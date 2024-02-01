@@ -99,10 +99,10 @@ class circumference {
   var close_circle : bool;              /* true to repeat first point at end */
 
   /***
-      circumference:  Default constructor that raises an error - you must
+      init:           Initializer that raises an error - you must
                       use the one with a radius.
   ***/
-  proc circumference() {
+  proc init() {
     writeln("you must provide at least a radius");
     halt();
   }
@@ -110,7 +110,7 @@ class circumference {
   /** Stand-alone mode **/
 
   /***
-      circumference:  Constructor that prepares the iterator to generate a
+      init:           Initializer that prepares the iterator to generate a
                       circle of a given radius.  Also sets up the center and
                       optionally whether to close the the circle when looping.
       args:           radius - radius of circle (>= 3)
@@ -118,12 +118,13 @@ class circumference {
                       closed - true to dup first point at end
       modifies:  r, x_center, y_center, close_circle
   ***/
-  proc circumference(radius : int, xc : int, yc : int, closed = false) {
+  proc init(radius : int, xc : int, yc : int, closed = false) {
 
-    set_radius(radius);
     x_center = xc;
     y_center = yc;
     close_circle = closed;
+    this.complete();
+    set_radius(radius);
   }
 
   /**!!!**/
@@ -176,13 +177,14 @@ class circumference {
   /** Cached mode **/
 
   /***
-      circumference:  Constructor that prepares the iterator to generate a
+      init:           Initializer that prepares the iterator to generate a
                       circle of a given radius.
       args:           radius - radius of circle (>= 3)
       modifies:  r
   ***/
-  proc circumference(radius : int) {
+  proc init(radius : int) {
 
+    this.complete();
     set_radius(radius);
   }
 
@@ -453,13 +455,13 @@ class chunkarray {
                    spec - parameters for FAST detector
     returns:   list of corners (may be empty)
 ***/
-proc find_corners(img : clrimage, spec : fastspec) : chunkarray(corner) {
+proc find_corners(img : unmanaged clrimage, spec : fastspec) : unmanaged chunkarray(corner) {
   const circle                          /* iterator about pixel */
-    = new circumference(spec.radius);
+    = new unmanaged circumference(spec.radius);
   const Ainside                         /* image interior we can analyze */
     = img.area.expand(-spec.radius, -spec.radius);
   var corners                           /* corners we've found */
-    = new chunkarray(corner);
+    = new unmanaged chunkarray(corner);
 
   forall (y,x) in Ainside {
     var details : corner;               /* info about corner */
@@ -489,7 +491,7 @@ proc find_corners(img : clrimage, spec : fastspec) : chunkarray(corner) {
                 circle - iterator with radius pre-set
     returns:   true if passes FAST criteria, false if not
 ***/
-proc is_corner(img : clrimage, x : int, y : int, spec : fastspec,
+proc is_corner(img : unmanaged clrimage, x : int, y : int, spec : fastspec,
                circle : circumference) : bool {
   var details : corner;                 /* temp storage (not used) */
 
@@ -508,7 +510,7 @@ proc is_corner(img : clrimage, x : int, y : int, spec : fastspec,
     returns:   true if passes FAST criteria, false if not
     modifies:  details (may be filled with garbage if returns false)
 ***/
-proc is_corner_with_details(img : clrimage, x : int, y : int, spec : fastspec,
+proc is_corner_with_details(img : unmanaged clrimage, x : int, y : int, spec : fastspec,
                             circle : circumference, out details : corner) : bool {
   var dir : thrdir;                     /* pixel difference direction */
   var len : int;                        /* consecutive length same dir */
@@ -597,7 +599,7 @@ proc is_corner_with_details(img : clrimage, x : int, y : int, spec : fastspec,
     returns:   thrdir classification at pt2
 ***/
 private inline
-proc pixel_thrdir(img : clrimage, x1 : int, y1 : int,
+proc pixel_thrdir(img : unmanaged clrimage, x1 : int, y1 : int,
                   x2 : int, y2 : int, spec : fastspec) : thrdir {
 
   if (img.c1(y2,x2) + spec.thr <= img.c1(y1,x1)) then return thrdir.LESS;
@@ -638,12 +640,12 @@ proc register_details(xc : int, yc : int, len : int, stpt : 2*int,
     modifies:  rawcnr (list sorted)
 ***/
 private
-proc suppress_corners(rawcnr : chunkarray(corner),
-                      spec : fastspec) : chunkarray(corner) {
+proc suppress_corners(rawcnr : unmanaged chunkarray(corner),
+                      spec : fastspec) : unmanaged chunkarray(corner) {
   var cnr                               /* actual data in rawcnr */
     = rawcnr();
   var suppcnr                           /* corners to keep */
-    = new chunkarray(corner);
+    = new unmanaged chunkarray(corner);
   var parent : [rawcnr.Ldata] int;      /* parent node in forest */
 
   /* Comparison functions for sort, first by center x, then y. */
@@ -722,23 +724,23 @@ proc set_parent(corners : [] corner, c1 : int, c2 : int, parent : [] int) {
                < 0 on failure (value depends on error)
     modifies:  marked
 ***/
-proc mark_corners(clr : clrimage, space : clrspace,
-                  corners : chunkarray(corner), ref marked : rgbimage) : int {
+proc mark_corners(clr : unmanaged clrimage, space : clrspace,
+                  corners : chunkarray(corner), ref marked : c_ptr(rgbimage)) : int {
   var retval : int;
 
   retval = alloc_rgbimage(marked, clr.ncol : c_int, clr.nrow : c_int);
   if (retval < 0) then return retval;
 
   forall (y, x) in clr.area {
-    const xy = y * marked.ncol + x;     /* pixel index */
+    const xy = y * marked.deref().ncol + x;     /* pixel index */
     /* L from 0 t/m 100.  Y from 16 t/m 235, don't scale. */
     if (clrspace.LAB == space) {
-      marked.r(xy) = nearbyint(2.55 * clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(2.55 * clr.c1(y,x)) : c_uchar;
     } else if (clrspace.YUV == space) {
-      marked.r(xy) = nearbyint(clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(clr.c1(y,x)) : c_uchar;
     }
-    marked.g(xy) = marked.r(xy);
-    marked.b(xy) = marked.r(xy);
+    marked.deref().g(xy) = marked.deref().r(xy);
+    marked.deref().b(xy) = marked.deref().r(xy);
   }
 
   /* Just marking the point. */
@@ -756,16 +758,16 @@ proc mark_corners(clr : clrimage, space : clrspace,
   forall c in corners.Ldata {
     const (xc, yc) = corners(c).center;
     for y in clr.rows[yc-5..yc+5] {
-      const xy = y * marked.ncol + xc;
-      marked.r(xy) = 255;
-      marked.g(xy) = 0;
-      marked.b(xy) = 0;
+      const xy = y * marked.deref().ncol + xc;
+      marked.deref().r(xy) = 255;
+      marked.deref().g(xy) = 0;
+      marked.deref().b(xy) = 0;
     }
     for x in clr.cols[xc-5..xc+5] {
-      const xy = yc * marked.ncol + x;
-      marked.r(xy) = 255;
-      marked.g(xy) = 0;
-      marked.b(xy) = 0;
+      const xy = yc * marked.deref().ncol + x;
+      marked.deref().r(xy) = 255;
+      marked.deref().g(xy) = 0;
+      marked.deref().b(xy) = 0;
     }
   }
 

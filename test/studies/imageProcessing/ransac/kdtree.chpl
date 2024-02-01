@@ -76,15 +76,17 @@ class kdtree {
   const IS_NIL  : uint(8) = 0x80;
 
   /***
-      kdtree:  Constructor for a tree.  Provide the number of elements you
+      init:    Initializer for a tree.  Provide the number of elements you
                want to store and their type and the dimensionality of the
                points used to divide the space.
       args:    nelt - number of elements to store
-               dataType - data to store at each point
-               ndim - number of dimensions to work on
+               dType - data to store at each point
+               nDim - number of dimensions to work on
       modifies:  Ltree, Ldata, dataType, ndim
   ***/
-  proc kdtree(nelt : int, type dataType, param ndim : int) {
+  proc init(nelt : int, type dType, param nDim : int) {
+    dataType = dType;
+    ndim = nDim;
 
     if (COORD < ndim) {
       halt("flags not large enough to store coordinate index");

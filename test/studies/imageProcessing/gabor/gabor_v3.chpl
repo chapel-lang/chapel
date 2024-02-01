@@ -163,7 +163,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
   exit(1);
@@ -184,10 +184,10 @@ proc verify_setup() {
 }
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var clr : clrimage;                   /* converted image with greyscale */
-  var grey : rgbimage;                  /* display version after filter */
-  var gabor : clrimage;                 /* result of Gabor filter */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var clr : unmanaged clrimage;         /* converted image with greyscale */
+  var grey : c_ptr(rgbimage);           /* display version after filter */
+  var gabor : unmanaged clrimage;       /* result of Gabor filter */
   var gabor2grey : conversion;          /* how to display result */
   var t0, t1, t2, t3, t4, t5 : Timer;   /* track time of each fn call */
   var retval : int;
@@ -212,7 +212,7 @@ proc main() {
 
   /* Note this copies a reference of the domain from the old to the new, so
      both clr and gabor share the same. */
-  gabor = new clrimage(clr);
+  gabor = new unmanaged clrimage(clr);
   run_gaborfilter(clr, gabor, size=size, theta=theta_rad, sclx=sclx, scly=scly,
                   wavelen=wavelen, phi=phi_rad);
 

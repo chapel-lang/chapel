@@ -107,7 +107,7 @@ proc gabor_kernel(theta : real, sclx : real, scly : real,
                       phi - offset of sinusoid, in radians
     modifies:  dest
 ***/
-proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int,
+proc run_gaborfilter(img : unmanaged clrimage, gabor : unmanaged clrimage, size : int,
                      theta : real, sclx : real, scly : real, wavelen : real,
                      phi : real) {
   const r = (size - 1) / 2;             /* kernel radius */
@@ -141,16 +141,16 @@ proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int,
     returns:   0 if successful
                < 0 on failure (value depends on error)
 ***/
-proc filter_and_save(img : clrimage, size : int, theta : int, sclx : real,
+proc filter_and_save(img : unmanaged clrimage, size : int, theta : int, sclx : real,
                      scly : real, wavelen : real, phi_rad : real) : int {
   const theta_rad = pi * theta / 180;   /* angle of rotation, in radians */
-  var gabor : clrimage;                 /* result of this filter */
-  var grey : rgbimage;                  /* display version of result */
+  var gabor : unmanaged clrimage;       /* result of this filter */
+  var grey : c_ptr(rgbimage);           /* display version of result */
   var gabor2grey : conversion;          /* how to display result */
   var outname : c_string;               /* output file name */
   var retval : int;
 
-  gabor = new clrimage(img);
+  gabor = new unmanaged clrimage(img);
   run_gaborfilter(img, gabor, size=size, theta=theta_rad, sclx=sclx, scly=scly,
                   wavelen=wavelen, phi=phi_rad);
 
@@ -168,6 +168,7 @@ proc filter_and_save(img : clrimage, size : int, theta : int, sclx : real,
   retval = PNG_write(outname, grey, CLR_R);
 
   free_rgbimage(grey);
+  delete gabor;
 
   writeln("  done Gabor filter at ", theta, " deg");
 
@@ -206,7 +207,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
   exit(1);
@@ -229,8 +230,8 @@ proc verify_setup() {
 
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var grey : clrimage;                  /* greyscale version of RGB */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var grey : unmanaged clrimage;        /* greyscale version of RGB */
   var retval : int;
 
   verify_setup();

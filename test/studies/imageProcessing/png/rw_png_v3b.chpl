@@ -25,7 +25,7 @@ config const x : c_int = -1;            /* pixel to change */
 config const y : c_int = -1;            /* pixel to change */
 
 /* The C image data structure. */
-extern class rgbimage {
+extern record rgbimage {
   var ncol : c_int;                     /* width (columns) of image */
   var nrow : c_int;                     /* height (rows) of image */
   var npix : c_int;                     /* number pixels = w * h */
@@ -35,14 +35,14 @@ extern class rgbimage {
 }
 
 /* Our variables */
-var rgb : rgbimage;                     /* the image we read */
+var rgb : c_ptr(rgbimage);                     /* the image we read */
 var xy : int(32);                       /* 1D index of x, y coord */
 var retval : c_int;                     /* return value with error code */
 
 /* External img_png linkage. */
-extern proc PNG_read(fname : c_string, ref img : rgbimage) : c_int;
-extern proc PNG_write(fname : c_string, img : rgbimage) : c_int;
-extern proc free_rgbimage(ref img : rgbimage) : void;
+extern proc PNG_read(fname : c_string, ref img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage)) : c_int;
+extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
 extern proc PNG_isa(fname : c_string) : c_int;
 /* The rest of the interface we don't use now. */
 /*
@@ -81,7 +81,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
   /* Note we skip the argument if we don't know how to clean it up.  The
      writefs are just to show which paths we execute. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then {
+    if (inst(i).type == c_ptr(rgbimage)) then {
       writef("freeing rgb instance\n");
       free_rgbimage(inst(i));
     } else if isClass(inst(i)) then {
@@ -107,7 +107,7 @@ class dummyclass {
   }
 }
 
-var dummy = new dummyclass(5,6);
+var dummy = new unmanaged dummyclass(5,6);
 
 
 
@@ -131,26 +131,27 @@ if ("" == outname) then
 retval = PNG_read(inname.c_str(), rgb);
 end_onerr(retval, rgb, dummy);
 
-if (rgb.ncol <= x) {
+if (rgb.deref().ncol <= x) {
   free_rgbimage(rgb);
   usage("--x (0-based) >= image width ");
 }
-if (rgb.nrow <= y) {
+if (rgb.deref().nrow <= y) {
   free_rgbimage(rgb);
   usage("--y (0-based) >= image height ");
 }
 
 /* Now we can access the fields directly. */
-xy = (y * rgb.ncol) + x;
-writef("\nRead %4i x %4i PNG image\n", rgb.ncol, rgb.nrow);
+xy = (y * rgb.deref().ncol) + x;
+writef("\nRead %4i x %4i PNG image\n", rgb.deref().ncol, rgb.deref().nrow);
 writef("At %4i,%4i      R %3u  G %3u  B %3u\n\n", x,y,
-       rgb.r(xy), rgb.g(xy), rgb.b(xy));
+       rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy));
 
-rgb.r(xy) = 1;
-rgb.g(xy) = 2;
-rgb.b(xy) = 3;
+rgb.deref().r(xy) = 1;
+rgb.deref().g(xy) = 2;
+rgb.deref().b(xy) = 3;
 
 retval = PNG_write(outname.c_str(), rgb);
 end_onerr(retval, rgb, dummy);
 
 free_rgbimage(rgb);
+delete dummy;

@@ -26,7 +26,7 @@ config var outname : string;            /* name of file to write */
 /**** C Interface ****/
 
 /* The C image data structure. */
-extern class rgbimage {
+extern record rgbimage {
   var ncol : c_int;                     /* width (columns) of image */
   var nrow : c_int;                     /* height (rows) of image */
   var npix : c_int;                     /* number pixels = w * h */
@@ -43,12 +43,12 @@ extern const CLR_G : int(32);
 extern const CLR_B : int(32);
 
 /* External img_png linkage. */
-extern proc PNG_read(fname : c_string, ref img : rgbimage) : c_int;
-extern proc PNG_write(fname : c_string, img : rgbimage, plane : c_int) : c_int;
+extern proc PNG_read(fname : c_string, ref img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage), plane : c_int) : c_int;
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : rgbimage,
+extern proc alloc_rgbimage(ref img : c_ptr(rgbimage),
                            ncol : c_int, nrow : c_int) : c_int;
-extern proc free_rgbimage(ref img : rgbimage) : void;
+extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
 
 
 /**** Constants - Internal ****/
@@ -84,8 +84,8 @@ const LAB_BMAX  =  156.20;
                < 0 on failure (value depends on error)
     modifies:  lab
 ***/
-proc rgb_to_lab(rgb : rgbimage, ref lab : rgbimage) : c_int {
-  const imgbounds = 0 .. (rgb.npix-1);  /* range covering image */
+proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : c_ptr(rgbimage)) : c_int {
+  const imgbounds = 0 .. (rgb.deref().npix-1);  /* range covering image */
   var l : [imgbounds] real;             /* L color plane */
   var l_a : [imgbounds] real;           /* A color plane */
   var l_b : [imgbounds] real;           /* B color plane */
@@ -93,7 +93,7 @@ proc rgb_to_lab(rgb : rgbimage, ref lab : rgbimage) : c_int {
   var retval : c_int;
 
   /* We return an error code from rgb_to_lab because this may fail. */
-  retval = alloc_rgbimage(lab, rgb.ncol, rgb.nrow);
+  retval = alloc_rgbimage(lab, rgb.deref().ncol, rgb.deref().nrow);
   if (retval < 0) then return retval;
 
   /* Since we scale the converted pixel immediately, it's not really
@@ -101,18 +101,19 @@ proc rgb_to_lab(rgb : rgbimage, ref lab : rgbimage) : c_int {
      l, l_a, and l_b as scalars inside the loop (so local).  We took this
      approach to try out arrays, and in preparation for the next version. */
   for xy in imgbounds {
-    rgbpix_to_lab(rgb.r(xy), rgb.g(xy), rgb.b(xy), l(xy), l_a(xy), l_b(xy));
+    rgbpix_to_lab(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy), l(xy),
+      l_a(xy), l_b(xy));
 
     clamped = clamp(l(xy), LAB_LMIN, LAB_LMAX);
-    lab.r(xy) =
+    lab.deref().r(xy) =
       ((255.0 * (clamped-LAB_LMIN) / (LAB_LMAX-LAB_LMIN)) + 0.5) : c_uchar;
 
     clamped = clamp(l_a(xy), LAB_AMIN, LAB_AMAX);
-    lab.g(xy) =
+    lab.deref().g(xy) =
       ((255.0 * (clamped-LAB_AMIN) / (LAB_AMAX-LAB_AMIN)) + 0.5) : c_uchar;
 
     clamped = clamp(l_b(xy), LAB_BMIN, LAB_BMAX);
-    lab.b(xy) =
+    lab.deref().b(xy) =
       ((255.0 * (clamped-LAB_BMIN) / (LAB_BMAX-LAB_BMIN)) + 0.5) : c_uchar;
   }
 
@@ -234,8 +235,8 @@ proc verify_setup() : void {
 /* Here we go. */
 
 proc main() {
-  var rgb : rgbimage;                   /* the image we've read */
-  var grey : rgbimage;                  /* L (greyscale) channel of rgb */
+  var rgb : c_ptr(rgbimage);            /* the image we've read */
+  var grey : c_ptr(rgbimage);           /* L (greyscale) channel of rgb */
   var retval : int;                     /* return value with error code */
 
   verify_setup();

@@ -40,7 +40,7 @@ proc test_assemble() : bool {
     returns:   true if all tests pass, false if any fail
 ***/
 proc test_assemble_1() : bool {
-  var tree = new kdtree(15, int, 3);    /* tree we're building */
+  var tree = new unmanaged kdtree(15, int, 3);    /* tree we're building */
   var expflag : uint(8);                /* expected value of flags */
   var passed = true;                    /* overall pass-fail flag */
 
@@ -116,7 +116,7 @@ proc test_assemble_1() : bool {
     returns:   true if all tests pass, false if any fail
 ***/
 proc test_assemble_2() : bool {
-  var tree = new kdtree(14, int, 3);    /* tree we're building */
+  var tree = new unmanaged kdtree(14, int, 3);    /* tree we're building */
   var expflag : uint(8);                /* expected value of flags */
   var passed = true;                    /* overall pass-fail flag */
 
@@ -229,7 +229,7 @@ proc test_nearest_point() : bool {
     returns:   true if all tests pass, false if any fail
 ***/
 proc test_traverse_to_point() : bool {
-  var tree = new kdtree(14, int, 3);    /* tree we're building */
+  var tree = new unmanaged kdtree(14, int, 3);    /* tree we're building */
   var node : int;                       /* node number returned */
   var match : bool;                     /* true if point in tree */
   var passed = true;                    /* overall pass-fail flag */
@@ -335,7 +335,7 @@ proc test_traverse_to_point() : bool {
     returns:   true if all tests pass, false if any fail
 ***/
 proc test_find_nearest() : bool {
-  var tree = new kdtree(14, int, 3);    /* tree we're building */
+  var tree = new unmanaged kdtree(14, int, 3);    /* tree we're building */
   var val : int;                        /* node value returned at closest */
   var passed = true;                    /* overall pass-fail flag */
 

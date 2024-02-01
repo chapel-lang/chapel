@@ -40,7 +40,7 @@ typedef struct __rgbimage {
   uchar *r;                             /* red plane */
   uchar *g;                             /* green plane */
   uchar *b;                             /* blue plane */
-} _rgbimage, *rgbimage;
+} rgbimage;
 
 
 /*** Constants / Enumerations ***/
@@ -68,7 +68,7 @@ extern int PNG_isa(const char *);
    returns < 0 on error
    modifies img
 */
-extern int PNG_read(const char *, _rgbimage **);
+extern int PNG_read(const char *, rgbimage **);
 
 /* write an rgbimage to disk in PNG format
      fname - name of file to write to (if NULL, use stdout)
@@ -76,7 +76,7 @@ extern int PNG_read(const char *, _rgbimage **);
      clrplane - CLR_* which plane to write
    returns < 0 on error
 */
-extern int PNG_write(const char *, _rgbimage *, enum clrplane);
+extern int PNG_write(const char *, rgbimage *, enum clrplane);
 
 /* allocate an image in our format, initializing contents to 0
      img - image to create (frees old if non-NULL)
@@ -84,27 +84,27 @@ extern int PNG_write(const char *, _rgbimage *, enum clrplane);
    returns < 0 on error
    modifies img
 */
-extern int alloc_rgbimage(_rgbimage **, int, int);
+extern int alloc_rgbimage(rgbimage **, int, int);
 
 /* release memory for an image
      img - image to free
    modifies img (set to NULL when done)
 */
-extern void free_rgbimage(_rgbimage **);
+extern void free_rgbimage(rgbimage **);
 
 /* get pixel's RGB values
      img - image
      x, y - pixel coordinates
      r, g, b - color planes (all modified)
 */
-extern int read_rgb(_rgbimage *, int, int, uchar *, uchar *, uchar *);
+extern int read_rgb(rgbimage *, int, int, uchar *, uchar *, uchar *);
 
 /* change a pixel's RGB values
      img - image
      x, y - pixel coordinates
      r, g, b - color values
 */
-extern int write_rgb(_rgbimage *, int, int, uchar, uchar, uchar);
+extern int write_rgb(rgbimage *, int, int, uchar, uchar, uchar);
 
 
 #endif   /* _IMGPNG */

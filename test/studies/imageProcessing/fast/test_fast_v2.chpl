@@ -113,7 +113,7 @@ proc test_circumference() : bool {
 
   writeln("  checking radius 6");
   cnt = 0;
-  var circle = new circumference(6);
+  var circle = new unmanaged circumference(6);
   for (x, y) in circle(0, 0, true) {
     var exp : 2 * int;                  /* expected result */
     select cnt {
@@ -284,9 +284,9 @@ proc test_circumference() : bool {
 proc test_is_corner() : bool {
   var passed                            /* overall result for bench */
     = true;
-  var img : clrimage;                   /* dummy data */
+  var img : unmanaged clrimage;         /* dummy data */
   var circle                            /* iterator about circle */
-    = new circumference(3);
+    = new unmanaged circumference(3);
   var spec : fastspec;                  /* FAST parameters */
 
   writeln("\nStarting test bench for is_corner");
@@ -296,7 +296,7 @@ proc test_is_corner() : bool {
   spec.maxlen = 13;
   spec.thr = 10.0;
 
-  img = new clrimage(20, 20, clrspace.LAB);
+  img = new unmanaged clrimage(20, 20, clrspace.LAB);
   img.c1(10,10) = 20.0;
 
   /* Pixel counts for r==3 range from 0 t/m 15. */
@@ -480,9 +480,9 @@ proc test_is_corner() : bool {
 proc test_is_corner_with_details() : bool {
   var passed                            /* overall result for bench */
     = true;
-  var img : clrimage;                   /* dummy data */
+  var img : unmanaged clrimage;         /* dummy data */
   var circle                            /* iterator about circle */
-    = new circumference(3);
+    = new unmanaged circumference(3);
   var spec : fastspec;                  /* FAST parameters */
   var details : corner;                 /* specifics about corner */
 
@@ -493,7 +493,7 @@ proc test_is_corner_with_details() : bool {
   spec.maxlen = 13;
   spec.thr = 10.0;
 
-  img = new clrimage(20, 20, clrspace.LAB);
+  img = new unmanaged clrimage(20, 20, clrspace.LAB);
   img.c1(10,10) = 20.0;
 
   /* Pixel counts for r==3 range from 0 t/m 15. */

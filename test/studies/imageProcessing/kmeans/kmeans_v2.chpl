@@ -102,8 +102,8 @@ proc random_domain(rand : RandomStream, dom : domain) : dom.rank * dom.idxType {
                < 0 on failure (value depends on error)
     modifies:  kset, ids
 ***/
-proc cluster_colors(clr : clrimage, ncluster : int,
-                    out kset : [] cluster, ref quant : rgbimage) : int {
+proc cluster_colors(clr : unmanaged clrimage, ncluster : int,
+                    out kset : [] cluster, ref quant : c_ptr(rgbimage)) : int {
   const ids : domain(1) = { 1..ncluster };
                                         /* range of clusters */
   var kprev : [ids] cluster;            /* clusters in previous pass */
@@ -170,7 +170,7 @@ proc cluster_colors(clr : clrimage, ncluster : int,
                    kset - cluster definitions at start of pass
     returns:   new set of clusters
 ***/
-proc iterate_pass(clr : clrimage, const ref kset : [] cluster) {
+proc iterate_pass(clr : unmanaged clrimage, const ref kset : [] cluster) {
   var knew : [kset.domain] cluster;     /* new cluster definitions */
 
   forall (y, x) in clr.area {
@@ -347,7 +347,7 @@ proc fillin_empties(kset : [] cluster, space : clrspace) {
                     kset - position of clusters to seed
     modifies:  kset
 ***/
-proc seed_clusters(clr : clrimage, kset : [] cluster) {
+proc seed_clusters(clr : unmanaged clrimage, kset : [] cluster) {
   const rand = makeRandomStream(real);  /* random numbers to pick pixels */
   var dmax : real;                      /* max distance to seeded clusters */
   var d : real;                         /* distance to another cluster */
@@ -395,8 +395,6 @@ proc seed_clusters(clr : clrimage, kset : [] cluster) {
       kset(i).skip = true;
     }
   }
-
-  delete rand;
 }
 
 /***
@@ -410,8 +408,8 @@ proc seed_clusters(clr : clrimage, kset : [] cluster) {
                < 0 on failure (value depends on error)
     modifies:  kset, ids
 ***/
-proc mark_and_backfill(clr : clrimage, kset : [] cluster,
-                       ref quant : rgbimage) : int {
+proc mark_and_backfill(clr : unmanaged clrimage, kset : [] cluster,
+                       ref quant : c_ptr(rgbimage)) : int {
   var retval: int;
 
   /* Back-calculate RGB. */
@@ -435,8 +433,8 @@ proc mark_and_backfill(clr : clrimage, kset : [] cluster,
   if (retval < 0) then return retval;
 
   forall (y, x) in clr.area {
-    var xy = (y * quant.ncol) + x;      /* pixel index */
-    quant.r(xy) = closest_cluster(clr.c1(y,x), clr.c2(y,x), clr.c3(y,x),
+    var xy = (y * quant.deref().ncol) + x;      /* pixel index */
+    quant.deref().r(xy) = closest_cluster(clr.c1(y,x), clr.c2(y,x), clr.c3(y,x),
                                   clr.space, kset) : c_uchar;
   }
 
@@ -475,7 +473,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
   exit(1);
@@ -496,9 +494,9 @@ proc verify_setup() {
 }
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var clr : clrimage;                   /* converted image with greyscale */
-  var ids : rgbimage;                   /* quantized color assignments */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var clr : unmanaged clrimage;         /* converted image with greyscale */
+  var ids : c_ptr(rgbimage);            /* quantized color assignments */
   var kset : [1..ncluster] cluster;     /* result of quantization */
   var retval : int;
 

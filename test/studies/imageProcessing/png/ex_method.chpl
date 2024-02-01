@@ -17,7 +17,7 @@ n.dump("or via an instance");
 */
 
 proc ref num.changeInst() {
-  this = new num(5);
+  this = new unmanaged num(5);
 }
 
 writeln("\ndemonstrate ref intent");

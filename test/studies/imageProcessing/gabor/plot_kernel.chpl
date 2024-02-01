@@ -39,7 +39,7 @@ const phi_rad = pi * phi / 180.0;
 /**** C interface ****/
 
 /* The C image data structure. */
-extern class rgbimage {
+extern record rgbimage {
   var ncol : c_int;                     /* width (columns) of image */
   var nrow : c_int;                     /* height (rows) of image */
   var npix : c_int;                     /* number pixels = w * h */
@@ -55,11 +55,11 @@ extern const CLR_R : int(32);
 extern const CLR_G : int(32);
 extern const CLR_B : int(32);
 
-extern proc PNG_write(fname : c_string, img : rgbimage, plane : c_int) : c_int;
+extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage), plane : c_int) : c_int;
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : rgbimage,
+extern proc alloc_rgbimage(ref img : c_ptr(rgbimage),
                            ncol : c_int, nrow : c_int) : c_int;
-extern proc free_rgbimage(ref img : rgbimage) : void;
+extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
 
 
 
@@ -128,7 +128,7 @@ proc main() {
   const imgsize = (size + 1) * res;     /* number cols/rows in image */
   const imgscl = 1.0 / res;             /* scale row/col to filter space */
   const imgoff = -((size+1)/2.0);       /* filter space coord of img (0, 0) */
-  var heat : rgbimage;                  /* heat map */
+  var heat : c_ptr(rgbimage);                  /* heat map */
   var retval : c_int;
 
   writef("\nGabor %i x %i   theta %6.1dr  scl %4.2dr %4.2dr   wavelen %4.2dr  phi %6.1dr\n\n",
@@ -147,7 +147,7 @@ proc main() {
          convolutions in gabor_v* are implicitly inverted, so this is correct.
       */
       const y = imgoff + (row * imgscl);
-      color_encode(gaborfn(x, y), heat.r(xy), heat.g(xy), heat.b(xy));
+      color_encode(gaborfn(x, y), heat.deref().r(xy), heat.deref().g(xy), heat.deref().b(xy));
     }
   }
 

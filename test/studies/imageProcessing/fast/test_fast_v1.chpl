@@ -113,7 +113,7 @@ proc test_circumference() : bool {
 
   writeln("  checking radius 6");
   cnt = 0;
-  var circle = new circumference(6);
+  var circle = new unmanaged circumference(6);
   for (x, y) in circle(0, 0, true) {
     var exp : 2 * int;                  /* expected result */
     select cnt {
@@ -283,8 +283,8 @@ proc test_circumference() : bool {
 ***/
 proc test_is_corner() : bool {
   var passed = true;                    /* overall result for bench */
-  var img : clrimage;                   /* dummy data */
-  var circle = new circumference(3);    /* iterator about circle */
+  var img : unmanaged clrimage;         /* dummy data */
+  var circle = new unmanaged circumference(3);    /* iterator about circle */
 
   writeln("\nStarting test bench for is_corner");
 
@@ -299,7 +299,7 @@ proc test_is_corner() : bool {
     return false;
   }
 
-  img = new clrimage(20, 20, clrspace.LAB);
+  img = new unmanaged clrimage(20, 20, clrspace.LAB);
   img.c1(10,10) = 20.0;
 
   /* Pixel counts for r==3 range from 0 t/m 15. */

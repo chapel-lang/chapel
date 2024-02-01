@@ -53,7 +53,7 @@ clrs(24) = (0x34 : uint(8), 0x34 : uint(8), 0x34 : uint(8));
 
 
 proc main() {
-  var rgb : rgbimage;                   /* color chart */
+  var rgb : c_ptr(rgbimage);                   /* color chart */
   var retval: int;
 
   retval = alloc_rgbimage(rgb, (NCOL*(WBORDER+WSQUARE)+WBORDER) : c_int,
@@ -66,9 +66,9 @@ proc main() {
       const xl = WBORDER + (i-1) * (WBORDER+WSQUARE);     /* x ll corner */
       const sq = ((j - 1) * NCOL) + i;                    /* color square */
       for y in yl..yl+WSQUARE {
-        var xy = (y * rgb.ncol);                          /* pixel index */
+        var xy = (y * rgb.deref().ncol);                          /* pixel index */
         for x in xl..xl+WSQUARE {
-          (rgb.r(xy+x), rgb.g(xy+x), rgb.b(xy+x)) = clrs(sq);
+          (rgb.deref().r(xy+x), rgb.deref().g(xy+x), rgb.deref().b(xy+x)) = clrs(sq);
         }
       }
     }
@@ -76,7 +76,7 @@ proc main() {
 
   retval = PNG_write(OUTNAME.c_str(), rgb, CLR_RGB);
 
-  delete rgb;
+  free_rgbimage(rgb);
 
   return retval;
 }

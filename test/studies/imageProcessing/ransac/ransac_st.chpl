@@ -119,7 +119,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
   const mincnt                          /* number corners that must match */
     = nearbyint(matchfrac * minlen) : int;
   var tree                              /* 2-dimensional sorted space */
-    = new kdtree(corners2.domain.size, int, 2);
+    = new unmanaged kdtree(corners2.domain.size, int, 2);
 
   for i in corners2.domain {
     tree.add_node(corners2(i).center, i);
@@ -131,7 +131,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
      to only use one or two cores (why is still being checked).
   */
   forall i in 1..ntry {
-    var rand : RandomStream(real);      /* random numbers to pick seeds */
+    var rand : owned RandomStream(real);      /* random numbers to pick seeds */
     var trytime : Timer;                /* run time for this try */
 
     if (fixrng) {
@@ -163,8 +163,6 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
 
     trytime.stop();
     tries(i).ttry = trytime.elapsed(TimeUnits.milliseconds);
-
-    delete rand;
   }
 
   besttry = select_besttry(tries);
@@ -627,7 +625,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
   exit(1);
@@ -649,12 +647,12 @@ proc verify_setup() {
 }
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var clr1 : clrimage;                  /* greyscale first image */
-  var clr2 : clrimage;                  /* greyscale second image */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var clr1 : unmanaged clrimage;        /* greyscale first image */
+  var clr2 : unmanaged clrimage;        /* greyscale second image */
   var spec : fastspec;                  /* FAST parameters */
-  var corners1 : chunkarray(corner);    /* corners found in clr1 */
-  var corners2 : chunkarray(corner);    /* corners found in clr2 */
+  var corners1 : unmanaged chunkarray(corner);    /* corners found in clr1 */
+  var corners2 : unmanaged chunkarray(corner);    /* corners found in clr2 */
   var Lcnr1 : domain(rank=1);           /* domain of corners1 */
   var Lcnr2 : domain(rank=1);           /* domain of corners2 */
   var match1to2 : [Lcnr1] int;          /* corners2 index for each corners1 */

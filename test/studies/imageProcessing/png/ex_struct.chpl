@@ -110,7 +110,7 @@ writeln("\nDemonstrating constructors");
 class image_cls {
   var ncol, nrow, npix : int;
 
-  proc image_cls(numcol : int, numrow : int) {
+  proc init(numcol : int, numrow : int) {
     ncol = numcol;
     nrow = numrow;
     npix = numcol * numrow;
@@ -121,7 +121,7 @@ class image_cls {
   }
 }
 
-var eximg = new image_cls(10, 20);
+var eximg = new unmanaged image_cls(10, 20);
 writef("image size %4i x %4i (= %6i npix)\n",
        eximg.ncol,eximg.nrow, eximg.npix);
 
@@ -130,20 +130,20 @@ writeln("\nDemonstrating memory management");
 class test_cls {
   var tmp : int;
 
-  proc ~test_cls() {
+  proc deinit() {
     writeln("  called class destructor, tmp was ", tmp);
   }
 }
 record test_rcd {
   var tmp : int;
 
-  proc ~test_rcd() {
+  proc deinit() {
     writeln("  called record destructor, tmp was ", tmp);
   }
 }
 
 proc test_destruct1() {
-  var c = new test_cls(3);
+  var c = new unmanaged test_cls(3);
   var r = new test_rcd(2);
 
   writeln("in test_destruct1:");
@@ -151,7 +151,7 @@ proc test_destruct1() {
 }
 
 proc test_destruct2() {
-  var c = new test_cls(2);
+  var c = new unmanaged test_cls(2);
   var r = new test_rcd(3);
 
   writeln("in test_destruct2:");

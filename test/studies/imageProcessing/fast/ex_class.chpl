@@ -16,16 +16,16 @@ class citer {
   var center_x, center_y : int;
   var closed_circle : bool;
 
-  /* Simple constructor only setting up the radius. */
-  proc citer(radius : int) {
+  /* Initializer only setting up the radius. */
+  proc init(radius : int) {
     if (this.r != radius) {
       writeln("init r to ", radius);
       this.r = radius;
     }
   }
 
-  /* Full constructor specifying the complete circle. */
-  proc citer(radius : int, xc : int, yc : int, closed = true) {
+  /* Initializer specifying the complete circle. */
+  proc init(radius : int, xc : int, yc : int, closed = true) {
     center_x = xc;
     center_y = yc;
     closed_circle = closed;
@@ -68,7 +68,7 @@ for i in new citer(5, 1, 1, false) do writeln("  iter ", i);
    method to shift the center/close the circle and call the iterator.  'this'
    is overloaded so that you can change only the radius. */
 writeln("Iterate over circle radius 4 at 1,1");
-var cinst = new citer(4);
+var cinst = new unmanaged citer(4);
 for i in cinst(1, 1) do writeln("  iter ", i);
 writeln("Iterate over circle radius 5 at 3,2");
 cinst.set_radius(5);

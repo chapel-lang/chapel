@@ -117,7 +117,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
   const mincnt                          /* number corners that must match */
     = nearbyint(matchfrac * minlen) : int;
   var tree                              /* 2-dimensional sorted space */
-    = new kdtree(corners2.domain.size, int, 2);
+    = new unmanaged kdtree(corners2.domain.size, int, 2);
 
   for i in corners2.domain {
     tree.add_node(corners2(i).center, i);
@@ -128,7 +128,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
      only one or two cores.  Why is still being investigated.
   */
   forall i in 1..ntry {
-    var rand : RandomStream(real);      /* random numbers to pick seeds */
+    var rand : owned RandomStream(real);      /* random numbers to pick seeds */
     var trytime : Timer;                /* run time for this try */
 
     if (fixrng) {
@@ -160,8 +160,6 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
 
     trytime.stop();
     tries(i).ttry = trytime.elapsed(TimeUnits.milliseconds);
-
-    delete rand;
   }
 
   besttry = select_besttry(tries);
@@ -755,11 +753,11 @@ proc dump_map(title : string, map : mapinfo) {
                    corners1, corners2 - corners found in inputs
                    match1to2 - index of corners2 matching 1, < 0 if no match
 ***/
-proc draw_matches(img1 : clrimage, img2 : clrimage,
+proc draw_matches(img1 : unmanaged clrimage, img2 : unmanaged clrimage,
                   corners1 : [] corner, corners2 : [] corner,
                   match1to2 : [] int) : int {
-  var disp : rgbimage;                       /* output image */
-  var grey : rgbimage;                       /* greyscale version of input */
+  var disp : c_ptr(rgbimage);                /* output image */
+  var grey : c_ptr(rgbimage);                /* greyscale version of input */
   var img2grey : conversion;                 /* greyscale conversion spec */
   var colors : [1..2*match_nclr] 3*c_uchar;  /* colors to use for lines */
   var ncol, nrow : c_int;                    /* size of combined image */
@@ -792,9 +790,9 @@ proc draw_matches(img1 : clrimage, img2 : clrimage,
     for x in img1.cols {
       const xy = y * img1.ncol + x;
       const xyd = (y + y1off) * ncol + (x + x1off);
-      disp.r(xyd) = grey.r(xy);
-      disp.g(xyd) = grey.g(xy);
-      disp.b(xyd) = grey.b(xy);
+      disp.deref().r(xyd) = grey.deref().r(xy);
+      disp.deref().g(xyd) = grey.deref().g(xy);
+      disp.deref().b(xyd) = grey.deref().b(xy);
     }
   }
 
@@ -804,9 +802,9 @@ proc draw_matches(img1 : clrimage, img2 : clrimage,
     for x in img2.cols {
       const xy = y * img2.ncol + x;
       const xyd = (y + y2off) * ncol + (x + x2off);
-      disp.r(xyd) = grey.r(xy);
-      disp.g(xyd) = grey.g(xy);
-      disp.b(xyd) = grey.b(xy);
+      disp.deref().r(xyd) = grey.deref().r(xy);
+      disp.deref().g(xyd) = grey.deref().g(xy);
+      disp.deref().b(xyd) = grey.deref().b(xy);
     }
   }
 
@@ -891,7 +889,7 @@ proc setup_combiimg(img1 : clrimage, img2: clrimage,
                 endpt - last point of line
     modifies:  img
 ***/
-proc draw_line(img : rgbimage, clr : 3 * c_uchar, stpt : 2 * int,
+proc draw_line(img : c_ptr(rgbimage), clr : 3 * c_uchar, stpt : 2 * int,
                endpt : 2 * int) {
   const (x0, y0) = stpt;
   const (x1, y1) = endpt;
@@ -959,7 +957,7 @@ proc determine_octant(x0 : int, y0 : int, x1 : int, y1 : int) : int {
                         x1, y1 - first point of line
     modifies:  img
 ***/
-proc draw_line_octant1(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
+proc draw_line_octant1(img : c_ptr(rgbimage), clr : 3 * c_uchar, x0 : int, y0 : int,
                        x1 : int, y1 : int) {
   const (r, g, b) = clr;                /* destructuring */
   const dx = x1 - x0;                   /* slope components */
@@ -971,10 +969,10 @@ proc draw_line_octant1(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
   x = x0;
   err = 0;
   while (x <= x1) {
-    xy = (y * img.ncol) + x;
-    img.r(xy) = r;
-    img.g(xy) = g;
-    img.b(xy) = b;
+    xy = (y * img.deref().ncol) + x;
+    img.deref().r(xy) = r;
+    img.deref().g(xy) = g;
+    img.deref().b(xy) = b;
 
     err += dy;
     if (dx <= (2 * err)) {
@@ -995,7 +993,7 @@ proc draw_line_octant1(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
                         x1, y1 - first point of line
     modifies:  img
 ***/
-proc draw_line_octant2(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
+proc draw_line_octant2(img : c_ptr(rgbimage), clr : 3 * c_uchar, x0 : int, y0 : int,
                        x1 : int, y1 : int) {
   const (r, g, b) = clr;                /* destructuring */
   const dx = x1 - x0;                   /* slope components */
@@ -1007,10 +1005,10 @@ proc draw_line_octant2(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
   x = x0;
   err = 0;
   while (y <= y1) {
-    xy = (y * img.ncol) + x;
-    img.r(xy) = r;
-    img.g(xy) = g;
-    img.b(xy) = b;
+    xy = (y * img.deref().ncol) + x;
+    img.deref().r(xy) = r;
+    img.deref().g(xy) = g;
+    img.deref().b(xy) = b;
 
     err += dx;
     if (dy <= (2 * err)) {
@@ -1031,7 +1029,7 @@ proc draw_line_octant2(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
                         x1, y1 - first point of line
     modifies:  img
 ***/
-proc draw_line_octant3(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
+proc draw_line_octant3(img : c_ptr(rgbimage), clr : 3 * c_uchar, x0 : int, y0 : int,
                        x1 : int, y1 : int) {
   const (r, g, b) = clr;                /* destructuring */
   const dx = x1 - x0;                   /* slope components */
@@ -1043,10 +1041,10 @@ proc draw_line_octant3(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
   x = x0;
   err = 0;
   while (y1 <= y) {
-    xy = (y + img.ncol) * x;
-    img.r(xy) = r;
-    img.g(xy) = g;
-    img.b(xy) = b;
+    xy = (y + img.deref().ncol) * x;
+    img.deref().r(xy) = r;
+    img.deref().g(xy) = g;
+    img.deref().b(xy) = b;
 
     err += dx;
     if ((2 * err) <= -dy) {
@@ -1067,7 +1065,7 @@ proc draw_line_octant3(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
                         x1, y1 - first point of line
     modifies:  img
 ***/
-proc draw_line_octant8(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
+proc draw_line_octant8(img : c_ptr(rgbimage), clr : 3 * c_uchar, x0 : int, y0 : int,
                        x1 : int, y1 : int) {
   const (r, g, b) = clr;                /* destructuring */
   const dx = x1 - x0;                   /* slope components */
@@ -1079,10 +1077,10 @@ proc draw_line_octant8(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
   x = x0;
   err = 0;
   while (x1 <= x) {
-    xy = (y + img.ncol) * x;
-    img.r(xy) = r;
-    img.g(xy) = g;
-    img.b(xy) = b;
+    xy = (y + img.deref().ncol) * x;
+    img.deref().r(xy) = r;
+    img.deref().g(xy) = g;
+    img.deref().b(xy) = b;
 
     err += dy;
     if ((2 * err) <= -dx) {
@@ -1142,7 +1140,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
   const mincnt                          /* number corners that must match */
     = nearbyint(matchfrac * minlen) : int;
   var tree                              /* 2-dimensional sorted space */
-    = new kdtree(corners2.domain.size, int, 2);
+    = new unmanaged kdtree(corners2.domain.size, int, 2);
 
   for i in corners2.domain {
     tree.add_node(corners2(i).center, i);
@@ -1391,7 +1389,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
   exit(1);
@@ -1414,12 +1412,12 @@ proc verify_setup() {
 
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var clr1 : clrimage;                  /* greyscale first image */
-  var clr2 : clrimage;                  /* greyscale second image */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var clr1 : unmanaged clrimage;        /* greyscale first image */
+  var clr2 : unmanaged clrimage;        /* greyscale second image */
   var spec : fastspec;                  /* FAST parameters */
-  var corners1 : chunkarray(corner);    /* corners found in clr1 */
-  var corners2 : chunkarray(corner);    /* corners found in clr2 */
+  var corners1 : unmanaged chunkarray(corner);    /* corners found in clr1 */
+  var corners2 : unmanaged chunkarray(corner);    /* corners found in clr2 */
   var Lcnr1 : domain(rank=1);           /* domain of corners1 */
   var Lcnr2 : domain(rank=1);           /* domain of corners2 */
   var match1to2 : [Lcnr1] int;          /* corners2 index for each corners1 */

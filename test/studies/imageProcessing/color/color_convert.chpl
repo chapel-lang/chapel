@@ -70,7 +70,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
   exit(1);
@@ -78,9 +78,9 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var clr : clrimage;                   /* converted image */
-  var grey : rgbimage;                  /* display version of plane */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var clr : unmanaged clrimage;         /* converted image */
+  var grey : c_ptr(rgbimage);           /* display version of plane */
   var clr2rgb : conversion;             /* how to display L plane */
   var retval : int;                     /* return value with error code */
 
@@ -131,6 +131,7 @@ proc main() {
 
   free_rgbimage(rgb);
   free_rgbimage(grey);
+  delete(clr);
 
   return 0;
 }

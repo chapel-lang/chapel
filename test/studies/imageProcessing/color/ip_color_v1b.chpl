@@ -39,7 +39,7 @@
 /**** C Interfaces ****/
 
 /* The C image data structure. */
-extern class rgbimage {
+extern record rgbimage {
   var ncol : c_int;                     /* width (columns) of image */
   var nrow : c_int;                     /* height (rows) of image */
   var npix : c_int;                     /* number pixels = w * h */
@@ -56,12 +56,12 @@ extern const CLR_G : int(32);
 extern const CLR_B : int(32);
 
 /* External img_png linkage. */
-extern proc PNG_read(fname : c_string, ref img : rgbimage) : c_int;
-extern proc PNG_write(fname : c_string, img : rgbimage, plane : c_int) : c_int;
+extern proc PNG_read(fname : c_string, ref img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage), plane : c_int) : c_int;
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : rgbimage,
+extern proc alloc_rgbimage(ref img : c_ptr(rgbimage),
                            ncol : c_int, nrow : c_int) : c_int;
-extern proc free_rgbimage(ref img : rgbimage) : void;
+extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
 
 
 /**** Constants - Internal ****/
@@ -96,12 +96,12 @@ class clrimage {
   var c3 : [area] real;                 /* third color plane (B, V, V) */
 
   /***
-      clrimage:  Constructor that allocates the arrays to store the color
+      init:      Initializer that allocates the arrays to store the color
                  data.
       args:      w, h - number of columns, rows in image
       modifies:  ncol, nrow, npix, area
   ***/
-  proc clrimage(w : int, h : int) {
+  proc init(w : int, h : int) {
     ncol = w;
     nrow = h;
     npix = w * h;
@@ -159,7 +159,7 @@ record conversion {
                   space - space to convert to
     modifies:  clr
 ***/
-proc rgb_convert(rgb : rgbimage, ref clr : clrimage, space : clrspace) {
+proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage, space : clrspace) {
   var clrfn : func(c_uchar, c_uchar, c_uchar, 3*real);
                                         /* convert function */
   var xy : int;                         /* pixel index */
@@ -172,12 +172,12 @@ proc rgb_convert(rgb : rgbimage, ref clr : clrimage, space : clrspace) {
     otherwise halt("unknown colorspace " + space);
   }
 
-  clr = new clrimage(rgb.ncol, rgb.nrow);
+  clr = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow);
 
   for (y, x) in clr.area {
-    xy = (y * rgb.ncol) + x;
+    xy = (y * rgb.deref().ncol) + x;
     (clr.c1(y,x), clr.c2(y,x), clr.c3(y,x)) =
-      clrfn(rgb.r(xy), rgb.g(xy), rgb.b(xy));
+      clrfn(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy));
   }
 }
 
@@ -376,7 +376,7 @@ proc rgbpix_to_rgb(r : c_uchar, g : c_uchar, b : c_uchar) : 3*real {
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_color(clr : clrimage, ref rgb : rgbimage,
+proc display_color(clr : unmanaged clrimage, ref rgb : c_ptr(rgbimage),
                    spec : conversion) : int {
   var xy : int;                         /* pixel index */
   var retval : int;
@@ -385,39 +385,39 @@ proc display_color(clr : clrimage, ref rgb : rgbimage,
   if (retval < 0) then return retval;
 
   if ((clrplane.C1 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c1, rgb.r, rgb.ncol, spec);
+    retval = display_plane(clr.c1, rgb.deref().r, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C1 == spec.plane) {
-      for xy in 0..(rgb.npix-1) {
-        rgb.g(xy) = rgb.r(xy);
-        rgb.b(xy) = rgb.r(xy);
+      for xy in 0..(rgb.deref().npix-1) {
+        rgb.deref().g(xy) = rgb.deref().r(xy);
+        rgb.deref().b(xy) = rgb.deref().r(xy);
       }
       return 0;
     }
   }
 
   if ((clrplane.C2 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c2, rgb.g, rgb.ncol, spec);
+    retval = display_plane(clr.c2, rgb.deref().g, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C2 == spec.plane) {
-      for xy in 0..(rgb.npix-1) {
-        rgb.r(xy) = rgb.g(xy);
-        rgb.b(xy) = rgb.g(xy);
+      for xy in 0..(rgb.deref().npix-1) {
+        rgb.deref().r(xy) = rgb.deref().g(xy);
+        rgb.deref().b(xy) = rgb.deref().g(xy);
       }
       return 0;
     }
   }
 
   if ((clrplane.C3 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c3, rgb.b, rgb.ncol, spec);
+    retval = display_plane(clr.c3, rgb.deref().b, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C3 == spec.plane) {
-      for xy in 0..(rgb.npix-1) {
-        rgb.r(xy) = rgb.b(xy);
-        rgb.g(xy) = rgb.b(xy);
+      for xy in 0..(rgb.deref().npix-1) {
+        rgb.deref().r(xy) = rgb.deref().b(xy);
+        rgb.deref().g(xy) = rgb.deref().b(xy);
       }
       return 0;
     }
@@ -471,7 +471,7 @@ proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
       else if (spec.max < clr(y,x)) then pix = 255.0;
       else pix = nearbyint(255.0 * (clr(y,x)-spec.min) / (spec.max-spec.min));
     } else {
-      writef("unknown method %s to convert colors to 8-bit\n", spec.how);
+      writef("unknown method %s to convert colors to 8-bit\n", spec.how:string);
       return -1;
     }
 

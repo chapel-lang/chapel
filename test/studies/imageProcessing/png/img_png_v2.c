@@ -92,7 +92,7 @@ int PNG_isa(const char *fname) {
 
 /***
     PNG_read:  Bring in a PNG image.  See the libpng manpage for what we're
-               doing.  Stored internally as an _rgbimage.  Alpha channel is
+               doing.  Stored internally as an rgbimage.  Alpha channel is
                ignored.
     args:      fname - name of file with image, if NULL take from stdin
                img - image read (if non-NULL, will free old image)
@@ -100,7 +100,7 @@ int PNG_isa(const char *fname) {
                < 0 on failure (value depends on error)
     modifies:  img
 ***/
-int PNG_read(const char *fname, _rgbimage **img) {
+int PNG_read(const char *fname, rgbimage **img) {
   FILE *fin;                            /* file handle to read from */
   png_structp ptr;                      /* internal reference to PNG data */
   png_infop info;                       /* picture information */
@@ -241,7 +241,7 @@ int PNG_read(const char *fname, _rgbimage **img) {
     returns:   0 if successful
                < 0 on failure (value depends on error)
 ***/
-int PNG_write(const char *fname, _rgbimage *img) {
+int PNG_write(const char *fname, rgbimage *img) {
   FILE *fout;                           /* file handle to write to */
   png_structp ptr;                      /* internal reference to PNG data */
   png_infop info;                       /* picture information */
@@ -351,13 +351,13 @@ int PNG_write(const char *fname, _rgbimage *img) {
                < 0 on failure (value depends on error)
     modifies:  img
 ***/
-int alloc_rgbimage(_rgbimage **img, int ncol, int nrow) {
+int alloc_rgbimage(rgbimage **img, int ncol, int nrow) {
 
   /* The 'free if non-NULL' means we don't try to resize the image, just
      start from scratch. */
   free_rgbimage(img);
 
-  if (NULL == (*img = (_rgbimage *) calloc(1, sizeof(_rgbimage)))) {
+  if (NULL == (*img = (rgbimage *) calloc(1, sizeof(rgbimage)))) {
     printf("can't allocate rgb image");
     return -1;
   }
@@ -398,7 +398,7 @@ int alloc_rgbimage(_rgbimage **img, int ncol, int nrow) {
     args:           img - data structure to free
     modifies:  img (set to NULL when done)
 ***/
-void free_rgbimage(_rgbimage **img) {
+void free_rgbimage(rgbimage **img) {
 
   if (*img) {
     if ((*img)->r) {
@@ -424,7 +424,7 @@ void free_rgbimage(_rgbimage **img) {
                < 0 on failure (value depends on error)
     modifies:  r, g, b
 ***/
-int read_rgb(_rgbimage *img, int x, int y, uchar *r, uchar *g, uchar *b) {
+int read_rgb(rgbimage *img, int x, int y, uchar *r, uchar *g, uchar *b) {
   int xy;                               /* pixel index */
 
   if ((x < 0) || (y < 0) || (img->ncol <= x) || (img->nrow <= y)) {
@@ -450,7 +450,7 @@ int read_rgb(_rgbimage *img, int x, int y, uchar *r, uchar *g, uchar *b) {
                < 0 on failure (value depends on error)
     modifies:  img
 ***/
-int write_rgb(_rgbimage *img, int x, int y, uchar r, uchar g, uchar b) {
+int write_rgb(rgbimage *img, int x, int y, uchar r, uchar g, uchar b) {
   int xy;                               /* pixel index */
 
   if ((x < 0) || (y < 0) || (img->ncol <= x) || (img->nrow <= y)) {

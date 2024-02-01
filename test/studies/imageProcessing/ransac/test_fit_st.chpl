@@ -67,7 +67,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
   exit(1);
@@ -93,10 +93,10 @@ proc verify_setup() {
 
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var disp : rgbimage;                  /* marked corners */
-  var clr1 : clrimage;                  /* greyscale first image */
-  var clr2 : clrimage;                  /* greyscale second image */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var disp : c_ptr(rgbimage);           /* marked corners */
+  var clr1 : unmanaged clrimage;        /* greyscale first image */
+  var clr2 : unmanaged clrimage;        /* greyscale second image */
   var spec : fastspec;                  /* FAST parameters */
   var corners1 : chunkarray(corner);    /* corners found in clr1 */
   var corners2 : chunkarray(corner);    /* corners found in clr2 */
@@ -140,7 +140,7 @@ proc main() {
   testmap.dy = dy;
 
   var tree                              /* 2-dimensional sorted space */
-    = new kdtree(corners2.size, int, 2);
+    = new unmanaged kdtree(corners2.size, int, 2);
   for i in corners2().domain {
     tree.add_node(corners2(i).center, i);
   }

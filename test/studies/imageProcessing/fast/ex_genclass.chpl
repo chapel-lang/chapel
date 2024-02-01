@@ -82,7 +82,7 @@ record corner {
 }
 
 
-var corners = new chunkarray(corner);
+var corners = new unmanaged chunkarray(corner);
 var details : corner;
 
 writeln("\nfilling array, storing first element");

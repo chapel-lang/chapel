@@ -85,10 +85,10 @@ class circumference {
   var close_circle : bool;              /* true to repeat first point at end */
 
   /***
-      circumference:  Default constructor that raises an error - you must
-                      use the one with a radius.
+      init:  Initializer that raises an error - you must
+             use the one with a radius.
   ***/
-  proc circumference() {
+  proc init() {
     writeln("you must provide at least a radius");
     halt();
   }
@@ -96,7 +96,7 @@ class circumference {
   /** Stand-alone mode **/
 
   /***
-      circumference:  Constructor that prepares the iterator to generate a
+      init:           Initializer that prepares the iterator to generate a
                       circle of a given radius.  Also sets up the center and
                       optionally whether to close the the circle when looping.
       args:           radius - radius of circle (>= 3)
@@ -104,12 +104,13 @@ class circumference {
                       closed - true to dup first point at end
       modifies:  r, x_center, y_center, close_circle
   ***/
-  proc circumference(radius : int, xc : int, yc : int, closed = false) {
+  proc init(radius : int, xc : int, yc : int, closed = false) {
 
-    set_radius(radius);
     x_center = xc;
     y_center = yc;
     close_circle = closed;
+    this.complete();
+    set_radius(radius);
   }
 
   /**!!!**/
@@ -162,13 +163,14 @@ class circumference {
   /** Cached mode **/
 
   /***
-      circumference:  Constructor that prepares the iterator to generate a
-                      circle of a given radius.
-      args:           radius - radius of circle (>= 3)
+      init:      Initializer that prepares the iterator to generate a
+                 circle of a given radius.
+      args:      radius - radius of circle (>= 3)
       modifies:  r
   ***/
-  proc circumference(radius : int) {
+  proc init(radius : int) {
 
+    this.complete();
     set_radius(radius);
   }
 
@@ -358,10 +360,10 @@ class circumference {
                < 0 on failure (value depends on error)
     modifies:  marked
 ***/
-proc mark_corners(clr : clrimage, space : clrspace,
-                  ref marked : rgbimage) : int {
+proc mark_corners(clr : unmanaged clrimage, space : clrspace,
+                  ref marked : c_ptr(rgbimage)) : int {
   const circle                          /* iterator about pixel */
-    = new circumference(radius);
+    = new unmanaged circumference(radius);
   const Ainside                         /* image interior we can analyze */
     = clr.area.expand(-radius, -radius);
   var cnt : sync int;                   /* number corners found */
@@ -376,15 +378,15 @@ proc mark_corners(clr : clrimage, space : clrspace,
   /* Double loop over area so we can also get the greyscale outside the
      corner checking area. */
   forall (y, x) in clr.area {
-    const xy = y * marked.ncol + x;     /* pixel index */
+    const xy = y * marked.deref().ncol + x;     /* pixel index */
     if (clrspace.LAB == space) {
       /* L from 0 t/m 100. */
-      marked.r(xy) = nearbyint(2.55 * clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(2.55 * clr.c1(y,x)) : c_uchar;
     } else if (clrspace.YUV == space) {
-      marked.r(xy) = nearbyint(clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(clr.c1(y,x)) : c_uchar;
     }
-    marked.g(xy) = marked.r(xy);
-    marked.b(xy) = marked.r(xy);
+    marked.deref().g(xy) = marked.deref().r(xy);
+    marked.deref().b(xy) = marked.deref().r(xy);
   }
 
   cnt = 0;
@@ -399,23 +401,23 @@ proc mark_corners(clr : clrimage, space : clrspace,
       */
 
       for yc in clr.rows[y-5..y+5] {
-        const xy = yc * marked.ncol + x;
-        marked.r(xy) = 255;
-        marked.g(xy) = 0;
-        marked.b(xy) = 0;
+        const xy = yc * marked.deref().ncol + x;
+        marked.deref().r(xy) = 255;
+        marked.deref().g(xy) = 0;
+        marked.deref().b(xy) = 0;
       }
       for xc in clr.cols[x-5..x+5] {
-        const xy = y * marked.ncol + xc;
-        marked.r(xy) = 255;
-        marked.g(xy) = 0;
-        marked.b(xy) = 0;
+        const xy = y * marked.deref().ncol + xc;
+        marked.deref().r(xy) = 255;
+        marked.deref().g(xy) = 0;
+        marked.deref().b(xy) = 0;
       }
       cnt += 1;
     }
   }
 
   writef("\nFAST analysis with r=%i, minlen=%i, maxlen=%i, thr=%5.1dr in %s\n",
-         radius, minlen, maxlen, thr, space);
+         radius, minlen, maxlen, thr, space:string);
   writeln("  found ", cnt.readFE(), " corners\n");
 
   delete circle;
@@ -430,7 +432,7 @@ proc mark_corners(clr : clrimage, space : clrspace,
                 circle - iterator with radius pre-set
     returns:   true if passes FAST criteria, false if not
 ***/
-proc is_corner(img : clrimage, x : int, y : int,
+proc is_corner(img : unmanaged clrimage, x : int, y : int,
                circle : circumference) : bool {
   var dir : thrdir;                     /* pixel difference direction */
   var len : int;                        /* consecutive length same dir */
@@ -490,7 +492,7 @@ proc is_corner(img : clrimage, x : int, y : int,
                    x2, y2 - comparison point (direction relative to pt1)
     returns:   thrdir classification at pt2
 ***/
-inline proc pixel_thrdir(img : clrimage, x1 : int, y1 : int,
+inline proc pixel_thrdir(img : unmanaged clrimage, x1 : int, y1 : int,
                          x2 : int, y2 : int) : thrdir {
 
   if (img.c1(y2,x2) + thr <= img.c1(y1,x1)) then return thrdir.LESS;
@@ -533,8 +535,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up. */
   for param i in 1..narg {
-    if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
-    else if isClass(inst(i)) then delete inst(i);
+    if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
   }
   exit(1);
 }
@@ -554,9 +555,9 @@ proc verify_setup() {
 }
 
 proc main() {
-  var rgb : rgbimage;                   /* image we've read */
-  var clr : clrimage;                   /* converted image with greyscale */
-  var marked : rgbimage;                /* quantized color assignments */
+  var rgb : c_ptr(rgbimage);            /* image we've read */
+  var clr : unmanaged clrimage;         /* converted image with greyscale */
+  var marked : c_ptr(rgbimage);         /* quantized color assignments */
   var retval : int;
 
   verify_setup();

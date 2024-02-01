@@ -111,6 +111,4 @@ proc main() {
 
   if (!passed) then writeln("--> sort FAILED verification");
   else writeln("--> sort passed verification");
-
-  delete rand;
 }
