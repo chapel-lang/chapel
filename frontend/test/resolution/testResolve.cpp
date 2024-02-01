@@ -740,7 +740,7 @@ static void test17() {
 
       param foo_param;
       foo_param = 5;
-      param bar_param;
+      param bar_param:string;
       bar_param = "bar_param";
 
       )""", { "foo", "bar", "foo_param", "bar_param"});
