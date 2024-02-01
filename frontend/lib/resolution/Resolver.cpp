@@ -1593,7 +1593,8 @@ void Resolver::adjustTypesForSplitInit(ID id,
 
   // check to see if it is generic/unknown
   // (otherwise we do not need to infer anything)
-  if (!lhsType.isUnknownKindOrType() &&
+  // If it is a param, continue as we still need the param value.
+  if (!lhsType.isParam() && !lhsType.isUnknownKindOrType() &&
       getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
     return;
 
