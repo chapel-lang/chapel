@@ -1096,7 +1096,11 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
     auto parentQuery = queryStack.back();
     if (parentQuery == resultEntry) {
       // Should only happen if recursion occurred, in which case do not add it
-      // to dependencies.
+      // to dependencies, in which case code below will skip it.
+      CHPL_ASSERT(resultEntry->recursionErrors.count(resultEntry) > 0);
+    } else if (resultEntry->recursionErrors.count(resultEntry) > 0) {
+      // Skip adding recursion error triggers to the depenedncy graph
+      // to avoid creating cycles.
     } else {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
                                  errorCollectionStack.back().collectingQuery() == parentQuery;
