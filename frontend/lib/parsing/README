@@ -1,21 +1,18 @@
 This directory contains the parser for Chapel which is implemented
 using the bison/flex tool set. The sources for the parser are
 
-chapel.lex
-chapel.ypp
+  chpl.lex # lex input file
+  chpl.ypp # bison input file
 
 and the generated files are
 
-flex-chapel.cpp,  ../include/flex-chapel.h
-bison-chapel.cpp, ../include/bison-chapel.h
+  flex-chpl-lib.h
+  flex-chpl-lib.cpp
+  bison-chpl-lib.h
+  bison-chpl-lib.cpp
 
-respectively.  The location for the generated files is
-defined using appropriate directives within the parser
-sources.
-
-
-
-
+The location for the generated files is defined using appropriate
+directives within the parser sources.
 
 Historically we included only the parser sources in the repository
 and relied on the target platform to construct the generated C files
@@ -36,19 +33,20 @@ when a user updates their repository.
 
 This means that we require that developers who work on the parser:
 
-1) have the following versions installed: Bison 2.5 or later; Flex 2.6 or later
+1) explicitly build the generated parser when they alter the parser
+   sources.  To do so, run `make parser` from the $CHPL_HOME directory.
 
-2) explicitly build the generated parser when they alter the parser
-sources.  One way to do this is to run "make parser" in this
-directory.
-
+2) use the current versions of flex and bison available in Homebrew
+   (at the time of this writing, that is flex 2.6.4 and bison 3.8.2)
 
 3) when submitting a pull request to modify the parser sources, also include
-the generated parser.  We find it helpful to add the sources and the
-generated files as separate commits within the same pull request.
-This enables the reviewer to more easily ignore the extensive diffs
-that may appear in the generated parser.
-
+   the generated parser.  We find it helpful to add the sources and the
+   generated files as separate commits within the same pull request.
+   This enables the reviewer to more easily ignore the extensive diffs
+   that may appear in the generated parser.
 
 Note that if there is ever a case in which the generated parser becomes
-corrupted it can be restored using "git checkout".
+corrupted it can be restored with:
+
+  cd frontend/lib/parsing
+  git checkout flex-chpl-lib.h flex-chpl-lib.cpp bison-chpl-lib.h bison-chpl-lib.cpp
