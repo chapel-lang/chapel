@@ -1027,6 +1027,19 @@ void ErrorRecursion::write(ErrorWriterBase& wr) const {
              "recursion detected in query '", queryName.c_str(), "'");
 }
 
+void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info);
+  auto mod = std::get<const uast::Module*>(info);
+
+  wr.heading(kind_, type_, ast,
+             "encountered recursion while resolving module statement:");
+  wr.codeForLocation(ast);
+  if (mod->kind() != uast::Module::IMPLICIT) {
+    wr.message("While resolving module '", mod->name(), "' declared here:");
+    wr.codeForLocation(mod);
+  }
+}
+
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto scopeId = std::get<ID>(info);
   auto name = std::get<UniqueString>(info);
