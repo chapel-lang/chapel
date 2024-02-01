@@ -39,14 +39,13 @@
     Seed Generation
     ---------------
 
-    The :record:`randomStream` type can be initialized with a seed value. Two
-    ``randomStream`` instances initialized with the same seed with produce
+    The :record:`randomStream` type can be initialized with a seed value. Any
+    two ``randomStream``'s initialized with the same seed value with produce
     identical sequences of random numbers.
 
     When not provided explicitly, a seed value will be generated in an
     implementation specific manner which is designed to minimize the chance
-    that two distinct invocations of the initializer will produce the same
-    seed.
+    that two distinct ``randomStream``'s will have the same seed.
 
     Prior to Chapel 1.33, seed values could be generated with the now
     deprecated ``RandomSupport.SeedGenerator`` type. For a non-deprecated
@@ -518,9 +517,9 @@ module Random {
     minimize the chance that two distinct instances of the ``randomStream``
     will have the same seed.
 
-    When copied, the ``randomStream``'s seed, state, and position will also be
-    copied. This means that the copy and original will produce the same sequence
-    of random numbers as the original without affecting each others state.
+    When copied, the ``randomStream``'s seed, state, and position in the stream
+    will also be copied. This means that the copy and original will produce the
+    same sequence of random numbers without affecting each others state.
 
     .. note:: **Implementation Details:**
 
@@ -623,7 +622,8 @@ module Random {
       Create a new ``randomStream``.
 
       A seed value will be generated in an implementation specific manner
-      that depends on the current time.
+      designed to minimize the chance that two distinct invocations of this
+      initializer will produce the same seed.
     */
     proc init(type eltType) where isNumericOrBoolType(eltType) {
       this.eltType = eltType;
