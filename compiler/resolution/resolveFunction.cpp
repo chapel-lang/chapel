@@ -456,6 +456,9 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
   resolveBlockStmt(fn->retExprType);
 
   checkSurprisingGenericDecls(fn, fn->retExprType->body.tail, nullptr);
+  
+  handleDefaultAssociativeWarnings(fn, fn->retExprType->body.tail,
+                                   /*initExpr*/ nullptr, /*field*/ nullptr);
 
   retType = fn->retExprType->body.tail->typeInfo();
 

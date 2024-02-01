@@ -8315,6 +8315,10 @@ void resolveInitVar(CallExpr* call) {
     if (moveIsAcceptable(call) == false)
       moveHaltMoveIsUnacceptable(call);
 
+    handleDefaultAssociativeWarnings(dst, targetTypeExpr,
+                                     /* initExpr */ nullptr,
+                                     /*for field*/ nullptr);
+
     bool genericTgt = targetType->symbol->hasFlag(FLAG_GENERIC);
     // If the target type is generic, compute the appropriate instantiation
     // type.
@@ -8382,6 +8386,8 @@ void resolveInitVar(CallExpr* call) {
     }
   } else {
     targetType = srcType;
+    handleDefaultAssociativeWarnings(dst, /*typeExpr*/ nullptr, srcExpr,
+                                     /*for field*/ nullptr);
   }
 
   bool srcSyncSingle = isSyncType(srcType->getValType()) ||
@@ -13241,6 +13247,7 @@ static void resolvePrimInit(CallExpr* call) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       checkSurprisingGenericDecls(val, typeExpr, nullptr);
+      handleDefaultAssociativeWarnings(val, typeExpr, nullptr, nullptr);
       resolvePrimInit(call, val, resolveTypeAlias(se));
     } else {
       USR_FATAL(call, "invalid type specification");
@@ -14129,6 +14136,7 @@ static bool computeIsField(Symbol*& sym, AggregateType* forFieldInHere) {
   return isField;
 }
 
+
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere) {
   if (sym == nullptr || typeExpr == nullptr) {
@@ -14303,6 +14311,64 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
   }
 }
 
+void handleDefaultAssociativeWarnings(Symbol* sym,
+                                      Expr* typeExpr, Expr* initExpr,
+                                      AggregateType* forFieldInHere) {
+
+  if (sym == nullptr) {
+    return;
+  }
+
+  if (forFieldInHere && forFieldInHere->symbol->hasFlag(FLAG_REF)) {
+    // no need to warn for creating a ref(assoc domain) type
+    return;
+  }
+
+  if (sym->id == 202008)
+    gdbShouldBreakHere();
+
+  Type* t = sym->getValType();
+  if (t == nullptr || t == dtUnknown) {
+    if (typeExpr) {
+      t = typeExpr->getValType();
+    } else if (initExpr) {
+      t = initExpr->getValType();
+    }
+  }
+
+  if (t == nullptr || t == dtUnknown) {
+    return;
+  }
+
+  // Don't worry about it for non-user code
+  ModuleSymbol* mod = sym->defPoint->getModule();
+  if (mod->modTag != MOD_USER) {
+    return;
+  }
+
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isRecordWrappedType(at)) {
+      Symbol* instanceField = at->getField("_instance", false);
+      if (instanceField) {
+        Type* implType = canonicalDecoratedClassType(instanceField->type);
+        if (isDomImplType(implType)) {
+          // It is a domain, but is it an associative domain?
+          const char* typeNameAstr = implType->symbol->name;
+          if (startsWith(typeNameAstr, "DefaultAssociativeDom")) {
+            // TODO: figure out if it has the default value of parSafe
+            //       in prefold, and transmit that to here with a flag
+            //       on the field/variable symbol
+            // TODO: don't warn if it looks like it was explicit
+            // TODO: don't warn if the variable is const
+            USR_WARN(sym, "bad default parsafe");
+            gdbShouldBreakHere();
+          }
+        }
+      }
+    }
+  }
+}
+ 
 // Handles:
 //  CallExpr(PRIM_INIT_REF_DECL, refSym, typeExpr[opt])
 // which result from:
