@@ -558,6 +558,14 @@ class Context {
     return result;
   }
 
+  bool recoverFromSelfRecursion() {
+    CHPL_ASSERT(!queryStack.empty());
+    auto topQuery = queryStack.back();
+    bool hadRecursion = topQuery->recursionErrors.count(topQuery);
+    topQuery->recursionErrors.erase(topQuery);
+    return hadRecursion;
+  }
+
   /**
     Get or create a unique string and return it as a C string. If the passed
     string is NULL, this function will return an empty string.
