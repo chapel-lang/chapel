@@ -1,16 +1,12 @@
-randomModule.chpl:8: warning: the overload of 'fillRandom' that generates its own seed is unstable
-randomModule.chpl:11: warning: the overload of 'shuffle' that generates its own seed is unstable
-randomModule.chpl:14: warning: the overload of 'permute' that generates its own seed is unstable
-randomModule.chpl:17: warning: The randomStream initializer that generates a seed is unstable and subject to change
-randomModule.chpl:20: warning: 'choice' is unstable and subject to change
-randomModule.chpl:21: warning: 'choice' is unstable and subject to change
-randomModule.chpl:22: warning: 'choice' is unstable and subject to change
-randomModule.chpl:24: warning: 'skipToNth' is unstable and subject to change
-randomModule.chpl:25: warning: 'getNth' is unstable and subject to change
-randomModule.chpl:27: warning: 'iterate' is unstable and subject to change
-randomModule.chpl:27: warning: 'iterate' is unstable and subject to change
-randomModule.chpl:31: warning: 'iterate' is unstable and subject to change
-randomModule.chpl:31: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:8: warning: 'choice' is unstable and subject to change
+randomModule.chpl:9: warning: 'choice' is unstable and subject to change
+randomModule.chpl:10: warning: 'choice' is unstable and subject to change
+randomModule.chpl:12: warning: 'skipToNth' is unstable and subject to change
+randomModule.chpl:13: warning: 'getNth' is unstable and subject to change
+randomModule.chpl:15: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:15: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:19: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:19: warning: 'iterate' is unstable and subject to change
 1
 4
 4
