@@ -830,8 +830,49 @@ static void test19() {
   guard.realizeErrors();
 }
 
-// Test resolving functions with pragma "last resort".
+// Accessing the param value of a split-init'd symbol in another module
 static void test20() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents =
+      R""""(
+      module M {
+        module N {
+          param CHPL_SOMETHING:string;
+          CHPL_SOMETHING = "foo";
+        }
+
+        use N;
+        param x = CHPL_SOMETHING;
+      }
+      )"""";
+
+  // parse modules and get M
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(contents));
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0];
+
+  // extract x
+  assert(m->numStmts() == 3);
+  // hardcoded stmt number
+  const Variable* x = m->stmt(2)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+
+  // check type
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  auto qt = rr.byAst(x).type();
+  ensureParamString(qt, "foo");
+
+  guard.realizeErrors();
+}
+
+// Test resolving functions with pragma "last resort".
+static void test21() {
   Context ctx;
   Context* context = &ctx;
 
@@ -1147,6 +1188,7 @@ int main() {
   test18();
   test19();
   test20();
+  test21();
 
   return 0;
 }
