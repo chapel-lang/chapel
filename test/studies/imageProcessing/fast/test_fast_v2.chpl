@@ -284,7 +284,7 @@ proc test_circumference() : bool {
 proc test_is_corner() : bool {
   var passed                            /* overall result for bench */
     = true;
-  var img : unmanaged clrimage;         /* dummy data */
+  var img : unmanaged clrimage?;        /* dummy data */
   var circle                            /* iterator about circle */
     = new unmanaged circumference(3);
   var spec : fastspec;                  /* FAST parameters */
@@ -480,7 +480,7 @@ proc test_is_corner() : bool {
 proc test_is_corner_with_details() : bool {
   var passed                            /* overall result for bench */
     = true;
-  var img : unmanaged clrimage;         /* dummy data */
+  var img : unmanaged clrimage?;        /* dummy data */
   var circle                            /* iterator about circle */
     = new unmanaged circumference(3);
   var spec : fastspec;                  /* FAST parameters */
@@ -622,7 +622,7 @@ proc verify_details(details : corner, no : int, xc : int, yc : int, len : int,
                   dir - condition that perimeter pixel must meet
     modifies:  img
 ***/
-proc set_segment(img : clrimage, xc : int, yc : int, circle : circumference,
+proc set_segment(img : unmanaged clrimage?, xc : int, yc : int, circle : circumference,
                  st : int, end : int, spec : fastspec, dir : thrdir) {
   var cnt = 0;                          /* position along circumference */
 

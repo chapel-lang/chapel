@@ -283,7 +283,7 @@ proc test_circumference() : bool {
 ***/
 proc test_is_corner() : bool {
   var passed = true;                    /* overall result for bench */
-  var img : unmanaged clrimage;         /* dummy data */
+  var img : unmanaged clrimage?;        /* dummy data */
   var circle = new unmanaged circumference(3);    /* iterator about circle */
 
   writeln("\nStarting test bench for is_corner");
@@ -486,7 +486,7 @@ proc test_is_corner() : bool {
                   dir - condition that perimeter pixel must meet
     modifies:  img
 ***/
-proc set_segment(img : clrimage, xc : int, yc : int, circle : circumference,
+proc set_segment(img : unmanaged clrimage?, xc : int, yc : int, circle : circumference,
                  st : int, end : int, dir : thrdir) {
   var cnt = 0;                          /* position along circumference */
 

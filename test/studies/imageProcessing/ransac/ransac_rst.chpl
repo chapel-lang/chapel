@@ -128,7 +128,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
      only one or two cores.  Why is still being investigated.
   */
   forall i in 1..ntry {
-    var rand : owned RandomStream(real);      /* random numbers to pick seeds */
+    var rand : owned RandomStream(real)?;      /* random numbers to pick seeds */
     var trytime : Timer;                /* run time for this try */
 
     if (fixrng) {
@@ -195,7 +195,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     modifies:  trial.seed[123], trial.map
 ***/
 proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
-                rand : RandomStream, inout trial : tryinfo) : bool {
+                rand : RandomStream?, inout trial : tryinfo) : bool {
   var ind11, ind12 : int;               /* seed1 indices in corners1,2 */
   var ind21, ind22 : int;               /* seed2 indices in corners1,2 */
   var ind31, ind32 : int;               /* seed3 indices in corners1,2 */
@@ -653,7 +653,7 @@ inline proc are_corners_similar(c1 : corner, c2 : corner) : bool {
                     rng - range to get random number within
     returns:   random point within range
 ***/
-proc random_ranged(rand : RandomStream, rng : range) : rng.idxType {
+proc random_ranged(rand : RandomStream?, rng : range) : rng.idxType {
   const elt = rng.length * rand.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
@@ -667,7 +667,7 @@ proc random_ranged(rand : RandomStream, rng : range) : rng.idxType {
                     dom - domain to generate point in
     returns:   random point within domain
 ***/
-proc random_domain(rand : RandomStream, dom : domain) : dom.rank * dom.idxType {
+proc random_domain(rand : RandomStream?, dom : domain) : dom.rank * dom.idxType {
   /* Do not use dom.numIndices.  dom.rank is a param, and the tuple declaration
      requires a parameter. */
   var pt : dom.rank * dom.idxType;
@@ -683,7 +683,7 @@ proc random_domain(rand : RandomStream, dom : domain) : dom.rank * dom.idxType {
                    rmin, rmax - bounds of range (incl.)
     returns:   random number from rmin t/m rmax
 ***/
-proc random_bound(rand : RandomStream, rmin : int, rmax : int) : int {
+proc random_bound(rand : RandomStream?, rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
   const elt = len * rand.getNext();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */
@@ -753,7 +753,7 @@ proc dump_map(title : string, map : mapinfo) {
                    corners1, corners2 - corners found in inputs
                    match1to2 - index of corners2 matching 1, < 0 if no match
 ***/
-proc draw_matches(img1 : unmanaged clrimage, img2 : unmanaged clrimage,
+proc draw_matches(img1 : unmanaged clrimage?, img2 : unmanaged clrimage?,
                   corners1 : [] corner, corners2 : [] corner,
                   match1to2 : [] int) : int {
   var disp : c_ptr(rgbimage);                /* output image */
@@ -855,7 +855,7 @@ proc draw_matches(img1 : unmanaged clrimage, img2 : unmanaged clrimage,
                      xoff2, yoff2 - position of (0,0) of img2 in combined
     modifies:  ncol, nrow, xoff1, yoff1, xoff2, yoff2
 ***/
-proc setup_combiimg(img1 : clrimage, img2: clrimage,
+proc setup_combiimg(img1 : unmanaged clrimage?, img2: unmanaged clrimage?,
                     out ncol : c_int, out nrow : c_int,
                     out x1off : int, out y1off : int,
                     out x2off : int, out y2off : int) {
@@ -1413,11 +1413,11 @@ proc verify_setup() {
 
 proc main() {
   var rgb : c_ptr(rgbimage);            /* image we've read */
-  var clr1 : unmanaged clrimage;        /* greyscale first image */
-  var clr2 : unmanaged clrimage;        /* greyscale second image */
+  var clr1 : unmanaged clrimage?;       /* greyscale first image */
+  var clr2 : unmanaged clrimage?;       /* greyscale second image */
   var spec : fastspec;                  /* FAST parameters */
-  var corners1 : unmanaged chunkarray(corner);    /* corners found in clr1 */
-  var corners2 : unmanaged chunkarray(corner);    /* corners found in clr2 */
+  var corners1 : unmanaged chunkarray(corner)?;    /* corners found in clr1 */
+  var corners2 : unmanaged chunkarray(corner)?;    /* corners found in clr2 */
   var Lcnr1 : domain(rank=1);           /* domain of corners1 */
   var Lcnr2 : domain(rank=1);           /* domain of corners2 */
   var match1to2 : [Lcnr1] int;          /* corners2 index for each corners1 */

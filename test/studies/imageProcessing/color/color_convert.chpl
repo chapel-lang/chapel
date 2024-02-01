@@ -79,7 +79,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
 proc main() {
   var rgb : c_ptr(rgbimage);            /* image we've read */
-  var clr : unmanaged clrimage;         /* converted image */
+  var clr : unmanaged clrimage?;        /* converted image */
   var grey : c_ptr(rgbimage);           /* display version of plane */
   var clr2rgb : conversion;             /* how to display L plane */
   var retval : int;                     /* return value with error code */

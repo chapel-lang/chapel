@@ -360,7 +360,7 @@ class circumference {
                < 0 on failure (value depends on error)
     modifies:  marked
 ***/
-proc mark_corners(clr : unmanaged clrimage, space : clrspace,
+proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
                   ref marked : c_ptr(rgbimage)) : int {
   const circle                          /* iterator about pixel */
     = new unmanaged circumference(radius);
@@ -432,7 +432,7 @@ proc mark_corners(clr : unmanaged clrimage, space : clrspace,
                 circle - iterator with radius pre-set
     returns:   true if passes FAST criteria, false if not
 ***/
-proc is_corner(img : unmanaged clrimage, x : int, y : int,
+proc is_corner(img : unmanaged clrimage?, x : int, y : int,
                circle : circumference) : bool {
   var dir : thrdir;                     /* pixel difference direction */
   var len : int;                        /* consecutive length same dir */
@@ -492,7 +492,7 @@ proc is_corner(img : unmanaged clrimage, x : int, y : int,
                    x2, y2 - comparison point (direction relative to pt1)
     returns:   thrdir classification at pt2
 ***/
-inline proc pixel_thrdir(img : unmanaged clrimage, x1 : int, y1 : int,
+inline proc pixel_thrdir(img : unmanaged clrimage?, x1 : int, y1 : int,
                          x2 : int, y2 : int) : thrdir {
 
   if (img.c1(y2,x2) + thr <= img.c1(y1,x1)) then return thrdir.LESS;
@@ -556,7 +556,7 @@ proc verify_setup() {
 
 proc main() {
   var rgb : c_ptr(rgbimage);            /* image we've read */
-  var clr : unmanaged clrimage;         /* converted image with greyscale */
+  var clr : unmanaged clrimage?;        /* converted image with greyscale */
   var marked : c_ptr(rgbimage);         /* quantized color assignments */
   var retval : int;
 

@@ -455,7 +455,7 @@ class chunkarray {
                    spec - parameters for FAST detector
     returns:   list of corners (may be empty)
 ***/
-proc find_corners(img : unmanaged clrimage, spec : fastspec) : unmanaged chunkarray(corner) {
+proc find_corners(img : unmanaged clrimage?, spec : fastspec) : unmanaged chunkarray(corner) {
   const circle                          /* iterator about pixel */
     = new unmanaged circumference(spec.radius);
   const Ainside                         /* image interior we can analyze */
@@ -491,7 +491,7 @@ proc find_corners(img : unmanaged clrimage, spec : fastspec) : unmanaged chunkar
                 circle - iterator with radius pre-set
     returns:   true if passes FAST criteria, false if not
 ***/
-proc is_corner(img : unmanaged clrimage, x : int, y : int, spec : fastspec,
+proc is_corner(img : unmanaged clrimage?, x : int, y : int, spec : fastspec,
                circle : circumference) : bool {
   var details : corner;                 /* temp storage (not used) */
 
@@ -510,7 +510,7 @@ proc is_corner(img : unmanaged clrimage, x : int, y : int, spec : fastspec,
     returns:   true if passes FAST criteria, false if not
     modifies:  details (may be filled with garbage if returns false)
 ***/
-proc is_corner_with_details(img : unmanaged clrimage, x : int, y : int, spec : fastspec,
+proc is_corner_with_details(img : unmanaged clrimage?, x : int, y : int, spec : fastspec,
                             circle : circumference, out details : corner) : bool {
   var dir : thrdir;                     /* pixel difference direction */
   var len : int;                        /* consecutive length same dir */
@@ -599,7 +599,7 @@ proc is_corner_with_details(img : unmanaged clrimage, x : int, y : int, spec : f
     returns:   thrdir classification at pt2
 ***/
 private inline
-proc pixel_thrdir(img : unmanaged clrimage, x1 : int, y1 : int,
+proc pixel_thrdir(img : unmanaged clrimage?, x1 : int, y1 : int,
                   x2 : int, y2 : int, spec : fastspec) : thrdir {
 
   if (img.c1(y2,x2) + spec.thr <= img.c1(y1,x1)) then return thrdir.LESS;
@@ -724,8 +724,8 @@ proc set_parent(corners : [] corner, c1 : int, c2 : int, parent : [] int) {
                < 0 on failure (value depends on error)
     modifies:  marked
 ***/
-proc mark_corners(clr : unmanaged clrimage, space : clrspace,
-                  corners : chunkarray(corner), ref marked : c_ptr(rgbimage)) : int {
+proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
+                  corners : unmanaged chunkarray(corner)?, ref marked : c_ptr(rgbimage)) : int {
   var retval : int;
 
   retval = alloc_rgbimage(marked, clr.ncol : c_int, clr.nrow : c_int);

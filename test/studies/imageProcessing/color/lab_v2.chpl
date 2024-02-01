@@ -135,7 +135,7 @@ record conversion {
                  lab - converted image
     modifies:  lab
 ***/
-proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : unmanaged clrimage) {
+proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : unmanaged clrimage?) {
 
   lab = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow);
 
@@ -207,7 +207,7 @@ inline proc lab_map(t : real) : real {
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_color(clr : unmanaged clrimage, ref rgb : c_ptr(rgbimage),
+proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
                    spec : conversion) : int {
   var xy : int;                         /* pixel index */
   var retval : int;
@@ -367,7 +367,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
 proc main() {
   var rgb : c_ptr(rgbimage);            /* the image we've read */
-  var lab : unmanaged clrimage;         /* converted image */
+  var lab : unmanaged clrimage?;        /* converted image */
   var grey : c_ptr(rgbimage);           /* displayable version of lab */
   var clr2rgb : conversion;             /* how to display L plane */
   var retval : int;                     /* return value with error code */

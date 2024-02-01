@@ -18,7 +18,7 @@ writeln("y = ", coord3D_3(2));
 
 writef("\n");
 for x in coord3D_3 do writeln("coord = ", x);
-for i in 1..coord3D_3.size do writeln("coord " + i + " = " + coord3D_3(i));
+for i in 1..coord3D_3.size do writeln("coord ", i, " = ", coord3D_3(i));
 
 writef("\n");
 

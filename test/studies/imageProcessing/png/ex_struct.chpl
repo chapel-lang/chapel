@@ -83,9 +83,9 @@ class rgbimg_cls {
   var b : c_ptr(c_uchar) = nil;
 };
 
-var excls : rgbimg_cls;
+var excls : unmanaged rgbimg_cls?;
 writef("  excls nil post-declaration? %s\n", (nil == excls));
-excls = new rgbimg_cls(200, npix=1000, ncol=5);
+excls = new unmanaged rgbimg_cls(200, npix=1000, ncol=5);
 writef("  new excls:     %4i x %4i (= %6i npix)   nil r? %s\n",
        excls.ncol,excls.nrow, excls.npix, (nil == excls.r));
 excls.ncol = 10;
@@ -105,6 +105,7 @@ writef("  cpcls now:     %4i x %4i (= %6i npix)   nil r? %s   == excls? %s\n",
        cpcls.ncol,cpcls.nrow, cpcls.npix, (nil == excls.r),
        (cpcls == excls));
 
+delete excls;
 
 writeln("\nDemonstrating constructors");
 class image_cls {

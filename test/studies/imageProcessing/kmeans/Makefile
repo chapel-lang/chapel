@@ -36,11 +36,11 @@ bin/ex_file : ex_file.chpl
 
 kmeans_v1 : bin/kmeans_v1
 bin/kmeans_v1 : kmeans_v1.chpl $(IPDEP) $(CLRDEP)
-	chpl $(CHPLOPT) -o $@ $^ -lpng
+	chpl $(CHPLOPT) -o $@ $^ -lpng --no-overload-sets-checks
 
 kmeans_v2 : bin/kmeans_v2
 bin/kmeans_v2 : kmeans_v2.chpl $(IPDEP) $(CLRDEP)
-	chpl $(CHPLOPT) -o $@ $^ -lpng
+	chpl $(CHPLOPT) -o $@ $^ -lpng --no-overload-sets-checks
 
 # This is an internal version, not released with the tutorial.
 kmeans_int : bin/kmeans_int

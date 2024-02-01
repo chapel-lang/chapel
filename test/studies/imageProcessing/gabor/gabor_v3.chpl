@@ -109,7 +109,7 @@ proc gabor_kernel(theta : real, sclx : real, scly : real,
                       phi - offset of sinusoid, in radians
     modifies:  dest
 ***/
-proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int,
+proc run_gaborfilter(img : unmanaged clrimage?, gabor : unmanaged clrimage?, size : int,
                      theta : real, sclx : real, scly : real, wavelen : real,
                      phi : real) {
   const r = (size - 1) / 2;             /* kernel radius */
@@ -185,9 +185,9 @@ proc verify_setup() {
 
 proc main() {
   var rgb : c_ptr(rgbimage);            /* image we've read */
-  var clr : unmanaged clrimage;         /* converted image with greyscale */
+  var clr : unmanaged clrimage?;        /* converted image with greyscale */
   var grey : c_ptr(rgbimage);           /* display version after filter */
-  var gabor : unmanaged clrimage;       /* result of Gabor filter */
+  var gabor : unmanaged clrimage?;      /* result of Gabor filter */
   var gabor2grey : conversion;          /* how to display result */
   var t0, t1, t2, t3, t4, t5 : Timer;   /* track time of each fn call */
   var retval : int;

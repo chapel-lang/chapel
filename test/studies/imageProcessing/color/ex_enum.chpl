@@ -20,7 +20,7 @@ if (clrspace_v2.LAB == clrspace_v2.RGB) then writeln("LAB, RGB identical");
 if (clrspace_v2.HSV == clrspace_v2.LAB) then writeln("HSV, LAB identical");
 
 proc print_space(space : clrspace_v2) {
-  writeln("picked color space " + space);
+  writeln("picked color space ", space);
 }
 
 print_space(clrspace_v2.HSV);

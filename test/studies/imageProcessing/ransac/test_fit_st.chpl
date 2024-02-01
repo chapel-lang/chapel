@@ -95,11 +95,11 @@ proc verify_setup() {
 proc main() {
   var rgb : c_ptr(rgbimage);            /* image we've read */
   var disp : c_ptr(rgbimage);           /* marked corners */
-  var clr1 : unmanaged clrimage;        /* greyscale first image */
-  var clr2 : unmanaged clrimage;        /* greyscale second image */
+  var clr1 : unmanaged clrimage?;       /* greyscale first image */
+  var clr2 : unmanaged clrimage?;       /* greyscale second image */
   var spec : fastspec;                  /* FAST parameters */
-  var corners1 : chunkarray(corner);    /* corners found in clr1 */
-  var corners2 : chunkarray(corner);    /* corners found in clr2 */
+  var corners1 : unmanaged chunkarray(corner)?;   /* corners found in clr1 */
+  var corners2 : unmanaged chunkarray(corner)?;   /* corners found in clr2 */
   var testmap : mapinfo;                /* mapping with parameters provided */
   var retval : int;
 

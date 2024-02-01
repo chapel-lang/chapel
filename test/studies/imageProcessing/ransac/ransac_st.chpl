@@ -131,7 +131,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
      to only use one or two cores (why is still being checked).
   */
   forall i in 1..ntry {
-    var rand : owned RandomStream(real);      /* random numbers to pick seeds */
+    var rand : owned RandomStream(real)?;      /* random numbers to pick seeds */
     var trytime : Timer;                /* run time for this try */
 
     if (fixrng) {
@@ -194,7 +194,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     modifies:  try.seed[12], try.map
 ***/
 proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
-                rand : RandomStream, inout trial : tryinfo) : bool {
+                rand : RandomStream?, inout trial : tryinfo) : bool {
   var ind11, ind12 : int;               /* seed1 indices in corners1, 2 */
   var ind21, ind22 : int;               /* seed2 indices in corners1, 2 */
   var matches : [corners2.domain] int;  /* possible seeds in corners2 */
@@ -538,7 +538,7 @@ inline proc quadrant(corner1 : corner, corner2 : corner) : int {
                     rng - range to get random number within
     returns:   random point within range
 ***/
-proc random_ranged(rand : RandomStream, rng : range) : rng.idxType {
+proc random_ranged(rand : RandomStream?, rng : range) : rng.idxType {
   const elt = rng.length * rand.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
@@ -552,7 +552,7 @@ proc random_ranged(rand : RandomStream, rng : range) : rng.idxType {
                    rmin, rmax - bounds of range (incl.)
     returns:   random number from rmin t/m rmax
 ***/
-proc random_bound(rand : RandomStream, rmin : int, rmax : int) : int {
+proc random_bound(rand : RandomStream?, rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
   const elt = len * rand.getNext();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */
@@ -648,11 +648,11 @@ proc verify_setup() {
 
 proc main() {
   var rgb : c_ptr(rgbimage);            /* image we've read */
-  var clr1 : unmanaged clrimage;        /* greyscale first image */
-  var clr2 : unmanaged clrimage;        /* greyscale second image */
+  var clr1 : unmanaged clrimage?;       /* greyscale first image */
+  var clr2 : unmanaged clrimage?;       /* greyscale second image */
   var spec : fastspec;                  /* FAST parameters */
-  var corners1 : unmanaged chunkarray(corner);    /* corners found in clr1 */
-  var corners2 : unmanaged chunkarray(corner);    /* corners found in clr2 */
+  var corners1 : unmanaged chunkarray(corner)?;   /* corners found in clr1 */
+  var corners2 : unmanaged chunkarray(corner)?;   /* corners found in clr2 */
   var Lcnr1 : domain(rank=1);           /* domain of corners1 */
   var Lcnr2 : domain(rank=1);           /* domain of corners2 */
   var match1to2 : [Lcnr1] int;          /* corners2 index for each corners1 */

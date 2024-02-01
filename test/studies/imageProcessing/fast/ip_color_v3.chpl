@@ -191,14 +191,14 @@ record conversion {
                   space - space to convert to
     modifies:  clr
 ***/
-proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage, space : clrspace) {
+proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage?, space : clrspace) {
 
   select space {
     when clrspace.LAB do rgb_to_lab(rgb, clr);
     when clrspace.HSV do rgb_to_hsv(rgb, clr);
     when clrspace.YUV do rgb_to_yuv(rgb, clr);
     when clrspace.RGB do rgb_to_rgb(rgb, clr);
-    otherwise halt("unknown colorspace " + space);
+    otherwise halt("unknown colorspace ", space);
   }
 }
 
@@ -213,7 +213,7 @@ proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage, space : cl
                  lab - converted image
     modifies:  lab
 ***/
-proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : unmanaged clrimage) {
+proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : unmanaged clrimage?) {
   var xy : int;                         /* pixel index */
 
   lab = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow, clrspace.LAB);
@@ -284,7 +284,7 @@ private inline proc lab_map(t : real) : real {
                  hsv - converted image
     modifies:  hsv
 ***/
-proc rgb_to_hsv(rgb : c_ptr(rgbimage), ref hsv : unmanaged clrimage) {
+proc rgb_to_hsv(rgb : c_ptr(rgbimage), ref hsv : unmanaged clrimage?) {
   var xy : int;                         /* pixel index */
 
   hsv = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow, clrspace.HSV);
@@ -364,7 +364,7 @@ proc rgbpix_to_hsv(r : c_uchar, g : c_uchar, b : c_uchar,
                  yuv - converted image
     modifies:  yuv
 ***/
-proc rgb_to_yuv(rgb : c_ptr(rgbimage), ref yuv : unmanaged clrimage) {
+proc rgb_to_yuv(rgb : c_ptr(rgbimage), ref yuv : unmanaged clrimage?) {
   var xy : int;                         /* pixel index */
 
   yuv = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow, clrspace.YUV);
@@ -431,7 +431,7 @@ private inline proc clamp(val : real, minval : real, maxval : real) {
                  rgb_chpl - color image in Chapel data structure
     modifies:  rgb_chpl
 ***/
-proc rgb_to_rgb(rgb_c : c_ptr(rgbimage), ref rgb_chpl : unmanaged clrimage) {
+proc rgb_to_rgb(rgb_c : c_ptr(rgbimage), ref rgb_chpl : unmanaged clrimage?) {
   var x, y, xy : int;                   /* pixel coordinates/index */
 
   rgb_chpl = new unmanaged clrimage(rgb_c.deref().ncol, rgb_c.deref().nrow, clrspace.RGB);
@@ -460,7 +460,7 @@ proc rgb_to_rgb(rgb_c : c_ptr(rgbimage), ref rgb_chpl : unmanaged clrimage) {
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_color(clr : unmanaged clrimage, ref rgb : c_ptr(rgbimage),
+proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
                    spec : conversion) : int {
   var xy : int;                         /* pixel index */
   var retval : int;

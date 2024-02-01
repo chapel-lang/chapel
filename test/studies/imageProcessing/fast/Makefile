@@ -52,7 +52,7 @@ bin/fast_v1 : fast_v1.chpl $(IPDEP) $(CLRDEP)
 
 fast_v2 : bin/fast_v2
 bin/fast_v2 : fast_v2.chpl $(IPDEP) $(CLRDEP)
-	chpl $(CHPLOPT) -o $@ $^ -lpng
+	chpl $(CHPLOPT) -o $@ $^ -lpng --no-overload-sets-checks
 
 test_fast_v1 : bin/test_fast_v1
 bin/test_fast_v1 : test_fast_v1.chpl fast_v1.chpl

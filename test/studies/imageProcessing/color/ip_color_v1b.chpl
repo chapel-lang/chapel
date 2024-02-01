@@ -159,8 +159,8 @@ record conversion {
                   space - space to convert to
     modifies:  clr
 ***/
-proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage, space : clrspace) {
-  var clrfn : func(c_uchar, c_uchar, c_uchar, 3*real);
+proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage?, space : clrspace) {
+  var clrfn : func(c_uchar, c_uchar, c_uchar, 3*real)?;
                                         /* convert function */
   var xy : int;                         /* pixel index */
 
@@ -169,7 +169,7 @@ proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage, space : cl
     when clrspace.HSV do clrfn = rgbpix_to_hsv;
     when clrspace.YUV do clrfn = rgbpix_to_yuv;
     when clrspace.RGB do clrfn = rgbpix_to_rgb;
-    otherwise halt("unknown colorspace " + space);
+    otherwise halt("unknown colorspace ", space);
   }
 
   clr = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow);
@@ -376,7 +376,7 @@ proc rgbpix_to_rgb(r : c_uchar, g : c_uchar, b : c_uchar) : 3*real {
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_color(clr : unmanaged clrimage, ref rgb : c_ptr(rgbimage),
+proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
                    spec : conversion) : int {
   var xy : int;                         /* pixel index */
   var retval : int;

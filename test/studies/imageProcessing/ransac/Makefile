@@ -32,19 +32,19 @@ IPDEP = ip_color_v3.chpl ip_corner.chpl kdtree.chpl
 
 ransac_st : bin/ransac_st
 bin/ransac_st : ransac_st.chpl $(IPDEP) $(CLRDEP)
-	chpl $(CHPLOPT) -o $@ $^ -lpng
+	chpl $(CHPLOPT) -o $@ $^ -lpng --no-overload-sets-checks
 
 ransac_rst : bin/ransac_rst
 bin/ransac_rst : ransac_rst.chpl $(IPDEP) $(CLRDEP)
-	chpl $(CHPLOPT) -o $@ $^ -lpng
+	chpl $(CHPLOPT) -o $@ $^ -lpng --no-overload-sets-checks
 
 test_fit_st : bin/test_fit_st
 bin/test_fit_st : test_fit_st.chpl ransac_st.chpl $(IPDEP) $(CLRDEP)
-	chpl $(CHPLOPT) --main-module test_fit_st -o $@ $^ -lpng
+	chpl $(CHPLOPT) --main-module test_fit_st -o $@ $^ -lpng --no-overload-sets-checks
 
 test_fit_rst : bin/test_fit_rst
 bin/test_fit_rst : test_fit_rst.chpl ransac_rst.chpl $(IPDEP) $(CLRDEP)
-	chpl $(CHPLOPT) --main-module test_fit_rst -o $@ $^ -lpng
+	chpl $(CHPLOPT) --main-module test_fit_rst -o $@ $^ -lpng --no-overload-sets-checks
 
 test_map_rst : bin/test_map_rst
 bin/test_map_rst : test_map_rst.chpl ransac_rst.chpl $(IPDEP)
@@ -57,7 +57,7 @@ bin/test_kdtree : test_kdtree.chpl
 
 ## general rules
 
-CHPLALL = ransac_st ransac_rst 
+CHPLALL = ransac_st ransac_rst
 CHPLALL += test_fit_st test_fit_rst test_kdtree test_map_rst
 CALL = img_png_v3
 
@@ -68,7 +68,7 @@ all : $(CALL) $(CHPLALL)
 	@echo > /dev/null
 
 clean :
-	-rm -f build/*.o build/*.dep 
+	-rm -f build/*.o build/*.dep
 	-rm -f $(addprefix bin/,$(CALL)) $(addprefix bin/,$(CHPLALL))
 
 tarball ../doc/data/chapel_by_ex_ransac.tar.gz :

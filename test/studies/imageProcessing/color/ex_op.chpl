@@ -13,7 +13,7 @@ writeln("1.0i * 2.0      = ", 1.0i * 2.0);
 writeln("3.0i / 2.0i     = ", 3.0i / 2.0i);
 writeln("3.0i / 2.0      = ", 3.0i / 2.0);
 
-writeln("\"concat\" + true = ", "concat" + true);
+writeln("\"concat\" + true = ", "concat" + true:string);
 
 writeln("9 % 5     = ", 9 % 5);
 writeln("(-9) % 5  = ", (-9) % 5);
@@ -44,7 +44,7 @@ writef("ipos >> 2    = %08bu (%u)\n", ipos >> 2, ipos);
 writef("u >> 2       = %08bu (%u)\n", u >> 2, u);
 
 proc tstfn(i : int) {
-  writeln("called tstfn with " + i);
+  writeln("called tstfn with ", i);
 }
 tstfn[2];
 

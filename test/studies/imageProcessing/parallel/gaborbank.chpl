@@ -107,7 +107,7 @@ proc gabor_kernel(theta : real, sclx : real, scly : real,
                       phi - offset of sinusoid, in radians
     modifies:  dest
 ***/
-proc run_gaborfilter(img : unmanaged clrimage, gabor : unmanaged clrimage, size : int,
+proc run_gaborfilter(img : unmanaged clrimage?, gabor : unmanaged clrimage?, size : int,
                      theta : real, sclx : real, scly : real, wavelen : real,
                      phi : real) {
   const r = (size - 1) / 2;             /* kernel radius */
@@ -141,10 +141,10 @@ proc run_gaborfilter(img : unmanaged clrimage, gabor : unmanaged clrimage, size 
     returns:   0 if successful
                < 0 on failure (value depends on error)
 ***/
-proc filter_and_save(img : unmanaged clrimage, size : int, theta : int, sclx : real,
+proc filter_and_save(img : unmanaged clrimage?, size : int, theta : int, sclx : real,
                      scly : real, wavelen : real, phi_rad : real) : int {
   const theta_rad = pi * theta / 180;   /* angle of rotation, in radians */
-  var gabor : unmanaged clrimage;       /* result of this filter */
+  var gabor : unmanaged clrimage?;      /* result of this filter */
   var grey : c_ptr(rgbimage);           /* display version of result */
   var gabor2grey : conversion;          /* how to display result */
   var outname : c_string;               /* output file name */
@@ -161,9 +161,9 @@ proc filter_and_save(img : unmanaged clrimage, size : int, theta : int, sclx : r
   if (retval < 0) then return retval;
 
   /* This makes a 3-digit angle without using something like a sprintf. */
-  if (theta < 10) then outname = "bank_00" + theta + ".png";
-  else if (theta < 100) then outname = "bank_0" + theta + ".png";
-  else outname = "bank_" + theta + ".png";
+  if (theta < 10) then outname = "bank_00" + theta:string + ".png";
+  else if (theta < 100) then outname = "bank_0" + theta:string + ".png";
+  else outname = "bank_" + theta:string + ".png";
 
   retval = PNG_write(outname, grey, CLR_R);
 
@@ -231,7 +231,7 @@ proc verify_setup() {
 
 proc main() {
   var rgb : c_ptr(rgbimage);            /* image we've read */
-  var grey : unmanaged clrimage;        /* greyscale version of RGB */
+  var grey : unmanaged clrimage?;       /* greyscale version of RGB */
   var retval : int;
 
   verify_setup();
