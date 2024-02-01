@@ -11,9 +11,8 @@ and the generated files are
   bison-chpl-lib.h
   bison-chpl-lib.cpp
 
-respectively.  The location for the generated files is
-defined using appropriate directives within the parser
-sources.
+The location for the generated files is defined using appropriate
+directives within the parser sources.
 
 Historically we included only the parser sources in the repository
 and relied on the target platform to construct the generated C files
