@@ -279,6 +279,13 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-class-memaccess
 endif
 
+#
+# Avoid build aborting due to this warning, it may be coming from LLVM headers
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 8; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=class-memaccess
+endif
+
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -eq 8; echo "$$?"),0)
 RUNTIME_CFLAGS += -Wno-stringop-overflow
 SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
