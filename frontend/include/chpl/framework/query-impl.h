@@ -409,7 +409,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   // If recursion errors happened at the time the result is being saved,
   // the query is 'poisoned' by recursion and we should store the default result.
   if (!r->recursionErrors.empty()) {
-    ResultType dummyValue;
+    ResultType dummyValue {};
     chpl::update<ResultType> combiner;
     changed = combiner(r->result, dummyValue);
   }
