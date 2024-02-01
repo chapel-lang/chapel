@@ -82,7 +82,7 @@ resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
               return rFn->byAstOrNull(ast);
             } else {
               auto typed = typedSignatureInitial(context, untyped);
-              if (!typed->needsInstantiation()) {
+              if (typed != nullptr && !typed->needsInstantiation()) {
                 auto rFn = resolveFunction(context, typed, nullptr);
                 return rFn->byAstOrNull(ast);
               }
@@ -120,7 +120,7 @@ computeAndPrintStuff(Context* context,
     } else {
       auto untyped = UntypedFnSignature::get(context, fn);
       auto typed = typedSignatureInitial(context, untyped);
-      if (!typed->needsInstantiation()) {
+      if (typed != nullptr && !typed->needsInstantiation()) {
         inFn = resolveFunction(context, typed, nullptr);
       }
     }

@@ -540,7 +540,7 @@ typedSignatureInitial(Context* context,
 
   auto ret = typedSignatureInitialQuery(context, untypedSig);
   // also check the signature at this point if it is concrete
-  if (!ret->needsInstantiation()) {
+  if (ret != nullptr && !ret->needsInstantiation()) {
     checkSignature(context, ret);
   }
   return ret;
@@ -2105,6 +2105,11 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
+
+  if (sig == nullptr) {
+    return nullptr;
+  }
+
   if (sig->needsInstantiation()) {
     return nullptr;
   }
@@ -2366,6 +2371,10 @@ doIsCandidateApplicableInitial(Context* context,
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
+
+  if (!ret) {
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  }
 
   return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
