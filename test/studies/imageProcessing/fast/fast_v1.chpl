@@ -18,8 +18,9 @@
       c 2015-2018 Primordial Machine Vision Systems
 *****/
 
-use ip_color_v3;
+public use ip_color_v3;
 use Help;
+use SysCTypes;
 
 
 /**** Command Line Arguments ****/
@@ -365,11 +366,11 @@ proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
   const circle                          /* iterator about pixel */
     = new unmanaged circumference(radius);
   const Ainside                         /* image interior we can analyze */
-    = clr.area.expand(-radius, -radius);
+    = clr!.area.expand(-radius, -radius);
   var cnt : sync int;                   /* number corners found */
   var retval : int;
 
-  retval = alloc_rgbimage(marked, clr.ncol : c_int, clr.nrow : c_int);
+  retval = alloc_rgbimage(marked, clr!.ncol : c_int, clr!.nrow : c_int);
   if (retval < 0) {
     delete circle;
     return retval;
@@ -377,13 +378,13 @@ proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
 
   /* Double loop over area so we can also get the greyscale outside the
      corner checking area. */
-  forall (y, x) in clr.area {
+  forall (y, x) in clr!.area {
     const xy = y * marked.deref().ncol + x;     /* pixel index */
     if (clrspace.LAB == space) {
       /* L from 0 t/m 100. */
-      marked.deref().r(xy) = nearbyint(2.55 * clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(2.55 * clr!.c1(y,x)) : c_uchar;
     } else if (clrspace.YUV == space) {
-      marked.deref().r(xy) = nearbyint(clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(clr!.c1(y,x)) : c_uchar;
     }
     marked.deref().g(xy) = marked.deref().r(xy);
     marked.deref().b(xy) = marked.deref().r(xy);
@@ -400,13 +401,13 @@ proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
       cnt += 1;
       */
 
-      for yc in clr.rows[y-5..y+5] {
+      for yc in clr!.rows[y-5..y+5] {
         const xy = yc * marked.deref().ncol + x;
         marked.deref().r(xy) = 255;
         marked.deref().g(xy) = 0;
         marked.deref().b(xy) = 0;
       }
-      for xc in clr.cols[x-5..x+5] {
+      for xc in clr!.cols[x-5..x+5] {
         const xy = y * marked.deref().ncol + xc;
         marked.deref().r(xy) = 255;
         marked.deref().g(xy) = 0;
@@ -495,8 +496,8 @@ proc is_corner(img : unmanaged clrimage?, x : int, y : int,
 inline proc pixel_thrdir(img : unmanaged clrimage?, x1 : int, y1 : int,
                          x2 : int, y2 : int) : thrdir {
 
-  if (img.c1(y2,x2) + thr <= img.c1(y1,x1)) then return thrdir.LESS;
-  else if (img.c1(y1,x1) + thr <= img.c1(y2,x2)) then return thrdir.MORE;
+  if (img!.c1(y2,x2) + thr <= img!.c1(y1,x1)) then return thrdir.LESS;
+  else if (img!.c1(y1,x1) + thr <= img!.c1(y2,x2)) then return thrdir.MORE;
   else return thrdir.SAME;
 }
 

@@ -21,7 +21,7 @@ proc ref num.changeInst() {
 }
 
 writeln("\ndemonstrate ref intent");
-var oldn = n;
+var oldn = n.borrow();
 writef("original instance %t (same as old? %s)\n", n, (n == oldn));
 n.changeInst();
 writef("new instance %t (same as old? %s)\n", n, (n == oldn));

@@ -45,6 +45,7 @@ use Math;
 use Random;
 use Sort;
 use Time;
+use SysCTypes;
 
 
 /**** Command Line Arguments ****/
@@ -132,9 +133,9 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     var trytime : Timer;                /* run time for this try */
 
     if (fixrng) {
-      rand = makeRandomStream(real, (2*i) + 1);
+      rand = createRandomStream(real, (2*i) + 1);
     } else {
-      rand = makeRandomStream(real);
+      rand = createRandomStream(real);
     }
 
     trytime.start();
@@ -654,7 +655,7 @@ inline proc are_corners_similar(c1 : corner, c2 : corner) : bool {
     returns:   random point within range
 ***/
 proc random_ranged(rand : RandomStream?, rng : range) : rng.idxType {
-  const elt = rng.length * rand.getNext();      /* scale random to range */
+  const elt = rng.size * rand!.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
      value.  That way we wouldn't have to worry about the type. */
@@ -685,7 +686,7 @@ proc random_domain(rand : RandomStream?, dom : domain) : dom.rank * dom.idxType 
 ***/
 proc random_bound(rand : RandomStream?, rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
-  const elt = len * rand.getNext();             /* scale random to range */
+  const elt = len * rand!.getNext();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */
   return res;
 }
@@ -786,9 +787,9 @@ proc draw_matches(img1 : unmanaged clrimage?, img2 : unmanaged clrimage?,
 
   retval = display_color(img1, grey, img2grey);
   end_onerr(retval, disp, grey);
-  for y in img1.rows {
-    for x in img1.cols {
-      const xy = y * img1.ncol + x;
+  for y in img1!.rows {
+    for x in img1!.cols {
+      const xy = y * img1!.ncol + x;
       const xyd = (y + y1off) * ncol + (x + x1off);
       disp.deref().r(xyd) = grey.deref().r(xy);
       disp.deref().g(xyd) = grey.deref().g(xy);
@@ -798,9 +799,9 @@ proc draw_matches(img1 : unmanaged clrimage?, img2 : unmanaged clrimage?,
 
   retval = display_color(img2, grey, img2grey);
   end_onerr(retval, disp, grey);
-  for y in img2.rows {
-    for x in img2.cols {
-      const xy = y * img2.ncol + x;
+  for y in img2!.rows {
+    for x in img2!.cols {
+      const xy = y * img2!.ncol + x;
       const xyd = (y + y2off) * ncol + (x + x2off);
       disp.deref().r(xyd) = grey.deref().r(xy);
       disp.deref().g(xyd) = grey.deref().g(xy);
@@ -860,22 +861,22 @@ proc setup_combiimg(img1 : unmanaged clrimage?, img2: unmanaged clrimage?,
                     out x1off : int, out y1off : int,
                     out x2off : int, out y2off : int) {
 
-  ncol = (img1.ncol + match_margin + img2.ncol) : c_int;
+  ncol = (img1!.ncol + match_margin + img2!.ncol) : c_int;
   x1off = 0;
-  x2off = img1.ncol + match_margin;
+  x2off = img1!.ncol + match_margin;
 
-  if (img1.nrow == img2.nrow) {
-    nrow = img1.nrow : c_int;
+  if (img1!.nrow == img2!.nrow) {
+    nrow = img1!.nrow : c_int;
     y1off = 0;
     y2off = 0;
-  } else if (img1.nrow < img2.nrow) {
-    nrow = img2.nrow : c_int;
-    y1off = (img2.nrow - img1.nrow) / 2;
+  } else if (img1!.nrow < img2!.nrow) {
+    nrow = img2!.nrow : c_int;
+    y1off = (img2!.nrow - img1!.nrow) / 2;
     y2off = 0;
   } else {
-    nrow = img1.nrow : c_int;
+    nrow = img1!.nrow : c_int;
     y1off = 0;
-    y2off = (img1.nrow - img2.nrow) / 2;
+    y2off = (img1!.nrow - img2!.nrow) / 2;
   }
 }
 
@@ -1444,14 +1445,14 @@ proc main() {
   corners1 = find_corners(clr1, spec);
   corners2 = find_corners(clr2, spec);
 
-  Lcnr1 = corners1().domain;
-  Lcnr2 = corners2().domain;
+  Lcnr1 = corners1!().domain;
+  Lcnr2 = corners2!().domain;
 
-  align_corners(corners1(), corners2(), bestmap, match1to2, match2to1);
+  align_corners(corners1!(), corners2!(), bestmap, match1to2, match2to1);
 
   dump_map("Best alignment", bestmap);
 
-  draw_matches(clr1, clr2, corners1(), corners2(), match1to2);
+  draw_matches(clr1, clr2, corners1!(), corners2!(), match1to2);
 
   free_rgbimage(rgb);
   delete clr1;

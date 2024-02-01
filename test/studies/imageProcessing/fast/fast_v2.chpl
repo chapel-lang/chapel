@@ -21,9 +21,10 @@
       c 2015-2018 Primordial Machine Vision Systems
 *****/
 
-use ip_color_v3;
+public use ip_color_v3;
 use Sort;
 use Help;
+use SysCTypes;
 
 
 /**** Command Line Arguments ****/
@@ -466,7 +467,7 @@ proc find_corners(img : unmanaged clrimage?, spec : fastspec) : unmanaged chunka
   const circle                          /* iterator about pixel */
     = new unmanaged circumference(spec.radius);
   const Ainside                         /* image interior we can analyze */
-    = img.area.expand(-spec.radius, -spec.radius);
+    = img!.area.expand(-spec.radius, -spec.radius);
   var corners                           /* corners we've found */
     = new unmanaged chunkarray(corner);
 
@@ -543,7 +544,7 @@ proc is_corner_with_details(img : unmanaged clrimage?, x : int, y : int, spec : 
       len = 1;
       stpt = (xp, yp);
       initpt = (xp, yp);
-      dpix = abs(img.c1(yp, xp) - img.c1(y, x));
+      dpix = abs(img!.c1(yp, xp) - img!.c1(y, x));
       first = false;
     } else if (prevdir != dir) {
       /* We can't claim victory if this is the first sequence because it
@@ -561,11 +562,11 @@ proc is_corner_with_details(img : unmanaged clrimage?, x : int, y : int, spec : 
       }
       len = 1;
       stpt = (xp, yp);
-      dpix = abs(img.c1(yp, xp) - img.c1(y, x));
+      dpix = abs(img!.c1(yp, xp) - img!.c1(y, x));
       prevdir = dir;
     } else if (thrdir.SAME != dir) {
       len += 1;
-      dpix = abs(img.c1(yp, xp) - img.c1(y, x));
+      dpix = abs(img!.c1(yp, xp) - img!.c1(y, x));
     }
   }
 
@@ -607,8 +608,8 @@ proc is_corner_with_details(img : unmanaged clrimage?, x : int, y : int, spec : 
 inline proc pixel_thrdir(img : unmanaged clrimage?, x1 : int, y1 : int,
                          x2 : int, y2 : int, spec : fastspec) : thrdir {
 
-  if (img.c1(y2,x2) + spec.thr <= img.c1(y1,x1)) then return thrdir.LESS;
-  else if (img.c1(y1,x1) + spec.thr <= img.c1(y2,x2)) then return thrdir.MORE;
+  if (img!.c1(y2,x2) + spec.thr <= img!.c1(y1,x1)) then return thrdir.LESS;
+  else if (img!.c1(y1,x1) + spec.thr <= img!.c1(y2,x2)) then return thrdir.MORE;
   else return thrdir.SAME;
 }
 
@@ -720,19 +721,19 @@ proc set_parent(corners : [] corner, c1 : int, c2 : int, parent : [] int) {
     modifies:  marked
 ***/
 proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
-                  corners : unmanaged chunkarray(corner), ref marked : c_ptr(rgbimage)) : int {
+                  corners : unmanaged chunkarray(corner)?, ref marked : c_ptr(rgbimage)) : int {
   var retval : int;
 
-  retval = alloc_rgbimage(marked, clr.ncol : c_int, clr.nrow : c_int);
+  retval = alloc_rgbimage(marked, clr!.ncol : c_int, clr!.nrow : c_int);
   if (retval < 0) then return retval;
 
-  forall (y, x) in clr.area {
+  forall (y, x) in clr!.area {
     const xy = y * marked.deref().ncol + x;     /* pixel index */
     /* L from 0 t/m 100.  Y from 16 t/m 235, don't scale. */
     if (clrspace.LAB == space) {
-      marked.deref().r(xy) = nearbyint(2.55 * clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(2.55 * clr!.c1(y,x)) : c_uchar;
     } else if (clrspace.YUV == space) {
-      marked.deref().r(xy) = nearbyint(clr.c1(y,x)) : c_uchar;
+      marked.deref().r(xy) = nearbyint(clr!.c1(y,x)) : c_uchar;
     }
     marked.deref().g(xy) = marked.deref().r(xy);
     marked.deref().b(xy) = marked.deref().r(xy);
@@ -749,15 +750,15 @@ proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
   */
 
   /* Making a small cross at the corner. */
-  forall c in corners.Ldata {
-    for y in clr.rows[corners(c).yc-5..corners(c).yc+5] {
-      const xy = y * marked.deref().ncol + corners(c).xc;
+  forall c in corners!.Ldata {
+    for y in clr!.rows[corners!(c).yc-5..corners!(c).yc+5] {
+      const xy = y * marked.deref().ncol + corners!(c).xc;
       marked.deref().r(xy) = 255;
       marked.deref().g(xy) = 0;
       marked.deref().b(xy) = 0;
     }
-    for x in clr.cols[corners(c).xc-5..corners(c).xc+5] {
-      const xy = corners(c).yc * marked.deref().ncol + x;
+    for x in clr!.cols[corners!(c).xc-5..corners!(c).xc+5] {
+      const xy = corners!(c).yc * marked.deref().ncol + x;
       marked.deref().r(xy) = 255;
       marked.deref().g(xy) = 0;
       marked.deref().b(xy) = 0;

@@ -19,6 +19,9 @@
         c 2015-2018 Primordial Machine Vision Systems
 *****/
 
+use SysCTypes;
+
+
 require "img_png_v1.h", "build/img_png_v1.o", "-lpng";
 
 /* Command line arguments. */

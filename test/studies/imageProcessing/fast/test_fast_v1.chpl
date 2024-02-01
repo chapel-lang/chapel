@@ -300,7 +300,7 @@ proc test_is_corner() : bool {
   }
 
   img = new unmanaged clrimage(20, 20, clrspace.LAB);
-  img.c1(10,10) = 20.0;
+  img!.c1(10,10) = 20.0;
 
   /* Pixel counts for r==3 range from 0 t/m 15. */
 
@@ -493,9 +493,9 @@ proc set_segment(img : unmanaged clrimage?, xc : int, yc : int, circle : circumf
   for (x, y) in circle(xc, yc) {
     if ((st <= cnt) && (cnt <= end)) {
       select (dir) {
-      when thrdir.SAME { img.c1(x, y) = img.c1(xc, yc) + thr - 1.0; }
-      when thrdir.MORE { img.c1(x, y) = img.c1(xc, yc) + thr + 1.0; }
-      when thrdir.LESS { img.c1(x, y) = img.c1(xc, yc) - thr - 1.0; }
+      when thrdir.SAME { img!.c1(x, y) = img!.c1(xc, yc) + thr - 1.0; }
+      when thrdir.MORE { img!.c1(x, y) = img!.c1(xc, yc) + thr + 1.0; }
+      when thrdir.LESS { img!.c1(x, y) = img!.c1(xc, yc) - thr - 1.0; }
       otherwise writeln("unknown threshold direction ", dir);
       }
     }

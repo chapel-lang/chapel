@@ -115,21 +115,21 @@ proc run_gaborfilter(img : unmanaged clrimage?, gabor : unmanaged clrimage?, siz
   const r = (size - 1) / 2;             /* kernel radius */
   const Akern : domain(2) = { -r..r, -r..r };
                                         /* filter matrix */
-  const Ainside = img.area.expand(-r, -r);
+  const Ainside = img!.area.expand(-r, -r);
                                         /* sub-image to convolve over */
   var kernel : [Akern] real;            /* filter coefficients */
-  var Aconv : subdomain(img.area);      /* convolution area of image */
+  var Aconv : subdomain(img!.area);      /* convolution area of image */
 
   gabor_kernel(theta=theta, sclx=sclx, scly=scly, wavelen=wavelen,
                phi=phi, kernel=kernel);
 
   /* Make sure destination is clear. */
-  gabor.c1 = 0.0;
+  gabor!.c1 = 0.0;
 
   for (y, x) in Ainside {
-    Aconv = img.area[y-r..y+r, x-r..x+r];
+    Aconv = img!.area[y-r..y+r, x-r..x+r];
     for ((yc, xc), (kj, ki)) in zip(Aconv, Akern) do
-      gabor.c1(y,x) += img.c1(yc,xc) * kernel(kj,ki);
+      gabor!.c1(y,x) += img!.c1(yc,xc) * kernel(kj,ki);
   }
 }
 

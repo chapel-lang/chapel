@@ -17,6 +17,8 @@
 *****/
 
 use Help;
+use SysCTypes;
+
 
 /* Command line arguments. */
 config const inname : string;           /* name of file to read */

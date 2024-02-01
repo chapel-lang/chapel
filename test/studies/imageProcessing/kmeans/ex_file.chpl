@@ -10,6 +10,7 @@
 *****/
 
 use FileSystem;
+use IO;
 
 
 config const fname = "test.out";        /* name of output file */

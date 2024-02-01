@@ -94,7 +94,7 @@ proc insertsort(data : [] real) {
 }
 
 proc main() {
-  const rand = makeRandomStream(real, 1);    /* RNG to create data */
+  const rand = createRandomStream(real, 1);    /* RNG to create data */
   var data : [1..nelt] real;            /* array to sort */
   var passed = true;                    /* verification flag */
 

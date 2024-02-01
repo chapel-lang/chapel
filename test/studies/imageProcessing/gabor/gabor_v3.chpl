@@ -115,7 +115,7 @@ proc run_gaborfilter(img : unmanaged clrimage?, gabor : unmanaged clrimage?, siz
   const r = (size - 1) / 2;             /* kernel radius */
   const Akern : domain(2) = { -r..r, -r..r };
                                         /* filter matrix */
-  const Ainside = img.area.expand(-r, -r);
+  const Ainside = img!.area.expand(-r, -r);
                                         /* sub-image to convolve over */
   var kernel : [Akern] real;            /* filter coefficients */
 
@@ -123,11 +123,11 @@ proc run_gaborfilter(img : unmanaged clrimage?, gabor : unmanaged clrimage?, siz
                phi=phi, kernel=kernel);
 
   /* Make sure destination is clear. */
-  gabor.c1 = 0.0;
+  gabor!.c1 = 0.0;
 
   for (y, x) in Ainside {
     for ((yc, xc), (kj, ki)) in zip(Akern.translate(y,x), Akern) do
-      gabor.c1(y,x) += img.c1(yc,xc) * kernel(kj,ki);
+      gabor!.c1(y,x) += img!.c1(yc,xc) * kernel(kj,ki);
   }
 }
 

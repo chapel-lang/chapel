@@ -17,6 +17,9 @@
       c 2015-2018 Primordial Machine Vision Systems
 *****/
 
+use SysCTypes;
+
+
 config const outname = "filter.png";    /* output file name */
 config const size = 13;                 /* kernel size */
 config const theta = 0.0;               /* plane rotation/filter angle, deg */

@@ -14,6 +14,7 @@
 
 
 use Help;
+use SysCTypes;
 
 
 /**** Declarations ****/

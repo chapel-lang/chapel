@@ -10,6 +10,9 @@
       c 2015-2018 Primordial Machine Vision Systems
 *****/
 
+use SysCTypes;
+
+
 writeln("\nDemonstrating unions");
 union numbers {
   var svar : int(16);
@@ -87,22 +90,22 @@ var excls : unmanaged rgbimg_cls?;
 writef("  excls nil post-declaration? %s\n", (nil == excls));
 excls = new unmanaged rgbimg_cls(200, npix=1000, ncol=5);
 writef("  new excls:     %4i x %4i (= %6i npix)   nil r? %s\n",
-       excls.ncol,excls.nrow, excls.npix, (nil == excls.r));
-excls.ncol = 10;
-excls.npix = 2000;
+       excls!.ncol,excls!.nrow, excls!.npix, (nil == excls!.r));
+excls!.ncol = 10;
+excls!.npix = 2000;
 writef("  excls changed: %4i x %4i (= %6i npix)   nil r? %s\n",
-       excls.ncol,excls.nrow, excls.npix, (nil == excls.r));
+       excls!.ncol,excls!.nrow, excls!.npix, (nil == excls!.r));
 
 var cpcls = excls;
 writef("  make cpcls:    %4i x %4i (= %6i npix)   nil r? %s   == excls? %s\n",
-       cpcls.ncol,cpcls.nrow, cpcls.npix, (nil == excls.r),
+       cpcls!.ncol,cpcls!.nrow, cpcls!.npix, (nil == excls!.r),
        (cpcls == excls));
-excls.nrow = 400;
-excls.npix = 4000;
+excls!.nrow = 400;
+excls!.npix = 4000;
 writef("  excls changed: %4i x %4i (= %6i npix)   nil r? %s\n",
-       excls.ncol,excls.nrow, excls.npix, (nil == excls.r));
+       excls!.ncol,excls!.nrow, excls!.npix, (nil == excls!.r));
 writef("  cpcls now:     %4i x %4i (= %6i npix)   nil r? %s   == excls? %s\n",
-       cpcls.ncol,cpcls.nrow, cpcls.npix, (nil == excls.r),
+       cpcls!.ncol,cpcls!.nrow, cpcls!.npix, (nil == excls!.r),
        (cpcls == excls));
 
 delete excls;

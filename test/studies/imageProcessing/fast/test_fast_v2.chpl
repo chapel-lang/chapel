@@ -297,7 +297,7 @@ proc test_is_corner() : bool {
   spec.thr = 10.0;
 
   img = new unmanaged clrimage(20, 20, clrspace.LAB);
-  img.c1(10,10) = 20.0;
+  img!.c1(10,10) = 20.0;
 
   /* Pixel counts for r==3 range from 0 t/m 15. */
 
@@ -494,7 +494,7 @@ proc test_is_corner_with_details() : bool {
   spec.thr = 10.0;
 
   img = new unmanaged clrimage(20, 20, clrspace.LAB);
-  img.c1(10,10) = 20.0;
+  img!.c1(10,10) = 20.0;
 
   /* Pixel counts for r==3 range from 0 t/m 15. */
 
@@ -631,9 +631,9 @@ proc set_segment(img : unmanaged clrimage?, xc : int, yc : int, circle : circumf
       var offset                        /* MORE/LESS, varies around ring */
         = spec.thr + 1.0 + cnt;
       select (dir) {
-      when thrdir.SAME { img.c1(x, y) = img.c1(xc, yc) + spec.thr - 1.0; }
-      when thrdir.MORE { img.c1(x, y) = img.c1(xc, yc) + offset; }
-      when thrdir.LESS { img.c1(x, y) = img.c1(xc, yc) - offset; }
+      when thrdir.SAME { img!.c1(x, y) = img!.c1(xc, yc) + spec.thr - 1.0; }
+      when thrdir.MORE { img!.c1(x, y) = img!.c1(xc, yc) + offset; }
+      when thrdir.LESS { img!.c1(x, y) = img!.c1(xc, yc) - offset; }
       otherwise writeln("unknown threshold direction ", dir);
       }
     }

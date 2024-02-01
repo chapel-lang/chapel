@@ -140,16 +140,16 @@ proc main() {
   testmap.dy = dy;
 
   var tree                              /* 2-dimensional sorted space */
-    = new unmanaged kdtree(corners2.size, int, 2);
-  for i in corners2().domain {
-    tree.add_node(corners2(i).center, i);
+    = new unmanaged kdtree(corners2!.size, int, 2);
+  for i in corners2!().domain {
+    tree.add_node(corners2!(i).center, i);
   }
   tree.assemble_tree();
 
-  var mapped1 : [corners1().domain] corner;
-  map_corners(corners1(), testmap, mapped1);
+  var mapped1 : [corners1!().domain] corner;
+  map_corners(corners1!(), testmap, mapped1);
 
-  var nmap = count_matches(mapped1, corners2(), tree);
+  var nmap = count_matches(mapped1, corners2!(), tree);
 
   writeln("\nMatching from fixed mapping");
   writef("  x2 = %6.3dr x1 %+7.1dr\n", testmap.sx, testmap.dx);

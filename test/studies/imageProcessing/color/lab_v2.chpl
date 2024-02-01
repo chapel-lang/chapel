@@ -16,6 +16,7 @@
 
 
 use Help;
+use SysCTypes;
 
 
 /**** Declarations ****/
@@ -139,10 +140,10 @@ proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : unmanaged clrimage?) {
 
   lab = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow);
 
-  for (y, x) in lab.area {
+  for (y, x) in lab!.area {
     const xy = (y * rgb.deref().ncol) + x;      /* pixel index */
     rgbpix_to_lab(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy),
-                  lab.c1(y,x), lab.c2(y,x), lab.c3(y,x));
+                  lab!.c1(y,x), lab!.c2(y,x), lab!.c3(y,x));
   }
 }
 
@@ -212,11 +213,11 @@ proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
   var xy : int;                         /* pixel index */
   var retval : int;
 
-  retval = alloc_rgbimage(rgb, clr.ncol : c_int, clr.nrow : c_int);
+  retval = alloc_rgbimage(rgb, clr!.ncol : c_int, clr!.nrow : c_int);
   if (retval < 0) then return retval;
 
   if ((clrplane.C1 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c1, rgb.deref().r, rgb.deref().ncol, spec);
+    retval = display_plane(clr!.c1, rgb.deref().r, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C1 == spec.plane) {
@@ -229,7 +230,7 @@ proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
   }
 
   if ((clrplane.C2 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c2, rgb.deref().g, rgb.deref().ncol, spec);
+    retval = display_plane(clr!.c2, rgb.deref().g, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C2 == spec.plane) {
@@ -242,7 +243,7 @@ proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
   }
 
   if ((clrplane.C3 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c3, rgb.deref().b, rgb.deref().ncol, spec);
+    retval = display_plane(clr!.c3, rgb.deref().b, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C3 == spec.plane) {

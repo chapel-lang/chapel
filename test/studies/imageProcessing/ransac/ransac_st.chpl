@@ -135,9 +135,9 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     var trytime : Timer;                /* run time for this try */
 
     if (fixrng) {
-      rand = makeRandomStream(real, (2*i) + 1);
+      rand = createRandomStream(real, (2*i) + 1);
     } else {
-      rand = makeRandomStream(real);
+      rand = createRandomStream(real);
     }
 
     trytime.start();
@@ -539,7 +539,7 @@ inline proc quadrant(corner1 : corner, corner2 : corner) : int {
     returns:   random point within range
 ***/
 proc random_ranged(rand : RandomStream?, rng : range) : rng.idxType {
-  const elt = rng.length * rand.getNext();      /* scale random to range */
+  const elt = rng.size * rand!.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
      value.  That way we wouldn't have to worry about the type. */
@@ -554,7 +554,7 @@ proc random_ranged(rand : RandomStream?, rng : range) : rng.idxType {
 ***/
 proc random_bound(rand : RandomStream?, rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
-  const elt = len * rand.getNext();             /* scale random to range */
+  const elt = len * rand!.getNext();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */
   return res;
 }
@@ -679,10 +679,10 @@ proc main() {
   corners1 = find_corners(clr1, spec);
   corners2 = find_corners(clr2, spec);
 
-  Lcnr1 = corners1().domain;
-  Lcnr2 = corners2().domain;
+  Lcnr1 = corners1!().domain;
+  Lcnr2 = corners2!().domain;
 
-  align_corners(corners1(), corners2(), bestmap, match1to2, match2to1);
+  align_corners(corners1!(), corners2!(), bestmap, match1to2, match2to1);
 
   writeln("\nBest alignment");
   writef("  x2 = %6.3dr x1 %+7.1dr\n", bestmap.sx, bestmap.dx);

@@ -15,6 +15,9 @@
         c 2015-2018 Primordial Machine Vision Systems
 *****/
 
+use SysCTypes;
+
+
 /* Command line arguments. */
 config const inname : string;           /* name of file to read */
 config const outname : string;          /* file to create with modded pixel */

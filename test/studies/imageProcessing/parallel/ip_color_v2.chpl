@@ -35,6 +35,7 @@
       c 2015-2018 Primordial Machine Vision Systems
 *****/
 
+use SysCTypes;
 
 
 /**** C Interfaces ****/
@@ -117,10 +118,10 @@ class clrimage {
     modifies:  ncol, nrow, npix, area
   ***/
   proc init(orig : clrimage?) {
-    ncol = orig.ncol;
-    nrow = orig.nrow;
-    npix = orig.npix;
-    area = orig.area;
+    ncol = orig!.ncol;
+    nrow = orig!.nrow;
+    npix = orig!.npix;
+    area = orig!.area;
   }
 }
 
@@ -200,10 +201,10 @@ proc rgb_to_lab(rgb : c_ptr(rgbimage), ref lab : unmanaged clrimage?) {
 
   lab = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow);
 
-  for (y, x) in lab.area {
+  for (y, x) in lab!.area {
     xy = (y * rgb.deref().ncol) + x;
     rgbpix_to_lab(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy),
-               lab.c1(y,x), lab.c2(y,x), lab.c3(y,x));
+               lab!.c1(y,x), lab!.c2(y,x), lab!.c3(y,x));
   }
 }
 
@@ -273,10 +274,10 @@ proc rgb_to_hsv(rgb : c_ptr(rgbimage), ref hsv : unmanaged clrimage?) {
 
   hsv = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow);
 
-  for (y, x) in hsv.area {
+  for (y, x) in hsv!.area {
     xy = (y * rgb.deref().ncol) + x;
     rgbpix_to_hsv(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy),
-                  hsv.c1(y,x), hsv.c2(y,x), hsv.c3(y,x));
+                  hsv!.c1(y,x), hsv!.c2(y,x), hsv!.c3(y,x));
   }
 }
 
@@ -353,10 +354,10 @@ proc rgb_to_yuv(rgb : c_ptr(rgbimage), ref yuv : unmanaged clrimage?) {
 
   yuv = new unmanaged clrimage(rgb.deref().ncol, rgb.deref().nrow);
 
-  for (y, x) in yuv.area {
+  for (y, x) in yuv!.area {
     xy = (y * rgb.deref().ncol) + x;
     rgbpix_to_yuv(rgb.deref().r(xy), rgb.deref().g(xy), rgb.deref().b(xy),
-                  yuv.c1(y,x), yuv.c2(y,x), yuv.c3(y,x));
+                  yuv!.c1(y,x), yuv!.c2(y,x), yuv!.c3(y,x));
   }
 }
 
@@ -420,11 +421,11 @@ proc rgb_to_rgb(rgb_c : c_ptr(rgbimage), ref rgb_chpl : unmanaged clrimage?) {
 
   rgb_chpl = new unmanaged clrimage(rgb_c.deref().ncol, rgb_c.deref().nrow);
 
-  for (y, x) in rgb_chpl.area {
+  for (y, x) in rgb_chpl!.area {
     xy = (y * rgb_c.deref().ncol) + x;
-    rgb_chpl.c1(y,x) = rgb_c.deref().r(xy);
-    rgb_chpl.c2(y,x) = rgb_c.deref().g(xy);
-    rgb_chpl.c3(y,x) = rgb_c.deref().b(xy);
+    rgb_chpl!.c1(y,x) = rgb_c.deref().r(xy);
+    rgb_chpl!.c2(y,x) = rgb_c.deref().g(xy);
+    rgb_chpl!.c3(y,x) = rgb_c.deref().b(xy);
   }
 }
 
@@ -449,11 +450,11 @@ proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
   var xy : int;                         /* pixel index */
   var retval : int;
 
-  retval = alloc_rgbimage(rgb, clr.ncol : c_int, clr.nrow : c_int);
+  retval = alloc_rgbimage(rgb, clr!.ncol : c_int, clr!.nrow : c_int);
   if (retval < 0) then return retval;
 
   if ((clrplane.C1 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c1, rgb.deref().r, rgb.deref().ncol, spec);
+    retval = display_plane(clr!.c1, rgb.deref().r, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C1 == spec.plane) {
@@ -466,7 +467,7 @@ proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
   }
 
   if ((clrplane.C2 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c2, rgb.deref().g, rgb.deref().ncol, spec);
+    retval = display_plane(clr!.c2, rgb.deref().g, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C2 == spec.plane) {
@@ -479,7 +480,7 @@ proc display_color(clr : unmanaged clrimage?, ref rgb : c_ptr(rgbimage),
   }
 
   if ((clrplane.C3 == spec.plane) || (clrplane.ALL == spec.plane)) {
-    retval = display_plane(clr.c3, rgb.deref().b, rgb.deref().ncol, spec);
+    retval = display_plane(clr!.c3, rgb.deref().b, rgb.deref().ncol, spec);
     if (retval < 0) then return retval;
 
     if (clrplane.C3 == spec.plane) {

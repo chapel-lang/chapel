@@ -22,6 +22,7 @@ use Sort;
 use Random;
 use Time;
 use Help;
+use SysCTypes;
 
 
 /**** Command Line Arguments ****/
@@ -63,7 +64,7 @@ record cluster {
     returns:   random point within range
 ***/
 proc random_ranged(rand : RandomStream, rng : range) : rng.idxType {
-  const elt = rng.length * rand.getNext();      /* scale random to range */
+  const elt = rng.size * rand.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
      value.  That way we wouldn't have to worry about the type. */
@@ -121,7 +122,7 @@ proc cluster_colors(clr : unmanaged clrimage?, ncluster : int,
   do {
     kcurr = iterate_pass(clr, kprev);
 
-    fillin_empties(kcurr, clr.space);
+    fillin_empties(kcurr, clr!.space);
 
     maxdnpix = min(real);
     for k in ids do
@@ -173,18 +174,18 @@ proc cluster_colors(clr : unmanaged clrimage?, ncluster : int,
 proc iterate_pass(clr : unmanaged clrimage?, const ref kset : [] cluster) {
   var knew : [kset.domain] cluster;     /* new cluster definitions */
 
-  forall (y, x) in clr.area {
+  forall (y, x) in clr!.area {
     const closest =
-      closest_cluster(clr.c1(y,x), clr.c2(y,x), clr.c3(y,x), clr.space, kset);
+      closest_cluster(clr!.c1(y,x), clr!.c2(y,x), clr!.c3(y,x), clr!.space, kset);
     knew(closest).sumpix.add(1);
-    if (clr.space == clrspace.HSV) {
-      knew(closest).sum1.add(sin(pi * clr.c1(y,x) / 180.0));
-      knew(closest).sumh.add(cos(pi * clr.c1(y,x) / 180.0));
+    if (clr!.space == clrspace.HSV) {
+      knew(closest).sum1.add(sin(pi * clr!.c1(y,x) / 180.0));
+      knew(closest).sumh.add(cos(pi * clr!.c1(y,x) / 180.0));
     } else {
-      knew(closest).sum1.add(clr.c1(y,x));
+      knew(closest).sum1.add(clr!.c1(y,x));
     }
-    knew(closest).sum2.add(clr.c2(y,x));
-    knew(closest).sum3.add(clr.c3(y,x));
+    knew(closest).sum2.add(clr!.c2(y,x));
+    knew(closest).sum3.add(clr!.c3(y,x));
   }
 
   forall k in knew {
@@ -192,7 +193,7 @@ proc iterate_pass(clr : unmanaged clrimage?, const ref kset : [] cluster) {
     if (0 == k.npix) {
       k.skip = true;
     } else {
-      if (clr.space == clrspace.HSV) {
+      if (clr!.space == clrspace.HSV) {
         k.c1 = atan2(k.sum1.read(), k.sumh.read());
       } else {
         k.c1 = k.sum1.read() / k.npix;
@@ -348,7 +349,7 @@ proc fillin_empties(kset : [] cluster, space : clrspace) {
     modifies:  kset
 ***/
 proc seed_clusters(clr : unmanaged clrimage?, kset : [] cluster) {
-  const rand = makeRandomStream(real);  /* random numbers to pick pixels */
+  const rand = createRandomStream(real);  /* random numbers to pick pixels */
   var dmax : real;                      /* max distance to seeded clusters */
   var d : real;                         /* distance to another cluster */
   /* Note that the type-checking here isn't good.  You can make this any
@@ -356,11 +357,11 @@ proc seed_clusters(clr : unmanaged clrimage?, kset : [] cluster) {
   var pt : 2 * int;                     /* random point in image */
   var maxpt : 2 * int;                  /* point at dmax */
 
-  pt = random_domain(rand, clr.area);
+  pt = random_domain(rand, clr!.area);
   kset(1).skip = false;
-  kset(1).c1 = clr.c1(pt);
-  kset(1).c2 = clr.c2(pt);
-  kset(1).c3 = clr.c3(pt);
+  kset(1).c1 = clr!.c1(pt);
+  kset(1).c2 = clr!.c2(pt);
+  kset(1).c3 = clr!.c3(pt);
 
   /* The seeding strategy here is to generate a fixed number of points and to
      take the furthest from the previous seeds if it meets the minimum
@@ -374,9 +375,9 @@ proc seed_clusters(clr : unmanaged clrimage?, kset : [] cluster) {
   for i in kset.domain[2..] {
     dmax = min(real);
     for pass in 1..NPTSEED {
-      pt = random_domain(rand, clr.area);
+      pt = random_domain(rand, clr!.area);
       for j in 1..i-1 {
-        d = cluster_sep(clr.c1(pt), clr.c2(pt), clr.c3(pt), clr.space,
+        d = cluster_sep(clr!.c1(pt), clr!.c2(pt), clr!.c3(pt), clr!.space,
                         kset(j).c1, kset(j).c2, kset(j).c3);
         if (dmax < d) {
           dmax = d;
@@ -386,9 +387,9 @@ proc seed_clusters(clr : unmanaged clrimage?, kset : [] cluster) {
     }
     if (DSEED <= dmax) {
       kset(i).skip = false;
-      kset(i).c1 = clr.c1(maxpt);
-      kset(i).c2 = clr.c2(maxpt);
-      kset(i).c3 = clr.c3(maxpt);
+      kset(i).c1 = clr!.c1(maxpt);
+      kset(i).c2 = clr!.c2(maxpt);
+      kset(i).c3 = clr!.c3(maxpt);
     } else {
       writef("  could not seed cluster %i with %i attempts, max %6.4dr\n",
              i, NPTSEED, dmax);
@@ -415,7 +416,7 @@ proc mark_and_backfill(clr : unmanaged clrimage?, kset : [] cluster,
   /* Back-calculate RGB. */
   for k in kset {
     if (!k.skip) {
-      select (clr.space) {
+      select (clr!.space) {
       when clrspace.LAB do
         labpix_to_rgb(k.c1, k.c2, k.c3, k.r, k.g, k.b);
       when clrspace.YUV do
@@ -429,13 +430,13 @@ proc mark_and_backfill(clr : unmanaged clrimage?, kset : [] cluster,
     }
   }
 
-  retval = alloc_rgbimage(quant, clr.ncol : c_int, clr.nrow : c_int);
+  retval = alloc_rgbimage(quant, clr!.ncol : c_int, clr!.nrow : c_int);
   if (retval < 0) then return retval;
 
-  forall (y, x) in clr.area {
+  forall (y, x) in clr!.area {
     var xy = (y * quant.deref().ncol) + x;      /* pixel index */
-    quant.deref().r(xy) = closest_cluster(clr.c1(y,x), clr.c2(y,x), clr.c3(y,x),
-                                  clr.space, kset) : c_uchar;
+    quant.deref().r(xy) = closest_cluster(clr!.c1(y,x), clr!.c2(y,x), clr!.c3(y,x),
+                                  clr!.space, kset) : c_uchar;
   }
 
   return 0;
