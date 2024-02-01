@@ -1027,6 +1027,32 @@ void ErrorRecursion::write(ErrorWriterBase& wr) const {
              "recursion detected in query '", queryName.c_str(), "'");
 }
 
+static const char* recursionMessage =
+  "Recursion errors during resolution can sometimes be addressed by "
+  "explicitly specifying variable and field types instead of "
+  "relying on type inference.";
+
+void ErrorRecursionFieldDecl::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info);
+  auto ad = std::get<const uast::AggregateDecl*>(info);
+  auto ct = std::get<const types::CompositeType*>(info);
+
+  if (auto vld = ast->toVarLikeDecl()) {
+    wr.heading(kind_, type_, ast, "encountered recursion while resolving field '",
+               vld->name(),"' of type '", ad->name(),"':");
+  } else {
+    wr.heading(kind_, type_, ast, "encountered recursion while resolving a field"
+               "of type '", ad->name(),"':");
+  }
+  wr.codeForLocation(ast);
+  wr.note(ad, "while computing field types for '", ad->name(), "' declared here:");
+  wr.codeForLocation(ad);
+  if (ct->instantiatedFromCompositeType() != nullptr) {
+    wr.note(ad, "the type '", ad->name(), "' was instantiated as '", ct, "'.");
+  }
+  wr.message(recursionMessage);
+}
+
 void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
   auto ast = std::get<const uast::AstNode*>(info);
   auto mod = std::get<const uast::Module*>(info);
@@ -1038,6 +1064,7 @@ void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
     wr.message("While resolving module '", mod->name(), "' declared here:");
     wr.codeForLocation(mod);
   }
+  wr.message(recursionMessage);
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {

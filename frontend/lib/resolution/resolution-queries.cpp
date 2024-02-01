@@ -720,6 +720,10 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
         }
         result.addForwarding(resolvedFields);
       }
+
+      if (context->recoverFromSelfRecursion()) {
+        CHPL_REPORT(context, RecursionFieldDecl, child, ad, ct);
+      }
     }
 
     // finalize the field types to compute summary information

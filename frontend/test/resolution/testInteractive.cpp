@@ -83,8 +83,9 @@ resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
             } else {
               auto typed = typedSignatureInitial(context, untyped);
               if (typed != nullptr && !typed->needsInstantiation()) {
-                auto rFn = resolveFunction(context, typed, nullptr);
-                return rFn->byAstOrNull(ast);
+                if (auto rFn = resolveFunction(context, typed, nullptr)) {
+                  return rFn->byAstOrNull(ast);
+                }
               }
             }
           }
