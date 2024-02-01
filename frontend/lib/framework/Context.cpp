@@ -994,6 +994,10 @@ bool Context::queryCanUseSavedResult(
   } else if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // the query was already checked/run in this revision
     useSaved = true;
+  } else if (resultEntry->recursionErrors.size()) {
+    // If the query had recursion, don't re-use its result
+    // in subsequent generations.
+    useSaved = false;
   } else if (resultEntry->parentQueryMap->isInputQuery) {
     // be sure to re-run input queries
     useSaved = false;
