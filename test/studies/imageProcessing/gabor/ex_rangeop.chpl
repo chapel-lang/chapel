@@ -31,12 +31,12 @@ writeln(" rng1 + 2                 ", rng1 + 2,
         "   = ", for i in (rng1 + 2) do i);
 writeln(" rng1 - 2                 ", rng1 - 2,
         "   = ", for i in (rng1 - 2) do i);
-writeln(" rng1.member(9)           ", rng1.member(9));
-writeln(" rng1.member(11)          ", rng1.member(11));
-writeln(" rng1.member(2..5)        ", rng1.member(2..5));
-writeln(" rng1.member(2..11)       ", rng1.member(2..11));
-writeln(" rng1.member(2..)         ", rng1.member(2..));
-writeln(" rng1.member(..8)         ", rng1.member(..8));
+writeln(" rng1.contains(9)           ", rng1.contains(9));
+writeln(" rng1.contains(11)          ", rng1.contains(11));
+writeln(" rng1.contains(2..5)        ", rng1.contains(2..5));
+writeln(" rng1.contains(2..11)       ", rng1.contains(2..11));
+writeln(" rng1.contains(2..)         ", rng1.contains(2..));
+writeln(" rng1.contains(..8)         ", rng1.contains(..8));
 writeln(" range rng2 with step, align   ", rng2,
         "   = ", for i in rng2 do i);
 writeln(" rng2.expand(2)                ", rng2.expand(2),
