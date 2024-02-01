@@ -182,12 +182,15 @@ proc testsize(size:int) {
   var input = makeInput(array, inputStrings);
 
   var ntrials = 1;
-  if mibibytes < 1 then
-    ntrials = 100;
-  if kibibytes < 100 then
-    ntrials = 1_000;
-  if kibibytes < 0.4 then
-    ntrials = 10_000;
+  if printStats {
+    // use more trials for small problem sizes when measuring speed
+    if mibibytes < 1 then
+      ntrials = 100;
+    if kibibytes < 100 then
+      ntrials = 1_000;
+    if kibibytes < 0.4 then
+      ntrials = 10_000;
+  }
 
   for m in methods {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
@@ -207,7 +210,7 @@ proc testsize(size:int) {
 
 proc main() {
   // run generateArray to output the distribution
-  generateArray(100, describe=true);
+  generateArray(100, describe=printStats);
 
   if printStats {
     writeln("Note, speeds are in MiB/s");
