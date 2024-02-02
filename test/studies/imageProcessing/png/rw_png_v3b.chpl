@@ -18,6 +18,7 @@
 
 use Help;
 use SysCTypes;
+use CPtr;
 
 
 /* Command line arguments. */

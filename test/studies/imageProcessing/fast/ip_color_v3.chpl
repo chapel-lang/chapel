@@ -43,6 +43,7 @@
 *****/
 
 use SysCTypes;
+use CPtr;
 
 
 /**** C Interfaces ****/

@@ -23,6 +23,7 @@ use Random;
 use Time;
 use Help;
 use SysCTypes;
+use CPtr;
 
 
 /**** Command Line Arguments ****/
@@ -301,12 +302,13 @@ proc closest_cluster(c1 : real, c2 : real, c3 : real, space : clrspace,
 proc fillin_empties(kset : [] cluster, space : clrspace) {
   var kst : int;                        /* first of averaging pair */
 
+  record Comparator {};
   /* Comparison function to sort by the number of pixels in the cluster. */
-  proc DefaultComparator.compare(c1 : cluster, c2 : cluster) {
+  proc Comparator.compare(c1 : cluster, c2 : cluster) {
     return (c1.npix - c2.npix);
   }
-
-  sort(kset, comparator=reverseComparator);
+  var clusterReverseComparator: ReverseComparator(Comparator);
+  sort(kset, comparator=clusterReverseComparator);
 
   kst = 1;
   /* Nothing to do, we've collapsed down to 0 or 1 clusters. */

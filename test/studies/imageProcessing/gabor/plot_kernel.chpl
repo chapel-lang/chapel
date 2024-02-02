@@ -18,6 +18,7 @@
 *****/
 
 use SysCTypes;
+use CPtr;
 
 
 config const outname = "filter.png";    /* output file name */

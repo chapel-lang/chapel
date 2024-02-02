@@ -26,6 +26,7 @@ use kdtree;
 use Help;
 use Math;
 use Random;
+use CPtr;
 
 
 /**** Command Line Arguments ****/

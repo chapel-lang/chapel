@@ -26,6 +26,7 @@
 use ip_color_v2;
 use Time;
 use Help;
+use CPtr;
 
 
 config const inname : string;           /* input file name */

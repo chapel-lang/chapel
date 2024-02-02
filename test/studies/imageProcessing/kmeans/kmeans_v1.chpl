@@ -22,6 +22,7 @@ use Random;
 use Time;
 use Help;
 use SysCTypes;
+use CPtr;
 
 
 /**** Command Line Arguments ****/

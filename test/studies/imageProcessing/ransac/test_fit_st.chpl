@@ -24,6 +24,7 @@ use ip_corner;
 use kdtree;
 use Help;
 use Random;
+use CPtr;
 
 
 /**** Command Line Arguments ****/

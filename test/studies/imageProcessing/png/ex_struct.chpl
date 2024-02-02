@@ -11,6 +11,7 @@
 *****/
 
 use SysCTypes;
+use CPtr;
 
 
 writeln("\nDemonstrating unions");

@@ -20,6 +20,7 @@
 *****/
 
 use SysCTypes;
+use CPtr;
 
 
 require "img_png_v1.h", "build/img_png_v1.o", "-lpng";
