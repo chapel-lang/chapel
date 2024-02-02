@@ -1,10 +1,9 @@
-config param printFromTasks = true;
+config param printFromTasks = false;
 
-config const debug = true;
+config const debug = false;
 
 config var start_num = 3,
            end_num = 3;
-
 
 twinprimes_ssoz();
 
@@ -34,7 +33,7 @@ proc twinprimes_ssoz() {
 
   writeln("each of ", pairscnt, " threads has nextp[", 2, " x ", primes.size, "] array");
 
-  var twinscnt: uint, last_twin = max(uint);
+  var twinscnt: uint, last_twin = min(uint);
   const lo_range = restwins[0] - 3;
   for tp in [3, 5, 11, 17] {
     if end_num == 3 then break;
@@ -46,7 +45,7 @@ proc twinprimes_ssoz() {
   ts.clear();
 
   var threadscnt: atomic uint;
-  coforall i in 0..<pairscnt with (+ reduce twinscnt, min reduce last_twin) {
+  coforall i in 0..<pairscnt with (+ reduce twinscnt, max reduce last_twin) {
     (last_twin, twinscnt) = twins_sieve(restwins[i], kmin, kmax, ks, start_num, end_num, modpg, primes, resinvrs);
     if printFromTasks then
       writeln("\r", threadscnt.fetchAdd(1), " of ", pairscnt, " twinpairs done");
@@ -139,7 +138,7 @@ proc nextp_init(rhi, kmin, modpg, primes, resinvrs) {
 }
 
 proc set_sieve_parameters(start_num, end_num) {
-  writeln((start_num, end_num));
+  if debug then writeln((start_num, end_num));
   const nrange = end_num - start_num;
   var bn = 0, pg = 3;
   if end_num < 49 {
@@ -188,7 +187,7 @@ proc gen_pg_parameters(prime) {
   var inverses: [0..<modpg + 2] int;
   var restwins = gen_restwins(modpg, inverses);
   sort(restwins);
-  writeln(restwins);
+  if debug then writeln(restwins);
   inverses[modpg + 1] = 1;
   inverses[modpg - 1] = modpg - 1;
   return (modpg, res_0, restwins.size, restwins, inverses);
@@ -254,7 +253,6 @@ iter sozp5(val, res_0, start_num, end_num) {
   while (resk >= res[r]) do r += 1;
   const pcs_to_sqrtn = k*rescnt + r;
   if pcs_to_sqrtn != 0 then for i in 0:uint..<pcs_to_sqrtn {
-    writeln("Within loop");
     const k = (i/rescnt): uint,
           r = (i%rescnt): int;
     if prms[k] & (1 << r) != 0 then continue;
@@ -287,3 +285,5 @@ iter sozp5(val, res_0, start_num, end_num) {
 // TODO: 32 vs. 64-bit?
 // TODO: for vs. foreach
 // TODO: if ( ... etc.
+// TODO: remove debugging
+// TODO: use ranges?
