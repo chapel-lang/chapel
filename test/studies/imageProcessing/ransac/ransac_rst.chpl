@@ -440,7 +440,7 @@ proc map_corners(const corners : [] corner, const in mapping : mapinfo,
   /* This gets everything; we'll overwrite the center and start. */
   mapped = corners;
 
-  forall c in corners.domain with (const in mapping) {
+  forall c in corners.domain with (const in mapping, ref mapped) {
     const (xc, yc) = corners(c).center;
     const vc
       = nearbyint(mapping.sxx * xc + mapping.sxy * yc + mapping.dx) : int;
