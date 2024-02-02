@@ -3430,7 +3430,7 @@ module TwoArrayRadixSort {
 
   proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
-    if !domainDistIsLayout(Data.domain) {
+    if !chpl_domainDistIsLayout(Data.domain) {
       compilerWarning("twoArrayRadix sort no longer handles distributed arrays. Please use TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort instead (but note that it is not stable)");
     }
 
