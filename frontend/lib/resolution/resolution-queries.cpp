@@ -3199,7 +3199,7 @@ struct LastResortCandidateGroups {
     // recurse into other's forwarding groups
     if (forwardingCandidateGroups) {
       forwardingCandidateGroups->mergeWithGroups(
-          std::move(*other.forwardingCandidateGroups));
+          std::move(other.getForwardingGroups()));
     } else {
       forwardingCandidateGroups = std::move(other.forwardingCandidateGroups);
     }
