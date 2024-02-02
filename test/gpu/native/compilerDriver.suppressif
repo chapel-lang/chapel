@@ -1,0 +1,2 @@
+# this test fails with llvm ir failures when using rocm
+CHPL_GPU==amd
