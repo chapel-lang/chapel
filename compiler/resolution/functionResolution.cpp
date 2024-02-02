@@ -14365,11 +14365,19 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
           // It is a domain, but is it an associative domain?
           const char* typeNameAstr = implType->symbol->name;
           if (startsWith(typeNameAstr, "DefaultAssociativeDom")) {
-            // TODO: figure out if it has the default value of parSafe
-            //       in prefold, and transmit that to here with a flag
-            //       on the field/variable symbol
-            // TODO: don't warn if it looks like it was explicit
-            // TODO: don't warn if the variable is const
+            // TODO: don't warn if the parsafe value couldn't be the default
+
+            if (AggregateType* implAt = toAggregateType(implType)) {
+              const char* parSafeAstr = astr("parSafe");
+              if (Symbol* value = implAt->getSubstitution(parSafeAstr)) {
+                if (value == gTrue) {
+                  printf("  it was parSafe=true\n");
+                } else if (value == gFalse) {
+                  printf("  it was parSafe=false\n");
+                }
+              }
+            }
+
             const char* varOrField = forFieldInHere?"field":"variable";
             USR_WARN(sym, "bad default parsafe for %s '%s'",
                      varOrField, sym->name);
