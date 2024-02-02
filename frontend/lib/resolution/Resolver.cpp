@@ -2134,7 +2134,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
-    return typeForModuleLevelSymbol(context, id);
+    bool isCurrentModule =
+        parsing::idToAst(context, parentId)->toModule() == symbol->toModule();
+    return typeForModuleLevelSymbol(context, id, isCurrentModule);
   }
 
   // If the id is contained within a class/record/union that we are resolving,
