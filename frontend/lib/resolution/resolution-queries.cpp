@@ -57,6 +57,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+// TODO: Since these are always used together with corresponding indices, tie
+// them together in a tuple or new data structure.
 using CandidatesVec = std::vector<const TypedFnSignature*>;
 using ForwardingInfoVec = std::vector<QualifiedType>;
 
