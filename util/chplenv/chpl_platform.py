@@ -77,6 +77,12 @@ def get(flag='host'):
 
 
 @memoize
+def is_wsl():
+    name = (platform.uname().release).lower()
+    if name.endswith('-microsoft') or name.endswith('-microsoft-standard-wsl2'):
+        return True
+
+@memoize
 def get_mac_os_version():
     release, version, machine = platform.mac_ver()
     return release
