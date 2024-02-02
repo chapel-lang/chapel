@@ -214,7 +214,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
   if (0 <= retval) then return;
 
   /* Note we skip the argument if we don't know how to clean it up. */
-  for param i in 1..narg {
+  for param i in 0..(narg-1) {
     if (inst(i).type == rgbimage) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }

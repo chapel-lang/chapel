@@ -14,11 +14,11 @@ var coord1D_1 : 1*int;
 var coord3D_3 = (10, 20, 30);
 var coord1D_2 = (100, );
 
-writeln("y = ", coord3D_3(2));
+writeln("y = ", coord3D_3(1));
 
 writef("\n");
 for x in coord3D_3 do writeln("coord = ", x);
-for i in 1..coord3D_3.size do writeln("coord ", i, " = ", coord3D_3(i));
+for i in 0..(coord3D_3.size-1) do writeln("coord ", i, " = ", coord3D_3(i));
 
 writef("\n");
 

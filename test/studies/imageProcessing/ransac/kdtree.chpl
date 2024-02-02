@@ -88,7 +88,8 @@ class kdtree {
     dataType = dType;
     ndim = nDim;
 
-    if (COORD < ndim) {
+    /* NOTE: If we use COORD instead of its value, the following halts. */
+    if (0x0f < ndim) {
       halt("flags not large enough to store coordinate index");
     }
 
@@ -129,17 +130,17 @@ class kdtree {
   ***/
   proc assemble_tree() {
 
-    if (nstored != Ldata.dim(1).high) {
+    if (nstored != Ldata.dim(0).high) {
       writeln("warning - not all elements added to tree before assembly");
     }
     if (!storable) then return;
 
     for param c in 1..ndim {
       for i in Ldata by -1 do sortind(c)(i) = i;
-      sort_kdpoints(Ldata.dim(1), c);
+      sort_kdpoints(Ldata.dim(0), c);
     }
 
-    place_node(Ldata.dim(1), 1, 1);
+    place_node(Ldata.dim(0), 1, 1);
 
     storable = false;
   }
@@ -429,7 +430,7 @@ class kdtree {
   proc dist2(pt1 : ndim * int, pt2 : ndim * int) : int {
     var d2 : int;                       /* distance squared */
 
-    for param c in 1..ndim {
+    for param c in 0..(ndim-1) {
       d2 += (pt1(c) - pt2(c)) ** 2;
     }
 
@@ -445,7 +446,7 @@ class kdtree {
   ***/
   proc perpdist2(pt : ndim * int, node : int) : int {
     const cbase                         /* the primary coordinate */
-      = tree(node).flags & COORD;
+      = (tree(node).flags & COORD) - 1;
 
     return (pt(cbase) - tree(node).pt(cbase)) ** 2;
   }
@@ -615,7 +616,7 @@ class kdtree {
                          noeq = false) : bool {
     for craw in cbase..(cbase+ndim-1) {
       const coff                        /* cycle through coordinates */
-        = if (craw > ndim) then (craw - ndim) else craw;
+        = if (craw > ndim) then (craw - ndim - 1) else (craw - 1);
       if (pt1(coff) != pt2(coff)) then
         return pt1(coff) <= pt2(coff);
     }
@@ -627,7 +628,7 @@ class kdtree {
                        noeq = false) : bool {
     for craw in cbase..(cbase+ndim-1) {
       const coff                        /* cycle through coordinates */
-        = if (craw > ndim) then (craw - ndim) else craw;
+        = if (craw > ndim) then (craw - ndim - 1) else (craw - 1);
       if (pt1(coff) != pt2(coff)) then
         return pt1(coff) < pt2(coff);
     }
@@ -639,7 +640,7 @@ class kdtree {
                        noeq = false) : bool {
     for craw in cbase..(cbase+ndim-1) {
       const coff                        /* cycle through coordinates */
-        = if (craw > ndim) then (craw - ndim) else craw;
+        = if (craw > ndim) then (craw - ndim - 1) else (craw - 1);
       if (pt1(coff) != pt2(coff)) then
         return pt1(coff) > pt2(coff);
     }
@@ -651,7 +652,7 @@ class kdtree {
                          noeq = false) : bool {
     for craw in cbase..(cbase+ndim-1) {
       const coff                        /* cycle through coordinates */
-        = if (craw > ndim) then (craw - ndim) else craw;
+        = if (craw > ndim) then (craw - ndim - 1) else (craw - 1);
       if (pt1(coff) != pt2(coff)) then
         return pt1(coff) >= pt2(coff);
     }

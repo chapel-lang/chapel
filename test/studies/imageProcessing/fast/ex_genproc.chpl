@@ -18,7 +18,7 @@ writeln("  castto 314.159 to uint8  ", castto(uint(8), 314.159));
 
 proc filltuple(param cnt: int, x) {
   var result : cnt*x.type;
-  for param i in 1..cnt do result(i) = x;
+  for param i in 0..(cnt-1) do result(i) = x;
   return result;
 }
 

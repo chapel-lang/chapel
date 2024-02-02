@@ -114,7 +114,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
   var tries : [1..ntry] tryinfo;        /* details about each try */
   var besttry : int;                    /* try with best result */
   const minlen                          /* smallest number of corners */
-    = min(corners1.domain.dim(1).last, corners2.domain.dim(1).last);
+    = min(corners1.domain.dim(0).last, corners2.domain.dim(0).last);
   const mincnt                          /* number corners that must match */
     = nearbyint(matchfrac * minlen) : int;
   var tree                              /* 2-dimensional sorted space */
@@ -202,8 +202,8 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
   var ind31, ind32 : int;               /* seed3 indices in corners1,2 */
   var matches : [corners2.domain] int;  /* possible seeds in corners2 */
   var nmatch : int;                     /* number possible seeds */
-  const rng1 = corners1.domain.dim(1);  /* range of indices for corners1 */
-  const rng2 = corners2.domain.dim(1);  /* range of indices for corners2 */
+  const rng1 = corners1.domain.dim(0);  /* range of indices for corners1 */
+  const rng2 = corners2.domain.dim(0);  /* range of indices for corners2 */
   var retval = true;                    /* work-around return value */
 
   ind11 = random_ranged(rand, rng1);
@@ -447,8 +447,8 @@ proc map_corners(const corners : [] corner, const in mapping : mapinfo,
       = nearbyint(mapping.syx * xc + mapping.syy * yc + mapping.dy) : int;
 
     mapped(c).center = (vc, wc);
-    mapped(c).st(1) += vc - xc;
-    mapped(c).st(2) += wc - yc;
+    mapped(c).st(0) += vc - xc;
+    mapped(c).st(1) += wc - yc;
   }
 }
 
@@ -556,9 +556,9 @@ proc refine_mapping(const corners1 : [] corner, const corners2 : [] corner,
   var seedmap : mapinfo;                /* mapping from seeds */
 
   /* Cannot use a cobegin here because bestmap is an output. */
-  regress_coords(corners1, corners2, map1to2, 1,
+  regress_coords(corners1, corners2, map1to2, 0,
                  bestmap.sxx, bestmap.sxy, bestmap.dx);
-  regress_coords(corners1, corners2, map1to2, 2,
+  regress_coords(corners1, corners2, map1to2, 1,
                  bestmap.syx, bestmap.syy, bestmap.dy);
   affine_to_rst(bestmap);
 
@@ -673,7 +673,7 @@ proc random_domain(rand : RandomStream?, dom : domain) : dom.rank * dom.idxType 
      requires a parameter. */
   var pt : dom.rank * dom.idxType;
 
-  for param i in 1..dom.rank do pt(i) = random_ranged(rand, dom.dim(i));
+  for param i in 0..(dom.rank-1) do pt(i) = random_ranged(rand, dom.dim(i));
 
   return pt;
 }
@@ -1135,9 +1135,9 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
                        map1to2 : [] int, map2to1 : [] int) {
   var tries : [1..ntry] tryinfo;        /* details about each try */
   var besttry : int;                    /* try with best result */
-  var rand = makeRandomStream(real);    /* random numbers to pick seeds */
+  var rand = createRandomStream(real);  /* random numbers to pick seeds */
   const minlen                          /* smallest number of corners */
-    = min(corners1.domain.dim(1).last, corners2.domain.dim(1).last);
+    = min(corners1.domain.dim(0).last, corners2.domain.dim(0).last);
   const mincnt                          /* number corners that must match */
     = nearbyint(matchfrac * minlen) : int;
   var tree                              /* 2-dimensional sorted space */
@@ -1163,7 +1163,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
   coforall thr in 1..here.maxTaskPar with (ref rand) {
     while (true) {
       const trial = nexttry.fetchAdd(1);
-      var rand_local = makeRandomStream(parSafe=false);
+      var rand_local = createRandomStream(parSafe=false);
 
       if (ntry < trial) then break;
 
@@ -1389,7 +1389,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
   if (0 <= retval) then return;
 
   /* Note we skip the argument if we don't know how to clean it up. */
-  for param i in 1..narg {
+  for param i in 0..(narg-1) {
     if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }

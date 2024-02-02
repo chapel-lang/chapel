@@ -46,8 +46,8 @@ proc test_assemble_1() : bool {
 
   writeln("  starting test 1");
 
-  if (15 != tree.Ltree.dim(1).high) {
-    writeln("    expected 15 elements in tree, got ", tree.Ltree.dim(1).high);
+  if (15 != tree.Ltree.dim(0).high) {
+    writeln("    expected 15 elements in tree, got ", tree.Ltree.dim(0).high);
     passed = false;
   }
 
@@ -83,7 +83,7 @@ proc test_assemble_1() : bool {
   for i in 1..15 {
     if (tree.tree(i).val != i) {
       writef("  expected payload at index %2i (%i,%i,%i) to be %2i, got %2i\n",
-             i, tree.tree(i).pt(1),tree.tree(i).pt(2),tree.tree(i).pt(3),
+             i, tree.tree(i).pt(0),tree.tree(i).pt(1),tree.tree(i).pt(2),
              i, tree.tree(i).val);
       passed = false;
     }
@@ -99,7 +99,7 @@ proc test_assemble_1() : bool {
 
     if (tree.tree(i).flags != expflag) {
       writef("  expected flags at index %2i (%i,%i,%i) to be 0x%02xu, got 0x%02xu\n",
-             i, tree.tree(i).pt(1),tree.tree(i).pt(2),tree.tree(i).pt(3),
+             i, tree.tree(i).pt(0),tree.tree(i).pt(1),tree.tree(i).pt(2),
              expflag, tree.tree(i).flags);
       passed = false;
     }
@@ -122,8 +122,8 @@ proc test_assemble_2() : bool {
 
   writeln("  starting test 2");
 
-  if (15 != tree.Ltree.dim(1).high) {
-    writeln("    expected 15 elements in tree, got ", tree.Ltree.dim(1).high);
+  if (15 != tree.Ltree.dim(0).high) {
+    writeln("    expected 15 elements in tree, got ", tree.Ltree.dim(0).high);
     passed = false;
   }
 
@@ -162,13 +162,13 @@ proc test_assemble_2() : bool {
     if (9 == i) {
       if (0 != tree.tree(i).val) {
         writef("  expected payload at index %2i (%i,%i,%i) to be %2i, got %2i\n",
-               i, tree.tree(i).pt(1),tree.tree(i).pt(2),tree.tree(i).pt(3),
+               i, tree.tree(i).pt(0),tree.tree(i).pt(1),tree.tree(i).pt(2),
                0, tree.tree(i).val);
         passed = false;
       }
     } else if (tree.tree(i).val != i) {
       writef("  expected payload at index %2i (%i,%i,%i) to be %2i, got %2i\n",
-             i, tree.tree(i).pt(1),tree.tree(i).pt(2),tree.tree(i).pt(3),
+             i, tree.tree(i).pt(0),tree.tree(i).pt(1),tree.tree(i).pt(2),
              i, tree.tree(i).val);
       passed = false;
     }
@@ -190,7 +190,7 @@ proc test_assemble_2() : bool {
 
     if (tree.tree(i).flags != expflag) {
       writef("  expected flags at index %2i (%i,%i,%i) to be 0x%02xu, got 0x%02xu\n",
-             i, tree.tree(i).pt(1),tree.tree(i).pt(2),tree.tree(i).pt(3),
+             i, tree.tree(i).pt(0),tree.tree(i).pt(1),tree.tree(i).pt(2),
              expflag, tree.tree(i).flags);
       passed = false;
     }

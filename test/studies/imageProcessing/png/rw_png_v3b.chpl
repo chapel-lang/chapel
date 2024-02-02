@@ -82,7 +82,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
   /* Note we skip the argument if we don't know how to clean it up.  The
      writefs are just to show which paths we execute. */
-  for param i in 1..narg {
+  for param i in 0..(narg-1) {
     if (inst(i).type == c_ptr(rgbimage)) then {
       writef("freeing rgb instance\n");
       free_rgbimage(inst(i));

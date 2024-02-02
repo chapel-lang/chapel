@@ -115,7 +115,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
   var tries : [1..ntry] tryinfo;        /* details about each try */
   var besttry : int;                    /* try with best result */
   const minlen                          /* smallest number of corners */
-    = min(corners1.domain.dim(1).last, corners2.domain.dim(1).last);
+    = min(corners1.domain.dim(0).last, corners2.domain.dim(0).last);
   const mincnt                          /* number corners that must match */
     = nearbyint(matchfrac * minlen) : int;
   var tree                              /* 2-dimensional sorted space */
@@ -199,8 +199,8 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
   var ind21, ind22 : int;               /* seed2 indices in corners1, 2 */
   var matches : [corners2.domain] int;  /* possible seeds in corners2 */
   var nmatch : int;                     /* number possible seeds */
-  const rng1 = corners1.domain.dim(1);  /* range of indices for corners1 */
-  const rng2 = corners2.domain.dim(1);  /* range of indices for corners2 */
+  const rng1 = corners1.domain.dim(0);  /* range of indices for corners1 */
+  const rng2 = corners2.domain.dim(0);  /* range of indices for corners2 */
   var retval = true;
 
   ind11 = random_ranged(rand, rng1);
@@ -335,8 +335,8 @@ proc map_corners(const corners : [] corner, const in mapping : mapinfo,
     mapped(c).center = (vc, wc);
     /* We shift the FAST ring start point along with the center, but do not
        scale it, as noted above. */
-    mapped(c).st(1) += vc - xc;
-    mapped(c).st(2) += wc - yc;
+    mapped(c).st(0) += vc - xc;
+    mapped(c).st(1) += wc - yc;
   }
 }
 
@@ -447,8 +447,8 @@ proc refine_mapping(const corners1 : [] corner, const corners2 : [] corner,
                     const map1to2 : [] int, const map2to1 : [] int,
                     out bestmap : mapinfo) {
 
-  regress_coords(corners1, corners2, map1to2, 1, bestmap.sx, bestmap.dx);
-  regress_coords(corners1, corners2, map1to2, 2, bestmap.sy, bestmap.dy);
+  regress_coords(corners1, corners2, map1to2, 0, bestmap.sx, bestmap.dx);
+  regress_coords(corners1, corners2, map1to2, 1, bestmap.sy, bestmap.dy);
 }
 
 /***
@@ -624,7 +624,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
   if (0 <= retval) then return;
 
   /* Note we skip the argument if we don't know how to clean it up. */
-  for param i in 1..narg {
+  for param i in 0..(narg-1) {
     if (inst(i).type == c_ptr(rgbimage)) then free_rgbimage(inst(i));
     else if isClass(inst(i)) then delete inst(i);
   }
