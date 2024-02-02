@@ -1,3 +1,14 @@
+// Chapel port of Jabari Zakiya's twinprimes_ssoz algorithm
+// Transliterated from the Crystal/C++ versions by Brad Chamberlain, 2024-02-01
+// Status:
+// * not tested very thoroughly or intelligently yet
+// * not much attention paid to performance thus far
+//   (note that writeln()s in Chapel are heavyweight, so may not want to time
+// * focused on correctness thus far; opportunities to be more Chapeltastic
+//   may abound
+// * shared memory only thus far
+// * see TODO list at bottom of file, and throughout, for other thoughts
+
 config param printFromTasks = false;
 
 config const debug = false;
@@ -307,4 +318,8 @@ iter sozp5(val, res_0, start_num, end_num) {
 // TODO: if ( ... etc.
 // TODO: remove debugging
 // TODO: use ranges instead of start/end pairs of integers??
+// TODO: name some of these common ranges / promote to domains?
 // TODO: try nested iterators to avoid long argument lists?
+// TODO: what would it take to make this distributed?  Could create a block-
+//       distributed index set for the 0..<pairscnt space for starters...
+//       what data would want/need to be localized?
