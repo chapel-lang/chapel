@@ -114,12 +114,7 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
   const QualifiedType lhsType = lhs.type();
   const QualifiedType rhsType = rhs.type();
 
-  // Check to see if it is generic/unknown
-  // (otherwise we do not need to infer anything).
-  // If it is a param, continue as we still need the param value.
-  if (!lhsType.isParam() && !lhsType.isUnknownKindOrType() &&
-      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
-    return;
+  if (!lhsType.needsSplitInitTypeInfo(context)) return;
 
   const Param* p = rhsType.param();
   if (lhsType.kind() != QualifiedType::PARAM) {
