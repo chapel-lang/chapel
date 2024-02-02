@@ -72,6 +72,8 @@
 static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
                                     llvm::SmallVectorImpl<ArgSymbol*>& actualFormals);
 
+static void markExplicitDomainParsafeVars(CallExpr* call);
+
 static void addDefaultTokensAndReorder(FnSymbol *fn,
                                        CallInfo& info,
                                        llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFml);
@@ -193,6 +195,10 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   // Remove any NamedExprs since they are no longer needed
   // now that the arguments are in the correct order
   removeNamedExprs(retval, call);
+
+  if (!anyDefault) {
+    markExplicitDomainParsafeVars(call);
+  }
 
   // Now, consider each argument, and handle:
   //  coercion
@@ -395,6 +401,55 @@ void addDefaultTokensAndReorder(FnSymbol *fn,
   for_formals(formal, fn) {
     actualFormals[i] = formal;
     i++;
+  }
+}
+
+static void markExplicitDomainParsafeVars(CallExpr* call) {
+  if (call->id == 202010)
+    gdbShouldBreakHere();
+
+  // handled here rather than in preFold in order have named
+  // argument processing already done
+  if (call->isNamed("chpl__buildDomainRuntimeType")) {
+    // Add checks to see if this is an associative domain or not
+    // and if it is, check to see if it passes an explicit parSafe arg.
+    // set a flag if it does.
+
+    // if the 2nd arg is a type variable, it's an associative domain
+    // (rectangular domain would use a range etc)
+    Symbol* secondArg = toSymExpr(call->get(2))->symbol();
+    if (secondArg->hasFlag(FLAG_TYPE_VARIABLE)) {
+      // this is an associative domain
+
+      // check if the optional 3rd argument is present, which indicates
+      // that a parSafe value was provided
+      if (call->numActuals() >= 3 && isSymExpr(call->get(3))) {
+        // this is an associative domain with an explicit parSafe flag
+        CallExpr* parent = toCallExpr(call->parentExpr);
+        if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          Symbol* retTemp = toSymExpr(parent->get(1))->symbol();
+          if (retTemp && retTemp->hasFlag(FLAG_TEMP)) {
+            if (SymExpr* use = retTemp->getSingleUse()) {
+              if (CallExpr* useParent = toCallExpr(use->parentExpr)) {
+                if (useParent->isPrimitive(PRIM_INIT_VAR) ||
+                    useParent->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+                    useParent->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
+                    useParent->isPrimitive(PRIM_INIT_FIELD) ||
+                    useParent->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
+                    useParent->isPrimitive(PRIM_MOVE) ||
+                    useParent->isPrimitive(PRIM_ASSIGN)) {
+                  if (Symbol* var = toSymExpr(useParent->get(1))->symbol()) {
+                    // TODO: if needed, add unstable warning here
+                    var->addFlag(FLAG_EXPLICIT_PAR_SAFE);
+                    printf("adding explicit par safe to %s\n", var->name);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

@@ -14340,6 +14340,11 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
     return;
   }
 
+  if (sym->hasFlag(FLAG_EXPLICIT_PAR_SAFE)) {
+    // don't worry about it, it had e.g. parSafe=true
+    return;
+  }
+
   // Don't worry about it for non-user code
   ModuleSymbol* mod = sym->defPoint->getModule();
   if (mod->modTag != MOD_USER) {
