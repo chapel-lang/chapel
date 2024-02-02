@@ -463,7 +463,7 @@ class kdtree {
       modifies:  nearnode
   ***/
   proc check_nearest(pt : ndim * int, in d2min : int, node : int,
-                     out nearnode : int) : bool {
+                     inout nearnode : int) : bool {
     var d2 : int;                       /* distance from point to node */
     var d2perp : int;                   /* perpendicular dist to node plane */
     var d2neigh : int;                  /* distance to neighboring node */

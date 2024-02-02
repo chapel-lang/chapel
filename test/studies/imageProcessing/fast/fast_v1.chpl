@@ -391,7 +391,7 @@ proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
     marked.deref().b(xy) = marked.deref().r(xy);
   }
 
-  cnt = 0;
+  cnt.writeXF(0);
   forall (y, x) in Ainside {
     if (is_corner(clr, x, y, circle)) {
       /* Just marking the point.
@@ -414,7 +414,7 @@ proc mark_corners(clr : unmanaged clrimage?, space : clrspace,
         marked.deref().g(xy) = 0;
         marked.deref().b(xy) = 0;
       }
-      cnt += 1;
+      cnt.writeXF(cnt.readXX()+1);
     }
   }
 

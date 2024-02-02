@@ -148,7 +148,7 @@ proc filter_and_save(img : unmanaged clrimage?, size : int, theta : int, sclx : 
   var gabor : unmanaged clrimage?;      /* result of this filter */
   var grey : c_ptr(rgbimage);           /* display version of result */
   var gabor2grey : conversion;          /* how to display result */
-  var outname : c_string;               /* output file name */
+  var outname : string;                 /* output file name */
   var retval : int;
 
   gabor = new unmanaged clrimage(img);
@@ -166,7 +166,7 @@ proc filter_and_save(img : unmanaged clrimage?, size : int, theta : int, sclx : 
   else if (theta < 100) then outname = "bank_0" + theta:string + ".png";
   else outname = "bank_" + theta:string + ".png";
 
-  retval = PNG_write(outname, grey, CLR_R);
+  retval = PNG_write(outname.c_str(), grey, CLR_R);
 
   free_rgbimage(grey);
   delete gabor;

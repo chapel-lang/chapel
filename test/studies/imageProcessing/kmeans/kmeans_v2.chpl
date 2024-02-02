@@ -307,7 +307,8 @@ proc fillin_empties(kset : [] cluster, space : clrspace) {
   proc Comparator.compare(c1 : cluster, c2 : cluster) {
     return (c1.npix - c2.npix);
   }
-  var clusterReverseComparator: ReverseComparator(Comparator);
+  var comparator: Comparator;
+  var clusterReverseComparator = new ReverseComparator(comparator);
   sort(kset, comparator=clusterReverseComparator);
 
   kst = 1;
