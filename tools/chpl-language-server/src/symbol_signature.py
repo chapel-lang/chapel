@@ -21,15 +21,14 @@ from typing import Optional, Union
 import chapel
 
 
-# TODO: for now, just text based. but should resolve generic types
-def get_symbol_signature(node: chapel.AstNode) -> str:
+def get_symbol_signature(node: chapel.AstNode, resolve: bool = False) -> str:
     """
     get a string representation of a AstNode's signature
 
-    Note: this is purely textual and does not resolve generic types
+    If resolve is True, it will attempt to resolve inferred types and values
     """
     if not isinstance(node, chapel.NamedDecl):
-        return _node_to_string(node)
+        return _node_to_string(node, resolve)
 
     if isinstance(node, chapel.Class) or isinstance(
         node, chapel.Record
@@ -42,20 +41,20 @@ def get_symbol_signature(node: chapel.AstNode) -> str:
     elif isinstance(node, chapel.Enum):
         return f"enum {node.name()}"
     elif isinstance(node, chapel.Variable):
-        return _var_to_string(node)
+        return _var_to_string(node, resolve)
     elif isinstance(node, chapel.Function):
         return _proc_to_string(node)
 
     return node.name()
 
 
-def _node_to_string(node: chapel.AstNode) -> str:
+def _node_to_string(node: chapel.AstNode, resolve: bool = False) -> str:
     """
     General helper method to convert an AstNode to a string representation. If
     it doesn't know how to convert the node, it returns "<...>"
     """
     if isinstance(node, chapel.NamedDecl):
-        return get_symbol_signature(node)
+        return get_symbol_signature(node, resolve)
     elif isinstance(node, chapel.Identifier):
         return node.name()
     elif isinstance(node, chapel.IntLiteral):
@@ -96,7 +95,7 @@ def _record_class_to_string(
     return f"{prefix}{keyword} {node.name()}{s}"
 
 
-def _var_to_string(node: chapel.VarLikeDecl) -> str:
+def _var_to_string(node: chapel.VarLikeDecl, resolve: bool = False) -> str:
     """
     Convert a VarLikeDecl to a string
     """
@@ -115,12 +114,10 @@ def _var_to_string(node: chapel.VarLikeDecl) -> str:
     if intent:
         s += f"{intent} "
     s += node.name()
-    type_ = node.type_expression()
-    if type_:
-        s += f": {_node_to_string(type_)}"
-    init = node.init_expression()
-    if init:
-        s += f" = {_node_to_string(init)}"
+
+    s += f": {get_symbol_type(node, resolve)}"
+    s += f" = {get_symbol_value(node, resolve)}"
+
     return s
 
 
@@ -178,3 +175,39 @@ def _intent_to_string(intent: Optional[str]) -> str:
     }
     # use 'intent' as the default, so if no remap no work done
     return remap.get(intent, intent) if intent else ""
+
+
+def get_symbol_type(node: chapel.AstNode, resolve: bool = False) -> str:
+    """Get the type of a symbol"""
+
+    qt = node.type() if resolve else None
+    if not qt:
+        # could not resolve the type, try and interpolate the type_expression (if it has one)
+        if isinstance(node, chapel.VarLikeDecl):
+            type_ = node.type_expression()
+            if type_:
+                return _node_to_string(type_, resolve)
+        # otherwise, return a placeholder text
+        return "<unknown type>"
+    else:
+        _, type_, _ = qt
+        if isinstance(type_, chapel.ErroneousType):
+            return "<error>"
+        return str(type_)
+
+def get_symbol_value(node: chapel.AstNode, resolve: bool = False) -> str:
+    """Get the value of a symbol"""
+
+    qt = node.type() if resolve else None
+
+    if not qt or qt[2] is None:
+        # could not resolve the type, try and interpolate the init_expression (if it has one)
+        if isinstance(node, chapel.VarLikeDecl):
+            init = node.init_expression()
+            if init:
+                return _node_to_string(init, resolve)
+        # otherwise, return a placeholder text
+        return "<...>"
+    else:
+        _, _, param = qt
+        return str(param)

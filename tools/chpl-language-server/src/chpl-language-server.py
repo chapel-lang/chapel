@@ -566,13 +566,16 @@ class FileInfo:
         a definition when it can, and falls back to references otherwise.
         """
 
-        segment = self.get_def_segment_at_position(position)
-        if segment:
-            return segment
-        else:
-            segment = self.get_use_segment_at_position(position)
-            if segment:
-                return segment.resolved_to
+        segment_def = self.get_def_segment_at_position(position)
+        segment_use = self.get_use_segment_at_position(position)
+
+        if segment_def and not segment_use:
+            return segment_def
+        elif segment_use and not segment_def:
+            return segment_use.resolved_to
+        elif segment_use and segment_def:
+            # prefer the use
+            return segment_use.resolved_to
 
         return None
 
@@ -897,7 +900,7 @@ class ChapelLanguageServer(LanguageServer):
     def get_tooltip(
         self, node: chapel.AstNode, siblings: chapel.SiblingMap
     ) -> str:
-        signature = get_symbol_signature(node)
+        signature = get_symbol_signature(node, resolve=ls.use_resolver)
         docstring = chapel.get_docstring(node, siblings)
         text = f"```chapel\n{signature}\n```"
         if docstring:
@@ -1081,15 +1084,14 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
-        segment = fi.get_use_segment_at_position(params.position)
+
+        segment = fi.get_use_or_def_segment_at_position(params.position)
         if not segment:
             return None
-        resolved_to = segment.resolved_to
-        node_fi, _ = ls.get_file_info(resolved_to.get_uri())
 
         text = ls.get_tooltip(resolved_to.node, node_fi.siblings)
         content = MarkupContent(MarkupKind.Markdown, text)
-        return Hover(content, range=resolved_to.get_location().range)
+        return Hover(content, range=segment.get_location().range)
 
     @server.feature(TEXT_DOCUMENT_COMPLETION, CompletionOptions())
     async def complete(ls: ChapelLanguageServer, params: CompletionParams):
