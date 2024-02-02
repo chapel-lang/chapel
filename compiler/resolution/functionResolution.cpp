@@ -11248,8 +11248,8 @@ static void resolveExterns()
 }
 
 // Returns 'true' if the type 'at' was resolved.
-static bool maybeForceResolveAggregateType(AggregateType* at) {
-  if (at == nullptr) return false;
+static void maybeForceResolveAggregateType(AggregateType* at) {
+  if (at == nullptr) return;
   for_SymbolSymExprs(use, at->symbol) {
     if (use->inTree()) {
       at->resolveConcreteType();
@@ -11257,10 +11257,9 @@ static bool maybeForceResolveAggregateType(AggregateType* at) {
         auto t = field->typeInfo();
         INT_ASSERT(t != dtUnknown);
       }
-      return true;
+      return;
     }
   }
-  return false;
 }
 
 static void adjustInternalSymbols() {
