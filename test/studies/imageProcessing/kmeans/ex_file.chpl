@@ -24,10 +24,26 @@ record cluster {
   var c1, c2, c3 : real;
 
   /***
-      readWriteThis:  General (de)serialization of the data.
-      args:           f - reader or writer channel
+      writeThis:      General serialization of the data.
+      args:           f - writer channel
   ***/
-  proc readWriteThis(f) {
+  proc writeThis(f) {
+    const sp = new ioLiteral(" ");
+
+    /* Reading will fail if you put spaces in a binary output stream. */
+    if (binout) {
+      f <~> npix <~> c1 <~> c2 <~> c3 <~> r <~> g <~> b;
+    } else {
+      f <~> sp <~> npix <~> sp <~> c1 <~> sp <~> c2 <~> sp <~> c3 <~> sp <~>
+        r <~> sp <~> g <~> sp <~> b;
+    }
+  }
+
+  /***
+      readThis:       General deserialization of the data.
+      args:           f - reader channel
+  ***/
+  proc readThis(f) {
     const sp = new ioLiteral(" ");
 
     /* Reading will fail if you put spaces in a binary output stream. */
@@ -42,10 +58,10 @@ record cluster {
 
 /*
   NOTE: We have the following warnings, but I don't know any alternative for now:
-    ex_file.chpl:47: warning: iostyle is deprecated, a new way of controlling channel output is planned
-    ex_file.chpl:48: warning: iostyle is deprecated, a new way of controlling channel output is planned
-    ex_file.chpl:65: warning: open with a style argument is deprecated
-    ex_file.chpl:71: warning: open with a style argument is deprecated
+    ex_file.chpl:71: warning: iostyle is deprecated, a new way of controlling channel output is planned
+    ex_file.chpl:72: warning: iostyle is deprecated, a new way of controlling channel output is planned
+    ex_file.chpl:89: warning: open with a style argument is deprecated
+    ex_file.chpl:95: warning: open with a style argument is deprecated
 */
 
 proc main() {
