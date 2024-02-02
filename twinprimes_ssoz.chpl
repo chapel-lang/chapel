@@ -31,7 +31,8 @@ proc twinprimes_ssoz() {
     set_sieve_parameters(start_num, end_num);
   const primes = sozp5(sqrt(end_num):uint, res_0, start_num, end_num);
 
-  writeln("each of ", pairscnt, " threads has nextp[", 2, " x ", primes.size, "] array");
+  writeln("each of ", pairscnt, " threads has nextp[", 2, " x ", primes.size,
+          "] array");
 
   var twinscnt: uint, last_twin = min(uint);
   const lo_range = restwins[0] - 3;
@@ -44,26 +45,37 @@ proc twinprimes_ssoz() {
   writeln("perform twinprimes ssoz sieve");
   ts.clear();
 
+  // TODO: Why not just use the loop index 'i' rather than this atomic?
   var threadscnt: atomic uint;
+
+  // NOTE: I used reduce intents here because it seemed more elegant
+  // than a results array that needed to be reduced after the fact
+  // (which could also result in false sharing)
+  //  
   coforall i in 0..<pairscnt with (+ reduce twinscnt, max reduce last_twin) {
-    (last_twin, twinscnt) = twins_sieve(restwins[i], kmin, kmax, ks, start_num, end_num, modpg, primes, resinvrs);
+    (last_twin, twinscnt) = twins_sieve(restwins[i], kmin, kmax, ks, start_num,
+                                        end_num, modpg, primes, resinvrs);
     if printFromTasks then
-      writeln("\r", threadscnt.fetchAdd(1), " of ", pairscnt, " twinpairs done");
+      writeln("\r", threadscnt.fetchAdd(1), " of ", pairscnt,
+              " twinpairs done");
   }
   writeln("\r", pairscnt, " of ", pairscnt, " twinpairs done");
 
   if end_num == 5 && twinscnt == 1 then last_twin = 5;
   var kn = krange % ks;
-  if (kn == 0) then kn = ks;
+  if kn == 0 then kn = ks;
 
   const t2 = ts.elapsed();
   writeln("sieve time = ", t2, " secs");
   writeln("total time = ", t2 + te, " secs");
-  writeln("last segment = ", kn, " resgroups; segment slices = ", (krange-1)/ks + 1);
-  writeln("total twins = ", twinscnt, "; last twin = ", (last_twin - 1), "+/-1");
+  writeln("last segment = ", kn, " resgroups; segment slices = ",
+          (krange-1)/ks + 1);
+  writeln("total twins = ", twinscnt, "; last twin = ", (last_twin - 1),
+          "+/-1");
 }
 
-proc twins_sieve(r_hi, kmin, kmax, ks, start_num, end_num, modpg, primes, resinvrs) {
+proc twins_sieve(r_hi, kmin, kmax, ks, start_num, end_num, modpg, primes,
+                 resinvrs) {
   use BitOps;
 
   var s = 6,
@@ -79,6 +91,7 @@ proc twins_sieve(r_hi, kmin, kmax, ks, start_num, end_num, modpg, primes, resinv
   var nextp = nextp_init(r_hi, ki, modpg, primes, resinvrs);
   while ki < k_max {
     if ks > (k_max - ki) then kn = k_max - ki;
+    // TODO: Could this be a foreach?
     for j in primes.indices {
       const prime = primes[j];
       var k1 = nextp[j << 1];
@@ -112,7 +125,7 @@ proc twins_sieve(r_hi, kmin, kmax, ks, start_num, end_num, modpg, primes, resinv
 
     if ki < k_max then foreach b in 0..((kn-1) >> s) do seg[b] = 0;
   }
-  hi_tp = if ((r_hi > end_num) || (sum == 0)) then 1 else hi_tp * modpg + r_hi;
+  hi_tp = if (r_hi > end_num) || (sum == 0) then 1 else hi_tp * modpg + r_hi;
   return (hi_tp, sum);
 }
 
@@ -120,17 +133,20 @@ proc nextp_init(rhi, kmin, modpg, primes, resinvrs) {
   var nextp: [0..<primes.size*2] uint;
   const r_hi = rhi,
         r_lo = rhi - 2;
+  // TODO: seems like this could be a foreach?
   for j in 0..<primes.size {
-    const prime = primes[j];
-    const k = (prime - 2) / modpg,
+    const prime = primes[j],
+          k = (prime - 2) / modpg,
           r = (prime - 2) % modpg + 2,
           r_inv = resinvrs[r: int]: uint;
     var rl = (r_inv * r_lo - 2) % modpg + 2,
         rh = (r_inv * r_hi - 2) % modpg + 2,
         kl = k * (prime + rl) + (r * rl - 2) / modpg,
         kh = k * (prime + rh) + (r * rh - 2) / modpg;
-    if kl < kmin { kl = (kmin - kl) % prime; if kl > 0 then kl = prime - kl; } else { kl -= kmin; }
-    if kh < kmin { kh = (kmin - kh) % prime; if kh > 0 then kh = prime - kh; } else { kh -= kmin; }
+    if kl < kmin { kl = (kmin - kl) % prime; if kl > 0 then kl = prime - kl; }
+            else { kl -= kmin; }
+    if kh < kmin { kh = (kmin - kh) % prime; if kh > 0 then kh = prime - kh; }
+            else { kh -= kmin; }
     nextp[j << 1] = kl;
     nextp[j << 1 | 1] = kh;
   }
@@ -162,7 +178,9 @@ proc set_sieve_parameters(start_num, end_num) {
   const kmin = (start_num-2) / modpg + 1,
         kmax = (end_num - 2) / modpg + 1,
         krange = kmax - kmin + 1,
-        n = if krange < 37_500_000_000_000 then 4 else if krange < 975_000_000_000_000 then 6 else 8,
+        n = if krange < 37_500_000_000_000 then 4 else
+            if krange < 975_000_000_000_000 then 6
+            else 8,
         b = bn * 1024 * n,
         ks: uint = min(krange, b);
 
@@ -242,7 +260,8 @@ iter sozp5(val, res_0, start_num, end_num) {
   const md = 30: uint,
         rescnt = 8,
         res = [7,11,13,17,19,23,29,31],
-        bitn = [0,0,0,0,0,1,0,0,0,2,0,4,0,0,0,8,0,16,0,0,0,32,0,0,0,0,0,64,0,128]: uint(8),
+        bitn = [0,0,0,0,0,1,0,0,0,2,0,4,0,0,0,8,0,16,0,0,0,32,0,0,0,0,0,64,0,
+                128]: uint(8),
         range_size = end_num - start_num,  // uint
         kmax: uint = (val - 2) / md + 1;
   var prms: [0..<kmax] uint(8);
@@ -250,8 +269,9 @@ iter sozp5(val, res_0, start_num, end_num) {
         k = sqrtn/md,
         resk = sqrtn - md*k;
   var r = 0; 
-  while (resk >= res[r]) do r += 1;
+  while resk >= res[r] do r += 1;
   const pcs_to_sqrtn = k*rescnt + r;
+  // TODO: This conditional is unfortunate...  rethink behavior of 0..<0??
   if pcs_to_sqrtn != 0 then for i in 0:uint..<pcs_to_sqrtn {
     const k = (i/rescnt): uint,
           r = (i%rescnt): int;
@@ -275,7 +295,8 @@ iter sozp5(val, res_0, start_num, end_num) {
       if (prms[k] & (1 << r)) == 0 {
         const prime: uint(64) = md * k + res[r],
               rem = start_num % prime;
-        if (res_0 <= prime && prime <= val) && (prime - rem <= range_size || rem == 0) then yield prime;
+        if (res_0 <= prime && prime <= val) &&
+           (prime - rem <= range_size || rem == 0) then yield prime;
       }
     }
   }
@@ -283,7 +304,7 @@ iter sozp5(val, res_0, start_num, end_num) {
 
 
 // TODO: 32 vs. 64-bit?
-// TODO: for vs. foreach
 // TODO: if ( ... etc.
 // TODO: remove debugging
-// TODO: use ranges?
+// TODO: use ranges instead of start/end pairs of integers??
+// TODO: try nested iterators to avoid long argument lists?
