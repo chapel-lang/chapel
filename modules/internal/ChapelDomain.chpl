@@ -837,23 +837,21 @@ module ChapelDomain {
 
   // This function exists to avoid communication from computing _value when
   // the result is param.
-  /* Returns true if the distribution of `d` is a layout,
-     that is, all indices of `d` are owned by the current locale. */
-  proc domainDistIsLayout(d: domain) param {
+  proc chpl_domainDistIsLayout(d: domain) param {
     return d.distribution._value.dsiIsLayout();
   }
 
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
-    param rhsIsLayout = domainDistIsLayout(rhs);
+    param rhsIsLayout = chpl_domainDistIsLayout(rhs);
 
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
-    if domainDistIsLayout(lhs) && !rhsIsLayout then
+    if chpl_domainDistIsLayout(lhs) && !rhsIsLayout then
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
 
     return lhs;
@@ -862,7 +860,7 @@ module ChapelDomain {
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:_domain,
                         definedConst: bool) {
-    param rhsIsLayout = domainDistIsLayout(rhs);
+    param rhsIsLayout = chpl_domainDistIsLayout(rhs);
 
     // TODO: just return rhs
     // if the domain types are the same and their runtime types
@@ -873,7 +871,7 @@ module ChapelDomain {
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
-    if domainDistIsLayout(lhs) && !rhsIsLayout then
+    if chpl_domainDistIsLayout(lhs) && !rhsIsLayout then
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
 
     return lhs;
