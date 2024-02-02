@@ -3265,12 +3265,16 @@ struct LastResortCandidateGroups {
   chpl::optional<CandidatesVec> nonPoi;
   // Poi candidates from innermost (more preferred) to outermost scope.
   std::vector<CandidatesVec> poi;
-
-  // Forwarding candidate groups
-  owned<LastResortCandidateGroups> forwardingCandidateGroups = nullptr;
-  // Forwarding-to information, used if this instance is from forwarding.
+  // Forwarding-to information for non-poi and poi candidates, respectively.
+  // These are used if this LastResortCandidateGroups is for candidates from
+  // forwarding.
   ForwardingInfoVec nonPoiForwardingInfo;
   std::vector<ForwardingInfoVec> poiForwardingInfo;
+
+  // A LastResortCandidateGroups for candidates found via forwarding from the
+  // site of the current group. This is effectively a linked list due to the
+  // possibility of forwards-to-forwards.
+  owned<LastResortCandidateGroups> forwardingCandidateGroups = nullptr;
 };
 
 // Returns candidates with last resort candidates removed and saved in a
