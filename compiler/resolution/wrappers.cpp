@@ -425,6 +425,8 @@ static void markExplicitDomainParsafeVars(CallExpr* call) {
       // that a parSafe value was provided
       if (call->numActuals() >= 3 && isSymExpr(call->get(3))) {
         // this is an associative domain with an explicit parSafe flag
+
+        // handle local variables
         CallExpr* parent = toCallExpr(call->parentExpr);
         if (parent && parent->isPrimitive(PRIM_MOVE)) {
           Symbol* retTemp = toSymExpr(parent->get(1))->symbol();
@@ -443,12 +445,20 @@ static void markExplicitDomainParsafeVars(CallExpr* call) {
                   if (Symbol* var = toSymExpr(inCall->get(1))->symbol()) {
                     // TODO: if needed, add unstable warning here
                     var->addFlag(FLAG_EXPLICIT_PAR_SAFE);
-                    printf("adding explicit par safe to %s\n", var->name);
+                    printf("  adding explicit par safe to %s [%i]\n",
+                           var->name, var->id);
                   }
                 }
               }
             }
           }
+        }
+
+        // handle formals with declared type
+        if (ArgSymbol* formal = toArgSymbol(call->parentSymbol)) {
+            formal->addFlag(FLAG_EXPLICIT_PAR_SAFE);
+            printf("  adding explicit par safe to formal %s [%i]\n",
+                   formal->name, formal->id);
         }
       }
     }
@@ -2028,6 +2038,10 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       inTmpToActualMap.put(actual->symbol(), origActualSym);
     }
   }
+
+  handleDefaultAssociativeWarnings(formal, /*typeExpr*/ nullptr,
+                                   /*initExpr*/ actual,
+                                   /*for field*/ nullptr);
 }
 
 static void handleOutIntents(FnSymbol* fn, CallExpr* call,
