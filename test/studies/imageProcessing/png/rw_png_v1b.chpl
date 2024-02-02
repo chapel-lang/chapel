@@ -19,8 +19,7 @@
         c 2015-2018 Primordial Machine Vision Systems
 *****/
 
-use SysCTypes;
-use CPtr;
+use CTypes;
 
 
 require "img_png_v1.h", "build/img_png_v1.o", "-lpng";

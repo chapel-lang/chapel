@@ -40,6 +40,14 @@ record cluster {
   }
 }
 
+/*
+  NOTE: We have the following warnings, but I don't know any alternative for now:
+    ex_file.chpl:47: warning: iostyle is deprecated, a new way of controlling channel output is planned
+    ex_file.chpl:48: warning: iostyle is deprecated, a new way of controlling channel output is planned
+    ex_file.chpl:65: warning: open with a style argument is deprecated
+    ex_file.chpl:71: warning: open with a style argument is deprecated
+*/
+
 proc main() {
   var kout : [1..10] cluster;           /* original data we write to disk */
   var kin : [1..10] cluster;            /* read-back from file */

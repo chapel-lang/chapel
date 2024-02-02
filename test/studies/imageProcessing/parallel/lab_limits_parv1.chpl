@@ -13,7 +13,7 @@
 
 use ip_color_v2;
 use Time;
-use SysCTypes;
+use CTypes;
 
 proc main() {
   var lmin, lmax : [0..255] real;         /* limits of L plane values, per r */

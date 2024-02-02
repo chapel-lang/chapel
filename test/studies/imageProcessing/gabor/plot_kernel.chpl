@@ -17,8 +17,7 @@
       c 2015-2018 Primordial Machine Vision Systems
 *****/
 
-use SysCTypes;
-use CPtr;
+use CTypes;
 
 
 config const outname = "filter.png";    /* output file name */

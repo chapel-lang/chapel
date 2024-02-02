@@ -52,7 +52,7 @@ use Help;
 use Random;
 use Sort;
 use Time;
-use CPtr;
+use CTypes;
 
 
 /**** Command Line Arguments ****/

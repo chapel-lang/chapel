@@ -45,8 +45,7 @@ use Math;
 use Random;
 use Sort;
 use Time;
-use SysCTypes;
-use CPtr;
+use CTypes;
 
 
 /**** Command Line Arguments ****/

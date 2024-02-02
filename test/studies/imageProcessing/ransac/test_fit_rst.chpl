@@ -26,7 +26,7 @@ use kdtree;
 use Help;
 use Math;
 use Random;
-use CPtr;
+use CTypes;
 
 
 /**** Command Line Arguments ****/

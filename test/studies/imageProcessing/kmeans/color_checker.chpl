@@ -12,8 +12,7 @@
 *****/
 
 use ip_color_v3;
-use SysCTypes;
-use CPtr;
+use CTypes;
 
 
 /**** Constants - Internal ****/

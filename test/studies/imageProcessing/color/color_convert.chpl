@@ -17,7 +17,7 @@
 
 use ip_color;
 use Help;
-use CPtr;
+use CTypes;
 
 
 /**** Command Line Arguments ****/

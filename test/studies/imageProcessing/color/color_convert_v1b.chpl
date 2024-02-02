@@ -20,7 +20,7 @@
 
 use ip_color_v1b;
 use Help;
-use CPtr;
+use CTypes;
 
 
 /**** Command Line Arguments ****/

@@ -14,7 +14,7 @@
 
 use ip_color_v2;
 use Time;
-use SysCTypes;
+use CTypes;
 
 proc main() {
   const cube : domain(rank=3) = { 0..255, 0..255, 0..255 };

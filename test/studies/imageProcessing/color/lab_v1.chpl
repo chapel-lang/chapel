@@ -14,8 +14,7 @@
 
 
 use Help;
-use SysCTypes;
-use CPtr;
+use CTypes;
 
 
 /**** Declarations ****/

@@ -20,8 +20,7 @@
 
 public use ip_color_v3;
 use Help;
-use SysCTypes;
-use CPtr;
+use CTypes;
 
 
 /**** Command Line Arguments ****/

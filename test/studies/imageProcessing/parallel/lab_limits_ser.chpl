@@ -11,7 +11,7 @@
 *****/
 
 use ip_color_v2;
-use SysCTypes;
+use CTypes;
 
 proc main() {
   var l, l_a, l_b : real;               /* CIE LAB coords */

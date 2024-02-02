@@ -26,8 +26,7 @@
 
 use ip_color_v3;
 use Sort;
-use SysCTypes;
-use CPtr;
+use CTypes;
 
 
 
