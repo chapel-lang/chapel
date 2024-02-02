@@ -65,6 +65,9 @@ using ForwardingInfoVec = std::vector<QualifiedType>;
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
+  QUERY_REGISTER_TRACER(
+    return std::make_pair(std::get<0>(args), "resolving this module statement");
+  );
 
   CHPL_ASSERT(id.postOrderId() >= 0);
 
@@ -78,8 +81,8 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto visitor = Resolver::createForModuleStmt(context, mod, modStmt, result);
     modStmt->traverse(visitor);
 
-    if (context->recoverFromSelfRecursion()) {
-      CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod);
+    if (auto rec = context->recoverFromSelfRecursion()) {
+      CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
     }
   }
 
@@ -678,6 +681,15 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                                              DefaultsPolicy defaultsPolicy) {
   QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, defaultsPolicy);
 
+  QUERY_REGISTER_TRACER(
+    auto& id = std::get<0>(args)->id();
+    auto typeName = std::get<0>(args)->name();
+    auto traceText = std::string("resolving the fields of type '")
+      + typeName.c_str()
+      + "'";
+    return std::make_pair(id, traceText);
+  );
+
   ResolvedFields result;
 
   CHPL_ASSERT(ct);
@@ -721,8 +733,8 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
         result.addForwarding(resolvedFields);
       }
 
-      if (context->recoverFromSelfRecursion()) {
-        CHPL_REPORT(context, RecursionFieldDecl, child, ad, ct);
+      if (auto rec = context->recoverFromSelfRecursion()) {
+        CHPL_REPORT(context, RecursionFieldDecl, child, ad, ct, std::move(*rec));
       }
     }
 

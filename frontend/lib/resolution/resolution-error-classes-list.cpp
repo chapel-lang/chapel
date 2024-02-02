@@ -1032,30 +1032,55 @@ static const char* recursionMessage =
   "explicitly specifying variable and field types instead of "
   "relying on type inference.";
 
+template <typename Loc>
+static void printRecursionTrace(ErrorWriterBase& wr,
+                                const std::string& rootGoal,
+                                const Loc& rootLocation,
+                                const std::vector<TraceElement>& trace) {
+  if (trace.size() == 0) return;
+
+  wr.message("");
+
+  std::string prefix = rootGoal + " led to recursion because doing so required";
+  for (size_t idx = 0; idx < trace.size(); idx++) {
+    auto& te = trace[idx];
+    wr.note(te.first, prefix, " ", te.second, ":");
+    wr.codeForLocation(te.first);
+
+    prefix = "which required";
+  }
+}
+
 void ErrorRecursionFieldDecl::write(ErrorWriterBase& wr) const {
   auto ast = std::get<const uast::AstNode*>(info);
   auto ad = std::get<const uast::AggregateDecl*>(info);
   auto ct = std::get<const types::CompositeType*>(info);
+  auto& trace = std::get<3>(info);
 
+  std::string rootGoalForTrace = "resolving the field";
   if (auto vld = ast->toVarLikeDecl()) {
     wr.heading(kind_, type_, ast, "encountered recursion while resolving field '",
                vld->name(),"' of type '", ad->name(),"':");
+    rootGoalForTrace += std::string(" '") + vld->name().c_str() + "'";
   } else {
     wr.heading(kind_, type_, ast, "encountered recursion while resolving a field"
                "of type '", ad->name(),"':");
   }
   wr.codeForLocation(ast);
-  wr.note(ad, "while computing field types for '", ad->name(), "' declared here:");
+  wr.message("while computing field types for '", ad->name(), "' declared here:");
   wr.codeForLocation(ad);
   if (ct->instantiatedFromCompositeType() != nullptr) {
     wr.note(ad, "the type '", ad->name(), "' was instantiated as '", ct, "'.");
   }
   wr.message(recursionMessage);
+
+  printRecursionTrace(wr, rootGoalForTrace, ast, trace);
 }
 
 void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
   auto ast = std::get<const uast::AstNode*>(info);
   auto mod = std::get<const uast::Module*>(info);
+  auto& trace = std::get<2>(info);
 
   wr.heading(kind_, type_, ast,
              "encountered recursion while resolving module statement:");
@@ -1065,6 +1090,9 @@ void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
     wr.codeForLocation(mod);
   }
   wr.message(recursionMessage);
+
+  auto rootGoalForTrace = "resolving the module statement";
+  printRecursionTrace(wr, rootGoalForTrace, ast, trace);
 }
 
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {

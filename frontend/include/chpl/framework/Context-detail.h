@@ -68,6 +68,11 @@ struct UniqueStrHash final {
 
 }
 
+// When printing a back-trace from the query system, the TraceElement makes
+// up each stack item. It contains an ID (to anchor the trace to a line etc.)
+// and a string describing what was being done.
+using TraceElement = std::pair<ID, std::string>;
+
 namespace querydetail {
 
 using RevisionNumber = int64_t;
@@ -90,6 +95,8 @@ class QueryMapResultBase;
 template<typename ResultType, typename... ArgTs> class QueryMapResult;
 class QueryMapBase;
 template<typename ResultType, typename... ArgTs> class QueryMap;
+class QueryTracerBase;
+template<typename ResultType, typename... ArgTs> class QueryTracer;
 
 template<typename TUP, size_t... I>
 static inline bool queryArgsEqualsImpl(const TUP& lhs, const TUP& rhs, std::index_sequence<I...>)
@@ -271,6 +278,8 @@ class QueryMapResultBase {
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
   virtual void markUniqueStringsInResult(Context* context) const = 0;
+
+  optional<TraceElement> tryTrace() const;
 };
 
 template<typename ResultType, typename... ArgTs>
@@ -304,10 +313,41 @@ class QueryMapResult final : public QueryMapResultBase {
   void markUniqueStringsInResult(Context* context) const override;
 };
 
+// ID is only forward declared here, so we cannot return it by value. Thus,
+// return an ID ref to the argument tuple; calling code will need to perform
+// a copy to construct an actual TraceElement.
+using TraceElementRef = std::pair<ID const&, std::string>;
+
+class QueryTracerBase {
+ public:
+  virtual ~QueryTracerBase() = 0; // this is an abstract base class
+  virtual TraceElementRef traceElementFrom(const QueryMapResultBase*) const = 0;
+};
+
+template<typename ResultType,
+         typename... ArgTs>
+class QueryTracer : public QueryTracerBase {
+ private:
+   std::function<TraceElementRef(const std::tuple<ArgTs...>&)> traceElementFrom_;
+
+ public:
+  ~QueryTracer() = default;
+
+  template <typename F>
+  QueryTracer(F&& traceElementFrom)
+    : traceElementFrom_(std::move(traceElementFrom)) {
+  }
+  TraceElementRef traceElementFrom(const QueryMapResultBase* r) const override {
+    auto specR = (const QueryMapResult<ResultType, ArgTs...>*) r;
+    return traceElementFrom_(specR->tupleOfArgs);
+  }
+};
+
 class QueryMapBase {
  public:
    const char* queryName;
    bool isInputQuery;
+   owned<QueryTracerBase> tracer;
 
   struct QueryStats {
     // NOTE: `system` here refers to what the query system is doing
@@ -374,6 +414,17 @@ class QueryMap final : public QueryMapBase {
     }
 
     oldResults.clear();
+  }
+
+  template <typename F>
+  inline void registerTracer(F&& fn) {
+    if (this->tracer.get() != nullptr) {
+      // We already have a tracer; do nothing.
+      return;
+    }
+
+    this->tracer = toOwned<QueryTracerBase>(
+        new QueryTracer<ResultType, ArgTs...>(std::forward<F>(fn)));
   }
 };
 

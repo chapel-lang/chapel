@@ -625,6 +625,11 @@ Context::querySetterUpdateResult(
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
   QUERY_BEGIN_TIMING(context);
 
+#define QUERY_REGISTER_TRACER(tracerBody) \
+  BEGIN_QUERY_MAP->registerTracer([](const decltype(BEGIN_QUERY_ARGS)& args) { \
+    tracerBody; \
+  });
+
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
   for input queries.

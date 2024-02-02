@@ -437,6 +437,10 @@ class Context {
 
   void doNotCollectUniqueCString(const char *s);
 
+  void gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
+                            const querydetail::QueryMapResultBase* result,
+                            std::vector<TraceElement>& trace) const;
+
   // Future Work: make the context thread-safe
 
   // Future Work: allow moving some AST to a different context
@@ -558,13 +562,7 @@ class Context {
     return result;
   }
 
-  bool recoverFromSelfRecursion() {
-    CHPL_ASSERT(!queryStack.empty());
-    auto topQuery = queryStack.back();
-    bool hadRecursion = topQuery->recursionErrors.count(topQuery);
-    topQuery->recursionErrors.erase(topQuery);
-    return hadRecursion;
-  }
+  optional<std::vector<TraceElement>> recoverFromSelfRecursion() const;
 
   /**
     Get or create a unique string and return it as a C string. If the passed

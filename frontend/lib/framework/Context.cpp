@@ -375,6 +375,18 @@ const char* Context::getOrCreateUniqueString(const char* str, size_t len) {
   return s;
 }
 
+optional<std::vector<TraceElement>> Context::recoverFromSelfRecursion() const {
+  CHPL_ASSERT(!queryStack.empty());
+  auto topQuery = queryStack.back();
+  bool hadRecursion = topQuery->recursionErrors.count(topQuery);
+  if (!hadRecursion) return {};
+
+  std::vector<TraceElement> trace;
+  gatherRecursionTrace(topQuery, topQuery, trace);
+  topQuery->recursionErrors.erase(topQuery);
+  return trace;
+}
+
 const char* Context::uniqueCString(const char* str, size_t len) {
   if (len == 0 || str == nullptr) str = "";
   return this->getOrCreateUniqueString(str, len);
@@ -531,6 +543,36 @@ void Context::doNotCollectUniqueCString(const char* s) {
   buf += UNIQUED_STRING_METADATA_LEN;   // pass the length
   buf += 1;                             // pass the gc mark
   *buf = 1;                             // set doNotCollectMark
+}
+
+
+void Context::gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
+                                   const querydetail::QueryMapResultBase* result,
+                                   std::vector<TraceElement>& trace) const {
+  // Note: do not collect the result, but only its dependency. The reason
+  // is that this is initally called with result=root, and including
+  // the root in the trace seems unhelpful since it will issue a proper error
+  // message.
+
+  CHPL_ASSERT(result->recursionErrors.count(root) > 0);
+  for (auto& dep : result->dependencies) {
+    if (dep.query->recursionErrors.count(root) > 0) {
+      if (auto te = dep.query->tryTrace()) {
+        trace.emplace_back(*te);
+      }
+
+      gatherRecursionTrace(root, dep.query, trace);
+      return;
+    }
+  }
+
+  // No dependency had a recursion error, which means the root must've been
+  // a dependency of result (but recursion-triggering queries aren't added
+  // as dependencies, so we didn't encounter it). Add it to the trace
+  // for completeness.
+  if (auto te = root->tryTrace()) {
+    trace.emplace_back(*te);
+  }
 }
 
 size_t Context::lengthForUniqueString(const char* s) {
@@ -1208,6 +1250,18 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
 }
 
 QueryMapResultBase::~QueryMapResultBase() {
+}
+
+optional<TraceElement> QueryMapResultBase::tryTrace() const {
+  if (auto& tracer = parentQueryMap->tracer) {
+    auto traceRef = tracer->traceElementFrom(this);
+    return TraceElement(traceRef.first, traceRef.second);
+  }
+
+  return {};
+}
+
+QueryTracerBase::~QueryTracerBase() {
 }
 
 QueryMapBase::~QueryMapBase() {
