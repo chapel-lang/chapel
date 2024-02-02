@@ -14340,8 +14340,13 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
     return;
   }
 
+  // don't worry about it, it had e.g. parSafe=true
   if (sym->hasFlag(FLAG_EXPLICIT_PAR_SAFE)) {
-    // don't worry about it, it had e.g. parSafe=true
+    return;
+  }
+
+  // don't worry about it if the variable is const
+  if (sym->isConstant()) {
     return;
   }
 
@@ -14365,7 +14370,9 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
             //       on the field/variable symbol
             // TODO: don't warn if it looks like it was explicit
             // TODO: don't warn if the variable is const
-            USR_WARN(sym, "bad default parsafe");
+            const char* varOrField = forFieldInHere?"field":"variable";
+            USR_WARN(sym, "bad default parsafe for %s '%s'",
+                     varOrField, sym->name);
             gdbShouldBreakHere();
           }
         }

@@ -429,16 +429,18 @@ static void markExplicitDomainParsafeVars(CallExpr* call) {
         if (parent && parent->isPrimitive(PRIM_MOVE)) {
           Symbol* retTemp = toSymExpr(parent->get(1))->symbol();
           if (retTemp && retTemp->hasFlag(FLAG_TEMP)) {
-            if (SymExpr* use = retTemp->getSingleUse()) {
-              if (CallExpr* useParent = toCallExpr(use->parentExpr)) {
-                if (useParent->isPrimitive(PRIM_INIT_VAR) ||
-                    useParent->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
-                    useParent->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
-                    useParent->isPrimitive(PRIM_INIT_FIELD) ||
-                    useParent->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
-                    useParent->isPrimitive(PRIM_MOVE) ||
-                    useParent->isPrimitive(PRIM_ASSIGN)) {
-                  if (Symbol* var = toSymExpr(useParent->get(1))->symbol()) {
+            // look at all mentions of the temp, b/c it might be mentioned
+            // twice in a split init scenario
+            for_SymbolSymExprs(se, retTemp) {
+              if (CallExpr* inCall = toCallExpr(se->parentExpr)) {;
+                if (inCall->isPrimitive(PRIM_INIT_VAR) ||
+                    inCall->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+                    inCall->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
+                    inCall->isPrimitive(PRIM_INIT_FIELD) ||
+                    inCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
+                    inCall->isPrimitive(PRIM_MOVE) ||
+                    inCall->isPrimitive(PRIM_ASSIGN)) {
+                  if (Symbol* var = toSymExpr(inCall->get(1))->symbol()) {
                     // TODO: if needed, add unstable warning here
                     var->addFlag(FLAG_EXPLICIT_PAR_SAFE);
                     printf("adding explicit par safe to %s\n", var->name);

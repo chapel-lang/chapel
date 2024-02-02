@@ -2861,28 +2861,38 @@ static Expr* preFoldNamed(CallExpr* call) {
     if (ConstrainedType* recv = toConstrainedType(call->get(2)->getValType())) {
       retval = resolveCallToAssociatedType(call, recv);
     }
-  } else if (call->isNamed("chpl__buildDomainRuntimeType")) {
+  }/* else if (call->isNamed("chpl__buildDomainRuntimeType")) {
+    if (call->id == 202010)
+      gdbShouldBreakHere();
+    // check to
     // Add checks to see if this is an associative domain or not
     // and if it is, check to see if it passes an explicit parSafe arg.
     // set a flag if it does.
     Symbol* secondArg = toSymExpr(call->get(2))->symbol();
     if (secondArg->hasFlag(FLAG_TYPE_VARIABLE)) {
       // this is an associative domain
-      if (Symbol* thirdArg = toSymExpr(call->get(3))->symbol()) {
+      if (call->numActuals() >= 3 && isSymExpr(call->get(3))) {
         // this is an associative domain with an explicit parSafe flag
-        if (CallExpr* parent = toCallExpr(call->parentExpr))
-          if (parent->isPrimitive(PRIM_MOVE))
-            if (Symbol* temp = toSymExpr(parent->get(1))->symbol())
-              if (temp->hasFlag(FLAG_TEMP))
-                if (SymExpr* use = temp->getSingleUse())
-                if (CallExpr* useParent = toCallExpr(use->parentExpr))
-                  if (useParent->isPrimitive(PRIM_INIT_VAR))
-                    // || .... other initializations )
-                    if (Symbol* var = toSymExpr(useParent->get(1))->symbol)
-                      var->addFlag(FLAG_EXPLICIT_PAR_SAFE);
+        CallExpr* parent = toCallExpr(call->parentExpr);
+        if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          Symbol* temp = toSymExpr(parent->get(1))->symbol();
+          if (temp && temp->hasFlag(FLAG_TEMP)) {
+            if (SymExpr* use = temp->getSingleUse()) {
+              if (CallExpr* useParent = toCallExpr(use->parentExpr)) {
+                if (useParent->isPrimitive(PRIM_INIT_VAR)) {
+                  // || .... other initializations )
+                  if (Symbol* var = toSymExpr(useParent->get(1))->symbol()) {
+                    var->addFlag(FLAG_EXPLICIT_PAR_SAFE);
+                    printf("adding explicit par safe to %s\n", var->name);
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
-  }
+  }*/
 
   return retval;
 }
