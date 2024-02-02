@@ -16,8 +16,8 @@ proc twinprimes_ssoz() {
 
   if start_num > end_num then start_num <=> end_num;
 
-  start_num |= 1;                // if start_num even, increase by 1
-  end_num = (end_num - 1) | 1;   // if end_num even, decrease by 1
+  start_num |= 1;
+  end_num = (end_num - 1) | 1;
 
   if (end_num - start_num) < 2 {
     start_num = 7;
@@ -46,14 +46,11 @@ proc twinprimes_ssoz() {
   ts.clear();
 
   var threadscnt: atomic uint;
-  writeln(last_twin);
   coforall i in 0..<pairscnt with (+ reduce twinscnt, min reduce last_twin) {
     (last_twin, twinscnt) = twins_sieve(restwins[i], kmin, kmax, ks, start_num, end_num, modpg, primes, resinvrs);
-    writeln(last_twin);
     if printFromTasks then
       writeln("\r", threadscnt.fetchAdd(1), " of ", pairscnt, " twinpairs done");
   }
-  writeln(last_twin);
   writeln("\r", pairscnt, " of ", pairscnt, " twinpairs done");
 
   if end_num == 5 && twinscnt == 1 then last_twin = 5;
@@ -100,6 +97,10 @@ proc twins_sieve(r_hi, kmin, kmax, ks, start_num, end_num, modpg, primes, resinv
     }
 
     seg[(kn-1) >> s] |= ~1 << ((kn-1) & bmask);
+    // TODO: Is this equivalent to these:
+    // const cnt = + reduce popCount(~seg);
+    // const cnt = + reduce for s in seg do popCount(~s);
+    // const cnt = + reduce for k in 0..(kn-1) >> s do popCount(~seg[k])
     var cnt: uint;
     for k in 0..(kn-1) >> s do cnt += popCount(~seg[k]);
     if cnt > 0 {
@@ -138,6 +139,7 @@ proc nextp_init(rhi, kmin, modpg, primes, resinvrs) {
 }
 
 proc set_sieve_parameters(start_num, end_num) {
+  writeln((start_num, end_num));
   const nrange = end_num - start_num;
   var bn = 0, pg = 3;
   if end_num < 49 {
@@ -158,16 +160,15 @@ proc set_sieve_parameters(start_num, end_num) {
     bn = 384; pg = 17;
   }
   const (modpg, res_0, pairscnt, restwins, resinvrs) = gen_pg_parameters(pg);
-  const kmin = (start_num-2) / modpg + 1, // number of resgroups to start_num
-        kmax = (end_num - 2) / modpg + 1, // number of resgroups to end_num
-        krange = kmax - kmin + 1,         // number of resgroups in range (> 1)
+  const kmin = (start_num-2) / modpg + 1,
+        kmax = (end_num - 2) / modpg + 1,
+        krange = kmax - kmin + 1,
         n = if krange < 37_500_000_000_000 then 4 else if krange < 975_000_000_000_000 then 6 else 8,
-        b = bn * 1024 * n,                // set seg size to optimize for selected PG
+        b = bn * 1024 * n,
         ks: uint = min(krange, b);
 
   writeln("segment size = ", ks, " resgroups; seg array is [1 x ",
           ((ks-1) >> 6) + 1, "] 64-bits");
-  if debug then writeln((krange, pairscnt));
   const maxpairs = krange * pairscnt;
   writeln("twinprime candidates = ", maxpairs, "; resgroups = ", krange);
   return (modpg, res_0, ks, kmin, kmax, krange, pairscnt, restwins, resinvrs);
@@ -176,18 +177,18 @@ proc set_sieve_parameters(start_num, end_num) {
 proc gen_pg_parameters(prime) {
   use Sort;
 
-  // Create prime generator parameters for given Pn
   writeln("using Prime Generator parameters for P", prime);
   const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23];
-  var modpg = 1, res_0 = 0;         // compute Pn's modulus and res_0 value
+  var modpg = 1, res_0 = 0;
   for prm in primes {
     res_0 = prm;
     if prm > prime then break;
     modpg *= prm;
   }
-  var inverses: [0..<modpg + 2] int;  // TODO: is 64-bits overkill?
+  var inverses: [0..<modpg + 2] int;
   var restwins = gen_restwins(modpg, inverses);
   sort(restwins);
+  writeln(restwins);
   inverses[modpg + 1] = 1;
   inverses[modpg - 1] = modpg - 1;
   return (modpg, res_0, restwins.size, restwins, inverses);
@@ -203,8 +204,8 @@ iter gen_restwins(modpg, inverses) {
       if res + 2 == rc {
         yield rc;
         yield mc + 2;
-        res = rc;
       }
+      res = rc;
     }
     rc += inc;
     inc ^= 0b110;
@@ -252,7 +253,8 @@ iter sozp5(val, res_0, start_num, end_num) {
   var r = 0; 
   while (resk >= res[r]) do r += 1;
   const pcs_to_sqrtn = k*rescnt + r;
-  for i in 0:uint..<pcs_to_sqrtn {
+  if pcs_to_sqrtn != 0 then for i in 0:uint..<pcs_to_sqrtn {
+    writeln("Within loop");
     const k = (i/rescnt): uint,
           r = (i%rescnt): int;
     if prms[k] & (1 << r) != 0 then continue;
@@ -280,3 +282,8 @@ iter sozp5(val, res_0, start_num, end_num) {
     }
   }
 }
+
+
+// TODO: 32 vs. 64-bit?
+// TODO: for vs. foreach
+// TODO: if ( ... etc.
