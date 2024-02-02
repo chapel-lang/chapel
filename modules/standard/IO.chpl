@@ -2523,6 +2523,9 @@ record fileReader {
   type deserializerType = defaultSerializeType(/* writing= */ false, kind);
 
   @chpldoc.nodoc
+  var _file_handle: shared fileHandle? = nil;
+
+  @chpldoc.nodoc
   var _home:locale = here;
   @chpldoc.nodoc
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
@@ -2539,6 +2542,15 @@ record fileReader {
   // Therefore further locking by the same task is not necessary.
   @chpldoc.nodoc
   var _readWriteThisFromLocale = nilLocale;
+}
+
+@chpldoc.nodoc
+class fileHandle {
+  var f: file;
+
+  proc deinit() {
+    try! f.close();
+  }
 }
 
 pragma "ignore deprecated use"
@@ -4615,6 +4627,7 @@ proc fileReader.init=(x: fileReader) {
   on x._home {
     qio_channel_retain(x._channel_internal);
   }
+  this._file_handle = x._file_handle;
 }
 
 @chpldoc.nodoc
@@ -5861,6 +5874,82 @@ private proc openReaderHelper(path:string,
   var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(kind, locking, region, hints, style,
                              deserializer=deserializer);
+}
+
+/*
+  Create a :record:`fileReader` around a :type:`string`
+
+  Note that the string is copied into a local memory file, so it can be modified
+  after the ``fileReader`` is created without affecting the contents of the
+  ``fileReader``.
+
+  :arg s: the ``string`` to read from
+  :arg deserializer: deserializer to use when reading.
+
+  :returns: a ``fileReader`` reading from the string
+
+*/
+@unstable("'openStringReader' is an experimental feature; its name and behavior are subject to change")
+proc openStringReader(in s: string, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
+  // populate a memory file with the contents of the string
+  const slocal = s.localize();
+  var f = openMemFile(),
+      w = f.writer();
+  w.write(slocal);
+  w.close();
+
+  // create a fileReader for the memory file
+  var err: errorCode = 0,
+      fr = new fileReader(
+        _iokind.dynamic, false, deserializer, f, err, ioHintSet.empty,
+        0, f.size, defaultIOStyleInternal()
+      );
+
+  if err then try fr._ch_ioerror(err, "in openStringReader");
+
+  // give the fileReader a handle to the file so it can be closed when
+  // this fileReader is deinitialized
+  fr._file_handle = new shared fileHandle(f);
+
+  return fr;
+}
+
+/*
+  Create a :record:`fileReader` around a :type:`bytes`
+
+  Note that the bytes is copied into a local memory file, so it can be modified
+  after the ``fileReader`` is created without affecting the contents of the
+  ``fileReader``.
+
+  :arg b: the ``bytes`` to read from
+  :arg deserializer: deserializer to use when reading.
+
+  :returns: a ``fileReader`` reading from the string
+
+*/
+@unstable("'openStringReader' is an experimental feature; its name and behavior are subject to change")
+proc openStringReader(in b: bytes, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
+  // populate a memory file with the contents of the bytes
+  const blocal = b.localize();
+  var f = openMemFile(),
+      w = f.writer();
+  w.write(blocal);
+  w.close();
+
+  // create a fileReader for the memory file
+  var err: errorCode = 0,
+      fr = new fileReader(
+        _iokind.dynamic, false, deserializer, f, err, ioHintSet.empty,
+        0, f.size, defaultIOStyleInternal()
+      );
+
+  if err then try fr._ch_ioerror(err, "in openStringReader");
+
+  // give the fileReader a handle to the file so it can be closed when
+  // this fileReader is deinitialized
+  fr._file_handle = new shared fileHandle(f);
+
+  return fr;
 }
 
 @deprecated("openWriter with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
