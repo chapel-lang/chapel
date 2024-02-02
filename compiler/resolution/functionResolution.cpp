@@ -11249,6 +11249,7 @@ static void resolveExterns()
 
 // Returns 'true' if the type 'at' was resolved.
 static bool maybeForceResolveAggregateType(AggregateType* at) {
+  if (at == nullptr) return false;
   for_SymbolSymExprs(use, at->symbol) {
     if (use->inTree()) {
       at->resolveConcreteType();
