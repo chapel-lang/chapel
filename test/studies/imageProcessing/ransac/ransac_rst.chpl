@@ -129,13 +129,13 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
      only one or two cores.  Why is still being investigated.
   */
   forall i in 1..ntry {
-    var rand : owned RandomStream(real)?;      /* random numbers to pick seeds */
+    var rand : randomStream(real);      /* random numbers to pick seeds */
     var trytime : stopwatch;                /* run time for this try */
 
     if (fixrng) {
-      rand = createRandomStream(real, (2*i) + 1);
+      rand = new randomStream(real, (2*i) + 1);
     } else {
-      rand = createRandomStream(real);
+      rand = new randomStream(real);
     }
 
     trytime.start();
@@ -196,7 +196,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     modifies:  trial.seed[123], trial.map
 ***/
 proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
-                rand : RandomStream?(?), inout trial : tryinfo) : bool {
+                ref rand : randomStream(?), inout trial : tryinfo) : bool {
   var ind11, ind12 : int;               /* seed1 indices in corners1,2 */
   var ind21, ind22 : int;               /* seed2 indices in corners1,2 */
   var ind31, ind32 : int;               /* seed3 indices in corners1,2 */
@@ -654,8 +654,8 @@ inline proc are_corners_similar(c1 : corner, c2 : corner) : bool {
                     rng - range to get random number within
     returns:   random point within range
 ***/
-proc random_ranged(rand : RandomStream?(?), rng : range) : rng.idxType {
-  const elt = rng.size * rand!.getNext();      /* scale random to range */
+proc random_ranged(ref rand : randomStream(?), rng : range) : rng.idxType {
+  const elt = rng.size * rand.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
      value.  That way we wouldn't have to worry about the type. */
@@ -668,7 +668,7 @@ proc random_ranged(rand : RandomStream?(?), rng : range) : rng.idxType {
                     dom - domain to generate point in
     returns:   random point within domain
 ***/
-proc random_domain(rand : RandomStream?(?), dom : domain(?)) : dom.rank * dom.idxType {
+proc random_domain(rand : randomStream(?), dom : domain(?)) : dom.rank * dom.idxType {
   /* Do not use dom.numIndices.  dom.rank is a param, and the tuple declaration
      requires a parameter. */
   var pt : dom.rank * dom.idxType;
@@ -684,9 +684,9 @@ proc random_domain(rand : RandomStream?(?), dom : domain(?)) : dom.rank * dom.id
                    rmin, rmax - bounds of range (incl.)
     returns:   random number from rmin t/m rmax
 ***/
-proc random_bound(rand : RandomStream?(?), rmin : int, rmax : int) : int {
+proc random_bound(ref rand : randomStream(?), rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
-  const elt = len * rand!.getNext();             /* scale random to range */
+  const elt = len * rand.getNext();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */
   return res;
 }
@@ -1135,7 +1135,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
                        map1to2 : [] int, map2to1 : [] int) {
   var tries : [1..ntry] tryinfo;        /* details about each try */
   var besttry : int;                    /* try with best result */
-  var rand = createRandomStream(real);  /* random numbers to pick seeds */
+  var rand = new randomStream(real);    /* random numbers to pick seeds */
   const minlen                          /* smallest number of corners */
     = min(corners1.domain.dim(0).last, corners2.domain.dim(0).last);
   const mincnt                          /* number corners that must match */
@@ -1163,7 +1163,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
   coforall thr in 1..here.maxTaskPar with (ref rand) {
     while (true) {
       const trial = nexttry.fetchAdd(1);
-      var rand_local = createRandomStream(parSafe=false);
+      var rand_local = new randomStream(parSafe=false);
 
       if (ntry < trial) then break;
 

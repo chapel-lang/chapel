@@ -18,42 +18,64 @@ config const binout = false;            /* true to store in binary format */
 
 /* Simplified form of our cluster.  Doesn't include the variables for
    determining the cluster's center of mass. */
-record cluster {
+record cluster : serializable {
   var npix : int;
   var r, g, b : uint(8);
   var c1, c2, c3 : real;
+
+  proc init() {}
+
+  proc init(reader, ref deserializer) throws {
+    init this;
+    readThis(reader);
+  }
 
   /***
       writeThis:      General serialization of the data.
       args:           f - writer channel
   ***/
   proc writeThis(f) {
-    const sp = new ioLiteral(" ");
-
     /* Reading will fail if you put spaces in a binary output stream. */
     if (binout) {
       f.write(npix, c1, c2, c3, r, g, b);
     } else {
-      f.write(npix, sp, c1, sp, c2, sp, c3, sp, r, sp, g, sp, b);
+      f.write(npix);
+      f.writeLiteral(" ");
+      f.write(c1);
+      f.writeLiteral(" ");
+      f.write(c2);
+      f.writeLiteral(" ");
+      f.write(c3);
+      f.writeLiteral(" ");
+      f.write(r);
+      f.writeLiteral(" ");
+      f.write(g);
+      f.writeLiteral(" ");
+      f.write(b);
     }
+  }
+
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   /***
       readThis:       General deserialization of the data.
       args:           f - reader channel
   ***/
-  proc readThis(f) {
+  proc ref readThis(f) {
     /* Reading will fail if you put spaces in a binary output stream. */
     f.read(npix, c1, c2, c3, r, g, b);
+  }
+
+  proc deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 }
 
 /*
-  NOTE: We have the following warnings (1.26, 1.27), but I don't know any alternative for now:
-    ex_file.chpl:63: warning: iostyle is deprecated, a new way of controlling channel output is planned
-    ex_file.chpl:64: warning: iostyle is deprecated, a new way of controlling channel output is planned
-    ex_file.chpl:81: warning: open with a style argument is deprecated
-    ex_file.chpl:87: warning: open with a style argument is deprecated
+  NOTE: I don't know how to handle iostyle(precision=17, realfmt=1) using a
+  (de)serializer.
 */
 
 proc main() {

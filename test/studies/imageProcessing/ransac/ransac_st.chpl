@@ -133,13 +133,13 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
      to only use one or two cores (why is still being checked).
   */
   forall i in 1..ntry {
-    var rand : owned RandomStream(real)?;      /* random numbers to pick seeds */
+    var rand : randomStream(real);      /* random numbers to pick seeds */
     var trytime : stopwatch;                /* run time for this try */
 
     if (fixrng) {
-      rand = createRandomStream(real, (2*i) + 1);
+      rand = new randomStream(real, (2*i) + 1);
     } else {
-      rand = createRandomStream(real);
+      rand = new randomStream(real);
     }
 
     trytime.start();
@@ -196,7 +196,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     modifies:  try.seed[12], try.map
 ***/
 proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
-                rand : RandomStream?(?), inout trial : tryinfo) : bool {
+                ref rand : randomStream(?), inout trial : tryinfo) : bool {
   var ind11, ind12 : int;               /* seed1 indices in corners1, 2 */
   var ind21, ind22 : int;               /* seed2 indices in corners1, 2 */
   var matches : [corners2.domain] int;  /* possible seeds in corners2 */
@@ -540,8 +540,8 @@ inline proc quadrant(corner1 : corner, corner2 : corner) : int {
                     rng - range to get random number within
     returns:   random point within range
 ***/
-proc random_ranged(rand : RandomStream?(?), rng : range) : rng.idxType {
-  const elt = rng.size * rand!.getNext();      /* scale random to range */
+proc random_ranged(ref rand : randomStream(?), rng : range) : rng.idxType {
+  const elt = rng.size * rand.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
      value.  That way we wouldn't have to worry about the type. */
@@ -554,9 +554,9 @@ proc random_ranged(rand : RandomStream?(?), rng : range) : rng.idxType {
                    rmin, rmax - bounds of range (incl.)
     returns:   random number from rmin t/m rmax
 ***/
-proc random_bound(rand : RandomStream?(?), rmin : int, rmax : int) : int {
+proc random_bound(ref rand : randomStream(?), rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
-  const elt = len * rand!.getNext();             /* scale random to range */
+  const elt = len * rand.getNext();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */
   return res;
 }

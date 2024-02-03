@@ -68,7 +68,7 @@ record cluster {
                     rng - range to get random number within
     returns:   random point within range
 ***/
-proc random_ranged(rand : RandomStream(?), rng : range) : rng.idxType {
+proc random_ranged(ref rand : randomStream(?), rng : range) : rng.idxType {
   const elt = rng.size * rand.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
@@ -83,7 +83,7 @@ proc random_ranged(rand : RandomStream(?), rng : range) : rng.idxType {
                     dom - domain to generate point in
     returns:   random point within domain
 ***/
-proc random_domain(rand : RandomStream(?), dom : domain(?)) : dom.rank * dom.idxType {
+proc random_domain(ref rand : randomStream(?), dom : domain(?)) : dom.rank * dom.idxType {
   /* Do not use dom.numIndices.  dom.rank is a param, and the tuple declaration
      requires a parameter. */
   var pt : dom.rank * dom.idxType;
@@ -356,7 +356,7 @@ proc fillin_empties(ref kset : [] cluster, space : clrspace) {
     modifies:  kset
 ***/
 proc seed_clusters(clr : unmanaged clrimage?, ref kset : [] cluster) {
-  const rand = createRandomStream(real);  /* random numbers to pick pixels */
+  var rand = new randomStream(real);  /* random numbers to pick pixels */
   var dmax : real;                      /* max distance to seeded clusters */
   var d : real;                         /* distance to another cluster */
   /* Note that the type-checking here isn't good.  You can make this any
