@@ -39,8 +39,8 @@ var rgb : c_ptr(rgbimage);              /* the image we read */
 var xy : int(32);                       /* 1D index of x, y coord */
 
 /* External img_png linkage. */
-extern proc PNG_read(fname : c_string, ref img : c_ptr(rgbimage)) : c_int;
-extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_read(fname : c_ptrConst(c_char), ref img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_write(fname : c_ptrConst(c_char), img : c_ptr(rgbimage)) : c_int;
 extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
 /* The rest of the interface we don't use now. */
 /*

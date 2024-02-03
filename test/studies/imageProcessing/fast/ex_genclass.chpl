@@ -19,8 +19,15 @@ class chunkarray {
   var Ldata : domain(rank=1)            /* range for data (starts empty) */
     = 1..0;
   var data : [Lalloc] eltType;          /* the allocation */
-  var lock$ : sync int                  /* synchronization lock in append */
+  var lock : sync int                   /* synchronization lock in append */
     = 1;
+
+  /***
+      init:  Default initializer.
+  ***/
+  proc init(type elemType) {
+    eltType = elemType;
+  }
 
   /***
       this:  Retrieve the array.
@@ -52,7 +59,7 @@ class chunkarray {
       modifies:  data, Lalloc, Ldata
   ***/
   proc append(const in val : eltType) {
-    lock$.readFE();
+    lock.readFE();
 
     /* Slice the expansion to trim negative indices. */
     if (Ldata.high == Lalloc.high) {
@@ -63,7 +70,7 @@ class chunkarray {
     Ldata = Ldata.expand(1)[1..];
     data[Ldata.high] = val;
 
-    lock$.writeEF(1);
+    lock.writeEF(1);
   }
 
   /***

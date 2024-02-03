@@ -31,8 +31,8 @@ var rpix, gpix, bpix : c_uchar;         /* RGB value at x, y */
 
 /* External img_png linkage. */
 extern type rgbimage;
-extern proc PNG_read(fname : c_string, ref img : c_ptr(rgbimage)) : c_int;
-extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_read(fname : c_ptrConst(c_char), ref img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_write(fname : c_ptrConst(c_char), img : c_ptr(rgbimage)) : c_int;
 extern proc read_rgb(img : c_ptr(rgbimage), x : c_int, y : c_int,
 ref r : c_uchar, ref g : c_uchar, ref b : c_uchar) : c_int;
 extern proc write_rgb(img : c_ptr(rgbimage), x : c_int, y : c_int,

@@ -35,6 +35,7 @@
 *****/
 
 use CTypes;
+use Math;
 
 
 /**** C Interfaces ****/
@@ -57,9 +58,9 @@ extern const CLR_G : int(32);
 extern const CLR_B : int(32);
 
 /* External img_png linkage. */
-extern proc PNG_read(fname : c_string, ref img : c_ptr(rgbimage)) : c_int;
-extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage), plane : c_int) : c_int;
-extern proc PNG_isa(fname : c_string) : c_int;
+extern proc PNG_read(fname : c_ptrConst(c_char), ref img : c_ptr(rgbimage)) : c_int;
+extern proc PNG_write(fname : c_ptrConst(c_char), img : c_ptr(rgbimage), plane : c_int) : c_int;
+extern proc PNG_isa(fname : c_ptrConst(c_char)) : c_int;
 extern proc alloc_rgbimage(ref img : c_ptr(rgbimage),
                            ncol : c_int, nrow : c_int) : c_int;
 extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
@@ -161,11 +162,8 @@ record conversion {
     modifies:  clr
 ***/
 proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage?, space : clrspace) {
-  /* var clrfn : func(c_uchar, c_uchar, c_uchar, 3*real)?; */
+  var clrfn : (proc(r : c_uchar, g : c_uchar, b : c_uchar): 3*real)?;
                                         /* convert function */
-  /* NOTE: This allows to compile even if it is not the expected behavior
-  (see Github issue #23168). */
-  var clrfn = rgbpix_to_lab;
   var xy : int;                         /* pixel index */
 
   select space {

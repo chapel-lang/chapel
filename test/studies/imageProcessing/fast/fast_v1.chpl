@@ -21,6 +21,7 @@
 public use ip_color_v3;
 use Help;
 use CTypes;
+use Math;
 
 
 /**** Command Line Arguments ****/
@@ -110,7 +111,7 @@ class circumference {
     x_center = xc;
     y_center = yc;
     close_circle = closed;
-    this.complete();
+    init this;
     set_radius(radius);
   }
 
@@ -171,7 +172,7 @@ class circumference {
   ***/
   proc init(radius : int) {
 
-    this.complete();
+    init this;
     set_radius(radius);
   }
 

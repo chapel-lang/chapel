@@ -27,6 +27,7 @@
 use ip_color_v3;
 use Sort;
 use CTypes;
+use Math;
 
 
 
@@ -124,7 +125,7 @@ class circumference {
     x_center = xc;
     y_center = yc;
     close_circle = closed;
-    this.complete();
+    init this;
     set_radius(radius);
   }
 
@@ -185,7 +186,7 @@ class circumference {
   ***/
   proc init(radius : int) {
 
-    this.complete();
+    init this;
     set_radius(radius);
   }
 
@@ -389,8 +390,15 @@ class chunkarray {
   var Ldata : domain(rank=1)            /* range for data (starts empty) */
     = 1..0;
   var data : [Lalloc] eltType;          /* the allocation */
-  var lock$ : sync int                  /* synchronization lock in append */
+  var lock : sync int                   /* synchronization lock in append */
     = 1;
+
+  /***
+      init:  Default initializer.
+  ***/
+  proc init(type elemType) {
+    eltType = elemType;
+  }
 
   /***
       this:  Return a copy of the data array limiting only to stored entries.
@@ -422,7 +430,7 @@ class chunkarray {
       modifies:  data, Lalloc, Ldata
   ***/
   proc append(const in val : eltType) {
-    lock$.readFE();
+    lock.readFE();
 
     /* Slice the expansion to trim negative values. */
     if (Ldata.high == Lalloc.high) {
@@ -431,7 +439,7 @@ class chunkarray {
     Ldata = Ldata.expand(1)[1..];
     data(Ldata.high) = val;
 
-    lock$.writeEF(1);
+    lock.writeEF(1);
   }
 
   /***
@@ -693,7 +701,7 @@ proc suppress_corners(rawcnr : unmanaged chunkarray(corner),
     modifies:  parent
 ***/
 private
-proc set_parent(corners : [] corner, c1 : int, c2 : int, parent : [] int) {
+proc set_parent(corners : [] corner, c1 : int, c2 : int, ref parent : [] int) {
   var root1 = c1;                     /* search up c1 tree to top */
   while (0 <= parent(root1)) do {
     root1 = parent(root1);

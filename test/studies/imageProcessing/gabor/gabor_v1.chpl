@@ -80,7 +80,7 @@ proc wrap_360(in ang : real) {
     modifies:  kernel
 ***/
 proc gabor_kernel(theta : real, sclx : real, scly : real,
-                  wavelen : real, phi : real, kernel : [] real) {
+                  wavelen : real, phi : real, ref kernel : [] real) {
   for (y, x) in kernel.domain {
     /* rotated x, y coordinates */
     const xrot = ( x * cos(theta)) + (y * sin(theta));

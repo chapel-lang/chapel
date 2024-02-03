@@ -534,27 +534,27 @@ class kdtree {
              noeq - true halts program if pt1 == pt2
   ***/
 
-  inline proc kdpoint_lteq(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
+  inline proc kdpoint_lteq(pt1 : kdpoint(?), pt2 : kdpoint(?), cbase : int,
                            noeq = true) : bool {
     return point_lteq(pt1.pt, pt2.pt, cbase, noeq);
   }
 
-  inline proc kdpoint_lt(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
+  inline proc kdpoint_lt(pt1 : kdpoint(?), pt2 : kdpoint(?), cbase : int,
                          noeq = true) : bool {
     return point_lt(pt1.pt, pt2.pt, cbase, noeq);
   }
 
-  inline proc kdpoint_gt(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
+  inline proc kdpoint_gt(pt1 : kdpoint(?), pt2 : kdpoint(?), cbase : int,
                          noeq = true) : bool {
     return point_gt(pt1.pt, pt2.pt, cbase, noeq);
   }
 
-  inline proc kdpoint_gteq(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
+  inline proc kdpoint_gteq(pt1 : kdpoint(?), pt2 : kdpoint(?), cbase : int,
                            noeq = true) : bool {
     return point_gteq(pt1.pt, pt2.pt, cbase, noeq);
   }
 
-  proc kdpoint_eq(pt1 : kdpoint, pt2 : kdpoint) : bool {
+  proc kdpoint_eq(pt1 : kdpoint(?), pt2 : kdpoint(?)) : bool {
     return pt1.pt == pt2.pt;
   }
 

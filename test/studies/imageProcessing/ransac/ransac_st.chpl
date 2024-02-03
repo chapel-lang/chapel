@@ -53,6 +53,7 @@ use Random;
 use Sort;
 use Time;
 use CTypes;
+use Math;
 
 
 /**** Command Line Arguments ****/
@@ -112,7 +113,7 @@ record tryinfo {
 ***/
 proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
                    out bestmap : mapinfo,
-                   map1to2 : [] int, map2to1 : [] int) {
+                   ref map1to2 : [] int, ref map2to1 : [] int) {
   var tries : [1..ntry] tryinfo;        /* details about each try */
   var besttry : int;                    /* try with best result */
   const minlen                          /* smallest number of corners */
@@ -195,7 +196,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     modifies:  try.seed[12], try.map
 ***/
 proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
-                rand : RandomStream?, inout trial : tryinfo) : bool {
+                rand : RandomStream?(?), inout trial : tryinfo) : bool {
   var ind11, ind12 : int;               /* seed1 indices in corners1, 2 */
   var ind21, ind22 : int;               /* seed2 indices in corners1, 2 */
   var matches : [corners2.domain] int;  /* possible seeds in corners2 */
@@ -323,12 +324,12 @@ proc valid_map(mapping : mapinfo) : bool {
     modifies:  mapped
 ***/
 proc map_corners(const corners : [] corner, const in mapping : mapinfo,
-                 mapped : [] corner) {
+                 ref mapped : [] corner) {
 
   /* This gets everything; we'll overwrite the center and start. */
   mapped = corners;
 
-  forall c in corners.domain with (const in mapping, ref mapped) {
+  forall c in corners.domain with (const mapping, ref mapped) {
     const (xc, yc) = corners(c).center;
     const vc = nearbyint(mapping.sx * xc + mapping.dx) : int;
     const wc = nearbyint(mapping.sy * yc + mapping.dy) : int;
@@ -349,7 +350,7 @@ proc map_corners(const corners : [] corner, const in mapping : mapinfo,
     returns:   number of corners that match
 ***/
 proc count_matches(const corners1 : [] corner, const corners2 : [] corner,
-                   tree : kdtree) : int {
+                   tree : kdtree(?)) : int {
   var map1to2 : [corners1.domain] int;  /* corners2 matching corners1 */
   var map2to1 : [corners2.domain] int;  /* corners1 matching corners2 */
 
@@ -367,7 +368,7 @@ proc count_matches(const corners1 : [] corner, const corners2 : [] corner,
     modifies:  map1to2, map2to1
 ***/
 proc match_corners(const corners1 : [] corner, const corners2 : [] corner,
-                   tree : kdtree, map1to2 : [] int, map2to1 : [] int) : int {
+                   tree : kdtree(?), ref map1to2 : [] int, ref map2to1 : [] int) : int {
   var nmap : int;                       /* number of matching corners */
 
   /* Originally we used 'ref mapping : mapinfo' as an argument where the
@@ -539,7 +540,7 @@ inline proc quadrant(corner1 : corner, corner2 : corner) : int {
                     rng - range to get random number within
     returns:   random point within range
 ***/
-proc random_ranged(rand : RandomStream?, rng : range) : rng.idxType {
+proc random_ranged(rand : RandomStream?(?), rng : range) : rng.idxType {
   const elt = rng.size * rand!.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
@@ -553,7 +554,7 @@ proc random_ranged(rand : RandomStream?, rng : range) : rng.idxType {
                    rmin, rmax - bounds of range (incl.)
     returns:   random number from rmin t/m rmax
 ***/
-proc random_bound(rand : RandomStream?, rmin : int, rmax : int) : int {
+proc random_bound(rand : RandomStream?(?), rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
   const elt = len * rand!.getNext();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */

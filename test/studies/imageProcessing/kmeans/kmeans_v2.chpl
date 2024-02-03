@@ -51,6 +51,11 @@ record cluster {
   var sum1, sum2, sum3 : atomic real;   /* sums for centers of mass */
   var sumh : atomic real;               /* temp needed to sum H */
   var r, g, b : c_uchar;                /* equivalent RGB value of cluster */
+
+  /***
+      init:  Default initializer.
+  ***/
+  proc init() {}
 }
 
 
@@ -63,7 +68,7 @@ record cluster {
                     rng - range to get random number within
     returns:   random point within range
 ***/
-proc random_ranged(rand : RandomStream, rng : range) : rng.idxType {
+proc random_ranged(rand : RandomStream(?), rng : range) : rng.idxType {
   const elt = rng.size * rand.getNext();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
@@ -78,7 +83,7 @@ proc random_ranged(rand : RandomStream, rng : range) : rng.idxType {
                     dom - domain to generate point in
     returns:   random point within domain
 ***/
-proc random_domain(rand : RandomStream, dom : domain) : dom.rank * dom.idxType {
+proc random_domain(rand : RandomStream(?), dom : domain(?)) : dom.rank * dom.idxType {
   /* Do not use dom.numIndices.  dom.rank is a param, and the tuple declaration
      requires a parameter. */
   var pt : dom.rank * dom.idxType;
@@ -298,7 +303,7 @@ proc closest_cluster(c1 : real, c2 : real, c3 : real, space : clrspace,
                      space - color space data is in
     modifies:  kset
 ***/
-proc fillin_empties(kset : [] cluster, space : clrspace) {
+proc fillin_empties(ref kset : [] cluster, space : clrspace) {
   var kst : int;                        /* first of averaging pair */
 
   record Comparator {};
@@ -350,7 +355,7 @@ proc fillin_empties(kset : [] cluster, space : clrspace) {
                     kset - position of clusters to seed
     modifies:  kset
 ***/
-proc seed_clusters(clr : unmanaged clrimage?, kset : [] cluster) {
+proc seed_clusters(clr : unmanaged clrimage?, ref kset : [] cluster) {
   const rand = createRandomStream(real);  /* random numbers to pick pixels */
   var dmax : real;                      /* max distance to seeded clusters */
   var d : real;                         /* distance to another cluster */
@@ -411,7 +416,7 @@ proc seed_clusters(clr : unmanaged clrimage?, kset : [] cluster) {
                < 0 on failure (value depends on error)
     modifies:  kset, ids
 ***/
-proc mark_and_backfill(clr : unmanaged clrimage?, kset : [] cluster,
+proc mark_and_backfill(clr : unmanaged clrimage?, ref kset : [] cluster,
                        ref quant : c_ptr(rgbimage)) : int {
   var retval: int;
 

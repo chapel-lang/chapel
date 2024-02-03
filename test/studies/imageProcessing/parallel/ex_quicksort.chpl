@@ -33,7 +33,7 @@ config param use_insert = false;        /* true to insertionsort small arrays */
                 rng - region of array to process with this pass
     modifies:  data
 ***/
-proc quicksort(data : [] real) {
+proc quicksort(ref data : [] real) {
   var q : int;                          /* index of pivot */
 
   if (data.domain.first < data.domain.last) {
@@ -58,7 +58,7 @@ proc quicksort(data : [] real) {
     returns:   index of element that's now in place
     modifies:  data
 ***/
-proc partition(data : [] real) : int {
+proc partition(ref data : [] real) : int {
 
   const pivot = data(data.domain.last);
   var i = data.domain.first - 1;
