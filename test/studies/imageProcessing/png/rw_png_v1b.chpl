@@ -22,7 +22,7 @@
 use CTypes;
 
 
-require "img_png_v1.h", "build/img_png_v1.o", "-lpng";
+require "img_png_v1.h", "img_png_v1.c", "-lpng";
 
 /* Command line arguments. */
 config const inname : string;           /* name of file to read */
