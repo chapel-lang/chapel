@@ -1,2 +1,7 @@
+ex_file.chpl:81: In function 'main':
+ex_file.chpl:85: warning: iostyle is deprecated; please use Serializers or Deserializers instead
+ex_file.chpl:86: warning: iostyle is deprecated; please use Serializers or Deserializers instead
+ex_file.chpl:103: warning: open with a 'style' argument is deprecated
+ex_file.chpl:109: warning: open with a 'style' argument is deprecated
 Compare write to read back
   no differences

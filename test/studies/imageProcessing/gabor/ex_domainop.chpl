@@ -21,7 +21,8 @@ writeln(" as function argument/array assignment:");
 var arr1 : [dom1] int;
 var arr2 : [dom1] int;
 
-arr2 = domfn1(dom1);
+/* NOTE: this assignment has been serialized to ensure deterministic output. */
+serial { arr2 = domfn1(dom1); }
 writeln("  arr2");
 writeln(arr2);
 

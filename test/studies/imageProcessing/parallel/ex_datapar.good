@@ -1,3 +1,4 @@
+ex_datapar.chpl:46: warning: scan has been serialized (see issue #12482)
 
 Demonstrating forall and reduce
   grand sum via column sum   665667000000
