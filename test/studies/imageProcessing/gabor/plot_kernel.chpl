@@ -18,6 +18,7 @@
 *****/
 
 use CTypes;
+use Math;
 
 
 config const outname = "filter.png";    /* output file name */

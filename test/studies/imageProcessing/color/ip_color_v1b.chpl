@@ -161,8 +161,11 @@ record conversion {
     modifies:  clr
 ***/
 proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage?, space : clrspace) {
-  var clrfn : func(c_uchar, c_uchar, c_uchar, 3*real)?;
+  /* var clrfn : func(c_uchar, c_uchar, c_uchar, 3*real)?; */
                                         /* convert function */
+  /* NOTE: This allows to compile even if it is not the expected behavior
+  (see Github issue #23168). */
+  var clrfn = rgbpix_to_lab;
   var xy : int;                         /* pixel index */
 
   select space {

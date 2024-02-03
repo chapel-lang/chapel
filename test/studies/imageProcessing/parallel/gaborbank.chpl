@@ -27,6 +27,7 @@
 use ip_color_v2;
 use Help;
 use CTypes;
+use Math;
 
 
 config const inname : string;           /* input file name */

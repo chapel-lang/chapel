@@ -29,6 +29,8 @@
       c 2015-2018 Primordial Machine Vision Systems
 *****/
 
+use Math;
+
 
 /**** Constants ****/
 
