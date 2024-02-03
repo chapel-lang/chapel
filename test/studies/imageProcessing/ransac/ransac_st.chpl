@@ -163,7 +163,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     } while (tries(i).nfail < nfail);
 
     trytime.stop();
-    tries(i).ttry = trytime.elapsed(TimeUnits.milliseconds);
+    tries(i).ttry = trytime.elapsed() * 1_000;
   }
 
   besttry = select_besttry(tries);

@@ -78,13 +78,13 @@ proc main() {
   /* No error checking - see main version for full usage.  We first open
      the file, then a write/read channel to it, then close in the opposite
      order. */
-  var fout = open("tst.out", iomode.cw, style=style);
+  var fout = open("tst.out", ioMode.cw, style=style);
   var chout = fout.writer();
   chout.write(kout);
   chout.close();
   fout.close();
 
-  var fin = open("tst.out", iomode.r, style=style);
+  var fin = open("tst.out", ioMode.r, style=style);
   var chin = fin.reader();
   chin.read(kin);
   chin.close();

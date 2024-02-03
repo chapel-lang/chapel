@@ -12,9 +12,9 @@
 
 
 class citer {
-  var r : int;
   var center_x, center_y : int;
   var closed_circle : bool;
+  var r : int;
 
   /* Initializer only setting up the radius. */
   proc init(radius : int) {

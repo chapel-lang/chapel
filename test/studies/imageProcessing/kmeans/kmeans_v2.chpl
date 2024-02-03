@@ -157,8 +157,8 @@ proc cluster_colors(clr : unmanaged clrimage?, ncluster : int,
   t1.stop();
 
   writeln("\nTiming (in ms)\n");
-  writef("  color clustering   %8.3dr\n", t0.elapsed(TimeUnits.milliseconds));
-  writef("  color mapping      %8.3dr\n", t1.elapsed(TimeUnits.milliseconds));
+  writef("  color clustering   %8.3dr\n", t0.elapsed() * 1_000);
+  writef("  color mapping      %8.3dr\n", t1.elapsed() * 1_000);
 
   return retval;
 }

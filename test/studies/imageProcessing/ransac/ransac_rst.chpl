@@ -160,7 +160,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     } while (tries(i).nfail < nfail);
 
     trytime.stop();
-    tries(i).ttry = trytime.elapsed(TimeUnits.milliseconds);
+    tries(i).ttry = trytime.elapsed() * 1_000;
   }
 
   besttry = select_besttry(tries);
@@ -1180,7 +1180,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
         seedtime.stop();
         attempts(trial)(tries(trial).nfail).seeded = picked;
         attempts(trial)(tries(trial).nfail).tseed =
-          seedtime.elapsed(TimeUnits.milliseconds);
+          seedtime.elapsed() * 1_000;
 
         if (picked) {
           attempts(trial)(tries(trial).nfail).seed1 = tries(trial).seed1;
@@ -1193,7 +1193,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
 
           failtime.stop();
           attempts(trial)(tries(trial).nfail).tattempt =
-            failtime.elapsed(TimeUnits.milliseconds);
+            failtime.elapsed() * 1_000;
 
           if (mincnt <= matchcnt) {
             tries(trial).nmap = matchcnt;
@@ -1203,13 +1203,13 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
         } else {
           failtime.stop();
           attempts(trial)(tries(trial).nfail).tattempt =
-            failtime.elapsed(TimeUnits.milliseconds);
+            failtime.elapsed() * 1_000;
         }
         tries(trial).nfail += 1;
       } while (tries(trial).nfail < nfail);
 
       trytime.stop();
-      tries(trial).ttry = trytime.elapsed(TimeUnits.milliseconds);
+      tries(trial).ttry = trytime.elapsed() * 1_000;
 
       delete rand_local;
     }

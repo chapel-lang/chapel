@@ -192,7 +192,7 @@ proc rgb_convert(rgb : c_ptr(rgbimage), ref clr : unmanaged clrimage?, space : c
     args:        r, g, b - source pixel to convert
     returns:   triple with l, l_a, l_b
 ***/
-inline proc rgbpix_to_lab(const in r : c_uchar, const in g : c_uchar, const in b : c_uchar) : 3*real {
+inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar) : 3*real {
   var l, l_a, l_b : real;               /* color conversion */
   var x, y, z : real;                   /* intermidate conversion to CIE XYZ */
 
@@ -245,7 +245,7 @@ private inline proc lab_map(t : real) : real {
     args:           r, g, b - source pixel to convert
     returns:   triple with h, s, v
 ***/
-proc rgbpix_to_hsv(const in r : c_uchar, const in g : c_uchar, const in b : c_uchar) : 3*real {
+proc rgbpix_to_hsv(r : c_uchar, g : c_uchar, b : c_uchar) : 3*real {
   var h, s, v : real;                   /* color conversion */
   var minrgb : real;                    /* minimum of R, G, B values */
   var maxrgb : real;                    /* maximum of R, G, B values */
@@ -309,7 +309,7 @@ proc rgbpix_to_hsv(const in r : c_uchar, const in g : c_uchar, const in b : c_uc
     args:           r, g, b - source pixel to convert
     returns:   triple with y, u, v
 ***/
-proc rgbpix_to_yuv(const in r : c_uchar, const in g : c_uchar, const in b : c_uchar) : 3*real {
+proc rgbpix_to_yuv(r : c_uchar, g : c_uchar, b : c_uchar) : 3*real {
   var y, u, v : real;                   /* color conversion */
   var ytmp, utmp, vtmp : real;          /* color values before clamping */
 
@@ -356,7 +356,7 @@ private inline proc clamp(val : real, minval : real, maxval : real) {
     args:           r, g, b - source pixel to convert
     returns:   triple with r, g, b (no modification)
 ***/
-proc rgbpix_to_rgb(const in r : c_uchar, const in g : c_uchar, const in b : c_uchar) : 3*real {
+proc rgbpix_to_rgb(r : c_uchar, g : c_uchar, b : c_uchar) : 3*real {
 
   return (r, g, b);
 }

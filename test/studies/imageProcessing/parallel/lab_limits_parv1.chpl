@@ -114,6 +114,6 @@ proc main() {
   tred.stop();
 
   writef("\nTiming [ms]\n");
-  writef("  forall    %6.0dr\n", tpar.elapsed(TimeUnits.milliseconds));
-  writef("  reduce    %6.0dr\n\n", tred.elapsed(TimeUnits.milliseconds));
+  writef("  forall    %6.0dr\n", tpar.elapsed() * 1_000);
+  writef("  reduce    %6.0dr\n\n", tred.elapsed() * 1_000);
 }

@@ -234,11 +234,11 @@ proc main() {
   t4.stop();
 
   write("\nTiming [ms]\n");
-  writef("   PNG_read          %6.0dr\n", t0.elapsed(TimeUnits.milliseconds));
-  writef("   rgb_convert       %6.0dr\n", t1.elapsed(TimeUnits.milliseconds));
-  writef("   run_gaborfilter   %6.0dr\n", t2.elapsed(TimeUnits.milliseconds));
-  writef("   display_color     %6.0dr\n", t3.elapsed(TimeUnits.milliseconds));
-  writef("   PNG_write         %6.0dr\n", t4.elapsed(TimeUnits.milliseconds));
+  writef("   PNG_read          %6.0dr\n", t0.elapsed() * 1_000);
+  writef("   rgb_convert       %6.0dr\n", t1.elapsed() * 1_000);
+  writef("   run_gaborfilter   %6.0dr\n", t2.elapsed() * 1_000);
+  writef("   display_color     %6.0dr\n", t3.elapsed() * 1_000);
+  writef("   PNG_write         %6.0dr\n", t4.elapsed() * 1_000);
 
   free_rgbimage(rgb);
   free_rgbimage(grey);
