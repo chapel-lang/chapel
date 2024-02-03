@@ -133,7 +133,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
   */
   forall i in 1..ntry {
     var rand : owned RandomStream(real)?;      /* random numbers to pick seeds */
-    var trytime : Timer;                /* run time for this try */
+    var trytime : stopwatch;                /* run time for this try */
 
     if (fixrng) {
       rand = createRandomStream(real, (2*i) + 1);

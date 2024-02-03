@@ -25,7 +25,7 @@ proc main() {
   var limit : real;                       /* absolute min/max for L, A, or B */
   var rlim, glim, blim : int;             /* color at limit */
   var x, y, z : real;                     /* CIE XYZ coords */
-  var tpar, tred : Timer;
+  var tpar, tred : stopwatch;
 
   /* First, verify white.  (255, 255, 255) is our reference white, and
      should give L=100, A=B=0.  Print the intermediate XYZ coords as ref. */

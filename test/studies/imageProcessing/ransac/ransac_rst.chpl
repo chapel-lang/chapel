@@ -130,7 +130,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
   */
   forall i in 1..ntry {
     var rand : owned RandomStream(real)?;      /* random numbers to pick seeds */
-    var trytime : Timer;                /* run time for this try */
+    var trytime : stopwatch;                /* run time for this try */
 
     if (fixrng) {
       rand = createRandomStream(real, (2*i) + 1);
@@ -1167,13 +1167,13 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
 
       if (ntry < trial) then break;
 
-      var trytime : Timer;
+      var trytime : stopwatch;
       trytime.start();
       do {
         attempts(trial)(tries(trial).nfail).thread = thr;
 
-        var failtime : Timer;
-        var seedtime : Timer;
+        var failtime : stopwatch;
+        var seedtime : stopwatch;
         failtime.start();
         seedtime.start();
         const picked = pick_seeds(corners1, corners2, rand_local, tries(trial));

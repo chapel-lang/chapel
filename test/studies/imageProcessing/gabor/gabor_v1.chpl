@@ -188,7 +188,7 @@ proc main() {
   var grey : c_ptr(rgbimage);           /* display version after filter */
   var gabor : unmanaged clrimage?;      /* result of Gabor filter */
   var gabor2grey : conversion;          /* how to display result */
-  var t0, t1, t2, t3, t4, t5 : Timer;   /* track time of each fn call */
+  var t0, t1, t2, t3, t4, t5 : stopwatch;   /* track time of each fn call */
   var retval : int;
 
   verify_setup();

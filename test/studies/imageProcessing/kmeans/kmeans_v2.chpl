@@ -112,7 +112,7 @@ proc cluster_colors(clr : unmanaged clrimage?, ncluster : int,
   var dnpix : real;                     /* fractional change cluster pop */
   var maxdnpix : real;                  /* biggest fractional change pop */
   var npass : int;                      /* number passes we've made */
-  var t0, t1 : Timer;                   /* track time of execution */
+  var t0, t1 : stopwatch;               /* track time of execution */
   var retval : int;
 
   t0.start();
