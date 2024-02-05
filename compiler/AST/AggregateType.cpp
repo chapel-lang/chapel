@@ -1347,8 +1347,6 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
 }
 
 void AggregateType::resolveConcreteType() {
-  if (this->id == breakOnResolveID) gdbShouldBreakHere();
-
   if (resolveStatus == RESOLVING || resolveStatus == RESOLVED) {
     // Recursively constructing this type
     return;

@@ -275,10 +275,8 @@ endif
 # The string overflow false positives occur in runtime code unlike gcc 7.
 # Also avoid false positives for array bounds and comments.
 #
-# Avoid build aborting due to this warning, it may be coming from LLVM headers
-#
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-error=class-memaccess
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-class-memaccess
 endif
 
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -eq 8; echo "$$?"),0)

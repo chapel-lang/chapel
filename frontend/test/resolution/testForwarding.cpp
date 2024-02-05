@@ -456,44 +456,7 @@ static void testForwardForwardExpr() {
   forwardForwardHelper("forwarding var x = bar();", /*isVar=*/true);
 }
 
-// Two different levels of forwarding->forwarding
-static void test7() {
-  printf("test7\n");
-
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
-  const char* contents =
-    R""""(
-    module M {
-      operator +=(ref lhs: int, rhs: int) { }
-      record Inner {
-        var i: int;
-        pragma "last resort"
-        proc ref addOne() {
-          i += 1;
-          return 1.0;
-        }
-      }
-      record Middle {
-        forwarding var impl: Inner;
-      }
-      record Outer {
-        forwarding var impl: Middle;
-        forwarding var anotherImpl: Inner;
-      }
-
-      var rec: Outer;
-      var x = rec.addOne();
-    }
-    )"""";
-
-  auto qt = resolveQualifiedTypeOfX(context, contents);
-  assert(qt.type()->isRealType());
-
-  guard.realizeErrors();
-}
+// TODO: forwarding with only, except
 
 
 int main() {
@@ -508,10 +471,6 @@ int main() {
 
   testExpr();
   testForwardForwardExpr();
-
-  test7();
-
-  // TODO: forwarding with only, except
 
   return 0;
 }

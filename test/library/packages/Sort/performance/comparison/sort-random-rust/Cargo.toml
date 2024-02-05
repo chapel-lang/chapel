@@ -1,15 +1,10 @@
 [package]
 name = "sort-random-rust"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
-publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = { version = "0.8.4", features = ["small_rng"] }
-rayon = "1.8.1"
+rand = "0.8.4"
 
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
-panic = "abort"

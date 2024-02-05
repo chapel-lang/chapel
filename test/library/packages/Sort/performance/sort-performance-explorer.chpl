@@ -93,22 +93,16 @@ proc makeInput(array, inputStrings) {
   }
 }
 
-proc generateArray(size:int, describe=false) {
+proc testsize(size:int) {
   var array:[1..size] int;
 
   if inputDataScheme == 0 {
     // scheme 0 : all zeros
-    if describe then
-      writeln("generating all zeros input");
   } else if inputDataScheme == 1 {
     // scheme 1: random ints
-    if describe then
-      writeln("generating random input");
     fillRandom(array, seed=seed);
   } else if inputDataScheme == 2 {
     // scheme 2: random ints, only top byte set
-    if describe then
-      writeln("generating random input setting only the top byte");
     fillRandom(array, seed=seed);
     for a in array {
       a >>= 56;
@@ -116,8 +110,6 @@ proc generateArray(size:int, describe=false) {
     }
   } else if inputDataScheme == 3 {
     // scheme 3: random ints, only a middle byte set
-    if describe then
-      writeln("generating random input setting only a middle byte");
     fillRandom(array, seed=seed);
     for a in array {
       a >>= 56;
@@ -126,8 +118,6 @@ proc generateArray(size:int, describe=false) {
     }
   } else if inputDataScheme == 4 {
     // scheme 4: random ints, only bottom byte set
-    if describe then
-      writeln("generating random input setting only the bottom byte");
     fillRandom(array, seed=seed);
     for a in array {
       a &= 0xff;
@@ -135,31 +125,13 @@ proc generateArray(size:int, describe=false) {
   } else if inputDataScheme == 5 {
     // scheme 5: heavily skewed distribution,
     // values are (1 << (random % 64))
-    if describe then
-      writeln("generating random powers of 2 input");
     fillRandom(array, seed=seed);
     for a in array {
       var shift = mod(a, 64);
       a = 1 << shift;
     }
-  } else if inputDataScheme == 6 {
-    // scheme 6: data is already in sorted order
-    if describe then
-      writeln("generating already-sorted input");
-    array = 1..size;
-  } else if inputDataScheme == 7 {
-    // scheme 7: data is in reverse sorted order
-    if describe then
-      writeln("generating reverse-sorted input");
-    array = 1..size by -1;
   }
 
-  return array;
-}
-
-proc testsize(size:int) {
-
-  var array = generateArray(size);
 
   var inputStringsDomain = {1..0};
   var inputStrings:[inputStringsDomain] string;
@@ -182,15 +154,10 @@ proc testsize(size:int) {
   var input = makeInput(array, inputStrings);
 
   var ntrials = 1;
-  if printStats {
-    // use more trials for small problem sizes when measuring speed
-    if mibibytes < 1 then
-      ntrials = 100;
-    if kibibytes < 100 then
-      ntrials = 1_000;
-    if kibibytes < 0.4 then
-      ntrials = 10_000;
-  }
+  if mibibytes < 1 then
+    ntrials = 10;
+  if kibibytes < 1 then
+    ntrials = 100;
 
   for m in methods {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
@@ -209,9 +176,6 @@ proc testsize(size:int) {
 }
 
 proc main() {
-  // run generateArray to output the distribution
-  generateArray(100, describe=printStats);
-
   if printStats {
     writeln("Note, speeds are in MiB/s");
     writef("% 16s", "size");

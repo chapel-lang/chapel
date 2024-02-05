@@ -355,25 +355,6 @@ static void test8() {
   assert(initType.kind() == QualifiedType::VAR);
 }
 
-// Ambiguous overloads with last resort.
-static void test9() {
-  Context ctx;
-  auto context = &ctx;
-
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                        R""""(
-      record R {
-        var field: int;
-        operator :(z: R, type t: int) { return z.field; }
-        pragma "last resort"
-        operator :(z: R, type t: int) { return z.field + 1; }
-      }
-      var myR: R;
-      var x = myR : int;
-    )"""");
-  assert(qt.type() && qt.type()->isIntType());
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-}
 
 int main() {
   test1();
@@ -384,7 +365,6 @@ int main() {
   test6();
   test7();
   test8();
-  test9();
 
   return 0;
 }

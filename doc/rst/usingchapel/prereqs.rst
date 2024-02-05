@@ -34,7 +34,7 @@ for using Chapel:
 
     * C11 support, while not required, will enable faster atomic operations.
 
-  * CMake is available and ``cmake`` runs version 3.20 or later.
+  * CMake is available and ``cmake`` runs version 3.13.4 or later.
 
   * The LLVM backend is now the default and it is easiest to use it with a
     system-wide installation of LLVM and clang. On Mac OS X, LLVM 14 and
@@ -43,8 +43,6 @@ for using Chapel:
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`).
-
-     * Using the LLVM backend with LLVM 16 or newer requires C++17 support.
 
 In addition, several optional components have additional requirements:
 
@@ -60,6 +58,9 @@ In addition, several optional components have additional requirements:
   * ``git`` is required for :ref:`readme-mason`, chapel's package manager
 
   * ``pkg-config`` is required for the ``mason system`` subcommands
+
+  * ``cmake`` 3.16 or newer is required to install ``chpl`` when choosing an
+    installation with ``./configure --chpl-home=/path/to/install``
 
 
 .. _readme-prereqs-installation:

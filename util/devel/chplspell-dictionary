@@ -2722,7 +2722,6 @@ pnext
 rnext
 
 FILEID: 2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5
-npath
 sfname
 sysctypes
 urse
@@ -2833,7 +2832,6 @@ FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
 bbcopy
 dbaadab
 ftemp
-gpuized
 newresult
 origfn
 rauto
@@ -3349,7 +3347,6 @@ FILEID: 515baeda-2ada-11e6-a3a6-10ddb1d4c3d5
 algebralib
 archlinux
 binarytrees
-buildinglargerpackages
 chpldocumentation
 chplspell
 circularities
@@ -3384,7 +3381,6 @@ libtool
 lmod
 lstlisting
 maxyear
-memcmp
 memkind
 memleakslog
 minyear
@@ -4725,7 +4721,6 @@ FILEID: e9a3e440-9db7-11e7-a204-10ddb1d4c3d5
 stddev
 
 FILEID: cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5
-apptainer
 bullseye
 centos
 cmake
@@ -4735,7 +4730,6 @@ fossa
 indri
 kitware
 kudu
-mantic
 pacman
 xvzf
 
@@ -4747,7 +4741,6 @@ pycparserext
 
 FILEID: cd80a742-ad6d-11e7-a204-10ddb1d4c3d5
 intented
-rsum
 
 FILEID: da2ea3b8-ad6d-11e7-a204-10ddb1d4c3d5
 adom
@@ -4818,7 +4811,6 @@ fabsall
 fids
 freeinfo
 hmem
-indexth
 lcpus
 libiberty
 librdmacm
@@ -4901,7 +4893,6 @@ testmain
 FILEID: a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5
 dabc
 mytest
-prediffs
 
 FILEID: c51f1070-3a21-11e8-af7e-10ddb1d4c3d5
 abcdefghijklmnopqrstuvwxyz
@@ -4978,12 +4969,9 @@ locdoms
 
 FILEID: 203d644e-8648-11e8-ad82-10ddb1d4c3d5
 andnot
-busid
 cpukinds
 nbobjs
 nics
-nonio
-numas
 schedaffinity
 sobj
 thisthread
@@ -5542,10 +5530,8 @@ threadidx
 
 FILEID: 65cc59e0-f560-11eb-bb15-35b7469d4b43
 allocas
-cgscc
 dtype
 hipcc
-idstr
 inalloca
 isinstance
 ndarray
@@ -5655,7 +5641,6 @@ acct
 
 FILEID: e72aeca4-45ab-11ec-a187-336475c959d4
 doit
-gpuized
 griddim
 uize
 xtract
@@ -6140,13 +6125,11 @@ filenamelookupposition
 FILEID: 70eb8f46-a729-11ec-866d-111c8d7a1817
 aopen
 asynchrony
-gpuopen
 hipcc
 nsight
 nvcc
 nvptx
 ptxas
-sdma
 senable
 shocsort
 triadchpl
@@ -6665,8 +6648,6 @@ FILEID: d484d08e-5502-11ee-81ec-fb959b7aa6d7
 rehook
 
 FILEID: d9c9da26-5502-11ee-81ec-fb959b7aa6d7
-cmplx
-cmplxf
 izing
 rehook
 
@@ -6726,35 +6707,6 @@ useed
 
 FILEID: 9d9ca5ac-9250-11ee-8bda-4776592287bc
 chplconstargcheck
-
-FILEID: 15d77cf4-bd7b-11ee-b488-ff57a08c3497
-cgam
-
-FILEID: 868a79d8-bd7b-11ee-b488-ff57a08c3497
-pragmatags
-
-FILEID: b04803a8-bd7b-11ee-b488-ff57a08c3497
-cimag
-cimagf
-cmplx
-cmplxf
-creal
-crealf
-csqrt
-csqrtf
-
-FILEID: ca233edc-bd7b-11ee-b488-ff57a08c3497
-pragmatags
-
-FILEID: 1f7f5960-bd7c-11ee-b488-ff57a08c3497
-nlines
-
-FILEID: 386cfb80-bd7c-11ee-b488-ff57a08c3497
-deadcode
-splitreq
-
-FILEID: 43c3e828-bd85-11ee-b488-ff57a08c3497
-myvar
 
 NATURAL:
 aarch
@@ -6821,8 +6773,6 @@ angeles
 aniket
 ankush
 anonymize
-anonymized
-anonymizer
 ansi
 antialias
 anubhav
@@ -6872,7 +6822,6 @@ asenjo
 ashwin
 asinh
 asprintf
-assignability
 astfalk
 astimezone
 astloc
@@ -7107,7 +7056,6 @@ cholesky
 chowdhury
 chown
 chpl
-chplcheck
 chplconfig
 chpldef
 chpldoc
@@ -7168,7 +7116,6 @@ codereview
 codesign
 coforall
 coforalls
-coghlan
 cohen
 colocales
 colorado
@@ -7331,7 +7278,6 @@ densifications
 densify
 deprioritized
 deps
-deques
 dequeue
 dequeued
 dequeuer
@@ -8159,7 +8105,6 @@ katz
 kaur
 kayah
 kayraklioglu
-kbrady
 keasler
 keaton
 keepalive

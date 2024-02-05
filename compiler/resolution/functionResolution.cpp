@@ -11247,20 +11247,6 @@ static void resolveExterns()
   }
 }
 
-// Returns 'true' if the type 'at' was resolved.
-static void maybeForceResolveAggregateType(AggregateType* at) {
-  if (at == nullptr) return;
-  for_SymbolSymExprs(use, at->symbol) {
-    if (use->inTree()) {
-      at->resolveConcreteType();
-      for_fields(field, at) {
-        auto t = field->typeInfo();
-        INT_ASSERT(t != dtUnknown);
-      }
-      return;
-    }
-  }
-}
 
 static void adjustInternalSymbols() {
   SET_LINENO(rootModule);
@@ -11274,12 +11260,6 @@ static void adjustInternalSymbols() {
   gDummyRef->qual = QUAL_REF;
   gDummyRef->addFlag(FLAG_REF);
   gDummyRef->removeFlag(FLAG_CONST);
-
-  // Force resolve these well known types, because they may contain
-  // type expressions such as 'c_ptr(void)' that cannot be resolved
-  // with scope-resolution alone.
-  maybeForceResolveAggregateType(dtExternalArray);
-  maybeForceResolveAggregateType(dtOpaqueArray);
 
   startInterfaceChecking();
 }
