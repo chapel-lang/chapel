@@ -19,8 +19,6 @@ tags
 .idea/
 cmake-build-*/
 .cache/
-target/
-Cargo.lock
 
 # Top level ignores.
 /BUILD_VERSION

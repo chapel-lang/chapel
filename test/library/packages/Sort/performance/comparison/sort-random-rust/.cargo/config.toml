@@ -1,5 +1,7 @@
-[build]
-rustflags = [
-  "-C",
-  "target-cpu=native",
-]
+# on the benchmark system, this actually makes it slower,
+# but that might not be true on other systems.
+#[build]
+#rustflags = [
+#  "-C",
+#  "target-cpu=native",
+#]
