@@ -1,5 +1,5 @@
 // run it with
-//  cd sort-random-rust
+//  cd sort-random-rust-rayon
 //  cargo run --release
 
 use rand::{distributions::Standard, rngs::SmallRng, Rng, SeedableRng};
