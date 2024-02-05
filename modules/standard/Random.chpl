@@ -132,6 +132,8 @@ module Random {
           sWhere = here.hash():int;
 
     var randomBits: int = 0;
+    // TODO: separate the "`/dev/urandom` doesn't exist" error handling from the
+    //        readBits error handling
     try {
       IO.openReader("/dev/urandom", region=0..<8).readBits(randomBits, 64);
     } catch {
