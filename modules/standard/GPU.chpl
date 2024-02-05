@@ -254,6 +254,7 @@ module GPU
   /*
     Set the block size for kernels launched on the GPU.
    */
+  @deprecated(notes="the functional form of setBlockSize() is deprecated. Please use the @blockSize(size) loop attribute instead.")
   inline proc setBlockSize(blockSize: integral) {
     __primitive("gpu set blockSize", blockSize);
   }
