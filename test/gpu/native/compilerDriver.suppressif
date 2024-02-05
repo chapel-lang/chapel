@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+
+# compiler driver causes llvm ir failure when using system llvm from rocm-5.4.3
+
+import os
+import subprocess
+
+CHPL_HOME = str(os.getenv('CHPL_HOME'))
+
+chplenv_ = subprocess.check_output(
+    [CHPL_HOME + "/util/printchplenv", "--all", "--internal", "--simple"]
+).decode("utf-8")
+
+chplenv = {
+    k: v
+    for (k, v) in [
+        line_str.split("=", 2)
+        for line_str in chplenv_.splitlines()
+        if line_str.count("=") == 1
+    ]
+}
+
+# suppress if rocm-5.4.3 in llvm-config path
+suppress = (
+    chplenv.get("CHPL_GPU", "none") == "amd"
+    and "rocm-5.4.3" in chplenv.get("CHPL_LLVM_CONFIG", "none")
+)
+print(suppress)
