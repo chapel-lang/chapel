@@ -10,7 +10,7 @@ use List;
 use CTypes;
 use ResultDB;
 use GpuDiagnostics;
-use GPU only syncThreads, createSharedArray, setBlockSize;
+use GPU only syncThreads, createSharedArray;
 
 
 config const noisy = false;
@@ -344,10 +344,8 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
                 ref keysOut : [] uint(32), ref valuesOut : [] uint(32),
                 ref keysIn : [] uint(32), ref valuesIn : [] uint(32)){
 
+    @blockSize(SORT_BLOCK_SIZE)
     foreach i in 0..<radixGlobalWorkSize:uint(32) {
-
-        setBlockSize(SORT_BLOCK_SIZE);
-
         var sMem = createSharedArray(uint(32), 512);
 
         // This does not work. Gives us an internal error
@@ -444,10 +442,8 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
 proc findRadixOffsets(findGlobalWorkSize, ref keys : [] uint(32), ref counters : [] uint(32),
         ref blockOffsets : [] uint(32), startbit :uint(32), numElements :uint(32), totalBlocks :uint(32) ){
 
+    @blockSize(SCAN_BLOCK_SIZE)
     foreach i in 0..<findGlobalWorkSize:uint(32){
-
-        setBlockSize(SCAN_BLOCK_SIZE);
-
         var sStartPointers = createSharedArray(uint(32), 16);
         var sRadix1 = createSharedArray(uint(32), 2*SCAN_BLOCK_SIZE);
 
@@ -510,9 +506,8 @@ proc reorderData (reorderGlobalWorkSize, startbit: uint(32),
         ref blockOffsets : [] uint(32), ref offsets : [] uint(32),
         ref sizes : [] uint(32), totalBlocks : uint(32)) {
 
+    @blockSize(SCAN_BLOCK_SIZE)
     foreach i in 0..<reorderGlobalWorkSize: uint(32){
-        setBlockSize(SCAN_BLOCK_SIZE);
-
         const GROUP_SIZE = SCAN_BLOCK_SIZE : uint(32);
 
         // sKeys2 in the CUDA version is an array of 256 uint2's (256*2 = 512)
@@ -597,11 +592,9 @@ proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] 
         const fullBlock: bool, const storeSum : bool){
 
     var globalSize : uint(32) = numBlocks * SCAN_BLOCK_SIZE;
+
+    @blockSize(SCAN_BLOCK_SIZE)
     foreach gid in 0..<globalSize : uint(32) {
-
-        setBlockSize(SCAN_BLOCK_SIZE);
-
-
         var s_data = createSharedArray(uint(32), 512);
 
         //Load data insto shared mem
@@ -671,10 +664,8 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
     // = numBlocks * SCAN_BLOCK_SIZE
     // = numElements / (4 * SCAN_BLOCK_SIZE) * SCAN_BLOCK_SIZE
     // = numElements / (4) = n/4
+    @blockSize(SCAN_BLOCK_SIZE)
     foreach i in 0..<n/4 : uint(32) {
-
-        setBlockSize(SCAN_BLOCK_SIZE);
-
         const blockId = i / SCAN_BLOCK_SIZE : uint(32);
         const threadId = i % SCAN_BLOCK_SIZE : uint(32);
 
