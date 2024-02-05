@@ -800,7 +800,8 @@ static void test19() {
 
   module N {
     use M;
-    var y = z;
+    var y;
+    y = z;
   }
   )"""";
 
