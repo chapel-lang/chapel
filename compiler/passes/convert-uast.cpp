@@ -113,18 +113,19 @@ struct ConvertedSymbolsMap {
   void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
 };
 
+struct Converter;
+
 struct LoopAttributeInfo {
   // LLVM metadata from various @llvm attributes.
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
+  // The @blockSize attribute, if one is provided by the user.
+  const uast::Attribute* blockSizeAttr = nullptr;
 
-  void insertGpuEligibilityAssertion(BlockStmt* body) {
-    if (assertOnGpuAttr) {
-      body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                      new SymExpr(gTrue)));
-    }
-  }
+  void insertGpuEligibilityAssertion(BlockStmt* body);
+  void insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  void insertPrimitives(Converter& converter, BlockStmt* body);
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -399,7 +400,6 @@ struct Converter {
 
     auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
     auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
-    auto assertOnGpu = UniqueString::get(context, "assertOnGpu");
 
     LoopAttributeInfo toReturn;
 
@@ -410,7 +410,8 @@ struct Converter {
     if (auto a = attrs->getAttributeNamed(assertVectorized)) {
       toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
     }
-    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(assertOnGpu);
+    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    toReturn.blockSizeAttr = attrs->getAttributeNamed(USTR("blockSize"));
 
     return toReturn;
   }
@@ -1840,7 +1841,7 @@ struct Converter {
       }
 
       auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1971,7 +1972,7 @@ struct Converter {
       bool serialOK = false;
 
       auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -2002,7 +2003,7 @@ struct Converter {
     } else {
       auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
       auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      loopAttributes.insertPrimitives(*this, body);
       ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                       zippered,
                                       isForExpr, std::move(loopAttributes.llvmMetadata));
@@ -4071,6 +4072,29 @@ struct Converter {
   }
 
 };
+
+void LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+  if (assertOnGpuAttr) {
+    body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
+                                    new SymExpr(gTrue)));
+  }
+}
+
+void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  if (blockSizeAttr) {
+    if (blockSizeAttr->numActuals() != 1) {
+      USR_FATAL(blockSizeAttr->id(), "'@blockSize' attribute must have exactly one argument: the block size");
+    }
+
+    Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
+    body->insertAtHead(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+  }
+}
+
+void LoopAttributeInfo::insertPrimitives(Converter& converter, BlockStmt* body) {
+  insertGpuEligibilityAssertion(body);
+  insertBlockSizeCall(converter, body);
+}
 
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::AstNode* node) {
