@@ -1,14 +1,14 @@
 
 /*****
-      color_convert.chpl -
+      color_convert_v1b.chpl -
       General purpose converter from the RGB color space to another.  One
       plane of the new space is saved in an 8-bit PNG.
 
-      This version uses the ip_color_v1b library.  The only difference is
-      the 'use ip_color_v1b;' line.
+      This version uses the ip_color_v1b library.  The only difference with
+      color_convert.chpl is the 'use ip_color_v1b;' line.
 
       Call:
-        color_convert
+        color_convert_v1b
           --inname=<file>      PNG file to read
           --outname=<file>     converted color plane
           --plane=C1|C2|C3     which plane to save, # is position in space

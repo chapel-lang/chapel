@@ -15,7 +15,7 @@
       information when done.
 
       Call:
-        ransac
+        ransac_rst
           --inname1=<file>         first image to compare
           --inname2=<file>         second image to compare
           --outname=<file>         image with matching corners (if provided)

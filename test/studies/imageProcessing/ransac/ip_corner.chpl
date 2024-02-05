@@ -2,7 +2,7 @@
 /*****
       ip_corner.chpl -
       Module holding the FAST corner detector and circumference ring iterator.
-      Note a stand-alone program.  'use ip_corner'
+      Not a stand-alone program.  'use ip_corner'
 
       The public bits:
         Data Structures

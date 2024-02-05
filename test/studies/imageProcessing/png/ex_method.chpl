@@ -1,4 +1,11 @@
 
+/*****
+      ex_method.chpl -
+      Examples of methods.  See text for details.
+
+      c 2015-2018 Primordial Machine Vision Systems
+*****/
+
 class num {
   var v : int;
 

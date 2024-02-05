@@ -7,7 +7,7 @@
       transform.
 
       Call:
-        test_fit
+        test_fit_st
           --inname1=<file>         first image to compare
           --inname2=<file>         second image to compare
           --sx                     x scaling image1 to 2 coords

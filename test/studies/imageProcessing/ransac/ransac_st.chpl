@@ -9,7 +9,7 @@
       information when done.
 
       Call:
-        ransac
+        ransac_st
           --inname1=<file>         first image to compare
           --inname2=<file>         second image to compare
           --space=[LAB|YUV]        color space for greyscale conversion

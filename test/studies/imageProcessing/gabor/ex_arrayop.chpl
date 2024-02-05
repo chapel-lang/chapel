@@ -1,6 +1,6 @@
 
 /*****
-      ex_arryop.chpl -
+      ex_arrayop.chpl -
       Examples of operations on arrays.  See text for details.
 
       c 2015-2018 Primordial Machine Vision Systems

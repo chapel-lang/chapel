@@ -1,13 +1,13 @@
 
 /*****
-      kmeans_.chpl -
+      kmeans_v2.chpl -
       Quantize colors in an image by using k-means clustering.  Not all
       clusters may be used (some may end up empty).  Prints the color of
       each cluster to stdout.
       This version uses atomic variables in the cluster for the iteration pass.
 
       Call:
-        kmeans
+        kmeans_v2
           --inname=<file>              input file
           --outname=<file>             8-bit image with cluster assignments
           --space=[LAB|YUV|HSV|RGB]    color space to work in

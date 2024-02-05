@@ -1,11 +1,11 @@
 
 /*****
-      lab_limits.chpl -
+      lab_limits_ser.chpl -
       Exercise 2, determine the actual min/max values for L, A, and B for
       all possible RGB values.  Print the limits out when done.
 
       Call:
-        lab_limits
+        lab_limits_ser
 
       c 2015-2018 Primordial Machine Vision Systems
 *****/

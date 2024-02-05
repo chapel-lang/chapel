@@ -7,7 +7,7 @@
       translate transform.
 
       Call:
-        test_fit
+        test_fit_rst
           --inname1=<file>         first image to compare
           --inname2=<file>         second image to compare
           --theta                  rotation angle in degrees

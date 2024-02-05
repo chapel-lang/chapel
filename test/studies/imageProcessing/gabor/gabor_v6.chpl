@@ -8,7 +8,7 @@
       zipping the range with the kernel domain for the inner loop.
 
       Call:
-        gabor_v2
+        gabor_v6
           --inname=<file>          name of file to read
           --outname=<file>         file for results
           --space=[LAB|YUV]        which colorspace for greyscale (L or Y)

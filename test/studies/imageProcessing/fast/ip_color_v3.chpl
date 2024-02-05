@@ -1,6 +1,6 @@
 
 /*****
-      ip_color.chpl -
+      ip_color_v3.chpl -
       Module holding the common routines and data types for color space
       transformations.  Not a stand-alone program.  'use ip_color_v3'
 

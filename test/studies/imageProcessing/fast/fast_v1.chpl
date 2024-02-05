@@ -1,11 +1,11 @@
 
 /*****
-      fast.chpl -
+      fast_v1.chpl -
       Perform a FAST corner detection on an image.  Uses a custom iterator for
       the circle for each FAST operator.
 
       Call:
-        fast
+        fast_v1
           --inname=<file>          input file
           --outname=<file>         greyscale input marked with corners
           --space=[LAB|YUV]        color space to use for greyscale generation

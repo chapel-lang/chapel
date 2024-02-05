@@ -10,7 +10,7 @@
         using the command line.  See the 'require' statement.
 
         Call:
-          rw_png_v1
+          rw_png_v1b
             --inname=<file>    file to read from
             --outname=<file>   file to write to
             --x=<#>            x coordinate of pixel to print
