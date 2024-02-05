@@ -132,13 +132,13 @@ module Random {
           sWhere = here.hash():int;
 
     var randomBits: int = 0;
-    // commented out due to an issue with opening too many fileReaders to
-    // /dev/urandom on some platforms
-    // try {
-    //   IO.openReader("/dev/urandom").readBits(randomBits, 64);
-    // } catch {
-    //   // may not be able to open /dev/urandom, ignore this step
-    // }
+    // TODO: separate the "`/dev/urandom` doesn't exist" error handling from the
+    //        readBits error handling
+    try {
+      IO.openReader("/dev/urandom", region=0..<8).readBits(randomBits, 64);
+    } catch {
+      // may not be able to open /dev/urandom, ignore this step
+    }
 
     return sWho ^ sWhat ^ sWhen ^ sWhere ^ randomBits;
   }
