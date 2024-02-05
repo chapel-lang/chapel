@@ -1494,6 +1494,7 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
 
   if (!c.exprType().hasTypePtr()) {
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+    r.setMostSpecific(c.mostSpecific());
     return true;
   } else {
     r.setPoiScope(c.poiInfo().poiScope());
@@ -3364,15 +3365,6 @@ void Resolver::exit(const Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
-  } else {
-    // For practical development/debugging, set the ResolvedExpression for
-    // this call in case resolution proceeds to the point where some other
-    // part of resolution assumes there is an entry for this call.
-    //
-    // Otherwise we would run into out_of_range exceptions when accessing
-    // the resolution result.
-    ResolvedExpression& r = byPostorder.byAst(call);
-    r.setType(QualifiedType());
   }
 
   inLeafCall = nullptr;

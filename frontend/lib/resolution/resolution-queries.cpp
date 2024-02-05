@@ -48,6 +48,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <iterator>
 
 namespace chpl {
 namespace resolution {
@@ -56,6 +57,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+// TODO: Since these are always used together with corresponding indices, tie
+// them together in a tuple or new data structure.
 using CandidatesVec = std::vector<const TypedFnSignature*>;
 using ForwardingInfoVec = std::vector<QualifiedType>;
 
@@ -3138,13 +3141,155 @@ lookupCalledExpr(Context* context,
 
 static void helpComputeForwardingTo(const CallInfo& fci,
                                     size_t start,
-                                    CandidatesVec& candidates,
+                                    const CandidatesVec& candidates,
                                     std::vector<QualifiedType>& forwardingTo) {
   QualifiedType forwardingReceiverActualType = fci.calledType();
   size_t n = candidates.size();
   forwardingTo.resize(start);
   for (size_t i = start; i < n; i++) {
     forwardingTo.push_back(forwardingReceiverActualType);
+  }
+}
+
+// Container for ordering groups of last resort candidates by resolution
+// preference.
+struct LastResortCandidateGroups {
+
+  // Combine another set of groups into this one, consuming the other one.
+  // For use with candidates from multiple potential forwarding types.
+  void mergeWithGroups(LastResortCandidateGroups other) {
+    // merge non-poi candidate group and forwarding info
+    if (other.nonPoi) {
+      if (nonPoi) {
+        nonPoi->insert(nonPoi->end(),
+                       std::make_move_iterator(other.nonPoi->begin()),
+                       std::make_move_iterator(other.nonPoi->end()));
+        nonPoiForwardingInfo.insert(
+            nonPoiForwardingInfo.end(),
+            std::make_move_iterator(other.nonPoiForwardingInfo.begin()),
+            std::make_move_iterator(other.nonPoiForwardingInfo.end()));
+      } else {
+        nonPoi = std::move(other.nonPoi);
+        nonPoiForwardingInfo = std::move(other.nonPoiForwardingInfo);
+      }
+    }
+
+    // merge poi candidate groups and forwarding info at corresponding indexes
+    for (size_t i = 0; i < std::max(this->poi.size(), other.poi.size());
+         i++) {
+      if (i < this->poi.size() && i < other.poi.size()) {
+        // both have a poi candidates group at this index
+        this->poi[i].insert(this->poi[i].end(),
+                            std::make_move_iterator(other.poi[i].begin()),
+                            std::make_move_iterator(other.poi[i].end()));
+        this->poiForwardingInfo[i].insert(
+            this->poiForwardingInfo[i].end(),
+            std::make_move_iterator(other.poiForwardingInfo[i].begin()),
+            std::make_move_iterator(other.poiForwardingInfo[i].end()));
+      } else if (i < this->poi.size()) {
+        // only this one has a group here, nothing to do
+      } else {
+        // only the other has a group
+        this->poi.push_back(std::move(other.poi[i]));
+        this->poiForwardingInfo.push_back(
+            std::move(other.poiForwardingInfo[i]));
+      }
+    }
+
+    // recurse into other's forwarding groups
+    if (forwardingCandidateGroups) {
+      forwardingCandidateGroups->mergeWithGroups(
+          std::move(other.getForwardingGroups()));
+    } else {
+      forwardingCandidateGroups = std::move(other.forwardingCandidateGroups);
+    }
+  }
+
+  // Get the LastResortCandidateGroups for forwarded-to candidates,
+  // creating it first if it does not exist.
+  LastResortCandidateGroups& getForwardingGroups() {
+    if (!forwardingCandidateGroups) {
+      forwardingCandidateGroups = std::make_unique<LastResortCandidateGroups>();
+    }
+    return *forwardingCandidateGroups;
+  }
+
+  // Get the most preferred candidates group that has candidates, if there is
+  // one. Otherwise, return an empty candidates group.
+  // Out-params:
+  // - firstPoiCandidate: Index of the first poi candidate. Presumed 0 to start
+  //   with, and set to the end of the non-poi candidates if they are returned.
+  // - forwardingInfo: Forwarding info for the returned group, set if it comes
+  //   from forwarding.
+  const CandidatesVec firstNonEmptyCandidatesGroup(
+      size_t* firstPoiCandidate, ForwardingInfoVec* forwardingInfo,
+      bool inForwardingGroups = false) const {
+    if (nonPoi && !nonPoi->empty()) {
+      *firstPoiCandidate = nonPoi->size();
+      if (inForwardingGroups) *forwardingInfo = nonPoiForwardingInfo;
+      return *nonPoi;
+    }
+    for (size_t i = 0; i < poi.size(); i++) {
+      if (!poi[i].empty()) {
+        if (inForwardingGroups) *forwardingInfo = poiForwardingInfo[i];
+        return poi[i];
+      }
+    }
+    if (forwardingCandidateGroups) {
+      return forwardingCandidateGroups->firstNonEmptyCandidatesGroup(
+          firstPoiCandidate, forwardingInfo, /* inForwardingGroups */ true);
+    }
+    return CandidatesVec();
+  }
+
+  void addNonPoiCandidates(CandidatesVec&& group,
+                           ForwardingInfoVec* forwardingInfo = nullptr) {
+    CHPL_ASSERT(!nonPoi && "non poi candidates already set");
+    this->nonPoi = std::move(group);
+    if (forwardingInfo) {
+      this->nonPoiForwardingInfo = *forwardingInfo;
+    }
+  }
+
+  void addPoiCandidates(CandidatesVec&& group,
+                        ForwardingInfoVec* forwardingInfo = nullptr) {
+    CHPL_ASSERT(nonPoi && "setting poi candidates before non poi");
+    this->poi.push_back(std::move(group));
+    if (forwardingInfo) {
+      this->poiForwardingInfo.push_back(*forwardingInfo);
+    }
+  }
+
+ private:
+  // Non-poi candidates (most preferred).
+  chpl::optional<CandidatesVec> nonPoi;
+  // Poi candidates from innermost (more preferred) to outermost scope.
+  std::vector<CandidatesVec> poi;
+  // Forwarding-to information for non-poi and poi candidates, respectively.
+  // These are used if this LastResortCandidateGroups is for candidates from
+  // forwarding.
+  ForwardingInfoVec nonPoiForwardingInfo;
+  std::vector<ForwardingInfoVec> poiForwardingInfo;
+
+  // A LastResortCandidateGroups for candidates found via forwarding from the
+  // site of the current group. This is effectively a linked list due to the
+  // possibility of forwards-to-forwards.
+  owned<LastResortCandidateGroups> forwardingCandidateGroups = nullptr;
+};
+
+// Returns candidates with last resort candidates removed and saved in a
+// separate list.
+static void filterCandidatesLastResort(
+    Context* context, const CandidatesVec& list, CandidatesVec& result,
+    CandidatesVec& lastResort) {
+  for (auto& candidate : list) {
+    auto attrs =
+        parsing::idToAttributeGroup(context, candidate->untyped()->id());
+    if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
+      lastResort.push_back(candidate);
+    } else {
+      result.push_back(candidate);
+    }
   }
 }
 
@@ -3163,7 +3308,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     CandidatesVec& nonPoiCandidates,
                                     CandidatesVec& poiCandidates,
                                     ForwardingInfoVec& nonPoiForwardingTo,
-                                    ForwardingInfoVec& poiForwardingTo) {
+                                    ForwardingInfoVec& poiForwardingTo,
+                                    LastResortCandidateGroups& lrcGroups) {
 
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -3243,11 +3389,15 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                           nonPoiCandidates);
       // update forwardingTo
       helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
+
+      // don't worry about last resort for compiler generated candidates
     }
 
     // next, look for candidates without using POI.
     {
       int i = 0;
+      CandidatesVec newLrcGroup;
+      ForwardingInfoVec newLrcForwardingTo;
       for (const auto& fci : forwardingCis) {
         size_t start = nonPoiCandidates.size();
         // compute the potential functions that it could resolve to
@@ -3258,19 +3408,27 @@ gatherAndFilterCandidatesForwarding(Context* context,
           filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
+        CandidatesVec candidatesWithInstantiations;
         filterCandidatesInstantiating(context,
                                       initialCandidates,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      nonPoiCandidates,
+                                      candidatesWithInstantiations,
                                       /* rejected */ nullptr);
 
-        // update forwardingTo
+        // filter out last resort candidates
+        filterCandidatesLastResort(context, candidatesWithInstantiations,
+                                   nonPoiCandidates, newLrcGroup);
+
+        // update forwardingTo (for candidates and last resort candidates)
         helpComputeForwardingTo(fci, start,
                                 nonPoiCandidates, nonPoiForwardingTo);
+        helpComputeForwardingTo(fci, start, newLrcGroup, newLrcForwardingTo);
         i++;
       }
+      lrcGroups.addNonPoiCandidates(std::move(newLrcGroup),
+                                    &newLrcForwardingTo);
     }
 
     // next, look for candidates using POI
@@ -3285,6 +3443,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
 
       int i = 0;
+      CandidatesVec newLrcGroup;
+      ForwardingInfoVec newLrcForwardingTo;
       for (const auto& fci : forwardingCis) {
         size_t start = poiCandidates.size();
 
@@ -3296,24 +3456,32 @@ gatherAndFilterCandidatesForwarding(Context* context,
           filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
+        CandidatesVec candidatesWithInstantiations;
         filterCandidatesInstantiating(context,
                                       initialCandidates,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      poiCandidates,
+                                      candidatesWithInstantiations,
                                       /* rejected */ nullptr);
 
-        // update forwardingTo
+        // filter out last resort candidates
+        filterCandidatesLastResort(context, candidatesWithInstantiations,
+                                   poiCandidates, newLrcGroup);
+
+        // update forwardingTo (for candidates and last resort candidates)
         helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
+        helpComputeForwardingTo(fci, start, newLrcGroup, newLrcForwardingTo);
         i++;
       }
+      lrcGroups.addPoiCandidates(std::move(newLrcGroup), &newLrcForwardingTo);
     }
 
     // If no candidates were found and it's a method, try forwarding
     // This supports the forwarding-to-forwarding case.
     if (nonPoiCandidates.empty() && poiCandidates.empty()) {
       for (const auto& fci : forwardingCis) {
+        LastResortCandidateGroups thisForwardingLrcGroups;
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
@@ -3322,12 +3490,18 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                                 nonPoiCandidates,
                                                 poiCandidates,
                                                 nonPoiForwardingTo,
-                                                poiForwardingTo);
+                                                poiForwardingTo,
+                                                thisForwardingLrcGroups);
           }
         }
+        lrcGroups.getForwardingGroups().mergeWithGroups(
+            std::move(thisForwardingLrcGroups));
       }
     }
   }
+
+  // No need to gather up last resort candidates here, gatherAndFilterCandidates
+  // above us will handle it.
 }
 
 // TODO: Could/should this be a parsing query?
@@ -3374,6 +3548,7 @@ gatherAndFilterCandidates(Context* context,
                           ForwardingInfoVec& forwardingInfo,
                           std::vector<ApplicabilityResult>* rejected) {
   CandidatesVec candidates;
+  LastResortCandidateGroups lrcGroups;
   CheckedScopes visited;
   firstPoiCandidate = 0;
 
@@ -3384,6 +3559,8 @@ gatherAndFilterCandidates(Context* context,
   //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
                                       candidates);
+
+  // don't worry about last resort for compiler generated candidates
 
   // next, look for candidates without using POI.
   {
@@ -3403,13 +3580,20 @@ gatherAndFilterCandidates(Context* context,
     }
 
     // find candidates, doing instantiation if necessary
+    CandidatesVec candidatesWithInstantiations;
     filterCandidatesInstantiating(context,
                                   initialCandidates,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates,
+                                  candidatesWithInstantiations,
                                   rejected);
+
+    // filter out last resort candidates
+    CandidatesVec lrcGroup;
+    filterCandidatesLastResort(context, candidatesWithInstantiations,
+                               candidates, lrcGroup);
+    lrcGroups.addNonPoiCandidates(std::move(lrcGroup));
   }
 
   // next, look for candidates using POI
@@ -3439,13 +3623,20 @@ gatherAndFilterCandidates(Context* context,
     }
 
     // find candidates, doing instantiation if necessary
+    CandidatesVec candidatesWithInstantiations;
     filterCandidatesInstantiating(context,
                                   initialCandidates,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates,
+                                  candidatesWithInstantiations,
                                   rejected);
+
+    // filter out last resort candidates
+    CandidatesVec lrcGroup;
+    filterCandidatesLastResort(context, candidatesWithInstantiations,
+                               candidates, lrcGroup);
+    lrcGroups.addPoiCandidates(std::move(lrcGroup));
   }
 
   // If no candidates were found and it's a method, try forwarding
@@ -3478,10 +3669,10 @@ gatherAndFilterCandidates(Context* context,
       ForwardingInfoVec nonPoiForwardingTo;
       ForwardingInfoVec poiForwardingTo;
 
-      gatherAndFilterCandidatesForwarding(context, call, ci,
-                                          inScope, inPoiScope,
-                                          nonPoiCandidates, poiCandidates,
-                                          nonPoiForwardingTo, poiForwardingTo);
+      gatherAndFilterCandidatesForwarding(
+          context, call, ci, inScope, inPoiScope, nonPoiCandidates,
+          poiCandidates, nonPoiForwardingTo, poiForwardingTo,
+          lrcGroups.getForwardingGroups());
 
       // append non-poi candidates
       candidates.insert(candidates.end(),
@@ -3497,6 +3688,12 @@ gatherAndFilterCandidates(Context* context,
                             poiForwardingTo.begin(),
                             poiForwardingTo.end());
     }
+  }
+
+  // If no candidates have been found, consider last resort candidates.
+  if (candidates.empty()) {
+    candidates = lrcGroups.firstNonEmptyCandidatesGroup(&firstPoiCandidate,
+                                                        &forwardingInfo);
   }
 
   return candidates;
