@@ -17,10 +17,8 @@ on here.gpus[0] {
   }
 
   for j in 1..128 {
-    @setBlockSize(j);
-    foreach i in 0..0 {
-      setBlockSize(j);
-    }
+    @blockSize(j)
+    foreach i in 0..0 {}
   }
 }
 

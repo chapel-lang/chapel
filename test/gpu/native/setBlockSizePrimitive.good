@@ -1,3 +1,4 @@
+setBlockSizePrimitive.chpl:15: warning: the functional form of setBlockSize(size) is deprecated. Please use the @blockSize(size) loop attribute instead.
 0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 1x1x1)
 0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 2x1x1)
 0 (gpu 0): setBlockSizePrimitive.chpl:7: kernel launch (block size: 3x1x1)
