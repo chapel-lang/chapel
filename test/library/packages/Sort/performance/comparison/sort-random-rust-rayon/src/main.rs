@@ -23,8 +23,7 @@ fn main() {
     );
 
     let start = Instant::now();
-    // Without rayon.
-    values.sort_unstable();
+    values.par_sort_unstable();
     let duration = start.elapsed();
 
     println!(
