@@ -40,7 +40,7 @@
     ---------------
 
     The :record:`randomStream` type can be initialized with a seed value. Any
-    two ``randomStream``'s initialized with the same seed value with produce
+    two ``randomStream``'s initialized with the same seed value will produce
     identical sequences of random numbers.
 
     When not provided explicitly, a seed value will be generated in an
