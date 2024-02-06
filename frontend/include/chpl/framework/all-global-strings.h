@@ -147,6 +147,8 @@ X(chplBy         , "chpl_by")
 X(chplAlign      , "chpl_align")
 X(chpldocDot     , "chpldoc.")
 X(llvmDot        , "llvm.")
+X(llvmMetadata   , "llvm.metadata")
+X(llvmAssertVectorized, "llvm.assertVectorized")
 X(deprecated     , "deprecated")
 X(unstable       , "unstable")
 

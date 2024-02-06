@@ -116,12 +116,129 @@ struct ConvertedSymbolsMap {
 struct Converter;
 
 struct LoopAttributeInfo {
+ public:
   // LLVM metadata from various @llvm attributes.
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
   // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
+
+ private:
+  LLVMMetadataPtr tupleToLLVMMetadata(Context* context,
+                                      const uast::Tuple* node) const {
+    if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
+
+    if (!node->actual(0)->isStringLiteral()) return nullptr;
+    auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
+
+    if (node->numActuals() == 1) {
+      return LLVMMetadata::construct(attrName);
+    } else {
+      auto attrVal = node->actual(1);
+
+      if (auto str = attrVal->toStringLiteral())
+        return LLVMMetadata::constructString(attrName, str->value().astr(context));
+      else if (auto int_ = attrVal->toIntLiteral())
+        return LLVMMetadata::constructInt(attrName, int_->value());
+      else if (auto bool_ = attrVal->toBoolLiteral())
+        return LLVMMetadata::constructBool(attrName, bool_->value());
+      else if (auto tup = attrVal->toTuple()) {
+        auto v = tupleToLLVMMetadata(context, tup);
+        if (v == nullptr) return nullptr;
+        return LLVMMetadata::constructMetadata(attrName, v);
+      }
+      else return nullptr;
+    }
+  }
+
+  LLVMMetadataPtr nodeToLLVMMetadata(Context* context,
+                                     const uast::AstNode* node) const {
+    if (node->isTuple()) {
+      return tupleToLLVMMetadata(context, node->toTuple());
+    } else if (node->isStringLiteral()) {
+      auto attrName = node->toStringLiteral()->value().astr(context);
+      return LLVMMetadata::construct(attrName);
+    } else {
+      return nullptr;
+    }
+  }
+
+  LLVMMetadataList buildLLVMMetadataList(Context* context,
+                                         const uast::Attribute* node) const {
+    LLVMMetadataList llvmAttrs;
+
+    for (auto act: node->actuals()) {
+      auto attr = nodeToLLVMMetadata(context, act);
+      if (attr != nullptr) {
+        llvmAttrs.push_back(attr);
+      } else {
+        auto loc = chpl::parsing::locateId(context, node->id());
+        std::string msg = "Invalid value for '" + node->name().str() + "'";
+        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
+        context->report(std::move(err));
+      }
+    }
+    return llvmAttrs;
+  }
+
+  LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) const {
+    auto attrName = astr("chpl.loop.assertvectorized");
+    return LLVMMetadata::constructBool(attrName, true);
+  }
+
+  void readLlvmAttributes(Context* context,
+                          const uast::AttributeGroup* attrs) {
+    if (auto a = attrs->getAttributeNamed(USTR("llvm.metadata"))) {
+      auto userAttrs = buildLLVMMetadataList(context, a);
+      this->llvmMetadata.insert(this->llvmMetadata.end(),
+                                userAttrs.begin(),
+                                userAttrs.end());
+    }
+    if (auto a = attrs->getAttributeNamed(USTR("llvm.assertVectorized"))) {
+      this->llvmMetadata.push_back(buildAssertVectorize(a));
+    }
+  }
+
+  void readNativeGpuAtrributes(const uast::AttributeGroup* attrs) {
+    this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
+  }
+
+ public:
+  static LoopAttributeInfo fromExplicitLoop(Context* context,
+                                            const uast::Loop* node) {
+    auto attrs = node->attributeGroup();
+    if (attrs == nullptr) return {};
+
+    LoopAttributeInfo into;
+    into.readLlvmAttributes(context, attrs);
+    into.readNativeGpuAtrributes(attrs);
+
+    return into;
+  }
+
+  static LoopAttributeInfo fromVariableDeclaration(Context* context,
+                                                   const uast::Variable* node) {
+    auto attrs = node->attributeGroup();
+    if (attrs == nullptr) return {};
+
+    // Do not bother parsing LLVM attributes, since they don't apply to loops.
+    LoopAttributeInfo into;
+    into.readNativeGpuAtrributes(attrs);
+
+    return into;
+  }
+
+  bool empty() const {
+    return llvmMetadata.size() > 0 ||
+           assertOnGpuAttr != nullptr ||
+           blockSizeAttr != nullptr;
+  }
+
+  operator bool() const {
+    return !empty();
+  }
 
   void insertGpuEligibilityAssertion(BlockStmt* body);
   void insertBlockSizeCall(Converter& converter, BlockStmt* body);
@@ -335,85 +452,10 @@ struct Converter {
     return nullptr;
   }
 
-  LLVMMetadataPtr tupleToLLVMMetadata(const uast::Tuple* node) {
-    if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
-
-    if (!node->actual(0)->isStringLiteral()) return nullptr;
-    auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
-
-    if (node->numActuals() == 1) {
-      return LLVMMetadata::construct(attrName);
-    } else {
-      auto attrVal = node->actual(1);
-
-      if (auto str = attrVal->toStringLiteral())
-        return LLVMMetadata::constructString(attrName, str->value().astr(context));
-      else if (auto int_ = attrVal->toIntLiteral())
-        return LLVMMetadata::constructInt(attrName, int_->value());
-      else if (auto bool_ = attrVal->toBoolLiteral())
-        return LLVMMetadata::constructBool(attrName, bool_->value());
-      else if (auto tup = attrVal->toTuple()) {
-        auto v = tupleToLLVMMetadata(tup);
-        if (v == nullptr) return nullptr;
-        return LLVMMetadata::constructMetadata(attrName, v);
-      }
-      else return nullptr;
-    }
-  }
-
-  LLVMMetadataPtr nodeToLLVMMetadata(const uast::AstNode* node) {
-    if (node->isTuple()) {
-      return tupleToLLVMMetadata(node->toTuple());
-    } else if (node->isStringLiteral()) {
-      auto attrName = node->toStringLiteral()->value().astr(context);
-      return LLVMMetadata::construct(attrName);
-    } else {
-      return nullptr;
-    }
-  }
-
-  LLVMMetadataList buildLLVMMetadataList(const uast::Attribute* node) {
-    LLVMMetadataList llvmAttrs;
-
-    for (auto act: node->actuals()) {
-      auto attr = nodeToLLVMMetadata(act);
-      if (attr != nullptr) {
-        llvmAttrs.push_back(attr);
-      } else {
-        auto loc = chpl::parsing::locateId(context, node->id());
-        std::string msg = "Invalid value for '" + node->name().str() + "'";
-        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
-        context->report(std::move(err));
-      }
-    }
-    return llvmAttrs;
-  }
-
-  LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) {
-    auto attrName = astr("chpl.loop.assertvectorized");
-    return LLVMMetadata::constructBool(attrName, true);
-  }
-
-  LoopAttributeInfo buildLoopAttributes(const uast::Loop* node) {
-    auto attrs = node->attributeGroup();
-    if (attrs == nullptr) return {};
-
-    auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
-    auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
-
-    LoopAttributeInfo toReturn;
-
-    if (auto a = attrs->getAttributeNamed(llvmMetadata)) {
-      auto userAttrs = buildLLVMMetadataList(a);
-      toReturn.llvmMetadata.insert(toReturn.llvmMetadata.end(), userAttrs.begin(), userAttrs.end());
-    }
-    if (auto a = attrs->getAttributeNamed(assertVectorized)) {
-      toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
-    }
-    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
-    toReturn.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
-
-    return toReturn;
+  void readNativeGpuAtrributes(LoopAttributeInfo& into,
+                               const uast::AttributeGroup* attrs) {
+    into.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    into.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
   }
 
   Expr* visit(const uast::AttributeGroup* node) {
@@ -1705,13 +1747,20 @@ struct Converter {
 
   /// Loops ///
 
+  LLVMMetadataList extractLlvmAttributesAndRejectOthers(const uast::Loop* node) {
+    auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
+    if (loopAttributes.assertOnGpuAttr != nullptr) {
+      CHPL_REPORT(context, InvalidGpuAssertion, node,
+                  loopAttributes.assertOnGpuAttr);
+    }
+    return std::move(loopAttributes.llvmMetadata);
+  }
+
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    auto loopAttributes = buildLoopAttributes(node);
-    if (loopAttributes.assertOnGpuAttr)
-      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
-    return DoWhileStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
+    return DoWhileStmt::build(condExpr, body,
+                              extractLlvmAttributesAndRejectOthers(node));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1726,10 +1775,8 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    auto loopAttributes = buildLoopAttributes(node);
-    if (loopAttributes.assertOnGpuAttr)
-      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
-    return WhileDoStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
+    return WhileDoStmt::build(condExpr, body,
+                              extractLlvmAttributesAndRejectOthers(node));
   }
 
   /// IndexableLoops ///
@@ -1839,7 +1886,7 @@ struct Converter {
         INT_ASSERT(intents);
       }
 
-      auto loopAttributes = buildLoopAttributes(node);
+      auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
       loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
@@ -1921,11 +1968,8 @@ struct Converter {
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
-      auto loopAttributes = buildLoopAttributes(node);
-      if (loopAttributes.assertOnGpuAttr)
-        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr, std::move(loopAttributes.llvmMetadata));
+                                  isForExpr, extractLlvmAttributesAndRejectOthers(node));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1970,7 +2014,7 @@ struct Converter {
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
 
-      auto loopAttributes = buildLoopAttributes(node);
+      auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
       loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
@@ -1996,7 +2040,7 @@ struct Converter {
                                  maybeArrayType, zippered);
     } else {
       auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-      auto loopAttributes = buildLoopAttributes(node);
+      auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
       loopAttributes.insertPrimitives(*this, body);
       ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                       zippered,
