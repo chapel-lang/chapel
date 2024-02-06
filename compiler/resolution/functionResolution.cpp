@@ -3515,7 +3515,7 @@ static bool callIsFromUserCode(CallExpr* call) {
       return false;
     }
     if (Expr* dp = sym->defPoint) {
-      sym = sym->defPoint->parentSymbol;
+      sym = dp->parentSymbol;
     } else {
       sym = NULL;
     }
