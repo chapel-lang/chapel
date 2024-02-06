@@ -286,6 +286,15 @@ WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
 #
+# Avoid errors about -Wmismatched-new-delete when using GCC 11+ because they
+# occur in LLVM headers.  We would like to know when this occurs, so don't turn
+# off the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 11; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=mismatched-new-delete
+endif
+
+#
 # Avoid errors about uninitialized memory because they occur in LLVM headers
 # (should be fixed in LLVM 15 though).
 # We would like to know when this occurs, though, so don't turn off
