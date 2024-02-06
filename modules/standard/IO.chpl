@@ -2541,15 +2541,6 @@ record fileReader {
   var _readWriteThisFromLocale = nilLocale;
 }
 
-@chpldoc.nodoc
-class fileHandle {
-  var f: file;
-
-  proc deinit() {
-    try! f.close();
-  }
-}
-
 pragma "ignore deprecated use"
 @chpldoc.nodoc
 proc fileReader._kind param do return kind;
