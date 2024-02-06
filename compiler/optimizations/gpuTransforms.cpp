@@ -1623,8 +1623,6 @@ static void reportErrorsForBadBlockSizeCalls() {
       USR_FATAL_CONT(callExpr, "'setBlockSize' can only be used in bodies of GPU-eligible loops");
       explainAnchor = callExpr;
 
-      debuggerBreakHere();
-
       // Search forward to try find the CForLoop corresponding to the GPU loop.
       auto search = callExpr->next;
       while (search) {
