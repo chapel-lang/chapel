@@ -957,7 +957,7 @@ module Random {
     proc ref choose(d: domain(?)): d.idxType
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
-      return this.pcg.choose(d);
+      return d.orderToIndex(this.getNext(0:this.eltType, (d.size-1):this.eltType));
     }
 
     /*
@@ -971,7 +971,7 @@ module Random {
     proc ref choose(r: range(bounds=boundKind.both, ?)): r.idxType
       where isCoercible(this.eltType, r.idxType)
     {
-      return this.pcg.choose({r});
+      return this.choose({r});
     }
 
     /*
@@ -987,12 +987,21 @@ module Random {
       :throws IllegalArgumentError: if ``n < 1`` or if ``n > arr.size`` and
                                    ``withReplacement=false``
     */
-    proc sample(const ref arr: [?d] ?t, n: int, withReplacement=false): [] t throws
+    proc ref sample(const ref arr: [?d] ?t, n: int, withReplacement=false): [] t throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
-      const ds = this.pcg.sample(arr, d, withReplacement);
-      var res: [d] t;
-      forall (i, di) in zip(res, ds) do res[i] = arr[di];
+      use CopyAggregation;
+
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty array");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= arr.size when withReplacement=false");
+
+      const ds = this.sample(d, n, withReplacement);
+      var res: [0..<n] t;
+      forall (i, di) in zip(res.domain, ds) with (var agg = new DstAggregator(t))
+        do agg.copy(res[i], arr[di]); // res[i] = arr[di];
       return res;
     }
 
@@ -1009,10 +1018,46 @@ module Random {
       :throws IllegalArgumentError: if ``n < 1`` or if ``n > d.size`` and
                                    ``withReplacement=false``
     */
-    proc sample(d: domain, n: int, withReplacement=false): [] d.idxType throws
+    proc ref sample(d: domain, n: int, withReplacement=false): [] d.idxType throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
-      return this.pcg.sample(d, n, withReplacement);
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty domain");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= d.size when withReplacement=false");
+
+      // create an array of n indices
+      const dOut = {0..<n};
+      var samples: [dOut] d.idxType;
+
+      if withReplacement {
+        for s in samples do s = this.choose(d);
+      } else {
+        if n < log2(d.size) {
+          // for a sufficiently small number of indices,
+          // use a set to fill 'samples' with n unique values
+          var indices: domain(int, parSafe=false),
+              i = 0;
+          while i < n {
+            const sample = this.choose(d);
+            if !indices.contains(sample) {
+              samples[dOut.orderToIndex(i)] = sample;
+              indices.add(sample);
+              i += 1;
+            }
+          }
+        } else {
+          // otherwise, shuffle an array of all
+          // indices and take the first n of them
+          var indices = [idx in d] idx;
+          this.shuffle(indices);
+          forall i in dOut
+            do samples[i] = indices[d.orderToIndex(i)];
+        }
+      }
+
+      return samples;
     }
 
     /*
@@ -1028,10 +1073,16 @@ module Random {
       :throws IllegalArgumentError: if ``n < 1`` or if ``n > r.size`` and
                                    ``withReplacement=false``
     */
-    proc sample(r: range, n: int, withReplacement=false): [] r.idxType throws
+    proc ref sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false): [] r.idxType throws
       where isCoercible(this.eltType, r.idxType)
     {
-      return this.pcg.sample({r}, n, withReplacement);
+      if r.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty range");
+
+      if n < 1 || (n > r.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= r.size when withReplacement=false");
+
+      return this.sample({r}, n, withReplacement);
     }
 
     /*
@@ -2333,7 +2384,7 @@ module Random {
       }
 
       /* Randomly shuffle a 1-D array. */
-      proc ref shuffle(ref arr: [?D] ?eltType ) {
+      proc ref shuffle(ref arr: [?D] ) {
 
         if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
@@ -2341,12 +2392,12 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.low,
-              stride = abs(D.stride);
+        const low = D.low: this.eltType,
+              stride = abs(D.stride): this.eltType;
 
         // Fisher-Yates shuffle
         for i in 0..#D.sizeAs(D.idxType) by -1 {
-          var k = PCGRandomStreamPrivate_getNext_noLock(D.idxType, 0, i);
+          var k = PCGRandomStreamPrivate_getNext_noLock(this.eltType, 0:this.eltType, i:this.eltType);
           var j = i;
 
           // Strided case
