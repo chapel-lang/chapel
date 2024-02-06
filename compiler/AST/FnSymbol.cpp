@@ -1025,10 +1025,6 @@ bool FnSymbol::isAnonymous() const {
   return hasFlag(FLAG_ANONYMOUS_FN) || hasFlag(FLAG_LEGACY_LAMBDA);
 }
 
-bool FnSymbol::isInline() const {
-  return hasFlag(FLAG_INLINE);
-}
-
 void FnSymbol::accept(AstVisitor* visitor) {
   if (visitor->enterFnSym(this) == true) {
 
