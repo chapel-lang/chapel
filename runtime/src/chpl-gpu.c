@@ -29,9 +29,11 @@ bool chpl_gpu_use_stream_per_task = true;
 
 #ifdef HAS_GPU_LOCALE
 
+
 // #define CHPL_GPU_ENABLE_PROFILE
 
 #include "chplrt.h"
+#include "chpl-atomics.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "chpl-gpu-diags.h"
@@ -47,6 +49,8 @@ bool chpl_gpu_use_stream_per_task = true;
 #include "gpu/chpl-gpu-reduce-util.h"
 
 #include <inttypes.h>
+
+static atomic_spinlock_t* priv_table_lock = NULL;
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -84,6 +88,15 @@ void chpl_gpu_init(void) {
 #ifndef GPU_RUNTIME_CPU
     }
 #endif
+  }
+
+  // TODO these should be freed
+  priv_table_lock = chpl_mem_alloc(chpl_gpu_num_devices *
+                                   sizeof(atomic_spinlock_t),
+                                   CHPL_RT_MD_GPU_UTIL, 0, 0);
+
+  for (int i=0 ; i<chpl_gpu_num_devices ; i++) {
+    atomic_init_spinlock_t(&priv_table_lock[i]);
   }
 }
 
@@ -239,6 +252,8 @@ typedef struct kernel_cfg_s {
   chpl_privateObject_t* priv_table_host; //used for initial staging on the host
   chpl_privateObject_t* priv_table_dev; //actual table on the device
 
+  bool has_priv_table_lock;
+
   // we need this in the config so that we can offload data using this stream,
   // and in the future allocate/deallocate on this stream, too
   void* stream;
@@ -285,6 +300,8 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
 
   cfg->priv_table_host = NULL;
   cfg->priv_table_dev = NULL;
+
+  cfg->has_priv_table_lock = false;
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -437,6 +454,13 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
 
   CHPL_GPU_DEBUG("Global for the device table: %p\n", dev_global);
 
+  atomic_spinlock_t* lock = &(priv_table_lock[cfg->dev]);
+  while(!atomic_try_lock_spinlock_t(lock)) {
+    chpl_task_yield();
+  }
+
+  cfg->has_priv_table_lock = true;
+
   if (chpl_gpu_impl_is_device_ptr(dev_global)) {
     chpl_gpu_impl_copy_host_to_device(dev_global,
                                       &(cfg->priv_table_dev),
@@ -464,6 +488,12 @@ void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn) {
 
 void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
+
+  // unlock the privatization table on the device
+  if (cfg->has_priv_table_lock) {
+    atomic_unlock_spinlock_t(&(priv_table_lock[cfg->dev]));
+  }
+
   // free GPU memory allocated for privatization
   for (int i=0 ; i<cfg->n_pids ; i++) {
     CHPL_GPU_DEBUG("Freeing privatized instance pid: %ld, ptr: %p\n",
