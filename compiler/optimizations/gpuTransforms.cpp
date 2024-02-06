@@ -1620,7 +1620,7 @@ static void reportErrorsForBadBlockSizeCalls() {
   CallExpr* explainAnchor = nullptr;
   for_alive_in_Vec(CallExpr, callExpr, gCallExprs) {
     if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      USR_FATAL_CONT(callExpr, "'setBlockSize' must only be used in bodies of GPU-eligible loops");
+      USR_FATAL_CONT(callExpr, "'setBlockSize' can only be used in bodies of GPU-eligible loops");
       explainAnchor = callExpr;
 
       debuggerBreakHere();
