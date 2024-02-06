@@ -84,6 +84,15 @@ static bool isFieldAccessPrimitive(CallExpr *call) {
       call->isPrimitive(PRIM_SET_SVEC_MEMBER);
 }
 
+static bool isPrivatizationTable(Symbol* sym) {
+  if (sym->defPoint->getModule()->modTag == MOD_INTERNAL) {
+    if (sym->name == astr("chpl_privateObjects")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // If any SymExpr is referring to a variable defined outside the
 // function return the SymExpr. Otherwise return nullptr
 static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
@@ -92,7 +101,7 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
-        if (var->name == astr("chpl_privateObjects")) {
+        if (isPrivatizationTable(var)) {
           // TODO consider adding a flag to skip other variables, too
           // we're covering this elsewhere
           continue;
