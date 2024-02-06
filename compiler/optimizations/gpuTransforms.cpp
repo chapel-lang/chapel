@@ -954,7 +954,7 @@ bool GpuizableLoop::extractUpperBound() {
 
 struct KernelActual {
   Symbol* sym;
-  int8_t kind;
+  int8_t kind;  // assigned to one or more values of GpuArgKind or'd together
 };
 
 // ----------------------------------------------------------------------------
@@ -1540,7 +1540,6 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                                                      instanceSym)));
 
     gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
-                                        //instanceType->symbol));
                                         instanceSize));
   }
 
