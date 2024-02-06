@@ -240,6 +240,7 @@ public:
   bool                       isTypeMethod()                              const;
   bool                       isSignature()                               const;
   bool                       isAnonymous()                               const;
+  bool                       isInline()                                  const;
 
   void                       setMethod(bool value);
 
