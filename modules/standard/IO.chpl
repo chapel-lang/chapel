@@ -2523,9 +2523,6 @@ record fileReader {
   type deserializerType = defaultSerializeType(/* writing= */ false, kind);
 
   @chpldoc.nodoc
-  var _file_handle: shared fileHandle? = nil;
-
-  @chpldoc.nodoc
   var _home:locale = here;
   @chpldoc.nodoc
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
@@ -4627,7 +4624,6 @@ proc fileReader.init=(x: fileReader) {
   on x._home {
     qio_channel_retain(x._channel_internal);
   }
-  this._file_handle = x._file_handle;
 }
 
 @chpldoc.nodoc
@@ -5906,11 +5902,6 @@ proc openStringReader(in s: string, in deserializer: ?dt = defaultSerializeVal(f
       );
 
   if err then try fr._ch_ioerror(err, "in openStringReader");
-
-  // give the fileReader a handle to the file so it can be closed when
-  // this fileReader is deinitialized
-  fr._file_handle = new shared fileHandle(f);
-
   return fr;
 }
 
@@ -5927,8 +5918,8 @@ proc openStringReader(in s: string, in deserializer: ?dt = defaultSerializeVal(f
   :returns: a ``fileReader`` reading from the string
 
 */
-@unstable("'openStringReader' is an experimental feature; its name and behavior are subject to change")
-proc openStringReader(in b: bytes, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
+@unstable("'openBytesReader' is an experimental feature; its name and behavior are subject to change")
+proc openBytesReader(in b: bytes, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
   // populate a memory file with the contents of the bytes
   const blocal = b.localize();
   var f = openMemFile(),
@@ -5944,11 +5935,6 @@ proc openStringReader(in b: bytes, in deserializer: ?dt = defaultSerializeVal(fa
       );
 
   if err then try fr._ch_ioerror(err, "in openStringReader");
-
-  // give the fileReader a handle to the file so it can be closed when
-  // this fileReader is deinitialized
-  fr._file_handle = new shared fileHandle(f);
-
   return fr;
 }
 
