@@ -93,6 +93,7 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
         if (var->name == astr("chpl_privateObjects")) {
+          // TODO consider adding a flag to skip other variables, too
           // we're covering this elsewhere
           continue;
         }
@@ -594,6 +595,8 @@ private:
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
                                    std::set<FnSymbol*> visitedFns);
+
+  FnSymbol* createErroringStubForGpu(FnSymbol* fn);
 };
 
 std::unordered_map<CForLoop*, GpuizableLoop> eligibleLoops;
@@ -748,6 +751,27 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
   return true;
 }
 
+FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
+  SET_LINENO(fn);
+
+  // set up the new function
+  FnSymbol* gpuCopy = fn->copy();
+  gpuCopy->addFlag(FLAG_GPU_CODEGEN);
+  fn->defPoint->insertBefore(new DefExpr(gpuCopy));
+
+  // modify its body
+  BlockStmt* gpuCopyBody = new BlockStmt();
+  VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
+
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_INT_ERROR));
+  gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
+
+  gpuCopy->body->replace(gpuCopyBody);
+
+  return gpuCopy;
+}
+
 bool GpuizableLoop::callsInBodyAreGpuizable() {
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
@@ -801,23 +825,8 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       // just errors. We don't expect this function to be called until we have
       // GPU-driven communication.
       if (fn->name == astr("nonLocalAccess")) {
-        SET_LINENO(fn);
-
-        // set up the new function
-        FnSymbol* gpuCopy = fn->copy();
-        gpuCopy->addFlag(FLAG_GPU_CODEGEN);
-        fn->defPoint->insertBefore(new DefExpr(gpuCopy));
+        FnSymbol* gpuCopy = createErroringStubForGpu(fn);
         call->setResolvedFunction(gpuCopy);
-
-        // modify its body
-        BlockStmt* gpuCopyBody = new BlockStmt();
-        VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
-
-        gpuCopyBody->insertAtTail(new CallExpr(PRIM_INT_ERROR));
-        gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
-        gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
-
-        gpuCopy->body->replace(gpuCopyBody);
 
         // now, this call is safe
         continue;
