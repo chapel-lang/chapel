@@ -841,7 +841,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       // spiraled out too fast. So, we'll just make a new copy for GPU here that
       // just errors. We don't expect this function to be called until we have
       // GPU-driven communication.
-      if (fn->name == astr("nonLocalAccess")) {
+      if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU)) {
         FnSymbol* gpuCopy = createErroringStubForGpu(fn);
         call->setResolvedFunction(gpuCopy);
 
