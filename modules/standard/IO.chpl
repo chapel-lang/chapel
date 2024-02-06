@@ -5850,7 +5850,6 @@ This function is equivalent to calling :proc:`open` and then
 :throws IllegalArgumentError: If trying to read explicitly prior to byte
                               0.
  */
-pragma "last resort" // remove post deprecation
 proc openReader(path:string, param locking /* = false (post deprecation) */,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false))
@@ -5859,6 +5858,7 @@ proc openReader(path:string, param locking /* = false (post deprecation) */,
 }
 
 // TODO: remove this overload after the locking-default-change deprecation
+pragma "last resort"
 @chpldoc.nodoc
 proc openReader(path:string,
                 region: range(?) = 0.., hints=ioHintSet.empty,
