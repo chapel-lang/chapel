@@ -148,11 +148,6 @@ CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && 
 # Also, if a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
-ifeq ($(GNU_GPP_MAJOR_VERSION),4)
-  CXX_STD   := -std=gnu++11
-  CXX11_STD := -std=gnu++11
-endif
-
 COMP_CFLAGS += $(C_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
@@ -351,24 +346,6 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-dangling-reference
 endif
 
-#
-# 2016/03/28: Help to protect the Chapel compiler from a partially
-# characterized GCC optimizer regression when the compiler is being
-# compiled with gcc 5.X.
-#
-# 2017-06-14: Regression apparently fixed since gcc 5.X.  Turning
-# off VRP interferes with operation of gcc 7, especially static
-# analysis.  The test below was "-ge 5", now changing it to "-eq 5".
-#
-# Note that 0 means "SUCCESS" rather than "false".
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
-
-ifeq ($(OPTIMIZE),1)
-COMP_CFLAGS += -fno-tree-vrp
-COMP_CXXFLAGS += -fno-tree-vrp
-endif
-
-endif
 
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
