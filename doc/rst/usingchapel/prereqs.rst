@@ -44,8 +44,6 @@ for using Chapel:
     use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`).
 
-     * Using the LLVM backend with LLVM 16 or newer requires C++17 support.
-
 In addition, several optional components have additional requirements:
 
   * Python 3.7 or newer is required if you want to use chpldoc, c2chapel,
