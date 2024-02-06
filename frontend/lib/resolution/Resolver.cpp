@@ -1591,11 +1591,7 @@ void Resolver::adjustTypesForSplitInit(ID id,
   ResolvedExpression& lhs = byPostorder.byId(id);
   QualifiedType lhsType = lhs.type();
 
-  // check to see if it is generic/unknown
-  // (otherwise we do not need to infer anything)
-  if (!lhsType.isUnknownKindOrType() &&
-      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
-    return;
+  if (!lhsType.needsSplitInitTypeInfo(context)) return;
 
   const Param* p = rhsType.param();
   auto useKind = lhsType.kind();
@@ -2138,7 +2134,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
-    return typeForModuleLevelSymbol(context, id);
+    bool isCurrentModule =
+        parsing::idToAst(context, parentId)->toModule() == symbol->toModule();
+    return typeForModuleLevelSymbol(context, id, isCurrentModule);
   }
 
   // If the id is contained within a class/record/union that we are resolving,

@@ -60,6 +60,12 @@ bool QualifiedType::isParamKnownTuple() const {
   return false;
 }
 
+bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
+  return (isParam() && !hasParamPtr()) ||
+    isUnknownKindOrType() ||
+    resolution::getTypeGenericity(context, type()) == Type::GENERIC;
+}
+
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
   return defaultUpdate(keep, addin);
 }
