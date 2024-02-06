@@ -434,13 +434,19 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   chpl_gpu_impl_load_global("chpl_privateObjects", &dev_global,
                             &priv_table_ptr_size);
   assert(dev_global);
-  assert(chpl_gpu_impl_is_device_ptr(dev_global));
 
   CHPL_GPU_DEBUG("Global for the device table: %p\n", dev_global);
 
-  chpl_gpu_impl_copy_host_to_device(dev_global,
-                                    &(cfg->priv_table_dev),
-                                    sizeof(void*), cfg->stream);
+  if (chpl_gpu_impl_is_device_ptr(dev_global)) {
+    chpl_gpu_impl_copy_host_to_device(dev_global,
+                                      &(cfg->priv_table_dev),
+                                      sizeof(void*), cfg->stream);
+  }
+  else {
+    // the device global is not actually a device pointer. This means we are
+    // running in cpu-as-device mode. We shouldn't fiddle with
+    // `chpl_privateObjects` as that's the base table.
+  }
 
   CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
 }
