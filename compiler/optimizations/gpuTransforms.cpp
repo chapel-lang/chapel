@@ -595,6 +595,7 @@ private:
   void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
+  Symbol* getPidFieldForPrivatizationOffload(SymExpr* sym);
   bool symsInBodyAreGpuizable();
   bool callsInBodyAreGpuizable();
   bool attemptToExtractLoopInformation();
@@ -726,6 +727,19 @@ static bool symbolIsAField(SymExpr* expr) {
   return false;
 }
 
+Symbol* GpuizableLoop::getPidFieldForPrivatizationOffload(SymExpr* symExpr) {
+  Symbol* sym = symExpr->symbol();
+  if (!isDefinedInTheLoops(sym, {this->loop_}) &&
+      !symbolIsAField(symExpr) &&
+      isRecordWrappedType(sym->type)) {
+    AggregateType* aggType = toAggregateType(sym->type);
+    INT_ASSERT(aggType);
+
+    return aggType->getField("_pid", /*fatal=*/ false);
+  }
+  return NULL;
+}
+
 bool GpuizableLoop::symsInBodyAreGpuizable() {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(this->loop_, symExprs);
@@ -745,16 +759,10 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
       }
     }
 
-    if (!isDefinedInTheLoops(sym, {this->loop_}) &&
-        !symbolIsAField(symExpr) &&
-        isRecordWrappedType(sym->type)) {
-
-      AggregateType* aggType = toAggregateType(sym->type);
-      if (Symbol* pidField = aggType->getField("_pid", /*fatal=*/ false)) {
-        SET_LINENO(symExpr);
-        CallExpr* pidGet = new CallExpr(PRIM_GET_MEMBER_VALUE, sym, pidField);
-        pidGets_.push_back(pidGet);
-      }
+    if(Symbol* pidField = getPidFieldForPrivatizationOffload(symExpr)) {
+      SET_LINENO(symExpr);
+      CallExpr* pidGet = new CallExpr(PRIM_GET_MEMBER_VALUE, sym, pidField);
+      pidGets_.push_back(pidGet);
     }
   }
   return true;
