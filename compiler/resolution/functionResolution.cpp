@@ -3508,6 +3508,22 @@ static bool isTypeConstructionCall(CallExpr* call) {
   return ret;
 }
 
+static bool callIsFromUserCode(CallExpr* call) {
+  Symbol* sym = call->parentExpr->parentSymbol;
+  while (sym != NULL) {
+    if (sym->hasFlag(FLAG_COMPILER_GENERATED)) {
+      return false;
+    }
+    if (Expr* dp = sym->defPoint) {
+      sym = sym->defPoint->parentSymbol;
+    } else {
+      sym = NULL;
+    }
+  }
+  return true;
+}
+
+
 // t is the type we resolved call to return
 static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
   // is the resulting type generic?
@@ -3535,6 +3551,10 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
         Type* tt = canonicalClassType(t);
         if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
           // print out which field
+          // if we're in compiler-generated code, don't warn about '?'
+          if (!callIsFromUserCode(call)) {
+            return;
+          }
           USR_WARN(checkCall, "partial instantiation without '?' argument");
           USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
           USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
