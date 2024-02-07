@@ -606,11 +606,14 @@ static bool considerForOuter(Symbol* sym) {
 
 // TODO: There's some logic in flattenFunctions that creates/threads formals for
 // outer variables for iterator-functions, can we leverage that?
-static void findOuterVars(LoopExpr* loopExpr, std::set<Symbol*>& outerVars) {
+static void findOuterVars(LoopExpr* loopExpr,
+                          BlockStmt* primsFromAttrs,
+                          std::set<Symbol*>& outerVars) {
   std::vector<SymExpr*> uses;
 
   collectSymExprs(loopExpr->loopBody, uses);
   if (loopExpr->cond) collectSymExprs(loopExpr->cond, uses);
+  if (primsFromAttrs) collectSymExprs(primsFromAttrs, uses);
 
   for_vector(SymExpr, se, uses) {
     Symbol* sym = se->symbol();
@@ -732,8 +735,18 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol) ||
                          isTypeSymbol(loopExpr->parentSymbol);
 
+  // The loop expression may receive additional vars via attributes applied
+  // to its variable. This is represented by enclosing the LoopExpr inside
+  // a "gpu attribute block". See if we need to handle that, as well.
+  BlockStmt* primsFromAttrs = nullptr;
+  if (auto attrBlock = findEnclosingGpuAttributeBlock(loopExpr)) {
+    // The primitives might be applied to several expressions at the same
+    // time, so we can't steal them, and need to copy.
+    primsFromAttrs = attrBlock->getPrimitivesBlock()->copy();
+  }
+
   std::set<Symbol*> outerVars;
-  findOuterVars(loopExpr, outerVars);
+  findOuterVars(loopExpr, primsFromAttrs, outerVars);
 
   // We need the individual pieces of loopExpr. We want to keep loopExpr itself
   // in the tree - that way we know where to put the replacement.
@@ -793,6 +806,21 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
     INT_ASSERT(!cond);
     block = handleArrayTypeCase(loopExpr, fn, indices,
                                 iteratorExprArg, loopBody);
+  }
+
+  if (primsFromAttrs) {
+    loopBody->insertAtHead(primsFromAttrs);
+
+    // Keep the primitives in a block. This will help later during GPUization,
+    // to have a handle on all the temps etc. introduced when computing
+    // the arguments to the primitive. e.g.:
+    //
+    // { scopeless
+    //   const-var tmp = computeBlockSize(...);
+    //   __primitive("set blockSize", tmp);
+    // }
+    //
+    // We don't want to move the primitive without moving the temp.
   }
 
   VarSymbol* iterator = newTemp("_iterator");

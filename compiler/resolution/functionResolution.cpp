@@ -11590,46 +11590,23 @@ static void checkSpeciallyNamedMethods() {
   }
 }
 
-static int applyGpuPrimitivesToLoops(Expr* root,
-                                      BlockStmt* prims,
-                                      SymbolMap* map = nullptr) {
-  int numApplied = 0;
-  std::vector<ForLoop*> loops;
-  collectForLoops(root, loops);
-  for (auto loop : loops) {
-    if (loop->isForExpr()) {
-      auto primCopy = prims->copy(map);
-      loop->body.insertAtHead(primCopy);
-      primCopy->flattenAndRemove();
-      numApplied++;
-    }
-  }
-  return numApplied;
-}
-
 static void applyGpuAttributesToIterableExprs() {
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    if (!call->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK)) continue;
-    SET_LINENO(call);
-
-    auto parentBlock = toBlockStmt(call->parentExpr);
-    INT_ASSERT(parentBlock);
-    auto primBlock = toBlockStmt(parentBlock->body.last());
-    INT_ASSERT(primBlock);
-
-    call->remove();
-    primBlock->remove();
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+    if (!block->isGpuAttributeBlock()) continue;
+    auto primCall = toCallExpr(block->body.first());
+    INT_ASSERT(primCall && primCall->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK));
 
     // For for-exprs etc. written directly in this block, apply GPU prims.
-    int numLoopExprs = applyGpuPrimitivesToLoops(parentBlock, primBlock);
+    int numLoopExprs = 0;
 
     // Ideally, we want to do something similar with promoted expressions.
     // However, at this point that would involve threading blockSize parameters
     // etc. through several layers of calls (_toLeader / toFollower, the "chpl_promo" fn, etc.).
     // This is future work; for now, emit a warning that we can't do it.
     int numPromotions = 0;
+
     std::vector<CallExpr*> calls;
-    collectCallExprs(parentBlock, calls);
+    collectCallExprs(block, calls);
     for (auto call : calls) {
       if (call->resolvedFunction() && call->resolvedFunction()->hasFlag(FLAG_PROMOTION_WRAPPER)) {
         numPromotions++;
@@ -11637,15 +11614,19 @@ static void applyGpuAttributesToIterableExprs() {
     }
 
     if (numPromotions > 0) {
-      USR_WARN(call, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
-      USR_PRINT(call, "consider using the 'GpuDiagnostics' to ensure that promoted expressions ran on GPU at runtime");
+      USR_WARN(block, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
+      USR_PRINT(block, "consider using the 'GpuDiagnostics' to ensure that promoted expressions ran on GPU at runtime");
     } else if (numLoopExprs == 0 && numPromotions == 0) {
-      USR_FATAL_CONT(call, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
-      USR_PRINT(call, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
+      USR_WARN(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
+      USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
       USR_STOP();
     }
 
-    parentBlock->flattenAndRemove();
+    // Clean up the block, since at this point it has been applied to anything
+    // that needs to have it applied to.
+    block->getPrimitivesBlock()->remove();
+    primCall->remove();
+    block->flattenAndRemove();
   }
 }
 
