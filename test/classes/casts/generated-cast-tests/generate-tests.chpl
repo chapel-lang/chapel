@@ -198,7 +198,7 @@ proc generateExplicitCasts() {
     allowed.add(("unmanaged", x));
 
   // cast borrowed to ...
-  for x in ["borrowed", "borrowed?"] do
+  for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowed.add(("borrowed", x));
 
   // cast owned? to ...
@@ -214,7 +214,7 @@ proc generateExplicitCasts() {
     allowed.add(("unmanaged?", x));
 
   // cast borrowed? to ...
-  for x in ["borrowed", "borrowed?"] do
+  for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowed.add(("borrowed?", x));
 
   // downcast is the same as upcast
