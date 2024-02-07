@@ -15,8 +15,8 @@ module test {
     var ownC = new owned Child(1, 2);
     var c = ownC.borrow();
 
-    var cu = new unmanaged Child(1, 2);
-    var cuq = cu:unmanaged class?;
+    var cu = c!:unmanaged;
+    var cuq = c!:unmanaged class?;
     var cb = c:borrowed;
     var cbq = c:borrowed class?;
     writeln();
@@ -49,7 +49,5 @@ module test {
     writeln("Passing cbq");
     abd(cbq);
     abq(cbq);
-
-    delete cu;
   }
 }
