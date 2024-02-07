@@ -4,7 +4,7 @@
 module Verify
 {
 
-proc verify_bfs_tree (root : int, ParentTree, Edges): int
+proc verify_bfs_tree (root : int, ParentTree, ref Edges): int
 {
 
    use Graph500_defs;
@@ -115,13 +115,13 @@ proc verify_bfs_tree (root : int, ParentTree, Edges): int
 
 }
 
-proc compute_levels (ParentTree, Level): int
+proc compute_levels (ParentTree, ref Level): int
 {
    use Graph500_defs;
 
    var error: int=0;
 
-   forall k in vertex_domain do {
+   forall k in vertex_domain with (ref error) do {
 
 // Would prefer to be able to use a continue statement here as opposed to
 // an if statement on these checks

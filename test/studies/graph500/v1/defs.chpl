@@ -33,7 +33,7 @@ module Graph500_defs
   }
 
 // Here we have overloaded the + operator
-  proc +(l: directed_vertex_pair, r: directed_vertex_pair)
+  operator +(l: directed_vertex_pair, r: directed_vertex_pair) do
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 // The data structures below are chosen with the intention of later defining
@@ -74,25 +74,25 @@ module Graph500_defs
 
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
-         forall n in Neighbors (1..neighbor_count) {
+         forall n in Neighbors(1..neighbor_count) with (ref is_member) {
             if (new_vertex_ID == n ) then is_member = true;
          }
          return is_member;
       }
 
-      proc add_self_edge () {
+      proc ref add_self_edge () {
          vlock.readFE();
          self_edges += 1;
          vlock.writeEF(true);
       }
 
-      proc add_duplicate () {
+      proc ref add_duplicate () {
          vlock.readFE();
          duplicates += 1;
          vlock.writeEF(true);
       }
 
-      proc add_Neighbor (new_vertex_ID: vertex_id) {
+      proc ref add_Neighbor (new_vertex_ID: vertex_id) {
          vlock.readFE();
          var ID: vertex_id = new_vertex_ID;
 //       Check again to make sure another thread did not recently
@@ -111,7 +111,7 @@ module Graph500_defs
          vlock.writeEF(true);
       }
 
-      proc grow_helper() {
+      proc ref grow_helper() {
           var new_nd = Neighbors.size + 1;
           nd = {1..new_nd};
       }
@@ -140,7 +140,7 @@ module Graph500_defs
 class Level_Set {
   type Vertex_List;
   var Members: Vertex_List;
-  var previous: Level_Set (Vertex_List);
+  var previous: unmanaged Level_Set(Vertex_List)?;
 }
 
 
