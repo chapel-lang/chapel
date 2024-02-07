@@ -1,1 +1,1 @@
--sprintTimings=false --fast
+-sprintTasks=false -sprintTimings=false --fast

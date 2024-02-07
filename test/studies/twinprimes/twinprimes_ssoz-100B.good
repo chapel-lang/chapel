@@ -1,4 +1,3 @@
-tasks = 8
 using Prime Generator parameters for P13
 segment size = 524288 resgroups; seg array is [1 x 8192] 64-bits
 twinprime candidates = 4945055940; resgroups = 3330004

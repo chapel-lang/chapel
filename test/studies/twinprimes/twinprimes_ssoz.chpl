@@ -1,7 +1,6 @@
 // Chapel port of Jabari Zakiya's twinprimes_ssoz algorithm
 // Transliterated from the Crystal/C++ versions by Brad Chamberlain, 2024-02-01
 // Status:
-// * not tested very thoroughly or intelligently yet
 // * not much attention paid to performance thus far
 //   (note that writeln()s in Chapel are heavyweight, so may not want to time
 // * focused on correctness thus far; opportunities to be more Chapeltastic
@@ -10,32 +9,21 @@
 // * see TODO list at bottom of file, and throughout, for other thoughts
 
 config param printFromTasks = false,
-             printTimings=true;
+             printTasks = true,
+             printTimings = true;
 
-config const debug = false;
-
-config var start_num = 3,
-           end_num = 3;
+config const low  = 1,
+             high = 1_000_000;
 
 twinprimes_ssoz();
 
 proc twinprimes_ssoz() {
   use Time;
 
-  start_num  = max(start_num, 3);
-  end_num = max(end_num, 3);
+  const (start_num, end_num) = computeStartEnd(low, high);
 
-  if start_num > end_num then start_num <=> end_num;
+  if printTasks then writeln("tasks = ", here.maxTaskPar);
 
-  start_num |= 1;
-  end_num = (end_num - 1) | 1;
-
-  if (end_num - start_num) < 2 {
-    start_num = 7;
-    end_num = 7;
-  }
-
-  writeln("tasks = ", here.maxTaskPar);
   var ts: stopwatch;
   ts.start();
 
@@ -169,8 +157,23 @@ proc nextp_init(rhi, kmin, modpg, primes, resinvrs) {
   return nextp;
 }
 
+proc computeStartEnd(lo, hi) {
+  var start_num  = max(lo, 3);
+  var end_num = max(hi, 3);
+
+  if start_num > end_num then start_num <=> end_num;
+
+  start_num |= 1;
+  end_num = (end_num - 1) | 1;
+
+  if (end_num - start_num) < 2 {
+    start_num = 7;
+    end_num = 7;
+  }
+  return (start_num, end_num);
+}
+
 proc set_sieve_parameters(start_num, end_num) {
-  if debug then writeln((start_num, end_num));
   const nrange = end_num - start_num;
   var bn = 0, pg = 3;
   if end_num < 49 {
@@ -221,7 +224,6 @@ proc gen_pg_parameters(prime) {
   var inverses: [0..<modpg + 2] int;
   var restwins = gen_restwins(modpg, inverses);
   sort(restwins);
-  if debug then writeln(restwins);
   inverses[modpg + 1] = 1;
   inverses[modpg - 1] = modpg - 1;
   return (modpg, res_0, restwins.size, restwins, inverses);
@@ -320,8 +322,6 @@ iter sozp5(val, res_0, start_num, end_num) {
 
 
 // TODO: 32 vs. 64-bit?
-// TODO: if ( ... etc.
-// TODO: remove debugging
 // TODO: use ranges instead of start/end pairs of integers??
 // TODO: name some of these common ranges / promote to domains?
 // TODO: try nested iterators to avoid long argument lists?

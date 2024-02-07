@@ -1,8 +1,7 @@
-tasks = 8
-using Prime Generator parameters for P3
-segment size = 1 resgroups; seg array is [1 x 1] 64-bits
-twinprime candidates = 1; resgroups = 1
-each of 1 threads has nextp[2 x 1] array
-1 of 1 twinpairs done
-last segment = 1 resgroups; segment slices = 1
-total twins = 0; last twin = 0+/-1
+using Prime Generator parameters for P5
+segment size = 33334 resgroups; seg array is [1 x 521] 64-bits
+twinprime candidates = 100002; resgroups = 33334
+each of 3 threads has nextp[2 x 165] array
+3 of 3 twinpairs done
+last segment = 33334 resgroups; segment slices = 1
+total twins = 8169; last twin = 999960+/-1
