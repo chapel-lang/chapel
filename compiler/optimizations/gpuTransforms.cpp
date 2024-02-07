@@ -1624,8 +1624,13 @@ static void reportErrorsForBadBlockSizeCalls() {
       explainAnchor = callExpr;
 
       // Search forward to try find the CForLoop corresponding to the GPU loop.
+      // This is just a heuristic to detect common erroneous uses for setBlockSize.
       auto search = callExpr->next;
       while (search) {
+        // Try recognizing a GPU-eligible loop that the blockSize call could've
+        // applied to by detecting the loop's dynamic launch check (i.e.,
+        // the "if runningOnGpuLocale()" conditional).
+
         auto condStmt = toCondStmt(search);
         if (gpuBranches.count(condStmt) > 0) {
           USR_PRINT(condStmt, "if you meant to set the block size of this GPU "
