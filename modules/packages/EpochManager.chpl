@@ -608,7 +608,7 @@ module EpochManager {
       }
       tok!.is_registered.write(true);
       // return tok;
-      return new owned TokenWrapper(tok!, _to_unmanaged(this));
+      return new owned TokenWrapper(tok!, this:unmanaged);
     }
 
     @chpldoc.nodoc
@@ -936,7 +936,7 @@ module EpochManager {
       }
       tok!.is_registered.write(true);
       // return tok;
-      return new owned DistTokenWrapper(tok!, _to_unmanaged(this));
+      return new owned DistTokenWrapper(tok!, this:unmanaged);
     }
 
     @chpldoc.nodoc
