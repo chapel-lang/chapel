@@ -292,6 +292,21 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 }
 #endif
 
+#ifdef HAVE_LLVM
+// this is currently only used for GPU compilation
+static void
+genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
+  GenInfo* info = gGenInfo;
+  llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getVoidTy(
+                                          info->module->getContext()), 1);
+  llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
+      info->module->getOrInsertGlobal(cname, voidPtrTy));
+  global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
+  global->setConstant(isConstant);
+  info->lvt->addGlobalValue(cname, global, GEN_PTR, false, dtCVoidPtr);
+}
+#endif
+
 static void
 genGlobalInt(const char* cname, int value, bool isHeader,
              bool isConstant=true) {
@@ -2584,6 +2599,7 @@ static void embedGpuCode() {
 
 static void codegenGpuGlobals() {
   genGlobalInt("chpl_nodeID", -1, false, false);
+  genGlobalVoidPtr("chpl_privateObjects", false, false);
 }
 #endif
 

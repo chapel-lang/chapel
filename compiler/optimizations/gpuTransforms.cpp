@@ -84,6 +84,15 @@ static bool isFieldAccessPrimitive(CallExpr *call) {
       call->isPrimitive(PRIM_SET_SVEC_MEMBER);
 }
 
+static bool isPrivatizationTable(Symbol* sym) {
+  if (sym->defPoint->getModule()->modTag == MOD_INTERNAL) {
+    if (sym->name == astr("chpl_privateObjects")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // If any SymExpr is referring to a variable defined outside the
 // function return the SymExpr. Otherwise return nullptr
 static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
@@ -92,6 +101,11 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
+        if (isPrivatizationTable(var)) {
+          // TODO consider adding a flag to skip other variables, too
+          // we're covering this elsewhere
+          continue;
+        }
         if (!var->isParameter() && var != gVoid && var != gNil) {
           if (CallExpr* parent = toCallExpr(se->parentExpr)) {
             if (isFieldAccessPrimitive(parent)) {
@@ -522,6 +536,8 @@ class GpuizableLoop {
   BlockStmt* gpuBlock_ = nullptr;
   CForLoop* gpuLoop_ = nullptr;
 
+  std::vector<CallExpr*> pidGets_;
+
   // To allow move constructor
   GpuizableLoop() {}
 public:
@@ -570,6 +586,8 @@ public:
   void makeGpuOnly() const;
   void fixupNonGpuPath() const;
 
+  const std::vector<CallExpr*>& pidGets() const { return pidGets_; }
+
 private:
   CallExpr* findCompileTimeGpuAssertions();
   void printNonGpuizableError(CallExpr* assertion, Expr* loc);
@@ -577,6 +595,7 @@ private:
   void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
+  Symbol* getPidFieldForPrivatizationOffload(SymExpr* sym);
   bool symsInBodyAreGpuizable();
   bool callsInBodyAreGpuizable();
   bool attemptToExtractLoopInformation();
@@ -586,6 +605,8 @@ private:
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
                                    std::set<FnSymbol*> visitedFns);
+
+  FnSymbol* createErroringStubForGpu(FnSymbol* fn);
 };
 
 std::unordered_map<CForLoop*, GpuizableLoop> eligibleLoops;
@@ -660,7 +681,7 @@ bool GpuizableLoop::isAlreadyInGpuKernel() {
 bool GpuizableLoop::evaluateLoop() {
   return isReportWorthy() &&
          parentFnAllowsGpuization() &&
-         !symsInBodyAreGpuizable() &&
+         symsInBodyAreGpuizable() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
 }
@@ -695,25 +716,77 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   return true;
 }
 
+static bool symbolIsAField(SymExpr* expr) {
+  if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
+    if (isFieldAccessPrimitive(parent)) {
+      if (expr == parent->get(2)) {  // this is a field
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Symbol* GpuizableLoop::getPidFieldForPrivatizationOffload(SymExpr* symExpr) {
+  Symbol* sym = symExpr->symbol();
+  if (!isDefinedInTheLoops(sym, {this->loop_}) &&
+      !symbolIsAField(symExpr) &&
+      isRecordWrappedType(sym->type)) {
+    AggregateType* aggType = toAggregateType(sym->type);
+    INT_ASSERT(aggType);
+
+    return aggType->getField("_pid", /*fatal=*/ false);
+  }
+  return NULL;
+}
 
 bool GpuizableLoop::symsInBodyAreGpuizable() {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(this->loop_, symExprs);
   for(auto *symExpr : symExprs) {
+    Symbol* sym = symExpr->symbol();
     // forall loops that contain a reduction intent introduce a temporary
     // variable with a special flag that we'll look for (for the time being we
     // want to not gpuize these loops).
-    if(symExpr->symbol()->hasFlag(FLAG_REDUCTION_TEMP)) {
-      return true;
+    if(sym->hasFlag(FLAG_REDUCTION_TEMP)) {
+      return false;
     }
     // gotos that jump outside the loop cannot be gpuized
     if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
       if (auto label = toSymExpr(gotostmt->label)) {
-        if (!isDefinedInTheLoops(label->symbol(), {this->loop_})) return true;
+        if (!isDefinedInTheLoops(label->symbol(), {this->loop_}))
+          return false;
       }
     }
+
+    if(Symbol* pidField = getPidFieldForPrivatizationOffload(symExpr)) {
+      SET_LINENO(symExpr);
+      CallExpr* pidGet = new CallExpr(PRIM_GET_MEMBER_VALUE, sym, pidField);
+      pidGets_.push_back(pidGet);
+    }
   }
-  return false;
+  return true;
+}
+
+FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
+  SET_LINENO(fn);
+
+  // set up the new function
+  FnSymbol* gpuCopy = fn->copy();
+  gpuCopy->addFlag(FLAG_GPU_CODEGEN);
+  fn->defPoint->insertBefore(new DefExpr(gpuCopy));
+
+  // modify its body
+  BlockStmt* gpuCopyBody = new BlockStmt();
+  VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
+
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_INT_ERROR));
+  gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
+
+  gpuCopy->body->replace(gpuCopyBody);
+
+  return gpuCopy;
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizable() {
@@ -759,6 +832,22 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         return false;
 
       FnSymbol *fn = call->resolvedFunction();
+
+      // nonLocalAccess function is really complicated, on a quick look it has:
+      // - allocation (RAD cache)
+      // - atomics
+      // - communication
+      // I tried adding stubs for these to just to get it to compile, but it
+      // spiraled out too fast. So, we'll just make a new copy for GPU here that
+      // just errors. We don't expect this function to be called until we have
+      // GPU-driven communication.
+      if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU)) {
+        FnSymbol* gpuCopy = createErroringStubForGpu(fn);
+        call->setResolvedFunction(gpuCopy);
+
+        // now, this call is safe
+        continue;
+      }
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
         assertionReporter_.pushCall(call);
@@ -865,6 +954,11 @@ bool GpuizableLoop::extractUpperBound() {
   return true;
 }
 
+struct KernelActual {
+  Symbol* sym;
+  int8_t kind;  // assigned to one or more values of GpuArgKind or'd together
+};
+
 // ----------------------------------------------------------------------------
 // GpuKernel
 // ----------------------------------------------------------------------------
@@ -881,7 +975,7 @@ class GpuKernel {
   const GpuizableLoop &gpuLoop;
   FnSymbol* fn_;
   std::vector<Symbol*> kernelIndices_;
-  std::vector<Symbol*> kernelActuals_;
+  std::vector<KernelActual> kernelActuals_;
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
   SymExpr* blockSize_;
@@ -890,7 +984,7 @@ class GpuKernel {
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
 
   FnSymbol* fn() const { return fn_; }
-  const std::vector<Symbol*>& kernelActuals() { return kernelActuals_; }
+  const std::vector<KernelActual>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   SymExpr* blockSize() const {return blockSize_; }
 
@@ -947,11 +1041,40 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
 
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   Type* symType = symInLoop->typeInfo();
+  Type* symValType = symType->getValType();
+
   IntentTag intent = symInLoop->isRef() ? INTENT_REF : INTENT_IN;
   ArgSymbol* newFormal = new ArgSymbol(intent, symInLoop->name, symType);
   fn_->insertFormalAtTail(newFormal);
 
-  kernelActuals_.push_back(symInLoop);
+
+  KernelActual actual;
+  actual.sym = symInLoop;
+
+  if (isClass(symValType) ||
+      (!symInLoop->isRef() && !isAggregateType(symValType))) {
+    // class: must be on GPU memory
+    // scalar: can be passed as an argument directly
+    actual.kind = GpuArgKind::ADDROF;
+  }
+  else if (symInLoop->isRef()) {
+    // ref: we assume that it is not on GPU memory to be safe, so offload it,
+    // but while doing so, we don't need to get the address of it. Because we
+    // just copy the value pointed by it.
+    // ENGIN: it is questionable whether we want to do this. This is creating
+    // a copy of something that was referred to by this `ref`. Accessing a
+    // `ref` shouldn't trigger a copy, unless... it was put to a "task
+    // private" variable:
+    // ref x = y; foreach ... with (var inBody = x)
+    // Consider [const] ref array formals
+    actual.kind = GpuArgKind::OFFLOAD;
+  }
+  else {
+    // we don't know what this is: offload
+    actual.kind = GpuArgKind::ADDROF | GpuArgKind::OFFLOAD;
+  }
+
+  kernelActuals_.push_back(actual);
   copyMap_.put(symInLoop, newFormal);
 
   return newFormal;
@@ -1137,6 +1260,9 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
         }
         else if (gpuLoop.isIndexVariable(sym)) {
           // These are handled already, nothing to do
+        }
+        else if (sym->name == astr("chpl_privateObjects")) {
+          // we are covering this elsewhere
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -1395,37 +1521,34 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
-                    new_IntSymbol(kernel.kernelActuals().size()));
+                    new_IntSymbol(kernel.kernelActuals().size()),
+                    new_IntSymbol(gpuLoop.pidGets().size()));
   gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
-  for_vector (Symbol, actualSym, kernel.kernelActuals()) {
-    Type* actualValType = actualSym->typeInfo()->getValType();
+  // first, add pids
+  for (auto pidGet: gpuLoop.pidGets()) {
+    Type* pidType = pidGet->get(2)->typeInfo();
+    Symbol* pid = new VarSymbol("pid_tmp", pidType);
+    gpuBlock->insertAtTail(new DefExpr(pid));
+    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
 
-    if (isClass(actualValType) || (!actualSym->isRef() &&
-          !isAggregateType(actualValType))) {
-      // class: must be on GPU memory
-      // scalar: can be passed as an argument directly
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
-                                          new_IntSymbol(GpuArgKind::ADDROF)));
-    }
-    else if (actualSym->isRef()) {
-      // ref: we assume that it is not on GPU memory to be safe, so offload it,
-      // but while doing so, we don't need to get the address of it. Because we
-      // just copy the value pointed by it.
-      // ENGIN: it is questionable whether we want to do this. This is creating
-      // a copy of something that was referred to by this `ref`. Accessing a
-      // `ref` shouldn't trigger a copy, unless... it was put to a "task
-      // private" variable:
-      // ref x = y; foreach ... with (var inBody = x)
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
-                                          new_IntSymbol(GpuArgKind::OFFLOAD)));
-    }
-    else {
-      // we don't know what this is: offload
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
-                                          new_IntSymbol(GpuArgKind::ADDROF |
-                                                        GpuArgKind::OFFLOAD)));
-    }
+    AggregateType* privUserType = toAggregateType(pidGet->get(1)->typeInfo());
+    Symbol* instanceSym = privUserType->getField("_instance");
+    Symbol* instanceSize = new VarSymbol("instance_size", dtInt[INT_SIZE_64]);
+
+    gpuBlock->insertAtTail(new DefExpr(instanceSize));
+    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
+                                        new CallExpr(PRIM_SIZEOF_BUNDLE,
+                                                     instanceSym)));
+
+    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
+                                        instanceSize));
+  }
+
+  // now, add kernel actuals
+  for (auto actual: kernel.kernelActuals()) {
+    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actual.sym,
+                                        new_IntSymbol(actual.kind)));
   }
 
   // populate the gpu block
