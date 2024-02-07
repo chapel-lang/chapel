@@ -11590,9 +11590,10 @@ static void checkSpeciallyNamedMethods() {
   }
 }
 
-static void applyGpuPrimitivesToLoops(Expr* root,
+static int applyGpuPrimitivesToLoops(Expr* root,
                                       BlockStmt* prims,
                                       SymbolMap* map = nullptr) {
+  int numApplied = 0;
   std::vector<ForLoop*> loops;
   collectForLoops(root, loops);
   for (auto loop : loops) {
@@ -11600,12 +11601,14 @@ static void applyGpuPrimitivesToLoops(Expr* root,
       auto primCopy = prims->copy(map);
       loop->body.insertAtHead(primCopy);
       primCopy->flattenAndRemove();
+      numApplied++;
     }
   }
+  return numApplied;
 }
 
 static void applyGpuAttributesToIterableExprs() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (!call->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK)) continue;
     SET_LINENO(call);
 
@@ -11618,15 +11621,28 @@ static void applyGpuAttributesToIterableExprs() {
     primBlock->remove();
 
     // For for-exprs etc. written directly in this block, apply GPU prims.
-    applyGpuPrimitivesToLoops(parentBlock, primBlock);
+    int numLoopExprs = applyGpuPrimitivesToLoops(parentBlock, primBlock);
 
-    // Do the same, but for promoted expressions.
+    // Ideally, we want to do something similar with promoted expressions.
+    // However, at this point that would involve threading blockSize parameters
+    // etc. through several layers of calls (_toLeader / toFollower, the "chpl_promo" fn, etc.).
+    // This is future work; for now, emit a warning that we can't do it.
+    int numPromotions = 0;
     std::vector<CallExpr*> calls;
     collectCallExprs(parentBlock, calls);
     for (auto call : calls) {
       if (call->resolvedFunction() && call->resolvedFunction()->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-        USR_WARN(call, "promoted expression in '@assertOnGpu'");
+        numPromotions++;
       }
+    }
+
+    if (numPromotions > 0) {
+      USR_WARN(call, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
+      USR_PRINT(call, "consider using the 'GpuDiagnostics' to ensure that promoted expressions ran on GPU at runtime");
+    } else if (numLoopExprs == 0 && numPromotions == 0) {
+      USR_FATAL_CONT(call, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
+      USR_PRINT(call, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
+      USR_STOP();
     }
 
     parentBlock->flattenAndRemove();
