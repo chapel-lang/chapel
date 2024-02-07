@@ -585,7 +585,7 @@ module CTypes {
   }
   pragma "last resort"
   @chpldoc.nodoc
-  inline operator :(x:c_ptr(void), type t:_anyManagementAnyNilable) {
+  inline operator :(x:c_ptr(void), type t:class) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_ptr(void) to "+ t:string +
                     " - cast to "+ _to_nilable(t):string +" instead");
