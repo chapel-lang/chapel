@@ -495,12 +495,6 @@ module CTypes {
     }
     return __primitive("cast", t, x);
   }
-  // c_ptr(void) specialization to allow implicit conversion of casted value
-  pragma "last resort"
-  @chpldoc.nodoc
-  inline operator :(x:c_ptr(void), type t:c_ptr) {
-    return __primitive("cast", t, x);
-  }
   @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
     // emit warning for C strict aliasing violations
@@ -563,6 +557,8 @@ module CTypes {
   inline operator :(x:c_ptrConst, type t:c_ptrConst(void)) {
     return __primitive("cast", t, x);
   }
+  // c_ptr(void) specialization of c_ptr->c_ptr cast, to enable implicit
+  // conversion of casted value to c_ptr(void)
   @chpldoc.nodoc
   inline operator :(x:c_ptr(void), type t:c_ptr) {
     return __primitive("cast", t, x);
@@ -589,7 +585,7 @@ module CTypes {
   }
   pragma "last resort"
   @chpldoc.nodoc
-  inline operator :(x:c_ptr(void), type t:_anyManagementAnyNilable) {
+  inline operator :(x:c_ptr(void), type t:class) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_ptr(void) to "+ t:string +
                     " - cast to "+ _to_nilable(t):string +" instead");

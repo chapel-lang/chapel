@@ -34,18 +34,18 @@
 
     * :proc:`fillRandom` fills an array with random numbers in parallel
     * :proc:`shuffle` randomly re-arranges the elements of an array
-    * :proc:`permutation` creates a random permutation of an array's domain (*unstable*).
+    * :proc:`permute` creates a random permutation of an array's domain
 
     Seed Generation
     ---------------
 
-    The :record:`randomStream` type can be initialized with a seed value.
-    When not provided explicitly, a seed will be generated in an
-    implementation specific manner based on the current time. This behavior
-    is currently unstable and may change in the future.
+    The :record:`randomStream` type can be initialized with a seed value. Any
+    two ``randomStream``'s initialized with the same seed value will produce
+    identical sequences of random numbers.
 
-    Additionally, the standalone methods in this module that generate their
-    own seed values are currently unstable.
+    When not provided explicitly, a seed value will be generated in an
+    implementation specific manner which is designed to minimize the chance
+    that two distinct ``randomStream``'s will have the same seed.
 
     Prior to Chapel 1.33, seed values could be generated with the now
     deprecated ``RandomSupport.SeedGenerator`` type. For a non-deprecated
@@ -132,8 +132,10 @@ module Random {
           sWhere = here.hash():int;
 
     var randomBits: int = 0;
+    // TODO: separate the "`/dev/urandom` doesn't exist" error handling from the
+    //        readBits error handling
     try {
-      IO.openReader("/dev/urandom").readBits(randomBits, 64);
+      IO.openReader("/dev/urandom", region=0..<8).readBits(randomBits, 64);
     } catch {
       // may not be able to open /dev/urandom, ignore this step
     }
@@ -181,7 +183,6 @@ module Random {
 
     :arg arr: An array of numeric values
   */
-  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -239,7 +240,6 @@ module Random {
     :arg min: The (inclusive) lower bound for the random values
     :arg max: The (inclusive) upper bound for the random values
   */
-  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t, min: t, max: t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -297,7 +297,6 @@ module Random {
 
     :arg arr: A non-strided default rectangular 1D array
   */
-  @unstable("the overload of 'shuffle' that generates its own seed is unstable")
   proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d) {
     var rs = new randomStream(d.idxType);
     rs.shuffle(arr);
@@ -337,7 +336,6 @@ module Random {
     :return: A new array containing each of the values from ``arr`` in a
               pseudo-random order.
   */
-  @unstable("the overload of 'permute' that generates its own seed is unstable")
   proc permute(const ref arr: [?d] ?t): [] t
     where is1DRectangularDomain(d)
   {
@@ -369,7 +367,6 @@ module Random {
     :return: An array containing each of the indices from ``d`` in a
               pseudo-random order.
   */
-  @unstable("the overload of 'permute' that generates its own seed is unstable")
   proc permute(d: domain(?)): [] d.idxType
     where is1DRectangularDomain(d)
   {
@@ -398,7 +395,6 @@ module Random {
     :return: An array containing each of the values from ``r`` in a
               pseudo-random order.
   */
-  @unstable("the overload of 'permute' that generates its own seed is unstable")
   proc permute(r: range(bounds=boundKind.both, ?)): [] r.idxType {
     var rs = new randomStream(r.idxType);
     return rs.permute(r);
@@ -686,33 +682,36 @@ module Random {
         * :proc:`randomStream.fill` to fill an array with random numbers
         * :proc:`randomStream.shuffle` to randomly re-arrange the elements of an
           array
-        * :proc:`randomStream.permutation` to create a random permutation of
-          an arrays domain, and store it in the array (*unstable*)
+        * :proc:`randomStream.permute` to create a random permutation of
+          an arrays domain, and store it in the array
         * :proc:`randomStream.choice` to randomly sample from an array or
           range (*unstable*)
 
     Note that these methods have top-level counterparts that will internally
-    create a ``randomStream`` and then call the corresponding method on it. These
-    can be convenient for one-off uses, but if you are generating many random
-    numbers, it is generally more efficient to create a ``randomStream`` and use
-    it repeatedly.
+    create a ``randomStream`` and then call the corresponding method on it —
+    convenient for one-off uses. To generate many random numbers, it is
+    generally more efficient to create a ``randomStream`` and call the relevant
+    method on it repeatedly.
 
     An individual random number can be requested using :proc:`randomStream.getNext`
     which will advance the stream to the next position and return the value at
     that position. The position of the stream can also be manipulated using:
 
       * :proc:`randomStream.skipToNth` to skip to a particular position in the
-        stream
+        stream (*unstable*)
       * :proc:`randomStream.getNth` to skip to a particular position in the
         stream and return the value at that position (*unstable*)
 
-    A ``randomStream`` can be initialized with a seed value. When not provided
-    explicitly, a seed will be generated in an implementation specific manner
-    that depends upon the current time (*this behavior is currently unstable*).
+    A ``randomStream`` can be initialized with a user-provided seed value. Two
+    ``randomStream`` instances initialized with the same seed will produce
+    identical sequences of random numbers. When not provided explicitly, a seed
+    value will be generated in an implementation specific manner designed to
+    minimize the chance that two distinct instances of the ``randomStream``
+    will have the same seed.
 
-    When copied, the ``randomStream``'s seed, state, and position will also be
-    copied. This means that the copy will produce the same sequence of random
-    numbers as the original without affecting the original.
+    When copied, the ``randomStream``'s seed, state, and position in the stream
+    will also be copied. This means that the copy and original will produce the
+    same sequence of random numbers without affecting each others state.
 
     .. note:: **Implementation Details:**
 
@@ -796,9 +795,6 @@ module Random {
 
     /*
       The seed value for the PCG random number generator.
-
-      When not provided explicitly, a seed will be generated in an implementation
-      specific manner that depends upon the current time.
     */
     const seed: int;
 
@@ -818,9 +814,9 @@ module Random {
       Create a new ``randomStream``.
 
       A seed value will be generated in an implementation specific manner
-      that depends on the current time.
+      designed to minimize the chance that two distinct invocations of this
+      initializer will produce the same seed.
     */
-    @unstable("The :record:`randomStream` initializer that generates a seed is unstable and subject to change")
     proc init(type eltType) where isNumericOrBoolType(eltType) {
       this.eltType = eltType;
       this.seed = randomishSeed();

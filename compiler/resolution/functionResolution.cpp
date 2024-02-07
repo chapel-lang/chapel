@@ -3535,6 +3535,10 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
         Type* tt = canonicalClassType(t);
         if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
           // print out which field
+          if (call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
+            // don't warn about '?' if we're in compiler-generated code
+            return;
+          }
           USR_WARN(checkCall, "partial instantiation without '?' argument");
           USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
           USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
@@ -11247,6 +11251,19 @@ static void resolveExterns()
   }
 }
 
+static void maybeForceResolveAggregateType(AggregateType* at) {
+  if (at == nullptr) return;
+  for_SymbolSymExprs(use, at->symbol) {
+    if (use->inTree()) {
+      at->resolveConcreteType();
+      for_fields(field, at) {
+        auto t = field->typeInfo();
+        INT_ASSERT(t != dtUnknown);
+      }
+      return;
+    }
+  }
+}
 
 static void adjustInternalSymbols() {
   SET_LINENO(rootModule);
@@ -11260,6 +11277,12 @@ static void adjustInternalSymbols() {
   gDummyRef->qual = QUAL_REF;
   gDummyRef->addFlag(FLAG_REF);
   gDummyRef->removeFlag(FLAG_CONST);
+
+  // Force resolve these well known types, because they may contain
+  // type expressions such as 'c_ptr(void)' that cannot be resolved
+  // with scope-resolution alone.
+  maybeForceResolveAggregateType(dtExternalArray);
+  maybeForceResolveAggregateType(dtOpaqueArray);
 
   startInterfaceChecking();
 }

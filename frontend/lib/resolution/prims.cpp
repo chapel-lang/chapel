@@ -883,7 +883,7 @@ static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
 
 static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
   CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
-  return QualifiedType();
+  return makeParamBool(context, false);
 }
 
 static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
@@ -1511,6 +1511,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_DEINIT_KERNEL_CFG:
     case PRIM_GPU_ARG:
+    case PRIM_GPU_PID_OFFLOAD:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
