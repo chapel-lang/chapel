@@ -1,4 +1,3 @@
-// deprecated by Jade in 1.31
 class A {}
 class Parent {}
 class Child: Parent {}
@@ -34,6 +33,7 @@ class Child: Parent {}
 
   compilerWarning("");
 
+  // these are ok and should not produce warnings
   { var x = borrowedA:unmanaged A; }
   { var x = nilableBorrowedA:unmanaged A; }
   { var x = borrowedA:unmanaged A?; }
@@ -56,6 +56,7 @@ class Child: Parent {}
 
   compilerWarning("");
 
+  // these are ok and should not produce warnings
   { var x = borrowedChild:unmanaged Parent; }
   { var x = nilableBorrowedChild:unmanaged Parent; }
   { var x = borrowedChild:unmanaged Parent?; }
@@ -64,9 +65,9 @@ class Child: Parent {}
   compilerWarning("");
 
   { var x = sharedChild:unmanaged Parent; }
-  { var x = nilableBorrowedChild:unmanaged Parent; }
+  { var x = nilableSharedChild:unmanaged Parent; }
   { var x = sharedChild:unmanaged Parent?; }
-  { var x = nilableBorrowedChild:unmanaged Parent?; }
+  { var x = nilableSharedChild:unmanaged Parent?; }
 
   compilerWarning("");
 
@@ -79,6 +80,7 @@ class Child: Parent {}
 
   compilerWarning("");
 
+  // these are ok and should not produce warnings
   try { var x = borrowedParent:unmanaged Child; } catch ClassCastError {}
   try { var x = nilableBorrowedParent:unmanaged Child; } catch ClassCastError {}
   { var x = borrowedParent:unmanaged Child?; }
