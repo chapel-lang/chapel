@@ -14312,6 +14312,21 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
   }
 }
 
+static bool parSafeWarningSilencedByUser(){
+  // Don't worry about warning if the user is silencing the warnings
+  // by using the silencing flag (noParSafeWarnings), or
+  // by explicitly opting for the new default parSafe=false, or
+  // by using the old default behavior of parSafe=true
+  VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
+                                                  "noParSafeWarning",
+                                                  /*cachedValue*/nullptr);
+  bool parSafeOnByDefaultSet = isSetCmdLineConfig(
+                               /*modName*/"ChapelBase",
+                               /*paramName*/"parSafeOnByDefault");
+  bool silenced = parSafeOnByDefaultSet || (noParSafeWarning == gTrue);
+  return silenced;
+}
+
 void handleDefaultAssociativeWarnings(Symbol* sym,
                                       Expr* typeExpr, Expr* initExpr,
                                       AggregateType* forFieldInHere) {
@@ -14354,20 +14369,6 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
     return;
   }
 
-  // Don't worry about it if the user is silencing the warnings
-  // by using the silencing flag (noParSafeWarnings), or
-  // by explicitly opting for the new default parSafe=false, or
-  // by using the old default behavior of parSafe=true
-  VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
-                                                  "noParSafeWarning",
-                                                  /*cachedValue*/nullptr);
-  bool parSafeOnByDefaultSet = isSetCmdLineConfig(
-                               /*modName*/"ChapelBase",
-                               /*paramName*/"parSafeOnByDefault");
-  bool silenced = parSafeOnByDefaultSet || (noParSafeWarning == gTrue);
-  if (silenced) {
-    return;
-  }
 
   if (AggregateType* at = toAggregateType(t)) {
     if (isRecordWrappedType(at)) {
@@ -14390,6 +14391,13 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
                   return;
                 }
               }
+            }
+
+            // These checks are expensive so we do them last
+            // Doing them earlier also causes the check to be done before
+            // ChapelBase is resolved which causes errors
+            if(parSafeWarningSilencedByUser()){
+              return;
             }
             USR_WARN(sym, "The default parSafe mode for associative domains "
                      "and arrays (like '%s') is changing from 'true' to "
