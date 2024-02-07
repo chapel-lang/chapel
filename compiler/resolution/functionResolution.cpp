@@ -11595,7 +11595,9 @@ static void applyGpuAttributesToIterableExprs() {
   for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     if (!block->isGpuAttributeBlock()) continue;
     auto primCall = toCallExpr(block->body.first());
+    auto primitivesBlock = block->getPrimitivesBlock();
     INT_ASSERT(primCall && primCall->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK));
+    INT_ASSERT(primitivesBlock);
 
     int numUsers = primCall->numActuals();
 
@@ -11612,9 +11614,23 @@ static void applyGpuAttributesToIterableExprs() {
       }
     }
 
+    // Check if any of the attributes were 'assertOnGpu', in order to give
+    // a helpful note about 'GpuDiagnostics'.
+    bool hasGpuAssertions = false;
+    for_alist(node, primitivesBlock->body) {
+      if (auto call = toCallExpr(node)) {
+        if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+          hasGpuAssertions = true;
+          break;
+        }
+      }
+    }
+
     if (numPromotions > 0) {
       USR_WARN(block, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
-      USR_PRINT(block, "consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime");
+      if (hasGpuAssertions) {
+        USR_PRINT(block, "consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime");
+      }
     } else if (numUsers == 0 && numPromotions == 0) {
       USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
       USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
@@ -11623,7 +11639,7 @@ static void applyGpuAttributesToIterableExprs() {
 
     // Clean up the block, since at this point it has been applied to anything
     // that needs to have it applied to.
-    block->getPrimitivesBlock()->remove();
+    primitivesBlock->remove();
     primCall->remove();
     block->flattenAndRemove();
   }

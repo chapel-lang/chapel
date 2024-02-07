@@ -6,4 +6,7 @@ on here.gpus[0] {
 
     @assertOnGpu
     var B = (foreach i in 1..5 do i) + 1;
+
+    @gpu.blockSize(128)
+    var C = (foreach i in 1..5 do i) + 1;
 }
