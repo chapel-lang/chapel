@@ -84,7 +84,7 @@ VarSymbol* isUsedCmdLineConfig(const char* name) {
 bool isSetCmdLineConfig(const char* moduleName, const char* paramName) {
   std::string fullName = std::string(moduleName) + "." + std::string(paramName);
   // TODO: This is O(n) in the number of params, we need a better way
-  for (const auto pair : gDynoParams) {
+  for (const auto& pair : gDynoParams) {
     if (pair.first == fullName ||
         strcmp(pair.first.c_str(), paramName) == 0){
       return true;
