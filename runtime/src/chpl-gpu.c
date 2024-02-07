@@ -356,11 +356,11 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
 
   if (pid < 0) {
     // array/domain that is not privatized
-    CHPL_GPU_DEBUG("\tIgnoring pid: %ld\n", pid);
+    CHPL_GPU_DEBUG("\tIgnoring pid: %" PRId64 "\n", pid);
     cfg->priv_insts[i].dev_instance = NULL;
   }
   else {
-    CHPL_GPU_DEBUG("\t offloading pid %ld\n", pid);
+    CHPL_GPU_DEBUG("\t offloading pid %" PRId64 "\n", pid);
 
     // adjust max_pid
     if (pid > cfg->max_pid) {
@@ -383,7 +383,7 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
                                       cfg->stream);
     cfg->priv_insts[i].dev_instance = dev_instance;
 
-    CHPL_GPU_DEBUG("\t offloaded pid %ld\n", pid);
+    CHPL_GPU_DEBUG("\t offloaded pid %" PRId64 "\n", pid);
   }
 
   cfg->cur_pid++;
@@ -496,7 +496,7 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
 
   // free GPU memory allocated for privatization
   for (int i=0 ; i<cfg->n_pids ; i++) {
-    CHPL_GPU_DEBUG("Freeing privatized instance pid: %ld, ptr: %p\n",
+    CHPL_GPU_DEBUG("Freeing privatized instance pid: %" PRId64 ", ptr: %p\n",
                    cfg->priv_insts[i].pid,
                    cfg->priv_insts[i].dev_instance);
     chpl_gpu_mem_free(cfg->priv_insts[i].dev_instance, cfg->ln, cfg->fn);
@@ -517,9 +517,9 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
 }
 
 void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size) {
-  CHPL_GPU_DEBUG("\tAdding pid: %ld with size %zu\n", pid, size);
+  CHPL_GPU_DEBUG("\tAdding pid: %" PRId64 " with size %zu\n", pid, size);
   cfg_add_pid((kernel_cfg*)cfg, pid, size);
-  CHPL_GPU_DEBUG("\tAdded pid: %ld with size %zu\n", pid, size);
+  CHPL_GPU_DEBUG("\tAdded pid: %" PRId64 " with size %zu\n", pid, size);
 }
 
 void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
