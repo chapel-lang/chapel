@@ -34,6 +34,7 @@
 #include "callInfo.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "config.h"
 #include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
@@ -14324,9 +14325,6 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
     return;
   }
 
-  if (sym->id == 202008)
-    gdbShouldBreakHere();
-
   Type* t = sym->getValType();
   if (t == nullptr || t == dtUnknown) {
     if (typeExpr) {
@@ -14356,6 +14354,21 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
     return;
   }
 
+  // Don't worry about it if the user is silencing the warnings
+  // by using the silencing flag (noParSafeWarnings), or
+  // by explicitly opting for the new default parSafe=false, or
+  // by using the old default behavior of parSafe=true
+  VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
+                                                  "noParSafeWarning",
+                                                  /*cachedValue*/nullptr);
+  bool parSafeOnByDefaultSet = isSetCmdLineConfig(
+                               /*modName*/"ChapelBase",
+                               /*paramName*/"parSafeOnByDefault");
+  bool silenced = parSafeOnByDefaultSet || (noParSafeWarning == gTrue);
+  if (silenced) {
+    return;
+  }
+
   if (AggregateType* at = toAggregateType(t)) {
     if (isRecordWrappedType(at)) {
       Symbol* instanceField = at->getField("_instance", false);
@@ -14365,30 +14378,34 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
           // It is a domain, but is it an associative domain?
           const char* typeNameAstr = implType->symbol->name;
           if (startsWith(typeNameAstr, "DefaultAssociativeDom")) {
-            // TODO: don't warn if the parsafe value couldn't be the default
-
+            // in some cases it is impossible to distinguish between
+            // parSafe=false because of default argument or being explicitly
+            // specified by the user
+            // we do our best and we don't warn if the parsafe value
+            // couldn't be the default because it's true
             if (AggregateType* implAt = toAggregateType(implType)) {
               const char* parSafeAstr = astr("parSafe");
               if (Symbol* value = implAt->getSubstitution(parSafeAstr)) {
                 if (value == gTrue) {
-                  printf("  it was parSafe=true\n");
-                } else if (value == gFalse) {
-                  printf("  it was parSafe=false\n");
+                  return;
                 }
               }
             }
-
-            const char* varOrField = forFieldInHere?"field":"variable";
-            USR_WARN(sym, "bad default parsafe for %s '%s'",
-                     varOrField, sym->name);
-            gdbShouldBreakHere();
+            USR_WARN(sym, "The default parSafe mode for associative domains "
+                     "and arrays (like '%s') is changing from 'true' to "
+                     "'false'. To suppress this warning, use an explicit "
+                     "parSafe argument (ex: domain(int, parSafe=false), or "
+                     "compile with '-snoParSafeWarning'. "
+                     "To use the old default of parSafe=true, compile with "
+                     "'-sparSafeOnByDefault'.",
+                     sym->name);
           }
         }
       }
     }
   }
 }
- 
+
 // Handles:
 //  CallExpr(PRIM_INIT_REF_DECL, refSym, typeExpr[opt])
 // which result from:

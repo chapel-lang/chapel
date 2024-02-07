@@ -405,11 +405,10 @@ void addDefaultTokensAndReorder(FnSymbol *fn,
 }
 
 static void markExplicitDomainParsafeVars(CallExpr* call) {
-  if (call->id == 202010)
-    gdbShouldBreakHere();
-
   // handled here rather than in preFold in order have named
   // argument processing already done
+  // And we don't do it in functionResolution so we can catch it before
+  // default arguments are inserted into the calls.
   if (call->isNamed("chpl__buildDomainRuntimeType")) {
     // Add checks to see if this is an associative domain or not
     // and if it is, check to see if it passes an explicit parSafe arg.
@@ -425,7 +424,11 @@ static void markExplicitDomainParsafeVars(CallExpr* call) {
       // that a parSafe value was provided
       if (call->numActuals() >= 3 && isSymExpr(call->get(3))) {
         // this is an associative domain with an explicit parSafe flag
-
+        Symbol* parSafe = toSymExpr(call->get(3))->symbol();
+        // Check if parSafe is true and warn unstable
+        if (fWarnUnstable && parSafe == gTrue) {
+          USR_WARN(call, "parSafe=true is unstable for associative domains and arrays, and its behavior may change in the future");
+        }
         // handle local variables
         CallExpr* parent = toCallExpr(call->parentExpr);
         if (parent && parent->isPrimitive(PRIM_MOVE)) {
@@ -445,8 +448,6 @@ static void markExplicitDomainParsafeVars(CallExpr* call) {
                   if (Symbol* var = toSymExpr(inCall->get(1))->symbol()) {
                     // TODO: if needed, add unstable warning here
                     var->addFlag(FLAG_EXPLICIT_PAR_SAFE);
-                    printf("  adding explicit par safe to %s [%i]\n",
-                           var->name, var->id);
                   }
                 }
               }
@@ -457,8 +458,6 @@ static void markExplicitDomainParsafeVars(CallExpr* call) {
         // handle formals with declared type
         if (ArgSymbol* formal = toArgSymbol(call->parentSymbol)) {
             formal->addFlag(FLAG_EXPLICIT_PAR_SAFE);
-            printf("  adding explicit par safe to formal %s [%i]\n",
-                   formal->name, formal->id);
         }
       }
     }
