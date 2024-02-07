@@ -71,7 +71,6 @@ module Graph500_defs
         this.vlock = other.vlock.readXX();
       }
 
-
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
          forall n in Neighbors(1..neighbor_count) with (ref is_member) {
@@ -119,8 +118,8 @@ module Graph500_defs
     }
 
     class Graph {
-      const nvertices;
-      var   Vertices : [nvertices] vertex_struct;
+      const my_vertices;
+      var   Vertices : [my_vertices] vertex_struct;
 
       proc   Neighbors ( v : vertex_id ) {return Vertices (v).Neighbors;}
 

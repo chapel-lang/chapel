@@ -72,12 +72,10 @@ module Scalable_Graph_Generator
       use Time;
 
       // Random Numbers return in the range [0.0, 1.0)
-
       var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
                        new randomStream (real, seed = 0556707007)
                      else
                        new randomStream (real);
-
 
       const vertex_range = 1..n_vertices;
 
@@ -157,11 +155,12 @@ module Scalable_Graph_Generator
 
          permutation (ndx1).writeEF (label2);
          permutation (ndx2).writeEF (label1);
-       };
+       }
+     }
+   }
 
-     };
-     };
       graph_gen_time.stop();
+
      if ENABLE_PRINTOUTS then
       writeln("Time for SDG: Construct Perm Array  = ", graph_gen_time.elapsed());
 
@@ -180,7 +179,6 @@ module Scalable_Graph_Generator
           var   skip : real;
 
           // randomize the coefficients, tweaking them by numbers in [-.05, .05)
-
           skip = Rand_Gen.getNext ();
           Rand_Gen.fill (Unif_Random);
           Noisy_a = a * (0.95 + 0.1 * Unif_Random);
@@ -207,11 +205,9 @@ module Scalable_Graph_Generator
           skip = Rand_Gen.getNext ();
           Rand_Gen.fill (Unif_Random);
 
-
           Edges += assign_quadrant ( Unif_Random, Noisy_a, Noisy_b,
                                      Noisy_c, Noisy_d, bit );
-
-        };
+      }
    }
    else
    {
@@ -228,27 +224,30 @@ module Scalable_Graph_Generator
           Rand_Gen.fill (Unif_Random);
 
           forall e in ArrD do {
-
             var start_inc = 0;
             var end_inc   = 0;
             var u = Unif_Random[e];
 
-            if u <= a then
-              {}
-            else if u <= a + b then
-              { end_inc = 1;}
-            else if u <= a + b + c then
-              { start_inc = 1;}
-            else
-              { start_inc = 1; end_inc = 1;};
+            if u <= a then {
+
+            } else if u <= a + b then {
+              end_inc = 1;
+
+	    } else if u <= a + b + c then {
+              start_inc = 1;
+
+            } else {
+              start_inc = 1; end_inc = 1;
+	    }
 
             Edges(e).start += bit * start_inc;
             Edges(e).end   += bit * end_inc;
           }
      }
-
    }
+
       graph_gen_time.stop();
+
      if ENABLE_PRINTOUTS then
       writeln("Time for SDG: Construct Edges  = ", graph_gen_time.elapsed());
 
@@ -259,8 +258,10 @@ module Scalable_Graph_Generator
    forall e in ArrD do {
       Edges(e).start = permutation (Edges(e).start).readFF();
       Edges(e).end   = permutation (Edges(e).end  ).readFF();
-   };
+   }
+
    graph_gen_time.stop();
+
   if ENABLE_PRINTOUTS then
    writeln("Time for SDG: Permute labels  = ", graph_gen_time.elapsed());
 
@@ -294,6 +295,7 @@ module Scalable_Graph_Generator
 
          Edge_lock (ndx1).readFE();
          Edge_lock (ndx2).readFE();
+
          var label1 = Edges (ndx1).start : int;
          var label2 = Edges (ndx1).end : int;
          var label3 = Edges (ndx2).start : int;
@@ -307,9 +309,9 @@ module Scalable_Graph_Generator
          Edges (ndx2).end = label2;
          Edge_lock (ndx1).writeEF(true);
          Edge_lock (ndx2).writeEF(true);
-       };
+       }
 //     };
-     };
+     }
 
      graph_gen_time.stop();
 
@@ -318,5 +320,6 @@ module Scalable_Graph_Generator
      }
 
 //   writeln("Upon exit, Edges is:\n", Edges, "\n");
+
 }
 }
