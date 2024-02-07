@@ -45,17 +45,6 @@ module URL {
   public use IO;
 
   pragma "last resort"
-  @deprecated("openUrlReader with a style and/or kind argument is deprecated")
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)),
-                     style:iostyle)
-                    : fileReader(kind, locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlReaderHelper(url, kind, locking, region, style: iostyleInternal);
-  }
-
-  pragma "last resort"
   @deprecated("openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
   proc openUrlReader(url:string, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
@@ -90,26 +79,14 @@ module URL {
   private
   proc openUrlReaderHelper(url:string,
                            param kind=_iokind.dynamic, param locking=true,
-                           region: range(?) = 0..,
-                           style:iostyleInternal = defaultIOStyleInternal())
+                           region: range(?) = 0..)
     : fileReader(kind, locking) throws {
 
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, ioMode.r, style);
+    var f = openCurlFile(url, ioMode.r);
     // TODO: change this back to f.reader when the kind argument is removed
     return f.readerHelper(kind=kind, locking=locking, region=region);
-  }
-
-  pragma "last resort"
-  @deprecated("openUrlWriter with a style and/or kind argument is deprecated")
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 style:iostyle)
-                : fileWriter(kind, locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlWriterHelper(url, kind, locking, region, style: iostyleInternal);
   }
 
   pragma "last resort"
@@ -147,13 +124,12 @@ module URL {
   private proc openUrlWriterHelper(url:string,
                                    param kind=_iokind.dynamic,
                                    param locking=true,
-                                   region: range(?) = 0..,
-                                   style:iostyleInternal = defaultIOStyleInternal())
+                                   region: range(?) = 0..)
     : fileWriter(kind, locking) throws {
 
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, ioMode.cw, style);
+    var f = openCurlFile(url, ioMode.cw);
     // TODO: change this back to f.writer when the kind argument has been
     // removed
     return f.writerHelper(kind=kind, locking=locking, region=region);
