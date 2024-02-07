@@ -900,12 +900,6 @@ struct CandidatesAndForwardingInfo {
      if (forwardingTo) {
        forwardingInfo.push_back(*forwardingTo);
      }
-
-     /* // Consistency check: If we're using forwarding info, the number of */
-     /* // candidates should always match the number of forwarding info entries. */
-     /* if (!forwardingInfo.empty()) { */
-     /*   CHPL_ASSERT(candidates.size() == forwardingInfo.size()); */
-     /* } */
    }
 
    // Compute and fill in forwarding info for a range of newly-added candidates.
