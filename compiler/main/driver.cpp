@@ -2422,7 +2422,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   // Set the config names/values we processed earlier and clear them.
   chpl::parsing::setConfigSettings(gContext, gDynoParams);
-  gDynoParams.clear();
+  // gDynoParams.clear(); // We don't clear so we can check during
+                          // resolution which config params were set
 
   // set any attribute tool names we processed earlier and clear the local list.
   chpl::parsing::setAttributeToolNames(gContext, usingAttributeToolNames);
