@@ -10824,6 +10824,7 @@ static bool isMentionOfFnTriggeringCapture(SymExpr* se) {
   if (auto call = toCallExpr(se->parentExpr)) {
     if (call->isPrimitive(PRIM_RESOLUTION_POINT)) return false;
     if (call->isPrimitive(PRIM_END_OF_STATEMENT)) return false;
+    if (call->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK)) return false;
     if (call->baseExpr == se) return false;
   }
 
@@ -11596,13 +11597,11 @@ static void applyGpuAttributesToIterableExprs() {
     auto primCall = toCallExpr(block->body.first());
     INT_ASSERT(primCall && primCall->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK));
 
-    // For for-exprs etc. written directly in this block, apply GPU prims.
-    int numLoopExprs = 0;
+    int numUsers = primCall->numActuals();
 
-    // Ideally, we want to do something similar with promoted expressions.
-    // However, at this point that would involve threading blockSize parameters
-    // etc. through several layers of calls (_toLeader / toFollower, the "chpl_promo" fn, etc.).
-    // This is future work; for now, emit a warning that we can't do it.
+    // Currently, we can't apply attributes from attribute blocks to promoted
+    // expressions directly. So, for the time being, warn about it if we
+    // see any promotions.
     int numPromotions = 0;
 
     std::vector<CallExpr*> calls;
@@ -11616,8 +11615,8 @@ static void applyGpuAttributesToIterableExprs() {
     if (numPromotions > 0) {
       USR_WARN(block, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
       USR_PRINT(block, "consider using the 'GpuDiagnostics' to ensure that promoted expressions ran on GPU at runtime");
-    } else if (numLoopExprs == 0 && numPromotions == 0) {
-      USR_WARN(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
+    } else if (numUsers == 0 && numPromotions == 0) {
+      USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
       USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
       USR_STOP();
     }

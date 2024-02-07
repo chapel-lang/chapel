@@ -155,6 +155,7 @@ public:
   bool isGpuPrimitivesBlock();
   bool isForGpuAttributes();
   BlockStmt* getPrimitivesBlock();
+  void noteUseOfGpuAttributeBlock(FnSymbol* user);
 
   virtual void        checkConstLoops();
   virtual bool        deadBlockCleanup();

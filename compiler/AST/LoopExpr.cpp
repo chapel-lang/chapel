@@ -738,8 +738,9 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   // The loop expression may receive additional vars via attributes applied
   // to its variable. This is represented by enclosing the LoopExpr inside
   // a "gpu attribute block". See if we need to handle that, as well.
+  BlockStmt* attrBlock = nullptr;
   BlockStmt* primsFromAttrs = nullptr;
-  if (auto attrBlock = findEnclosingGpuAttributeBlock(loopExpr)) {
+  if ((attrBlock = findEnclosingGpuAttributeBlock(loopExpr))) {
     // The primitives might be applied to several expressions at the same
     // time, so we can't steal them, and need to copy.
     primsFromAttrs = attrBlock->getPrimitivesBlock()->copy();
@@ -765,6 +766,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->setGeneric(true);
   if (forall) fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
+  if (attrBlock) attrBlock->noteUseOfGpuAttributeBlock(fn);
 
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
