@@ -1113,7 +1113,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
     */
-    @unstable("'choice' is unstable and subject to change")
+    @deprecated("randomStream.choice is deprecated; please use :proc:`~randomStream.choose` or :proc:`~randomStream.sample` instead")
     proc ref choice(const x: [?d], size:?sizeType=none, replace=true, prob:?probType=none) throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
@@ -1149,7 +1149,7 @@ module Random {
                                     if ``size < 1 || size.size < 1``,
                                     if ``replace=false`` and ``size > x.size || size.size > x.size``
     */
-    @unstable("'choice' is unstable and subject to change")
+    @deprecated("randomStream.choice is deprecated; please use :proc:`~randomStream.choose` or :proc:`~randomStream.sample` instead")
     proc ref choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws
       where isCoercible(this.eltType, x.idxType)
         do return _choice(this, {x}, size, replace, prob);
@@ -1182,7 +1182,7 @@ module Random {
                                     if ``size < 1 || size.size < 1``,
                                     if ``replace=false`` and ``size > x.size || size.size > x.size``.
     */
-    @unstable("'choice' is unstable and subject to change")
+    @deprecated("randomStream.choice is deprecated; please use :proc:`~randomStream.choose` or :proc:`~randomStream.sample` instead")
     proc ref choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
       where is1DRectangularDomain(x) && isCoercible(this.eltType, x.idxType)
         do return _choice(this, x, size, replace, prob);
