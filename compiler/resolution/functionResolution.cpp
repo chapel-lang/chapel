@@ -11614,7 +11614,7 @@ static void applyGpuAttributesToIterableExprs() {
 
     if (numPromotions > 0) {
       USR_WARN(block, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
-      USR_PRINT(block, "consider using the 'GpuDiagnostics' to ensure that promoted expressions ran on GPU at runtime");
+      USR_PRINT(block, "consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime");
     } else if (numUsers == 0 && numPromotions == 0) {
       USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
       USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
