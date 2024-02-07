@@ -671,6 +671,18 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
     if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
       return call;
     }
+
+    // When inserted via attributes, the assert_on_gpu primitive can also
+    // occur inside a single scopeless block marked with another primitive.
+    BlockStmt *blk = toBlockStmt(expr);
+    if (blk && blk->isGpuPrimitivesBlock()) {
+      for_alist(expr, blk->body) {
+        CallExpr *call = toCallExpr(expr);
+        if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+          return call;
+        }
+      }
+    }
   }
 
   return nullptr;
