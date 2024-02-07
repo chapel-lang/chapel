@@ -151,6 +151,11 @@ public:
   virtual bool        isCoforallLoop()                             const;
   virtual bool        isCForLoop()                                 const;
 
+  bool isGpuAttributeBlock();
+  bool isGpuPrimitivesBlock();
+  bool isForGpuAttributes();
+  BlockStmt* getPrimitivesBlock();
+
   virtual void        checkConstLoops();
   virtual bool        deadBlockCleanup();
   void                appendChapelStmt(BlockStmt* stmt);
@@ -201,6 +206,8 @@ private:
 
   CallExpr*           blockInfo;
 };
+
+BlockStmt* findEnclosingGpuAttributeBlock(Expr* startFrom);
 
 /************************************* | **************************************
 *                                                                             *

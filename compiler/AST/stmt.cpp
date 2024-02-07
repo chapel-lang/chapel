@@ -600,6 +600,52 @@ BlockStmt::isCForLoop() const {
   return false;
 }
 
+static bool hasMarker(BlockStmt* stmt, PrimitiveTag markerType) {
+  if (!stmt->body.empty()) {
+    if (auto call = toCallExpr(stmt->body.first())) {
+      if (call->isPrimitive(markerType)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// See docs on PRIM_GPU_ATTRIBUTE_BLOCK and PRIM_GPU_PRIMITIVE_BLOCK
+// in primitive.cpp for what they do.
+
+bool BlockStmt::isGpuAttributeBlock() {
+  return hasMarker(this, PRIM_GPU_ATTRIBUTE_BLOCK);
+}
+
+bool BlockStmt::isGpuPrimitivesBlock() {
+  return hasMarker(this, PRIM_GPU_PRIMITIVE_BLOCK);
+}
+
+bool BlockStmt::isForGpuAttributes() {
+  return this->isGpuAttributeBlock() ||
+         this->isGpuPrimitivesBlock();
+}
+
+BlockStmt* BlockStmt::getPrimitivesBlock() {
+  if (isGpuAttributeBlock()) {
+    auto lastBlock = toBlockStmt(body.last());
+    INT_ASSERT(lastBlock && lastBlock->isGpuPrimitivesBlock());
+    return lastBlock;
+  }
+  return nullptr;
+}
+
+BlockStmt* findEnclosingGpuAttributeBlock(Expr* search) {
+  while (search) {
+    if (auto block = toBlockStmt(search)) {
+      if (block->isGpuAttributeBlock()) return block;
+    }
+    search = search->parentExpr;
+  }
+  return nullptr;
+}
+
 void
 BlockStmt::checkConstLoops() {
 

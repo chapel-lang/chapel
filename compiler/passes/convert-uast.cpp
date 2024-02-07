@@ -3959,6 +3959,7 @@ struct Converter {
 
       auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
       block->insertAtTail(primBlock);
+      primBlock->insertAtTail(new CallExpr(PRIM_GPU_PRIMITIVE_BLOCK));
       loopFlags.insertPrimitives(*this, primBlock);
 
       ret.entireExpr = block;
@@ -4161,7 +4162,7 @@ struct Converter {
 
 void LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
   if (assertOnGpuAttr) {
-    body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
+    body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
                                     new SymExpr(gTrue)));
   }
 }
@@ -4175,7 +4176,7 @@ void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
     }
 
     Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtHead(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
   }
 }
 
