@@ -779,7 +779,9 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       }
 
       if (hasOuterVarAccesses(fn)) {
-        assertionReporter_.reportNotGpuizable(loop_, call, "call has outer var access");
+        assertionReporter_.pushCall(call);
+        assertionReporter_.reportNotGpuizable(loop_, fn, "called function has outer var access");
+        assertionReporter_.popCall();
         return false;
       }
 
