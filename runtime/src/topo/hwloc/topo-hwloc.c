@@ -576,10 +576,22 @@ static void partitionResources(void) {
           logAccSets[i] = s;
         }
       } else {
-        int coresPerLocale = numCPUsPhysAcc / numLocalesOnNode;
         int id;
         int count = 0;
         int locale = -1;
+        int coresPerLocale = numCPUsPhysAcc / numLocalesOnNode;
+        if (coresPerLocale < 1) {
+          char msg[200];
+          snprintf(msg, sizeof(msg), "Cannot run %d co-locales on %d cores.",
+                   numLocalesOnNode, numCPUsPhysAcc);
+          chpl_error(msg, 0, 0);
+        }
+        int leftovers = numCPUsPhysAcc % numLocalesOnNode;
+        if (leftovers != 0) {
+          char msg[200];
+          snprintf(msg, sizeof(msg), "%d cores are unused", leftovers);
+          chpl_warning(msg, 0, 0);
+        }
         hwloc_bitmap_foreach_begin(id, physAccSet) {
           if (count == 0) {
             locale++;
