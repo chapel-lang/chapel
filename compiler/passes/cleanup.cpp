@@ -208,6 +208,27 @@ static void handleNonTypedAndNonInitedVar(DefExpr* def) {
   }
 }
 
+static bool isGpuAttributeBlock(BlockStmt* block) {
+  if (!block->body.empty()) {
+    if (auto call = toCallExpr(block->body.first())) {
+      if (call->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static bool isForGpuAttributes(BlockStmt* block) {
+  if (isGpuAttributeBlock(block)) return true;
+
+  if (auto parentBlock = toBlockStmt(block->parentExpr)) {
+    return isGpuAttributeBlock(parentBlock);
+  }
+
+  return false;
+}
+
 static void cleanup(ModuleSymbol* module) {
   std::vector<BaseAST*> asts;
 
@@ -253,7 +274,12 @@ static void cleanup(ModuleSymbol* module) {
 
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
-        block->flattenAndRemove();
+        // If the scopeless block is for applying GPU attributes to promoted
+        // expressions, do not flatten it. The bounds of the block denote
+        // where the GPU attribute is applied.
+        if (!isForGpuAttributes(block)) {
+          block->flattenAndRemove();
+        }
       }
 
     } else if (CallExpr* call = toCallExpr(ast)) {

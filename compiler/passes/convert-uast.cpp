@@ -231,9 +231,9 @@ struct LoopAttributeInfo {
   }
 
   bool empty() const {
-    return llvmMetadata.size() > 0 ||
-           assertOnGpuAttr != nullptr ||
-           blockSizeAttr != nullptr;
+    return llvmMetadata.size() == 0 &&
+           assertOnGpuAttr == nullptr &&
+           blockSizeAttr == nullptr;
   }
 
   operator bool() const {
@@ -1542,7 +1542,7 @@ struct Converter {
 
       if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName);
+        conv = convertVariable(var, useLinkageName).entireExpr;
       } else {
         // TODO: Might need to do something different on this path.
         conv = convertAST(decl);
@@ -1797,7 +1797,7 @@ struct Converter {
         return new UnresolvedSymExpr("chpl__tuple_blank");
       }
 
-      return convertVariable(var, false);
+      return convertVariable(var, false).requireDefOnly();
 
     // For tuples, recursively call 'convertLoopIndexDecl' on each element.
     // to produce a CallExpr containing DefExprs
@@ -2627,7 +2627,7 @@ struct Converter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName);
+        conv = convertVariable(var, useLinkageName).entireExpr;
 
         DefExpr* defExpr = toDefExpr(conv);
         INT_ASSERT(defExpr);
@@ -2674,7 +2674,7 @@ struct Converter {
       // Do not use the visitor because it produces a block statement.
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName);
+        conv = convertVariable(var, useLinkageName).entireExpr;
 
       // It must be a tuple.
       } else {
@@ -3819,8 +3819,28 @@ struct Converter {
     return ret;
   }
 
+  // When converting variables etc. with @assertOnGpu or @blockSize,
+  // we don't just create a DefExpr; we also create an enclosing block which
+  // contains calls to primitives that implement @assertOnGpu and @blockSize.
+  //
+  // This data structure contains pointers to both.
+  struct VariableDefInfo {
+    DefExpr* variableDef;
+    Expr* entireExpr;
+
+    /**
+      Helper for code that calls 'convertVariable' but doesn't expect to handle
+      blocks with additional primitives, which can be introuced by that call
+      for GPU attributes that need to be propagated to init expressions.
+     */
+    Expr* requireDefOnly() const {
+      CHPL_ASSERT(entireExpr == variableDef);
+      return variableDef;
+    }
+  };
+
   // Returns a DefExpr that has not yet been inserted into the tree.
-  DefExpr* convertVariable(const uast::Variable* node,
+  VariableDefInfo convertVariable(const uast::Variable* node,
                            bool useLinkageName) {
     astlocMarker markAstLoc(node->id());
 
@@ -3928,12 +3948,26 @@ struct Converter {
       initExpr = convertExprOrNull(node->initExpression());
     }
 
-    auto ret = new DefExpr(varSym, initExpr, typeExpr);
+    auto def = new DefExpr(varSym, initExpr, typeExpr);
+    VariableDefInfo ret = { def, def };
+
+    auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
+    if (!loopFlags.empty()) {
+      auto block = new BlockStmt(BLOCK_SCOPELESS);
+      block->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
+      block->insertAtTail(def);
+
+      auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
+      block->insertAtTail(primBlock);
+      loopFlags.insertPrimitives(*this, primBlock);
+
+      ret.entireExpr = block;
+    }
 
     // If the init expression of this variable is a domain and this
     // variable is not const, propagate that information by setting
     // 'definedConst' in the domain to false.
-    setDefinedConstForDefExprIfApplicable(ret, &ret->sym->flags);
+    setDefinedConstForDefExprIfApplicable(def, &def->sym->flags);
 
     // Fix up the AST based on the type, if it should be known
     setVariableType(node, varSym);
@@ -3948,19 +3982,19 @@ struct Converter {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
-    auto defExpr = convertVariable(node, true);
-    INT_ASSERT(defExpr);
-    auto varSym = toVarSymbol(defExpr->sym);
+    auto info = convertVariable(node, true);
+    INT_ASSERT(info.entireExpr && info.variableDef);
+    auto varSym = toVarSymbol(info.variableDef->sym);
     INT_ASSERT(varSym);
 
-    stmts->insertAtTail(defExpr);
+    stmts->insertAtTail(info.entireExpr);
 
     // Special handling for extern type variables.
     if (isTypeVar) {
       if (node->linkage() == uast::Decl::EXTERN) {
         INT_ASSERT(!node->isConfig());
-        INT_ASSERT(defExpr->sym && isVarSymbol(defExpr->sym));
-        auto varSym = toVarSymbol(defExpr->sym);
+        INT_ASSERT(info.variableDef->sym && isVarSymbol(info.variableDef->sym));
+        auto varSym = toVarSymbol(info.variableDef->sym);
         auto linkageName = node->linkageName() ? varSym->cname : nullptr;
         stmts = convertTypesToExtern(stmts, linkageName);
 

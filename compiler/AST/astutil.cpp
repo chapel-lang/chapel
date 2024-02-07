@@ -115,6 +115,12 @@ void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
     callExprs.push_back(callExpr);
 }
 
+void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops) {
+  AST_CHILDREN_CALL(ast, collectForLoops, forLoops);
+  if (ForLoop* forLoop = toForLoop(ast))
+    forLoops.push_back(forLoop);
+}
+
 void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
                            FnSymbol* parent_fn) {
   AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);

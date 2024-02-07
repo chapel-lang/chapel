@@ -11590,6 +11590,49 @@ static void checkSpeciallyNamedMethods() {
   }
 }
 
+static void applyGpuPrimitivesToLoops(Expr* root,
+                                      BlockStmt* prims,
+                                      SymbolMap* map = nullptr) {
+  std::vector<ForLoop*> loops;
+  collectForLoops(root, loops);
+  for (auto loop : loops) {
+    if (loop->isForExpr()) {
+      auto primCopy = prims->copy(map);
+      loop->body.insertAtHead(primCopy);
+      primCopy->flattenAndRemove();
+    }
+  }
+}
+
+static void applyGpuAttributesToIterableExprs() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (!call->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK)) continue;
+    SET_LINENO(call);
+
+    auto parentBlock = toBlockStmt(call->parentExpr);
+    INT_ASSERT(parentBlock);
+    auto primBlock = toBlockStmt(parentBlock->body.last());
+    INT_ASSERT(primBlock);
+
+    call->remove();
+    primBlock->remove();
+
+    // For for-exprs etc. written directly in this block, apply GPU prims.
+    applyGpuPrimitivesToLoops(parentBlock, primBlock);
+
+    // Do the same, but for promoted expressions.
+    std::vector<CallExpr*> calls;
+    collectCallExprs(parentBlock, calls);
+    for (auto call : calls) {
+      if (call->resolvedFunction() && call->resolvedFunction()->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+        USR_WARN(call, "promoted expression in '@assertOnGpu'");
+      }
+    }
+
+    parentBlock->flattenAndRemove();
+  }
+}
+
 static void postResolveLiftStaticVars() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR_WRAPPER)) {
@@ -11692,6 +11735,8 @@ void resolve() {
     printUnusedFunctions();
 
   checkSpeciallyNamedMethods();
+
+  applyGpuAttributesToIterableExprs();
 
   saveGenericSubstitutions();
 
