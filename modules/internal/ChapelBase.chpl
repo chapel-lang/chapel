@@ -2251,12 +2251,6 @@ module ChapelBase {
     do chpl_castUnmanagedError(t:string);
 
   // casting to unmanaged?, no class downcast
-  // inline operator :(x:owned class?, type t:unmanaged class?)
-    // where isSubtype(_to_unmanaged(x.type),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
-  // inline operator :(x:shared class?, type t:unmanaged class?)
-    // where isSubtype(_to_unmanaged(x.type),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
   pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
@@ -2265,11 +2259,6 @@ module ChapelBase {
   }
 
   // inline operator :(x:owned class, type t:unmanaged class?)
-    // where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
-  // inline operator :(x:shared class, type t:unmanaged class?)
-    // where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
   pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
@@ -2278,12 +2267,6 @@ module ChapelBase {
   }
 
   // casting to unmanaged, no class downcast
-  // inline operator :(x:owned class, type t:unmanaged class)
-    // where isSubtype(_to_unmanaged(x.type),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
-  // inline operator :(x:shared class, type t:unmanaged class)
-    // where isSubtype(_to_unmanaged(x.type),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
   pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
@@ -2313,12 +2296,6 @@ module ChapelBase {
   }
 
   // casting away nilability, no class downcast
-  // inline operator :(x:owned class?, type t:unmanaged class)  throws
-    // where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
-  // inline operator :(x:shared class?, type t:unmanaged class)  throws
-    // where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
   pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class)  throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
@@ -2357,12 +2334,6 @@ module ChapelBase {
 
 
   // this version handles downcast to non-nil unmanaged
-  // inline operator :(x:owned class?, type t:unmanaged class) throws
-    // where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
-    // do compilerError(chpl_castToUnmanagedError(t:string));
-  // inline operator :(x:shared class?, type t:unmanaged class) throws
-    // where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
-    // do compilerError(chpl_castToUnmanagedError(t:string));
   pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
@@ -2379,12 +2350,6 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
-  // inline operator :(x:owned class?, type t:unmanaged class?)
-    // where isProperSubtype(t,_to_unmanaged(x.type))
-    // do compilerError(chpl_castToUnmanagedError(t:string));
-  // inline operator :(x:shared class?, type t:unmanaged class?)
-    // where isProperSubtype(t,_to_unmanaged(x.type))
-    // do compilerError(chpl_castToUnmanagedError(t:string));
   pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
@@ -2397,12 +2362,6 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
-  // inline operator :(x:owned class, type t:unmanaged class?)
-    // where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
-  // inline operator :(x:shared class, type t:unmanaged class?)
-    // where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
-    // do compilerError(chpl_castToUnmanagedError(t:string));
   pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
