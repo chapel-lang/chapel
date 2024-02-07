@@ -426,7 +426,7 @@ static void markExplicitDomainParsafeVars(CallExpr* call) {
         // this is an associative domain with an explicit parSafe flag
         Symbol* parSafe = toSymExpr(call->get(3))->symbol();
         // Check if parSafe is true and warn unstable
-        if (fWarnUnstable && parSafe == gTrue) {
+        if (shouldWarnUnstableFor(call) && parSafe == gTrue) {
           USR_WARN(call, "parSafe=true is unstable for associative domains and arrays, and its behavior may change in the future");
         }
         // handle local variables
