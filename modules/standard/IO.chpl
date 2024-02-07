@@ -1646,32 +1646,6 @@ operator file.=(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-private proc initHelper(ref f: file, fp: c_ptr(c_FILE), hints=ioHintSet.empty,
-                        style:iostyleInternal = defaultIOStyleInternal(),
-                        own=false) throws {
-
-  var local_style = style;
-  f._home = here;
-  var internalHints = hints._internal;
-  if (own) {
-    internalHints |= QIO_HINT_OWNED;
-  }
-  var err = qio_file_init(f._file_internal, fp, -1, internalHints, local_style,
-                          1);
-
-  // On exit either f._file_internal.ref_cnt == 1, or f._file_internal is NULL.
-  // error should be nonzero in the latter case.
-  if err {
-    var path_cs:c_ptrConst(c_char);
-    var path_err = qio_file_path_for_fp(fp, path_cs);
-    var path = if path_err then "unknown"
-                           else string.createCopyingBuffer(path_cs,
-                                                          policy=decodePolicy.replace);
-    deallocate(path_cs);
-    try ioerror(err, "in init", path);
-  }
-}
-
 /*
 Create a Chapel :record:`file` that wraps around an open C file. A pointer to
 a C ``FILE`` object can be obtained via Chapel's
@@ -1707,30 +1681,28 @@ proc file.init(fp: c_ptr(c_FILE), hints=ioHintSet.empty, own=false) throws {
   initHelper(this, fp, hints, own=own);
 }
 
-private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
-                         style:iostyleInternal = defaultIOStyleInternal(),
-                         own=false) throws {
+private proc initHelper(ref f: file, fp: c_ptr(c_FILE), hints=ioHintSet.empty,
+                        own=false) throws {
 
-  var local_style = style;
+  var local_style = defaultIOStyleInternal();
   f._home = here;
-  extern proc chpl_cnullfile():c_ptr(c_FILE);
   var internalHints = hints._internal;
   if (own) {
     internalHints |= QIO_HINT_OWNED;
   }
-  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, internalHints,
-                          local_style, 0);
+  var err = qio_file_init(f._file_internal, fp, -1, internalHints, local_style,
+                          1);
 
-  // On return, either f._file_internal.ref_cnt == 1, or f._file_internal is
-  // NULL.
-  // err should be nonzero in the latter case.
+  // On exit either f._file_internal.ref_cnt == 1, or f._file_internal is NULL.
+  // error should be nonzero in the latter case.
   if err {
     var path_cs:c_ptrConst(c_char);
-    var path_err = qio_file_path_for_fd(fd, path_cs);
+    var path_err = qio_file_path_for_fp(fp, path_cs);
     var path = if path_err then "unknown"
                            else string.createCopyingBuffer(path_cs,
                                                           policy=decodePolicy.replace);
-    try ioerror(err, "in file.init", path);
+    deallocate(path_cs);
+    try ioerror(err, "in init", path);
   }
 }
 
@@ -1771,6 +1743,32 @@ proc file.init(fileDescriptor: int, hints=ioHintSet.empty, own=false) throws {
   this.init();
 
   initHelper2(this, fileDescriptor.safeCast(c_int), hints, own=own);
+}
+
+private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
+                         own=false) throws {
+
+  var local_style = defaultIOStyleInternal();
+  f._home = here;
+  extern proc chpl_cnullfile():c_ptr(c_FILE);
+  var internalHints = hints._internal;
+  if (own) {
+    internalHints |= QIO_HINT_OWNED;
+  }
+  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, internalHints,
+                          local_style, 0);
+
+  // On return, either f._file_internal.ref_cnt == 1, or f._file_internal is
+  // NULL.
+  // err should be nonzero in the latter case.
+  if err {
+    var path_cs:c_ptrConst(c_char);
+    var path_err = qio_file_path_for_fd(fd, path_cs);
+    var path = if path_err then "unknown"
+                           else string.createCopyingBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
+    try ioerror(err, "in file.init", path);
+  }
 }
 
 @chpldoc.nodoc
@@ -2035,10 +2033,9 @@ proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
 }
 
 
-private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
-                        style:iostyleInternal = defaultIOStyleInternal()): file throws {
+private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
 
-  var local_style = style;
+  var local_style = defaultIOStyleInternal();
   var error: errorCode = 0;
   var ret: file;
   ret._home = here;
@@ -2138,9 +2135,8 @@ proc openTempFile(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
-private proc opentmpHelper(hints=ioHintSet.empty,
-                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
-  var local_style = style;
+private proc opentmpHelper(hints=ioHintSet.empty):file throws {
+  var local_style = defaultIOStyleInternal();
   var ret:file;
   ret._home = here;
 
@@ -2167,9 +2163,8 @@ proc openMemFile():file throws {
   return openMemFileHelper();
 }
 
-private
-proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
-  var local_style = style;
+private proc openMemFileHelper():file throws {
+  var local_style = defaultIOStyleInternal();
   var ret:file;
   ret._home = here;
 
@@ -5526,12 +5521,11 @@ private proc openReaderHelper(path:string,
                               param kind=_iokind.dynamic, param locking=true,
                               region: range(?) = 0..,
                               hints=ioHintSet.empty,
-                              style:iostyleInternal = defaultIOStyleInternal(),
                               in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
-  return try fl.readerHelper(kind, locking, region, hints, style,
+  return try fl.readerHelper(kind, locking, region, hints, defaultIOStyleInternal(),
                              deserializer=deserializer);
 }
 
@@ -5582,12 +5576,12 @@ private proc openWriterHelper(path:string,
                               param kind=_iokind.dynamic, param locking=true,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
-                              style:iostyleInternal = defaultIOStyleInternal(),
                               in serializer: ?st = defaultSerializeVal(true,kind))
   : fileWriter(kind, locking, st) throws {
 
   var fl:file = try open(path, ioMode.cw);
-  return try fl.writerHelper(kind, locking, start..end, hints, style, serializer=serializer);
+  return try fl.writerHelper(kind, locking, start..end, hints, defaultIOStyleInternal(),
+                             serializer=serializer);
 }
 
 /*
