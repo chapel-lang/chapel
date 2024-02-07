@@ -293,11 +293,13 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
 
 /////// call resolution
 
+struct CandidatesAndForwardingInfo;
+
 /**
   Compute the (potentially generic) TypedFnSignatures of possibly applicable
   candidate functions from a list of visible functions.
  */
-const std::vector<const TypedFnSignature*>&
+const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
                         std::vector<BorrowedIdsWithName> lst,
                         CallInfo call);
@@ -313,11 +315,11 @@ filterCandidatesInitial(Context* context,
  */
 void
 filterCandidatesInstantiating(Context* context,
-                              const std::vector<const TypedFnSignature*>& lst,
+                              const CandidatesAndForwardingInfo& lst,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
-                              std::vector<const TypedFnSignature*>& result,
+                              CandidatesAndForwardingInfo& result,
                               std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
