@@ -846,10 +846,11 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
-      // classifyPrimitive gets mad that that this primitive should already
-      // have been removed from the tree. We know it's safe, so just
+      // classifyPrimitive gets mad that that our internal marker primitives
+      // should already have been removed from the tree. We know it's safe, so just
       // leave it.
-      if (call->primitive->tag == PRIM_GPU_ELIGIBLE) continue;
+      if (call->primitive->tag == PRIM_GPU_ELIGIBLE ||
+          call->primitive->tag == PRIM_GPU_PRIMITIVE_BLOCK) continue;
 
       // only primitives that are fast and local are allowed for now
       bool inLocal = inLocalBlock(call);
@@ -994,6 +995,8 @@ struct KernelActual {
 // GpuKernel
 // ----------------------------------------------------------------------------
 
+static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
+
 // Given a GpuizableLoop that was determined to be "eligible" we generate an
 // outlined function
 // for GPU code generation that:
@@ -1009,7 +1012,7 @@ class GpuKernel {
   std::vector<KernelActual> kernelActuals_;
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
-  SymExpr* blockSize_;
+  CallExpr* blockSizeCall_;
 
   public:
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1017,12 +1020,11 @@ class GpuKernel {
   FnSymbol* fn() const { return fn_; }
   const std::vector<KernelActual>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
-  SymExpr* blockSize() const {return blockSize_; }
+  CallExpr* blockSizeCall() const {return blockSizeCall_; }
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
   void determineBlockSize();
-  static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
   void populateBody(FnSymbol *outlinedFunction);
   void normalizeOutlinedFunction();
   void setLateGpuizationFailure(bool flag);
@@ -1038,7 +1040,7 @@ class GpuKernel {
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
   , lateGpuizationFailure_(false)
-  , blockSize_(nullptr)
+  , blockSizeCall_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
@@ -1211,19 +1213,20 @@ void GpuKernel::determineBlockSize() {
 
   for_vector(CallExpr, callExpr, callExprsInBody) {
     if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      if (blockSize_ != nullptr) {
+      if (blockSizeCall_ != nullptr) {
         USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
       }
-      blockSize_ = toSymExpr(callExpr->get(1));
+      blockSizeCall_ = callExpr;
     }
   }
 }
 
-bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
+bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
   if (!call) return false;
 
   return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
-         call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE);
+         call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
+         call->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK);
 }
 
 void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
@@ -1255,6 +1258,11 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
       this->copyMap_.put(def->sym, newDef->sym);
 
       outlinedFunction->insertBeforeEpilogue(newDef);
+    }
+    else if (isBlockStmt(node) && toBlockStmt(node)->isGpuPrimitivesBlock()) {
+      // GPU primitives blocks need not be in the kernel, since they
+      // set launch-time properties of a kernel.
+      copyNode = false;
     }
     else {
       // We also need to copy any defs that appear in blocks.
@@ -1459,6 +1467,17 @@ class CpuBoundLoopCleanup {
   public:
 
   static void doit(CForLoop *loop) {
+    // 'gpu primitive blocks' contain several GPU primitives as well as
+    // any temporaries used for computing their arguments. We know for sure
+    // they don't need to go into the CPU loop.
+    std::vector<BlockStmt*> blocksInBody;
+    collectBlockStmts(loop, blocksInBody);
+    for (auto block : blocksInBody) {
+      if (block->isGpuPrimitivesBlock()) {
+        block->remove();
+      }
+    }
+
     std::vector<CallExpr*> callExprsInBody;
     for_alist(node, loop->body) {
       collectCallExprs(node, callExprsInBody);
@@ -1531,16 +1550,36 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
   return numThreads;
 }
 
-static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
+static CallExpr* generateGPUCall(GpuKernel& info, BlockStmt* gpuBlock, VarSymbol* numThreads) {
   CallExpr *call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
 
   call->insertAtTail(info.fn());
 
   call->insertAtTail(numThreads);  // total number of GPU threads
 
-  if (info.blockSize()) {
+  if (auto blockSizeCall = info.blockSizeCall()) {
     // sets blockSize if specified with by "gpu set BlockSize" primitive
-    call->insertAtTail(info.blockSize()->copy());
+    debuggerBreakHere();
+
+    // If the parent of the call is 'gpu primitives' block, it was constructed
+    // specifically to 'fence off' GPU primitives. There may be
+    // some additional temps etc. that are used for computing block size.
+    // We need to lift them, too. Since we're "consuming" the GPU loop,
+    // just modify the parent block in place.
+    if (auto callParent = toBlockStmt(blockSizeCall->parentExpr)) {
+      if (callParent->isGpuPrimitivesBlock()) {
+        for_alist(expr, callParent->body) {
+          if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
+            expr->remove();
+          }
+        }
+
+        gpuBlock->insertAtTail(callParent->remove());
+        callParent->flattenAndRemove();
+      }
+    }
+
+    call->insertAtTail(info.blockSizeCall()->get(1)->copy());
   } else {
     int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
     call->insertAtTail(new_IntSymbol(blockSize));
@@ -1588,7 +1627,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
 
   // populate the gpu block
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
-  CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
+  CallExpr* gpuCall = generateGPUCall(kernel, gpuBlock, numThreads);
   gpuCall->insertAtTail(new SymExpr(cfg));
   gpuBlock->insertAtTail(gpuCall);
   gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
