@@ -9,7 +9,8 @@
 // * shared memory only thus far
 // * see TODO list at bottom of file, and throughout, for other thoughts
 
-config param printFromTasks = false;
+config param printFromTasks = false,
+             printTimings=true;
 
 config const debug = false;
 
@@ -52,9 +53,11 @@ proc twinprimes_ssoz() {
     if start_num <= tp && tp < lo_range then twinscnt += 1;
   }
   const te = ts.elapsed();
-  writeln("setup time = ", te, " secs");
-  writeln("perform twinprimes ssoz sieve");
-  ts.clear();
+  if printTimings {
+    writeln("setup time = ", te, " secs");
+    writeln("perform twinprimes ssoz sieve");
+    ts.clear();
+  }
 
   // TODO: Why not just use the loop index 'i' rather than this atomic?
   var threadscnt: atomic uint;
@@ -76,9 +79,11 @@ proc twinprimes_ssoz() {
   var kn = krange % ks;
   if kn == 0 then kn = ks;
 
-  const t2 = ts.elapsed();
-  writeln("sieve time = ", t2, " secs");
-  writeln("total time = ", t2 + te, " secs");
+  if printTimings {
+    const t2 = ts.elapsed();
+    writeln("sieve time = ", t2, " secs");
+    writeln("total time = ", t2 + te, " secs");
+  }
   writeln("last segment = ", kn, " resgroups; segment slices = ",
           (krange-1)/ks + 1);
   writeln("total twins = ", twinscnt, "; last twin = ", (last_twin - 1),
