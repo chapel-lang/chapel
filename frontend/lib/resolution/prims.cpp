@@ -1332,7 +1332,8 @@ CallResolutionResult resolvePrimCall(Context* context,
                                IntParam::get(context, s));
           break;
         } else if (actualType.type()->isStringType() ||
-                   actualType.type()->isBytesType()) {
+                   actualType.type()->isBytesType() ||
+                   actualType.type()->isCStringType()) {
           // for non-param string/bytes, the return type is just a default int
           type = QualifiedType(QualifiedType::CONST_VAR,
                                IntType::get(context, 0));
