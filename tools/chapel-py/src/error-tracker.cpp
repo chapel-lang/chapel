@@ -60,7 +60,7 @@ void ErrorObject_dealloc(ErrorObject* self) {
 PyObject* ErrorObject_location(ErrorObject* self, PyObject* args) {
   auto locationObjectPy = PyObject_CallObject((PyObject *) &LocationType, nullptr);
   auto& location = ((LocationObject*) locationObjectPy)->location;
-  auto context = &((ContextObject*) self->contextObject)->context;
+  auto context = &((ContextObject*) self->contextObject)->context_;
 
   location = self->error->location(context);
   return locationObjectPy;
@@ -111,14 +111,14 @@ void ErrorManagerObject_dealloc(ErrorManagerObject* self) {
 }
 
 PyObject* ErrorManagerObject_enter(ErrorManagerObject* self, PyObject* args) {
-  auto& context = ((ContextObject*) self->contextObject)->context;
+  auto& context = ((ContextObject*) self->contextObject)->context_;
   auto list = ((PythonErrorHandler*) context.errorHandler())->pushList();
   Py_INCREF(list);
   return list;
 }
 
 PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args) {
-  auto& context = ((ContextObject*) self->contextObject)->context;
+  auto& context = ((ContextObject*) self->contextObject)->context_;
   ((PythonErrorHandler*) context.errorHandler())->popList();
 
   Py_RETURN_NONE;

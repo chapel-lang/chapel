@@ -59,19 +59,19 @@ void setupContextType() {
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   Context::Configuration config;
   config.chplHome = getenv("CHPL_HOME");
-  new (&self->context) Context(std::move(config));
-  self->context.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
+  new (&self->context_) Context(std::move(config));
+  self->context_.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
   return 0;
 }
 
 void ContextObject_dealloc(ContextObject* self) {
-  self->context.~Context();
+  self->context_.~Context();
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
-  auto context = &self->context;
+  auto context = &self->context_;
   const char* fileName;
   if (!PyArg_ParseTuple(args, "s", &fileName)) {
     PyErr_BadArgument();
@@ -102,7 +102,7 @@ static void extractListOfStrings(PyObject* list, std::vector<std::string>& into)
 }
 
 PyObject* ContextObject_set_module_paths(ContextObject *self, PyObject* args) {
-  auto context = &self->context;
+  auto context = &self->context_;
   std::vector<std::string> paths;
   std::vector<std::string> filenames;
 
@@ -122,7 +122,7 @@ PyObject* ContextObject_set_module_paths(ContextObject *self, PyObject* args) {
 }
 
 PyObject* ContextObject_introspect_parsed_files(ContextObject *self, PyObject* args) {
-  auto context = &self->context;
+  auto context = &self->context_;
 
   auto parsedFiles = parsing::introspectParsedFiles(context);
   PyObject* destinationList = PyList_New(parsedFiles.size());
@@ -135,7 +135,7 @@ PyObject* ContextObject_introspect_parsed_files(ContextObject *self, PyObject* a
 }
 
 PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args) {
-  auto context = &self->context;
+  auto context = &self->context_;
   const char* fileName;
   if (!PyArg_ParseTuple(args, "s", &fileName)) {
     PyErr_BadArgument();
@@ -152,7 +152,7 @@ PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args) {
 }
 
 PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* args) {
-  auto context = &self->context;
+  auto context = &self->context_;
   bool prepareToGc;
   if (!PyArg_ParseTuple(args, "b", &prepareToGc)) {
     PyErr_BadArgument();
@@ -355,7 +355,7 @@ void ScopeObject_dealloc(ScopeObject* self) {
 
 PyObject* ScopeObject_used_imported_modules(ScopeObject* self, PyObject* Py_UNUSED(args)) {
   auto contextObject = ((ContextObject*) self->contextObject);
-  auto context = &contextObject->context;
+  auto context = &contextObject->context_;
   auto& moduleIds = resolution::findUsedImportedModules(context, self->scope);
 
   // Dyno sometimes reports duplicate IDs; ignore them using a set.
@@ -457,7 +457,7 @@ PyObject* AstNodeObject_pragmas(AstNodeObject *self) {
 
 PyObject* AstNodeObject_parent(AstNodeObject* self) {
   auto contextObject = (ContextObject*) self->contextObject;
-  auto context = &contextObject->context;
+  auto context = &contextObject->context_;
 
   return wrapAstNode(contextObject, parsing::parentAst(context, self->ptr));
 }
@@ -467,13 +467,13 @@ PyObject* AstNodeObject_iter(AstNodeObject *self) {
 }
 
 PyObject* AstNodeObject_location(AstNodeObject *self) {
-  auto context = &((ContextObject*) self->contextObject)->context;
+  auto context = &((ContextObject*) self->contextObject)->context_;
   return wrapLocation(parsing::locateAst(context, self->ptr));
 }
 
 PyObject* AstNodeObject_scope(AstNodeObject *self) {
   PyObject* args = Py_BuildValue("(O)", self->contextObject);
-  auto context = &((ContextObject*) self->contextObject)->context;
+  auto context = &((ContextObject*) self->contextObject)->context_;
   auto scope = resolution::scopeForId(context, self->ptr->id());
 
   if (scope == nullptr) {
@@ -489,7 +489,7 @@ PyObject* AstNodeObject_scope(AstNodeObject *self) {
 
 PyObject* AstNodeObject_type(AstNodeObject *self) {
   auto contextObject = (ContextObject*) self->contextObject;
-  auto context = &contextObject->context;
+  auto context = &contextObject->context_;
 
   auto qt = typeForNode(context, self->ptr);
   if (qt.isUnknown()) {
@@ -505,7 +505,7 @@ PyObject* AstNodeObject_type(AstNodeObject *self) {
 
 PyObject* AstNodeObject_called_fn(AstNodeObject *self) {
   auto contextObject = (ContextObject*) self->contextObject;
-  auto context = &contextObject->context;
+  auto context = &contextObject->context_;
 
   return wrapAstNode(contextObject, calledFnForNode(context, self->ptr));
 }

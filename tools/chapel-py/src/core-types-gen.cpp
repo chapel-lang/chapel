@@ -74,7 +74,7 @@ static const char* opKindToString(Range::OpKind kind) {
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
     auto node = ((NODE##Object*) self)->unwrap(); \
     auto contextObject = ((NODE##Object*) self)->context(); \
-    auto context = &contextObject->context; \
+    auto context = &contextObject->context_; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
     auto result = [node, &context, &args]() { \
       (void) context; \

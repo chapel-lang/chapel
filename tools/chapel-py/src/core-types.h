@@ -32,8 +32,10 @@ PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
 struct ContextObject {
   PyObject_HEAD
-  chpl::Context context;
-  /* Type-specific fields go here. */
+  chpl::Context context_;
+
+  chpl::Context* unwrap() { return &context_; }
+  ContextObject* context() { return this; }
 };
 extern PyTypeObject ContextType;
 void setupContextType();
