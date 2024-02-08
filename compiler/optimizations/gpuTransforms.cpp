@@ -1745,6 +1745,13 @@ static void reportErrorsForBadBlockSizeCalls() {
   CallExpr* explainAnchor = nullptr;
   for_alive_in_Vec(CallExpr, callExpr, gCallExprs) {
     if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+      if (callExpr->getFunction()->hasFlag(FLAG_GPU_SPECIALIZATION)) {
+        // Assume that this primitive got here by being copied, and that the
+        // other location will error about it. Since both copies of the primitive
+        // will have the same location, erroring here would lead to duplicates.
+        continue;
+      }
+
       USR_FATAL_CONT(callExpr, "'setBlockSize' can only be used in bodies of GPU-eligible loops");
       explainAnchor = callExpr;
 
