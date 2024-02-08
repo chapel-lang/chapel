@@ -287,7 +287,7 @@ bool CanPassResult::canConvertNumeric(Context* context,
     // don't convert bools to reals (per spec: "unintended by programmer")
 
     // coerce any integer type to any width real
-    if (actualT->isNumericType())
+    if (actualT->isIntegralType())
       return true;
 
     // convert real from smaller size
