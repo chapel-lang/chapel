@@ -346,7 +346,7 @@ module HDFS {
 
       // Create an HDFSFile and return the QIO file containing it
       // this initializer bumps the reference count to this
-      var fl = new unmanaged HDFSFile(_to_unmanaged(this), hfile, path);
+      var fl = new unmanaged HDFSFile(this:unmanaged, hfile, path);
 
       var ret: file;
       try {
@@ -387,7 +387,7 @@ module HDFS {
       if verbose then
         writeln("HDFSFile.setupChannel");
 
-      var hdfsch = new unmanaged HDFSChannel(_to_unmanaged(this), qioChannelPtr);
+      var hdfsch = new unmanaged HDFSChannel(this:unmanaged, qioChannelPtr);
       pluginChannel = hdfsch;
       return 0;
     }

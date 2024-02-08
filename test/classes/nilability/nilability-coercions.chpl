@@ -13,9 +13,9 @@ module test {
     var c = ownC.borrow();
 
     // Check some coercions
-    var cu = new unmanaged Child(1, 2);
-    var cuc = cu:unmanaged class;
-    var cuq = cu:unmanaged class?;
+    var cu = c.borrow():unmanaged;
+    var cuc = c.borrow():unmanaged class;
+    var cuq = c.borrow():unmanaged class?;
     var cb = c:borrowed;
     var cbc = c:borrowed class;
     var cbq = c:borrowed class?;
@@ -108,6 +108,5 @@ module test {
       acceptsParentQ(cbq);
       acceptsChildQ(cbq);
     }
-    delete cu;
   }
 }

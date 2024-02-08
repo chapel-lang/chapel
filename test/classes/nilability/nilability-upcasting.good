@@ -74,6 +74,13 @@ borrowed Child? nil
 borrowed Child? nil
 
 casts to unmanaged Child
+cb:unmanaged Child
+unmanaged Child {p = 1, c = 2}
+unmanaged Child {p = 1, c = 2}
+unmanaged Child {p = 1, c = 2}
+cbq:unmanaged Child
+unmanaged Child {p = 1, c = 2}
+unmanaged Child {p = 1, c = 2}
 cu:unmanaged Child
 unmanaged Child {p = 1, c = 2}
 unmanaged Child {p = 1, c = 2}
@@ -81,11 +88,21 @@ unmanaged Child {p = 1, c = 2}
 cuq:unmanaged Child
 unmanaged Child {p = 1, c = 2}
 unmanaged Child {p = 1, c = 2}
+nbq:unmanaged Child
+NilClassError: cannot convert nil class to non nilable type
+NilClassError: cannot convert nil class to non nilable type
 nuq:unmanaged Child
 NilClassError: cannot convert nil class to non nilable type
 NilClassError: cannot convert nil class to non nilable type
 
 casts to unmanaged Child?
+cb:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+unmanaged Child? {p = 1, c = 2}
+cbq:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+unmanaged Child? {p = 1, c = 2}
+unmanaged Child? {p = 1, c = 2}
 cu:unmanaged Child?
 unmanaged Child? {p = 1, c = 2}
 unmanaged Child? {p = 1, c = 2}
@@ -93,6 +110,10 @@ cuq:unmanaged Child?
 unmanaged Child? {p = 1, c = 2}
 unmanaged Child? {p = 1, c = 2}
 unmanaged Child? {p = 1, c = 2}
+nbq:unmanaged Child?
+unmanaged Child? nil
+unmanaged Child? nil
+unmanaged Child? nil
 nuq:unmanaged Child?
 unmanaged Child? nil
 unmanaged Child? nil
@@ -155,17 +176,29 @@ nuq:borrowed Parent?
 borrowed Parent? nil
 
 casts to unmanaged Parent
+cb:unmanaged Parent
+unmanaged Parent {p = 1, c = 2}
+cbq:unmanaged Parent
+unmanaged Parent {p = 1, c = 2}
 cu:unmanaged Parent
 unmanaged Parent {p = 1, c = 2}
 cuq:unmanaged Parent
 unmanaged Parent {p = 1, c = 2}
+nbq:unmanaged Parent
+NilClassError: cannot convert nil class to non nilable type
 nuq:unmanaged Parent
 NilClassError: cannot convert nil class to non nilable type
 
 casts to unmanaged Parent?
+cb:unmanaged Parent?
+unmanaged Parent? {p = 1, c = 2}
+cbq:unmanaged Parent?
+unmanaged Parent? {p = 1, c = 2}
 cu:unmanaged Parent?
 unmanaged Parent? {p = 1, c = 2}
 cuq:unmanaged Parent?
 unmanaged Parent? {p = 1, c = 2}
+nbq:unmanaged Parent?
+unmanaged Parent? nil
 nuq:unmanaged Parent?
 unmanaged Child? nil
