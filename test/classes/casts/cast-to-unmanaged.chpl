@@ -8,8 +8,8 @@ class Child: Parent {}
   var nilableOwnedA = new A?();
   var ownedChild = new Child();
   var nilableOwnedChild = new Child?();
-  var ownedParent = new Parent();
-  var nilableOwnedParent = new Parent?();
+  var ownedParent: Parent = new Child();
+  var nilableOwnedParent: Parent? = new Child?();
 
   var borrowedA = ownedA.borrow();
   var nilableBorrowedA = nilableOwnedA.borrow();
@@ -22,8 +22,8 @@ class Child: Parent {}
   var nilableSharedA = new shared A?();
   var sharedChild = new shared Child();
   var nilableSharedChild = new shared Child?();
-  var sharedParent = new shared Parent();
-  var nilableSharedParent = new shared Parent?();
+  var sharedParent: Parent = new shared Child();
+  var nilableSharedParent: Parent? = new shared Child?();
 
   compilerWarning("flat casting");
   { var x = ownedA:unmanaged A; }
@@ -72,25 +72,24 @@ class Child: Parent {}
   compilerWarning("");
 
   compilerWarning("downcasting");
-  // down casting - these are runtime errors, catch the ClassCastError
-  try { var x = ownedParent:unmanaged Child; } catch ClassCastError {}
-  try { var x = nilableOwnedParent:unmanaged Child; } catch ClassCastError {}
+  { var x = ownedParent:unmanaged Child; }
+  { var x = nilableOwnedParent:unmanaged Child; }
   { var x = ownedParent:unmanaged Child?; }
-  try { var x = nilableOwnedParent:unmanaged Child?; } catch ClassCastError {}
+  { var x = nilableOwnedParent:unmanaged Child?; }
 
   compilerWarning("");
 
   // these are ok and should not produce warnings
-  try { var x = borrowedParent:unmanaged Child; } catch ClassCastError {}
-  try { var x = nilableBorrowedParent:unmanaged Child; } catch ClassCastError {}
+  { var x = borrowedParent:unmanaged Child; }
+  { var x = nilableBorrowedParent:unmanaged Child; }
   { var x = borrowedParent:unmanaged Child?; }
-  try { var x = nilableBorrowedParent:unmanaged Child?; } catch ClassCastError {}
+  { var x = nilableBorrowedParent:unmanaged Child?; }
 
   compilerWarning("");
 
-  try { var x = sharedParent:unmanaged Child; } catch ClassCastError {}
-  try { var x = nilableSharedParent:unmanaged Child; } catch ClassCastError {}
+  { var x = sharedParent:unmanaged Child; }
+  { var x = nilableSharedParent:unmanaged Child; }
   { var x = sharedParent:unmanaged Child?; }
-  try { var x = nilableSharedParent:unmanaged Child?; } catch ClassCastError {}
+  { var x = nilableSharedParent:unmanaged Child?; }
 
 }
