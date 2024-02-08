@@ -128,6 +128,7 @@ PyObject* ParamObject_str(ParamObject* self);
     ROOT##Object parent; \
   \
     const auto unwrap() const { return parent.ptr->to##NAME(); } \
+    ContextObject* context() const { return (ContextObject*) parent.contextObject; } \
   }; \
   \
   extern PyTypeObject NAME##Type;
