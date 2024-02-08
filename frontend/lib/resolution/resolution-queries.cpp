@@ -1514,7 +1514,8 @@ ApplicabilityResult instantiateSignature(Context* context,
 
   const TypedFnSignature* parentFnTyped = nullptr;
   if (sig->parentFn()) {
-    CHPL_ASSERT(false && "generic child functions not yet supported");
+    CHPL_UNIMPL("generic child functions not yet supported");
+    return ApplicabilityResult::failure(sig->id(), FAIL_CANDIDATE_OTHER);
     // TODO: how to compute parentFn for the instantiation?
     // Does the parent function need to be instantiated in some case?
     // Set parentFnTyped somehow.
