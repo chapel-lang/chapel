@@ -34,6 +34,8 @@ struct ContextObject {
   PyObject_HEAD
   chpl::Context context_;
 
+  static constexpr const char* Name = "Context";
+
   chpl::Context* unwrap() { return &context_; }
   ContextObject* context() { return this; }
 };
@@ -128,6 +130,8 @@ PyObject* ParamObject_str(ParamObject* self);
 #define DECLARE_PY_OBJECT_FOR(ROOT, NAME)\
   struct NAME##Object { \
     ROOT##Object parent; \
+  \
+    static constexpr const char* Name = #NAME; \
   \
     const auto unwrap() const { return parent.ptr->to##NAME(); } \
     ContextObject* context() const { return (ContextObject*) parent.contextObject; } \

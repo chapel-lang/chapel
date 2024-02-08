@@ -190,13 +190,16 @@ static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequ
 }
 
 template <typename T>
-struct GeneratedTypeInfo {};
+struct ParentTypeInfo {
+  static PyTypeObject* parentTypeObject() { return nullptr; }
+};
 
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) \
   template <> \
-  struct GeneratedTypeInfo<NAME##Object> { \
-    static constexpr auto Tag = TAG; \
-    static constexpr const char* Name = #NAME; \
+  struct ParentTypeInfo<NAME##Object> { \
+    static PyTypeObject* parentTypeObject() { \
+      return parentTypeFor(TAG); \
+    } \
   };
 #include "generated-types-list.h"
 
@@ -230,10 +233,12 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   std::unordered_set<std::string> generated;
 
   #define CLASS_BEGIN(NODE) \
-    ss << "class " << GeneratedTypeInfo<NODE##Object>::Name << "("; \
-    generated.insert(GeneratedTypeInfo<NODE##Object>::Name); \
-    ss << parentTypeFor(GeneratedTypeInfo<NODE##Object>::Tag)->tp_name; \
-    ss << "):" << std::endl;
+    ss << "class " << NODE##Object::Name; \
+    generated.insert(NODE##Object::Name); \
+    if (auto parentType = ParentTypeInfo<NODE##Object>::parentTypeObject()) { \
+      ss << "(" << parentType->tp_name << "):"; \
+    } \
+    ss << std::endl;
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
     ss << "    def " << #NAME << "(self"; \
     printTypedPythonFunctionArgs<PythonFnHelper<TYPEFN>::ArgTypeInfo>(ss, std::make_index_sequence<std::tuple_size<PythonFnHelper<TYPEFN>::ArgTypeInfo>::value>()); \
@@ -247,10 +252,12 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   #include "method-tables.h"
 
   #define ENSURE_ALL_CLASSES(NODE, TAG) \
-    if(generated.find(GeneratedTypeInfo<NODE##Object>::Name) == generated.end()) { \
-      ss << "class " << GeneratedTypeInfo<NODE##Object>::Name << "("; \
-      ss << parentTypeFor(TAG)->tp_name; \
-      ss << "):" << std::endl; \
+    if(generated.find(NODE##Object::Name) == generated.end()) { \
+      ss << "class " << NODE##Object::Name; \
+      if (auto parentType = ParentTypeInfo<NODE##Object>::parentTypeObject()) { \
+        ss << parentTypeFor(TAG)->tp_name << "):"; \
+      } \
+      ss << std::endl; \
       ss << "    pass" << std::endl; \
     } \
 
