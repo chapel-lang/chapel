@@ -610,6 +610,7 @@ private:
 };
 
 std::unordered_map<CForLoop*, GpuizableLoop> eligibleLoops;
+std::unordered_set<CondStmt*> gpuBranches;
 
 GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   INT_ASSERT(blk->getFunction());
@@ -1740,6 +1741,37 @@ static void cleanupTaskIndependentCapturePrimitives() {
       cleanupTaskIndependentCapturePrimitive(callExpr);
 }
 
+static void reportErrorsForBadBlockSizeCalls() {
+  CallExpr* explainAnchor = nullptr;
+  for_alive_in_Vec(CallExpr, callExpr, gCallExprs) {
+    if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+      USR_FATAL_CONT(callExpr, "'setBlockSize' can only be used in bodies of GPU-eligible loops");
+      explainAnchor = callExpr;
+
+      // Search forward to try find the CForLoop corresponding to the GPU loop.
+      // This is just a heuristic to detect common erroneous uses for setBlockSize.
+      auto search = callExpr->next;
+      while (search) {
+        // Try recognizing a GPU-eligible loop that the blockSize call could've
+        // applied to by detecting the loop's dynamic launch check (i.e.,
+        // the "if runningOnGpuLocale()" conditional).
+
+        auto condStmt = toCondStmt(search);
+        if (gpuBranches.count(condStmt) > 0) {
+          USR_PRINT(condStmt, "if you meant to set the block size of this GPU "
+                              "loop, move the 'setBlockSize' call into the loop "
+                              "body");
+          break;
+        }
+
+        search = search->next;
+      }
+    }
+  }
+  if (explainAnchor) {}
+  USR_STOP();
+}
+
 // ----------------------------------------------------------------------------
 
 void lateGpuTransforms() {
@@ -1762,6 +1794,7 @@ void lateGpuTransforms() {
   }
 
   cleanupTaskIndependentCapturePrimitives();
+  reportErrorsForBadBlockSizeCalls();
 }
 
 bool isLoopGpuBound(CForLoop* loop) {
@@ -1827,6 +1860,7 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
   // easier to wrangle the CondStmt AST elsewhere (c.f. makeCpuOnly,
   // makeGpuOnly).
   CondStmt* cond = new CondStmt(condExpr, gpuBlock, cpuBlock);
+  gpuBranches.insert(cond);
 
   // first, make sure the conditional is in place
   cpuLoop()->insertBefore(cond);
