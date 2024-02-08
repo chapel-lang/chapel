@@ -1381,13 +1381,19 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto attributeGroup = parents_[parents_.size() - 1];
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
   auto node = parents_[parents_.size() - 2];
-  if (attr->name() == USTR("assertOnGpu")) {
+  if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.blockSize")) {
     if (node->isForall() || node->isForeach()) return;
     if (auto var = node->toVariable()) {
        if (!var->isField()) return;
     }
 
     CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+    if (attr->name() == USTR("assertOnGpu")) {
+      CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+    } else {
+      CHPL_ASSERT(attr->name() == USTR("gpu.blockSize"));
+      CHPL_REPORT(context_, InvalidBlockSize, node, attr);
+    }
   } else if (attr->name() == USTR("functionStatic")) {
     if (!node->isVariable()) {
       error(node, "the '@functionStatic' attribute can only be applied to variables.");
