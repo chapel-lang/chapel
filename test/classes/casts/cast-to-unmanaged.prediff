@@ -8,6 +8,6 @@ sed -E 's/^.+\.chpl:[0-9]*:[ ]*((warning|error):[ ]*)?/\1/' < $OUTFILE > $TMPFIL
 # filter trailing whitespace
 mv $TMPFILE $OUTFILE
 sed -E 's/[ ]*$//' < $OUTFILE > $TMPFILE
-# filter out error caused by usong `--ignore-user-errors`
+# filter out error caused by using `--ignore-user-errors`
 grep -v "illegal use of function that does not return a value: ':'" $TMPFILE > $OUTFILE
 rm $TMPFILE
