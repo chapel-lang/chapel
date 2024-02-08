@@ -874,6 +874,9 @@ module Random {
 
       .. code-block:: chapel
 
+        var rs = new randomStream(int),
+            A: [1..1000] int;
+
         forall (a, r) in zip(A, rs.next(A.domain)) do
           a = r;
 
@@ -1737,8 +1740,8 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
-        // call this.next instead of pcg.next to use locking
-        forall (x, r) in zip(arr, this.next(arr.domain, arr.eltType)) do
+        // call this.next instead of pcg.iterate to use locking
+        forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType)) do
           x = r;
       }
 
@@ -1746,8 +1749,8 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
-        // call this.next instead of pcg.next to use locking
-        forall (x, r) in zip(arr, this.next(arr.domain, arr.eltType,
+        // call this.next instead of pcg.iterate to use locking
+        forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType,
                                           min, max)) do
           x = r;
       }
