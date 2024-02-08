@@ -1585,6 +1585,9 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
           str += field->name;
           str += "=";
         }
+
+        Symbol* newField = at->getField(field->name);
+        str += buildValueName(newField, cname);
       }
     } else {
       // A partial instantiation
