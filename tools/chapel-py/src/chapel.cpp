@@ -23,7 +23,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "iterator-support.h"
 #include "error-tracker.h"
-#include "core-types.h"
+#include "core-types-gen.h"
 #include <utility>
 
 static PyMethodDef ChapelMethods[] = {

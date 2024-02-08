@@ -18,6 +18,7 @@
  */
 
 #include "core-types.h"
+#include "core-types-gen.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/types/all-types.h"
 #include "chpl/parsing/parsing-queries.h"

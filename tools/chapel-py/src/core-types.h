@@ -123,29 +123,6 @@ int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs);
 void ParamObject_dealloc(ParamObject* self);
 PyObject* ParamObject_str(ParamObject* self);
 
-/**
-  Declare a Python PyTypeObject that corresponds to a generated type
-  (AST node, Chapel type, etc.) of a given name.
- */
-#define DECLARE_PY_OBJECT_FOR(ROOT, NAME)\
-  struct NAME##Object { \
-    ROOT##Object parent; \
-  \
-    static constexpr const char* Name = #NAME; \
-  \
-    const auto unwrap() const { return parent.ptr->to##NAME(); } \
-    ContextObject* context() const { return (ContextObject*) parent.contextObject; } \
-  }; \
-  \
-  extern PyTypeObject NAME##Type;
-
-/* Generate a Python object for reach AST node type. */
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(ROOT, NAME)
-#include "generated-types-list.h"
-#undef DECLARE_PY_OBJECT_FOR
-
-void setupGeneratedTypes();
-
 template<typename IntentType>
 const char* intentToString(IntentType intent) {
   return qualifierToString(chpl::uast::Qualifier(int(intent)));

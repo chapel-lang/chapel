@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "core-types.h"
+#include "core-types-gen.h"
 #include "resolution.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
@@ -91,7 +91,7 @@ struct InvokeHelper<void(Args...)> {
    in a Python-compatible type.
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
-  static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
+  PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
     auto node = ((NODE##Object*) self)->unwrap(); \
     auto contextObject = ((NODE##Object*) self)->context(); \
     auto context = &contextObject->context_; \
@@ -111,7 +111,7 @@ struct InvokeHelper<void(Args...)> {
    that have actuals don't all share a parent class (Attribute vs FnCall, e.g.).
    */
 #define ACTUAL_ITERATOR(NAME)\
-  static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
+  PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
     auto node = ((NAME##Object*) self)->unwrap(); \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
@@ -134,39 +134,6 @@ struct InvokeHelper<void(Args...)> {
 
 ACTUAL_ITERATOR(Attribute);
 ACTUAL_ITERATOR(FnCall);
-
-/* The following code is used to help set up the (Python) method tables for
-   each Chapel AST node class. Each node class needs a table, but not all
-   classes have Python methods we want to expose. We thus want to default
-   to an empty method table (to save on typing / boilerplate), but at the same
-   time to make it easy to override a node's method table.
-
-   To this end, we use template specialization of the PerTypeMethods struct. The
-   default template provides an empty table; it can be specialized per-node to
-   change the table for that node.
-
-   Macros below take this a step further and compiler-generate the template
-   specializations. */
-template <typename ObjectType>
-struct PerTypeMethods {
-  static constexpr PyMethodDef methods[] = {
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
-
-#define CLASS_BEGIN(NAME) \
-  template <> \
-  struct PerTypeMethods<NAME##Object> { \
-    static constexpr PyMethodDef methods[] = {
-#define CLASS_END(NAME) \
-      {NULL, NULL, 0, NULL}  /* Sentinel */ \
-    }; \
-  };
-#define METHOD(NODE, NAME, DOCSTR, TYPE, BODY) \
-  {#NAME, NODE##Object_##NAME, PythonFnHelper<TYPE>::PyArgTag, DOCSTR},
-#define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
-  {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
-#include "method-tables.h"
 
 /* Having generated the method calls and the method tables, we can now
    generate the Python type objects for each AST node. The DEFINE_PY_TYPE_FOR
