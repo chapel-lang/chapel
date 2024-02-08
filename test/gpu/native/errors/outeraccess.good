@@ -1,4 +1,5 @@
 outeraccess.chpl:17: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
-outeraccess.chpl:8: note: call has outer var access
+outeraccess.chpl:3: note: called function has outer var access
+outeraccess.chpl:8: note:   reached via call to 'f1' here
 outeraccess.chpl:12: note:   reached via call to 'f2' here
 outeraccess.chpl:18: note:   reached via call to 'f3' in loop body here

@@ -156,4 +156,4 @@ inline proc getNextRand() {
   lastRand = (lastRand * IA + IC) % IM;
   return lastRand;
 }
-use Compat;
+use Compat, CompatIOKind;

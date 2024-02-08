@@ -164,6 +164,7 @@ PRIMITIVE_R(GPU_ELIGIBLE, "gpu eligible")
 PRIMITIVE_G(GPU_INIT_KERNEL_CFG, "gpu init kernel cfg")
 PRIMITIVE_G(GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg")
 PRIMITIVE_G(GPU_ARG, "gpu arg")
+PRIMITIVE_G(GPU_PID_OFFLOAD, "gpu pid offload")
 PRIMITIVE_G(GET_SERIAL, "task_get_serial")
 PRIMITIVE_G(SET_SERIAL, "task_set_serial")
 

@@ -138,4 +138,4 @@ record hashVal {
   }
 }
 
-use Compat;
+use Compat, CompatIOKind;

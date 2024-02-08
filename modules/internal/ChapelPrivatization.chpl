@@ -27,6 +27,7 @@ module ChapelPrivatization {
     var obj:c_ptr(void);
   }
 
+  pragma "codegen for CPU and GPU"
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
   pragma "fn returns infinite lifetime"

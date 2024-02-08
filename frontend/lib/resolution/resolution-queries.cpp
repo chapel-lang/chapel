@@ -114,11 +114,7 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
   const QualifiedType lhsType = lhs.type();
   const QualifiedType rhsType = rhs.type();
 
-  // check to see if it is generic/unknown
-  // (otherwise we do not need to infer anything)
-  if (!lhsType.isUnknownKindOrType() &&
-      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
-    return;
+  if (!lhsType.needsSplitInitTypeInfo(context)) return;
 
   const Param* p = rhsType.param();
   if (lhsType.kind() != QualifiedType::PARAM) {
@@ -245,8 +241,9 @@ scopeResolveModule(Context* context, ID id) {
 
 }
 
-const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
-  QUERY_BEGIN(typeForModuleLevelSymbol, context, id);
+const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
+                                              bool isCurrentModule) {
+  QUERY_BEGIN(typeForModuleLevelSymbol, context, id, isCurrentModule);
 
   QualifiedType result;
 
@@ -255,6 +252,12 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     const auto& resolvedStmt = resolveModuleStmt(context, id);
     if (resolvedStmt.hasId(id)) {
       result = resolvedStmt.byId(id).type();
+      if (result.needsSplitInitTypeInfo(context) && !isCurrentModule) {
+        ID moduleId = parsing::idToParentId(context, id);
+        const auto& resolvedModule = resolveModule(context, moduleId);
+        assert(resolvedModule.hasId(id));
+        result = resolvedModule.byId(id).type();
+      }
     } else {
       // fall back to default value
       result = QualifiedType();

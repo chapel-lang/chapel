@@ -58,7 +58,7 @@ TYPE_NODE(CPtrType)
 
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
   // concrete builtin types
-  BUILTIN_TYPE_NODE(CFnPtrType, "c_fn_ptr")
+  BUILTIN_TYPE_NODE(CFnPtrType, "chpl_c_fn_ptr")
   BUILTIN_TYPE_NODE(CVoidPtrType, "chpl__c_void_ptr")
   BUILTIN_TYPE_NODE(OpaqueType, "opaque")
   BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
