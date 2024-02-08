@@ -79,4 +79,4 @@ proc revcomp(buf, lo, hi) {
   forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
     (buf[i], buf[j]) = (cmpl[buf[j]], cmpl[buf[i]]);
 }
-use Compat;
+use Compat, CompatIOKind;
