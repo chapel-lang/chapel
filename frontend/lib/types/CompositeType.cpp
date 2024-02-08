@@ -153,6 +153,14 @@ const RecordType* CompositeType::getLocaleType(Context* context) {
                          SubstitutionsMap());
 }
 
+const RecordType* CompositeType::getLocaleIDType(Context* context) {
+  auto name = UniqueString::get(context, "chpl_localeID_t");
+  auto id = ID();
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
 bool CompositeType::isMissingBundledType(Context* context, ID id) {
   return isMissingBundledClassType(context, id) ||
          isMissingBundledRecordType(context, id);
