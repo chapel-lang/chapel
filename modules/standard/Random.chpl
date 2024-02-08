@@ -841,7 +841,7 @@ module Random {
     /*
       Get the next value in the random stream and advance its position by one.
     */
-    proc next(): eltType do
+    proc ref next(): eltType do
       return this.pcg.getNext();
 
     /*
@@ -864,7 +864,7 @@ module Random {
       :arg min: The minimum value to sample
       :arg max: The maximum value to sample
     */
-    proc next(min: eltType, max: eltType): eltType do
+    proc ref next(min: eltType, max: eltType): eltType do
       return this.pcg.getNext(min, max);
 
     /*
@@ -933,7 +933,7 @@ module Random {
       if boundsChecking then
         if n < 0 then halt("cannot skip to a negative position: " + n:string + " in the random stream");
 
-      this.pcg.skipToNth(n);
+      try! this.pcg.skipToNth(n);
     }
 
     @deprecated("skipToNth is deprecated; please use :proc:`skipTo` instead")
@@ -1100,10 +1100,10 @@ module Random {
       // Return 1 sample
       var randVal;
       // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
-      if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
-        randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+      if __primitive("method call and fn resolves", stream, "next", X.idxType) {
+        randVal = stream.next(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
       } else {
-        randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+        randVal = stream.next(0, X.sizeAs(X.idxType)-1);
       }
       var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
@@ -1125,10 +1125,10 @@ module Random {
         for sample in samples {
           var randVal;
           // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
-          if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
-            randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+          if __primitive("method call and fn resolves", stream, "next", X.idxType) {
+            randVal = stream.next(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
           } else {
-            randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+            randVal = stream.next(0, X.sizeAs(X.idxType)-1);
           }
           var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
@@ -1140,10 +1140,10 @@ module Random {
           while i < numElements {
             var randVal;
             // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
-            if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
-              randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+            if __primitive("method call and fn resolves", stream, "next", X.idxType) {
+              randVal = stream.next(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
             } else {
-              randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+              randVal = stream.next(0, X.sizeAs(X.idxType)-1);
             }
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
@@ -1203,7 +1203,7 @@ module Random {
     // Begin sampling
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randNum = stream.getNext();
+      var randNum = stream.next();
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
       return X.dim(0).orderToIndex(idx);
     } else {
@@ -1222,7 +1222,7 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randNum = stream.getNext();
+          var randNum = stream.next();
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
           sample = X.dim(0).orderToIndex(idx);
         }
@@ -1239,7 +1239,7 @@ module Random {
           }
 
           var remainingSamples = samples.sizeAs(int) - indicesChosen.sizeAs(int);
-          for randNum in stream.iterate({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}) {
+          for randNum in stream.next({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}) {
             // A potential optimization: Generate rand nums ahead of time
             // and do a multi-target binary search to find all of their positions
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
@@ -1737,8 +1737,8 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
-        // call this.iterate instead of pcg.iterate to use locking
-        forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType)) do
+        // call this.next instead of pcg.next to use locking
+        forall (x, r) in zip(arr, this.next(arr.domain, arr.eltType)) do
           x = r;
       }
 
@@ -1746,8 +1746,8 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
-        // call this.iterate instead of pcg.iterate to use locking
-        forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType,
+        // call this.next instead of pcg.next to use locking
+        forall (x, r) in zip(arr, this.next(arr.domain, arr.eltType,
                                           min, max)) do
           x = r;
       }
