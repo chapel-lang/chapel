@@ -102,6 +102,16 @@ DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(
 template <typename T>
 T_DEFINE_INOUT_TYPE(std::vector<T>, vectorTypeString<T>(), wrapVector(CONTEXT, TO_WRAP), unwrapVector<T>(CONTEXT, TO_UNWRAP));
 
+
+/* Specialize for void, but don't include 'wrap' and 'unwrap' methods:
+   unwrapping isn't possible since we can't accept 'void' arguments, and
+   'wrapping' isn't possible because 'void' is not a traditional value.
+ */
+template <>
+struct PythonReturnTypeInfo<void> {
+  static std::string typeString() { return "None"; }
+};
+
 /* In the `method-tables.h` file, we encode a method signature using the C++
    function type in the form `R(Args...)`. This template, PythonFnHelper, is
    used to extract information back out of this function type, including

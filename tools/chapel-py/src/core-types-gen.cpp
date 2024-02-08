@@ -65,6 +65,26 @@ static const char* opKindToString(Range::OpKind kind) {
   }
 }
 
+template <typename T> struct InvokeHelper {};
+
+template <typename Ret, typename... Args>
+struct InvokeHelper<Ret(Args...)> {
+  template <typename F>
+  static PyObject* invoke(ContextObject* contextObject, F&& fn) {
+    auto result = fn();
+    return PythonFnHelper<Ret(Args...)>::ReturnTypeInfo::wrap(contextObject, std::move(result));
+  }
+};
+
+template <typename... Args>
+struct InvokeHelper<void(Args...)> {
+  template <typename F>
+  static PyObject* invoke(ContextObject* contextObject, F&& fn) {
+    fn();
+    Py_RETURN_NONE;
+  }
+};
+
 /* The METHOD macro is overridden here to actually create a Python-compatible
    function to insert into the method table. Each such function retrieves
    a node's context object, calls the method body, and wraps the result
@@ -76,11 +96,11 @@ static const char* opKindToString(Range::OpKind kind) {
     auto contextObject = ((NODE##Object*) self)->context(); \
     auto context = &contextObject->context_; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
-    auto result = [node, &context, &args]() { \
-      (void) context; \
-      BODY; \
-    }() ; \
-    return PythonFnHelper<TYPEFN>::ReturnTypeInfo::wrap(contextObject, std::move(result));\
+    return InvokeHelper<TYPEFN>::invoke(contextObject, \
+      [node, &context, &args]() { \
+        (void) context; \
+        BODY; \
+      }); \
   }
 
 /* Call METHOD on each method in the method-tables.h header to generate
