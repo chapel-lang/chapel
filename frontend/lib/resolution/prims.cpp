@@ -1318,7 +1318,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* string operations */
     case PRIM_STRING_COMPARE:
     case PRIM_STRING_CONTAINS:
-    case PRIM_STRING_CONCAT:
     case PRIM_STRING_LENGTH_BYTES:
     {
       if (ci.numActuals() > 0) {
@@ -1340,6 +1339,22 @@ CallResolutionResult resolvePrimCall(Context* context,
           break;
         }
       }
+    }
+    case PRIM_STRING_CONCAT:
+    {
+      if (ci.numActuals() == 2) {
+        auto lhs = ci.actual(0).type();
+        auto rhs = ci.actual(1).type();
+        CHPL_ASSERT(lhs.type() == rhs.type());
+        CHPL_ASSERT(lhs.isParam() && rhs.isParam());
+        CHPL_ASSERT(lhs.type()->isStringType() || lhs.type()->isBytesType());
+
+        auto lstr = lhs.param()->toStringParam()->value();
+        auto rstr = rhs.param()->toStringParam()->value();
+        auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
+        type = QualifiedType(QualifiedType::PARAM, lhs.type(), StringParam::get(context, concat));
+      }
+      break;
     }
     case PRIM_STRING_LENGTH_CODEPOINTS:
     case PRIM_ASCII:
