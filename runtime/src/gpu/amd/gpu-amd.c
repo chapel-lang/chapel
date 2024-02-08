@@ -89,17 +89,15 @@ void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
 extern c_nodeid_t chpl_nodeID;
 
 static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
-  hipDeviceptr_t ptr;
+  hipDeviceptr_t ptr = NULL;;
   size_t glob_size;
 
   chpl_gpu_impl_load_global("chpl_nodeID", (void**)&ptr, &glob_size);
 
-  assert(glob_size == sizeof(c_nodeid_t));
-  // chpl_gpu_impl_copy_host_to_device performs a validation using
-  // hipPointerGetAttributes. However, apparently, that's not something you
-  // should call on pointers returned from hipModuleGetGlobal. Just perform
-  // the copy directly.
-  ROCM_CALL(hipMemcpyHtoD(ptr, (void*)&chpl_nodeID, glob_size));
+  if (ptr) {
+    assert(glob_size == sizeof(c_nodeid_t));
+    chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
+  }
 }
 
 
@@ -113,7 +111,7 @@ void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
 
   module = chpl_gpu_rocm_modules[(int)device];
   //
-  // Engin: The AMDGPU backend seems to optimize chpl_nodeID away when it is not
+  // Engin: The AMDGPU backend seems to optimize globals away when they are not
   // used.  So, we should not error out if we can't find its definition. We can
   // look into making sure that it remains in the module, which feels a bit
   // safer, admittedly. Note also that this is the only diff between nvidia and
