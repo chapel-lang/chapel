@@ -30,17 +30,6 @@
 using namespace chpl;
 using namespace uast;
 
-static PyMethodDef ContextObject_methods[] = {
-  { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
-  { "set_module_paths", (PyCFunction) ContextObject_set_module_paths, METH_VARARGS, "Set the module path arguments to the given lists of module paths and filenames" },
-  { "introspect_parsed_files", (PyCFunction) ContextObject_introspect_parsed_files, METH_VARARGS, "Inspect the list of files that have been parsed by the Context" },
-  { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
-  { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
-  { "_get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
-  { "track_errors", (PyCFunction) ContextObject_track_errors, METH_NOARGS, "Return a context manager that tracks errors emitted by this Context" },
-  {NULL, NULL, 0, NULL}  /* Sentinel */
-};
-
 PyTypeObject ContextType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -52,7 +41,7 @@ void setupContextType() {
   ContextType.tp_dealloc = (destructor) ContextObject_dealloc;
   ContextType.tp_flags = Py_TPFLAGS_DEFAULT;
   ContextType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
-  ContextType.tp_methods = ContextObject_methods;
+  ContextType.tp_methods = (PyMethodDef*) PerTypeMethods<ContextObject>::methods;
   ContextType.tp_init = (initproc) ContextObject_init;
   ContextType.tp_new = PyType_GenericNew;
 }
@@ -204,7 +193,7 @@ struct ParentTypeInfo {
   };
 #include "generated-types-list.h"
 
-PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
+PyObject* ContextObject__get_pyi_file(PyObject* self, PyObject* args) {
   std::ostringstream ss;
 
   ss << "\"\"\"" << std::endl;
@@ -269,11 +258,11 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   return Py_BuildValue("s", ss.str().c_str());
 }
 
-PyObject* ContextObject_track_errors(ContextObject *self, PyObject* args) {
+PyObject* ContextObject_track_errors(PyObject *self, PyObject* args) {
   auto errorManagerObjectPy = PyObject_CallObject((PyObject *) &ErrorManagerType, nullptr);
   auto errorManagerObject = (ErrorManagerObject*) errorManagerObjectPy;
   Py_INCREF(self);
-  errorManagerObject->contextObject = (PyObject*) self;
+  errorManagerObject->contextObject = self;
   return errorManagerObjectPy;
 }
 

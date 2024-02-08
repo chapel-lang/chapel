@@ -618,6 +618,38 @@ CLASS_BEGIN(CompositeType)
                const chpl::uast::AstNode*, return parsing::idToAst(context, node->id()))
 CLASS_END(CompositeType)
 
+CLASS_BEGIN(Context)
+  PLAIN_GETTER(Context, introspect_parsed_files, "Inspect the list of files that have been parsed by the Context",
+               std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(context))
+
+  METHOD(Context, parse, "Parse a top-level AST node from the given file",
+         IterAdapterBase*(chpl::UniqueString),
+
+         auto& builderResult = parsing::parseFileToBuilderResultAndCheck(context, std::get<0>(args), chpl::UniqueString());
+         return mkIterPair(builderResult.topLevelExpressions()))
+  METHOD(Context, set_module_paths, "Set the module path arguments to the given lists of module paths and filenames",
+         void(std::vector<std::string>, std::vector<std::string>),
+
+         auto& paths = std::get<0>(args);
+         auto& filenames = std::get<1>(args);
+         parsing::setupModuleSearchPaths(context, false, false, paths, filenames))
+  METHOD(Context, is_bundled_path, "Check if the given file path is within the bundled (built-in) Chapel files",
+         bool(chpl::UniqueString),
+
+         auto pathUS = std::get<0>(args);
+         return parsing::filePathIsInInternalModule(context, pathUS) ||
+                parsing::filePathIsInStandardModule(context, pathUS) ||
+                parsing::filePathIsInBundledModule(context, pathUS))
+  METHOD(Context, advance_to_next_revision, "Advance the context to the next revision",
+         void(bool),
+
+         auto prepareToGc = std::get<0>(args);
+         context->advanceToNextRevision(prepareToGc))
+
+  METHOD_PROTOTYPE(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes")
+  METHOD_PROTOTYPE(Context, track_errors, "Return a context manager that tracks errors emitted by this Context")
+CLASS_END(Context)
+
 //
 // Cleanup and undefine all macros
 //
