@@ -2258,7 +2258,6 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
 
-  // inline operator :(x:owned class, type t:unmanaged class?)
   pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
