@@ -623,10 +623,17 @@ CLASS_BEGIN(Context)
                std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(context))
 
   METHOD(Context, parse, "Parse a top-level AST node from the given file",
-         IterAdapterBase*(chpl::UniqueString),
+         std::vector<const chpl::uast::AstNode*>(chpl::UniqueString),
 
-         auto& builderResult = parsing::parseFileToBuilderResultAndCheck(context, std::get<0>(args), chpl::UniqueString());
-         return mkIterPair(builderResult.topLevelExpressions()))
+         auto fileNameUS = std::get<0>(args);
+         auto parentPathUS = chpl::UniqueString();
+         auto& builderResult =
+           parsing::parseFileToBuilderResultAndCheck(context, fileNameUS, parentPathUS);
+         std::vector<const chpl::uast::AstNode*> topLevelNodes;
+         for (auto i = 0; i < builderResult.numTopLevelExpressions(); i++) {
+           topLevelNodes.push_back(builderResult.topLevelExpression(i));
+         }
+         return topLevelNodes)
   METHOD(Context, set_module_paths, "Set the module path arguments to the given lists of module paths and filenames",
          void(std::vector<std::string>, std::vector<std::string>),
 
