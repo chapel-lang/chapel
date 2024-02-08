@@ -30,11 +30,11 @@ PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
-typedef struct {
+struct ContextObject {
   PyObject_HEAD
   chpl::Context context;
   /* Type-specific fields go here. */
-} ContextObject;
+};
 extern PyTypeObject ContextType;
 void setupContextType();
 
@@ -48,10 +48,10 @@ PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* 
 PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args);
 PyObject* ContextObject_track_errors(ContextObject *self, PyObject* args);
 
-typedef struct {
+struct LocationObject {
   PyObject_HEAD
   chpl::Location location;
-} LocationObject;
+};
 extern PyTypeObject LocationType;
 void setupLocationType();
 
@@ -61,11 +61,11 @@ PyObject* LocationObject_start(LocationObject *self, PyObject* Py_UNUSED(args));
 PyObject* LocationObject_end(LocationObject *self, PyObject* Py_UNUSED(args));
 PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args));
 
-typedef struct {
+struct ScopeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::resolution::Scope* scope;
-} ScopeObject;
+};
 extern PyTypeObject ScopeType;
 void setupScopeType();
 
@@ -73,11 +73,11 @@ int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs);
 void ScopeObject_dealloc(ScopeObject* self);
 PyObject* ScopeObject_used_imported_modules(ScopeObject *self, PyObject* Py_UNUSED(args));
 
-typedef struct {
+struct AstNodeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::uast::AstNode* ptr;
-} AstNodeObject;
+};
 extern PyTypeObject AstNodeType;
 void setupAstNodeType();
 
@@ -95,11 +95,11 @@ PyObject* AstNodeObject_scope(AstNodeObject *self);
 PyObject* AstNodeObject_type(AstNodeObject *self);
 PyObject* AstNodeObject_called_fn(AstNodeObject *self);
 
-typedef struct {
+struct ChapelTypeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::types::Type* ptr;
-} ChapelTypeObject;
+};
 extern PyTypeObject ChapelTypeType;
 void setupChapelTypeType();
 
@@ -107,11 +107,11 @@ int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwar
 void ChapelTypeObject_dealloc(ChapelTypeObject* self);
 PyObject* ChapelTypeObject_str(ChapelTypeObject* self);
 
-typedef struct {
+struct ParamObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::types::Param* ptr;
-} ParamObject;
+};
 extern PyTypeObject ParamType;
 void setupParamType();
 
@@ -124,11 +124,11 @@ PyObject* ParamObject_str(ParamObject* self);
   (AST node, Chapel type, etc.) of a given name.
  */
 #define DECLARE_PY_OBJECT_FOR(ROOT, NAME)\
-  typedef struct { \
+  struct NAME##Object { \
     ROOT##Object parent; \
   \
     const auto unwrap() const { return parent.ptr->to##NAME(); } \
-  } NAME##Object; \
+  }; \
   \
   extern PyTypeObject NAME##Type;
 

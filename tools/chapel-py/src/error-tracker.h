@@ -24,11 +24,11 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 
-typedef struct {
+struct ErrorObject {
   PyObject_HEAD
   chpl::owned<chpl::ErrorBase> error;
   PyObject* contextObject;
-} ErrorObject;
+};
 extern PyTypeObject ErrorType;
 
 void setupErrorType();
@@ -40,10 +40,10 @@ PyObject* ErrorObject_message(ErrorObject* self, PyObject* args);
 PyObject* ErrorObject_kind(ErrorObject* self, PyObject* args);
 PyObject* ErrorObject_type(ErrorObject* self, PyObject* args);
 
-typedef struct {
+struct ErrorManagerObject {
   PyObject_HEAD
   PyObject* contextObject;
-} ErrorManagerObject;
+};
 extern PyTypeObject ErrorManagerType;
 
 void setupErrorManagerType();
