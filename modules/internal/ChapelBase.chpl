@@ -2237,6 +2237,7 @@ module ChapelBase {
   pragma "last resort"
   operator :(x:owned class?, type t:unmanaged class?)
     do chpl_castUnmanagedError(t:string);
+
   pragma "last resort"
   operator :(x:shared class, type t:unmanaged class)
     do chpl_castUnmanagedError(t:string);
