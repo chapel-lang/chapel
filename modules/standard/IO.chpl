@@ -2553,7 +2553,7 @@ record fileReader {
   var _readWriteThisFromLocale = nilLocale;
 }
 
-/**
+/*
   Get the :record:`file` type underlying a :record:`fileReader`.
 */
 @unstable("The 'fileReader.getFile()' method may change based on feedback")
@@ -2651,7 +2651,7 @@ proc fileWriter.writing param: bool {
   return true;
 }
 
-/**
+/*
   Get the :record:`file` type underlying a :record:`fileWriter`.
 */
 @unstable("The 'fileWriter.getFile()' method may change based on feedback")
