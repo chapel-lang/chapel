@@ -5437,18 +5437,6 @@ private proc openReaderHelper(path:string,
                              deserializer=deserializer);
 }
 
-// @deprecated("openWriter with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
-// proc openWriter(path:string,
-//                 param kind=iokind.dynamic, param locking=true,
-//                 start:int(64) = 0, end:int(64) = max(int(64)),
-//                 hints=ioHintSet.empty,
-//                 style:iostyle)
-//     : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
-//   return openWriterHelper(path, kind, locking, start, end, hints,
-//                     style: iostyleInternal);
-// }
-
-
 /*
   Controls the default value of the ``locking`` parameter for :proc:`openWriter`.
 
@@ -5594,16 +5582,6 @@ proc file.reader(region: range(?) = 0.., hints = ioHintSet.empty,
                            deserializer=deserializer);
 }
 
-pragma "last resort"
-@deprecated("reader with a 'kind' argument is deprecated, please use Deserializers instead")
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false,kind))
-  : fileReader(kind, locking, dt) throws {
-  return this.readerHelper(kind, locking, region, hints,
-                           deserializer=deserializer);
-}
-
 @chpldoc.nodoc
 proc file.readerHelper(param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
@@ -5702,7 +5680,7 @@ proc file.readerHelper(param locking=true,
  */
 proc file.writer(param locking,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
+                 in serializer:?st = defaultSerializeVal(true))
     : fileWriter(locking, st) throws {
   return this.writerHelper(locking, region, hints, serializer=serializer);
 }
