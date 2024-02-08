@@ -555,8 +555,9 @@ module Random {
 
     :return: A zero-based array of ``n`` random elements sampled from the array
 
-    :throws IllegalArgumentError: if ``n < 1`` or if ``n > arr.size`` and
-                                   ``withReplacement=false``
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``arr`` is
+                                  empty.
   */
   proc sample(const ref arr: [?d] ?t, n: int, withReplacement=false): [] t throws
     where is1DRectangularDomain(d)
@@ -575,8 +576,9 @@ module Random {
 
     :return: A zero-based array of ``n`` random elements sampled from the array
 
-    :throws IllegalArgumentError: if ``n < 1`` or if ``n > arr.size`` and
-                                   ``withReplacement=false``
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``arr`` is
+                                  empty.
   */
   proc sample(const ref arr: [?d] ?t, n: int, withReplacement=false, seed: int): [] t throws
     where is1DRectangularDomain(d)
@@ -594,8 +596,9 @@ module Random {
 
     :return: A zero-based array of ``n`` random indices sampled from the domain
 
-    :throws IllegalArgumentError: if ``n < 1`` or if ``n > d.size`` and
-                                   ``withReplacement=false``
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``d`` is
+                                  empty.
   */
   proc sample(d: domain(?), n: int, withReplacement=false): [] d.idxType throws
     where is1DRectangularDomain(d)
@@ -614,8 +617,9 @@ module Random {
 
     :return: A zero-based array of ``n`` random indices sampled from the domain
 
-    :throws IllegalArgumentError: if ``n < 1`` or if ``n > d.size`` and
-                                   ``withReplacement=false``
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``d`` is
+                                  empty.
   */
   proc sample(d: domain(?), n: int, withReplacement=false, seed: int): [] d.idxType throws
     where is1DRectangularDomain(d)
@@ -633,8 +637,9 @@ module Random {
 
     :return: A zero-based array of ``n`` random values sampled from the range
 
-    :throws IllegalArgumentError: if ``n < 1`` or if ``n > r.size`` and
-                                   ``withReplacement=false``
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``r`` is
+                                  empty.
   */
   proc sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false): [] r.idxType throws {
     var rs = new randomStream(r.idxType);
@@ -651,8 +656,9 @@ module Random {
 
     :return: A zero-based array of ``n`` random values sampled from the range
 
-    :throws IllegalArgumentError: if ``n < 1`` or if ``n > r.size`` and
-                                   ``withReplacement=false``
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``r`` is
+                                  empty.
   */
   proc sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false, seed: int): [] r.idxType throws {
     var rs = new randomStream(r.idxType, seed);
@@ -980,8 +986,9 @@ module Random {
 
       :return: A zero-based array of ``n`` random elements sampled from the array
 
-      :throws IllegalArgumentError: if ``n < 1`` or if ``n > arr.size`` and
-                                   ``withReplacement=false``
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``arr`` is
+                                    empty.
     */
     proc ref sample(const ref arr: [?d] ?t, n: int, withReplacement=false): [] t throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
@@ -1011,8 +1018,9 @@ module Random {
 
       :return: A zero-based array of ``n`` random indices sampled from the domain
 
-      :throws IllegalArgumentError: if ``n < 1`` or if ``n > d.size`` and
-                                   ``withReplacement=false``
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``d`` is
+                                    empty.
     */
     proc ref sample(d: domain, n: int, withReplacement=false): [] d.idxType throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
@@ -1066,8 +1074,9 @@ module Random {
 
       :return: A zero-based array of ``n`` random values sampled from the range
 
-      :throws IllegalArgumentError: if ``n < 1`` or if ``n > r.size`` and
-                                   ``withReplacement=false``
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``r`` is
+                                    empty.
     */
     proc ref sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false): [] r.idxType throws
       where isCoercible(this.eltType, r.idxType)
