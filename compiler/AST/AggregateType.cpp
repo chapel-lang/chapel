@@ -969,20 +969,6 @@ AggregateType* AggregateType::generateType(CallExpr* call,
   // place positional args in a map based on remaining unspecified fields
   for_vector(Symbol, field, genericFields) {
     if (substitutionForField(field, map) == NULL && notNamed.size() > 0) {
-      if (getModule()->modTag == MOD_STANDARD &&
-          field->hasFlag(FLAG_DEPRECATED) &&
-          strcmp(field->name, "kind") == 0) {
-        std::string typeName = notNamed.front()->type->symbol->name;
-        if (typeName != "iokind" && typeName != "_iokind") {
-          // If trying to pass a type other than iokind to 'kind' field,
-          // assume user is ignoring the deprecated field.
-          //
-          // TODO: How can we write this to apply more generally to any
-          // deprecated field?
-          continue;
-        }
-      }
-
       map.put(field, notNamed.front());
       notNamed.pop();
     }
@@ -1589,21 +1575,6 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
       // A fully instantiated type
       bool isFirst = true;
       for_vector(Symbol, field, root->genericFields) {
-        Symbol* newField = at->getField(field->name);
-        const char* valStr = buildValueName(newField, cname);
-
-        bool isFileReaderWriter = root->getModule() == ioModule &&
-                                  (strcmp(root->symbol->name, "fileReader") == 0 ||
-                                   strcmp(root->symbol->name, "fileWriter") == 0);
-        bool isSubprocess = root->getModule()->modTag == MOD_STANDARD &&
-                            strcmp(root->getModule()->name, "Subprocess") == 0 &&
-                            strcmp(root->symbol->name, "subprocess") == 0;
-        if ((isFileReaderWriter || isSubprocess) &&
-            strcmp(field->name, "kind") == 0 &&
-            strcmp(valStr, "dynamic") == 0) {
-          continue;
-        }
-
         if (isFirst) {
           isFirst = false;
         } else {
@@ -1614,8 +1585,6 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
           str += field->name;
           str += "=";
         }
-
-        str += valStr;
       }
     } else {
       // A partial instantiation
