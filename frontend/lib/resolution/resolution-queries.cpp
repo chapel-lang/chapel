@@ -2930,6 +2930,21 @@ static bool resolveFnCallSpecial(Context* context,
     return true;
   }
 
+  if (ci.name() == USTR("this") && ci.numActuals() == 2) {
+    // compiler-defined 'this' operator for param-indexed tuples
+    auto thisType = ci.actual(0).type();
+    auto second = ci.actual(1).type();
+    if (thisType.hasTypePtr() && thisType.type()->isTupleType() &&
+        second.isParam() && second.hasParamPtr() &&
+        second.type()->isIntType()) {
+      auto tup = thisType.type()->toTupleType();
+      auto val = second.param()->toIntParam()->value();
+      auto member = tup->elementType(val);
+      exprTypeOut = member;
+      return true;
+    }
+  }
+
   return false;
 }
 
