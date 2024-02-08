@@ -37,6 +37,8 @@
 
 #include "global-ast-vecs.h"
 
+static void undoReturnByRef(FnSymbol* fn);
+
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
 typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;
@@ -89,6 +91,7 @@ void denormalize(void) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       // remove unused epilogue labels
       removeUnnecessaryGotos(fn, true);
+      if (fn->hasFlag(FLAG_FN_RETARG)) undoReturnByRef(fn);
 
       bool isFirstRound = true;
       do {
@@ -668,4 +671,200 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     }
   }
   return false;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// undoReturnByRef()
+//
+// Ultimately we want to avoid introducing return by ref.
+// For now, simply undo it as a denormalization step.
+
+///////////
+//
+// transformRetTempDef() will modify 'fn' to replace
+//   =(refArg, something)
+//   return(void)
+// with:
+//   return(something)
+
+class DefInfoRR {
+public:
+  FnSymbol*  fn;           // the function that returns by ref
+  ArgSymbol* refArg;       // the function's formal implementing that
+  bool       skipLnFnArgs; // if true, refArg is fn's 3rd-last formal
+};
+
+static bool isGoodRefArg(FnSymbol* fn,              DefInfoRR& info,
+                         bool      skippedLnFnArgs, Expr*      argDef) {
+  ArgSymbol* refArg = toArgSymbol(toDefExpr(argDef)->sym);
+  if (!refArg->hasFlag(FLAG_RETARG))
+    return false; // give up; maybe look harder?
+  INT_ASSERT(!strcmp(refArg->name, "_retArg"));
+  INT_ASSERT(fn->retType = dtVoid);
+
+  info = { fn, refArg, skippedLnFnArgs };
+  return true;
+}
+
+static bool acceptableDef(FnSymbol* fn, DefInfoRR& info) {
+  // isGoodRefArg() fills 'info'
+  if (! isGoodRefArg(fn, info, false, fn->formals.tail)             &&
+      ! (fn->numFormals() >= 3 &&
+         isGoodRefArg(fn, info, true, fn->formals.tail->prev->prev)) )
+    return false;
+
+  if (info.refArg->type->symbol->hasFlag(FLAG_STAR_TUPLE))
+    return false; // codegen requires star tuples to be passed by ref
+
+  for_SymbolSymExprs(refSE, info.refArg) {
+    if (CallExpr* call = toCallExpr(refSE->parentExpr)) {
+      if (call->isPrimitive(PRIM_NO_ALIAS_SET))
+        continue; // any of these are ok
+      if (! call->isPrimitive(PRIM_ASSIGN))
+        return false; // need more work to handle, ex., PRIM_SET_MEMBER
+      // transformRetTempDef() will assert that we have only one PRIM_ASSIGN
+    }
+  }
+
+  return true;
+}
+
+static void transformRetTempDef(DefInfoRR& info) {
+  SymExpr* refUse = nullptr;
+  for_SymbolSymExprs(refSE, info.refArg) {
+    if (CallExpr* call = toCallExpr(refSE->parentExpr))
+      if (call->isPrimitive(PRIM_NO_ALIAS_SET)) {
+        if (call->numActuals() == 1) call->remove();
+        else refSE->remove();
+        continue;
+      }
+    INT_ASSERT(refUse == nullptr); // expect only a single SE
+    refUse = refSE;
+  }
+
+  CallExpr* assignCall = toCallExpr(refUse->parentExpr);
+  Expr* refValueExpr = assignCall->get(2)->remove();
+  INT_ASSERT(isSymExpr(refValueExpr)); // ensure it can be used in 'return'
+  // Do we need to add FLAG_RVV to refValueExpr->symbol()?
+  // At this point temps with FLAG_RVV may occur anywhere due to inlining.
+  assignCall->remove();
+
+  CallExpr* returnCall = toCallExpr(info.fn->body->body.tail);
+  INT_ASSERT(returnCall->isPrimitive(PRIM_RETURN));
+  INT_ASSERT(toSymExpr(returnCall->get(1))->symbol() == gVoid);
+  returnCall->get(1)->replace(refValueExpr);
+
+  info.refArg->defPoint->remove();
+  info.fn->retType = info.refArg->type;
+  info.fn->removeFlag(FLAG_FN_RETARG);
+}
+
+///////////
+//
+// transformRetTempUse() will replace:
+//   def ret_tmp
+//   call fn(..., ret_tmp)
+//   move(..., ret_tmp)
+// with:
+//   move(..., call fn(...))
+
+class UseInfoRR {
+public:
+  SymExpr* fnSE;      // the SymExpr for 'fn' in 'call fn(..., ret_tmp)' above
+  SymExpr* argToFn;   // the SymExpr for 'ret_tmp' in 'fn(..., ret_tmp)' above
+  SymExpr* argToMove; // the SymExpr for 'ret_tmp' in 'move' above;
+};                    // argToMove is NULL when no 'move' ie ret_tmp is unused
+
+// Return true if the desired pattern is present.
+static bool acceptableUse(DefInfoRR& defInfo, SymExpr* fnUse,
+                          UseInfoRR& useInfo) {
+  CallExpr* call = toCallExpr(fnUse->parentExpr);
+  if (call == nullptr || call->resolvedFunction() != defInfo.fn)
+    return false;
+
+  INT_ASSERT(call == call->getStmtExpr());
+  SymExpr*  lastActual = toSymExpr(defInfo.skipLnFnArgs ?
+                      call->argList.tail->prev->prev : call->argList.tail);
+  Symbol*   retTemp = lastActual->symbol();
+  // retTemp is usually called "ret_tmp", however not necessarily
+  INT_ASSERT(retTemp->type == defInfo.refArg->type); // fyi
+
+  SymExpr*  tempRead = nullptr;
+  for_SymbolSymExprs(tempUse, retTemp) {
+    if (tempUse == lastActual) continue;
+    CallExpr* move = toCallExpr(tempUse->parentExpr);
+    // is PRIM_ASSIGN also OK?
+    if (move == nullptr || ! move->isPrimitive(PRIM_MOVE))
+      return false;
+    INT_ASSERT(tempRead == nullptr); // expect only a single use
+    tempRead = tempUse;
+  }
+
+  useInfo = { fnUse, lastActual, tempRead };
+  return true;
+}
+
+static void transformRetTempUse(UseInfoRR& info) {
+  Symbol* retTemp = info.argToFn->symbol();
+  info.argToFn->remove();
+  //fyi:
+  INT_ASSERT(! retTemp->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF));
+  Expr* fnCall = info.fnSE->parentExpr;
+
+  if (retTemp->isRef()) {
+    // replace:
+    //   call fn(args, tmp)
+    // with:
+    //   def call_tmp
+    //   move(call_tmp, call fn(args))
+    //   assign(tmp, call_tmp)
+    SET_LINENO(fnCall);
+    VarSymbol* callTemp = newTempConst("call_temp", retTemp->type);
+    DefExpr*   ctDef    = new DefExpr(callTemp);
+    CallExpr*  move     = new CallExpr(PRIM_MOVE, callTemp);
+    CallExpr*  assign   = new CallExpr(PRIM_ASSIGN, retTemp, callTemp);
+    fnCall->insertBefore(ctDef);
+    fnCall->insertBefore(move);
+    fnCall->insertBefore(assign);
+    move->insertAtTail(fnCall->remove());
+  }
+  else {
+    // replace:
+    //   def ret_tmp
+    //   call fn(args, ret_tmp)
+    //   move(target, ret_tmp
+    // with:
+    //   move(target, call fn(args))
+    if (info.argToMove == nullptr)
+      return;
+    info.argToMove->replace(fnCall->remove());
+    retTemp->defPoint->remove();
+  }
+}
+
+///////////
+// put it all together
+
+static void undoReturnByRef(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_VIRTUAL)) return;  // skip these for now
+
+  DefInfoRR defInfo;
+  if (! acceptableDef(fn, defInfo))
+    return;
+
+  // Make changes only if we can handle all uses of 'fn'.
+  // While checking, store some findings for later use.
+  std::vector<UseInfoRR> infos;
+  for_SymbolSymExprs(use, fn) {
+    UseInfoRR useInfo;
+    if (acceptableUse(defInfo, use, useInfo))
+      infos.push_back(useInfo);
+    else
+      return;
+  }
+
+  for (UseInfoRR& info: infos)
+    transformRetTempUse(info);
+
+  transformRetTempDef(defInfo);
 }
