@@ -1168,6 +1168,36 @@ static void test21() {
   }
 }
 
+// Check calling implicit 'this' on a field.
+static void test22() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents =
+      R""""(
+      module M {
+        record Inner {
+          proc this(arg: int) {
+            return arg;
+          }
+        }
+        record Outer {
+          var inner : Inner;
+        }
+        var outer : Outer;
+        var x = outer.inner(3);
+      }
+      )"""";
+
+  auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+  assert(type.type());
+  assert(!type.isUnknown());
+  assert(type.type()->isIntType());
+
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -1190,6 +1220,7 @@ int main() {
   test19();
   test20();
   test21();
+  test22();
 
   return 0;
 }
