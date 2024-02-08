@@ -174,6 +174,8 @@ test-frontend: FORCE frontend-tests $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 
 frontend-tests: $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Making the frontend tests..."
+	@cd ../third-party && $(MAKE) llvm
+	@cd ../third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests
 	@echo "Making symbolic link to frontend tests in build/frontend-test"
 	@cd ../build && rm -f frontend-test && ln -s $(COMPILER_BUILD)/frontend/test frontend-test
