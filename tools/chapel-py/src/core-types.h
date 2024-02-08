@@ -126,6 +126,8 @@ PyObject* ParamObject_str(ParamObject* self);
 #define DECLARE_PY_OBJECT_FOR(ROOT, NAME)\
   typedef struct { \
     ROOT##Object parent; \
+  \
+    const auto unwrap() const { return parent.ptr->to##NAME(); } \
   } NAME##Object; \
   \
   extern PyTypeObject NAME##Type;

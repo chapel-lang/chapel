@@ -72,7 +72,7 @@ static const char* opKindToString(Range::OpKind kind) {
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    auto node = ((NODE##Object*) self)->parent.ptr->to##NODE(); \
+    auto node = ((NODE##Object*) self)->unwrap(); \
     auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject; \
     auto context = &contextObject->context; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
@@ -92,7 +92,7 @@ static const char* opKindToString(Range::OpKind kind) {
    */
 #define ACTUAL_ITERATOR(NAME)\
   static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
-    auto node = ((NAME##Object*) self)->parent.ptr->to##NAME(); \
+    auto node = ((NAME##Object*) self)->unwrap(); \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
     auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \
