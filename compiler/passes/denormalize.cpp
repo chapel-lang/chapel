@@ -38,6 +38,7 @@
 #include "global-ast-vecs.h"
 
 static void undoReturnByRef(FnSymbol* fn);
+static void collapseTrivialMoves();
 
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
@@ -115,6 +116,8 @@ void denormalize(void) {
         isFirstRound = false;
       } while(deferredSyms.size() > 0);
     }
+
+    collapseTrivialMoves();
   }
 }
 
@@ -762,18 +765,17 @@ static void transformRetTempDef(DefInfoRR& info) {
 ///////////
 //
 // transformRetTempUse() will replace:
-//   def ret_tmp
-//   call fn(..., ret_tmp)
-//   move(..., ret_tmp)
+//   call fn(args, ret_tmp)
 // with:
-//   move(..., call fn(...))
+//   move(ret_tmp, call fn(args))
+//
+// collapseTrivialMoves() will reduce to the original 'call_temp = fn(...)'
 
 class UseInfoRR {
-public:
-  SymExpr* fnSE;      // the SymExpr for 'fn' in 'call fn(..., ret_tmp)' above
-  SymExpr* argToFn;   // the SymExpr for 'ret_tmp' in 'fn(..., ret_tmp)' above
-  SymExpr* argToMove; // the SymExpr for 'ret_tmp' in 'move' above;
-};                    // argToMove is NULL when no 'move' ie ret_tmp is unused
+public:             // in 'call fn(args, ret_tmp)' above, the SymExprs for:
+  SymExpr* fnSE;    //  'fn'
+  SymExpr* tempSE;  //  'ret_tmp'
+};
 
 // Return true if the desired pattern is present.
 static bool acceptableUse(DefInfoRR& defInfo, SymExpr* fnUse,
@@ -783,67 +785,38 @@ static bool acceptableUse(DefInfoRR& defInfo, SymExpr* fnUse,
     return false;
 
   INT_ASSERT(call == call->getStmtExpr());
-  SymExpr*  lastActual = toSymExpr(defInfo.skipLnFnArgs ?
+  SymExpr* tempSE = toSymExpr(defInfo.skipLnFnArgs ?
                       call->argList.tail->prev->prev : call->argList.tail);
-  Symbol*   retTemp = lastActual->symbol();
-  // retTemp is usually called "ret_tmp", however not necessarily
-  INT_ASSERT(retTemp->type == defInfo.refArg->type); // fyi
+  // the temp is usually called "ret_tmp", however not necessarily
+  INT_ASSERT(tempSE->symbol()->type == defInfo.refArg->type); // fyi
 
-  SymExpr*  tempRead = nullptr;
-  for_SymbolSymExprs(tempUse, retTemp) {
-    if (tempUse == lastActual) continue;
-    CallExpr* move = toCallExpr(tempUse->parentExpr);
-    // is PRIM_ASSIGN also OK?
-    if (move == nullptr || ! move->isPrimitive(PRIM_MOVE))
-      return false;
-    INT_ASSERT(tempRead == nullptr); // expect only a single use
-    tempRead = tempUse;
-  }
-
-  useInfo = { fnUse, lastActual, tempRead };
+  useInfo = { fnUse, tempSE };
   return true;
 }
 
 static void transformRetTempUse(UseInfoRR& info) {
-  Symbol* retTemp = info.argToFn->symbol();
-  info.argToFn->remove();
+  Expr*   fnCall  = info.fnSE->parentExpr;
+  Symbol* retTemp = info.tempSE->symbol();
   //fyi:
   INT_ASSERT(! retTemp->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF));
-  Expr* fnCall = info.fnSE->parentExpr;
 
-  if (retTemp->isRef()) {
-    // replace:
-    //   call fn(args, tmp)
-    // with:
-    //   def call_tmp
-    //   move(call_tmp, call fn(args))
-    //   assign(tmp, call_tmp)
-    SET_LINENO(fnCall);
-    VarSymbol* callTemp = newTempConst("call_temp", retTemp->type);
-    DefExpr*   ctDef    = new DefExpr(callTemp);
-    CallExpr*  move     = new CallExpr(PRIM_MOVE, callTemp);
-    CallExpr*  assign   = new CallExpr(PRIM_ASSIGN, retTemp, callTemp);
-    fnCall->insertBefore(ctDef);
-    fnCall->insertBefore(move);
-    fnCall->insertBefore(assign);
-    move->insertAtTail(fnCall->remove());
-  }
-  else {
-    // replace:
-    //   def ret_tmp
-    //   call fn(args, ret_tmp)
-    //   move(target, ret_tmp
-    // with:
-    //   move(target, call fn(args))
-    if (info.argToMove == nullptr)
-      return;
-    info.argToMove->replace(fnCall->remove());
-    retTemp->defPoint->remove();
-  }
+  // replace:
+  //   call fn(args, ret_tmp)
+  // with:
+  //   move(ret_tmp, call fn(args))  // if ret_tmp is a ref, make it assign
+  //
+  SET_LINENO(fnCall);
+
+  Expr* anchor = fnCall->prev;
+  BlockStmt* encl = anchor ? NULL : toBlockStmt(fnCall->parentExpr);
+  Expr* move   = new CallExpr(retTemp->isRef() ? PRIM_ASSIGN : PRIM_MOVE,
+                              info.tempSE->remove(), fnCall->remove());
+  if (anchor) anchor->insertAfter(move);
+  else        encl->insertAtHead(move);
 }
 
 ///////////
-// put it all together
+// putting it all together
 
 static void undoReturnByRef(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_VIRTUAL)) return;  // skip these for now
@@ -867,4 +840,91 @@ static void undoReturnByRef(FnSymbol* fn) {
     transformRetTempUse(info);
 
   transformRetTempDef(defInfo);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// collapseTrivialMoves() converts:
+//   move(source, expr)  // move1
+//   move(dest, source)  // move2
+// provided:
+//   'move1' and 'move2' are adjacent or have only DefExprs in between
+//   'source' has no other references
+// to:
+//   move(dest, expr)
+
+// In some cases codegen adds an appropriate dereference, widening, etc.
+// for a symbol-to-symbol move and not for a call-to-symbol move.
+// So collapse only moves for which such additions are not needed.
+static bool okSymbol(Symbol* sym) {
+  return sym->qual == QUAL_VAL || sym->qual == QUAL_CONST_VAL;
+}
+
+static bool okToCollapse(SymExpr* dest, SymExpr* source) {
+  Symbol *destSym = dest->symbol(), *sourceSym = source->symbol();
+  return
+    destSym->type == sourceSym->type                     &&
+    ! sourceSym->hasEitherFlag(FLAG_CONFIG, FLAG_EXPORT) &&
+    okSymbol(destSym) && okSymbol(sourceSym);
+}
+
+static bool closeEnough(Expr* move1, Expr* move2) {
+  Expr* curr = move1;
+  for (int dist = 0; dist < 5; dist++) {  // heuristically allow <=5 defs
+    curr = curr->next;
+    if (curr == move2) return true;
+    if (!curr || ! isDefExpr(curr)) return false;
+  }
+  return false;
+}
+
+// Returns 'move1', or NULL if the desired pattern is not present.
+// 'sourceSE' is the SymExpr for 'source' in 'move2'.
+static CallExpr* singleMoveTo(CallExpr* move2, SymExpr* sourceSE) {
+  Symbol* source = sourceSE->symbol();
+  SymExpr* otherSE = source->firstSymExpr();
+  // Specialize for exactly two references to 'source'.
+  if (otherSE == sourceSE) {
+    // need source -> sourceSE -> otherSE -> NULL
+    otherSE = otherSE->symbolSymExprsNext;
+    if (otherSE == nullptr || otherSE->symbolSymExprsNext != nullptr)
+      return nullptr; // 1 or >2 references
+  }
+  else {
+    // need source -> otherSE -> sourceSE -> NULL
+    if (otherSE->symbolSymExprsNext != sourceSE ||
+        sourceSE->symbolSymExprsNext != nullptr)
+      return nullptr; // >2 references
+  }
+
+  CallExpr* move1 = toCallExpr(otherSE->parentExpr);
+  if (move1 != nullptr                                    &&
+      otherSE == move1->get(1)                            &&
+      move1->isPrimitive(PRIM_MOVE)                       &&
+      (move2 == move1->next || closeEnough(move1, move2)) )
+    return move1;
+  else
+    return nullptr;
+}
+
+static void collapseTrivialMoves() {
+// Empirically, running collapseTrivialMoves() the second time
+// would not result in any additional removals.
+// This work could be done on a per-function basis using collectCallExprs().
+// Simply traversing 'gCallExprs' avoids the overhead of collectCallExprs().
+  for_alive_in_Vec(CallExpr, move2, gCallExprs) {
+   if (move2->isPrimitive(PRIM_MOVE))
+    if (SymExpr* dest = toSymExpr(move2->get(1)))
+     while (true) {
+      if (SymExpr* source = toSymExpr(move2->get(2)))
+       if (okToCollapse(dest, source))
+        if (CallExpr* move1 = singleMoveTo(move2, source))
+         {
+           move1->remove();
+           source->replace(move1->get(2)->remove());
+           source->symbol()->defPoint->remove();
+           continue; // will check for another move1 to reduce with move2
+         }
+      break; // no further opportunities with move2
+     } // while
+  } // for
 }
