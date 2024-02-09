@@ -55,9 +55,16 @@ PyObject* ContextObject_track_errors(ContextObject *self, PyObject* args);
 struct LocationObject {
   PyObject_HEAD
   chpl::Location location;
+
+  static constexpr const char* Name = "Location";
+
+  chpl::Location* unwrap() { return &location; }
+  ContextObject* context() { return nullptr; }
 };
 extern PyTypeObject LocationType;
 void setupLocationType();
+
+using LineColumnPair = std::tuple<int, int>;
 
 int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs);
 void LocationObject_dealloc(LocationObject* self);

@@ -110,8 +110,6 @@ PyObject* ContextObject__get_pyi_file(PyObject* self, PyObject* args) {
   ss << "import typing" << std::endl << std::endl;
 
   // these get replaced with `scripts/generate-pyi.py`
-  ss << "class Context: pass" << std::endl << std::endl;
-  ss << "class Location: pass" << std::endl << std::endl;
   ss << "class ErrorManager: pass" << std::endl << std::endl;
   ss << "class Error: pass" << std::endl << std::endl;
   ss << "class Scope: pass" << std::endl << std::endl;
@@ -173,13 +171,6 @@ PyObject* ContextObject_track_errors(PyObject *self, PyObject* args) {
   return errorManagerObjectPy;
 }
 
-static PyMethodDef LocationObject_methods[] = {
-  { "start", (PyCFunction) LocationObject_start, METH_VARARGS, "Get the start of a Location object" },
-  { "end", (PyCFunction) LocationObject_end, METH_VARARGS, "Get the end of a Location object" },
-  { "path", (PyCFunction) LocationObject_path, METH_VARARGS, "Get the path of a Location object" },
-  {NULL, NULL, 0, NULL}  /* Sentinel */
-};
-
 PyTypeObject LocationType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -191,7 +182,7 @@ void setupLocationType() {
   LocationType.tp_dealloc = (destructor) LocationObject_dealloc;
   LocationType.tp_flags = Py_TPFLAGS_DEFAULT;
   LocationType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
-  LocationType.tp_methods = LocationObject_methods;
+  LocationType.tp_methods = (PyMethodDef*) PerTypeMethods<LocationObject>::methods;
   LocationType.tp_init = (initproc) LocationObject_init;
   LocationType.tp_new = PyType_GenericNew;
 }
@@ -205,25 +196,6 @@ void LocationObject_dealloc(LocationObject* self) {
   self->location.~Location();
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
-
-PyObject* LocationObject_start(LocationObject *self, PyObject* Py_UNUSED(args)) {
-  auto& location = self->location;
-  return Py_BuildValue("ii", location.firstLine(), location.firstColumn());
-}
-
-PyObject* LocationObject_end(LocationObject *self, PyObject* Py_UNUSED(args)) {
-  auto& location = self->location;
-  return Py_BuildValue("ii", location.lastLine(), location.lastColumn());
-}
-
-PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args)) {
-  return Py_BuildValue("s", self->location.path().c_str());
-}
-
-static PyMethodDef ScopeObject_methods[] = {
-  { "used_imported_modules", (PyCFunction) ScopeObject_used_imported_modules, METH_VARARGS, "Get the modules that were used or imported in this scope" },
-  {NULL, NULL, 0, NULL}  /* Sentinel */
-};
 
 PyTypeObject ScopeType = {
   PyVarObject_HEAD_INIT(NULL, 0)

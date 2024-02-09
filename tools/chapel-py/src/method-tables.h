@@ -657,6 +657,15 @@ CLASS_BEGIN(Context)
   METHOD_PROTOTYPE(Context, track_errors, "Return a context manager that tracks errors emitted by this Context")
 CLASS_END(Context)
 
+CLASS_BEGIN(Location)
+  PLAIN_GETTER(Location, start, "Get the line-column pair where this Location starts",
+               LineColumnPair, return std::make_tuple(node->firstLine(), node->firstColumn()))
+  PLAIN_GETTER(Location, end, "Get the line-column pair where this Location ends",
+               LineColumnPair, return std::make_tuple(node->lastLine(), node->lastColumn()))
+  PLAIN_GETTER(Location, path, "Get the file path of this Location",
+               chpl::UniqueString, return node->path())
+CLASS_END(Location)
+
 //
 // Cleanup and undefine all macros
 //
