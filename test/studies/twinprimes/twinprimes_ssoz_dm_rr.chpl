@@ -5,7 +5,9 @@
 //   (note that writeln()s in Chapel are heavyweight, so may not want to time
 // * focused on correctness thus far; opportunities to be more Chapeltastic
 //   may abound
-// * this version is shared-memory parallel only; other files contain dist-mem
+// * this is a distributed memory version that deals out iterations of the
+//   main parallel loop to locales in a round-robin manner; we could also
+//   consider using a distributed domain to do this.
 // * see README.md in this directory for a bit more information
 
 config param printFromTasks = false,
@@ -55,11 +57,19 @@ proc twinprimes_ssoz() {
   // (which could also result in false sharing)
   //  
   coforall i in 0..<pairscnt with (+ reduce twinscnt, max reduce last_twin) {
-    (last_twin, twinscnt) = twins_sieve(restwins[i], kmin, kmax, ks, start_num,
-                                        end_num, modpg, primes, resinvrs);
-    if printFromTasks then
-      writeln("\r", threadscnt.fetchAdd(1), " of ", pairscnt,
-              " twinpairs done");
+    on Locales[i%numLocales] {
+      const locPrimes = localize(primes),
+            locInvrs = localize(resinvrs),
+            restwin = restwins[i];
+      local {
+        (last_twin, twinscnt) = twins_sieve(restwin, kmin, kmax, ks,
+                                            start_num, end_num, modpg,
+                                            locPrimes, locInvrs);
+      }
+      if printFromTasks then
+        writeln("\r", threadscnt.fetchAdd(1), " of ", pairscnt,
+                " twinpairs done on locale ", here.id);
+    }
   }
   writeln("\r", pairscnt, " of ", pairscnt, " twinpairs done");
 
@@ -318,4 +328,10 @@ iter sozp5(val, res_0, start_num, end_num) {
       }
     }
   }
+}
+
+proc localize(arr) {
+  const locDom = arr.domain,
+        locArr: [locDom] arr.eltType = arr;
+  return locArr;
 }
