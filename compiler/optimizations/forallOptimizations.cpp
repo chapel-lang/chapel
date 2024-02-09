@@ -142,10 +142,15 @@ static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent);
 static void removeAggregationFromRecursiveForallHelp(BlockStmt *block);
 static void autoAggregation(ForallStmt *forall);
 
+static void bulkViewTransfer();
+
 void doPreNormalizeArrayOptimizations() {
+  bulkViewTransfer();
+
   const bool anyAnalysisNeeded = fAutoLocalAccess ||
                                  fAutoAggregation ||
                                  !fNoFastFollowers;
+
   if (anyAnalysisNeeded) {
     forv_expanding_Vec(ForallStmt, forall, gForallStmts) {
       if (!fNoFastFollowers) {
@@ -2451,4 +2456,68 @@ static bool isLocalAccess(CallExpr *call) {
   }
 
   return false;
+}
+
+static void bulkViewTransfer() {
+  std::vector<CallExpr*> candidates;
+
+  for_alive_in_Vec (CallExpr, call, gCallExprs) {
+    if (call->getModule()->modTag == MOD_USER) {
+      if (call->isNamed("=")) {
+        list_view(call);
+
+        CallExpr* lhs = toCallExpr(call->get(1));
+        CallExpr* rhs = toCallExpr(call->get(2));
+        if (lhs && rhs) {
+          candidates.push_back(call);
+        }
+      }
+    }
+  }
+
+  for_vector(CallExpr, call, candidates) {
+    SET_LINENO(call);
+
+    CallExpr* lhs = toCallExpr(call->get(1));
+    CallExpr* rhs = toCallExpr(call->get(2));
+
+    Expr* lhsBase = lhs->baseExpr;
+    Expr* rhsBase = rhs->baseExpr;
+
+
+    CallExpr* arrCheck = new CallExpr("chpl__basesSupportViewTransfer",
+        lhsBase->copy(), rhsBase->copy());
+    CallExpr* slicingExprCheck =
+        new CallExpr("chpl__slicingExprsSupportViewTransfer");
+
+    CallExpr* lhsPSCall = new CallExpr("chpl__createProtoSlice",
+                                       lhsBase->copy());
+    CallExpr* rhsPSCall = new CallExpr("chpl__createProtoSlice",
+                                       rhsBase->copy());
+
+    for_actuals(actual, lhs) {
+      slicingExprCheck->insertAtTail(actual->copy());
+      lhsPSCall->insertAtTail(actual->copy());
+    }
+    for_actuals(actual, rhs) {
+      slicingExprCheck->insertAtTail(actual->copy());
+      rhsPSCall->insertAtTail(actual->copy());
+    }
+    CallExpr* condExpr = new CallExpr("&&", arrCheck, slicingExprCheck);
+
+    BlockStmt* thenBlock = new BlockStmt();
+    VarSymbol* lhsPS = new VarSymbol("lhs_proto_slice");
+    VarSymbol* rhsPS = new VarSymbol("rhs_proto_slice");
+
+    thenBlock->insertAtTail(new DefExpr(lhsPS, lhsPSCall));
+    thenBlock->insertAtTail(new DefExpr(rhsPS, rhsPSCall));
+    thenBlock->insertAtTail(new CallExpr("=", lhsPS, rhsPS));
+
+    BlockStmt* elseBlock = new BlockStmt();
+
+    CondStmt* arrCond = new CondStmt(condExpr, thenBlock, elseBlock);
+
+    call->insertBefore(arrCond);
+    elseBlock->insertAtTail(call->remove());
+  }
 }
