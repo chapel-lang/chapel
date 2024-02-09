@@ -3484,7 +3484,6 @@ void Resolver::exit(const Dot* dot) {
   if (resolvingCalledDot && !scopeResolveOnly) {
     // We will handle it when resolving the FnCall.
 
-    gdbShouldBreakHere();
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
