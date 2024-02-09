@@ -2316,27 +2316,32 @@ module ChapelArray {
   pragma "find user line"
   inline proc chpl__uncheckedArrayTransfer(ref a, b, param kind) {
 
-    var done = false;
-    if !chpl__serializeAssignment(a, b) {
-      if chpl__compatibleForBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferArray(a, b);
-      }
-      else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferPtrArray(a, b);
-      }
-      // If we did a bulk transfer, it just bit copied, so need to
-      // run copy initializer still
-      if done {
-        if kind==_tElt.initCopy && !isPODType(a.eltType) {
-          initCopyAfterTransfer(a);
-        } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
-                                       isSubtype(a.eltType, _domain)) {
-          fixEltRuntimeTypesAfterTransfer(a);
+    if isProtoSlice(a) && isProtoSlice(b) && a.sizeAs(int) < 100 {
+      chpl__transferArray(a, b, kind, alwaysSerialize=true);
+    }
+    else {
+      var done = false;
+      if !chpl__serializeAssignment(a, b) {
+        if chpl__compatibleForBulkTransfer(a, b, kind) {
+          done = chpl__bulkTransferArray(a, b);
+        }
+        else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
+          done = chpl__bulkTransferPtrArray(a, b);
+        }
+        // If we did a bulk transfer, it just bit copied, so need to
+        // run copy initializer still
+        if done {
+          if kind==_tElt.initCopy && !isPODType(a.eltType) {
+            initCopyAfterTransfer(a);
+          } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
+                                         isSubtype(a.eltType, _domain)) {
+            fixEltRuntimeTypesAfterTransfer(a);
+          }
         }
       }
-    }
-    if !done {
-      chpl__transferArray(a, b, kind);
+      if !done {
+        chpl__transferArray(a, b, kind);
+      }
     }
   }
 
@@ -2518,7 +2523,8 @@ module ChapelArray {
   pragma "find user line"
   pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a, const ref b,
-                           param kind=_tElt.assign) lifetime a <= b {
+                           param kind=_tElt.assign,
+                           param alwaysSerialize=false) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
 
@@ -2546,7 +2552,7 @@ module ChapelArray {
           aa = b;
         }
       }
-    } else if chpl__serializeAssignment(a, b) {
+    } else if alwaysSerialize || chpl__serializeAssignment(a, b) {
       if kind==_tElt.move {
         if needsInitWorkaround(a.eltType) {
           for (ai, bb) in zip(a.domain, b) {
