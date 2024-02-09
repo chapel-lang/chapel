@@ -266,23 +266,6 @@ PyObject* AstNodeObject_iter(AstNodeObject *self) {
   return wrapIterPair((ContextObject*) self->contextObject, self->ptr->children());
 }
 
-PyObject* AstNodeObject_scope(PyObject* selfPy, PyObject* unusedArgs) {
-  auto self = (AstNodeObject*) selfPy;
-  PyObject* args = Py_BuildValue("(O)", self->contextObject);
-  auto context = &((ContextObject*) self->contextObject)->context_;
-  auto scope = resolution::scopeForId(context, self->ptr->id());
-
-  if (scope == nullptr) {
-    Py_RETURN_NONE;
-  }
-
-  auto scopeObjectPy = PyObject_CallObject((PyObject *) &ScopeType, args);
-  auto scopeObject = (ScopeObject*) scopeObjectPy;
-  scopeObject->scope = scope;
-
-  return scopeObjectPy;
-}
-
 static PyMethodDef ChapelTypeObject_methods[] = {
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
@@ -491,3 +474,17 @@ PyObject* wrapLocation(Location loc) {
   location = std::move(loc);
   return locationObjectPy;
 }
+
+PyObject* wrapScope(ContextObject* contextObj, const chpl::resolution::Scope* scope) {
+  if (scope == nullptr) {
+    Py_RETURN_NONE;
+  }
+
+  PyObject* args = Py_BuildValue("(O)", contextObj);
+  auto scopeObjectPy = PyObject_CallObject((PyObject *) &ScopeType, args);
+  auto scopeObject = (ScopeObject*) scopeObjectPy;
+  scopeObject->scope = scope;
+
+  return scopeObjectPy;
+}
+

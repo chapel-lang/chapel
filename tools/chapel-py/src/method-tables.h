@@ -103,7 +103,8 @@ CLASS_BEGIN(AstNode)
                std::stringstream ss;
                node->id().stringify(ss, CHPL_SYNTAX);
                return ss.str())
-  METHOD_PROTOTYPE(AstNode, scope, "Get the scope for this AST node")
+  PLAIN_GETTER(AstNode, scope, "Get the scope for this AST node",
+               PyObject*, return wrapScope(contextObject, resolution::scopeForId(context, node->id())))
   PLAIN_GETTER(AstNode, type, "Get the type of this AST node, as a 3-tuple of (kind, type, param).",
                std::optional<QualifiedTypeTuple>,
 

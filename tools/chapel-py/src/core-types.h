@@ -185,4 +185,9 @@ PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
  */
 PyObject* wrapLocation(chpl::Location loc);
 
+/**
+  Create a Python object from the given Scope.
+ */
+PyObject* wrapScope(ContextObject* context, const chpl::resolution::Scope* scope);
+
 #endif
