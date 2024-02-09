@@ -30,6 +30,11 @@ struct ErrorObject {
   PyObject_HEAD
   chpl::owned<chpl::ErrorBase> error;
   PyObject* contextObject;
+
+  static constexpr const char* Name = "Error";
+
+  const chpl::ErrorBase* unwrap() { return error.get(); }
+  ContextObject* context() { return (ContextObject*) contextObject; }
 };
 extern PyTypeObject ErrorType;
 

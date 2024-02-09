@@ -729,6 +729,17 @@ CLASS_BEGIN(Scope)
                return toReturn)
 CLASS_END(Scope)
 
+CLASS_BEGIN(Error)
+  PLAIN_GETTER(Error, location, "Get the location at which this error occurred",
+               chpl::Location, return node->location(context))
+  PLAIN_GETTER(Error, message, "Retrieve the contents of this error message",
+               std::string, return node->message())
+  PLAIN_GETTER(Error, kind, "Retrieve the kind ('error', 'warning') of this type of error",
+               const char*, return chpl::ErrorBase::getKindName(node->kind()))
+  PLAIN_GETTER(Error, type, "Retrieve the unique name of this type of error",
+               const char*, return chpl::ErrorBase::getTypeName(node->type()))
+CLASS_END(Error)
+
 //
 // Cleanup and undefine all macros
 //

@@ -21,6 +21,7 @@
 #define CHAPEL_PY_CORE_TYPES_GEN_H
 
 #include "core-types.h"
+#include "error-tracker.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 
