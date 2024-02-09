@@ -98,6 +98,57 @@ std::string vectorTypeString() {
   return std::string("typing.List[") + PythonReturnTypeInfo<T>::typeString() + "]";
 }
 
+template <typename T>
+PyObject* wrapSet(ContextObject* CONTEXT, const std::set<T>& set) {
+  PyObject* toReturn = PySet_New(nullptr);
+  for (const auto& elem : set) {
+    PySet_Add(toReturn, PythonReturnTypeInfo<T>::wrap(CONTEXT, elem));
+  }
+  return toReturn;
+}
+
+template <typename T>
+std::set<T> unwrapSet(ContextObject* CONTEXT, PyObject* set) {
+  std::set<T> toReturn;
+  PyObject* iter = PyObject_GetIter(set);
+  PyObject* item;
+  while ((item = PyIter_Next(iter))) {
+    toReturn.insert(PythonReturnTypeInfo<T>::unwrap(CONTEXT, item));
+    Py_DECREF(item);
+  }
+  Py_DECREF(iter);
+  return toReturn;
+}
+
+template <typename T>
+std::string setTypeString() {
+  return std::string("typing.Set[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
+
+/* Same but for std::optional<T>, with 'None' as default value. */
+template <typename T>
+PyObject* wrapOptional(ContextObject* context, const std::optional<T>& opt) {
+  if (opt) {
+    return PythonReturnTypeInfo<T>::wrap(context, *opt);
+  } else {
+    Py_RETURN_NONE;
+  }
+}
+
+template <typename T>
+std::optional<T> unwrapOptional(ContextObject* context, PyObject* opt) {
+  if (opt == Py_None) {
+    return {};
+  } else {
+    return PythonReturnTypeInfo<T>::unwrap(context, opt);
+  }
+}
+
+template <typename T>
+std::string optionalTypeString() {
+  return std::string("typing.Optional[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
+
 template <typename ... Elems, size_t ... Is>
 PyObject* wrapTupleImpl(ContextObject* context, const std::tuple<Elems...>& tup, std::index_sequence<Is...>) {
   PyObject* tuple = PyTuple_New(sizeof...(Elems));
@@ -164,6 +215,10 @@ DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(
 
 template <typename T>
 T_DEFINE_INOUT_TYPE(std::vector<T>, vectorTypeString<T>(), wrapVector(CONTEXT, TO_WRAP), unwrapVector<T>(CONTEXT, TO_UNWRAP));
+template <typename T>
+T_DEFINE_INOUT_TYPE(std::set<T>, setTypeString<T>(), wrapSet(CONTEXT, TO_WRAP), unwrapSet<T>(CONTEXT, TO_UNWRAP));
+template <typename T>
+T_DEFINE_INOUT_TYPE(std::optional<T>, optionalTypeString<T>(), wrapOptional(CONTEXT, TO_WRAP), unwrapOptional<T>(CONTEXT, TO_UNWRAP));
 template <typename ... Elems>
 T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
 
