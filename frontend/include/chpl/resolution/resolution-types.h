@@ -904,8 +904,9 @@ struct CandidatesAndForwardingInfo {
 
   // Compute and fill in forwarding info for a range of newly-added candidates.
   void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
-    types::QualifiedType forwardingReceiverActualType = fci.calledType();
+    CHPL_ASSERT(forwardingInfo.size() <= start);
     forwardingInfo.resize(start);
+    types::QualifiedType forwardingReceiverActualType = fci.calledType();
     for (size_t i = start; i < candidates.size(); i++) {
       forwardingInfo.push_back(forwardingReceiverActualType);
     }
