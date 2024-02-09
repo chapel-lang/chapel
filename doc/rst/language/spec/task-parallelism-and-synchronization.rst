@@ -715,6 +715,10 @@ continue statements may not be used to exit a sync statement block.
 The Serial Statement
 --------------------
 
+.. note::
+
+   The ``serial`` statement is unstable and likely to be deprecated.
+
 The ``serial`` statement can be used to dynamically disable parallelism.
 The syntax is:
 
