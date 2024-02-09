@@ -3832,6 +3832,7 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
   }
 }
 
+static bool isMethodPreResolve(CallExpr* call);
 
 static
 FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
@@ -3852,6 +3853,31 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   resolveGenericActuals(call);
 
   resolveNormalCallAdjustAssign(call);
+
+  bool isMethod = isMethodPreResolve(call);
+
+  bool isInit = isMethod && (call->isNamedAstr(astrInit) || call->isNamedAstr(astrInitEquals));
+  if (isInit) {
+    INT_ASSERT(call->numActuals() >= 2);
+    if (isRecord(call->get(2)->typeInfo())) {
+      auto mod = call->getModule();
+      bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
+                                 fWarnUnstableInternal);
+      bool shouldWarnStandard = (mod->modTag == MOD_STANDARD &&
+                                 fWarnUnstableStandard);
+      if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
+                            mod->modTag == MOD_USER) &&
+          !fNoConstArgChecks) {
+        if (NamedExpr* ne = toNamedExpr(call->get(2))) {
+          call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE,
+                                          ne->actual->copy()));
+        } else {
+          call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE,
+                                          call->get(2)->copy()));
+        }
+      }
+    }
+  }
 
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
