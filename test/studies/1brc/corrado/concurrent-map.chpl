@@ -1,4 +1,4 @@
-use IO, Math, ParallelIO, ConcurrentMap;
+use IO, Math, ParallelIO, ConcurrentMap, Sort;
 
 config const fileName = "measurements.txt",
              nTasks = 8;
@@ -10,33 +10,18 @@ proc main() {
     // read and aggregate temperature data for each city
     forall ct in readDelimited(fileName, t=cityTemp, delim="\n", nTasks=nTasks)
         with (var token = cityTempStats.getToken())
-    {
-        // // unsure how to use the concurrent map interface to do the update atomically.
-        // // this is the closest I can get...
-        // var set = false;
-        // while !set {
-        //     var (hasValue, td) = cityTempStats.getValue(ct.city, token);
-        //     if hasValue {
-        //         td += ct.temp;
-        //         cityTempStats.set(ct.city, td, token);
-        //         set = true;
-        //     } else {
-        //         if cityTempStats.add(ct.city, new tempData(ct.temp), token) then set = true;
-        //     }
-        // }
+            do cityTempStats.update(ct.city, new adder(ct.temp), token);
 
-        // using an update interface I added...
-        cityTempStats.update(ct.city, new adder(ct.temp), token);
-    }
+    // sort the results by city name
+    var results = cityTempStats.toArray();
+    sort(results, new comparator());
 
-    // print out results
+    // print the results
     var first = true;
     write("{");
-    for (city, temps) in cityTempStats.items() {
-        if city != b"" {
-            if first then first = false; else write(", ");
-            write(city, "=", temps);
-        }
+    for (city, td) in results {
+        if first then first = false; else write(", ");
+        write(city, "=", td);
     }
     writeln("}");
 }
@@ -92,3 +77,6 @@ record adder {
     var temp: real;
     proc this(ref td: tempData) do td += this.temp;
 }
+
+record comparator { }
+proc comparator.key(k: (bytes, tempData)) { return k[0]; }
