@@ -943,12 +943,8 @@ struct CandidatesAndForwardingInfo {
   bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
 
   // Iterator over contained candidates
-  const_iterator begin() const {
-    return candidates.begin();
-  }
-  const_iterator end() const {
-    return candidates.end();
-  }
+  const_iterator begin() const { return candidates.begin(); }
+  const_iterator end() const { return candidates.end(); }
 
   /* Query system supporting functions */
 
