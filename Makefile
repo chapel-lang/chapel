@@ -184,6 +184,10 @@ chplcheck: frontend-shared FORCE
 	@# writing this target is always FORCEd (so we'd end up building it twice).
 	cd tools/chplcheck && $(MAKE) all install
 
+chpl-language-server: frontend-shared FORCE
+	@# see comments the chplcheck target above.
+	cd tools/chpl-language-server && $(MAKE) all install
+
 lint-standard-modules: chplcheck FORCE
 	tools/chplcheck/chplcheck --skip-unstable \
 		--internal-prefix "_" \
