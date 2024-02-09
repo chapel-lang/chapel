@@ -926,8 +926,10 @@ struct CandidatesAndForwardingInfo {
   // Get the candidate at the provided index with no bounds checking.
   const TypedFnSignature* get(size_t i) const { return candidates[i]; }
 
-  // Get the forwarding info at the provided index with no bounds checking.
+  // Get the forwarding info at the provided index.
+  // Fails if there isn't forwarding info saved for each candidate.
   const types::QualifiedType& getForwardingInfo(size_t i) const {
+    CHPL_ASSERT(candidates.size() == forwardingInfo.size());
     return forwardingInfo[i];
   }
 
