@@ -2066,7 +2066,7 @@ module ChapelArray {
     }
   }
 
-  proc chpl__serializeAssignment(a: [], b) param {
+  proc chpl__serializeAssignment(a, b) param {
     if a.rank != 1 && isRange(b) then
       return true;
 
@@ -2091,7 +2091,7 @@ module ChapelArray {
   }
 
   // This must be a param function
-  proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
+  proc chpl__compatibleForBulkTransfer(a, b, param kind:_tElt) param {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if kind==_tElt.move then return true;
@@ -2141,7 +2141,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
+  proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = a._value.dom.dsiDims(),
             bDims = b._value.dom.dsiDims();
@@ -2158,9 +2158,17 @@ module ChapelArray {
     }
   }
 
-  pragma "find user line"
-  @chpldoc.nodoc
-  inline operator =(ref a: [], b:[]) {
+  proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
+
+  proc isArrayOrProtoSlice(a) param {
+    return isArray(a) || isProtoSlice(a);
+  }
+
+  proc areBothArraysOrProtoSlices(a,b) {
+    return isArrayOrProtoSlice(a) && isArrayOrProtoSlice(b);
+  }
+
+  private inline proc arrayOrProtoSliceAssign(ref a, b) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
 
@@ -2184,6 +2192,19 @@ module ChapelArray {
       checkArrayShapesUponAssignment(a, b);
 
     chpl__uncheckedArrayTransfer(a, b, kind=_tElt.assign);
+  }
+
+
+  pragma "find user line"
+  @chpldoc.nodoc
+  inline operator =(ref a: [], b: []) {
+    arrayOrProtoSliceAssign(a, b);
+  }
+
+  pragma "find user line"
+  @chpldoc.nodoc
+  inline operator =(ref a: chpl__protoSlice, b: chpl__protoSlice) {
+    arrayOrProtoSliceAssign(a, b);
   }
 
   // what kind of transfer to do for each element?
@@ -2293,7 +2314,7 @@ module ChapelArray {
   }
 
   pragma "find user line"
-  inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[], param kind) {
+  inline proc chpl__uncheckedArrayTransfer(ref a, b, param kind) {
 
     var done = false;
     if !chpl__serializeAssignment(a, b) {
@@ -2359,8 +2380,68 @@ module ChapelArray {
   inline proc chpl__bulkTransferArray(ref a: [?AD], b : [?BD]) {
     return chpl__bulkTransferArray(a, AD, b, BD);
   }
+
+  inline proc chpl__bulkTransferArray(ref a: chpl__protoSlice,
+                                      b: chpl__protoSlice) {
+
+    return chpl__bulkTransferArray(a.ptrToArr.deref(), {(...a.slicingExprs)},
+                                   b.ptrToArr.deref(), {(...b.slicingExprs)});
+
+  }
   inline proc chpl__bulkTransferArray(ref a: [], AD : domain, const ref b: [], BD : domain) {
     return chpl__bulkTransferArray(a._value, AD, b._value, BD);
+  }
+
+  record chpl__protoSlice {
+    var ptrToArr; // I want this to be a `forwarding ref` to the array
+    var slicingExprs;
+
+    proc init=(other: chpl__protoSlice) {
+      this.ptrToArr = other.ptrToArr;
+      this.slicingExprs = other.slicingExprs;
+      init this;
+      extern proc printf(s...);
+      printf("this is probably not what you want\n");
+    }
+
+    inline proc rank param { return ptrToArr.deref().rank; }
+    inline proc eltType type { return ptrToArr.deref().eltType; }
+    inline proc _value { return ptrToArr.deref()._value; }
+    inline proc sizeAs(type t) { return ptrToArr.deref().sizeAs(t); }
+    inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
+    iter these() ref {
+      for i in {(...slicingExprs)}.these() {
+        yield ptrToArr.deref()[i];
+      }
+    }
+    iter these(param tag: iterKind) where tag==iterKind.leader {
+      for followThis in {(...slicingExprs)}.these(iterKind.leader) {
+        yield followThis;
+      }
+    }
+    iter these(param tag: iterKind, followThis) ref where tag==iterKind.follower {
+      for i in {(...slicingExprs)}.these(iterKind.follower, followThis) {
+        yield ptrToArr.deref()[i];
+      }
+    }
+  }
+
+  proc chpl__createProtoSlice(ref Arr, slicingExprs...) {
+    return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
+  }
+
+  proc chpl__basesSupportViewTransfer(a, b) param {
+    return chpl__isDROrDRView(a) && chpl__isDROrDRView(b);
+    /*return false;*/
+  }
+
+  proc chpl__slicingExprsSupportViewTransfer(x...) param {
+    return (isHomogeneousTuple(x) && isRange(x[0]));
+  }
+
+  proc chpl__bulkTransferView(a, aTuple, b, bTuple) {
+    compilerAssert(aTuple.size == bTuple.size);
+    chpl__bulkTransferArray(a, {(...aTuple)}, b, {(...bTuple)});
   }
 
   inline proc chpl__bulkTransferArray(destClass, destDom : domain, srcClass, srcDom : domain) {
@@ -2407,7 +2488,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "ignore transfer errors"
-  inline proc chpl__transferArray(ref a: [], const ref b,
+  inline proc chpl__transferArray(ref a, const ref b,
                            param kind=_tElt.assign) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
