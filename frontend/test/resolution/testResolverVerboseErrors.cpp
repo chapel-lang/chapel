@@ -281,14 +281,9 @@ r.x("hello");
 
 static const char* errorOther = R"""(
 ─── error in file.chpl:6 [NoMatchingCandidates] ───
-  Unable to resolve call to 'x': no matching candidates.
+  Unable to resolve call to 'this': no matching candidates.
       |
     6 | r.x("hello");
-      |
-  
-  The following candidate didn't match:
-      |
-    2 |     var x: int;
       |
 )""";
 
