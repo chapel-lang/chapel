@@ -25,16 +25,18 @@ proc main() {
         //     }
         // }
 
-        // using an update interface I added to the map...
+        // using an update interface I added...
         cityTempStats.update(ct.city, new adder(ct.temp), token);
     }
 
     // print out results
     var first = true;
     write("{");
-    for (city, temps) in zip(cityTempStats.keys(), cityTempStats.values()) {
-        if first then first = false; else write(", ");
-        write(city, "=", temps);
+    for (city, temps) in cityTempStats.items() {
+        if city != b"" {
+            if first then first = false; else write(", ");
+            write(city, "=", temps);
+        }
     }
     writeln("}");
 }
@@ -71,7 +73,7 @@ inline operator tempData.+=(ref td: tempData, temp: real) {
 
 // how to write a tempData record to a file (min/avg/max)
 proc tempData.serialize(writer: fileWriter(?), ref serializer) throws {
-    writer.write(this.min, "/", this.total / this.count , "/", this.max);
+    writer.writef("%.1dr/%.1dr/%.1dr", this.min, this.total / this.count, this.max);
 }
 
 // record representing a <city>;<temperature> pair

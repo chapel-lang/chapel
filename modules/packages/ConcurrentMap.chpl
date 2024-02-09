@@ -809,58 +809,25 @@ module ConcurrentMap {
       return (found, res);
     }
 
-    @chpldoc.nodoc
-    proc _getValue(key : keyType, tok: owned TokenWrapper): (bool, valType) throws {
-      var elist = getEList(key, false, tok);
-      var res : valType;
-      if (elist == nil) {
-        return (false, res);
-      }
-      var found = false;
+    proc update(key: keyType, updater, tok : owned TokenWrapper = getToken()) throws {
+      tok.pin();
+      var elist = getEList(key, true, tok),
+          found = false;
       for i in 0..#elist!.count {
         if (elist!.keys[i] == key) {
-          res = elist!.values[i];
+          updater(elist!.values[i]);
           found = true;
           break;
         }
       }
-      elist!.lock.write(E_AVAIL);
-      return (found, res);
-    }
-
-    @chpldoc.nodoc
-    proc _add_unchecked(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) throws {
-      var elist = getEList(key, true, tok);
-      elist!.count += 1;
-      elist!.keys[elist!.count-1] = key;
-      elist!.values[elist!.count-1] = val;
-      elist!.lock.write(E_AVAIL);
-      return true;
-    }
-
-    @chpldoc.nodoc
-    proc _set_unchecked(key: keyType, in val: valType, tok : owned TokenWrapper = getToken()) throws {
-      var elist = getEList(key, false, tok);
-      for i in 0..#elist!.count {
-        if (elist!.keys[i] == key) {
-          elist!.values[i] = val;
-          break;
-        }
+      if !found {
+        var v: valType;
+        updater(v);
+        elist!.count += 1;
+        elist!.keys[elist!.count-1] = key;
+        elist!.values[elist!.count-1] = v;
       }
       elist!.lock.write(E_AVAIL);
-    }
-
-    proc update(key: keyType, updater, tok : owned TokenWrapper = getToken()) throws {
-      tok.pin();
-      var (hasValue, currValue) = _getValue(key, tok);
-      if hasValue {
-        updater(currValue);
-        _set_unchecked(key, currValue, tok);
-      } else {
-        var sentinel: valType;
-        updater(sentinel);
-        _add_unchecked(key, sentinel, tok);
-      }
       tok.unpin();
     }
 
