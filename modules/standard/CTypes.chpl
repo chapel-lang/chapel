@@ -836,16 +836,16 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
+    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
-    if (arr._value.locale != here) then
-      halt(
-          "c_ptrTo() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
-
     if boundsChecking {
+      if (arr._value.locale != here) then
+        halt(
+            "c_ptrTo() can only be applied to an array from the locale on " +
+            "which it lives (array is on locale " + arr._value.locale.id:string +
+            ", call was made on locale " + here.id:string + ")");
+
       if (arr.size == 0) then
         halt("Can't create a C pointer for an array with 0 elements.");
     }
@@ -925,16 +925,16 @@ module CTypes {
    */
   @chpldoc.nodoc
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
+    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
-    if (arr._value.locale != here) then
-      halt(
-          "c_ptrToConst() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
-
     if boundsChecking {
+      if (arr._value.locale != here) then
+        halt(
+            "c_ptrToConst() can only be applied to an array from the locale on " +
+            "which it lives (array is on locale " + arr._value.locale.id:string +
+            ", call was made on locale " + here.id:string + ")");
+
       if (arr.size == 0) then
         halt("Can't create a C pointer for an array with 0 elements.");
     }
@@ -996,10 +996,10 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
-      compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
+    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
+      compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
 
-    if (arr._value.locale != here) then
+    if (boundsChecking && arr._value.locale != here) then
       halt(
           "c_addrOf() can only be applied to an array from the locale on " +
           "which it lives (array is on locale " + arr._value.locale.id:string +
@@ -1014,10 +1014,10 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
+    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
 
-    if (arr._value.locale != here) then
+    if (boundsChecking && arr._value.locale != here) then
       halt(
           "c_addrOfConst() can only be applied to an array from the locale on " +
           "which it lives (array is on locale " + arr._value.locale.id:string +
