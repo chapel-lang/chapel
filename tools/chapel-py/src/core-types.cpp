@@ -161,14 +161,6 @@ std::string generatePyiFile() {
   return ss.str();
 }
 
-PyObject* ContextObject_track_errors(PyObject *self, PyObject* args) {
-  auto errorManagerObjectPy = PyObject_CallObject((PyObject *) &ErrorManagerType, nullptr);
-  auto errorManagerObject = (ErrorManagerObject*) errorManagerObjectPy;
-  Py_INCREF(self);
-  errorManagerObject->contextObject = self;
-  return errorManagerObjectPy;
-}
-
 PyTypeObject LocationType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };

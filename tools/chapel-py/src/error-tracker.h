@@ -24,6 +24,8 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 
+struct ContextObject;
+
 struct ErrorObject {
   PyObject_HEAD
   chpl::owned<chpl::ErrorBase> error;
@@ -52,6 +54,11 @@ int ErrorManagerObject_init(ErrorManagerObject* self, PyObject* args, PyObject* 
 void ErrorManagerObject_dealloc(ErrorManagerObject* self);
 PyObject* ErrorManagerObject_enter(ErrorManagerObject* self, PyObject* args);
 PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args);
+
+/**
+  Create a new ErrorManager object which hooks into a given Context object.
+ */
+PyObject* createNewErrorManager(ContextObject* contextObject);
 
 class PythonErrorHandler : public chpl::Context::ErrorHandler {
  private:

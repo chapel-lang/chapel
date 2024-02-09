@@ -124,6 +124,14 @@ PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
+PyObject* createNewErrorManager(ContextObject* contextObject) {
+  auto errorManagerObjectPy = PyObject_CallObject((PyObject *) &ErrorManagerType, nullptr);
+  auto errorManagerObject = (ErrorManagerObject*) errorManagerObjectPy;
+  Py_INCREF(contextObject);
+  errorManagerObject->contextObject = (PyObject*) contextObject;
+  return errorManagerObjectPy;
+}
+
 PyObject* PythonErrorHandler::pushList() {
   PyObject* newList = PyList_New(0);
   errorLists.push_back(newList);
