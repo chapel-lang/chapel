@@ -1622,6 +1622,54 @@ module DefaultRectangular {
     }
   }
 
+  // This is specialized to avoid overheads of calling dsiAccess()
+  iter chpl__serialViewIter1D(arr, viewRange) ref
+      where chpl__isDROrDRView(arr) {
+
+    param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
+
+    if viewRange.hasUnitStride() {
+      // Ideally we would like to be able to do something like
+      // "for i in first..last by step". However, right now that would
+      // result in a strided iterator which isn't as optimized. It would
+      // also add a range initializer, which in tight loops is pretty
+      // expensive. Instead we use a direct range iterator that is
+      // optimized for positively strided ranges. It should be just as fast
+      // as directly using a "c for loop", but it contains code check for
+      // overflow and invalid strides as well as the ability to use a less
+      // optimized iteration method if users are concerned about range
+      // overflow.
+
+      const first  = info.getDataIndex(viewRange.low);
+      const second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, chpl__idxToInt(viewRange.low)+1));
+      const step   = (second-first);
+      const last   = first + (viewRange.size:step.type-1) * step;
+      foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
+        yield info.theData(i);
+      }
+    } else {
+      type vdIntIdxType = chpl__idxTypeToIntIdxType(viewRange.idxType);
+      const stride = viewRange.stride: vdIntIdxType,
+            start  = viewRange.first,
+            second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, viewRange.firstAsInt + stride));
+
+      var   first  = info.getDataIndex(start);
+      const step   = (second-first).safeCast(int);
+      var   last   = first + (viewRange.sizeAs(int)-1) * step;
+
+      if step < 0 then
+        last <=> first;
+
+      var data = info.theData;
+      foreach i in first..last by step do
+        yield data(i);
+    }
+
+  }
+
   iter chpl__serialViewIter(arr, viewDom) ref
     where chpl__isDROrDRView(arr) {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
@@ -1629,44 +1677,8 @@ module DefaultRectangular {
                else if arr.isSliceArrayView() then arr.arr
                else arr;
     if arr.rank == 1 {
-      // This is specialized to avoid overheads of calling dsiAccess()
-      if viewDom.hasUnitStride() {
-        // Ideally we would like to be able to do something like
-        // "for i in first..last by step". However, right now that would
-        // result in a strided iterator which isn't as optimized. It would
-        // also add a range initializer, which in tight loops is pretty
-        // expensive. Instead we use a direct range iterator that is
-        // optimized for positively strided ranges. It should be just as fast
-        // as directly using a "c for loop", but it contains code check for
-        // overflow and invalid strides as well as the ability to use a less
-        // optimized iteration method if users are concerned about range
-        // overflow.
-
-        const first  = info.getDataIndex(viewDom.dsiLow);
-        const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
-        const step   = (second-first);
-        const last   = first + (viewDom.dsiNumIndices:step.type-1) * step;
-        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) with (ref info) {
-          yield info.theData(i);
-        }
-      } else {
-        type vdIntIdxType = chpl__idxTypeToIntIdxType(viewDom.idxType);
-        const viewDomDim = viewDom.dsiDim(0),
-              stride = viewDomDim.stride: vdIntIdxType,
-              start  = viewDomDim.first,
-              second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, viewDomDim.firstAsInt + stride));
-
-        var   first  = info.getDataIndex(start);
-        const step   = (second-first).safeCast(int);
-        var   last   = first + (viewDomDim.sizeAs(int)-1) * step;
-
-        if step < 0 then
-          last <=> first;
-
-        var data = info.theData;
-        foreach i in first..last by step do
-          yield data(i);
-      }
+      foreach elem in chpl__serialViewIter1D(arr, viewDom.dsiDim[0]) do
+        yield elem;
     } else if useCache {
       foreach i in viewDom {
         const dataIdx = info.getDataIndex(i);
