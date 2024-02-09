@@ -662,6 +662,8 @@ CLASS_END(CompositeType)
 CLASS_BEGIN(Context)
   PLAIN_GETTER(Context, introspect_parsed_files, "Inspect the list of files that have been parsed by the Context",
                std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(context))
+  PLAIN_GETTER(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes",
+               std::string, return generatePyiFile())
 
   METHOD(Context, parse, "Parse a top-level AST node from the given file",
          std::vector<const chpl::uast::AstNode*>(chpl::UniqueString),
@@ -694,7 +696,6 @@ CLASS_BEGIN(Context)
          auto prepareToGc = std::get<0>(args);
          context->advanceToNextRevision(prepareToGc))
 
-  METHOD_PROTOTYPE(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes")
   METHOD_PROTOTYPE(Context, track_errors, "Return a context manager that tracks errors emitted by this Context")
 CLASS_END(Context)
 

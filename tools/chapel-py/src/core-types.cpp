@@ -100,7 +100,7 @@ struct ParentTypeInfo {
   };
 #include "generated-types-list.h"
 
-PyObject* ContextObject__get_pyi_file(PyObject* self, PyObject* args) {
+std::string generatePyiFile() {
   std::ostringstream ss;
 
   ss << "\"\"\"" << std::endl;
@@ -112,7 +112,6 @@ PyObject* ContextObject__get_pyi_file(PyObject* self, PyObject* args) {
   // these get replaced with `scripts/generate-pyi.py`
   ss << "class ErrorManager: pass" << std::endl << std::endl;
   ss << "class Error: pass" << std::endl << std::endl;
-  ss << "class AstNode: pass" << std::endl << std::endl;
   ss << "class ChapelType: pass" << std::endl << std::endl;
   ss << "class Param: pass" << std::endl << std::endl;
 
@@ -159,7 +158,7 @@ PyObject* ContextObject__get_pyi_file(PyObject* self, PyObject* args) {
   #include "generated-types-list.h"
   #undef ENSURE_ALL_CLASSES
 
-  return Py_BuildValue("s", ss.str().c_str());
+  return ss.str();
 }
 
 PyObject* ContextObject_track_errors(PyObject *self, PyObject* args) {

@@ -148,6 +148,12 @@ const char* intentToString(IntentType intent) {
 }
 
 /**
+ Using the various definitions, templates, and method tables we have, generate
+ a Python .pyi file describing the various methods and types we provide.
+ */
+std::string generatePyiFile();
+
+/**
   Create a Python object of the class corresponding to the given AST node's
   type. For example, an Identifier node will be wrapped in a chapel.Identifier.
  */
