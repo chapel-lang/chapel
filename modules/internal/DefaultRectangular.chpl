@@ -1978,6 +1978,25 @@ module DefaultRectangular {
     dsiSerialReadWrite(f);
   }
 
+  inline proc DefaultRectangularArr.isDataContiguous(dom: domain) {
+    return isDataContiguous(dom._value);
+  }
+
+  // This is very conservative.
+  inline proc DefaultRectangularArr.isDataContiguous(dom: range) {
+    if rank != 1 then return false;
+
+    if debugDefaultDistBulkTransfer then
+      chpl_debug_writeln("isDataContiguous(): off=", off, " blk=", blk);
+
+    if blk(rank-1) != 1 then return false;
+
+    if debugDefaultDistBulkTransfer then
+      chpl_debug_writeln("\tYES!");
+
+    return true;
+  }
+
   // This is very conservative.
   proc DefaultRectangularArr.isDataContiguous(dom) {
     if debugDefaultDistBulkTransfer then
@@ -1998,7 +2017,7 @@ module DefaultRectangular {
   }
 
   private proc _canDoSimpleTransfer(A, aView, B, bView) {
-    if !A.isDataContiguous(aView._value) || !B.isDataContiguous(bView._value) {
+    if !A.isDataContiguous(aView) || !B.isDataContiguous(bView) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("isDataContiguous return False");
       return false;
@@ -2022,6 +2041,13 @@ module DefaultRectangular {
   proc DefaultRectangularArr.doiBulkTransferFromKnown(destDom, srcClass:DefaultRectangularArr, srcDom) : bool {
     return transferHelper(this, destDom, srcClass, srcDom);
   }
+
+  /*proc DefaultRectangularArr.doiBulkTransferFromKnown(destRange: range,*/
+                                                      /*srcClass:DefaultRectangularArr,*/
+                                                      /*srcRange: range) : bool {*/
+    /*return transferHelper(this, destRange, srcClass, srcRange);*/
+
+  /*}*/
 
   private proc transferHelper(A, aView, B, bView) : bool {
     if A.rank == B.rank &&
@@ -2049,15 +2075,29 @@ module DefaultRectangular {
     param rank     = A.rank;
     type idxType   = A.idxType;
 
-    const Adims = aView.dims();
     var Alo: rank*aView.idxType;
-    for param i in 0..rank-1 do
-      Alo(i) = Adims(i).first;
 
-    const Bdims = bView.dims();
+    if isDomain(aView) {
+      const Adims = aView.dims();
+      for param i in 0..rank-1 do
+        Alo(i) = Adims(i).first;
+    }
+    else if isRange(aView) {
+      Alo(0) = aView.first;
+    }
+    else {
+      compilerError("Unexpected type");
+    }
+
     var Blo: rank*B.idxType;
+    if isDomain(bView) {
+    const Bdims = bView.dims();
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
+    }
+    else if isRange(bView) {
+      Blo(0) = bView.first;
+    }
 
     const len = aView.sizeAs(aView.chpl_integralIdxType).safeCast(c_size_t);
 
@@ -2214,8 +2254,10 @@ module DefaultRectangular {
       writeln("Original domains   :", LHS.dom.dsiDims(), " <-- ", RHS.dom.dsiDims());
     }
 
-    const LeftDims  = LViewDom.dims();
-    const RightDims = RViewDom.dims();
+    const LeftDims  = if isDomain(LViewDom) then LViewDom.dims()
+                                            else (LViewDom,);
+    const RightDims = if isDomain(RViewDom) then RViewDom.dims()
+                                            else (RViewDom, );
 
     const (LeftActives, RightActives, inferredRank) = bulkCommComputeActiveDims(LeftDims, RightDims);
 

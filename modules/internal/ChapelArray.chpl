@@ -2384,11 +2384,18 @@ module ChapelArray {
   inline proc chpl__bulkTransferArray(ref a: chpl__protoSlice,
                                       b: chpl__protoSlice) {
 
-    return chpl__bulkTransferArray(a.ptrToArr.deref(), {(...a.slicingExprs)},
-                                   b.ptrToArr.deref(), {(...b.slicingExprs)});
+    if a.slicingExprs.size == 1 {
+      // check the other too?
+      return chpl__bulkTransferArray(a.ptrToArr.deref(), a.slicingExprs[0],
+                                     b.ptrToArr.deref(), b.slicingExprs[0]);
+    }
+    else {
+      return chpl__bulkTransferArray(a.ptrToArr.deref(), {(...a.slicingExprs)},
+                                     b.ptrToArr.deref(), {(...b.slicingExprs)});
+    }
 
   }
-  inline proc chpl__bulkTransferArray(ref a: [], AD : domain, const ref b: [], BD : domain) {
+  inline proc chpl__bulkTransferArray(ref a: [], AD, const ref b: [], BD) {
     return chpl__bulkTransferArray(a._value, AD, b._value, BD);
   }
 
@@ -2444,7 +2451,7 @@ module ChapelArray {
     chpl__bulkTransferArray(a, {(...aTuple)}, b, {(...bTuple)});
   }
 
-  inline proc chpl__bulkTransferArray(destClass, destDom : domain, srcClass, srcDom : domain) {
+  inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
     var success = false;
 
     inline proc bulkTransferDebug(msg:string) {
@@ -2452,6 +2459,8 @@ module ChapelArray {
     }
 
     bulkTransferDebug("in chpl__bulkTransferArray");
+    bulkTransferDebug("destView.type: " + destView.type:string +
+                      "srcView.type: " + srcView.type:string);
 
     //
     // BHARSH TODO: I would prefer to hoist these 'canResolveMethod' calls into
@@ -2461,21 +2470,21 @@ module ChapelArray {
     // TODO: should we attempt other bulk transfer methods if one fails?
     //
     if Reflection.canResolveMethod(destClass, "doiBulkTransferFromKnown",
-                                   destDom, srcClass, srcDom) {
+                                   destView, srcClass, srcView) {
       bulkTransferDebug("attempting doiBulkTransferFromKnown");
-      success = destClass.doiBulkTransferFromKnown(destDom, srcClass, srcDom);
+      success = destClass.doiBulkTransferFromKnown(destView, srcClass, srcView);
     } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToKnown",
-                                          srcDom, destClass, destDom) {
+                                          srcView, destClass, destView) {
       bulkTransferDebug("attempting doiBulkTransferToKnown");
-      success = srcClass.doiBulkTransferToKnown(srcDom, destClass, destDom);
+      success = srcClass.doiBulkTransferToKnown(srcView, destClass, destView);
     } else if Reflection.canResolveMethod(destClass, "doiBulkTransferFromAny",
-                                          destDom, srcClass, srcDom) {
+                                          destView, srcClass, srcView) {
       bulkTransferDebug("attempting doiBulkTransferFromAny");
-      success = destClass.doiBulkTransferFromAny(destDom, srcClass, srcDom);
+      success = destClass.doiBulkTransferFromAny(destView, srcClass, srcView);
     } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToAny",
-                                          srcDom, destClass, destDom) {
+                                          srcView, destClass, destView) {
       bulkTransferDebug("attempting doiBulkTransferToAny");
-      success = srcClass.doiBulkTransferToAny(srcDom, destClass, destDom);
+      success = srcClass.doiBulkTransferToAny(srcView, destClass, destView);
     }
 
     if success then
