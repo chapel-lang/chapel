@@ -1,6 +1,13 @@
 This directory contains files related to a quick port I did of Jabari
 Zakiya's 'twinprimes_ssoz' computation from C++ and Crystal to Chapel.
 
+* `TPUtil.chpl`: A utility module containing the routines used to set
+  up the main arguments, tables, etc.  Arguably 'twins_sieve()' and
+  'nextp_init()' could also be moved here (or into another common
+  module) since they do not change between versions, but since they
+  feel more like they're part of the main algorithm, I left them
+  as-is.
+
 * `twinprimes_ssoz.chpl`: This is the original port, done primarily as
   a quick transliteration to check correctness; opportunities for
   performance and style improvements may exist.
