@@ -741,6 +741,19 @@ CLASS_BEGIN(Error)
                const char*, return chpl::ErrorBase::getTypeName(node->type()))
 CLASS_END(Error)
 
+CLASS_BEGIN(ErrorManager)
+  PLAIN_GETTER(ErrorManager, __enter__, "The context manager 'enter' method for this ErrorManager object",
+               PyObject*,
+
+               (void) node;
+               auto list = ((PythonErrorHandler*) context->errorHandler())->pushList();
+               Py_INCREF(list);
+               return list)
+
+  PLAIN_GETTER(ErrorManager, __exit__, "The context manager 'enter' method for this ErrorManager object",
+               void, (void) node; ((PythonErrorHandler*) context->errorHandler())->popList())
+CLASS_END(ErrorManager)
+
 //
 // Cleanup and undefine all macros
 //

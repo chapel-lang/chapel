@@ -50,6 +50,11 @@ PyObject* ErrorObject_type(ErrorObject* self, PyObject* args);
 struct ErrorManagerObject {
   PyObject_HEAD
   PyObject* contextObject;
+
+  static constexpr const char* Name = "ErrorManager";
+
+  ErrorManagerObject* unwrap() { return this; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
 };
 extern PyTypeObject ErrorManagerType;
 

@@ -50,12 +50,6 @@ void ErrorObject_dealloc(ErrorObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-static PyMethodDef ErrorManagerObject_methods[] = {
-  { "__enter__", (PyCFunction) ErrorManagerObject_enter, METH_NOARGS, "The context manager 'enter' method for this ErrorManager object" },
-  { "__exit__", (PyCFunction) ErrorManagerObject_exit, METH_VARARGS, "The context manager 'exit' method for this ErrorManager object" },
-  {NULL, NULL, 0, NULL}  /* Sentinel */
-};
-
 PyTypeObject ErrorManagerType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -67,7 +61,7 @@ void setupErrorManagerType() {
   ErrorManagerType.tp_dealloc = (destructor) ErrorManagerObject_dealloc;
   ErrorManagerType.tp_flags = Py_TPFLAGS_DEFAULT;
   ErrorManagerType.tp_doc = PyDoc_STR("A wrapper container to help track the errors from a Context.");
-  ErrorManagerType.tp_methods = ErrorManagerObject_methods;
+  ErrorManagerType.tp_methods = (PyMethodDef*) PerTypeMethods<ErrorManagerObject>::methods;
   ErrorManagerType.tp_init = (initproc) ErrorManagerObject_init;
   ErrorManagerType.tp_new = PyType_GenericNew;
 }
@@ -80,20 +74,6 @@ int ErrorManagerObject_init(ErrorManagerObject* self, PyObject* args, PyObject* 
 void ErrorManagerObject_dealloc(ErrorManagerObject* self) {
   Py_DECREF(self->contextObject);
   Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyObject* ErrorManagerObject_enter(ErrorManagerObject* self, PyObject* args) {
-  auto& context = ((ContextObject*) self->contextObject)->context_;
-  auto list = ((PythonErrorHandler*) context.errorHandler())->pushList();
-  Py_INCREF(list);
-  return list;
-}
-
-PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args) {
-  auto& context = ((ContextObject*) self->contextObject)->context_;
-  ((PythonErrorHandler*) context.errorHandler())->popList();
-
-  Py_RETURN_NONE;
 }
 
 PyObject* createNewErrorManager(ContextObject* contextObject) {
