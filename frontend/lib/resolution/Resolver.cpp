@@ -3479,12 +3479,12 @@ void Resolver::exit(const Dot* dot) {
 
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
 
-  bool resolvingCalledDot = (inLeafCall &&
-                             dot == inLeafCall->calledExpression());
-  if (resolvingCalledDot && !scopeResolveOnly) {
-    // we will handle it when resolving the FnCall
-    return;
-  }
+  /* bool resolvingCalledDot = (inLeafCall && */
+  /*                            dot == inLeafCall->calledExpression()); */
+  /* if (resolvingCalledDot && !scopeResolveOnly) { */
+  /*   // we will handle it when resolving the FnCall */
+  /*   return; */
+  /* } */
 
   if (dot->field() == USTR("type")) {
     const Type* receiverType;
@@ -3611,9 +3611,11 @@ void Resolver::exit(const Dot* dot) {
                       actuals);
   auto inScope = scopeStack.back();
   auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
-  // save the most specific candidates in the resolution result for the id
-  ResolvedExpression& r = byPostorder.byAst(dot);
-  handleResolvedCall(r, dot, ci, c);
+  if (!c.mostSpecific().isEmpty()) {
+    // save the most specific candidates in the resolution result for the id
+    ResolvedExpression& r = byPostorder.byAst(dot);
+    handleResolvedCall(r, dot, ci, c);
+  }
 }
 
 bool Resolver::enter(const New* node) {

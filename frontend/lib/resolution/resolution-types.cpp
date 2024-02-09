@@ -322,34 +322,10 @@ CallInfo CallInfo::create(Context* context,
     }
   }
 
-  // Check for method call, maybe construct a receiver.
-  if (!call->isOpCall()) {
-    if (auto called = call->calledExpression()) {
-      if (auto calledDot = called->toDot()) {
-
-        const AstNode* receiver = calledDot->receiver();
-        const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
-        const QualifiedType& qtReceiver = reReceiver.type();
-
-        // Check to make sure the receiver is a value or type.
-        if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
-            qtReceiver.kind() != QualifiedType::FUNCTION &&
-            qtReceiver.kind() != QualifiedType::MODULE) {
-
-          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-          if (actualAsts != nullptr) {
-            actualAsts->push_back(receiver);
-          }
-          calledType = qtReceiver;
-          isMethodCall = true;
-        }
-      }
-    }
-  }
-
   // Get the type of the called expression.
-  if (isMethodCall == false) {
-    if (auto calledExpr = call->calledExpression()) {
+  if (auto calledExpr = call->calledExpression()) {
+    if (byPostorder.hasAst(calledExpr)) {
+      // Construct a call to 'this' if relevant.
       const ResolvedExpression& r = byPostorder.byAst(calledExpr);
       calledType = r.type();
 
@@ -367,6 +343,27 @@ CallInfo CallInfo::create(Context* context,
         }
         // and reset calledType
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      }
+    } else if (!call->isOpCall()) {
+      // Check for method call, maybe construct a receiver.
+      if (auto called = call->calledExpression()) {
+        if (auto calledDot = called->toDot()) {
+          const AstNode* receiver = calledDot->receiver();
+          const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
+          const QualifiedType& qtReceiver = reReceiver.type();
+
+          // Check to make sure the receiver is a value or type.
+          if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
+              qtReceiver.kind() != QualifiedType::FUNCTION &&
+              qtReceiver.kind() != QualifiedType::MODULE) {
+            actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+            if (actualAsts != nullptr) {
+              actualAsts->push_back(receiver);
+            }
+            calledType = qtReceiver;
+            isMethodCall = true;
+          }
+        }
       }
     }
   }
