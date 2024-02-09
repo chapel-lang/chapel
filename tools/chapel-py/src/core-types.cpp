@@ -262,10 +262,6 @@ PyObject* AstNodeObject_iter(AstNodeObject *self) {
   return wrapIterPair((ContextObject*) self->contextObject, self->ptr->children());
 }
 
-static PyMethodDef ChapelTypeObject_methods[] = {
-  {NULL, NULL, 0, NULL} /* Sentinel */
-};
-
 PyTypeObject ChapelTypeType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -277,7 +273,7 @@ void setupChapelTypeType() {
   ChapelTypeType.tp_dealloc = (destructor) ChapelTypeObject_dealloc;
   ChapelTypeType.tp_flags = Py_TPFLAGS_BASETYPE;
   ChapelTypeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  ChapelTypeType.tp_methods = ChapelTypeObject_methods;
+  ChapelTypeType.tp_methods = (PyMethodDef*) PerTypeMethods<ChapelTypeObject>::methods;
   ChapelTypeType.tp_init = (initproc) ChapelTypeObject_init;
   ChapelTypeType.tp_new = PyType_GenericNew;
   ChapelTypeType.tp_str = (reprfunc) ChapelTypeObject_str;
@@ -306,10 +302,6 @@ PyObject* ChapelTypeObject_str(ChapelTypeObject* self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 
-static PyMethodDef ParamObject_methods[] = {
-  {NULL, NULL, 0, NULL} /* Sentinel */
-};
-
 PyTypeObject ParamType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -321,7 +313,7 @@ void setupParamType() {
   ParamType.tp_dealloc = (destructor) ParamObject_dealloc;
   ParamType.tp_flags = Py_TPFLAGS_BASETYPE;
   ParamType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  ParamType.tp_methods = ParamObject_methods;
+  ParamType.tp_methods = (PyMethodDef*) PerTypeMethods<ParamObject>::methods;
   ParamType.tp_init = (initproc) ParamObject_init;
   ParamType.tp_new = PyType_GenericNew;
   ParamType.tp_str = (reprfunc) ParamObject_str;
