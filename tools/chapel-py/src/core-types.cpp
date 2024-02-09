@@ -112,7 +112,6 @@ PyObject* ContextObject__get_pyi_file(PyObject* self, PyObject* args) {
   // these get replaced with `scripts/generate-pyi.py`
   ss << "class ErrorManager: pass" << std::endl << std::endl;
   ss << "class Error: pass" << std::endl << std::endl;
-  ss << "class Scope: pass" << std::endl << std::endl;
   ss << "class AstNode: pass" << std::endl << std::endl;
   ss << "class ChapelType: pass" << std::endl << std::endl;
   ss << "class Param: pass" << std::endl << std::endl;
@@ -208,7 +207,7 @@ void setupScopeType() {
   ScopeType.tp_dealloc = (destructor) ScopeObject_dealloc;
   ScopeType.tp_flags = Py_TPFLAGS_DEFAULT;
   ScopeType.tp_doc = PyDoc_STR("A scope in the Chapel program, such as a block.");
-  ScopeType.tp_methods = ScopeObject_methods;
+  ScopeType.tp_methods = (PyMethodDef*) PerTypeMethods<ScopeObject>::methods;
   ScopeType.tp_init = (initproc) ScopeObject_init;
   ScopeType.tp_new = PyType_GenericNew;
 }
@@ -227,26 +226,6 @@ int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs) {
 void ScopeObject_dealloc(ScopeObject* self) {
   Py_XDECREF(self->contextObject);
   Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyObject* ScopeObject_used_imported_modules(ScopeObject* self, PyObject* Py_UNUSED(args)) {
-  auto contextObject = ((ContextObject*) self->contextObject);
-  auto context = &contextObject->context_;
-  auto& moduleIds = resolution::findUsedImportedModules(context, self->scope);
-
-  // Dyno sometimes reports duplicate IDs; ignore them using a set.
-  std::set<ID> reportedIds;
-  PyObject* modulesList = PyList_New(0);
-  for (size_t i = 0; i < moduleIds.size(); i++) {
-    auto& id = moduleIds[i];
-    if (!reportedIds.insert(id).second) continue;
-
-    auto ast = parsing::idToAst(context, id);
-    PyObject* node = wrapAstNode(contextObject, ast);
-    PyList_Append(modulesList, node);
-  }
-
-  return modulesList;
 }
 
 static PyMethodDef AstNodeObject_methods[] = {

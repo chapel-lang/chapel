@@ -76,6 +76,11 @@ struct ScopeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::resolution::Scope* scope;
+
+  static constexpr const char* Name = "Scope";
+
+  const chpl::resolution::Scope* unwrap() { return scope; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
 };
 extern PyTypeObject ScopeType;
 void setupScopeType();
