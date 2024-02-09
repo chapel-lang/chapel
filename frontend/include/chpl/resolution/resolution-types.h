@@ -893,6 +893,8 @@ struct CandidatesAndForwardingInfo {
   std::vector<types::QualifiedType> forwardingInfo;
 
  public:
+  using const_iterator = std::vector<const TypedFnSignature*>::const_iterator;
+
   // Add a candidate and optional forwarding info.
   void addCandidate(const TypedFnSignature* candidate,
                     const types::QualifiedType* forwardingTo = nullptr) {
@@ -929,7 +931,7 @@ struct CandidatesAndForwardingInfo {
   const TypedFnSignature* get(size_t i) const { return candidates[i]; }
 
   // Get the forwarding info at the provided index with no bounds checking.
-  types::QualifiedType getForwardingInfo(size_t i) const {
+  const types::QualifiedType& getForwardingInfo(size_t i) const {
     return forwardingInfo[i];
   }
 
@@ -943,10 +945,10 @@ struct CandidatesAndForwardingInfo {
   bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
 
   // Iterator over contained candidates
-  std::vector<const TypedFnSignature*>::const_iterator begin() const {
+  const_iterator begin() const {
     return candidates.begin();
   }
-  std::vector<const TypedFnSignature*>::const_iterator end() const {
+  const_iterator end() const {
     return candidates.end();
   }
 
@@ -958,12 +960,8 @@ struct CandidatesAndForwardingInfo {
   }
   size_t hash() const { return chpl::hash(candidates, forwardingInfo); }
   void mark(Context* context) const {
-    for (const auto& candidate : candidates) {
-      context->markPointer(candidate);
-    }
-    for (const auto& info : forwardingInfo) {
-      info.mark(context);
-    }
+    chpl::mark<decltype(candidates)>{}(context, candidates);
+    chpl::mark<decltype(forwardingInfo)>{}(context, forwardingInfo);
   }
   bool operator==(const CandidatesAndForwardingInfo& other) const {
     return candidates == other.candidates &&
