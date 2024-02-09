@@ -3858,7 +3858,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   resolveNormalCallAdjustAssign(call);
 
   if (isGenericRecordInit(call) == true) {
-    retval = resolveInitializer(call);
+    const bool emitErrors = checkState != CHECK_CALLABLE_ONLY;
+    retval = resolveInitializer(call, emitErrors);
   } else if (info.isWellFormed(call) == true) {
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);

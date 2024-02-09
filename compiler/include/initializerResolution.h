@@ -35,7 +35,7 @@ class CallExpr;
 class FnSymbol;
 class Type;
 
-FnSymbol* resolveInitializer(CallExpr* call);
+FnSymbol* resolveInitializer(CallExpr* call, bool emitErrors);
 void resolveNewInitializer(CallExpr* call, Type* manager = NULL);
 
 #endif
