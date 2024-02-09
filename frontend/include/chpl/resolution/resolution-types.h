@@ -888,98 +888,91 @@ class TypedFnSignature {
 // Container for resolution candidates and (if applicable) their correponding
 // forwarding-to types.
 struct CandidatesAndForwardingInfo {
-  private:
+ private:
   std::vector<const TypedFnSignature*> candidates;
   std::vector<types::QualifiedType> forwardingInfo;
 
-  public:
-   // Add a candidate and optional forwarding info.
-   void addCandidate(const TypedFnSignature* candidate,
-                     const types::QualifiedType* forwardingTo = nullptr) {
-     candidates.push_back(candidate);
-     if (forwardingTo) {
-       forwardingInfo.push_back(*forwardingTo);
-     }
-   }
+ public:
+  // Add a candidate and optional forwarding info.
+  void addCandidate(const TypedFnSignature* candidate,
+                    const types::QualifiedType* forwardingTo = nullptr) {
+    candidates.push_back(candidate);
+    if (forwardingTo) {
+      forwardingInfo.push_back(*forwardingTo);
+    }
+  }
 
-   // Compute and fill in forwarding info for a range of newly-added candidates.
-   void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
-     types::QualifiedType forwardingReceiverActualType = fci.calledType();
-     forwardingInfo.resize(start);
-     for (size_t i = start; i < candidates.size(); i++) {
-       forwardingInfo.push_back(forwardingReceiverActualType);
-     }
-   }
+  // Compute and fill in forwarding info for a range of newly-added candidates.
+  void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
+    types::QualifiedType forwardingReceiverActualType = fci.calledType();
+    forwardingInfo.resize(start);
+    for (size_t i = start; i < candidates.size(); i++) {
+      forwardingInfo.push_back(forwardingReceiverActualType);
+    }
+  }
 
-   // Move the contents of another container into this one, clearing out the
-   // other.
-   void takeFromOther(CandidatesAndForwardingInfo& other) {
-     candidates.insert(candidates.end(),
-                       std::make_move_iterator(other.candidates.begin()),
-                       std::make_move_iterator(other.candidates.end()));
-     forwardingInfo.insert(
-         forwardingInfo.end(),
-         std::make_move_iterator(other.forwardingInfo.begin()),
-         std::make_move_iterator(other.forwardingInfo.end()));
-     other.candidates.clear();
-     other.forwardingInfo.clear();
-   }
+  // Move the contents of another container into this one, clearing out the
+  // other.
+  void takeFromOther(CandidatesAndForwardingInfo& other) {
+    candidates.insert(candidates.end(),
+                      std::make_move_iterator(other.candidates.begin()),
+                      std::make_move_iterator(other.candidates.end()));
+    forwardingInfo.insert(forwardingInfo.end(),
+                          std::make_move_iterator(other.forwardingInfo.begin()),
+                          std::make_move_iterator(other.forwardingInfo.end()));
+    other.candidates.clear();
+    other.forwardingInfo.clear();
+  }
 
-   // Get the candidate at the provided index with no bounds checking.
-   const TypedFnSignature* get(size_t i) const { return candidates[i]; }
+  // Get the candidate at the provided index with no bounds checking.
+  const TypedFnSignature* get(size_t i) const { return candidates[i]; }
 
-   // Get the forwarding info at the provided index with no bounds checking.
-   types::QualifiedType getForwardingInfo(size_t i) const { return forwardingInfo[i]; }
+  // Get the forwarding info at the provided index with no bounds checking.
+  types::QualifiedType getForwardingInfo(size_t i) const {
+    return forwardingInfo[i];
+  }
 
-   // Check if any candidates are present
-   bool empty() const {
-     return candidates.empty();
-   }
+  // Check if any candidates are present
+  bool empty() const { return candidates.empty(); }
 
-   // Get the number of candidates
-   size_t size() const {
-     return candidates.size();
-   }
+  // Get the number of candidates
+  size_t size() const { return candidates.size(); }
 
-   // Return true if this container stores any forwarding info
-   bool hasForwardingInfo() const {
-     return !forwardingInfo.empty();
-   }
+  // Return true if this container stores any forwarding info
+  bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
 
-   // Iterator over contained candidates
-   std::vector<const TypedFnSignature*>::const_iterator begin() const {
-     return candidates.begin();
-   }
-   std::vector<const TypedFnSignature*>::const_iterator end() const {
-     return candidates.end();
-   }
+  // Iterator over contained candidates
+  std::vector<const TypedFnSignature*>::const_iterator begin() const {
+    return candidates.begin();
+  }
+  std::vector<const TypedFnSignature*>::const_iterator end() const {
+    return candidates.end();
+  }
 
-   /* Query system supporting functions */
+  /* Query system supporting functions */
 
-   static bool update(CandidatesAndForwardingInfo& keep,
-                      CandidatesAndForwardingInfo& addin) {
-     return defaultUpdate(keep, addin);
-   }
-   size_t hash() const {
-     return chpl::hash(candidates, forwardingInfo);
-   }
-   void mark(Context* context) const {
-     for (const auto& candidate : candidates) {
-       context->markPointer(candidate);
-     }
-     for (const auto& info : forwardingInfo) {
-       info.mark(context);
-     }
-   }
-   bool operator==(const CandidatesAndForwardingInfo& other) const {
-     return candidates == other.candidates &&
-            forwardingInfo == other.forwardingInfo;
-   }
-   void swap(CandidatesAndForwardingInfo& other) {
-     std::swap(candidates, other.candidates);
-     std::swap(forwardingInfo, other.forwardingInfo);
-   }
-   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+  static bool update(CandidatesAndForwardingInfo& keep,
+                     CandidatesAndForwardingInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  size_t hash() const { return chpl::hash(candidates, forwardingInfo); }
+  void mark(Context* context) const {
+    for (const auto& candidate : candidates) {
+      context->markPointer(candidate);
+    }
+    for (const auto& info : forwardingInfo) {
+      info.mark(context);
+    }
+  }
+  bool operator==(const CandidatesAndForwardingInfo& other) const {
+    return candidates == other.candidates &&
+           forwardingInfo == other.forwardingInfo;
+  }
+  void swap(CandidatesAndForwardingInfo& other) {
+    std::swap(candidates, other.candidates);
+    std::swap(forwardingInfo, other.forwardingInfo);
+  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /**
