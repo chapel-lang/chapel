@@ -3479,12 +3479,34 @@ void Resolver::exit(const Dot* dot) {
 
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
 
-  /* bool resolvingCalledDot = (inLeafCall && */
-  /*                            dot == inLeafCall->calledExpression()); */
-  /* if (resolvingCalledDot && !scopeResolveOnly) { */
-  /*   // we will handle it when resolving the FnCall */
-  /*   return; */
-  /* } */
+  bool resolvingCalledDot = (inLeafCall &&
+                             dot == inLeafCall->calledExpression());
+  if (resolvingCalledDot && !scopeResolveOnly) {
+    // We will handle it when resolving the FnCall.
+
+    gdbShouldBreakHere();
+    // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
+    // it later if needed.
+    if (!receiver.type().isUnknown() && receiver.type().type() &&
+        receiver.type().type()->isCompositeType()) {
+      std::vector<CallInfoActual> actuals;
+      actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
+      auto ci = CallInfo(/* name */ dot->field(),
+                         /* calledType */ QualifiedType(),
+                         /* isMethodCall */ true,
+                         /* hasQuestionArg */ false,
+                         /* isParenless */ true, actuals);
+      auto inScope = scopeStack.back();
+      auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+      if (!c.mostSpecific().isEmpty()) {
+        // save the most specific candidates in the resolution result for the id
+        ResolvedExpression& r = byPostorder.byAst(dot);
+        handleResolvedCall(r, dot, ci, c);
+      }
+    }
+
+    return;
+  }
 
   if (dot->field() == USTR("type")) {
     const Type* receiverType;
@@ -3611,11 +3633,9 @@ void Resolver::exit(const Dot* dot) {
                       actuals);
   auto inScope = scopeStack.back();
   auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
-  if (!c.mostSpecific().isEmpty()) {
-    // save the most specific candidates in the resolution result for the id
-    ResolvedExpression& r = byPostorder.byAst(dot);
-    handleResolvedCall(r, dot, ci, c);
-  }
+  // save the most specific candidates in the resolution result for the id
+  ResolvedExpression& r = byPostorder.byAst(dot);
+  handleResolvedCall(r, dot, ci, c);
 }
 
 bool Resolver::enter(const New* node) {
