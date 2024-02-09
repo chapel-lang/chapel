@@ -147,19 +147,8 @@ CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && 
 # don't know how to do that
 # Also, if a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
-CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
-
-ifeq ($(GNU_GPP_MAJOR_VERSION),4)
-  CXX_STD   := -std=gnu++11
-  CXX11_STD := -std=gnu++11
-endif
 
 COMP_CFLAGS += $(C_STD)
-ifneq ($(CHPL_MAKE_LLVM_VERSION),16)
-COMP_CXXFLAGS += $(CXX14_STD)
-else
-# get the C++ standard flag from CMake
-endif
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)
@@ -297,6 +286,15 @@ WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
 #
+# Avoid errors about -Wmismatched-new-delete when using GCC 11+ because they
+# occur in LLVM headers.  We would like to know when this occurs, so don't turn
+# off the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 11; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=mismatched-new-delete
+endif
+
+#
 # Avoid errors about uninitialized memory because they occur in LLVM headers
 # (should be fixed in LLVM 15 though).
 # We would like to know when this occurs, though, so don't turn off
@@ -357,24 +355,6 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-dangling-reference
 endif
 
-#
-# 2016/03/28: Help to protect the Chapel compiler from a partially
-# characterized GCC optimizer regression when the compiler is being
-# compiled with gcc 5.X.
-#
-# 2017-06-14: Regression apparently fixed since gcc 5.X.  Turning
-# off VRP interferes with operation of gcc 7, especially static
-# analysis.  The test below was "-ge 5", now changing it to "-eq 5".
-#
-# Note that 0 means "SUCCESS" rather than "false".
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
-
-ifeq ($(OPTIMIZE),1)
-COMP_CFLAGS += -fno-tree-vrp
-COMP_CXXFLAGS += -fno-tree-vrp
-endif
-
-endif
 
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)

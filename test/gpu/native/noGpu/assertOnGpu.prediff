@@ -1,4 +1,5 @@
 #!/bin/sh
 
-sed -i -e 's/chpl:[[:digit:]]\+:/chpl:X:/' $2
-
+if sed -e 's/chpl:[[:digit:]][[:digit:]]*:/chpl:X:/' $2 >$2.tmp; then
+    mv $2.tmp $2
+fi

@@ -24,7 +24,7 @@ for using Chapel:
   * You have access to standard C and C++ compilers.
 
     * Building the Chapel compiler and bundled components requires
-      C++14 and one of the following:
+      C++17 and one of the following:
 
       * GCC 7.1 or newer
 
@@ -43,8 +43,6 @@ for using Chapel:
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`).
-
-     * Using the LLVM backend with LLVM 16 or newer requires C++17 support.
 
 In addition, several optional components have additional requirements:
 
