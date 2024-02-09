@@ -2313,35 +2313,60 @@ module ChapelArray {
     }
   }
 
-  pragma "find user line"
-  inline proc chpl__uncheckedArrayTransfer(ref a, b, param kind) {
+  private proc chpl__staticCheckShortArrayTransfer(a, b) param {
+    return isProtoSlice(a) && isProtoSlice(b);
+  }
 
-    if isProtoSlice(a) && isProtoSlice(b) && a.sizeAs(int) < 100 {
-      chpl__transferArray(a, b, kind, alwaysSerialize=true);
+  private inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
+    param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
+    const sizeOk = a.sizeAs(uint) > 100;
+    if localCompilation {
+      return sizeOk;
     }
     else {
-      var done = false;
-      if !chpl__serializeAssignment(a, b) {
-        if chpl__compatibleForBulkTransfer(a, b, kind) {
-          done = chpl__bulkTransferArray(a, b);
-        }
-        else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
-          done = chpl__bulkTransferPtrArray(a, b);
-        }
-        // If we did a bulk transfer, it just bit copied, so need to
-        // run copy initializer still
-        if done {
-          if kind==_tElt.initCopy && !isPODType(a.eltType) {
-            initCopyAfterTransfer(a);
-          } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
-                                         isSubtype(a.eltType, _domain)) {
-            fixEltRuntimeTypesAfterTransfer(a);
-          }
-        }
+      return sizeOk &&
+             __primitive("_wide_get_locale", a) ==
+             __primitive("_wide_get_locale", b);
+    }
+  }
+
+  pragma "find user line"
+  inline proc chpl__uncheckedArrayTransfer(ref a, b, param kind) {
+    if chpl__serializeAssignment(a, b) {
+      chpl__transferArray(a, b, kind);
+    }
+    else if chpl__staticCheckShortArrayTransfer(a, b) &&
+            chpl__dynamicCheckShortArrayTransfer(a, b) {
+      chpl__transferArray(a, b, kind, alwaysSerialize=true);
+    }
+    else if chpl__compatibleForBulkTransfer(a, b, kind) {
+      if chpl__bulkTransferArray(a, b) {
+        chpl__initAfterBulkTransfer(a, kind);
       }
-      if !done {
+      else {
         chpl__transferArray(a, b, kind);
       }
+    }
+    else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
+      if chpl__bulkTransferPtrArray(a, b) {
+        chpl__initAfterBulkTransfer(a, kind);
+      }
+      else {
+        chpl__transferArray(a, b, kind);
+      }
+    }
+    else {
+      chpl__transferArray(a, b, kind);
+
+    }
+  }
+
+  inline proc chpl__initAfterBulkTransfer(ref a, param kind) {
+    if kind==_tElt.initCopy && !isPODType(a.eltType) {
+      initCopyAfterTransfer(a);
+    } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
+        isSubtype(a.eltType, _domain)) {
+      fixEltRuntimeTypesAfterTransfer(a);
     }
   }
 
