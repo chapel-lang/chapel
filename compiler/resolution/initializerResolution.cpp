@@ -338,6 +338,12 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
     USR_PRINT(call, "init resulted in type '%s'", toString(tmp->type));
   }
 
+  if (isRecord(tmp->type)) {
+    if (fWarnUnstable && !fNoConstArgChecks) {
+      call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE, new SymExpr(tmp)));
+    }
+  }
+
   return call;
 }
 
