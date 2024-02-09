@@ -19,7 +19,7 @@ proc testit(seed: int, n: int) {
   afterA = rng.next();
 
   if verbose then writeln("testit ", seed, " ", n, " A");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   for i in 1..n {
     B[i] = rng.next();
   }
@@ -28,7 +28,7 @@ proc testit(seed: int, n: int) {
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " B");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   rng.fill(B);
   checkMatch(A, B);
   afterB = rng.next();
@@ -36,8 +36,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " C");
   B = 0;
-  rng.skipToNth(0);
-  for (i,x) in zip(A.domain, rng.iterate(A.domain)) {
+  rng.skipTo(0);
+  for (i,x) in zip(A.domain, rng.next(A.domain)) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -46,8 +46,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " D");
   B = 0;
-  rng.skipToNth(0);
-  forall (i,x) in zip(A.domain, rng.iterate(A.domain)) with (ref B) {
+  rng.skipTo(0);
+  forall (i,x) in zip(A.domain, rng.next(A.domain)) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -56,8 +56,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " E");
   B = 0;
-  rng.skipToNth(0);
-  for (x,i) in zip(rng.iterate(A.domain), A.domain) {
+  rng.skipTo(0);
+  for (x,i) in zip(rng.next(A.domain), A.domain) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -66,8 +66,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " F");
   B = 0;
-  rng.skipToNth(0);
-  forall (x,i) in zip(rng.iterate(A.domain), A.domain) with (ref B) {
+  rng.skipTo(0);
+  forall (x,i) in zip(rng.next(A.domain), A.domain) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -75,7 +75,7 @@ proc testit(seed: int, n: int) {
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " G");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   for i in 1..n {
     B[i] = rng.next(0, max(uint));
   }
@@ -84,7 +84,7 @@ proc testit(seed: int, n: int) {
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " H");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   rng.fill(B, 0, max(uint));
   checkMatch(A, B);
   afterB = rng.next();
@@ -92,8 +92,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " I");
   B = 0;
-  rng.skipToNth(0);
-  for (i,x) in zip(A.domain, rng.iterate(A.domain, 0, max(uint))) {
+  rng.skipTo(0);
+  for (i,x) in zip(A.domain, rng.next(A.domain, 0, max(uint))) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -102,8 +102,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " J");
   B = 0;
-  rng.skipToNth(0);
-  forall (i,x) in zip(A.domain, rng.iterate(A.domain, 0, max(uint))) with (ref B) {
+  rng.skipTo(0);
+  forall (i,x) in zip(A.domain, rng.next(A.domain, 0, max(uint))) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -112,8 +112,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " K");
   B = 0;
-  rng.skipToNth(0);
-  for (x,i) in zip(rng.iterate(A.domain, 0, max(uint)), A.domain) {
+  rng.skipTo(0);
+  for (x,i) in zip(rng.next(A.domain, 0, max(uint)), A.domain) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -122,8 +122,8 @@ proc testit(seed: int, n: int) {
 
   if verbose then writeln("testit ", seed, " ", n, " L");
   B = 0;
-  rng.skipToNth(0);
-  forall (x,i) in zip(rng.iterate(A.domain, 0, max(uint)), A.domain) with (ref B) {
+  rng.skipTo(0);
+  forall (x,i) in zip(rng.next(A.domain, 0, max(uint)), A.domain) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
@@ -142,29 +142,29 @@ proc testitb(seed: int, n: int, min: uint, max: uint) {
   }
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " A");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   for i in 1..n {
     B[i] = rng.next(min, max);
   }
   checkMatch(A, B);
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " B");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   rng.fill(B, min, max);
   checkMatch(A, B);
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " C");
   B = 0;
-  rng.skipToNth(0);
-  for (i,x) in zip(A.domain, rng.iterate(A.domain, min, max)) {
+  rng.skipTo(0);
+  for (i,x) in zip(A.domain, rng.next(A.domain, min, max)) {
     B[i] = x;
   }
   checkMatch(A, B);
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " D");
   B = 0;
-  rng.skipToNth(0);
-  forall (i,x) in zip(A.domain, rng.iterate(A.domain, min, max)) with (ref B) {
+  rng.skipTo(0);
+  forall (i,x) in zip(A.domain, rng.next(A.domain, min, max)) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
