@@ -53,9 +53,9 @@ coforall loc in Locales with (ref counts) {
       var rs = new randomStream(real, seed);
       const locNPerTask = locN/tasksPerLocale,
             extras = locN%tasksPerLocale;
-      rs.skipToNth(2*(locFirstPt +
-                      tid*locNPerTask + (if tid < extras then tid else extras))
-                   );
+      rs.skipTo(2*(locFirstPt +
+                  tid*locNPerTask + (if tid < extras then tid else extras))
+                );
 
       var count = 0;
       for i in 1..locNPerTask + (tid < extras) do

@@ -2094,7 +2094,7 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
-        // call this.next instead of pcg.iterate to use locking
+        // call this.iterate instead of pcg.iterate to use locking
         forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType)) do
           x = r;
       }
@@ -2103,7 +2103,7 @@ module Random {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
-        // call this.next instead of pcg.iterate to use locking
+        // call this.iterate instead of pcg.iterate to use locking
         forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType,
                                           min, max)) do
           x = r;
