@@ -60,6 +60,21 @@ struct PythonReturnTypeInfo {};
   template <> \
   T_DEFINE_INOUT_TYPE(TYPE, TYPESTR, WRAP, UNWRAP)
 
+namespace detail {
+  template <typename Tuple, size_t idx>
+  static void unwrapArgHelper(ContextObject* context, PyObject* argTup, Tuple& toModify) {
+    using Unwrapper = PythonReturnTypeInfo<typename std::tuple_element<idx, Tuple>::type>;
+    std::get<idx>(toModify) = Unwrapper::unwrap(context, PyTuple_GetItem(argTup, idx));
+  }
+
+  template <typename Tuple, size_t ... Indices>
+  static Tuple unwrapArgsHelper(ContextObject* context, PyObject* argTup, std::index_sequence<Indices...>) {
+    Tuple toReturn;
+    (unwrapArgHelper<Tuple, Indices>(context, argTup, toReturn), ...);
+    return toReturn;
+  }
+}
+
 template <typename T>
 PyObject* wrapVector(ContextObject* CONTEXT, const std::vector<T>& vec) {
   PyObject* toReturn = PyList_New(vec.size());
@@ -80,7 +95,55 @@ std::vector<T> unwrapVector(ContextObject* CONTEXT, PyObject* vec) {
 
 template <typename T>
 std::string vectorTypeString() {
-  return std::string("List[") + PythonReturnTypeInfo<T>::typeString() + "]";
+  return std::string("typing.List[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
+
+template <typename ... Elems, size_t ... Is>
+PyObject* wrapTupleImpl(ContextObject* context, const std::tuple<Elems...>& tup, std::index_sequence<Is...>) {
+  PyObject* tuple = PyTuple_New(sizeof...(Elems));
+
+  ssize_t idx = 0;
+  auto wrapElem = [&idx, tuple, context](const auto& elem) {
+    using T = std::remove_const_t<std::remove_reference_t<decltype(elem)>>;
+    PyTuple_SetItem(tuple, idx++, PythonReturnTypeInfo<T>::wrap(context, elem));
+  };
+
+  (wrapElem(std::get<Is>(tup)), ...);
+  return tuple;
+}
+
+template <typename ... Elems>
+PyObject* wrapTuple(ContextObject* context, const std::tuple<Elems...>& tup) {
+  return wrapTupleImpl<Elems...>(context, tup, std::make_index_sequence<sizeof...(Elems)>());
+}
+
+template <typename ... Elems>
+std::tuple<Elems...> unwrapTuple(ContextObject* context, PyObject* tup) {
+  return detail::unwrapArgsHelper(context, tup, std::make_index_sequence<sizeof...(Elems)>());
+}
+
+template <typename ... Elems, size_t ... Is>
+std::string tupleTypeStringImpl(std::index_sequence<Is...>) {
+  std::string toReturn = "typing.Tuple[";
+
+  bool needsComma = false;
+  auto printElem = [&needsComma, &toReturn](const auto& elem) {
+    using T = std::remove_const_t<std::remove_reference_t<decltype(elem)>>;
+
+    if (needsComma) toReturn += ", ";
+    toReturn += PythonReturnTypeInfo<T>::typeString();
+    needsComma = true;
+  };
+
+  (printElem(std::get<Is>(std::tuple<Elems...>())), ...);
+  toReturn += "]";
+
+  return toReturn;
+}
+
+template <typename ... Elems>
+std::string tupleTypeString() {
+  return tupleTypeStringImpl<Elems...>(std::make_index_sequence<sizeof...(Elems)>());
 }
 
 /* Invoke the DEFINE_INOUT_TYPE macro for each type we want to support.
@@ -101,6 +164,8 @@ DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(
 
 template <typename T>
 T_DEFINE_INOUT_TYPE(std::vector<T>, vectorTypeString<T>(), wrapVector(CONTEXT, TO_WRAP), unwrapVector<T>(CONTEXT, TO_UNWRAP));
+template <typename ... Elems>
+T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
 
 
 /* Specialize for void, but don't include 'wrap' and 'unwrap' methods:
@@ -127,22 +192,9 @@ struct PythonFnHelper<R(Args...)> {
 
   static constexpr int PyArgTag = std::tuple_size<ArgTypeInfo>::value == 0 ? METH_NOARGS : METH_VARARGS;
 
- private:
-  template <typename Tuple, size_t idx>
-  static void unwrapArgHelper(ContextObject* context, PyObject* argTup, Tuple& toModify) {
-    std::get<idx>(toModify) = std::tuple_element<idx, ArgTypeInfo>::type::unwrap(context, PyTuple_GetItem(argTup, idx));
-  }
-
-  template <typename Tuple, size_t ... Indices>
-  static Tuple unwrapArgsHelper(ContextObject* context, PyObject* argTup, std::index_sequence<Indices...>) {
-    Tuple toReturn;
-    (unwrapArgHelper<Tuple, Indices>(context, argTup, toReturn), ...);
-    return toReturn;
-  }
-
  public:
   static std::tuple<Args...> unwrapArgs(ContextObject* context, PyObject* argsTup) {
-    return unwrapArgsHelper<std::tuple<Args...>>(context, argsTup, std::make_index_sequence<sizeof...(Args)>());
+    return detail::unwrapArgsHelper<std::tuple<Args...>>(context, argsTup, std::make_index_sequence<sizeof...(Args)>());
   }
 };
 
