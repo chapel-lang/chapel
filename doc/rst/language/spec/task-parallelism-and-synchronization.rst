@@ -67,7 +67,10 @@ Tasks are considered to be created when execution reaches the start of a
 actually executed depends on the Chapel implementation and run-time
 execution state.
 
-A task is represented as a call to a *task function*, whose body
+Tasks created by ``begin``, ``cobegin``, and ``coforall`` can depend upon
+each other, even if that leads to the program not being serializable.
+
+A task is implemented as a call to a *task function*, whose body
 contains the Chapel code for the task. Variables defined in outer scopes
 are considered to be passed into a task function by default intent,
 unless a different *task intent* is specified explicitly by a
