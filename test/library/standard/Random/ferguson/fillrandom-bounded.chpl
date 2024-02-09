@@ -135,7 +135,7 @@ proc testitb(seed: int, n: int, min: uint, max: uint) {
   var A: [1..n] uint;
   var B: [1..n] uint;
 
-  var rng = new randomStream(seed=seed, eltType=int);
+  var rng = new randomStream(seed=seed, eltType=uint);
   for i in 1..n {
     A[i] = rng.next(min, max);
     assert(min <= A[i] && A[i] <= max);
