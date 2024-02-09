@@ -895,13 +895,9 @@ struct CandidatesAndForwardingInfo {
  public:
   using const_iterator = std::vector<const TypedFnSignature*>::const_iterator;
 
-  // Add a candidate and optional forwarding info.
-  void addCandidate(const TypedFnSignature* candidate,
-                    const types::QualifiedType* forwardingTo = nullptr) {
+  // Add a candidate without forwarding info.
+  void addCandidate(const TypedFnSignature* candidate) {
     candidates.push_back(candidate);
-    if (forwardingTo) {
-      forwardingInfo.push_back(*forwardingTo);
-    }
   }
 
   // Compute and fill in forwarding info for a range of newly-added candidates.
