@@ -634,6 +634,9 @@ CLASS_BEGIN(AggregateDecl)
                IterAdapterBase*, return mkIterPair(node->inheritExprs()))
 CLASS_END(AggregateDecl)
 
+CLASS_BEGIN(Param)
+CLASS_END(Param)
+
 CLASS_BEGIN(BoolParam)
   PLAIN_GETTER(BoolParam, value, "Get the value of this boolean Param",
                bool, return node->value())
@@ -653,6 +656,9 @@ CLASS_BEGIN(StringParam)
   PLAIN_GETTER(StringParam, value, "Get the value of this string Param",
                chpl::UniqueString, return node->value())
 CLASS_END(StringParam)
+
+CLASS_BEGIN(ChapelType)
+CLASS_END(ChapelType)
 
 CLASS_BEGIN(CompositeType)
   PLAIN_GETTER(CompositeType, decl, "Get the chpl::uast::AstNode that declares this CompositeType",

@@ -112,8 +112,6 @@ std::string generatePyiFile() {
   // these get replaced with `scripts/generate-pyi.py`
   ss << "class ErrorManager: pass" << std::endl << std::endl;
   ss << "class Error: pass" << std::endl << std::endl;
-  ss << "class ChapelType: pass" << std::endl << std::endl;
-  ss << "class Param: pass" << std::endl << std::endl;
 
   // Here, use X-macros with the method-tables.h header file to generate
   // printing code for each AST node class. This uses the helper function
@@ -125,14 +123,18 @@ std::string generatePyiFile() {
 
   std::unordered_set<std::string> generated;
 
+  bool printedAnything = false;
+
   #define CLASS_BEGIN(NODE) \
     ss << "class " << NODE##Object::Name; \
+    printedAnything = false; \
     generated.insert(NODE##Object::Name); \
     if (auto parentType = ParentTypeInfo<NODE##Object>::parentTypeObject()) { \
       ss << "(" << parentType->tp_name << ")"; \
     } \
     ss << ":" << std::endl;
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
+    printedAnything = true; \
     ss << "    def " << #NAME << "(self"; \
     printTypedPythonFunctionArgs<PythonFnHelper<TYPEFN>::ArgTypeInfo>(ss, std::make_index_sequence<std::tuple_size<PythonFnHelper<TYPEFN>::ArgTypeInfo>::value>()); \
     ss << ") -> " << PythonFnHelper<TYPEFN>::ReturnTypeInfo::typeString() << ":" << std::endl;\
@@ -141,6 +143,9 @@ std::string generatePyiFile() {
     ss << "        \"\"\"" << std::endl; \
     ss << "        ..." << std::endl << std::endl;
   #define CLASS_END(NODE) \
+    if (!printedAnything) { \
+      ss << "    pass" << std::endl; \
+    } \
     ss << std::endl;
   #include "method-tables.h"
 

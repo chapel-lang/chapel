@@ -122,6 +122,11 @@ struct ChapelTypeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::types::Type* ptr;
+
+  static constexpr const char* Name = "ChapelType";
+
+  const chpl::types::Type* unwrap() { return ptr; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
 };
 extern PyTypeObject ChapelTypeType;
 void setupChapelTypeType();
@@ -134,6 +139,11 @@ struct ParamObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::types::Param* ptr;
+
+  static constexpr const char* Name = "Param";
+
+  const chpl::types::Param* unwrap() { return ptr; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
 };
 extern PyTypeObject ParamType;
 void setupParamType();
