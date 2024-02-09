@@ -102,6 +102,8 @@ struct AstNodeObject {
 extern PyTypeObject AstNodeType;
 void setupAstNodeType();
 
+using QualifiedTypeTuple = std::tuple<const char*, const chpl::types::Type*, const chpl::types::Param*>;
+
 int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs);
 void AstNodeObject_dealloc(AstNodeObject* self);
 PyObject* AstNodeObject_dump(AstNodeObject *self);

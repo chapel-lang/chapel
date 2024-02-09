@@ -87,7 +87,16 @@ CLASS_BEGIN(AstNode)
                chpl::Location, return chpl::parsing::locateAst(context, node))
   PLAIN_GETTER(AstNode, parent, "Get the parent node of this AST node",
                const chpl::uast::AstNode*, return chpl::parsing::parentAst(context, node))
-  METHOD_PROTOTYPE(AstNode, pragmas, "Get the pragmas of this AST node")
+  PLAIN_GETTER(AstNode, pragmas, "Get the pragmas of this AST node",
+               std::set<std::string>,
+
+               std::set<std::string> toReturn;
+               if (auto ag = node->attributeGroup()) {
+                 for (auto p : ag->pragmas()) {
+                   toReturn.insert(pragmatags::pragmaTagToName(p));
+                 }
+               }
+               return toReturn)
   PLAIN_GETTER(AstNode, unique_id, "Get a unique identifier for this AST node",
                std::string,
 
@@ -95,7 +104,15 @@ CLASS_BEGIN(AstNode)
                node->id().stringify(ss, CHPL_SYNTAX);
                return ss.str())
   METHOD_PROTOTYPE(AstNode, scope, "Get the scope for this AST node")
-  METHOD_PROTOTYPE(AstNode, type, "Get the type of this AST node")
+  PLAIN_GETTER(AstNode, type, "Get the type of this AST node, as a 3-tuple of (kind, type, param).",
+               std::optional<QualifiedTypeTuple>,
+
+               auto qt = typeForNode(context, node);
+               if (qt.isUnknown()) {
+                 return {};
+               }
+
+               return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
   PLAIN_GETTER(AstNode, called_fn, "Get the function being invoked by this node",
                const chpl::uast::AstNode*, return calledFnForNode(context, node))
 CLASS_END(AstNode)

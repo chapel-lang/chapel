@@ -266,19 +266,6 @@ PyObject* AstNodeObject_dump(AstNodeObject *self) {
   Py_RETURN_NONE;
 }
 
-PyObject* AstNodeObject_pragmas(PyObject* selfPy, PyObject* unusedArgs) {
-  auto self = (AstNodeObject*) selfPy;
-  PyObject* elms = PySet_New(NULL);
-  auto attrs = self->ptr->attributeGroup();
-  if (attrs) {
-    for (auto p: attrs->pragmas()) {
-      PyObject* s = Py_BuildValue("s", pragmatags::pragmaTagToName(p));
-      PySet_Add(elms, s);
-    }
-  }
-  return elms;
-}
-
 PyObject* AstNodeObject_iter(AstNodeObject *self) {
   return wrapIterPair((ContextObject*) self->contextObject, self->ptr->children());
 }
@@ -298,23 +285,6 @@ PyObject* AstNodeObject_scope(PyObject* selfPy, PyObject* unusedArgs) {
   scopeObject->scope = scope;
 
   return scopeObjectPy;
-}
-
-PyObject* AstNodeObject_type(PyObject* selfPy, PyObject* unusedArgs) {
-  auto self = (AstNodeObject*) selfPy;
-  auto contextObject = (ContextObject*) self->contextObject;
-  auto context = &contextObject->context_;
-
-  auto qt = typeForNode(context, self->ptr);
-  if (qt.isUnknown()) {
-    Py_RETURN_NONE;
-  }
-
-  auto ret = Py_BuildValue("(sOO)", intentToString(qt.kind()),
-                                    wrapType(contextObject, qt.type()),
-                                    wrapParam(contextObject, qt.param()));
-
-  return ret;
 }
 
 static PyMethodDef ChapelTypeObject_methods[] = {
