@@ -244,6 +244,7 @@ struct PythonFnHelper<R(Args...)> {
  public:
   using ReturnTypeInfo = PythonReturnTypeInfo<R>;
   using ArgTypeInfo = std::tuple<PythonReturnTypeInfo<Args>...>;
+  using ReturnType = R;
 
   static constexpr int PyArgTag = std::tuple_size<ArgTypeInfo>::value == 0 ? METH_NOARGS : METH_VARARGS;
 

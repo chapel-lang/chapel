@@ -97,7 +97,7 @@ struct InvokeHelper<void(Args...)> {
     auto context = &contextObject->context_; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
     return InvokeHelper<TYPEFN>::invoke(contextObject, \
-      [node, &context, &args]() { \
+      [node, &context, &args]() -> PythonFnHelper<TYPEFN>::ReturnType { \
         (void) context; \
         BODY; \
       }); \
