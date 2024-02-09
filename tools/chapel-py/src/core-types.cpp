@@ -109,10 +109,6 @@ std::string generatePyiFile() {
 
   ss << "import typing" << std::endl << std::endl;
 
-  // these get replaced with `scripts/generate-pyi.py`
-  ss << "class ErrorManager: pass" << std::endl << std::endl;
-  ss << "class Error: pass" << std::endl << std::endl;
-
   // Here, use X-macros with the method-tables.h header file to generate
   // printing code for each AST node class. This uses the helper function
   // printTypedPythonFunctionArgs (explained in its body) for the arguments.
