@@ -108,6 +108,9 @@ CLASS_BEGIN(ErrorManager)
                Py_INCREF(list);
                return list)
 
-  PLAIN_GETTER(ErrorManager, __exit__, "The context manager 'enter' method for this ErrorManager object",
-               void, (void) node; ((PythonErrorHandler*) context->errorHandler())->popList())
+  METHOD(ErrorManager, __exit__, "The context manager 'enter' method for this ErrorManager object",
+         void(PyObject*, PyObject*, PyObject*),
+
+         (void) node;
+         ((PythonErrorHandler*) context->errorHandler())->popList())
 CLASS_END(ErrorManager)
