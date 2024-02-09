@@ -2411,24 +2411,44 @@ module ChapelArray {
       printf("this is probably not what you want\n");
     }
 
+    inline proc domOrRange {
+      if rank == 1 then
+        return slicingExprs[0];
+      else
+        return {(...slicingExprs)};
+    }
+
     inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
     inline proc _value { return ptrToArr.deref()._value; }
-    inline proc sizeAs(type t) { return ptrToArr.deref().sizeAs(t); }
+    inline proc sizeAs(type t) { return domOrRange.sizeAs(t); }
     inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
+
     iter these() ref {
-      for i in {(...slicingExprs)}.these() {
-        yield ptrToArr.deref()[i];
+      ref arrInst = ptrToArr.deref()._instance;
+      if rank == 1 then {
+        foreach elem in chpl__serialViewIter1D(arrInst, domOrRange) {
+          yield elem;
+        }
+      }
+      else {
+        const viewDomInst = domOrRange._instance;
+        foreach elem in chpl__serialViewIter(arrInst, viewDomInst) {
+          yield elem;
+        }
       }
     }
+
     iter these(param tag: iterKind) where tag==iterKind.leader {
-      for followThis in {(...slicingExprs)}.these(iterKind.leader) {
+      for followThis in domOrRange.these(iterKind.leader) {
         yield followThis;
       }
     }
+
     iter these(param tag: iterKind, followThis) ref where tag==iterKind.follower {
-      for i in {(...slicingExprs)}.these(iterKind.follower, followThis) {
-        yield ptrToArr.deref()[i];
+      ref arr = ptrToArr.deref();
+      foreach i in domOrRange.these(iterKind.follower, followThis) {
+        yield arr[i];
       }
     }
   }
