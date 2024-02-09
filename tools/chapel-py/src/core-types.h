@@ -44,13 +44,6 @@ void setupContextType();
 
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs);
 void ContextObject_dealloc(ContextObject* self);
-PyObject* ContextObject_parse(ContextObject *self, PyObject* args);
-PyObject* ContextObject_set_module_paths(ContextObject *self, PyObject* args);
-PyObject* ContextObject_introspect_parsed_files(ContextObject *self, PyObject* args);
-PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args);
-PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* args);
-PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args);
-PyObject* ContextObject_track_errors(ContextObject *self, PyObject* args);
 
 struct LocationObject {
   PyObject_HEAD
@@ -68,9 +61,6 @@ using LineColumnPair = std::tuple<int, int>;
 
 int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs);
 void LocationObject_dealloc(LocationObject* self);
-PyObject* LocationObject_start(LocationObject *self, PyObject* Py_UNUSED(args));
-PyObject* LocationObject_end(LocationObject *self, PyObject* Py_UNUSED(args));
-PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args));
 
 struct ScopeObject {
   PyObject_HEAD
@@ -87,7 +77,6 @@ void setupScopeType();
 
 int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs);
 void ScopeObject_dealloc(ScopeObject* self);
-PyObject* ScopeObject_used_imported_modules(ScopeObject *self, PyObject* Py_UNUSED(args));
 
 struct AstNodeObject {
   PyObject_HEAD
@@ -106,17 +95,7 @@ using QualifiedTypeTuple = std::tuple<const char*, const chpl::types::Type*, con
 
 int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs);
 void AstNodeObject_dealloc(AstNodeObject* self);
-PyObject* AstNodeObject_dump(AstNodeObject *self);
-PyObject* AstNodeObject_tag(AstNodeObject *self);
-PyObject* AstNodeObject_unique_id(AstNodeObject *self);
-PyObject* AstNodeObject_attribute_group(AstNodeObject *self);
-PyObject* AstNodeObject_pragmas(AstNodeObject *self);
-PyObject* AstNodeObject_parent(AstNodeObject* self);
 PyObject* AstNodeObject_iter(AstNodeObject *self);
-PyObject* AstNodeObject_location(AstNodeObject *self);
-PyObject* AstNodeObject_scope(AstNodeObject *self);
-PyObject* AstNodeObject_type(AstNodeObject *self);
-PyObject* AstNodeObject_called_fn(AstNodeObject *self);
 
 struct ChapelTypeObject {
   PyObject_HEAD
