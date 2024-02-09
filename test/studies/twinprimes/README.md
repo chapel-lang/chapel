@@ -1,3 +1,6 @@
+Twin Primes SSOZ Port
+=====================
+
 This directory contains files related to a quick port I did of Jabari
 Zakiya's 'twinprimes_ssoz' computation from C++ and Crystal to Chapel.
 
@@ -29,6 +32,14 @@ Zakiya's 'twinprimes_ssoz' computation from C++ and Crystal to Chapel.
   - some TODOs:
     - consider using a distributed domain to deal out the work (may reduce
       task startup communication or have benefits w.r.t. parallel overheads)
+
+* `twinprimes_ssoz-forall.chpl`: This is a shared-memory variation on
+  `twinprimes_ssoz.chpl that uses a 'forall' loop rather than a
+  'coforall' loop.  In my simple studies, the performance difference
+  between the two was negligible and the complexity of this one was
+  slightly higher.  However, as thread counts vary, the performance
+  characteristics could change. And this would be a good foundation
+  for a distributed-memory version based on distributed domains.
 
 * `*.good`: These are files containing expected output at various
   problem sizes for use in testing
