@@ -71,7 +71,7 @@ module Treap {
   */
   @chpldoc.nodoc
   proc _random(): int {
-    return _treapRandomStream.getNext();
+    return _treapRandomStream.next();
   }
 
   @chpldoc.nodoc

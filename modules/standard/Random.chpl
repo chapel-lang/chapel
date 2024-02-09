@@ -959,7 +959,7 @@ module Random {
     proc ref choose(d: domain(?)): d.idxType
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
-      return d.orderToIndex(this.getNext(0:this.eltType, (d.size-1):this.eltType));
+      return d.orderToIndex(this.next(0:this.eltType, (d.size-1):this.eltType));
     }
 
     /*

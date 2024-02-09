@@ -16,8 +16,8 @@ proc main() {
   var r = new randomStream(int);
 
   for i in 1..count {
-    var x = r.getNext(1, 20000);
-    var y = r.getNext(1, 20000);
+    var x = r.next(1, 20000);
+    var y = r.next(1, 20000);
 
     var s1 = get_str_with_concat(x, y);
     var s2 = get_str_with_join(x, y);

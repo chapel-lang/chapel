@@ -55,7 +55,7 @@ proc main(){
   }
 
   for (x, y) in computationDomain do
-     space[0, x, y] = generator.getNext();
+     space[0, x, y] = generator.next();
 
   // because the serial method does not give us read and write buffers
   // we must make our own
@@ -107,7 +107,7 @@ proc verifyResult(ref space: [] Cell, computationalDomain: domain(2),
   var generator = new randomStream( real, globalSeed );
 
   for (x, y) in computationalDomain do
-     space[0, x, y] = generator.getNext();
+     space[0, x, y] = generator.next();
 
   var read = 0;
   var write = 1;

@@ -27,7 +27,7 @@ coforall tid in 0..#tasks with (ref counts) {
 
   var count = 0;
   for i in 1..nPerTask + (tid < extras) do
-    count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
+    count += (rs.next()**2 + rs.next()**2) <= 1.0;
 
   counts[tid] = count;
 }

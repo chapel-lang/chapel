@@ -59,7 +59,7 @@ coforall loc in Locales with (ref counts) {
 
       var count = 0;
       for i in 1..locNPerTask + (tid < extras) do
-        count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
+        count += (rs.next()**2 + rs.next()**2) <= 1.0;
 
       locCounts[tid] = count;
     }
