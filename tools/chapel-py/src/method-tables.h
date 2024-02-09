@@ -76,6 +76,30 @@
 // Inside each method table, methods should be listed in alphabetical order
 //
 
+CLASS_BEGIN(AstNode)
+  PLAIN_GETTER(AstNode, dump, "Dump the internal representation of the given AST node",
+               void, node->dump())
+  PLAIN_GETTER(AstNode, tag, "Get a string representation of the AST node's type",
+               const char*, return chpl::uast::asttags::tagToString(node->tag()))
+  PLAIN_GETTER(AstNode, attribute_group, "Get the attribute group, if any, associated with this node",
+               const chpl::uast::AstNode*, return node->attributeGroup())
+  PLAIN_GETTER(AstNode, location, "Get the location of this AST node in its file",
+               chpl::Location, return chpl::parsing::locateAst(context, node))
+  PLAIN_GETTER(AstNode, parent, "Get the parent node of this AST node",
+               const chpl::uast::AstNode*, return chpl::parsing::parentAst(context, node))
+  METHOD_PROTOTYPE(AstNode, pragmas, "Get the pragmas of this AST node")
+  PLAIN_GETTER(AstNode, unique_id, "Get a unique identifier for this AST node",
+               std::string,
+
+               std::stringstream ss;
+               node->id().stringify(ss, CHPL_SYNTAX);
+               return ss.str())
+  METHOD_PROTOTYPE(AstNode, scope, "Get the scope for this AST node")
+  METHOD_PROTOTYPE(AstNode, type, "Get the type of this AST node")
+  PLAIN_GETTER(AstNode, called_fn, "Get the function being invoked by this node",
+               const chpl::uast::AstNode*, return calledFnForNode(context, node))
+CLASS_END(AstNode)
+
 CLASS_BEGIN(AnonFormal)
   PLAIN_GETTER(AnonFormal, intent, "Get the intent for this AnonFormal node",
                const char*, return intentToString(node->intent()))

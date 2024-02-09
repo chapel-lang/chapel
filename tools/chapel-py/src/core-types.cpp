@@ -228,20 +228,6 @@ void ScopeObject_dealloc(ScopeObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-static PyMethodDef AstNodeObject_methods[] = {
-  {"dump", (PyCFunction) AstNodeObject_dump, METH_NOARGS, "Dump the internal representation of the given AST node"},
-  {"tag", (PyCFunction) AstNodeObject_tag, METH_NOARGS, "Get a string representation of the AST node's type"},
-  {"attribute_group", (PyCFunction) AstNodeObject_attribute_group, METH_NOARGS, "Get the attribute group, if any, associated with this node"},
-  {"location", (PyCFunction) AstNodeObject_location, METH_NOARGS, "Get the location of this AST node in its file"},
-  {"parent", (PyCFunction) AstNodeObject_parent, METH_NOARGS, "Get the parent node of this AST node"},
-  {"pragmas", (PyCFunction) AstNodeObject_pragmas, METH_NOARGS, "Get the pragmas of this AST node"},
-  {"unique_id", (PyCFunction) AstNodeObject_unique_id, METH_NOARGS, "Get a unique identifier for this AST node"},
-  {"scope", (PyCFunction) AstNodeObject_scope, METH_NOARGS, "Get the scope for this AST node"},
-  {"type", (PyCFunction) AstNodeObject_type, METH_NOARGS, "Get the type of this AST node"},
-  {"called_fn", (PyCFunction) AstNodeObject_called_fn, METH_NOARGS, "Get the function being invoked by this node"},
-  {NULL, NULL, 0, NULL} /* Sentinel */
-};
-
 PyTypeObject AstNodeType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -254,7 +240,7 @@ void setupAstNodeType() {
   AstNodeType.tp_flags = Py_TPFLAGS_BASETYPE;
   AstNodeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
   AstNodeType.tp_iter = (getiterfunc) AstNodeObject_iter;
-  AstNodeType.tp_methods = AstNodeObject_methods;
+  AstNodeType.tp_methods = (PyMethodDef*) PerTypeMethods<AstNodeObject>::methods;
   AstNodeType.tp_init = (initproc) AstNodeObject_init;
   AstNodeType.tp_new = PyType_GenericNew;
 }
@@ -280,25 +266,8 @@ PyObject* AstNodeObject_dump(AstNodeObject *self) {
   Py_RETURN_NONE;
 }
 
-PyObject* AstNodeObject_tag(AstNodeObject *self) {
-  const char* nodeType = asttags::tagToString(self->ptr->tag());
-  return Py_BuildValue("s", nodeType);
-}
-
-PyObject* AstNodeObject_unique_id(AstNodeObject *self) {
-  std::stringstream ss;
-  self->ptr->id().stringify(ss, CHPL_SYNTAX);
-  auto uniqueID = ss.str();
-  return Py_BuildValue("s", uniqueID.c_str());
-}
-
-
-PyObject* AstNodeObject_attribute_group(AstNodeObject *self) {
-  return wrapAstNode((ContextObject*) self->contextObject,
-                     self->ptr->attributeGroup());
-}
-
-PyObject* AstNodeObject_pragmas(AstNodeObject *self) {
+PyObject* AstNodeObject_pragmas(PyObject* selfPy, PyObject* unusedArgs) {
+  auto self = (AstNodeObject*) selfPy;
   PyObject* elms = PySet_New(NULL);
   auto attrs = self->ptr->attributeGroup();
   if (attrs) {
@@ -310,23 +279,12 @@ PyObject* AstNodeObject_pragmas(AstNodeObject *self) {
   return elms;
 }
 
-PyObject* AstNodeObject_parent(AstNodeObject* self) {
-  auto contextObject = (ContextObject*) self->contextObject;
-  auto context = &contextObject->context_;
-
-  return wrapAstNode(contextObject, parsing::parentAst(context, self->ptr));
-}
-
 PyObject* AstNodeObject_iter(AstNodeObject *self) {
   return wrapIterPair((ContextObject*) self->contextObject, self->ptr->children());
 }
 
-PyObject* AstNodeObject_location(AstNodeObject *self) {
-  auto context = &((ContextObject*) self->contextObject)->context_;
-  return wrapLocation(parsing::locateAst(context, self->ptr));
-}
-
-PyObject* AstNodeObject_scope(AstNodeObject *self) {
+PyObject* AstNodeObject_scope(PyObject* selfPy, PyObject* unusedArgs) {
+  auto self = (AstNodeObject*) selfPy;
   PyObject* args = Py_BuildValue("(O)", self->contextObject);
   auto context = &((ContextObject*) self->contextObject)->context_;
   auto scope = resolution::scopeForId(context, self->ptr->id());
@@ -342,7 +300,8 @@ PyObject* AstNodeObject_scope(AstNodeObject *self) {
   return scopeObjectPy;
 }
 
-PyObject* AstNodeObject_type(AstNodeObject *self) {
+PyObject* AstNodeObject_type(PyObject* selfPy, PyObject* unusedArgs) {
+  auto self = (AstNodeObject*) selfPy;
   auto contextObject = (ContextObject*) self->contextObject;
   auto context = &contextObject->context_;
 
@@ -356,13 +315,6 @@ PyObject* AstNodeObject_type(AstNodeObject *self) {
                                     wrapParam(contextObject, qt.param()));
 
   return ret;
-}
-
-PyObject* AstNodeObject_called_fn(AstNodeObject *self) {
-  auto contextObject = (ContextObject*) self->contextObject;
-  auto context = &contextObject->context_;
-
-  return wrapAstNode(contextObject, calledFnForNode(context, self->ptr));
 }
 
 static PyMethodDef ChapelTypeObject_methods[] = {

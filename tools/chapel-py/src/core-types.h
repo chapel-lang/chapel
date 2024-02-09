@@ -93,6 +93,11 @@ struct AstNodeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::uast::AstNode* ptr;
+
+  static constexpr const char* Name = "AstNode";
+
+  const chpl::uast::AstNode* unwrap() { return ptr; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
 };
 extern PyTypeObject AstNodeType;
 void setupAstNodeType();
