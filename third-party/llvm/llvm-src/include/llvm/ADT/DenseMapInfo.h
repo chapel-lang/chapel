@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace llvm {
@@ -232,6 +233,14 @@ struct DenseMapInfo<std::pair<T, U>> {
                                     SecondInfo::getHashValue(PairVal.second));
   }
 
+  // Expose an additional function intended to be used by other
+  // specializations of DenseMapInfo without needing to know how
+  // to combine hash values manually
+  static unsigned getHashValuePiecewise(const T &First, const U &Second) {
+    return detail::combineHashValue(FirstInfo::getHashValue(First),
+                                    SecondInfo::getHashValue(Second));
+  }
+
   static bool isEqual(const Pair &LHS, const Pair &RHS) {
     return FirstInfo::isEqual(LHS.first, RHS.first) &&
            SecondInfo::isEqual(LHS.second, RHS.second);
@@ -252,7 +261,7 @@ template <typename... Ts> struct DenseMapInfo<std::tuple<Ts...>> {
 
   template <unsigned I>
   static unsigned getHashValueImpl(const Tuple &values, std::false_type) {
-    using EltType = typename std::tuple_element<I, Tuple>::type;
+    using EltType = std::tuple_element_t<I, Tuple>;
     std::integral_constant<bool, I + 1 == sizeof...(Ts)> atEnd;
     return detail::combineHashValue(
         DenseMapInfo<EltType>::getHashValue(std::get<I>(values)),
@@ -271,7 +280,7 @@ template <typename... Ts> struct DenseMapInfo<std::tuple<Ts...>> {
 
   template <unsigned I>
   static bool isEqualImpl(const Tuple &lhs, const Tuple &rhs, std::false_type) {
-    using EltType = typename std::tuple_element<I, Tuple>::type;
+    using EltType = std::tuple_element_t<I, Tuple>;
     std::integral_constant<bool, I + 1 == sizeof...(Ts)> atEnd;
     return DenseMapInfo<EltType>::isEqual(std::get<I>(lhs), std::get<I>(rhs)) &&
            isEqualImpl<I + 1>(lhs, rhs, atEnd);

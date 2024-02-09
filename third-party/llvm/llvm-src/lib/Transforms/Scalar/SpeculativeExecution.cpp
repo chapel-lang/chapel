@@ -152,7 +152,7 @@ bool SpeculativeExecutionLegacyPass::runOnFunction(Function &F) {
 namespace llvm {
 
 bool SpeculativeExecutionPass::runImpl(Function &F, TargetTransformInfo *TTI) {
-  if (OnlyIfDivergentTarget && !TTI->hasBranchDivergence()) {
+  if (OnlyIfDivergentTarget && !TTI->hasBranchDivergence(&F)) {
     LLVM_DEBUG(dbgs() << "Not running SpeculativeExecution because "
                          "TTI->hasBranchDivergence() is false.\n");
     return false;
@@ -252,7 +252,7 @@ static InstructionCost ComputeSpeculationCost(const Instruction *I,
     case Instruction::ShuffleVector:
     case Instruction::ExtractValue:
     case Instruction::InsertValue:
-      return TTI.getUserCost(I, TargetTransformInfo::TCK_SizeAndLatency);
+      return TTI.getInstructionCost(I, TargetTransformInfo::TCK_SizeAndLatency);
 
     default:
       return InstructionCost::getInvalid(); // Disallow anything not explicitly

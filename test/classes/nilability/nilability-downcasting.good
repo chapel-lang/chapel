@@ -44,25 +44,45 @@ nuq:borrowed Child?
 borrowed Child? nil
 
 casts to unmanaged Child
+cb:unmanaged Child
+unmanaged Child {p = 1, c = 2}
+cbq:unmanaged Child
+unmanaged Child {p = 1, c = 2}
 cu:unmanaged Child
 unmanaged Child {p = 1, c = 2}
 cuq:unmanaged Child
 unmanaged Child {p = 1, c = 2}
+pb:unmanaged Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+pbq:unmanaged Child
+ClassCastError: cannot cast class to type - runtime types not compatible
 pu:unmanaged Child
 ClassCastError: cannot cast class to type - runtime types not compatible
 puq:unmanaged Child
 ClassCastError: cannot cast class to type - runtime types not compatible
+nbq:unmanaged Child
+NilClassError: cannot convert nil class to non nilable type
 nuq:unmanaged Child
 NilClassError: cannot convert nil class to non nilable type
 
 casts to unmanaged Child?
+cb:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
+cbq:unmanaged Child?
+unmanaged Child? {p = 1, c = 2}
 cu:unmanaged Child?
 unmanaged Child? {p = 1, c = 2}
 cuq:unmanaged Child?
 unmanaged Child? {p = 1, c = 2}
+pb:unmanaged Child?
+unmanaged Child? nil
+pbq:unmanaged Child?
+unmanaged Child? nil
 pu:unmanaged Child?
 unmanaged Child? nil
 puq:unmanaged Child?
+unmanaged Child? nil
+nbq:unmanaged Child?
 unmanaged Child? nil
 nuq:unmanaged Child?
 unmanaged Child? nil

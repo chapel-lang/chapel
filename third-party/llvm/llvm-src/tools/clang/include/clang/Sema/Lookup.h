@@ -26,10 +26,10 @@
 #include "clang/Basic/Specifiers.h"
 #include "clang/Sema/Sema.h"
 #include "llvm/ADT/MapVector.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/Casting.h"
 #include <cassert>
+#include <optional>
 #include <utility>
 
 namespace clang {
@@ -507,7 +507,7 @@ public:
         Paths = nullptr;
       }
     } else {
-      llvm::Optional<AmbiguityKind> SavedAK;
+      std::optional<AmbiguityKind> SavedAK;
       bool WasAmbiguous = false;
       if (ResultKind == Ambiguous) {
         SavedAK = Ambiguity;
@@ -656,6 +656,15 @@ public:
           CalledDone(F.CalledDone) {
       F.CalledDone = true;
     }
+
+    // The move assignment operator is defined as deleted pending
+    // further motivation.
+    Filter &operator=(Filter &&) = delete;
+
+    // The copy constrcutor and copy assignment operator is defined as deleted
+    // pending further motivation.
+    Filter(const Filter &) = delete;
+    Filter &operator=(const Filter &) = delete;
 
     ~Filter() {
       assert(CalledDone &&

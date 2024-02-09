@@ -51,8 +51,8 @@ CSKYTargetLowering::CSKYTargetLowering(const TargetMachine &TM,
       addRegisterClass(MVT::f64, &CSKY::FPR64RegClass);
   }
 
-  setOperationAction(ISD::ADDCARRY, MVT::i32, Legal);
-  setOperationAction(ISD::SUBCARRY, MVT::i32, Legal);
+  setOperationAction(ISD::UADDO_CARRY, MVT::i32, Legal);
+  setOperationAction(ISD::USUBO_CARRY, MVT::i32, Legal);
   setOperationAction(ISD::BITREVERSE, MVT::i32, Legal);
 
   setOperationAction(ISD::SREM, MVT::i32, Expand);
@@ -87,6 +87,9 @@ CSKYTargetLowering::CSKYTargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::ExternalSymbol, MVT::i32, Custom);
   setOperationAction(ISD::GlobalTLSAddress, MVT::i32, Custom);
   setOperationAction(ISD::BlockAddress, MVT::i32, Custom);
+  if (!Subtarget.hasE2()) {
+    setOperationAction(ISD::ConstantPool, MVT::i32, Custom);
+  }
   setOperationAction(ISD::JumpTable, MVT::i32, Custom);
   setOperationAction(ISD::VASTART, MVT::Other, Custom);
 
@@ -113,8 +116,9 @@ CSKYTargetLowering::CSKYTargetLowering(const TargetMachine &TM,
       ISD::SETUGE, ISD::SETULT, ISD::SETULE,
   };
 
-  ISD::NodeType FPOpToExpand[] = {ISD::FSIN, ISD::FCOS, ISD::FSINCOS,
-                                  ISD::FPOW, ISD::FREM, ISD::FCOPYSIGN};
+  ISD::NodeType FPOpToExpand[] = {
+      ISD::FSIN, ISD::FCOS,      ISD::FSINCOS,    ISD::FPOW,
+      ISD::FREM, ISD::FCOPYSIGN, ISD::FP16_TO_FP, ISD::FP_TO_FP16};
 
   if (STI.useHardFloat()) {
 
@@ -133,10 +137,14 @@ CSKYTargetLowering::CSKYTargetLowering(const TargetMachine &TM,
 
     if (STI.hasFPUv2SingleFloat() || STI.hasFPUv3SingleFloat()) {
       setOperationAction(ISD::ConstantFP, MVT::f32, Legal);
+      setLoadExtAction(ISD::EXTLOAD, MVT::f32, MVT::f16, Expand);
+      setTruncStoreAction(MVT::f32, MVT::f16, Expand);
     }
     if (STI.hasFPUv2DoubleFloat() || STI.hasFPUv3DoubleFloat()) {
       setLoadExtAction(ISD::EXTLOAD, MVT::f64, MVT::f32, Expand);
       setTruncStoreAction(MVT::f64, MVT::f32, Expand);
+      setLoadExtAction(ISD::EXTLOAD, MVT::f64, MVT::f16, Expand);
+      setTruncStoreAction(MVT::f64, MVT::f16, Expand);
     }
   }
 
@@ -150,8 +158,7 @@ CSKYTargetLowering::CSKYTargetLowering(const TargetMachine &TM,
   setMaxAtomicSizeInBitsSupported(0);
 
   setStackPointerRegisterToSaveRestore(CSKY::R14);
-  const Align FunctionAlignment(2);
-  setMinFunctionAlignment(FunctionAlignment);
+  setMinFunctionAlignment(Align(2));
   setSchedulingPreference(Sched::Source);
 }
 
@@ -170,6 +177,8 @@ SDValue CSKYTargetLowering::LowerOperation(SDValue Op,
     return LowerJumpTable(Op, DAG);
   case ISD::BlockAddress:
     return LowerBlockAddress(Op, DAG);
+  case ISD::ConstantPool:
+    return LowerConstantPool(Op, DAG);
   case ISD::VASTART:
     return LowerVASTART(Op, DAG);
   case ISD::FRAMEADDR:
@@ -359,7 +368,7 @@ SDValue CSKYTargetLowering::LowerFormalArguments(
     const unsigned XLenInBytes = 4;
     const MVT XLenVT = MVT::i32;
 
-    ArrayRef<MCPhysReg> ArgRegs = makeArrayRef(GPRArgRegs);
+    ArrayRef<MCPhysReg> ArgRegs = ArrayRef(GPRArgRegs);
     unsigned Idx = CCInfo.getFirstUnallocated(ArgRegs);
     const TargetRegisterClass *RC = &CSKY::GPRRegClass;
     MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -374,7 +383,7 @@ SDValue CSKYTargetLowering::LowerFormalArguments(
     // If all registers are allocated, then all varargs must be passed on the
     // stack and we don't need to save any argregs.
     if (ArgRegs.size() == Idx) {
-      VaArgOffset = CCInfo.getNextStackOffset();
+      VaArgOffset = CCInfo.getStackSize();
       VarArgsSaveSize = 0;
     } else {
       VarArgsSaveSize = XLenInBytes * (ArgRegs.size() - Idx);
@@ -527,7 +536,7 @@ SDValue CSKYTargetLowering::LowerCall(CallLoweringInfo &CLI,
                        "site marked musttail");
 
   // Get a count of how many bytes are to be pushed on the stack.
-  unsigned NumBytes = ArgCCInfo.getNextStackOffset();
+  unsigned NumBytes = ArgCCInfo.getStackSize();
 
   // Create local copies for byval args
   SmallVector<SDValue, 8> ByValArgs;
@@ -702,8 +711,7 @@ SDValue CSKYTargetLowering::LowerCall(CallLoweringInfo &CLI,
   Glue = Chain.getValue(1);
 
   // Mark the end of the call, which is glued to the call itself.
-  Chain = DAG.getCALLSEQ_END(Chain, DAG.getConstant(NumBytes, DL, PtrVT, true),
-                             DAG.getConstant(0, DL, PtrVT, true), Glue, DL);
+  Chain = DAG.getCALLSEQ_END(Chain, NumBytes, 0, Glue, DL);
   Glue = Chain.getValue(1);
 
   // Assign locations to each value returned by this call.
@@ -1059,9 +1067,21 @@ SDValue CSKYTargetLowering::getTargetConstantPoolValue(BlockAddressSDNode *N,
                                                        EVT Ty,
                                                        SelectionDAG &DAG,
                                                        unsigned Flags) const {
+  assert(N->getOffset() == 0);
   CSKYConstantPoolValue *CPV = CSKYConstantPoolConstant::Create(
       N->getBlockAddress(), CSKYCP::CPBlockAddress, 0, getModifier(Flags),
       false);
+  return DAG.getTargetConstantPool(CPV, Ty);
+}
+
+SDValue CSKYTargetLowering::getTargetConstantPoolValue(ConstantPoolSDNode *N,
+                                                       EVT Ty,
+                                                       SelectionDAG &DAG,
+                                                       unsigned Flags) const {
+  assert(N->getOffset() == 0);
+  CSKYConstantPoolValue *CPV = CSKYConstantPoolConstant::Create(
+      N->getConstVal(), Type::getInt32Ty(*DAG.getContext()),
+      CSKYCP::CPConstPool, 0, getModifier(Flags), false);
   return DAG.getTargetConstantPool(CPV, Ty);
 }
 
@@ -1088,6 +1108,14 @@ SDValue CSKYTargetLowering::getTargetNode(BlockAddressSDNode *N, SDLoc DL,
                                           unsigned Flags) const {
   return DAG.getTargetBlockAddress(N->getBlockAddress(), Ty, N->getOffset(),
                                    Flags);
+}
+
+SDValue CSKYTargetLowering::getTargetNode(ConstantPoolSDNode *N, SDLoc DL,
+                                          EVT Ty, SelectionDAG &DAG,
+                                          unsigned Flags) const {
+
+  return DAG.getTargetConstantPool(N->getConstVal(), Ty, N->getAlign(),
+                                   N->getOffset(), Flags);
 }
 
 const char *CSKYTargetLowering::getTargetNodeName(unsigned Opcode) const {
@@ -1155,6 +1183,14 @@ SDValue CSKYTargetLowering::LowerJumpTable(SDValue Op,
 SDValue CSKYTargetLowering::LowerBlockAddress(SDValue Op,
                                               SelectionDAG &DAG) const {
   BlockAddressSDNode *N = cast<BlockAddressSDNode>(Op);
+
+  return getAddr(N, DAG);
+}
+
+SDValue CSKYTargetLowering::LowerConstantPool(SDValue Op,
+                                              SelectionDAG &DAG) const {
+  assert(!Subtarget.hasE2());
+  ConstantPoolSDNode *N = cast<ConstantPoolSDNode>(Op);
 
   return getAddr(N, DAG);
 }
@@ -1339,4 +1375,29 @@ SDValue CSKYTargetLowering::getDynamicTLSAddr(GlobalAddressSDNode *N,
   SDValue V = LowerCallTo(CLI).first;
 
   return V;
+}
+
+bool CSKYTargetLowering::decomposeMulByConstant(LLVMContext &Context, EVT VT,
+                                                SDValue C) const {
+  if (!VT.isScalarInteger())
+    return false;
+
+  // Omit if data size exceeds.
+  if (VT.getSizeInBits() > Subtarget.XLen)
+    return false;
+
+  if (auto *ConstNode = dyn_cast<ConstantSDNode>(C.getNode())) {
+    const APInt &Imm = ConstNode->getAPIntValue();
+    // Break MULT to LSLI + ADDU/SUBU.
+    if ((Imm + 1).isPowerOf2() || (Imm - 1).isPowerOf2() ||
+        (1 - Imm).isPowerOf2())
+      return true;
+    // Only break MULT for sub targets without MULT32, since an extra
+    // instruction will be generated against the above 3 cases. We leave it
+    // unchanged on sub targets with MULT32, since not sure it is better.
+    if (!Subtarget.hasE2() && (-1 - Imm).isPowerOf2())
+      return true;
+  }
+
+  return false;
 }

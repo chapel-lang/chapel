@@ -129,6 +129,10 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
 
   gatherType(context, map, "class", AnyClassType::get(context));
+  auto genericBorrowed = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
+  gatherType(context, map, "borrowed", genericBorrowed);
+  auto genericUnmanaged = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
+  gatherType(context, map, "unmanaged", genericUnmanaged);
 
   gatherType(context, map, "c_ptr", CPtrType::get(context));
 

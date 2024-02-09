@@ -37,12 +37,6 @@
         - [ ] Check to see if there are any mentions of these version
               requirements in the tech note and update as needed.
 
-         - [ ] Check public issue #22085, we believe this should be resolved
-              once LLVM adds support for CUDA 12. If LLVM has added support for
-              CUDA 12 and it's resolved remove this checklist item.  If LLVM
-              added support for CUDA 12 and it's not resolved reopen the issue
-              so we can discuss what to do next.
-
     - [ ] Take a moment to think if there are other items that should belong on
           this checklist and add them if appropriate.
 
@@ -54,7 +48,7 @@
 
 // After addressing the checklist items (or creating a GH issue to do so)
 // modify the following const so that this test no longer fails.
-const EXPECTED_LLVM_VERSION = 15;
+const EXPECTED_LLVM_VERSION = 17;
 
 //-----------------------------------------------------------------------------
 

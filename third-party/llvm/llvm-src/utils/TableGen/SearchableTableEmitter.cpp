@@ -19,6 +19,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/TableGen/Error.h"
 #include "llvm/TableGen/Record.h"
+#include "llvm/TableGen/TableGenBackend.h"
 #include <algorithm>
 #include <set>
 #include <string>
@@ -173,6 +174,8 @@ private:
                                      "' lookup method '" + Index.Name +
                                      "', key field '" + Field.Name +
                                      "' of type bits is too large");
+    } else if (isa<BitRecTy>(Field.RecType)) {
+      return "bool";
     } else if (Field.Enum || Field.IsIntrinsic || Field.IsInstruction)
       return "unsigned";
     PrintFatalError(Index.Loc,
@@ -378,7 +381,7 @@ void SearchableTableEmitter::emitLookupFunction(const GenericTable &Table,
   }
 
   if (IsContiguous) {
-    OS << "  auto Table = makeArrayRef(" << IndexName << ");\n";
+    OS << "  auto Table = ArrayRef(" << IndexName << ");\n";
     OS << "  size_t Idx = " << Index.Fields[0].Name << ";\n";
     OS << "  return Idx >= Table.size() ? nullptr : ";
     if (IsPrimary)
@@ -423,7 +426,7 @@ void SearchableTableEmitter::emitLookupFunction(const GenericTable &Table,
   }
   OS << "};\n";
 
-  OS << "  auto Table = makeArrayRef(" << IndexName << ");\n";
+  OS << "  auto Table = ArrayRef(" << IndexName << ");\n";
   OS << "  auto Idx = std::lower_bound(Table.begin(), Table.end(), Key,\n";
   OS << "    [](const " << IndexTypeName << " &LHS, const KeyType &RHS) {\n";
 
@@ -574,7 +577,7 @@ std::unique_ptr<SearchIndex> SearchableTableEmitter::parseSearchIndex(
 void SearchableTableEmitter::collectEnumEntries(
     GenericEnum &Enum, StringRef NameField, StringRef ValueField,
     const std::vector<Record *> &Items) {
-  for (auto EntryRec : Items) {
+  for (auto *EntryRec : Items) {
     StringRef Name;
     if (NameField.empty())
       Name = EntryRec->getName();
@@ -607,7 +610,7 @@ void SearchableTableEmitter::collectTableEntries(
     PrintFatalError(Table.Locs,
                     Twine("Table '") + Table.Name + "' has no entries");
 
-  for (auto EntryRec : Items) {
+  for (auto *EntryRec : Items) {
     for (auto &Field : Table.Fields) {
       auto TI = dyn_cast<TypedInit>(EntryRec->getValueInit(Field.Name));
       if (!TI || !TI->isComplete()) {
@@ -662,7 +665,7 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
   DenseMap<Record *, GenericTable *> TableMap;
 
   // Collect all definitions first.
-  for (auto EnumRec : Records.getAllDerivedDefinitions("GenericEnum")) {
+  for (auto *EnumRec : Records.getAllDerivedDefinitions("GenericEnum")) {
     StringRef NameField;
     if (!EnumRec->isValueUnset("NameField"))
       NameField = EnumRec->getValueAsString("NameField");
@@ -688,7 +691,7 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
     Enums.emplace_back(std::move(Enum));
   }
 
-  for (auto TableRec : Records.getAllDerivedDefinitions("GenericTable")) {
+  for (auto *TableRec : Records.getAllDerivedDefinitions("GenericTable")) {
     auto Table = std::make_unique<GenericTable>();
     Table->Name = std::string(TableRec->getName());
     Table->Locs = TableRec->getLoc();
@@ -822,10 +825,5 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
     OS << "#undef " << Guard << "\n";
 }
 
-namespace llvm {
-
-void EmitSearchableTables(RecordKeeper &RK, raw_ostream &OS) {
-  SearchableTableEmitter(RK).run(OS);
-}
-
-} // End llvm namespace.
+static TableGen::Emitter::OptClass<SearchableTableEmitter>
+    X("gen-searchable-tables", "Generate generic binary-searchable table");

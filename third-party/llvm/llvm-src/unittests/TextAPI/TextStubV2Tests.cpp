@@ -87,7 +87,6 @@ TEST(TBDv2, ReadFile) {
   EXPECT_EQ(ObjCConstraintType::Retain_Release, File->getObjCConstraint());
   EXPECT_TRUE(File->isTwoLevelNamespace());
   EXPECT_TRUE(File->isApplicationExtensionSafe());
-  EXPECT_TRUE(File->isInstallAPI());
   InterfaceFileRef client("clientA", Targets);
   InterfaceFileRef reexport("/usr/lib/libfoo.dylib", Targets);
   EXPECT_EQ(1U, File->allowableClients().size());
@@ -105,7 +104,7 @@ TEST(TBDv2, ReadFile) {
   }
   llvm::sort(Exports);
 
-  EXPECT_EQ(sizeof(TBDv2Symbols) / sizeof(ExportedSymbol), Exports.size());
+  EXPECT_EQ(std::size(TBDv2Symbols), Exports.size());
   EXPECT_TRUE(
       std::equal(Exports.begin(), Exports.end(), std::begin(TBDv2Symbols)));
 }
@@ -159,7 +158,6 @@ TEST(TBDv2, ReadFile2) {
   EXPECT_EQ(ObjCConstraintType::Retain_Release, File->getObjCConstraint());
   EXPECT_FALSE(File->isTwoLevelNamespace());
   EXPECT_FALSE(File->isApplicationExtensionSafe());
-  EXPECT_FALSE(File->isInstallAPI());
   EXPECT_EQ(0U, File->allowableClients().size());
   EXPECT_EQ(0U, File->reexportedLibraries().size());
 }

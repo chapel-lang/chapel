@@ -124,7 +124,7 @@ module ``M`` loaded on a ThreadSafeContext ``Ctx``:
     return EntrySym.takeError();
 
   // Cast the entry point address to a function pointer.
-  auto *Entry = (void(*)())EntrySym.getAddress();
+  auto *Entry = EntrySym.getAddress().toPtr<void(*)()>();
 
   // Call into JIT'd code.
   Entry();
@@ -147,7 +147,7 @@ specified before the JIT instance is constructed. For example:
   auto JIT = LLLazyJITBuilder()
                .setNumCompileThreads(4)
                .setLazyCompileFailureAddr(
-                   toJITTargetAddress(&handleLazyCompileFailure))
+                   ExecutorAddr::fromPtr(&handleLazyCompileFailure))
                .create();
 
   // ...
@@ -204,7 +204,7 @@ In ORC, this would translate into API calls on a hypothetical CXXCompilingLayer
 
   // Look up the JIT'd main, cast it to a function pointer, then call it.
   auto MainSym = ExitOnErr(ES.lookup({&MainJD}, "main"));
-  auto *Main = (int(*)(int, char*[]))MainSym.getAddress();
+  auto *Main = MainSym.getAddress().toPtr<int(*)(int, char *[])>();
 
   int Result = Main(...);
 
@@ -315,7 +315,7 @@ absolute symbols is allowing resolution of process symbols. E.g.
 
   JD.define(absoluteSymbols(SymbolMap({
       { Mangle("printf"),
-        { pointerToJITTargetAddress(&printf),
+        { ExecutorAddr::fromPtr(&printf),
           JITSymbolFlags::Callable } }
     });
 
@@ -364,7 +364,7 @@ absolute symbol definition when the JIT is started:
 
   JITStdLibJD.define(absoluteSymbols(SymbolMap({
       { Mangle("__MyJITInstance"),
-        { pointerToJITTargetAddress(&J), JITSymbolFlags() } }
+        { ExecutorAddr::fromPtr(&J), JITSymbolFlags() } }
     });
 
 Aliases and Reexports
@@ -819,8 +819,8 @@ absoluteSymbols function:
 
     JD.define(
       absoluteSymbols({
-        { Mangle("puts"), pointerToJITTargetAddress(&puts)},
-        { Mangle("gets"), pointerToJITTargetAddress(&getS)}
+        { Mangle("puts"), ExecutorAddr::fromPtr(&puts)},
+        { Mangle("gets"), ExecutorAddr::fromPtr(&getS)}
       }));
 
 Using absoluteSymbols is reasonable if the set of symbols to be reflected is

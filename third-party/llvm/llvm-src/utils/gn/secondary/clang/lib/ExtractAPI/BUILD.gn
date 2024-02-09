@@ -7,12 +7,14 @@ static_library("ExtractAPI") {
     "//clang/lib/Frontend",
     "//clang/lib/Index",
     "//llvm/lib/Support",
+    "//llvm/lib/TargetParser",
   ]
   sources = [
     "API.cpp",
+    "APIIgnoresList.cpp",
+    "AvailabilityInfo.cpp",
     "DeclarationFragments.cpp",
     "ExtractAPIConsumer.cpp",
-    "Serialization/SerializerBase.cpp",
     "Serialization/SymbolGraphSerializer.cpp",
     "TypedefUnderlyingTypeResolver.cpp",
   ]

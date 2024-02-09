@@ -533,7 +533,7 @@ module Curl {
                           end:int(64),
                           qioChannelPtr:qio_channel_ptr_t):errorCode {
         var curlch = new unmanaged CurlChannel();
-        curlch.curlf = _to_unmanaged(this);
+        curlch.curlf = this:unmanaged;
         curlch.qio_ch = qioChannelPtr;
         pluginChannel = curlch;
         return start_channel(curlch, start, end);

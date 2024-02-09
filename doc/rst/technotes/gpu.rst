@@ -123,7 +123,7 @@ Requirements
       wish to generate code for (e.g.  NVPTX to target NVIDIA GPUs and AMDGPU to
       target AMD GPUs).
 
-    * we expect it to be the same version as the bundled version (currently 15).
+    * we expect it to be the same version as the bundled version (currently 17).
       Older versions may work; however, we only make efforts to test GPU support
       with this version.
 
@@ -141,6 +141,10 @@ Requirements
 
     * You can check the current status of ROCm 5.x support `here
       <https://github.com/chapel-lang/chapel/issues/23480>`_.
+
+    * When using ROCm, you must use the LLVM that is bundled with your version
+      of ROCm. Chapel will auto-detect the right LLVM from your ROCm
+      installation, just make sure to use ``CHPL_LLVM=system``.
 
 
 GPU-Related Environment Variables

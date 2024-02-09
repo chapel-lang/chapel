@@ -77,11 +77,11 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipMalloc(&result, sizeof(kvp))); \
   void* temp = NULL; \
   size_t temp_bytes = 0; \
-  hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, n,\
-                                  (hipStream_t)stream);\
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, \
+                                            n, (hipStream_t)stream)); \
   ROCM_CALL(hipMalloc(&temp, temp_bytes)); \
-  hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, n,\
-                                  (hipStream_t)stream);\
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, \
+                                            n, (hipStream_t)stream)); \
   kvp result_host; \
   ROCM_CALL(hipMemcpyDtoHAsync(&result_host, result, sizeof(kvp),\
                                (hipStream_t)stream)); \

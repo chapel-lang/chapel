@@ -14,7 +14,11 @@
 #include "CodeGenTarget.h"
 #include "GlobalISel/CodeExpander.h"
 #include "GlobalISel/CodeExpansions.h"
+#include "GlobalISel/CombinerUtils.h"
 #include "GlobalISel/GIMatchDag.h"
+#include "GlobalISel/GIMatchDagEdge.h"
+#include "GlobalISel/GIMatchDagInstr.h"
+#include "GlobalISel/GIMatchDagOperands.h"
 #include "GlobalISel/GIMatchDagPredicate.h"
 #include "GlobalISel/GIMatchTree.h"
 #include "llvm/ADT/SmallSet.h"
@@ -24,6 +28,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ScopedPrinter.h"
 #include "llvm/TableGen/Error.h"
+#include "llvm/TableGen/Record.h"
 #include "llvm/TableGen/StringMatcher.h"
 #include "llvm/TableGen/TableGenBackend.h"
 #include <cstdint>
@@ -38,14 +43,14 @@ STATISTIC(NumPatternTotalStatistic, "Total number of patterns");
 
 cl::OptionCategory
     GICombinerEmitterCat("Options for -gen-global-isel-combiner");
-static cl::list<std::string>
+cl::list<std::string>
     SelectedCombiners("combiners", cl::desc("Emit the specified combiners"),
                       cl::cat(GICombinerEmitterCat), cl::CommaSeparated);
 static cl::opt<bool> ShowExpansions(
     "gicombiner-show-expansions",
     cl::desc("Use C++ comments to indicate occurence of code expansion"),
     cl::cat(GICombinerEmitterCat));
-static cl::opt<bool> StopAfterParse(
+cl::opt<bool> StopAfterParse(
     "gicombiner-stop-after-parse",
     cl::desc("Stop processing after parsing rules and dump state"),
     cl::cat(GICombinerEmitterCat));
@@ -276,55 +281,6 @@ public:
     }
   }
 };
-
-/// A convenience function to check that an Init refers to a specific def. This
-/// is primarily useful for testing for defs and similar in DagInit's since
-/// DagInit's support any type inside them.
-static bool isSpecificDef(const Init &N, StringRef Def) {
-  if (const DefInit *OpI = dyn_cast<DefInit>(&N))
-    if (OpI->getDef()->getName() == Def)
-      return true;
-  return false;
-}
-
-/// A convenience function to check that an Init refers to a def that is a
-/// subclass of the given class and coerce it to a def if it is. This is
-/// primarily useful for testing for subclasses of GIMatchKind and similar in
-/// DagInit's since DagInit's support any type inside them.
-static Record *getDefOfSubClass(const Init &N, StringRef Cls) {
-  if (const DefInit *OpI = dyn_cast<DefInit>(&N))
-    if (OpI->getDef()->isSubClassOf(Cls))
-      return OpI->getDef();
-  return nullptr;
-}
-
-/// A convenience function to check that an Init refers to a dag whose operator
-/// is a specific def and coerce it to a dag if it is. This is primarily useful
-/// for testing for subclasses of GIMatchKind and similar in DagInit's since
-/// DagInit's support any type inside them.
-static const DagInit *getDagWithSpecificOperator(const Init &N,
-                                                 StringRef Name) {
-  if (const DagInit *I = dyn_cast<DagInit>(&N))
-    if (I->getNumArgs() > 0)
-      if (const DefInit *OpI = dyn_cast<DefInit>(I->getOperator()))
-        if (OpI->getDef()->getName() == Name)
-          return I;
-  return nullptr;
-}
-
-/// A convenience function to check that an Init refers to a dag whose operator
-/// is a def that is a subclass of the given class and coerce it to a dag if it
-/// is. This is primarily useful for testing for subclasses of GIMatchKind and
-/// similar in DagInit's since DagInit's support any type inside them.
-static const DagInit *getDagWithOperatorOfSubClass(const Init &N,
-                                                   StringRef Cls) {
-  if (const DagInit *I = dyn_cast<DagInit>(&N))
-    if (I->getNumArgs() > 0)
-      if (const DefInit *OpI = dyn_cast<DefInit>(I->getOperator()))
-        if (OpI->getDef()->isSubClassOf(Cls))
-          return I;
-  return nullptr;
-}
 
 StringRef makeNameForAnonInstr(CombineRule &Rule) {
   return insertStrTab(to_string(
@@ -636,7 +592,7 @@ void GICombinerEmitter::emitNameMatcher(raw_ostream &OS) const {
         std::make_pair(std::string(EnumeratedRule.getName()), Code));
   }
 
-  OS << "static Optional<uint64_t> getRuleIdxForIdentifier(StringRef "
+  OS << "static std::optional<uint64_t> getRuleIdxForIdentifier(StringRef "
         "RuleIdentifier) {\n"
      << "  uint64_t I;\n"
      << "  // getAtInteger(...) returns false on success\n"
@@ -647,7 +603,7 @@ void GICombinerEmitter::emitNameMatcher(raw_ostream &OS) const {
   StringMatcher Matcher("RuleIdentifier", Cases, OS);
   Matcher.Emit();
   OS << "#endif // ifndef NDEBUG\n\n"
-     << "  return None;\n"
+     << "  return std::nullopt;\n"
      << "}\n";
 }
 
@@ -764,6 +720,29 @@ void GICombinerEmitter::generateCodeForTree(raw_ostream &OS,
 
     OS << Indent << "  if (1\n";
 
+    // Emit code for C++ Predicates.
+    if (RuleDef.getValue("Predicates")) {
+      ListInit *Preds = RuleDef.getValueAsListInit("Predicates");
+      for (Init *I : Preds->getValues()) {
+        if (DefInit *Pred = dyn_cast<DefInit>(I)) {
+          Record *Def = Pred->getDef();
+          if (!Def->isSubClassOf("Predicate")) {
+            PrintError(Def->getLoc(), "Unknown 'Predicate' Type");
+            return;
+          }
+
+          StringRef CondString = Def->getValueAsString("CondString");
+          if (CondString.empty())
+            continue;
+
+          OS << Indent << "      && (\n"
+             << Indent << "           // Predicate: " << Def->getName() << "\n"
+             << Indent << "           " << CondString << "\n"
+             << Indent << "         )\n";
+        }
+      }
+    }
+
     // Attempt to emit code for any untested predicates left over. Note that
     // isFullyTested() will remain false even if we succeed here and therefore
     // combine rule elision will not be performed. This is because we do not
@@ -800,16 +779,19 @@ void GICombinerEmitter::generateCodeForTree(raw_ostream &OS,
          << Indent << "      "
          << CodeExpander(Rule->getMatchingFixupCode()->getValue(), Expansions,
                          RuleDef.getLoc(), ShowExpansions)
-         << "\n"
+         << '\n'
          << Indent << "      return true;\n"
          << Indent << "  }()";
     }
-    OS << ") {\n" << Indent << "   ";
+    OS << Indent << "     ) {\n" << Indent << "   ";
 
     if (const StringInit *Code = dyn_cast<StringInit>(Applyer->getArg(0))) {
-      OS << CodeExpander(Code->getAsUnquotedString(), Expansions,
+      OS << "    LLVM_DEBUG(dbgs() << \"Applying rule '"
+         << RuleDef.getName()
+         << "'\\n\");\n"
+         << CodeExpander(Code->getAsUnquotedString(), Expansions,
                          RuleDef.getLoc(), ShowExpansions)
-         << "\n"
+         << '\n'
          << Indent << "    return true;\n"
          << Indent << "  }\n";
     } else {
@@ -842,7 +824,7 @@ static void emitAdditionalHelperMethodArguments(raw_ostream &OS,
                                                 Record *Combiner) {
   for (Record *Arg : Combiner->getValueAsListOfDefs("AdditionalArguments"))
     OS << ",\n    " << Arg->getValueAsString("Type")
-       << Arg->getValueAsString("Name");
+       << " " << Arg->getValueAsString("Name");
 }
 
 void GICombinerEmitter::run(raw_ostream &OS) {
@@ -924,7 +906,7 @@ void GICombinerEmitter::run(raw_ostream &OS) {
 
   emitNameMatcher(OS);
 
-  OS << "static Optional<std::pair<uint64_t, uint64_t>> "
+  OS << "static std::optional<std::pair<uint64_t, uint64_t>> "
         "getRuleRangeForIdentifier(StringRef RuleIdentifier) {\n"
      << "  std::pair<StringRef, StringRef> RangePair = "
         "RuleIdentifier.split('-');\n"
@@ -934,7 +916,7 @@ void GICombinerEmitter::run(raw_ostream &OS) {
      << "    const auto Last = "
         "getRuleIdxForIdentifier(RangePair.second);\n"
      << "    if (!First || !Last)\n"
-     << "      return None;\n"
+     << "      return std::nullopt;\n"
      << "    if (First >= Last)\n"
      << "      report_fatal_error(\"Beginning of range should be before "
         "end of range\");\n"
@@ -945,7 +927,7 @@ void GICombinerEmitter::run(raw_ostream &OS) {
      << "  }\n"
      << "  const auto I = getRuleIdxForIdentifier(RangePair.first);\n"
      << "  if (!I)\n"
-     << "    return None;\n"
+     << "    return std::nullopt;\n"
      << "  return {{*I, *I + 1}};\n"
      << "}\n\n";
 
@@ -1036,8 +1018,14 @@ void GICombinerEmitter::run(raw_ostream &OS) {
 
 //===----------------------------------------------------------------------===//
 
-namespace llvm {
-void EmitGICombiner(RecordKeeper &RK, raw_ostream &OS) {
+static void EmitGICombiner(RecordKeeper &RK, raw_ostream &OS) {
+  PrintWarning(
+      "'-gen-global-isel-combiner' is deprecated and will be removed soon; "
+      "please use '-gen-global-isel-combiner-match-table' instead");
+  PrintNote(
+      "See "
+      "https://discourse.llvm.org/t/rfc-matchtable-based-globalisel-combiners");
+
   CodeGenTarget Target(RK);
   emitSourceFileHeader("Global Combiner", OS);
 
@@ -1052,4 +1040,5 @@ void EmitGICombiner(RecordKeeper &RK, raw_ostream &OS) {
   NumPatternTotalStatistic = NumPatternTotal;
 }
 
-} // namespace llvm
+static TableGen::Emitter::Opt X("gen-global-isel-combiner", EmitGICombiner,
+                                "Generate GlobalISel combiner");

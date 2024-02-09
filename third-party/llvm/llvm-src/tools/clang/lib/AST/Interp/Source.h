@@ -13,6 +13,7 @@
 #ifndef LLVM_CLANG_AST_INTERP_SOURCE_H
 #define LLVM_CLANG_AST_INTERP_SOURCE_H
 
+#include "PrimType.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Stmt.h"
 #include "llvm/Support/Endian.h"
@@ -22,7 +23,7 @@ namespace interp {
 class Function;
 
 /// Pointer into the code segment.
-class CodePtr {
+class CodePtr final {
 public:
   CodePtr() : Ptr(nullptr) {}
 
@@ -43,27 +44,27 @@ public:
 
   bool operator!=(const CodePtr &RHS) const { return Ptr != RHS.Ptr; }
 
+  operator bool() const { return Ptr; }
+
   /// Reads data and advances the pointer.
   template <typename T> std::enable_if_t<!std::is_pointer<T>::value, T> read() {
+    assert(aligned(Ptr));
     using namespace llvm::support;
     T Value = endian::read<T, endianness::native, 1>(Ptr);
-    Ptr += sizeof(T);
+    Ptr += align(sizeof(T));
     return Value;
   }
 
 private:
-  /// Constructor used by Function to generate pointers.
-  CodePtr(const char *Ptr) : Ptr(Ptr) {}
-
-private:
   friend class Function;
-
+  /// Constructor used by Function to generate pointers.
+  CodePtr(const std::byte *Ptr) : Ptr(Ptr) {}
   /// Pointer into the code owned by a function.
-  const char *Ptr;
+  const std::byte *Ptr;
 };
 
 /// Describes the statement/declaration an opcode was generated from.
-class SourceInfo {
+class SourceInfo final {
 public:
   SourceInfo() {}
   SourceInfo(const Stmt *E) : Source(E) {}
@@ -89,12 +90,12 @@ public:
   virtual ~SourceMapper() {}
 
   /// Returns source information for a given PC in a function.
-  virtual SourceInfo getSource(Function *F, CodePtr PC) const = 0;
+  virtual SourceInfo getSource(const Function *F, CodePtr PC) const = 0;
 
   /// Returns the expression if an opcode belongs to one, null otherwise.
-  const Expr *getExpr(Function *F, CodePtr PC) const;
+  const Expr *getExpr(const Function *F, CodePtr PC) const;
   /// Returns the location from which an opcode originates.
-  SourceLocation getLocation(Function *F, CodePtr PC) const;
+  SourceLocation getLocation(const Function *F, CodePtr PC) const;
 };
 
 } // namespace interp

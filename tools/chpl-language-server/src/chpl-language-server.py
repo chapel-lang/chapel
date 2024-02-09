@@ -102,6 +102,7 @@ from lsprotocol.types import (
     InlayHint,
 )
 from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
+from lsprotocol.types import TEXT_DOCUMENT_RENAME, RenameParams
 
 import argparse
 import configargparse
@@ -179,8 +180,9 @@ def completion_item_for_decl(
 def location_to_location(loc) -> Location:
     return Location("file://" + loc.path(), location_to_range(loc))
 
+
 def get_symbol_information(
-    decl: chapel.NamedDecl
+    decl: chapel.NamedDecl,
 ) -> Optional[SymbolInformation]:
     loc = location_to_location(decl.location())
     kind = decl_kind(decl)
@@ -727,19 +729,19 @@ def run_lsp():
     Start a language server on the standard input/output
     """
     parser = configargparse.ArgParser(
-        default_config_files=[], # Empty for now because cwd() is odd with VSCode etc.
+        default_config_files=[],  # Empty for now because cwd() is odd with VSCode etc.
         config_file_parser_class=configargparse.YAMLConfigFileParser,
     )
 
     def add_bool_flag(name: str, dest: str, default: bool):
-        parser.add_argument(f'--{name}', dest=dest, action='store_true')
-        parser.add_argument(f'--no-{name}', dest=dest, action='store_false')
+        parser.add_argument(f"--{name}", dest=dest, action="store_true")
+        parser.add_argument(f"--no-{name}", dest=dest, action="store_false")
         parser.set_defaults(**{dest: default})
 
-    add_bool_flag('resolver', 'resolver', False)
-    add_bool_flag('type-inlays', 'type_inlays', True)
-    add_bool_flag('param-inlays', 'param_inlays', True)
-    add_bool_flag('literal-arg-inlays', 'literal_arg_inlays', True)
+    add_bool_flag("resolver", "resolver", False)
+    add_bool_flag("type-inlays", "type_inlays", True)
+    add_bool_flag("param-inlays", "param_inlays", True)
+    add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
 
     server = ChapelLanguageServer(parser.parse_args())
 
@@ -935,6 +937,28 @@ def run_lsp():
             )
 
         return actions
+
+    @server.feature(TEXT_DOCUMENT_RENAME)
+    async def rename(ls: ChapelLanguageServer, params: RenameParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        if not node_and_loc:
+            return None
+
+        edits: Dict[str, List[TextEdit]] = {}
+
+        def add_to_edits(nr: NodeAndRange):
+            if nr.get_uri() not in edits:
+                edits[nr.get_uri()] = []
+            edits[nr.get_uri()].append(TextEdit(nr.rng, params.new_name))
+
+        add_to_edits(node_and_loc)
+        for use in fi.uses_here[node_and_loc.node.unique_id()]:
+            add_to_edits(use)
+
+        return WorkspaceEdit(changes=edits)
 
     @server.feature(TEXT_DOCUMENT_INLAY_HINT)
     async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):

@@ -44,7 +44,10 @@ supplementing or overriding the command-line options supplied to :program:`lit`
 by ``check`` targets defined by a project's build system.
 
 :program:`lit` can also read options from response files which are specified as
-inputs using the ``@path/to/file.rsp`` syntax.
+inputs using the ``@path/to/file.rsp`` syntax. Arguments read from a file must
+be one per line and are treated as if they were in the same place as the
+original file referencing argument on the command line. A response file can
+reference other response files.
 
 Users interested in the :program:`lit` architecture or designing a
 :program:`lit` testing implementation should see :ref:`lit-infrastructure`.
@@ -93,7 +96,7 @@ OUTPUT OPTIONS
 
 .. option:: -vv, --echo-all-commands
 
- Echo all commands to stdout, as they are being executed.
+ On test failure, echo all commands to stdout as they are being executed.
  This can be valuable for debugging test failures, as the last echoed command
  will be the one which has failed.
  :program:`lit` normally inserts a no-op command (``:`` in the case of bash)
@@ -159,11 +162,6 @@ EXECUTION OPTIONS
 .. option:: --ignore-fail
 
  Exit with status zero even if some tests fail.
-
-.. option:: --no-indirectly-run-check
-
- Do not error if a test would not be run if the user had specified the
- containing directory instead of naming the test directly.
 
 .. _selection-options:
 
@@ -455,9 +453,8 @@ executed, two important global variables are predefined:
  tests in the suite.
 
  **standalone_tests** When true, mark a directory with tests expected to be run
- standalone. Test discovery is disabled for that directory and
- *--no-indirectly-run-check* is in effect. *lit.suffixes* and *lit.excludes*
- must be empty when this variable is true.
+ standalone. Test discovery is disabled for that directory. *lit.suffixes* and
+ *lit.excludes* must be empty when this variable is true.
 
  **suffixes** For **lit** test formats which scan directories for tests, this
  variable is a list of suffixes to identify test files.  Used by: *ShTest*.
@@ -558,14 +555,6 @@ TestRunner.py:
 Other substitutions are provided that are variations on this base set and
 further substitution patterns can be defined by each test module. See the
 modules :ref:`local-configuration-files`.
-
-By default, substitutions are expanded exactly once, so that if e.g. a
-substitution ``%build`` is defined in top of another substitution ``%cxx``,
-``%build`` will expand to ``%cxx`` textually, not to what ``%cxx`` expands to.
-However, if the ``recursiveExpansionLimit`` property of the ``TestingConfig``
-is set to a non-negative integer, substitutions will be expanded recursively
-until that limit is reached. It is an error if the limit is reached and
-expanding substitutions again would yield a different result.
 
 More detailed information on substitutions can be found in the
 :doc:`../TestingGuide`.

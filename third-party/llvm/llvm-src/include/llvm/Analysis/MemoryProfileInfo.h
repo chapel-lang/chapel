@@ -17,21 +17,15 @@
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/ModuleSummaryIndex.h"
 #include <map>
 
 namespace llvm {
 namespace memprof {
 
-// Allocation type assigned to an allocation reached by a given context.
-// More can be added but initially this is just noncold and cold.
-// Values should be powers of two so that they can be ORed, in particular to
-// track allocations that have different behavior with different calling
-// contexts.
-enum class AllocationType : uint8_t { None = 0, NotCold = 1, Cold = 2 };
-
 /// Return the allocation type for a given set of memory profile values.
-AllocationType getAllocType(uint64_t MaxAccessCount, uint64_t MinSize,
-                            uint64_t MinLifetime);
+AllocationType getAllocType(uint64_t TotalLifetimeAccessDensity,
+                            uint64_t AllocCount, uint64_t TotalLifetime);
 
 /// Build callstack metadata from the provided list of call stack ids. Returns
 /// the resulting metadata node.
@@ -42,6 +36,12 @@ MDNode *getMIBStackNode(const MDNode *MIB);
 
 /// Returns the allocation type from an MIB metadata node.
 AllocationType getMIBAllocType(const MDNode *MIB);
+
+/// Returns the string to use in attributes with the given type.
+std::string getAllocTypeAttributeString(AllocationType Type);
+
+/// True if the AllocTypes bitmask contains just a single type.
+bool hasSingleAllocType(uint8_t AllocTypes);
 
 /// Class to build a trie of call stack contexts for a particular profiled
 /// allocation call, along with their associated allocation types.
@@ -61,9 +61,9 @@ private:
   };
 
   // The node for the allocation at the root.
-  CallStackTrieNode *Alloc;
+  CallStackTrieNode *Alloc = nullptr;
   // The allocation's leaf stack id.
-  uint64_t AllocStackId;
+  uint64_t AllocStackId = 0;
 
   void deleteTrieNode(CallStackTrieNode *Node) {
     if (!Node)
@@ -80,7 +80,7 @@ private:
                      bool CalleeHasAmbiguousCallerContext);
 
 public:
-  CallStackTrie() : Alloc(nullptr), AllocStackId(0) {}
+  CallStackTrie() = default;
   ~CallStackTrie() { deleteTrieNode(Alloc); }
 
   bool empty() const { return Alloc == nullptr; }
@@ -105,6 +105,87 @@ public:
   /// Returns true if memprof metadata attached, false if not (attribute added).
   bool buildAndAttachMIBMetadata(CallBase *CI);
 };
+
+/// Helper class to iterate through stack ids in both metadata (memprof MIB and
+/// callsite) and the corresponding ThinLTO summary data structures
+/// (CallsiteInfo and MIBInfo). This simplifies implementation of client code
+/// which doesn't need to worry about whether we are operating with IR (Regular
+/// LTO), or summary (ThinLTO).
+template <class NodeT, class IteratorT> class CallStack {
+public:
+  CallStack(const NodeT *N = nullptr) : N(N) {}
+
+  // Implement minimum required methods for range-based for loop.
+  // The default implementation assumes we are operating on ThinLTO data
+  // structures, which have a vector of StackIdIndices. There are specialized
+  // versions provided to iterate through metadata.
+  struct CallStackIterator {
+    const NodeT *N = nullptr;
+    IteratorT Iter;
+    CallStackIterator(const NodeT *N, bool End);
+    uint64_t operator*();
+    bool operator==(const CallStackIterator &rhs) { return Iter == rhs.Iter; }
+    bool operator!=(const CallStackIterator &rhs) { return !(*this == rhs); }
+    void operator++() { ++Iter; }
+  };
+
+  bool empty() const { return N == nullptr; }
+
+  CallStackIterator begin() const;
+  CallStackIterator end() const { return CallStackIterator(N, /*End*/ true); }
+  CallStackIterator beginAfterSharedPrefix(CallStack &Other);
+  uint64_t back() const;
+
+private:
+  const NodeT *N = nullptr;
+};
+
+template <class NodeT, class IteratorT>
+CallStack<NodeT, IteratorT>::CallStackIterator::CallStackIterator(
+    const NodeT *N, bool End)
+    : N(N) {
+  if (!N) {
+    Iter = nullptr;
+    return;
+  }
+  Iter = End ? N->StackIdIndices.end() : N->StackIdIndices.begin();
+}
+
+template <class NodeT, class IteratorT>
+uint64_t CallStack<NodeT, IteratorT>::CallStackIterator::operator*() {
+  assert(Iter != N->StackIdIndices.end());
+  return *Iter;
+}
+
+template <class NodeT, class IteratorT>
+uint64_t CallStack<NodeT, IteratorT>::back() const {
+  assert(N);
+  return N->StackIdIndices.back();
+}
+
+template <class NodeT, class IteratorT>
+typename CallStack<NodeT, IteratorT>::CallStackIterator
+CallStack<NodeT, IteratorT>::begin() const {
+  return CallStackIterator(N, /*End*/ false);
+}
+
+template <class NodeT, class IteratorT>
+typename CallStack<NodeT, IteratorT>::CallStackIterator
+CallStack<NodeT, IteratorT>::beginAfterSharedPrefix(CallStack &Other) {
+  CallStackIterator Cur = begin();
+  for (CallStackIterator OtherCur = Other.begin();
+       Cur != end() && OtherCur != Other.end(); ++Cur, ++OtherCur)
+    assert(*Cur == *OtherCur);
+  return Cur;
+}
+
+/// Specializations for iterating through IR metadata stack contexts.
+template <>
+CallStack<MDNode, MDNode::op_iterator>::CallStackIterator::CallStackIterator(
+    const MDNode *N, bool End);
+template <>
+uint64_t CallStack<MDNode, MDNode::op_iterator>::CallStackIterator::operator*();
+template <> uint64_t CallStack<MDNode, MDNode::op_iterator>::back() const;
 
 } // end namespace memprof
 } // end namespace llvm

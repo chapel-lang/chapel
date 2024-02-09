@@ -1198,6 +1198,11 @@ static void removeVoidMoves()
   }
 }
 
+static void removeStatementLevelUsesOfNone() {
+  for_SymbolSymExprs(se, gNone) {
+    if (se == se->getStmtExpr()) se->remove();
+  }
+}
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.
@@ -1219,6 +1224,8 @@ prune() {
   pruneUnusedTypes(types);
 
   removeVoidMoves();
+
+  removeStatementLevelUsesOfNone();
 }
 
 

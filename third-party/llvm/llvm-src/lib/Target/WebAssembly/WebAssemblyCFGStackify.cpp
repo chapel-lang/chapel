@@ -792,7 +792,7 @@ static void unstackifyVRegsUsedInSplitBB(MachineBasicBlock &MBB,
 
   for (auto &MI : Split) {
     for (auto &MO : MI.explicit_uses()) {
-      if (!MO.isReg() || Register::isPhysicalRegister(MO.getReg()))
+      if (!MO.isReg() || MO.getReg().isPhysical())
         continue;
       if (MachineInstr *Def = MRI.getUniqueVRegDef(MO.getReg()))
         if (Def->getParent() == &MBB)
@@ -1291,6 +1291,7 @@ bool WebAssemblyCFGStackify::fixCatchUnwindMismatches(MachineFunction &MF) {
   // end_try
 
   const auto *EHInfo = MF.getWasmEHFuncInfo();
+  assert(EHInfo);
   SmallVector<const MachineBasicBlock *, 8> EHPadStack;
   // For EH pads that have catch unwind mismatches, a map of <EH pad, its
   // correct unwind destination>.
@@ -1501,7 +1502,7 @@ void WebAssemblyCFGStackify::fixEndsAtEndOfFunction(MachineFunction &MF) {
             std::next(WebAssembly::findCatch(EHPad)->getReverseIterator());
         if (NextIt != EHPad->rend())
           Worklist.push_back(NextIt);
-        LLVM_FALLTHROUGH;
+        [[fallthrough]];
       }
       case WebAssembly::END_BLOCK:
       case WebAssembly::END_LOOP:
