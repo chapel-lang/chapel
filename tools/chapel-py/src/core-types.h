@@ -56,6 +56,22 @@ struct PythonClass {
     return &value_;
   }
 
+  // If T is a pointer, allow ::create() to be called with nullptr, and
+  // just return None.
+  template <typename Q = T>
+  static typename std::enable_if<std::is_pointer_v<Q>, PyObject*>::type returnNoneIfNeeded(const Q& val) {
+    if (val == nullptr) {
+      Py_RETURN_NONE;
+    }
+    return nullptr;
+  }
+
+  // If T is a not a pointer, we can't detect 'nullptr'.
+  template <typename Q = T>
+  static typename std::enable_if<!std::is_pointer_v<Q>, PyObject*>::type returnNoneIfNeeded(const Q& val) {
+    return nullptr;
+  }
+
   UnwrappedT unwrap() { return unwrapImpl(); }
   ContextObject* context() { return nullptr; }
 
@@ -100,7 +116,11 @@ struct PythonClass {
   /** ===== Public convenience methods for using this object ===== */
 
   static PyObject* create(T createFrom) {
-    auto selfObjectPy = PyObject_CallObject((PyObject *) &PythonType, nullptr);
+    if (auto obj = PythonClass<Self, T>::returnNoneIfNeeded(createFrom)) {
+      return obj;
+    }
+
+    auto selfObjectPy = PyObject_CallObject((PyObject *) &Self::PythonType, nullptr);
     auto& val = ((Self*) selfObjectPy)->value_;
 
     val = std::move(createFrom);
@@ -129,21 +149,51 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
 
 using LineColumnPair = std::tuple<int, int>;
 
-struct ScopeObject {
-  PyObject_HEAD
+template <typename Self, typename T>
+struct PythonClassWithObject : public PythonClass<Self, T> {
   PyObject* contextObject;
-  const chpl::resolution::Scope* scope;
 
-  static constexpr const char* Name = "Scope";
+  static void dealloc(Self* self) {
+    Py_DECREF(self->contextObject);
+    PythonClass<Self, T>::dealloc(self);
+  }
 
-  const chpl::resolution::Scope* unwrap() { return scope; }
+  static int init(Self* self, PyObject* args, PyObject* kwargs) {
+    PyObject* contextObjectPy;
+    if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
+        return -1;
+
+    if (contextObjectPy->ob_type != &ContextObject::PythonType) {
+      PyErr_SetString(PyExc_TypeError, "Expected a chapel.Context object as the only argument.");
+      return -1;
+    }
+
+    Py_INCREF(contextObjectPy);
+    self->contextObject = contextObjectPy;
+    return PythonClass<Self, T>::init(self, args, kwargs);
+  }
+
   ContextObject* context() { return (ContextObject*) contextObject; }
-};
-extern PyTypeObject ScopeType;
-void setupScopeType();
 
-int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs);
-void ScopeObject_dealloc(ScopeObject* self);
+  static PyObject* create(T createFrom) = delete; /* Don't you mention Liskov to me! */
+  static PyObject* create(ContextObject* context, T createFrom) {
+    if (auto obj = PythonClass<Self, T>::returnNoneIfNeeded(createFrom)) {
+      return obj;
+    }
+
+    PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
+    auto selfObjectPy = PyObject_CallObject((PyObject *) &Self::PythonType, args);
+    auto& val = ((Self*) selfObjectPy)->value_;
+
+    val = std::move(createFrom);
+    return selfObjectPy;
+  }
+};
+
+struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resolution::Scope*> {
+  static constexpr const char* Name = "Scope";
+  static constexpr const char* DocStr = "A scope in the Chapel program, such as a block.";
+};
 
 struct AstNodeObject {
   PyObject_HEAD

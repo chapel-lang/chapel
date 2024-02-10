@@ -141,38 +141,6 @@ std::string generatePyiFile() {
   return ss.str();
 }
 
-PyTypeObject ScopeType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupScopeType() {
-  ScopeType.tp_name = "Scope";
-  ScopeType.tp_basicsize = sizeof(ScopeObject);
-  ScopeType.tp_itemsize = 0;
-  ScopeType.tp_dealloc = (destructor) ScopeObject_dealloc;
-  ScopeType.tp_flags = Py_TPFLAGS_DEFAULT;
-  ScopeType.tp_doc = PyDoc_STR("A scope in the Chapel program, such as a block.");
-  ScopeType.tp_methods = (PyMethodDef*) PerTypeMethods<ScopeObject>::methods;
-  ScopeType.tp_init = (initproc) ScopeObject_init;
-  ScopeType.tp_new = PyType_GenericNew;
-}
-
-int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->scope = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
-}
-
-void ScopeObject_dealloc(ScopeObject* self) {
-  Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
 PyTypeObject AstNodeType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -407,17 +375,3 @@ PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
   Py_XDECREF(args);
   return toReturn;
 }
-
-PyObject* wrapScope(ContextObject* contextObj, const chpl::resolution::Scope* scope) {
-  if (scope == nullptr) {
-    Py_RETURN_NONE;
-  }
-
-  PyObject* args = Py_BuildValue("(O)", contextObj);
-  auto scopeObjectPy = PyObject_CallObject((PyObject *) &ScopeType, args);
-  auto scopeObject = (ScopeObject*) scopeObjectPy;
-  scopeObject->scope = scope;
-
-  return scopeObjectPy;
-}
-
