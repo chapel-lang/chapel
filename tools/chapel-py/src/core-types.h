@@ -101,20 +101,16 @@ struct PythonClass {
 template <typename Self, typename T>
 PyTypeObject PythonClass<Self,T>::PythonType = Self::configurePythonType();
 
-struct ContextObject {
-  PyObject_HEAD
-  chpl::Context context_;
-
+struct ContextObject : public PythonClass<ContextObject, chpl::Context> {
   static constexpr const char* Name = "Context";
+  static constexpr const char* DocStr = "The Chapel context object that tracks various frontend state";
 
-  chpl::Context* unwrap() { return &context_; }
+  // override init to set CHPL_HOME and install an error handler.
+  static int init(ContextObject* self, PyObject* args, PyObject* kwargs);
+
+  // override context() because this object is expected to return itself.
   ContextObject* context() { return this; }
 };
-extern PyTypeObject ContextType;
-void setupContextType();
-
-int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs);
-void ContextObject_dealloc(ContextObject* self);
 
 struct LocationObject {
   PyObject_HEAD

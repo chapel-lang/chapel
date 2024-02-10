@@ -30,34 +30,13 @@
 using namespace chpl;
 using namespace uast;
 
-PyTypeObject ContextType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupContextType() {
-  ContextType.tp_name = "Context";
-  ContextType.tp_basicsize = sizeof(ContextObject);
-  ContextType.tp_itemsize = 0;
-  ContextType.tp_dealloc = (destructor) ContextObject_dealloc;
-  ContextType.tp_flags = Py_TPFLAGS_DEFAULT;
-  ContextType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
-  ContextType.tp_methods = (PyMethodDef*) PerTypeMethods<ContextObject>::methods;
-  ContextType.tp_init = (initproc) ContextObject_init;
-  ContextType.tp_new = PyType_GenericNew;
-}
-
-int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
+int ContextObject::init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   Context::Configuration config;
   config.chplHome = getenv("CHPL_HOME");
-  new (&self->context_) Context(std::move(config));
-  self->context_.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
+  new (&self->value_) Context(std::move(config));
+  self->value_.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
   return 0;
-}
-
-void ContextObject_dealloc(ContextObject* self) {
-  self->context_.~Context();
-  Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 template <typename Tuple, size_t ... Indices>

@@ -43,7 +43,6 @@ extern "C" {
 PyMODINIT_FUNC PyInit_core() {
   PyObject* chapelModule = nullptr;
 
-  setupContextType();
   setupErrorType();
   setupErrorManagerType();
   setupLocationType();
@@ -59,7 +58,6 @@ PyMODINIT_FUNC PyInit_core() {
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) READY_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE
-  READY_TYPE(Context)
   READY_TYPE(Error)
   READY_TYPE(ErrorManager)
   READY_TYPE(Location)
@@ -69,6 +67,8 @@ PyMODINIT_FUNC PyInit_core() {
   READY_TYPE(AstNode)
   READY_TYPE(ChapelType)
   READY_TYPE(Param)
+
+  if (ContextObject::ready() < 0) return nullptr;
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
@@ -81,11 +81,8 @@ PyMODINIT_FUNC PyInit_core() {
   ADD_TYPE(ChapelType);
   ADD_TYPE(Param);
 
-  if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
-    Py_DECREF(&ContextType);
-    Py_DECREF(chapelModule);
-    return NULL;
-  }
+  if (ContextObject::addToModule(chapelModule) < 0) return nullptr;
+
   return chapelModule;
 }
 

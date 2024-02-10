@@ -209,7 +209,7 @@ std::string tupleTypeString() {
 DEFINE_INOUT_TYPE(bool, "bool", PyBool_FromLong(TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_INOUT_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_INOUT_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), PyUnicode_AsUTF8(TO_UNWRAP));
-DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->context_, PyUnicode_AsUTF8(TO_UNWRAP)));
+DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->value_, PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_INOUT_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_INOUT_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->ptr);
 DEFINE_INOUT_TYPE(const chpl::types::Type*, "ChapelType", wrapType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->ptr);
