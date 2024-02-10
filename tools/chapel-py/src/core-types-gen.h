@@ -35,7 +35,7 @@
   \
     static constexpr const char* Name = #NAME; \
   \
-    const auto unwrap() const { return parent.ptr->to##NAME(); } \
+    const auto unwrap() const { return parent.value_->to##NAME(); } \
     ContextObject* context() const { return (ContextObject*) parent.contextObject; } \
   }; \
   \

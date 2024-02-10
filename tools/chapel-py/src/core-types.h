@@ -195,58 +195,49 @@ struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resol
   static constexpr const char* DocStr = "A scope in the Chapel program, such as a block.";
 };
 
-struct AstNodeObject {
-  PyObject_HEAD
-  PyObject* contextObject;
-  const chpl::uast::AstNode* ptr;
-
+struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*> {
   static constexpr const char* Name = "AstNode";
+  static constexpr const char* DocStr = "The base type of Chapel AST nodes";
 
-  const chpl::uast::AstNode* unwrap() { return ptr; }
-  ContextObject* context() { return (ContextObject*) contextObject; }
+  static PyObject* iter(AstNodeObject *self);
+
+  static PyTypeObject configurePythonType() {
+    PyTypeObject configuring = PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType();
+    configuring.tp_iter = (getiterfunc) AstNodeObject::iter;
+    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+    return configuring;
+  }
 };
-extern PyTypeObject AstNodeType;
-void setupAstNodeType();
 
 using QualifiedTypeTuple = std::tuple<const char*, const chpl::types::Type*, const chpl::types::Param*>;
 
-int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs);
-void AstNodeObject_dealloc(AstNodeObject* self);
-PyObject* AstNodeObject_iter(AstNodeObject *self);
-
-struct ChapelTypeObject {
-  PyObject_HEAD
-  PyObject* contextObject;
-  const chpl::types::Type* ptr;
-
+struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*> {
   static constexpr const char* Name = "ChapelType";
+  static constexpr const char* DocStr = "The base type of Chapel types";
 
-  const chpl::types::Type* unwrap() { return ptr; }
-  ContextObject* context() { return (ContextObject*) contextObject; }
+  static PyObject* str(ChapelTypeObject* self);
+
+  static PyTypeObject configurePythonType() {
+    PyTypeObject configuring = PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*>::configurePythonType();
+    configuring.tp_str = (reprfunc) ChapelTypeObject::str;
+    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+    return configuring;
+  }
 };
-extern PyTypeObject ChapelTypeType;
-void setupChapelTypeType();
 
-int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs);
-void ChapelTypeObject_dealloc(ChapelTypeObject* self);
-PyObject* ChapelTypeObject_str(ChapelTypeObject* self);
-
-struct ParamObject {
-  PyObject_HEAD
-  PyObject* contextObject;
-  const chpl::types::Param* ptr;
-
+struct ParamObject : public PythonClassWithObject<ParamObject, const chpl::types::Param*> {
   static constexpr const char* Name = "Param";
+  static constexpr const char* DocStr = "The base type of Chapel parameters (compile-time known values)";
 
-  const chpl::types::Param* unwrap() { return ptr; }
-  ContextObject* context() { return (ContextObject*) contextObject; }
+  static PyObject* str(ParamObject* self);
+
+  static PyTypeObject configurePythonType() {
+    PyTypeObject configuring = PythonClassWithObject<ParamObject, const chpl::types::Param*>::configurePythonType();
+    configuring.tp_str = (reprfunc) ParamObject::str;
+    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+    return configuring;
+  }
 };
-extern PyTypeObject ParamType;
-void setupParamType();
-
-int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs);
-void ParamObject_dealloc(ParamObject* self);
-PyObject* ParamObject_str(ParamObject* self);
 
 template<typename IntentType>
 const char* intentToString(IntentType intent) {
@@ -275,10 +266,5 @@ PyObject* wrapType(ContextObject* context, const chpl::types::Type* node);
   Creates a Python object of the class corresponding to the given Param*.
  */
 PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
-
-/**
-  Create a Python object from the given Scope.
- */
-PyObject* wrapScope(ContextObject* context, const chpl::resolution::Scope* scope);
 
 #endif

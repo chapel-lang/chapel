@@ -141,74 +141,8 @@ std::string generatePyiFile() {
   return ss.str();
 }
 
-PyTypeObject AstNodeType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupAstNodeType() {
-  AstNodeType.tp_name = "AstNode";
-  AstNodeType.tp_basicsize = sizeof(AstNodeObject);
-  AstNodeType.tp_itemsize = 0;
-  AstNodeType.tp_dealloc = (destructor) AstNodeObject_dealloc;
-  AstNodeType.tp_flags = Py_TPFLAGS_BASETYPE;
-  AstNodeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  AstNodeType.tp_iter = (getiterfunc) AstNodeObject_iter;
-  AstNodeType.tp_methods = (PyMethodDef*) PerTypeMethods<AstNodeObject>::methods;
-  AstNodeType.tp_init = (initproc) AstNodeObject_init;
-  AstNodeType.tp_new = PyType_GenericNew;
-}
-
-int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->ptr = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
-}
-
-void AstNodeObject_dealloc(AstNodeObject* self) {
-  Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyObject* AstNodeObject_dump(AstNodeObject *self) {
-  self->ptr->dump();
-  Py_RETURN_NONE;
-}
-
-PyObject* AstNodeObject_iter(AstNodeObject *self) {
-  return wrapIterPair((ContextObject*) self->contextObject, self->ptr->children());
-}
-
-PyTypeObject ChapelTypeType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupChapelTypeType() {
-  ChapelTypeType.tp_name = "ChapelType";
-  ChapelTypeType.tp_basicsize = sizeof(ChapelTypeObject);
-  ChapelTypeType.tp_itemsize = 0;
-  ChapelTypeType.tp_dealloc = (destructor) ChapelTypeObject_dealloc;
-  ChapelTypeType.tp_flags = Py_TPFLAGS_BASETYPE;
-  ChapelTypeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  ChapelTypeType.tp_methods = (PyMethodDef*) PerTypeMethods<ChapelTypeObject>::methods;
-  ChapelTypeType.tp_init = (initproc) ChapelTypeObject_init;
-  ChapelTypeType.tp_new = PyType_GenericNew;
-  ChapelTypeType.tp_str = (reprfunc) ChapelTypeObject_str;
-}
-
-int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->ptr = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
+PyObject* AstNodeObject::iter(AstNodeObject *self) {
+  return wrapIterPair((ContextObject*) self->contextObject, self->value_->children());
 }
 
 void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
@@ -216,49 +150,16 @@ void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-PyObject* ChapelTypeObject_str(ChapelTypeObject* self) {
+PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
   std::stringstream ss;
-  self->ptr->stringify(ss, CHPL_SYNTAX);
+  self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();
   return Py_BuildValue("s", typeString.c_str());
 }
 
-PyTypeObject ParamType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupParamType() {
-  ParamType.tp_name = "Param";
-  ParamType.tp_basicsize = sizeof(ParamObject);
-  ParamType.tp_itemsize = 0;
-  ParamType.tp_dealloc = (destructor) ParamObject_dealloc;
-  ParamType.tp_flags = Py_TPFLAGS_BASETYPE;
-  ParamType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  ParamType.tp_methods = (PyMethodDef*) PerTypeMethods<ParamObject>::methods;
-  ParamType.tp_init = (initproc) ParamObject_init;
-  ParamType.tp_new = PyType_GenericNew;
-  ParamType.tp_str = (reprfunc) ParamObject_str;
-}
-
-int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->ptr = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
-}
-
-void ParamObject_dealloc(ParamObject* self) {
-  Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyObject* ParamObject_str(ParamObject* self) {
+PyObject* ParamObject::str(ParamObject* self) {
   std::stringstream ss;
-  self->ptr->stringify(ss, CHPL_SYNTAX);
+  self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();
   return Py_BuildValue("s", typeString.c_str());
 }
@@ -276,7 +177,7 @@ PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
-  return &AstNodeType;
+  return &AstNodeObject::PythonType;
 }
 
 PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
@@ -292,11 +193,11 @@ PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
 #undef BUILTIN_TYPE_NODE
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
-  return &ChapelTypeType;
+  return &ChapelTypeObject::PythonType;
 }
 
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
-  return &ParamType;
+  return &ParamObject::PythonType;
 }
 
 PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
@@ -309,7 +210,7 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
 #define CAST_TO(NAME) \
     case asttags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->parent.ptr = node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.value_ = node->to##NAME(); \
       break;
 #define AST_NODE(NAME) CAST_TO(NAME)
 #define AST_LEAF(NAME) CAST_TO(NAME)
@@ -338,7 +239,7 @@ PyObject* wrapType(ContextObject* context, const types::Type* node) {
 #define CAST_TO(NAME) \
     case types::typetags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->parent.ptr = (const types::Type*) node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.value_ = (const types::Type*) node->to##NAME(); \
       break;
 #define TYPE_NODE(NAME) CAST_TO(NAME)
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) CAST_TO(NAME)
@@ -367,7 +268,7 @@ PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
 #define PARAM_NODE(NAME, TYPE) \
     case chpl::types::paramtags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->parent.ptr = node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.value_ = node->to##NAME(); \
       break;
 #include "chpl/types/param-classes-list.h"
 #undef PARAM_NODE
