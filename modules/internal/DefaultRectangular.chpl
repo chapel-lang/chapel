@@ -2054,13 +2054,6 @@ module DefaultRectangular {
     return transferHelper(this, destDom, srcClass, srcDom);
   }
 
-  /*proc DefaultRectangularArr.doiBulkTransferFromKnown(destRange: range,*/
-                                                      /*srcClass:DefaultRectangularArr,*/
-                                                      /*srcRange: range) : bool {*/
-    /*return transferHelper(this, destRange, srcClass, srcRange);*/
-
-  /*}*/
-
   private proc transferHelper(A, aView, B, bView) : bool {
     if A.rank == B.rank &&
        aView.hasUnitStride() && bView.hasUnitStride() &&

@@ -2317,6 +2317,8 @@ module ChapelArray {
   }
 
   private proc chpl__staticCheckShortArrayTransfer(a, b) param {
+    // this is the case I'm focusing on in the initial PR. This can definitely
+    // be loosened up... by a lot.
     return isProtoSlice(a) && isProtoSlice(b);
   }
 
@@ -2327,6 +2329,8 @@ module ChapelArray {
       return sizeOk;
     }
     else {
+      // No `.locale` to avoid overheads. Note that this is an optimization for
+      // fast-running code. Small things matter.
       return sizeOk &&
              __primitive("_wide_get_locale", a) ==
              __primitive("_wide_get_locale", b);
@@ -2489,16 +2493,10 @@ module ChapelArray {
 
   proc chpl__basesSupportViewTransfer(a, b) param {
     return chpl__isDROrDRView(a) && chpl__isDROrDRView(b);
-    /*return false;*/
   }
 
   proc chpl__slicingExprsSupportViewTransfer(x...) param {
     return (isHomogeneousTuple(x) && isRange(x[0]));
-  }
-
-  proc chpl__bulkTransferView(a, aTuple, b, bTuple) {
-    compilerAssert(aTuple.size == bTuple.size);
-    chpl__bulkTransferArray(a, {(...aTuple)}, b, {(...bTuple)});
   }
 
   inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
