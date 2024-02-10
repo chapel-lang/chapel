@@ -23,6 +23,9 @@
 #include "core-types.h"
 #include "iterator-support.h"
 #include <optional>
+#include <vector>
+#include <set>
+#include <tuple>
 
 /* The general idea here is the following: we want to add an allowlist
    of C++ types that have defined conversions to and from Python types.
