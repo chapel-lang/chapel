@@ -1,7 +1,3 @@
-localizeConstDom.chpl:5: warning: accessing the locale of a local expression
-$CHPL_HOME/modules/internal/ChapelArray.chpl:3176: warning: accessing the locale of a local expression
-$CHPL_HOME/modules/internal/ChapelArray.chpl:3176: warning: accessing the locale of a local expression
-$CHPL_HOME/modules/internal/ChapelArray.chpl:3176: warning: accessing the locale of a local expression
 all var
 After A
 In initCopy(definedConst=false)domain definedConst: true

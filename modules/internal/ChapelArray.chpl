@@ -3156,7 +3156,7 @@ module ChapelArray {
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     writeln("In initCopy(definedConst=", definedConst, ")", "domain definedConst: ", rhs.domain.definedConst);
-    if rhs.domain.definedConst && rhs.domain.locale != here {
+    if rhs.domain.definedConst && rhs.domain._value.locale != here {
       writeln("Localize path");
       // localize domain for efficiency since it's 'const'
       const lhsDom = rhs.domain;
