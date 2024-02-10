@@ -2413,17 +2413,8 @@ module ChapelArray {
 
   inline proc chpl__bulkTransferArray(ref a: chpl__protoSlice,
                                       b: chpl__protoSlice) {
-
-    if a.slicingExprs.size == 1 {
-      // check the other too?
-      return chpl__bulkTransferArray(a.ptrToArr.deref(), a.slicingExprs[0],
-                                     b.ptrToArr.deref(), b.slicingExprs[0]);
-    }
-    else {
-      return chpl__bulkTransferArray(a.ptrToArr.deref(), {(...a.slicingExprs)},
-                                     b.ptrToArr.deref(), {(...b.slicingExprs)});
-    }
-
+    return chpl__bulkTransferArray(a.ptrToArr.deref(), a.domOrRange,
+                                   b.ptrToArr.deref(), b.domOrRange);
   }
   inline proc chpl__bulkTransferArray(ref a: [], AD, const ref b: [], BD) {
     return chpl__bulkTransferArray(a._value, AD, b._value, BD);
@@ -2441,17 +2432,18 @@ module ChapelArray {
       printf("this is probably not what you want\n");
     }
 
-    inline proc domOrRange {
-      if rank == 1 then
-        return slicingExprs[0];
-      else
-        return {(...slicingExprs)};
+    inline proc domOrRange where rank==1 {
+      return slicingExprs;
+    }
+
+    inline proc domOrRange where rank>1 {
+      return {(...slicingExprs)};
     }
 
     inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
     inline proc _value { return ptrToArr.deref()._value; }
-    inline proc sizeAs(type t) { return domOrRange.sizeAs(t); }
+    inline proc sizeAs(type t) { return slicingExprs.sizeAs(t); }
     inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
 
     iter these() ref {
@@ -2483,6 +2475,11 @@ module ChapelArray {
     }
   }
 
+  proc chpl__createProtoSlice(ref Arr, slicingExprs) {
+    return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
+  }
+
+  pragma "last resort"
   proc chpl__createProtoSlice(ref Arr, slicingExprs...) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
