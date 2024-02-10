@@ -2464,8 +2464,6 @@ static void bulkViewTransfer() {
   for_alive_in_Vec (CallExpr, call, gCallExprs) {
     if (call->getModule()->modTag == MOD_USER) {
       if (call->isNamed("=")) {
-        list_view(call);
-
         CallExpr* lhs = toCallExpr(call->get(1));
         CallExpr* rhs = toCallExpr(call->get(2));
         if (lhs && rhs) {
