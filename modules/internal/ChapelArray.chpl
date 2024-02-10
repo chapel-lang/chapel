@@ -3155,9 +3155,20 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
-    pragma "no copy"
-    var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
-    return lhs;
+    writeln("In initCopy(definedConst=", definedConst, ")", "domain definedConst: ", rhs.domain.definedConst);
+    if rhs.domain.definedConst && rhs.domain.locale != here {
+      writeln("Localize path");
+      // localize domain for efficiency since it's 'const'
+      const lhsDom = rhs.domain;
+      pragma "no copy"
+      var lhs: [lhsDom] rhs.eltType = rhs;
+      return lhs;
+    } else {
+      writeln("Normal path");
+      pragma "no copy"
+      var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
+      return lhs;
+    }
   }
 
   // TODO: why is the compiler calling chpl__autoCopy on an array at all?
