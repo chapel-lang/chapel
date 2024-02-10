@@ -80,6 +80,9 @@ module ChapelArray {
   @chpldoc.nodoc
   config param logAllArrEltAccess = false;
 
+  @chpldoc.nodoc
+  config const shortArrayTransferThreshold = 50;
+
   proc _isPrivatized(value) param do
     return (!compiledForSingleLocale() || CHPL_LOCALE_MODEL=="gpu") &&
            ((_privatization && value!.dsiSupportsPrivatization()) ||
@@ -2319,7 +2322,7 @@ module ChapelArray {
 
   private inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
     param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
-    const sizeOk = a.sizeAs(uint) < 100;
+    const sizeOk = a.sizeAs(uint) < shortArrayTransferThreshold;
     if localCompilation {
       return sizeOk;
     }
