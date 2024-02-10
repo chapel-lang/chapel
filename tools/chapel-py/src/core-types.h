@@ -30,6 +30,77 @@ PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
+template <typename ObjectType>
+struct PerTypeMethods;
+
+struct ContextObject;
+
+template <typename Self, typename T>
+struct PythonClass {
+  PyObject_HEAD
+  T value_;
+
+  /** ===== Support for the method-tables API ===== */
+
+  using UnwrappedT = typename std::conditional<std::is_pointer_v<T>, T, T*>::type;
+
+  // If T is a pointer, return it by value, since copying pointers is cheap.
+  template <typename Q = T>
+  typename std::enable_if<std::is_pointer_v<Q>, UnwrappedT>::type unwrapImpl() {
+    return value_;
+  }
+
+  // If T is a not a pointer, return it by pointer, since values could be large.
+  template <typename Q = T>
+  typename std::enable_if<!std::is_pointer_v<Q>, UnwrappedT>::type unwrapImpl() {
+    return &value_;
+  }
+
+  UnwrappedT unwrap() { return unwrapImpl(); }
+  ContextObject* context() { return nullptr; }
+
+  /** ===== CPython API support ===== */
+
+  static void dealloc(Self* self) {
+    ((PythonClass*) self)->value_.~T();
+    Py_TYPE(self)->tp_free((PyObject *) self);
+  }
+
+  static int init(Self* self, PyObject* args, PyObject* kwargs) {
+    new (&((PythonClass*) self)->value_) T();
+    return 0;
+  }
+
+  static PyTypeObject configurePythonType() {
+    PyTypeObject configuring = {
+      PyVarObject_HEAD_INIT(NULL, 0)
+    };
+    configuring.tp_name = Self::Name;
+    configuring.tp_basicsize = sizeof(Self);
+    configuring.tp_itemsize = 0;
+    configuring.tp_dealloc = (destructor) Self::dealloc;
+    configuring.tp_flags = Py_TPFLAGS_DEFAULT;
+    configuring.tp_doc = PyDoc_STR(Self::DocStr);
+    configuring.tp_methods = (PyMethodDef*) PerTypeMethods<Self>::methods;
+    configuring.tp_init = (initproc) Self::init;
+    configuring.tp_new = PyType_GenericNew;
+    return configuring;
+  }
+
+  static PyTypeObject PythonType;
+
+  static int ready() {
+    return PyType_Ready(&Self::PythonType);
+  }
+
+  static int addToModule(PyObject* mod) {
+    return PyModule_AddObject(mod, Self::Name, (PyObject*) &Self::PythonType);
+  }
+};
+
+template <typename Self, typename T>
+PyTypeObject PythonClass<Self,T>::PythonType = Self::configurePythonType();
+
 struct ContextObject {
   PyObject_HEAD
   chpl::Context context_;
