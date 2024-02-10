@@ -141,32 +141,6 @@ std::string generatePyiFile() {
   return ss.str();
 }
 
-PyTypeObject LocationType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupLocationType() {
-  LocationType.tp_name = "Location";
-  LocationType.tp_basicsize = sizeof(LocationObject);
-  LocationType.tp_itemsize = 0;
-  LocationType.tp_dealloc = (destructor) LocationObject_dealloc;
-  LocationType.tp_flags = Py_TPFLAGS_DEFAULT;
-  LocationType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
-  LocationType.tp_methods = (PyMethodDef*) PerTypeMethods<LocationObject>::methods;
-  LocationType.tp_init = (initproc) LocationObject_init;
-  LocationType.tp_new = PyType_GenericNew;
-}
-
-int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs) {
-  new (&self->location) Location();
-  return 0;
-}
-
-void LocationObject_dealloc(LocationObject* self) {
-  self->location.~Location();
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
 PyTypeObject ScopeType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -432,14 +406,6 @@ PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
   }
   Py_XDECREF(args);
   return toReturn;
-}
-
-PyObject* wrapLocation(Location loc) {
-  auto locationObjectPy = PyObject_CallObject((PyObject *) &LocationType, nullptr);
-  auto& location = ((LocationObject*) locationObjectPy)->location;
-
-  location = std::move(loc);
-  return locationObjectPy;
 }
 
 PyObject* wrapScope(ContextObject* contextObj, const chpl::resolution::Scope* scope) {

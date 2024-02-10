@@ -96,6 +96,16 @@ struct PythonClass {
   static int addToModule(PyObject* mod) {
     return PyModule_AddObject(mod, Self::Name, (PyObject*) &Self::PythonType);
   }
+
+  /** ===== Public convenience methods for using this object ===== */
+
+  static PyObject* create(T createFrom) {
+    auto selfObjectPy = PyObject_CallObject((PyObject *) &PythonType, nullptr);
+    auto& val = ((Self*) selfObjectPy)->value_;
+
+    val = std::move(createFrom);
+    return selfObjectPy;
+  }
 };
 
 template <typename Self, typename T>
@@ -112,22 +122,12 @@ struct ContextObject : public PythonClass<ContextObject, chpl::Context> {
   ContextObject* context() { return this; }
 };
 
-struct LocationObject {
-  PyObject_HEAD
-  chpl::Location location;
-
+struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static constexpr const char* Name = "Location";
-
-  chpl::Location* unwrap() { return &location; }
-  ContextObject* context() { return nullptr; }
+  static constexpr const char* DocStr = "An object that represents the location of an AST node in a source file.";
 };
-extern PyTypeObject LocationType;
-void setupLocationType();
 
 using LineColumnPair = std::tuple<int, int>;
-
-int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs);
-void LocationObject_dealloc(LocationObject* self);
 
 struct ScopeObject {
   PyObject_HEAD
@@ -225,11 +225,6 @@ PyObject* wrapType(ContextObject* context, const chpl::types::Type* node);
   Creates a Python object of the class corresponding to the given Param*.
  */
 PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
-
-/**
-  Create a Python object from the given Location.
- */
-PyObject* wrapLocation(chpl::Location loc);
 
 /**
   Create a Python object from the given Scope.

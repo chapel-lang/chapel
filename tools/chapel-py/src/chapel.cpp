@@ -45,7 +45,6 @@ PyMODINIT_FUNC PyInit_core() {
 
   setupErrorType();
   setupErrorManagerType();
-  setupLocationType();
   setupScopeType();
   setupAstIterType();
   setupAstCallIterType();
@@ -60,7 +59,6 @@ PyMODINIT_FUNC PyInit_core() {
 #undef GENERATED_TYPE
   READY_TYPE(Error)
   READY_TYPE(ErrorManager)
-  READY_TYPE(Location)
   READY_TYPE(Scope)
   READY_TYPE(AstIter)
   READY_TYPE(AstCallIter)
@@ -69,6 +67,7 @@ PyMODINIT_FUNC PyInit_core() {
   READY_TYPE(Param)
 
   if (ContextObject::ready() < 0) return nullptr;
+  if (LocationObject::ready() < 0) return nullptr;
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
@@ -82,6 +81,7 @@ PyMODINIT_FUNC PyInit_core() {
   ADD_TYPE(Param);
 
   if (ContextObject::addToModule(chapelModule) < 0) return nullptr;
+  if (LocationObject::addToModule(chapelModule) < 0) return nullptr;
 
   return chapelModule;
 }
