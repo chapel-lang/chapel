@@ -4,8 +4,7 @@ proc printComponentWidths(type T: (int(?), int(?))) {
 }
 
 proc printComponentWidths((a, b) : (int(?w1), int(?w2))) {
-  writeln('w1: ', w1);
-  writeln('w2: ', w2);
+  writeln('w1: ', w1, ', w2: ', w2);
 }
 
 proc testPrintWidths() {

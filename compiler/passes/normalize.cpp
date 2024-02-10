@@ -4119,7 +4119,7 @@ cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal);
 
 static void
 doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal,
-                                           int width);
+                                   int width);
 
 static bool
 cloneParameterizedPrimitiveInAnyFormal(FnSymbol* fn) {
