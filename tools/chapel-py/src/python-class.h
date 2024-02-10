@@ -34,19 +34,7 @@ struct PythonClass {
 
   /** ===== Support for the method-tables API ===== */
 
-  using UnwrappedT = typename std::conditional<std::is_pointer_v<T>, T, T*>::type;
-
-  // If T is a pointer, return it by value, since copying pointers is cheap.
-  template <typename Q = T>
-  typename std::enable_if<std::is_pointer_v<Q>, UnwrappedT>::type unwrapImpl() {
-    return value_;
-  }
-
-  // If T is a not a pointer, return it by pointer, since values could be large.
-  template <typename Q = T>
-  typename std::enable_if<!std::is_pointer_v<Q>, UnwrappedT>::type unwrapImpl() {
-    return &value_;
-  }
+  using UnwrappedT = typename std::conditional<std::is_pointer_v<T>, T, T&>::type;
 
   // If T is a pointer, allow ::create() to be called with nullptr, and
   // just return None.
@@ -64,7 +52,7 @@ struct PythonClass {
     return nullptr;
   }
 
-  UnwrappedT unwrap() { return unwrapImpl(); }
+  UnwrappedT unwrap() { return value_; }
   ContextObject* context() { return nullptr; }
 
   /** ===== CPython API support ===== */

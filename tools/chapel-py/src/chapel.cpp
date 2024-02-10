@@ -43,8 +43,6 @@ extern "C" {
 PyMODINIT_FUNC PyInit_core() {
   PyObject* chapelModule = nullptr;
 
-  setupErrorType();
-  setupErrorManagerType();
   setupAstIterType();
   setupAstCallIterType();
   setupGeneratedTypes();
@@ -53,8 +51,6 @@ PyMODINIT_FUNC PyInit_core() {
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) READY_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE
-  READY_TYPE(Error)
-  READY_TYPE(ErrorManager)
   READY_TYPE(AstIter)
   READY_TYPE(AstCallIter)
 
@@ -64,6 +60,8 @@ PyMODINIT_FUNC PyInit_core() {
   if (AstNodeObject::ready() < 0) return nullptr;
   if (ChapelTypeObject::ready() < 0) return nullptr;
   if (ParamObject::ready() < 0) return nullptr;
+  if (ErrorObject::ready() < 0) return nullptr;
+  if (ErrorManagerObject::ready() < 0) return nullptr;
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
@@ -79,6 +77,8 @@ PyMODINIT_FUNC PyInit_core() {
   if (AstNodeObject::addToModule(chapelModule) < 0) return nullptr;
   if (ChapelTypeObject::addToModule(chapelModule) < 0) return nullptr;
   if (ParamObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ErrorObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ErrorManagerObject::addToModule(chapelModule) < 0) return nullptr;
 
   return chapelModule;
 }
