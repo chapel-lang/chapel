@@ -1,1 +1,1 @@
-defs.chpl constructGraph.chpl BFS.chpl scalableDataGenerator.chpl verify.chpl
+--no-local defs.chpl constructGraph.chpl BFS.chpl scalableDataGenerator.chpl verify.chpl
