@@ -226,7 +226,11 @@ module Crypto {
     proc toHex() throws {
       var buffHex: [this.buffDomain] string;
       for i in this.buffDomain do {
-        buffHex[i] = try "%02xu".format(this.buff[i]);
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHex[i].appendCodepointValues(nib1, nib2);
       }
       return buffHex;
     }
@@ -240,7 +244,11 @@ module Crypto {
     proc toHexString() throws {
       var buffHexString: string;
       for i in this.buffDomain do {
-        buffHexString += try "%02xu".format(this.buff[i]);
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHexString.appendCodepointValues(nib1, nib2);
       }
       return buffHexString;
     }
@@ -1349,5 +1357,25 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_bf_ofb(): CONST_EVP_CIPHER_PTR;
 
     extern proc RAND_seed(const buf: c_ptr(void), num: c_int);
+  }
+
+  /*
+   * Convert a nibble into a character in its hexadecimal representation.
+   * Copied from Bytes.chpl.
+   * TODO: Put this in a shared location both can use.
+   */
+  @chpldoc.nodoc
+  private proc convertNibble(in nib:uint(8), uppercase: bool): uint(8) {
+    nib = nib & 0xf;
+    if 0 <= nib && nib <= 9 {
+      param zero:uint(8) = b"0"(0); // aka 0x30
+      return zero + nib;
+    } else if 10 <= nib && nib <= 15 {
+      param a:uint(8) = b"a"(0); // aka 0x61
+      param A:uint(8) = b"A"(0); // aka 0x41
+      return (if uppercase then A else a) + nib - 10;
+    }
+
+    return 0;
   }
 }

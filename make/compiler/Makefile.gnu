@@ -355,7 +355,15 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-dangling-reference
 endif
 
-
+#
+# Don't warn for deprecated declarations with llvm 11 and 12, its a very noisy warning
+#
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 11; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-deprecated-declarations
+endif
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-deprecated-declarations
+endif
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
