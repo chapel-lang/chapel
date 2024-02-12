@@ -364,7 +364,7 @@ unconditionally return.
         splitInitHasOtherwise(2);
       }
 
-  .. BLOCK-test-chapeloutput
+   .. BLOCK-test-chapeloutput
 
       2
 
@@ -1139,23 +1139,6 @@ Copy elision does not apply:
       }
       elideCopyBothConditional();
 
-      proc elideCopyParamSelect() {
-        type T = int;
-        var x = makeRecord();
-        var y = x; // copy elided
-        select T {
-          when real {
-            writeln(x);
-          }
-          when string {
-            writeln(x);
-          }
-          otherwise {
-            writeln(y); // compiler can determine this is the only possible branch
-          }
-        }
-      }
-      elideCopyParamSelect();
    .. BLOCK-test-chapeloutput
 
       init (default)
@@ -1172,8 +1155,6 @@ Copy elision does not apply:
       deinit 0
       init (default)
       block ending
-      deinit 0
-      init (default)
       deinit 0
 
 
