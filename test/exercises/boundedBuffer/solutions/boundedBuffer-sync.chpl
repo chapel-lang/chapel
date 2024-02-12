@@ -136,7 +136,7 @@ class BoundedBuffer {
   // block until it is.  Then advance the 'head' position.
   //
   proc produce(item: eltType) {
-    if noisy then sleep(rng.getNext() / prodNoiseScale);
+    if noisy then sleep(rng.next() / prodNoiseScale);
 
     buff[advance(head)].writeEF(item);
   }
@@ -158,7 +158,7 @@ class BoundedBuffer {
   // 'false' otherwise.
   //
   proc consume(): (eltType, bool) {
-    if noisy then sleep(rng.getNext() / consNoiseScale);
+    if noisy then sleep(rng.next() / consNoiseScale);
 
     const val = buff[advance(tail)].readFE();
     return (val, val != sentinel);

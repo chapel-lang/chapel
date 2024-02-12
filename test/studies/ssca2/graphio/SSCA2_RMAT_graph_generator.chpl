@@ -153,19 +153,19 @@ proc Gen_RMAT_graph ( a : real,
 
         // randomize the coefficients, tweaking them by numbers in [-.05, .05)
 
-        skip = Rand_Gen.getNext ();
+        skip = Rand_Gen.next ();
         Rand_Gen.fill (Unif_Random);
         Noisy_a = a * (0.95 + 0.1 * Unif_Random);
 
-        skip = Rand_Gen.getNext ();
+        skip = Rand_Gen.next ();
         Rand_Gen.fill (Unif_Random);
         Noisy_b = b * (0.95 + 0.1 * Unif_Random);
 
-        skip = Rand_Gen.getNext ();
+        skip = Rand_Gen.next ();
         Rand_Gen.fill (Unif_Random);
         Noisy_c = c * (0.95 + 0.1 * Unif_Random);
 
-        skip = Rand_Gen.getNext ();
+        skip = Rand_Gen.next ();
         Rand_Gen.fill (Unif_Random);
         Noisy_d = d * (0.95 + 0.1 * Unif_Random);
 
@@ -175,7 +175,7 @@ proc Gen_RMAT_graph ( a : real,
         Noisy_c *= norm;
         Noisy_d *= norm;
 
-        skip = Rand_Gen.getNext ();
+        skip = Rand_Gen.next ();
         Rand_Gen.fill (Unif_Random);
 
         Edges += assign_quadrant ( Unif_Random, Noisy_a, Noisy_b,

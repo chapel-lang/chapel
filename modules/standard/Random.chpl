@@ -959,7 +959,7 @@ module Random {
     proc ref choose(d: domain(?)): d.idxType
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
-      return d.orderToIndex(this.getNext(0:this.eltType, (d.size-1):this.eltType));
+      return d.orderToIndex(this.next(0:this.eltType, (d.size-1):this.eltType));
     }
 
     /*
@@ -1195,7 +1195,7 @@ module Random {
     /*
       Get the next value in the random stream and advance its position by one.
     */
-    proc ref getNext(): eltType do
+    proc ref next(): eltType do
       return this.pcg.getNext();
 
     /*
@@ -1218,6 +1218,63 @@ module Random {
       :arg min: The minimum value to sample
       :arg max: The maximum value to sample
     */
+    proc ref next(min: eltType, max: eltType): eltType do
+      return this.pcg.getNext(min, max);
+
+    /*
+      Return an iterable object yielding values from the random stream.
+
+      For example, a rectangular array ``A`` could be filled with random values using:
+
+      .. code-block:: chapel
+
+        var rs = new randomStream(int),
+            A: [1..1000] int;
+
+        forall (a, r) in zip(A, rs.next(A.domain)) do
+          a = r;
+
+      *Note that :proc:`randomStream.fill` also serves the same purpose.*
+
+      :arg d: domain associated with the iteration. ``d.size`` values will be yielded
+              by the iterator. When ``d`` is the first argument in a zippered iteration,
+              its parallelization strategy will be used.
+    */
+    pragma "fn returns iterator"
+    proc ref next(d: domain) do
+      return this.pcg.iterate(d, eltType);
+
+    pragma "fn returns iterator"
+    @chpldoc.nodoc
+    proc next(d: domain, param tag: iterKind)
+      where tag == iterKind.leader
+        do return this.pcg.iterate(d, eltType, tag);
+
+    /*
+      Return an iterable object yielding values from the random stream within
+      a given range.
+
+      :arg d: domain associated with the iteration. ``d.size`` values will be yielded
+              by the iterator. When ``d`` is the first argument in a zippered iteration,
+              its parallelization strategy will be used.
+      :arg min: The minimum value to sample
+      :arg max: The maximum value to sample
+    */
+    pragma "fn returns iterator"
+    proc ref next(d: domain, min: eltType, max: eltType) do
+      return this.pcg.iterate(d, eltType, min, max);
+
+    pragma "fn returns iterator"
+    @chpldoc.nodoc
+    proc next(d: domain, min: eltType, max: eltType, param tag: iterKind)
+      where tag == iterKind.leader
+        do return this.pcg.iterate(d, eltType, min, max, tag);
+
+    @deprecated("randomStream.getNext is deprecated; please use :proc:`next` instead")
+    proc ref getNext(): eltType do
+      return this.pcg.getNext();
+
+    @deprecated("randomStream.getNext is deprecated; please use :proc:`next` instead")
     proc ref getNext(min: eltType, max: eltType): eltType do
       return this.pcg.getNext(min, max);
 
@@ -1225,11 +1282,18 @@ module Random {
       Advance or rewind the random stream to the ``n``-th position in the
       pseudorandom sequence (where ``n=0`` is the starting position)
 
-      :arg n: The position to skip to
+      This method will halt for negative arguments if checks are enabled.
 
-      :throws IllegalArgumentError: If ``n`` is negative
+      :arg n: The position to skip to
     */
-    @unstable("'skipToNth' is unstable and subject to change")
+    proc ref skipTo(n: int) {
+      if boundsChecking then
+        if n < 0 then halt("cannot skip to a negative position: " + n:string + " in the random stream");
+
+      try! this.pcg.skipToNth(n);
+    }
+
+    @deprecated("skipToNth is deprecated; please use :proc:`skipTo` instead")
     proc ref skipToNth(n: integral) throws do
       this.pcg.skipToNth(n);
 
@@ -1242,33 +1306,34 @@ module Random {
 
       :throws IllegalArgumentError: If ``n`` is negative
     */
-    @unstable("'getNth' is unstable and subject to change")
+    @deprecated("getNth is deprecated; please use :proc:`skipTo` followed by :proc:`next` instead")
     proc ref getNth(n: integral): eltType throws do
       return this.pcg.getNth(n);
 
+
     pragma "fn returns iterator"
-    @unstable("'iterate' is unstable and subject to change")
+    @deprecated("iterate is deprecated; please use :proc:`next` instead")
     proc ref iterate(D: domain) do
       return this.pcg.iterate(D, eltType);
 
     pragma "fn returns iterator"
-    @unstable("'iterate' is unstable and subject to change")
+    @deprecated("iterate is deprecated; please use :proc:`next` instead")
     proc ref iterate(D: domain, min: eltType, max: eltType) do
       return this.pcg.iterate(D, eltType, min, max);
 
     pragma "fn returns iterator"
     @chpldoc.nodoc
-    @unstable("'iterate' is unstable and subject to change")
+    @deprecated("iterate is deprecated; please use :proc:`next` instead")
     proc iterate(D: domain, param tag: iterKind)
       where tag == iterKind.leader
         do return this.pcg.iterate(D, eltType, tag);
 
     pragma "fn returns iterator"
     @chpldoc.nodoc
-    @unstable("'iterate' is unstable and subject to change")
+    @deprecated("iterate is deprecated; please use :proc:`next` instead")
     proc iterate(D: domain, min: eltType, max: eltType, param tag: iterKind)
       where tag == iterKind.leader
-        do return this.pcg.iterate(D, eltType, min, max);
+        do return this.pcg.iterate(D, eltType, min, max, tag);
 
     /*
       serialize the ``randomStream`` as a record with two fields: ``eltType`` and ``seed``.
@@ -1392,10 +1457,10 @@ module Random {
       // Return 1 sample
       var randVal;
       // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
-      if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
-        randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+      if __primitive("method call and fn resolves", stream, "next", X.idxType) {
+        randVal = stream.next(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
       } else {
-        randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+        randVal = stream.next(0, X.sizeAs(X.idxType)-1);
       }
       var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
@@ -1417,10 +1482,10 @@ module Random {
         for sample in samples {
           var randVal;
           // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
-          if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
-            randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+          if __primitive("method call and fn resolves", stream, "next", X.idxType) {
+            randVal = stream.next(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
           } else {
-            randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+            randVal = stream.next(0, X.sizeAs(X.idxType)-1);
           }
           var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
@@ -1432,10 +1497,10 @@ module Random {
           while i < numElements {
             var randVal;
             // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
-            if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
-              randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+            if __primitive("method call and fn resolves", stream, "next", X.idxType) {
+              randVal = stream.next(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
             } else {
-              randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+              randVal = stream.next(0, X.sizeAs(X.idxType)-1);
             }
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
@@ -1495,7 +1560,7 @@ module Random {
     // Begin sampling
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randNum = stream.getNext();
+      var randNum = stream.next();
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
       return X.dim(0).orderToIndex(idx);
     } else {
@@ -1514,7 +1579,7 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randNum = stream.getNext();
+          var randNum = stream.next();
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
           sample = X.dim(0).orderToIndex(idx);
         }
@@ -1531,7 +1596,7 @@ module Random {
           }
 
           var remainingSamples = samples.sizeAs(int) - indicesChosen.sizeAs(int);
-          for randNum in stream.iterate({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}) {
+          for randNum in stream.next({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}) {
             // A potential optimization: Generate rand nums ahead of time
             // and do a multi-target binary search to find all of their positions
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);

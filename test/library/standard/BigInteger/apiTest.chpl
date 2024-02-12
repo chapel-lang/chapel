@@ -273,11 +273,11 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   // Conversions
   use Random;
   var randStream = new randomStream(int, false);
-  var randVal = randStream.getNext();
+  var randVal = randStream.next();
   assert(randVal:bigint == randVal);
 
   var uRandStream = new randomStream(uint, false);
-  var uRandVal = uRandStream.getNext();
+  var uRandVal = uRandStream.next();
   assert(uRandVal:bigint == uRandVal);
 
   assert(a.cmp(b) == -1);

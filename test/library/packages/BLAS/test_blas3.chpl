@@ -95,8 +95,8 @@ proc test_gemm_helper(type t) {
     rng.fill(B);
     rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A,B,C,alpha,beta);
     forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*B[..,j]));
@@ -120,8 +120,8 @@ proc test_gemm_helper(type t) {
     rng.fill(B);
     rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A,B,C,alpha,beta, opA=Op.T);
     forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[..,i]*B[..,j]));
@@ -145,8 +145,8 @@ proc test_gemm_helper(type t) {
     rng.fill(B);
     rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A,B,C,alpha,beta, opB=Op.H);
     forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*conj(B[j,..])));
@@ -171,8 +171,8 @@ proc test_gemm_helper(type t) {
     rng.fill(B);
     rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A[..,0.. #k], B[..,0.. #n], C[..,0.. #n], alpha,beta);
     forall (i,j) in {0.. #m, 0.. #n} with (ref D) do
@@ -209,8 +209,8 @@ proc test_symm_helper(type t) {
     rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     symm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Left);
     // Do a direct multiplication as a test
@@ -243,8 +243,8 @@ proc test_symm_helper(type t) {
     rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     symm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Right);
     // Do a direct multiplication as a test
@@ -287,8 +287,8 @@ proc test_hemm_helper(type t) {
     rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     hemm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Left);
     // Do a direct multiplication as a test
@@ -321,8 +321,8 @@ proc test_hemm_helper(type t) {
     rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     hemm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Right);
     // Do a direct multiplication as a test
@@ -362,8 +362,8 @@ proc test_syrk_helper(type t) {
     makeSymm(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     syrk(A, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
     // Do a direct multiplication as a test
@@ -429,7 +429,7 @@ proc test_herk_helper(type t) {
     var saveC = C;
     D = C;
     // HERK uses real alpha and beta -- just grab the real and imaginary parts
-    var tmp = rng.getNext();
+    var tmp = rng.next();
     const alpha = tmp.re,
           beta = tmp.im;
 
@@ -498,8 +498,8 @@ proc test_syr2k_helper(type t) {
     makeSymm(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     var one = 1 : t;
     syr2k(A, B, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
@@ -570,9 +570,9 @@ proc test_her2k_helper(type t) {
     makeHerm(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
+    const alpha = rng.next(),
           calpha = conj(alpha);
-    var tmp = rng.getNext();
+    var tmp = rng.next();
     // Beta is real
     const beta = tmp.re;
 
@@ -642,7 +642,7 @@ proc test_trmm_helper(type t) {
     var rng = new randomStream(eltType=t);
     rng.fill(B);
     var saveB = B;
-    const alpha = rng.getNext();
+    const alpha = rng.next();
 
     var zero = 0 : t;
     fillRandom(A);
@@ -709,7 +709,7 @@ proc test_trsm_helper(type t) {
     var rng = new randomStream(eltType=t);
     rng.fill(B);
     var saveB = B;
-    const alpha = rng.getNext();
+    const alpha = rng.next();
 
     var zero = 0 : t,
         one = 1 : t;
