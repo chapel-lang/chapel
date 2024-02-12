@@ -136,10 +136,51 @@ the variable is otherwise mentioned. It will consider the variable passed
 to an ``out`` intent argument as an assignment statement for this
 purpose.  It will search only within block statements ``{ }``,
 ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
-``try`` blocks, ``try!`` blocks, and
-conditionals.  These assignment statements and calls to functions with
+``try`` blocks, ``try!`` blocks, ``select`` blocks, and
+conditionals.  For ``select`` blocks and conditionals, the compiler will 
+ignore blocks that are statically known to be unreachable.
+These assignment statements and calls to functions with
 ``out`` intent are called applicable assignment statements.  They perform
 initialization, not assignment, of that variable.
+
+Split initialization does not apply:
+
+ * when the variable is a field, config variable, or ``extern`` variable.
+ * when an applicable assignment statement setting the variable could not
+   be identified
+ * when an applicable assignment statement is in at least one branch of a
+   conditional or ``select`` block but not in another, unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * every branch without an applicable assignment statement always
+       returns or throws. Note that an ``if`` statement written without an
+       ``else`` is considered to have an empty ``else`` branch. Similarly,
+       a ``select`` without an ``otherwise`` is considered to have an empty
+       ``otherwise``.
+
+   This rule prevents split-initialization when the applicable assignment
+   statement is in a conditional that has no ``else`` branch and the
+   ``if`` branch does not return or throw. The same applies for a ``select`` 
+   without an ``otherwise``.
+
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   block which has ``catch`` clauses that mention the variable
+
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   with ``catch`` clauses unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * all catch clauses return or throw
+
+In the case that the variable is declared with no ``type-part`` or with a
+generic declared type, and where multiple applicable assignment
+statements are identified, all of the assignment statements need to
+contain an initialization expression of the same type.
+
+Any variables declared in a particular scope that are initialized with
+split init in multiple branches of a conditional or ``select``
+must be initialized in the same order in all branches that do not
+unconditionally return.
 
    *Example (simple-split-init.chpl)*
 
@@ -229,39 +270,103 @@ initialization, not assignment, of that variable.
       5
 
 
-Split initialization does not apply:
+   *Example (split-init-select-ignored-path.chpl)*
 
- * when the variable is a field, config variable, or ``extern`` variable.
- * when an applicable assignment statement setting the variable could not
-   be identified
- * when an applicable assignment statement is in one branch of a
-   conditional but not in the other, unless:
+   When the condition for a ``select`` or conditional statement
+   can be evaluated at compile-time, the compiler only considers
+   the path that will be taken:
+    
+   .. code-block:: chapel
+      
+      proc splitInitsBecausePathKnown(type T) {
+        var x: int;
+        select T {
+          when int {
+            // split initialization occurs here when T==int
+            x = 1; 
+          }
+          when string {
+            //compiler ignores this block when T==int
+            writeln("T==string");
+          }
+        }
+        writeln(x);
+      }
+      proc noSplitInitBecausePathUnknown(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+            // no split init, not all paths return, throw, or initialize
+            x = 1; 
+          }
+          when 1 {
+            // this block not ignored by compiler
+            // arg value unknown at compile-time
+            writeln("no initialization");
+          } 
+        }
+        writeln(x);
+      }
+      proc main() {
+        splitInitsBecausePathKnown(int);
+        noSplitInitBecausePathUnknown(0);
+      }
+    
+   .. BLOCK-test-chapeloutput
 
-     * the variable is not an ``out`` intent formal, and
-     * the other branch always returns or throws.
+      1
+      1
 
-   This rule prevents split-initialization when the applicable assignment
-   statement is in a conditional that has no ``else`` branch and the
-   ``if`` branch does not return or throw.
+   *Example (split-init-select-otherwise.chpl)*
 
- * when an applicable assignment statement is in a ``try`` or ``try!``
-   block which has ``catch`` clauses that mention the variable
+   For split initialization with a ``select`` statement, the ``otherwise``
+   clause (or its absence) impact whether or not split initialization is 
+   possible within the ``when`` clauses:
+      
+   .. code-block:: chapel
 
- * when an applicable assignment statement is in a ``try`` or ``try!``
-   with ``catch`` clauses unless:
+      proc noSplitInitMissingOtherwise(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+            // no split init, not all paths return, throw, or initialize
+            // consider path taken when arg==2
+            x = 1; 
+          }
+          when 1 {
+            x = 2; 
+          } 
+          // since this select statement does not have an `otherwise`,
+          // the compiler considers it equivalent to an empty `otherwise`:
+          // otherwise { }
+        }
+        writeln(x);
+      }
+      proc splitInitHasOtherwise(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+            // split init will occur here
+            x = 1;
+          }
+          when 1 {
+            x = 2;
+          } 
+          otherwise {
+            // now all paths initialize, return, or throw.
+            return; 
+          }
+        }
+        writeln(x);
+      }
+      proc main() {
+        noSplitInitMissingOtherwise(1);
+        splitInitHasOtherwise(2);
+      }
 
-     * the variable is not an ``out`` intent formal, and
-     * all catch clauses return or throw
+  .. BLOCK-test-chapeloutput
 
-In the case that the variable is declared with no ``type-part`` or with a
-generic declared type, and where multiple applicable assignment
-statements are identified, all of the assignment statements need to
-contain an initialization expression of the same type.
-
-Any variables declared in a particular scope that are initialized with
-split init in both the ``then`` and ``else`` branches of a conditional
-must be initialized in the same order in the ``then`` and ``else``
-branches.
+      2
 
 .. _Default_Values_For_Types:
 
@@ -941,7 +1046,21 @@ is not mentioned again, the copy will be elided.  Since a ``return`` or
 immediately by a ``return`` or ``throw``. When searching forward from
 variable declarations, copy elision considers eliding copies only within
 block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
-``try`` blocks, ``try!`` blocks, and conditionals.
+``try`` blocks, ``try!`` blocks, ``select`` blocks, and conditionals. As with 
+split initialization, the compiler ignores blocks that are statically known to
+be unreachable.
+
+
+Copy elision does not apply:
+
+ * when the source variable is a reference, field, or module-level
+   variable
+ * when the copy statement is in a conditional or ``select`` branch and
+   at least one branch does not contain the copy, a ``return``, or a ``throw``
+ * when the copy statement is in a ``try`` or ``try!`` block which has
+   ``catch`` clauses that mention the variable or which has ``catch``
+   clauses that do not always ``throw`` or ``return``.
+
 
    *Example (copy-elision.chpl)*
 
@@ -1020,6 +1139,23 @@ block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
       }
       elideCopyBothConditional();
 
+      proc elideCopyParamSelect() {
+        type T = int;
+        var x = makeRecord();
+        var y = x; // copy elided
+        select T {
+          when real {
+            writeln(x);
+          }
+          when string {
+            writeln(x);
+          }
+          otherwise {
+            writeln(y); // compiler can determine this is the only possible branch
+          }
+        }
+      }
+      elideCopyParamSelect();
    .. BLOCK-test-chapeloutput
 
       init (default)
@@ -1037,16 +1173,7 @@ block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
       init (default)
       block ending
       deinit 0
+      init (default)
+      deinit 0
 
-
-Copy elision does not apply:
-
- * when the source variable is a reference, field, or module-level
-   variable
- * when the copy statement is in one branch of a conditional but not in
-   the other, or when the other branch does not always ``return`` or
-   ``throw``.
- * when the copy statement is in a ``try`` or ``try!`` block which has
-   ``catch`` clauses that mention the variable or which has ``catch``
-   clauses that do not always ``throw`` or ``return``.
 
