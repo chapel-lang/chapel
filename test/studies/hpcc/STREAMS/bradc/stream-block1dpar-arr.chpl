@@ -85,9 +85,9 @@ proc initVectors(B, C) {
         then new randomStream(eltType=real)
         else new randomStream(eltType=real, seed=314159265);
       // TODO: Need to clean this up to use more normal method names
-      randlist.skipToNth(B.locArr(loc)!.locDom.low-1);
+      randlist.skipTo(B.locArr(loc)!.locDom.low-1);
       randlist.fill(B.locArr(loc)!.myElems);
-      randlist.skipToNth(B.size + C.locArr(loc)!.locDom.low-1);
+      randlist.skipTo(B.size + C.locArr(loc)!.locDom.low-1);
       randlist.fill(C.locArr(loc)!.myElems);
     }
   }

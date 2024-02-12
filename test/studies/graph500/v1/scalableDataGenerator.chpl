@@ -129,7 +129,7 @@ module Scalable_Graph_Generator
    for i in 1..scale do {
       var   skip : real;
       Rand_Gen.fill ( Unif_Random );
-      skip = Rand_Gen.getNext ();
+      skip = Rand_Gen.next ();
       Rand_Gen.fill ( Unif_Random2 );
 
    forall j in ArrD do
@@ -179,19 +179,19 @@ module Scalable_Graph_Generator
           var   skip : real;
 
           // randomize the coefficients, tweaking them by numbers in [-.05, .05)
-          skip = Rand_Gen.getNext ();
+          skip = Rand_Gen.next ();
           Rand_Gen.fill (Unif_Random);
           Noisy_a = a * (0.95 + 0.1 * Unif_Random);
 
-          skip = Rand_Gen.getNext ();
+          skip = Rand_Gen.next ();
           Rand_Gen.fill (Unif_Random);
           Noisy_b = b * (0.95 + 0.1 * Unif_Random);
 
-          skip = Rand_Gen.getNext ();
+          skip = Rand_Gen.next ();
           Rand_Gen.fill (Unif_Random);
           Noisy_c = c * (0.95 + 0.1 * Unif_Random);
 
-          skip = Rand_Gen.getNext ();
+          skip = Rand_Gen.next ();
           Rand_Gen.fill (Unif_Random);
           Noisy_d = d * (0.95 + 0.1 * Unif_Random);
 
@@ -202,7 +202,7 @@ module Scalable_Graph_Generator
           Noisy_c *= norm;
           Noisy_d *= norm;
 
-          skip = Rand_Gen.getNext ();
+          skip = Rand_Gen.next ();
           Rand_Gen.fill (Unif_Random);
 
           Edges += assign_quadrant ( Unif_Random, Noisy_a, Noisy_b,
@@ -220,7 +220,7 @@ module Scalable_Graph_Generator
           bit >>= 1;
           var   skip : real;
 
-          skip = Rand_Gen.getNext ();
+          skip = Rand_Gen.next ();
           Rand_Gen.fill (Unif_Random);
 
           forall e in ArrD do {
@@ -274,7 +274,7 @@ module Scalable_Graph_Generator
 //   for i in 1..scale do {
       var   skip : real;
       Rand_Gen.fill ( Unif_Random );
-      skip = Rand_Gen.getNext ();
+      skip = Rand_Gen.next ();
       Rand_Gen.fill ( Unif_Random2 );
 
      forall j in ArrD do

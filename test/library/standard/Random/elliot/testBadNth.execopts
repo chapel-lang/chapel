@@ -1,2 +1,0 @@
---getNth=true  # testBadNth.get.good
---getNth=false # testBadNth.skip.good

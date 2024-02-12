@@ -70,9 +70,9 @@ proc initVectors(ref B, ref C, ProblemSpace) {
     then new randomStream(eltType=real)
     else new randomStream(eltType=real, seed=314159265);
 
-  randlist.skipToNth(B.domain.low-1);
+  randlist.skipTo(B.domain.low-1);
   randlist.fill(B);
-  randlist.skipToNth(ProblemSpace.size + C.domain.low-1);
+  randlist.skipTo(ProblemSpace.size + C.domain.low-1);
   randlist.fill(C);
 
   if (printArrays) {

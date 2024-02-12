@@ -79,9 +79,9 @@ proc color.serialize(writer: fileWriter(?), ref serializer) throws {
 
 proc type color.random(): color {
   return new color(
-    rng.getNext(),
-    rng.getNext(),
-    rng.getNext()
+    rng.next(),
+    rng.next(),
+    rng.next()
   );
 }
 

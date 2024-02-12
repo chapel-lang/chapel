@@ -162,7 +162,7 @@ proc test_tz_aware_arithmetic() {
   assert(nowawareplus - nowaware == delta);
 
   // Make up a random timezone.
-  var tzr = new shared FixedOffset(rng.getNext(-1439, 1439), "randomtimezone");
+  var tzr = new shared FixedOffset(rng.next(-1439, 1439), "randomtimezone");
   // Attach it to nowawareplus.
   nowawareplus = nowawareplus.replace(tz=tzr);
   assert(nowawareplus.timezone == tzr);

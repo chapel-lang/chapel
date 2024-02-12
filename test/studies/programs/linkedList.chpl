@@ -165,7 +165,7 @@ proc main() {
   // Add some integers between 1-100
   //
   for i in 1..listSize do
-    lst.insert(1 + (maxValue * rnd.getNext()):int);
+    lst.insert(1 + (maxValue * rnd.next()):int);
   //
   // writeln uses the writeThis method to display the list
   //

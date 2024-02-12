@@ -2146,6 +2146,18 @@ class _serializeWrapper : writeSerializable {
   }
 }
 
+// Get the internal file, bump its reference count, and wrap it in a 'file'.
+private inline
+proc chpl_fileFromReaderOrWriter(readerOrWriter): file {
+  var fp: qio_file_ptr_t;
+  qio_channel_get_file_ptr(readerOrWriter._channel_internal, fp);
+  qio_file_retain(fp);
+  var ret: file;
+  ret._home = readerOrWriter._home;
+  ret._file_internal = fp;
+  return ret;
+}
+
 /*
 
 A ``fileReader`` supports sequential reading from an underlying :record:`file`
@@ -2272,6 +2284,12 @@ record fileWriter {
 proc fileWriter.writing param: bool {
   return true;
 }
+
+/*
+  Get the :record:`file` type underlying a :record:`fileWriter`.
+*/
+@unstable("The 'fileWriter.getFile()' method may change based on feedback")
+proc fileWriter.getFile() do return chpl_fileFromReaderOrWriter(this);
 
 @chpldoc.nodoc
 proc fileWriter._writing param: bool do return true;

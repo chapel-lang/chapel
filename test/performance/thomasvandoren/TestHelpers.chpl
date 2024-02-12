@@ -35,7 +35,7 @@ myFillRandom(B);
 proc myFillRandom(ref A: [] int) {
   // Use serial loop so A filling is reproducible when seed is same.
   for a in A {
-    a = (randStream.getNext() * A.size): int;
+    a = (randStream.next() * A.size): int;
   }
 }
 

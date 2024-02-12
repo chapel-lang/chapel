@@ -7,7 +7,7 @@ config const nBytes = 1024;
 var rs = new randomStream(eltType=uint(8));
 var buf = allocate(uint(8), (nBytes+1).safeCast(c_size_t));
 for i in 0..#nBytes {
-  buf[i] = rs.getNext();
+  buf[i] = rs.next();
 }
 buf[nBytes] = 0;
 

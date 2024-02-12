@@ -24,7 +24,7 @@ proc makeIntsFile(path: string, n: int): int {
         w = f.writer(locking=false);
 
     for 0..<n {
-        const x = rng.getNext(0, 100);
+        const x = rng.next(0, 100);
         sum += x;
         w.writeln(x);
     }
