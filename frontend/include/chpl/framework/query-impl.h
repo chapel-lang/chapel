@@ -231,6 +231,10 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
     // A recursion error was encountered. We will try to gracefully handle
     // this error by adding it to the set of recursion errors on this
     // result.
+    //
+    // When a query introduces a recursion error, its output is forced to
+    // be the default value of its type (e.g., pointer-returning queries
+    // return nullptr, class C queries return C()).
     savedElement->recursionErrors.insert(savedElement);
     updateResultForQueryMapR(queryMap, savedElement, tupleOfArgs, ResultType(),
                              /* forSetter */ false);
@@ -409,6 +413,15 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   // If recursion errors happened at the time the result is being saved,
   // the query is 'poisoned' by recursion and we should store the default result.
   if (!r->recursionErrors.empty()) {
+    // Note: cannot use
+    //
+    //   ResultType dummyValue;
+    //
+    // The above for integers will leave them uninitialized; the below, using
+    // {}, will zero-initialize them. This matters especially for pointers:
+    // we don't want to return a garbage pointer from a recursion-causing
+    // query.
+
     ResultType dummyValue {};
     chpl::update<ResultType> combiner;
     changed = combiner(r->result, dummyValue);

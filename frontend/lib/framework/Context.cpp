@@ -1039,6 +1039,19 @@ bool Context::queryCanUseSavedResult(
   } else if (resultEntry->recursionErrors.size()) {
     // If the query had recursion, don't re-use its result
     // in subsequent generations.
+    //
+    // Largely, this is to avoid the (possibly complicated) logic for figuring
+    // out if recursion will re-occur again. A potential complication is that
+    // a (non-recursive) query returning a default result ought to be treated
+    // differently from a (recursive) query being forced to return a default
+    // value. Their outputs are the same, but calling queries would behave
+    // differently:
+    //
+    //   * runAndTrackErrors will return a different result in parent queries
+    //   * parent queries will / will not be poisoned with recursion errors.
+    //
+    // In the future, we might consider being more intelligent about
+    // this to improve re-use.
     useSaved = false;
   } else if (resultEntry->parentQueryMap->isInputQuery) {
     // be sure to re-run input queries
@@ -1146,7 +1159,7 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
       // to dependencies, in which case code below will skip it.
       CHPL_ASSERT(resultEntry->recursionErrors.count(resultEntry) > 0);
     } else if (resultEntry->recursionErrors.count(resultEntry) > 0) {
-      // Skip adding recursion error triggers to the depenedncy graph
+      // Skip adding recursion error triggers to the dependency graph
       // to avoid creating cycles.
     } else {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
