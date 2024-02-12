@@ -322,10 +322,13 @@ CallInfo CallInfo::create(Context* context,
     }
   }
 
-  // Get the type of the called expression.
+  // Set up a method call if relevant.
   if (auto calledExpr = call->calledExpression()) {
+    // It shouldn't be possible to have definitions that could match either a
+    // normal method call or a call to 'this' on a field, so no need to
+    // disambiguate here; assume it'll be one or the other.
     if (byPostorder.hasAst(calledExpr)) {
-      // Construct a call to 'this' if relevant.
+      // If we have a resolved type for the expression, call its 'this'.
       const ResolvedExpression& r = byPostorder.byAst(calledExpr);
       calledType = r.type();
 
@@ -345,7 +348,7 @@ CallInfo CallInfo::create(Context* context,
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
       }
     } else if (!call->isOpCall()) {
-      // Check for method call, maybe construct a receiver.
+      // Check for normal method call, maybe construct a receiver.
       if (auto called = call->calledExpression()) {
         if (auto calledDot = called->toDot()) {
           const AstNode* receiver = calledDot->receiver();
