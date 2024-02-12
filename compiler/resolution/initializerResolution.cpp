@@ -44,7 +44,7 @@
 #include "wrappers.h"
 #include <llvm/ADT/SmallVector.h>
 
-static void resolveInitCall(CallExpr* call, bool emitErrors,
+static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
                             AggregateType* newExprAlias = NULL,
                             bool forNewExpr = false);
 
@@ -67,12 +67,13 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr);
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol* resolveInitializer(CallExpr* call, bool emitErrors) {
+FnSymbol*
+resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
   FnSymbol* retval = NULL;
 
   callStack.add(call);
 
-  resolveInitCall(call, emitErrors);
+  resolveInitCall(call, emitCallResolutionErrors);
 
   // call->isResolved() is sometimes false on this.init() calls for generic
   // records, as it might be a partial call that needs to get adjusted in order
@@ -319,8 +320,8 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   // Find the correct 'init' function without wrapping/promoting
   AggregateType* alias = at == rootType ? NULL : at;
-  const bool emitErrors = true;
-  resolveInitCall(call, emitErrors, alias, true);
+  const bool emitCallResolutionErrors = true;
+  resolveInitCall(call, emitCallResolutionErrors, alias, true);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
@@ -518,7 +519,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call, bool emitErrors,
+static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
                             AggregateType* newExprAlias,
                             bool forNewExpr) {
   CallInfo info;
@@ -559,13 +560,14 @@ static void resolveInitCall(CallExpr* call, bool emitErrors,
           // In the future, the compiler should not be attempting to resolve
           // an already-resolved call.
           bool existingErrors = fatalErrorsEncountered();
-          if (newExprAlias != NULL && emitErrors) {
+          if (newExprAlias != NULL && emitCallResolutionErrors) {
             USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
           }
           if (!inGenerousResolutionForErrors()) {
             startGenerousResolutionForErrors();
             const bool forNewExpr = false;
-            resolveInitCall(call, emitErrors, newExprAlias, forNewExpr);
+            resolveInitCall(call, emitCallResolutionErrors, newExprAlias,
+                            forNewExpr);
             FnSymbol* retry = call->resolvedFunction();
             stopGenerousResolutionForErrors();
 
@@ -573,7 +575,7 @@ static void resolveInitCall(CallExpr* call, bool emitErrors,
               clearFatalErrors();
           }
         } else {
-          if (emitErrors) {
+          if (emitCallResolutionErrors) {
             if (candidates.n == 0) {
               printResolutionErrorUnresolved(info, mostApplicable);
 
@@ -581,8 +583,6 @@ static void resolveInitCall(CallExpr* call, bool emitErrors,
             } else {
               printResolutionErrorAmbiguous (info, candidates);
             }
-          } else {
-            INT_ASSERT(tryingToResolve());
           }
         }
       }
@@ -591,7 +591,7 @@ static void resolveInitCall(CallExpr* call, bool emitErrors,
       instantiateBody(best->fn);
 
       if (explainCallLine != 0 && explainCallMatch(call) == true &&
-          emitErrors) {
+          emitCallResolutionErrors) {
         USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
       }
 
@@ -600,7 +600,7 @@ static void resolveInitCall(CallExpr* call, bool emitErrors,
 
         call->baseExpr->replace(new SymExpr(best->fn));
 
-        if (emitErrors) {
+        if (emitCallResolutionErrors) {
           checkForStoringIntoTuple(call, best->fn);
           resolveNormalCallCompilerWarningStuff(call, best->fn);
         }
@@ -611,7 +611,7 @@ static void resolveInitCall(CallExpr* call, bool emitErrors,
       delete candidate;
     }
 
-  } else if (emitErrors) {
+  } else if (emitCallResolutionErrors) {
     info.haltNotWellFormed();
   }
 }
