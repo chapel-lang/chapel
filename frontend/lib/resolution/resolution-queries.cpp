@@ -2126,11 +2126,7 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
 
-  if (sig == nullptr) {
-    return nullptr;
-  }
-
-  if (sig->needsInstantiation()) {
+  if (sig == nullptr || sig->needsInstantiation()) {
     return nullptr;
   }
 
