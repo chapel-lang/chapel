@@ -353,7 +353,7 @@ Context::queryEnd(
   if (r->recursionErrors.count(r) != 0) {
     // This query had the opportunity to handle its own recursion, but didn't.
     // Emit a generic error.
-    haltForRecursiveQuery(r);
+    emitErrorForRecursiveQuery(r);
   }
 
   if (enableDebugTrace

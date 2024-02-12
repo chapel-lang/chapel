@@ -386,7 +386,7 @@ class Context {
   getResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
             const std::tuple<ArgTs...>& tupleOfArgs);
 
-  void haltForRecursiveQuery(const querydetail::QueryMapResultBase* r);
+  void emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r);
 
   template<typename ResultType,
            typename... ArgTs>

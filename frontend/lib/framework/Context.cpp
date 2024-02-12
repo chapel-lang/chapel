@@ -1191,7 +1191,7 @@ void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
   saveDependencyInParent(resultEntry);
 }
 
-void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
+void Context::emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   CHPL_REPORT(this, Recursion,
               UniqueString::get(this, r->parentQueryMap->queryName));
 }
