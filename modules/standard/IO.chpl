@@ -2209,6 +2209,12 @@ record fileReader {
   var _readWriteThisFromLocale = nilLocale;
 }
 
+/*
+  Get the :record:`file` type underlying a :record:`fileReader`.
+*/
+@unstable("The 'fileReader.getFile()' method may change based on feedback")
+proc fileReader.getFile() do return chpl_fileFromReaderOrWriter(this);
+
 /* Returns a bool indicating whether the fileReader is used for writing.  It is
    always ``false`` */
 @deprecated(notes="'fileReader.writing' is deprecated and will be removed in a future release")
