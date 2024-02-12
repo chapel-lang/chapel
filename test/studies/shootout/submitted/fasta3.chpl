@@ -154,4 +154,4 @@ iter getRands(n) {
     yield lastRand: real / IM;
   }
 }
-use Compat;
+use Compat, CompatIOKind;
