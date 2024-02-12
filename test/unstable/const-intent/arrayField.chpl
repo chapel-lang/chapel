@@ -1,8 +1,8 @@
 record Foo {
-  var x: [0..3]	int;
+  var x: [0..3] int;
 }
 
-var arr	= [2, 4, 6, 2];
+var arr = [2, 4, 6, 2];
 var globalFoo = new Foo(arr);
 
 proc takesAFoo(const arg: Foo) {
