@@ -20,6 +20,7 @@
 #ifndef CHPL_QUERIES_CONTEXT_DETAIL_H
 #define CHPL_QUERIES_CONTEXT_DETAIL_H
 
+#include "chpl/framework/ID.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
@@ -313,22 +314,17 @@ class QueryMapResult final : public QueryMapResultBase {
   void markUniqueStringsInResult(Context* context) const override;
 };
 
-// ID is only forward declared here, so we cannot return it by value. Thus,
-// return an ID ref to the argument tuple; calling code will need to perform
-// a copy to construct an actual TraceElement.
-using TraceElementRef = std::pair<ID const&, std::string>;
-
 class QueryTracerBase {
  public:
   virtual ~QueryTracerBase() = 0; // this is an abstract base class
-  virtual TraceElementRef traceElementFrom(const QueryMapResultBase*) const = 0;
+  virtual TraceElement traceElementFrom(const QueryMapResultBase*) const = 0;
 };
 
 template<typename ResultType,
          typename... ArgTs>
 class QueryTracer : public QueryTracerBase {
  private:
-   std::function<TraceElementRef(const std::tuple<ArgTs...>&)> traceElementFrom_;
+   std::function<TraceElement(const std::tuple<ArgTs...>&)> traceElementFrom_;
 
  public:
   ~QueryTracer() = default;
@@ -337,7 +333,7 @@ class QueryTracer : public QueryTracerBase {
   QueryTracer(F&& traceElementFrom)
     : traceElementFrom_(std::move(traceElementFrom)) {
   }
-  TraceElementRef traceElementFrom(const QueryMapResultBase* r) const override {
+  TraceElement traceElementFrom(const QueryMapResultBase* r) const override {
     auto specR = (const QueryMapResult<ResultType, ArgTs...>*) r;
     return traceElementFrom_(specR->tupleOfArgs);
   }
