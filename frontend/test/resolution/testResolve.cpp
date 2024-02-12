@@ -874,6 +874,7 @@ static void test20() {
 
 // Test resolving functions with pragma "last resort".
 static void test21() {
+  printf("test21\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -1168,34 +1169,177 @@ static void test21() {
   }
 }
 
-// Check calling implicit 'this' on a field.
+// Resolve calls to 'this' on a field.
 static void test22() {
+  printf("test22\n");
   Context ctx;
   Context* context = &ctx;
-  ErrorGuard guard(context);
 
-  std::string contents =
-      R""""(
-      module M {
-        record Inner {
-          proc this(arg: int) {
-            return arg;
+  // Resolve unambiguous call to 'this'.
+  {
+    printf("part 1\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this(arg: int) {
+              return arg;
+            }
           }
+          record Outer {
+            var inner : Inner;
+          }
+          var outer : Outer;
+          var x = outer.inner(3);
         }
-        record Outer {
-          var inner : Inner;
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    assert(type.type());
+    assert(!type.isUnknown());
+    assert(type.type()->isIntType());
+
+    guard.realizeErrors();
+    context->collectGarbage();
+  }
+
+  // Above but as param
+  {
+    printf("part 2\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this(param arg: int) param {
+              return arg;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+          }
+          var outer : Outer;
+          param x = outer.inner(3);
         }
-        var outer : Outer;
-        var x = outer.inner(3);
-      }
-      )"""";
+        )"""";
 
-  auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
-  assert(type.type());
-  assert(!type.isUnknown());
-  assert(type.type()->isIntType());
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    ensureParamInt(type, 3);
 
-  guard.realizeErrors();
+    guard.realizeErrors();
+    context->collectGarbage();
+  }
+
+  // Non-applicable 'this' candidate
+  {
+    printf("part 3\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this() {
+              return 3;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+          }
+          var outer : Outer;
+          param x = outer.inner(3);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    assert(type.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
+
+    guard.realizeErrors();
+
+    context->collectGarbage();
+  }
+
+  // Normal method and 'this' both applicable.
+  // We prefer the 'this' call, but likely want to make this a multiple
+  // definition error eventually anyways.
+  {
+    printf("part 4\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this(param arg: int) param {
+              return 3;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+            proc inner(param arg: int) param {
+              return 5;
+            }
+          }
+          var outer : Outer;
+          param x = outer.inner(1);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    ensureParamInt(type, 3);
+
+    guard.realizeErrors();
+
+    context->collectGarbage();
+  }
+
+  // Normal method applicable, 'this' not applicable.
+  // This doesn't resolve as we only try to resolve the field's 'this' and not
+  // methods with the same name.
+  // Like the above, the method and field with the same name should be made a
+  // multiple definition error.
+  {
+    printf("part 5\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this() param {
+              return 3;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+            proc inner(param arg: int) param {
+              return 5;
+            }
+          }
+          var outer : Outer;
+          param x = outer.inner(1);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    assert(type.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
+
+    guard.realizeErrors();
+
+    context->collectGarbage();
+  }
 }
 
 int main() {
