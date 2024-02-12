@@ -148,12 +148,15 @@ Split initialization does not apply:
  * when the variable is a field, config variable, or ``extern`` variable.
  * when an applicable assignment statement setting the variable could not
    be identified
- * when an applicable assignment statement is in at least one branch of a 
+ * when an applicable assignment statement is in at least one branch of a
    conditional or ``select`` block but not in another, unless:
 
      * the variable is not an ``out`` intent formal, and
-     * every branch without an applicable assignment statement always 
-       returns or throws.
+     * every branch without an applicable assignment statement always
+       returns or throws. Note that an ``if`` statement written without an
+       ``else`` is considered to have an empty ``else`` branch. Similarly,
+       a ``select`` without an ``otherwise`` is considered to have an empty
+       ``otherwise``.
 
    This rule prevents split-initialization when the applicable assignment
    statement is in a conditional that has no ``else`` branch and the
@@ -267,7 +270,7 @@ unconditionally return.
       5
 
 
-   *Example (split-init-select-dce.chpl)*
+   *Example (split-init-select-ignored-path.chpl)*
 
    When the condition for a ``select`` or conditional statement
    can be evaluated at compile-time, the compiler only considers
@@ -275,7 +278,7 @@ unconditionally return.
     
    .. code-block:: chapel
       
-      proc splitInitsBecauseDCE(type T) {
+      proc splitInitsBecausePathKnown(type T) {
         var x: int;
         select T {
           when int {
@@ -283,7 +286,8 @@ unconditionally return.
             x = 1; 
           }
           when string {
-            writeln("compiler ignores this block when T==int");
+            //compiler ignores this block when T==int
+            writeln("T==string");
           }
         }
         writeln(x);
@@ -292,18 +296,19 @@ unconditionally return.
         var x: int;
         select arg {
           when 0 {
-          // no split init, not all paths return, throw, or initialize
+            // no split init, not all paths return, throw, or initialize
             x = 1; 
           }
           when 1 {
-            writeln("this block not ignored by compiler.");
-            writeln("arg value unknown at compile-time.");
+            // this block not ignored by compiler
+            // arg value unknown at compile-time
+            writeln("no initialization");
           } 
         }
         writeln(x);
       }
       proc main() {
-        splitInitsBecauseDCE(int);
+        splitInitsBecausePathKnown(int);
         noSplitInitBecausePathUnknown(0);
       }
     
@@ -314,8 +319,9 @@ unconditionally return.
 
    *Example (split-init-select-otherwise.chpl)*
 
-   Remember to consider the path taken by select statements where
-   none of the cases match:
+   For split initialization with a ``select`` statement, the ``otherwise``
+   clause (or its absence) impact whether or not split initialization is 
+   possible within the ``when`` clauses:
       
    .. code-block:: chapel
 
@@ -323,13 +329,16 @@ unconditionally return.
         var x: int;
         select arg {
           when 0 {
-          // no split init, not all paths return, throw, or initialize
+            // no split init, not all paths return, throw, or initialize
+            // consider path taken when arg==2
             x = 1; 
           }
           when 1 {
-          // hint: consider the path taken when arg=2
             x = 2; 
           } 
+          // since this select statement does not have an `otherwise`,
+          // the compiler considers it equivalent to an empty `otherwise`:
+          // otherwise { }
         }
         writeln(x);
       }
@@ -337,14 +346,14 @@ unconditionally return.
         var x: int;
         select arg {
           when 0 {
-            //split init will occur here
+            // split init will occur here
             x = 1;
           }
           when 1 {
             x = 2;
           } 
           otherwise {
-            //now all paths initialize, return, or throw.
+            // now all paths initialize, return, or throw.
             return; 
           }
         }
@@ -1037,7 +1046,7 @@ is not mentioned again, the copy will be elided.  Since a ``return`` or
 immediately by a ``return`` or ``throw``. When searching forward from
 variable declarations, copy elision considers eliding copies only within
 block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
-``try`` blocks, ``try!`` blocks, ``select`` blocks, and conditionals. Like 
+``try`` blocks, ``try!`` blocks, ``select`` blocks, and conditionals. As with 
 split initialization, the compiler ignores blocks that are statically known to
 be unreachable.
 
