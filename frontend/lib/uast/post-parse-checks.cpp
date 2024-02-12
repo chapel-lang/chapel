@@ -147,6 +147,7 @@ struct Visitor {
   void checkCStringLiteral(const CStringLiteral* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
+  void checkUnstableSerial(const Serial* ser);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -191,6 +192,7 @@ struct Visitor {
   void visit(const PrimCall* node);
   void visit(const Return* node);
   void visit(const Select* node);
+  void visit(const Serial* node);
   void visit(const TypeQuery* node);
   void visit(const Union* node);
   void visit(const Use* node);
@@ -1553,6 +1555,17 @@ void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
       break;
     } 
     if (when->isOtherwise())  seenOtherwise = when;
+  }
+}
+
+void Visitor::visit(const Serial* node) {
+  checkUnstableSerial(node);
+}
+
+void Visitor::checkUnstableSerial(const Serial* ser) {
+  if (shouldEmitUnstableWarning(ser)) {
+    warn(ser, "'serial' statements are unstable "
+              "and likely to be deprecated in a future release");
   }
 }
 
