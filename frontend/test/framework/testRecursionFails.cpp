@@ -118,7 +118,7 @@ static void test1() {
   .---.       .-----.   |
   | f | ----> |     |---| (first call)
   .---.       |  g  |
-    ^         |     |---| (second dcall)
+    ^         |     |---| (second call)
     |         .-----.   |
     |                   |
     ---------------------
@@ -135,7 +135,7 @@ static void test1() {
   .---.       .-----.   |
   | f | ----> |     |---| (first call)
   .---.       |  g  |
-              |     |---| (second dcall)
+              |     |---| (second call)
               .-----.   |
                  ^      |
                  |      |
