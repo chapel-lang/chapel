@@ -468,6 +468,204 @@ module Random {
   }
 
   /*
+    Choose a random element from an array.
+
+    :arg arr: The 1D rectangular array to choose from
+
+    :return: A random element from the array
+  */
+  proc choose(const ref arr: [?d] ?t): t
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType);
+    return rs.choose(arr);
+  }
+
+  /*
+    Choose a random element from an array.
+
+    :arg arr: The 1D rectangular array to choose from
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A random element from the array
+  */
+  proc choose(const ref arr: [?d] ?t, seed: int): t
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType, seed);
+    return rs.choose(arr);
+  }
+
+  /*
+    Choose a random index from a domain.
+
+    :arg d: The 1D rectangular domain to choose from
+
+    :return: A random index from the domain
+  */
+  proc choose(d: domain(?)): d.idxType {
+    var rs = new randomStream(d.idxType);
+    return rs.choose(d);
+  }
+
+  /*
+    Choose a random index from a domain.
+
+    :arg d: The 1D rectangular domain to choose from
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A random index from the domain
+  */
+  proc choose(d: domain(?), seed: int): d.idxType {
+    var rs = new randomStream(d.idxType, seed);
+    return rs.choose(d);
+  }
+
+  /*
+    Choose a random value from a range.
+
+    :arg r: A fully bounded range to choose from
+
+    :return: A random value from the range
+  */
+  proc choose(r: range(bounds=boundKind.both, ?)): r.idxType {
+    var rs = new randomStream(r.idxType);
+    return rs.choose({r});
+  }
+
+  /*
+    Choose a random value from a range.
+
+    :arg r: A fully bounded range to choose from
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A random value from the range
+  */
+  proc choose(r: range(bounds=boundKind.both, ?), seed: int): r.idxType {
+    var rs = new randomStream(r.idxType, seed);
+    return rs.choose({r});
+  }
+
+  /*
+    Randomly sample ``n`` elements from an array.
+
+    :arg arr: The 1D rectangular array to sample from
+    :arg n: The number of elements to sample
+    :arg withReplacement: Whether or not to sample with replacement
+
+    :return: A zero-based array of ``n`` random elements sampled from the array
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``arr`` is
+                                  empty.
+  */
+  proc sample(const ref arr: [?d] ?t, n: int, withReplacement=false): [] t throws
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType);
+    return rs.sample(arr, n, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` elements from an array.
+
+    :arg arr: The 1D rectangular array to sample from
+    :arg n: The number of elements to sample
+    :arg withReplacement: Whether or not to sample with replacement
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A zero-based array of ``n`` random elements sampled from the array
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``arr`` is
+                                  empty.
+  */
+  proc sample(const ref arr: [?d] ?t, n: int, withReplacement=false, seed: int): [] t throws
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType, seed);
+    return rs.sample(arr, n, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` indices from a domain.
+
+    :arg d: The 1D rectangular domain to sample from
+    :arg n: The number of indices to sample
+    :arg withReplacement: Whether or not to sample with replacement
+
+    :return: A zero-based array of ``n`` random indices sampled from the domain
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``d`` is
+                                  empty.
+  */
+  proc sample(d: domain(?), n: int, withReplacement=false): [] d.idxType throws
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType);
+    return rs.sample(d, n, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` indices from a domain.
+
+    :arg d: The 1D rectangular domain to sample from
+    :arg n: The number of indices to sample
+    :arg withReplacement: Whether or not to sample with replacement
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A zero-based array of ``n`` random indices sampled from the domain
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``d`` is
+                                  empty.
+  */
+  proc sample(d: domain(?), n: int, withReplacement=false, seed: int): [] d.idxType throws
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType, seed);
+    return rs.sample(d, n, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` values from a range.
+
+    :arg r: A fully bounded range to sample from
+    :arg n: The number of values to sample
+    :arg withReplacement: Whether or not to sample with replacement
+
+    :return: A zero-based array of ``n`` random values sampled from the range
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``r`` is
+                                  empty.
+  */
+  proc sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false): [] r.idxType throws {
+    var rs = new randomStream(r.idxType);
+    return rs.sample(r, n, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` values from a range.
+
+    :arg r: A fully bounded range to sample from
+    :arg n: The number of values to sample
+    :arg withReplacement: Whether or not to sample with replacement
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A zero-based array of ``n`` random values sampled from the range
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``r`` is
+                                  empty.
+  */
+  proc sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false, seed: int): [] r.idxType throws {
+    var rs = new randomStream(r.idxType, seed);
+    return rs.sample(r, n, withReplacement);
+  }
+
+  /*
     A :record:`randomStream` represents a stream of pseudorandom numbers of a
     particular type. Numeric and bool types are supported.
 
@@ -737,6 +935,162 @@ module Random {
         this.pcg.permutation(arr);
 
     /*
+      Choose a random element from an array.
+
+      :arg arr: The 1D rectangular array to choose from. Its domain's ``idxType``
+                should be coercible from this stream's ``eltType``.
+
+      :return: A random element from the array
+    */
+    proc ref choose(const ref arr: [?d] ?t): t
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
+    {
+      return arr[this.choose(d)];
+    }
+
+    /*
+      Choose a random index from a domain.
+
+      :arg d: The 1D rectangular domain to choose from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+
+      :return: A random index from the domain
+    */
+    proc ref choose(d: domain(?)): d.idxType
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
+    {
+      return d.orderToIndex(this.getNext(0:this.eltType, (d.size-1):this.eltType));
+    }
+
+    /*
+      Choose a random value from a range.
+
+      :arg r: The fully bounded range to choose from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+
+      :return: A random value from the range
+    */
+    proc ref choose(r: range(bounds=boundKind.both, ?)): r.idxType
+      where isCoercible(this.eltType, r.idxType)
+    {
+      return this.choose({r});
+    }
+
+    /*
+      Sample ``n`` random elements from an array.
+
+      :arg arr: The 1D rectangular array to sample from. Its domain's ``idxType``
+                should be coercible from this stream's ``eltType``.
+      :arg n: The number of elements to sample
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random elements sampled from the array
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``arr`` is
+                                    empty.
+    */
+    proc ref sample(const ref arr: [?d] ?t, n: int, withReplacement=false): [] t throws
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
+    {
+      use CopyAggregation;
+
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty array");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= arr.size when withReplacement=false");
+
+      const ds = this.sample(d, n, withReplacement);
+      var res: [0..<n] t;
+      forall (i, di) in zip(res.domain, ds) with (var agg = new DstAggregator(t))
+        do agg.copy(res[i], arr[di]); // res[i] = arr[di];
+      return res;
+    }
+
+    /*
+      Sample ``n`` random indices from a domain.
+
+      :arg d: The 1D rectangular domain to sample from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+      :arg n: The number of indices to sample
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random indices sampled from the domain
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``d`` is
+                                    empty.
+    */
+    proc ref sample(d: domain, n: int, withReplacement=false): [] d.idxType throws
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
+    {
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty domain");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= d.size when withReplacement=false");
+
+      // create an array of n indices
+      const dOut = {0..<n};
+      var samples: [dOut] d.idxType;
+
+      if withReplacement {
+        for s in samples do s = this.choose(d);
+      } else {
+        if n < log2(d.size) {
+          // for a sufficiently small number of indices,
+          // use a set to fill 'samples' with n unique values
+          var indices: domain(int, parSafe=false),
+              i = 0;
+          while i < n {
+            const sample = this.choose(d);
+            if !indices.contains(sample) {
+              samples[dOut.orderToIndex(i)] = sample;
+              indices.add(sample);
+              i += 1;
+            }
+          }
+        } else {
+          // otherwise, shuffle an array of all
+          // indices and take the first n of them
+          var indices = [idx in d] idx;
+          this.shuffle(indices);
+          forall i in dOut
+            do samples[i] = indices[d.orderToIndex(i)];
+        }
+      }
+
+      return samples;
+    }
+
+    /*
+      Sample ``n`` random values from a range.
+
+      :arg r: The fully bounded range to sample from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+      :arg n: The number of values to sample
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random values sampled from the range
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``r`` is
+                                    empty.
+    */
+    proc ref sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false): [] r.idxType throws
+      where isCoercible(this.eltType, r.idxType)
+    {
+      if r.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty range");
+
+      if n < 1 || (n > r.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= r.size when withReplacement=false");
+
+      return this.sample({r}, n, withReplacement);
+    }
+
+    /*
       Return a random sample from a given 1D array, ``x``.
 
       :arg x: The array to take a sample from.
@@ -764,7 +1118,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
     */
-    @unstable("'choice' is unstable and subject to change")
+    @deprecated("randomStream.choice is deprecated; please use :proc:`~randomStream.choose` or :proc:`~randomStream.sample` instead")
     proc ref choice(const x: [?d], size:?sizeType=none, replace=true, prob:?probType=none) throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
@@ -800,7 +1154,7 @@ module Random {
                                     if ``size < 1 || size.size < 1``,
                                     if ``replace=false`` and ``size > x.size || size.size > x.size``
     */
-    @unstable("'choice' is unstable and subject to change")
+    @deprecated("randomStream.choice is deprecated; please use :proc:`~randomStream.choose` or :proc:`~randomStream.sample` instead")
     proc ref choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws
       where isCoercible(this.eltType, x.idxType)
         do return _choice(this, {x}, size, replace, prob);
@@ -833,7 +1187,7 @@ module Random {
                                     if ``size < 1 || size.size < 1``,
                                     if ``replace=false`` and ``size > x.size || size.size > x.size``.
     */
-    @unstable("'choice' is unstable and subject to change")
+    @deprecated("randomStream.choice is deprecated; please use :proc:`~randomStream.choose` or :proc:`~randomStream.sample` instead")
     proc ref choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
       where is1DRectangularDomain(x) && isCoercible(this.eltType, x.idxType)
         do return _choice(this, x, size, replace, prob);
@@ -2035,7 +2389,7 @@ module Random {
       }
 
       /* Randomly shuffle a 1-D array. */
-      proc ref shuffle(ref arr: [?D] ?eltType ) {
+      proc ref shuffle(ref arr: [?D] ) {
 
         if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
@@ -2043,12 +2397,12 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.low,
-              stride = abs(D.stride);
+        const low = D.low: this.eltType,
+              stride = abs(D.stride): this.eltType;
 
         // Fisher-Yates shuffle
         for i in 0..#D.sizeAs(D.idxType) by -1 {
-          var k = PCGRandomStreamPrivate_getNext_noLock(D.idxType, 0, i);
+          var k = PCGRandomStreamPrivate_getNext_noLock(this.eltType, 0:this.eltType, i:this.eltType);
           var j = i;
 
           // Strided case

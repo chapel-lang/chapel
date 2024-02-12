@@ -90,8 +90,8 @@ module testmodule {
     var myBorrowedNonNilable:borrowed MyClass = myBorrowedNonNilableOwn.borrow();
     var myBorrowedNilableOwn = new owned MyClass();
     var myBorrowedNilable:borrowed MyClass? = myBorrowedNilableOwn.borrow();
-    var myUnmanagedNonNilable:unmanaged MyClass = new unmanaged MyClass();
-    var myUnmanagedNilable:unmanaged MyClass? = new unmanaged MyClass?();
+    var myUnmanagedNonNilable:unmanaged MyClass = myBorrowedNonNilable:unmanaged;
+    var myUnmanagedNilable:unmanaged MyClass? = myBorrowedNilable:unmanaged;
     var myInt = 1;
 
     {
@@ -422,7 +422,5 @@ module testmodule {
       assert(canResolve(fnName, myUnmanagedNilable));
       assert(!canResolve(fnName, myInt));
     }
-    delete myUnmanagedNonNilable;
-    delete myUnmanagedNilable;
   }
 }

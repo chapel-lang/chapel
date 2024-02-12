@@ -1,2 +1,2 @@
 assertOnGpu.chpl:X: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
-assertOnGpu.chpl:X: note: call has outer var access
+assertOnGpu.chpl:X: note: use of ineligible standard library function 'writeln' in loop body

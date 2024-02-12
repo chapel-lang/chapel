@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf using llvm fastcc
-GITHUB_USER=chapel-lang
-GITHUB_BRANCH=main
-SHORT_NAME=main
-START_DATE=1/18/24
+# Test performance without the return-by-reference transformation
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=denorm-return-by-ref
+SHORT_NAME=denorm-ret-by-ref
+START_DATE=02/08/24
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
