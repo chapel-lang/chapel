@@ -927,23 +927,23 @@ struct CandidatesAndForwardingInfo {
   }
 
   // Get the candidate at the provided index with no bounds checking.
-  const TypedFnSignature* get(size_t i) const { return candidates[i]; }
+  inline const TypedFnSignature* get(size_t i) const { return candidates[i]; }
 
   // Get the forwarding info at the provided index.
   // Fails if there isn't forwarding info saved for each candidate.
-  const types::QualifiedType& getForwardingInfo(size_t i) const {
+  inline const types::QualifiedType& getForwardingInfo(size_t i) const {
     CHPL_ASSERT(candidates.size() == forwardingInfo.size());
     return forwardingInfo[i];
   }
 
   // Check if any candidates are present
-  bool empty() const { return candidates.empty(); }
+  inline bool empty() const { return candidates.empty(); }
 
   // Get the number of candidates
-  size_t size() const { return candidates.size(); }
+  inline size_t size() const { return candidates.size(); }
 
   // Return true if this container stores any forwarding info
-  bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
+  inline bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
 
   // Iterator over contained candidates
   const_iterator begin() const { return candidates.begin(); }
