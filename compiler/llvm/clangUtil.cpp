@@ -2501,7 +2501,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
   PassInstrumentationCallbacks PIC;
   StandardInstrumentations SI(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
@@ -2645,7 +2645,7 @@ void prepareCodegenLLVM()
   info->PIC = new PassInstrumentationCallbacks();
   info->SI = new StandardInstrumentations(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
