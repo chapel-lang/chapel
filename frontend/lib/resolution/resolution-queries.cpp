@@ -65,6 +65,9 @@ using ForwardingInfoVec = std::vector<QualifiedType>;
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
+  QUERY_REGISTER_TRACER(
+    return std::make_pair(std::get<0>(args), "resolving this module statement");
+  );
 
   CHPL_ASSERT(id.postOrderId() >= 0);
 
@@ -77,6 +80,10 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto modStmt = parsing::idToAst(context, id);
     auto visitor = Resolver::createForModuleStmt(context, mod, modStmt, result);
     modStmt->traverse(visitor);
+
+    if (auto rec = context->recoverFromSelfRecursion()) {
+      CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
+    }
   }
 
   return QUERY_END(result);
@@ -540,7 +547,7 @@ typedSignatureInitial(Context* context,
 
   auto ret = typedSignatureInitialQuery(context, untypedSig);
   // also check the signature at this point if it is concrete
-  if (!ret->needsInstantiation()) {
+  if (ret != nullptr && !ret->needsInstantiation()) {
     checkSignature(context, ret);
   }
   return ret;
@@ -674,6 +681,15 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                                              DefaultsPolicy defaultsPolicy) {
   QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, defaultsPolicy);
 
+  QUERY_REGISTER_TRACER(
+    auto& id = std::get<0>(args)->id();
+    auto typeName = std::get<0>(args)->name();
+    auto traceText = std::string("resolving the fields of type '")
+      + typeName.c_str()
+      + "'";
+    return std::make_pair(id, traceText);
+  );
+
   ResolvedFields result;
 
   CHPL_ASSERT(ct);
@@ -715,6 +731,10 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                           resolvedFields.fieldType(i));
         }
         result.addForwarding(resolvedFields);
+      }
+
+      if (auto rec = context->recoverFromSelfRecursion()) {
+        CHPL_REPORT(context, RecursionFieldDecl, child, ad, ct, std::move(*rec));
       }
     }
 
@@ -2105,7 +2125,8 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-  if (sig->needsInstantiation()) {
+
+  if (sig == nullptr || sig->needsInstantiation()) {
     return nullptr;
   }
 
@@ -2366,6 +2387,10 @@ doIsCandidateApplicableInitial(Context* context,
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
+
+  if (!ret) {
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  }
 
   return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
