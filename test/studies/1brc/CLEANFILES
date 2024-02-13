@@ -2,6 +2,7 @@
 
 set -x
 
-rm ./create_measurements.py
-rm ./weather_stations.csv
-rm ./create_measurements.py
+rm -f ./create_measurements.py
+rm -f ./create_measurements.py.bak
+rm -f ./weather_stations.csv
+rm -f ./create_measurements.py

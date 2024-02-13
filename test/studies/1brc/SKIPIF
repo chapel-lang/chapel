@@ -1,17 +1,31 @@
 #!/usr/bin/env bash
 
+# This script downloads a third-party script to generate an input dataset for
+# this example. (SKIPIF scripts are run before starting any tests).
+#
+# If something fails along the way (perhaps due to a network outage) we'll
+# skip executing the test.
+
 set -x
 
 if [[ ! -e create_measurements.py ]]; then
-  wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/src/main/python/create_measurements.py
+  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/src/main/python/create_measurements.py; then
+    echo "True"
+    exit
+  fi
   sed -i.bak 's:\.\./\.\./\.\./data/weather_stations\.csv:weather_stations\.csv:' create_measurements.py
   sed -i.bak 's:\.\./\.\./\.\./data/measurements\.txt:measurements\.txt:' create_measurements.py
 fi
 
 if [[ ! -e weather_stations.csv ]]; then
-  wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/data/weather_stations.csv
+  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/data/weather_stations.csv; then
+    echo "True"
+    exit
+  fi
 fi
 
 if [[ ! -e measurements.txt ]]; then
   python ./create_measurements.py 10_000_000
 fi
+
+echo "false"
