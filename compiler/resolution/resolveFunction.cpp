@@ -2930,13 +2930,9 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
           auto call = new CallExpr(op, to, initCopy);
           newCalls.push_back(call);
           insertBefore->insertBefore(call);
-
         } else {
           INT_FATAL("Not handled yet!");
         }
-
-        // TODO: Issue another call to `insertInitConversion` so that both
-        // cases can consider runtime types.
       }
     } else if (isRecord(toType->type) || isUnion(toType->type)) {
       // insert an init= call
