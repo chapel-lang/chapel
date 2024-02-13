@@ -484,6 +484,19 @@ static std::set<UniqueString> gatherStdModuleNames() {
   // leave out Treap since it is an 'include module' for SortedSet
   modNames.erase(UniqueString::get(gContext, "Treap"));
 
+  // Workaround: if we're compiling for CHPL_COMM=none, then ignore the
+  // network atomics modules, to avoid later compilation errors.
+  // A better solution would be preferred.
+  /*modNames.erase(UniqueString::get(gContext, "NetworkAtomicTypes"));
+  modNames.erase(UniqueString::get(gContext, "NetworkAtomics"));*/
+
+  // Workaround: if compiling for CHPL_LOCALE_MODEL!=gpu,
+  // then ignore the GPU module, to avoid later compilation errors.
+  if (!usingGpuLocaleModel()) {
+    modNames.erase(UniqueString::get(gContext, "GPU"));
+    modNames.erase(UniqueString::get(gContext, "ChapelGpuSupport"));
+  }
+
   return modNames;
 }
 
