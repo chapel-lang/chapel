@@ -4868,6 +4868,11 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   std::string inputs = "-inputs=/dev/null";
   std::string outputs = "-outputs=" + fatbinFilename;
 #endif
+  auto sdkString = std::string(gGpuSdkPath);
+  // check file exists, maybe use alternate path (say if spack installed)
+  std::string lldBin = pathExists((sdkString + "/llvm/bin/").c_str()) ?
+                       sdkString + "/llvm/bin/lld"  :
+                       sdkString + "/bin/lld";
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
     std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
@@ -4877,8 +4882,9 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                          "--triple=amdgcn-amd-amdhsa --mcpu=" + gpuArch + " " +
                          artifactFilename + " " +
                          "-o " + gpuObject;
-    std::string lldCmd = std::string(gGpuSdkPath) +
-                        "/bin/lld -flavor gnu" +
+
+    std::string lldCmd = lldBin +
+                         " -flavor gnu" +
                          " --no-undefined -shared" +
                          " -plugin-opt=-amdgpu-internalize-symbols" +
                          " -plugin-opt=mcpu=" + gpuArch +
