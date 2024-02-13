@@ -12,11 +12,11 @@ module Graph500_defs
   config param RMAT_WITH_SHUFFLE = true;
   config param DEBUG_GRAPH_GENERATOR = false && ENABLE_PRINTOUTS;
   config const SCALE = 6;
-         const N_VERTICES = 1 << SCALE;
   config const EDGEFACTOR = 8;
-         const N_RAWEDGES = N_VERTICES*EDGEFACTOR;
-         const NUMROOTS = 4;
-         const NUM_CANDIDATES = 1024;
+  const N_VERTICES = 1 << SCALE;
+  const N_RAWEDGES = N_VERTICES*EDGEFACTOR;
+  const NUMROOTS = 4;
+  const NUM_CANDIDATES = 1024;
 
 
 // The data structure used to store the edges is an array of records
@@ -33,7 +33,8 @@ module Graph500_defs
   }
 
 // Here we have overloaded the + operator
-  operator +(l: directed_vertex_pair, r: directed_vertex_pair) do
+  operator directed_vertex_pair.+(l: directed_vertex_pair,
+                                  r: directed_vertex_pair) do
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 // The data structures below are chosen with the intention of later defining
@@ -73,7 +74,7 @@ module Graph500_defs
 
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
-         forall n in Neighbors(1..neighbor_count) with (ref is_member) {
+         forall n in Neighbors (1..neighbor_count) with (ref is_member) {
             if (new_vertex_ID == n ) then is_member = true;
          }
          return is_member;
@@ -139,7 +140,7 @@ module Graph500_defs
 class Level_Set {
   type Vertex_List;
   var Members: Vertex_List;
-  var previous: unmanaged Level_Set(Vertex_List)?;
+  var previous: unmanaged Level_Set (Vertex_List)?;
 }
 
 

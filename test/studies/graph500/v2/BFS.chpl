@@ -27,9 +27,9 @@ proc BFS ( root : vertex_id, ref ParentTree, G )
   while Active_Level.Members.size > 0 do
   {
 
-    forall u in Active_Level.Members with (ref ParentTree) do {
+    forall u in Active_Level.Members do {
 
-      forall v in G.Neighbors (u) with (ref ParentTree) do {
+      forall v in G.Neighbors (u) do {
 
         if ( visited (v).readXX() < 0 )
         {

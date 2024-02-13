@@ -65,7 +65,7 @@ module Scalable_Graph_Generator
   proc Scalable_Data_Generator ( scale :int, n_vertices : int,
                                 n_raw_edges : int, ref Edges:[?ArrD] )
 
-    {
+  {
       use BlockDist;
       use Graph500_defs;
       use Random;
@@ -140,7 +140,7 @@ module Scalable_Graph_Generator
        var ndx2 = floor (1 + Unif_Random2(j) * n_vertices) : int;
 
 //     If the locations are not the same, then swap
-       if (ndx1 != ndx2){
+       if (ndx1 != ndx2) {
 
 //       If the first location is greater than the second, swap. Insures
 //       that the locations are locked in order, preventing deadlock
@@ -267,15 +267,15 @@ module Scalable_Graph_Generator
 
 // Step 2: Shuffle edges
    if RMAT_WITH_SHUFFLE then {
-   graph_gen_time.clear();
-   graph_gen_time.start();
+     graph_gen_time.clear();
+     graph_gen_time.start();
 
 //   Sample specification only applies edgefactor*N swaps
 //   for i in 1..scale do {
-      var   skip : real;
-      Rand_Gen.fill ( Unif_Random );
-      skip = Rand_Gen.next ();
-      Rand_Gen.fill ( Unif_Random2 );
+     var   skip : real;
+     Rand_Gen.fill ( Unif_Random );
+     skip = Rand_Gen.next ();
+     Rand_Gen.fill ( Unif_Random2 );
 
      forall j in ArrD do
      {
@@ -285,7 +285,7 @@ module Scalable_Graph_Generator
        var ndx2 = floor (1 + Unif_Random2 (j) * n_vertices) : int;
 
 //     If the locations are not the same, then swap
-       if (ndx1 != ndx2){
+       if (ndx1 != ndx2) {
 
 //       If the first location is greater than the second, swap. Insures
 //       that the locations are locked in order, preventing deadlock
@@ -315,11 +315,11 @@ module Scalable_Graph_Generator
 
      graph_gen_time.stop();
 
-    if ENABLE_PRINTOUTS then
-     writeln("Time for SDG: Shuffle Edges  = ", graph_gen_time.elapsed());
-     }
+     if ENABLE_PRINTOUTS then
+       writeln("Time for SDG: Shuffle Edges  = ", graph_gen_time.elapsed());
+   }
 
 //   writeln("Upon exit, Edges is:\n", Edges, "\n");
 
-}
+  }
 }
