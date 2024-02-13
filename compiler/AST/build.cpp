@@ -913,13 +913,19 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
 Expr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ false, zippered, maybeArrayType);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FOR_EXPR, zippered, maybeArrayType);
 }
 
+
+Expr*
+buildForeachLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+  if (zippered) zipToTuple(iteratorExpr);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FOREACH_EXPR, zippered, maybeArrayType);
+}
 Expr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ true, zippered, maybeArrayType);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FORALL_EXPR, zippered, maybeArrayType);
 }
 
 //

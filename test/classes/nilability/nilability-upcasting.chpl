@@ -7,8 +7,8 @@ module test {
     var ownCb = new owned Child(1, 2);
     var cb:borrowed Child = ownCb.borrow();
     var cbq = cb:borrowed Child?;
-    var cu = new unmanaged Child(1, 2);
-    var cuq = cu:unmanaged Child?;
+    var cu = cb:unmanaged Child;
+    var cuq = cb:unmanaged Child?;
     var nbq:borrowed Child? = nil;
     var nuq:unmanaged Child? = nil;
 
@@ -288,6 +288,34 @@ module test {
     {
       writeln();
       writeln("casts to unmanaged Child");
+      // cb
+      {
+        writeln("cb:unmanaged Child");
+        var x = cb:unmanaged Child;
+        writeln(x.type:string, " ", x);
+        var y = cb:unmanaged class;
+        writeln(y.type:string, " ", y);
+        var z = cb:unmanaged;
+        writeln(z.type:string, " ", z);
+      }
+      // cbq
+      {
+        writeln("cbq:unmanaged Child");
+        try {
+          var x = cbq:unmanaged Child;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+        try {
+          var y = cbq:unmanaged class;
+          writeln(y.type:string, " ", y);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
       // cu
       {
         writeln("cu:unmanaged Child");
@@ -309,11 +337,29 @@ module test {
           halt("fail");
         }
         try {
-          var y = cuq:unmanaged class;
+          var y = cbq:unmanaged class;
           writeln(y.type:string, " ", y);
         } catch e {
           writeln(e);
           halt("fail");
+        }
+      }
+      // nbq
+      {
+        writeln("nbq:unmanaged Child");
+        try {
+          var x = nbq:unmanaged Child;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+        try {
+          var y = nbq:unmanaged class;
+          writeln(y.type:string, " ", y);
+          halt("fail");
+        } catch e {
+          writeln(e);
         }
       }
       // nuq
@@ -340,6 +386,24 @@ module test {
     {
       writeln();
       writeln("casts to unmanaged Child?");
+      // cb
+      {
+        writeln("cb:unmanaged Child?");
+        var x = cb:unmanaged Child?;
+        writeln(x.type:string, " ", x);
+        var y = cb:unmanaged class?;
+        writeln(y.type:string, " ", y);
+      }
+      // cbq
+      {
+        writeln("cbq:unmanaged Child?");
+        var x = cbq:unmanaged Child?;
+        writeln(x.type:string, " ", x);
+        var y = cbq:unmanaged class?;
+        writeln(y.type:string, " ", y);
+        var z = cbq:unmanaged;
+        writeln(z.type:string, " ", z);
+      }
       // cu
       {
         writeln("cu:unmanaged Child?");
@@ -357,6 +421,19 @@ module test {
         writeln(y.type:string, " ", y);
         var z = cuq:unmanaged;
         writeln(z.type:string, " ", z);
+      }
+      // nbq
+      {
+        writeln("nbq:unmanaged Child?");
+        var x = nbq:unmanaged Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+        var y = nbq:unmanaged class?;
+        writeln(y.type:string, " ", y);
+        assert(y == nil);
+        var z = nbq:unmanaged;
+        writeln(z.type:string, " ", z);
+        assert(z == nil);
       }
       // nuq
       {
@@ -589,6 +666,23 @@ module test {
     {
       writeln();
       writeln("casts to unmanaged Parent");
+      // cb
+      {
+        writeln("cb:unmanaged Parent");
+        var x = cb:unmanaged Parent;
+        writeln(x.type:string, " ", x);
+      }
+      // cbq
+      {
+        writeln("cbq:unmanaged Parent");
+        try {
+          var x = cbq:unmanaged Parent;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
       // cu
       {
         writeln("cu:unmanaged Parent");
@@ -604,6 +698,17 @@ module test {
         } catch e {
           writeln(e);
           halt("fail");
+        }
+      }
+      // nbq
+      {
+        writeln("nbq:unmanaged Parent");
+        try {
+          var x = nbq:unmanaged Parent;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
         }
       }
       // nuq
@@ -623,6 +728,18 @@ module test {
     {
       writeln();
       writeln("casts to unmanaged Parent?");
+      // cb
+      {
+        writeln("cb:unmanaged Parent?");
+        var x = cb:unmanaged Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // cbq
+      {
+        writeln("cbq:unmanaged Parent?");
+        var x = cbq:unmanaged Parent?;
+        writeln(x.type:string, " ", x);
+      }
       // cu
       {
         writeln("cu:unmanaged Parent?");
@@ -635,6 +752,13 @@ module test {
         var x = cuq:unmanaged Parent?;
         writeln(x.type:string, " ", x);
       }
+      // nbq
+      {
+        writeln("nbq:unmanaged Parent?");
+        var x = nbq:unmanaged Parent?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
       // nuq
       {
         writeln("nuq:unmanaged Parent?");
@@ -643,6 +767,5 @@ module test {
         assert(x == nil);
       }
     }
-    delete cu;
   }
 }

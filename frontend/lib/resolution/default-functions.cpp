@@ -93,11 +93,14 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
           checkFormal->traverse(vis);
           auto receiverQualType = vis.byPostorder.byAst(checkFormal).type();
 
-          // return true if the receiver type matches or
-          // if the receiver type is a generic type and we have
-          // an instantiation.
+          // Return true if:
+          // * the receiver type matches
+          // * the receiver type is a generic type and we have an instantiation
+          // * the receiver type converts via implicit borrowing
           auto result = canPass(context, haveQt, receiverQualType);
-          if (result.passes() && !result.converts() && !result.promotes()) {
+          if (result.passes() &&
+              (!result.converts() || result.convertsWithBorrowing()) &&
+              !result.promotes()) {
             return true;
           }
         }
@@ -124,6 +127,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (!areOverloadsPresentInDefiningScope(context, type, name)) {
       return true;
     }
+  }
+
+  if (type->isTupleType() && name == "size") {
+    return true;
   }
 
   // Some basic getter methods for domain properties
@@ -439,6 +446,41 @@ generateArrayMethod(Context* context,
   return result;
 }
 
+static const TypedFnSignature*
+generateTupleMethod(Context* context,
+                    const TupleType* at,
+                    UniqueString name) {
+  // TODO: we should really have a way to just set the return type here
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, at));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ at->id(),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ asttags::Tuple,
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 fieldAccessorQuery(Context* context,
                    const types::CompositeType* compType,
@@ -657,6 +699,8 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       result = generateDomainMethod(context, domainType, name);
     } else if (auto arrayType = type->toArrayType()) {
       result = generateArrayMethod(context, arrayType, name);
+    } else if (auto tupleType = type->toTupleType()) {
+      result = generateTupleMethod(context, tupleType, name);
     } else if (auto recordType = type->toRecordType()) {
       if (name == USTR("==")) {
         result = generateRecordComparison(context, recordType);

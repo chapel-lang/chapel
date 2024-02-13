@@ -186,6 +186,21 @@ introspectParsedTopLevelExpressions(Context* context) {
   return toReturn;
 }
 
+std::vector<UniqueString>
+introspectParsedFiles(Context* context) {
+  std::vector<UniqueString> toReturn;
+
+  if (auto parsedResults = context->querySavedResults(parsing::parseFileToBuilderResultQuery)) {
+    for (auto& result : *parsedResults) {
+      if (!context->isResultUpToDate(result)) continue;
+
+      toReturn.push_back(std::get<0>(result.tupleOfArgs));
+    }
+  }
+
+  return toReturn;
+}
+
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id) {

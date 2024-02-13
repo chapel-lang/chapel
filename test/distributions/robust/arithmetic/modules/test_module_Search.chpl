@@ -14,7 +14,8 @@ var elem: real;
 
 proc reset(ref A) {
   rng.fill(A);
-  sort(A);
+  QuickSort.quickSort(A); // use quicksort for now to avoid warning
+                          // about sorting a distributed array
   elem = A[idx];
 }
 

@@ -1571,10 +1571,18 @@ static void addArgCoercion(FnSymbol*  fn,
         prevActual->isParameter()) {
       castTemp->addFlag(FLAG_REF_TO_CONST);
     }
-
   } else if (ats->hasFlag(FLAG_REF) &&
-             !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
-               formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
+             ats->getValType()->symbol->hasFlag(FLAG_C_ARRAY) &&
+             fts->getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    // Deliberately fall through to the common case of adding a cast.
+    // Otherwise, we would deref and copy the actual c_array, which leads
+    // to the incorrect semantics (in C, an array should decay to a
+    // pointer to the array's first element).
+    castCall = nullptr;
+    addedCast = false;
+  } else if (ats->hasFlag(FLAG_REF) &&
+             !ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             !formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
 
     AggregateType* at = toAggregateType(ats->getValType());
 
@@ -2247,12 +2255,18 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   // The first promoted argument argument determines the shape.
   Symbol* shapeSource = leadingArg(promotion, call);
 
-  Symbol* fromForExpr = (! promotion.hasLeaderFollowers             ||
-                         checkIteratorFromForExpr(move, shapeSource) )
-                        ? gTrue : gFalse;
+  LoopExprType type = FORALL_EXPR;
+  if (checkIteratorFromForeachExpr(move, shapeSource)) {
+    type = FOREACH_EXPR;
+  } else if (!promotion.hasLeaderFollowers ||
+             checkIteratorFromForExpr(move, shapeSource)) {
+    type = FOR_EXPR;
+  }
+
+  Symbol* fromExpr = new_IntSymbol(type);
 
   move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
-                                 irTemp, shapeSource, fromForExpr));
+                                 irTemp, shapeSource, fromExpr));
 }
 
 

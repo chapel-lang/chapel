@@ -386,7 +386,7 @@ class Context {
   getResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
             const std::tuple<ArgTs...>& tupleOfArgs);
 
-  void haltForRecursiveQuery(const querydetail::QueryMapResultBase* r);
+  void emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -436,6 +436,10 @@ class Context {
             const querydetail::QueryMapResultBase* resultEntry);
 
   void doNotCollectUniqueCString(const char *s);
+
+  void gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
+                            const querydetail::QueryMapResultBase* result,
+                            std::vector<TraceElement>& trace) const;
 
   // Future Work: make the context thread-safe
 
@@ -557,6 +561,8 @@ class Context {
     errorCollectionStack.pop_back();
     return result;
   }
+
+  optional<std::vector<TraceElement>> recoverFromSelfRecursion() const;
 
   /**
     Get or create a unique string and return it as a C string. If the passed

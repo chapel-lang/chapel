@@ -13,9 +13,11 @@
 
 #include "SystemZAsmPrinter.h"
 #include "MCTargetDesc/SystemZInstPrinter.h"
+#include "MCTargetDesc/SystemZMCExpr.h"
 #include "SystemZConstantPoolValue.h"
 #include "SystemZMCInstLower.h"
 #include "TargetInfo/SystemZTargetInfo.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/CodeGen/MachineModuleInfoImpls.h"
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
@@ -140,6 +142,50 @@ void SystemZAsmPrinter::emitCallInformation(CallType CT) {
                  MCInstBuilder(SystemZ::BCRAsm)
                      .addImm(0)
                      .addReg(SystemZMC::GR64Regs[static_cast<unsigned>(CT)]));
+}
+
+uint32_t SystemZAsmPrinter::AssociatedDataAreaTable::insert(const MCSymbol *Sym,
+                                                            unsigned SlotKind) {
+  auto Key = std::make_pair(Sym, SlotKind);
+  auto It = Displacements.find(Key);
+
+  if (It != Displacements.end())
+    return (*It).second;
+
+  // Determine length of descriptor.
+  uint32_t Length;
+  switch (SlotKind) {
+  case SystemZII::MO_ADA_DIRECT_FUNC_DESC:
+    Length = 2 * PointerSize;
+    break;
+  default:
+    Length = PointerSize;
+    break;
+  }
+
+  uint32_t Displacement = NextDisplacement;
+  Displacements[std::make_pair(Sym, SlotKind)] = NextDisplacement;
+  NextDisplacement += Length;
+
+  return Displacement;
+}
+
+uint32_t
+SystemZAsmPrinter::AssociatedDataAreaTable::insert(const MachineOperand MO) {
+  MCSymbol *Sym;
+  if (MO.getType() == MachineOperand::MO_GlobalAddress) {
+    const GlobalValue *GV = MO.getGlobal();
+    Sym = MO.getParent()->getMF()->getTarget().getSymbol(GV);
+    assert(Sym && "No symbol");
+  } else if (MO.getType() == MachineOperand::MO_ExternalSymbol) {
+    const char *SymName = MO.getSymbolName();
+    Sym = MO.getParent()->getMF()->getContext().getOrCreateSymbol(SymName);
+    assert(Sym && "No symbol");
+  } else
+    llvm_unreachable("Unexpected operand type");
+
+  unsigned ADAslotType = MO.getTargetFlags();
+  return insert(Sym, ADAslotType);
 }
 
 void SystemZAsmPrinter::emitInstruction(const MachineInstr *MI) {
@@ -272,6 +318,43 @@ void SystemZAsmPrinter::emitInstruction(const MachineInstr *MI) {
     emitCallInformation(CallType::BASR33);
     return;
 
+  case SystemZ::ADA_ENTRY_VALUE:
+  case SystemZ::ADA_ENTRY: {
+    const SystemZSubtarget &Subtarget = MF->getSubtarget<SystemZSubtarget>();
+    const SystemZInstrInfo *TII = Subtarget.getInstrInfo();
+    uint32_t Disp = ADATable.insert(MI->getOperand(1));
+    Register TargetReg = MI->getOperand(0).getReg();
+
+    Register ADAReg = MI->getOperand(2).getReg();
+    Disp += MI->getOperand(3).getImm();
+    bool LoadAddr = MI->getOpcode() == SystemZ::ADA_ENTRY;
+
+    unsigned Op0 = LoadAddr ? SystemZ::LA : SystemZ::LG;
+    unsigned Op = TII->getOpcodeForOffset(Op0, Disp);
+
+    Register IndexReg = 0;
+    if (!Op) {
+      if (TargetReg != ADAReg) {
+        IndexReg = TargetReg;
+        // Use TargetReg to store displacement.
+        EmitToStreamer(
+            *OutStreamer,
+            MCInstBuilder(SystemZ::LLILF).addReg(TargetReg).addImm(Disp));
+      } else
+        EmitToStreamer(
+            *OutStreamer,
+            MCInstBuilder(SystemZ::ALGFI).addReg(TargetReg).addImm(Disp));
+      Disp = 0;
+      Op = Op0;
+    }
+    EmitToStreamer(*OutStreamer, MCInstBuilder(Op)
+                                     .addReg(TargetReg)
+                                     .addReg(IndexReg)
+                                     .addImm(Disp)
+                                     .addReg(ADAReg));
+
+    return;
+  }
   case SystemZ::CallBRASL:
     LoweredMI = MCInstBuilder(SystemZ::BRASL)
       .addReg(SystemZ::R14D)
@@ -530,11 +613,6 @@ void SystemZAsmPrinter::emitInstruction(const MachineInstr *MI) {
         .addImm(15).addReg(SystemZ::R0D);
     break;
 
-  // Emit nothing here but a comment if we can.
-  case SystemZ::MemBarrier:
-    OutStreamer->emitRawComment("MEMBARRIER");
-    return;
-
   // We want to emit "j .+2" for traps, jumping to the relative immediate field
   // of the jump instruction, which is an illegal instruction. We cannot emit a
   // "." symbol, so create and emit a temp label before the instruction and use
@@ -759,6 +837,17 @@ void SystemZAsmPrinter::LowerPATCHPOINT(const MachineInstr &MI,
                             getSubtargetInfo());
 }
 
+// The *alignment* of 128-bit vector types is different between the software
+// and hardware vector ABIs. If the there is an externally visible use of a
+// vector type in the module it should be annotated with an attribute.
+void SystemZAsmPrinter::emitAttributes(Module &M) {
+  if (M.getModuleFlag("s390x-visible-vector-ABI")) {
+    bool HasVectorFeature =
+      TM.getMCSubtargetInfo()->hasFeature(SystemZ::FeatureVector);
+    OutStreamer->emitGNUAttribute(8, HasVectorFeature ? 2 : 1);
+  }
+}
+
 // Convert a SystemZ-specific constant pool modifier into the associated
 // MCSymbolRefExpr variant kind.
 static MCSymbolRefExpr::VariantKind
@@ -785,6 +874,49 @@ void SystemZAsmPrinter::emitMachineConstantPoolValue(
   OutStreamer->emitValue(Expr, Size);
 }
 
+static void printFormattedRegName(const MCAsmInfo *MAI, unsigned RegNo,
+                                  raw_ostream &OS) {
+  const char *RegName = SystemZInstPrinter::getRegisterName(RegNo);
+  if (MAI->getAssemblerDialect() == AD_HLASM) {
+    // Skip register prefix so that only register number is left
+    assert(isalpha(RegName[0]) && isdigit(RegName[1]));
+    OS << (RegName + 1);
+  } else
+    OS << '%' << RegName;
+}
+
+static void printOperand(const MCOperand &MCOp, const MCAsmInfo *MAI,
+                         raw_ostream &OS) {
+  if (MCOp.isReg()) {
+    if (!MCOp.getReg())
+      OS << '0';
+    else
+      printFormattedRegName(MAI, MCOp.getReg(), OS);
+  } else if (MCOp.isImm())
+    OS << MCOp.getImm();
+  else if (MCOp.isExpr())
+    MCOp.getExpr()->print(OS, MAI);
+  else
+    llvm_unreachable("Invalid operand");
+}
+
+static void printAddress(const MCAsmInfo *MAI, unsigned Base,
+                         const MCOperand &DispMO, unsigned Index,
+                         raw_ostream &OS) {
+  printOperand(DispMO, MAI, OS);
+  if (Base || Index) {
+    OS << '(';
+    if (Index) {
+      printFormattedRegName(MAI, Index, OS);
+      if (Base)
+        OS << ',';
+    }
+    if (Base)
+      printFormattedRegName(MAI, Base, OS);
+    OS << ')';
+  }
+}
+
 bool SystemZAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
                                         const char *ExtraCode,
                                         raw_ostream &OS) {
@@ -802,7 +934,7 @@ bool SystemZAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
     SystemZMCInstLower Lower(MF->getContext(), *this);
     MCOp = Lower.lowerOperand(MO);
   }
-  SystemZInstPrinter::printOperand(MCOp, MAI, OS);
+  printOperand(MCOp, MAI, OS);
   return false;
 }
 
@@ -810,15 +942,87 @@ bool SystemZAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
                                               unsigned OpNo,
                                               const char *ExtraCode,
                                               raw_ostream &OS) {
-  SystemZInstPrinter::
-    printAddress(MAI, MI->getOperand(OpNo).getReg(),
-                 MCOperand::createImm(MI->getOperand(OpNo + 1).getImm()),
-                 MI->getOperand(OpNo + 2).getReg(), OS);
+  printAddress(MAI, MI->getOperand(OpNo).getReg(),
+               MCOperand::createImm(MI->getOperand(OpNo + 1).getImm()),
+               MI->getOperand(OpNo + 2).getReg(), OS);
   return false;
 }
 
 void SystemZAsmPrinter::emitEndOfAsmFile(Module &M) {
-  emitStackMaps(SM);
+  auto TT = OutContext.getTargetTriple();
+  if (TT.isOSzOS()) {
+    emitADASection();
+  }
+  emitAttributes(M);
+}
+
+void SystemZAsmPrinter::emitADASection() {
+  OutStreamer->pushSection();
+
+  const unsigned PointerSize = getDataLayout().getPointerSize();
+  OutStreamer->switchSection(getObjFileLowering().getADASection());
+
+  unsigned EmittedBytes = 0;
+  for (auto &Entry : ADATable.getTable()) {
+    const MCSymbol *Sym;
+    unsigned SlotKind;
+    std::tie(Sym, SlotKind) = Entry.first;
+    unsigned Offset = Entry.second;
+    assert(Offset == EmittedBytes && "Offset not as expected");
+    (void)EmittedBytes;
+#define EMIT_COMMENT(Str)                                                      \
+  OutStreamer->AddComment(Twine("Offset ")                                     \
+                              .concat(utostr(Offset))                          \
+                              .concat(" " Str " ")                             \
+                              .concat(Sym->getName()));
+    switch (SlotKind) {
+    case SystemZII::MO_ADA_DIRECT_FUNC_DESC:
+      // Language Environment DLL logic requires function descriptors, for
+      // imported functions, that are placed in the ADA to be 8 byte aligned.
+      EMIT_COMMENT("function descriptor of");
+      OutStreamer->emitValue(
+          SystemZMCExpr::create(SystemZMCExpr::VK_SystemZ_RCon,
+                                MCSymbolRefExpr::create(Sym, OutContext),
+                                OutContext),
+          PointerSize);
+      OutStreamer->emitValue(
+          SystemZMCExpr::create(SystemZMCExpr::VK_SystemZ_VCon,
+                                MCSymbolRefExpr::create(Sym, OutContext),
+                                OutContext),
+          PointerSize);
+      EmittedBytes += PointerSize * 2;
+      break;
+    case SystemZII::MO_ADA_DATA_SYMBOL_ADDR:
+      EMIT_COMMENT("pointer to data symbol");
+      OutStreamer->emitValue(
+          SystemZMCExpr::create(SystemZMCExpr::VK_SystemZ_None,
+                                MCSymbolRefExpr::create(Sym, OutContext),
+                                OutContext),
+          PointerSize);
+      EmittedBytes += PointerSize;
+      break;
+    case SystemZII::MO_ADA_INDIRECT_FUNC_DESC: {
+      MCSymbol *Alias = OutContext.createTempSymbol(
+          Twine(Sym->getName()).concat("@indirect"));
+      OutStreamer->emitAssignment(Alias,
+                                  MCSymbolRefExpr::create(Sym, OutContext));
+      OutStreamer->emitSymbolAttribute(Alias, MCSA_IndirectSymbol);
+
+      EMIT_COMMENT("pointer to function descriptor");
+      OutStreamer->emitValue(
+          SystemZMCExpr::create(SystemZMCExpr::VK_SystemZ_VCon,
+                                MCSymbolRefExpr::create(Alias, OutContext),
+                                OutContext),
+          PointerSize);
+      EmittedBytes += PointerSize;
+      break;
+    }
+    default:
+      llvm_unreachable("Unexpected slot kind");
+    }
+#undef EMIT_COMMENT
+  }
+  OutStreamer->popSection();
 }
 
 void SystemZAsmPrinter::emitFunctionBodyEnd() {
@@ -1010,7 +1214,7 @@ void SystemZAsmPrinter::emitPPA1(MCSymbol *FnEndSym) {
 
   OutStreamer->AddComment("Length/4 of Parms");
   OutStreamer->emitInt16(
-      static_cast<uint16_t>(MFFrame.getMaxCallFrameSize() / 4)); // Parms/4.
+      static_cast<uint16_t>(ZFI->getSizeOfFnParams() / 4)); // Parms/4.
   OutStreamer->AddComment("Length of Code");
   OutStreamer->emitAbsoluteSymbolDiff(FnEndSym, CurrentFnEPMarkerSym, 4);
 

@@ -4,5 +4,5 @@ import shutil
 import os
 
 missing_gdb = shutil.which("gdb") is None
-using_driver = '--compiler-driver' in os.getenv('COMPOPTS');
-print(missing_gdb or using_driver)
+no_driver = '--no-compiler-driver' in os.getenv('COMPOPTS');
+print(missing_gdb or no_driver)

@@ -18,7 +18,7 @@
 #
 
 import chapel
-import chapel.core
+import chapel
 import functools
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
@@ -87,7 +87,7 @@ class LintDriver:
         return any(node.name().startswith(p) for p in self.internal_prefixes)
 
     def _is_unstable_module(node):
-        if isinstance(node, chapel.core.Module):
+        if isinstance(node, chapel.Module):
             attrs = node.attribute_group()
             if attrs:
                 if attrs.is_unstable():

@@ -24,6 +24,10 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 
+extern "C" {
+  #include "complex-support.h"
+}
+
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
@@ -37,15 +41,6 @@
 #endif
 
 extern unsigned int open_hash_multipliers[256];
-
-struct complex64 {
-  float r;
-  float i;
-};
-struct complex128 {
-  double r;
-  double i;
-};
 
 using ImmString = chpl::detail::PODUniqueString;
 

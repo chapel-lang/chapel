@@ -1,0 +1,3 @@
+borrowed MyClass {x = 0}
+unmanaged MyClass {x = 0}
+borrowed MyClass {x = 0}

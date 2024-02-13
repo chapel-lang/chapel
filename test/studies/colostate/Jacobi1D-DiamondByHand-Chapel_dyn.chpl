@@ -120,7 +120,7 @@ proc main(){
   }
 
   for i in computationSpaceRange do
-    space[0, i] = generator.getNext();
+    space[0, i] = generator.next();
 
   // 3 - jacobi 1D timed within an openmp loop
   timer.start();
@@ -163,7 +163,7 @@ proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
   var generator = new randomStream( real, globalSeed );
 
   for i in computationSpaceRange do
-    space[0, i] = generator.getNext();
+    space[0, i] = generator.next();
 
   var read  = 0;
   var write = 1;

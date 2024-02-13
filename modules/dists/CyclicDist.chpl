@@ -553,7 +553,7 @@ override proc CyclicImpl.dsiNewRectangularDom(param rank: int, type idxType, par
   delete dummyLCD;
 
   var dom = new unmanaged CyclicDom(rank, idxType, strides,
-                                    _to_unmanaged(this), locDomsTemp, whole);
+                                    this:unmanaged, locDomsTemp, whole);
   return dom;
 }
 

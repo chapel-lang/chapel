@@ -22,66 +22,66 @@ import chapel
 
 
 # TODO: for now, just text based. but should resolve generic types
-def get_symbol_signature(node: chapel.core.AstNode) -> str:
+def get_symbol_signature(node: chapel.AstNode) -> str:
     """
     get a string representation of a AstNode's signature
 
     Note: this is purely textual and does not resolve generic types
     """
-    if not isinstance(node, chapel.core.NamedDecl):
+    if not isinstance(node, chapel.NamedDecl):
         return _node_to_string(node)
 
-    if isinstance(node, chapel.core.Class) or isinstance(
-        node, chapel.core.Record
+    if isinstance(node, chapel.Class) or isinstance(
+        node, chapel.Record
     ):
         return _record_class_to_string(node)
-    elif isinstance(node, chapel.core.Interface):
+    elif isinstance(node, chapel.Interface):
         return f"interface {node.name()}"
-    elif isinstance(node, chapel.core.Module):
+    elif isinstance(node, chapel.Module):
         return f"module {node.name()}"
-    elif isinstance(node, chapel.core.Enum):
+    elif isinstance(node, chapel.Enum):
         return f"enum {node.name()}"
-    elif isinstance(node, chapel.core.Variable):
+    elif isinstance(node, chapel.Variable):
         return _var_to_string(node)
-    elif isinstance(node, chapel.core.Function):
+    elif isinstance(node, chapel.Function):
         return _proc_to_string(node)
 
     return node.name()
 
 
-def _node_to_string(node: chapel.core.AstNode) -> str:
+def _node_to_string(node: chapel.AstNode) -> str:
     """
     General helper method to convert an AstNode to a string representation. If
     it doesn't know how to convert the node, it returns "<...>"
     """
-    if isinstance(node, chapel.core.NamedDecl):
+    if isinstance(node, chapel.NamedDecl):
         return get_symbol_signature(node)
-    elif isinstance(node, chapel.core.Identifier):
+    elif isinstance(node, chapel.Identifier):
         return node.name()
-    elif isinstance(node, chapel.core.IntLiteral):
+    elif isinstance(node, chapel.IntLiteral):
         return node.text()
-    elif isinstance(node, chapel.core.UintLiteral):
+    elif isinstance(node, chapel.UintLiteral):
         return node.text()
-    elif isinstance(node, chapel.core.BoolLiteral):
+    elif isinstance(node, chapel.BoolLiteral):
         return node.value()
-    elif isinstance(node, chapel.core.ImagLiteral):
+    elif isinstance(node, chapel.ImagLiteral):
         return node.text()
-    elif isinstance(node, chapel.core.RealLiteral):
+    elif isinstance(node, chapel.RealLiteral):
         return node.text()
-    elif isinstance(node, chapel.core.StringLiteral):
+    elif isinstance(node, chapel.StringLiteral):
         return '"' + node.value() + '"'
-    elif isinstance(node, chapel.core.CStringLiteral):
+    elif isinstance(node, chapel.CStringLiteral):
         return 'c"' + node.value() + '"'
     return "<...>"
 
 
 def _record_class_to_string(
-    node: Union[chapel.core.Record, chapel.core.Class]
+    node: Union[chapel.Record, chapel.Class]
 ) -> str:
     """
     Convert a Record or a Class to a string
     """
-    keyword = "record" if isinstance(node, chapel.core.Record) else "class"
+    keyword = "record" if isinstance(node, chapel.Record) else "class"
 
     s = ""
     ie = list(node.inherit_exprs())
@@ -96,7 +96,7 @@ def _record_class_to_string(
     return f"{prefix}{keyword} {node.name()}{s}"
 
 
-def _var_to_string(node: chapel.core.VarLikeDecl) -> str:
+def _var_to_string(node: chapel.VarLikeDecl) -> str:
     """
     Convert a VarLikeDecl to a string
     """
@@ -108,7 +108,7 @@ def _var_to_string(node: chapel.core.VarLikeDecl) -> str:
     if node.linkage_name():
         s += f"{_node_to_string(node.linkage_name())} "
 
-    if isinstance(node, chapel.core.Variable):
+    if isinstance(node, chapel.Variable):
         if node.is_config():
             s += "config "
     intent = _intent_to_string(node.intent())
@@ -124,7 +124,7 @@ def _var_to_string(node: chapel.core.VarLikeDecl) -> str:
     return s
 
 
-def _proc_to_string(node: chapel.core.Function) -> str:
+def _proc_to_string(node: chapel.Function) -> str:
     """
     Convert a function to a string
     """

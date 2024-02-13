@@ -209,6 +209,11 @@ class QualifiedType final {
     return uast::isGenericQualifier(kind_);
   }
 
+  /**
+    Returns true if the type might need to get more info from split-init.
+  */
+  bool needsSplitInitTypeInfo(Context* context) const;
+
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
            type_ == other.type_ &&

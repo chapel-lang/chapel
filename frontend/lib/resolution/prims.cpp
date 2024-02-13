@@ -429,7 +429,7 @@ struct TestFunctionFinder {
     // The function also needs to be concrete.
     const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn);
     const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-    if (sig->needsInstantiation()) return false;
+    if (sig == nullptr || sig->needsInstantiation()) return false;
 
     if (canPass(context, testType, sig->formalType(0)).passes()) {
       // One formal of 'testType', which constitutes a test.
@@ -651,14 +651,22 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     // it's sufficient to check if no conversion occurs (both instantiates()
     // and !instantiates() are allowed).
     result = cpr.passes() && !cpr.converts() && !cpr.promotes();
-  } else if (prim == PRIM_IS_SUBTYPE) {
-    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
-                              cpr.conversionKind() == CanPassResult::SUBTYPE);
   } else {
-    CHPL_ASSERT(prim == PRIM_IS_PROPER_SUBTYPE);
-    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
-                              cpr.conversionKind() == CanPassResult::SUBTYPE) &&
-             newSubQT != newParentQT;
+    // TODO: Don't count borrowing conversion as implying subtype, since that's
+    // not what the spec does.
+    bool isSubType = cpr.passes() &&
+                     (cpr.conversionKind() == CanPassResult::NONE ||
+                      cpr.conversionKind() == CanPassResult::SUBTYPE ||
+                      cpr.conversionKind() == CanPassResult::BORROWS ||
+                      cpr.conversionKind() == CanPassResult::BORROWS_SUBTYPE);
+    if (prim == PRIM_IS_SUBTYPE) {
+      result = isSubType;
+    } else {
+      CHPL_ASSERT(prim == PRIM_IS_PROPER_SUBTYPE);
+      // TODO: Analogous to the above, don't count a non-subtype borrowing
+      // conversion as a proper subtype.
+      result = isSubType && newSubQT != newParentQT;
+    }
   }
 
   return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
@@ -875,7 +883,7 @@ static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
 
 static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
   CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
-  return QualifiedType();
+  return makeParamBool(context, false);
 }
 
 static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
@@ -1503,6 +1511,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_DEINIT_KERNEL_CFG:
     case PRIM_GPU_ARG:
+    case PRIM_GPU_PID_OFFLOAD:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;

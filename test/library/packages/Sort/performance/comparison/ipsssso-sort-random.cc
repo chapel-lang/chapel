@@ -44,6 +44,7 @@ int main() {
 
   printf("Sorted %i elements in %f seconds\n", n, end-start);
   printf("%f MiB/s\n", sizeof(*arr) *n / (end-start) / 1024.0 / 1024.0);
+  printf("%f MB/s\n", sizeof(*arr) *n / (end-start) / 1000.0 / 1000.0);
 
   std::sort(arr2, arr2+n);
   for (int i = 0; i < n-1; i++) {

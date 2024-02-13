@@ -167,8 +167,9 @@ static void testPrimitive(const Test& tpg) {
 
 static void test0() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
                record r1 { var x: int; }
                record r2 { type T; var x: T; }
                record r3 { type T=int; var x: T; }
@@ -176,8 +177,8 @@ static void test0() {
                class c2 { type T; var x: T; }
                class c3 { type T=int; var x: T; }
                )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_GENERIC_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_GENERIC_TYPE,
+    /* calls */ {
       { {"r1"}, Test::FALSE },
       { {"r2"}, Test::TRUE },
       // Types with default values are still considered generic.
@@ -234,14 +235,14 @@ static void test0() {
 
 static void test1() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
              )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_CLASS_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_CLASS_TYPE,
+    /* calls */ {
       { {"r1"}, Test::FALSE },
       { {"c1"}, Test::TRUE },
       { {"owned c1"}, Test::TRUE },
@@ -256,14 +257,14 @@ static void test1() {
 
 static void test2() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
              )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_NILABLE_CLASS_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_NILABLE_CLASS_TYPE,
+    /* calls */ {
       { {"r1"}, Test::FALSE },
       { {"owned c1"}, Test::FALSE },
       { {"int"}, Test::FALSE },
@@ -277,14 +278,14 @@ static void test2() {
 
 static void test3() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
              )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_NON_NILABLE_CLASS_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_NON_NILABLE_CLASS_TYPE,
+    /* calls */ {
       { {"r1"}, Test::FALSE },
       { {"c1"}, Test::TRUE },
       { {"owned c1"}, Test::TRUE },
@@ -299,14 +300,14 @@ static void test3() {
 
 static void test4() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
              )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_RECORD_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_RECORD_TYPE,
+    /* calls */ {
       { {"r1"}, Test::TRUE },
       { {"c1"}, Test::FALSE },
       { {"owned c1"}, Test::FALSE },
@@ -321,15 +322,15 @@ static void test4() {
 
 static void test5() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
                record r1 { var x: int; }
                class c1 { var x: int; }
                union u1 { var x: int; }
                )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_UNION_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_UNION_TYPE,
+    /* calls */ {
       { {"r1"}, Test::FALSE },
       { {"c1"}, Test::FALSE },
       { {"u1"}, Test::TRUE },
@@ -347,7 +348,7 @@ static void test5() {
 static void test6() {
   Test tpg {
     .testName=__FUNCTION__,
-    .isChplHomeRequired = true,
+    .isChplHomeRequired= true,
     .prelude=R"""(
              record r1 { var x: int; }
              )""",
@@ -366,14 +367,14 @@ static void test6() {
 
 static void test7() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
                record r1 { var x: int; }
                class c1 { var x: int; }
                )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_BORROWED_CLASS_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_BORROWED_CLASS_TYPE,
+    /* calls */ {
       { {"r1"}, Test::FALSE },
       { {"c1"}, Test::FALSE },
       { {"c1?"}, Test::FALSE },
@@ -390,9 +391,9 @@ static void test7() {
 
 static void test8() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
              enum e1 { foo=1, bar=2 }       // concrete
@@ -408,8 +409,8 @@ static void test8() {
              var x5: e5;
              var x6: e6;
              )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_ABS_ENUM_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_ABS_ENUM_TYPE,
+    /* calls */ {
       { {"r1"}, Test::FALSE },
       { {"c1"}, Test::FALSE },
       { {"c1?"}, Test::FALSE },
@@ -436,15 +437,15 @@ static void test8() {
 
 static void test9() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
                record r1 { var x: int; }
                class c1 { var x: int; }
                class d1 : c1 {}
                )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_COERCIBLE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_COERCIBLE,
+    /* calls */ {
       { {"int", "bool"}, Test::FALSE },
       { {"int(8)", "bool"}, Test::FALSE },
       { {"int(16)", "bool"}, Test::FALSE },
@@ -466,9 +467,9 @@ static void test9() {
 
 static void test10() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
             record r1 { var x: int; }
             record r2 { type T; var x: T; }
             record r3 { type T=int; var x: T; }
@@ -478,8 +479,8 @@ static void test10() {
             union u1 {}
             enum e1 { foo }
             )""",
-    .primitive = chpl::uast::primtags::PRIM_TYPE_TO_STRING,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_TYPE_TO_STRING,
+    /* calls */ {
       { {"bool"}, Test::STRING, "bool" },
       { {"int"}, Test::STRING, "int(64)" },
       { {"int(8)"}, Test::STRING, "int(8)" },
@@ -519,9 +520,9 @@ static void test10() {
 
 static void test11() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
             record r1 { var x: int; }
             record r2 { type T; var x: T; }
             record r3 { type T=int; var x: T; }
@@ -531,8 +532,8 @@ static void test11() {
             union u1 {}
             enum e1 { foo }
             )""",
-    .primitive = chpl::uast::primtags::PRIM_SIMPLE_TYPE_NAME,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_SIMPLE_TYPE_NAME,
+    /* calls */ {
       { {"bool"}, Test::STRING, "bool" },
       { {"int"}, Test::STRING, "int(64)" },
       { {"int(8)"}, Test::STRING, "int(8)" },
@@ -569,9 +570,9 @@ static void test11() {
 
 static void test12() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,    // TODO: True...
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,    // TODO: True...
+    /* prelude */ R"""(
             pragma "ignore noinit"
             record r1 {}
             record r2 { var x: int; var y: real; }
@@ -595,8 +596,8 @@ static void test12() {
             record r10 { var x: owned c1?; }
             record r11 { var x: r9; }
             )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_POD,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_POD,
+    /* calls */ {
       { {"bool"}, Test::TRUE },
       { {"int"}, Test::TRUE },
       { {"int(8)"}, Test::TRUE },
@@ -647,15 +648,15 @@ static void test12() {
 
 static void test13() {
   Test tpg {
-    .testName = __FUNCTION__,
-    .isChplHomeRequired = false,
-    .prelude = R"""(
+    /* testName */ __FUNCTION__,
+    /* isChplHomeRequired */ false,
+    /* prelude */ R"""(
                extern type foo;
                extern record bar {}
                record baz {}
                )""",
-    .primitive = chpl::uast::primtags::PRIM_IS_EXTERN_TYPE,
-    .calls = {
+    /* primitive */ chpl::uast::primtags::PRIM_IS_EXTERN_TYPE,
+    /* calls */ {
       { {"int"}, Test::FALSE },
       { {"foo"}, Test::TRUE },
       { {"bar"}, Test::TRUE },

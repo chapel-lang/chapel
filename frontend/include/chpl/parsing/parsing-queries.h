@@ -100,6 +100,9 @@ parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
 std::vector<const uast::AstNode*>
 introspectParsedTopLevelExpressions(Context* context);
 
+std::vector<UniqueString>
+introspectParsedFiles(Context* context);
+
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
   Useful for projection queries.

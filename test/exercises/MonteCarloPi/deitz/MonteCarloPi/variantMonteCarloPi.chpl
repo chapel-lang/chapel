@@ -40,7 +40,7 @@ var rs = new randomStream(real, seed);
 var n = 0, count = 0;
 do {
   n += 1;
-  count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
+  count += rs.next()**2 + rs.next()**2 <= 1.0;
 } while abs(count * 4.0 / n - pi) > epsilon;
 
 //

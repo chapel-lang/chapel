@@ -10,6 +10,7 @@
 #define LLVM_DEBUGINFO_DWARF_DWARFACCELERATORTABLE_H
 
 #include "llvm/ADT/DenseSet.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/DebugInfo/DWARF/DWARFDataExtractor.h"
@@ -51,14 +52,14 @@ public:
 
   public:
     /// Returns the Offset of the Compilation Unit associated with this
-    /// Accelerator Entry or None if the Compilation Unit offset is not recorded
-    /// in this Accelerator Entry.
-    virtual Optional<uint64_t> getCUOffset() const = 0;
+    /// Accelerator Entry or std::nullopt if the Compilation Unit offset is not
+    /// recorded in this Accelerator Entry.
+    virtual std::optional<uint64_t> getCUOffset() const = 0;
 
     /// Returns the Tag of the Debug Info Entry associated with this
-    /// Accelerator Entry or None if the Tag is not recorded in this
+    /// Accelerator Entry or std::nullopt if the Tag is not recorded in this
     /// Accelerator Entry.
-    virtual Optional<dwarf::Tag> getTag() const = 0;
+    virtual std::optional<dwarf::Tag> getTag() const = 0;
 
     /// Returns the raw values of fields in the Accelerator Entry. In general,
     /// these can only be interpreted with the help of the metadata in the
@@ -99,11 +100,14 @@ class AppleAcceleratorTable : public DWARFAcceleratorTable {
     uint64_t DIEOffsetBase;
     SmallVector<std::pair<AtomType, Form>, 3> Atoms;
 
-    Optional<uint64_t> extractOffset(Optional<DWARFFormValue> Value) const;
+    std::optional<uint64_t>
+    extractOffset(std::optional<DWARFFormValue> Value) const;
   };
 
-  struct Header Hdr;
-  struct HeaderData HdrData;
+  Header Hdr;
+  HeaderData HdrData;
+  dwarf::FormParams FormParams;
+  uint32_t HashDataEntryLength;
   bool IsValid = false;
 
   /// Returns true if we should continue scanning for entries or false if we've
@@ -111,69 +115,186 @@ class AppleAcceleratorTable : public DWARFAcceleratorTable {
   bool dumpName(ScopedPrinter &W, SmallVectorImpl<DWARFFormValue> &AtomForms,
                 uint64_t *DataOffset) const;
 
+  /// Reads an uint32_t from the accelerator table at Offset, which is
+  /// incremented by the number of bytes read.
+  std::optional<uint32_t> readU32FromAccel(uint64_t &Offset,
+                                           bool UseRelocation = false) const;
+
+  /// Reads a StringRef from the string table at Offset.
+  std::optional<StringRef>
+  readStringFromStrSection(uint64_t StringSectionOffset) const;
+
+  /// Return the offset into the section where the Buckets begin.
+  uint64_t getBucketBase() const { return sizeof(Hdr) + Hdr.HeaderDataLength; }
+
+  /// Return the offset into the section where the I-th bucket is.
+  uint64_t getIthBucketBase(uint32_t I) const {
+    return getBucketBase() + I * 4;
+  }
+
+  /// Return the offset into the section where the hash list begins.
+  uint64_t getHashBase() const { return getBucketBase() + getNumBuckets() * 4; }
+
+  /// Return the offset into the section where the I-th hash is.
+  uint64_t getIthHashBase(uint32_t I) const { return getHashBase() + I * 4; }
+
+  /// Return the offset into the section where the offset list begins.
+  uint64_t getOffsetBase() const { return getHashBase() + getNumHashes() * 4; }
+
+  /// Return the offset into the section where the table entries begin.
+  uint64_t getEntriesBase() const {
+    return getOffsetBase() + getNumHashes() * 4;
+  }
+
+  /// Return the offset into the section where the I-th offset is.
+  uint64_t getIthOffsetBase(uint32_t I) const {
+    return getOffsetBase() + I * 4;
+  }
+
+  /// Returns the index of the bucket where a hypothetical Hash would be.
+  uint32_t hashToBucketIdx(uint32_t Hash) const {
+    return Hash % getNumBuckets();
+  }
+
+  /// Returns true iff a hypothetical Hash would be assigned to the BucketIdx-th
+  /// bucket.
+  bool wouldHashBeInBucket(uint32_t Hash, uint32_t BucketIdx) const {
+    return hashToBucketIdx(Hash) == BucketIdx;
+  }
+
+  /// Reads the contents of the I-th bucket, that is, the index in the hash list
+  /// where the hashes corresponding to this bucket begin.
+  std::optional<uint32_t> readIthBucket(uint32_t I) const {
+    uint64_t Offset = getIthBucketBase(I);
+    return readU32FromAccel(Offset);
+  }
+
+  /// Reads the I-th hash in the hash list.
+  std::optional<uint32_t> readIthHash(uint32_t I) const {
+    uint64_t Offset = getIthHashBase(I);
+    return readU32FromAccel(Offset);
+  }
+
+  /// Reads the I-th offset in the offset list.
+  std::optional<uint32_t> readIthOffset(uint32_t I) const {
+    uint64_t Offset = getIthOffsetBase(I);
+    return readU32FromAccel(Offset);
+  }
+
+  /// Reads a string offset from the accelerator table at Offset, which is
+  /// incremented by the number of bytes read.
+  std::optional<uint32_t> readStringOffsetAt(uint64_t &Offset) const {
+    return readU32FromAccel(Offset, /*UseRelocation*/ true);
+  }
+
+  /// Scans through all Hashes in the BucketIdx-th bucket, attempting to find
+  /// HashToFind. If it is found, its index in the list of hashes is returned.
+  std::optional<uint32_t> idxOfHashInBucket(uint32_t HashToFind,
+                                            uint32_t BucketIdx) const;
+
 public:
   /// Apple-specific implementation of an Accelerator Entry.
   class Entry final : public DWARFAcceleratorTable::Entry {
-    const HeaderData *HdrData = nullptr;
+    const AppleAcceleratorTable &Table;
 
-    Entry(const HeaderData &Data);
-    Entry() = default;
-
-    void extract(const AppleAcceleratorTable &AccelTable, uint64_t *Offset);
+    Entry(const AppleAcceleratorTable &Table);
+    void extract(uint64_t *Offset);
 
   public:
-    Optional<uint64_t> getCUOffset() const override;
+    std::optional<uint64_t> getCUOffset() const override;
 
     /// Returns the Section Offset of the Debug Info Entry associated with this
-    /// Accelerator Entry or None if the DIE offset is not recorded in this
-    /// Accelerator Entry. The returned offset is relative to the start of the
-    /// Section containing the DIE.
-    Optional<uint64_t> getDIESectionOffset() const;
+    /// Accelerator Entry or std::nullopt if the DIE offset is not recorded in
+    /// this Accelerator Entry. The returned offset is relative to the start of
+    /// the Section containing the DIE.
+    std::optional<uint64_t> getDIESectionOffset() const;
 
-    Optional<dwarf::Tag> getTag() const override;
+    std::optional<dwarf::Tag> getTag() const override;
 
     /// Returns the value of the Atom in this Accelerator Entry, if the Entry
     /// contains such Atom.
-    Optional<DWARFFormValue> lookup(HeaderData::AtomType Atom) const;
+    std::optional<DWARFFormValue> lookup(HeaderData::AtomType Atom) const;
 
     friend class AppleAcceleratorTable;
     friend class ValueIterator;
   };
 
-  class ValueIterator {
-    const AppleAcceleratorTable *AccelTable = nullptr;
-    Entry Current;           ///< The current entry.
-    uint64_t DataOffset = 0; ///< Offset into the section.
-    unsigned Data = 0; ///< Current data entry.
-    unsigned NumData = 0; ///< Number of data entries.
-
-    /// Advance the iterator.
-    void Next();
+  /// An iterator for Entries all having the same string as key.
+  class SameNameIterator
+      : public iterator_facade_base<SameNameIterator, std::forward_iterator_tag,
+                                    Entry> {
+    Entry Current;
+    uint64_t Offset = 0;
 
   public:
-    using iterator_category = std::input_iterator_tag;
-    using value_type = Entry;
-    using difference_type = std::ptrdiff_t;
-    using pointer = value_type *;
-    using reference = value_type &;
-
     /// Construct a new iterator for the entries at \p DataOffset.
-    ValueIterator(const AppleAcceleratorTable &AccelTable, uint64_t DataOffset);
-    /// End marker.
-    ValueIterator() = default;
+    SameNameIterator(const AppleAcceleratorTable &AccelTable,
+                     uint64_t DataOffset);
 
-    const Entry &operator*() const { return Current; }
-    ValueIterator &operator++() { Next(); return *this; }
-    ValueIterator operator++(int) {
-      ValueIterator I = *this;
-      Next();
-      return I;
+    const Entry &operator*() {
+      uint64_t OffsetCopy = Offset;
+      Current.extract(&OffsetCopy);
+      return Current;
     }
-    friend bool operator==(const ValueIterator &A, const ValueIterator &B) {
-      return A.NumData == B.NumData && A.DataOffset == B.DataOffset;
+    SameNameIterator &operator++() {
+      Offset += Current.Table.getHashDataEntryLength();
+      return *this;
     }
-    friend bool operator!=(const ValueIterator &A, const ValueIterator &B) {
-      return !(A == B);
+    friend bool operator==(const SameNameIterator &A,
+                           const SameNameIterator &B) {
+      return A.Offset == B.Offset;
+    }
+  };
+
+  struct EntryWithName {
+    EntryWithName(const AppleAcceleratorTable &Table)
+        : BaseEntry(Table), StrOffset(0) {}
+
+    std::optional<StringRef> readName() const {
+      return BaseEntry.Table.readStringFromStrSection(StrOffset);
+    }
+
+    Entry BaseEntry;
+    uint32_t StrOffset;
+  };
+
+  /// An iterator for all entries in the table.
+  class Iterator
+      : public iterator_facade_base<Iterator, std::forward_iterator_tag,
+                                    EntryWithName> {
+    constexpr static auto EndMarker = std::numeric_limits<uint64_t>::max();
+
+    EntryWithName Current;
+    uint64_t Offset = EndMarker;
+    uint32_t NumEntriesToCome = 0;
+
+    void setToEnd() { Offset = EndMarker; }
+    bool isEnd() const { return Offset == EndMarker; }
+    const AppleAcceleratorTable &getTable() const {
+      return Current.BaseEntry.Table;
+    }
+
+    /// Reads the next Entry in the table, populating `Current`.
+    /// If not possible (e.g. end of the section), becomes the end iterator.
+    void prepareNextEntryOrEnd();
+
+    /// Reads the next string pointer and the entry count for that string,
+    /// populating `NumEntriesToCome`.
+    /// If not possible (e.g. end of the section), becomes the end iterator.
+    /// Assumes `Offset` points to a string reference.
+    void prepareNextStringOrEnd();
+
+  public:
+    Iterator(const AppleAcceleratorTable &Table, bool SetEnd = false);
+
+    Iterator &operator++() {
+      prepareNextEntryOrEnd();
+      return *this;
+    }
+    bool operator==(const Iterator &It) const { return Offset == It.Offset; }
+    const EntryWithName &operator*() const {
+      assert(!isEnd() && "dereferencing end iterator");
+      return Current;
     }
   };
 
@@ -182,14 +303,24 @@ public:
       : DWARFAcceleratorTable(AccelSection, StringSection) {}
 
   Error extract() override;
-  uint32_t getNumBuckets();
-  uint32_t getNumHashes();
-  uint32_t getSizeHdr();
-  uint32_t getHeaderDataLength();
+  uint32_t getNumBuckets() const;
+  uint32_t getNumHashes() const;
+  uint32_t getSizeHdr() const;
+  uint32_t getHeaderDataLength() const;
+
+  /// Returns the size of one HashData entry.
+  uint32_t getHashDataEntryLength() const { return HashDataEntryLength; }
 
   /// Return the Atom description, which can be used to interpret the raw values
   /// of the Accelerator Entries in this table.
   ArrayRef<std::pair<HeaderData::AtomType, HeaderData::Form>> getAtomsDesc();
+
+  /// Returns true iff `AtomTy` is one of the atoms available in Entries of this
+  /// table.
+  bool containsAtomType(HeaderData::AtomType AtomTy) const {
+    return is_contained(make_first_range(HdrData.Atoms), AtomTy);
+  }
+
   bool validateForms();
 
   /// Return information related to the DWARF DIE we're looking for when
@@ -204,7 +335,12 @@ public:
   void dump(raw_ostream &OS) const override;
 
   /// Look up all entries in the accelerator table matching \c Key.
-  iterator_range<ValueIterator> equal_range(StringRef Key) const;
+  iterator_range<SameNameIterator> equal_range(StringRef Key) const;
+
+  /// Lookup all entries in the accelerator table.
+  auto entries() const {
+    return make_range(Iterator(*this), Iterator(*this, /*SetEnd*/ true));
+  }
 };
 
 /// .debug_names section consists of one or more units. Each unit starts with a
@@ -287,25 +423,25 @@ public:
     Entry(const NameIndex &NameIdx, const Abbrev &Abbr);
 
   public:
-    Optional<uint64_t> getCUOffset() const override;
-    Optional<dwarf::Tag> getTag() const override { return tag(); }
+    std::optional<uint64_t> getCUOffset() const override;
+    std::optional<dwarf::Tag> getTag() const override { return tag(); }
 
     /// Returns the Index into the Compilation Unit list of the owning Name
-    /// Index or None if this Accelerator Entry does not have an associated
-    /// Compilation Unit. It is up to the user to verify that the returned Index
-    /// is valid in the owning NameIndex (or use getCUOffset(), which will
-    /// handle that check itself). Note that entries in NameIndexes which index
-    /// just a single Compilation Unit are implicitly associated with that unit,
-    /// so this function will return 0 even without an explicit
+    /// Index or std::nullopt if this Accelerator Entry does not have an
+    /// associated Compilation Unit. It is up to the user to verify that the
+    /// returned Index is valid in the owning NameIndex (or use getCUOffset(),
+    /// which will handle that check itself). Note that entries in NameIndexes
+    /// which index just a single Compilation Unit are implicitly associated
+    /// with that unit, so this function will return 0 even without an explicit
     /// DW_IDX_compile_unit attribute.
-    Optional<uint64_t> getCUIndex() const;
+    std::optional<uint64_t> getCUIndex() const;
 
     /// .debug_names-specific getter, which always succeeds (DWARF v5 index
     /// entries always have a tag).
     dwarf::Tag tag() const { return Abbr->Tag; }
 
     /// Returns the Offset of the DIE within the containing CU or TU.
-    Optional<uint64_t> getDIEUnitOffset() const;
+    std::optional<uint64_t> getDIEUnitOffset() const;
 
     /// Return the Abbreviation that can be used to interpret the raw values of
     /// this Accelerator Entry.
@@ -313,7 +449,7 @@ public:
 
     /// Returns the value of the Index Attribute in this Accelerator Entry, if
     /// the Entry contains such Attribute.
-    Optional<DWARFFormValue> lookup(dwarf::Index Index) const;
+    std::optional<DWARFFormValue> lookup(dwarf::Index Index) const;
 
     void dump(ScopedPrinter &W) const;
 
@@ -406,7 +542,7 @@ public:
     void dumpAbbreviations(ScopedPrinter &W) const;
     bool dumpEntry(ScopedPrinter &W, uint64_t *Offset) const;
     void dumpName(ScopedPrinter &W, const NameTableEntry &NTE,
-                  Optional<uint32_t> Hash) const;
+                  std::optional<uint32_t> Hash) const;
     void dumpBucket(ScopedPrinter &W, uint32_t Bucket) const;
 
     Expected<AttributeEncoding> extractAttributeEncoding(uint64_t *Offset);
@@ -491,13 +627,13 @@ public:
     /// (searches all name indices).
     bool IsLocal;
 
-    Optional<Entry> CurrentEntry;
+    std::optional<Entry> CurrentEntry;
     uint64_t DataOffset = 0; ///< Offset into the section.
     std::string Key;         ///< The Key we are searching for.
-    Optional<uint32_t> Hash; ///< Hash of Key, if it has been computed.
+    std::optional<uint32_t> Hash; ///< Hash of Key, if it has been computed.
 
     bool getEntryAtCurrentOffset();
-    Optional<uint64_t> findEntryOffsetInCurrentIndex();
+    std::optional<uint64_t> findEntryOffsetInCurrentIndex();
     bool findInCurrentIndex();
     void searchFromStartOfCurrentIndex();
     void next();

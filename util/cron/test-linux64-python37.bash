@@ -10,4 +10,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python37"
 
 set_python_version "3.7"
 
-$CWD/nightly -cron -hellos ${nightly_args}
+$CWD/nightly -cron -pythonDep ${nightly_args}

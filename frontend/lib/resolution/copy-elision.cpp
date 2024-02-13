@@ -434,7 +434,7 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
     //yield the local variables
     saveLocalVarElidedCopies(frame);
 
-    //promote outer varaible access
+    //promote outer variable access
     for (const auto& entry : frame->copyElisionState) {
       ID id = entry.first;
       const CopyElisionState& state = entry.second;

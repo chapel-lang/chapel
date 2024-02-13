@@ -18,7 +18,7 @@
  */
 
 #include "iterator-support.h"
-#include "core-types.h"
+#include "core-types-gen.h"
 
 PyTypeObject AstIterType = {
   PyVarObject_HEAD_INIT(NULL, 0)

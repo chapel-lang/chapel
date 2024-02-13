@@ -143,9 +143,9 @@ static bool fBaseline = false;
 //
 static bool fRungdb = false;
 static bool fRunlldb = false;
-bool fDriverDoMonolithic = true;
 bool fDriverCompilationPhase = false;
 bool fDriverMakeBinaryPhase = false;
+bool fDriverDoMonolithic = false;
 bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
 char driverTmpDir[FILENAME_MAX] = "";
@@ -224,6 +224,7 @@ bool fWarnIntUint = false;
 bool fWarnUnstable = false;
 bool fWarnUnstableStandard = false;
 bool fWarnUnstableInternal = false;
+bool fWarnPotentialRaces = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -1291,6 +1292,7 @@ static ArgumentDescription arg_desc[] = {
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_WARNINGS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
  {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
+{"warn-potential-races", ' ', NULL, "Enable [disable] output of warnings for potential race conditions", "N", &fWarnPotentialRaces, "CHPL_WARN_POTENTIAL_RACES", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
@@ -1475,7 +1477,7 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver (internal use flag)", "P", &driverTmpDir, NULL, NULL},
- {"compiler-driver", ' ', NULL, "Run chpl executable as a compiler driver", "f", &fDriverDoMonolithic, NULL, NULL},
+ {"compiler-driver", ' ', NULL, "Enable [disable] compiler driver mode", "n", &fDriverDoMonolithic, NULL, NULL},
  {"driver-compilation-phase", ' ', NULL, "Run driver compilation phase (internal use flag)", "F", &fDriverCompilationPhase, NULL, setSubInvocation},
  {"driver-makebinary-phase", ' ', NULL, "Run driver makeBinary phase (internal use flag)", "F", &fDriverMakeBinaryPhase, NULL, setSubInvocation},
  {"driver-debug-phase", ' ', "<phase>", "Specify driver phase to run when debugging: compilation, makeBinary, all", "S", NULL, NULL, setDriverDebugPhase},
@@ -2309,7 +2311,11 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,
     .cacheRemote = fCacheRemote,
-    .privatization = !(fNoPrivatization || fLocal),
+    // We need privitization if we are doing a non-local compilation, or using
+    // GPUs
+    // TODO can we remove `--no-privatization` flag?
+    .privatization = (!fNoPrivatization && !fLocal) ||
+                     (!fNoPrivatization && usingGpuLocaleModel()),
     .local = fLocal,
     .warnUnstable = fWarnUnstable,
   };
@@ -2323,13 +2329,12 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
 static void bootstrapTmpDir() {
   chpl::Context::Configuration config;
 
-  if (driverInSubInvocation) {
+  if (!fDriverDoMonolithic && driverInSubInvocation) {
     // We are in a sub-invocation and can assume that a tmp dir has been
     // established for us by the driver already, and will be deleted for us
     // later if necessary.
-    if (!driverTmpDir[0]) {
-      USR_FATAL("Driver sub-invocation was not supplied a tmp dir path");
-    }
+    INT_ASSERT(driverTmpDir[0] &&
+               "driver sub-invocation was not supplied a tmp dir path");
     config.tmpDir = driverTmpDir;
     config.keepTmpDir = true;
   } else {

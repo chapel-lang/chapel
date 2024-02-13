@@ -140,6 +140,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/NPBRandom.chpl \
 	packages/ObjectSerialization.chpl \
 	packages/ProtobufProtocolSupport.chpl \
+	packages/ParallelIO.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \

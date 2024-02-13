@@ -93,6 +93,7 @@ namespace {
     void replaceRemWithNumeratorOrZero(BinaryOperator *Rem);
     void replaceSRemWithURem(BinaryOperator *Rem);
     bool eliminateSDiv(BinaryOperator *SDiv);
+    bool strengthenBinaryOp(BinaryOperator *BO, Instruction *IVOperand);
     bool strengthenOverflowingOperation(BinaryOperator *OBO,
                                         Instruction *IVOperand);
     bool strengthenRightShift(BinaryOperator *BO, Instruction *IVOperand);
@@ -106,13 +107,8 @@ static Instruction *findCommonDominator(ArrayRef<Instruction *> Instructions,
                                         DominatorTree &DT) {
   Instruction *CommonDom = nullptr;
   for (auto *Insn : Instructions)
-    if (!CommonDom || DT.dominates(Insn, CommonDom))
-      CommonDom = Insn;
-    else if (!DT.dominates(CommonDom, Insn))
-      // If there is no dominance relation, use common dominator.
-      CommonDom =
-          DT.findNearestCommonDominator(CommonDom->getParent(),
-                                        Insn->getParent())->getTerminator();
+    CommonDom =
+        CommonDom ? DT.findNearestCommonDominator(CommonDom, Insn) : Insn;
   assert(CommonDom && "Common dominator not found?");
   return CommonDom;
 }
@@ -195,6 +191,9 @@ Value *SimplifyIndvar::foldIVUser(Instruction *UseInst, Instruction *IVOperand) 
 
 bool SimplifyIndvar::makeIVComparisonInvariant(ICmpInst *ICmp,
                                                Instruction *IVOperand) {
+  auto *Preheader = L->getLoopPreheader();
+  if (!Preheader)
+    return false;
   unsigned IVOperIdx = 0;
   ICmpInst::Predicate Pred = ICmp->getPredicate();
   if (IVOperand != ICmp->getOperand(0)) {
@@ -209,51 +208,24 @@ bool SimplifyIndvar::makeIVComparisonInvariant(ICmpInst *ICmp,
   const Loop *ICmpLoop = LI->getLoopFor(ICmp->getParent());
   const SCEV *S = SE->getSCEVAtScope(ICmp->getOperand(IVOperIdx), ICmpLoop);
   const SCEV *X = SE->getSCEVAtScope(ICmp->getOperand(1 - IVOperIdx), ICmpLoop);
-
-  auto *PN = dyn_cast<PHINode>(IVOperand);
-  if (!PN)
-    return false;
-  auto LIP = SE->getLoopInvariantPredicate(Pred, S, X, L);
+  auto LIP = SE->getLoopInvariantPredicate(Pred, S, X, L, ICmp);
   if (!LIP)
     return false;
   ICmpInst::Predicate InvariantPredicate = LIP->Pred;
   const SCEV *InvariantLHS = LIP->LHS;
   const SCEV *InvariantRHS = LIP->RHS;
 
-  // Rewrite the comparison to a loop invariant comparison if it can be done
-  // cheaply, where cheaply means "we don't need to emit any new
-  // instructions".
-
-  SmallDenseMap<const SCEV*, Value*> CheapExpansions;
-  CheapExpansions[S] = ICmp->getOperand(IVOperIdx);
-  CheapExpansions[X] = ICmp->getOperand(1 - IVOperIdx);
-
-  // TODO: Support multiple entry loops?  (We currently bail out of these in
-  // the IndVarSimplify pass)
-  if (auto *BB = L->getLoopPredecessor()) {
-    const int Idx = PN->getBasicBlockIndex(BB);
-    if (Idx >= 0) {
-      Value *Incoming = PN->getIncomingValue(Idx);
-      const SCEV *IncomingS = SE->getSCEV(Incoming);
-      CheapExpansions[IncomingS] = Incoming;
-    }
-  }
-  Value *NewLHS = CheapExpansions[InvariantLHS];
-  Value *NewRHS = CheapExpansions[InvariantRHS];
-
-  if (!NewLHS)
-    if (auto *ConstLHS = dyn_cast<SCEVConstant>(InvariantLHS))
-      NewLHS = ConstLHS->getValue();
-  if (!NewRHS)
-    if (auto *ConstRHS = dyn_cast<SCEVConstant>(InvariantRHS))
-      NewRHS = ConstRHS->getValue();
-
-  if (!NewLHS || !NewRHS)
-    // We could not find an existing value to replace either LHS or RHS.
-    // Generating new instructions has subtler tradeoffs, so avoid doing that
-    // for now.
+  // Do not generate something ridiculous.
+  auto *PHTerm = Preheader->getTerminator();
+  if (Rewriter.isHighCostExpansion({InvariantLHS, InvariantRHS}, L,
+                                   2 * SCEVCheapExpansionBudget, TTI, PHTerm) ||
+      !Rewriter.isSafeToExpandAt(InvariantLHS, PHTerm) ||
+      !Rewriter.isSafeToExpandAt(InvariantRHS, PHTerm))
     return false;
-
+  auto *NewLHS =
+      Rewriter.expandCodeFor(InvariantLHS, IVOperand->getType(), PHTerm);
+  auto *NewRHS =
+      Rewriter.expandCodeFor(InvariantRHS, IVOperand->getType(), PHTerm);
   LLVM_DEBUG(dbgs() << "INDVARS: Simplified comparison: " << *ICmp << '\n');
   ICmp->setPredicate(InvariantPredicate);
   ICmp->setOperand(0, NewLHS);
@@ -288,6 +260,7 @@ void SimplifyIndvar::eliminateIVComparison(ICmpInst *ICmp,
     Users.push_back(cast<Instruction>(U));
   const Instruction *CtxI = findCommonDominator(Users, *DT);
   if (auto Ev = SE->evaluatePredicateAt(Pred, S, X, CtxI)) {
+    SE->forgetValue(ICmp);
     ICmp->replaceAllUsesWith(ConstantInt::getBool(ICmp->getContext(), *Ev));
     DeadInsts.emplace_back(ICmp);
     LLVM_DEBUG(dbgs() << "INDVARS: Eliminated comparison: " << *ICmp << '\n');
@@ -683,7 +656,7 @@ bool SimplifyIndvar::replaceFloatIVWithIntegerIV(Instruction *UseInst) {
       UseInst->getOpcode() != CastInst::UIToFP)
     return false;
 
-  Value *IVOperand = UseInst->getOperand(0);
+  Instruction *IVOperand = cast<Instruction>(UseInst->getOperand(0));
   // Get the symbolic expression for this instruction.
   const SCEV *IV = SE->getSCEV(IVOperand);
   unsigned MaskBits;
@@ -696,17 +669,35 @@ bool SimplifyIndvar::replaceFloatIVWithIntegerIV(Instruction *UseInst) {
     for (User *U : UseInst->users()) {
       // Match for fptosi/fptoui of sitofp and with same type.
       auto *CI = dyn_cast<CastInst>(U);
-      if (!CI || IVOperand->getType() != CI->getType())
+      if (!CI)
         continue;
 
       CastInst::CastOps Opcode = CI->getOpcode();
       if (Opcode != CastInst::FPToSI && Opcode != CastInst::FPToUI)
         continue;
 
-      CI->replaceAllUsesWith(IVOperand);
+      Value *Conv = nullptr;
+      if (IVOperand->getType() != CI->getType()) {
+        IRBuilder<> Builder(CI);
+        StringRef Name = IVOperand->getName();
+        // To match InstCombine logic, we only need sext if both fptosi and
+        // sitofp are used. If one of them is unsigned, then we can use zext.
+        if (SE->getTypeSizeInBits(IVOperand->getType()) >
+            SE->getTypeSizeInBits(CI->getType())) {
+          Conv = Builder.CreateTrunc(IVOperand, CI->getType(), Name + ".trunc");
+        } else if (Opcode == CastInst::FPToUI ||
+                   UseInst->getOpcode() == CastInst::UIToFP) {
+          Conv = Builder.CreateZExt(IVOperand, CI->getType(), Name + ".zext");
+        } else {
+          Conv = Builder.CreateSExt(IVOperand, CI->getType(), Name + ".sext");
+        }
+      } else
+        Conv = IVOperand;
+
+      CI->replaceAllUsesWith(Conv);
       DeadInsts.push_back(CI);
       LLVM_DEBUG(dbgs() << "INDVARS: Replace IV user: " << *CI
-                        << " with: " << *IVOperand << '\n');
+                        << " with: " << *Conv << '\n');
 
       ++NumFoldedUser;
       Changed = true;
@@ -751,11 +742,19 @@ bool SimplifyIndvar::eliminateIdentitySCEV(Instruction *UseInst,
 
   LLVM_DEBUG(dbgs() << "INDVARS: Eliminated identity: " << *UseInst << '\n');
 
+  SE->forgetValue(UseInst);
   UseInst->replaceAllUsesWith(IVOperand);
   ++NumElimIdentity;
   Changed = true;
   DeadInsts.emplace_back(UseInst);
   return true;
+}
+
+bool SimplifyIndvar::strengthenBinaryOp(BinaryOperator *BO,
+                                        Instruction *IVOperand) {
+  return (isa<OverflowingBinaryOperator>(BO) &&
+          strengthenOverflowingOperation(BO, IVOperand)) ||
+         (isa<ShlOperator>(BO) && strengthenRightShift(BO, IVOperand));
 }
 
 /// Annotate BO with nsw / nuw if it provably does not signed-overflow /
@@ -909,6 +908,14 @@ void SimplifyIndvar::simplifyUsers(PHINode *CurrIV, IVVisitor *V) {
     if (replaceIVUserWithLoopInvariant(UseInst))
       continue;
 
+    // Go further for the bitcast ''prtoint ptr to i64'
+    if (isa<PtrToIntInst>(UseInst))
+      for (Use &U : UseInst->uses()) {
+        Instruction *User = cast<Instruction>(U.getUser());
+        if (replaceIVUserWithLoopInvariant(User))
+          break; // done replacing
+      }
+
     Instruction *IVOperand = UseOper.second;
     for (unsigned N = 0; IVOperand; ++N) {
       assert(N <= Simplified.size() && "runaway iteration");
@@ -928,9 +935,7 @@ void SimplifyIndvar::simplifyUsers(PHINode *CurrIV, IVVisitor *V) {
     }
 
     if (BinaryOperator *BO = dyn_cast<BinaryOperator>(UseInst)) {
-      if ((isa<OverflowingBinaryOperator>(BO) &&
-           strengthenOverflowingOperation(BO, IVOperand)) ||
-          (isa<ShlOperator>(BO) && strengthenRightShift(BO, IVOperand))) {
+      if (strengthenBinaryOp(BO, IVOperand)) {
         // re-queue uses of the now modified binary operator and fall
         // through to the checks that remain.
         pushIVUsers(IVOperand, L, Simplified, SimpleIVUsers);
@@ -1041,13 +1046,13 @@ class WidenIV {
   // context.
   DenseMap<DefUserPair, ConstantRange> PostIncRangeInfos;
 
-  Optional<ConstantRange> getPostIncRangeInfo(Value *Def,
-                                              Instruction *UseI) {
+  std::optional<ConstantRange> getPostIncRangeInfo(Value *Def,
+                                                   Instruction *UseI) {
     DefUserPair Key(Def, UseI);
     auto It = PostIncRangeInfos.find(Key);
     return It == PostIncRangeInfos.end()
-               ? Optional<ConstantRange>(None)
-               : Optional<ConstantRange>(It->second);
+               ? std::optional<ConstantRange>(std::nullopt)
+               : std::optional<ConstantRange>(It->second);
   }
 
   void calculatePostIncRanges(PHINode *OrigPhi);

@@ -64,6 +64,10 @@ def get_runtime_includes_and_defines():
         bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
         if gpu_type == "nvidia":
             system.append("-I" + os.path.join(sdk_path, "include"))
+
+            # workaround an issue with __float128 not being supported by clang in device code
+            system.append("-D__STRICT_ANSI__=1")
+
         elif gpu_type == "amd":
             # -isystem instead of -I silences warnings from inside these includes.
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))

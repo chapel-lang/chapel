@@ -466,7 +466,7 @@ const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>> dedupDeprecationWarnings;
+std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupDeprecationWarnings;
 
 void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   if (!this->hasFlag(FLAG_DEPRECATED)) return;
@@ -535,7 +535,7 @@ static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
   return fWarnUnstable;
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>> dedupUnstableWarnings;
+std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupUnstableWarnings;
 
 //based on maybeGenerateDeprecationWarning
 void Symbol::maybeGenerateUnstableWarning(Expr* context) {

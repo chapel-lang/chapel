@@ -33,7 +33,7 @@ link=$(bdir)/chplcheck
 all: chplcheck install
 
 chplcheck-venv:
-	cd ../../third-party && $(MAKE) chplcheck-venv
+	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chplcheck-venv
 
 chplcheck: chplcheck-venv
 

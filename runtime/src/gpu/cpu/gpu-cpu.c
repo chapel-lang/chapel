@@ -39,6 +39,11 @@ void chpl_gpu_impl_init(int* num_devices) {
   *num_devices = 1;
 }
 
+void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
+                               size_t* size) {
+  *ptr = (void*)1; // we don't want to return NULL here to avoid an assertion
+}
+
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return false;  // this OK? maybe we want assertions to go through?
 }
@@ -88,9 +93,6 @@ void chpl_gpu_impl_comm_wait(void *stream) {
 }
 
 void* chpl_gpu_impl_mem_array_alloc(size_t size) {
-  // this function's upstream is blocked by GPU_RUNTIME_CPU check, This should
-  // be unreachable
-  chpl_internal_error("chpl_gpu_mem_array_alloc was called unexpectedly.");
   return chpl_malloc(size);
 }
 

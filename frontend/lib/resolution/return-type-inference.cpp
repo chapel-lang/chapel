@@ -910,6 +910,11 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       }
 
       return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
+               untyped->name() == "size") {
+      auto tup = sig->formalType(0).type()->toTupleType();
+      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, tup->numElements()));
+      return true;
     } else {
       CHPL_ASSERT(false && "unhandled compiler-generated record method");
       return true;
@@ -959,8 +964,10 @@ static bool helpComputeReturnType(Context* context,
     }
 
     // if there are no returns with a value, use void return type
-    if (fn->linkage() != Decl::EXTERN &&
-        fnAstReturnsNonVoid(context, ast->id()) == false) {
+    if (fn->linkage() == Decl::EXTERN && fn->returnType() == nullptr) {
+      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+      return true;
+    } else if (fnAstReturnsNonVoid(context, ast->id()) == false) {
       result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       return true;
     }

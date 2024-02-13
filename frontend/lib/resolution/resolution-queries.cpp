@@ -31,6 +31,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/util/hash.h"
 
 #include "Resolver.h"
 #include "call-init-deinit.h"
@@ -48,6 +49,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <iterator>
 
 namespace chpl {
 namespace resolution {
@@ -56,12 +58,12 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-using CandidatesVec = std::vector<const TypedFnSignature*>;
-using ForwardingInfoVec = std::vector<QualifiedType>;
-
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
+  QUERY_REGISTER_TRACER(
+    return std::make_pair(std::get<0>(args), "resolving this module statement");
+  );
 
   CHPL_ASSERT(id.postOrderId() >= 0);
 
@@ -74,6 +76,10 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto modStmt = parsing::idToAst(context, id);
     auto visitor = Resolver::createForModuleStmt(context, mod, modStmt, result);
     modStmt->traverse(visitor);
+
+    if (auto rec = context->recoverFromSelfRecursion()) {
+      CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
+    }
   }
 
   return QUERY_END(result);
@@ -111,11 +117,7 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
   const QualifiedType lhsType = lhs.type();
   const QualifiedType rhsType = rhs.type();
 
-  // check to see if it is generic/unknown
-  // (otherwise we do not need to infer anything)
-  if (!lhsType.isUnknownKindOrType() &&
-      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
-    return;
+  if (!lhsType.needsSplitInitTypeInfo(context)) return;
 
   const Param* p = rhsType.param();
   if (lhsType.kind() != QualifiedType::PARAM) {
@@ -242,8 +244,9 @@ scopeResolveModule(Context* context, ID id) {
 
 }
 
-const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
-  QUERY_BEGIN(typeForModuleLevelSymbol, context, id);
+const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
+                                              bool isCurrentModule) {
+  QUERY_BEGIN(typeForModuleLevelSymbol, context, id, isCurrentModule);
 
   QualifiedType result;
 
@@ -252,6 +255,12 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     const auto& resolvedStmt = resolveModuleStmt(context, id);
     if (resolvedStmt.hasId(id)) {
       result = resolvedStmt.byId(id).type();
+      if (result.needsSplitInitTypeInfo(context) && !isCurrentModule) {
+        ID moduleId = parsing::idToParentId(context, id);
+        const auto& resolvedModule = resolveModule(context, moduleId);
+        assert(resolvedModule.hasId(id));
+        result = resolvedModule.byId(id).type();
+      }
     } else {
       // fall back to default value
       result = QualifiedType();
@@ -534,7 +543,7 @@ typedSignatureInitial(Context* context,
 
   auto ret = typedSignatureInitialQuery(context, untypedSig);
   // also check the signature at this point if it is concrete
-  if (!ret->needsInstantiation()) {
+  if (ret != nullptr && !ret->needsInstantiation()) {
     checkSignature(context, ret);
   }
   return ret;
@@ -668,6 +677,15 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                                              DefaultsPolicy defaultsPolicy) {
   QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, defaultsPolicy);
 
+  QUERY_REGISTER_TRACER(
+    auto& id = std::get<0>(args)->id();
+    auto typeName = std::get<0>(args)->name();
+    auto traceText = std::string("resolving the fields of type '")
+      + typeName.c_str()
+      + "'";
+    return std::make_pair(id, traceText);
+  );
+
   ResolvedFields result;
 
   CHPL_ASSERT(ct);
@@ -709,6 +727,10 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                           resolvedFields.fieldType(i));
         }
         result.addForwarding(resolvedFields);
+      }
+
+      if (auto rec = context->recoverFromSelfRecursion()) {
+        CHPL_REPORT(context, RecursionFieldDecl, child, ad, ct, std::move(*rec));
       }
     }
 
@@ -2099,7 +2121,8 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-  if (sig->needsInstantiation()) {
+
+  if (sig == nullptr || sig->needsInstantiation()) {
     return nullptr;
   }
 
@@ -2350,14 +2373,20 @@ doIsCandidateApplicableInitial(Context* context,
     auto res = vis.byPostorder.byAst(fn->thisFormal());
 
     auto got = canPass(context, recv, res.type());
-    if (!got.passes()) {
-      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+    // Allow passing directly or via implicit borrowing only.
+    if (!got.passes() || (got.converts() && !got.convertsWithBorrowing())) {
+      return ApplicabilityResult::failure(candidateId,
+                                          /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
+
+  if (!ret) {
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  }
 
   return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
@@ -2396,22 +2425,21 @@ isCandidateApplicableInitialQuery(Context* context,
   return QUERY_END(result);
 }
 
-static const std::pair<std::vector<const TypedFnSignature*>,
+static const std::pair<CandidatesAndForwardingInfo,
                        std::vector<ApplicabilityResult>>&
 filterCandidatesInitialGatherRejected(Context* context,
                                       std::vector<BorrowedIdsWithName> lst,
-                                      CallInfo call,
-                                      bool gatherRejected) {
+                                      CallInfo call, bool gatherRejected) {
   QUERY_BEGIN(filterCandidatesInitialGatherRejected, context, lst, call, gatherRejected);
 
-  std::vector<const TypedFnSignature*> matching;
+  CandidatesAndForwardingInfo matching;
   std::vector<ApplicabilityResult> rejected;
 
   for (const BorrowedIdsWithName& ids : lst) {
     for (const ID& id : ids) {
       auto s = isCandidateApplicableInitialQuery(context, id, call);
       if (s.success()) {
-        matching.push_back(s.candidate());
+        matching.addCandidate(s.candidate());
       } else if (gatherRejected) {
         rejected.push_back(s);
       }
@@ -2422,7 +2450,7 @@ filterCandidatesInitialGatherRejected(Context* context,
   return QUERY_END(result);
 }
 
-const std::vector<const TypedFnSignature*>&
+const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
                         std::vector<BorrowedIdsWithName> lst,
                         CallInfo call) {
@@ -2433,11 +2461,11 @@ filterCandidatesInitial(Context* context,
 
 void
 filterCandidatesInstantiating(Context* context,
-                              const std::vector<const TypedFnSignature*>& lst,
+                              const CandidatesAndForwardingInfo& lst,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
-                              std::vector<const TypedFnSignature*>& result,
+                              CandidatesAndForwardingInfo& result,
                               std::vector<ApplicabilityResult>* rejected) {
 
   // Performance: Would it help to make this a query?
@@ -2458,13 +2486,13 @@ filterCandidatesInstantiating(Context* context,
                                              call,
                                              instantiationPoiScope);
       if (instantiated.success()) {
-        result.push_back(instantiated.candidate());
+        result.addCandidate(instantiated.candidate());
       } if (rejected) {
         rejected->push_back(std::move(instantiated));
       }
     } else {
       // if it's already concrete, we already know it is a candidate.
-      result.push_back(typedSignature);
+      result.addCandidate(typedSignature);
     }
   }
 }
@@ -2937,10 +2965,9 @@ static bool resolveFnCallSpecialType(Context* context,
   return false;
 }
 
-static void buildReaderWriterTypeCtor(Context* context,
-                                      const CallInfo& ci,
-                                      const TypedFnSignature* initial,
-                                      CandidatesVec& initialCandidates) {
+static void buildReaderWriterTypeCtor(
+    Context* context, const CallInfo& ci, const TypedFnSignature* initial,
+    CandidatesAndForwardingInfo& initialCandidates) {
   std::vector<UntypedFnSignature::FormalDetail> formals;
   // Move 'kind' to the end and allow the first two args to just be
   // 'locking' and  '(de)serializerType'
@@ -2982,7 +3009,7 @@ static void buildReaderWriterTypeCtor(Context* context,
                                       /* parentFn */ nullptr,
                                       /* formalsInstantiated */ Bitmap());
 
-  initialCandidates.push_back(result);
+  initialCandidates.addCandidate(result);
 }
 
 static MostSpecificCandidates
@@ -2992,14 +3019,14 @@ resolveFnCallForTypeCtor(Context* context,
                          const PoiScope* inPoiScope,
                          PoiInfo& poiInfo) {
 
-  CandidatesVec initialCandidates;
-  CandidatesVec candidates;
+  CandidatesAndForwardingInfo initialCandidates;
+  CandidatesAndForwardingInfo candidates;
 
   CHPL_ASSERT(ci.calledType().type() != nullptr);
   CHPL_ASSERT(!ci.calledType().type()->isUnknownType());
 
   auto initial = typeConstructorInitial(context, ci.calledType().type());
-  initialCandidates.push_back(initial);
+  initialCandidates.addCandidate(initial);
 
   //
   // Adds an alternative type constructor for fileReader/Writer to support
@@ -3026,14 +3053,10 @@ resolveFnCallForTypeCtor(Context* context,
                                 /* rejected */ nullptr);
 
 
-  ForwardingInfoVec forwardingInfo;
-
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
   MostSpecificCandidates mostSpecific =
-    findMostSpecificCandidates(context,
-                               candidates, forwardingInfo,
-                               ci, inScope, inPoiScope);
+      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
 
   return mostSpecific;
 }
@@ -3043,7 +3066,7 @@ considerCompilerGeneratedCandidates(Context* context,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
-                                   CandidatesVec& candidates) {
+                                   CandidatesAndForwardingInfo& candidates) {
 
   // only consider compiler-generated methods and opcalls, for now
   if (!ci.isMethodCall() && !ci.isOpCall()) return;
@@ -3073,7 +3096,7 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // OK, already concrete, store and return
   if (!tfs->needsInstantiation()) {
-    candidates.push_back(tfs);
+    candidates.addCandidate(tfs);
     return;
   }
 
@@ -3087,7 +3110,7 @@ considerCompilerGeneratedCandidates(Context* context,
   CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction());
   CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
 
-  candidates.push_back(instantiated.candidate());
+  candidates.addCandidate(instantiated.candidate());
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -3134,15 +3157,114 @@ lookupCalledExpr(Context* context,
   return ret;
 }
 
-static void helpComputeForwardingTo(const CallInfo& fci,
-                                    size_t start,
-                                    CandidatesVec& candidates,
-                                    std::vector<QualifiedType>& forwardingTo) {
-  QualifiedType forwardingReceiverActualType = fci.calledType();
-  size_t n = candidates.size();
-  forwardingTo.resize(start);
-  for (size_t i = start; i < n; i++) {
-    forwardingTo.push_back(forwardingReceiverActualType);
+// Container for ordering groups of last resort candidates by resolution
+// preference.
+struct LastResortCandidateGroups {
+
+  // Combine another set of groups into this one, consuming the other one.
+  // For use with candidates from multiple potential forwarding types.
+  void mergeWithGroups(LastResortCandidateGroups other) {
+    // merge non-poi candidate group and forwarding info
+    if (other.nonPoi) {
+      if (nonPoi) {
+        nonPoi->takeFromOther(*other.nonPoi);
+      } else {
+        nonPoi = std::move(other.nonPoi);
+      }
+    }
+
+    // merge poi candidate groups and forwarding info at corresponding indexes
+    for (size_t i = 0; i < std::max(this->poi.size(), other.poi.size());
+         i++) {
+      if (i < this->poi.size() && i < other.poi.size()) {
+        // both have a poi candidates group at this index
+        this->poi[i].takeFromOther(other.poi[i]);
+      } else if (i < this->poi.size()) {
+        // only this one has a group here, nothing to do
+      } else {
+        // only the other has a group
+        this->poi.push_back(std::move(other.poi[i]));
+      }
+    }
+
+    // recurse into other's forwarding groups
+    if (forwardingCandidateGroups) {
+      forwardingCandidateGroups->mergeWithGroups(
+          std::move(other.getForwardingGroups()));
+    } else {
+      forwardingCandidateGroups = std::move(other.forwardingCandidateGroups);
+    }
+  }
+
+  // Get the LastResortCandidateGroups for forwarded-to candidates,
+  // creating it first if it does not exist.
+  LastResortCandidateGroups& getForwardingGroups() {
+    if (!forwardingCandidateGroups) {
+      forwardingCandidateGroups = std::make_unique<LastResortCandidateGroups>();
+    }
+    return *forwardingCandidateGroups;
+  }
+
+  // Get the most preferred candidates group that has candidates, if there is
+  // one. Otherwise, return an empty candidates group.
+  // Out-params:
+  // - firstPoiCandidate: Index of the first poi candidate. Presumed 0 to start
+  //   with, and set to the end of the non-poi candidates if they are returned.
+  // - forwardingInfo: Forwarding info for the returned group, set if it comes
+  //   from forwarding.
+  const CandidatesAndForwardingInfo firstNonEmptyCandidatesGroup(
+      size_t* firstPoiCandidate) const {
+    if (nonPoi && !nonPoi->empty()) {
+      *firstPoiCandidate = nonPoi->size();
+      return *nonPoi;
+    }
+    for (size_t i = 0; i < poi.size(); i++) {
+      if (!poi[i].empty()) {
+        return poi[i];
+      }
+    }
+    if (forwardingCandidateGroups) {
+      return forwardingCandidateGroups->firstNonEmptyCandidatesGroup(
+          firstPoiCandidate);
+    }
+    return CandidatesAndForwardingInfo();
+  }
+
+  void addNonPoiCandidates(CandidatesAndForwardingInfo&& group) {
+    CHPL_ASSERT(!nonPoi && "non poi candidates already set");
+    this->nonPoi = std::move(group);
+  }
+
+  void addPoiCandidates(CandidatesAndForwardingInfo&& group) {
+    CHPL_ASSERT(nonPoi && "setting poi candidates before non poi");
+    this->poi.push_back(std::move(group));
+  }
+
+ private:
+  // Non-poi candidates (most preferred).
+  chpl::optional<CandidatesAndForwardingInfo> nonPoi;
+  // Poi candidates from innermost (more preferred) to outermost scope.
+  std::vector<CandidatesAndForwardingInfo> poi;
+
+  // A LastResortCandidateGroups for candidates found via forwarding from the
+  // site of the current group. This is effectively a linked list due to the
+  // possibility of forwards-to-forwards.
+  owned<LastResortCandidateGroups> forwardingCandidateGroups = nullptr;
+};
+
+// Returns candidates with last resort candidates removed and saved in a
+// separate list.
+static void filterCandidatesLastResort(
+    Context* context, const CandidatesAndForwardingInfo& list, CandidatesAndForwardingInfo& result,
+    CandidatesAndForwardingInfo& lastResort) {
+  for (auto& candidate : list) {
+    auto attrs =
+        parsing::idToAttributeGroup(context, candidate->untyped()->id());
+    if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
+      lastResort.addCandidate(candidate);
+    } else {
+      result.addCandidate(candidate);
+    }
   }
 }
 
@@ -3158,10 +3280,9 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     const CallInfo& ci,
                                     const Scope* inScope,
                                     const PoiScope* inPoiScope,
-                                    CandidatesVec& nonPoiCandidates,
-                                    CandidatesVec& poiCandidates,
-                                    ForwardingInfoVec& nonPoiForwardingTo,
-                                    ForwardingInfoVec& poiForwardingTo) {
+                                    CandidatesAndForwardingInfo& nonPoiCandidates,
+                                    CandidatesAndForwardingInfo& poiCandidates,
+                                    LastResortCandidateGroups& lrcGroups) {
 
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -3240,12 +3361,15 @@ gatherAndFilterCandidatesForwarding(Context* context,
       considerCompilerGeneratedCandidates(context, fci, inScope, inPoiScope,
                                           nonPoiCandidates);
       // update forwardingTo
-      helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
+      nonPoiCandidates.helpComputeForwardingTo(fci, start);
+
+      // don't worry about last resort for compiler generated candidates
     }
 
     // next, look for candidates without using POI.
     {
       int i = 0;
+      CandidatesAndForwardingInfo newLrcGroup;
       for (const auto& fci : forwardingCis) {
         size_t start = nonPoiCandidates.size();
         // compute the potential functions that it could resolve to
@@ -3256,19 +3380,25 @@ gatherAndFilterCandidatesForwarding(Context* context,
           filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
+        CandidatesAndForwardingInfo candidatesWithInstantiations;
         filterCandidatesInstantiating(context,
                                       initialCandidates,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      nonPoiCandidates,
+                                      candidatesWithInstantiations,
                                       /* rejected */ nullptr);
 
-        // update forwardingTo
-        helpComputeForwardingTo(fci, start,
-                                nonPoiCandidates, nonPoiForwardingTo);
+        // filter out last resort candidates
+        filterCandidatesLastResort(context, candidatesWithInstantiations,
+                                   nonPoiCandidates, newLrcGroup);
+
+        // update forwardingTo (for candidates and last resort candidates)
+        nonPoiCandidates.helpComputeForwardingTo(fci, start);
+        newLrcGroup.helpComputeForwardingTo(fci, start);
         i++;
       }
+      lrcGroups.addNonPoiCandidates(std::move(newLrcGroup));
     }
 
     // next, look for candidates using POI
@@ -3283,6 +3413,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
 
       int i = 0;
+      CandidatesAndForwardingInfo newLrcGroup;
       for (const auto& fci : forwardingCis) {
         size_t start = poiCandidates.size();
 
@@ -3294,24 +3425,32 @@ gatherAndFilterCandidatesForwarding(Context* context,
           filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
+        CandidatesAndForwardingInfo candidatesWithInstantiations;
         filterCandidatesInstantiating(context,
                                       initialCandidates,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      poiCandidates,
+                                      candidatesWithInstantiations,
                                       /* rejected */ nullptr);
 
-        // update forwardingTo
-        helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
+        // filter out last resort candidates
+        filterCandidatesLastResort(context, candidatesWithInstantiations,
+                                   poiCandidates, newLrcGroup);
+
+        // update forwardingTo (for candidates and last resort candidates)
+        poiCandidates.helpComputeForwardingTo(fci, start);
+        newLrcGroup.helpComputeForwardingTo(fci, start);
         i++;
       }
+      lrcGroups.addPoiCandidates(std::move(newLrcGroup));
     }
 
     // If no candidates were found and it's a method, try forwarding
     // This supports the forwarding-to-forwarding case.
     if (nonPoiCandidates.empty() && poiCandidates.empty()) {
       for (const auto& fci : forwardingCis) {
+        LastResortCandidateGroups thisForwardingLrcGroups;
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
@@ -3319,13 +3458,17 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                                 inScope, inPoiScope,
                                                 nonPoiCandidates,
                                                 poiCandidates,
-                                                nonPoiForwardingTo,
-                                                poiForwardingTo);
+                                                thisForwardingLrcGroups);
           }
         }
+        lrcGroups.getForwardingGroups().mergeWithGroups(
+            std::move(thisForwardingLrcGroups));
       }
     }
   }
+
+  // No need to gather up last resort candidates here, gatherAndFilterCandidates
+  // above us will handle it.
 }
 
 // TODO: Could/should this be a parsing query?
@@ -3362,16 +3505,16 @@ static bool isInsideForwarding(Context* context, const Call* call) {
 // If forwarding is used, it will have an element for each of the returned
 // candidates and will indicate the actual type that is passed
 // to the 'this' receiver formal.
-static CandidatesVec
+static CandidatesAndForwardingInfo
 gatherAndFilterCandidates(Context* context,
                           const Call* call,
                           const CallInfo& ci,
                           const Scope* inScope,
                           const PoiScope* inPoiScope,
                           size_t& firstPoiCandidate,
-                          ForwardingInfoVec& forwardingInfo,
                           std::vector<ApplicabilityResult>* rejected) {
-  CandidatesVec candidates;
+  CandidatesAndForwardingInfo candidates;
+  LastResortCandidateGroups lrcGroups;
   CheckedScopes visited;
   firstPoiCandidate = 0;
 
@@ -3382,6 +3525,8 @@ gatherAndFilterCandidates(Context* context,
   //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
                                       candidates);
+
+  // don't worry about last resort for compiler generated candidates
 
   // next, look for candidates without using POI.
   {
@@ -3401,13 +3546,20 @@ gatherAndFilterCandidates(Context* context,
     }
 
     // find candidates, doing instantiation if necessary
+    CandidatesAndForwardingInfo candidatesWithInstantiations;
     filterCandidatesInstantiating(context,
                                   initialCandidates,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates,
+                                  candidatesWithInstantiations,
                                   rejected);
+
+    // filter out last resort candidates
+    CandidatesAndForwardingInfo lrcGroup;
+    filterCandidatesLastResort(context, candidatesWithInstantiations,
+                               candidates, lrcGroup);
+    lrcGroups.addNonPoiCandidates(std::move(lrcGroup));
   }
 
   // next, look for candidates using POI
@@ -3437,13 +3589,20 @@ gatherAndFilterCandidates(Context* context,
     }
 
     // find candidates, doing instantiation if necessary
+    CandidatesAndForwardingInfo candidatesWithInstantiations;
     filterCandidatesInstantiating(context,
                                   initialCandidates,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates,
+                                  candidatesWithInstantiations,
                                   rejected);
+
+    // filter out last resort candidates
+    CandidatesAndForwardingInfo lrcGroup;
+    filterCandidatesLastResort(context, candidatesWithInstantiations,
+                               candidates, lrcGroup);
+    lrcGroups.addPoiCandidates(std::move(lrcGroup));
   }
 
   // If no candidates were found and it's a method, try forwarding
@@ -3471,30 +3630,22 @@ gatherAndFilterCandidates(Context* context,
 
     if (typeUsesForwarding(context, receiverType) &&
         !isInsideForwarding(context, call)) {
-      CandidatesVec nonPoiCandidates;
-      CandidatesVec poiCandidates;
-      ForwardingInfoVec nonPoiForwardingTo;
-      ForwardingInfoVec poiForwardingTo;
+      CandidatesAndForwardingInfo nonPoiCandidates;
+      CandidatesAndForwardingInfo poiCandidates;
 
-      gatherAndFilterCandidatesForwarding(context, call, ci,
-                                          inScope, inPoiScope,
-                                          nonPoiCandidates, poiCandidates,
-                                          nonPoiForwardingTo, poiForwardingTo);
+      gatherAndFilterCandidatesForwarding(
+          context, call, ci, inScope, inPoiScope, nonPoiCandidates,
+          poiCandidates, lrcGroups.getForwardingGroups());
 
-      // append non-poi candidates
-      candidates.insert(candidates.end(),
-                        nonPoiCandidates.begin(), nonPoiCandidates.end());
-      forwardingInfo.insert(forwardingInfo.end(),
-                            nonPoiForwardingTo.begin(),
-                            nonPoiForwardingTo.end());
-      // append poi candidates
-      firstPoiCandidate = candidates.size();
-      candidates.insert(candidates.end(),
-                        poiCandidates.begin(), poiCandidates.end());
-      forwardingInfo.insert(forwardingInfo.end(),
-                            poiForwardingTo.begin(),
-                            poiForwardingTo.end());
+      // append candidates from forwarding
+      candidates.takeFromOther(nonPoiCandidates);
+      candidates.takeFromOther(poiCandidates);
     }
+  }
+
+  // If no candidates have been found, consider last resort candidates.
+  if (candidates.empty()) {
+    candidates = lrcGroups.firstNonEmptyCandidatesGroup(&firstPoiCandidate);
   }
 
   return candidates;
@@ -3505,8 +3656,7 @@ gatherAndFilterCandidates(Context* context,
 // * gather POI info from any instantiations
 static MostSpecificCandidates
 findMostSpecificAndCheck(Context* context,
-                         const CandidatesVec& candidates,
-                         const ForwardingInfoVec& forwardingInfo,
+                         const CandidatesAndForwardingInfo& candidates,
                          size_t firstPoiCandidate,
                          const Call* call,
                          const CallInfo& ci,
@@ -3516,8 +3666,7 @@ findMostSpecificAndCheck(Context* context,
 
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific =
-    findMostSpecificCandidates(context, candidates, forwardingInfo,
-                               ci, inScope, inPoiScope);
+      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const MostSpecificCandidate& candidate : mostSpecific) {
@@ -3531,7 +3680,7 @@ findMostSpecificAndCheck(Context* context,
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
       for (const MostSpecificCandidate& candidate : mostSpecific) {
-        if (candidate.fn() == candidates[i]) {
+        if (candidate.fn() == candidates.get(i)) {
           poiInfo.addIds(call->id(), candidate.fn()->id());
         }
       }
@@ -3553,22 +3702,16 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
-  ForwardingInfoVec forwardingInfo;
-  CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
-                                                       inScope, inPoiScope,
-                                                       firstPoiCandidate,
-                                                       forwardingInfo,
-                                                       rejected);
+  CandidatesAndForwardingInfo candidates = gatherAndFilterCandidates(
+      context, call, ci, inScope, inPoiScope, firstPoiCandidate, rejected);
 
   // * find most specific candidates / disambiguate
   // * check signatures
   // * gather POI info
 
   MostSpecificCandidates mostSpecific =
-    findMostSpecificAndCheck(context,
-                             candidates, forwardingInfo, firstPoiCandidate,
-                             call, ci,
-                             inScope, inPoiScope, poiInfo);
+      findMostSpecificAndCheck(context, candidates, firstPoiCandidate, call, ci,
+                               inScope, inPoiScope, poiInfo);
 
   return mostSpecific;
 }

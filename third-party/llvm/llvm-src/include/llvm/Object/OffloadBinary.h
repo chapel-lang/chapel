@@ -17,7 +17,7 @@
 #ifndef LLVM_OBJECT_OFFLOADBINARY_H
 #define LLVM_OBJECT_OFFLOADBINARY_H
 
-#include "llvm/ADT/StringMap.h"
+#include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Support/Error.h"
@@ -59,7 +59,7 @@ enum ImageKind : uint16_t {
 /// offsets from the beginning of the file.
 class OffloadBinary : public Binary {
 public:
-  using string_iterator = StringMap<StringRef>::const_iterator;
+  using string_iterator = MapVector<StringRef, StringRef>::const_iterator;
   using string_iterator_range = iterator_range<string_iterator>;
 
   /// The current version of the binary used for backwards compatibility.
@@ -70,7 +70,7 @@ public:
     ImageKind TheImageKind;
     OffloadKind TheOffloadKind;
     uint32_t Flags;
-    StringMap<StringRef> StringData;
+    MapVector<StringRef, StringRef> StringData;
     std::unique_ptr<MemoryBuffer> Image;
   };
 
@@ -142,7 +142,7 @@ private:
   OffloadBinary(const OffloadBinary &Other) = delete;
 
   /// Map from keys to offsets in the binary.
-  StringMap<StringRef> StringData;
+  MapVector<StringRef, StringRef> StringData;
   /// Raw pointer to the MemoryBufferRef for convenience.
   const char *Buffer;
   /// Location of the header within the binary.
@@ -150,6 +150,28 @@ private:
   /// Location of the metadata entries within the binary.
   const Entry *TheEntry;
 };
+
+/// A class to contain the binary information for a single OffloadBinary that
+/// owns its memory.
+class OffloadFile : public OwningBinary<OffloadBinary> {
+public:
+  using TargetID = std::pair<StringRef, StringRef>;
+
+  OffloadFile(std::unique_ptr<OffloadBinary> Binary,
+              std::unique_ptr<MemoryBuffer> Buffer)
+      : OwningBinary<OffloadBinary>(std::move(Binary), std::move(Buffer)) {}
+
+  /// We use the Triple and Architecture pair to group linker inputs together.
+  /// This conversion function lets us use these inputs in a hash-map.
+  operator TargetID() const {
+    return std::make_pair(getBinary()->getTriple(), getBinary()->getArch());
+  }
+};
+
+/// Extracts embedded device offloading code from a memory \p Buffer to a list
+/// of \p Binaries.
+Error extractOffloadBinaries(MemoryBufferRef Buffer,
+                             SmallVectorImpl<OffloadFile> &Binaries);
 
 /// Convert a string \p Name to an image kind.
 ImageKind getImageKind(StringRef Name);

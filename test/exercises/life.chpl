@@ -29,7 +29,7 @@ var rs = if useRandomSeed
   else new randomStream(314159, eltType=real(64));
 
 for i in D do
-  Grid(i) = if rs.getNext() <= p:real / 100 then true else false;
+  Grid(i) = if rs.next() <= p:real / 100 then true else false;
 
 writeln("Initial Grid");
           printGrid();

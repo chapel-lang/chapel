@@ -18,11 +18,14 @@
 #
 
 from . import core
+from .core import *
 from collections import defaultdict
 import os
 from typing import Dict, List, Optional
+import typing
 from . import visitor
 
+QualifiedType = typing.Tuple[str, Optional[ChapelType], Optional[Param]]
 
 def preorder(node):
     """
@@ -42,7 +45,7 @@ def postorder(node):
     yield node
 
 
-def is_deprecated(node: core.AstNode) -> bool:
+def is_deprecated(node: AstNode) -> bool:
     """
     Returns true if node is marked with a @deprecated attribute
     """
@@ -52,7 +55,7 @@ def is_deprecated(node: core.AstNode) -> bool:
     return False
 
 
-def is_unstable(node: core.AstNode) -> bool:
+def is_unstable(node: AstNode) -> bool:
     """
     Returns true if node is marked with a @unstable attribute
     """
@@ -62,7 +65,7 @@ def is_unstable(node: core.AstNode) -> bool:
     return False
 
 
-def is_docstring_comment(comment: core.Comment) -> bool:
+def is_docstring_comment(comment: Comment) -> bool:
     """
     comment is a docstring if it doesn't begin with '//'
     """
@@ -77,11 +80,11 @@ class SiblingMap:
     @visitor.visitor
     class SiblingVisitor:
         def __init__(self):
-            self.stack: List[Optional[core.AstNode]] = [None]
-            self.map: Dict[str, core.AstNode] = {}
+            self.stack: List[Optional[AstNode]] = [None]
+            self.map: Dict[str, AstNode] = {}
 
         @visitor.enter
-        def enter_AstNode(self, node: core.AstNode):
+        def enter_AstNode(self, node: AstNode):
             if len(self.stack) > 0:
                 peeked = self.stack[-1]
                 if peeked:
@@ -89,29 +92,29 @@ class SiblingMap:
             self.stack.append(None)
 
         @visitor.exit
-        def exit_AstNode(self, node: core.AstNode):
+        def exit_AstNode(self, node: AstNode):
             self.stack.pop()
             if len(self.stack) > 0:
                 self.stack[-1] = node
 
-    def __init__(self, top_level_modules: List[core.AstNode]):
+    def __init__(self, top_level_modules: List[AstNode]):
         vis = SiblingMap.SiblingVisitor()
         for m in top_level_modules:
             vis.visit(m)
         self.siblings = vis.map
 
-    def get_sibling(self, node: core.AstNode) -> Optional[core.AstNode]:
+    def get_sibling(self, node: AstNode) -> Optional[AstNode]:
         return self.siblings.get(node.unique_id(), None)
 
 
-def get_docstring(node: core.AstNode, sibling_map: SiblingMap) -> Optional[str]:
+def get_docstring(node: AstNode, sibling_map: SiblingMap) -> Optional[str]:
     """
     Get the docstring for a node, if it exists
     """
     prev_sibling = sibling_map.get_sibling(node)
     if (
         prev_sibling
-        and isinstance(prev_sibling, core.Comment)
+        and isinstance(prev_sibling, Comment)
         and is_docstring_comment(prev_sibling)
     ):
         return prev_sibling.text().lstrip().lstrip("/*").rstrip("*/")
@@ -302,7 +305,7 @@ def match_pattern(ast, pattern):
                     return False
 
             return True
-        elif issubclass(pat, core.AstNode):
+        elif issubclass(pat, AstNode):
             # Just check if the AST node matches
             return isinstance(ast, pat)
         else:
@@ -339,7 +342,7 @@ def files_with_contexts(files):
         buckets[bucket].append(filename)
 
     for bucket in buckets:
-        ctx = core.Context()
+        ctx = Context()
         to_yield = buckets[bucket]
 
         for filename in to_yield:

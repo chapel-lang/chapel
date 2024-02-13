@@ -17,6 +17,7 @@
 # limitations under the License.
 #
 
+# use core to prevent circular dependency
 import chapel.core
 
 from collections import defaultdict

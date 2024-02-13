@@ -2051,7 +2051,8 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
                             toOwned(iterandExpr),
                             toOwned(withClause),
                             blockStyle,
-                            std::move(body), // TODO: add isExpressionLevel
+                            std::move(body),
+                            /* isExpressionLevel */ false,
                             this->popLoopAttributeGroup()).release();
   } else if (loopTypeUstr == USTR("forall")) {
     result = Forall::build(builder, convertLocation(locKw),
@@ -2097,8 +2098,13 @@ AstNode* ParserContext::buildGeneralLoopExpr(YYLTYPE locWhole,
                         /*isParam*/ false,
                         this->popLoopAttributeGroup()).release();
   } else if (loopTypeUstr == USTR("foreach")) {
-    error = syntax(locWhole,
-                   "'foreach' expressions are currently not supported.");
+    result = Foreach::build(builder, convertLocation(locWhole),
+                            std::move(index), toOwned(iterandExpr),
+                           /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            std::move(body),
+                            /*isExpressionLevel*/ true,
+                            this->popLoopAttributeGroup()).release();
   } else if (loopTypeUstr == USTR("forall")) {
     result = Forall::build(builder, convertLocation(locWhole),
                            std::move(index), toOwned(iterandExpr),

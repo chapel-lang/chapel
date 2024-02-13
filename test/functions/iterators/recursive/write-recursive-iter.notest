@@ -1,0 +1,7 @@
+This test has started sporadically passing, where the first occurrence
+I'm finding was Nov 28, 2023.  We've had a few more passes this week,
+and on a local run using SHA 677e3647fb3cfb25731d4f5edcc9556e94fad8c9,
+I'm seeing about 2 passes for every 1 failure.  That's encouraging,
+but makes this test problematic to run in nightly testing.  For now,
+I'm adding a .notest for it and updating its issue to note the
+improvement.

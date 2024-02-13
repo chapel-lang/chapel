@@ -1857,10 +1857,10 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 
      Arrays with any offset are supported, and ``x`` inherits the indexing.
 */
-proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
+proc solve(const ref A: [?Adom] ?eltType, const ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
-  b = permute(ipiv, b, true);
-  var z = solve_tril(LU, b);
+  var y = permute(ipiv, b, true);
+  var z = solve_tril(LU, y);
   var x = solve_triu(LU, z);
   return x;
 }

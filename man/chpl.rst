@@ -136,6 +136,13 @@ OPTIONS
     "unknown tool name" warning. To provide multiple tool names, use one
     **\--using-attribute-toolname** flag per name.
 
+**\--[no-]warn-potential-races**
+
+    Enable [disable] the printing of compiler warnings for potential race
+    conditions. For example, modifying the result of a promoted array indexing
+    operation may be race condition and will warn with this flag. Defaults to
+    not printing race condition warnings.
+
 *Parallelism Control Options*
 
 **\--[no-]local**

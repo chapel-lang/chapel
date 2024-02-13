@@ -109,7 +109,7 @@ static void test1() {
   assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
-  // Now the hidden errors have been re-reported; no new errors should be reporterd
+  // Now the hidden errors have been re-reported; no new errors should be reported
   // after the second call.
   assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
@@ -139,7 +139,7 @@ static void test2() {
   assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
   assert(guard.errors().size() == 1);
 
-  // Now the hidden errors have been re-reported; no new errors should be reporterd
+  // Now the hidden errors have been re-reported; no new errors should be reported
   // after the second call.
   assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
   assert(guard.errors().size() == 1);
@@ -303,7 +303,7 @@ static void test6() {
   // ================
   //   Generation 2
   // ================
-  // Just runthe previous code again, make sure a single error is re-reported.
+  // Just run the previous code again, make sure a single error is re-reported.
   // Run a query that tracks errors. It should detect errors ("errors on the second go"),
   // and also it reports an error of its own, so the error count goes to one.
   assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");

@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-from chapel.core import *
+from chapel import *
 from chapel.replace import run, fuse, rename_formals, rename_named_actuals
 import chapel
 from collections import defaultdict

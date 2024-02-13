@@ -36,6 +36,7 @@
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/NilType.h"
+#include "chpl/types/NothingType.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/PrimitiveType.h"
 #include "chpl/types/QualifiedType.h"

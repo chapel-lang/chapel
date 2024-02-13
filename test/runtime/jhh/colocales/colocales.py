@@ -32,6 +32,12 @@ def runCmd(cmd, env=None, check=True):
         proc = subprocess.run(cmd, text=True, check=check,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     else:
+        # Make sure environment variables are strings, otherwise you get
+        # an exception deep in the callstack.
+        for (key, value) in env.items():
+            if type(value) != str:
+                raise Exception('Environment variable "%s" is not a string.' %
+                                key)
         proc = subprocess.run(cmd, text=True, check=check, env=env,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return proc.stdout
@@ -149,10 +155,8 @@ class TestCases(object):
             Locale in socket should use cores and threads in that socket and
             the closest NIC, no matter which NIC is suggested.
             """
-            env = self.env.copy()
-            env['CHPL_RT_LOCALES_PER_NODE'] = str(self.sockets)
             output = self.runCmd("./colocales -r %d -n %d -N %s" %
-                             (socket, self.sockets, nic), env=env)
+                             (socket, self.sockets, nic))
             cpus = stringify(self.getSocketCores(socket))
             self.assertIn("Physical CPUs: %s\n" % cpus, output)
             cpus = stringify(self.getSocketThreads(socket))
@@ -189,10 +193,8 @@ class TestCases(object):
             the closest NIC, no matter which NIC is suggested.
             """
             numas = self.numas * self.sockets
-            env = self.env.copy()
-            env['CHPL_RT_LOCALES_PER_NODE'] = str(numas)
             output = self.runCmd("./colocales -r %d -n %d -N %s" %
-                             (numa, numas, nic), env=env)
+                             (numa, numas, nic))
             cpus = stringify(self.getNumaCores(numa))
             self.assertIn("Physical CPUs: %s\n" % cpus, output)
             cpus = stringify(self.getNumaThreads(numa))
@@ -248,6 +250,32 @@ class Ex2Tests(TestCases.TestCase):
                            '0000:21:00.0', '0000:a1:00.0', '0000:a1:00.0',
                            '0000:a1:00.0', '0000:a1:00.0']
 
+    def test_10_generalized(self):
+        """
+        16 co-locales should each have 8 cores
+        """
+        for i in range(0, 16):
+            with self.subTest(i=i):
+                output = self.runCmd("./colocales -r %d -n %d -N %s" %
+                                     (i, 16, self.nics[0]))
+                cpus = stringify([i*8+j for j in range(0, 8)])
+                self.assertIn("Physical CPUs: %s\n" % cpus, output)
+
+    def test_11_not_enough_cores(self):
+        """
+        Must have at least one core per locale
+        """
+        output = self.runCmd("./colocales -r 0 -n 129")
+        self.assertIn("error: Cannot run 129 co-locales on 128 cores.\n",
+                      output)
+
+    def test_12_leftover_cores(self):
+        """
+        Warn about unused cores
+        """
+        output = self.runCmd("./colocales -r 0 -n 17")
+        self.assertIn("warning: 9 cores are unused\n", output);
+
 class Hpc6aTests(TestCases.TestCase):
     """
     AWS hpc6a.48xlarge instance. Two sockets, two NUMA domains per socket, 48
@@ -286,18 +314,18 @@ class M6inTests(TestCases.TestCase):
         In this topology the NICs are not in sockets. Test that each locale
         gets a unique NIC.
         """
-        self.env['CHPL_RT_LOCALES_PER_NODE'] = str(self.sockets)
         nics = []
         for i in range(0, self.sockets):
-            output = self.runCmd("./colocales -r %d -n %d -N %s" %
-                                 (i, self.sockets, self.nics[0]))
-            for line in output.split('\n'):
-                if line.startswith("NIC:"):
-                    nic = line.split()[1]
-                    self.assertIn(nic, self.nics)
-                    self.assertNotIn(nic, nics)
-                    nics.append(nic)
-                    break
+            with self.subTest(i=i):
+                output = self.runCmd("./colocales -r %d -n %d -N %s" %
+                                     (i, self.sockets, self.nics[0]))
+                for line in output.split('\n'):
+                    if line.startswith("NIC:"):
+                        nic = line.split()[1]
+                        self.assertIn(nic, self.nics)
+                        self.assertNotIn(nic, nics)
+                        nics.append(nic)
+                        break
 
     def test_11_numa_unique_nics(self):
         """
@@ -305,7 +333,6 @@ class M6inTests(TestCases.TestCase):
         gets a unique NIC.
         """
         numas = self.numas * self.sockets
-        self.env['CHPL_RT_LOCALES_PER_NODE'] = str(numas)
         nics = []
         for i in range(0, numas):
             output = self.runCmd("./colocales -r %d -n %d -N %s" %

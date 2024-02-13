@@ -34,3 +34,18 @@ def bisect_right(a: Sequence, x, key: Optional[Callable]=None):
         else:
             lo = mid + 1
     return lo
+
+def bisect_left(a: Sequence, x, key: Optional[Callable]=None):
+    lo = 0
+    hi = len(a)
+
+    if key is None:
+        key = lambda e: e
+
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if x <= key(a[mid]):
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo

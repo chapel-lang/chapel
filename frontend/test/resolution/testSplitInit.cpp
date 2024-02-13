@@ -566,7 +566,7 @@ static void test21() {
     /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
 }
 
-/* not tested -- "ount intent varargs are not supported"
+/* not tested -- "out intent varargs are not supported"
 static void test22() {
   testSplitInit("test22",
     R""""(
@@ -1958,6 +1958,38 @@ static void test65a() {
     {"x"});
 }
 
+// Test params are split-inited to their param value when their type is known.
+static void test68() {
+  testSplitInit("test68",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          param x:int;
+          x = 5;
+          var y;
+          // x should be param 5...
+          select x {
+            when 5 {
+              // ... so y should get split-init to 1
+              y = 1;
+            }
+            otherwise {
+              // ... but if y is split-init to a string,
+              // x (erroneously) wasn't param 5.
+              y = "string";
+            }
+          }
+        }
+      }
+    )"""",
+    {"x", "y"});
+}
+
 int main() {
   test1();
   test2();
@@ -2031,5 +2063,7 @@ int main() {
   test66();
   test67();
   testParamTrueWhen();
+  test68();
+
   return 0;
 }

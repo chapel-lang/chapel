@@ -4,5 +4,5 @@ import shutil
 import os
 
 missing_lldb = shutil.which("lldb") is None
-using_driver = '--compiler-driver' in os.getenv('COMPOPTS');
-print(missing_lldb or using_driver)
+no_driver = '--no-compiler-driver' in os.getenv('COMPOPTS');
+print(missing_lldb or no_driver)

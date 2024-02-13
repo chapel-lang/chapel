@@ -18,7 +18,7 @@
 #
 
 import chapel
-from chapel.core import *
+from chapel import *
 import re
 
 def name_for_linting(node):

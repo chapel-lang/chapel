@@ -15,6 +15,8 @@
 #ifndef LLVM_DEBUGINFOD_HTTPCLIENT_H
 #define LLVM_DEBUGINFOD_HTTPCLIENT_H
 
+#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBuffer.h"
 
@@ -27,6 +29,7 @@ enum class HTTPMethod { GET };
 /// A stateless description of an outbound HTTP request.
 struct HTTPRequest {
   SmallString<128> Url;
+  SmallVector<std::string, 0> Headers;
   HTTPMethod Method = HTTPMethod::GET;
   bool FollowRedirects = true;
   HTTPRequest(StringRef Url);
