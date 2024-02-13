@@ -59,6 +59,9 @@ static void        moveAndCheckInterfaceConstraints();
 static void        transformLogicalShortCircuit();
 static void        checkReduceAssign();
 
+static bool
+cloneParameterizedPrimitiveInAnyFormal(FnSymbol* fn);
+
 static bool        isArrayFormal(ArgSymbol* arg);
 static Expr*       arrayTypeEltTypeExprOrNull(Expr* expr);
 
@@ -67,8 +70,6 @@ static void        makeExportWrapper(FnSymbol* fn);
 
 static void        fixupArrayFormals(FnSymbol* fn);
 
-static bool        includesParameterizedPrimitive(FnSymbol* fn);
-static bool        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 static void        fixupCastFormals(FnSymbol* fn);
 
@@ -155,7 +156,8 @@ void normalize() {
 
     // Some functions can get removed by code in the loop - and if they
     // contain nested functions, then those functions will get removed
-    // as well (as flattening does not happen until after resolution).
+    // as well by virtue of being children (as flattening does not happen
+    // until after resolution).
     if (!fn->inTree()) continue;
 
     SET_LINENO(fn);
@@ -166,13 +168,11 @@ void normalize() {
     }
 
     // In the event of a formal with the type 'int(?w)' or '[...] int(?w)',
-    // we immediately stamp out overloads with 'w' as each int width, and
+    // we immediately stamp out overloads with 'w' as each bit width, and
     // then discard the originating function. We should not normalize 'fn'
     // any further after this branch, as it longer in the tree.
-    if (includesParameterizedPrimitive(fn)) {
-      bool pruned = replaceFunctionWithInstantiationsOfPrimitive(fn);
-      if (pruned) continue;
-    }
+    bool pruned = cloneParameterizedPrimitiveInAnyFormal(fn);
+    if (pruned) continue;
 
     fixupArrayFormals(fn);
     fixupCastFormals(fn);
@@ -4108,38 +4108,40 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isParameterizedPrimitive(CallExpr* call);
+static bool isCallParameterizedPrimitive(CallExpr* call);
 
-static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, CallExpr* typeSpecifier);
+static CallExpr* firstParameterizedPrimitiveInCall(CallExpr* call);
 
-static void cloneParameterizedPrimitive(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        Expr*     query,
-                                        int       width);
+static CallExpr* firstParameterizedPrimitiveInFormal(ArgSymbol* formal);
 
-static bool includesParameterizedPrimitive(FnSymbol* fn) {
-  bool retval = false;
+static bool
+cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal);
 
+static void
+doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal,
+                                   int width);
+
+static bool
+cloneParameterizedPrimitiveInAnyFormal(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (BlockStmt* typeExpr = formal->typeExpr) {
-      if (CallExpr* typeSpecifier = toCallExpr(typeExpr->body.tail)) {
-        if (isParameterizedPrimitive(typeSpecifier) == true) {
-          retval = true;
-          break;
-        }
-      }
-    }
+    if (cloneFirstParameterizedPrimitive(fn, formal)) return true;
   }
-
-  return retval;
+  return false;
 }
 
-static bool replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (BlockStmt* typeExpr = formal->typeExpr) {
-      if (CallExpr* typeSpecifier = toCallExpr(typeExpr->body.tail)) {
-        if (isParameterizedPrimitive(typeSpecifier) == true) {
-          cloneParameterizedPrimitive(fn, formal, typeSpecifier);
+// Looks for the pattern 'int(?w)' or 'int(?)'.
+static bool isCallParameterizedPrimitive(CallExpr* queryCall) {
+  if (SymExpr* baseSymExpr = toSymExpr(queryCall->baseExpr)) {
+    if (queryCall->numActuals() == 1) {
+      Expr* first = queryCall->get(1);
+      SymExpr* query = toSymExpr(first);
+      if (isDefExpr(first) || (query && query->symbol() == gUninstantiated)) {
+        Symbol* baseSym = baseSymExpr->symbol();
+        if (baseSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
+            baseSym == dtUInt[INT_SIZE_DEFAULT]->symbol   ||
+            baseSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
+            baseSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol ||
+            baseSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
           return true;
         }
       }
@@ -4148,74 +4150,79 @@ static bool replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn) {
   return false;
 }
 
-// e.g. x : int(?w) or int(?)
-// or [...] int(?w)
-static bool isParameterizedPrimitive(CallExpr* call) {
-  bool retval = false;
-
-  // Parameterization could be happening for the array element type.
-  CallExpr* typeSpecifier = call;
-  if (auto e = arrayTypeEltTypeExprOrNull(call))
-    if (auto c = toCallExpr(e)) typeSpecifier = c;
-
-  if (SymExpr* callFnSymExpr = toSymExpr(typeSpecifier->baseExpr)) {
-    if (typeSpecifier->numActuals() == 1) {
-      Expr* first = typeSpecifier->get(1);
-      SymExpr* query = toSymExpr(first);
-      if (isDefExpr(first) || (query && query->symbol() == gUninstantiated)) {
-        Symbol* callFnSym = callFnSymExpr->symbol();
-
-        if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
-            callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol   ||
-            callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
-            callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol ||
-            callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
-          retval = true;
+// Looks for the patterns:
+// -> 'int(?w)' or 'int(?)'
+// -> '[...] int(?w)'
+// -> '_build_tuple(int(?w), ...)'
+static CallExpr* firstParameterizedPrimitiveInCall(CallExpr* call) {
+  if (auto e = arrayTypeEltTypeExprOrNull(call)) {
+    auto c = toCallExpr(e);
+    return c && isCallParameterizedPrimitive(c) ? c : nullptr;
+  } else if (isCallParameterizedPrimitive(call)) {
+    return call;
+  } else if (call->isNamedAstr(astrBuildTuple)) {
+    for_actuals(actual, call) {
+      if (auto c = toCallExpr(actual)) {
+        if (auto found = firstParameterizedPrimitiveInCall(c)) {
+          return found;
         }
       }
     }
   }
-
-  return retval;
+  return nullptr;
 }
 
-// Here 'formal' is certain to be a parameterized primitive e.g int(?w) or
-// an array type with an element type that is a parameterized primitive.
-static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, CallExpr* call) {
+static CallExpr* firstParameterizedPrimitiveInFormal(ArgSymbol* formal) {
+  if (BlockStmt* block = formal->typeExpr) {
+    if (CallExpr* call = toCallExpr(block->body.tail)) {
+      auto queryCall = firstParameterizedPrimitiveInCall(call);
+      return queryCall ? queryCall : nullptr;
+    }
+  }
+  return nullptr;
+}
 
-  // Parameterization could be happening over the array element type.
-  CallExpr* typeSpecifier = call;
-  if (auto e = arrayTypeEltTypeExprOrNull(call))
-    if (auto c = toCallExpr(e)) typeSpecifier = c;
+// Returns 'true' if cloning occurred.
+static bool
+cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
+  auto queryCall = firstParameterizedPrimitiveInFormal(formal);
+  if (!queryCall) return false;
 
-  Symbol* callFnSym = toSymExpr(typeSpecifier->baseExpr)->symbol();
-  Expr* query = typeSpecifier->get(1);
+  auto baseSym = toSymExpr(queryCall->baseExpr)->symbol();
+  bool ret = false;
 
-  if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol ||
-      callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
+  if (baseSym == dtInt[INT_SIZE_DEFAULT]->symbol ||
+      baseSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
+    ret = true;
     for (int i = INT_SIZE_8; i < INT_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, formal, query, get_width(dtInt[i]));
+      doCloneFirstParameterizedPrimitive(fn, formal, get_width(dtInt[i]));
     }
-
-  } else if (callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
-             callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol) {
+  } else if (baseSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
+             baseSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol) {
+    ret = true;
     for (int i = FLOAT_SIZE_32; i < FLOAT_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, formal, query, get_width(dtReal[i]));
+      doCloneFirstParameterizedPrimitive(fn, formal, get_width(dtReal[i]));
     }
-
-  } else if (callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
+  } else if (baseSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
+    ret = true;
     for (int i = COMPLEX_SIZE_64; i < COMPLEX_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, formal, query, get_width(dtComplex[i]));
+      doCloneFirstParameterizedPrimitive(fn, formal, get_width(dtComplex[i]));
     }
   }
 
-  fn->defPoint->remove();
+  // Cloning occurred, so remove the original function.
+  if (ret) fn->defPoint->remove();
+
+  return ret;
 }
 
-static void cloneParameterizedPrimitive(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        Expr*     query,
-                                        int       width) {
+static void
+doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal,
+                                   int width) {
+  auto queryCall = firstParameterizedPrimitiveInFormal(formal);
+  INT_ASSERT(queryCall);
+
+  Expr* query = queryCall->get(1);
   SymbolMap map;
   FnSymbol* newFn = fn->copy(&map);
   ArgSymbol* newFormal = toArgSymbol(map.get(formal));
@@ -4227,13 +4234,14 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
     newSym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
 
     collectSymExprsFor(newFn, newSym, symExprs);
-
     for_vector(SymExpr, se, symExprs) {
-        se->setSymbol(new_IntSymbol(width));
+      se->setSymbol(new_IntSymbol(width));
     }
+
   } else {
-    CallExpr* typeSpecifier = toCallExpr(newFormal->typeExpr->body.tail);
-    typeSpecifier->get(1)->replace(new SymExpr(new_IntSymbol(width)));
+    auto newQueryCall = firstParameterizedPrimitiveInFormal(newFormal);
+    INT_ASSERT(newQueryCall && newQueryCall->get(1));
+    newQueryCall->get(1)->replace(new SymExpr(new_IntSymbol(width)));
   }
 
   // add a flag to the new formal created to cause a warning
@@ -4693,7 +4701,6 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                ArgSymbol* formal,
                                                CallExpr* call,
                                                Expr* queried) {
-
   int position = 1;
   bool isTuple = false;
 
