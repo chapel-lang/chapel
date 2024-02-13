@@ -161,13 +161,16 @@ static bool const& queryF(Context* context, bool callFFirst, bool runHandler) {
 static bool const& queryG(Context* context, bool callFFirst, bool runHandler) {
   QUERY_BEGIN(queryG, context, callFFirst, runHandler);
 
+  // Use bitwise & instead of logical && to avoid short-circuiting.
+  // Some compilers warn for & with boolean operands, so cast to int to ignore
+  // the warning.
   bool res;
   if (callFFirst) {
-    res = queryF(context, callFFirst, runHandler) &
-          queryG(context, callFFirst, runHandler);
+    res = (int)queryF(context, callFFirst, runHandler) &
+          (int)queryG(context, callFFirst, runHandler);
   } else {
-    res = queryG(context, callFFirst, runHandler) &
-          queryF(context, callFFirst, runHandler);
+    res = (int)queryG(context, callFFirst, runHandler) &
+          (int)queryF(context, callFFirst, runHandler);
   }
 
   if (runHandler) {
