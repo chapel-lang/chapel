@@ -1,8 +1,9 @@
 use IO, Time, Map, List, Sort, ParallelIO;
 
-config const filename = "million_entries.txt";
+config const filename = "measurements.txt";
 config param parallel = true;
 config const timeExecution = false;
+config const printOutput = false;
 
 // ----------------------------------------------------------------------------
 
@@ -69,17 +70,19 @@ if(parallel) {
 watch.stop();
 
 // Report results
-var cities = cityMin.keys();
-sort(cities);
+if printOutput {
+  var cities = cityMin.keys();
+  sort(cities);
 
-for city in cities {
-  writef("%20s: %7.1dr %7.1dr %7.1dr\n",
-         city.decode(),
-         cityMin.get(city,0),
-         citySum.get(city,0) / cityCount.get(city,0),
-         cityMax.get(city,0));
+  for city in cities {
+    writef("%20s: %7.1dr %7.1dr %7.1dr\n",
+           city.decode(),
+           cityMin.get(city,0),
+           citySum.get(city,0) / cityCount.get(city,0),
+           cityMax.get(city,0));
+  }
+  writeln();
 }
-writeln();
 
 if timeExecution then
   writeln("elapsed time: ", watch.elapsed());

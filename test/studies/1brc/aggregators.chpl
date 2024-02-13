@@ -1,8 +1,8 @@
 use ParallelIO, Map, IO, Math, Time;
 
-config const fileName = "million_entries.txt",
+config const fileName = "measurements.txt",
              nTasks = 2,
-             printOutput = true,
+             printOutput = false,
              timeExecution = false;
 
 // how often to flush local maps to the global map
