@@ -2330,7 +2330,7 @@ static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
     }
 
     fprintf(stderr, "Importing Module\n");
-    pm.mod->dump();
+    //pm.mod->dump();
   }
 
   return pm;
@@ -2353,7 +2353,7 @@ static llvm::Function* importPrecompiledFunctionProto(chpl::ID fnId) {
   fprintf(stderr, "Preparing to import function %s\n", cname);
 
   fprintf(stderr, "Current Module\n");
-  info->module->dump();
+  //info->module->dump();
 
   // check to see if the library's LLVM IR contains the symbol
   // find the function

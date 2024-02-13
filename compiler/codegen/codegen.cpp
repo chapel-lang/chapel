@@ -3004,7 +3004,7 @@ static void codegenPartTwo() {
       {
         llvm::raw_string_ostream OS(generatedCodeBuffer);
         llvm::WriteBitcodeToFile(*M.get(), OS);
-        M->dump();
+        //M->dump();
       }
 
       auto modName = UniqueString::get(gContext, genMod->name);
