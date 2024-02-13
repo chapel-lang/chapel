@@ -4870,7 +4870,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 #endif
   auto sdkString = std::string(gGpuSdkPath);
   // check file exists, maybe use alternate path (say if spack installed)
-  std::string lldBin = pathExists((sdkString + "/llvm/bin/").c_str()) ?
+  std::string lldBin = pathExists((sdkString + "/llvm/bin/lld").c_str()) ?
                        sdkString + "/llvm/bin/lld"  :
                        sdkString + "/bin/lld";
   for (auto& gpuArch : gpuArches) {
