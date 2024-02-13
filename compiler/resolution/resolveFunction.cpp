@@ -2733,7 +2733,7 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
 // Emit an init= or similar pattern to create 'to' of type 'toType' from 'from'
 // (the Symbol toType conveys any runtime type info beyond what to->type is.)
 //
-// No matter what, adds the initialization pattern after 'insertAfter'.
+// No matter what, adds the initialization pattern after 'insertBefore'.
 // Adds all calls added to the newCalls vector to be resolved later.
 static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
                                  bool fromPrimCoerce,
@@ -2885,35 +2885,59 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       }
 
     } else if (toType->type == getCopyTypeDuringResolution(fromValType)) {
-      // today, this code should only apply to sync/single
-      // (since arrays are handled above with useRttCopy)
+
       // for sync/single, getCopyTypeDuringResolution returns the valType.
-      Type* valType = getCopyTypeDuringResolution(fromValType);
+      if (isSyncType(fromValType) || isSingleType(fromValType)) {
+        Type* valType = getCopyTypeDuringResolution(fromValType);
 
-      VarSymbol* tmp = newTemp("_cast_tmp_", valType);
-      insertBefore->insertBefore(new DefExpr(tmp));
+        VarSymbol* tmp = newTemp("_cast_tmp_", valType);
+        insertBefore->insertBefore(new DefExpr(tmp));
 
-      CallExpr* readCall = NULL;
-      if (isSyncType(fromValType)) {
-        readCall = new CallExpr("readFE", gMethodToken, from);
-        USR_WARN(to, "implicitly reading from a sync is deprecated; "
-                     "apply a 'read\?\?()' method to the actual");
-      } else if (isSingleType(fromValType)) {
-        readCall = new CallExpr("readFF", gMethodToken, from);
-        USR_WARN(to, "implicitly reading from a single is deprecated; "
-                     "apply a 'read\?\?()' method to the actual");
-      } else {
-        INT_FATAL("not handled");
+        CallExpr* readCall = NULL;
+        if (isSyncType(fromValType)) {
+          readCall = new CallExpr("readFE", gMethodToken, from);
+          USR_WARN(to, "implicitly reading from a sync is deprecated; "
+                       "apply a 'read\?\?()' method to the actual");
+        } else {
+          INT_ASSERT(isSingleType(fromValType));
+          readCall = new CallExpr("readFF", gMethodToken, from);
+          USR_WARN(to, "implicitly reading from a single is deprecated; "
+                       "apply a 'read\?\?()' method to the actual");
+        }
+
+        newCalls.push_back(readCall);
+        CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);
+        newCalls.push_back(setTmp);
+        insertBefore->insertBefore(setTmp);
+        // add a conversion / plain assignment setting to from tmp
+        insertInitConversion(to, toType, tmp,
+                             fromPrimCoerce, insertBefore, newCalls);
+
+      // This case can occur when an iterator appears on one or both sides
+      // of a ternary expression/if-expr.
+      } else if (fromValType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        Type* toValType = toType->getValType();
+
+        if (toValType->symbol->hasFlag(FLAG_ARRAY)) {
+          VarSymbol* initTmp = newTemp("init_tmp_", toValType);
+          insertBefore->insertBefore(new DefExpr(initTmp));
+
+          auto initCopy = new CallExpr(astr_initCopy, from, definedConst);
+          newCalls.push_back(initCopy);
+
+          // TODO: Can the ASSIGN case occur? Can we weaken it?
+          auto op = toType->isRef() ? PRIM_ASSIGN : PRIM_MOVE;
+          auto call = new CallExpr(op, to, initCopy);
+          newCalls.push_back(call);
+          insertBefore->insertBefore(call);
+
+        } else {
+          INT_FATAL("Not handled yet!");
+        }
+
+        // TODO: Issue another call to `insertInitConversion` so that both
+        // cases can consider runtime types.
       }
-
-      newCalls.push_back(readCall);
-      CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);
-      newCalls.push_back(setTmp);
-      insertBefore->insertBefore(setTmp);
-      // add a conversion / plain assignment setting to from tmp
-      insertInitConversion(to, toType, tmp,
-                           fromPrimCoerce, insertBefore, newCalls);
-
     } else if (isRecord(toType->type) || isUnion(toType->type)) {
       // insert an init= call
       CallExpr* initEq = NULL;
