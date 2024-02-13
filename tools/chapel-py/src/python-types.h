@@ -209,15 +209,17 @@ std::string tupleTypeString() {
 DEFINE_INOUT_TYPE(bool, "bool", PyBool_FromLong(TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_INOUT_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_INOUT_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), PyUnicode_AsUTF8(TO_UNWRAP));
-DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->context_, PyUnicode_AsUTF8(TO_UNWRAP)));
+DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->value_, PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_INOUT_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
-DEFINE_INOUT_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->ptr);
-DEFINE_INOUT_TYPE(const chpl::types::Type*, "ChapelType", wrapType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->ptr);
-DEFINE_INOUT_TYPE(const chpl::types::Param*, "Param", wrapParam(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->ptr);
-DEFINE_INOUT_TYPE(chpl::Location, "Location", wrapLocation(TO_WRAP), ((LocationObject*) TO_UNWRAP)->location);
+DEFINE_INOUT_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(const chpl::types::Type*, "ChapelType", wrapType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(const chpl::types::Param*, "Param", wrapParam(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(chpl::Location, "Location", LocationObject::create(TO_WRAP), ((LocationObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 DEFINE_INOUT_TYPE(PyObject*, "typing.Any", TO_WRAP, TO_UNWRAP);
 
+template <typename T>
+T_DEFINE_INOUT_TYPE(T*, T::Name, (PyObject*) TO_WRAP, (T*) TO_UNWRAP);
 template <typename T>
 T_DEFINE_INOUT_TYPE(std::vector<T>, vectorTypeString<T>(), wrapVector(CONTEXT, TO_WRAP), unwrapVector<T>(CONTEXT, TO_UNWRAP));
 template <typename T>

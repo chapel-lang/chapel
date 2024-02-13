@@ -56,7 +56,15 @@ CLASS_BEGIN(AstNode)
                node->id().stringify(ss, CHPL_SYNTAX);
                return ss.str())
   PLAIN_GETTER(AstNode, scope, "Get the scope for this AST node",
-               PyObject*, return wrapScope(contextObject, resolution::scopeForId(context, node->id())))
+               ScopeObject*,
+
+               // XXX: bit of a hack. This returns a PyObject* because it can
+               // be 'None'. However, to match the lambda return type, we should
+               // return ScopeObject*. The wrapping casts it right back to
+               // a PyObject*, so this is safe. Using ScopeObject* instead
+               // of PyObject* as a return type is better because we can
+               // generate more specific Python type signatures.
+               return (ScopeObject*) ScopeObject::create(contextObject, resolution::scopeForId(context, node->id())))
   PLAIN_GETTER(AstNode, type, "Get the type of this AST node, as a 3-tuple of (kind, type, param).",
                std::optional<QualifiedTypeTuple>,
 

@@ -30,34 +30,13 @@
 using namespace chpl;
 using namespace uast;
 
-PyTypeObject ContextType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupContextType() {
-  ContextType.tp_name = "Context";
-  ContextType.tp_basicsize = sizeof(ContextObject);
-  ContextType.tp_itemsize = 0;
-  ContextType.tp_dealloc = (destructor) ContextObject_dealloc;
-  ContextType.tp_flags = Py_TPFLAGS_DEFAULT;
-  ContextType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
-  ContextType.tp_methods = (PyMethodDef*) PerTypeMethods<ContextObject>::methods;
-  ContextType.tp_init = (initproc) ContextObject_init;
-  ContextType.tp_new = PyType_GenericNew;
-}
-
-int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
+int ContextObject::init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   Context::Configuration config;
   config.chplHome = getenv("CHPL_HOME");
-  new (&self->context_) Context(std::move(config));
-  self->context_.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
+  new (&self->value_) Context(std::move(config));
+  self->value_.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
   return 0;
-}
-
-void ContextObject_dealloc(ContextObject* self) {
-  self->context_.~Context();
-  Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 template <typename Tuple, size_t ... Indices>
@@ -162,132 +141,8 @@ std::string generatePyiFile() {
   return ss.str();
 }
 
-PyTypeObject LocationType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupLocationType() {
-  LocationType.tp_name = "Location";
-  LocationType.tp_basicsize = sizeof(LocationObject);
-  LocationType.tp_itemsize = 0;
-  LocationType.tp_dealloc = (destructor) LocationObject_dealloc;
-  LocationType.tp_flags = Py_TPFLAGS_DEFAULT;
-  LocationType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
-  LocationType.tp_methods = (PyMethodDef*) PerTypeMethods<LocationObject>::methods;
-  LocationType.tp_init = (initproc) LocationObject_init;
-  LocationType.tp_new = PyType_GenericNew;
-}
-
-int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs) {
-  new (&self->location) Location();
-  return 0;
-}
-
-void LocationObject_dealloc(LocationObject* self) {
-  self->location.~Location();
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyTypeObject ScopeType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupScopeType() {
-  ScopeType.tp_name = "Scope";
-  ScopeType.tp_basicsize = sizeof(ScopeObject);
-  ScopeType.tp_itemsize = 0;
-  ScopeType.tp_dealloc = (destructor) ScopeObject_dealloc;
-  ScopeType.tp_flags = Py_TPFLAGS_DEFAULT;
-  ScopeType.tp_doc = PyDoc_STR("A scope in the Chapel program, such as a block.");
-  ScopeType.tp_methods = (PyMethodDef*) PerTypeMethods<ScopeObject>::methods;
-  ScopeType.tp_init = (initproc) ScopeObject_init;
-  ScopeType.tp_new = PyType_GenericNew;
-}
-
-int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->scope = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
-}
-
-void ScopeObject_dealloc(ScopeObject* self) {
-  Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyTypeObject AstNodeType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupAstNodeType() {
-  AstNodeType.tp_name = "AstNode";
-  AstNodeType.tp_basicsize = sizeof(AstNodeObject);
-  AstNodeType.tp_itemsize = 0;
-  AstNodeType.tp_dealloc = (destructor) AstNodeObject_dealloc;
-  AstNodeType.tp_flags = Py_TPFLAGS_BASETYPE;
-  AstNodeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  AstNodeType.tp_iter = (getiterfunc) AstNodeObject_iter;
-  AstNodeType.tp_methods = (PyMethodDef*) PerTypeMethods<AstNodeObject>::methods;
-  AstNodeType.tp_init = (initproc) AstNodeObject_init;
-  AstNodeType.tp_new = PyType_GenericNew;
-}
-
-int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->ptr = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
-}
-
-void AstNodeObject_dealloc(AstNodeObject* self) {
-  Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyObject* AstNodeObject_dump(AstNodeObject *self) {
-  self->ptr->dump();
-  Py_RETURN_NONE;
-}
-
-PyObject* AstNodeObject_iter(AstNodeObject *self) {
-  return wrapIterPair((ContextObject*) self->contextObject, self->ptr->children());
-}
-
-PyTypeObject ChapelTypeType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupChapelTypeType() {
-  ChapelTypeType.tp_name = "ChapelType";
-  ChapelTypeType.tp_basicsize = sizeof(ChapelTypeObject);
-  ChapelTypeType.tp_itemsize = 0;
-  ChapelTypeType.tp_dealloc = (destructor) ChapelTypeObject_dealloc;
-  ChapelTypeType.tp_flags = Py_TPFLAGS_BASETYPE;
-  ChapelTypeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  ChapelTypeType.tp_methods = (PyMethodDef*) PerTypeMethods<ChapelTypeObject>::methods;
-  ChapelTypeType.tp_init = (initproc) ChapelTypeObject_init;
-  ChapelTypeType.tp_new = PyType_GenericNew;
-  ChapelTypeType.tp_str = (reprfunc) ChapelTypeObject_str;
-}
-
-int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->ptr = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
+PyObject* AstNodeObject::iter(AstNodeObject *self) {
+  return wrapIterPair((ContextObject*) self->contextObject, self->value_->children());
 }
 
 void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
@@ -295,49 +150,16 @@ void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-PyObject* ChapelTypeObject_str(ChapelTypeObject* self) {
+PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
   std::stringstream ss;
-  self->ptr->stringify(ss, CHPL_SYNTAX);
+  self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();
   return Py_BuildValue("s", typeString.c_str());
 }
 
-PyTypeObject ParamType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
-
-void setupParamType() {
-  ParamType.tp_name = "Param";
-  ParamType.tp_basicsize = sizeof(ParamObject);
-  ParamType.tp_itemsize = 0;
-  ParamType.tp_dealloc = (destructor) ParamObject_dealloc;
-  ParamType.tp_flags = Py_TPFLAGS_BASETYPE;
-  ParamType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
-  ParamType.tp_methods = (PyMethodDef*) PerTypeMethods<ParamObject>::methods;
-  ParamType.tp_init = (initproc) ParamObject_init;
-  ParamType.tp_new = PyType_GenericNew;
-  ParamType.tp_str = (reprfunc) ParamObject_str;
-}
-
-int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs) {
-  PyObject* contextObjectPy;
-  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
-      return -1;
-
-  Py_INCREF(contextObjectPy);
-  self->ptr = nullptr;
-  self->contextObject = contextObjectPy;
-  return 0;
-}
-
-void ParamObject_dealloc(ParamObject* self) {
-  Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyObject* ParamObject_str(ParamObject* self) {
+PyObject* ParamObject::str(ParamObject* self) {
   std::stringstream ss;
-  self->ptr->stringify(ss, CHPL_SYNTAX);
+  self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();
   return Py_BuildValue("s", typeString.c_str());
 }
@@ -355,7 +177,7 @@ PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
-  return &AstNodeType;
+  return &AstNodeObject::PythonType;
 }
 
 PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
@@ -371,11 +193,11 @@ PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
 #undef BUILTIN_TYPE_NODE
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
-  return &ChapelTypeType;
+  return &ChapelTypeObject::PythonType;
 }
 
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
-  return &ParamType;
+  return &ParamObject::PythonType;
 }
 
 PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
@@ -388,7 +210,7 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
 #define CAST_TO(NAME) \
     case asttags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->parent.ptr = node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.value_ = node->to##NAME(); \
       break;
 #define AST_NODE(NAME) CAST_TO(NAME)
 #define AST_LEAF(NAME) CAST_TO(NAME)
@@ -417,7 +239,7 @@ PyObject* wrapType(ContextObject* context, const types::Type* node) {
 #define CAST_TO(NAME) \
     case types::typetags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->parent.ptr = (const types::Type*) node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.value_ = (const types::Type*) node->to##NAME(); \
       break;
 #define TYPE_NODE(NAME) CAST_TO(NAME)
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) CAST_TO(NAME)
@@ -446,7 +268,7 @@ PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
 #define PARAM_NODE(NAME, TYPE) \
     case chpl::types::paramtags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->parent.ptr = node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.value_ = node->to##NAME(); \
       break;
 #include "chpl/types/param-classes-list.h"
 #undef PARAM_NODE
@@ -454,25 +276,3 @@ PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
   Py_XDECREF(args);
   return toReturn;
 }
-
-PyObject* wrapLocation(Location loc) {
-  auto locationObjectPy = PyObject_CallObject((PyObject *) &LocationType, nullptr);
-  auto& location = ((LocationObject*) locationObjectPy)->location;
-
-  location = std::move(loc);
-  return locationObjectPy;
-}
-
-PyObject* wrapScope(ContextObject* contextObj, const chpl::resolution::Scope* scope) {
-  if (scope == nullptr) {
-    Py_RETURN_NONE;
-  }
-
-  PyObject* args = Py_BuildValue("(O)", contextObj);
-  auto scopeObjectPy = PyObject_CallObject((PyObject *) &ScopeType, args);
-  auto scopeObject = (ScopeObject*) scopeObjectPy;
-  scopeObject->scope = scope;
-
-  return scopeObjectPy;
-}
-

@@ -92,12 +92,12 @@ struct InvokeHelper<void(Args...)> {
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    auto node = ((NODE##Object*) self)->unwrap(); \
+    auto&& node = ((NODE##Object*) self)->unwrap(); \
     auto contextObject = ((NODE##Object*) self)->context(); \
-    auto context = &contextObject->context_; \
+    auto context = &contextObject->value_; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
     return InvokeHelper<TYPEFN>::invoke(contextObject, \
-      [node, context, contextObject, &args]() -> PythonFnHelper<TYPEFN>::ReturnType { \
+      [&node, context, contextObject, &args]() -> PythonFnHelper<TYPEFN>::ReturnType { \
         (void) context, contextObject; \
         BODY; \
       }); \

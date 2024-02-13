@@ -26,9 +26,9 @@
 
 CLASS_BEGIN(Context)
   PLAIN_GETTER(Context, introspect_parsed_files, "Inspect the list of files that have been parsed by the Context",
-               std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(node))
+               std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(&node))
   PLAIN_GETTER(Context, track_errors, "Return a context manager that tracks errors emitted by this Context",
-               PyObject*, std::ignore = node; return createNewErrorManager(contextObject))
+               PyObject*, std::ignore = node; return ErrorManagerObject::create(contextObject, std::make_tuple()))
   PLAIN_GETTER(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes",
                std::string, std::ignore = node; return generatePyiFile())
 
@@ -38,7 +38,7 @@ CLASS_BEGIN(Context)
          auto fileNameUS = std::get<0>(args);
          auto parentPathUS = chpl::UniqueString();
          auto& builderResult =
-           parsing::parseFileToBuilderResultAndCheck(node, fileNameUS, parentPathUS);
+           parsing::parseFileToBuilderResultAndCheck(&node, fileNameUS, parentPathUS);
          std::vector<const chpl::uast::AstNode*> topLevelNodes;
          for (auto i = 0; i < builderResult.numTopLevelExpressions(); i++) {
            topLevelNodes.push_back(builderResult.topLevelExpression(i));
@@ -49,28 +49,28 @@ CLASS_BEGIN(Context)
 
          auto& paths = std::get<0>(args);
          auto& filenames = std::get<1>(args);
-         parsing::setupModuleSearchPaths(node, false, false, paths, filenames))
+         parsing::setupModuleSearchPaths(&node, false, false, paths, filenames))
   METHOD(Context, is_bundled_path, "Check if the given file path is within the bundled (built-in) Chapel files",
          bool(chpl::UniqueString),
 
          auto pathUS = std::get<0>(args);
-         return parsing::filePathIsInInternalModule(node, pathUS) ||
-                parsing::filePathIsInStandardModule(node, pathUS) ||
-                parsing::filePathIsInBundledModule(node, pathUS))
+         return parsing::filePathIsInInternalModule(&node, pathUS) ||
+                parsing::filePathIsInStandardModule(&node, pathUS) ||
+                parsing::filePathIsInBundledModule(&node, pathUS))
   METHOD(Context, advance_to_next_revision, "Advance the context to the next revision",
          void(bool),
 
          auto prepareToGc = std::get<0>(args);
-         node->advanceToNextRevision(prepareToGc))
+         node.advanceToNextRevision(prepareToGc))
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)
   PLAIN_GETTER(Location, start, "Get the line-column pair where this Location starts",
-               LineColumnPair, return std::make_tuple(node->firstLine(), node->firstColumn()))
+               LineColumnPair, return std::make_tuple(node.firstLine(), node.firstColumn()))
   PLAIN_GETTER(Location, end, "Get the line-column pair where this Location ends",
-               LineColumnPair, return std::make_tuple(node->lastLine(), node->lastColumn()))
+               LineColumnPair, return std::make_tuple(node.lastLine(), node.lastColumn()))
   PLAIN_GETTER(Location, path, "Get the file path of this Location",
-               chpl::UniqueString, return node->path())
+               chpl::UniqueString, return node.path())
 CLASS_END(Location)
 
 CLASS_BEGIN(Scope)

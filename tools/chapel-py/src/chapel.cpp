@@ -43,32 +43,25 @@ extern "C" {
 PyMODINIT_FUNC PyInit_core() {
   PyObject* chapelModule = nullptr;
 
-  setupContextType();
-  setupErrorType();
-  setupErrorManagerType();
-  setupLocationType();
-  setupScopeType();
   setupAstIterType();
   setupAstCallIterType();
-  setupAstNodeType();
-  setupChapelTypeType();
-  setupParamType();
   setupGeneratedTypes();
 
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) READY_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE
-  READY_TYPE(Context)
-  READY_TYPE(Error)
-  READY_TYPE(ErrorManager)
-  READY_TYPE(Location)
-  READY_TYPE(Scope)
   READY_TYPE(AstIter)
   READY_TYPE(AstCallIter)
-  READY_TYPE(AstNode)
-  READY_TYPE(ChapelType)
-  READY_TYPE(Param)
+
+  if (ContextObject::ready() < 0) return nullptr;
+  if (LocationObject::ready() < 0) return nullptr;
+  if (ScopeObject::ready() < 0) return nullptr;
+  if (AstNodeObject::ready() < 0) return nullptr;
+  if (ChapelTypeObject::ready() < 0) return nullptr;
+  if (ParamObject::ready() < 0) return nullptr;
+  if (ErrorObject::ready() < 0) return nullptr;
+  if (ErrorManagerObject::ready() < 0) return nullptr;
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
@@ -77,15 +70,16 @@ PyMODINIT_FUNC PyInit_core() {
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) ADD_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE
-  ADD_TYPE(AstNode);
-  ADD_TYPE(ChapelType);
-  ADD_TYPE(Param);
 
-  if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
-    Py_DECREF(&ContextType);
-    Py_DECREF(chapelModule);
-    return NULL;
-  }
+  if (ContextObject::addToModule(chapelModule) < 0) return nullptr;
+  if (LocationObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ScopeObject::addToModule(chapelModule) < 0) return nullptr;
+  if (AstNodeObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ChapelTypeObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ParamObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ErrorObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ErrorManagerObject::addToModule(chapelModule) < 0) return nullptr;
+
   return chapelModule;
 }
 
