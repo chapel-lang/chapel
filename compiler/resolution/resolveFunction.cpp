@@ -2733,7 +2733,7 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
 // Emit an init= or similar pattern to create 'to' of type 'toType' from 'from'
 // (the Symbol toType conveys any runtime type info beyond what to->type is.)
 //
-// No matter what, adds the initialization pattern after 'insertBefore'.
+// No matter what, adds the initialization pattern before 'insertBefore'.
 // Adds all calls added to the newCalls vector to be resolved later.
 static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
                                  bool fromPrimCoerce,
