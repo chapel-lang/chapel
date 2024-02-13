@@ -4878,7 +4878,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                          artifactFilename + " " +
                          "-o " + gpuObject;
     std::string lldCmd = std::string(gGpuSdkPath) +
-                        "/llvm/bin/lld -flavor gnu" +
+                        "/bin/lld -flavor gnu" +
                          " --no-undefined -shared" +
                          " -plugin-opt=-amdgpu-internalize-symbols" +
                          " -plugin-opt=mcpu=" + gpuArch +
