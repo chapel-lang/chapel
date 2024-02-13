@@ -298,7 +298,9 @@ def get_sdk_version():
                 if match:
                     rocm_version = match.group(1)
                 else:
-                    rocm_version="5.4.3"
+                    match = re.search(r"llvm-amdgpu-([\d\.]+)", my_stdout)
+                    if match:
+                        rocm_version = match.group(1)
         return rocm_version
 
     if get() == 'nvidia':
