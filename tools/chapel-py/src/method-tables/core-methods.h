@@ -28,9 +28,9 @@ CLASS_BEGIN(Context)
   PLAIN_GETTER(Context, introspect_parsed_files, "Inspect the list of files that have been parsed by the Context",
                std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(node))
   PLAIN_GETTER(Context, track_errors, "Return a context manager that tracks errors emitted by this Context",
-               PyObject*, (void) node; return createNewErrorManager(contextObject))
+               PyObject*, std::ignore = node; return createNewErrorManager(contextObject))
   PLAIN_GETTER(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes",
-               std::string, (void) node; return generatePyiFile())
+               std::string, std::ignore = node; return generatePyiFile())
 
   METHOD(Context, parse, "Parse a top-level AST node from the given file",
          std::vector<const chpl::uast::AstNode*>(chpl::UniqueString),
@@ -103,7 +103,7 @@ CLASS_BEGIN(ErrorManager)
   PLAIN_GETTER(ErrorManager, __enter__, "The context manager 'enter' method for this ErrorManager object",
                PyObject*,
 
-               (void) node;
+               std::ignore = node;
                auto list = ((PythonErrorHandler*) context->errorHandler())->pushList();
                Py_INCREF(list);
                return list)
@@ -111,6 +111,6 @@ CLASS_BEGIN(ErrorManager)
   METHOD(ErrorManager, __exit__, "The context manager 'enter' method for this ErrorManager object",
          void(PyObject*, PyObject*, PyObject*),
 
-         (void) node;
+         std::ignore = node;
          ((PythonErrorHandler*) context->errorHandler())->popList())
 CLASS_END(ErrorManager)

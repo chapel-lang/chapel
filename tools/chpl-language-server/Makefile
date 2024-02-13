@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -33,7 +32,7 @@ link=$(bdir)/chpl-language-server
 all: chpl-language-server install
 
 chpl-language-server-venv:
-	cd ../../third-party && $(MAKE) chpl-language-server-venv
+	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chpl-language-server-venv
 
 chpl-language-server: chpl-language-server-venv
 

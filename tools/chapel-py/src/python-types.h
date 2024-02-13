@@ -227,6 +227,8 @@ T_DEFINE_INOUT_TYPE(std::optional<T>, optionalTypeString<T>(), wrapOptional(CONT
 template <typename ... Elems>
 T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
 
+#undef T_DEFINE_INOUT_TYPE
+#undef DEFINE_INOUT_TYPE
 
 /* Specialize for void, but don't include 'wrap' and 'unwrap' methods:
    unwrapping isn't possible since we can't accept 'void' arguments, and
