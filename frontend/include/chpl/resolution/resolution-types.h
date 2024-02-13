@@ -890,6 +890,9 @@ class TypedFnSignature {
 struct CandidatesAndForwardingInfo {
  private:
   std::vector<const TypedFnSignature*> candidates;
+  // Note we have a (small) storage footprint for forwardingInfo even in the
+  // relatively common case where it is unused; could potentially use something
+  // lighter than this struct for candidates without forwarding info.
   std::vector<types::QualifiedType> forwardingInfo;
 
  public:
