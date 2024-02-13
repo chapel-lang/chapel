@@ -12,3 +12,7 @@ class thing: contextManager {
 }
 
 var x = new thing(int, 5);
+
+manage x as n {
+    writeln(n);
+}
