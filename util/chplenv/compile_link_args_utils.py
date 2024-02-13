@@ -106,9 +106,7 @@ def get_runtime_link_args(runtime_subdir):
             lib_path = os.path.join(sdk_path, "lib")
             system.append("-L" + lib_path)
             system.append("-Wl,-rpath," + lib_path)
-            system.append("-L" + "/chapel/home/rezaii/git/spack/opt/spack/linux-sles15-zen/gcc-7.5.0/hip-5.4.3-fmhis32cckubpd4hmorgn7cn2mbin44y/lib")
             system.append("-lamdhip64")
-            system.append("-L"+"/chapel/home/rezaii/git/spack/opt/spack/linux-sles15-zen/gcc-7.5.0/hsa-rocr-dev-5.4.3-pw2zlzkhtq2szfgvxjgcsboyoitfq3gx/lib")
             system.append("-lhsa-runtime64")
 
     # always link with the math library
