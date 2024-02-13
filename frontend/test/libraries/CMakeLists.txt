@@ -16,3 +16,4 @@
 # limitations under the License.
 
 comp_unit_test(testLibraryFile)
+comp_unit_test(summarizeLibraryFile)

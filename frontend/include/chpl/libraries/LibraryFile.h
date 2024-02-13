@@ -113,10 +113,16 @@ class LibraryFile {
       uint32_t symbolEntryOffset = 0;
       uint32_t astOffset = 0;
       uint32_t locationOffset = 0;
+      bool allConcrete = true;
+      UniqueString symbolPath;
+      std::vector<UniqueString> cnames;
       bool operator==(const SymbolInfo& other) const {
         return symbolEntryOffset == other.symbolEntryOffset &&
                astOffset == other.astOffset &&
-               locationOffset == other.locationOffset;
+               locationOffset == other.locationOffset &&
+               allConcrete == other.allConcrete &&
+               symbolPath == other.symbolPath &&
+               cnames == other.cnames;
       }
       bool operator!=(const SymbolInfo& other) const {
         return !(*this == other);
@@ -248,6 +254,7 @@ class LibraryFile {
   // returns 'true' if everything is OK, 'false' if there were errors.
   bool readModuleSection(Context* context,
                          Region moduleRegion,
+                         UniqueString moduleSymPath,
                          ModuleSection& mod) const;
 
   // reads the module metadata (including the symbol table)
@@ -362,6 +369,11 @@ class LibraryFile {
     Returns a vector containing the paths stored in this module.
     */
   std::vector<UniqueString> containedFilePaths() const;
+
+  /**
+    Print a summary of a LibraryFile.
+    */
+  void summarize(Context* context, std::ostream& s) const;
 
   /**
     Load uAST from this LibraryFile for a particular source path.
