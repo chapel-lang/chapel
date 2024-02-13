@@ -293,8 +293,6 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
 
 /////// call resolution
 
-struct CandidatesAndForwardingInfo;
-
 /**
   Compute the (potentially generic) TypedFnSignatures of possibly applicable
   candidate functions from a list of visible functions.
