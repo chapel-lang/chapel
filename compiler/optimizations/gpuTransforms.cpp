@@ -741,6 +741,19 @@ Symbol* GpuizableLoop::getPidFieldForPrivatizationOffload(SymExpr* symExpr) {
   return NULL;
 }
 
+static bool symbolIsAPid(SymExpr* expr) {
+  if (CallExpr *parent = toCallExpr(expr->parentExpr)) {
+    if (parent->isPrimitive(PRIM_ARRAY_GET) && parent->get(2) == expr) {
+      SymExpr* theArray = toSymExpr(parent->get(1));
+      INT_ASSERT(theArray);
+      if (theArray->symbol()->name == astr("chpl_privateObjects")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool GpuizableLoop::symsInBodyAreGpuizable() {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(this->loop_, symExprs);
@@ -760,12 +773,28 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
       }
     }
 
+    // TODO: at this point we should just record privatized symbols used in the
+    // loop body. Currently, the compiler can sometimes generate two `pidGets`
+    // for the same thing. This should be OK; but runtime is probably doing
+    // redundant work.
     if(Symbol* pidField = getPidFieldForPrivatizationOffload(symExpr)) {
+      // the symbol is an array/domain record with `_pid` field
       SET_LINENO(symExpr);
       CallExpr* pidGet = new CallExpr(PRIM_GET_MEMBER_VALUE, sym, pidField);
       pidGets_.push_back(pidGet);
     }
+    else if (symbolIsAPid(symExpr)) {
+      // the symbol is an index into `chpl_privateObjects`
+      CallExpr* move = toCallExpr(sym->getSingleDef()->getStmtExpr());
+      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+
+      CallExpr* rhs = toCallExpr(move->get(2));
+      INT_ASSERT(rhs && rhs->isPrimitive(PRIM_GET_MEMBER_VALUE));
+
+      pidGets_.push_back(rhs);
+    }
   }
+
   return true;
 }
 
