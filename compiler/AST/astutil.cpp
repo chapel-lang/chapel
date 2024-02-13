@@ -1035,12 +1035,9 @@ pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 }
 
 
-static bool fnInDynoGenLibModule(FnSymbol* fn) {
-  if (!fDynoGenLib) {
-    return false;
-  }
+static ModuleSymbol* getToplevelModule(FnSymbol* fn) {
   if (fn->defPoint == nullptr) {
-    return false;
+    return nullptr;
   }
 
   // find the top-level module
@@ -1053,7 +1050,32 @@ static bool fnInDynoGenLibModule(FnSymbol* fn) {
     }
   }
 
+  return topLevelModule;
+}
+
+static bool separatelyCompilingModule(ModuleSymbol* topLevelModule) {
   return gDynoGenLibModuleNameAstrs.count(topLevelModule->name) > 0;
+}
+
+static bool keepFnForSeparateCompilation(FnSymbol* fn) {
+  if (!fDynoGenLib) {
+    return false;
+  }
+
+  ModuleSymbol* mod = getToplevelModule(fn);
+  if (mod && separatelyCompilingModule(mod)) {
+    // Workaround: don't keep 'iteratorIndex' functions in
+    // ChapelIteratorSupport because these can call 'getValue' functions
+    // that contain partial and invalid AST.
+    if (0 == strcmp(mod->name, "ChapelIteratorSupport") &&
+        0 == strcmp(fn->name, "iteratorIndex")) {
+      return false;
+    }
+
+    // generally, keep functions in modules being separately compiled
+    return true;
+  }
+  return false;
 }
 
 // Visit and mark functions (and types) which are reachable from
@@ -1083,11 +1105,14 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
 
-  // Mark exported symbols and module init/deinit functions as visible.
+  // Mark things to consider always visible:
+  //  * exported symbols
+  //  * always-resolve functions
+  //  * functions in modules being separately compiled
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_EXPORT) ||
         fn->hasFlag(FLAG_ALWAYS_RESOLVE) ||
-        fnInDynoGenLibModule(fn)) {
+        keepFnForSeparateCompilation(fn)) {
       pruneVisit(fn, fns, types);
     }
   }
