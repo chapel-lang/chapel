@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Expect this output for a valgrind failure:
+#
+#  Lines 1-5 - as in .good, then:
+#  ==40376== Thread 15:
+#  ==40376== Invalid read of size 8
+#  ==40376== <details>
+#  ...
+
+sed -e 's/.*Thread.*/Thread/; s/.*Invalid read.*/Invalid read/; 7q' $2 > $2.tmp
+mv $2.tmp $2
