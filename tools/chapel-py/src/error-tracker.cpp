@@ -20,14 +20,7 @@
 #include "error-tracker.h"
 #include "core-types.h"
 #include "chpl/framework/ErrorBase.h"
-
-static PyMethodDef ErrorObject_methods[] = {
-  { "location", (PyCFunction) ErrorObject_location, METH_NOARGS, "Get the location at which this error occurred" },
-  { "message", (PyCFunction) ErrorObject_message, METH_NOARGS, "Retrieve the contents of this error message" },
-  { "kind", (PyCFunction) ErrorObject_kind, METH_NOARGS, "Retrieve the kind ('error', 'warning') of this type of error" },
-  { "type", (PyCFunction) ErrorObject_type, METH_NOARGS, "Retrieve the unique name of this type of error" },
-  {NULL, NULL, 0, NULL}  /* Sentinel */
-};
+#include "core-types-gen.h"
 
 PyTypeObject ErrorType = {
   PyVarObject_HEAD_INIT(NULL, 0)
@@ -40,7 +33,7 @@ void setupErrorType() {
   ErrorType.tp_dealloc = (destructor) ErrorObject_dealloc;
   ErrorType.tp_flags = Py_TPFLAGS_DEFAULT;
   ErrorType.tp_doc = PyDoc_STR("An error that occurred as part of processing a file with the Chapel compiler frontend");
-  ErrorType.tp_methods = ErrorObject_methods;
+  ErrorType.tp_methods = (PyMethodDef*) PerTypeMethods<ErrorObject>::methods;
   ErrorType.tp_init = (initproc) ErrorObject_init;
   ErrorType.tp_new = PyType_GenericNew;
 }
@@ -57,33 +50,6 @@ void ErrorObject_dealloc(ErrorObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-PyObject* ErrorObject_location(ErrorObject* self, PyObject* args) {
-  auto locationObjectPy = PyObject_CallObject((PyObject *) &LocationType, nullptr);
-  auto& location = ((LocationObject*) locationObjectPy)->location;
-  auto context = &((ContextObject*) self->contextObject)->context;
-
-  location = self->error->location(context);
-  return locationObjectPy;
-}
-
-PyObject* ErrorObject_message(ErrorObject* self, PyObject* args) {
-  return Py_BuildValue("s", self->error->message().c_str());
-}
-
-PyObject* ErrorObject_kind(ErrorObject* self, PyObject* args) {
-  return Py_BuildValue("s", chpl::ErrorBase::getKindName(self->error->kind()));
-}
-
-PyObject* ErrorObject_type(ErrorObject* self, PyObject* args) {
-  return Py_BuildValue("s", chpl::ErrorBase::getTypeName(self->error->type()));
-}
-
-static PyMethodDef ErrorManagerObject_methods[] = {
-  { "__enter__", (PyCFunction) ErrorManagerObject_enter, METH_NOARGS, "The context manager 'enter' method for this ErrorManager object" },
-  { "__exit__", (PyCFunction) ErrorManagerObject_exit, METH_VARARGS, "The context manager 'exit' method for this ErrorManager object" },
-  {NULL, NULL, 0, NULL}  /* Sentinel */
-};
-
 PyTypeObject ErrorManagerType = {
   PyVarObject_HEAD_INIT(NULL, 0)
 };
@@ -95,7 +61,7 @@ void setupErrorManagerType() {
   ErrorManagerType.tp_dealloc = (destructor) ErrorManagerObject_dealloc;
   ErrorManagerType.tp_flags = Py_TPFLAGS_DEFAULT;
   ErrorManagerType.tp_doc = PyDoc_STR("A wrapper container to help track the errors from a Context.");
-  ErrorManagerType.tp_methods = ErrorManagerObject_methods;
+  ErrorManagerType.tp_methods = (PyMethodDef*) PerTypeMethods<ErrorManagerObject>::methods;
   ErrorManagerType.tp_init = (initproc) ErrorManagerObject_init;
   ErrorManagerType.tp_new = PyType_GenericNew;
 }
@@ -110,18 +76,12 @@ void ErrorManagerObject_dealloc(ErrorManagerObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-PyObject* ErrorManagerObject_enter(ErrorManagerObject* self, PyObject* args) {
-  auto& context = ((ContextObject*) self->contextObject)->context;
-  auto list = ((PythonErrorHandler*) context.errorHandler())->pushList();
-  Py_INCREF(list);
-  return list;
-}
-
-PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args) {
-  auto& context = ((ContextObject*) self->contextObject)->context;
-  ((PythonErrorHandler*) context.errorHandler())->popList();
-
-  Py_RETURN_NONE;
+PyObject* createNewErrorManager(ContextObject* contextObject) {
+  auto errorManagerObjectPy = PyObject_CallObject((PyObject *) &ErrorManagerType, nullptr);
+  auto errorManagerObject = (ErrorManagerObject*) errorManagerObjectPy;
+  Py_INCREF(contextObject);
+  errorManagerObject->contextObject = (PyObject*) contextObject;
+  return errorManagerObjectPy;
 }
 
 PyObject* PythonErrorHandler::pushList() {

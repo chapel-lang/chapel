@@ -114,10 +114,12 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core
 	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
 		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-		$(CHPL_MAKE_HOME)/tools/chapel-py/scripts/generate-pyi.py \
+		python3 -c 'import chapel; print(chapel.Context()._get_pyi_file())' \
 		>$(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi
 
 chplcheck-venv: chapel-py-venv
+
+chpl-language-server-venv: chapel-py-venv
 
 install-requirements: install-chpldeps
 

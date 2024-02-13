@@ -24,34 +24,45 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 
-typedef struct {
+struct ContextObject;
+
+struct ErrorObject {
   PyObject_HEAD
   chpl::owned<chpl::ErrorBase> error;
   PyObject* contextObject;
-} ErrorObject;
+
+  static constexpr const char* Name = "Error";
+
+  const chpl::ErrorBase* unwrap() { return error.get(); }
+  ContextObject* context() { return (ContextObject*) contextObject; }
+};
 extern PyTypeObject ErrorType;
 
 void setupErrorType();
 
 int ErrorObject_init(ErrorObject* self, PyObject* args, PyObject* kwargs);
 void ErrorObject_dealloc(ErrorObject* self);
-PyObject* ErrorObject_location(ErrorObject* self, PyObject* args);
-PyObject* ErrorObject_message(ErrorObject* self, PyObject* args);
-PyObject* ErrorObject_kind(ErrorObject* self, PyObject* args);
-PyObject* ErrorObject_type(ErrorObject* self, PyObject* args);
 
-typedef struct {
+struct ErrorManagerObject {
   PyObject_HEAD
   PyObject* contextObject;
-} ErrorManagerObject;
+
+  static constexpr const char* Name = "ErrorManager";
+
+  ErrorManagerObject* unwrap() { return this; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
+};
 extern PyTypeObject ErrorManagerType;
 
 void setupErrorManagerType();
 
 int ErrorManagerObject_init(ErrorManagerObject* self, PyObject* args, PyObject* kwargs);
 void ErrorManagerObject_dealloc(ErrorManagerObject* self);
-PyObject* ErrorManagerObject_enter(ErrorManagerObject* self, PyObject* args);
-PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args);
+
+/**
+  Create a new ErrorManager object which hooks into a given Context object.
+ */
+PyObject* createNewErrorManager(ContextObject* contextObject);
 
 class PythonErrorHandler : public chpl::Context::ErrorHandler {
  private:

@@ -30,76 +30,83 @@ PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
-typedef struct {
+struct ContextObject {
   PyObject_HEAD
-  chpl::Context context;
-  /* Type-specific fields go here. */
-} ContextObject;
+  chpl::Context context_;
+
+  static constexpr const char* Name = "Context";
+
+  chpl::Context* unwrap() { return &context_; }
+  ContextObject* context() { return this; }
+};
 extern PyTypeObject ContextType;
 void setupContextType();
 
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs);
 void ContextObject_dealloc(ContextObject* self);
-PyObject* ContextObject_parse(ContextObject *self, PyObject* args);
-PyObject* ContextObject_set_module_paths(ContextObject *self, PyObject* args);
-PyObject* ContextObject_introspect_parsed_files(ContextObject *self, PyObject* args);
-PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args);
-PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* args);
-PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args);
-PyObject* ContextObject_track_errors(ContextObject *self, PyObject* args);
 
-typedef struct {
+struct LocationObject {
   PyObject_HEAD
   chpl::Location location;
-} LocationObject;
+
+  static constexpr const char* Name = "Location";
+
+  chpl::Location* unwrap() { return &location; }
+  ContextObject* context() { return nullptr; }
+};
 extern PyTypeObject LocationType;
 void setupLocationType();
 
+using LineColumnPair = std::tuple<int, int>;
+
 int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs);
 void LocationObject_dealloc(LocationObject* self);
-PyObject* LocationObject_start(LocationObject *self, PyObject* Py_UNUSED(args));
-PyObject* LocationObject_end(LocationObject *self, PyObject* Py_UNUSED(args));
-PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args));
 
-typedef struct {
+struct ScopeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::resolution::Scope* scope;
-} ScopeObject;
+
+  static constexpr const char* Name = "Scope";
+
+  const chpl::resolution::Scope* unwrap() { return scope; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
+};
 extern PyTypeObject ScopeType;
 void setupScopeType();
 
 int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs);
 void ScopeObject_dealloc(ScopeObject* self);
-PyObject* ScopeObject_used_imported_modules(ScopeObject *self, PyObject* Py_UNUSED(args));
 
-typedef struct {
+struct AstNodeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::uast::AstNode* ptr;
-} AstNodeObject;
+
+  static constexpr const char* Name = "AstNode";
+
+  const chpl::uast::AstNode* unwrap() { return ptr; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
+};
 extern PyTypeObject AstNodeType;
 void setupAstNodeType();
 
+using QualifiedTypeTuple = std::tuple<const char*, const chpl::types::Type*, const chpl::types::Param*>;
+
 int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs);
 void AstNodeObject_dealloc(AstNodeObject* self);
-PyObject* AstNodeObject_dump(AstNodeObject *self);
-PyObject* AstNodeObject_tag(AstNodeObject *self);
-PyObject* AstNodeObject_unique_id(AstNodeObject *self);
-PyObject* AstNodeObject_attribute_group(AstNodeObject *self);
-PyObject* AstNodeObject_pragmas(AstNodeObject *self);
-PyObject* AstNodeObject_parent(AstNodeObject* self);
 PyObject* AstNodeObject_iter(AstNodeObject *self);
-PyObject* AstNodeObject_location(AstNodeObject *self);
-PyObject* AstNodeObject_scope(AstNodeObject *self);
-PyObject* AstNodeObject_type(AstNodeObject *self);
-PyObject* AstNodeObject_called_fn(AstNodeObject *self);
 
-typedef struct {
+struct ChapelTypeObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::types::Type* ptr;
-} ChapelTypeObject;
+
+  static constexpr const char* Name = "ChapelType";
+
+  const chpl::types::Type* unwrap() { return ptr; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
+};
 extern PyTypeObject ChapelTypeType;
 void setupChapelTypeType();
 
@@ -107,11 +114,16 @@ int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwar
 void ChapelTypeObject_dealloc(ChapelTypeObject* self);
 PyObject* ChapelTypeObject_str(ChapelTypeObject* self);
 
-typedef struct {
+struct ParamObject {
   PyObject_HEAD
   PyObject* contextObject;
   const chpl::types::Param* ptr;
-} ParamObject;
+
+  static constexpr const char* Name = "Param";
+
+  const chpl::types::Param* unwrap() { return ptr; }
+  ContextObject* context() { return (ContextObject*) contextObject; }
+};
 extern PyTypeObject ParamType;
 void setupParamType();
 
@@ -119,28 +131,16 @@ int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs);
 void ParamObject_dealloc(ParamObject* self);
 PyObject* ParamObject_str(ParamObject* self);
 
-/**
-  Declare a Python PyTypeObject that corresponds to a generated type
-  (AST node, Chapel type, etc.) of a given name.
- */
-#define DECLARE_PY_OBJECT_FOR(ROOT, NAME)\
-  typedef struct { \
-    ROOT##Object parent; \
-  } NAME##Object; \
-  \
-  extern PyTypeObject NAME##Type;
-
-/* Generate a Python object for reach AST node type. */
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(ROOT, NAME)
-#include "generated-types-list.h"
-#undef DECLARE_PY_OBJECT_FOR
-
-void setupGeneratedTypes();
-
 template<typename IntentType>
 const char* intentToString(IntentType intent) {
   return qualifierToString(chpl::uast::Qualifier(int(intent)));
 }
+
+/**
+ Using the various definitions, templates, and method tables we have, generate
+ a Python .pyi file describing the various methods and types we provide.
+ */
+std::string generatePyiFile();
 
 /**
   Create a Python object of the class corresponding to the given AST node's
@@ -163,5 +163,10 @@ PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
   Create a Python object from the given Location.
  */
 PyObject* wrapLocation(chpl::Location loc);
+
+/**
+  Create a Python object from the given Scope.
+ */
+PyObject* wrapScope(ContextObject* context, const chpl::resolution::Scope* scope);
 
 #endif

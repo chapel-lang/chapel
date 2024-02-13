@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,7 +17,7 @@
 # limitations under the License.
 #
 #
-# chplcheck - a Python-based Chapel linter.
+# chpl-language-server - a Python-based Chapel language server.
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
@@ -28,14 +27,14 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 include $(CHPL_MAKE_HOME)/third-party/chpl-venv/Makefile.include
 
 bdir=$(CHPL_BIN_DIR)
-link=$(bdir)/chplcheck
+link=$(bdir)/chpl-language-server
 
-all: chplcheck install
+all: chpl-language-server install
 
-chplcheck-venv:
-	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chplcheck-venv
+chpl-language-server-venv:
+	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chpl-language-server-venv
 
-chplcheck: chplcheck-venv
+chpl-language-server: chpl-language-server-venv
 
 clean:
 ifneq ($(wildcard $(link)),)
@@ -49,8 +48,8 @@ cleanall: clean
 clobber: clean
 
 $(link): clean
-	@echo "Installing chplcheck symbolic link..."
+	@echo "Installing chpl-language-server symbolic link..."
 	mkdir -p $(bdir)
-	ln -s $(shell pwd)/chplcheck $(link)
+	ln -s $(shell pwd)/chpl-language-server $(link)
 
-install: chplcheck $(link)
+install: chpl-language-server $(link)
