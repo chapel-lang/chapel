@@ -2,13 +2,13 @@ use IO, IO.FormattedIO;
 import Subprocess.spawn;
 
 iter getEcgSamples(path: string): int throws {
-  const fr = openReader(path);
+  const fr = openReader(path, locking=false);
   var a, b: int;
   while fr.readf("%i %i\n", a, b) do yield b;
 }
 
 iter getGoodCoeffs(path: string): int throws {
-  const fr = openReader(path);
+  const fr = openReader(path, locking=false);
   var c: int;
   while fr.read(c) do yield c;
 }
