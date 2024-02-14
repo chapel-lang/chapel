@@ -563,19 +563,16 @@ class FileInfo:
         of a definition: its type, references to it, etc. However, it is
         convenient to be able to "find references" and "go to type definition"
         from references to a definition too. Thus, this method returns
-        a definition when it can, and falls back to references otherwise.
+        a reference when it can, and falls back to definition otherwise.
         """
 
-        segment_def = self.get_def_segment_at_position(position)
-        segment_use = self.get_use_segment_at_position(position)
-
-        if segment_def and not segment_use:
-            return segment_def
-        elif segment_use and not segment_def:
-            return segment_use.resolved_to
-        elif segment_use and segment_def:
-            # prefer the use
-            return segment_use.resolved_to
+        segment = self.get_use_segment_at_position(position)
+        if segment:
+            return segment.resolved_to
+        else:
+            segment = self.get_def_segment_at_position(position)
+            if segment:
+                return segment
 
         return None
 
