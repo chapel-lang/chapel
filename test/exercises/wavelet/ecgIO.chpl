@@ -14,8 +14,8 @@ iter getGoodCoeffs(path: string): int throws {
 }
 
 proc plotDwtData(signal, coefficients, n) throws {
-  openWriter("results/signal.txt").write(signal);
-  openWriter("results/coeffs.txt").write(coefficients);
+  openWriter("results/signal.txt", locking=false).write(signal);
+  openWriter("results/coeffs.txt", locking=false).write(coefficients);
   try {
     spawn(["python3", "plot.py", n: string]);
   } catch e {
