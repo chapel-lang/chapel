@@ -519,7 +519,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, ioMode.r).reader(locking=false);
+                                     else open(scene, ioMode.r).reader(locking=true);
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect
