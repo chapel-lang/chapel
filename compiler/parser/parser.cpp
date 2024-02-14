@@ -478,11 +478,23 @@ static std::set<UniqueString> gatherStdModuleNames() {
   gatherStdModuleNamesInDir(modulesDir + "/internal", modNames);
   gatherStdModuleNamesInDir(modulesDir + "/layouts", modNames);
   // skip minimal
-  gatherStdModuleNamesInDir(modulesDir + "/packages", modNames);
+  // skip packages (see below)
   gatherStdModuleNamesInDir(modulesDir + "/standard", modNames);
 
+  // add select packages that don't have dependencies at compile time
+  // these particular ones are compiled by default even for "hello world"
+  std::vector<const char*> pkgModules = {"CopyAggregation",
+                                         "NPBRandom",
+                                         "RangeChunk",
+                                         "Search",
+                                         "Sort"};
+
+  for (auto name : pkgModules) {
+    modNames.insert(UniqueString::get(gContext, name));
+  }
+
   // leave out Treap since it is an 'include module' for SortedSet
-  modNames.erase(UniqueString::get(gContext, "Treap"));
+  //modNames.erase(UniqueString::get(gContext, "Treap"));
 
   // Workaround: if we're compiling for CHPL_COMM=none, then ignore the
   // network atomics modules, to avoid later compilation errors.
@@ -494,7 +506,7 @@ static std::set<UniqueString> gatherStdModuleNames() {
   // then ignore the GPU module, to avoid later compilation errors.
   if (!usingGpuLocaleModel()) {
     modNames.erase(UniqueString::get(gContext, "GPU"));
-    modNames.erase(UniqueString::get(gContext, "ChapelGpuSupport"));
+    //modNames.erase(UniqueString::get(gContext, "ChapelGpuSupport"));
   }
 
   return modNames;

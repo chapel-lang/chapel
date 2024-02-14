@@ -113,14 +113,12 @@ class LibraryFile {
       uint32_t symbolEntryOffset = 0;
       uint32_t astOffset = 0;
       uint32_t locationOffset = 0;
-      bool allConcrete = true;
       UniqueString symbolPath;
       std::vector<UniqueString> cnames;
       bool operator==(const SymbolInfo& other) const {
         return symbolEntryOffset == other.symbolEntryOffset &&
                astOffset == other.astOffset &&
                locationOffset == other.locationOffset &&
-               allConcrete == other.allConcrete &&
                symbolPath == other.symbolPath &&
                cnames == other.cnames;
       }

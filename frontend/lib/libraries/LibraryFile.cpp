@@ -759,16 +759,14 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
 
       for (const auto& symInfo : mod->symbols) {
         UniqueString symPath = symInfo.symbolPath;
-        int nCnames = 0;
-        int nWithIr = 0;
+        s << "         " << symPath.str();
         for (auto cname : symInfo.cnames) {
-          nCnames++;
+          s << " " << cname;;
           if (!cname.isEmpty() && llvmMod->getFunction(cname.str())) {
-            nWithIr++;
+            s << "[llvm]";
           }
         }
-        s << "         " << symPath.str()
-             << " gen " << nWithIr << "/" << nCnames << "\n";
+        s << "\n";
       }
     }
 

@@ -2925,7 +2925,7 @@ static void codegenPartTwo() {
 
 
 
-  // generate a .dyno file storing the result of separate compliation.
+  // generate a .dyno file storing the result of separate compilation.
   if (fDynoGenLib && fLlvmCodegen) {
 #ifdef HAVE_LLVM
     llvm::Module* llvmModule = gGenInfo->module;
@@ -2953,6 +2953,8 @@ static void codegenPartTwo() {
       // compute the functions/globals from the requested module
       std::set<const llvm::GlobalValue*> filterGvs;
 
+      printf("Processing module %s\n", genMod->name);
+
       // gather functions
       std::vector<FnSymbol*> fns =
         genMod->getTopLevelFunctions(/* includeExterns */ false);
@@ -2965,6 +2967,8 @@ static void codegenPartTwo() {
       }
 
       for (FnSymbol* fn : fns) {
+        printf("processing fn %s %s\n", fn->name, fn->cname);
+
         if (fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
           // skip chpl_gen_main
         } else {
@@ -3038,12 +3042,16 @@ static void codegenPartTwo() {
         ValuesToLink.push_back(GV);
 
         llvm::Error err = GV->materialize();
+        if (err) {
+          INT_FATAL("Failure to materialize a GlobalValue");
+        }
+
         fprintf(stderr, "Will link %s\n", name.c_str());
-        GV->dump();
+        //GV->dump();
       }
 
       fprintf(stderr, "Module Before Linking\n");
-      DstMod->dump();
+      //DstMod->dump();
 
       // take the mod from the PrecompiledModule map
       std::unique_ptr<llvm::Module> takeMod;
@@ -3057,8 +3065,12 @@ static void codegenPartTwo() {
                         // definition with the same name?
                         llvm::GlobalValue* HaveGV =
                           DstMod->getNamedValue(v.getName());
-                        if (HaveGV->isDeclaration()) {
+                        if (HaveGV && HaveGV->isDeclaration()) {
                           // it's not a definition, so link it in
+                          HaveGV = nullptr;
+                        }
+
+                        if (HaveGV == nullptr) {
                           add(v);
                         }
                      },
@@ -3069,7 +3081,7 @@ static void codegenPartTwo() {
       }
 
       fprintf(stderr, "Module After Linking\n");
-      DstMod->dump();
+      //DstMod->dump();
     }
   }
 }

@@ -186,7 +186,7 @@ struct GenInfo {
   // pointer to clang support info
   ClangInfo* clangInfo = nullptr;
 
-  // When a separately compiled .dyno file,
+  // When using a separately compiled .dyno file,
   // keep track of the LLVM IR modules that have been used
   // for the separately compiled information.
   std::map<UniqueString, PrecompiledModule> precompiledMods;

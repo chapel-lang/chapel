@@ -2298,6 +2298,15 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
   return fngen;
 }
 
+static bool shouldUsePrecompiled(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_PRECOMPILED) &&
+         !fn->astloc.id().isEmpty() &&
+         // don't do this for generic instantiations for now
+         // TODO: figure out how to get LibraryFile to
+         // differentiate between instantiations
+         !fn->hasFlag(FLAG_INSTANTIATED_GENERIC);
+}
+
 #ifdef HAVE_LLVM
 static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
   GenInfo *info = gGenInfo;
@@ -2336,11 +2345,10 @@ static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
   return pm;
 }
 
-static llvm::Function* importPrecompiledFunctionProto(chpl::ID fnId) {
+static llvm::Function*
+importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
   llvm::Function* ret = nullptr;
   GenInfo *info = gGenInfo;
-  UniqueString fnSymbolPath = fnId.symbolPath();
-  const char* cname = fnSymbolPath.c_str();
 
   INT_ASSERT(fIdBasedMunging && "expected ID based munging");
 
@@ -2381,7 +2389,8 @@ static llvm::Function* importPrecompiledFunctionProto(chpl::ID fnId) {
   F->copyMetadata(SF, 0);
 
   // record the fact that the function was probably needed
-  pm.neededGlobalNames.push_back(fnSymbolPath);
+  UniqueString ucname = UniqueString::get(gContext, cname);
+  pm.neededGlobalNames.push_back(ucname);
 
 #if 0
   llvm::IRMover irMover(*info->module);
@@ -2397,7 +2406,7 @@ static llvm::Function* importPrecompiledFunctionProto(chpl::ID fnId) {
 #endif
 
   fprintf(stderr, "After Module\n");
-  info->module->dump();
+  //info->module->dump();
 
   return ret;
 }
@@ -2427,8 +2436,8 @@ void FnSymbol::codegenPrototype() {
     fprintf(info->cfile, ";\n");
   } else {
 #ifdef HAVE_LLVM
-    if (hasFlag(FLAG_PRECOMPILED) && !astloc.id().isEmpty()) {
-      importPrecompiledFunctionProto(astloc.id());
+    if (shouldUsePrecompiled(this)) {
+      importPrecompiledFunctionProto(astloc.id(), cname);
       return;
     }
 
@@ -2668,7 +2677,7 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
-    if (hasFlag(FLAG_PRECOMPILED) && !astloc.id().isEmpty()) {
+    if (shouldUsePrecompiled(this)) {
       // the definition should have been imported along side the
       // declaration in codegenPrototype.
       return;
