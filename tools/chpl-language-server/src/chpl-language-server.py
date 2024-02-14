@@ -639,6 +639,7 @@ class ChapelLanguageServer(LanguageServer):
         self.literal_arg_inlays: bool = config.literal_arg_inlays
         self.param_inlays: bool = config.param_inlays
         self.dead_code: bool = config.dead_code
+        self.eval_expressions: bool = config.eval_expressions
 
         self._setup_regexes()
 
@@ -900,7 +901,7 @@ class ChapelLanguageServer(LanguageServer):
     def get_tooltip(
         self, node: chapel.AstNode, siblings: chapel.SiblingMap
     ) -> str:
-        signature = get_symbol_signature(node, resolve=ls.use_resolver)
+        signature = get_symbol_signature(node, eval_expressions=self.eval_expressions, resolve=self.use_resolver)
         docstring = chapel.get_docstring(node, siblings)
         text = f"```chapel\n{signature}\n```"
         if docstring:
@@ -959,6 +960,7 @@ def run_lsp():
     add_bool_flag("param-inlays", "param_inlays", True)
     add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
     add_bool_flag("dead-code", "dead_code", True)
+    add_bool_flag('evaluate-expressions', 'eval_expressions', True)
 
     server = ChapelLanguageServer(parser.parse_args())
 
