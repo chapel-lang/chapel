@@ -438,6 +438,10 @@ CLASS_BEGIN(FnCall)
   METHOD_PROTOTYPE(FnCall, actuals, "Get the actuals of this FnCall node")
   PLAIN_GETTER(FnCall, used_square_brackets, "Check if this FnCall was made using square brackets",
                bool, return node->callUsedSquareBrackets())
+  METHOD(FnCall, is_named_actual, "Check if the nth actual is named",
+         bool(int), return node->isNamedActual(std::get<0>(args)))
+  METHOD(FnCall, actual_name, "Get the name of an actual if used; otherwise an empty string",
+         UniqueString(int), return node->actualName(std::get<0>(args)))
 CLASS_END(FnCall)
 
 CLASS_BEGIN(OpCall)
