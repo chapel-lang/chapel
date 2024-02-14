@@ -101,11 +101,16 @@ from lsprotocol.types import (
     InlayHintParams,
     InlayHint,
     InlayHintLabelPart,
-    InlayHintKind
+    InlayHintKind,
 )
 from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
 from lsprotocol.types import TEXT_DOCUMENT_RENAME, RenameParams
-from lsprotocol.types import TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT, DocumentHighlightParams, DocumentHighlight, DocumentHighlightKind
+from lsprotocol.types import (
+    TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT,
+    DocumentHighlightParams,
+    DocumentHighlight,
+    DocumentHighlightKind,
+)
 
 import argparse
 import configargparse
@@ -649,12 +654,15 @@ class ChapelLanguageServer(LanguageServer):
                 position=decl.rng.end,
                 label="param value is " + str(param),
                 padding_left=True,
-                kind=InlayHintKind.Parameter
+                kind=InlayHintKind.Parameter,
             )
         ]
 
     def _get_type_inlays(
-        self, decl: NodeAndRange, qt: chapel.QualifiedType, siblings: chapel.SiblingMap
+        self,
+        decl: NodeAndRange,
+        qt: chapel.QualifiedType,
+        siblings: chapel.SiblingMap,
     ) -> List[InlayHint]:
         if not self.type_inlays:
             return []
@@ -687,11 +695,13 @@ class ChapelLanguageServer(LanguageServer):
                 text_edits=[
                     TextEdit(Range(name_rng.end, name_rng.end), type_str)
                 ],
-                kind=InlayHintKind.Type
+                kind=InlayHintKind.Type,
             )
         ]
 
-    def get_decl_inlays(self, decl: NodeAndRange, siblings: chapel.SiblingMap) -> List[InlayHint]:
+    def get_decl_inlays(
+        self, decl: NodeAndRange, siblings: chapel.SiblingMap
+    ) -> List[InlayHint]:
         if not self.use_resolver:
             return []
 
@@ -737,7 +747,9 @@ class ChapelLanguageServer(LanguageServer):
 
         return inlays
 
-    def get_tooltip(self, node: chapel.AstNode, siblings: chapel.SiblingMap) -> str:
+    def get_tooltip(
+        self, node: chapel.AstNode, siblings: chapel.SiblingMap
+    ) -> str:
         signature = get_symbol_signature(node)
         docstring = chapel.get_docstring(node, siblings)
         text = f"```chapel\n{signature}\n```"
@@ -1011,7 +1023,9 @@ def run_lsp():
         return inlays
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT)
-    async def document_highlight(ls: ChapelLanguageServer, params: DocumentHighlightParams):
+    async def document_highlight(
+        ls: ChapelLanguageServer, params: DocumentHighlightParams
+    ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
@@ -1021,9 +1035,13 @@ def run_lsp():
             return None
 
         # todo: it would be nice if this differentiated between read and write
-        highlights = [DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)]
+        highlights = [
+            DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+        ]
         for use in fi.uses_here[node_and_loc.node.unique_id()]:
-            highlights.append(DocumentHighlight(use.rng, DocumentHighlightKind.Text))
+            highlights.append(
+                DocumentHighlight(use.rng, DocumentHighlightKind.Text)
+            )
 
         return highlights
 
