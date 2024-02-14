@@ -4024,7 +4024,19 @@ static void fixupArrayDomainExpr(FnSymbol*                    fn,
       if (se->symbol() == queryDomain->sym) {
         SET_LINENO(se);
 
-        if (isArgSymbol(se->parentSymbol) || isInWhereBlock(fn, se)) {
+        // Grab the outermost containing block...
+        BlockStmt* block = nullptr;
+        for (Expr* tmp = se->parentExpr; tmp; tmp = tmp->parentExpr) {
+          if (isBlockStmt(tmp)) {
+            block = toBlockStmt(tmp);
+          }
+        }
+
+        // ... and check if we're in the return-expression or where-clause
+        bool isInRetExpr = block != nullptr && fn->retExprType == block;
+        bool isInWhere = block != nullptr && fn->where == block;
+
+        if (isArgSymbol(se->parentSymbol) || isInWhere || isInRetExpr) {
           // Need to use the call in arguments' expression and where-clauses
           se->replace(new CallExpr(".", formal, new_CStringSymbol("_dom")));
         } else {
