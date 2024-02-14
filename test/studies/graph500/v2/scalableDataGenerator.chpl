@@ -66,7 +66,6 @@ module Scalable_Graph_Generator
                                 n_raw_edges : int, ref Edges:[?ArrD] )
 
   {
-    use BlockDist;
     use Graph500_defs;
     use Random;
     use Time;
@@ -140,7 +139,7 @@ module Scalable_Graph_Generator
         var ndx2 = floor (1 + Unif_Random2(j) * n_vertices) : int;
 
 //     If the locations are not the same, then swap
-        if (ndx1 != ndx2){
+        if (ndx1 != ndx2) {
 
 //       If the first location is greater than the second, swap. Insures
 //       that the locations are locked in order, preventing deadlock
@@ -255,7 +254,7 @@ module Scalable_Graph_Generator
     graph_gen_time.clear();
     graph_gen_time.start();
 
-    forall e in ArrD with (ref Edges) do {
+    forall e in ArrD do {
       Edges(e).start = permutation (Edges(e).start).readFF();
       Edges(e).end   = permutation (Edges(e).end  ).readFF();
     }
@@ -277,7 +276,7 @@ module Scalable_Graph_Generator
      skip = Rand_Gen.next ();
      Rand_Gen.fill ( Unif_Random2 );
 
-     forall j in ArrD with (ref Edges) do
+     forall j in ArrD do
      {
 
 //     Choose two locations at random
