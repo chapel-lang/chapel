@@ -1,7 +1,0 @@
-bug: invalid memory accesses => valgrind/asan failure
-
-See, ex:
-  https://github.com/chapel-lang/chapel/pull/24353#issuecomment-1940350479
-
-2024-02: the valgrind/asan failure is intermittent, however more likely
-for --no-local

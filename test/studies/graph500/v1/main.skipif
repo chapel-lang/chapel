@@ -1,5 +1,0 @@
-# Intermittent failures for all other cases
-# 2024-02: the failures are intermittent even under valgrind.
-# If this makes testing noisy, we may want to notest this, ex:
-#   https://github.com/chapel-lang/chapel/pull/24353#issuecomment-1940350479
-CHPL_TEST_VGRND_EXE!=on

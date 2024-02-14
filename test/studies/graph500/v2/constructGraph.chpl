@@ -23,6 +23,12 @@ proc constructGraph(Edges:[?ArrD] , G)
         var v: vertex_id = e.end;
 
         if ( v != u ) then {
+          // The call to is_a_neighbor() in one task could be reading an array
+          // that is being concurrently resized by a call to add_Neighbor
+          // in another task, resulting in invalid memory reference.
+          // This does actually happen because the Neighbors arrays
+          // are pre-allocated so they never need resizing.
+          // The halt() in grow_helper() confirms this.
           if G.Vertices (u).is_a_neighbor(v) then {
             G.Vertices (u).add_duplicate();
           }
