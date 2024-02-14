@@ -898,7 +898,11 @@ class ChapelLanguageServer(LanguageServer):
     def get_tooltip(
         self, node: chapel.AstNode, siblings: chapel.SiblingMap
     ) -> str:
-        signature = get_symbol_signature(node, eval_expressions=self.eval_expressions, resolve=self.use_resolver)
+        signature = get_symbol_signature(
+            node,
+            eval_expressions=self.eval_expressions,
+            resolve=self.use_resolver,
+        )
         docstring = chapel.get_docstring(node, siblings)
         text = f"```chapel\n{signature}\n```"
         if docstring:
