@@ -20,7 +20,7 @@ config var filename = "test.txt";
 }
 
 {
-  var r = openReader(filename);
+  var r = openReader(filename, locking=false);
   var line: string;
   while r.readLine(line) {
     write(line);

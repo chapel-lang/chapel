@@ -32,7 +32,7 @@ config const k = 4;
 
 // read in the input sequence from the file infile and strip out newlines
 var sequence, line : string;
-var infile =  openReader(infilename);
+var infile =  openReader(infilename, locking=false);
 while infile.readLine(line, stripNewline=true) {
   sequence += line;
 }

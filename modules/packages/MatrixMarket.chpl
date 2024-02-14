@@ -204,7 +204,7 @@ class MMReader {
 
    proc init(const fname:string) {
       fd = open(fname, ioMode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
-      fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch);
+      fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch, locking=true);
    }
 
    proc read_header() {

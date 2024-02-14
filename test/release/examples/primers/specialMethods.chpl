@@ -189,13 +189,13 @@ proc ref R.deserialize(reader: fileReader(?),
 }
 
 {
-  var chW = openWriter(filename);
+  var chW = openWriter(filename, locking=false);
   chW.writeln(r);
   chW.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openReader(filename);
+  var chR = openReader(filename, locking=false);
   chR.readln(r2);
   assert(r == r2);
 }

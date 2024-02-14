@@ -263,7 +263,7 @@ proc process_json(fname: string, ref Pairs)
     var sub = spawn(["gunzip", "-c", fname], stdout=pipeStyle.pipe);
     process_json(sub.stdout, fname, Pairs);
   } else {
-    var logfile = openReader(fname);
+    var logfile = openReader(fname, locking=false);
     process_json(logfile, fname, Pairs);
   }
 }

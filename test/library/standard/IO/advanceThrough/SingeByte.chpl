@@ -1,7 +1,7 @@
 use IO;
 
-testAdvancePast(openReader("singleByteInput.txt"), ">");
-testAdvancePast(openReader("singleByteInput.txt"), b">");
+testAdvancePast(openReader("singleByteInput.txt", locking=false), ">");
+testAdvancePast(openReader("singleByteInput.txt", locking=false), b">");
 
 proc testAdvancePast(r, sep) {
   // advance past the delimiter
