@@ -4018,12 +4018,34 @@ static void fixupArrayDomainExpr(FnSymbol*                    fn,
                                  const std::vector<SymExpr*>& symExprs) {
   // : [?D]   -> defExpr('D')
   if (DefExpr* queryDomain = toDefExpr(domExpr)) {
+    VarSymbol* domRef = nullptr;
     // Walk the body of 'fn' and replace uses of 'D' with 'D'._dom
     for_vector(SymExpr, se, symExprs) {
       if (se->symbol() == queryDomain->sym) {
         SET_LINENO(se);
 
-        se->replace(new CallExpr(".", formal, new_CStringSymbol("_dom")));
+        if (isArgSymbol(se->parentSymbol) || isInWhereBlock(fn, se)) {
+          // Need to use the call in arguments' expression and where-clauses
+          se->replace(new CallExpr(".", formal, new_CStringSymbol("_dom")));
+        } else {
+          // Otherwise, create a temporary at the top of the function and use
+          // that in the function body.
+          if (domRef == nullptr) {
+            VarSymbol* vs = new VarSymbol(astr("_chpl__domain_expr_", queryDomain->sym->name));
+            vs->addFlag(FLAG_TEMP);
+            vs->addFlag(FLAG_REF_VAR);
+            vs->addFlag(FLAG_CONST);
+            vs->qual = QUAL_CONST_REF;
+
+            DefExpr* def = new DefExpr(vs, new CallExpr(".", formal, new_CStringSymbol("_dom")));
+            fn->insertAtHead(def);
+            normalizeVariableDefinition(def);
+
+            domRef = vs;
+          }
+
+          se->replace(new SymExpr(domRef));
+        }
       }
     }
 
