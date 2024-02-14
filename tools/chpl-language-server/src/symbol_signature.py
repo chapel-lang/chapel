@@ -17,11 +17,34 @@
 # limitations under the License.
 #
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 import chapel
 
 
-def get_symbol_signature(node: chapel.AstNode, eval_expressions: bool = True, resolve: bool = False) -> str:
+class SymbolSignature:
+    def __init__(self, node: chapel.AstNode):
+        self.node = node
+        self._signature = get_symbol_signature(self.node, False, False)
+
+    def compute_type(self):
+        """
+        if types aren't textually present, try to resolve them
+
+        Note: this is a temporary method that will go away when the resolver is fully online
+        """
+        self._signature = get_symbol_signature(self.node, False, True)
+
+    def compute_value(self):
+        """evaluate expressions"""
+        self._signature = get_symbol_signature(self.node, True, True)
+
+    def __str__(self) -> str:
+        return self._signature
+
+
+def get_symbol_signature(
+    node: chapel.AstNode, eval_expressions: bool = True, resolve: bool = False
+) -> str:
     """
     get a string representation of a AstNode's signature
 
@@ -30,9 +53,7 @@ def get_symbol_signature(node: chapel.AstNode, eval_expressions: bool = True, re
     if not isinstance(node, chapel.NamedDecl):
         return _node_to_string(node, eval_expressions, resolve)
 
-    if isinstance(node, chapel.Class) or isinstance(
-        node, chapel.Record
-    ):
+    if isinstance(node, chapel.Class) or isinstance(node, chapel.Record):
         return _record_class_to_string(node)
     elif isinstance(node, chapel.Interface):
         return f"interface {node.name()}"
@@ -48,7 +69,9 @@ def get_symbol_signature(node: chapel.AstNode, eval_expressions: bool = True, re
     return node.name()
 
 
-def _node_to_string(node: chapel.AstNode, eval_expressions: bool = True, resolve: bool = False) -> str:
+def _node_to_string(
+    node: chapel.AstNode, eval_expressions: bool = True, resolve: bool = False
+) -> str:
     """
     General helper method to convert an AstNode to a string representation. If
     it doesn't know how to convert the node, it returns "<...>"
@@ -74,9 +97,7 @@ def _node_to_string(node: chapel.AstNode, eval_expressions: bool = True, resolve
     return "<...>"
 
 
-def _record_class_to_string(
-    node: Union[chapel.Record, chapel.Class]
-) -> str:
+def _record_class_to_string(node: Union[chapel.Record, chapel.Class]) -> str:
     """
     Convert a Record or a Class to a string
     """
@@ -95,7 +116,11 @@ def _record_class_to_string(
     return f"{prefix}{keyword} {node.name()}{s}"
 
 
-def _var_to_string(node: chapel.VarLikeDecl, eval_expressions: bool = True, resolve: bool = False) -> str:
+def _var_to_string(
+    node: chapel.VarLikeDecl,
+    eval_expressions: bool = True,
+    resolve: bool = False,
+) -> str:
     """
     Convert a VarLikeDecl to a string
     """
@@ -181,7 +206,9 @@ def _intent_to_string(intent: Optional[str]) -> str:
     return remap.get(intent, intent) if intent else ""
 
 
-def get_symbol_type(node: chapel.AstNode, resolve: bool = False) -> Optional[str]:
+def get_symbol_type(
+    node: chapel.AstNode, resolve: bool = False
+) -> Optional[str]:
     """Get the type of a symbol"""
 
     qt = node.type() if resolve else None
@@ -198,9 +225,11 @@ def get_symbol_type(node: chapel.AstNode, resolve: bool = False) -> Optional[str
             return "<error>"
         return str(type_)
 
-def get_symbol_value(node: chapel.AstNode, eval_expressions: bool = True, resolve: bool = False) -> Optional[str]:
-    """Get the value of a symbol"""
 
+def get_symbol_value(
+    node: chapel.AstNode, eval_expressions: bool = True, resolve: bool = False
+) -> Optional[str]:
+    """Get the value of a symbol"""
 
     qt = node.type() if resolve and eval_expressions else None
 

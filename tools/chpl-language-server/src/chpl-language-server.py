@@ -34,7 +34,7 @@ from typing import (
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_left, bisect_right
-from symbol_signature import get_symbol_signature
+from symbol_signature import SymbolSignature
 import itertools
 import os
 import json
@@ -215,8 +215,10 @@ def get_symbol_information(
         # using symbol information for now, as it sort-of autogets the tree
         # structure
         is_deprecated = chapel.is_deprecated(decl)
-        name = get_symbol_signature(decl)
-        return SymbolInformation(loc, name, kind, deprecated=is_deprecated)
+        signature = SymbolSignature(decl)
+        return SymbolInformation(
+            loc, str(signature), kind, deprecated=is_deprecated
+        )
     return None
 
 
@@ -898,11 +900,12 @@ class ChapelLanguageServer(LanguageServer):
     def get_tooltip(
         self, node: chapel.AstNode, siblings: chapel.SiblingMap
     ) -> str:
-        signature = get_symbol_signature(
-            node,
-            eval_expressions=self.eval_expressions,
-            resolve=self.use_resolver,
-        )
+        signature = SymbolSignature(node)
+        if self.use_resolver:
+            signature.compute_type()
+            if self.eval_expressions:
+                signature.compute_value()
+
         docstring = chapel.get_docstring(node, siblings)
         text = f"```chapel\n{signature}\n```"
         if docstring:
