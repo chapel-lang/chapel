@@ -100,9 +100,12 @@ from lsprotocol.types import (
     TEXT_DOCUMENT_INLAY_HINT,
     InlayHintParams,
     InlayHint,
+    InlayHintLabelPart,
+    InlayHintKind
 )
 from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
 from lsprotocol.types import TEXT_DOCUMENT_RENAME, RenameParams
+from lsprotocol.types import TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT, DocumentHighlightParams, DocumentHighlight, DocumentHighlightKind
 
 import argparse
 import configargparse
@@ -646,11 +649,12 @@ class ChapelLanguageServer(LanguageServer):
                 position=decl.rng.end,
                 label="param value is " + str(param),
                 padding_left=True,
+                kind=InlayHintKind.Parameter
             )
         ]
 
     def _get_type_inlays(
-        self, decl: NodeAndRange, qt: chapel.QualifiedType
+        self, decl: NodeAndRange, qt: chapel.QualifiedType, siblings: chapel.SiblingMap
     ) -> List[InlayHint]:
         if not self.type_inlays:
             return []
@@ -667,17 +671,27 @@ class ChapelLanguageServer(LanguageServer):
 
         name_rng = location_to_range(decl.node.name_location())
         type_str = ": " + str(type_)
+        colon_label = InlayHintLabelPart(": ")
+        label = InlayHintLabelPart(str(type_))
+        if isinstance(type_, chapel.CompositeType):
+            typedecl = type_.decl()
+            text = self.get_tooltip(typedecl, siblings)
+            content = MarkupContent(MarkupKind.Markdown, text)
+            label.tooltip = content
+            label.location = location_to_location(typedecl.location())
+
         return [
             InlayHint(
                 position=name_rng.end,
-                label=type_str,
+                label=[colon_label, label],
                 text_edits=[
                     TextEdit(Range(name_rng.end, name_rng.end), type_str)
                 ],
+                kind=InlayHintKind.Type
             )
         ]
 
-    def get_decl_inlays(self, decl: NodeAndRange) -> List[InlayHint]:
+    def get_decl_inlays(self, decl: NodeAndRange, siblings: chapel.SiblingMap) -> List[InlayHint]:
         if not self.use_resolver:
             return []
 
@@ -687,7 +701,7 @@ class ChapelLanguageServer(LanguageServer):
 
         inlays = []
         inlays.extend(self._get_param_inlays(decl, qt))
-        inlays.extend(self._get_type_inlays(decl, qt))
+        inlays.extend(self._get_type_inlays(decl, qt, siblings))
         return inlays
 
     def get_call_inlays(self, call: chapel.FnCall) -> List[InlayHint]:
@@ -722,6 +736,14 @@ class ChapelLanguageServer(LanguageServer):
             )
 
         return inlays
+
+    def get_tooltip(self, node: chapel.AstNode, siblings: chapel.SiblingMap) -> str:
+        signature = get_symbol_signature(node)
+        docstring = chapel.get_docstring(node, siblings)
+        text = f"```chapel\n{signature}\n```"
+        if docstring:
+            text += f"\n---\n{docstring}"
+        return text
 
 
 def run_lsp():
@@ -872,11 +894,7 @@ def run_lsp():
         resolved_to = segment.resolved_to
         node_fi, _ = ls.get_file_info(resolved_to.get_uri())
 
-        signature = get_symbol_signature(resolved_to.node)
-        docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
-        text = f"```chapel\n{signature}\n```"
-        if docstring:
-            text += f"\n---\n{docstring}"
+        text = ls.get_tooltip(resolved_to.node, node_fi.siblings)
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=resolved_to.get_location().range)
 
@@ -985,12 +1003,29 @@ def run_lsp():
         inlays: List[InlayHint] = []
         with fi.context.context.track_errors() as _:
             for decl in decls:
-                inlays.extend(ls.get_decl_inlays(decl))
+                inlays.extend(ls.get_decl_inlays(decl, fi.siblings))
 
             for call in calls:
                 inlays.extend(ls.get_call_inlays(call))
 
         return inlays
+
+    @server.feature(TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT)
+    async def document_highlight(ls: ChapelLanguageServer, params: DocumentHighlightParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        if not node_and_loc:
+            return None
+
+        # todo: it would be nice if this differentiated between read and write
+        highlights = [DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)]
+        for use in fi.uses_here[node_and_loc.node.unique_id()]:
+            highlights.append(DocumentHighlight(use.rng, DocumentHighlightKind.Text))
+
+        return highlights
 
     server.start_io()
 
