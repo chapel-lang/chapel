@@ -101,7 +101,6 @@ from lsprotocol.types import (
     InlayHintParams,
     InlayHint,
     InlayHintLabelPart,
-    InlayHintKind,
 )
 from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
 from lsprotocol.types import TEXT_DOCUMENT_RENAME, RenameParams
@@ -654,7 +653,6 @@ class ChapelLanguageServer(LanguageServer):
                 position=decl.rng.end,
                 label="param value is " + str(param),
                 padding_left=True,
-                kind=InlayHintKind.Parameter,
             )
         ]
 
@@ -695,7 +693,6 @@ class ChapelLanguageServer(LanguageServer):
                 text_edits=[
                     TextEdit(Range(name_rng.end, name_rng.end), type_str)
                 ],
-                kind=InlayHintKind.Type,
             )
         ]
 
