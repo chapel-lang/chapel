@@ -64,7 +64,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
                 skipCheck: bool, projectHome: string, tf="Mason.toml") throws {
 
   const tomlPath = '/'.join(projectHome, tf);
-  const openFile = openReader(tomlPath);
+  const openFile = openReader(tomlPath, locking=false);
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
 
@@ -258,7 +258,7 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
 /* Generate the modified Mason.toml */
 proc generateToml(toml: borrowed Toml, tomlPath: string) {
   const tomlFile = open(tomlPath, ioMode.cw);
-  const tomlWriter = tomlFile.writer();
+  const tomlWriter = tomlFile.writer(locking=false);
   tomlWriter.writeln(toml);
   tomlWriter.close();
   tomlFile.close();

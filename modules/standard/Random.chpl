@@ -135,7 +135,7 @@ module Random {
     // TODO: separate the "`/dev/urandom` doesn't exist" error handling from the
     //        readBits error handling
     try {
-      IO.openReader("/dev/urandom", region=0..<8).readBits(randomBits, 64);
+      IO.openReader("/dev/urandom", region=0..<8, locking=false).readBits(randomBits, 64);
     } catch {
       // may not be able to open /dev/urandom, ignore this step
     }
