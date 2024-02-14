@@ -10,8 +10,8 @@ module CSVtest {
     try {
       // read and write using a tuple. The type arguments to `read` define
       // the types in each row.
-      var myReader = if infile == "" then stdin else openReader(infile, locking=false);
-      var myWriter = if outfile == "" then stdout else openWriter(outfile, locking=false);
+      var myReader = if infile == "" then stdin else openReader(infile, locking=true);
+      var myWriter = if outfile == "" then stdout else openWriter(outfile, locking=true);
       var r = new CSVIO(myReader, hasHeader=false);
       var w = new CSVIO(myWriter);
       var myData = r.read((...(4*real)), string);

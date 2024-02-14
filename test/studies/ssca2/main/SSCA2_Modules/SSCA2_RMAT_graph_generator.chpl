@@ -355,7 +355,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
      if rmatEdgeGenFile != "" {
       writeln("writing edges to ", rmatEdgeGenFile);
       const fl = open(rmatEdgeGenFile, ioMode.cw);
-      const ch = fl.writer();
+      const ch = fl.writer(locking=false);
       for (ed, w) in zip(Edges, Edge_Weight) do
         ch.writeln (ed.start, " ", ed.end, " ", w);
       ch.close();

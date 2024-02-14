@@ -7,7 +7,7 @@ module dissimilarity {
 
     // Open an input file with the specified filename in read mode.
     var infile = open(filename, ioMode.r);
-    var reader = infile.reader();
+    var reader = infile.reader(locking=false);
 
     // Read the number of rows and columns in the array in from the file.
     var m = reader.read(int);

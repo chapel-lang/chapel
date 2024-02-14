@@ -3,7 +3,7 @@ binaryFormat.chpl:10: In function 'main':
 binaryFormat.chpl:16: warning: binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'write':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  binaryFormat.chpl:17: called as (fileWriter(true,binarySerializer)).write(args(0): string)
+  binaryFormat.chpl:17: called as (fileWriter(false,binarySerializer)).write(args(0): string)
 binaryFormat.chpl:10: In function 'main':
 binaryFormat.chpl:23: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_readInner':
@@ -13,9 +13,9 @@ $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format
   within internal functions (use --print-callstack-on-error to see)
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as canResolveMethod(obj: owned C, param fname = "deserialize", args(0): fileReader(false,binaryDeserializer), args(1): binaryDeserializer) from method 'deserializeValue'
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as binaryDeserializer.deserializeValue(reader: fileReader(false,binaryDeserializer), val: owned C) from method '_deserializeOne'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,binaryDeserializer))._deserializeOne(x: owned C, loc: locale) from method '_readInner'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,binaryDeserializer))._readInner(args(0): owned C) from method 'read'
-  binaryFormat.chpl:23: called as (fileReader(true,binaryDeserializer)).read(args(0): owned C)
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(false,binaryDeserializer))._deserializeOne(x: owned C, loc: locale) from method '_readInner'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(false,binaryDeserializer))._readInner(args(0): owned C) from method 'read'
+  binaryFormat.chpl:23: called as (fileReader(false,binaryDeserializer)).read(args(0): owned C)
 binaryFormat.chpl:10: In function 'main':
 binaryFormat.chpl:38: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
 ----- WRITING -----

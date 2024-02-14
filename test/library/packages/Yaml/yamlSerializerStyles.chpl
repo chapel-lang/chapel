@@ -19,7 +19,8 @@ var a = sout.writer(
         YamlMappingStyle.Block,
         YamlScalarStyle.SingleQuoted,
         YamlDocumentStyle.Explicit
-        )
+        ),
+        locking=false
       );
 
 var b = sout.writer(
@@ -28,7 +29,8 @@ var b = sout.writer(
         YamlMappingStyle.Flow,
         YamlScalarStyle.Plain,
         YamlDocumentStyle.Implicit
-        )
+        ),
+        locking=false
       );
 
 var c = sout.writer(
@@ -37,7 +39,8 @@ var c = sout.writer(
         YamlMappingStyle.Flow,
         YamlScalarStyle.Folded,
         YamlDocumentStyle.Explicit
-        )
+        ),
+        locking=false
       );
 
 var d = sout.writer(serializer = new yamlSerializer(), locking=false);
