@@ -31,7 +31,7 @@ use Random;
 
   var rs = new randomStream(real, seed=315);
 
-  forall (i, r) in zip({1..n}, rs.iterate({1..n})) with (ref B) do
+  forall (i, r) in zip({1..n}, rs.next({1..n})) with (ref B) do
     B(i) = r;
 
   writeln(B);
@@ -42,7 +42,7 @@ use Random;
 
   var rs = new randomStream(real, seed=315);
 
-  forall (f, r) in zip(foo(n), rs.iterate({1..n})) with (ref B) do
+  forall (f, r) in zip(foo(n), rs.next({1..n})) with (ref B) do
     B(f) = r;
 
   writeln(B);

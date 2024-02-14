@@ -429,7 +429,7 @@ struct TestFunctionFinder {
     // The function also needs to be concrete.
     const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn);
     const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-    if (sig->needsInstantiation()) return false;
+    if (sig == nullptr || sig->needsInstantiation()) return false;
 
     if (canPass(context, testType, sig->formalType(0)).passes()) {
       // One formal of 'testType', which constitutes a test.

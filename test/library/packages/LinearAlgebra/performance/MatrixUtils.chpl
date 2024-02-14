@@ -22,8 +22,8 @@ proc populate(ref A, ref ADom, nnz: int, seed: int) where isCSArr(A) {
     // Ensure no duplicates
     var newIdx = idx;
     while (maxloc reduce zip(indices == newIdx, indices.domain))(0) {
-      newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high),
-                randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
+      newIdx = (randomIndices.next(ADom.dim(0).low, ADom.dim(0).high),
+                randomIndices.next(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
   }
@@ -32,6 +32,6 @@ proc populate(ref A, ref ADom, nnz: int, seed: int) where isCSArr(A) {
 
   var randomReals = new randomStream(eltType=real, seed=seed);
   for idx in ADom {
-    A[idx] = 2.0; //randomReals.getNext();
+    A[idx] = 2.0; //randomReals.next();
   }
 }

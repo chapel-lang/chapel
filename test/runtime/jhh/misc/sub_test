@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Runs all *.py files in the current directory.
+
+dirs=$CHPL_HOME/util/chplenv:$CHPL_HOME/util/test
+export PYTHONPATH=${PYTHONPATH:+${PYTHONPATH}:}$dirs
+
+export PATH=${PATH:+${PATH}:}$CHPL_HOME/util/config
+
+for file in *.py; do
+    python3 $file $@
+done

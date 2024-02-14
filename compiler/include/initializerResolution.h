@@ -35,7 +35,12 @@ class CallExpr;
 class FnSymbol;
 class Type;
 
-FnSymbol* resolveInitializer(CallExpr* call);
+/*  If 'emitCallResolutionErrors' is 'false', then errors emitted when
+    no candidates were found will be suppressed as best as possible.
+    This enables speculative resolution of default-initializers
+    (see #24383). */
+FnSymbol*
+resolveInitializer(CallExpr* call, bool emitCallResolutionErrors);
 void resolveNewInitializer(CallExpr* call, Type* manager = NULL);
 
 #endif

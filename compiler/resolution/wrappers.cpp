@@ -1571,10 +1571,18 @@ static void addArgCoercion(FnSymbol*  fn,
         prevActual->isParameter()) {
       castTemp->addFlag(FLAG_REF_TO_CONST);
     }
-
   } else if (ats->hasFlag(FLAG_REF) &&
-             !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
-               formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
+             ats->getValType()->symbol->hasFlag(FLAG_C_ARRAY) &&
+             fts->getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    // Deliberately fall through to the common case of adding a cast.
+    // Otherwise, we would deref and copy the actual c_array, which leads
+    // to the incorrect semantics (in C, an array should decay to a
+    // pointer to the array's first element).
+    castCall = nullptr;
+    addedCast = false;
+  } else if (ats->hasFlag(FLAG_REF) &&
+             !ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             !formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
 
     AggregateType* at = toAggregateType(ats->getValType());
 

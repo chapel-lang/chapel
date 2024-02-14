@@ -1,3 +1,0 @@
-depReaderWriter.chpl:1: warning: URL is unstable
-depReaderWriter.chpl:10: warning: openUrlReader with a style and/or kind argument is deprecated
-depReaderWriter.chpl:11: warning: openUrlWriter with a style and/or kind argument is deprecated

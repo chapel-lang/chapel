@@ -174,4 +174,4 @@ proc findSeqStart(buff, inds, ref ltLoc) {
 inline proc join(i: uint(16), j) {
   return i << 8 | j;
 }
-use Compat;
+use Compat, CompatIOKind;
