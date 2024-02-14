@@ -1,0 +1,7 @@
+using Prime Generator parameters for P13
+segment size = 1572864 resgroups; seg array is [1 x 24576] 64-bits
+twinprime candidates = 494505495990; resgroups = 333000334
+each of 1485 threads has nextp[2 x 227641] array
+1485 of 1485 twinpairs done
+last segment = 1126030 resgroups; segment slices = 212
+total twins = 15834664872; last twin = 9999999998490+/-1

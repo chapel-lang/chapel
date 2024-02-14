@@ -1,10 +1,10 @@
                             # twinprimes_ssoz.good
 --high=1_000_000            # twinprimes_ssoz.good
---high=10_000_000_000       # twinprimes_ssoz-10B.good
---high=50_000_000_000       # twinprimes_ssoz-50B.good
---high=100_000_000_000      # twinprimes_ssoz-100B.good
---high=500_000_000_000      # twinprimes_ssoz-500B.good
---high=1_000_000_000_000    # twinprimes_ssoz-1T.good
---high=5_000_000_000_000    # twinprimes_ssoz-5T.good
---high=10_000_000_000_000   # twinprimes_ssoz-10T.good
+--high=10_000_000_000       # twinprimes_ssoz-10T.good
+--high=50_000_000_000       # twinprimes_ssoz-50T.good
+--high=100_000_000_000      # twinprimes_ssoz-100T.good
+--high=500_000_000_000      # twinprimes_ssoz-500T.good
+--high=1_000_000_000_000    # twinprimes_ssoz-1Q.good
+--high=5_000_000_000_000    # twinprimes_ssoz-5Q.good
+--high=10_000_000_000_000   # twinprimes_ssoz-10Q.good
 

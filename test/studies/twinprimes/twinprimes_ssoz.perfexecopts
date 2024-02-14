@@ -1,8 +1,8 @@
---high=10_000_000_000       # twinprimes_ssoz-10B
---high=50_000_000_000       # twinprimes_ssoz-50B
---high=100_000_000_000      # twinprimes_ssoz-100B
---high=500_000_000_000      # twinprimes_ssoz-500B
---high=1_000_000_000_000    # twinprimes_ssoz-1T
---high=5_000_000_000_000    # twinprimes_ssoz-5T
---high=10_000_000_000_000   # twinprimes_ssoz-10T
+--high=10_000_000_000       # twinprimes_ssoz-10T
+--high=50_000_000_000       # twinprimes_ssoz-50T
+--high=100_000_000_000      # twinprimes_ssoz-100T
+--high=500_000_000_000      # twinprimes_ssoz-500T
+--high=1_000_000_000_000    # twinprimes_ssoz-1Q
+--high=5_000_000_000_000    # twinprimes_ssoz-5Q
+--high=10_000_000_000_000   # twinprimes_ssoz-10Q
 

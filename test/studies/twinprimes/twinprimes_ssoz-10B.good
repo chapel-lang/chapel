@@ -1,7 +1,0 @@
-using Prime Generator parameters for P11
-segment size = 262144 resgroups; seg array is [1 x 4096] 64-bits
-twinprime candidates = 584415675; resgroups = 4329005
-each of 135 threads has nextp[2 x 9587] array
-135 of 135 twinpairs done
-last segment = 134701 resgroups; segment slices = 17
-total twins = 27412679; last twin = 9999999702+/-1
