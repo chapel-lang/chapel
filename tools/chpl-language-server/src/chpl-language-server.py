@@ -1090,12 +1090,12 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
-
         segment = fi.get_use_or_def_segment_at_position(params.position)
         if not segment:
             return None
+        node_fi, _ = ls.get_file_info(segment.get_uri())
 
-        text = ls.get_tooltip(resolved_to.node, node_fi.siblings)
+        text = ls.get_tooltip(segment.node, node_fi.siblings)
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=segment.get_location().range)
 
