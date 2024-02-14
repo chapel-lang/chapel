@@ -5,14 +5,14 @@ module Create_Parent_Tree
 {
 use Graph500_defs;
 
-proc BFS ( root : vertex_id, ParentTree, G )
+proc BFS ( root : vertex_id, ref ParentTree, G )
 {
 
   type Vertex_List = domain ( vertex_id );
   var visited : [vertex_domain] sync int = -1;
 
-  var Active_Level = new Level_Set (Vertex_List);
-  var Next_Level = new Level_Set (Vertex_List);
+  var Active_Level = new unmanaged Level_Set (Vertex_List);
+  var Next_Level = new unmanaged Level_Set (Vertex_List);
 
 // Lock currently needed as associative domain add is not thread safe
 
@@ -54,14 +54,17 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
 //    writeln("Active Level is ",Active_Level);
 
+    delete Active_Level;
     Active_Level = Next_Level;
-    Next_Level = new Level_Set (Vertex_List);
+    Next_Level = new unmanaged Level_Set (Vertex_List);
 
     Next_Level.Members.clear ();
     Next_Level.previous = Active_Level;
 
   }
 //  writeln("Active Level is ",Active_Level);
+  delete Active_Level;
+  delete Next_Level;
 }
 
 

@@ -45,7 +45,7 @@ proc generateRandom(ref pp : []WeightedParticle3D) {
   var x,y,z : real;
   var rng = new randomStream(eltType=real);
   for ip in pp {
-    x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z=rng.getNext()*1000.0;
+    x = rng.next()*1000.0; y = rng.next()*1000.0; z=rng.next()*1000.0;
     ip.x = (x,y,z);
     ip.w = 1.0;
     ip.r2 = x**2 + y**2 + z**2;

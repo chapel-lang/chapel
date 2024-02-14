@@ -531,8 +531,8 @@ where D.rank == 2
   var columnMap : [D.dim(1)] D.idxType = D.dim(1);
   //use seed to create two new seeds, one for each shuffle
   var randStreamSeeded = new randomStream(int, seed);
-  const seed1 = randStreamSeeded.getNext() | 1;
-  const seed2 = randStreamSeeded.getNext() | 1;
+  const seed1 = randStreamSeeded.next() | 1;
+  const seed2 = randStreamSeeded.next() | 1;
   shuffle( rowMap, seed = seed1 );
   shuffle( columnMap , seed = seed2);
   return new shared PermutationMap( rowMap, columnMap );
@@ -613,7 +613,7 @@ proc createSparseUpperTriangluarIndexList(
       var totalAdded = 0;
       while totalAdded < numberNonZerosAddedInStrictlyUT {
         // get random row
-        var row = (abs( random.getNext() ) % (high-1)) + 1;
+        var row = (abs( random.next() ) % (high-1)) + 1;
         // if row is not filled, add
         if rowCount[row] < high-row{
           rowCount[row] += 1;
@@ -648,7 +648,7 @@ proc createSparseUpperTriangluarIndexList(
         var bagOfIndices : domain(D.idxType);
         while rowCount[row] > 0 {
           // random column in range row+1 .. high
-          var column = (abs( localRandom.getNext() ) % (high-row)) + row+1;
+          var column = (abs( localRandom.next() ) % (high-row)) + row+1;
           // if not already in our index set, add it
           if !bagOfIndices.contains( column ) {
             bagOfIndices += column; // add to set

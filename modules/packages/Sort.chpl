@@ -1763,7 +1763,7 @@ module SampleSortHelp {
     while numSamples > 0 {
       numSamples -= 1;
 
-      var offset = randNums.getNext(start_n, end_n);
+      var offset = randNums.next(start_n, end_n);
       if offset != start_n {
         // A[start_n] <=> A[offset] but with shallow copy.
         var tmp: A.eltType;

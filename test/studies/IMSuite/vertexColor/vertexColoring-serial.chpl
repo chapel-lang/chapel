@@ -214,7 +214,7 @@ module vertexColoring {
        for k in 1..3 {
             var x = 6-k;
             var randStream = new randomStream(real, 3);
-            var ncolor : int = randStream.getNext(): int;
+            var ncolor : int = randStream.next(): int;
             ncolor = ncolor%3;
             shiftDown();
             if(nodeSet[root]!.color == ncolor) then ncolor = (ncolor+1)%3;

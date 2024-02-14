@@ -4,7 +4,6 @@
 module Graph500_main
 {
   proc main () {
-
   use BlockDist;
   use Time;
   use Random;
@@ -52,8 +51,7 @@ module Graph500_main
  if ENABLE_PRINTOUTS then
   writeln("Time for Scalable Data Generator = ", generation_time.elapsed()); 
 
-// Check min/max Node ID's
-
+    // Check min/max Node ID's
   var min_vertex_ID_start = min reduce Edges.start;
   var min_vertex_ID_end = min reduce Edges.end;
   var max_vertex_ID_start = max reduce Edges.start;
@@ -73,6 +71,7 @@ module Graph500_main
   constructGraph (Edges, G);
 
   construction_time.stop();
+
  if ENABLE_PRINTOUTS then
   writeln("Kernel 1, Graph Construction Time = ", construction_time.elapsed()); 
 
@@ -91,12 +90,12 @@ module Graph500_main
   while ( (runID <= NUMROOTS) && (candidate <= NUM_CANDIDATES )) do
   {
      root = floor (1+ Unif_Random[candidate]* N_VERTICES): vertex_id;
+
     if ENABLE_PRINTOUTS then
      writeln("Candidate root = ", root);
 
      // Verify that root is a valid candidate, ie has at least one edge
      if ( G.Vertices[root].neighbor_count > 0 ){
-
        BFS_time[runID].start(); 
        BFS ( root, ParentTree, G);
        BFS_time[runID].stop(); 
@@ -115,15 +114,14 @@ module Graph500_main
 
        runID += 1; candidate += 1;
        ParentTree = -1;
-       
      }
      else
      {
        if ENABLE_PRINTOUTS then
         writeln("Root not a valid candidate");
+
         candidate += 1;
      }
-
   }
 
       output_results (SCALE, N_VERTICES, EDGEFACTOR, A, B, C, D,
@@ -136,5 +134,4 @@ module Graph500_main
 proc Graph500main() {
   main();
 }
-
 }

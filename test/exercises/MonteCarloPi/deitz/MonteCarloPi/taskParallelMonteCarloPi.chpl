@@ -37,7 +37,7 @@ coforall task in 1..tasks with (ref counts) {
   var rs = new randomStream(real, seed + task*2);
   var count = 0;
   for i in (task-1)*n/tasks+1..task*n/tasks do
-    count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
+    count += rs.next()**2 + rs.next()**2 <= 1.0;
   counts[task] = count;
 }
 

@@ -13,7 +13,7 @@ var myRand = new randomStream(real, seed=314159265);
 
 // Return a random number on the range [1, n]
 proc getRand(n: int) {
-  return (myRand.getNext()*max(int)):int%n+1;
+  return (myRand.next()*max(int)):int%n+1;
 }
 
 

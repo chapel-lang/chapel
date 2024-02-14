@@ -1,0 +1,1 @@
+testBadNth.chpl:5: error: halt reached - cannot skip to a negative position: -1 in the random stream

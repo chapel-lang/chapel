@@ -495,11 +495,11 @@ proc initRands() {
       then new randomStream(real, seed)
       else new randomStream(real);
     for u in rands.urand do
-      u(X) = rng.getNext() - 0.5;
+      u(X) = rng.next() - 0.5;
     for u in rands.urand do
-      u(Y) = rng.getNext() - 0.5;
+      u(Y) = rng.next() - 0.5;
     for r in rands.irand do
-      r = (nran * rng.getNext()): int;
+      r = (nran * rng.next()): int;
   }
 
   return rands;

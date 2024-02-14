@@ -205,7 +205,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
   try! {
     const packageLocation = absPath(here.cwd());
     var stream = new randomStream(int, false);
-    var uniqueDir = stream.getNext(): string;
+    var uniqueDir = stream.next(): string;
     const name = getPackageName();
     var safeDir = '';
 

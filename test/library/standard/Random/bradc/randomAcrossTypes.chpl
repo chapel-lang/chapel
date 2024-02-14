@@ -45,32 +45,19 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-//
-// Check getNth() method
-//
-for i in 1..8 {
-  A[i] = rs4.getNth(i-1);
-  B[i] = rs5.getNth(i-1);
-}
-for i in 1..4 {
-  C[i] = rs6.getNth(i-1);
-}
-writeln(A);
-writeln(B);
-writeln(C);
 
 //
-// Check skipToNth()/getNext() methods
+// Check skipTo()/next() methods
 //
 for i in 1..8 {
-  rs4.skipToNth(i-1);
-  A[i] = rs4.getNext();
-  rs5.skipToNth(i-1);
-  B[i] = rs5.getNext();
+  rs4.skipTo(i-1);
+  A[i] = rs4.next();
+  rs5.skipTo(i-1);
+  B[i] = rs5.next();
 }
 for i in 1..4 {
-  rs6.skipToNth(i-1);
-  C[i] = rs6.getNext();
+  rs6.skipTo(i-1);
+  C[i] = rs6.next();
 }
 writeln(A);
 writeln(B);
@@ -80,14 +67,14 @@ var rs7 = new randomStream(seed=314159265, eltType=real);
 var rs8 = new randomStream(seed=314159265, eltType=imag);
 var rs9 = new randomStream(seed=314159265, eltType=complex);
 //
-// Check getNext() method
+// Check next() method
 //
 for i in 1..8 {
-  A[i] = rs7.getNext();
-  B[i] = rs8.getNext();
+  A[i] = rs7.next();
+  B[i] = rs8.next();
 }
 for i in 1..4 {
-  C[i] = rs9.getNext();
+  C[i] = rs9.next();
 }
 writeln(A);
 writeln(B);

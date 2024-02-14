@@ -16,7 +16,7 @@ var randStr2 = new randomStream(real, 314159265);
 randStr1.fill(A);
 
 for b in B do
-  b = randStr2.getNext();
+  b = randStr2.next();
 
 for (i,a,b) in zip(ProblemSpace,A,B) {
   if (a != b) then

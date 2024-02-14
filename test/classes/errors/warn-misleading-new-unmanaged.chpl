@@ -35,21 +35,21 @@ proc test2() {
   // warn
   var x: borrowed C = new unmanaged C();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
 }
 test2();
 proc test2n() {
   // warn
   var x: borrowed C? = new unmanaged C();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
 }
 test2n();
 proc test2nn() {
   // warn
   var x: borrowed C? = new unmanaged C?();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
 }
 test2nn();
 
@@ -58,7 +58,7 @@ proc test3() {
   var x: borrowed C;
   x = new unmanaged C();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
 }
 test3();
 proc test3n() {
@@ -66,7 +66,7 @@ proc test3n() {
   var x: borrowed C?;
   x = new unmanaged C();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
 }
 test3n();
 proc test3nn() {
@@ -74,7 +74,7 @@ proc test3nn() {
   var x: borrowed C?;
   x = new unmanaged C?();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
 }
 test3nn();
 
@@ -86,7 +86,7 @@ proc test4() {
   // warn
   x = new unmanaged C();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
   delete myUnmanaged;
 }
 test4();
@@ -98,7 +98,7 @@ proc test4n() {
   // warn
   x = new unmanaged C();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
   delete myUnmanaged;
 }
 test4n();
@@ -110,7 +110,7 @@ proc test4nn() {
   // warn
   x = new unmanaged C?();
 
-  delete (_to_unmanaged(x));
+  delete (x: unmanaged);
   delete myUnmanaged;
 }
 test4nn();

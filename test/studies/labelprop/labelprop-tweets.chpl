@@ -503,7 +503,7 @@ proc create_and_analyze_graph(ref Pairs)
       var tiebreaker = new randomStream(seed+vid, eltType=bool);
 
       for (count,lab) in zip(counts, counts.domain) {
-        if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
+        if count > maxcount || (count == maxcount && tiebreaker.next()) {
           maxcount = count;
           maxlabel = lab;
         }
