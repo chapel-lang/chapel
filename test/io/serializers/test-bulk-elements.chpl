@@ -70,7 +70,7 @@ proc main() {
   var A : [1..10] int = 1..10;
 
   var f = openMemFile();
-  f.writer(serializer=new Serializer()).write(A);
+  f.writer(serializer=new Serializer(), locking=false).write(A);
 
-  var X = f.reader(deserializer=new Deserializer()).read(A.type);
+  var X = f.reader(deserializer=new Deserializer(), locking=false).read(A.type);
 }

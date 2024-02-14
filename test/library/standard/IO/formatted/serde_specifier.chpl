@@ -17,9 +17,9 @@ record R : writeSerializable, readDeserializable {
 var f = open("test.txt", ioMode.cwr),
     r = new R(1);
 
-f.writer().writef("an R: %?\n", r);
+f.writer(locking=false).writef("an R: %?\n", r);
 
 var r2 = new R(2);
-f.reader().readf("an R: %?\n", r2);
+f.reader(locking=false).readf("an R: %?\n", r2);
 
 writeln(r == r2);

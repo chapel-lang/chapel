@@ -36,12 +36,12 @@ class mything : serializable {
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var ownB = new owned mything(2);
   var b = ownB.borrow();

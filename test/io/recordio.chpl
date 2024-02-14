@@ -31,7 +31,7 @@ var B: [0..#3] MyRecord;
 
 {
   // Create a writer that we'll use to write the data.
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
 
   // Now let's write the records in a particular format:
   // 1 line per record
@@ -55,7 +55,7 @@ var B: [0..#3] MyRecord;
 
 // Now read the data. Way 1: use formatted I/O
 {
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   var rec:MyRecord;
   var i = 0;
@@ -118,7 +118,7 @@ proc MyRecord.init(r: fileReader(?)) throws {
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   var rec:MyRecord;
   var i = 0;

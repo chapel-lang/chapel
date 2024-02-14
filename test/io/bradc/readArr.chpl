@@ -3,7 +3,7 @@ use IO;
 config const filename = "Arr.dat";
 
 var infile = open(filename, ioMode.r);
-var reader = infile.reader();
+var reader = infile.reader(locking=false);
 
 var (numElems, A) = readArray(reader);
 var (numElems2, B) = readArray(reader);

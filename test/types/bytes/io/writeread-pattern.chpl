@@ -33,14 +33,14 @@ proc test(byteRange) {
 
   {
     // write them to a channel
-    var bytesWriter = bytesChannel.writer();
+    var bytesWriter = bytesChannel.writer(locking=false);
     bytesWriter.write(randomBytes);
     bytesWriter.close();
   }
 
   {
     // read them into a different object
-    var bytesReader = bytesChannel.reader();
+    var bytesReader = bytesChannel.reader(locking=false);
     var readBytes = bytesReader.readAll(bytes);
     bytesReader.close();
     // compare
@@ -54,14 +54,14 @@ proc test(byteRange) {
 
   {
     // write them to a channel
-    var bytesWriter = bytesChannel.writer();
+    var bytesWriter = bytesChannel.writer(locking=false);
     bytesWriter.writef("%|*s", randomBytes.size, randomBytes);
     bytesWriter.close();
   }
 
   {
     // read them into a different object
-    var bytesReader = bytesChannel.reader();
+    var bytesReader = bytesChannel.reader(locking=false);
     var readBytes = b"";
     var readLen = randomBytes.size;
     bytesReader.readf("%|*s", readLen, readBytes);

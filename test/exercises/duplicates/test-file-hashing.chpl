@@ -19,7 +19,7 @@ proc printHashOfN(n:int) {
   // Fill out the "a"s file
   {
     var f = open(path, ioMode.cwr);
-    var w = f.writer();
+    var w = f.writer(locking=false);
     for i in 1..n {
       w.write("a");
     }

@@ -77,19 +77,19 @@ proc getType() type {
 }
 
 proc doWrite(f, val) {
-  f.writer().write(val);
+  f.writer(locking=false).write(val);
 }
 
 proc doDeserialize(f, val) {
-  f.writer().write("(x = ", val.x, ")");
+  f.writer(locking=false).write("(x = ", val.x, ")");
   var x : val.type;
-  f.reader().read(x);
+  f.reader(locking=false).read(x);
   assert(x.x == 10);
 }
 
 proc doInit(f, val) {
-  f.writer().write("(x = ", val.x, ")");
-  var x = f.reader().read(val.type);
+  f.writer(locking=false).write("(x = ", val.x, ")");
+  var x = f.reader(locking=false).read(val.type);
   assert(x.x == 10);
 }
 

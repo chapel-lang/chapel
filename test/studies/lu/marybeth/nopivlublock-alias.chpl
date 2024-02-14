@@ -96,7 +96,7 @@ proc initA(ref A,filename:string){
 // Very expensive, but easy way to permute the matrix
 // so that pivoting isn't needed.
 
-var Adat = open(filename,ioMode.r).reader();
+var Adat = open(filename,ioMode.r).reader(locking=false);
 var P, temp: [A.domain] real;
 
 for ij in A.domain {

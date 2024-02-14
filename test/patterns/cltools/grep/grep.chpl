@@ -38,7 +38,7 @@ proc fileGrep(toFind: string, fname: string) throws {
   try! {
     toRead = open(fname, ioMode.r);
   }
-  var r = toRead.reader();
+  var r = toRead.reader(locking=false);
   defer {
     try! r.close();  // close file
   }

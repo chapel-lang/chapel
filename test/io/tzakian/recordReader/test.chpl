@@ -10,8 +10,8 @@ if no_mmap {
 
 var f = open("input1.txt", ioMode.rw);
 var ff = open("input2_beer.txt", ioMode.rw, hints=hints);
-var fr = f.reader();
-var ffr = ff.reader();
+var fr = f.reader(locking=false);
+var ffr = ff.reader(locking=false);
 
 record Bar {
   var beer: string;

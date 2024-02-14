@@ -166,7 +166,7 @@ proc R.serialize(writer: fileWriter(?),
   // Open the file in a new block so that deinitializers
   // will close it at the end of the block
   var f = open(filename, ioMode.cw);
-  var ch = f.writer();
+  var ch = f.writer(locking=false);
   ch.writeln(r);
 }
 
@@ -182,7 +182,7 @@ proc ref R.deserialize(reader: fileReader(?),
 
 {
   var f = open(filename, ioMode.r);
-  var ch = f.reader();
+  var ch = f.reader(locking=false);
   var r2 = new R();
   ch.readln(r2);
   assert(r == r2);

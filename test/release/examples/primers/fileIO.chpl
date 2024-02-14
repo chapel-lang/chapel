@@ -55,7 +55,7 @@ proc writeSquareArray(n, X, filename) {
 
   // Create and open an output file with the specified filename in write mode.
   var outfile = open(filename, ioMode.cw);
-  var writer = outfile.writer();
+  var writer = outfile.writer(locking=false);
 
   // Write the problem size in each dimension to the file.
   writer.writeln(n, " ", n);
@@ -73,7 +73,7 @@ proc readArray(filename) {
 
    // Open an input file with the specified filename in read mode.
   var infile = open(filename, ioMode.r);
-  var reader = infile.reader();
+  var reader = infile.reader(locking=false);
 
   // Read the number of rows and columns in the array in from the file.
   var m = reader.read(int),
@@ -128,7 +128,7 @@ if example == 0 || example == 2 {
 
   {
     // Get a binary writing channel for the start of the file.
-    var w = f.writer(serializer=new binarySerializer());
+    var w = f.writer(serializer=new binarySerializer(), locking=false);
 
     for i in 0..#num {
       var tmp:uint(64) = i:uint(64);
@@ -145,7 +145,7 @@ if example == 0 || example == 2 {
 // Note: This could be a forall loop to do I/O in parallel!
   for i in 0..#num by -1 {
     var start = 8*i;
-    var r = f.reader(deserializer=new binaryDeserializer(), region=start..#8);
+    var r = f.reader(deserializer=new binaryDeserializer(), region=start..#8, locking=false);
     var tmp:uint(64);
     r.read(tmp);
     assert(tmp == i:uint(64));
@@ -228,7 +228,7 @@ if example == 0 || example == 4 {
   writeln("Running Example 4");
 
   var f = open(testfile, ioMode.cwr);
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.writeln("Hello");
   w.writeln("This");
@@ -240,7 +240,7 @@ if example == 0 || example == 4 {
   // flush buffers, close the channel.
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var line:string;
   while( r.readLine(line) ) {
     write("Read line: ", line);
@@ -338,7 +338,7 @@ if example == 0 || example == 7 {
   var f = open(testfile, ioMode.cwr);
 
   {
-    var w = f.writer(serializer=new binarySerializer());
+    var w = f.writer(serializer=new binarySerializer(), locking=false);
 
     // Write 011 0110 011110000
     w.writeBits(0b011, 3);
@@ -349,7 +349,7 @@ if example == 0 || example == 7 {
 
   // Try reading it back the way we wrote it.
   {
-    var r = f.reader(deserializer=new binaryDeserializer());
+    var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
     var tmp:uint(64);
 
     r.readBits(tmp, 3);
@@ -367,7 +367,7 @@ if example == 0 || example == 7 {
   // Try reading it back all as one big chunk.
   // Read 01101100 11110000
   {
-    var r = f.reader(deserializer=new binaryDeserializer());
+    var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
     var tmp:uint(8);
 
     r.read(tmp);

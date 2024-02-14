@@ -3,7 +3,7 @@ use IO;
 var filename = "outOfRange.txt";
 var f = open(filename, ioMode.cw);
 
-var writeCh = f.writer(region=0..3);
+var writeCh = f.writer(region=0..3, locking=false);
 try {
     writeCh.writeln("blah", "blah", "blah");
 } catch e : EofError {
@@ -13,7 +13,7 @@ try {
 }
 writeCh.close();
 
-writeCh = f.writer(region=0..3);
+writeCh = f.writer(region=0..3, locking=false);
 try {
     writeCh.writeln("blah, blah, blah");
 } catch e : UnexpectedEofError {
@@ -23,7 +23,7 @@ try {
 }
 writeCh.close();
 
-writeCh = f.writer(region=4..7);
+writeCh = f.writer(region=4..7, locking=false);
 try {
     writeCh.write("blah", "blah", "blah");
 } catch e : EofError {
@@ -33,7 +33,7 @@ try {
 }
 writeCh.close();
 
-writeCh = f.writer(region=0..3);
+writeCh = f.writer(region=0..3, locking=false);
 try {
     writeCh.write("blah, blah, blah");
 } catch e : UnexpectedEofError {
@@ -43,7 +43,7 @@ try {
 }
 writeCh.close();
 
-writeCh = f.writer(region=8..);
+writeCh = f.writer(region=8.., locking=false);
 writeCh.writeln();
 writeCh.close();
 

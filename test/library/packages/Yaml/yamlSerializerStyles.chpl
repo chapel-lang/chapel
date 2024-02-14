@@ -40,9 +40,9 @@ var c = sout.writer(
         )
       );
 
-var d = sout.writer(serializer = new yamlSerializer());
+var d = sout.writer(serializer = new yamlSerializer(), locking=false);
 
-var defaultFormat = sout.writer();
+var defaultFormat = sout.writer(locking=false);
 
 const longString = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In in nisl lobortis, rhoncus \
   metus dapibus, molestie mi. Donec porta lacus vitae dignissim posuere. In non auctor lorem. Nullam nec dui \

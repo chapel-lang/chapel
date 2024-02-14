@@ -7,12 +7,12 @@ proc test(param endian : endianness) {
     write("Actual EOF: ");
     var f = openMemFile();
     {
-      f.writer().writeBinary(123:uint(16), endian);
+      f.writer(locking=false).writeBinary(123:uint(16), endian);
     }
     {
       var val : uint;
       try {
-        var ret = f.reader().readBinary(val, endian);
+        var ret = f.reader(locking=false).readBinary(val, endian);
         writeln("UNINTENDED SUCCESS; val = ", val, "; ret = ", ret);
       } catch e {
         writeln("ERROR: ", e.message());
@@ -23,12 +23,12 @@ proc test(param endian : endianness) {
     write("Short Region: ");
     var f = openMemFile();
     {
-      f.writer().writeBinary(123:uint(64), endian);
+      f.writer(locking=false).writeBinary(123:uint(64), endian);
     }
     {
       var val : uint;
       try {
-        var ret = f.reader(region=0..4).readBinary(val, endian);
+        var ret = f.reader(region=0..4, locking=false).readBinary(val, endian);
         writeln("UNINTENDED SUCCESS; val = ", val, "; ret = ", ret);
       } catch e {
         writeln("ERROR: ", e.message());
@@ -39,7 +39,7 @@ proc test(param endian : endianness) {
     write("Short Seek Region: ");
     var f = openMemFile();
     {
-      var w = f.writer();
+      var w = f.writer(locking=false);
       w.writeBinary(123:uint(64), endian);
       w.writeBinary(456:uint(64), endian);
     }

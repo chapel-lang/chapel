@@ -1,8 +1,8 @@
 use IO;
 
 var f = open("binaryQuery.chpl", ioMode.rw),
-    w = f.writer(),
-    r = f.reader();
+    w = f.writer(locking=false),
+    r = f.reader(locking=false);
 
 var ws = w._styleInternal();
 ws.binary = 1;

@@ -149,12 +149,12 @@ proc test(x, ref y) {
   printDebugFmt(x);
   var f = openMemFile();
   try {
-    f.writer().withSerializer(FormatWriter).write(x);
+    f.writer(locking=false).withSerializer(FormatWriter).write(x);
   } catch e {
     writeln("ERROR: ", e);
   }
   try {
-    f.reader().withDeserializer(FormatReader).read(y);
+    f.reader(locking=false).withDeserializer(FormatReader).read(y);
 
     var mismatch = if isClassType(x.type) then x.b != y.b else x != y;
     if mismatch {

@@ -66,7 +66,7 @@ var f = open(inFileName, ioMode.r);
   writeln();
   writeln("Approach 1: formatted input into a list of maps");
 
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   // Read the first line to get the column names.
   // Assuming the following format, where the number of columns (ncol) is not 
@@ -113,7 +113,7 @@ var f = open(inFileName, ioMode.r);
   // input csv file.
   if debug {
     var outfile = open(approach1FileName, ioMode.cw);
-    var writer = outfile.writer();
+    var writer = outfile.writer(locking=false);
 
     // First write to the output file the column names separated by commas.
     for colIdx in 0..colNames.size-2 {
@@ -144,7 +144,7 @@ var f = open(inFileName, ioMode.r);
   writeln("and values are arrays of row values"); 
 
   // Create another reader of the input csv file
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   // Read the first line to get the column names.
   // Note: this portion is the same as in Approach 1
@@ -206,7 +206,7 @@ var f = open(inFileName, ioMode.r);
   // input csv file.
   if debug {
     var outfile = open(approach2FileName, ioMode.cw);
-    var writer = outfile.writer();
+    var writer = outfile.writer(locking=false);
 
     // First write to the output file the column names separated by commas.
     for colIdx in 0..colNames.size-2 {

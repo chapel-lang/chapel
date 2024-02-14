@@ -14,7 +14,7 @@ use LinkedLists, IO, JSON;
 
 var f = openTempFile();
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '[]';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -22,7 +22,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new jsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:LinkedList(int);
 
@@ -36,7 +36,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[ ]';
 
   writeln("Writing JSON: ", str);
@@ -45,7 +45,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new jsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:LinkedList(int);
 
@@ -60,7 +60,7 @@ var f = openTempFile();
 
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[1]';
 
   writeln("Writing JSON: ", str);
@@ -69,7 +69,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new jsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:LinkedList(int);
 
@@ -83,7 +83,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[1,2]';
 
   writeln("Writing JSON: ", str);
@@ -92,7 +92,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new jsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:LinkedList(int);
 
@@ -106,7 +106,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[ 1, 2, 3 ]';
 
   writeln("Writing JSON: ", str);
@@ -115,7 +115,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new jsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:LinkedList(int);
 

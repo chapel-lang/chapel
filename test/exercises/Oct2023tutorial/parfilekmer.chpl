@@ -26,7 +26,7 @@ filenames = fList;
 forall f in filenames {
   // read in the input sequence from the file infile and strip out newlines
   var sequence, line : string;
-  var infile = open(f, ioMode.r).reader();
+  var infile = open(f, ioMode.r).reader(locking=false);
   while infile.readLine(line) {
     sequence += line.strip();
   }

@@ -273,7 +273,7 @@ proc main() {
 
   if printCoords {
     var outfile = open("coords.out", ioMode.cw);
-    var writer = outfile.writer();
+    var writer = outfile.writer(locking=false);
     var fmtstrnum = if debug then "%1.9er" else "%1.4er";
     var fmtstr = fmtstrnum + " " + fmtstrnum + " " + fmtstrnum + "\n";
     for i in Nodes {
