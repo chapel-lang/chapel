@@ -4083,7 +4083,12 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
     oldWhere->replace(newWhere);
 
     newWhere->insertAtTail(oldWhere);
-    newWhere->insertAtTail(new CallExpr("==", eltExpr->remove(), getEltType));
+
+    // Is '<formal>.eltType' an instantiation of the formal's '<type-expr>'?
+    // Order for call is ('<type-expr>', '<formal>.eltType')...
+    newWhere->insertAtTail(new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
+                                        eltExpr->remove(),
+                                        getEltType));
   }
 }
 
