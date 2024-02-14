@@ -41,6 +41,10 @@ Zakiya's 'twinprimes_ssoz' computation from C++ and Crystal to Chapel.
   characteristics could change. And this would be a good foundation
   for a distributed-memory version based on distributed domains.
 
+* 'twinprimes_ssoz_dm_forall.chpl: This is a distributed-memory
+  variant of the previous code, designed to reduce the number of
+  cross-locale copies relative to `twinprimes_ssoz_dm_rr.chpl`.
+
 * `*.good`: These are files containing expected output at various
   problem sizes for use in testing
 
