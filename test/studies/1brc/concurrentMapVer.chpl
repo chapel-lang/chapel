@@ -1,9 +1,14 @@
-use IO, Math, ParallelIO, ConcurrentMap, Sort;
+use IO, Math, ParallelIO, ConcurrentMap, Sort, Time;
 
 config const fileName = "measurements.txt",
-             nTasks = 8;
+             nTasks = here.maxTaskPar,
+             printOutput = false,
+             timeExecution = false;
 
 proc main() {
+    var t = new stopwatch();
+    if timeExecution then t.start();
+
     // map to store temperature statistics for each city
     var cityTempStats = new ConcurrentMap(bytes, tempData);
 
@@ -12,18 +17,13 @@ proc main() {
         with (var token = cityTempStats.getToken())
             do cityTempStats.update(ct.city, new adder(ct.temp), token);
 
-    // sort the results by city name
-    var results = cityTempStats.toArray();
-    sort(results, new comparator());
+    if timeExecution then writeln("elapsed time: ", t.elapsed());
 
-    // print the results
-    var first = true;
-    write("{");
-    for (city, td) in results {
-        if first then first = false; else write(", ");
-        write(city, "=", td);
+    if printOutput {
+        var results = cityTempStats.toArray();
+        sort(results, new comparator());
+        for (city, td) in results do writef("%20s: %?", city.decode(), temps);
     }
-    writeln("}");
 }
 
 // record to store temperature stats for a particular city
@@ -58,7 +58,7 @@ inline operator tempData.+=(ref td: tempData, temp: real) {
 
 // how to write a tempData record to a file (min/avg/max)
 proc tempData.serialize(writer: fileWriter(?), ref serializer) throws {
-    writer.writef("%.1dr/%.1dr/%.1dr", this.min, this.total / this.count, this.max);
+    writer.writef("%7.1dr %7.1dr %7.1dr\n", this.min, this.total / this.count, this.max);
 }
 
 // record representing a <city>;<temperature> pair

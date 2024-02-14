@@ -1,7 +1,7 @@
 use ParallelIO, Map, IO, Math, Time;
 
 config const fileName = "measurements.txt",
-             nTasks = 2,
+             nTasks = here.maxTaskPar,
              printOutput = false,
              timeExecution = false;
 
@@ -130,4 +130,3 @@ class sharedLock : contextManager {
         this.lock.unlock();
     }
 }
-
