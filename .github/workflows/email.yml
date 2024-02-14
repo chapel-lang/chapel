@@ -2,14 +2,15 @@ name: email
 on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
-    pull_request_target:
-      types:
-        - closed
+    # pull_request_target:
+    #   types:
+    #     - closed
+    pull_request:
       
 jobs: 
   send_email:
-   # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+   # # run this workflow step only when the PR is merged 
+   #  if:  github.event.pull_request.merged == true 
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
@@ -33,7 +34,7 @@ jobs:
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
-          fetch-depth: 0 
+          fetch-depth: 15
       # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body. 
       # (2) Get the files changed on the merge commit using the git log --name-status command.
       - name: Get merge log
@@ -41,53 +42,18 @@ jobs:
         env:
            MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
         run: |   
-              merge_log=$(git show -s --format=%B $MERGE_SHA )
-              echo "$merge_log" 
-              echo 'MERGE<<EOF' >> $GITHUB_ENV
-              echo "$merge_log" >> $GITHUB_ENV
-              echo 'EOF' >> $GITHUB_ENV
+              # merge_log=$(git show -s --format=%B $MERGE_SHA )
+              # echo "$merge_log" 
+              # echo 'MERGE<<EOF' >> $GITHUB_ENV
+              # echo "$merge_log" >> $GITHUB_ENV
+              # echo 'EOF' >> $GITHUB_ENV
 
-              diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
+              diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT HEAD~~~~~ HEAD)
               # Cut off long diff output after some number of lines
-              diff_max_lines=1000
+              diff_max_lines=2
               diff=$(echo "$diff" | awk "NR <= $diff_max_lines; NR > $diff_max_lines { print \"(diff output truncated at $diff_max_lines lines)\"; exit }")
 
               echo "$diff" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
               echo "$diff" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV                   
-      
-      - name: Send mail  
-        uses: dawidd6/action-send-mail@v3
-        with:
-           # Required mail server address if not connection_url:
-           server_address: ${{ secrets.SMTP_PROVIDER}}
-           server_port: 465
-           # Optional whether this connection use TLS (default is true if server_port is 465)
-           secure: true
-           # Optional (recommended): mail server username:
-           username:  ${{ secrets.MAIL_USERNAME}} 
-           # Optional (recommended) mail server password:
-           password: ${{secrets.MAIL_PASSWORD}}
-           # Required mail subject:
-           subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
-           # Required recipients' addresses:
-           to: chapel+commits@discoursemail.com
-           # Required sender full name (address can be skipped):
-           from:  ${{env.AUTHOR}}
-           body: |
-              
-              Branch: ${{github.ref}} 
-              Revision: ${{ github.event.pull_request.merge_commit_sha }} 
-              Author: ${{ env.AUTHOR}} 
-              Link: ${{github.event.pull_request._links.html.href}}              
-              Log Message: 
-              ${{env.MERGE}} 
-
-              Compare: ${{env.COMPARE_URL}}
-
-              Diff: 
-                       ${{env.DIFF}} 
-                       ${{github.event.pull_request.diff_url}}
-           # Optional priority: 'high', 'normal' (default) or 'low'
-           priority: low
