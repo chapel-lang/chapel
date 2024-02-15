@@ -219,7 +219,6 @@ def range_to_tokens(rng: chapel.Location, lines: List[str]) -> List[Tuple[int, i
     (line_start, char_start) = rng.start()
     (line_end, char_end) = rng.end()
 
-    last_start = char_start
     if line_start == line_end:
         return [(line_start - 1, char_start - 1, char_end - char_start)]
 
