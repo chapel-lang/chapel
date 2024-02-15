@@ -114,3 +114,58 @@ CLASS_BEGIN(ErrorManager)
          std::ignore = node;
          ((PythonErrorHandler*) context->errorHandler())->popList())
 CLASS_END(ErrorManager)
+
+CLASS_BEGIN(ResolvedExpression)
+  PLAIN_GETTER(ResolvedExpression, most_specific_candidate, "If this node is a call, return the most specific overload selected by call resolution.",
+               PyObject*,
+
+               if (auto& msc = node->mostSpecific().only()) {
+                 return MostSpecificCandidateObject::create(contextObject, {&msc, node->poiScope()});
+               }
+               Py_RETURN_NONE)
+  PLAIN_GETTER(ResolvedExpression, type, "Retrieve the type of the expression.",
+               std::optional<QualifiedTypeTuple>,
+
+               auto qt = node->type();
+               if (qt.isUnknown()) {
+                 return {};
+               }
+
+               return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
+CLASS_END(ResolvedExpression)
+
+CLASS_BEGIN(MostSpecificCandidate)
+  PLAIN_GETTER(MostSpecificCandidate, function, "Get the signature of the function called by this candidate.",
+               PyObject*, return TypedSignatureObject::create(contextObject, {node.candidate->fn(), node.poiScope }))
+  PLAIN_GETTER(MostSpecificCandidate, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",
+               std::vector<int>,
+
+               std::vector<int> res;
+
+               int i = 0;
+               while (auto formalActual = node.candidate->formalActualMap().byActualIdx(i++)) {
+                 res.push_back(formalActual->formalIdx());
+               }
+               return res)
+CLASS_END(MostSpecificCandidate)
+
+CLASS_BEGIN(TypedSignature)
+  METHOD(TypedSignature, formal_type, "Get the type of the nth formal of this function signature",
+         std::optional<QualifiedTypeTuple>(int),
+
+         auto arg = std::get<int>(args);
+         if (arg < 0 && arg >= node.signature->numFormals()) {
+           return {};
+         }
+
+         auto& qt = node.signature->formalType(arg);
+         if (qt.isUnknown()) {
+           return {};
+         }
+
+         return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
+  PLAIN_GETTER(TypedSignature, is_instantiation, "Check if this function is an instantiation of a generic function",
+               bool, return node.signature->instantiatedFrom() != nullptr)
+  PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
+               const chpl::uast::AstNode*, return chpl::parsing::idToAst(context, node.signature->id()))
+CLASS_END(TypedSignature)
