@@ -289,7 +289,7 @@ class ContextContainer:
 
         self.context.set_module_paths(self.module_paths, self.file_paths)
 
-    def new_file_info(self, uri: str) -> Tuple["FileInfo", List[Any]]:
+    def new_file_info(self, uri: str, use_resolver: bool) -> Tuple["FileInfo", List[Any]]:
         """
         Creates a new FileInfo for a given URI. FileInfos constructed in
         this manner are tied to this ContextContainer, and have their
@@ -298,7 +298,7 @@ class ContextContainer:
         """
 
         with self.context.track_errors() as errors:
-            fi = FileInfo(uri, self)
+            fi = FileInfo(uri, self, use_resolver)
             self.file_infos.append(fi)
         return (fi, errors)
 
@@ -324,9 +324,12 @@ class ContextContainer:
 class FileInfo:
     uri: str
     context: ContextContainer
+    use_resolver: bool
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
+    instantiation_segments: PositionList[Tuple[NodeAndRange, chapel.TypedSignature]] = field(init=False)
     uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
+    instantiations: Dict[str, Set[chapel.TypedSignature]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
     possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
@@ -334,6 +337,7 @@ class FileInfo:
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
+        self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.AstNode]:
@@ -398,6 +402,29 @@ class FileInfo:
 
                 self.possibly_visible_decls.append(child)
 
+    def _search_instantiations(self, root: chapel.AstNode, via: Optional[chapel.TypedSignature] = None):
+        for node in chapel.preorder(root):
+            if not isinstance(node, chapel.FnCall):
+                continue
+
+            rr = node.resolve_via(via) if via else node.resolve()
+            if not rr:
+                continue
+
+            candidate = rr.most_specific_candidate()
+            if not candidate:
+                continue
+
+            sig = candidate.function()
+            fn = sig.ast()
+
+            insts = self.instantiations[fn.unique_id()]
+            if not sig.is_instantiation() or sig in insts:
+                continue
+
+            insts.add(sig)
+            self._search_instantiations(fn, via=sig)
+
     def rebuild_index(self):
         """
         Rebuild the cached line info and siblings information
@@ -410,6 +437,7 @@ class FileInfo:
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
         self.uses_here = defaultdict(list)
+        self.instantiations = defaultdict(set)
         self.use_segments.clear()
         self.def_segments.clear()
         self.visit(asts)
@@ -419,6 +447,11 @@ class FileInfo:
         self.siblings = chapel.SiblingMap(asts)
         self._collect_used_modules(asts)
         self._collect_possibly_visible_decls()
+
+        if self.use_resolver:
+            with self.context.context.track_errors() as _:
+                for ast in asts:
+                    self._search_instantiations(ast)
 
     def get_use_segment_at_position(
         self, position: Position
@@ -431,6 +464,15 @@ class FileInfo:
     ) -> Optional[NodeAndRange]:
         """lookup a def segment based upon a Position, likely a user mouse location"""
         return self.def_segments.find(position)
+
+    def get_inst_segment_at_position(
+        self, position: Position
+    ) -> Optional[chapel.TypedSignature]:
+        """lookup a def segment based upon a Position, likely a user mouse location"""
+        segment = self.instantiation_segments.find(position)
+        if segment:
+            return segment[1]
+        return None
 
     def get_use_or_def_segment_at_position(
         self, position: Position
@@ -596,7 +638,7 @@ class ChapelLanguageServer(LanguageServer):
             if do_update:
                 errors = file_info.context.advance()
         else:
-            file_info, errors = self.get_context(uri).new_file_info(uri)
+            file_info, errors = self.get_context(uri).new_file_info(uri, self.use_resolver)
             self.file_infos[uri] = file_info
 
         return (file_info, errors)
@@ -696,13 +738,15 @@ class ChapelLanguageServer(LanguageServer):
             )
         ]
 
-    def get_decl_inlays(
-        self, decl: NodeAndRange, siblings: chapel.SiblingMap
-    ) -> List[InlayHint]:
+    def get_decl_inlays(self, decl: NodeAndRange, siblings: chapel.SiblingMap, via: Optional[chapel.TypedSignature] = None) -> List[InlayHint]:
         if not self.use_resolver:
             return []
 
-        qt = decl.node.type()
+        rr = decl.node.resolve_via(via) if via else decl.node.resolve()
+        if not rr:
+            return []
+
+        qt = rr.type()
         if qt is None:
             return []
 
@@ -711,16 +755,24 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt, siblings))
         return inlays
 
-    def get_call_inlays(self, call: chapel.FnCall) -> List[InlayHint]:
+    def get_call_inlays(self, call: chapel.FnCall, via: Optional[chapel.TypedSignature] = None) -> List[InlayHint]:
         if not self.literal_arg_inlays or not self.use_resolver:
             return []
 
-        fn = call.called_fn()
+        rr = call.resolve_via(via) if via else call.resolve()
+        if not rr:
+            return []
+
+        msc = rr.most_specific_candidate()
+        if not msc:
+            return []
+
+        fn = msc.function().ast()
         if not fn or not isinstance(fn, chapel.core.Function):
             return []
 
         inlays = []
-        for i, act in zip(call.formal_actual_mapping(), call.actuals()):
+        for i, act in zip(msc.formal_actual_mapping(), call.actuals()):
             if not isinstance(act, chapel.core.AstNode):
                 # Named arguments are represented using (name, node)
                 # tuples. We don't need hints for those.
@@ -1012,10 +1064,12 @@ def run_lsp():
         inlays: List[InlayHint] = []
         with fi.context.context.track_errors() as _:
             for decl in decls:
-                inlays.extend(ls.get_decl_inlays(decl, fi.siblings))
+                instantiation = fi.get_inst_segment_at_position(decl.rng.start)
+                inlays.extend(ls.get_decl_inlays(decl, fi.siblings, instantiation))
 
             for call in calls:
-                inlays.extend(ls.get_call_inlays(call))
+                instantiation = fi.get_inst_segment_at_position(location_to_range(call.location()).start)
+                inlays.extend(ls.get_call_inlays(call, instantiation))
 
         return inlays
 
