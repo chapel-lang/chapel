@@ -111,8 +111,20 @@ from lsprotocol.types import (
     DocumentHighlight,
     DocumentHighlightKind,
 )
-from lsprotocol.types import TEXT_DOCUMENT_CODE_LENS, CodeLensParams, CodeLens, Command
-from lsprotocol.types import TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, SemanticTokensRegistrationOptions, SemanticTokensLegend, SemanticTokensParams, SemanticTokens, SemanticTokenTypes
+from lsprotocol.types import (
+    TEXT_DOCUMENT_CODE_LENS,
+    CodeLensParams,
+    CodeLens,
+    Command,
+)
+from lsprotocol.types import (
+    TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL,
+    SemanticTokensRegistrationOptions,
+    SemanticTokensLegend,
+    SemanticTokensParams,
+    SemanticTokens,
+    SemanticTokenTypes,
+)
 
 import argparse
 import configargparse
@@ -207,7 +219,10 @@ def get_symbol_information(
         return SymbolInformation(loc, name, kind, deprecated=is_deprecated)
     return None
 
-def range_to_tokens(rng: chapel.Location, lines: List[str]) -> List[Tuple[int, int, int]]:
+
+def range_to_tokens(
+    rng: chapel.Location, lines: List[str]
+) -> List[Tuple[int, int, int]]:
     """
     Convert a Chapel location to a list of token-compatible ranges. If a location
     spans multiple lines, it gets split into multuple tokens. The lines
@@ -222,14 +237,23 @@ def range_to_tokens(rng: chapel.Location, lines: List[str]) -> List[Tuple[int, i
     if line_start == line_end:
         return [(line_start - 1, char_start - 1, char_end - char_start)]
 
-    tokens = [ (line_start - 1, char_start - 1, len(lines[line_start - 1]) - char_start) ]
+    tokens = [
+        (
+            line_start - 1,
+            char_start - 1,
+            len(lines[line_start - 1]) - char_start,
+        )
+    ]
     for line in range(line_start + 1, line_end):
         tokens.append((line - 1, 0, len(lines[line - 1])))
     tokens.append((line_end - 1, 0, char_end - 1))
 
     return tokens
 
-def encode_deltas(tokens: List[Tuple[int, int, int]], token_type, token_modifiers) -> List[int]:
+
+def encode_deltas(
+    tokens: List[Tuple[int, int, int]], token_type, token_modifiers
+) -> List[int]:
     """
     Given a (non-encoded) list of token positions, applies the LSP delta-encoding
     to it: each line is encoded as a delta from the previous line, and each
@@ -241,7 +265,7 @@ def encode_deltas(tokens: List[Tuple[int, int, int]], token_type, token_modifier
     encoded = []
     last_line = None
     last_col = 0
-    for (line, start, length) in tokens:
+    for line, start, length in tokens:
         backup = line
         if line == last_line:
             start -= last_col
@@ -277,7 +301,6 @@ class PositionList(Generic[EltT]):
         # :sunglasses:
         self.elts.append(elt)
         self.sort()
-
 
     def clear(self):
         self.elts.clear()
@@ -349,7 +372,9 @@ class ContextContainer:
 
         self.context.set_module_paths(self.module_paths, self.file_paths)
 
-    def new_file_info(self, uri: str, use_resolver: bool) -> Tuple["FileInfo", List[Any]]:
+    def new_file_info(
+        self, uri: str, use_resolver: bool
+    ) -> Tuple["FileInfo", List[Any]]:
         """
         Creates a new FileInfo for a given URI. FileInfos constructed in
         this manner are tied to this ContextContainer, and have their
@@ -387,7 +412,9 @@ class FileInfo:
     use_resolver: bool
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
-    instantiation_segments: PositionList[Tuple[NodeAndRange, chapel.TypedSignature]] = field(init=False)
+    instantiation_segments: PositionList[
+        Tuple[NodeAndRange, chapel.TypedSignature]
+    ] = field(init=False)
     uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
     instantiations: Dict[str, Set[chapel.TypedSignature]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
@@ -462,7 +489,9 @@ class FileInfo:
 
                 self.possibly_visible_decls.append(child)
 
-    def _search_instantiations(self, root: chapel.AstNode, via: Optional[chapel.TypedSignature] = None):
+    def _search_instantiations(
+        self, root: chapel.AstNode, via: Optional[chapel.TypedSignature] = None
+    ):
         for node in chapel.preorder(root):
             if not isinstance(node, chapel.FnCall):
                 continue
@@ -557,7 +586,9 @@ class FileInfo:
         return None
 
     def file_lines(self) -> List[str]:
-        file_text = self.context.context.get_file_text(self.uri[len("file://") :])
+        file_text = self.context.context.get_file_text(
+            self.uri[len("file://") :]
+        )
         return file_text.splitlines()
 
 
@@ -703,7 +734,9 @@ class ChapelLanguageServer(LanguageServer):
             if do_update:
                 errors = file_info.context.advance()
         else:
-            file_info, errors = self.get_context(uri).new_file_info(uri, self.use_resolver)
+            file_info, errors = self.get_context(uri).new_file_info(
+                uri, self.use_resolver
+            )
             self.file_infos[uri] = file_info
 
         return (file_info, errors)
@@ -803,7 +836,12 @@ class ChapelLanguageServer(LanguageServer):
             )
         ]
 
-    def get_decl_inlays(self, decl: NodeAndRange, siblings: chapel.SiblingMap, via: Optional[chapel.TypedSignature] = None) -> List[InlayHint]:
+    def get_decl_inlays(
+        self,
+        decl: NodeAndRange,
+        siblings: chapel.SiblingMap,
+        via: Optional[chapel.TypedSignature] = None,
+    ) -> List[InlayHint]:
         if not self.use_resolver:
             return []
 
@@ -820,7 +858,9 @@ class ChapelLanguageServer(LanguageServer):
         inlays.extend(self._get_type_inlays(decl, qt, siblings))
         return inlays
 
-    def get_call_inlays(self, call: chapel.FnCall, via: Optional[chapel.TypedSignature] = None) -> List[InlayHint]:
+    def get_call_inlays(
+        self, call: chapel.FnCall, via: Optional[chapel.TypedSignature] = None
+    ) -> List[InlayHint]:
         if not self.literal_arg_inlays or not self.use_resolver:
             return []
 
@@ -871,11 +911,20 @@ class ChapelLanguageServer(LanguageServer):
             text += f"\n---\n{docstring}"
         return text
 
-    def get_dead_code_tokens(self, node: chapel.Conditional, lines: list[str], via: Optional[chapel.TypedSignature] = None) -> List[Tuple[int, int, int]]:
+    def get_dead_code_tokens(
+        self,
+        node: chapel.Conditional,
+        lines: list[str],
+        via: Optional[chapel.TypedSignature] = None,
+    ) -> List[Tuple[int, int, int]]:
         if not self.dead_code or not self.use_resolver:
             return []
 
-        rr = node.condition().resolve_via(via) if via else node.condition().resolve()
+        rr = (
+            node.condition().resolve_via(via)
+            if via
+            else node.condition().resolve()
+        )
         if not rr:
             return []
 
@@ -885,7 +934,9 @@ class ChapelLanguageServer(LanguageServer):
 
         _, _, val = qt
         if isinstance(val, chapel.BoolParam):
-            dead_branch = node.else_block() if val.value() else node.then_block()
+            dead_branch = (
+                node.else_block() if val.value() else node.then_block()
+            )
             if dead_branch:
                 loc = dead_branch.location()
                 return range_to_tokens(loc, lines)
@@ -1153,10 +1204,14 @@ def run_lsp():
         with fi.context.context.track_errors() as _:
             for decl in decls:
                 instantiation = fi.get_inst_segment_at_position(decl.rng.start)
-                inlays.extend(ls.get_decl_inlays(decl, fi.siblings, instantiation))
+                inlays.extend(
+                    ls.get_decl_inlays(decl, fi.siblings, instantiation)
+                )
 
             for call in calls:
-                instantiation = fi.get_inst_segment_at_position(location_to_range(call.location()).start)
+                instantiation = fi.get_inst_segment_at_position(
+                    location_to_range(call.location()).start
+                )
                 inlays.extend(ls.get_call_inlays(call, instantiation))
 
         return inlays
@@ -1198,30 +1253,51 @@ def run_lsp():
                 and decl.node.unique_id() in fi.instantiations
             ):
                 insts = fi.instantiations[decl.node.unique_id()]
-                for (i, inst) in enumerate(insts):
+                for i, inst in enumerate(insts):
                     action = CodeLens(
-                        data = (decl.node.unique_id(), i),
-                        command = Command("Show instantiation", "chpl-language-server/showInstantiation", [params.text_document.uri, decl.node.unique_id(), i]),
-                        range = decl.rng
+                        data=(decl.node.unique_id(), i),
+                        command=Command(
+                            "Show instantiation",
+                            "chpl-language-server/showInstantiation",
+                            [
+                                params.text_document.uri,
+                                decl.node.unique_id(),
+                                i,
+                            ],
+                        ),
+                        range=decl.rng,
                     )
                     actions.append(action)
 
         return actions
 
     @server.command("chpl-language-server/showInstantiation")
-    async def show_instantiation(ls: ChapelLanguageServer, data: Tuple[str, str, int]):
+    async def show_instantiation(
+        ls: ChapelLanguageServer, data: Tuple[str, str, int]
+    ):
         uri, unique_id, i = data
 
         fi, _ = ls.get_file_info(uri)
-        decl = next(decl for decl in fi.def_segments.elts if decl.node.unique_id() == unique_id)
+        decl = next(
+            decl
+            for decl in fi.def_segments.elts
+            if decl.node.unique_id() == unique_id
+        )
         inst = list(fi.instantiations[unique_id])[i]
         fi.instantiation_segments.insert((decl, inst))
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
 
-    @server.feature(TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, options=SemanticTokensLegend(token_types=[SemanticTokenTypes.Comment], token_modifiers=[]))
-    async def semantic_tokens_range(ls: ChapelLanguageServer, params: SemanticTokensParams):
+    @server.feature(
+        TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL,
+        options=SemanticTokensLegend(
+            token_types=[SemanticTokenTypes.Comment], token_modifiers=[]
+        ),
+    )
+    async def semantic_tokens_range(
+        ls: ChapelLanguageServer, params: SemanticTokensParams
+    ):
         if not ls.use_resolver:
             return None
 
@@ -1236,7 +1312,11 @@ def run_lsp():
                 if isinstance(ast, chapel.core.Conditional):
                     start_pos = location_to_range(ast.location()).start
                     instantiation = fi.get_inst_segment_at_position(start_pos)
-                    tokens.extend(ls.get_dead_code_tokens(ast, fi.file_lines(), instantiation))
+                    tokens.extend(
+                        ls.get_dead_code_tokens(
+                            ast, fi.file_lines(), instantiation
+                        )
+                    )
 
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
