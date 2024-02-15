@@ -643,6 +643,9 @@ class WorkspaceConfig:
 
             self.files[key] = compile_commands[0]
 
+    def file_paths(self) -> Iterable[str]:
+        return self.files.keys()
+
     def for_file(self, path: str) -> Optional[Dict[str, Any]]:
         if path in self.files:
             return self.files[path]
@@ -737,6 +740,13 @@ class ChapelLanguageServer(LanguageServer):
         self.contexts[path] = context
 
         return context
+
+    def eagerly_process_all_files(self, context: ContextContainer):
+        cfg = context.config
+        if cfg:
+            for file in cfg.files:
+                self.get_file_info("file://" + file, do_update=False)
+
 
     def get_file_info(
         self, uri: str, do_update: bool = False
@@ -1051,6 +1061,8 @@ def run_lsp():
         node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
         if not node_and_loc:
             return None
+
+        ls.eagerly_process_all_files(fi.context)
 
         locations = [node_and_loc.get_location()]
         for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
