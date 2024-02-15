@@ -207,6 +207,52 @@ def get_symbol_information(
         return SymbolInformation(loc, name, kind, deprecated=is_deprecated)
     return None
 
+def range_to_tokens(rng: chapel.Location, lines: List[str]) -> List[Tuple[int, int, int]]:
+    """
+    Convert a Chapel location to a list of token-compatible ranges. If a location
+    spans multiple lines, it gets split into multuple tokens. The lines
+    and columns are zero-indexed.
+
+    Returns a list of (line, column, length).
+    """
+
+    (line_start, char_start) = rng.start()
+    (line_end, char_end) = rng.end()
+
+    last_start = char_start
+    if line_start == line_end:
+        return [(line_start - 1, char_start - 1, char_end - char_start)]
+
+    tokens = [ (line_start - 1, char_start - 1, len(lines[line_start - 1]) - char_start) ]
+    for line in range(line_start + 1, line_end):
+        tokens.append((line - 1, 0, len(lines[line - 1])))
+    tokens.append((line_end - 1, 0, char_end - 1))
+
+    return tokens
+
+def encode_deltas(tokens: List[Tuple[int, int, int]], token_type, token_modifiers) -> List[int]:
+    """
+    Given a (non-encoded) list of token positions, applies the LSP delta-encoding
+    to it: each line is encoded as a delta from the previous line, and each
+    column is encoded as a delta from the previous column.
+
+    Returns tokens with type token_type, and modifiers token_modifiers.
+    """
+
+    encoded = []
+    last_line = None
+    last_col = 0
+    for (line, start, length) in tokens:
+        backup = line
+        if line == last_line:
+            start -= last_col
+        if last_line is not None:
+            line -= last_line
+        last_line = backup
+
+        encoded.extend([line, start, length, token_type, token_modifiers])
+    return encoded
+
 
 EltT = TypeVar("EltT")
 
@@ -568,6 +614,7 @@ class ChapelLanguageServer(LanguageServer):
         self.type_inlays: bool = config.type_inlays
         self.literal_arg_inlays: bool = config.literal_arg_inlays
         self.param_inlays: bool = config.param_inlays
+        self.dead_code: bool = config.dead_code
 
         self._setup_regexes()
 
@@ -825,6 +872,27 @@ class ChapelLanguageServer(LanguageServer):
             text += f"\n---\n{docstring}"
         return text
 
+    def get_dead_code_tokens(self, node: chapel.Conditional, lines: list[str], via: Optional[chapel.TypedSignature] = None) -> List[Tuple[int, int, int]]:
+        if not self.dead_code or not self.use_resolver:
+            return []
+
+        rr = node.condition().resolve_via(via) if via else node.condition().resolve()
+        if not rr:
+            return []
+
+        qt = rr.type()
+        if qt is None:
+            return []
+
+        _, _, val = qt
+        if isinstance(val, chapel.BoolParam):
+            dead_branch = node.else_block() if val.value() else node.then_block()
+            if dead_branch:
+                loc = dead_branch.location()
+                return range_to_tokens(loc, lines)
+
+        return []
+
 
 def run_lsp():
     """
@@ -844,6 +912,7 @@ def run_lsp():
     add_bool_flag("type-inlays", "type_inlays", True)
     add_bool_flag("param-inlays", "param_inlays", True)
     add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
+    add_bool_flag("dead-code", "dead_code", True)
 
     server = ChapelLanguageServer(parser.parse_args())
 
@@ -1152,39 +1221,11 @@ def run_lsp():
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
 
-    def range_to_tokens(rng: chapel.Location, lines: List[str]) -> List[Tuple[int, int, int]]:
-        (line_start, char_start) = rng.start()
-        (line_end, char_end) = rng.end()
-
-        last_start = char_start
-        if line_start == line_end:
-            return [(line_start - 1, char_start - 1, char_end - char_start)]
-
-        tokens = [ (line_start - 1, char_start - 1, len(lines[line_start - 1]) - char_start) ]
-        for line in range(line_start + 1, line_end):
-            tokens.append((line - 1, 0, len(lines[line - 1])))
-        tokens.append((line_end - 1, 0, char_end - 1))
-
-        return tokens
-
-    def encode_deltas(tokens: List[Tuple[int, int, int]]) -> List[int]:
-        encoded = []
-        last_line = None
-        last_col = 0
-        for (line, start, length) in tokens:
-            backup = line
-            if line == last_line:
-                start -= last_col
-            if last_line is not None:
-                line -= last_line
-            last_line = backup
-
-            encoded.extend([line, start, length, 0, 0])
-        return encoded
-
-
     @server.feature(TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, options=SemanticTokensLegend(token_types=[SemanticTokenTypes.Comment], token_modifiers=[]))
     async def semantic_tokens_range(ls: ChapelLanguageServer, params: SemanticTokensParams):
+        if not ls.use_resolver:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
@@ -1196,23 +1237,9 @@ def run_lsp():
                 if isinstance(ast, chapel.core.Conditional):
                     start_pos = location_to_range(ast.location()).start
                     instantiation = fi.get_inst_segment_at_position(start_pos)
+                    tokens.extend(ls.get_dead_code_tokens(ast, fi.file_lines(), instantiation))
 
-                    rr = ast.condition().resolve_via(instantiation) if instantiation else ast.condition().resolve()
-                    if not rr:
-                        continue
-
-                    qt = rr.type()
-                    if qt is None:
-                        continue
-
-                    _, _, val = qt
-                    if isinstance(val, chapel.BoolParam):
-                        dead_branch = ast.else_block() if val.value() else ast.then_block()
-                        if dead_branch:
-                            loc = dead_branch.location()
-                            tokens.extend(range_to_tokens(loc, fi.file_lines()))
-
-        return SemanticTokens(data=encode_deltas(tokens))
+        return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
     server.start_io()
 
