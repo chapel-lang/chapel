@@ -103,6 +103,7 @@ from lsprotocol.types import (
     InlayHintLabelPart,
 )
 from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
+from lsprotocol.types import WORKSPACE_SEMANTIC_TOKENS_REFRESH
 from lsprotocol.types import TEXT_DOCUMENT_RENAME, RenameParams
 from lsprotocol.types import (
     TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT,
@@ -111,6 +112,7 @@ from lsprotocol.types import (
     DocumentHighlightKind,
 )
 from lsprotocol.types import TEXT_DOCUMENT_CODE_LENS, CodeLensParams, CodeLens, Command
+from lsprotocol.types import TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, SemanticTokensRegistrationOptions, SemanticTokensLegend, SemanticTokensParams, SemanticTokens, SemanticTokenTypes
 
 import argparse
 import configargparse
@@ -874,6 +876,7 @@ def run_lsp():
         diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
+        ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
 
     @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)
@@ -1143,6 +1146,69 @@ def run_lsp():
         fi.instantiation_segments.insert((decl, inst))
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
+        ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
+
+    def range_to_tokens(rng: chapel.Location, lines: List[str]) -> List[Tuple[int, int, int]]:
+        (line_start, char_start) = rng.start()
+        (line_end, char_end) = rng.end()
+
+        last_start = char_start
+        if line_start == line_end:
+            return [(line_start - 1, char_start - 1, char_end - char_start)]
+
+        tokens = [ (line_start - 1, char_start - 1, len(lines[line_start - 1]) - char_start) ]
+        for line in range(line_start + 1, line_end):
+            tokens.append((line - 1, 0, len(lines[line - 1])))
+        tokens.append((line_end - 1, 0, char_end - 1))
+
+        return tokens
+
+    def encode_deltas(tokens: List[Tuple[int, int, int]]) -> List[int]:
+        encoded = []
+        last_line = None
+        last_col = 0
+        for (line, start, length) in tokens:
+            backup = line
+            if line == last_line:
+                start -= last_col
+            if last_line is not None:
+                line -= last_line
+            last_line = backup
+
+            encoded.extend([line, start, length, 0, 0])
+        return encoded
+
+
+    @server.feature(TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, options=SemanticTokensLegend(token_types=[SemanticTokenTypes.Comment], token_modifiers=[]))
+    async def semantic_tokens_range(ls: ChapelLanguageServer, params: SemanticTokensParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        tokens = []
+
+        for root in fi.get_asts():
+            for ast in chapel.postorder(root):
+                if isinstance(ast, chapel.core.Conditional):
+                    start_pos = location_to_range(ast.location()).start
+                    instantiation = fi.get_inst_segment_at_position(start_pos)
+
+                    rr = ast.condition().resolve_via(instantiation) if instantiation else ast.condition().resolve()
+                    if not rr:
+                        continue
+
+                    qt = rr.type()
+                    if qt is None:
+                        continue
+
+                    _, _, val = qt
+                    if isinstance(val, chapel.BoolParam):
+                        dead_branch = ast.else_block() if val.value() else ast.then_block()
+                        if dead_branch:
+                            loc = dead_branch.location()
+                            tokens.extend(range_to_tokens(loc, text_doc.lines))
+
+        return SemanticTokens(data=encode_deltas(tokens))
 
     server.start_io()
 
