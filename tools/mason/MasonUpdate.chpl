@@ -216,7 +216,7 @@ proc chplVersionError(brick:borrowed Toml) {
    project and continues down dep tree recursively
    until each dep is recorded */
 private proc createDepTree(root: Toml) {
-  var dp: domain(string);
+  var dp: domain(string, parSafe=false);
   var dps: [dp] shared Toml?;
   var depTree = new shared Toml(dps);
   if root.pathExists("brick") {
@@ -304,7 +304,7 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
     depList.pushBack(new shared Toml(package));
 
     if depTree.pathExists(package) == false {
-      var dt: domain(string);
+      var dt: domain(string, parSafe=false);
       var depTbl: [dt] shared Toml?;
       depTree.set(package, depTbl);
     }
@@ -330,7 +330,7 @@ private proc addGitDeps(depTree: Toml, ref gitDeps) {
   //val url branch revision
   for key in gitDeps {
     if !depTree.pathExists(key[0]) {
-      var dt: domain(string);
+      var dt: domain(string, parSafe=false);
       var depTbl: [dt] shared Toml?;
       depTree.set(key[0], depTbl);
       depTree[key[0]]!.set("name", key[0]);

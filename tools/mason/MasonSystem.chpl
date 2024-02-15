@@ -206,7 +206,7 @@ proc pkgExists(pkgName: string) : bool {
 /* Retrieves build information for MasonUpdate */
 proc getPkgInfo(pkgName: string, version: string) throws {
 
-  var pkgDom: domain(string);
+  var pkgDom: domain(string, parSafe=false);
   var pkgToml: [pkgDom] shared Toml?;
   var pkgInfo = new shared Toml(pkgToml);
 
@@ -235,7 +235,7 @@ proc getPkgInfo(pkgName: string, version: string) throws {
    the dependencies in a toml */
 proc getPCDeps(exDeps: Toml) {
 
-  var exDom: domain(string);
+  var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
 
   for (name, vers) in zip(exDeps.A.keys(), exDeps.A.values()) {
