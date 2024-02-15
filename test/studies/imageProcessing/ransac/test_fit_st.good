@@ -11,3 +11,5 @@ Matching from fixed mapping
   x2 =  1.250 x1  +150.0
   y2 =  1.300 y1  +300.0
   number matching corners  210
+
+Test passed: files match!

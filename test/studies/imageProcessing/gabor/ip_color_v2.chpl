@@ -239,9 +239,9 @@ private inline proc rgbpix_to_xyz(r : c_uchar, g : c_uchar, b : c_uchar,
                                   out  x : real, out y : real, out z : real) {
 
   /* The original RGB space is 0 t/m 1, so divide by 255.0. */
-  x = (0.49 * r    + 0.31 * g    + 0.2 * b)     / (255.0 * XYZ_SCALE);
-  y = (0.17697 * r + 0.81240 * g + 0.01063 * b) / (255.0 * XYZ_SCALE);
-  z = (              0.01 * g    + 0.99 * b)    / (255.0 * XYZ_SCALE);
+  x = (0.49 * r:real    + 0.31 * g:real    + 0.2 * b:real)     / (255.0 * XYZ_SCALE);
+  y = (0.17697 * r:real + 0.81240 * g:real + 0.01063 * b:real) / (255.0 * XYZ_SCALE);
+  z = (                   0.01 * g:real    + 0.99 * b:real)    / (255.0 * XYZ_SCALE);
 }
 
 /***

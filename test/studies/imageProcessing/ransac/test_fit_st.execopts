@@ -1,1 +1,1 @@
---inname1=bonds1.png --inname2=bonds2_st.png --sx=1.25 --sy=1.3 --dx=150 --dy=300 --thr=10
+--inname1=bonds1.png --inname2=bonds2_st.png --sx=1.25 --sy=1.3 --dx=150.0 --dy=300.0 --thr=10.0
