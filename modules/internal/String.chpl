@@ -700,7 +700,16 @@ module String {
       // same names, because "wellknown" implementation in the compiler does not
       // allow overloads.
       var ret: string;
-      __primitive("zero variable", ret);
+
+      // 2024/02/15 Lydia NOTE: This avoids a valgrind warning when performing
+      // checks about arguments passed by default/const intent when they could
+      // be implicitly modified.  The string type has boolean fields, which C
+      // inserts padding for but we can't actually initialize the padding
+      // without a memset
+      if (chpl_warnUnstable && chpl_constArgChecking) {
+        __primitive("zero variable", ret);
+      }
+
       initWithBorrowedBuffer(ret, x, length, size);
       ret.cachedNumCodepoints = numCodepoints;
       return ret;
