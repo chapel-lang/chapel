@@ -355,12 +355,29 @@ class ResolvedPair:
     resolved_to: NodeAndRange
 
 
+@dataclass
+class References:
+    in_file: "FileInfo"
+    uses: List[NodeAndRange]
+
+    def append(self, x: NodeAndRange):
+        self.uses.append(x)
+
+    def clear(self):
+        self.uses.clear()
+
+    def __iter__(self):
+        return iter(self.uses)
+
+
 class ContextContainer:
     def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
+        self.config: Optional["WorkspaceConfig"] = config
         self.file_paths: List[str] = []
         self.module_paths: List[str] = [file]
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
+        self.global_uses: Dict[str, List[References]] = defaultdict(list)
 
         if config:
             file_config = config.for_file(file)
@@ -413,7 +430,7 @@ class FileInfo:
     instantiation_segments: PositionList[
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
-    uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
+    uses_here: Dict[str, References] = field(init=False)
     instantiations: Dict[str, Set[chapel.TypedSignature]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
@@ -423,6 +440,7 @@ class FileInfo:
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
+        self.uses_here = {}
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.AstNode]:
@@ -442,6 +460,15 @@ class FileInfo:
         with self.context.context.track_errors() as _:
             return self.parse_file()
 
+    def _get_use_container(self, uid: str) -> References:
+        if uid in self.uses_here:
+            return self.uses_here[uid]
+
+        refs = References(self, [])
+        self.uses_here[uid] = refs
+        self.context.global_uses[uid].append(refs)
+        return refs
+
     def _note_reference(self, node: Union[chapel.Dot, chapel.Identifier]):
         """
         Given a node that can refer to another node, note what it refers
@@ -451,7 +478,7 @@ class FileInfo:
         if not to:
             return
 
-        self.uses_here[to.unique_id()].append(NodeAndRange(node))
+        self._get_use_container(to.unique_id()).append(NodeAndRange(node))
         self.use_segments.append(
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
@@ -523,8 +550,9 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.uses_here = defaultdict(list)
         self.instantiations = defaultdict(set)
+        for _, refs in self.uses_here.items():
+            refs.clear()
         self.use_segments.clear()
         self.def_segments.clear()
         self.visit(asts)
@@ -1025,8 +1053,9 @@ def run_lsp():
             return None
 
         locations = [node_and_loc.get_location()]
-        for use in fi.uses_here[node_and_loc.node.unique_id()]:
-            locations.append(use.get_location())
+        for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
+            for use in uselist:
+                locations.append(use.get_location())
 
         return locations
 
@@ -1231,7 +1260,7 @@ def run_lsp():
         highlights = [
             DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
         ]
-        for use in fi.uses_here[node_and_loc.node.unique_id()]:
+        for use in fi.uses_here.get(node_and_loc.node.unique_id(), []):
             highlights.append(
                 DocumentHighlight(use.rng, DocumentHighlightKind.Text)
             )
