@@ -700,6 +700,7 @@ module String {
       // same names, because "wellknown" implementation in the compiler does not
       // allow overloads.
       var ret: string;
+      __primitive("zero variable", ret);
       initWithBorrowedBuffer(ret, x, length, size);
       ret.cachedNumCodepoints = numCodepoints;
       return ret;
