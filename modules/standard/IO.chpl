@@ -5173,18 +5173,20 @@ proc fileReader.seek(region: range(?)) throws {
     throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
-    if (region.hasHighBound()) {
-      const err = qio_channel_seek(_channel_internal, region.low,
-                                   region.high + 1);
+    on this._home {
+      if (region.hasHighBound()) {
+        const err = qio_channel_seek(_channel_internal, region.low,
+                                     region.high + 1);
 
-      if err then
-        throw createSystemError(err);
+        if err then
+          throw createSystemError(err);
 
-    } else {
-      const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
+      } else {
+        const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
 
-      if err then
-        throw createSystemError(err);
+        if err then
+          throw createSystemError(err);
+      }
     }
   }
 }
@@ -5226,18 +5228,20 @@ proc fileWriter.seek(region: range(?)) throws {
     throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
-    if (region.hasHighBound()) {
-      const err = qio_channel_seek(_channel_internal, region.low,
-                                   region.high + 1);
+    on this._home {
+      if (region.hasHighBound()) {
+        const err = qio_channel_seek(_channel_internal, region.low,
+                                     region.high + 1);
 
-      if err then
-        throw createSystemError(err);
+        if err then
+          throw createSystemError(err);
 
-    } else {
-      const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
+      } else {
+        const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
 
-      if err then
-        throw createSystemError(err);
+        if err then
+          throw createSystemError(err);
+      }
     }
   }
 }
