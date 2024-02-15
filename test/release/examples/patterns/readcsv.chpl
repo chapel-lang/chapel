@@ -66,6 +66,8 @@ var f = open(inFileName, ioMode.r);
   writeln();
   writeln("Approach 1: formatted input into a list of maps");
 
+  // Open a fileReader to the file. Here, 'locking=false' is used because
+  // the reader is only accessed by one task at a time.
   var reader = f.reader(locking=false);
 
   // Read the first line to get the column names.

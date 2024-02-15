@@ -71,8 +71,12 @@ proc writeSquareArray(n, X, filename) {
 // This procedure reads a new array out of a file and returns it.
 proc readArray(filename) {
 
-   // Open an input file with the specified filename in read mode.
+  // Open an input file with the specified filename in read mode.
   var infile = open(filename, ioMode.r);
+
+  // Create a fileReader by calling reader on the file object.
+  // Here we use 'locking=false' because the reader is only
+  // used by a single task.
   var reader = infile.reader(locking=false);
 
   // Read the number of rows and columns in the array in from the file.
@@ -227,8 +231,9 @@ Reading and printing UTF-8 lines
 if example == 0 || example == 4 {
   writeln("Running Example 4");
 
-  var f = open(testfile, ioMode.cwr);
-  var w = f.writer(locking=false);
+  // Use the convenience procedure 'openWriter' to open a fileWriter from
+  // a file's name, rather than calling 'open' and 'writer' separately.
+  var w = openWriter(testfile);
 
   w.writeln("Hello");
   w.writeln("This");
@@ -240,14 +245,15 @@ if example == 0 || example == 4 {
   // flush buffers, close the channel.
   w.close();
 
-  var r = f.reader(locking=false);
+  // Use the reading version of 'openWriter' to open a fileReader from
+  // a file's name, rather than calling 'open' and 'reader' separately.
+  var r = openReader(testfile);
   var line:string;
   while( r.readLine(line) ) {
     write("Read line: ", line);
   }
   r.close();
 
-  f.close();
   remove(testfile);
 }
 
@@ -335,10 +341,8 @@ Binary I/O with bits at a time
 if example == 0 || example == 7 {
   writeln("Running Example 7");
 
-  var f = open(testfile, ioMode.cwr);
-
   {
-    var w = f.writer(serializer=new binarySerializer(), locking=false);
+    var w = openWriter(testfile, serializer=new binarySerializer());
 
     // Write 011 0110 011110000
     w.writeBits(0b011, 3);
@@ -349,7 +353,7 @@ if example == 0 || example == 7 {
 
   // Try reading it back the way we wrote it.
   {
-    var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
+    var r = openReader(testfile, deserializer=new binaryDeserializer());
     var tmp:uint(64);
 
     r.readBits(tmp, 3);
@@ -367,7 +371,7 @@ if example == 0 || example == 7 {
   // Try reading it back all as one big chunk.
   // Read 01101100 11110000
   {
-    var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
+    var r = openReader(testfile, deserializer=new binaryDeserializer());
     var tmp:uint(8);
 
     r.read(tmp);
@@ -379,5 +383,4 @@ if example == 0 || example == 7 {
     r.close();
   }
 
-  f.close();
 }

@@ -26,7 +26,7 @@ filenames = fList;
 forall f in filenames {
   // read in the input sequence from the file infile and strip out newlines
   var sequence, line : string;
-  var infile = open(f, ioMode.r).reader(locking=false);
+  var infile = openReader(f);
   while infile.readLine(line) {
     sequence += line.strip();
   }
@@ -42,5 +42,3 @@ forall f in filenames {
   writeln("Number of unique k-mers in ", f, " is ", nkmerCounts.size);
   writeln();
 }
-
-

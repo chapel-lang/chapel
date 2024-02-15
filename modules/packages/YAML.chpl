@@ -37,10 +37,10 @@ IO module's serialization/deserialization API. For example:
     var b: string;
   }
 
-  var myFile = open("r.yaml", ioMode.cwr),
+  var writer = openWriter("r.yaml", serializer = new yamlSerializer()),
       r1 = new R(1, "hello");
 
-  myFile.writer(locking=false).withSerializer(new yamlSerializer()).write(r1);
+  writer.write(r1);
 
   /* r.yaml:
     --- R!

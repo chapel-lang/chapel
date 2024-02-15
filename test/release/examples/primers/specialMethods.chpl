@@ -163,11 +163,10 @@ proc R.serialize(writer: fileWriter(?),
 }
 
 {
-  // Open the file in a new block so that deinitializers
+  // Open the fileReader in a new block so that deinitializers
   // will close it at the end of the block
-  var f = open(filename, ioMode.cw);
-  var ch = f.writer(locking=false);
-  ch.writeln(r);
+  var fw = openWriter(filename);
+  fw.writeln(r);
 }
 
 // The ``deserialize`` method defines how to read an instance of R from a
@@ -181,22 +180,21 @@ proc ref R.deserialize(reader: fileReader(?),
 }
 
 {
-  var f = open(filename, ioMode.r);
-  var ch = f.reader(locking=false);
+  var fr = openReader(filename);
   var r2 = new R();
-  ch.readln(r2);
+  fr.readln(r2);
   assert(r == r2);
 }
 
 {
-  var chW = openWriter(filename, locking=false);
-  chW.writeln(r);
-  chW.flush();
+  var fw = openWriter(filename);
+  fw.writeln(r);
+  fw.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openReader(filename, locking=false);
-  chR.readln(r2);
+  var fr = openReader(filename);
+  fr.readln(r2);
   assert(r == r2);
 }
 
