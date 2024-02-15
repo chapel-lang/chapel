@@ -62,6 +62,8 @@ CLASS_BEGIN(Context)
 
          auto prepareToGc = std::get<0>(args);
          node.advanceToNextRevision(prepareToGc))
+  METHOD(Context, get_file_text, "Get the text of the file at the given path",
+         std::string(chpl::UniqueString), return parsing::fileText(&node, std::get<0>(args)).text())
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)

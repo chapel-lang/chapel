@@ -511,6 +511,10 @@ class FileInfo:
 
         return None
 
+    def file_lines(self) -> List[str]:
+        file_text = self.context.context.get_file_text(self.uri[len("file://") :])
+        return file_text.splitlines()
+
 
 class WorkspaceConfig:
     def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
@@ -1206,7 +1210,7 @@ def run_lsp():
                         dead_branch = ast.else_block() if val.value() else ast.then_block()
                         if dead_branch:
                             loc = dead_branch.location()
-                            tokens.extend(range_to_tokens(loc, text_doc.lines))
+                            tokens.extend(range_to_tokens(loc, fi.file_lines()))
 
         return SemanticTokens(data=encode_deltas(tokens))
 
