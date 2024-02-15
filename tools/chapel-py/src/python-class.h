@@ -21,6 +21,7 @@
 #define CHAPEL_PY_PYTHON_CLASS_H
 #include "Python.h"
 #include "chpl/framework/Context.h"
+#include <optional>
 
 template <typename ObjectType>
 struct PerTypeMethods;
