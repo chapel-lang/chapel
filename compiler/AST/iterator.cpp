@@ -1847,6 +1847,10 @@ rebuildIterator(IteratorInfo* ii,
 
   fn->insertAtTail(new DefExpr(iterator));
 
+  // Lydia 2/14/24 todo: only do this when we're performing the constness
+  // checks?
+  fn->insertAtTail(new CallExpr(PRIM_ZERO_VARIABLE, new SymExpr(iterator)));
+
   // For each live argument
   forv_Vec(Symbol, local, locals) {
     if (!toArgSymbol(local))
