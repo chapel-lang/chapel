@@ -77,14 +77,14 @@ CLASS_BEGIN(AstNode)
   PLAIN_GETTER(AstNode, called_fn, "Get the function being invoked by this node",
                const chpl::uast::AstNode*, return calledFnForNode(context, node))
   PLAIN_GETTER(AstNode, resolve, "Perform resolution on code surrounding this node to determine its type and other information.",
-               PyObject*, return ResolvedExpressionObject::create(contextObject, resolveResultsForNode(context, node)))
+               std::optional<ResolvedExpressionObject*>, return ResolvedExpressionObject::tryCreate(contextObject, resolveResultsForNode(context, node)))
   METHOD(AstNode, resolve_via, "Use a given function's type information to determine the information of this node.",
-         PyObject*(PyObject*),
+         std::optional<ResolvedExpressionObject*>(TypedSignatureObject*),
 
-         auto sigObj = (TypedSignatureObject*) std::get<0>(args);
+         auto sigObj = std::get<0>(args);
          auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
          auto r = resolvedFn->byAstOrNull(node);
-         return ResolvedExpressionObject::create(contextObject, r))
+         return ResolvedExpressionObject::tryCreate(contextObject, r))
 CLASS_END(AstNode)
 
 CLASS_BEGIN(AnonFormal)

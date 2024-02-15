@@ -28,7 +28,7 @@ CLASS_BEGIN(Context)
   PLAIN_GETTER(Context, introspect_parsed_files, "Inspect the list of files that have been parsed by the Context",
                std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(&node))
   PLAIN_GETTER(Context, track_errors, "Return a context manager that tracks errors emitted by this Context",
-               PyObject*, std::ignore = node; return ErrorManagerObject::create(contextObject, std::make_tuple()))
+               ErrorManagerObject*, std::ignore = node; return ErrorManagerObject::create(contextObject, std::make_tuple()))
   PLAIN_GETTER(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes",
                std::string, std::ignore = node; return generatePyiFile())
 
@@ -119,12 +119,12 @@ CLASS_END(ErrorManager)
 
 CLASS_BEGIN(ResolvedExpression)
   PLAIN_GETTER(ResolvedExpression, most_specific_candidate, "If this node is a call, return the most specific overload selected by call resolution.",
-               PyObject*,
+               std::optional<MostSpecificCandidateObject*>,
 
                if (auto& msc = node->mostSpecific().only()) {
                  return MostSpecificCandidateObject::create(contextObject, {&msc, node->poiScope()});
                }
-               Py_RETURN_NONE)
+               return {})
   PLAIN_GETTER(ResolvedExpression, type, "Retrieve the type of the expression.",
                std::optional<QualifiedTypeTuple>,
 
@@ -138,7 +138,7 @@ CLASS_END(ResolvedExpression)
 
 CLASS_BEGIN(MostSpecificCandidate)
   PLAIN_GETTER(MostSpecificCandidate, function, "Get the signature of the function called by this candidate.",
-               PyObject*, return TypedSignatureObject::create(contextObject, {node.candidate->fn(), node.poiScope }))
+               TypedSignatureObject*, return TypedSignatureObject::create(contextObject, {node.candidate->fn(), node.poiScope }))
   PLAIN_GETTER(MostSpecificCandidate, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",
                std::vector<int>,
 
