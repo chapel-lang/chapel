@@ -110,6 +110,7 @@ from lsprotocol.types import (
     DocumentHighlight,
     DocumentHighlightKind,
 )
+from lsprotocol.types import TEXT_DOCUMENT_CODE_LENS, CodeLensParams, CodeLens, Command
 
 import argparse
 import configargparse
@@ -218,6 +219,18 @@ class PositionList(Generic[EltT]):
 
     def append(self, elt: EltT):
         self.elts.append(elt)
+
+    def insert(self, elt: EltT):
+        # pos = self.get_range(elt).start
+        # end = bisect_left(
+        #     self.elts, pos, key=lambda x: self.get_range(x).start
+        # )
+        # self.elts.insert(end, elt)
+
+        # :sunglasses:
+        self.elts.append(elt)
+        self.sort()
+
 
     def clear(self):
         self.elts.clear()
@@ -1095,6 +1108,41 @@ def run_lsp():
             )
 
         return highlights
+
+    @server.feature(TEXT_DOCUMENT_CODE_LENS)
+    async def code_lens(ls: ChapelLanguageServer, params: CodeLensParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        actions = []
+        decls = fi.def_segments.elts
+        for decl in decls:
+            if (
+                isinstance(decl.node, chapel.Function)
+                and decl.node.unique_id() in fi.instantiations
+            ):
+                insts = fi.instantiations[decl.node.unique_id()]
+                for (i, inst) in enumerate(insts):
+                    action = CodeLens(
+                        data = (decl.node.unique_id(), i),
+                        command = Command("Show instantiation", "chpl-language-server/showInstantiation", [params.text_document.uri, decl.node.unique_id(), i]),
+                        range = decl.rng
+                    )
+                    actions.append(action)
+
+        return actions
+
+    @server.command("chpl-language-server/showInstantiation")
+    async def show_instantiation(ls: ChapelLanguageServer, data: Tuple[str, str, int]):
+        uri, unique_id, i = data
+
+        fi, _ = ls.get_file_info(uri)
+        decl = next(decl for decl in fi.def_segments.elts if decl.node.unique_id() == unique_id)
+        inst = list(fi.instantiations[unique_id])[i]
+        fi.instantiation_segments.insert((decl, inst))
+
+        ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
 
     server.start_io()
 
