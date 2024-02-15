@@ -100,7 +100,11 @@ proc end_onerr(retval : int, inst ...?narg) : void {
 
 /* This is a simple class to show end_onerr deletes it correctly. */
 
-class dummyclass {
+/* NOTE: This class and its associated instance have been commented out because
+end_onerr is not triggered in the following. In addition, I suspect a potential
+memory leak in the initial version of this file since 'dummy' was not deleted. */
+
+/* class dummyclass {
   var tmp1 : int(32);
   var tmp2 : int(64);
 
@@ -109,7 +113,7 @@ class dummyclass {
   }
 }
 
-var dummy = new unmanaged dummyclass(5,6);
+var dummy = new unmanaged dummyclass(5,6); */
 
 
 
@@ -131,7 +135,7 @@ if ("" == outname) then
   usage("missing --outname");
 
 retval = PNG_read(inname.c_str(), rgb);
-end_onerr(retval, rgb, dummy);
+end_onerr(retval, rgb/*, dummy*/);
 
 if (rgb.deref().ncol <= x) {
   free_rgbimage(rgb);
@@ -153,7 +157,7 @@ rgb.deref().g(xy) = 2;
 rgb.deref().b(xy) = 3;
 
 retval = PNG_write(outname.c_str(), rgb);
-end_onerr(retval, rgb, dummy);
+end_onerr(retval, rgb/*, dummy*/);
 
 free_rgbimage(rgb);
-delete dummy;
+/* delete dummy; */
