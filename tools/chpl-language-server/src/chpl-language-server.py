@@ -724,7 +724,7 @@ class ChapelLanguageServer(LanguageServer):
         # an explicit type, and whose type is valid.
         _, type_, _ = qt
         if (
-            not isinstance(decl.node, chapel.Variable)
+            not isinstance(decl.node, (chapel.Variable, chapel.Formal))
             or decl.node.type_expression() is not None
             or isinstance(type_, chapel.ErroneousType)
         ):
