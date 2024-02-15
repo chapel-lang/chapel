@@ -1,6 +1,6 @@
 use IO, Math, ParallelIO, ConcurrentMap, Sort, Time;
 
-config const fileName = "measurements.txt",
+config const fileName = "million_entries.txt",
              nTasks = here.maxTaskPar,
              printOutput = false,
              timeExecution = false;
@@ -22,7 +22,7 @@ proc main() {
     if printOutput {
         var results = cityTempStats.toArray();
         sort(results, new comparator());
-        for (city, td) in results do writef("%20s: %?", city.decode(), temps);
+        for (city, td) in results do writef("%20s: %?", city.decode(), td);
     }
 }
 

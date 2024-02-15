@@ -574,7 +574,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     /*
       Default initialize the manager.
@@ -861,7 +861,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted on current locale
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     //  Vector for bulk transfer of remote objects marked deleted on current
     //  locale

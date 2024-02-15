@@ -515,7 +515,7 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    inline proc atomicVariable ref {
+    inline proc ref atomicVariable ref {
       if hasABASupport {
         return atomicVar[0]._ABA_ptr;
       } else {
@@ -575,11 +575,11 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc read() : objType? {
+    proc ref read() : objType? {
       return fromPointer(atomicVariable.read());
     }
 
-    proc compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
+    proc ref compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
       return atomicVariable.compareAndSwap(toPointer(expectedObj), toPointer(newObj));
     }
 
@@ -600,7 +600,7 @@ prototype module AtomicObjects {
       compareAndSwapABA(expectedObj, newObj.getObject());
     }
 
-    proc write(newObj:objType?) {
+    proc ref write(newObj:objType?) {
       atomicVariable.write(toPointer(newObj));
     }
 
@@ -625,7 +625,7 @@ prototype module AtomicObjects {
       write128bit_special(new ABA(objType?, toPointer(newObj), 0));
     }
 
-    inline proc exchange(newObj:objType?) : objType? {
+    inline proc ref exchange(newObj:objType?) : objType? {
       return fromPointer(atomicVariable.exchange(toPointer(newObj)));
     }
 
