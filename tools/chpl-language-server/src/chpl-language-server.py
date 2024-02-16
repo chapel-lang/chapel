@@ -225,7 +225,7 @@ def range_to_tokens(
 ) -> List[Tuple[int, int, int]]:
     """
     Convert a Chapel location to a list of token-compatible ranges. If a location
-    spans multiple lines, it gets split into multuple tokens. The lines
+    spans multiple lines, it gets split into multiple tokens. The lines
     and columns are zero-indexed.
 
     Returns a list of (line, column, length).
