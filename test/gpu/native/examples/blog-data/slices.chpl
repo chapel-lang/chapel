@@ -1,7 +1,7 @@
-import RangeChunk;
+import RangeChunk.chunks;
 
-config const n = 10;           // now, our application has `--n` to set this!
-config const sliceSize = 5;    // number of elements per slice
+config const n = 32;           // now, our application has `--n` to set this!
+config const sliceSize = 4;    // number of elements per slice
 
 const numSlices = n/sliceSize; // assume divisibility for simplicity
 
@@ -11,7 +11,7 @@ HostArr = 1;              // executes on [multicore] CPU
 on here.gpus[0] {
   var DevArr: [1..n] int;  // allocated on the device
 
-  for chunk in RangeChunk.chunks(1..n, numSlices) {
+  for chunk in chunks(1..n, numSlices) {
     DevArr = HostArr[chunk];        // copy a slice from host to device
     DevArr += 1;                    // executes on GPU as a kernel
     HostArr[chunk] = DevArr;        // copy from device to a slice on host
