@@ -71,7 +71,10 @@ CLASS_BEGIN(AstNode)
   PLAIN_GETTER(AstNode, called_fn, "Get the function being invoked by this node",
                const chpl::uast::AstNode*, return calledFnForNode(context, node))
   PLAIN_GETTER(AstNode, resolve, "Perform resolution on code surrounding this node to determine its type and other information.",
-               std::optional<ResolvedExpressionObject*>, return ResolvedExpressionObject::tryCreate(contextObject, resolveResultsForNode(context, node)))
+               std::optional<ResolvedExpressionObject*>,
+
+               auto r = resolveResultsForNode(context, node);
+               return ResolvedExpressionObject::tryCreate(contextObject, r))
   METHOD(AstNode, resolve_via, "Use a given function's type information to determine the information of this node.",
          std::optional<ResolvedExpressionObject*>(TypedSignatureObject*),
 
