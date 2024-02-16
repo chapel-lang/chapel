@@ -323,6 +323,18 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
   return {nullptr, nullptr};
 }
 
+static QualifiedType handleParamCast(Context* context,
+                                     QualifiedType a,
+                                     QualifiedType b) {
+  // convert Param to Immediate
+  Immediate aImm = paramToImmediate(a.param(), a.type());
+  Immediate bImm = paramToImmediate(b.param(), b.type());
+
+  coerce_immediate(context, &aImm, &bImm);
+  std::pair<const Param*, const Type*> pair = immediateToParam(context, bImm);
+  return QualifiedType(Qualifier::PARAM, pair.second, pair.first);
+}
+
 QualifiedType Param::fold(Context* context,
                           chpl::uast::PrimitiveTag op,
                           QualifiedType a,
@@ -334,6 +346,11 @@ QualifiedType Param::fold(Context* context,
 
   // fold
   int immOp = op;
+
+  if (op == chpl::uast::PrimitiveTag::PRIM_CAST) {
+    // valid param casts should always be foldable
+    return handleParamCast(context, a, b);
+  }
 
   if (!Param::isParamOpFoldable(op)) {
     CHPL_ASSERT(false && "param primitive op not foldable");
