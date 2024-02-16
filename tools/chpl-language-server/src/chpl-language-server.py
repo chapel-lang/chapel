@@ -490,7 +490,7 @@ class FileInfo:
                 self.possibly_visible_decls.append(child)
 
     def _search_instantiations(
-        self, root: chapel.AstNode, via: Optional[chapel.TypedSignature] = None
+        self, root: Union[chapel.AstNode, List[chapel.AstNode]], via: Optional[chapel.TypedSignature] = None
     ):
         for node in chapel.preorder(root):
             if not isinstance(node, chapel.FnCall):
@@ -539,8 +539,7 @@ class FileInfo:
 
         if self.use_resolver:
             with self.context.context.track_errors() as _:
-                for ast in asts:
-                    self._search_instantiations(ast)
+                self._search_instantiations(asts)
 
     def get_use_segment_at_position(
         self, position: Position
@@ -1307,16 +1306,15 @@ def run_lsp():
 
         tokens = []
 
-        for root in fi.get_asts():
-            for ast in chapel.postorder(root):
-                if isinstance(ast, chapel.core.Conditional):
-                    start_pos = location_to_range(ast.location()).start
-                    instantiation = fi.get_inst_segment_at_position(start_pos)
-                    tokens.extend(
-                        ls.get_dead_code_tokens(
-                            ast, fi.file_lines(), instantiation
-                        )
+        for ast in chapel.postorder(fi.get_asts()):
+            if isinstance(ast, chapel.core.Conditional):
+                start_pos = location_to_range(ast.location()).start
+                instantiation = fi.get_inst_segment_at_position(start_pos)
+                tokens.extend(
+                    ls.get_dead_code_tokens(
+                        ast, fi.file_lines(), instantiation
                     )
+                )
 
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
