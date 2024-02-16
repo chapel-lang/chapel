@@ -87,6 +87,59 @@ struct ParamObject : public PythonClassWithObject<ParamObject, const chpl::types
   }
 };
 
+struct ResolvedExpressionObject : public PythonClassWithObject<ResolvedExpressionObject, const chpl::resolution::ResolvedExpression*> {
+  static constexpr const char* Name = "ResolvedExpression";
+  static constexpr const char* DocStr = "Container for type information about a particular AST node.";
+};
+
+// Return a MostSpecificCandidate with its POI scope, so that we can call 'resolve'
+// on it and get the correct result.
+struct MostSpecificCandidateAndPoiScope {
+  const chpl::resolution::MostSpecificCandidate* candidate;
+  const chpl::resolution::PoiScope* poiScope;
+};
+
+struct MostSpecificCandidateObject : public PythonClassWithObject<MostSpecificCandidateObject, MostSpecificCandidateAndPoiScope> {
+  static constexpr const char* Name = "MostSpecificCandidate";
+  static constexpr const char* DocStr = "A candidate function returned from call resolution that represents the most specific overload matching the call.";
+};
+
+// Same as MostSpecificCandidate: include the POI scope in the bundle, so that
+// we immediately have all the info to resolve the function.
+struct TypedSignatureAndPoiScope {
+  const chpl::resolution::TypedFnSignature* signature;
+  const chpl::resolution::PoiScope* poiScope;
+};
+
+struct TypedSignatureObject : public PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope> {
+  static constexpr const char* Name = "TypedSignature";
+  static constexpr const char* DocStr = "The signature of a particular function. Could include types gathred when instantiating the function";
+
+  static Py_hash_t hash(TypedSignatureObject* self) {
+    return chpl::hash(self->value_.signature, self->value_.poiScope);
+  }
+
+  // Define a rich comparison function, too
+  static PyObject* richcompare(TypedSignatureObject* self, PyObject* other, int op) {
+    if (other->ob_type != &TypedSignatureObject::PythonType) {
+      Py_RETURN_NOTIMPLEMENTED;
+    }
+    auto otherCast = (TypedSignatureObject*) other;
+    auto selfVal = std::make_tuple(self->value_.signature, self->value_.poiScope);
+    auto otherVal = std::make_tuple(otherCast->value_.signature, otherCast->value_.poiScope);
+
+    Py_RETURN_RICHCOMPARE(selfVal, otherVal, op);
+  }
+
+  static PyTypeObject configurePythonType() {
+    // Configure the necessary methods to make inserting into sets working:
+    PyTypeObject configuring = PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType();
+    configuring.tp_hash = (hashfunc) hash;
+    configuring.tp_richcompare = (richcmpfunc) richcompare;
+    return configuring;
+  }
+};
+
 template<typename IntentType>
 const char* intentToString(IntentType intent) {
   return qualifierToString(chpl::uast::Qualifier(int(intent)));

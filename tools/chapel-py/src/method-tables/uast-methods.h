@@ -56,15 +56,9 @@ CLASS_BEGIN(AstNode)
                node->id().stringify(ss, CHPL_SYNTAX);
                return ss.str())
   PLAIN_GETTER(AstNode, scope, "Get the scope for this AST node",
-               ScopeObject*,
+               std::optional<ScopeObject*>,
 
-               // XXX: bit of a hack. This returns a PyObject* because it can
-               // be 'None'. However, to match the lambda return type, we should
-               // return ScopeObject*. The wrapping casts it right back to
-               // a PyObject*, so this is safe. Using ScopeObject* instead
-               // of PyObject* as a return type is better because we can
-               // generate more specific Python type signatures.
-               return (ScopeObject*) ScopeObject::create(contextObject, resolution::scopeForId(context, node->id())))
+               return ScopeObject::tryCreate(contextObject, resolution::scopeForId(context, node->id())))
   PLAIN_GETTER(AstNode, type, "Get the type of this AST node, as a 3-tuple of (kind, type, param).",
                std::optional<QualifiedTypeTuple>,
 
@@ -76,6 +70,18 @@ CLASS_BEGIN(AstNode)
                return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
   PLAIN_GETTER(AstNode, called_fn, "Get the function being invoked by this node",
                const chpl::uast::AstNode*, return calledFnForNode(context, node))
+  PLAIN_GETTER(AstNode, resolve, "Perform resolution on code surrounding this node to determine its type and other information.",
+               std::optional<ResolvedExpressionObject*>,
+
+               auto r = resolveResultsForNode(context, node);
+               return ResolvedExpressionObject::tryCreate(contextObject, r))
+  METHOD(AstNode, resolve_via, "Use a given function's type information to determine the information of this node.",
+         std::optional<ResolvedExpressionObject*>(TypedSignatureObject*),
+
+         auto sigObj = std::get<0>(args);
+         auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
+         auto r = resolvedFn->byAstOrNull(node);
+         return ResolvedExpressionObject::tryCreate(contextObject, r))
 CLASS_END(AstNode)
 
 CLASS_BEGIN(AnonFormal)

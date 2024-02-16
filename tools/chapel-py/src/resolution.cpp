@@ -114,7 +114,7 @@ static const resolution::ResolvedExpression* resolveViaModule(Context* context, 
   return nullptr;
 }
 
-static const resolution::ResolvedExpression* resolveResultsForNode(Context* context, const AstNode* node) {
+const resolution::ResolvedExpression* resolveResultsForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
     auto rr = resolveViaFunction(context, search, node);
