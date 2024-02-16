@@ -11,7 +11,7 @@ class CSharpSortRandom {
   private static void Main() {
     Console.WriteLine("Creating Random Array");
     Random rng = new Random();
-    int n = 1024*1024*128;
+    int n = 128*1024*1024;
     long[] arr = new long[n];
     for (int i = 0; i < n; i++) {
       int low = rng.Next();
@@ -26,5 +26,7 @@ class CSharpSortRandom {
     double elapsed = stopwatch.Elapsed.TotalSeconds;
     Console.WriteLine("Sorting Time Elapsed " + elapsed + " s");
     Console.WriteLine((8*n/elapsed/1024.0/1024.0) + " MiB/s");
+    Console.WriteLine((n/elapsed/1000.0/1000.0) +
+                      " million elements sorted per second");
   }
 }

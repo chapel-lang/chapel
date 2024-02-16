@@ -1,11 +1,11 @@
-revcomp8.chpl:28: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 revcomp8.chpl:29: warning: QIO_CH_ALWAYS_UNBUFFERED is deprecated
-revcomp8.chpl:30: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 revcomp8.chpl:31: warning: QIO_CH_ALWAYS_UNBUFFERED is deprecated
 revcomp8.chpl:28: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-revcomp8.chpl:28: warning: reader with a 'kind' argument is deprecated, please use Deserializers instead
+revcomp8.chpl:28: warning: reader with a 'kind' argument is deprecated, please use Serializers instead
+revcomp8.chpl:28: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 revcomp8.chpl:30: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
 revcomp8.chpl:30: warning: writer with a 'kind' argument is deprecated, please use Serializers instead
+revcomp8.chpl:30: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 revcomp8.chpl:33: In function 'main':
 revcomp8.chpl:35: warning: the idxType of this range literal 10..121 with the low bound of the type uint(8) and the high bound of the type int(64) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
 revcomp8.chpl:146: In function 'revcomp':

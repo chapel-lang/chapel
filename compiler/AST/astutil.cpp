@@ -48,6 +48,7 @@
 
 #include "global-ast-vecs.h"
 
+#include <set>
 #include <vector>
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
@@ -149,6 +150,40 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
     if (SymExpr* labelSE = toSymExpr(gt->label))
       if (labelSE->symbol()->inTree())
         GOTOs.push_back(gt);
+}
+
+std::set<Symbol*> findAllDetupledComponents(Symbol* sym) {
+  std::set<Symbol*> ret;
+
+  if (!sym->typeInfo()->symbol->hasFlag(FLAG_TUPLE) ||
+      !sym->hasFlag(FLAG_TEMP)) {
+    return ret;
+  }
+
+  for_SymbolSymExprs(se1, sym) {
+    auto c1 = toCallExpr(se1->parentExpr);
+    if (c1 && c1->baseExpr == se1) {
+      auto c2 = toCallExpr(c1->parentExpr);
+      if (c2 && c2->isPrimitive(PRIM_MOVE)) {
+        auto seTemp = toSymExpr(c2->get(1));
+        if (seTemp && seTemp->symbol()->hasFlag(FLAG_TEMP)) {
+          for_SymbolSymExprs(se2, seTemp->symbol()) {
+            auto c3 = toCallExpr(se2->parentExpr);
+            if (c3 && c3->isPrimitive(PRIM_INIT_VAR) &&
+                c3 != c2 &&
+                c3->get(2) == se2) {
+              auto seFound = toSymExpr(c3->get(1));
+              INT_ASSERT(seFound);
+              auto sym = seFound->symbol();
+              INT_ASSERT(ret.find(sym) == ret.end());
+              ret.insert(sym);
+            }
+          }
+        }
+      }
+    }
+  }
+  return ret;
 }
 
 //
@@ -1198,6 +1233,11 @@ static void removeVoidMoves()
   }
 }
 
+static void removeStatementLevelUsesOfNone() {
+  for_SymbolSymExprs(se, gNone) {
+    if (se == se->getStmtExpr()) se->remove();
+  }
+}
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.
@@ -1219,6 +1259,8 @@ prune() {
   pruneUnusedTypes(types);
 
   removeVoidMoves();
+
+  removeStatementLevelUsesOfNone();
 }
 
 

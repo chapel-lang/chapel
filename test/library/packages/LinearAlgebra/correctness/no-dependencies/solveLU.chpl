@@ -35,7 +35,7 @@ var res = true;
 
     // solve
     const x = solve(Ao, bo);
-    bo = b; // `solve` overrites bo
+    assertAlmostEqual(b, bo, "solve() modified its argument");
 
     // check results
     if !almostEquals(dot(Ao, x), bo) {

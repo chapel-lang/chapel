@@ -101,4 +101,4 @@ proc createTable() {
 
   return table;
 }
-use Compat;
+use Compat, CompatIOKind;

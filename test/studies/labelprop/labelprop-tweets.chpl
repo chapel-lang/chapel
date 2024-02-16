@@ -439,8 +439,7 @@ proc create_and_analyze_graph(ref Pairs)
   //      with as much internal state as the yielded values)
   //   - yield values only within the requested range
   //     (in order to yield once, keep statistics)
-  var reorder:[G.vertices] int(32);
-  permutation(reorder, seed=seed);
+  var reorder = permute(G.vertices, seed);
   // Or we could just do it in the normal order...
 
   var go: atomic bool;
@@ -504,7 +503,7 @@ proc create_and_analyze_graph(ref Pairs)
       var tiebreaker = new randomStream(seed+vid, eltType=bool);
 
       for (count,lab) in zip(counts, counts.domain) {
-        if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
+        if count > maxcount || (count == maxcount && tiebreaker.next()) {
           maxcount = count;
           maxlabel = lab;
         }

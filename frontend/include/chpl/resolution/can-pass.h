@@ -52,6 +52,10 @@ class CanPassResult {
     NUMERIC,
     /** A conversion that implements subtyping */
     SUBTYPE,
+    /** A conversion that borrows a managed type (without subtyping) */
+    BORROWS,
+    /** A conversion that implements subtyping AND borrows a managed type */
+    BORROWS_SUBTYPE,
     /** Non-subtype conversion that doesn't produce a param */
     OTHER,
   };
@@ -114,6 +118,10 @@ class CanPassResult {
                                          const types::ClassType* actualCt,
                                          const types::ClassType* formalCt);
 
+  static CanPassResult canPassSubtypeOrBorrowing(Context* context,
+                                                 const types::Type* actualT,
+                                                 const types::Type* formalT);
+
   static CanPassResult canPassSubtype(Context* context,
                                       const types::Type* actualT,
                                       const types::Type* formalT);
@@ -162,6 +170,10 @@ class CanPassResult {
   bool convertsWithParamNarrowing() const {
     return conversionKind_ == PARAM_NARROWING;
   }
+
+  /** Returns true if an implicit borrowing conversion is required.
+      Does not include borrowing with implicit subtyping. */
+  bool convertsWithBorrowing() const { return conversionKind_ == BORROWS; }
 
   // implementation of canPass to allow use of private fields
   static CanPassResult canPass(Context* context,
@@ -230,7 +242,7 @@ class KindProperties {
 
   /* Combine two sets of kind properties, strictly enforcing properties of
      the receiver (e.g. (receiver) param + (other) value = invalid, because
-     param-ness is requird).
+     param-ness is required).
 
      const-ness and ref-ness mismatch doesn't raise issues here since const/ref
      checking is a separate pass. */

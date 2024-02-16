@@ -138,6 +138,12 @@ Expr* buildForLoopExpr(Expr* indices,
                        Expr* cond = NULL,
                        bool maybeArrayType = false,
                        bool zippered = false);
+Expr* buildForeachLoopExpr(Expr* indices,
+                           Expr* iterator,
+                           Expr* expr,
+                           Expr* cond = NULL,
+                           bool maybeArrayType = false,
+                           bool zippered = false);
 Expr* buildForallLoopExpr(Expr* indices,
                           Expr* iterator,
                           Expr* expr,

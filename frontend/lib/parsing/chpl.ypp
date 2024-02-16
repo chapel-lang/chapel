@@ -527,6 +527,8 @@
 
 %type <exprList> class_level_stmt_ls
 
+%type <uniqueStr> for_loop_kw
+
 %type <commentsAndStmt> stmt tryable_stmt stmt_base attribute_receiver
 %type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt loop_stmt_base
@@ -1576,6 +1578,17 @@ loop_stmt:
 | no_loop_attributes loop_stmt_base { $$ = $2; }
 ;
 
+/* For loops that can be either statements or expressions, use a separate
+   nonterminal to represent the specific keyword used. This way, we reduce
+   in both the statement and the expression case, and there are no shift-
+   reduce conflicts arising from not knowing if something is an expression
+   or a statement. */
+for_loop_kw :
+  TFOR
+| TFORALL
+| TFOREACH
+;
+
 loop_stmt_base:
   TDO stmt TWHILE expr TSEMI
   {
@@ -1636,22 +1649,6 @@ loop_stmt_base:
   {
     $$ = context->buildCoforallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
   }
-| TFOR expr TIN expr do_stmt
-  {
-    $$ = context->buildForLoopStmt(@1, @2, @5, $2, $4, $5);
-  }
-| TFOR expr TIN zippered_iterator do_stmt
-  {
-    $$ = context->buildForLoopStmt(@1, @2, @5, $2, $4, $5);
-  }
-| TFOR expr do_stmt
-  {
-    $$ = context->buildForLoopStmt(@1, @1, @3, nullptr, $2, $3);
-  }
-| TFOR zippered_iterator do_stmt
-  {
-    $$ = context->buildForLoopStmt(@1, @1, @3, nullptr, $2, $3);
-  }
 | TFOR TPARAM ident_def TIN expr do_stmt
   {
     std::vector<ParserComment>* comments;
@@ -1672,69 +1669,37 @@ loop_stmt_base:
     context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);
   }
-| TFORALL expr TIN expr                                   do_stmt
+| for_loop_kw expr TIN expr                                   do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
+    $$ = context->buildGeneralLoopStmt(@1, @2, @5, $1, $2, $4, nullptr, $5);
   }
-| TFORALL expr TIN expr              forall_intent_clause do_stmt
+| for_loop_kw expr TIN expr              forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+    $$ = context->buildGeneralLoopStmt(@1, @2, @6, $1, $2, $4, $5, $6);
   }
-| TFORALL expr TIN zippered_iterator                      do_stmt
+| for_loop_kw expr TIN zippered_iterator                      do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
+    $$ = context->buildGeneralLoopStmt(@1, @2, @5, $1, $2, $4, nullptr, $5);
   }
-| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt
+| for_loop_kw expr TIN zippered_iterator forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+    $$ = context->buildGeneralLoopStmt(@1, @2, @6, $1, $2, $4, $5, $6);
   }
-| TFORALL          expr                                   do_stmt
+| for_loop_kw          expr                                   do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
+    $$ = context->buildGeneralLoopStmt(@1, @1, @3, $1, nullptr, $2, nullptr, $3);
   }
-| TFORALL          expr              forall_intent_clause do_stmt
+| for_loop_kw          expr              forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
+    $$ = context->buildGeneralLoopStmt(@1, @1, @4, $1, nullptr, $2, $3, $4);
   }
-| TFORALL          zippered_iterator                      do_stmt
+| for_loop_kw          zippered_iterator                      do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
+    $$ = context->buildGeneralLoopStmt(@1, @1, @3, $1, nullptr, $2, nullptr, $3);
   }
-| TFORALL          zippered_iterator forall_intent_clause do_stmt
+| for_loop_kw          zippered_iterator forall_intent_clause do_stmt
   {
-    $$ = context->buildForallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
-  }
-| TFOREACH expr TIN expr                                   do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
-  }
-| TFOREACH expr TIN expr              forall_intent_clause do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @2, @6, $2, $4, $5, $6);
-  }
-| TFOREACH expr TIN zippered_iterator                      do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
-  }
-| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @2, @6, $2, $4, $5, $6);
-  }
-| TFOREACH          expr                                   do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
-  }
-| TFOREACH          expr              forall_intent_clause do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
-  }
-| TFOREACH          zippered_iterator                      do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
-  }
-| TFOREACH          zippered_iterator forall_intent_clause do_stmt
-  {
-    $$ = context->buildForeachLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
+    $$ = context->buildGeneralLoopStmt(@1, @1, @4, $1, nullptr, $2, $3, $4);
   }
 | TLSBR expr_ls TIN expr TRSBR stmt
   {
@@ -1887,7 +1852,7 @@ ifc_formal_ls:
 
 ifc_formal:
   // implicitly 'type' intent, could specify explicitly - see #16966
-  ident_def  { $$ = context->buildInterfaceFormal(@1, $1); }
+  ident_def  { $$ = context->buildInterfaceFormal(@1, @1, $1); }
 ;
 
 // which types are allowed in 'T implements IFC'
@@ -2589,12 +2554,12 @@ formal_ident_def:
 named_formal:
   opt_formal_intent_tag formal_ident_def opt_colon_formal_type opt_init_expr
   {
-    $$ = context->buildFormal(@$, $1, $2, $3, $4);
+    $$ = context->buildFormal(@$, @2, $1, $2, $3, $4);
   }
 | pragma_ls opt_formal_intent_tag formal_ident_def opt_colon_formal_type
   opt_init_expr
   {
-    $$ = context->buildFormal(@$, $2, $3, $4, $5, true);
+    $$ = context->buildFormal(@$, @3, $2, $3, $4, $5, true);
   }
 | opt_formal_intent_tag formal_ident_def opt_colon_formal_type
   formal_var_arg_expr
@@ -2843,6 +2808,7 @@ var_decl_stmt_inner:
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
+      BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
       context->clearComments();
@@ -3045,153 +3011,44 @@ for_expr:
 ;
 
 for_expr_base:
-  TFOR expr TIN expr TDO expr %prec TFOR
+  for_loop_kw expr TIN expr TDO expr %prec TFOR
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                    BlockStyle::IMPLICIT,
-                    context->consumeToBlock(@6, $6),
-                    /*isExpressionLevel*/ true,
-                    /*isParam*/ false,
-                    context->popLoopAttributeGroup()).release();
+    $$ = context->buildGeneralLoopExpr(@$, @2, @6, $1, $2, $4, $6);
   }
-| TFOR expr TIN zippered_iterator TDO expr %prec TFOR
+| for_loop_kw expr TIN zippered_iterator TDO expr %prec TFOR
   {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                    BlockStyle::IMPLICIT,
-                    context->consumeToBlock(@6, $6),
-                    /*isExpressionLevel*/ true,
-                    /*isParam*/ false,
-                    context->popLoopAttributeGroup()).release();
+    $$ = context->buildGeneralLoopExpr(@$, @2, @6, $1, $2, $4, $6);
   }
-| TFOR expr TDO expr %prec TFOR
+| for_loop_kw expr TDO expr %prec TFOR
   {
-    $$ = For::build(BUILDER, LOC(@$), /*index*/ nullptr, toOwned($2),
-                    BlockStyle::IMPLICIT,
-                    context->consumeToBlock(@4, $4),
-                    /*isExpressionLevel*/ true,
-                    /*isParam*/ false,
-                    context->popLoopAttributeGroup()).release();
+    $$ = context->buildGeneralLoopExpr(@$, @$, @4, $1, nullptr, $2, $4);
   }
-| TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
+| for_loop_kw expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
-    auto index = context->buildLoopIndexDecl(@2, $2);
     auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
                                      BlockStyle::IMPLICIT,
                                      context->consumeToBlock(@9, $9),
                                      /*isExpressionLevel*/ true);
     auto ifLoc = context->makeSpannedLocation(@6, @9);
-    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                    BlockStyle::IMPLICIT,
-                    context->consumeToBlock(ifLoc, ifExpr.release()),
-                    /*isExpressionLevel*/ true,
-                    /*isParam*/ false,
-                    context->popLoopAttributeGroup()).release();
+    $$ = context->buildGeneralLoopExpr(@$, @2, ifLoc, $1, $2, $4, ifExpr.release());
   }
-| TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
+| for_loop_kw expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
   {
-    auto index = context->buildLoopIndexDecl(@2, $2);
     auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
                                      BlockStyle::IMPLICIT,
                                      context->consumeToBlock(@9, $9),
                                      /*isExpressionLevel*/ true);
     auto ifLoc = context->makeSpannedLocation(@6, @9);
-    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                    BlockStyle::IMPLICIT,
-                    context->consumeToBlock(ifLoc, ifExpr.release()),
-                    /*isExpressionLevel*/ true,
-                    /*isParam*/ false,
-                    context->popLoopAttributeGroup()).release();
+    $$ = context->buildGeneralLoopExpr(@$, @2, ifLoc, $1, $2, $4, ifExpr.release());
   }
-| TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
+| for_loop_kw expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
     auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
                                      BlockStyle::IMPLICIT,
                                      context->consumeToBlock(@7, $7),
                                      /*isExpressionLevel*/ true);
     auto ifLoc = context->makeSpannedLocation(@4, @7);
-    $$ = For::build(BUILDER, LOC(@$), /*index*/ nullptr,
-                    toOwned($2),
-                    BlockStyle::IMPLICIT,
-                    context->consumeToBlock(ifLoc, ifExpr.release()),
-                    /*isExpressionLevel*/ true,
-                    /*isParam*/ false,
-                    context->popLoopAttributeGroup()).release();
-  }
-| TFORALL expr TIN expr TDO expr %prec TFOR
-  {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    $$ = Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                       /*withClause*/ nullptr,
-                       BlockStyle::IMPLICIT,
-                       context->consumeToBlock(@6, $6),
-                       /*isExpressionLevel*/ true,
-                       context->popLoopAttributeGroup()).release();
-  }
-| TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
-  {
-    auto index = context->buildLoopIndexDecl(@2, toOwned($2));
-    $$ = Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                       /*withClause*/ nullptr,
-                       BlockStyle::IMPLICIT,
-                       context->consumeToBlock(@6, $6),
-                       /*isExpressionLevel*/ true,
-                       context->popLoopAttributeGroup()).release();
-  }
-| TFORALL expr TDO expr %prec TFOR
-  {
-    $$ = Forall::build(BUILDER, LOC(@$), /*index*/ nullptr, toOwned($2),
-                       /*withClause*/ nullptr,
-                       BlockStyle::IMPLICIT,
-                       context->consumeToBlock(@4, $4),
-                       /*isExpressionLevel*/ true,
-                       context->popLoopAttributeGroup()).release();
-  }
-| TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-  {
-    auto index = context->buildLoopIndexDecl(@2, $2);
-    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
-                                     BlockStyle::IMPLICIT,
-                                     context->consumeToBlock(@9, $9),
-                                     /*isExpressionLevel*/ true);
-    auto ifLoc = context->makeSpannedLocation(@6, @9);
-    $$ = Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                       /*withClause*/ nullptr,
-                       BlockStyle::IMPLICIT,
-                       context->consumeToBlock(ifLoc, ifExpr.release()),
-                       /*isExpressionLevel*/ true,
-                       context->popLoopAttributeGroup()).release();
-  }
-| TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-  {
-    auto index = context->buildLoopIndexDecl(@2, $2);
-    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
-                                     BlockStyle::IMPLICIT,
-                                     context->consumeToBlock(@9, $9),
-                                     /*isExpressionLevel*/ true);
-    auto ifLoc = context->makeSpannedLocation(@6, @9);
-    $$= Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                      /*withClause*/ nullptr,
-                      BlockStyle::IMPLICIT,
-                      context->consumeToBlock(ifLoc, ifExpr.release()),
-                      /*isExpressionLevel*/ true,
-                      context->popLoopAttributeGroup()).release();
-  }
-| TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-  {
-    auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
-                                     BlockStyle::IMPLICIT,
-                                     context->consumeToBlock(@7, $7),
-                                     /*isExpressionLevel*/ true);
-    auto ifLoc = context->makeSpannedLocation(@4, @7);
-    $$ = Forall::build(BUILDER, LOC(@$), /*index*/ nullptr,
-                       toOwned($2),
-                       /*withClause*/ nullptr,
-                       BlockStyle::IMPLICIT,
-                       context->consumeToBlock(ifLoc, ifExpr.release()),
-                       /*isExpressionLevel*/ true,
-                       context->popLoopAttributeGroup()).release();
+    $$ = context->buildGeneralLoopExpr(@$, @$, ifLoc, $1, nullptr, $2, ifExpr.release());
   }
 ;
 

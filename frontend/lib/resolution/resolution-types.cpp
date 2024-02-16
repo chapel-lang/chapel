@@ -763,6 +763,19 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+void CandidatesAndForwardingInfo::stringify(
+    std::ostream& ss, chpl::StringifyKind stringKind) const {
+  ss << "CandidatesAndForwardingInfo: ";
+  ss << "(candidates) ";
+  for (const auto& candidate : candidates) {
+    candidate->stringify(ss, stringKind);
+  }
+  ss << "(forwarding info) ";
+  for (const auto& info : forwardingInfo) {
+    info.stringify(ss, stringKind);
+  }
+}
+
 void CallInfoActual::stringify(std::ostream& ss,
                                chpl::StringifyKind stringKind) const {
   if (!byName_.isEmpty()) {
@@ -844,7 +857,7 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
     }
   }
 
-  return MostSpecificCandidate(fn, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, faMap, coercionFormal, coercionActual);
 }
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,

@@ -329,7 +329,9 @@ struct ParserContext {
                                   bool isOverride);
 
   AstNode*
-  buildFormal(YYLTYPE location, Formal::Intent intent,
+  buildFormal(YYLTYPE location,
+              YYLTYPE locName,
+              Formal::Intent intent,
               PODUniqueString name,
               AstNode* typeExpr,
               AstNode* initExpr,
@@ -429,6 +431,14 @@ struct ParserContext {
                                 ParserExprList* iterandExprs,
                                 AstNode* bodyExpr);
 
+  AstNode* buildGeneralLoopExpr(YYLTYPE locWhole,
+                                YYLTYPE locIndex,
+                                YYLTYPE locBodyAnchor,
+                                PODUniqueString loopType,
+                                AstNode* indexExpr,
+                                AstNode* iterandExpr,
+                                AstNode* blockOrDo);
+
   AstNode* buildTupleComponent(YYLTYPE location, PODUniqueString name);
   AstNode* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);
 
@@ -510,31 +520,15 @@ struct ParserContext {
                                        WithClause* withClause,
                                        CommentsAndStmt cs);
 
-  CommentsAndStmt buildForallLoopStmt(YYLTYPE locForall,
+  CommentsAndStmt buildGeneralLoopStmt(YYLTYPE locKw,
                                       YYLTYPE locIndex,
                                       YYLTYPE locBodyAnchor,
+                                      PODUniqueString loopType,
                                       AstNode* indexExpr,
                                       AstNode* iterandExpr,
                                       WithClause* withClause,
                                       BlockOrDo blockOrDo);
                                       // AttributeGroup* attributeGroup);
-
-  CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForeach,
-                                       YYLTYPE locIndex,
-                                       YYLTYPE locBodyAnchor,
-                                       AstNode* indexExpr,
-                                       AstNode* iterandExpr,
-                                       WithClause* withClause,
-                                       BlockOrDo blockOrDo);
-                                      //  AttributeGroup* attributeGroup);
-
-  CommentsAndStmt buildForLoopStmt(YYLTYPE locFor,
-                                   YYLTYPE locIndex,
-                                   YYLTYPE locBodyAnchor,
-                                   AstNode* indexExpr,
-                                   AstNode* iterandExpr,
-                                   BlockOrDo blockOrDo);
-                                  //  AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
                                         YYLTYPE locIndex,
@@ -685,7 +679,9 @@ struct ParserContext {
   buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                       CommentsAndStmt cs);
 
-  AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);
+  AstNode* buildInterfaceFormal(YYLTYPE location,
+                                YYLTYPE locName,
+                                PODUniqueString name);
 
   CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
                                      PODUniqueString name,

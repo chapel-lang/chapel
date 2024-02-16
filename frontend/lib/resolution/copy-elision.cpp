@@ -99,8 +99,13 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleReturn(const uast::Return* ast, RV& rv) override;
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
+  
+  void handleDisjunction(const AstNode * node, 
+                         VarFrame * currentFrame,
+                         const std::vector<VarFrame*>& frames, 
+                         bool total, RV& rv) override;
+  
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -221,12 +226,9 @@ void FindElidedCopies::addCopyInit(VarFrame* frame, ID fromVarId, ID point) {
   state.points.insert(point);
 }
 void FindElidedCopies::addMention(VarFrame* frame, ID varId) {
-  auto it = frame->copyElisionState.find(varId);
-  if (it != frame->copyElisionState.end()) {
-    CopyElisionState& state = it->second;
-    state.lastIsCopy = false;
-    state.points.clear();
-  }
+  CopyElisionState& state = frame->copyElisionState[varId];
+  state.lastIsCopy = false;
+  state.points.clear();
 }
 
 void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
@@ -404,113 +406,84 @@ void FindElidedCopies::handleYield(const uast::Yield* ast, RV& rv) {
 
 }
 
-void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
-  VarFrame* frame = currentFrame();
-  VarFrame* thenFrame = currentThenFrame();
-  VarFrame* elseFrame = currentElseFrame();
-
-  bool thenReturnsThrows = false;
-  if (thenFrame != nullptr) {
-    thenReturnsThrows = thenFrame->returnsOrThrows;
+static void propagateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFrame) {
+  parentFrame->initedVars.insert(childFrame->initedVars.begin(),
+                                 childFrame->initedVars.end());
+  for(auto pair : childFrame->copyElisionState) {
+    auto id = pair.first;
+    //if there's a non-copy use, update the parent frame
+    if(!pair.second.lastIsCopy) {
+      CopyElisionState& parentState = parentFrame->copyElisionState[id];
+      parentState.lastIsCopy = false;
+      parentState.points.clear();
+    }
   }
-  bool elseReturnsThrows = false;
-  if (elseFrame != nullptr) {
-    elseReturnsThrows = elseFrame->returnsOrThrows;
-  }
+}
 
-  // don't copy elide
-  //  * when the copy statement is in one branch of a conditional but not in
-  //    the other
-  //  * when the other branch does not always return or throw.
 
-  if (thenReturnsThrows && elseReturnsThrows) {
-    // if both blocks return, their copy elisions have already been saved
-  } else if (elseFrame == nullptr && thenReturnsThrows) {
-    // then returns, no else block, so then copy elisions
-    // have already been saved and nothing else to do
-  } else if (elseFrame == nullptr && !thenReturnsThrows && thenFrame != nullptr) {
-    // then does not return, no else block.
-    // allow copy elision only for local variables
-    // outer variables aren't eligible because they wouldn't
-    // aways be copy elided.
-    saveLocalVarElidedCopies(thenFrame);
-  } else if (thenFrame == nullptr && elseReturnsThrows) {
-    // else returns, then block not considered due to param false, so then
-    // copy elisions have already been saved and nothing else to do
-  } else if (thenFrame == nullptr && !elseReturnsThrows && elseFrame != nullptr) {
-    // else does not return, then block not considered due to param false.
-    // allow copy elision only for local variables
-    // outer variables aren't eligible because they wouldn't
-    // aways be copy elided.
-    saveLocalVarElidedCopies(elseFrame);
-  } else if (thenFrame == nullptr && elseFrame == nullptr) {
-    // no else block, then block ignored due to param false.
-    // Nothing to do.
-  } else if (!thenReturnsThrows && !elseReturnsThrows) {
-    // Both then and else blocks exist.
-    // Neither if nor else block returns. Promote elision points from
-    // each block into the parent copy elision map. If a variable is
-    // declared in a higher scope and is not copied in both blocks, then
-    // we cannot promote it. The elision points for local variables from
-    // each block can be promoted freely.
+void FindElidedCopies::handleDisjunction(const AstNode * node,
+                                         VarFrame * currentFrame, 
+                                         const std::vector<VarFrame*>& frames, 
+                                         bool total, RV& rv) {
+  // if any frame is 'param true' the rest of the frames do not matter
+  for (auto frame : frames) {
+    if (!frame->knownPath) continue;
+    // yielding handled during return/throw
+    if (frame->returnsOrThrows) return;
 
-    // First, save local variables from each block.
-    saveLocalVarElidedCopies(thenFrame);
-    saveLocalVarElidedCopies(elseFrame);
+    //yield the local variables
+    saveLocalVarElidedCopies(frame);
 
-    // promote only vars that can be copy elided in both branches
-    for (const auto& thenPair : thenFrame->copyElisionState) {
-      const CopyElisionState& thenState = thenPair.second;
-      if (thenState.lastIsCopy) {
-        ID id = thenPair.first;
-        if (lastMentionIsCopy(elseFrame, id)) {
-          const CopyElisionState& elseState = elseFrame->copyElisionState[id];
-          if (elseState.lastIsCopy) {
-            CopyElisionState& s = frame->copyElisionState[id];
-            s.lastIsCopy = true;
-            s.points.insert(thenState.points.begin(), thenState.points.end());
-            s.points.insert(elseState.points.begin(), elseState.points.end());
-          }
-        }
+    //promote outer variable access
+    for (const auto& entry : frame->copyElisionState) {
+      ID id = entry.first;
+      const CopyElisionState& state = entry.second;
+      if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
+        CopyElisionState& s = currentFrame->copyElisionState[id];
+        s.lastIsCopy = true;
+        s.points.insert(state.points.begin(), state.points.end());
       }
     }
-  } else {
-    // Both then and else exist, but one block returned and the
-    // other did not. Promote all elision points for the block that
-    // didn't return into the parent map.
-    // (those from the block that returned have already been saved)
-    VarFrame* branch = thenReturnsThrows ? elseFrame : thenFrame;
 
-    // First, save local variables from the block
-    saveLocalVarElidedCopies(branch);
+    propagateMentionsAndInits(currentFrame, frame);
 
-    // promote other vars in the branch not returning
-    for (const auto& pair : branch->copyElisionState) {
-      const CopyElisionState& branchState = pair.second;
-      if (branchState.lastIsCopy) {
-        ID id = pair.first;
-        // only consider variables that aren't local to the branch
-        if (branch->eligibleVars.count(id) == 0) {
-          CopyElisionState& s = frame->copyElisionState[id];
-          s.lastIsCopy = true;
-          s.points.insert(branchState.points.begin(), branchState.points.end());
-        }
-      }
+    return;
+  }
+
+  //propagate mentions to the parent
+  for(auto frame: frames) {
+    propagateMentionsAndInits(currentFrame, frame);
+  }
+
+  std::vector<VarFrame*> nonReturningFrames;
+  for(auto frame: frames) {
+    if (frame->returnsOrThrows) continue;
+    saveLocalVarElidedCopies(frame);
+    nonReturningFrames.push_back(frame);
+  }
+
+  if (!total) return;
+
+  // Now, note all variables that are elided in all non-returning branches.
+  std::unordered_map<ID, size_t> idCounts;
+  for (auto frame : nonReturningFrames) {
+    for(auto pair : frame->copyElisionState) {
+      if (pair.second.lastIsCopy) idCounts[pair.first] += 1;
     }
   }
 
-  // propagate inited variables from the then/else scopes
-  if (thenFrame) {
-    frame->initedVars.insert(thenFrame->initedVars.begin(),
-                             thenFrame->initedVars.end());
-  }
-  if (elseFrame) {
-    frame->initedVars.insert(elseFrame->initedVars.begin(),
-                             elseFrame->initedVars.end());
-  }
+  for (auto pair : idCounts) {
+    // Variable did not occur in all frames, it does not get promoted.
+    if (pair.second != nonReturningFrames.size()) continue;
 
-  // now that the current frame is updated, propagate to the parent
-  handleScope(cond, rv);
+    // Populate the parent frame
+    CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
+    parentState.lastIsCopy = true;
+    for (auto frame : nonReturningFrames) {
+      CopyElisionState& frameState = frame->copyElisionState.at(pair.first);
+      parentState.points.insert(frameState.points.begin(), frameState.points.end());
+    }
+  }
 }
 
 void FindElidedCopies::handleTry(const Try* t, RV& rv) {
@@ -566,12 +539,20 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   tryFrame->copyElisionState.swap(updatedState);
 
+  //propagate mentions in the catch clauses
+  for (int i = 0; i < nCatchFrames; i++) {
+    VarFrame* catchFrame = currentCatchFrame(i);
+    if (catchFrame) {
+      propagateMentionsAndInits(tryFrame, catchFrame);
+    }
+  }
   handleScope(t, rv);
 }
 
 static bool allowsCopyElision(const AstNode* ast) {
   return ast->isBlock() ||
          ast->isConditional() ||
+         ast->isSelect() ||
          ast->isLocal() ||
          ast->isSerial() ||
          ast->isTry();
@@ -600,6 +581,10 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
           CopyElisionState& parentState = parent->copyElisionState[id];
           parentState.lastIsCopy = true;
           parentState.points.insert(state.points.begin(), state.points.end());
+        } else if (frame->eligibleVars.count(id) == 0) {
+          CopyElisionState& parentState = parent->copyElisionState[id];
+          parentState.lastIsCopy = false;
+          parentState.points.clear();
         }
       }
     }
@@ -642,7 +627,6 @@ computeElidedCopies(Context* context,
 
   return elidedCopyFromIds;
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

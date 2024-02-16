@@ -158,13 +158,6 @@ module BigInteger {
    */
   private extern proc chpl_macro_int_EFORMAT():c_int;
 
-  /* A compile-time parameter to control the behavior of bigint initializers
-     that take a string argument.
-  */
-  @chpldoc.nodoc()
-  @deprecated("bigint initializers will now always throw instead of halt, this config no longer impacts code and will be removed in a future release")
-  config param bigintInitThrows = true;
-
   // TODO: remove when initializers can throw in their body
   private proc throwingInitWorkaround() throws {
     throw new BadFormatError("Error initializing big integer");
@@ -175,7 +168,7 @@ module BigInteger {
     precision integers across multiple locales.
   */
   pragma "ignore noinit"
-  record bigint : writeSerializable {
+  record bigint : serializable {
     // The underlying GMP C structure
     pragma "no init"
     @chpldoc.nodoc
@@ -428,6 +421,13 @@ module BigInteger {
     /* Writes this number to a :type:`~IO.fileWriter` */
     proc serialize(writer, ref serializer) throws {
       writeThis(writer);
+    }
+
+    /* Read this number from a :type:`~IO.fileReader` */
+    proc ref deserialize(reader, ref deserializer) throws {
+      var s: string;
+      reader.read(s);
+      this = new bigint(s);
     }
   }
 

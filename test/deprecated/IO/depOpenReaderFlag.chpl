@@ -1,3 +1,0 @@
-use IO;
-
-writeln(useNewOpenReaderRegionBounds);

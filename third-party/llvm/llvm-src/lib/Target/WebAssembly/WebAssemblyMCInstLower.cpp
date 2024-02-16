@@ -140,8 +140,8 @@ MCOperand WebAssemblyMCInstLower::lowerSymbolOperand(const MachineOperand &MO,
 }
 
 MCOperand WebAssemblyMCInstLower::lowerTypeIndexOperand(
-    SmallVector<wasm::ValType, 1> &&Returns,
-    SmallVector<wasm::ValType, 4> &&Params) const {
+    SmallVectorImpl<wasm::ValType> &&Returns,
+    SmallVectorImpl<wasm::ValType> &&Params) const {
   auto Signature = std::make_unique<wasm::WasmSignature>(std::move(Returns),
                                                          std::move(Params));
   MCSymbol *Sym = Printer.createTempSymbol("typeindex");
@@ -194,7 +194,7 @@ void WebAssemblyMCInstLower::lower(const MachineInstr *MI,
     case MachineOperand::MO_Immediate: {
       unsigned DescIndex = I - NumVariadicDefs;
       if (DescIndex < Desc.NumOperands) {
-        const MCOperandInfo &Info = Desc.OpInfo[DescIndex];
+        const MCOperandInfo &Info = Desc.operands()[DescIndex];
         if (Info.OperandType == WebAssembly::OPERAND_TYPEINDEX) {
           SmallVector<wasm::ValType, 4> Returns;
           SmallVector<wasm::ValType, 4> Params;

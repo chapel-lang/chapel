@@ -419,7 +419,7 @@ bool AstDumpToHtml::enterLoopExpr(LoopExpr* node) {
 
   fprintf(mFP, "(%d ", node->id);
 
-  if (node->forall) {
+  if (node->type == FORALL_EXPR) {
     if (node->maybeArrayType) fprintf(mFP, "[ ");
     else fprintf(mFP, "<B>forall</B> ");
   } else {

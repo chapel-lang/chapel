@@ -74,7 +74,7 @@ t.stop();
 //
 // It returns a ``timeDelta`` representing the time passed since the Unix
 //  Epoch. The ``timeDelta`` represents the epoch in days, seconds, and
-//  microsends, but we convert this to a single number with the
+//  microseconds, but we convert this to a single number with the
 //  ``totalSeconds()`` method. As a simple example, we can use the following
 // idiom to time the number of seconds something will take:
 //

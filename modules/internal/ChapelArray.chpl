@@ -33,7 +33,7 @@ module ChapelArray {
   use ChapelDebugPrint;
   use CTypes;
   use ChapelPrivatization;
-  use ChplConfig only compiledForSingleLocale;
+  use ChplConfig only compiledForSingleLocale, CHPL_LOCALE_MODEL;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are
@@ -81,7 +81,7 @@ module ChapelArray {
   config param logAllArrEltAccess = false;
 
   proc _isPrivatized(value) param do
-    return !compiledForSingleLocale() &&
+    return (!compiledForSingleLocale() || CHPL_LOCALE_MODEL=="gpu") &&
            ((_privatization && value!.dsiSupportsPrivatization()) ||
             value!.dsiRequiresPrivatization());
     // _privatization is controlled by --[no-]privatization
@@ -1954,7 +1954,7 @@ module ChapelArray {
     }
 
     proc chpl_isNonDistributedArray() param {
-      return domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
+      return chpl_domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
     }
 
     /* Return true if the argument ``a`` is an array with a rectangular
@@ -3633,6 +3633,21 @@ module ChapelArray {
           __primitive("=", r, copy);
         }
       }
+    } else if chpl_iteratorFromForeachExpr(ir) {
+      if needsInitWorkaround(result.eltType) {
+        foreach (ri, src) in zip(result.domain, ir) {
+          ref r = result[ri];
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      } else {
+        foreach (r, src) in zip(result, ir) {
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      }
     } else {
       if needsInitWorkaround(result.eltType) {
         forall (ri, src) in zip(result.domain, ir) with (ref result) {
@@ -3805,7 +3820,7 @@ module ChapelArray {
   // 'castToVoidStar' says whether we should cast the result to c_ptr(void)
 
   proc chpl_arrayToPtrErrorHelper(const ref arr: []) {
-    if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
+    if (!arr.isRectangular() || !chpl_domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=3);
 
     if (arr._value.locale != here) then

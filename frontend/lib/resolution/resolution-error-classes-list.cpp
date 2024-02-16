@@ -1021,6 +1021,76 @@ static bool firstIdFromDecls(
   return false;
 }
 
+void ErrorRecursion::write(ErrorWriterBase& wr) const {
+  auto queryName = std::get<UniqueString>(info);
+  wr.heading(kind_, type_, ID(),
+             "recursion detected in query '", queryName.c_str(), "'");
+}
+
+static const char* recursionMessage =
+  "Recursion errors during resolution can sometimes be addressed by "
+  "explicitly specifying variable and field types instead of "
+  "relying on type inference.";
+
+template <typename Loc>
+static bool printRecursionTrace(ErrorWriterBase& wr,
+                                const std::string& rootGoal,
+                                const Loc& rootLocation,
+                                const std::vector<TraceElement>& trace) {
+  if (trace.size() == 0) return false;
+  std::string prefix = rootGoal + " led to recursion because doing so required";
+  for (size_t idx = 0; idx < trace.size(); idx++) {
+    auto& te = trace[idx];
+    wr.note(te.first, prefix, " ", te.second, ":");
+    wr.codeForLocation(te.first);
+
+    prefix = "which required";
+  }
+
+  return true;
+}
+
+void ErrorRecursionFieldDecl::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info);
+  auto ad = std::get<const uast::AggregateDecl*>(info);
+  auto ct = std::get<const types::CompositeType*>(info);
+  auto& trace = std::get<3>(info);
+
+  std::string rootGoalForTrace = "resolving the field";
+  if (auto vld = ast->toVarLikeDecl()) {
+    wr.heading(kind_, type_, ast, "encountered recursion while resolving field '",
+               vld->name(),"' of type '", ad->name(),"':");
+    rootGoalForTrace += std::string(" '") + vld->name().c_str() + "'";
+  } else {
+    wr.heading(kind_, type_, ast, "encountered recursion while resolving a field"
+               "of type '", ad->name(),"':");
+  }
+  wr.codeForLocation(ast);
+  if (ct->instantiatedFromCompositeType() != nullptr) {
+    wr.note(ad, "the type '", ad->name(), "' was instantiated as '", ct, "'.");
+  }
+
+  if (printRecursionTrace(wr, rootGoalForTrace, ast, trace)) {
+    wr.message("");
+  }
+  wr.message(recursionMessage);
+}
+
+void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info);
+  auto& trace = std::get<2>(info);
+
+  wr.heading(kind_, type_, ast,
+             "encountered recursion while resolving module statement:");
+  wr.codeForLocation(ast);
+
+  auto rootGoalForTrace = "resolving the module statement";
+  if (printRecursionTrace(wr, rootGoalForTrace, ast, trace)) {
+    wr.message("");
+  }
+  wr.message(recursionMessage);
+}
+
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto scopeId = std::get<ID>(info);
   auto name = std::get<UniqueString>(info);
@@ -1141,20 +1211,40 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
 void ErrorSplitInitMismatchedConditionalTypes::write(
     ErrorWriterBase& wr) const {
   const uast::Variable* var = std::get<0>(info);
-  const uast::Conditional* cond = std::get<1>(info);
+  const uast::AstNode* node = std::get<1>(info);
   const types::QualifiedType thenType = std::get<2>(info);
   const types::QualifiedType elseType = std::get<3>(info);
+  const int idx1 = std::get<4>(info);
+  const int idx2 = std::get<5>(info);
 
-  wr.heading(kind_, type_, var,
+  if (node->isConditional()) {
+    const uast::Conditional* cond = node->toConditional();
+    wr.heading(kind_, type_, var,
              "mismatched types for split-initialization of '", var->name(),
              "' in conditional branches.");
-  wr.note(cond->thenBlock(), "initialized with ", thenType,
-          " in 'then' branch");
-  wr.note(cond->elseBlock(), "initialized with ", elseType,
-          " in 'else' branch");
-  wr.message(
-      "Types of different initialization parts for split-initialized "
-      "declarations must exactly match");
+    wr.note(cond->thenBlock(), "initialized with ", thenType,
+            " in 'then' branch");
+    wr.note(cond->elseBlock(), "initialized with ", elseType,
+            " in 'else' branch");
+    wr.message(
+        "Types of different initialization parts for split-initialized "
+        "declarations must exactly match");
+  } else {
+    const uast::Select* sel = node->toSelect();
+    const uast::When* branch1 = sel->whenStmt(idx1);
+    const uast::When* branch2 = sel->whenStmt(idx2);
+    wr.heading(kind_, type_, var,
+             "mismatched types for split-initialization of '", var->name(),
+             "' in select branches.");
+    
+    wr.note(branch1, "Initialized with ", thenType,
+            " in one branch");
+    wr.note(branch2, "Initialized with ", elseType,
+            " in another branch");
+    wr.message(
+        "Types of different initialization parts for split-initialized "
+        "declarations must exactly match");
+  }
 }
 
 void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {

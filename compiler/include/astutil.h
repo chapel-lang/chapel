@@ -56,6 +56,9 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<CondStmt*>& IBBs);
 void computeHasToplevelYields(BaseAST* ast, bool& result);
 
+// Given a detupled tuple 'sym', collect all its components.
+std::set<Symbol*> findAllDetupledComponents(Symbol* sym);
+
 // collect children asts in _an_ order. Today this is preorder
 // but callsites should transition to using collect_asts_{pre,post,un}order
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);

@@ -270,18 +270,6 @@ module HDFS {
       return oldValue - 1;
     }
 
-    pragma "last resort"
-    @deprecated("open with a style argument is deprecated")
-    proc open(path:string, mode:ioMode,
-              style:iostyle,
-              in flags:c_int = 0, // default to based on mode
-              bufferSize:c_int = 0,    // 0 -> use hdfs default value
-              replication:c_short = 0, // 0 -> use hdfs default value
-              blockSize:tSize = 0      // 0 -> use hdfs default value
-             ) throws {
-      return openHelper(path, mode, style: iostyleInternal, flags, bufferSize,
-                  replication, blockSize);
-    }
     /*
 
       Open an HDFS file stored at a particular path.  Note that once the file is
@@ -301,19 +289,6 @@ module HDFS {
               replication:c_short = 0, // 0 -> use hdfs default value
               blockSize:tSize = 0      // 0 -> use hdfs default value
              ) throws {
-      return openHelper(path, mode, flags=flags, bufferSize=bufferSize,
-                        replication=replication, blockSize=blockSize);
-    }
-
-    @chpldoc.nodoc
-    proc openHelper(path:string, mode:ioMode,
-                    style:iostyleInternal = defaultIOStyleInternal(),
-                    in flags:c_int = 0, // default to based on mode
-                    bufferSize:c_int = 0,    // 0 -> use hdfs default value
-                    replication:c_short = 0, // 0 -> use hdfs default value
-                    blockSize:tSize = 0      // 0 -> use hdfs default value
-                    ) throws {
-
       if flags == 0 {
         // set flags based upon ioMode
         select mode {
@@ -346,11 +321,11 @@ module HDFS {
 
       // Create an HDFSFile and return the QIO file containing it
       // this initializer bumps the reference count to this
-      var fl = new unmanaged HDFSFile(_to_unmanaged(this), hfile, path);
+      var fl = new unmanaged HDFSFile(this:unmanaged, hfile, path);
 
       var ret: file;
       try {
-        ret = openplugin(fl, mode, seekable=true, style);
+        ret = openplugin(fl, mode, seekable=true, defaultIOStyleInternal());
       } catch e {
         fl.close();
         delete fl;
@@ -387,7 +362,7 @@ module HDFS {
       if verbose then
         writeln("HDFSFile.setupChannel");
 
-      var hdfsch = new unmanaged HDFSChannel(_to_unmanaged(this), qioChannelPtr);
+      var hdfsch = new unmanaged HDFSChannel(this:unmanaged, qioChannelPtr);
       pluginChannel = hdfsch;
       return 0;
     }

@@ -656,7 +656,7 @@ and :ref:`Parallel_Iterators` for parallel iteration.
 
 Consider a function ``f`` with formal arguments ``s1``, ``s2``, ... that
 are promoted and formal arguments ``a1``, ``a2``, ... that are not
-promoted. The call 
+promoted. The call
 
 .. code-block:: chapel
 
@@ -782,25 +782,21 @@ which results in the promoted expression:
 
    [b in B] A[b]
 
-However, it is an error to modify promoted expressions like this one.
-For example, the following is an error:
+Modifying promoted expressions may introduce undesirable race conditions in
+code. For example, the following code will potentially result in an incorrect
+result:
 
 .. code-block:: chapel
 
+   B = [1, 2, 1];
    A[B] += 3;
 
-If this was promoted, it would become the following:
+To avoid this race, the above code could be written using an explicit loop
+statement and the proper intents, for example:
 
 .. code-block:: chapel
 
-   [b in B] A[b] += 3;
-
-This is illegal, as ``A`` cannot be modified without an explicit ``ref`` intent.
-An explicit loop statement must be used, for example:
-
-.. code-block:: chapel
-
-   [b in B with (ref A)] A[b] += 3;
+   [b in B with (+ reduce A)] A[b] += 3;
 
 .. _Reductions_and_Scans:
 

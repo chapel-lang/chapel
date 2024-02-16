@@ -1854,6 +1854,30 @@ struct Converter {
     return buildThunk(buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
   }
 
+  Expr* tryExtractFilterCond(const uast::IndexableLoop* node, Expr*& cond) {
+    INT_ASSERT(node->isExpressionLevel());
+    INT_ASSERT(node->numStmts() == 1);
+
+    Expr* ret = nullptr;
+    // Unpack things differently if body is a conditional.
+    if (auto origCond = node->stmt(0)->toConditional()) {
+      INT_ASSERT(origCond->numThenStmts() == 1);
+      if (!origCond->hasElseBlock()) {
+        ret = singleExprFromStmts(origCond->thenStmts());
+        cond = toExpr(convertAST(origCond->condition()));
+      } else {
+        INT_ASSERT(origCond->numElseStmts() == 1);
+      }
+    }
+
+    if (!ret) {
+      ret = singleExprFromStmts(node->stmts());
+    }
+
+    INT_ASSERT(ret);
+    return ret;
+  }
+
   Expr* visit(const uast::For* node) {
     Expr* ret = nullptr;
 
@@ -1866,29 +1890,11 @@ struct Converter {
     bool isForExpr = node->isExpressionLevel();
 
     if (node->isExpressionLevel()) {
-      INT_ASSERT(node->numStmts() == 1);
-
-      // Unpack things differently if body is a conditional.
-      if (auto origCond = node->stmt(0)->toConditional()) {
-        INT_ASSERT(origCond->numThenStmts() == 1);
-        if (!origCond->hasElseBlock()) {
-          body = singleExprFromStmts(origCond->thenStmts());
-          cond = toExpr(convertAST(origCond->condition()));
-        } else {
-          INT_ASSERT(origCond->numElseStmts() == 1);
-        }
-      }
-
-      if (!body) {
-        body = singleExprFromStmts(node->stmts());
-      }
-
-      INT_ASSERT(body);
+      body = tryExtractFilterCond(node, cond);
 
       ret = buildForLoopExpr(index, iteratorExpr, body, cond,
                              maybeArrayType,
                              zippered);
-
     // Param loops use the index variable name as 'const char*'.
     } else if (node->isParam()) {
       INT_ASSERT(node->index() && node->index()->isVariable());
@@ -1937,18 +1943,7 @@ struct Converter {
     bool zippered = node->iterand()->isZip();
 
     // An 'if-expr' without an else is special pattern for the builder.
-    if (auto noElseCond = node->stmt(0)->toConditional()) {
-      if (!noElseCond->hasElseBlock()) {
-        expr = singleExprFromStmts(noElseCond->thenStmts());
-        cond = toExpr(convertAST(noElseCond->condition()));
-        INT_ASSERT(cond);
-      }
-    }
-
-    if (!expr) {
-      INT_ASSERT(!cond);
-      expr = singleExprFromStmts(node->stmts());
-    }
+    expr = tryExtractFilterCond(node, cond);
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
@@ -1976,10 +1971,8 @@ struct Converter {
     }
   }
 
-  BlockStmt* visit(const uast::Foreach* node) {
-
-    // Does not appear possible right now, from reading the grammar.
-    INT_ASSERT(!node->isExpressionLevel());
+  Expr* visit(const uast::Foreach* node) {
+    Expr* ret = nullptr;
 
     if (!fForeachIntents && node->withClause()) {
       USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
@@ -1990,18 +1983,24 @@ struct Converter {
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     CallExpr* intents = convertWithClause(node->withClause(), node);
-    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
+    Expr* cond = nullptr;
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
+    bool maybeArrayType = false;
 
-    // convert these for now, despite the error, so that symbols are converted.
-    convertWithClause(node->withClause(), node);
+    if (node->isExpressionLevel()) {
+      auto body = tryExtractFilterCond(node, cond);
 
-    auto loopAttributes = buildLoopAttributes(node);
-    loopAttributes.insertGpuEligibilityAssertion(body);
-    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
-                                         zippered,
-                                         isForExpr, std::move(loopAttributes.llvmMetadata));
+      ret = buildForeachLoopExpr(indices, iteratorExpr, body, cond,
+                                 maybeArrayType, zippered);
+    } else {
+      auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertGpuEligibilityAssertion(body);
+      ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
+                                      zippered,
+                                      isForExpr, std::move(loopAttributes.llvmMetadata));
+    }
 
     return ret;
   }

@@ -326,8 +326,8 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   set(${CHPL_ENV_NAME} ${CHPL_ENV_VALUE} CACHE STRING "overwritten description" FORCE)
 endforeach()
 # We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
-string(REPLACE "-std=c++14" "" CHPL_HOST_BUNDLED_COMPILE_ARGS "${CHPL_HOST_BUNDLED_COMPILE_ARGS}")
-string(REPLACE "-std=c++14" "" CHPL_HOST_SYSTEM_COMPILE_ARGS "${CHPL_HOST_SYSTEM_COMPILE_ARGS}")
+string(REPLACE "-std=c++17" "" CHPL_HOST_BUNDLED_COMPILE_ARGS "${CHPL_HOST_BUNDLED_COMPILE_ARGS}")
+string(REPLACE "-std=c++17" "" CHPL_HOST_SYSTEM_COMPILE_ARGS "${CHPL_HOST_SYSTEM_COMPILE_ARGS}")
 
 if ((CHPL_HOME STREQUAL CMAKE_BINARY_DIR) OR
     (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR))
@@ -366,7 +366,7 @@ endif()
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")
   # let the build and install rpaths be absolute (which is the default)
-  set_target_properties(chpl chpldoc
+  set_target_properties(chpl chpldoc ChplFrontendShared
                         PROPERTIES
                         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
   install(TARGETS chpl chpldoc
@@ -388,7 +388,7 @@ else()
       set(CHPL_INSTALL_RPATH "@executable_path/../../lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
     endif()
 
-    set_target_properties(chpl chpldoc
+    set_target_properties(chpl chpldoc ChplFrontendShared
                           PROPERTIES
                           BUILD_WITH_INSTALL_RPATH TRUE
                           INSTALL_RPATH ${CHPL_INSTALL_RPATH})

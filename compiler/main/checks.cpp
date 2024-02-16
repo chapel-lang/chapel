@@ -197,12 +197,13 @@ bool symbolIsUsedAsRef(Symbol* sym) {
 }
 
 static
-void checkForInvalidPromotions() {
+void checkForPromotionsThatMayRace() {
+  // skip check if warning is off
+  if (!fWarnPotentialRaces) return;
+
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
-
-    if (!shouldWarnUnstableFor(ce)) continue;
 
     if (FnSymbol* fn = ce->theFnSymbol()) {
       if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
@@ -221,7 +222,7 @@ void checkForInvalidPromotions() {
               if(symbolIsUsedAsRef(lhs->symbol())) {
                 USR_WARN(ce,
                          "modifying the result of a promoted index expression "
-                         "is unstable");
+                         "is a potential race condition");
               }
             }
           }
@@ -243,7 +244,7 @@ void check_cullOverReferences()
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 
-  checkForInvalidPromotions();
+  checkForPromotionsThatMayRace();
 }
 
 void check_lowerErrorHandling()

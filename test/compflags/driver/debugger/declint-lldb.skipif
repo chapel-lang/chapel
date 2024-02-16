@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-import shutil
-
-missing_lldb = shutil.which("lldb") is None
-print(missing_lldb)

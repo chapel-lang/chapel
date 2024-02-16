@@ -1,3 +1,0 @@
-GenericTupleWithWhereClause.chpl:1: In function 'bar':
-GenericTupleWithWhereClause.chpl:1: error: unable to resolve type
-  GenericTupleWithWhereClause.chpl:5: called as bar(chpl__tuple_arg_temp0: (real(64),imag(64)))

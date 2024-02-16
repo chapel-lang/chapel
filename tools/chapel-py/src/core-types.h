@@ -25,94 +25,147 @@
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstTag.h"
 #include "error-tracker.h"
+#include "python-class.h"
 
 PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
+PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
+PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
-typedef struct {
-  PyObject_HEAD
-  chpl::Context context;
-  /* Type-specific fields go here. */
-} ContextObject;
-extern PyTypeObject ContextType;
-void setupContextType();
+struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
+  static constexpr const char* Name = "Location";
+  static constexpr const char* DocStr = "An object that represents the location of an AST node in a source file.";
+};
 
-int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs);
-void ContextObject_dealloc(ContextObject* self);
-PyObject* ContextObject_parse(ContextObject *self, PyObject* args);
-PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args);
-PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* args);
-PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args);
-PyObject* ContextObject_track_errors(ContextObject *self, PyObject* args);
+using LineColumnPair = std::tuple<int, int>;
 
-typedef struct {
-  PyObject_HEAD
-  chpl::Location location;
-} LocationObject;
-extern PyTypeObject LocationType;
-void setupLocationType();
+struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resolution::Scope*> {
+  static constexpr const char* Name = "Scope";
+  static constexpr const char* DocStr = "A scope in the Chapel program, such as a block.";
+};
 
-int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs);
-void LocationObject_dealloc(LocationObject* self);
-PyObject* LocationObject_start(LocationObject *self, PyObject* Py_UNUSED(args));
-PyObject* LocationObject_end(LocationObject *self, PyObject* Py_UNUSED(args));
-PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args));
+struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*> {
+  static constexpr const char* Name = "AstNode";
+  static constexpr const char* DocStr = "The base type of Chapel AST nodes";
 
-typedef struct {
-  PyObject_HEAD
-  PyObject* contextObject;
-  const chpl::uast::AstNode* astNode;
-} AstNodeObject;
-extern PyTypeObject AstNodeType;
-void setupAstNodeType();
+  static PyObject* iter(AstNodeObject *self);
 
-int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs);
-void AstNodeObject_dealloc(AstNodeObject* self);
-PyObject* AstNodeObject_dump(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_pragmas(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_iter(AstNodeObject *self);
-PyObject* AstNodeObject_location(AstNodeObject *self);
+  static PyTypeObject configurePythonType() {
+    PyTypeObject configuring = PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType();
+    configuring.tp_iter = (getiterfunc) AstNodeObject::iter;
+    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+    return configuring;
+  }
+};
+
+using QualifiedTypeTuple = std::tuple<const char*, const chpl::types::Type*, const chpl::types::Param*>;
+
+struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*> {
+  static constexpr const char* Name = "ChapelType";
+  static constexpr const char* DocStr = "The base type of Chapel types";
+
+  static PyObject* str(ChapelTypeObject* self);
+
+  static PyTypeObject configurePythonType() {
+    PyTypeObject configuring = PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*>::configurePythonType();
+    configuring.tp_str = (reprfunc) ChapelTypeObject::str;
+    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+    return configuring;
+  }
+};
+
+struct ParamObject : public PythonClassWithObject<ParamObject, const chpl::types::Param*> {
+  static constexpr const char* Name = "Param";
+  static constexpr const char* DocStr = "The base type of Chapel parameters (compile-time known values)";
+
+  static PyObject* str(ParamObject* self);
+
+  static PyTypeObject configurePythonType() {
+    PyTypeObject configuring = PythonClassWithObject<ParamObject, const chpl::types::Param*>::configurePythonType();
+    configuring.tp_str = (reprfunc) ParamObject::str;
+    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+    return configuring;
+  }
+};
+
+struct ResolvedExpressionObject : public PythonClassWithObject<ResolvedExpressionObject, const chpl::resolution::ResolvedExpression*> {
+  static constexpr const char* Name = "ResolvedExpression";
+  static constexpr const char* DocStr = "Container for type information about a particular AST node.";
+};
+
+// Return a MostSpecificCandidate with its POI scope, so that we can call 'resolve'
+// on it and get the correct result.
+struct MostSpecificCandidateAndPoiScope {
+  const chpl::resolution::MostSpecificCandidate* candidate;
+  const chpl::resolution::PoiScope* poiScope;
+};
+
+struct MostSpecificCandidateObject : public PythonClassWithObject<MostSpecificCandidateObject, MostSpecificCandidateAndPoiScope> {
+  static constexpr const char* Name = "MostSpecificCandidate";
+  static constexpr const char* DocStr = "A candidate function returned from call resolution that represents the most specific overload matching the call.";
+};
+
+// Same as MostSpecificCandidate: include the POI scope in the bundle, so that
+// we immediately have all the info to resolve the function.
+struct TypedSignatureAndPoiScope {
+  const chpl::resolution::TypedFnSignature* signature;
+  const chpl::resolution::PoiScope* poiScope;
+};
+
+struct TypedSignatureObject : public PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope> {
+  static constexpr const char* Name = "TypedSignature";
+  static constexpr const char* DocStr = "The signature of a particular function. Could include types gathred when instantiating the function";
+
+  static Py_hash_t hash(TypedSignatureObject* self) {
+    return chpl::hash(self->value_.signature, self->value_.poiScope);
+  }
+
+  // Define a rich comparison function, too
+  static PyObject* richcompare(TypedSignatureObject* self, PyObject* other, int op) {
+    if (other->ob_type != &TypedSignatureObject::PythonType) {
+      Py_RETURN_NOTIMPLEMENTED;
+    }
+    auto otherCast = (TypedSignatureObject*) other;
+    auto selfVal = std::make_tuple(self->value_.signature, self->value_.poiScope);
+    auto otherVal = std::make_tuple(otherCast->value_.signature, otherCast->value_.poiScope);
+
+    Py_RETURN_RICHCOMPARE(selfVal, otherVal, op);
+  }
+
+  static PyTypeObject configurePythonType() {
+    // Configure the necessary methods to make inserting into sets working:
+    PyTypeObject configuring = PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType();
+    configuring.tp_hash = (hashfunc) hash;
+    configuring.tp_richcompare = (richcmpfunc) richcompare;
+    return configuring;
+  }
+};
+
+template<typename IntentType>
+const char* intentToString(IntentType intent) {
+  return qualifierToString(chpl::uast::Qualifier(int(intent)));
+}
 
 /**
-  Declare a Python PyTypeObject that corresponds to an AST node with the given
-  name and tag. The tag is not the same as the name because abstract base
-  classes like NamedDecl have corresponding tags called START_NamedDecl
-  and END_NamedDecl, but not NamedDecl.
+ Using the various definitions, templates, and method tables we have, generate
+ a Python .pyi file describing the various methods and types we provide.
  */
-#define DECLARE_PY_OBJECT_FOR(NAME, TAG)\
-  typedef struct { \
-    AstNodeObject parent; \
-  } NAME##Object; \
-  \
-  extern PyTypeObject NAME##Type;
-
-/* Generate a Python object for reach AST node type. */
-#define AST_NODE(NAME) DECLARE_PY_OBJECT_FOR(NAME, NAME)
-#define AST_LEAF(NAME) DECLARE_PY_OBJECT_FOR(NAME, NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DECLARE_PY_OBJECT_FOR(NAME, START_##NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef DECLARE_PY_OBJECT_FOR
-
-void setupPerNodeTypes();
-
+std::string generatePyiFile();
 
 /**
   Create a Python object of the class corresponding to the given AST node's
-  type. For example, an Identifier node will be wrapped in a a chapel.Identifier.
+  type. For example, an Identifier node will be wrapped in a chapel.Identifier.
  */
 PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node);
 
 /**
-  Create a Python object from the given Location.
+  Create a Python object of the class corresponding to the given Type*.
+  For example, an ArrayType type will be wrapped in a chapel.ArrayType.
  */
-PyObject* wrapLocation(chpl::Location loc);
+PyObject* wrapType(ContextObject* context, const chpl::types::Type* node);
+
+/**
+  Creates a Python object of the class corresponding to the given Param*.
+ */
+PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
 
 #endif

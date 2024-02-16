@@ -1561,6 +1561,7 @@ proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
+pragma "not called from gpu"
 proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {

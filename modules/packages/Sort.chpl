@@ -435,8 +435,8 @@ The choice of sorting algorithm used is made by the implementation.
 
 .. note::
 
-  This function currently either uses a parallel radix sort or a serial
-  quickSort. The algorithms used will change over time.
+  This function currently either uses a parallel radix sort or a parallel
+  improved quick sort.  The algorithms used will change over time.
 
   It currently uses parallel radix sort if the following conditions are met:
 
@@ -484,6 +484,16 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
     compilerError("stable sort not yet implemented");
   } else {
     if radixSortOk(Data, comparator) {
+      // TODO: use a sample sort if the input does not have enough
+      // randomness, according to some heuristic
+
+      var simplerSortSize=50_000;
+      if Data.domain.size < simplerSortSize {
+        // TODO: use quicksort instead in these small cases
+        MSBRadixSort.msbRadixSort(Data, comparator=comparator);
+        return;
+      }
+
       if inPlaceAlgorithm {
         // use an in-place algorithm
         MSBRadixSort.msbRadixSort(Data, comparator=comparator);
@@ -764,6 +774,7 @@ module InsertionSort {
 
     for i in low..high by stride {
       pragma "no auto destroy"
+      pragma "no copy"
       var ithVal = ShallowCopy.shallowCopyInit(Data[i]);
 
       var inserted = false;
@@ -1111,6 +1122,7 @@ module MergeSort {
 
 // this quick sort is not stable
 // it is in-place however
+// it is parallel but has limited parallelism
 @chpldoc.nodoc
 module QuickSort {
   private use Sort;
@@ -1157,6 +1169,7 @@ module QuickSort {
 
     // Now swap the pivot to a local variable
     pragma "no auto destroy"
+    pragma "no copy"
     var piv: eltType = ShallowCopy.shallowCopyInit(Data[lo]); // leaves Data[lo] empty
 
     while true {
@@ -1475,6 +1488,7 @@ module ShellSort {
       for is in hs..end {
         // move Data[is] into v
         pragma "no auto destroy"
+        pragma "no copy"
         var v = ShallowCopy.shallowCopyInit(Data[is]);
         js = is;
         while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
@@ -1750,7 +1764,7 @@ module SampleSortHelp {
     while numSamples > 0 {
       numSamples -= 1;
 
-      var offset = randNums.getNext(start_n, end_n);
+      var offset = randNums.next(start_n, end_n);
       if offset != start_n {
         // A[start_n] <=> A[offset] but with shallow copy.
         var tmp: A.eltType;
@@ -2054,7 +2068,6 @@ module ShallowCopy {
     }
   }
 
-  // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
 
     // Ideally this would just be
@@ -2269,8 +2282,9 @@ module SequentialInPlacePartitioning {
 module TwoArrayPartitioning {
   private use Math;
   public use List only list;
-  import Sort.{ShellSort, MSBRadixSort, QuickSort};
+  import Sort.{ShellSort, MSBRadixSort};
   import Sort.{RadixSortHelp, ShallowCopy};
+  import Sort;
   use MSBRadixSort;
 
   private param debug = false;
@@ -2298,10 +2312,24 @@ module TwoArrayPartitioning {
     var localCounts: [0..#maxBuckets] int;
   }
 
+  proc defaultNumTasks() {
+    if __primitive("task_get_serial") {
+      return 1;
+    }
+
+    const tasksPerLocale = dataParTasksPerLocale;
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    var nTasks = if tasksPerLocale > 0 then tasksPerLocale else here.maxTaskPar;
+    if !ignoreRunning {
+      const otherTasks = here.runningTasks() - 1; // don't include self
+      nTasks = if otherTasks < nTasks then (nTasks-otherTasks):int else 1;
+    }
+
+    return nTasks;
+  }
+
   record TwoArrayBucketizerSharedState {
-    var nTasks:int = if dataParTasksPerLocale > 0
-                      then dataParTasksPerLocale
-                      else here.maxTaskPar;
+    var nTasks:int = defaultNumTasks();
     var countsSize:int = nTasks*maxBuckets;
 
     type bucketizerType;
@@ -2355,9 +2383,13 @@ module TwoArrayPartitioning {
   // (e.g. sorted by the next digit in radix sort)
   // Counts per bin are stored in state.counts. Other data in
   // state is used locally by this routine or used elsewhere
+  // If allowSkipahead=true, and the count determines everything is
+  // in just one bin, startbit can be modified and the bucketize
+  // will reflect a later startbit.
   proc bucketize(start_n: int, end_n: int, ref dst:[], src:[],
                  ref state: TwoArrayBucketizerSharedState,
-                 criterion, startbit:int) {
+                 criterion, inout startbit:int,
+                 allowSkipahead=false) {
 
     if debug then
       writeln("bucketize ", start_n..end_n, " startbit=", startbit);
@@ -2400,6 +2432,63 @@ module TwoArrayPartitioning {
       // Now store the counts into the global counts array
       foreach bin in 0..#nBuckets {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
+      }
+    }
+
+    // Compute the total counts for the next check and for use
+    // after this function returns.
+    ref counts = state.counts;
+    forall bin in 0..#nBuckets with (ref counts) {
+      var total = 0;
+      for tid in 0..#nTasks {
+        total += state.globalCounts[bin*nTasks + tid];
+      }
+      counts[bin] = total;
+    }
+
+    if !state.bucketizer.isSampleSort && allowSkipahead {
+      // If the data parts we gathered all have the same leading bits,
+      // we can skip ahead immediately to the next count step.
+      //
+      // Check: was there actually only one bin with data?
+      var onlyBin: int = -1;
+      for bin in 0..#nBuckets {
+        var total = counts[bin];
+        if total == 0 {
+          // ok, continue
+        } else if total == n {
+          // everything is in one bin, so we can stop
+          onlyBin = bin;
+          break;
+        } else {
+          // a bin contained not 0 and not n,
+          // so this check is done
+          break;
+        }
+      }
+
+      if onlyBin >= 0 {
+        // TODO: would it help performance to compute min and max
+        // here and reset startbit according to these?
+        // Or, would it be better to compute min and max word
+        // in the above loop? (similar to 'ubits' in msbRadixSort)
+
+        // compute the next start bit since there was no need to sort
+        // at this start bit
+        startbit = state.bucketizer.getNextStartBit(startbit);
+        // stop if the next startbit is too far
+        if startbit > state.endbit then
+          return;
+
+        // stop if it's a bin that doesn't need sorting
+        // (bin for end-of-string indicator)
+        if !state.bucketizer.getBinsToRecursivelySort().contains(onlyBin) then
+          return;
+
+        // start over with the new start bit
+        bucketize(start_n, end_n, dst, src, state, criterion,
+                  startbit, allowSkipahead=true);
+        return; // note: startbit is inout so will change at call site
       }
     }
 
@@ -2451,23 +2540,14 @@ module TwoArrayPartitioning {
         next += 1;
       }
     }
-
-    // Compute the total counts
-    ref counts = state.counts;
-    forall bin in 0..#nBuckets with (ref counts) {
-      var total = 0;
-      for tid in 0..#nTasks {
-        total += state.globalCounts[bin*nTasks + tid];
-      }
-      counts[bin] = total;
-    }
   }
   proc testBucketize(start_n: int, end_n: int, ref dst:[], src:[],
                      bucketizer, criterion, startbit:int) {
 
     var state = new TwoArrayBucketizerSharedState(bucketizer=bucketizer);
 
-    bucketize(start_n, end_n, dst, src, state, criterion, startbit);
+    var myStartBit = startbit;
+    bucketize(start_n, end_n, dst, src, state, criterion, myStartBit);
 
     return state.counts;
   }
@@ -2499,21 +2579,9 @@ module TwoArrayPartitioning {
       if debug then
         writeln("recursing to sort the sample");
 
-      // sort the sample
+      // sort the sample using the usual sorting algorithm
+      Sort.sort(A[start_n..#sampleSize], comparator=criterion);
 
-
-      // TODO: make it adjustable from the settings
-      if sampleSize <= 1024*1024 {
-        // base case sort, parallel OK
-        msbRadixSort(A, start_n, start_n + sampleSize - 1,
-                     criterion,
-                     startbit, state.endbit,
-                     settings=new MSBRadixSortSettings());
-      } else {
-        partitioningSortWithScratchSpace(start_n, start_n + sampleSize - 1,
-                                         A, Scratch,
-                                         state, criterion, startbit);
-      }
       if debug {
         RadixSortHelp.checkSorted(start_n, start_n + sampleSize - 1, A, criterion, startbit);
       }
@@ -2559,6 +2627,7 @@ module TwoArrayPartitioning {
     while !state.bigTasks.isEmpty() {
       const task = state.bigTasks.popBack();
       const taskEnd = task.start + task.size - 1;
+      var taskStartBit = task.startbit;
 
       assert(task.doSort);
 
@@ -2569,11 +2638,11 @@ module TwoArrayPartitioning {
       if task.inA {
         partitioningSortWithScratchSpaceHandleSampling(
               task.start, taskEnd, A, Scratch,
-              state, criterion, task.startbit);
+              state, criterion, taskStartBit);
 
         // Count and partition
         bucketize(task.start, taskEnd, Scratch, A, state,
-                  criterion, task.startbit);
+                  criterion, taskStartBit, allowSkipahead=true);
         // bucketized data now in Scratch
         if debug {
           writef("pb %i %i Scratch=%?\n", task.start, taskEnd, Scratch[task.start..taskEnd]);
@@ -2581,11 +2650,11 @@ module TwoArrayPartitioning {
       } else {
         partitioningSortWithScratchSpaceHandleSampling(
               task.start, taskEnd, Scratch, A,
-              state, criterion, task.startbit);
+              state, criterion, taskStartBit);
 
         // Count and partition
         bucketize(task.start, taskEnd, A, Scratch, state,
-                  criterion, task.startbit);
+                  criterion, taskStartBit, allowSkipahead=true);
         // bucketized data now in A
         if debug {
           writef("pb %i %i A=%?\n", task.start, taskEnd, A[task.start..taskEnd]);
@@ -2602,7 +2671,7 @@ module TwoArrayPartitioning {
         const binSize = state.counts[bin];
         const binStart = state.ends[bin] - binSize;
         const binEnd = binStart + binSize - 1;
-        const binStartBit = state.bucketizer.getNextStartBit(task.startbit);
+        const binStartBit = state.bucketizer.getNextStartBit(taskStartBit);
 
         const sortit =
           binSize > 1 && // have 2 or more elements to sort
@@ -3064,6 +3133,7 @@ module TwoArrayDistributedPartitioning {
           // This uses perLocale[tid].compat.
           const taskStart = task.start;
           const taskEnd = task.start + task.size - 1;
+          var taskStartBit = task.startbit;
 
           const localDomain = A.localSubdomain()[task.start..taskEnd];
           ref localSrc = A.localSlice(localDomain);
@@ -3075,7 +3145,7 @@ module TwoArrayDistributedPartitioning {
           bucketize(localDomain.low,
                     localDomain.high,
                     localDst, localSrc,
-                    state.perLocale[tid].compat, criterion, task.startbit);
+                    state.perLocale[tid].compat, criterion, taskStartBit);
 
           ref localCounts = state.perLocale[tid].compat.counts;
 
@@ -3361,10 +3431,12 @@ module TwoArrayRadixSort {
 
   proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
-    var sequentialSizePerTask=4096;
-    var baseCaseSize=16;
-    var distributedBaseCaseSize=1024;
+    if !chpl_domainDistIsLayout(Data.domain) {
+      compilerWarning("twoArrayRadix sort no longer handles distributed arrays. Please use TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort instead (but note that it is not stable)");
+    }
 
+    var baseCaseSize=16;
+    var sequentialSizePerTask=4096;
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
     if endbit < 0 then
@@ -3374,6 +3446,10 @@ module TwoArrayRadixSort {
     pragma "no auto destroy"
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
+
+    // It would make sense to touch the memory first here, but early experiments
+    // suggest that it doesn't help with CHPL_COMM=none.
+    Scratch.dsiElementInitializationComplete();
 
     var state = new TwoArrayBucketizerSharedState(
       bucketizer=new RadixBucketizer(),
@@ -3421,6 +3497,9 @@ module TwoArrayDistributedRadixSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
+    // TODO: do some first-touch, which should matter for comm=ugni
+    Scratch.dsiElementInitializationComplete();
+
     var state1 = new TwoArrayDistributedBucketizerSharedState(
       bucketizerType=RadixBucketizer,
       numLocales=Data.targetLocales().size,
@@ -3459,20 +3538,18 @@ module TwoArraySampleSort {
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;
 
-    var endbit:int;
-    endbit = msbRadixSortParamLastStartBit(Data, comparator);
-    if endbit < 0 then
-      endbit = max(int);
-
     // Allocate the Scratch array.
     pragma "no auto destroy"
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
+    // It would make sense to touch the memory first here, but early experiments
+    // suggest that it doesn't help with CHPL_COMM=none.
+    Scratch.dsiElementInitializationComplete();
+
     var state = new TwoArrayBucketizerSharedState(
       bucketizer=new SampleBucketizer(Data.eltType),
-      baseCaseSize=baseCaseSize,
-      endbit=endbit);
+      baseCaseSize=baseCaseSize);
 
     partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
                                      Data.domain.high.safeCast(int),
@@ -3515,6 +3592,9 @@ module TwoArrayDistributedSampleSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
+    // TODO: do some first-touch, which should matter for comm=ugni
+    Scratch.dsiElementInitializationComplete();
+
     var state = new TwoArrayDistributedBucketizerSharedState(
       bucketizerType=SampleBucketizer(Data.eltType),
       numLocales=Data.targetLocales().size,
@@ -3550,7 +3630,7 @@ module MSBRadixSort {
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {
     param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
-    const sortSwitch = 256; // when sorting <= this many elements, use shell sort
+    const sortSwitch = 256; // when sorting <= this # elements, use other sort
     const minForTask = 256; // when sorting >= this many elements, go parallel
     param CHECK_SORTS = false; // do costly extra checks that data is sorted
     param progress = false; // print progress
@@ -3585,9 +3665,13 @@ module MSBRadixSort {
       return;
 
     if( end_n - start_n < settings.sortSwitch ) {
+      // Shell sort here works reasonably well for
+      // ordered and random input sequences.
+      // Insertion sort would improve performance for random sequences
+      // but causes performance problems with ordered sequences.
+      // Using quicksort here has a similar, but less extreme impact.
       ShellSort.shellSortMoveElts(A, criterion,
-                                  start=start_n,
-                                  end=end_n);
+                                  start=start_n, end=end_n);
       if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
       return;
     }

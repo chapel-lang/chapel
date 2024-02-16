@@ -34,8 +34,8 @@ proc run(name:string,
     var t:stopwatch;
     t.start();
     for update in 0..<numUpdates {
-      const node = rng.getNext(min=0, max=nLocales-1);
-      const addr = rng.getNext(min=0, max=spacePerLocale-1);
+      const node = rng.next(min=0, max=nLocales-1);
+      const addr = rng.next(min=0, max=spacePerLocale-1);
       chpl_cache_mock_get(node:c_int, basePtr+addr, 8);
     }
     t.stop();

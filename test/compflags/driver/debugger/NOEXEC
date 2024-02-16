@@ -1,1 +1,0 @@
-These tests (copied from compflags/bradc/gdbddash) make sure the debugger runs interact with the driver as expected, and don't need to run an exectuable.

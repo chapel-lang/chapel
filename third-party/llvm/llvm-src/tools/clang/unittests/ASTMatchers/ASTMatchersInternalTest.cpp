@@ -11,8 +11,8 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Tooling/Tooling.h"
-#include "llvm/ADT/Triple.h"
-#include "llvm/Support/Host.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/TargetParser/Triple.h"
 #include "llvm/Testing/Support/SupportHelpers.h"
 #include "gtest/gtest.h"
 
@@ -63,7 +63,7 @@ static void crashTestNodeDump(MatcherT Matcher,
 
   struct CrashCallback : public MatchFinder::MatchCallback {
     void run(const MatchFinder::MatchResult &Result) override { abort(); }
-    llvm::Optional<TraversalKind> getCheckTraversalKind() const override {
+    std::optional<TraversalKind> getCheckTraversalKind() const override {
       return TK_IgnoreUnlessSpelledInSource;
     }
     StringRef getID() const override { return "CrashTester"; }

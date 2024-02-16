@@ -204,8 +204,8 @@ static void test3() {
 }
 
 static void test4() {
-  // test returning a param from an ambigous param-returning function
-  // non-ambigous tests are in testParamIf.
+  // test returning a param from an ambiguous param-returning function
+  // non-ambiguous tests are in testParamIf.
   testProgram({
       lit("1"),
       lit("2")
@@ -864,7 +864,7 @@ static void testSelectTypes() {
     testSelectCases(fooFunc, vals);
   }
   {
-    // mutiple cases in a single 'when'
+    // multiple cases in a single 'when'
     std::string fooFunc = ops + R"""(
     proc foo(type T) type {
       select T {
@@ -968,7 +968,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "string"} //future test for init resolution DCE
+                      {"string", "string"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
@@ -991,7 +991,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "real(64)"} //future test for init resolution DCE
+                      {"string", "real(64)"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
@@ -1021,7 +1021,7 @@ static void testSelectParams() {
     testSelectCases(fooFunc, vals);
   }
   {
-    // mutiple cases in a single 'when'
+    // multiple cases in a single 'when'
     std::string fooFunc = ops + R"""(
     proc foo(param p) type {
       select p {

@@ -5336,9 +5336,16 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
 }
 
 DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
-  ret = codegenCallExpr("chpl_gpu_init_kernel_cfg", call->get(1)->codegen(),
-                  new_IntSymbol(call->astloc.lineno()),
-                  new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+  std::vector<GenRet> args;
+  auto numKernelArgs = call->get(1);
+  auto numKernelPids = call->get(2);
+
+  args.push_back(numKernelArgs->codegen());
+  args.push_back(numKernelPids->codegen());
+  args.push_back(new_IntSymbol(call->astloc.lineno()));
+  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+
+  ret = codegenCallExprWithArgs("chpl_gpu_init_kernel_cfg", args);
 }
 
 DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {
@@ -5374,6 +5381,15 @@ DEFINE_PRIM(GPU_ARG) {
   }
 
   ret = codegenCallExprWithArgs(fnName, args);
+}
+
+DEFINE_PRIM(GPU_PID_OFFLOAD) {
+  auto cfg = call->get(1);
+  auto pid = call->get(2);
+  auto size = call->get(3);
+
+  ret = codegenCallExpr("chpl_gpu_pid_offload", cfg->codegen(),
+                        pid->codegen(), size->codegen());
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }

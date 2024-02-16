@@ -61,7 +61,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._writeOne(dc._kind, val, here);
+      dc._writeOne(_iokind.dynamic, val, here);
     }
 
     /* Serialize a value into a :record:`~IO.fileWriter` in JSON format */
@@ -627,7 +627,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._readOne(dc._kind, val, here);
+      dc._readOne(_iokind.dynamic, val, here);
     }
 
     /*
@@ -657,7 +657,7 @@ module JSON {
       // - escaped strings
       if isNumericType(readType) || isBoolType(readType) {
         var x : readType;
-        reader._readOne(reader._kind, x, here);
+        reader._readOne(_iokind.dynamic, x, here);
         return x;
       } else if isStringType(readType) || isBytesType(readType) {
         // TODO: Ideally something like:

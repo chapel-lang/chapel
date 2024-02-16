@@ -23,6 +23,12 @@
 
 #include "stmt.h"
 
+enum LoopExprType {
+  FOR_EXPR,
+  FOREACH_EXPR,
+  FORALL_EXPR
+};
+
 class LoopExpr final : public Expr {
 public:
   Expr* indices;       // DefExpr for index or
@@ -32,8 +38,7 @@ public:
   Expr* cond;          // filtering condition or NULL if none
   BlockStmt* loopBody;
 
-  // Indicates whether this loop-expression is a forall-expr or for-expr
-  bool forall;
+  LoopExprType type;
 
   // 'true' if the iteratorExpr is zippered
   bool zippered;
@@ -49,10 +54,10 @@ public:
            Expr* iteratorExpr,
            Expr* cond,
            Expr* loopBody,
-           bool forall,
+           LoopExprType type,
            bool zippered,
            bool maybeArrayType);
-  LoopExpr(bool forall, bool zippered, bool maybeArrayType);
+  LoopExpr(LoopExprType type, bool zippered, bool maybeArrayType);
 
   DECLARE_COPY(LoopExpr);
   LoopExpr* copyInner(SymbolMap* map)                 override;

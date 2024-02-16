@@ -80,7 +80,7 @@ proc randomtest(n:int) {
 
   var timer:stopwatch;
   timer.start();
-  TwoArrayRadixSort.twoArrayRadixSort(A, defaultComparator);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A, defaultComparator);
   timer.stop();
 
   if comms {

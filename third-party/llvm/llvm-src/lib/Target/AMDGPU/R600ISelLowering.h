@@ -52,7 +52,7 @@ public:
   bool allowsMisalignedMemoryAccesses(
       EVT VT, unsigned AS, Align Alignment,
       MachineMemOperand::Flags Flags = MachineMemOperand::MONone,
-      bool *IsFast = nullptr) const override;
+      unsigned *IsFast = nullptr) const override;
 
   bool canCombineTruncStore(EVT ValVT, EVT MemVT,
                             bool LegalOperations) const override {
@@ -92,6 +92,7 @@ private:
 
   SDValue lowerPrivateExtLoad(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerLOAD(SDValue Op, SelectionDAG &DAG) const;
+  SDValue lowerADDRSPACECAST(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerBRCOND(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerTrig(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerShiftParts(SDValue Op, SelectionDAG &DAG) const;
@@ -113,6 +114,9 @@ private:
                           SelectionDAG &DAG) const;
 
   SDNode *PostISelFolding(MachineSDNode *N, SelectionDAG &DAG) const override;
+
+  TargetLowering::AtomicExpansionKind
+  shouldExpandAtomicRMWInIR(AtomicRMWInst *RMW) const override;
 };
 
 } // End namespace llvm;

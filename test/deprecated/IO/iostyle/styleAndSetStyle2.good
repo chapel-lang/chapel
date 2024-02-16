@@ -1,2 +1,0 @@
-styleAndSetStyle2.chpl:5: warning: fileReader._style is deprecated because it returns a type that is deprecated
-styleAndSetStyle2.chpl:6: warning: fileReader._set_style is deprecated because its purpose involves a deprecated type

@@ -22,6 +22,7 @@
 #define _PASSES_H_
 
 #include "FnSymbol.h"
+#include "LoopExpr.h"
 #include "symbol.h"
 #include "PassManager.h"
 #include "pass-manager-passes.h"
@@ -134,9 +135,10 @@ void  handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
 
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
-                                 bool fromForExpr);
+                                 LoopExprType type);
 void setIteratorRecordShape(CallExpr* call);
 bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
+bool checkIteratorFromForeachExpr(Expr* ref, Symbol* shape);
 
 // LoopExpr.cpp
 bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr);

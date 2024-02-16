@@ -81,8 +81,9 @@ emitPrologueEpilogueSPUpdate(MachineBasicBlock &MBB,
     MachineFunction &MF = *MBB.getParent();
     const ARMSubtarget &ST = MF.getSubtarget<ARMSubtarget>();
     if (ST.genExecuteOnly()) {
-      BuildMI(MBB, MBBI, dl, TII.get(ARM::t2MOVi32imm), ScratchReg)
-        .addImm(NumBytes).setMIFlags(MIFlags);
+      unsigned XOInstr = ST.useMovt() ? ARM::t2MOVi32imm : ARM::tMOVi32imm;
+      BuildMI(MBB, MBBI, dl, TII.get(XOInstr), ScratchReg)
+          .addImm(NumBytes).setMIFlags(MIFlags);
     } else {
       MRI.emitLoadConstPool(MBB, MBBI, dl, ScratchReg, 0, NumBytes, ARMCC::AL,
                             0, MIFlags);
@@ -218,7 +219,7 @@ void Thumb1FrameLowering::emitPrologue(MachineFunction &MF,
         FRSize += 4;
         break;
       }
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case ARM::R8:
     case ARM::R9:
     case ARM::R10:
@@ -226,13 +227,13 @@ void Thumb1FrameLowering::emitPrologue(MachineFunction &MF,
         GPRCS2Size += 4;
         break;
       }
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case ARM::LR:
       if (HasFrameRecordArea) {
         FRSize += 4;
         break;
       }
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case ARM::R4:
     case ARM::R5:
     case ARM::R6:
@@ -368,7 +369,7 @@ void Thumb1FrameLowering::emitPrologue(MachineFunction &MF,
       case ARM::R12:
         if (STI.splitFramePushPop(MF))
           break;
-        LLVM_FALLTHROUGH;
+        [[fallthrough]];
       case ARM::R0:
       case ARM::R1:
       case ARM::R2:

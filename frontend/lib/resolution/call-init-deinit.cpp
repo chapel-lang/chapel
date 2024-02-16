@@ -132,8 +132,11 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleReturn(const uast::Return* ast, RV& rv) override;
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
+  void handleDisjunction(const AstNode * node, 
+                         VarFrame * currentFrame,
+                         const std::vector<VarFrame*>& frames, 
+                         bool total, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -993,25 +996,6 @@ void CallInitDeinit::handleYield(const uast::Yield* ast, RV& rv) {
   processReturnThrowYield(ast, rv);
 }
 
-
-void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
-  // Any outer variables inited in the 'then' frame can be propagated up
-  VarFrame* frame = currentFrame();
-  VarFrame* parent = currentParentFrame();
-  VarFrame* thenFrame = currentThenFrame();
-  VarFrame* elseFrame = currentElseFrame();
-
-  // process end-of-block deinits in then/else blocks and then propagate
-  if (thenFrame && !thenFrame->returnsOrThrows) {
-    processDeinitsAndPropagate(thenFrame, frame, rv);
-  }
-  if (elseFrame && !elseFrame->returnsOrThrows) {
-    processDeinitsAndPropagate(elseFrame, frame, rv);
-  }
-
-  // propagate information out of Conditional itself
-  processDeinitsAndPropagate(frame, parent, rv);
-}
 void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
@@ -1027,12 +1011,27 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   // propagate information out of the Try itself
   processDeinitsAndPropagate(frame, parent, rv);
 }
+
+void CallInitDeinit::handleDisjunction(const uast::AstNode * node, 
+                                 VarFrame* currentFrame, 
+                                 const std::vector<VarFrame*>& frames, 
+                                 bool total, RV& rv) {
+  
+  for (auto frame : frames) {
+    if(!frame->returnsOrThrows) {
+      processDeinitsAndPropagate(frame, currentFrame, rv);
+    }
+  }
+
+  //propagate out of the disjunction itself
+  processDeinitsAndPropagate(currentFrame, currentParentFrame(), rv);
+}
+
 void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
   processDeinitsAndPropagate(frame, parent, rv);
 }
-
 
 void callInitDeinit(Resolver& resolver) {
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,

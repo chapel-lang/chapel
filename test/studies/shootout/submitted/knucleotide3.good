@@ -1,7 +1,8 @@
 knucleotide3.chpl:14: In function 'main':
 knucleotide3.chpl:18: warning: 'ionative' is deprecated, please use Serializers or Deserializers that support endianness instead
 knucleotide3.chpl:16: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-knucleotide3.chpl:18: warning: reader with a 'kind' argument is deprecated, please use Deserializers instead
+knucleotide3.chpl:18: warning: reader with a 'kind' argument is deprecated, please use Serializers instead
+knucleotide3.chpl:18: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 knucleotide3.chpl:25: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
 knucleotide3.chpl:25: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
 knucleotide3.chpl:33: warning: fileReader.readline is deprecated. Use fileReader.readLine instead

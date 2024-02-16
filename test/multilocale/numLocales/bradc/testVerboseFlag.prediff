@@ -55,9 +55,9 @@ case $tasks in
             mv $2.tmp $2;;
 esac
 
-# Remove info related to running one locale per socket
+# Remove info related to co-locales
 
-grep -v '^0: using socket' $2 > $2.tmp && mv $2.tmp $2
+grep -v '^[0-9]*: using core(s)' $2 > $2.tmp && mv $2.tmp $2
 
 # If we use the amudprun launcher, there's a path on the front of it.
 # If we use the aprun launcher, the depth (-d) value may vary, and also

@@ -19,7 +19,7 @@
 
 import argparse
 import chapel
-import chapel.core
+import chapel
 import os
 import sys
 import typing
@@ -61,7 +61,7 @@ class ReplacementContext:
         (row, col) = loc
         return self.lines[row] + (col - 1)
 
-    def node_idx_range(self, node: chapel.core.AstNode) -> (int, int):
+    def node_idx_range(self, node: chapel.AstNode) -> (int, int):
         """
         Given a node, determine where it starts and ends in the given source
         file.
@@ -72,7 +72,7 @@ class ReplacementContext:
         range_end = self.loc_to_idx(loc.end())
         return (range_start, range_end)
 
-    def node_exact_string(self, node: chapel.core.AstNode) -> str:
+    def node_exact_string(self, node: chapel.AstNode) -> str:
         """
         Return the substring that corresponds to the given node in the source
         file.
@@ -80,7 +80,7 @@ class ReplacementContext:
         (range_start, range_end) = self.node_idx_range(node)
         return self.content[range_start:range_end]
 
-    def node_indent(self, node: chapel.core.AstNode) -> int:
+    def node_indent(self, node: chapel.AstNode) -> int:
         """
         Determine the number of characters between the given node and the
         beginning of the line.
@@ -88,7 +88,7 @@ class ReplacementContext:
         (range_start, _) = self.node_idx_range(node)
         return range_start - self.lines[self.lines_back[range_start]]
 
-def rename_formals(rc: ReplacementContext, fn: chapel.core.Function, renames):
+def rename_formals(rc: ReplacementContext, fn: chapel.Function, renames):
     """
     Helper iterator to be used in finder functions. Given a function
     and a map of ('original formal name' -> 'new formal name'), yields
@@ -104,7 +104,7 @@ def rename_formals(rc: ReplacementContext, fn: chapel.core.Function, renames):
 
         yield (child, name_replacer(name))
 
-def rename_named_actuals(rc: ReplacementContext, call: chapel.core.Call, renames):
+def rename_named_actuals(rc: ReplacementContext, call: chapel.Call, renames):
     """
     Helper iterator to be used in finder functions. Given a function call expression,
     and a map of ('original name' -> 'new name'), yields
@@ -123,7 +123,7 @@ def rename_named_actuals(rc: ReplacementContext, call: chapel.core.Call, renames
 
 
 def replace(finder: typing.Generator,
-            ctx: chapel.core.Context,
+            ctx: chapel.Context,
             filename: str) -> str:
     """
     Drives replacement of text based on matches found in `finder`.
@@ -159,7 +159,7 @@ def replace(finder: typing.Generator,
                 else:
                     nodes_to_replace[uid] = replace_with(nodes_to_replace[uid])
 
-    def recurse(node: chapel.core.AstNode):
+    def recurse(node: chapel.AstNode):
         my_replace = None
         if node.unique_id() in nodes_to_replace:
             my_replace = nodes_to_replace[node.unique_id()]
@@ -201,7 +201,7 @@ def replace(finder: typing.Generator,
 
     return new_content
 
-def _do_replace(finder: typing.Generator, ctx: chapel.core.Context, filename: str, suffix: str, inplace: bool):
+def _do_replace(finder: typing.Generator, ctx: chapel.Context, filename: str, suffix: str, inplace: bool):
 
     new_content = replace(finder, ctx, filename)
 

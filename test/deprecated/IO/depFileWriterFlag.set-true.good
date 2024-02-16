@@ -1,4 +1,0 @@
-warning: 'useNewFileWriterRegionBounds' is deprecated - :proc:`file.writer` now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release
-note: 'useNewFileWriterRegionBounds' was set via a compiler flag
-depFileWriterFlag.chpl:3: warning: 'useNewFileWriterRegionBounds' is deprecated - file.writer now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release
-true

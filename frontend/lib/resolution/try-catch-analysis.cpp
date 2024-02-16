@@ -232,7 +232,7 @@ struct TryCatchAnalyzer {
                 break;
               }
             }
-            if (!foundCatchAll) {
+            if (!foundCatchAll && !canThrow()) {
               context->error(ast, "call to throwing function '%s' is "
                                   "in a try but not handled",
                                   bestResFn->untyped()->name().c_str());

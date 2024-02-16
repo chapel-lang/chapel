@@ -3329,13 +3329,24 @@ static void exit_any(int status) {
 }
 
 
+//
+// FIXME: this is a workaround for hangs when the provider is EFA:
+//        we skip fi_close and don't properly shutdown libfabric
+//
+static inline
+int chpl_fi_close_wrapper(struct fid* fid) {
+  chpl_bool using_efa = providerInUse(provType_efa);
+  if (!using_efa) return fi_close(fid);
+  else            return FI_SUCCESS;
+}
+
 static
 void fini_ofi(void) {
   if (chpl_numNodes <= 1)
     return;
 
   for (int i = 0; i < memTabCount; i++) {
-    OFI_CHK(fi_close(&ofiMrTab[i]->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&ofiMrTab[i]->fid));
   }
 
   if (memTabMap != NULL) {
@@ -3350,35 +3361,35 @@ void fini_ofi(void) {
     }
   }
 
-  OFI_CHK(fi_close(&ofi_rxEp->fid));
-  OFI_CHK(fi_close(&ofi_rxCQ->fid));
+  OFI_CHK(chpl_fi_close_wrapper(&ofi_rxEp->fid));
+  OFI_CHK(chpl_fi_close_wrapper(&ofi_rxCQ->fid));
   if (ofi_rxCntr != NULL) {
-    OFI_CHK(fi_close(&ofi_rxCntr->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&ofi_rxCntr->fid));
   }
 
   for (int i = 0; i < tciTabLen; i++) {
-    OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCtx->fid));
     if (tciTab[i].txCntr != NULL) {
-      OFI_CHK(fi_close(&tciTab[i].txCntr->fid));
+      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCntr->fid));
     }
     if (tciTab[i].txCQ != NULL) {
-      OFI_CHK(fi_close(&tciTab[i].txCQ->fid));
+      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCQ->fid));
     }
   }
 
   if (ofi_txEpScal != NULL) {
-    OFI_CHK(fi_close(&ofi_txEpScal->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&ofi_txEpScal->fid));
   }
 
   for (int i = 0; i < tciTabLen; i++) {
     if (tciTab[i].av != ofi_av) {
-      OFI_CHK(fi_close(&tciTab[i].av->fid));
+      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].av->fid));
       CHPL_FREE(tciTab[i].addrs);
     }
   }
 
   if (ofi_rxAv != ofi_av) {
-    OFI_CHK(fi_close(&ofi_rxAv->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&ofi_rxAv->fid));
   }
 
   if (ofi_rxAddrs != NULL) {
@@ -3386,18 +3397,18 @@ void fini_ofi(void) {
   }
 
   if (ofi_av != NULL) {
-    OFI_CHK(fi_close(&ofi_av->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&ofi_av->fid));
   }
   if (ofi_addrs != NULL) {
     CHPL_FREE(ofi_addrs);
   }
   if (ofi_amhPollSet != NULL) {
-    OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
-    OFI_CHK(fi_close(&ofi_amhPollSet->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&ofi_amhWaitSet->fid));
+    OFI_CHK(chpl_fi_close_wrapper(&ofi_amhPollSet->fid));
   }
 
-  OFI_CHK(fi_close(&ofi_domain->fid));
-  OFI_CHK(fi_close(&ofi_fabric->fid));
+  OFI_CHK(chpl_fi_close_wrapper(&ofi_domain->fid));
+  OFI_CHK(chpl_fi_close_wrapper(&ofi_fabric->fid));
 
   fi_freeinfo(ofi_info);
 
@@ -4533,32 +4544,24 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
   case am_opExecOnLrg:
     forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
                           node /*skipNode*/, tcip);
-    havePutsOut = (tcip->putVisBitmap != NULL
-                   && bitmapTest(tcip->putVisBitmap, node));
-    haveAmosOut = (tcip->amoVisBitmap != NULL
-                   && bitmapTest(tcip->amoVisBitmap, node));
+    havePutsOut = bitmapTest(tcip->putVisBitmap, node);
+    haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     break;
   case am_opAMO:
     {
       chpl_bool amoHasMemFx = (req->amo.ofiOp != FI_ATOMIC_READ);
       forceMemFxVisAllNodes(amoHasMemFx /*checkPuts*/, true /*checkAmos*/,
                             node /*skipNode*/, tcip);
-      havePutsOut = (amoHasMemFx
-                     && tcip->putVisBitmap != NULL
-                     && bitmapTest(tcip->putVisBitmap, node));
-      haveAmosOut = (tcip->amoVisBitmap != NULL
-                     && bitmapTest(tcip->amoVisBitmap, node));
+      havePutsOut = (amoHasMemFx && bitmapTest(tcip->putVisBitmap, node));
+      haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     }
     break;
   case am_opGet:
-    havePutsOut = (tcip->putVisBitmap != NULL
-                   && bitmapTest(tcip->putVisBitmap, node));
-    haveAmosOut = (tcip->amoVisBitmap != NULL
-                   && bitmapTest(tcip->amoVisBitmap, node));
+    havePutsOut = bitmapTest(tcip->putVisBitmap, node);
+    haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     break;
   case am_opPut:
-    haveAmosOut = (tcip->amoVisBitmap != NULL
-                   && bitmapTest(tcip->amoVisBitmap, node));
+    haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     break;
   }
 
@@ -5972,8 +5975,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
                                            struct perTxCtxInfo_t* tcip) {
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
-      && (tcip->amoVisBitmap == NULL
-          || !bitmapTest(tcip->amoVisBitmap, node))
+      && (!bitmapTest(tcip->amoVisBitmap, node))
       && envInjectRMA) {
     //
     // Special case: write injection has the least latency.  We can use
@@ -5986,8 +5988,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     atomic_bool txnDone;
     void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
 
-    if (tcip->bound
-        && bitmapTest(tcip->amoVisBitmap, node)) {
+    if (tcip->bound && bitmapTest(tcip->amoVisBitmap, node)) {
       //
       // Special case: If our last operation was an AMO (which can only
       // be true with a bound tx context) then we need to do a fenced
@@ -6423,10 +6424,8 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
                                            uint64_t mrRaddr, uint64_t mrKey,
                                            size_t size, void* ctx,
                                            struct perTxCtxInfo_t* tcip) {
-  chpl_bool havePutsOut = tcip->putVisBitmap != NULL
-                          && bitmapTest(tcip->putVisBitmap, node);
-  chpl_bool haveAmosOut = tcip->amoVisBitmap != NULL
-                          && bitmapTest(tcip->amoVisBitmap, node);
+  chpl_bool havePutsOut = bitmapTest(tcip->putVisBitmap, node);
+  chpl_bool haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
 
   if (havePutsOut || haveAmosOut) {
     //
@@ -6468,12 +6467,8 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrd(void* myAddr, void* mrDesc,
   // visible.
   //
   if (tcip->bound) {
-    if (tcip->putVisBitmap != NULL) {
-      bitmapClear(tcip->putVisBitmap, node);
-    }
-    if (tcip->amoVisBitmap != NULL) {
-      bitmapClear(tcip->amoVisBitmap, node);
-    }
+    bitmapClear(tcip->putVisBitmap, node);
+    bitmapClear(tcip->amoVisBitmap, node);
   }
   (void) wrap_fi_read(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
   return NULL;
@@ -6811,6 +6806,13 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
   uint64_t flags = 0;
   chpl_bool havePutsOut = bitmapTest(tcip->putVisBitmap, ab->node);
   chpl_bool haveAmosOut = bitmapTest(tcip->amoVisBitmap, ab->node);
+
+  //
+  // Force visibility of all pending Puts and AMOs on all locales except for
+  // the target locale. We will ensure visibility on the target below.
+  //
+  forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                        ab->node /*skipNode*/, tcip);
 
   //
   // Inject this AMO if it is non-fetching, we have a bound tx context so we
@@ -7302,10 +7304,8 @@ void forceMemFxVisOneNode(c_nodeid_t node,
   //
   if (tcip->bound) {
     chpl_bool havePutsOut = (checkPuts
-                             && tcip->putVisBitmap != NULL
                              && bitmapTest(tcip->putVisBitmap, node));
     chpl_bool haveAmosOut = (checkAmos
-                             && tcip->amoVisBitmap != NULL
                              && bitmapTest(tcip->amoVisBitmap, node));
     if (havePutsOut || haveAmosOut) {
       mcmReleaseOneNode(node, tcip, "PUT");

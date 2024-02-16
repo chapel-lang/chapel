@@ -61,12 +61,12 @@ record randomStrings {
   proc init() {} // ensure the default values are used consistently
 
   iter these() {
-    for rnd in stream.iterate(dom) do
+    for rnd in stream.next(dom) do
       yield rnd:string;
   }
 
   iter these(param tag) where tag == iterKind.standalone {
-    forall rnd in stream.iterate(dom) do
+    forall rnd in stream.next(dom) do
       yield rnd:string;
   }
 }

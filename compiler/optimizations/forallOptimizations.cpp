@@ -753,7 +753,7 @@ static Expr *getLocalityDominator(CallExpr* ce) {
     }
 
     if (LoopExpr *loop = toLoopExpr(cur)) {
-      if (loop->forall) {
+      if (loop->type == FORALL_EXPR) {
         return loop;
       }
     }

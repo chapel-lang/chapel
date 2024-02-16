@@ -20,6 +20,7 @@
 #ifndef CHPL_QUERIES_CONTEXT_DETAIL_H
 #define CHPL_QUERIES_CONTEXT_DETAIL_H
 
+#include "chpl/framework/ID.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
@@ -68,6 +69,11 @@ struct UniqueStrHash final {
 
 }
 
+// When printing a back-trace from the query system, the TraceElement makes
+// up each stack item. It contains an ID (to anchor the trace to a line etc.)
+// and a string describing what was being done.
+using TraceElement = std::pair<ID, std::string>;
+
 namespace querydetail {
 
 using RevisionNumber = int64_t;
@@ -90,6 +96,8 @@ class QueryMapResultBase;
 template<typename ResultType, typename... ArgTs> class QueryMapResult;
 class QueryMapBase;
 template<typename ResultType, typename... ArgTs> class QueryMap;
+class QueryTracerBase;
+template<typename ResultType, typename... ArgTs> class QueryTracer;
 
 template<typename TUP, size_t... I>
 static inline bool queryArgsEqualsImpl(const TUP& lhs, const TUP& rhs, std::index_sequence<I...>)
@@ -258,6 +266,7 @@ class QueryMapResultBase {
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
   mutable bool emittedErrors = false;
+  mutable std::set<const QueryMapResultBase*> recursionErrors;
   mutable QueryErrorVec errors;
 
   QueryMapBase* parentQueryMap;
@@ -265,10 +274,13 @@ class QueryMapResultBase {
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
                      bool emittedErrors,
+                     std::set<const QueryMapResultBase*> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
   virtual void markUniqueStringsInResult(Context* context) const = 0;
+
+  optional<TraceElement> tryTrace() const;
 };
 
 template<typename ResultType, typename... ArgTs>
@@ -282,17 +294,19 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
   QueryMapResult(RevisionNumber lastChecked,
                  RevisionNumber lastChanged,
                  bool emittedErrors,
+                 std::set<const QueryMapResultBase*> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
-    : QueryMapResultBase(lastChecked, lastChanged, emittedErrors, parentQueryMap),
+    : QueryMapResultBase(lastChecked, lastChanged, emittedErrors,
+                         std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {
   }
@@ -300,10 +314,36 @@ class QueryMapResult final : public QueryMapResultBase {
   void markUniqueStringsInResult(Context* context) const override;
 };
 
+class QueryTracerBase {
+ public:
+  virtual ~QueryTracerBase() = 0; // this is an abstract base class
+  virtual TraceElement traceElementFrom(const QueryMapResultBase*) const = 0;
+};
+
+template<typename ResultType,
+         typename... ArgTs>
+class QueryTracer : public QueryTracerBase {
+ private:
+   std::function<TraceElement(const std::tuple<ArgTs...>&)> traceElementFrom_;
+
+ public:
+  ~QueryTracer() = default;
+
+  template <typename F>
+  QueryTracer(F&& traceElementFrom)
+    : traceElementFrom_(std::move(traceElementFrom)) {
+  }
+  TraceElement traceElementFrom(const QueryMapResultBase* r) const override {
+    auto specR = (const QueryMapResult<ResultType, ArgTs...>*) r;
+    return traceElementFrom_(specR->tupleOfArgs);
+  }
+};
+
 class QueryMapBase {
  public:
    const char* queryName;
    bool isInputQuery;
+   owned<QueryTracerBase> tracer;
 
   struct QueryStats {
     // NOTE: `system` here refers to what the query system is doing
@@ -370,6 +410,17 @@ class QueryMap final : public QueryMapBase {
     }
 
     oldResults.clear();
+  }
+
+  template <typename F>
+  inline void registerTracer(F&& fn) {
+    if (this->tracer.get() != nullptr) {
+      // We already have a tracer; do nothing.
+      return;
+    }
+
+    this->tracer = toOwned<QueryTracerBase>(
+        new QueryTracer<ResultType, ArgTs...>(std::forward<F>(fn)));
   }
 };
 

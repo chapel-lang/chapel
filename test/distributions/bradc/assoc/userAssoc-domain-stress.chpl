@@ -12,7 +12,7 @@ if requestCapacity then
 coforall loc in Locales with (ref D) {
   on loc {
     var rng = new randomStream(eltType=int, seed=100+loc.id);
-    forall r in rng.iterate({1..updatesPerLocale}) with (ref D) {
+    forall r in rng.next({1..updatesPerLocale}) with (ref D) {
       D += r;
     }
   }
@@ -22,7 +22,7 @@ coforall loc in Locales with (ref D) {
 coforall loc in Locales {
   on loc {
     var rng = new randomStream(eltType=int, seed=100+loc.id);
-    forall r in rng.iterate({1..updatesPerLocale}) {
+    forall r in rng.next({1..updatesPerLocale}) {
       assert(D.contains(r));
     }
   }

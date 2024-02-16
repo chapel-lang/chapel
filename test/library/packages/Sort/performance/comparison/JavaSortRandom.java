@@ -7,7 +7,7 @@ import java.util.Random;
 public class JavaSortRandom {
 
   public static void main(String[] args) {
-    int n = 1024*1024*128;
+    int n = 128*1024*1024;
 
     System.out.println("Creating Array");
     long[] arr = new long[n];
@@ -22,5 +22,7 @@ public class JavaSortRandom {
     double elapsed = (end-start)/1000.0/1000.0/1000.0;
     System.out.println("Sorting took " + elapsed + " seconds");
     System.out.println("MiB/s: " + (8*n/elapsed/1024.0/1024.0));
+    System.out.println("million elements sorted per second: " +
+                       (n/elapsed/1000.0/1000.0));
   }
 }

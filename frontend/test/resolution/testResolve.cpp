@@ -740,7 +740,7 @@ static void test17() {
 
       param foo_param;
       foo_param = 5;
-      param bar_param;
+      param bar_param:string;
       bar_param = "bar_param";
 
       )""", { "foo", "bar", "foo_param", "bar_param"});
@@ -800,7 +800,8 @@ static void test19() {
 
   module N {
     use M;
-    var y = z;
+    var y;
+    y = z;
   }
   )"""";
 
@@ -830,6 +831,343 @@ static void test19() {
   guard.realizeErrors();
 }
 
+// Accessing the param value of a split-init'd symbol in another module
+static void test20() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents =
+      R""""(
+      module M {
+        module N {
+          param CHPL_SOMETHING:string;
+          CHPL_SOMETHING = "foo";
+        }
+
+        use N;
+        param x = CHPL_SOMETHING;
+      }
+      )"""";
+
+  // parse modules and get M
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(contents));
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0];
+
+  // extract x
+  assert(m->numStmts() == 3);
+  // hardcoded stmt number
+  const Variable* x = m->stmt(2)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+
+  // check type
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  auto qt = rr.byAst(x).type();
+  ensureParamString(qt, "foo");
+
+  guard.realizeErrors();
+}
+
+// Test resolving functions with pragma "last resort".
+static void test21() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // Test no ambiguity between nearly-identical functions where just one is last
+  // resort.
+  {
+    printf("part 1\n");
+    context->advanceToNextRevision(true);
+
+    auto path = UniqueString::get(context, "input.chpl");
+    std::string contents = R""""(
+        module M {
+          proc foo(x: int) {
+            return x;
+          }
+          pragma "last resort"
+          proc foo(y: int) {
+            return y;
+          }
+          var x = foo(4);
+        }
+                          )"""";
+
+    setFileText(context, path, contents);
+
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 3);
+
+    // foo overload with x arg
+    const Function* procFooX = m->stmt(0)->toFunction();
+    assert(procFooX && procFooX->name() == "foo" && procFooX->numFormals() == 1);
+    const NamedDecl* procFooXArg = procFooX->formal(0)->toNamedDecl();
+    assert(procFooXArg && procFooXArg->name() == "x");
+
+    // last resort foo overload with y arg
+    const Function* procFooY = m->stmt(1)->toFunction();
+    assert(procFooY && procFooY->name() == "foo" && procFooY->numFormals() == 1);
+    const NamedDecl* procFooYArg = procFooY->formal(0)->toNamedDecl();
+    assert(procFooYArg && procFooYArg->name() == "y");
+
+    // variable initialized with foo call
+    const Variable* x = m->stmt(2)->toVariable();
+    assert(x);
+    const AstNode* rhs = x->initExpression();
+    assert(rhs);
+    const FnCall* fnCall = rhs->toFnCall();
+    assert(fnCall);
+
+    // Get called foo
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(fnCall);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    // Check we called the correct foo.
+    assert(c.fn()->untyped()->name() == "foo");
+    assert(c.fn()->numFormals() == 1);
+    assert(c.fn()->formalName(0) == "x");
+
+    context->collectGarbage();
+  }
+
+  // Test ambiguity between two nearly-identical last resort functions.
+  {
+    printf("part 2\n");
+    context->advanceToNextRevision(true);
+
+    ErrorGuard guard(context);
+
+    auto path = UniqueString::get(context, "input.chpl");
+    std::string contents = R""""(
+        module M {
+          pragma "last resort"
+          proc foo(x: int) {
+            return x;
+          }
+          pragma "last resort"
+          proc foo(y: int) {
+            return y;
+          }
+          var x = foo(4);
+        }
+                          )"""";
+
+    setFileText(context, path, contents);
+
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 3);
+
+    // variable initialized with foo call
+    const Variable* x = m->stmt(2)->toVariable();
+    assert(x);
+    const AstNode* rhs = x->initExpression();
+    assert(rhs);
+    const FnCall* fnCall = rhs->toFnCall();
+    assert(fnCall);
+
+    // Get called foo
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(fnCall);
+
+    // Check foo call is ambiguous
+    assert(re.mostSpecific().isAmbiguous());
+
+    // Check variable couldn't resolve
+    auto rrx = rr.byAst(x);
+    auto xt = rrx.type().type();
+    assert(xt);
+    assert(xt->isErroneousType());
+
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->message() ==
+           "Cannot resolve call to 'foo': ambiguity");
+    guard.realizeErrors();
+
+    context->collectGarbage();
+  }
+
+  // Test resolving a last resort that's the only actual option.
+  {
+    printf("part 3\n");
+    context->advanceToNextRevision(true);
+
+    auto path = UniqueString::get(context, "input.chpl");
+    std::string contents = R""""(
+        module M {
+          proc foo(x: string) {
+            return x;
+          }
+          pragma "last resort"
+          proc foo(y: int) {
+            return y;
+          }
+          var x = foo(4);
+        }
+                          )"""";
+
+    setFileText(context, path, contents);
+
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 3);
+
+    // variable initialized with foo call
+    const Variable* x = m->stmt(2)->toVariable();
+    assert(x);
+    const AstNode* rhs = x->initExpression();
+    assert(rhs);
+    const FnCall* fnCall = rhs->toFnCall();
+    assert(fnCall);
+
+    // Get called foo
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(fnCall);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    // Check we called the correct foo.
+    assert(c.fn()->untyped()->name() == "foo");
+    assert(c.fn()->numFormals() == 1);
+    assert(c.fn()->formalName(0) == "y");
+    assert(c.fn()->formalType(0).type());
+    assert(c.fn()->formalType(0).type()->isIntType());
+
+    context->collectGarbage();
+  }
+
+  // Test resolving between forwarded-to methods where just one is last resort.
+  {
+    printf("part 4\n");
+    context->advanceToNextRevision(true);
+
+    auto path = UniqueString::get(context, "input.chpl");
+    std::string contents = R""""(
+        module M {
+          record MyImpl {
+            proc foo(x: int) {
+              return x;
+            }
+            pragma "last resort"
+            proc foo(y: int) {
+              return y;
+            }
+          }
+          record MyForward {
+            forwarding var impl: MyImpl;
+          }
+          var mf: MyForward;
+          var x = mf.foo(4);
+        }
+                          )"""";
+
+    setFileText(context, path, contents);
+
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 4);
+
+    // variable initialized with foo call
+    const Variable* x = m->stmt(3)->toVariable();
+    assert(x);
+    const AstNode* rhs = x->initExpression();
+    assert(rhs);
+    const FnCall* fnCall = rhs->toFnCall();
+    assert(fnCall);
+
+    // Get called foo
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(fnCall);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    // Check we called the correct foo.
+    assert(c.fn()->untyped()->name() == "foo");
+    assert(c.fn()->numFormals() == 2);
+    assert(c.fn()->formalName(0) == "this");
+    assert(c.fn()->formalName(1) == "x");
+    assert(c.fn()->formalType(1).type());
+    assert(c.fn()->formalType(1).type()->isIntType());
+
+    context->collectGarbage();
+  }
+
+  // Test resolving to a forwarded-to method over a last resort non-forwarded
+  // one.
+  {
+    printf("part 5\n");
+    context->advanceToNextRevision(true);
+
+    auto path = UniqueString::get(context, "input.chpl");
+    std::string contents = R""""(
+        module M {
+          record MyImpl {
+            proc foo(x: int) {
+              return x;
+            }
+          }
+          record MyForward {
+            forwarding var impl: MyImpl;
+
+            pragma "last resort"
+            proc foo(y: int) {
+              return y;
+            }
+          }
+          var mf: MyForward;
+          var x = mf.foo(4);
+        }
+                          )"""";
+
+    setFileText(context, path, contents);
+
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 4);
+
+    // variable initialized with foo call
+    const Variable* x = m->stmt(3)->toVariable();
+    assert(x);
+    const AstNode* rhs = x->initExpression();
+    assert(rhs);
+    const FnCall* fnCall = rhs->toFnCall();
+    assert(fnCall);
+
+    // Get called foo
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(fnCall);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    // Check we called the correct foo.
+    assert(c.fn()->untyped()->name() == "foo");
+    assert(c.fn()->numFormals() == 2);
+    assert(c.fn()->formalName(0) == "this");
+    assert(c.fn()->formalName(1) == "x");
+    assert(c.fn()->formalType(1).type());
+    assert(c.fn()->formalType(1).type()->isIntType());
+
+    context->collectGarbage();
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -850,6 +1188,8 @@ int main() {
   test17();
   test18();
   test19();
+  test20();
+  test21();
 
   return 0;
 }

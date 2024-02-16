@@ -11,7 +11,6 @@ anywhere in `myfile.chpl`.
 
 ```Python
 from chapel import *
-from chapel.core import *
 
 ctx = Context()
 ast = ctx.parse("myfile.chpl")
@@ -68,22 +67,23 @@ in action.
 
 The library is split into three major components:
 
-* The `chapel.core` module which provides the parts of this library that are
-  bridged from C++. This includes the AST node class hierarchy, the `Context`
-  object, and some other supporting code.
-* The `chapel` module provides higher-level, pure Python implementations of
-  certain utility functions. For instance, it provides the `preorder` and `postorder`
-  traversal iterators, and a `match` function to perform AST pattern matching.
+* The `chapel` module provides the AST node class hierarchy and the `Context`
+  object. It also provides some higher-level, pure Python implementations of
+  certain utility functions. For instance, it provides the `preorder` and
+  `postorder`, traversal iterators, and a `match` function to perform AST
+  pattern matching.
 * The `chapel.replace` module provides the "replacer API", which is intended
   to perform transformations on existing Chapel files for various reasons. For
   instance, deprecations and syntax changes can be performed automatically using
   the replacer API, by finding AST patterns and performing string substitution.
 * The `chapel.lsp` module provides a few helpers to tranform Dyno types to LSP
   (Language Server Protocol) types.
+* The `chapel.core` module which provides the parts of this library that are
+  bridged from C++. Most users should not need to use this library, as all symbols are forwarded to `chapel`.
 
 The following sections document the three modules.
 
-### `chapel.core`
+### `chapel`
 
 The main entry point to the Chapel Python API is the `Context` object. This
 is a wrapper around the C++ construct of the same name. The Context in 'dyno'
@@ -151,9 +151,7 @@ METHOD_TABLE(START_NamedDecl,
 );
 ```
 
-### `chapel`
-
-The `chapel` module provides convenience functions for working with the library.
+The `chapel` module also provides convenience functions for working with the library.
 For instance, it provides the `postorder` and `preorder` iterators (the
 implementation of the former is included above). It also provides a couple
 of more advanced helpers for dealing with Chapel ASTs.

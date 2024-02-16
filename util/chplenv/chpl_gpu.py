@@ -17,16 +17,26 @@ def _validate_rocm_version():
 
 class gpu_type:
     def __init__(self, sdk_path_env, compiler, default_arch, llvm_target,
-                 runtime_impl, version_validator):
+                 runtime_impl, version_validator, llvm_validator):
         self.sdk_path_env = sdk_path_env
         self.compiler = compiler
         self.default_arch = default_arch
         self.llvm_target = llvm_target
         self.runtime_impl = runtime_impl
         self.version_validator = version_validator
+        self.llvm_validator = llvm_validator
 
     def validate_sdk_version(self):
         return self.version_validator()
+
+    def validate_llvm(self):
+        return self.llvm_validator(self)
+
+def _validate_cuda_llvm_version(gpu: gpu_type):
+    return _validate_cuda_llvm_version_impl(gpu)
+
+def _validate_rocm_llvm_version(gpu: gpu_type):
+    return _validate_rocm_llvm_version_impl(gpu)
 
 
 GPU_TYPES = {
@@ -35,19 +45,22 @@ GPU_TYPES = {
                        default_arch="sm_60",
                        llvm_target="NVPTX",
                        runtime_impl="cuda",
-                       version_validator=_validate_cuda_version),
+                       version_validator=_validate_cuda_version,
+                       llvm_validator=_validate_cuda_llvm_version),
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
                     compiler="hipcc",
                     default_arch="",
                     llvm_target="AMDGPU",
                     runtime_impl="rocm",
-                    version_validator=_validate_rocm_version),
+                    version_validator=_validate_rocm_version,
+                    llvm_validator=_validate_rocm_llvm_version),
     "cpu": gpu_type(sdk_path_env="",
                     compiler="",
                     default_arch="",
                     llvm_target="",
                     runtime_impl="cpu",
-                    version_validator=lambda: None),
+                    version_validator=lambda: None,
+                    llvm_validator=lambda: None),
 }
 
 
@@ -75,6 +88,13 @@ def determine_gpu_type():
       ("" if len(typesFound) == 0 else " (detected: [%s])" %  ", ".join(typesFound),
        ", ".join(GPU_TYPES.keys())))
     return None;
+
+def get_llvm_override():
+    if get() == 'amd':
+        if get_sdk_version().split('.')[0] == '5':
+            return '{}/llvm/bin/llvm-config'.format(get_sdk_path('amd'))
+        pass
+    return 'none'
 
 @memoize
 def get():
@@ -204,48 +224,42 @@ def validateLlvmBuiltForTgt(expectedTgt):
     return expectedTgt in targets
 
 
+def _validate_cuda_llvm_version_impl(gpu: gpu_type):
+    if not validateLlvmBuiltForTgt(gpu.llvm_target):
+        _reportMissingGpuReq(
+            "LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
+            gpu.llvm_target, allowExempt=False
+        )
+
+def _validate_rocm_llvm_version_impl(gpu: gpu_type):
+    if chpl_llvm.get() == 'bundled':
+        error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
+    if not validateLlvmBuiltForTgt(gpu.llvm_target):
+        _reportMissingGpuReq(
+            "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
+        )
+
 def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "7"
     MAX_REQ_VERSION = "13"
 
-    chpl_cuda_path = get_sdk_path('nvidia')
-    version_file_json = '%s/version.json' % chpl_cuda_path
-    version_file_txt = '%s/version.txt' % chpl_cuda_path
-    cudaVersion = None
-    if os.path.exists(version_file_json):
-        f = open(version_file_json)
-        version_json = json.load(f)
-        f.close()
-        cudaVersion = version_json["cuda"]["version"]
-    elif os.path.exists(version_file_txt):
-        txt = open(version_file_txt).read()
-        match = re.search(r'\d+\.\d+\.\d+', txt)
-        if match:
-            cudaVersion = match.group()
-    if cudaVersion is None:
-        exists, returncode, my_stdout, my_stderr = utils.try_run_command(
-            ["nvcc", "--version"])
-        if exists and returncode == 0:
-            pattern = r"Cuda compilation tools, release ([\d\.]+)"
-            match = re.search(pattern, my_stdout)
-            if match:
-                cudaVersion = match.group(1)
+    cuda_version = get_sdk_version()
 
-    if cudaVersion is None:
+    if cuda_version is None:
         _reportMissingGpuReq("Unable to determine CUDA version.")
         return False
 
-    if not is_ver_in_range(cudaVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
+    if not is_ver_in_range(cuda_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
       _reportMissingGpuReq(
             "Chapel requires a CUDA version between %s and %s, "
             "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, cudaVersion))
+            (MIN_REQ_VERSION, MAX_REQ_VERSION, cuda_version))
       return False
 
     # CUDA 12 requires the bundled LLVM or the major LLVM version must be >15
-    if is_ver_in_range(cudaVersion, "12", "13"):
+    if is_ver_in_range(cuda_version, "12", "13"):
         llvm = chpl_llvm.get()
         if llvm == "system":
             llvm_config = chpl_llvm.find_system_llvm_config()
@@ -261,6 +275,55 @@ def _validate_cuda_version_impl():
 
     return True
 
+def get_sdk_version():
+    if get() == 'amd':
+        chpl_rocm_path = get_sdk_path('amd')
+        files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
+            '%s/.info/version-libs' % chpl_rocm_path]
+
+        version_filename = None
+        for fname in files_to_try:
+           if os.path.exists(fname):
+               version_filename = fname
+               break
+
+        rocm_version = None
+        if version_filename is not None:
+            rocm_version = open(version_filename).read()
+        else:
+            exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+                ["hipcc", "--version"])
+            if exists and returncode == 0:
+                match = re.search(r"rocm?-([\d\.]+)", my_stdout)
+                if match:
+                    rocm_version = match.group(1)
+        return rocm_version
+    
+    if get() == 'nvidia':
+        chpl_cuda_path = get_sdk_path('nvidia')
+        version_file_json = '%s/version.json' % chpl_cuda_path
+        version_file_txt = '%s/version.txt' % chpl_cuda_path
+        cuda_version = None
+        if os.path.exists(version_file_json):
+            f = open(version_file_json)
+            version_json = json.load(f)
+            f.close()
+            cuda_version = version_json["cuda"]["version"]
+        elif os.path.exists(version_file_txt):
+            txt = open(version_file_txt).read()
+            match = re.search(r'\d+\.\d+\.\d+', txt)
+            if match:
+                cuda_version = match.group()
+        if cuda_version is None:
+            exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+                ["nvcc", "--version"])
+            if exists and returncode == 0:
+                pattern = r"Cuda compilation tools, release ([\d\.]+)"
+                match = re.search(pattern, my_stdout)
+                if match:
+                    cuda_version = match.group(1)
+        return cuda_version
+
 
 def _validate_rocm_version_impl():
     """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
@@ -268,36 +331,17 @@ def _validate_rocm_version_impl():
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "5.5"
 
-    chpl_rocm_path = get_sdk_path('amd')
-    files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
-        '%s/.info/version-libs' % chpl_rocm_path]
+    rocm_version = get_sdk_version()
 
-    version_filename = None
-    for fname in files_to_try:
-       if os.path.exists(fname):
-           version_filename = fname
-           break
-
-    rocmVersion = None
-    if version_filename is not None:
-        rocmVersion = open(version_filename).read()
-    else:
-        exists, returncode, my_stdout, my_stderr = utils.try_run_command(
-            ["hipcc", "--version"])
-        if exists and returncode == 0:
-            match = re.search(r"rocm?-([\d\.]+)", my_stdout)
-            if match:
-                rocmVersion = match.group(1)
-
-    if rocmVersion is None:
+    if rocm_version is None:
         _reportMissingGpuReq("Unable to determine ROCm version.")
         return False
 
-    if not is_ver_in_range(rocmVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
+    if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
         _reportMissingGpuReq(
             "Chapel requires ROCm to be a version between %s and %s, "
             "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, rocmVersion))
+            (MIN_REQ_VERSION, MAX_REQ_VERSION, rocm_version))
         return False
 
     return True
@@ -322,13 +366,7 @@ def validate(chplLocaleModel):
         error("The 'gpu' locale model can only be used with "
               "CHPL_TARGET_COMPILER=llvm.")
 
-    llvm_ver = chpl_llvm.get_llvm_version()
-    if llvm_ver in ('16','17',):
-        error("The 'gpu' locale model cannot be used with LLVM version {}".format(llvm_ver))
-
-    if not validateLlvmBuiltForTgt(gpu.llvm_target):
-        _reportMissingGpuReq("LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
-                             gpu.llvm_target, allowExempt=False)
+    gpu.validate_llvm()
 
     for depr_env in ("CHPL_GPU_CODEGEN", "CHPL_GPU_RUNTIME"):
         if os.environ.get(depr_env):

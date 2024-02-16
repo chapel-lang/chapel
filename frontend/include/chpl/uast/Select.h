@@ -121,6 +121,10 @@ class Select final : public AstNode {
     auto end = begin + numWhenStmts_;
     return AstListIteratorPair<When>(begin, end);
   }
+
+  bool hasOtherwise() const {
+    return whenStmt(numWhenStmts()-1)->isOtherwise();
+  }
 };
 
 

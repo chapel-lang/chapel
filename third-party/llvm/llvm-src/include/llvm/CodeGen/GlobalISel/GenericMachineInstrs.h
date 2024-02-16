@@ -153,7 +153,7 @@ public:
 /// Represents G_BUILD_VECTOR, G_CONCAT_VECTORS or G_MERGE_VALUES.
 /// All these have the common property of generating a single value from
 /// multiple sources.
-class GMergeLikeOp : public GenericMachineInstr {
+class GMergeLikeInstr : public GenericMachineInstr {
 public:
   /// Returns the number of source registers.
   unsigned getNumSources() const { return getNumOperands() - 1; }
@@ -173,7 +173,7 @@ public:
 };
 
 /// Represents a G_MERGE_VALUES.
-class GMerge : public GMergeLikeOp {
+class GMerge : public GMergeLikeInstr {
 public:
   static bool classof(const MachineInstr *MI) {
     return MI->getOpcode() == TargetOpcode::G_MERGE_VALUES;
@@ -181,7 +181,7 @@ public:
 };
 
 /// Represents a G_CONCAT_VECTORS.
-class GConcatVectors : public GMergeLikeOp {
+class GConcatVectors : public GMergeLikeInstr {
 public:
   static bool classof(const MachineInstr *MI) {
     return MI->getOpcode() == TargetOpcode::G_CONCAT_VECTORS;
@@ -189,7 +189,7 @@ public:
 };
 
 /// Represents a G_BUILD_VECTOR.
-class GBuildVector : public GMergeLikeOp {
+class GBuildVector : public GMergeLikeInstr {
 public:
   static bool classof(const MachineInstr *MI) {
     return MI->getOpcode() == TargetOpcode::G_BUILD_VECTOR;
@@ -255,6 +255,106 @@ class GFCmp : public GAnyCmp {
 public:
   static bool classof(const MachineInstr *MI) {
     return MI->getOpcode() == TargetOpcode::G_FCMP;
+  }
+};
+
+/// Represents overflowing binary operations.
+/// Only carry-out:
+/// G_UADDO, G_SADDO, G_USUBO, G_SSUBO, G_UMULO, G_SMULO
+/// Carry-in and carry-out:
+/// G_UADDE, G_SADDE, G_USUBE, G_SSUBE
+class GBinOpCarryOut : public GenericMachineInstr {
+public:
+  Register getDstReg() const { return getReg(0); }
+  Register getCarryOutReg() const { return getReg(1); }
+  MachineOperand &getLHS() { return getOperand(2); }
+  MachineOperand &getRHS() { return getOperand(3); }
+
+  static bool classof(const MachineInstr *MI) {
+    switch (MI->getOpcode()) {
+    case TargetOpcode::G_UADDO:
+    case TargetOpcode::G_SADDO:
+    case TargetOpcode::G_USUBO:
+    case TargetOpcode::G_SSUBO:
+    case TargetOpcode::G_UADDE:
+    case TargetOpcode::G_SADDE:
+    case TargetOpcode::G_USUBE:
+    case TargetOpcode::G_SSUBE:
+    case TargetOpcode::G_UMULO:
+    case TargetOpcode::G_SMULO:
+      return true;
+    default:
+      return false;
+    }
+  }
+};
+
+/// Represents overflowing add/sub operations.
+/// Only carry-out:
+/// G_UADDO, G_SADDO, G_USUBO, G_SSUBO
+/// Carry-in and carry-out:
+/// G_UADDE, G_SADDE, G_USUBE, G_SSUBE
+class GAddSubCarryOut : public GBinOpCarryOut {
+public:
+  bool isAdd() const {
+    switch (getOpcode()) {
+    case TargetOpcode::G_UADDO:
+    case TargetOpcode::G_SADDO:
+    case TargetOpcode::G_UADDE:
+    case TargetOpcode::G_SADDE:
+      return true;
+    default:
+      return false;
+    }
+  }
+  bool isSub() const { return !isAdd(); }
+
+  bool isSigned() const {
+    switch (getOpcode()) {
+    case TargetOpcode::G_SADDO:
+    case TargetOpcode::G_SSUBO:
+    case TargetOpcode::G_SADDE:
+    case TargetOpcode::G_SSUBE:
+      return true;
+    default:
+      return false;
+    }
+  }
+  bool isUnsigned() const { return !isSigned(); }
+
+  static bool classof(const MachineInstr *MI) {
+    switch (MI->getOpcode()) {
+    case TargetOpcode::G_UADDO:
+    case TargetOpcode::G_SADDO:
+    case TargetOpcode::G_USUBO:
+    case TargetOpcode::G_SSUBO:
+    case TargetOpcode::G_UADDE:
+    case TargetOpcode::G_SADDE:
+    case TargetOpcode::G_USUBE:
+    case TargetOpcode::G_SSUBE:
+      return true;
+    default:
+      return false;
+    }
+  }
+};
+
+/// Represents overflowing add/sub operations that also consume a carry-in.
+/// G_UADDE, G_SADDE, G_USUBE, G_SSUBE
+class GAddSubCarryInOut : public GAddSubCarryOut {
+public:
+  Register getCarryInReg() const { return getReg(4); }
+
+  static bool classof(const MachineInstr *MI) {
+    switch (MI->getOpcode()) {
+    case TargetOpcode::G_UADDE:
+    case TargetOpcode::G_SADDE:
+    case TargetOpcode::G_USUBE:
+    case TargetOpcode::G_SSUBE:
+      return true;
+    default:
+      return false;
+    }
   }
 };
 

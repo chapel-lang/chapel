@@ -1075,7 +1075,7 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      // resize the buffer to make room and amoritize resize time for
+      // resize the buffer to make room and amortize resize time for
       // repeated appends
       const newLength = resizeBufferForAppend(lhs, rhs.buffLen);
       // copy the data from rhs
@@ -1098,7 +1098,7 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      // resize the buffer to make room and amoritize resize time for
+      // resize the buffer to make room and amortize resize time for
       // repeated appends
       const newLength = resizeBufferForAppend(lhs, n);
       // copy the data into the buffer, but only the n bytes requested

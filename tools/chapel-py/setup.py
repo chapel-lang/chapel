@@ -24,7 +24,7 @@ import os
 import sys
 import glob
 
-chpl_home = os.getenv('CHPL_HOME')
+chpl_home = str(os.getenv('CHPL_HOME'))
 chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
 chpl_variables_lines = subprocess.check_output([chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]).decode(sys.stdout.encoding).strip().splitlines()
 chpl_variables = dict()
@@ -33,9 +33,10 @@ for line in chpl_variables_lines:
     if len(elms) == 2:
         chpl_variables[elms[0].strip()] = elms[1].strip()
 
-llvm_config = chpl_variables.get("CHPL_LLVM_CONFIG")
+llvm_config = str(chpl_variables.get("CHPL_LLVM_CONFIG"))
 
-chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
+host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
+chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
 
 CXXFLAGS = []
 CXXFLAGS += ["-Wno-c99-designator"]

@@ -281,7 +281,7 @@ static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
 // test environments, so dodge it to be safe;  Currently, we only compile
 // this header using a C++ compiler when compiling our re2 stubs, which
 // don't seem to use this routine anyway.
-#if defined(CMPLX) && !defined(__cplusplus)
+#if defined(CMPLXF) && !defined(__cplusplus)
   return CMPLXF(re, im);
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING

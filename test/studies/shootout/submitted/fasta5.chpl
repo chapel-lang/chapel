@@ -173,4 +173,4 @@ proc getRands(n, arr) {
     arr[i] = lastRand;
   }
 }
-use Compat;
+use Compat, CompatIOKind;

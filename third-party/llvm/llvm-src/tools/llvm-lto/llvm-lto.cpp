@@ -317,11 +317,11 @@ namespace {
       if (!CurrentActivity.empty())
         OS << ' ' << CurrentActivity;
       OS << ": ";
-  
+
       DiagnosticPrinterRawOStream DP(OS);
       DI.print(DP);
       OS << '\n';
-  
+
       if (DI.getSeverity() == DS_Error)
         exit(1);
       return true;
@@ -516,11 +516,10 @@ static void getThinLTOOldAndNewPrefix(std::string &OldPrefix,
 /// Given the original \p Path to an output file, replace any path
 /// prefix matching \p OldPrefix with \p NewPrefix. Also, create the
 /// resulting directory if it does not yet exist.
-static std::string getThinLTOOutputFile(const std::string &Path,
-                                        const std::string &OldPrefix,
-                                        const std::string &NewPrefix) {
+static std::string getThinLTOOutputFile(StringRef Path, StringRef OldPrefix,
+                                        StringRef NewPrefix) {
   if (OldPrefix.empty() && NewPrefix.empty())
-    return Path;
+    return std::string(Path);
   SmallString<128> NewPath(Path);
   llvm::sys::path::replace_path_prefix(NewPath, OldPrefix, NewPrefix);
   StringRef ParentPath = llvm::sys::path::parent_path(NewPath.str());
@@ -1099,7 +1098,9 @@ int main(int argc, char **argv) {
         error("writing merged module failed.");
     }
 
-    auto AddStream = [&](size_t Task) -> std::unique_ptr<CachedFileStream> {
+    auto AddStream =
+        [&](size_t Task,
+            const Twine &ModuleName) -> std::unique_ptr<CachedFileStream> {
       std::string PartFilename = OutputFilename;
       if (Parallelism != 1)
         PartFilename += "." + utostr(Task);

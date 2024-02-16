@@ -16,7 +16,9 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/BranchProbabilityInfo.h"
+#include "llvm/Analysis/Loads.h"
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/CodeGen/Analysis.h"
@@ -27,6 +29,7 @@
 #include "llvm/CodeGen/GlobalISel/InlineAsmLowering.h"
 #include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
 #include "llvm/CodeGen/LowLevelType.h"
+#include "llvm/CodeGen/LowLevelTypeUtils.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -41,6 +44,7 @@
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetLowering.h"
+#include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
@@ -61,6 +65,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/IR/Statepoint.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/User.h"
 #include "llvm/IR/Value.h"
@@ -71,7 +76,6 @@
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/LowLevelTypeImpl.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetIntrinsicInfo.h"
@@ -81,6 +85,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -167,6 +172,7 @@ void IRTranslator::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<StackProtector>();
   AU.addRequired<TargetPassConfig>();
   AU.addRequired<GISelCSEAnalysisWrapperPass>();
+  AU.addRequired<AssumptionCacheTracker>();
   if (OptLevel != CodeGenOpt::None) {
     AU.addRequired<BranchProbabilityInfoWrapperPass>();
     AU.addRequired<AAResultsWrapperPass>();
@@ -295,7 +301,7 @@ bool IRTranslator::translateBinaryOp(unsigned Opcode, const User &U,
   Register Op0 = getOrCreateVReg(*U.getOperand(0));
   Register Op1 = getOrCreateVReg(*U.getOperand(1));
   Register Res = getOrCreateVReg(U);
-  uint16_t Flags = 0;
+  uint32_t Flags = 0;
   if (isa<Instruction>(U)) {
     const Instruction &I = cast<Instruction>(U);
     Flags = MachineInstr::copyFlagsFromInstruction(I);
@@ -309,7 +315,7 @@ bool IRTranslator::translateUnaryOp(unsigned Opcode, const User &U,
                                     MachineIRBuilder &MIRBuilder) {
   Register Op0 = getOrCreateVReg(*U.getOperand(0));
   Register Res = getOrCreateVReg(U);
-  uint16_t Flags = 0;
+  uint32_t Flags = 0;
   if (isa<Instruction>(U)) {
     const Instruction &I = cast<Instruction>(U);
     Flags = MachineInstr::copyFlagsFromInstruction(I);
@@ -340,7 +346,7 @@ bool IRTranslator::translateCompare(const User &U,
     MIRBuilder.buildCopy(
         Res, getOrCreateVReg(*Constant::getAllOnesValue(U.getType())));
   else {
-    uint16_t Flags = 0;
+    uint32_t Flags = 0;
     if (CI)
       Flags = MachineInstr::copyFlagsFromInstruction(*CI);
     MIRBuilder.buildFCmp(Pred, Res, Op0, Op1, Flags);
@@ -839,8 +845,8 @@ void IRTranslator::emitSwitchCase(SwitchCG::CaseBlock &CB,
     // For conditional branch lowering, we might try to do something silly like
     // emit an G_ICMP to compare an existing G_ICMP i1 result with true. If so,
     // just re-use the existing condition vreg.
-    if (MRI->getType(CondLHS).getSizeInBits() == 1 && CI &&
-        CI->getZExtValue() == 1 && CB.PredInfo.Pred == CmpInst::ICMP_EQ) {
+    if (MRI->getType(CondLHS).getSizeInBits() == 1 && CI && CI->isOne() &&
+        CB.PredInfo.Pred == CmpInst::ICMP_EQ) {
       Cond = CondLHS;
     } else {
       Register CondRHS = getOrCreateVReg(*CB.CmpRHS);
@@ -1013,7 +1019,7 @@ void IRTranslator::emitBitTestHeader(SwitchCG::BitTestBlock &B,
 
   LLT MaskTy = SwitchOpTy;
   if (MaskTy.getSizeInBits() > PtrTy.getSizeInBits() ||
-      !isPowerOf2_32(MaskTy.getSizeInBits()))
+      !llvm::has_single_bit<uint32_t>(MaskTy.getSizeInBits()))
     MaskTy = LLT::scalar(PtrTy.getSizeInBits());
   else {
     // Ensure that the type will fit the mask value.
@@ -1064,19 +1070,19 @@ void IRTranslator::emitBitTestCase(SwitchCG::BitTestBlock &BB,
 
   LLT SwitchTy = getLLTForMVT(BB.RegVT);
   Register Cmp;
-  unsigned PopCount = countPopulation(B.Mask);
+  unsigned PopCount = llvm::popcount(B.Mask);
   if (PopCount == 1) {
     // Testing for a single bit; just compare the shift count with what it
     // would need to be to shift a 1 bit in that position.
     auto MaskTrailingZeros =
-        MIB.buildConstant(SwitchTy, countTrailingZeros(B.Mask));
+        MIB.buildConstant(SwitchTy, llvm::countr_zero(B.Mask));
     Cmp =
         MIB.buildICmp(ICmpInst::ICMP_EQ, LLT::scalar(1), Reg, MaskTrailingZeros)
             .getReg(0);
   } else if (PopCount == BB.Range) {
     // There is only one zero bit in the range, test for it directly.
     auto MaskTrailingOnes =
-        MIB.buildConstant(SwitchTy, countTrailingOnes(B.Mask));
+        MIB.buildConstant(SwitchTy, llvm::countr_one(B.Mask));
     Cmp = MIB.buildICmp(CmpInst::ICMP_NE, LLT::scalar(1), Reg, MaskTrailingOnes)
               .getReg(0);
   } else {
@@ -1289,7 +1295,7 @@ bool IRTranslator::translateLoad(const User &U, MachineIRBuilder &MIRBuilder) {
   AAMDNodes AAInfo = LI.getAAMetadata();
 
   const Value *Ptr = LI.getPointerOperand();
-  Type *OffsetIRTy = DL->getIntPtrType(Ptr->getType());
+  Type *OffsetIRTy = DL->getIndexType(Ptr->getType());
   LLT OffsetTy = getLLTForType(*OffsetIRTy, *DL);
 
   if (CLI->supportSwiftError() && isSwiftError(Ptr)) {
@@ -1301,16 +1307,12 @@ bool IRTranslator::translateLoad(const User &U, MachineIRBuilder &MIRBuilder) {
   }
 
   auto &TLI = *MF->getSubtarget().getTargetLowering();
-  MachineMemOperand::Flags Flags = TLI.getLoadMemOperandFlags(LI, *DL);
+  MachineMemOperand::Flags Flags =
+      TLI.getLoadMemOperandFlags(LI, *DL, AC, LibInfo);
   if (AA && !(Flags & MachineMemOperand::MOInvariant)) {
     if (AA->pointsToConstantMemory(
             MemoryLocation(Ptr, LocationSize::precise(StoreSize), AAInfo))) {
       Flags |= MachineMemOperand::MOInvariant;
-
-      // FIXME: pointsToConstantMemory probably does not imply dereferenceable,
-      // but the previous usage implied it did. Probably should check
-      // isDereferenceableAndAlignedPointer.
-      Flags |= MachineMemOperand::MODereferenceable;
     }
   }
 
@@ -1341,7 +1343,7 @@ bool IRTranslator::translateStore(const User &U, MachineIRBuilder &MIRBuilder) {
   ArrayRef<uint64_t> Offsets = *VMap.getOffsets(*SI.getValueOperand());
   Register Base = getOrCreateVReg(*SI.getPointerOperand());
 
-  Type *OffsetIRTy = DL->getIntPtrType(SI.getPointerOperandType());
+  Type *OffsetIRTy = DL->getIndexType(SI.getPointerOperandType());
   LLT OffsetTy = getLLTForType(*OffsetIRTy, *DL);
 
   if (CLI->supportSwiftError() && isSwiftError(SI.getPointerOperand())) {
@@ -1437,7 +1439,7 @@ bool IRTranslator::translateSelect(const User &U,
   ArrayRef<Register> Op0Regs = getOrCreateVRegs(*U.getOperand(1));
   ArrayRef<Register> Op1Regs = getOrCreateVRegs(*U.getOperand(2));
 
-  uint16_t Flags = 0;
+  uint32_t Flags = 0;
   if (const SelectInst *SI = dyn_cast<SelectInst>(&U))
     Flags = MachineInstr::copyFlagsFromInstruction(*SI);
 
@@ -1467,8 +1469,14 @@ bool IRTranslator::translateBitCast(const User &U,
                                     MachineIRBuilder &MIRBuilder) {
   // If we're bitcasting to the source type, we can reuse the source vreg.
   if (getLLTForType(*U.getOperand(0)->getType(), *DL) ==
-      getLLTForType(*U.getType(), *DL))
+      getLLTForType(*U.getType(), *DL)) {
+    // If the source is a ConstantInt then it was probably created by
+    // ConstantHoisting and we should leave it alone.
+    if (isa<ConstantInt>(U.getOperand(0)))
+      return translateCast(TargetOpcode::G_CONSTANT_FOLD_BARRIER, U,
+                           MIRBuilder);
     return translateCopy(U, *U.getOperand(0), MIRBuilder);
+  }
 
   return translateCast(TargetOpcode::G_BITCAST, U, MIRBuilder);
 }
@@ -1487,7 +1495,7 @@ bool IRTranslator::translateGetElementPtr(const User &U,
   Register BaseReg = getOrCreateVReg(Op0);
   Type *PtrIRTy = Op0.getType();
   LLT PtrTy = getLLTForType(*PtrIRTy, *DL);
-  Type *OffsetIRTy = DL->getIntPtrType(PtrIRTy);
+  Type *OffsetIRTy = DL->getIndexType(PtrIRTy);
   LLT OffsetTy = getLLTForType(*OffsetIRTy, *DL);
 
   // Normalize Vector GEP - all scalar operands should be converted to the
@@ -1512,7 +1520,7 @@ bool IRTranslator::translateGetElementPtr(const User &U,
             .getReg(0);
     PtrIRTy = FixedVectorType::get(PtrIRTy, VectorWidth);
     PtrTy = getLLTForType(*PtrIRTy, *DL);
-    OffsetIRTy = DL->getIntPtrType(PtrIRTy);
+    OffsetIRTy = DL->getIndexType(PtrIRTy);
     OffsetTy = getLLTForType(*OffsetIRTy, *DL);
   }
 
@@ -1758,6 +1766,8 @@ unsigned IRTranslator::getSimpleIntrinsicOpcode(Intrinsic::ID ID) {
       return TargetOpcode::G_FLOG2;
     case Intrinsic::log10:
       return TargetOpcode::G_FLOG10;
+    case Intrinsic::ldexp:
+      return TargetOpcode::G_FLDEXP;
     case Intrinsic::nearbyint:
       return TargetOpcode::G_FNEARBYINT;
     case Intrinsic::pow:
@@ -1850,6 +1860,8 @@ static unsigned getConstrainedOpcode(Intrinsic::ID ID) {
     return TargetOpcode::G_STRICT_FMA;
   case Intrinsic::experimental_constrained_sqrt:
     return TargetOpcode::G_STRICT_FSQRT;
+  case Intrinsic::experimental_constrained_ldexp:
+    return TargetOpcode::G_STRICT_FLDEXP;
   default:
     return 0;
   }
@@ -1863,7 +1875,7 @@ bool IRTranslator::translateConstrainedFPIntrinsic(
   if (!Opcode)
     return false;
 
-  unsigned Flags = MachineInstr::copyFlagsFromInstruction(FPI);
+  uint32_t Flags = MachineInstr::copyFlagsFromInstruction(FPI);
   if (EB == fp::ExceptionBehavior::ebIgnore)
     Flags |= MachineInstr::NoFPExcept;
 
@@ -1878,14 +1890,66 @@ bool IRTranslator::translateConstrainedFPIntrinsic(
   return true;
 }
 
+std::optional<MCRegister> IRTranslator::getArgPhysReg(Argument &Arg) {
+  auto VRegs = getOrCreateVRegs(Arg);
+  if (VRegs.size() != 1)
+    return std::nullopt;
+
+  // Arguments are lowered as a copy of a livein physical register.
+  auto *VRegDef = MF->getRegInfo().getVRegDef(VRegs[0]);
+  if (!VRegDef || !VRegDef->isCopy())
+    return std::nullopt;
+  return VRegDef->getOperand(1).getReg().asMCReg();
+}
+
+bool IRTranslator::translateIfEntryValueArgument(const DbgValueInst &DebugInst,
+                                                 MachineIRBuilder &MIRBuilder) {
+  auto *Arg = dyn_cast<Argument>(DebugInst.getValue());
+  if (!Arg)
+    return false;
+
+  const DIExpression *Expr = DebugInst.getExpression();
+  if (!Expr->isEntryValue())
+    return false;
+
+  std::optional<MCRegister> PhysReg = getArgPhysReg(*Arg);
+  if (!PhysReg) {
+    LLVM_DEBUG(dbgs() << "Dropping dbg.value: expression is entry_value but "
+                         "couldn't find a physical register\n"
+                      << DebugInst << "\n");
+    return true;
+  }
+
+  MIRBuilder.buildDirectDbgValue(*PhysReg, DebugInst.getVariable(),
+                                 DebugInst.getExpression());
+  return true;
+}
+
+bool IRTranslator::translateIfEntryValueArgument(
+    const DbgDeclareInst &DebugInst) {
+  auto *Arg = dyn_cast<Argument>(DebugInst.getAddress());
+  if (!Arg)
+    return false;
+
+  const DIExpression *Expr = DebugInst.getExpression();
+  if (!Expr->isEntryValue())
+    return false;
+
+  std::optional<MCRegister> PhysReg = getArgPhysReg(*Arg);
+  if (!PhysReg)
+    return false;
+
+  MF->setVariableDbgInfo(DebugInst.getVariable(), Expr, *PhysReg,
+                         DebugInst.getDebugLoc());
+  return true;
+}
+
 bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                                            MachineIRBuilder &MIRBuilder) {
   if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI)) {
     if (ORE->enabled()) {
-      const Function &F = *MI->getParent()->getParent();
-      auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
-      if (MemoryOpRemark::canHandle(MI, TLI)) {
-        MemoryOpRemark R(*ORE, "gisel-irtranslator-memsize", *DL, TLI);
+      if (MemoryOpRemark::canHandle(MI, *LibInfo)) {
+        MemoryOpRemark R(*ORE, "gisel-irtranslator-memsize", *DL, *LibInfo);
         R.visit(MI);
       }
     }
@@ -1946,12 +2010,16 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
       // instructions (in fact, they get ignored if they *do* exist).
       MF->setVariableDbgInfo(DI.getVariable(), DI.getExpression(),
                              getOrCreateFrameIndex(*AI), DI.getDebugLoc());
-    } else {
-      // A dbg.declare describes the address of a source variable, so lower it
-      // into an indirect DBG_VALUE.
-      MIRBuilder.buildIndirectDbgValue(getOrCreateVReg(*Address),
-                                       DI.getVariable(), DI.getExpression());
+      return true;
     }
+
+    if (translateIfEntryValueArgument(DI))
+      return true;
+
+    // A dbg.declare describes the address of a source variable, so lower it
+    // into an indirect DBG_VALUE.
+    MIRBuilder.buildIndirectDbgValue(getOrCreateVReg(*Address),
+                                     DI.getVariable(), DI.getExpression());
     return true;
   }
   case Intrinsic::dbg_label: {
@@ -1992,16 +2060,32 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
       // DI cannot produce a valid DBG_VALUE, so produce an undef DBG_VALUE to
       // terminate any prior location.
       MIRBuilder.buildIndirectDbgValue(0, DI.getVariable(), DI.getExpression());
-    } else if (const auto *CI = dyn_cast<Constant>(V)) {
+      return true;
+    }
+    if (const auto *CI = dyn_cast<Constant>(V)) {
       MIRBuilder.buildConstDbgValue(*CI, DI.getVariable(), DI.getExpression());
-    } else {
-      for (Register Reg : getOrCreateVRegs(*V)) {
-        // FIXME: This does not handle register-indirect values at offset 0. The
-        // direct/indirect thing shouldn't really be handled by something as
-        // implicit as reg+noreg vs reg+imm in the first place, but it seems
-        // pretty baked in right now.
-        MIRBuilder.buildDirectDbgValue(Reg, DI.getVariable(), DI.getExpression());
-      }
+      return true;
+    }
+    if (auto *AI = dyn_cast<AllocaInst>(V);
+        AI && AI->isStaticAlloca() && DI.getExpression()->startsWithDeref()) {
+      // If the value is an alloca and the expression starts with a
+      // dereference, track a stack slot instead of a register, as registers
+      // may be clobbered.
+      auto ExprOperands = DI.getExpression()->getElements();
+      auto *ExprDerefRemoved =
+          DIExpression::get(AI->getContext(), ExprOperands.drop_front());
+      MIRBuilder.buildFIDbgValue(getOrCreateFrameIndex(*AI), DI.getVariable(),
+                                 ExprDerefRemoved);
+      return true;
+    }
+    if (translateIfEntryValueArgument(DI, MIRBuilder))
+      return true;
+    for (Register Reg : getOrCreateVRegs(*V)) {
+      // FIXME: This does not handle register-indirect values at offset 0. The
+      // direct/indirect thing shouldn't really be handled by something as
+      // implicit as reg+noreg vs reg+imm in the first place, but it seems
+      // pretty baked in right now.
+      MIRBuilder.buildDirectDbgValue(Reg, DI.getVariable(), DI.getExpression());
     }
     return true;
   }
@@ -2091,6 +2175,13 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                             getOrCreateVReg(*CI.getArgOperand(0)),
                             MachineInstr::copyFlagsFromInstruction(CI));
     return true;
+  case Intrinsic::frexp: {
+    ArrayRef<Register> VRegs = getOrCreateVRegs(CI);
+    MIRBuilder.buildFFrexp(VRegs[0], VRegs[1],
+                           getOrCreateVReg(*CI.getArgOperand(0)),
+                           MachineInstr::copyFlagsFromInstruction(CI));
+    return true;
+  }
   case Intrinsic::memcpy_inline:
     return translateMemFunc(CI, MIRBuilder, TargetOpcode::G_MEMCPY_INLINE);
   case Intrinsic::memcpy:
@@ -2297,11 +2388,11 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
     return CLI->lowerCall(MIRBuilder, Info);
   }
   case Intrinsic::fptrunc_round: {
-    unsigned Flags = MachineInstr::copyFlagsFromInstruction(CI);
+    uint32_t Flags = MachineInstr::copyFlagsFromInstruction(CI);
 
     // Convert the metadata argument to a constant integer
     Metadata *MD = cast<MetadataAsValue>(CI.getArgOperand(1))->getMetadata();
-    Optional<RoundingMode> RoundMode =
+    std::optional<RoundingMode> RoundMode =
         convertStrToRoundingMode(cast<MDString>(MD)->getString());
 
     // Add the Rounding mode as an integer
@@ -2310,6 +2401,17 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                     {getOrCreateVReg(CI)},
                     {getOrCreateVReg(*CI.getArgOperand(0))}, Flags)
         .addImm((int)*RoundMode);
+
+    return true;
+  }
+  case Intrinsic::is_fpclass: {
+    Value *FpValue = CI.getOperand(0);
+    ConstantInt *TestMaskValue = cast<ConstantInt>(CI.getOperand(1));
+
+    MIRBuilder
+        .buildInstr(TargetOpcode::G_IS_FPCLASS, {getOrCreateVReg(CI)},
+                    {getOrCreateVReg(*FpValue)})
+        .addImm(TestMaskValue->getZExtValue());
 
     return true;
   }
@@ -2352,7 +2454,7 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
       SwiftInVReg = MRI->createGenericVirtualRegister(Ty);
       MIRBuilder.buildCopy(SwiftInVReg, SwiftError.getOrCreateVRegUseAt(
                                             &CB, &MIRBuilder.getMBB(), Arg));
-      Args.emplace_back(makeArrayRef(SwiftInVReg));
+      Args.emplace_back(ArrayRef(SwiftInVReg));
       SwiftErrorVReg =
           SwiftError.getOrCreateVRegDefAt(&CB, &MIRBuilder.getMBB(), Arg);
       continue;
@@ -2362,10 +2464,8 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
 
   if (auto *CI = dyn_cast<CallInst>(&CB)) {
     if (ORE->enabled()) {
-      const Function &F = *CI->getParent()->getParent();
-      auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
-      if (MemoryOpRemark::canHandle(CI, TLI)) {
-        MemoryOpRemark R(*ORE, "gisel-irtranslator-memsize", *DL, TLI);
+      if (MemoryOpRemark::canHandle(CI, *LibInfo)) {
+        MemoryOpRemark R(*ORE, "gisel-irtranslator-memsize", *DL, *LibInfo);
         R.visit(CI);
       }
     }
@@ -2401,6 +2501,10 @@ bool IRTranslator::translateCall(const User &U, MachineIRBuilder &MIRBuilder) {
 
   // FIXME: support control flow guard targets.
   if (CI.countOperandBundlesOfType(LLVMContext::OB_cfguardtarget))
+    return false;
+
+  // FIXME: support statepoints and related.
+  if (isa<GCStatepointInst, GCRelocateInst, GCResultInst>(U))
     return false;
 
   if (CI.isInlineAsm())
@@ -2475,8 +2579,16 @@ bool IRTranslator::translateCall(const User &U, MachineIRBuilder &MIRBuilder) {
     LLT MemTy = Info.memVT.isSimple()
                     ? getLLTForMVT(Info.memVT.getSimpleVT())
                     : LLT::scalar(Info.memVT.getStoreSizeInBits());
-    MIB.addMemOperand(MF->getMachineMemOperand(MachinePointerInfo(Info.ptrVal),
-                                               Info.flags, MemTy, Alignment));
+
+    // TODO: We currently just fallback to address space 0 if getTgtMemIntrinsic
+    //       didn't yield anything useful.
+    MachinePointerInfo MPI;
+    if (Info.ptrVal)
+      MPI = MachinePointerInfo(Info.ptrVal, Info.offset);
+    else if (Info.fallbackAddressSpace)
+      MPI = MachinePointerInfo(*Info.fallbackAddressSpace);
+    MIB.addMemOperand(
+        MF->getMachineMemOperand(MPI, Info.flags, MemTy, Alignment, CI.getAAMetadata()));
   }
 
   return true;
@@ -2566,14 +2678,12 @@ bool IRTranslator::translateInvoke(const User &U,
 
   bool LowerInlineAsm = I.isInlineAsm();
   bool NeedEHLabel = true;
-  // If it can't throw then use a fast-path without emitting EH labels.
-  if (LowerInlineAsm)
-    NeedEHLabel = (cast<InlineAsm>(I.getCalledOperand()))->canThrow();
 
   // Emit the actual call, bracketed by EH_LABELs so that the MF knows about
   // the region covered by the try.
   MCSymbol *BeginSymbol = nullptr;
   if (NeedEHLabel) {
+    MIRBuilder.buildInstr(TargetOpcode::G_INVOKE_REGION_START);
     BeginSymbol = Context.createTempSymbol();
     MIRBuilder.buildInstr(TargetOpcode::EH_LABEL).addSym(BeginSymbol);
   }
@@ -2808,7 +2918,7 @@ bool IRTranslator::translateExtractElement(const User &U,
   Register Idx;
   if (auto *CI = dyn_cast<ConstantInt>(U.getOperand(1))) {
     if (CI->getBitWidth() != PreferredVecIdxWidth) {
-      APInt NewIdx = CI->getValue().sextOrTrunc(PreferredVecIdxWidth);
+      APInt NewIdx = CI->getValue().zextOrTrunc(PreferredVecIdxWidth);
       auto *NewIdxCI = ConstantInt::get(CI->getContext(), NewIdx);
       Idx = getOrCreateVReg(*NewIdxCI);
     }
@@ -2817,7 +2927,7 @@ bool IRTranslator::translateExtractElement(const User &U,
     Idx = getOrCreateVReg(*U.getOperand(1));
   if (MRI->getType(Idx).getSizeInBits() != PreferredVecIdxWidth) {
     const LLT VecIdxTy = LLT::scalar(PreferredVecIdxWidth);
-    Idx = MIRBuilder.buildSExtOrTrunc(VecIdxTy, Idx).getReg(0);
+    Idx = MIRBuilder.buildZExtOrTrunc(VecIdxTy, Idx).getReg(0);
   }
   MIRBuilder.buildExtractVectorElement(Res, Val, Idx);
   return true;
@@ -2934,6 +3044,12 @@ bool IRTranslator::translateAtomicRMW(const User &U,
   case AtomicRMWInst::FMin:
     Opcode = TargetOpcode::G_ATOMICRMW_FMIN;
     break;
+  case AtomicRMWInst::UIncWrap:
+    Opcode = TargetOpcode::G_ATOMICRMW_UINC_WRAP;
+    break;
+  case AtomicRMWInst::UDecWrap:
+    Opcode = TargetOpcode::G_ATOMICRMW_UDEC_WRAP;
+    break;
   }
 
   MIRBuilder.buildAtomicRMW(
@@ -3003,6 +3119,7 @@ void IRTranslator::finishPendingPhis() {
 
 bool IRTranslator::translate(const Instruction &Inst) {
   CurBuilder->setDebugLoc(Inst.getDebugLoc());
+  CurBuilder->setPCSections(Inst.getMetadata(LLVMContext::MD_pcsections));
 
   auto &TLI = *MF->getSubtarget().getTargetLowering();
   if (TLI.fallBackToDAGISel(Inst))
@@ -3393,6 +3510,9 @@ bool IRTranslator::runOnMachineFunction(MachineFunction &CurMF) {
     FuncInfo.BPI = nullptr;
   }
 
+  AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(
+      MF->getFunction());
+  LibInfo = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
   FuncInfo.CanLowerReturn = CLI->checkReturnTypeForCallConv(*MF);
 
   const auto &TLI = *MF->getSubtarget().getTargetLowering();
@@ -3437,7 +3557,7 @@ bool IRTranslator::runOnMachineFunction(MachineFunction &CurMF) {
     MF->push_back(MBB);
 
     if (BB.hasAddressTaken())
-      MBB->setHasAddressTaken();
+      MBB->setAddressTakenIRBlock(const_cast<BasicBlock *>(&BB));
 
     if (!HasMustTailInVarArgFn)
       HasMustTailInVarArgFn = checkForMustTailInVarArgFn(IsVarArg, BB);

@@ -147,6 +147,9 @@ struct Visitor {
   void checkCStringLiteral(const CStringLiteral* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
+  void checkUnstableSerial(const Serial* ser);
+  void checkLocalBlock(const Local* node);
+
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -187,10 +190,12 @@ struct Visitor {
   void visit(const FunctionSignature* node);
   void visit(const Implements* node);
   void visit(const Import* node);
+  void visit(const Local* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
   void visit(const Select* node);
+  void visit(const Serial* node);
   void visit(const TypeQuery* node);
   void visit(const Union* node);
   void visit(const Use* node);
@@ -1554,6 +1559,28 @@ void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
     } 
     if (when->isOtherwise())  seenOtherwise = when;
   }
+}
+
+void Visitor::visit(const Serial* node) {
+  checkUnstableSerial(node);
+}
+
+void Visitor::checkUnstableSerial(const Serial* ser) {
+  if (shouldEmitUnstableWarning(ser)) {
+    warn(ser, "'serial' statements are unstable "
+              "and likely to be deprecated in a future release");
+  }
+}
+
+void Visitor::checkLocalBlock(const Local* node){
+  if (shouldEmitUnstableWarning(node))
+    warn(node, "local blocks are unstable,"
+          " their behavior is likely to change in the future.");
+}
+
+
+void Visitor::visit(const Local* node){
+  checkLocalBlock(node);
 }
 
 void Visitor::visit(const Yield* node) {

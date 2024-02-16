@@ -25,6 +25,16 @@ proc showU1(name: string, list) {
   writeln();
 }
 
+proc showU2(name: string, list) {
+  write("showU2 ", name, ":");
+  var curr = list.borrow(): unmanaged class?;  // another workaround
+  while const cur = curr {
+    write(" ", cur.elm);
+    curr = cur.next.borrow(): unmanaged class?;
+  }
+  writeln();
+}
+
 proc consume(name: string, in list) {
   write("consume ", name, ":");
   var curr = list: class?;
@@ -46,6 +56,11 @@ proc main {
   showU1("c0", c0);
   showU1("gl", gl);
   showU1("g0", g0);
+
+  showU2("cl", cl);
+  showU2("c0", c0);
+  showU2("gl", gl);
+  showU2("g0", g0);
 
   writeln("cl = ", cl);
   writeln("c0 = ", c0);

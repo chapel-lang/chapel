@@ -70,7 +70,8 @@ using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
 // key: pair of module symbol and name to lookup
 // value: vector of Symbol* that it resolved to
 static std::unordered_map<std::pair<ModuleSymbol*, const char*>,
-                          std::vector<Symbol*>> modSymsCache;
+                          std::vector<Symbol*>,
+                          chpl::detail::hasher<std::pair<ModuleSymbol*, const char*>>> modSymsCache;
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.

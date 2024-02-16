@@ -40,7 +40,7 @@ coforall loc in Locales with (ref counts) do on loc {
     var rs = new randomStream(real, seed + loc.id*tasks*2 + task*2);
     var count = 0;
     for i in (task-1)*myN/tasks+1..task*myN/tasks do
-      count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
+      count += rs.next()**2 + rs.next()**2 <= 1.0;
     counts[loc.id][task] = count;
   }
 }

@@ -353,6 +353,17 @@ module ChapelIteratorSupport {
     return false;
   }
 
+  proc chpl_iteratorFromForeachExpr(ir: _iteratorRecord) param {
+    if Reflection.canResolveMethod(ir, "_fromForeachExpr_") then
+      return ir._fromForeachExpr_;
+    else
+      return false;
+  }
+  proc chpl_iteratorFromForeachExpr(arg) param {
+    // non-iterator-record cases are always parallel, not via foreach.
+    return false;
+  }
+
   operator =(ref ic: _iteratorRecord, xs) {
     for (e, x) in zip(ic, xs) do
       e = x;

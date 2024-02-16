@@ -286,6 +286,7 @@ PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function 
 PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "generate both GPU and CPU code")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
 PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", ncm)
+PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "this function will never be called from a gpu")
 PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
 
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")

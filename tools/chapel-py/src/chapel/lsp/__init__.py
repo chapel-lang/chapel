@@ -28,10 +28,9 @@ def location_to_range(location) -> Range:
 
     start = location.start()
     end = location.end()
-    # NOTE: we want the char number to be one extra, otherwise single character identifiers don't work right
     return Range(
-        start=Position(start[0] - 1, start[1] - 1),
-        end=Position(end[0] - 1, end[1]),
+        start=Position(max(start[0] - 1, 0), max(start[1] - 1, 0)),
+        end=Position(max(0, end[0] - 1), max(end[1] - 1, 0)),
     )
 
 def error_to_diagnostic(error) -> Diagnostic:

@@ -447,6 +447,14 @@ public:
     return const_cast<Decl*>(this)->getDeclContext();
   }
 
+  /// Return the non transparent context.
+  /// See the comment of `DeclContext::isTransparentContext()` for the
+  /// definition of transparent context.
+  DeclContext *getNonTransparentDeclContext();
+  const DeclContext *getNonTransparentDeclContext() const {
+    return const_cast<Decl *>(this)->getNonTransparentDeclContext();
+  }
+
   /// Find the innermost non-closure ancestor of this declaration,
   /// walking up through blocks, lambdas, etc.  If that ancestor is
   /// not a code context (!isFunctionOrMethod()), returns null.
@@ -465,6 +473,9 @@ public:
   bool isInAnonymousNamespace() const;
 
   bool isInStdNamespace() const;
+
+  // Return true if this is a FileContext Decl.
+  bool isFileContextDecl() const;
 
   ASTContext &getASTContext() const LLVM_READONLY;
 
@@ -633,6 +644,9 @@ public:
     return getModuleOwnershipKind() > ModuleOwnershipKind::VisibleWhenImported;
   }
 
+  /// Whether this declaration comes from another module unit.
+  bool isInAnotherModuleUnit() const;
+
   /// FIXME: Implement discarding declarations actually in global module
   /// fragment. See [module.global.frag]p3,4 for details.
   bool isDiscardedInGlobalModuleFragment() const { return false; }
@@ -799,7 +813,7 @@ public:
   }
 
   /// Get the module that owns this declaration for linkage purposes.
-  /// There only ever is such a module under the C++ Modules TS.
+  /// There only ever is such a standard C++ module.
   ///
   /// \param IgnoreLinkage Ignore the linkage of the entity; assume that
   /// all declarations in a global module fragment are unowned.
@@ -1120,7 +1134,7 @@ public:
   /// Determine whether this is a block-scope declaration with linkage.
   /// This will either be a local variable declaration declared 'extern', or a
   /// local function declaration.
-  bool isLocalExternDecl() {
+  bool isLocalExternDecl() const {
     return IdentifierNamespace & IDNS_LocalExtern;
   }
 
@@ -1160,6 +1174,12 @@ public:
         IdentifierNamespace |= IDNS_Ordinary;
     }
   }
+
+  /// Clears the namespace of this declaration.
+  ///
+  /// This is useful if we want this declaration to be available for
+  /// redeclaration lookup but otherwise hidden for ordinary name lookups.
+  void clearIdentifierNamespace() { IdentifierNamespace = 0; }
 
   enum FriendObjectKind {
     FOK_None,      ///< Not a friend object.
@@ -1215,6 +1235,10 @@ public:
   /// when possible. Will return null if the type underlying the Decl does not
   /// have a FunctionType.
   const FunctionType *getFunctionType(bool BlocksToo = true) const;
+
+  // Looks through the Decl's underlying type to determine if it's a
+  // function pointer type.
+  bool isFunctionPointerType() const;
 
 private:
   void setAttrsImpl(const AttrVec& Attrs, ASTContext &Ctx);
@@ -1358,6 +1382,13 @@ public:
   }
 };
 
+/// Only used by CXXDeductionGuideDecl.
+enum class DeductionCandidate : unsigned char {
+  Normal,
+  Copy,
+  Aggregate,
+};
+
 /// DeclContext - This is used only as base class of specific decl types that
 /// can act as declaration contexts. These decls are (only the top classes
 /// that directly derive from DeclContext are mentioned, not their subclasses):
@@ -1378,6 +1409,8 @@ public:
 class DeclContext {
   /// For makeDeclVisibleInContextImpl
   friend class ASTDeclReader;
+  /// For checking the new bits in the Serialization part.
+  friend class ASTDeclWriter;
   /// For reconcileExternalVisibleStorage, CreateStoredDeclsMap,
   /// hasNeedToReconcileExternalVisibleStorage
   friend class ExternalASTSource;
@@ -1566,10 +1599,14 @@ class DeclContext {
 
     /// Indicates whether this struct has had its field layout randomized.
     uint64_t IsRandomized : 1;
+
+    /// True if a valid hash is stored in ODRHash. This should shave off some
+    /// extra storage and prevent CXXRecordDecl to store unused bits.
+    uint64_t ODRHash : 26;
   };
 
   /// Number of non-inherited bits in RecordDeclBitfields.
-  enum { NumRecordDeclBits = 15 };
+  enum { NumRecordDeclBits = 41 };
 
   /// Stores the bits used by OMPDeclareReductionDecl.
   /// If modified NumOMPDeclareReductionDeclBits and the accessor
@@ -1580,7 +1617,7 @@ class DeclContext {
     uint64_t : NumDeclContextBits;
 
     /// Kind of initializer,
-    /// function call or omp_priv<init_expr> initializtion.
+    /// function call or omp_priv<init_expr> initialization.
     uint64_t InitializerKind : 2;
   };
 
@@ -1590,10 +1627,10 @@ class DeclContext {
   /// Stores the bits used by FunctionDecl.
   /// If modified NumFunctionDeclBits and the accessor
   /// methods in FunctionDecl and CXXDeductionGuideDecl
-  /// (for IsCopyDeductionCandidate) should be updated appropriately.
+  /// (for DeductionCandidateKind) should be updated appropriately.
   class FunctionDeclBitfields {
     friend class FunctionDecl;
-    /// For IsCopyDeductionCandidate
+    /// For DeductionCandidateKind
     friend class CXXDeductionGuideDecl;
     /// For the bits in DeclContextBitfields.
     uint64_t : NumDeclContextBits;
@@ -1629,6 +1666,8 @@ class DeclContext {
 
     /// Kind of contexpr specifier as defined by ConstexprSpecKind.
     uint64_t ConstexprKind : 2;
+    uint64_t BodyContainsImmediateEscalatingExpression : 1;
+
     uint64_t InstantiationIsPending : 1;
 
     /// Indicates if the function uses __try.
@@ -1646,20 +1685,24 @@ class DeclContext {
     /// function using attribute 'target'.
     uint64_t IsMultiVersion : 1;
 
-    /// [C++17] Only used by CXXDeductionGuideDecl. Indicates that
-    /// the Deduction Guide is the implicitly generated 'copy
-    /// deduction candidate' (is used during overload resolution).
-    uint64_t IsCopyDeductionCandidate : 1;
+    /// Only used by CXXDeductionGuideDecl. Indicates the kind
+    /// of the Deduction Guide that is implicitly generated
+    /// (used during overload resolution).
+    uint64_t DeductionCandidateKind : 2;
 
     /// Store the ODRHash after first calculation.
     uint64_t HasODRHash : 1;
 
     /// Indicates if the function uses Floating Point Constrained Intrinsics
     uint64_t UsesFPIntrin : 1;
+
+    // Indicates this function is a constrained friend, where the constraint
+    // refers to an enclosing template for hte purposes of [temp.friend]p9.
+    uint64_t FriendConstraintRefersToEnclosingTemplate : 1;
   };
 
   /// Number of non-inherited bits in FunctionDeclBitfields.
-  enum { NumFunctionDeclBits = 28 };
+  enum { NumFunctionDeclBits = 31 };
 
   /// Stores the bits used by CXXConstructorDecl. If modified
   /// NumCXXConstructorDeclBits and the accessor
@@ -1671,12 +1714,12 @@ class DeclContext {
     /// For the bits in FunctionDeclBitfields.
     uint64_t : NumFunctionDeclBits;
 
-    /// 23 bits to fit in the remaining available space.
+    /// 20 bits to fit in the remaining available space.
     /// Note that this makes CXXConstructorDeclBitfields take
     /// exactly 64 bits and thus the width of NumCtorInitializers
     /// will need to be shrunk if some bit is added to NumDeclContextBitfields,
     /// NumFunctionDeclBitfields or CXXConstructorDeclBitfields.
-    uint64_t NumCtorInitializers : 20;
+    uint64_t NumCtorInitializers : 17;
     uint64_t IsInheritingConstructor : 1;
 
     /// Whether this constructor has a trail-allocated explicit specifier.
@@ -1894,6 +1937,10 @@ protected:
 public:
   ~DeclContext();
 
+  // For use when debugging; hasValidDeclKind() will always return true for
+  // a correctly constructed object within its lifetime.
+  bool hasValidDeclKind() const;
+
   Decl::Kind getDeclKind() const {
     return static_cast<Decl::Kind>(DeclContextBits.DeclKind);
   }
@@ -2009,7 +2056,7 @@ public:
   /// Here, E is a transparent context, so its enumerator (Val1) will
   /// appear (semantically) that it is in the same context of E.
   /// Examples of transparent contexts include: enumerations (except for
-  /// C++0x scoped enums), and C++ linkage specifications.
+  /// C++0x scoped enums), C++ linkage specifications and export declaration.
   bool isTransparentContext() const;
 
   /// Determines whether this context or some of its ancestors is a
@@ -2502,10 +2549,8 @@ public:
                  D == LastDecl);
   }
 
-  bool setUseQualifiedLookup(bool use = true) const {
-    bool old_value = DeclContextBits.UseQualifiedLookup;
+  void setUseQualifiedLookup(bool use = true) const {
     DeclContextBits.UseQualifiedLookup = use;
-    return old_value;
   }
 
   bool shouldUseQualifiedLookup() const {
@@ -2515,6 +2560,8 @@ public:
   static bool classof(const Decl *D);
   static bool classof(const DeclContext *D) { return true; }
 
+  void dumpAsDecl() const;
+  void dumpAsDecl(const ASTContext *Ctx) const;
   void dumpDeclContext() const;
   void dumpLookups() const;
   void dumpLookups(llvm::raw_ostream &OS, bool DumpDecls = false,
@@ -2563,14 +2610,6 @@ private:
 
   void reconcileExternalVisibleStorage() const;
   bool LoadLexicalDeclsFromExternalStorage() const;
-
-  /// Makes a declaration visible within this context, but
-  /// suppresses searches for external declarations with the same
-  /// name.
-  ///
-  /// Analogous to makeDeclVisibleInContext, but for the exclusive
-  /// use of addDeclInternal().
-  void makeDeclVisibleInContextInternal(NamedDecl *D);
 
   StoredDeclsMap *CreateStoredDeclsMap(ASTContext &C) const;
 

@@ -533,7 +533,7 @@ module Curl {
                           end:int(64),
                           qioChannelPtr:qio_channel_ptr_t):errorCode {
         var curlch = new unmanaged CurlChannel();
-        curlch.curlf = _to_unmanaged(this);
+        curlch.curlf = this:unmanaged;
         curlch.qio_ch = qioChannelPtr;
         pluginChannel = curlch;
         return start_channel(curlch, start, end);
@@ -1137,8 +1137,7 @@ module Curl {
     }
 
     proc openCurlFile(url:string,
-                     mode:ioMode = ioMode.r,
-                     style:iostyleInternal = defaultIOStyleInternal()) throws {
+                     mode:ioMode = ioMode.r) throws {
 
       var err_out: errorCode = 0;
       var rc = 0;
@@ -1174,7 +1173,7 @@ module Curl {
       var ret: file;
 
       try {
-        ret = openplugin(fl, mode, fl.seekable, style);
+        ret = openplugin(fl, mode, fl.seekable, defaultIOStyleInternal());
       } catch e {
         fl.close();
         delete fl;

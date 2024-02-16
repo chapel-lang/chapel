@@ -18,10 +18,14 @@
 target_sources(ChplFrontend-obj
                PRIVATE
 
-               ifa_vars.cpp
+               # C sources
+               complex-support.h
+               complex-support.c
+
+               # C++ sources
                hash_multipliers.cpp
+               ifa_vars.cpp
                num.cpp
                num.h
                prim_data.h
-
               )

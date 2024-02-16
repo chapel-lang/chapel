@@ -22,14 +22,24 @@ group("default") {
       "//libcxxabi",
     ]
   }
-  if (current_os == "linux" || current_os == "win") {
+  if (current_os == "linux" || current_os == "win" || current_os=="mac") {
     deps += [ "//compiler-rt/test/asan" ]
   }
+
+  if (current_os == "linux" || current_os == "mac") {
+    deps += [ "//compiler-rt/test/lsan"]
+  }
+
   if (current_os == "linux" || current_os == "android") {
     deps += [ "//compiler-rt/test/hwasan" ]
   }
   if (current_os == "linux" || current_os == "mac") {
     deps += [ "//libunwind" ]
+  }
+
+  # FIXME: Add this on win after testing that it builds.
+  if (current_os != "win") {
+    deps += [ "//bolt/test" ]
   }
 
   testonly = true
@@ -65,6 +75,11 @@ group("lld") {
 }
 group("llvm-ar") {
   deps = [ "//llvm/tools/llvm-ar:symlinks" ]
+}
+if (current_os == "mac") {
+  group("llvm-bolt") {
+    deps = [ "//bolt/tools/driver:symlinks" ]
+  }
 }
 group("llvm-dwp") {
   deps = [ "//llvm/tools/llvm-dwp:symlinks" ]
