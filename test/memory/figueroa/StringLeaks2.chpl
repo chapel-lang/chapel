@@ -6,7 +6,7 @@ use MemDiagnostics, IO;
 config const n = 1;
 
 proc foo () {
-  var stdout = (new file(1)).writer(locking=false);
+  var stdout = (new file(1)).writer(locking=true);
   var s = "Good bye";
   if n > 0 then
     s = "Nos vemos";
