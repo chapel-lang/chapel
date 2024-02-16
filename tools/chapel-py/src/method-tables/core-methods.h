@@ -125,6 +125,11 @@ CLASS_BEGIN(ResolvedExpression)
                  return MostSpecificCandidateObject::create(contextObject, {&msc, node->poiScope()});
                }
                return {})
+
+  // Note: calling node.resolve().type() -- thus using the below method --
+  // should be equivalent to calling node.type(). The latter is just a more
+  // convenient shortcut if additional information isn't needed.
+
   PLAIN_GETTER(ResolvedExpression, type, "Retrieve the type of the expression.",
                std::optional<QualifiedTypeTuple>,
 
@@ -139,6 +144,12 @@ CLASS_END(ResolvedExpression)
 CLASS_BEGIN(MostSpecificCandidate)
   PLAIN_GETTER(MostSpecificCandidate, function, "Get the signature of the function called by this candidate.",
                TypedSignatureObject*, return TypedSignatureObject::create(contextObject, {node.candidate->fn(), node.poiScope }))
+
+  // Note: calling node.resolve().formal_actual_mapping() -- thus using the
+  // below method -- should be equivalent to calling node.formal_actual_mapping().
+  // The latter is just a more convenient shortcut if additional information
+  // isn't needed.
+
   PLAIN_GETTER(MostSpecificCandidate, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",
                std::vector<int>,
 
