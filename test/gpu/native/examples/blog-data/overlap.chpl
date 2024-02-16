@@ -3,7 +3,7 @@ import RangeChunk.chunks;
 config const n = 32;         // now, our application has `--n` to set this!
 config const sliceSize = 4;  // number of elements per slice
 
-const numSlices = n/sliceSize; // assume divisibility for simplicity
+const numSlices = n/sliceSize;  // assume divisibility for simplicity
 
 var HostArr: [1..n] int;  // allocated on the host
 HostArr = 1;              // executes on [multicore] CPU

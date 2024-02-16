@@ -1,5 +1,5 @@
 var HostArr: [1..5] int;  // allocated on the host
-HostArr += 1;             // executes on [multicore] CPU
+HostArr = 1;              // executes on [multicore] CPU
 
 on here.gpus[0] {
   var DevArr: [1..5] int;  // allocated on the device

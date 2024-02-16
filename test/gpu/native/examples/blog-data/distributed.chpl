@@ -14,7 +14,7 @@ coforall (loc, locChunk) in zip(Locales, chunks(1..n, numLocales)) {
         const numSlices = gpuChunk.size/sliceSize;  // assume divisibility
 
         coforall chunk in chunks(gpuChunk, numSlices) {
-          var DevArr: [chunk] int;  // allocated per device
+          var DevArr: [chunk] int;  // allocated on the device
 
           DevArr = HostArr[chunk];  // copy a slice from host to device
           DevArr += 1;              // executes on GPU as a kernel
