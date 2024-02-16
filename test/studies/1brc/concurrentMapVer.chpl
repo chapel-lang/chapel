@@ -1,6 +1,6 @@
 use IO, Math, ParallelIO, ConcurrentMap, Sort, Time;
 
-config const fileName = "million_entries.txt",
+config const fileName = "measurements.txt",
              nTasks = here.maxTaskPar,
              printOutput = false,
              timeExecution = false;
