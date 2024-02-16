@@ -38,6 +38,10 @@
 extern "C" {
 #endif
 
+static inline void chpl_gpu_dev_block_reduce(int64_t thread_val) {
+  printf("(host) thread_val %ld\n", thread_val);
+}
+
 //
 // Call a function in the compiler-produced function table, passing it
 // one argument.

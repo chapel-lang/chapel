@@ -923,6 +923,7 @@ initPrimitive() {
   prim_def(PRIM_GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg", returnInfoVoid, true);
   prim_def(PRIM_GPU_ARG, "gpu arg", returnInfoVoid, true);
   prim_def(PRIM_GPU_PID_OFFLOAD, "gpu pid offload", returnInfoVoid, true);
+  prim_def(PRIM_GPU_BLOCK_REDUCE, "gpu block reduce", returnInfoVoid, true);
 
   // Marker for a scopeless block that denotes the "scope" of code to which
   // GPU attributes are being applied. The block contains the primitives as the

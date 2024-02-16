@@ -5477,6 +5477,12 @@ DEFINE_PRIM(GPU_PID_OFFLOAD) {
                         pid->codegen(), size->codegen());
 }
 
+DEFINE_PRIM(GPU_BLOCK_REDUCE) {
+  auto threadData = call->get(1);
+  ret = codegenCallExpr("chpl_gpu_dev_block_reduce", threadData->codegen());
+
+}
+
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
 DEFINE_PRIM(GPU_THREADIDX_Y) { ret = codegenCallExpr("chpl_gpu_getThreadIdxY"); }
 DEFINE_PRIM(GPU_THREADIDX_Z) { ret = codegenCallExpr("chpl_gpu_getThreadIdxZ"); }

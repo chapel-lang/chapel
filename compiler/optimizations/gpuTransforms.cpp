@@ -777,7 +777,7 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
     // variable with a special flag that we'll look for (for the time being we
     // want to not gpuize these loops).
     if(sym->hasFlag(FLAG_REDUCTION_TEMP)) {
-      return false;
+      //return false;
     }
     // gotos that jump outside the loop cannot be gpuized
     if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
@@ -1052,6 +1052,8 @@ class GpuKernel {
   void markGPUSubCalls(FnSymbol* fn);
   Symbol* addKernelArgument(Symbol* symInLoop);
   Symbol* addLocalVariable(Symbol* symInLoop);
+
+  std::set<Symbol*> redTemps_;
 };
 
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
@@ -1102,6 +1104,11 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
 
   KernelActual actual;
   actual.sym = symInLoop;
+
+  if (symInLoop->hasFlag(FLAG_REDUCTION_TEMP)) {
+    nprint_view(symInLoop);
+    this->redTemps_.insert(symInLoop);
+  }
 
   if (isClass(symValType) ||
       (!symInLoop->isRef() && !isAggregateType(symValType))) {
@@ -1375,6 +1382,12 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
     if (copyNode) {
       outlinedFunction->insertBeforeEpilogue(node->copy());
     }
+  }
+
+  for_set (Symbol, redTemp, this->redTemps_) {
+    CallExpr* blockReduce = new CallExpr(PRIM_GPU_BLOCK_REDUCE, redTemp);
+
+    outlinedFunction->insertBeforeEpilogue(blockReduce);
   }
 
   update_symbols(outlinedFunction->body, &copyMap_);

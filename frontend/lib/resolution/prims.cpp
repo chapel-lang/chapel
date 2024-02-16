@@ -1531,6 +1531,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_PID_OFFLOAD:
     case PRIM_GPU_ATTRIBUTE_BLOCK:
     case PRIM_GPU_PRIMITIVE_BLOCK:
+    case PRIM_GPU_BLOCK_REDUCE:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;

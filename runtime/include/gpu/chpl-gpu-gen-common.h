@@ -27,6 +27,11 @@
 #include "chpl-comm.h"
 #include <string.h>
 
+__device__
+static inline void chpl_gpu_dev_block_reduce(int64_t thread_val) {
+  printf("(dev) thread_val %ld\n", thread_val);
+}
+
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
   // TODO
