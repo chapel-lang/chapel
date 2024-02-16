@@ -1005,6 +1005,12 @@ struct KernelActual {
   int8_t kind;  // assigned to one or more values of GpuArgKind or'd together
 };
 
+struct ReductionPair {
+  Symbol* symInLoop;
+  ArgSymbol* formalForInterimResult;
+};
+
+
 // ----------------------------------------------------------------------------
 // GpuKernel
 // ----------------------------------------------------------------------------
@@ -1053,7 +1059,9 @@ class GpuKernel {
   Symbol* addKernelArgument(Symbol* symInLoop);
   Symbol* addLocalVariable(Symbol* symInLoop);
 
-  std::set<Symbol*> redTemps_;
+  //std::set<ReductionPair> redTemps_;
+  std::map<Symbol*, ArgSymbol*> loopSymbolToInterimReductionFormal;
+
 };
 
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
@@ -1101,14 +1109,12 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   ArgSymbol* newFormal = new ArgSymbol(intent, symInLoop->name, symType);
   fn_->insertFormalAtTail(newFormal);
 
+  const bool isRedTemp = symInLoop->hasFlag(FLAG_REDUCTION_TEMP);
+
 
   KernelActual actual;
   actual.sym = symInLoop;
 
-  if (symInLoop->hasFlag(FLAG_REDUCTION_TEMP)) {
-    nprint_view(symInLoop);
-    this->redTemps_.insert(symInLoop);
-  }
 
   if (isClass(symValType) ||
       (!symInLoop->isRef() && !isAggregateType(symValType))) {
@@ -1135,6 +1141,25 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
 
   kernelActuals_.push_back(actual);
   copyMap_.put(symInLoop, newFormal);
+
+  if (isRedTemp && loopSymbolToInterimReductionFormal.count(symInLoop) == 0) {
+    nprint_view(symInLoop);
+    ArgSymbol* interimResultBuffer = new ArgSymbol(INTENT_IN,
+                                                   astr(symInLoop->name, "_interim"),
+                                                   symInLoop->getRefType());
+
+
+    loopSymbolToInterimReductionFormal[symInLoop] = interimResultBuffer;
+    //ReductionPair pair;
+    //pair.symInLoop = symInLoop;
+    //pair.formalForInterimResult = interimResultBuffer;
+
+    //this->redTemps_.insert(pair);
+    //
+    fn_->insertFormalAtTail(interimResultBuffer);
+  }
+
+
 
   return newFormal;
 }
@@ -1384,8 +1409,14 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
     }
   }
 
-  for_set (Symbol, redTemp, this->redTemps_) {
-    CallExpr* blockReduce = new CallExpr(PRIM_GPU_BLOCK_REDUCE, redTemp);
+
+  //for (ReductionPair redPair: this->redTemps_) {
+  //for (ReductionPair redPair: this->redTemps_) {
+  for (auto const& [symInLoop, interimResultFormal]:
+       loopSymbolToInterimReductionFormal) {
+    CallExpr* blockReduce = new CallExpr(PRIM_GPU_BLOCK_REDUCE,
+                                         symInLoop,
+                                         interimResultFormal);
 
     outlinedFunction->insertBeforeEpilogue(blockReduce);
   }

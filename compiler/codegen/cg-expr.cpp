@@ -5479,7 +5479,9 @@ DEFINE_PRIM(GPU_PID_OFFLOAD) {
 
 DEFINE_PRIM(GPU_BLOCK_REDUCE) {
   auto threadData = call->get(1);
-  ret = codegenCallExpr("chpl_gpu_dev_block_reduce", threadData->codegen());
+  auto interimResult = call->get(2);
+  ret = codegenCallExpr("chpl_gpu_dev_block_reduce", threadData->codegen(),
+                        interimResult->codegen());
 
 }
 
