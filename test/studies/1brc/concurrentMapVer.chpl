@@ -29,8 +29,8 @@ proc main() {
 
 // record to store temperature stats for a particular city
 record tempData: writeSerializable {
-    var min: real = max(real);
-    var max: real = min(real);
+    var min: real = Math.max(real);
+    var max: real = Math.min(real);
     var total: real = 0.0;
     var count: int = 0;
 }
