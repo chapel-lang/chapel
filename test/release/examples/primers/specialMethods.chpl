@@ -163,7 +163,7 @@ proc R.serialize(writer: fileWriter(?),
 }
 
 {
-  // Open the fileReader in a new block so that deinitializers
+  // Open the fileWriter in a new block so that deinitializers
   // will close it at the end of the block
   var fw = openWriter(filename);
   fw.writeln(r);
