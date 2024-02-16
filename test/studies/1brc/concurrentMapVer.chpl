@@ -19,6 +19,7 @@ proc main() {
 
     if timeExecution then writeln("elapsed time: ", t.elapsed());
 
+    // print temperature statistics for each city
     if printOutput {
         var results = cityTempStats.toArray();
         sort(results, new comparator());
@@ -28,27 +29,13 @@ proc main() {
 
 // record to store temperature stats for a particular city
 record tempData: writeSerializable {
-    var min: real;
-    var max: real;
-    var total: real;
-    var count: int;
-
-    proc init(temp: real) {
-        this.min = temp;
-        this.max = temp;
-        this.total = temp;
-        this.count = 1;
-    }
-
-    proc init() {
-        this.min = 0;
-        this.max = 0;
-        this.total = 0;
-        this.count = 0;
-    }
+    var min: real = max(real);
+    var max: real = min(real);
+    var total: real = 0.0;
+    var count: int = 0;
 }
 
-// how to add two tempData records together
+// how to add a temperature to a tempData record
 inline operator tempData.+=(ref td: tempData, temp: real) {
     td.min = Math.min(td.min, temp);
     td.max = Math.max(td.max, temp);
@@ -73,10 +60,12 @@ proc ref cityTemp.deserialize(reader: fileReader(?), ref deserializer) throws {
     this.temp = reader.read(real);
 }
 
+// used to facilitate atomic updates to tempData records
 record adder {
     var temp: real;
     proc this(ref td: tempData) do td += this.temp;
 }
 
+// used to sort tempData records by city name
 record comparator { }
 proc comparator.key(k: (bytes, tempData)) { return k[0]; }

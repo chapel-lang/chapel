@@ -1,3 +1,7 @@
+# This test uses the ConcurrentMap package, which in turn
+# relies on the AtomicObjects package, which currently requires
+# that LLVM be enabled and that `CHPL_TARGET_ARCH=x86_64`.
+
 # AtomicObjects uses extern blocks
 CHPL_LLVM==none
 # AtomicObjects uses GCC inline assembly, so only test it on gcc/clang
