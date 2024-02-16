@@ -46,11 +46,11 @@ struct IterAdapter : IterAdapterBase {
   }
 };
 
-typedef struct {
+struct AstIterObject {
   PyObject_HEAD
   IterAdapterBase* iterAdapter;
   PyObject* contextObject;
-} AstIterObject;
+};
 extern PyTypeObject AstIterType;
 
 void setupAstIterType();
@@ -60,7 +60,7 @@ void AstIterObject_dealloc(AstIterObject* self);
 PyObject* AstIterObject_iter(AstIterObject *self);
 PyObject* AstIterObject_next(AstIterObject *self);
 
-typedef struct {
+struct AstCallIterObject {
   PyObject_HEAD
   int current;
   int num;
@@ -68,7 +68,7 @@ typedef struct {
   chpl::UniqueString (*nameGetter)(const void*, int);
   const chpl::uast::AstNode* (*childGetter)(const void*, int);
   PyObject* contextObject;
-} AstCallIterObject;
+};
 extern PyTypeObject AstCallIterType;
 
 void setupAstCallIterType();

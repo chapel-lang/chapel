@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -x
+
+rm -f ./create_measurements.py
+rm -f ./create_measurements.py.bak
+rm -f ./weather_stations.csv
+rm -f ./create_measurements.py
+rm -f ./measurements.txt

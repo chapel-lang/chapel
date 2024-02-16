@@ -184,6 +184,13 @@ chplcheck: frontend-shared FORCE
 	@# writing this target is always FORCEd (so we'd end up building it twice).
 	cd tools/chplcheck && $(MAKE) all install
 
+chpl-language-server: frontend-shared FORCE
+	@# chpl-language-server's build files take care of ensuring the virtual
+	@# env is built. Best not to depend on chapel-py-venv here, because at
+	@# the time of writing this target is always FORCEd (so we'd end up
+	@# building it twice).
+	cd tools/chpl-language-server && $(MAKE) all install
+
 lint-standard-modules: chplcheck FORCE
 	tools/chplcheck/chplcheck --skip-unstable \
 		--internal-prefix "_" \

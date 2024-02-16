@@ -16,13 +16,8 @@
 # limitations under the License.
 
 
-# request C++14 -- or C++17 if using LLVM 16
-if (CHPL_LLVM_VERSION VERSION_LESS 16.0)
-  set(CMAKE_CXX_STANDARD 14)
-else()
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-
+# request C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # request C11

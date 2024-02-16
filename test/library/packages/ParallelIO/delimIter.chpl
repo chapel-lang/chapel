@@ -42,7 +42,7 @@ proc makeThingsFile(path: string, n: int): map(int, int) {
         w = f.writer(locking=false);
 
     for 0..n {
-        const t = new thing(rng.getNext(0, 100), rng.getNext(0, 100));
+        const t = new thing(rng.next(0, 100), rng.next(0, 100));
         m[t.k] += t.v;
         w.write(t, ",");
     }

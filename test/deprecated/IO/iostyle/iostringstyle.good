@@ -1,3 +1,0 @@
-iostringstyle.chpl:1: warning: iostringstyle is deprecated, please use Serializers or Deserializers instead
-iostringstyle.chpl:3: warning: iostringstyle is deprecated, please use Serializers or Deserializers instead
-iostringstyle.chpl:3: warning: iostringstyle is deprecated, please use Serializers or Deserializers instead

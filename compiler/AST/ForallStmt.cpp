@@ -359,8 +359,14 @@ LabelSymbol* ForallStmt::continueLabel() {
     // If this presents hardship, we can switch to always creating
     // fContinueLabel, right when the ForallStmt is created.
     INT_ASSERT(!normalized);
+    // We need the continue label to be in an outer scope w.r.t.
+    // the user-defined loop body, see #21292.
+    BlockStmt* wrapper = new BlockStmt();
+    BlockStmt* userBody = fLoopBody;
+    userBody->replace(wrapper);
+    wrapper->insertAtTail(userBody);
     fContinueLabel = new LabelSymbol("_continueLabel");
-    fLoopBody->insertAtTail(new DefExpr(fContinueLabel));
+    wrapper->insertAtTail(new DefExpr(fContinueLabel));
   }
   return fContinueLabel;
 }

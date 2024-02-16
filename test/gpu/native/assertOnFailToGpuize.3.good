@@ -10,4 +10,5 @@ assertOnFailToGpuize.chpl:79: warning: the functional form of assertOnGpu() is d
 assertOnFailToGpuize.chpl:80: warning: the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.
 assertOnFailToGpuize.chpl:81: warning: the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.
 assertOnFailToGpuize.chpl:38: error: Loop contains assertOnGpu() but is not eligible for execution on a GPU
-assertOnFailToGpuize.chpl:40: note: call has outer var access
+assertOnFailToGpuize.chpl:13: note: called function has outer var access
+assertOnFailToGpuize.chpl:40: note:   reached via call to 'usesOutsideVar' in loop body here

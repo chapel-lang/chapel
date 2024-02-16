@@ -1,2 +1,0 @@
-openReaderWriter.chpl:5: warning: openWriter with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead
-openReaderWriter.chpl:7: warning: openReader with a 'style' argument is deprecated, please pass a Deserializer to the 'deserializer' argument instead

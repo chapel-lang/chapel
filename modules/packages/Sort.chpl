@@ -435,8 +435,8 @@ The choice of sorting algorithm used is made by the implementation.
 
 .. note::
 
-  This function currently either uses a parallel radix sort or a serial
-  quickSort. The algorithms used will change over time.
+  This function currently either uses a parallel radix sort or a parallel
+  improved quick sort.  The algorithms used will change over time.
 
   It currently uses parallel radix sort if the following conditions are met:
 
@@ -1122,6 +1122,7 @@ module MergeSort {
 
 // this quick sort is not stable
 // it is in-place however
+// it is parallel but has limited parallelism
 @chpldoc.nodoc
 module QuickSort {
   private use Sort;
@@ -1763,7 +1764,7 @@ module SampleSortHelp {
     while numSamples > 0 {
       numSamples -= 1;
 
-      var offset = randNums.getNext(start_n, end_n);
+      var offset = randNums.next(start_n, end_n);
       if offset != start_n {
         // A[start_n] <=> A[offset] but with shallow copy.
         var tmp: A.eltType;

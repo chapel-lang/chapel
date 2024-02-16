@@ -51,7 +51,7 @@ module ChplFormat {
       st.tuple_style = QIO_TUPLE_FORMAT_CHPL:uint(8);
       st.pad_char = 0x20;
       dc._set_styleInternal(st);
-      dc._writeOne(dc._kind, val, here);
+      dc._writeOne(_iokind.dynamic, val, here);
     }
 
     proc ref serializeValue(writer: _writeType, const val:?t) throws {
@@ -251,7 +251,7 @@ module ChplFormat {
       st.tuple_style = QIO_TUPLE_FORMAT_CHPL:uint(8);
       st.pad_char = 0x20;
       dc._set_styleInternal(st);
-      dc._readOne(dc._kind, val, here);
+      dc._readOne(_iokind.dynamic, val, here);
     }
 
     proc ref deserializeType(reader:_readerType, type readType) : readType throws {
@@ -261,7 +261,7 @@ module ChplFormat {
 
       if isNumericType(readType) || isBoolType(readType) {
         var x : readType;
-        reader._readOne(reader._kind, x, here);
+        reader._readOne(_iokind.dynamic, x, here);
         return x;
       } else if isStringType(readType) || isBytesType(readType) {
         var tmp : readType;

@@ -3535,6 +3535,10 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
         Type* tt = canonicalClassType(t);
         if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
           // print out which field
+          if (call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
+            // don't warn about '?' if we're in compiler-generated code
+            return;
+          }
           USR_WARN(checkCall, "partial instantiation without '?' argument");
           USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
           USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
@@ -3854,7 +3858,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   resolveNormalCallAdjustAssign(call);
 
   if (isGenericRecordInit(call) == true) {
-    retval = resolveInitializer(call);
+    const bool emitCallResolutionErrors = checkState != CHECK_CALLABLE_ONLY;
+    retval = resolveInitializer(call, emitCallResolutionErrors);
   } else if (info.isWellFormed(call) == true) {
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);
@@ -11247,7 +11252,6 @@ static void resolveExterns()
   }
 }
 
-// Returns 'true' if the type 'at' was resolved.
 static void maybeForceResolveAggregateType(AggregateType* at) {
   if (at == nullptr) return;
   for_SymbolSymExprs(use, at->symbol) {

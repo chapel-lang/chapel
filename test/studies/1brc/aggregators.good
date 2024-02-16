@@ -1,0 +1,2 @@
+aggregators.chpl:86: In method 'flush':
+aggregators.chpl:88: warning: borrowed sharedLock(map(bytes,tempData,false)) is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, borrowed sharedLock(map(bytes,tempData,false)) does not implement contextManager. In the future, this will result in an error.

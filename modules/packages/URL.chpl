@@ -45,23 +45,12 @@ module URL {
   public use IO;
 
   pragma "last resort"
-  @deprecated("openUrlReader with a style and/or kind argument is deprecated")
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)),
-                     style:iostyle)
-                    : fileReader(kind, locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlReaderHelper(url, kind, locking, region, style: iostyleInternal);
-  }
-
-  pragma "last resort"
   @deprecated("openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
   proc openUrlReader(url:string, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
                     : fileReader(locking) throws {
     var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlReaderHelper(url, _iokind.dynamic, locking, region);
+    return openUrlReaderHelper(url, locking, region);
   }
 
   /*
@@ -84,32 +73,19 @@ module URL {
   proc openUrlReader(url:string, param locking=true,
                      region: range(?) = 0..)
                     : fileReader(locking) throws {
-    return openUrlReaderHelper(url, _iokind.dynamic, locking, region);
+    return openUrlReaderHelper(url, locking, region);
   }
 
   private
-  proc openUrlReaderHelper(url:string,
-                           param kind=_iokind.dynamic, param locking=true,
-                           region: range(?) = 0..,
-                           style:iostyleInternal = defaultIOStyleInternal())
-    : fileReader(kind, locking) throws {
+  proc openUrlReaderHelper(url:string, param locking=true,
+                           region: range(?) = 0..)
+    : fileReader(locking) throws {
 
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, ioMode.r, style);
+    var f = openCurlFile(url, ioMode.r);
     // TODO: change this back to f.reader when the kind argument is removed
-    return f.readerHelper(kind=kind, locking=locking, region=region);
-  }
-
-  pragma "last resort"
-  @deprecated("openUrlWriter with a style and/or kind argument is deprecated")
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 style:iostyle)
-                : fileWriter(kind, locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlWriterHelper(url, kind, locking, region, style: iostyleInternal);
+    return f.readerHelper(locking=locking, region=region);
   }
 
   pragma "last resort"
@@ -118,7 +94,7 @@ module URL {
                  start:int(64) = 0, end:int(64) = max(int(64)))
                 : fileWriter(locking) throws {
     var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlWriterHelper(url, _iokind.dynamic, locking, region);
+    return openUrlWriterHelper(url, locking, region);
   }
 
   /*
@@ -141,22 +117,19 @@ module URL {
   proc openUrlWriter(url:string, param locking=true,
                  region: range(?) = 0..)
                 : fileWriter(locking) throws {
-    return openUrlWriterHelper(url, _iokind.dynamic, locking, region);
+    return openUrlWriterHelper(url, locking, region);
   }
 
-  private proc openUrlWriterHelper(url:string,
-                                   param kind=_iokind.dynamic,
-                                   param locking=true,
-                                   region: range(?) = 0..,
-                                   style:iostyleInternal = defaultIOStyleInternal())
-    : fileWriter(kind, locking) throws {
+  private proc openUrlWriterHelper(url:string, param locking=true,
+                                   region: range(?) = 0..)
+    : fileWriter(locking) throws {
 
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, ioMode.cw, style);
+    var f = openCurlFile(url, ioMode.cw);
     // TODO: change this back to f.writer when the kind argument has been
     // removed
-    return f.writerHelper(kind=kind, locking=locking, region=region);
+    return f.writerHelper(locking=locking, region=region);
   }
 
 }

@@ -145,6 +145,7 @@ class UntypedFnSignature {
     CHPL_ASSERT(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
            idTag == uast::asttags::Record   ||
+           idTag == uast::asttags::Tuple    ||
            idTag == uast::asttags::Union    ||
            idTag == uast::asttags::Variable);
   }
@@ -882,6 +883,92 @@ class TypedFnSignature {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+// Container for resolution candidates and (if applicable) their correponding
+// forwarding-to types.
+struct CandidatesAndForwardingInfo {
+ private:
+  std::vector<const TypedFnSignature*> candidates;
+  // Note we have a (small) storage footprint for forwardingInfo even in the
+  // relatively common case where it is unused; could potentially use something
+  // lighter than this struct for candidates without forwarding info.
+  std::vector<types::QualifiedType> forwardingInfo;
+
+ public:
+  using const_iterator = std::vector<const TypedFnSignature*>::const_iterator;
+
+  // Add a candidate without forwarding info.
+  void addCandidate(const TypedFnSignature* candidate) {
+    candidates.push_back(candidate);
+  }
+
+  // Compute and fill in forwarding info for a range of newly-added candidates.
+  void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
+    CHPL_ASSERT(forwardingInfo.size() <= start);
+    forwardingInfo.resize(start);
+    types::QualifiedType forwardingReceiverActualType = fci.calledType();
+    for (size_t i = start; i < candidates.size(); i++) {
+      forwardingInfo.push_back(forwardingReceiverActualType);
+    }
+  }
+
+  // Move the contents of another container into this one, clearing out the
+  // other.
+  void takeFromOther(CandidatesAndForwardingInfo& other) {
+    candidates.insert(candidates.end(),
+                      std::make_move_iterator(other.candidates.begin()),
+                      std::make_move_iterator(other.candidates.end()));
+    forwardingInfo.insert(forwardingInfo.end(),
+                          std::make_move_iterator(other.forwardingInfo.begin()),
+                          std::make_move_iterator(other.forwardingInfo.end()));
+    other.candidates.clear();
+    other.forwardingInfo.clear();
+  }
+
+  // Get the candidate at the provided index with no bounds checking.
+  inline const TypedFnSignature* get(size_t i) const { return candidates[i]; }
+
+  // Get the forwarding info at the provided index.
+  // Fails if there isn't forwarding info saved for each candidate.
+  inline const types::QualifiedType& getForwardingInfo(size_t i) const {
+    CHPL_ASSERT(candidates.size() == forwardingInfo.size());
+    return forwardingInfo[i];
+  }
+
+  // Check if any candidates are present
+  inline bool empty() const { return candidates.empty(); }
+
+  // Get the number of candidates
+  inline size_t size() const { return candidates.size(); }
+
+  // Return true if this container stores any forwarding info
+  inline bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
+
+  // Iterator over contained candidates
+  const_iterator begin() const { return candidates.begin(); }
+  const_iterator end() const { return candidates.end(); }
+
+  /* Query system supporting functions */
+
+  static bool update(CandidatesAndForwardingInfo& keep,
+                     CandidatesAndForwardingInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  size_t hash() const { return chpl::hash(candidates, forwardingInfo); }
+  void mark(Context* context) const {
+    chpl::mark<decltype(candidates)>{}(context, candidates);
+    chpl::mark<decltype(forwardingInfo)>{}(context, forwardingInfo);
+  }
+  bool operator==(const CandidatesAndForwardingInfo& other) const {
+    return candidates == other.candidates &&
+           forwardingInfo == other.forwardingInfo;
+  }
+  void swap(CandidatesAndForwardingInfo& other) {
+    std::swap(candidates, other.candidates);
+    std::swap(forwardingInfo, other.forwardingInfo);
+  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /**
@@ -2294,6 +2381,14 @@ template<> struct hash<chpl::resolution::CallInfoActual>
 template<> struct hash<chpl::resolution::CallInfo>
 {
   size_t operator()(const chpl::resolution::CallInfo& key) const {
+    return key.hash();
+  }
+};
+
+template <>
+struct hash<chpl::resolution::CandidatesAndForwardingInfo> {
+  size_t operator()(
+      const chpl::resolution::CandidatesAndForwardingInfo& key) const {
     return key.hash();
   }
 };

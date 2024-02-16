@@ -20,7 +20,7 @@ module Foo {
 
     var ret : [0..len-1] string;
     var r = new randomStream(int);
-    var rindices = try! r.choice(indices, len);
+    var rindices = try! r.sample(indices, len);
 
     for i in 1..len-1 do
       ret[i] = alphanum[rindices[i]];

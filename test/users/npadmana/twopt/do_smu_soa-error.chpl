@@ -60,7 +60,7 @@ class Particle3D {
       var rng = new randomStream(eltType=real);
       var x, y, z : real;
       for ii in Dpart {
-        x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;
+        x = rng.next()*1000.0; y = rng.next()*1000.0; z = rng.next()*1000.0;
         arr[0,ii] = x; arr[1, ii] = y; arr[2, ii] = z;
         arr[3,ii] = 1.0;
         arr[4,ii] = x**2 + y**2 + z**2;
@@ -101,7 +101,7 @@ class Particle3D {
     var rng = new randomStream(eltType=real, seed=41);
     var jj : int;
     for ii in 0..(npart-2) {
-      jj = (rng.getNext()*(npart-ii)):int + ii;
+      jj = (rng.next()*(npart-ii)):int + ii;
       _ndx[jj] <=> _ndx[ii];
     }
 

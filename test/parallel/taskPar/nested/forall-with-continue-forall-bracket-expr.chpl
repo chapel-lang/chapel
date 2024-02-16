@@ -1,3 +1,6 @@
+// The original example in #21292
+// uncommented: bracket expression
+
 var D = {-1..1,-1..1};
 var D2 = D;
 var D3 = {-1..1,-1..1};
@@ -39,5 +42,5 @@ forall Exy in D {
 
   //  writeln(+ reduce ({-1..1,-1..1})); // works
 
+  writeln(neighbours);
 }
-writeln(neighbours);
