@@ -1151,6 +1151,7 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
                            toOwned(fp.where),
                            this->consumeList(fp.lifetime),
                            std::move(body));
+  builder->noteDeclNameLocation(f.get(), identNameLoc);
   ret = f.release();
   return ret;
 }
@@ -1177,6 +1178,7 @@ ParserContext::buildFormal(YYLTYPE location,
 AstNode*
 ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
                                  PODUniqueString name,
+                                 YYLTYPE nameLocation,
                                  AstNode* typeExpr,
                                  AstNode* initExpr,
                                  bool consumeAttributeGroup) {
@@ -1187,6 +1189,7 @@ ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
                                   toOwned(typeExpr),
                                   toOwned(initExpr));
   this->noteIsBuildingFormal(false);
+  builder->noteDeclNameLocation(node.get(), convertLocation(nameLocation));
   if (consumeAttributeGroup) resetAttributeGroupPartsState();
   return node.release();
 }
@@ -1447,8 +1450,6 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
     auto identNameLoc = builder->getLocation(identName.get());
     CHPL_ASSERT(!identNameLoc.isEmpty());
 
-    // TODO: Right now this location is the start of the function, and
-    // it seems more natural for the location to be the symbol.
     auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributeGroup),
                              Decl::DEFAULT_VISIBILITY,
@@ -1468,6 +1469,7 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
                              toOwned(fp.where),
                              this->consumeList(fp.lifetime),
                              std::move(body));
+    builder->noteDeclNameLocation(f.get(), identNameLoc);
     ret = f.release();
   } else {
     ret = fp.errorExpr;
@@ -1684,7 +1686,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
-    return Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
+    auto var = Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
@@ -1694,11 +1696,13 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
+    builder->noteDeclNameLocation(var.get(), convLoc);
+    return var;
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
     AstList elements;
     for (auto expr : tup->actuals()) {
-      auto decl = buildLoopIndexDecl(location, expr);
+      auto decl = buildLoopIndexDecl(locationFromChplLocation(expr), expr);
       if (decl.get() != nullptr) {
         CHPL_ASSERT(decl->isDecl());
         elements.push_back(std::move(decl));
@@ -2757,15 +2761,17 @@ AstNode* ParserContext::buildReduce(YYLTYPE location,
 AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
                                           YYLTYPE locOp,
                                           PODUniqueString op,
-                                          AstNode* iterand) {
+                                          AstNode* iterand,
+                                          YYLTYPE iterandLoc) {
   auto ident = buildIdent(locOp, op);
-  return buildReduceIntent(location, locOp, ident, iterand);
+  return buildReduceIntent(location, locOp, ident, iterand, iterandLoc);
 }
 
 AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
                                           YYLTYPE locOp,
                                           AstNode* op,
-                                          AstNode* iterand) {
+                                          AstNode* iterand,
+                                          YYLTYPE iterandLoc) {
   (void) locOp;
   const Identifier* ident = iterand->toIdentifier();
   if (ident == nullptr) {
@@ -2774,6 +2780,7 @@ AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
   auto node = ReduceIntent::build(builder, convertLocation(location),
                                   toOwned(op),
                                   ident->name());
+  builder->noteDeclNameLocation(node.get(), convertLocation(iterandLoc));
   return node.release();
 }
 
@@ -2803,6 +2810,13 @@ AstNode* ParserContext::buildTypeQuery(YYLTYPE location,
   const char* adjust = queriedIdent.c_str() + 1;
   auto name = UniqueString::get(context(), adjust);
   auto node = TypeQuery::build(builder, convertLocation(location), name);
+  // this is a bit of a hack, since the query is reported as a single token
+  auto identLoc = Location(this->filename,
+                  location.first_line,
+                  location.first_column+1, // skip the '?'
+                  location.last_line,
+                  location.last_column);
+  builder->noteDeclNameLocation(node.get(), identLoc);
   return node.release();
 }
 
@@ -3019,6 +3033,7 @@ AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
 }
 
 CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
+                                                  YYLTYPE identLocation,
                                                   PODUniqueString name,
                                                   ParserExprList* formals,
                                                   YYLTYPE locBody,
@@ -3052,6 +3067,7 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
                                isFormalListPresent,
                                std::move(formalList),
                                std::move(bodyStmts));
+  builder->noteDeclNameLocation(node.get(), convertLocation(identLocation));
 
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
