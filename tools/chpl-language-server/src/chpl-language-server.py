@@ -818,10 +818,12 @@ class ChapelLanguageServer(LanguageServer):
         label = InlayHintLabelPart(str(type_))
         if isinstance(type_, chapel.CompositeType):
             typedecl = type_.decl()
-            text = self.get_tooltip(typedecl, siblings)
-            content = MarkupContent(MarkupKind.Markdown, text)
-            label.tooltip = content
-            label.location = location_to_location(typedecl.location())
+
+            if typedecl:
+                text = self.get_tooltip(typedecl, siblings)
+                content = MarkupContent(MarkupKind.Markdown, text)
+                label.tooltip = content
+                label.location = location_to_location(typedecl.location())
 
         return [
             InlayHint(
