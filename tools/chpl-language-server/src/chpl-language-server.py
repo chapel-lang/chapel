@@ -291,16 +291,19 @@ class PositionList(Generic[EltT]):
     def append(self, elt: EltT):
         self.elts.append(elt)
 
-    def insert(self, elt: EltT):
-        # pos = self.get_range(elt).start
-        # end = bisect_left(
-        #     self.elts, pos, key=lambda x: self.get_range(x).start
-        # )
-        # self.elts.insert(end, elt)
+    def _get_range(self, rng: Range):
+        start = bisect_left(
+            self.elts, rng.start, key=lambda x: self.get_range(x).start
+        )
+        end = bisect_right(
+            self.elts, rng.end, key=lambda x: self.get_range(x).start
+        )
+        return (start, end)
 
-        # :sunglasses:
-        self.elts.append(elt)
-        self.sort()
+    def overwrite(self, elt: EltT):
+        rng = self.get_range(elt)
+        start, end = self._get_range(rng)
+        self.elts[start:end] = [elt]
 
     def clear(self):
         self.elts.clear()
@@ -315,12 +318,7 @@ class PositionList(Generic[EltT]):
         return self.elts[idx]
 
     def range(self, rng: Range) -> List[EltT]:
-        start = bisect_right(
-            self.elts, rng.start, key=lambda x: self.get_range(x).start
-        )
-        end = bisect_left(
-            self.elts, rng.end, key=lambda x: self.get_range(x).start
-        )
+        start, end = self._get_range(rng)
         return self.elts[start:end]
 
 
@@ -1283,7 +1281,7 @@ def run_lsp():
             if decl.node.unique_id() == unique_id
         )
         inst = list(fi.instantiations[unique_id])[i]
-        fi.instantiation_segments.insert((decl, inst))
+        fi.instantiation_segments.overwrite((decl, inst))
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
