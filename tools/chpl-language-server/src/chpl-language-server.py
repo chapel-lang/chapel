@@ -252,7 +252,7 @@ def range_to_tokens(
 
 
 def encode_deltas(
-    tokens: List[Tuple[int, int, int]], token_type, token_modifiers
+    tokens: List[Tuple[int, int, int]], token_type: int, token_modifiers: int
 ) -> List[int]:
     """
     Given a (non-encoded) list of token positions, applies the LSP delta-encoding
