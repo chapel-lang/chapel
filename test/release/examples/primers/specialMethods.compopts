@@ -1,1 +1,1 @@
--sOpenWriterLockingDefault=false -sOpenReaderLockingDefault=false
+-snoParSafeWarning -sOpenWriterLockingDefault=false -sOpenReaderLockingDefault=false

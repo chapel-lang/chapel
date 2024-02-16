@@ -1,1 +1,1 @@
-cg-makea.chpl -O -M ../../../reductions/partial
+-snoParSafeWarning cg-makea.chpl -O -M ../../../reductions/partial
