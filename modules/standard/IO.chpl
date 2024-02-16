@@ -5453,7 +5453,7 @@ proc openStringReader(in s: string, in deserializer: ?dt = defaultSerializeVal(f
   // create a fileReader for the memory file
   var err: errorCode = 0,
       fr = new fileReader(
-        _iokind.dynamic, false, deserializer, f, err, ioHintSet.empty,
+        false, deserializer, f, err, ioHintSet.empty,
         0, f.size, defaultIOStyleInternal()
       );
 
@@ -5486,7 +5486,7 @@ proc openBytesReader(in b: bytes, in deserializer: ?dt = defaultSerializeVal(fal
   // create a fileReader for the memory file
   var err: errorCode = 0,
       fr = new fileReader(
-        _iokind.dynamic, false, deserializer, f, err, ioHintSet.empty,
+        false, deserializer, f, err, ioHintSet.empty,
         0, f.size, defaultIOStyleInternal()
       );
 
