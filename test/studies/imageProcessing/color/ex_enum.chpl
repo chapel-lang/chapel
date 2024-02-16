@@ -12,12 +12,12 @@
 
 /* HSV=1, LAB=2, YUV=1, RGB=2 */
 enum clrspace_v2 {
-  HSV, LAB, YUV=1, RGB
+  HSV=1, LAB=2, YUV=1, RGB=2
 }
 
-if (clrspace_v2.HSV == clrspace_v2.YUV) then writeln("HSV, YUV identical");
-if (clrspace_v2.LAB == clrspace_v2.RGB) then writeln("LAB, RGB identical");
-if (clrspace_v2.HSV == clrspace_v2.LAB) then writeln("HSV, LAB identical");
+if (clrspace_v2.HSV:int == clrspace_v2.YUV:int) then writeln("HSV, YUV identical");
+if (clrspace_v2.LAB:int == clrspace_v2.RGB:int) then writeln("LAB, RGB identical");
+if (clrspace_v2.HSV:int == clrspace_v2.LAB:int) then writeln("HSV, LAB identical");
 
 proc print_space(space : clrspace_v2) {
   writeln("picked color space ", space);
