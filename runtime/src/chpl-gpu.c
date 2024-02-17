@@ -575,14 +575,19 @@ void chpl_gpu_arg_reduce(void* cfg, void* arg, size_t elem_size) {
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
 
   for (int i=0 ; i<cfg->n_redbufs ; i++) {
-    int64_t* host_tmp = chpl_malloc(2*sizeof(int64_t));
+    /*int64_t* host_tmp = chpl_malloc(2*sizeof(int64_t));*/
 
-    chpl_gpu_copy_device_to_host(host_tmp, 0, cfg->redbufs[i], 2, 0,
-                                 cfg->ln, cfg->fn);
+    /*chpl_gpu_copy_device_to_host(host_tmp, 0, cfg->redbufs[i], 2*sizeof(int64_t), 0,*/
+                                 /*cfg->ln, cfg->fn);*/
+    /*for (int j=0 ; j<2 ; j++) {*/
+      /*printf("Interim reduce buffer[%d]=%ld\n", j, host_tmp[j]);*/
+    /*}*/
 
-    for (int j=0 ; j<2 ; j++) {
-      printf("Interim reduce buffer[%d]=%ld\n", j, host_tmp[j]);
-    }
+    int64_t result = 0;
+    chpl_gpu_sum_reduce_int64_t(cfg->redbufs[i], 2, &result, NULL);
+
+    printf("reduce result: %ld\n", result);
+
   }
 }
 
