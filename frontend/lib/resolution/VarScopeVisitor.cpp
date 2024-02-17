@@ -488,7 +488,7 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
                                  /* raiseErrors */ false,
                                  &actualAsts);
 
-      if (isMethod) {
+      if (isMethod && ci.isMethodCall() == false) {
         // Create a dummy 'this' actual
         ci = ci.createWithReceiver(ci, QualifiedType());
         actualAsts.insert(actualAsts.begin(), nullptr);
