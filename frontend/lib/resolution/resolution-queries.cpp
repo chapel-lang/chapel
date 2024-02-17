@@ -2862,7 +2862,6 @@ bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
   return true;
 }
 
-
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
 static bool resolveFnCallSpecial(Context* context,
@@ -2873,6 +2872,7 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
+  // explicit param casts are resolved here
   if (ci.name() == USTR(":")) {
     auto lhs = ci.actual(0).type();
     auto rhs = ci.actual(1).type();
@@ -2881,18 +2881,17 @@ static bool resolveFnCallSpecial(Context* context,
     bool isParamTypeCast = lhs.kind() == QualifiedType::PARAM && isRhsType;
 
     if (isParamTypeCast) {
-        exprTypeOut = Param::fold(context, chpl::uast::PrimitiveTag::PRIM_CAST,
+        exprTypeOut = Param::fold(context, uast::PrimitiveTag::PRIM_CAST,
                                   lhs, rhs);
         return true;
     } else if (!isRhsType) {
-      // casting to something that's not a type is bad, mmmkay?
+      // trying to cast to something that's not a type
       auto typeName = tagToString(rhs.type()->tag());
       context->error(astForErr, "bad cast to %s", typeName);
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
       return true;
     }
-
     return false;
   }
 

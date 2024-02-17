@@ -104,7 +104,6 @@ static T getImmediateValueOrEmpty(const S* p) {
   return (T) 0;
 }
 
-
 static Param::ComplexDouble getImmediateValueOrEmpty(const ComplexParam* p) {
   if (p) {
     return p->value();
@@ -112,14 +111,17 @@ static Param::ComplexDouble getImmediateValueOrEmpty(const ComplexParam* p) {
   return Param::ComplexDouble(0.0, 0.0);
 }
 
-
-static chpl::detail::PODUniqueString getImmediateValueOrEmpty(const StringParam* p) {
+static ImmString getImmediateValueOrEmpty(const StringParam* p) {
   if (p) {
     return p->value().podUniqueString();
   }
   return UniqueString().podUniqueString();
 }
 
+/*
+  Get the immediate value from a Param in the proper type. Pass nullptr as param
+  to get an empty immediate for a param of Type t.
+*/
 static
 Immediate paramToImmediate(const Param* p, const Type* t) {
   Immediate ret;
