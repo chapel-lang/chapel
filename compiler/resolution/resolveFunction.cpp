@@ -2120,8 +2120,10 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
         if (isIterator) {
           // TODO: Right now this has to be USR_FATAL in order to avoid
           // the possibility of subsequent errors about 'nothing'.
-          USR_FATAL(fn, "iterators that have zero 'yield' statements "
-                        "must declare their return type");
+          if (!fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+            USR_FATAL(fn, "iterators that have zero 'yield' statements "
+                          "must declare their return type");
+          }
           retType = dtNothing;
         } else {
           retType = dtVoid;
