@@ -5424,9 +5424,11 @@ DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
   std::vector<GenRet> args;
   auto numKernelArgs = call->get(1);
   auto numKernelPids = call->get(2);
+  auto numReductionBufs = call->get(3);
 
   args.push_back(numKernelArgs->codegen());
   args.push_back(numKernelPids->codegen());
+  args.push_back(numReductionBufs->codegen());
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
@@ -5460,6 +5462,14 @@ DEFINE_PRIM(GPU_ARG) {
   if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
     fnName = "chpl_gpu_arg_offload";
     args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
+
+    // can OFFLOAD and REDUCE be set at the same time?
+    INT_ASSERT((kind & GpuArgKind::REDUCE) == 0);
+  }
+  else if (kind & GpuArgKind::REDUCE) {
+    fnName = "chpl_gpu_arg_reduce";
+    args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
+
   }
   else {
     fnName = "chpl_gpu_arg_pass";

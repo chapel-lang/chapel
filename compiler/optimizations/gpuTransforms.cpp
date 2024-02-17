@@ -1036,6 +1036,8 @@ class GpuKernel {
   CallExpr* blockSizeCall_;
   BlockStmt* gpuPrimitivesBlock_;
 
+  int nReductionBufs_ = 0;
+
   public:
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
 
@@ -1044,6 +1046,9 @@ class GpuKernel {
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   CallExpr* blockSizeCall() const {return blockSizeCall_; }
   BlockStmt* gpuPrimitivesBlock() const { return gpuPrimitivesBlock_; }
+  SymExpr* blockSize() const {return blockSize_; }
+  int nReductionBufs() const {return nReductionBufs_; }
+  void incReductionBufs() { nReductionBufs_ += 1; }
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
@@ -1139,27 +1144,29 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
     actual.kind = GpuArgKind::ADDROF | GpuArgKind::OFFLOAD;
   }
 
-  kernelActuals_.push_back(actual);
-  copyMap_.put(symInLoop, newFormal);
+  if (isRedTemp) {
+    actual.kind |= GpuArgKind::REDUCE;
+    if (loopSymbolToInterimReductionFormal.count(symInLoop) == 0) {
+      nprint_view(symInLoop);
+      ArgSymbol* interimResultBuffer = new ArgSymbol(INTENT_IN,
+                                                     astr(symInLoop->name, "_interim"),
+                                                     symInLoop->getRefType());
 
-  if (isRedTemp && loopSymbolToInterimReductionFormal.count(symInLoop) == 0) {
-    nprint_view(symInLoop);
-    ArgSymbol* interimResultBuffer = new ArgSymbol(INTENT_IN,
-                                                   astr(symInLoop->name, "_interim"),
-                                                   symInLoop->getRefType());
 
+      loopSymbolToInterimReductionFormal[symInLoop] = interimResultBuffer;
+      //ReductionPair pair;
+      //pair.symInLoop = symInLoop;
+      //pair.formalForInterimResult = interimResultBuffer;
 
-    loopSymbolToInterimReductionFormal[symInLoop] = interimResultBuffer;
-    //ReductionPair pair;
-    //pair.symInLoop = symInLoop;
-    //pair.formalForInterimResult = interimResultBuffer;
-
-    //this->redTemps_.insert(pair);
-    //
-    fn_->insertFormalAtTail(interimResultBuffer);
+      //this->redTemps_.insert(pair);
+      //
+      fn_->insertFormalAtTail(interimResultBuffer);
+      this->incReductionBufs();
+    }
   }
 
-
+  kernelActuals_.push_back(actual);
+  copyMap_.put(symInLoop, newFormal);
 
   return newFormal;
 }
@@ -1673,7 +1680,8 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
                     new_IntSymbol(kernel.kernelActuals().size()),
-                    new_IntSymbol(gpuLoop.pidGets().size()));
+                    new_IntSymbol(gpuLoop.pidGets().size()),
+                    new_IntSymbol(kernel.nReductionBufs()));
   gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
   // first, add pids

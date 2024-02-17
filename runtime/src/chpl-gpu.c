@@ -254,21 +254,27 @@ typedef struct kernel_cfg_s {
 
   bool has_priv_table_lock;
 
+  int n_redbufs;
+  int cur_redbuf;
+
+  void** redbufs;
+
   // we need this in the config so that we can offload data using this stream,
   // and in the future allocate/deallocate on this stream, too
   void* stream;
 } kernel_cfg;
 
-static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
-                     int32_t fn) {
+static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int n_redbufs,
+                     int ln, int32_t fn) {
   cfg->dev = chpl_task_getRequestedSubloc();
   cfg->stream = get_stream(cfg->dev);
 
   cfg->ln = ln;
   cfg->fn = fn;
 
-  //+2 for the ln and fn arguments that we add to the end of the array
-  cfg->n_params = n_params+2;
+  // +2 for the ln and fn arguments that we add to the end of the array
+  // reduction buffers are just another param for runtime
+  cfg->n_params = n_params+n_redbufs+2;
   cfg->cur_param = 0;
 
   cfg->kernel_params = chpl_mem_alloc(cfg->n_params * sizeof(void **),
@@ -302,6 +308,12 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
   cfg->priv_table_dev = NULL;
 
   cfg->has_priv_table_lock = false;
+
+  cfg->n_redbufs = n_redbufs;
+  cfg->cur_redbuf = 0;
+
+  cfg->redbufs = chpl_mem_alloc(cfg->n_redbufs * sizeof(void*),
+                                CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -387,6 +399,24 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
   }
 
   cfg->cur_pid++;
+}
+
+static void cfg_add_reduce_param(kernel_cfg* cfg, void* arg, size_t elem_size) {
+  // create the reduction buffer
+  const int i = cfg->cur_redbuf;
+  assert(i < cfg->n_redbufs);
+
+  void* buf = chpl_gpu_mem_array_alloc(2*elem_size,
+                                       CHPL_RT_MD_GPU_KERNEL_ARG,
+                                       cfg->ln, cfg->fn);
+  CHPL_GPU_DEBUG("Allocated reduction buffer: %p\n", buf);
+
+  cfg->redbufs[i] = buf;
+
+  // pass that normally
+  cfg_add_direct_param((kernel_cfg*)cfg, &(cfg->redbufs[i]));
+
+  cfg->cur_redbuf++;
 }
 
 static void cfg_finalize_priv_table(kernel_cfg *cfg) {
@@ -475,13 +505,16 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
 }
 
-void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn) {
+void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int n_redbufs,
+                               int ln, int32_t fn) {
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
-  cfg_init((kernel_cfg*)ret, n_params, n_pids, ln, fn);
+  cfg_init((kernel_cfg*)ret, n_params, n_pids, n_redbufs, ln, fn);
 
-  CHPL_GPU_DEBUG("Initialized kernel config for %d params and %d pids\n",
-                 n_params, n_pids);
+  CHPL_GPU_DEBUG("Initialized kernel config for %d params, %d pids"
+                 " and %d reduction buffers\n",
+                 n_params, n_pids, n_redbufs);
+  CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
 
   return ret;
 }
@@ -530,6 +563,13 @@ void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
 void chpl_gpu_arg_pass(void* cfg, void* arg) {
   cfg_add_direct_param((kernel_cfg*)cfg, arg);
   CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
+}
+
+void chpl_gpu_arg_reduce(void* cfg, void* arg, size_t elem_size) {
+  // pass the argument normally
+  cfg_add_direct_param((kernel_cfg*)cfg, arg);
+  cfg_add_reduce_param((kernel_cfg*)cfg, arg, elem_size);
+  CHPL_GPU_DEBUG("\tAdded by-reduce param: %p\n", arg);
 }
 
 static void launch_kernel(const char* name,
@@ -585,6 +625,8 @@ static void launch_kernel(const char* name,
   CHPL_GPU_START_TIMER(teardown_time);
 
   // deinit them before synch as a (premature?) optimization
+  // Engin: note that we are not using stream-ordered allocators yet. So, I
+  // expect the following to serve as a synchornization unfortunately
   cfg_deinit_params(cfg);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
