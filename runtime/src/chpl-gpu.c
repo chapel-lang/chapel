@@ -224,10 +224,16 @@ void chpl_gpu_support_module_finished_initializing(void) {
                  chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
-typedef struct priv_inst {
+typedef struct priv_inst_s {
   int64_t pid;
   void* dev_instance;
 } priv_inst;
+
+typedef struct reduce_var_s {
+  void* outer_var;
+  size_t elem_size;
+  void* buffer;
+} reduce_var;
 
 typedef struct kernel_cfg_s {
   int dev;
@@ -254,18 +260,18 @@ typedef struct kernel_cfg_s {
 
   bool has_priv_table_lock;
 
-  int n_redbufs;
-  int cur_redbuf;
+  int n_reduce_vars;
+  int cur_reduce_var;
 
-  void** redbufs;
+  reduce_var* reduce_vars;
 
   // we need this in the config so that we can offload data using this stream,
   // and in the future allocate/deallocate on this stream, too
   void* stream;
 } kernel_cfg;
 
-static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int n_redbufs,
-                     int ln, int32_t fn) {
+static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids,
+                     int n_reduce_vars, int ln, int32_t fn) {
   cfg->dev = chpl_task_getRequestedSubloc();
   cfg->stream = get_stream(cfg->dev);
 
@@ -273,8 +279,8 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int n_redbufs,
   cfg->fn = fn;
 
   // +2 for the ln and fn arguments that we add to the end of the array
-  // reduction buffers are just another param for runtime
-  cfg->n_params = n_params+n_redbufs+2;
+  // we pass an additional reduce buffer per reduce variable
+  cfg->n_params = n_params+n_reduce_vars+2;
   cfg->cur_param = 0;
 
   cfg->kernel_params = chpl_mem_alloc(cfg->n_params * sizeof(void **),
@@ -309,10 +315,10 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int n_redbufs,
 
   cfg->has_priv_table_lock = false;
 
-  cfg->n_redbufs = n_redbufs;
-  cfg->cur_redbuf = 0;
+  cfg->n_reduce_vars = n_reduce_vars;
+  cfg->cur_reduce_var = 0;
 
-  cfg->redbufs = chpl_mem_alloc(cfg->n_redbufs * sizeof(void*),
+  cfg->reduce_vars = chpl_mem_alloc(cfg->n_reduce_vars * sizeof(void*),
                                 CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
 }
 
@@ -403,20 +409,22 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
 
 static void cfg_add_reduce_param(kernel_cfg* cfg, void* arg, size_t elem_size) {
   // create the reduction buffer
-  const int i = cfg->cur_redbuf;
-  assert(i < cfg->n_redbufs);
+  const int i = cfg->cur_reduce_var;
+  assert(i < cfg->n_reduce_vars);
 
   void* buf = chpl_gpu_mem_array_alloc(2*elem_size,
                                        CHPL_RT_MD_GPU_KERNEL_ARG,
                                        cfg->ln, cfg->fn);
   CHPL_GPU_DEBUG("Allocated reduction buffer: %p\n", buf);
 
-  cfg->redbufs[i] = buf;
+  cfg->reduce_vars[i].buffer = buf;
+  cfg->reduce_vars[i].outer_var = arg;
+  cfg->reduce_vars[i].elem_size = elem_size;
 
   // pass that normally
-  cfg_add_direct_param((kernel_cfg*)cfg, &(cfg->redbufs[i]));
+  cfg_add_direct_param((kernel_cfg*)cfg, &(cfg->reduce_vars[i].buffer));
 
-  cfg->cur_redbuf++;
+  cfg->cur_reduce_var++;
 }
 
 static void cfg_finalize_priv_table(kernel_cfg *cfg) {
@@ -505,15 +513,15 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
 }
 
-void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int n_redbufs,
+void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int n_reduce_vars,
                                int ln, int32_t fn) {
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
-  cfg_init((kernel_cfg*)ret, n_params, n_pids, n_redbufs, ln, fn);
+  cfg_init((kernel_cfg*)ret, n_params, n_pids, n_reduce_vars, ln, fn);
 
   CHPL_GPU_DEBUG("Initialized kernel config for %d params, %d pids"
                  " and %d reduction buffers\n",
-                 n_params, n_pids, n_redbufs);
+                 n_params, n_pids, n_reduce_vars);
   CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
 
   return ret;
@@ -574,17 +582,23 @@ void chpl_gpu_arg_reduce(void* cfg, void* arg, size_t elem_size) {
 
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
 
-  for (int i=0 ; i<cfg->n_redbufs ; i++) {
+  for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
     /*int64_t* host_tmp = chpl_malloc(2*sizeof(int64_t));*/
 
-    /*chpl_gpu_copy_device_to_host(host_tmp, 0, cfg->redbufs[i], 2*sizeof(int64_t), 0,*/
+    /*chpl_gpu_copy_device_to_host(host_tmp, 0, cfg->reduce_vars[i], 2*sizeof(int64_t), 0,*/
                                  /*cfg->ln, cfg->fn);*/
     /*for (int j=0 ; j<2 ; j++) {*/
       /*printf("Interim reduce buffer[%d]=%ld\n", j, host_tmp[j]);*/
     /*}*/
 
+    CHPL_GPU_DEBUG("Reduce %p into %p\n", cfg->reduce_vars[i].buffer,
+                  cfg->reduce_vars[i].outer_var);
+
+
     int64_t result = 0;
-    chpl_gpu_sum_reduce_int64_t(cfg->redbufs[i], 2, &result, NULL);
+    chpl_gpu_sum_reduce_int64_t((int64_t*)cfg->reduce_vars[i].buffer,
+                                2, (int64_t*)cfg->reduce_vars[i].outer_var,
+                                NULL);
 
     printf("reduce result: %ld\n", result);
 
