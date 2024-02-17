@@ -572,6 +572,20 @@ void chpl_gpu_arg_reduce(void* cfg, void* arg, size_t elem_size) {
   CHPL_GPU_DEBUG("\tAdded by-reduce param: %p\n", arg);
 }
 
+static void cfg_finalize_reductions(kernel_cfg* cfg) {
+
+  for (int i=0 ; i<cfg->n_redbufs ; i++) {
+    int64_t* host_tmp = chpl_malloc(2*sizeof(int64_t));
+
+    chpl_gpu_copy_device_to_host(host_tmp, 0, cfg->redbufs[i], 2, 0,
+                                 cfg->ln, cfg->fn);
+
+    for (int j=0 ; j<2 ; j++) {
+      printf("Interim reduce buffer[%d]=%ld\n", j, host_tmp[j]);
+    }
+  }
+}
+
 static void launch_kernel(const char* name,
                           int grd_dim_x, int grd_dim_y, int grd_dim_z,
                           int blk_dim_x, int blk_dim_y, int blk_dim_z,
@@ -614,6 +628,7 @@ static void launch_kernel(const char* name,
                               cfg->stream, (void**)(cfg->kernel_params));
   CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
 
+  cfg_finalize_reductions(cfg);
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
   chpl_gpu_impl_stream_synchronize(cfg->stream);
