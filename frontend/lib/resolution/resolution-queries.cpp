@@ -2862,44 +2862,6 @@ bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
   return true;
 }
 
-/*
-  helper to get a param of a given type with default values populated
-*/
-static const Param* getDefaultParam(Context* context, QualifiedType qt) {
-  auto defaultVar = chpl::resolution::typeWithDefaults(context, qt);
-  auto t = defaultVar.type();
-  if (t->isBoolType()) {
-    return BoolParam::get(context, false);
-  } else if (t->isIntType()) {
-    return IntParam::get(context, 0);
-  } else if (t->isComplexType()) {
-    return ComplexParam::get(context, Param::ComplexDouble(0.0, 0.0));
-  } else if (t->isRealType()) {
-    return RealParam::get(context, 0.0);
-  } else if (t->isUintType()) {
-    return UintParam::get(context, 0);
-  } else if (t->isStringType()) {
-    return StringParam::get(context, UniqueString::get(context, ""));
-  } else if (t->isEnumType()) {
-    // TODO: how to properly get the default immediate for an enum?
-    ID enumId = qt.type()->toEnumType()->id();
-    // get the first enum value
-    auto elemAst = parsing::idToAst(context, enumId)->toEnum();
-    CHPL_ASSERT(elemAst && "expected enum ast node");
-    const EnumElement* el;
-    // use the elemAst enumElements() iterator to get the first enum element
-    for (auto elem : elemAst->enumElements()) {
-      el = elem;
-      break;
-    }
-    CHPL_ASSERT(el && "expected to find the first enum element");
-    return EnumParam::get(context, el->id());
-  } else if (t->isNothingType() || t->isNilType()) {
-    return NoneParam::get(context, Param::NoneValue());
-  } else {
-    return nullptr;
-  }
-}
 
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
@@ -2915,16 +2877,14 @@ static bool resolveFnCallSpecial(Context* context,
     auto lhs = ci.actual(0).type();
     auto rhs = ci.actual(1).type();
 
-    bool isParamTypeCast = lhs.kind() == QualifiedType::PARAM &&
-                           rhs.kind() == QualifiedType::TYPE;
+    bool isRhsType = rhs.kind() == QualifiedType::TYPE;
+    bool isParamTypeCast = lhs.kind() == QualifiedType::PARAM && isRhsType;
 
     if (isParamTypeCast) {
-        auto outParam = getDefaultParam(context, rhs);
-        auto rhsQt = QualifiedType(QualifiedType::PARAM, rhs.type(), outParam);
         exprTypeOut = Param::fold(context, chpl::uast::PrimitiveTag::PRIM_CAST,
-                                  lhs, rhsQt);
+                                  lhs, rhs);
         return true;
-    } else if (lhs.kind() == QualifiedType::PARAM) {
+    } else if (!isRhsType) {
       // casting to something that's not a type is bad, mmmkay?
       auto typeName = tagToString(rhs.type()->tag());
       context->error(astForErr, "bad cast to %s", typeName);
