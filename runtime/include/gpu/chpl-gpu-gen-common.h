@@ -27,10 +27,26 @@
 #include "chpl-comm.h"
 #include <string.h>
 
+#include <cub/cub.cuh>
+
 __device__
 static inline void chpl_gpu_dev_block_reduce(int64_t thread_val,
                                              int64_t* interim_res) {
+
   printf("(dev) thread_val %ld %p\n", thread_val, interim_res);
+
+  // Specialize BlockReduce for a 1D block of 128 threads of type int
+  typedef cub::BlockReduce<int64_t, 512> BlockReduce;
+
+  // Allocate shared memory for BlockReduce
+  __shared__ typename BlockReduce::TempStorage temp_storage;
+  //
+  // Compute the block-wide sum for thread0
+  interim_res[blockIdx.x] = BlockReduce(temp_storage).Sum(thread_val);
+
+  if (threadIdx.x == 0) {
+    printf("(dev) interim_res[%d] = %ld\n", blockIdx.x, interim_res[blockIdx.x]);
+  }
 }
 
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
