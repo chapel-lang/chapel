@@ -1,0 +1,1 @@
+Issue21265.chpl:6: error: iterators that have zero 'yield' statements must declare their return type

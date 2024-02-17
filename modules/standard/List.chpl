@@ -116,6 +116,9 @@ module List {
       compilerError("list element type cannot currently be generic");
       // In the future we might support it if the list is not default-inited
     }
+    if eltType == nothing {
+      compilerError("cannot initialize list with element type 'nothing'");
+    }
   }
 
   @chpldoc.nodoc
