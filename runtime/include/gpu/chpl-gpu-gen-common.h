@@ -46,7 +46,6 @@ static inline void chpl_gpu_dev_block_reduce(int64_t thread_val,
   // Compute the block-wide sum for thread0
   if (threadIdx.x == 0) {
     interim_res[blockIdx.x] = res;
-    printf("(dev) interim_res[%d] = %ld\n", blockIdx.x, interim_res[blockIdx.x]);
   }
 }
 
