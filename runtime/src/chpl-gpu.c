@@ -240,6 +240,13 @@ typedef struct kernel_cfg_s {
   int64_t num_threads;
   int blk_dim;
 
+  int grd_dim_x;
+  int grd_dim_y;
+  int grd_dim_z;
+  int blk_dim_x;
+  int blk_dim_y;
+  int blk_dim_z;
+
   int dev;
 
   int ln;
@@ -281,6 +288,23 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name, int64_t num_threads,
   cfg->fn_name = fn_name;
   cfg->num_threads = num_threads;
   cfg->blk_dim = blk_dim;
+
+  if (cfg->num_threads > 0){
+    cfg->grd_dim_x = (cfg->num_threads+cfg->blk_dim-1)/cfg->blk_dim;
+    cfg->grd_dim_y = 1;
+    cfg->grd_dim_z = 1;
+    cfg->blk_dim_x = cfg->blk_dim;
+    cfg->blk_dim_y = 1;
+    cfg->blk_dim_z = 1;
+  }
+  else {
+    cfg->grd_dim_x = 0;
+    cfg->grd_dim_y = 0;
+    cfg->grd_dim_z = 0;
+    cfg->blk_dim_x = 0;
+    cfg->blk_dim_y = 0;
+    cfg->blk_dim_z = 0;
+  }
 
   cfg->dev = chpl_task_getRequestedSubloc();
   cfg->stream = get_stream(cfg->dev);
@@ -417,13 +441,19 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
   cfg->cur_pid++;
 }
 
+static bool cfg_can_reduce(kernel_cfg* cfg) {
+  return (cfg->blk_dim_x > 0 &&
+          cfg->blk_dim_y == 1 &&
+          cfg->blk_dim_z == 1);
+}
+
 static void cfg_add_reduce_buffer_for_arg(kernel_cfg* cfg, void* arg,
                                           size_t elem_size) {
   // create the reduction buffer
   const int i = cfg->cur_reduce_var;
   assert(i < cfg->n_reduce_vars);
 
-  void* buf = chpl_gpu_mem_array_alloc(2*elem_size,
+  void* buf = chpl_gpu_mem_array_alloc((cfg->blk_dim_x)*elem_size,
                                        CHPL_RT_MD_GPU_KERNEL_ARG,
                                        cfg->ln, cfg->fn);
   CHPL_GPU_DEBUG("Allocated reduction buffer: %p\n", buf);
@@ -587,11 +617,18 @@ void chpl_gpu_arg_pass(void* cfg, void* arg) {
   CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
 }
 
-void chpl_gpu_arg_reduce(void* cfg, void* arg, size_t elem_size) {
-  // pass the argument normally
-  cfg_add_direct_param((kernel_cfg*)cfg, arg);
-  cfg_add_reduce_buffer_for_arg((kernel_cfg*)cfg, arg, elem_size);
-  CHPL_GPU_DEBUG("\tAdded by-reduce param: %p\n", arg);
+void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+  if (cfg_can_reduce(cfg)) {
+    // pass the argument normally
+    cfg_add_direct_param(cfg, arg);
+    cfg_add_reduce_buffer_for_arg(cfg, arg, elem_size);
+    CHPL_GPU_DEBUG("\tAdded by-reduce param: %p\n", arg);
+  }
+  else {
+    chpl_internal_error("The runtime is not ready to do reductions with this"
+                        " kernel configuration. Using multidimensional launch?\n");
+  }
 }
 
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
@@ -601,7 +638,8 @@ static void cfg_finalize_reductions(kernel_cfg* cfg) {
                   cfg->reduce_vars[i].outer_var);
 
     chpl_gpu_sum_reduce_int64_t((int64_t*)cfg->reduce_vars[i].buffer,
-                                2, (int64_t*)cfg->reduce_vars[i].outer_var,
+                                cfg->blk_dim_x,
+                                (int64_t*)cfg->reduce_vars[i].outer_var,
                                 NULL);
   }
 }
@@ -703,6 +741,7 @@ inline void chpl_gpu_launch_kernel(const char* name,
                  name,
                  cfg->n_params);
 
+  // now, this could just take `cfg`
   launch_kernel(name,
                 grd_dim_x, grd_dim_y, grd_dim_z,
                 blk_dim_x, blk_dim_y, blk_dim_z,
@@ -741,16 +780,9 @@ inline void chpl_gpu_launch_kernel_flat(void* _cfg) {
                  cfg->num_threads);
 
   if (cfg->num_threads > 0){
-    int grd_dim_x = (cfg->num_threads+cfg->blk_dim-1)/cfg->blk_dim;
-    int grd_dim_y = 1;
-    int grd_dim_z = 1;
-    int blk_dim_x = cfg->blk_dim;
-    int blk_dim_y = 1;
-    int blk_dim_z = 1;
-
     launch_kernel(cfg->fn_name,
-                  grd_dim_x, grd_dim_y, grd_dim_z,
-                  blk_dim_x, blk_dim_y, blk_dim_z,
+                  cfg->grd_dim_x, cfg->grd_dim_y, cfg->grd_dim_z,
+                  cfg->blk_dim_x, cfg->blk_dim_y, cfg->blk_dim_z,
                   cfg);
 
   } else {
