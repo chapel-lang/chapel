@@ -5352,64 +5352,9 @@ static bool isCStringImmediate(Symbol* sym) {
 }
 
 static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
-  // Used to codegen for PRIM_GPU_KERNEL_LAUNCH_FLAT and PRIM_GPU_KERNEL_LAUNCH.
-  // They differ in number of arguments only. The first passes 1 integer for
-  // grid and block size each, the other passes 3 for each.
-  //
-  // Generates a call to the `chpl_gpu_launch_kernel*` runtime functions.
-  //
-  // The primitive's arguments are
-  //   - function name (c_string immediate) or symbol (FnSymbol)
-  //   - grid size (1 arg or 3 args)
-  //   - block size (1 arg or 3 args)
-  //   - any number of arguments to be passed to the kernel
-  //
-  // Kernel arguments are passed in the following ways:
-  //
-  // 1. If a class: pass by reference. We also pass 0 as size.
-  //    This will cause the runtime to assume that this is a device pointer and
-  //    pass it directly to the kernel. Current semantics with the `on` statements
-  //    guarantees that.
-  // 2. If non-aggregate: same as 1.
-  // 3. If a ref: pass by value, and the size of its value. Runtime will
-  //    offload that value and create a GPU pointer to the offloaded instance.
-  // 4. If aggregate: pass by reference, and the size of its value. The behavior
-  //    will be similar to 3.
-
-  // number of arguments that are not kernel params
-  int nNonKernelParamArgs = is3d ? 7:3;
-
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
-  std::vector<GenRet> args;
-
-  // "Copy" arguments from primitive call to runtime library function call.
-  int curArg = 1;
-  for_actuals(actual, call) {
-    Symbol* actualSym = toSymExpr(actual)->symbol();
-    if (curArg == 1) {  // function name or symbol
-      if (FnSymbol* fn = toFnSymbol(actualSym)) {
-        args.push_back(new_CStringSymbol(fn->cname));
-      }
-      else if (isCStringImmediate(actualSym)) {
-        args.push_back(actual->codegen());
-      }
-      else {
-        INT_FATAL("Unknown argument type in GPU launch primitive");
-      }
-    }
-    else if (curArg <= nNonKernelParamArgs) {  // grid and block size args
-      args.push_back(actual->codegen());
-
-    }
-    else { // kernel args
-      // must be the cfg arg
-      args.push_back(actual->codegen());
-    }
-    curArg++;
-  }
-
-  return codegenCallExprWithArgs(fn, args);
+  return codegenCallExpr(fn, call->get(1)->codegen());
 }
 
 DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
@@ -5421,14 +5366,31 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
 }
 
 DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
+  int curArg = 1;
   std::vector<GenRet> args;
-  auto numKernelArgs = call->get(1);
-  auto numKernelPids = call->get(2);
-  auto numReductionBufs = call->get(3);
+  Symbol* kernelFn = toSymExpr(call->get(curArg++))->symbol();
+  if (FnSymbol* fn = toFnSymbol(kernelFn)) {
+    args.push_back(new_CStringSymbol(fn->cname));
+  }
+  else if (isCStringImmediate(kernelFn)) {
+    args.push_back(kernelFn->codegen());
+  }
 
+  auto numThreads = call->get(curArg++);
+  args.push_back(numThreads->codegen());
+
+  auto blockSize = call->get(curArg++);
+  args.push_back(blockSize->codegen());
+
+  auto numKernelArgs = call->get(curArg++);
   args.push_back(numKernelArgs->codegen());
+
+  auto numKernelPids = call->get(curArg++);
   args.push_back(numKernelPids->codegen());
+
+  auto numReductionBufs = call->get(curArg++);
   args.push_back(numReductionBufs->codegen());
+
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 

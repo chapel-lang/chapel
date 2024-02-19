@@ -1638,50 +1638,28 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
   return numThreads;
 }
 
-static CallExpr* generateGPUCall(GpuKernel& info, BlockStmt* gpuBlock, VarSymbol* numThreads) {
-  CallExpr *call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
-
-  call->insertAtTail(info.fn());
-
-  call->insertAtTail(numThreads);  // total number of GPU threads
-
-  // If the parent of the call is 'gpu primitives' block, it was constructed
-  // specifically to 'fence off' GPU primitives. There may be
-  // some additional temps etc. that are used for computing block size.
-  // We need to lift them, too. Since we're "consuming" the GPU loop,
-  // just modify the parent block in place.
-  if (auto primitivesBlock = info.gpuPrimitivesBlock()) {
-    INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
-    for_alist(expr, primitivesBlock->body) {
-      if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
-        expr->remove();
-      }
-    }
-
-    gpuBlock->insertAtTail(primitivesBlock->remove());
-    primitivesBlock->flattenAndRemove();
-  }
-
-  if (auto blockSizeCall = info.blockSizeCall()) {
-    call->insertAtTail(blockSizeCall->get(1)->copy());
-  } else {
-    int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
-    call->insertAtTail(new_IntSymbol(blockSize));
-  }
-
-  return call;
-}
-
 static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                                   GpuKernel &kernel) {
   BlockStmt* gpuBlock = new BlockStmt();
 
   VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
 
-  CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
-                    new_IntSymbol(kernel.kernelActuals().size()),
-                    new_IntSymbol(gpuLoop.pidGets().size()),
-                    new_IntSymbol(kernel.nReductionBufs()));
+  VarSymbol* numThreads = generateNumThreads(gpuBlock, gpuLoop);
+  SymExpr* blockSize = nullptr;
+  if (auto blockSizeCall = info.blockSizeCall()) {
+    blockSize = blockSizeCall->get(1)->copy();
+  } else {
+    const int blockSizeN = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
+    blockSize = new SymExpr(new_IntSymbol(blockSizeN));
+  }
+
+  CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
+  initCfgCall->insertAtTail(kernel.fn());
+  initCfgCall->insertAtTail(numThreads);
+  initCfgCall->insertAtTail(blockSize);
+  initCfgCall->insertAtTail(new_IntSymbol(kernel.kernelActuals().size()));
+  initCfgCall->insertAtTail(new_IntSymbol(gpuLoop.pidGets().size()));
+  initCfgCall->insertAtTail(new_IntSymbol(kernel.nReductionBufs()));
   gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
   // first, add pids
@@ -1712,8 +1690,25 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
 
   // populate the gpu block
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
-  CallExpr* gpuCall = generateGPUCall(kernel, gpuBlock, numThreads);
-  gpuCall->insertAtTail(new SymExpr(cfg));
+  CallExpr* gpuCall = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT, cfg);
+
+  // If the parent of the call is 'gpu primitives' block, it was constructed
+  // specifically to 'fence off' GPU primitives. There may be
+  // some additional temps etc. that are used for computing block size.
+  // We need to lift them, too. Since we're "consuming" the GPU loop,
+  // just modify the parent block in place.
+  if (auto primitivesBlock = info.gpuPrimitivesBlock()) {
+    INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
+    for_alist(expr, primitivesBlock->body) {
+      if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
+        expr->remove();
+      }
+    }
+
+    gpuBlock->insertAtTail(primitivesBlock->remove());
+    primitivesBlock->flattenAndRemove();
+  }
+
   gpuBlock->insertAtTail(gpuCall);
   gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
   gpuLoop.gpuLoop()->replace(gpuBlock);
