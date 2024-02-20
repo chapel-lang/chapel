@@ -28,7 +28,7 @@ CLASS_BEGIN(Context)
   PLAIN_GETTER(Context, introspect_parsed_files, "Inspect the list of files that have been parsed by the Context",
                std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(&node))
   PLAIN_GETTER(Context, track_errors, "Return a context manager that tracks errors emitted by this Context",
-               PyObject*, std::ignore = node; return ErrorManagerObject::create(contextObject, std::make_tuple()))
+               ErrorManagerObject*, std::ignore = node; return ErrorManagerObject::create(contextObject, std::make_tuple()))
   PLAIN_GETTER(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes",
                std::string, std::ignore = node; return generatePyiFile())
 
@@ -62,6 +62,8 @@ CLASS_BEGIN(Context)
 
          auto prepareToGc = std::get<0>(args);
          node.advanceToNextRevision(prepareToGc))
+  METHOD(Context, get_file_text, "Get the text of the file at the given path",
+         std::string(chpl::UniqueString), return parsing::fileText(&node, std::get<0>(args)).text())
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)
@@ -114,3 +116,69 @@ CLASS_BEGIN(ErrorManager)
          std::ignore = node;
          ((PythonErrorHandler*) context->errorHandler())->popList())
 CLASS_END(ErrorManager)
+
+CLASS_BEGIN(ResolvedExpression)
+  PLAIN_GETTER(ResolvedExpression, most_specific_candidate, "If this node is a call, return the most specific overload selected by call resolution.",
+               std::optional<MostSpecificCandidateObject*>,
+
+               if (auto& msc = node->mostSpecific().only()) {
+                 return MostSpecificCandidateObject::create(contextObject, {&msc, node->poiScope()});
+               }
+               return {})
+
+  // Note: calling node.resolve().type() -- thus using the below method --
+  // should be equivalent to calling node.type(). The latter is just a more
+  // convenient shortcut if additional information isn't needed.
+
+  PLAIN_GETTER(ResolvedExpression, type, "Retrieve the type of the expression.",
+               std::optional<QualifiedTypeTuple>,
+
+               auto qt = node->type();
+               if (qt.isUnknown()) {
+                 return {};
+               }
+
+               return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
+CLASS_END(ResolvedExpression)
+
+CLASS_BEGIN(MostSpecificCandidate)
+  PLAIN_GETTER(MostSpecificCandidate, function, "Get the signature of the function called by this candidate.",
+               TypedSignatureObject*, return TypedSignatureObject::create(contextObject, {node.candidate->fn(), node.poiScope }))
+
+  // Note: calling node.resolve().formal_actual_mapping() -- thus using the
+  // below method -- should be equivalent to calling node.formal_actual_mapping().
+  // The latter is just a more convenient shortcut if additional information
+  // isn't needed.
+
+  PLAIN_GETTER(MostSpecificCandidate, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",
+               std::vector<int>,
+
+               std::vector<int> res;
+
+               int i = 0;
+               while (auto formalActual = node.candidate->formalActualMap().byActualIdx(i++)) {
+                 res.push_back(formalActual->formalIdx());
+               }
+               return res)
+CLASS_END(MostSpecificCandidate)
+
+CLASS_BEGIN(TypedSignature)
+  METHOD(TypedSignature, formal_type, "Get the type of the nth formal of this function signature",
+         std::optional<QualifiedTypeTuple>(int),
+
+         auto arg = std::get<int>(args);
+         if (arg < 0 && arg >= node.signature->numFormals()) {
+           return {};
+         }
+
+         auto& qt = node.signature->formalType(arg);
+         if (qt.isUnknown()) {
+           return {};
+         }
+
+         return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
+  PLAIN_GETTER(TypedSignature, is_instantiation, "Check if this function is an instantiation of a generic function",
+               bool, return node.signature->instantiatedFrom() != nullptr)
+  PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
+               const chpl::uast::AstNode*, return chpl::parsing::idToAst(context, node.signature->id()))
+CLASS_END(TypedSignature)

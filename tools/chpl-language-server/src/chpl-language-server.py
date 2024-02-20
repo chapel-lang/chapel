@@ -100,9 +100,31 @@ from lsprotocol.types import (
     TEXT_DOCUMENT_INLAY_HINT,
     InlayHintParams,
     InlayHint,
+    InlayHintLabelPart,
 )
 from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
+from lsprotocol.types import WORKSPACE_SEMANTIC_TOKENS_REFRESH
 from lsprotocol.types import TEXT_DOCUMENT_RENAME, RenameParams
+from lsprotocol.types import (
+    TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT,
+    DocumentHighlightParams,
+    DocumentHighlight,
+    DocumentHighlightKind,
+)
+from lsprotocol.types import (
+    TEXT_DOCUMENT_CODE_LENS,
+    CodeLensParams,
+    CodeLens,
+    Command,
+)
+from lsprotocol.types import (
+    TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL,
+    SemanticTokensRegistrationOptions,
+    SemanticTokensLegend,
+    SemanticTokensParams,
+    SemanticTokens,
+    SemanticTokenTypes,
+)
 
 import argparse
 import configargparse
@@ -198,6 +220,63 @@ def get_symbol_information(
     return None
 
 
+def range_to_tokens(
+    rng: chapel.Location, lines: List[str]
+) -> List[Tuple[int, int, int]]:
+    """
+    Convert a Chapel location to a list of token-compatible ranges. If a location
+    spans multiple lines, it gets split into multiple tokens. The lines
+    and columns are zero-indexed.
+
+    Returns a list of (line, column, length).
+    """
+
+    (line_start, char_start) = rng.start()
+    (line_end, char_end) = rng.end()
+
+    if line_start == line_end:
+        return [(line_start - 1, char_start - 1, char_end - char_start)]
+
+    tokens = [
+        (
+            line_start - 1,
+            char_start - 1,
+            len(lines[line_start - 1]) - char_start,
+        )
+    ]
+    for line in range(line_start + 1, line_end):
+        tokens.append((line - 1, 0, len(lines[line - 1])))
+    tokens.append((line_end - 1, 0, char_end - 1))
+
+    return tokens
+
+
+def encode_deltas(
+    tokens: List[Tuple[int, int, int]], token_type: int, token_modifiers: int
+) -> List[int]:
+    """
+    Given a (non-encoded) list of token positions, applies the LSP delta-encoding
+    to it: each line is encoded as a delta from the previous line, and each
+    column is encoded as a delta from the previous column.
+
+    Returns tokens with type token_type, and modifiers token_modifiers.
+    """
+
+    encoded = []
+    last_line = None
+    last_col = 0
+    for line, start, length in tokens:
+        backup = line
+        if line == last_line:
+            start -= last_col
+        if last_line is not None:
+            line -= last_line
+        last_line = backup
+
+        encoded.extend([line, start, length, token_type, token_modifiers])
+    return encoded
+
+
 EltT = TypeVar("EltT")
 
 
@@ -212,6 +291,20 @@ class PositionList(Generic[EltT]):
     def append(self, elt: EltT):
         self.elts.append(elt)
 
+    def _get_range(self, rng: Range):
+        start = bisect_left(
+            self.elts, rng.start, key=lambda x: self.get_range(x).start
+        )
+        end = bisect_right(
+            self.elts, rng.end, key=lambda x: self.get_range(x).start
+        )
+        return (start, end)
+
+    def overwrite(self, elt: EltT):
+        rng = self.get_range(elt)
+        start, end = self._get_range(rng)
+        self.elts[start:end] = [elt]
+
     def clear(self):
         self.elts.clear()
 
@@ -225,12 +318,7 @@ class PositionList(Generic[EltT]):
         return self.elts[idx]
 
     def range(self, rng: Range) -> List[EltT]:
-        start = bisect_right(
-            self.elts, rng.start, key=lambda x: self.get_range(x).start
-        )
-        end = bisect_left(
-            self.elts, rng.end, key=lambda x: self.get_range(x).start
-        )
+        start, end = self._get_range(rng)
         return self.elts[start:end]
 
 
@@ -282,7 +370,9 @@ class ContextContainer:
 
         self.context.set_module_paths(self.module_paths, self.file_paths)
 
-    def new_file_info(self, uri: str) -> Tuple["FileInfo", List[Any]]:
+    def new_file_info(
+        self, uri: str, use_resolver: bool
+    ) -> Tuple["FileInfo", List[Any]]:
         """
         Creates a new FileInfo for a given URI. FileInfos constructed in
         this manner are tied to this ContextContainer, and have their
@@ -291,7 +381,7 @@ class ContextContainer:
         """
 
         with self.context.track_errors() as errors:
-            fi = FileInfo(uri, self)
+            fi = FileInfo(uri, self, use_resolver)
             self.file_infos.append(fi)
         return (fi, errors)
 
@@ -317,9 +407,14 @@ class ContextContainer:
 class FileInfo:
     uri: str
     context: ContextContainer
+    use_resolver: bool
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
+    instantiation_segments: PositionList[
+        Tuple[NodeAndRange, chapel.TypedSignature]
+    ] = field(init=False)
     uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
+    instantiations: Dict[str, Set[chapel.TypedSignature]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
     possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
@@ -327,6 +422,7 @@ class FileInfo:
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
+        self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.AstNode]:
@@ -391,6 +487,31 @@ class FileInfo:
 
                 self.possibly_visible_decls.append(child)
 
+    def _search_instantiations(
+        self, root: Union[chapel.AstNode, List[chapel.AstNode]], via: Optional[chapel.TypedSignature] = None
+    ):
+        for node in chapel.preorder(root):
+            if not isinstance(node, chapel.FnCall):
+                continue
+
+            rr = node.resolve_via(via) if via else node.resolve()
+            if not rr:
+                continue
+
+            candidate = rr.most_specific_candidate()
+            if not candidate:
+                continue
+
+            sig = candidate.function()
+            fn = sig.ast()
+
+            insts = self.instantiations[fn.unique_id()]
+            if not sig.is_instantiation() or sig in insts:
+                continue
+
+            insts.add(sig)
+            self._search_instantiations(fn, via=sig)
+
     def rebuild_index(self):
         """
         Rebuild the cached line info and siblings information
@@ -403,6 +524,7 @@ class FileInfo:
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
         self.uses_here = defaultdict(list)
+        self.instantiations = defaultdict(set)
         self.use_segments.clear()
         self.def_segments.clear()
         self.visit(asts)
@@ -412,6 +534,10 @@ class FileInfo:
         self.siblings = chapel.SiblingMap(asts)
         self._collect_used_modules(asts)
         self._collect_possibly_visible_decls()
+
+        if self.use_resolver:
+            with self.context.context.track_errors() as _:
+                self._search_instantiations(asts)
 
     def get_use_segment_at_position(
         self, position: Position
@@ -424,6 +550,15 @@ class FileInfo:
     ) -> Optional[NodeAndRange]:
         """lookup a def segment based upon a Position, likely a user mouse location"""
         return self.def_segments.find(position)
+
+    def get_inst_segment_at_position(
+        self, position: Position
+    ) -> Optional[chapel.TypedSignature]:
+        """lookup a def segment based upon a Position, likely a user mouse location"""
+        segment = self.instantiation_segments.find(position)
+        if segment:
+            return segment[1]
+        return None
 
     def get_use_or_def_segment_at_position(
         self, position: Position
@@ -446,6 +581,12 @@ class FileInfo:
                 return segment.resolved_to
 
         return None
+
+    def file_lines(self) -> List[str]:
+        file_text = self.context.context.get_file_text(
+            self.uri[len("file://") :]
+        )
+        return file_text.splitlines()
 
 
 class WorkspaceConfig:
@@ -500,6 +641,7 @@ class ChapelLanguageServer(LanguageServer):
         self.type_inlays: bool = config.type_inlays
         self.literal_arg_inlays: bool = config.literal_arg_inlays
         self.param_inlays: bool = config.param_inlays
+        self.dead_code: bool = config.dead_code
 
         self._setup_regexes()
 
@@ -589,7 +731,9 @@ class ChapelLanguageServer(LanguageServer):
             if do_update:
                 errors = file_info.context.advance()
         else:
-            file_info, errors = self.get_context(uri).new_file_info(uri)
+            file_info, errors = self.get_context(uri).new_file_info(
+                uri, self.use_resolver
+            )
             self.file_infos[uri] = file_info
 
         return (file_info, errors)
@@ -650,7 +794,10 @@ class ChapelLanguageServer(LanguageServer):
         ]
 
     def _get_type_inlays(
-        self, decl: NodeAndRange, qt: chapel.QualifiedType
+        self,
+        decl: NodeAndRange,
+        qt: chapel.QualifiedType,
+        siblings: chapel.SiblingMap,
     ) -> List[InlayHint]:
         if not self.type_inlays:
             return []
@@ -659,7 +806,7 @@ class ChapelLanguageServer(LanguageServer):
         # an explicit type, and whose type is valid.
         _, type_, _ = qt
         if (
-            not isinstance(decl.node, chapel.Variable)
+            not isinstance(decl.node, (chapel.Variable, chapel.Formal))
             or decl.node.type_expression() is not None
             or isinstance(type_, chapel.ErroneousType)
         ):
@@ -667,39 +814,69 @@ class ChapelLanguageServer(LanguageServer):
 
         name_rng = location_to_range(decl.node.name_location())
         type_str = ": " + str(type_)
+        colon_label = InlayHintLabelPart(": ")
+        label = InlayHintLabelPart(str(type_))
+        if isinstance(type_, chapel.CompositeType):
+            typedecl = type_.decl()
+
+            if typedecl:
+                text = self.get_tooltip(typedecl, siblings)
+                content = MarkupContent(MarkupKind.Markdown, text)
+                label.tooltip = content
+                label.location = location_to_location(typedecl.location())
+
         return [
             InlayHint(
                 position=name_rng.end,
-                label=type_str,
+                label=[colon_label, label],
                 text_edits=[
                     TextEdit(Range(name_rng.end, name_rng.end), type_str)
                 ],
             )
         ]
 
-    def get_decl_inlays(self, decl: NodeAndRange) -> List[InlayHint]:
+    def get_decl_inlays(
+        self,
+        decl: NodeAndRange,
+        siblings: chapel.SiblingMap,
+        via: Optional[chapel.TypedSignature] = None,
+    ) -> List[InlayHint]:
         if not self.use_resolver:
             return []
 
-        qt = decl.node.type()
+        rr = decl.node.resolve_via(via) if via else decl.node.resolve()
+        if not rr:
+            return []
+
+        qt = rr.type()
         if qt is None:
             return []
 
         inlays = []
         inlays.extend(self._get_param_inlays(decl, qt))
-        inlays.extend(self._get_type_inlays(decl, qt))
+        inlays.extend(self._get_type_inlays(decl, qt, siblings))
         return inlays
 
-    def get_call_inlays(self, call: chapel.FnCall) -> List[InlayHint]:
+    def get_call_inlays(
+        self, call: chapel.FnCall, via: Optional[chapel.TypedSignature] = None
+    ) -> List[InlayHint]:
         if not self.literal_arg_inlays or not self.use_resolver:
             return []
 
-        fn = call.called_fn()
+        rr = call.resolve_via(via) if via else call.resolve()
+        if not rr:
+            return []
+
+        msc = rr.most_specific_candidate()
+        if not msc:
+            return []
+
+        fn = msc.function().ast()
         if not fn or not isinstance(fn, chapel.core.Function):
             return []
 
         inlays = []
-        for i, act in zip(call.formal_actual_mapping(), call.actuals()):
+        for i, act in zip(msc.formal_actual_mapping(), call.actuals()):
             if not isinstance(act, chapel.core.AstNode):
                 # Named arguments are represented using (name, node)
                 # tuples. We don't need hints for those.
@@ -723,6 +900,48 @@ class ChapelLanguageServer(LanguageServer):
 
         return inlays
 
+    def get_tooltip(
+        self, node: chapel.AstNode, siblings: chapel.SiblingMap
+    ) -> str:
+        signature = get_symbol_signature(node)
+        docstring = chapel.get_docstring(node, siblings)
+        text = f"```chapel\n{signature}\n```"
+        if docstring:
+            text += f"\n---\n{docstring}"
+        return text
+
+    def get_dead_code_tokens(
+        self,
+        node: chapel.Conditional,
+        lines: list[str],
+        via: Optional[chapel.TypedSignature] = None,
+    ) -> List[Tuple[int, int, int]]:
+        if not self.dead_code or not self.use_resolver:
+            return []
+
+        rr = (
+            node.condition().resolve_via(via)
+            if via
+            else node.condition().resolve()
+        )
+        if not rr:
+            return []
+
+        qt = rr.type()
+        if qt is None:
+            return []
+
+        _, _, val = qt
+        if isinstance(val, chapel.BoolParam):
+            dead_branch = (
+                node.else_block() if val.value() else node.then_block()
+            )
+            if dead_branch:
+                loc = dead_branch.location()
+                return range_to_tokens(loc, lines)
+
+        return []
+
 
 def run_lsp():
     """
@@ -742,6 +961,7 @@ def run_lsp():
     add_bool_flag("type-inlays", "type_inlays", True)
     add_bool_flag("param-inlays", "param_inlays", True)
     add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
+    add_bool_flag("dead-code", "dead_code", True)
 
     server = ChapelLanguageServer(parser.parse_args())
 
@@ -778,6 +998,7 @@ def run_lsp():
         diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
+        ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
 
     @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)
@@ -872,11 +1093,7 @@ def run_lsp():
         resolved_to = segment.resolved_to
         node_fi, _ = ls.get_file_info(resolved_to.get_uri())
 
-        signature = get_symbol_signature(resolved_to.node)
-        docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
-        text = f"```chapel\n{signature}\n```"
-        if docstring:
-            text += f"\n---\n{docstring}"
+        text = ls.get_tooltip(resolved_to.node, node_fi.siblings)
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=resolved_to.get_location().range)
 
@@ -985,12 +1202,121 @@ def run_lsp():
         inlays: List[InlayHint] = []
         with fi.context.context.track_errors() as _:
             for decl in decls:
-                inlays.extend(ls.get_decl_inlays(decl))
+                instantiation = fi.get_inst_segment_at_position(decl.rng.start)
+                inlays.extend(
+                    ls.get_decl_inlays(decl, fi.siblings, instantiation)
+                )
 
             for call in calls:
-                inlays.extend(ls.get_call_inlays(call))
+                instantiation = fi.get_inst_segment_at_position(
+                    location_to_range(call.location()).start
+                )
+                inlays.extend(ls.get_call_inlays(call, instantiation))
 
         return inlays
+
+    @server.feature(TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT)
+    async def document_highlight(
+        ls: ChapelLanguageServer, params: DocumentHighlightParams
+    ):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        if not node_and_loc:
+            return None
+
+        # todo: it would be nice if this differentiated between read and write
+        highlights = [
+            DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+        ]
+        for use in fi.uses_here[node_and_loc.node.unique_id()]:
+            highlights.append(
+                DocumentHighlight(use.rng, DocumentHighlightKind.Text)
+            )
+
+        return highlights
+
+    @server.feature(TEXT_DOCUMENT_CODE_LENS)
+    async def code_lens(ls: ChapelLanguageServer, params: CodeLensParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        actions = []
+        decls = fi.def_segments.elts
+        for decl in decls:
+            if (
+                isinstance(decl.node, chapel.Function)
+                and decl.node.unique_id() in fi.instantiations
+            ):
+                insts = fi.instantiations[decl.node.unique_id()]
+                for i, inst in enumerate(insts):
+                    action = CodeLens(
+                        data=(decl.node.unique_id(), i),
+                        command=Command(
+                            "Show instantiation",
+                            "chpl-language-server/showInstantiation",
+                            [
+                                params.text_document.uri,
+                                decl.node.unique_id(),
+                                i,
+                            ],
+                        ),
+                        range=decl.rng,
+                    )
+                    actions.append(action)
+
+        return actions
+
+    @server.command("chpl-language-server/showInstantiation")
+    async def show_instantiation(
+        ls: ChapelLanguageServer, data: Tuple[str, str, int]
+    ):
+        uri, unique_id, i = data
+
+        fi, _ = ls.get_file_info(uri)
+        decl = next(
+            decl
+            for decl in fi.def_segments.elts
+            if decl.node.unique_id() == unique_id
+        )
+        inst = list(fi.instantiations[unique_id])[i]
+        fi.instantiation_segments.overwrite((decl, inst))
+
+        ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
+        ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
+
+    @server.feature(
+        TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL,
+        options=SemanticTokensLegend(
+            token_types=[SemanticTokenTypes.Comment], token_modifiers=[]
+        ),
+    )
+    async def semantic_tokens_range(
+        ls: ChapelLanguageServer, params: SemanticTokensParams
+    ):
+        if not ls.use_resolver:
+            return None
+
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        tokens = []
+
+        for ast in chapel.postorder(fi.get_asts()):
+            if isinstance(ast, chapel.core.Conditional):
+                start_pos = location_to_range(ast.location()).start
+                instantiation = fi.get_inst_segment_at_position(start_pos)
+                tokens.extend(
+                    ls.get_dead_code_tokens(
+                        ast, fi.file_lines(), instantiation
+                    )
+                )
+
+        return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
     server.start_io()
 

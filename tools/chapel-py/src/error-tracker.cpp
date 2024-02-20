@@ -43,5 +43,6 @@ void PythonErrorHandler::report(chpl::Context* context, const chpl::ErrorBase* e
   }
 
   // There's an error list! Create an error object and store it into the list.
-  PyList_Append(errorLists.back(), ErrorObject::create((ContextObject*) contextObject, err->clone()));
+  auto errObj = ErrorObject::create((ContextObject*) contextObject, err->clone());
+  PyList_Append(errorLists.back(), (PyObject*) errObj);
 }

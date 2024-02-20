@@ -1,0 +1,5 @@
+perfkeys: elapsed time:, elapsed time:, elapsed time:
+files: aggregators.dat, parSafeMapVer.dat, serialVer.dat
+graphkeys: Aggregators, Pararallel Safe Map, Serial
+ylabel: Time (seconds)
+graphtitle: One Billion Row Challenge (using 10 million row input set)

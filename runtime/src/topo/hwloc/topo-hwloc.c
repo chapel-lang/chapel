@@ -405,13 +405,25 @@ static void cpuInfoInit(void) {
     _DBG_P("logAccSet after filtering: %s", buf);
   }
 
+  //
+  // all cores
+  //
+
+  logAllSet = hwloc_bitmap_dup(hwloc_topology_get_complete_cpuset(topology));
+  numCPUsLogAll = hwloc_bitmap_weight(logAllSet);
+  CHK_ERR(numCPUsLogAll > 0);
+  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
+
   // accessible cores
 
   int maxPusPerAccCore = 0;
 
-  for (hwloc_obj_t core = NEXT_OBJ(logAccSet, HWLOC_OBJ_CORE, NULL);
+  for (hwloc_obj_t core = NEXT_OBJ(logAllSet, HWLOC_OBJ_CORE, NULL);
        core != NULL;
-       core = NEXT_OBJ(logAccSet, HWLOC_OBJ_CORE, core)) {
+       core = NEXT_OBJ(logAllSet, HWLOC_OBJ_CORE, core)) {
+    // check whether this core is included in our filtered set
+    if (!hwloc_bitmap_intersects(logAccSet, core->cpuset)) continue;
+
     // filter the core's PUs
     hwloc_cpuset_t cpuset = NULL;
     CHK_ERR_ERRNO((cpuset = hwloc_bitmap_dup(core->cpuset)) != NULL);
@@ -439,15 +451,6 @@ static void cpuInfoInit(void) {
   if (numCPUsPhysAcc == 0) {
     chpl_error("No useable cores.", 0, 0);
   }
-
-  //
-  // all cores
-  //
-
-  logAllSet = hwloc_bitmap_dup(hwloc_topology_get_complete_cpuset(topology));
-  numCPUsLogAll = hwloc_bitmap_weight(logAllSet);
-  CHK_ERR(numCPUsLogAll > 0);
-  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
 
   if (numCPUsLogAll == numCPUsLogAcc) {
     // All PUs and therefore all cores are accessible
