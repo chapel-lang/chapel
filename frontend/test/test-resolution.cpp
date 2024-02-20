@@ -267,3 +267,24 @@ void ensureErroneousType(const QualifiedType& type) {
   assert(type.type() != nullptr);
   assert(type.type()->isErroneousType());
 }
+
+
+QualifiedType getTypeForFirstStmt(Context* context,
+                                  const std::string& program) {
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, program);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 1);
+  auto stmt = m->stmt(0);
+  assert(stmt);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  const auto& resolvedExpr = rr.byAst(stmt);
+
+  return resolvedExpr.type();
+}

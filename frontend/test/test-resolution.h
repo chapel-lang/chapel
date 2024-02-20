@@ -75,4 +75,6 @@ void ensureParamBool(const QualifiedType& type, bool expectedValue);
 void ensureParamString(const QualifiedType& type, const std::string& expectedValue);
 void ensureErroneousType(const QualifiedType& type);
 
+QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
+
 #endif
