@@ -200,7 +200,7 @@ def completion_item_for_decl(
 
 
 def location_to_location(loc) -> Location:
-    return Location("file://" + loc.path(), location_to_range(loc))
+    return Location("file://" + os.path.abspath(loc.path()), location_to_range(loc))
 
 
 def get_symbol_information(
@@ -345,7 +345,7 @@ class NodeAndRange:
         return Location(self.get_uri(), self.rng)
 
     def get_uri(self):
-        path = self.node.location().path()
+        path = os.path.abspath(self.node.location().path())
         return f"file://{path}"
 
 
