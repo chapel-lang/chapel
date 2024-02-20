@@ -352,8 +352,8 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name, int64_t num_threads,
   cfg->n_reduce_vars = n_reduce_vars;
   cfg->cur_reduce_var = 0;
 
-  cfg->reduce_vars = chpl_mem_alloc(cfg->n_reduce_vars * sizeof(void*),
-                                CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  cfg->reduce_vars = chpl_mem_alloc(cfg->n_reduce_vars * sizeof(reduce_var),
+                                    CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -453,10 +453,11 @@ static void cfg_add_reduce_buffer_for_arg(kernel_cfg* cfg, void* arg,
   const int i = cfg->cur_reduce_var;
   assert(i < cfg->n_reduce_vars);
 
-  void* buf = chpl_gpu_mem_array_alloc((cfg->blk_dim_x)*elem_size,
+  void* buf = chpl_gpu_mem_array_alloc((cfg->grd_dim_x)*elem_size,
                                        CHPL_RT_MD_GPU_KERNEL_ARG,
                                        cfg->ln, cfg->fn);
-  CHPL_GPU_DEBUG("Allocated reduction buffer: %p\n", buf);
+  CHPL_GPU_DEBUG("Allocated reduction buffer: %p num elems:%d elem_size:%zu\n",
+                 buf, cfg->grd_dim_x, elem_size);
 
   cfg->reduce_vars[i].buffer = buf;
   cfg->reduce_vars[i].outer_var = arg;
@@ -607,14 +608,16 @@ void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size) {
   CHPL_GPU_DEBUG("\tAdded pid: %" PRId64 " with size %zu\n", pid, size);
 }
 
-void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
-  cfg_add_offload_param((kernel_cfg*)cfg, arg, size);
-  CHPL_GPU_DEBUG("\tAdded by-offload param: %p\n", arg);
+void chpl_gpu_arg_offload(void* _cfg, void* arg, size_t size) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+  cfg_add_offload_param(cfg, arg, size);
+  CHPL_GPU_DEBUG("\tAdded by-offload param (at %d): %p\n", cfg->cur_param, arg);
 }
 
-void chpl_gpu_arg_pass(void* cfg, void* arg) {
-  cfg_add_direct_param((kernel_cfg*)cfg, arg);
-  CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
+void chpl_gpu_arg_pass(void* _cfg, void* arg) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+  cfg_add_direct_param(cfg, arg);
+  CHPL_GPU_DEBUG("\tAdded by-val param (at %d): %p\n", cfg->cur_param,  arg);
 }
 
 void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size) {
@@ -623,7 +626,7 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size) {
     // pass the argument normally
     cfg_add_direct_param(cfg, arg);
     cfg_add_reduce_buffer_for_arg(cfg, arg, elem_size);
-    CHPL_GPU_DEBUG("\tAdded by-reduce param: %p\n", arg);
+    CHPL_GPU_DEBUG("\tAdded by-reduce param (at %d): %p\n", cfg->cur_param, arg);
   }
   else {
     chpl_internal_error("The runtime is not ready to do reductions with this"
@@ -637,10 +640,10 @@ static void cfg_finalize_reductions(kernel_cfg* cfg) {
     CHPL_GPU_DEBUG("Reduce %p into %p\n", cfg->reduce_vars[i].buffer,
                   cfg->reduce_vars[i].outer_var);
 
-    chpl_gpu_sum_reduce_int64_t((int64_t*)cfg->reduce_vars[i].buffer,
-                                cfg->blk_dim_x,
-                                (int64_t*)cfg->reduce_vars[i].outer_var,
-                                NULL);
+    chpl_gpu_sum_reduce_double((double*)cfg->reduce_vars[i].buffer,
+                               cfg->grd_dim_x,
+                               (double*)cfg->reduce_vars[i].outer_var,
+                               NULL);
   }
 }
 
@@ -671,7 +674,7 @@ static void launch_kernel(const char* name,
       blk_dim_x, blk_dim_y, blk_dim_z);
 
   for (int i = 0; i < cfg->n_params ; i++) {
-    CHPL_GPU_DEBUG("\tArg: %p\n", cfg->kernel_params[i]);
+    CHPL_GPU_DEBUG("\tArg[%d]: %p\n", i, cfg->kernel_params[i]);
     CHPL_GPU_DEBUG("\t\tVal: %p\n", *(cfg->kernel_params[i]));
   }
 

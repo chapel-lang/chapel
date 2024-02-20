@@ -30,18 +30,18 @@
 #include <cub/cub.cuh>
 
 __device__
-static inline void chpl_gpu_dev_block_reduce(int64_t thread_val,
-                                             int64_t* interim_res) {
+static inline void chpl_gpu_dev_block_reduce(double thread_val,
+                                             double* interim_res) {
 
   //printf("(dev block %d) thread_val %ld %p\n", blockIdx.x, thread_val, interim_res);
 
   // Specialize BlockReduce for a 1D block of 128 threads of type int
-  typedef cub::BlockReduce<int64_t, 512> BlockReduce;
+  typedef cub::BlockReduce<double, 512> BlockReduce;
 
   // Allocate shared memory for BlockReduce
   __shared__ typename BlockReduce::TempStorage temp_storage;
   //
-  int res = BlockReduce(temp_storage).Sum(thread_val);
+  double res = BlockReduce(temp_storage).Sum(thread_val);
 
   // Compute the block-wide sum for thread0
   if (threadIdx.x == 0) {
