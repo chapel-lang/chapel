@@ -37,10 +37,10 @@ IO module's serialization/deserialization API. For example:
     var b: string;
   }
 
-  var myFile = open("r.yaml", ioMode.cwr),
+  var writer = openWriter("r.yaml", serializer = new yamlSerializer()),
       r1 = new R(1, "hello");
 
-  myFile.writer().withSerializer(new yamlSerializer()).write(r1);
+  writer.write(r1);
 
   /* r.yaml:
     --- R!
@@ -49,7 +49,7 @@ IO module's serialization/deserialization API. For example:
     ...
   */
 
-  var r2 = myFile.reader().withDeserializer(new yamlDeserializer()).read(R);
+  var r2 = myFile.reader(locking=false).withDeserializer(new yamlDeserializer()).read(R);
   assert(r1 == r2);
 
 Yaml files can also be written and parsed directly using the :type:`YamlValue`

@@ -1,0 +1,5 @@
+openStringReader.chpl:4: warning: 'openStringReader' is an experimental feature; its name and behavior are subject to change
+openStringReader.chpl:15: warning: 'openStringReader' is an experimental feature; its name and behavior are subject to change
+(x = 3.14159, y = data)
+hello world!
+I'm a string!

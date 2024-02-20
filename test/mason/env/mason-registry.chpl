@@ -27,7 +27,7 @@ proc makeToml(name: string, ver: string) {
   }
 
   var fi = open(name + "/" + ver + ".toml", ioMode.cw);
-  var w  = fi.writer();
+  var w  = fi.writer(locking=false);
   const info = "\n" +
 "[brick]\n" +
 "name = '" + name + "'\n" +

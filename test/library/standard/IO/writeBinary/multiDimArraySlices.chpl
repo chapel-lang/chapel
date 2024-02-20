@@ -12,13 +12,13 @@ var A: [Dom] real = [(i,j) in Dom] i * 100 + j/100.0;
 writeln(A);
 
 var outfile = open("out.bin", ioMode.cw);
-outfile.writer().writeBinary(A[Slice]);
+outfile.writer(locking=false).writeBinary(A[Slice]);
 outfile.close();
 
 var B: [Dom] real;
 
 var infile = open("out.bin", ioMode.r);
-infile.reader().readBinary(B[Slice]);
+infile.reader(locking=false).readBinary(B[Slice]);
 infile.close();
 
 writeln(B);

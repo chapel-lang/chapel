@@ -254,12 +254,12 @@ IntentTag blankIntentForExternFnArg(Type* type) {
     return INTENT_CONST_IN;
 }
 
-// Add calls to some runtime functions used to determine if a `const` argument
-// that would be transformed into `const ref` is implicitly modified over the
-// course of the function.  We may decide to change this behavior in the future,
-// so want to generate a warning if it occurs (and one of the primitives will
-// handle generating that warning).
-static void warnForConstIntent(ArgSymbol* arg) {
+// Add calls to some runtime functions used to determine if a `const` or blank
+// intent argument that would be transformed into `const ref` is implicitly
+// modified over the course of the function.  We may decide to change this
+// behavior in the future, so want to generate a warning if it occurs (and one
+// of the primitives will handle generating that warning).
+static void warnForInferredConstRef(ArgSymbol* arg) {
   SET_LINENO(arg);
 
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
@@ -271,38 +271,51 @@ static void warnForConstIntent(ArgSymbol* arg) {
     return;
   }
 
-  // Hash the argument at the start of the function
-  CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
+  // Want this to be an unstable warning, and not trigger for internal or
+  // standard modules unless the appropriate flag is used
+  auto mod = fn->getModule();
+  bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
+                             fWarnUnstableInternal);
+  bool shouldWarnStandard = (mod->modTag == MOD_STANDARD &&
+                             fWarnUnstableStandard);
+  if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
+                        mod->modTag == MOD_USER) &&
+      !fNoConstArgChecks) {
 
-  VarSymbol* startHash = newTemp(dtUInt[INT_SIZE_64]);
-  DefExpr* startDef = new DefExpr(startHash);
+    // Hash the argument at the start of the function
+    CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH,
+                                          new SymExpr(arg));
 
-  CallExpr* outerStart = new CallExpr(PRIM_MOVE, new SymExpr(startHash),
-                                      getStartHash);
+    VarSymbol* startHash = newTemp(dtUInt[INT_SIZE_64]);
+    DefExpr* startDef = new DefExpr(startHash);
 
-  fn->insertAtHead(outerStart);
-  outerStart->insertBefore(startDef);
+    CallExpr* outerStart = new CallExpr(PRIM_MOVE, new SymExpr(startHash),
+                                        getStartHash);
 
-  // Hash the argument at the end of the function
-  CallExpr* getEndHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
+    fn->insertAtHead(outerStart);
+    outerStart->insertBefore(startDef);
 
-  VarSymbol* endHash = newTemp(dtUInt[INT_SIZE_64]);
-  DefExpr* endDef = new DefExpr(endHash);
+    // Hash the argument at the end of the function
+    CallExpr* getEndHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
 
-  CallExpr* outerEnd = new CallExpr(PRIM_MOVE, new SymExpr(endHash),
-                                    getEndHash);
+    VarSymbol* endHash = newTemp(dtUInt[INT_SIZE_64]);
+    DefExpr* endDef = new DefExpr(endHash);
 
-  // Create defer block to ensure we will always check the end hash
-  DeferStmt* finishCheck = new DeferStmt(outerEnd);
-  outerEnd->insertBefore(endDef);
+    CallExpr* outerEnd = new CallExpr(PRIM_MOVE, new SymExpr(endHash),
+                                      getEndHash);
 
-  // Ensure the two hashes match.  If not, will generate a runtime error
-  CallExpr* checkHash = new CallExpr(PRIM_CHECK_CONST_ARG_HASH,
-                                     new SymExpr(startHash),
-                                     new SymExpr(endHash),
-                                     new_CStringSymbol(arg->name));
-  outerEnd->insertAfter(checkHash);
-  outerStart->insertAfter(finishCheck);
+    // Create defer block to ensure we will always check the end hash
+    DeferStmt* finishCheck = new DeferStmt(outerEnd);
+    outerEnd->insertBefore(endDef);
+
+    // Ensure the two hashes match.  If not, will generate a runtime error
+    CallExpr* checkHash = new CallExpr(PRIM_CHECK_CONST_ARG_HASH,
+                                       new SymExpr(startHash),
+                                       new SymExpr(endHash),
+                                       new_CStringSymbol(arg->name));
+    outerEnd->insertAfter(checkHash);
+    outerStart->insertAfter(finishCheck);
+  }
 }
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
@@ -326,25 +339,20 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     return INTENT_REF;
 
   else {
+    // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
+    // in a later pass that does more AST transformation.  Potentially
+    // callDestructors?
     if (arg->intent == INTENT_CONST) {
       // No need to warn if the argument intent was going to be converted to
       // `const in`
       if (constIntentForType(arg->type) == INTENT_CONST_REF) {
-        // Want this to be an unstable warning, and not trigger for internal or
-        // standard modules
-        auto mod = fn->getModule();
-        bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
-                                   fWarnUnstableInternal);
-        bool shouldWarnStandard = (mod->modTag == MOD_STANDARD &&
-                                   fWarnUnstableStandard);
-        if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
-                              mod->modTag == MOD_USER) &&
-            !fNoConstArgChecks) {
-          // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
-          // in a later pass that does more AST transformation.  Potentially
-          // callDestructors?
-          warnForConstIntent(arg);
-        }
+        warnForInferredConstRef(arg);
+      }
+    } else if (arg->intent == INTENT_BLANK) {
+      // Only warn if the argument intent was going to be converted to `const
+      // ref`
+      if (blankIntentForType(arg->type) == INTENT_CONST_REF) {
+        warnForInferredConstRef(arg);
       }
     }
     return concreteIntent(arg->intent, arg->type);

@@ -2,9 +2,9 @@ use IO;
 
 var f = openMemFile();
 
-f.writer().write("1 2 3 error");
+f.writer(locking=false).write("1 2 3 error");
 
-var r = f.reader();
+var r = f.reader(locking=false);
 
 r.readLiteral("1");
 r.readLiteral("2");

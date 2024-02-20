@@ -3836,7 +3836,6 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
   }
 }
 
-
 static
 FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;

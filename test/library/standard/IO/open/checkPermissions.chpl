@@ -2,7 +2,7 @@ use IO, OS.POSIX, FileSystem;
 
 var filename = "readOnly.txt";
 
-var w = openWriter(filename);
+var w = openWriter(filename, locking=false);
 w.writeln("something");
 w.close();
 

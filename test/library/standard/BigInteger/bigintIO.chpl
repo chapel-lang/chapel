@@ -7,7 +7,7 @@ config var filename = "test.txt";
 var f = open(filename, ioMode.cwr);
 
 {
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   var a = 17:bigint;
   w.writeln(a);
@@ -16,7 +16,7 @@ var f = open(filename, ioMode.cwr);
 }
 
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var a: bigint;
   r.read(a);

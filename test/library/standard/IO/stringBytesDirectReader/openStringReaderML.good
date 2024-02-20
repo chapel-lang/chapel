@@ -1,0 +1,4 @@
+openStringReaderML.chpl:6: warning: 'openStringReader' is an experimental feature; its name and behavior are subject to change
+hello world!
+I'm a string!
+From Locale 0

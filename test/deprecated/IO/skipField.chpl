@@ -12,9 +12,9 @@ proc main() {
   """;
 
   var f = openMemFile();
-  f.writer().write(obj);
+  f.writer(locking=false).write(obj);
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var st = r._styleInternal();
   var orig = st; defer { r._set_styleInternal(orig); }
   st.realfmt = 2;

@@ -6,13 +6,13 @@ proc test_readlines()
 
   var f = openTempFile();
   {
-    var ch = f.writer();
+    var ch = f.writer(locking=false);
     ch.writeln("a b");
     ch.writeln("c d");
     ch.flush();
   }
 
-  var ch = f.reader();
+  var ch = f.reader(locking=false);
 
   // try reading it in a few ways.
   {
@@ -68,11 +68,11 @@ proc check_expected(data, expected:string, len) {
 proc test_readlineArray(amount: int, input: string, expected: string) {
   /* Write input string to f, so we can readline() it out */
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.writeln(input);
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var ret: bool;
   var numRead: int;
 

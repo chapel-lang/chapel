@@ -108,7 +108,6 @@ class AccessibleTests(unittest.TestCase):
         cpus = stringify(self.getThreads())
         self.assertIn("Logical CPUs: %s\n" % cpus, output)
 
-    @unittest.expectedFailure
     def test_01_high_threads_inaccessible(self):
         """
         All cores and low-numbered threads are accessible.
@@ -119,7 +118,6 @@ class AccessibleTests(unittest.TestCase):
         cpus = stringify(self.getLowThreads())
         self.assertIn("Logical CPUs: %s\n" % cpus, output)
 
-    @unittest.expectedFailure
     def test_02_low_threads_inaccessible(self):
         """
         All cores and high-numbered threads are accessible.

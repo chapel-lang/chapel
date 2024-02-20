@@ -23,7 +23,7 @@ writeln(A);
 
 mmwrite("dense-4x3-write.mtx", A);
 
-var r = openReader("dense-4x3-write.mtx");
+var r = openReader("dense-4x3-write.mtx", locking=false);
 var lines = new list(string);
 var i=1;
 for l in r.lines() {

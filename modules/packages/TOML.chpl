@@ -87,7 +87,7 @@ Use the following code in Chapel.
 */
 proc parseToml(input: file) : shared Toml {
   var tomlStr: string;
-  var tomlFile = input.reader();
+  var tomlFile = input.reader(locking=false);
   tomlFile.readAll(tomlStr);
   tomlFile.close();
   return parseToml(tomlStr);

@@ -72,7 +72,7 @@ inline proc colorOffset(param color) param {
 proc writeImage(image, format, pixels: [] pixelType) {
   // the output file channel
   const outfile = if image == "stdout" then stdout
-                                       else open(image, ioMode.cw).writer();
+                                       else open(image, ioMode.cw).writer(locking=true);
   if image != "stdout" then
     writeln("Writing image to ", image);
   select format {

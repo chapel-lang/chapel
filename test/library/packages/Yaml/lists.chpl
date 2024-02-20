@@ -9,12 +9,12 @@ proc test(A) {
   printDebugFmt(A);
   var f = openTempFile();
   try {
-    f.writer().withSerializer(FormatWriter).write(A);
+    f.writer(locking=false).withSerializer(FormatWriter).write(A);
   } catch e {
     writeln("ERROR: ", e);
   }
   try {
-    var B = f.reader().withDeserializer(FormatReader).read(A.type);
+    var B = f.reader(locking=false).withDeserializer(FormatReader).read(A.type);
 
     var match = false;
     if isArray(A) {

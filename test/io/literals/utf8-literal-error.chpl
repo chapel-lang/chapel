@@ -13,10 +13,10 @@ proc main() {
   var b = b"\x80\x81";
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write("hello");
   }
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   try {
     r.readLiteral(b);

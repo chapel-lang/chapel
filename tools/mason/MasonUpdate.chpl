@@ -74,7 +74,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + Path.relPath(tf);
     const lockPath = projectHome + "/" + Path.relPath(lf);
-    const openFile = openReader(tomlPath);
+    const openFile = openReader(tomlPath, locking=false);
     const TomlFile = parseToml(openFile);
     var updated = false;
     if isFile(tomlPath) {
@@ -120,7 +120,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 /* Writes out the lock file */
 proc genLock(lock: borrowed Toml, lf: string) {
   const lockFile = open(lf, ioMode.cw);
-  const tomlWriter = lockFile.writer();
+  const tomlWriter = lockFile.writer(locking=false);
   tomlWriter.writeln(lock);
   tomlWriter.close();
   lockFile.close();

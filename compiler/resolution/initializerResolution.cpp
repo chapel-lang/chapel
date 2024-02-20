@@ -342,6 +342,17 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
     USR_PRINT(call, "init resulted in type '%s'", toString(tmp->type));
   }
 
+  // Avoid a potential access of uninitialized memory in the case where the
+  // record has a bool field.  C will pad around boolean fields, but that memory
+  // cannot normally be updated - without explicitly zero initializing it,
+  // valgrind will complain when we use it to create the hash to ensure inferred
+  // const ref arguments are not implicitly modified.
+  if (isRecord(tmp->type)) {
+    if (fWarnUnstable && !fNoConstArgChecks) {
+      call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE, new SymExpr(tmp)));
+    }
+  }
+
   return call;
 }
 

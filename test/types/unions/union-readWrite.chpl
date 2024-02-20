@@ -21,20 +21,20 @@ proc helper(param name : string) {
 
   {
     writeln("writing: ", x);
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(x);
   }
 
   {
     var s : string;
-    var r = f.reader();
+    var r = f.reader(locking=false);
     r.readAll(s);
     writeln("file contents: ", s);
   }
 
   {
     var y : U;
-    var r = f.reader();
+    var r = f.reader(locking=false);
     r.read(y);
     writeln("read: ", y);
   }

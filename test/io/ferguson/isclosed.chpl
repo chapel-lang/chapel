@@ -4,7 +4,7 @@ config const fileName = "test.txt";
 
 var f = open(fileName, ioMode.cwr);
 
-var w = f.writer();
+var w = f.writer(locking=false);
 
 assert(!w.isClosed());
 w.close();

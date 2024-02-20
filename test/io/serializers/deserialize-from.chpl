@@ -51,10 +51,10 @@ class C : writeSerializable {
 proc test(val, type T) {
   var f = openMemFile();
   {
-    f.writer().write(val);
+    f.writer(locking=false).write(val);
   }
   {
-    var read = f.reader().read(T);
+    var read = f.reader(locking=false).read(T);
 
     if isClassType(T) {
       if isNilableClassType(T) {

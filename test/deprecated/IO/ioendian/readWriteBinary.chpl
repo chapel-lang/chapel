@@ -4,15 +4,15 @@ var f = openMemFile();
 
 
 proc writeout(arg:numeric) {
-    f.writer().writeBinary(arg, ioendian.little);
-    f.writer().writeBinary(arg, ioendian.big);
-    f.writer().writeBinary(arg, ioendian.native);
+    f.writer(locking=false).writeBinary(arg, ioendian.little);
+    f.writer(locking=false).writeBinary(arg, ioendian.big);
+    f.writer(locking=false).writeBinary(arg, ioendian.native);
 }
 
 proc readin(ref arg:int) {
-  f.reader().readBinary(arg, ioendian.little);
-  f.reader().readBinary(arg, ioendian.big);
-  f.reader().readBinary(arg, ioendian.native);
+  f.reader(locking=false).readBinary(arg, ioendian.little);
+  f.reader(locking=false).readBinary(arg, ioendian.big);
+  f.reader(locking=false).readBinary(arg, ioendian.native);
 
 }
 

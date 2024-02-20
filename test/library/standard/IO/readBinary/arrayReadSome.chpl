@@ -2,7 +2,7 @@
 
 use IO;
 
-var r = openReader("./input/tu8.bin");
+var r = openReader("./input/tu8.bin", locking=false);
 
 var partial: [0..#3] uint(8),
     larger: [0..#10] uint(8) = 1,
