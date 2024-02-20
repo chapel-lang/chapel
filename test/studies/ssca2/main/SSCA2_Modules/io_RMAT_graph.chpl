@@ -267,10 +267,8 @@ var IOgateSync: sync bool;
 // But it is not implemented. Use --IOserial instead.
 //
 iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
-                         dON, dRow, dEdge, dstyle) {
+                         dON, dRow, dEdge, dstyle): VType {
   halt("serial graphReaderIterator should not be invoked");
-  yield 0:VType;
-
 }
 
 // This is the follower iterator.

@@ -2118,12 +2118,14 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
         if (isIterator) {
-          // TODO: Right now this has to be USR_FATAL in order to avoid
-          // the possibility of subsequent errors about 'nothing'.
-          if (!fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-            USR_FATAL(fn, "iterators that have zero 'yield' statements "
+          const bool emitError = !fn->hasFlag(FLAG_PROMOTION_WRAPPER);
+          if (emitError) {
+            // TODO: Right now this has to be USR_FATAL in order to avoid
+            // the possibility of subsequent errors about 'nothing'.
+            USR_FATAL(fn, "iterators with no reachable 'yield' statements "
                           "must declare their return type");
           }
+
           retType = dtNothing;
         } else {
           retType = dtVoid;
