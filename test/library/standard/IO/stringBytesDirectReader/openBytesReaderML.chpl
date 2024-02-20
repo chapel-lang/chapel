@@ -7,8 +7,8 @@ on Locales[1] {
     write(r.readLine());
 
     on Locales[2] do
-        write(r.readLine())
+        write(r.readLine());
 
     on Locales[0] do
-        writeln(r.readLine())
+        writeln(r.readLine());
 }

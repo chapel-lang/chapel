@@ -7226,10 +7226,12 @@ proc fileReader.readLine(ref s: string,
       nCodepoints -= 1;
     }
 
+    var sLoc: string;
+
     // now read the data into the string
     // readStringBytesData will advance the fileReader by exactly `nBytes`.
     // This may consume or leave the newline based on the logic above.
-    err = readStringBytesData(s, this._channel_internal, nBytes, nCodepoints);
+    err = readStringBytesData(sLoc, this._channel_internal, nBytes, nCodepoints);
     if foundNewline && stripNewline && !err {
       // pass the newline in the input
       err = qio_channel_read_char(false, this._channel_internal, chr);
@@ -7241,6 +7243,7 @@ proc fileReader.readLine(ref s: string,
 
     // return 'true' if we read anything
     ret = foundNewline || nBytes > 0;
+    s = sLoc;
   }
 
   return ret;
@@ -7311,10 +7314,12 @@ proc fileReader.readLine(ref b: bytes,
       nBytes -= 1;
     }
 
+    var bLoc: bytes;
+
     // now read the data into the bytes
     // readStringBytesData will advance the fileReader by exactly `nBytes`.
     // This may consume or leave the newline based on the logic above.
-    err = readStringBytesData(b, this._channel_internal, nBytes,
+    err = readStringBytesData(bLoc, this._channel_internal, nBytes,
                               nCodepoints=-1);
     if foundNewline && stripNewline && !err {
       // pass the newline in the input
@@ -7330,6 +7335,7 @@ proc fileReader.readLine(ref b: bytes,
 
     // return 'true' if we read anything
     ret = foundNewline || nBytes > 0;
+    b = bLoc;
   }
 
   return ret;
