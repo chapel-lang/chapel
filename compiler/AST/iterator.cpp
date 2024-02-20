@@ -1847,6 +1847,12 @@ rebuildIterator(IteratorInfo* ii,
 
   fn->insertAtTail(new DefExpr(iterator));
 
+  // Avoids a valgrind warning about uninitialized memory when performing
+  // indirect modification checks on const and default intent arguments
+  if (fWarnUnstable && !fNoConstArgChecks) {
+    fn->insertAtTail(new CallExpr(PRIM_ZERO_VARIABLE, new SymExpr(iterator)));
+  }
+
   // For each live argument
   forv_Vec(Symbol, local, locals) {
     if (!toArgSymbol(local))
