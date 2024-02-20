@@ -3482,7 +3482,28 @@ void Resolver::exit(const Dot* dot) {
   bool resolvingCalledDot = (inLeafCall &&
                              dot == inLeafCall->calledExpression());
   if (resolvingCalledDot && !scopeResolveOnly) {
-    // we will handle it when resolving the FnCall
+    // We will handle it when resolving the FnCall.
+
+    // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
+    // it later if needed.
+    if (!receiver.type().isUnknown() && receiver.type().type() &&
+        receiver.type().type()->isCompositeType()) {
+      std::vector<CallInfoActual> actuals;
+      actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
+      auto ci = CallInfo(/* name */ dot->field(),
+                         /* calledType */ QualifiedType(),
+                         /* isMethodCall */ true,
+                         /* hasQuestionArg */ false,
+                         /* isParenless */ true, actuals);
+      auto inScope = scopeStack.back();
+      auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+      if (!c.mostSpecific().isEmpty()) {
+        // save the most specific candidates in the resolution result for the id
+        ResolvedExpression& r = byPostorder.byAst(dot);
+        handleResolvedCall(r, dot, ci, c);
+      }
+    }
+
     return;
   }
 
