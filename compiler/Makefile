@@ -248,6 +248,8 @@ install-chpl-chpldoc: $(CHPL) $(CHPLDOC)
 	fi
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) install
 
+install-chpl: $(CHPL)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) install
 #
 # include standard footer for compiler
 #

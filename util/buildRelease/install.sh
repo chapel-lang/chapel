@@ -3,6 +3,7 @@
 STAGE=""
 STAGE_SET=0
 PREFIX=""
+BUILD_CHPLDOC=1
 # Different from DESTDIR, which is for staged installs
 # this variable is for installing the Chapel directory in one place
 # (to mirror release / source checkout)
@@ -24,6 +25,10 @@ do
       fi
       shift
       ;;
+    --no-chpldoc)
+      BUILD_CHPLDOC=0
+      shift
+      ;;
     *)
       echo
       echo "Usage: $0 [--stage=DESTDIR]"
@@ -31,6 +36,8 @@ do
       echo "       --stage=DESTDIR prepends DESTDIR to prefix"
       echo "                e.g. for staged installation as with"
       echo "                     the DESTDIR Makefile variable"
+      echo
+      echo "       --no-chpldoc don't install chpldoc with chpl"
       echo
       exit -1
     ;;
@@ -71,7 +78,7 @@ else
     read -r DEST_DIR < "$CHPL_HOME/configured-chpl-home"
     DEST_DIR="${STAGE}${DEST_DIR}"
     mkdir -p "$DEST_DIR"
-    
+
     if [ ! -d "$DEST_DIR" ]
     then
       echo "Exiting: Installation dest path '$DEST_DIR' does not exist"
@@ -233,8 +240,14 @@ myinstallfileto () {
   fi
 }
 
-# run 'cmake' to install the compiler library, 'chpl' and 'chpldoc'
-(cd compiler && "$MAKE" install-chpl-chpldoc)
+# run 'cmake' to install the compiler library, 'chpl', and optionally 'chpldoc'
+if [ $BUILD_CHPLDOC -eq 1 ]
+then
+  (cd compiler && "$MAKE" install-chpl-chpldoc)
+else
+  (cd compiler && "$MAKE" install-chpl)
+fi
+# (cd compiler && "$MAKE" install-chpl-chpldoc)
 
 # copy compiler and runtime lib
 myinstalldir  lib                     "$DEST_RUNTIME_LIB"
@@ -311,7 +324,7 @@ do
 
   # chpl-venv also needs to copy chpldoc-sphinx-project
   # but this never contains executables so should go in DEST_CHPL_HOME
-  if [ -d third-party/"$dir"/chpldoc-sphinx-project ]
+  if [ -d third-party/"$dir"/chpldoc-sphinx-project ] && [ $BUILD_CHPLDOC -eq 1 ]
   then
     myinstalldir "third-party/$dir/chpldoc-sphinx-project" "$DEST_CHPL_HOME/third-party/$dir/chpldoc-sphinx-project/"
   fi
