@@ -515,7 +515,9 @@ class FileInfo:
                 self.possibly_visible_decls.append(child)
 
     def _search_instantiations(
-        self, root: Union[chapel.AstNode, List[chapel.AstNode]], via: Optional[chapel.TypedSignature] = None
+        self,
+        root: Union[chapel.AstNode, List[chapel.AstNode]],
+        via: Optional[chapel.TypedSignature] = None,
     ):
         for node in chapel.preorder(root):
             if not isinstance(node, chapel.FnCall):
@@ -746,7 +748,6 @@ class ChapelLanguageServer(LanguageServer):
         if cfg:
             for file in cfg.files:
                 self.get_file_info("file://" + file, do_update=False)
-
 
     def get_file_info(
         self, uri: str, do_update: bool = False
@@ -1352,9 +1353,7 @@ def run_lsp():
                 start_pos = location_to_range(ast.location()).start
                 instantiation = fi.get_inst_segment_at_position(start_pos)
                 tokens.extend(
-                    ls.get_dead_code_tokens(
-                        ast, fi.file_lines(), instantiation
-                    )
+                    ls.get_dead_code_tokens(ast, fi.file_lines(), instantiation)
                 )
 
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
