@@ -10,7 +10,7 @@ proc normalReturn(doWhat: bool): bool {
   // This code won't get executed in the calls made by
   // this test.
   var f = open("filename.txt", ioMode.r);
-  var c = f.reader();
+  var c = f.reader(locking=false);
   var line: string;
   while (c.readLine(line)) {
     write(line);
@@ -30,7 +30,7 @@ proc outReturn(out res: bool, doWhat: bool) {
   // This code won't get executed in the calls made by
   // this test.
   var f = open("filename.txt", ioMode.r);
-  var c = f.reader();
+  var c = f.reader(locking=false);
   var line: string;
   while (c.readLine(line)) {
     write(line);

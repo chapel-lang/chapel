@@ -9,11 +9,11 @@ write("Writing ");
 stdout.writeCodepoint(euro);
 writeln();
 
-var writer = f.writer();
+var writer = f.writer(locking=false);
 writer.writeCodepoint(euro);
 writer.close();
 
-var reader = f.reader();
+var reader = f.reader(locking=false);
 got = reader.readCodepoint();
 reader.close();
 

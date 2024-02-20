@@ -54,7 +54,7 @@ proc main() {
 
   var datastart:int(64);
   var f = open(outfile, ioMode.cwr);
-  var hwriter = f.writer();
+  var hwriter = f.writer(locking=false);
   hwriter.writeln("P4");
   hwriter.writeln(size, " ", size);
   datastart = hwriter.offset();

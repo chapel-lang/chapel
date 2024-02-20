@@ -5380,6 +5380,14 @@ proc fileWriter.filePlugin() : borrowed QioPluginFile? {
 // this fileReader presumably).
 
 /*
+  Controls the default value of the ``locking`` parameter for :proc:`openReader`.
+
+  When ``true``, a warning will be issued if ``locking`` is not set explicitly.
+  When ``false``, the new default value of ``false`` will be used.
+*/
+config param OpenReaderLockingDefault = true;
+
+/*
 
 Open a file at a particular path and return a :record:`fileReader` for it.
 This function is equivalent to calling :proc:`open` and then
@@ -5389,8 +5397,7 @@ This function is equivalent to calling :proc:`open` and then
 :arg locking: compile-time argument to determine whether or not the
               fileReader should use locking; sets the
               corresponding parameter of the :record:`fileReader` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
+              Defaults to ``true`` (*default deprecated, see warning below*).
 :arg region: zero-based byte offset indicating where in the file the
             fileReader should start and stop reading. Defaults to
             ``0..``, meaning from the start of the file to no specified end
@@ -5404,6 +5411,16 @@ This function is equivalent to calling :proc:`open` and then
 
    The region argument will ignore any specified stride other than 1.
 
+.. warning::
+
+   The default value for ``locking`` will change from ``true`` to ``false``
+   in an upcoming release. To avoid the warning, specify the value
+   of ``locking`` explicitly, or compile with ``-sOpenReaderLockingDefault=false``
+   to use the new default.
+
+   Note that ``locking=true`` should only be used when a fileReader will be
+   used by multiple tasks concurrently.
+
 :throws FileNotFoundError: If part of the provided path did not exist
 :throws PermissionError: If part of the provided path had inappropriate
                          permissions
@@ -5413,11 +5430,27 @@ This function is equivalent to calling :proc:`open` and then
 :throws IllegalArgumentError: If trying to read explicitly prior to byte
                               0.
  */
-proc openReader(path:string, param locking=true,
+proc openReader(path:string, param locking /* = false (post deprecation) */,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false))
     : fileReader(locking, dt) throws {
   return openReaderHelper(path, locking, region, hints, deserializer=deserializer);
+}
+
+// TODO: remove this overload after the locking-default-change deprecation
+pragma "last resort"
+@chpldoc.nodoc
+proc openReader(path:string,
+                region: range(?) = 0.., hints=ioHintSet.empty,
+                in deserializer: ?dt = defaultSerializeVal(false))
+    : fileReader(OpenReaderLockingDefault, dt) throws {
+  if OpenReaderLockingDefault then
+    compilerWarning("the default value of 'locking' for 'openReader' will change ",
+                    "from true to false in a future release; ",
+                    "please specify the value of 'locking' explicitly, or compile",
+                    "with '-sOpenReaderLockingDefault=false' to use the new default");
+
+  return openReaderHelper(path, OpenReaderLockingDefault, region, hints, deserializer=deserializer);
 }
 
 private proc openReaderHelper(path:string,
@@ -5433,6 +5466,14 @@ private proc openReaderHelper(path:string,
 }
 
 /*
+  Controls the default value of the ``locking`` parameter for :proc:`openWriter`.
+
+  When ``true``, a warning will be issued if ``locking`` is not set explicitly.
+  When ``false``, the new default value of ``false`` will be used.
+*/
+config param OpenWriterLockingDefault = true;
+
+/*
 
 Open a file at a particular path and return a :record:`fileWriter` for it.
 This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
@@ -5442,12 +5483,22 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :arg locking: compile-time argument to determine whether or not the
               fileWriter should use locking; sets the
               corresponding parameter of the :record:`fileWriter` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
+              Defaults to ``true`` (*default deprecated, see warning below*).
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :arg serializer: serializer to use when writing.
 :returns: an open fileWriter to the requested resource.
+
+.. warning::
+
+   The default value for ``locking`` will change from ``true`` to ``false``
+   in an upcoming release. To avoid the warning, specify the value
+   of ``locking`` explicitly, or compile with ``-sOpenWriterLockingDefault=false``
+   to use the new default.
+
+   Note that ``locking=true`` should only be used when a fileWriter will be
+   used by multiple tasks concurrently.
+
 
 :throws FileNotFoundError: If part of the provided path did not exist
 :throws PermissionError: If part of the provided path had inappropriate
@@ -5458,11 +5509,27 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws IllegalArgumentError: If trying to write explicitly prior to byte
                               0.
 */
-proc openWriter(path:string, param locking=true,
+proc openWriter(path:string, param locking /* = false (post deprecation) */,
                 hints = ioHintSet.empty,
                 in serializer: ?st = defaultSerializeVal(true))
     : fileWriter(locking, st) throws {
   return openWriterHelper(path, locking, hints=hints, serializer=serializer);
+}
+
+// TODO: remove this overload after the locking-default-change deprecation
+pragma "last resort"
+@chpldoc.nodoc
+proc openWriter(path:string,
+                hints = ioHintSet.empty,
+                in serializer: ?st = defaultSerializeVal(true))
+    : fileWriter(OpenWriterLockingDefault, st) throws {
+  if OpenWriterLockingDefault then
+    compilerWarning("the default value of 'locking' for 'openWriter' will change ",
+                    "from true to false in a future release; ",
+                    "please specify the value of 'locking' explicitly, or compile",
+                    "with '-sOpenWriterLockingDefault=false' to use the new default");
+
+  return openWriterHelper(path, OpenWriterLockingDefault, hints=hints, serializer=serializer);
 }
 
 private proc openWriterHelper(path:string,
@@ -5496,8 +5563,7 @@ private proc openWriterHelper(path:string,
    :arg locking: compile-time argument to determine whether or not the
                  fileReader should use locking; sets the
                  corresponding parameter of the :record:`fileReader` type.
-                 Defaults to true, but when safe, setting it to false
-                 can improve performance.
+                 Defaults to ``true`` (*default deprecated, see warning below*).
    :arg region: zero-based byte offset indicating where in the file the
                fileReader should start and stop reading. Defaults to
                ``0..`` - meaning from the start of the file to no end point.
@@ -5511,15 +5577,36 @@ private proc openWriterHelper(path:string,
 
       The region argument will ignore any specified stride other than 1.
 
+   .. warning::
+
+      The default value for ``locking`` will be removed in an upcoming release.
+      To avoid the warning, specify the value of ``locking`` explicitly.
+
+      Note that ``locking=true`` should only be used when a fileReader will be
+      used by multiple tasks concurrently.
+
+
    :throws SystemError: If a fileReader could not be returned.
    :throws IllegalArgumentError: If trying to read explicitly prior to
                                  byte 0.
  */
-proc file.reader(param locking=true,
+proc file.reader(param locking,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in deserializer: ?dt = defaultSerializeVal(false))
   : fileReader(locking, dt) throws {
   return this.readerHelper(locking, region, hints,
+                           deserializer=deserializer);
+}
+
+@chpldoc.nodoc
+proc file.reader(region: range(?) = 0.., hints = ioHintSet.empty,
+                 in deserializer: ?dt = defaultSerializeVal(false))
+    : fileReader(true, dt) throws {
+  compilerWarning("in a future release, the default value for 'locking' will be ",
+                  "removed from 'file.reader' and this warning will become an error; ",
+                  "please specify the value explicitly (e.g., 'f.reader(locking=false)').");
+
+  return this.readerHelper(true, region, hints,
                            deserializer=deserializer);
 }
 
@@ -5591,8 +5678,7 @@ proc file.readerHelper(param locking=true,
    :arg locking: compile-time argument to determine whether or not the
                  fileWriter should use locking; sets the
                  corresponding parameter of the :record:`fileWriter` type.
-                 Defaults to true, but when safe, setting it to false
-                 can improve performance.
+                 Defaults to ``true`` (*default deprecated, see warning below*).
    :arg region: zero-based byte offset indicating where in the file the
                fileWriter should start and stop writing. Defaults to
                ``0..`` - meaning from the start of the file to no specified end
@@ -5607,15 +5693,35 @@ proc file.readerHelper(param locking=true,
 
       The region argument will ignore any specified stride other than 1.
 
+   .. warning::
+
+      The default value for ``locking`` will be removed in an upcoming release.
+      To avoid the warning, specify the value of ``locking`` explicitly.
+
+      Note that ``locking=true`` should only be used when a fileWriter will be
+      used by multiple tasks concurrently.
+
+
    :throws SystemError: If a fileWriter could not be returned.
    :throws IllegalArgumentError: If trying to write explicitly prior to
                                  byte 0.
  */
-proc file.writer(param locking=true,
+proc file.writer(param locking,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
-                 fileWriter(locking,st) throws {
+                 in serializer:?st = defaultSerializeVal(true))
+    : fileWriter(locking, st) throws {
   return this.writerHelper(locking, region, hints, serializer=serializer);
+}
+
+@chpldoc.nodoc
+proc file.writer(region: range(?) = 0.., hints = ioHintSet.empty,
+                 in serializer:?st = defaultSerializeVal(true))
+    : fileWriter(true, st) throws {
+  compilerWarning("in a future release, the default value for 'locking' will be ",
+                  "removed from 'file.writer' and this warning will become an error; ",
+                  "please specify the value explicitly (e.g., 'f.writer(locking=false)').");
+
+  return this.writerHelper(true, region, hints, serializer=serializer);
 }
 
 @chpldoc.nodoc
@@ -9243,18 +9349,18 @@ record itemReaderInternal {
 
 /* A locking :record:`fileReader` instance that reads from standard input. */
 const stdin:fileReader(true);
-stdin = try! (new file(0)).reader();
+stdin = try! (new file(0)).reader(locking=true);
 
 extern proc chpl_cstdout(): c_ptr(c_FILE);
 /* A locking :record:`fileWriter` instance that writes to standard output. */
 const stdout:fileWriter(true);
-stdout = try! (new file(chpl_cstdout())).writer();
+stdout = try! (new file(chpl_cstdout())).writer(locking=true);
 
 
 extern proc chpl_cstderr(): c_ptr(c_FILE);
 /* A locking :record:`fileWriter` instance that writes to standard error. */
 const stderr:fileWriter(true);
-stderr = try! (new file(chpl_cstderr())).writer();
+stderr = try! (new file(chpl_cstderr())).writer(locking=true);
 
 /* Equivalent to ``stdin.read``. See :proc:`fileReader.read` */
 proc read(ref args ...?n):bool throws {

@@ -42,7 +42,7 @@ proc main {
   use Time;
   var numNodes: int(32);
   var f = open(infileName, ioMode.r);
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var inputTimer, outputTimer, computeTimer, totalTimer: stopwatch;
 
   totalTimer.start();
@@ -84,7 +84,7 @@ proc main {
 
   outputTimer.start();
   var outf = open(outfileName, ioMode.cw);
-  var w = outf.writer();
+  var w = outf.writer(locking=false);
   w.writeln(numNodes);
   writeln("writing nodes");
   for i in 0..#numNodes {

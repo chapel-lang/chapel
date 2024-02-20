@@ -6,14 +6,14 @@ record Point {
 }
 
 var f = openTempFile();
-var w = f.writer();
+var w = f.writer(locking=false);
 
 var p = new Point(1,3);
 
 w.writef("Hello %t there\n", p);
 w.close();
 
-var r = f.reader();
+var r = f.reader(locking=false);
 
 p.x = 0;
 p.y = 0;

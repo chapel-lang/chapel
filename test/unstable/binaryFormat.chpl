@@ -11,14 +11,14 @@ proc main() {
   var f = openMemFile();
   {
     writeln("----- WRITING -----");
-    var w = f.writer(serializer=new binarySerializer());
+    var w = f.writer(serializer=new binarySerializer(), locking=false);
     var c = new owned C(5);
     w.write(c);
     w.write("abcdefg");
   }
   {
     writeln("----- READ BY VALUE -----");
-    var r = f.reader(deserializer=new binaryDeserializer());
+    var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
     var c = new owned C();
     r.read(c);
 
@@ -34,7 +34,7 @@ proc main() {
   }
   {
     writeln("----- READ TYPE -----");
-    var r = f.reader(deserializer=new binaryDeserializer());
+    var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
     var c = r.read(owned C);
     writeln(c);
     try {

@@ -3,7 +3,7 @@ use IO, OS.POSIX;
 var filename = "secretlyNotADir/foo.txt";
 
 try {
-  var f = openReader(filename);
+  var f = openReader(filename, locking=false);
   writeln("uh oh, no error");
 } catch e: NotADirectoryError {
   writeln(e.message());

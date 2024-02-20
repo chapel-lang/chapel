@@ -21,7 +21,7 @@ testBinaryWrite("I64_LE", makeSignedArray(64), endianness.little);
 
 
 proc testBinaryWrite(testName, values, endian: endianness = endianness.native) {
-    var w = openWriter(testName + ".bin");
+    var w = openWriter(testName + ".bin", locking=false);
     w.writeBinary(values, endian);
 }
 

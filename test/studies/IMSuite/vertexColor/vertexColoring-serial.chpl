@@ -80,7 +80,7 @@ module vertexColoring {
     proc main() {
 
         var inFile = open(inputFile, ioMode.r);
-        var reader = inFile.reader();
+        var reader = inFile.reader(locking=false);
 
         nodes = reader.read(int);
         D = {0..(nodes-1)};
@@ -282,7 +282,7 @@ module vertexColoring {
 
     proc printOutput() {
         var outfile = open(outputFile, ioMode.cw);
-        var writer = outfile.writer();
+        var writer = outfile.writer(locking=false);
         for (q, node) in zip(D, nodeSet!) {
             writer.writeln("Node ", q, ": \t Color ", node.color);
             writeln("Node ", q, ": \t Color ", node.color);

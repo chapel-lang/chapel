@@ -52,7 +52,7 @@ var b = new B(1);
 var c = new C(1);
 
 var f = openMemFile();
-var w = f.writer();
+var w = f.writer(locking=false);
 
 writeln("Writes from Locale 1");
 on Locales[1] {
@@ -69,7 +69,7 @@ on Locales[2] {
 }
 
 
-var r = f.reader();
+var r = f.reader(locking=false);
 
 writeln("Reads from Locale 1");
 on Locales[1] {

@@ -27,7 +27,7 @@ module HDF5Preprocessors {
 
         // write the script to a file
         {
-          var writer = f.writer();
+          var writer = f.writer(locking=false);
           writer.writeln(script);
           writer.flush();
           f.fsync();

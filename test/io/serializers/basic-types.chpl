@@ -25,14 +25,14 @@ proc test(val, type T = val.type) {
     {
       printDebugFmt(val);
 
-      f.writer().withSerializer(FormatWriter).write(val);
+      f.writer(locking=false).withSerializer(FormatWriter).write(val);
     }
 
     // Avoid bug when reading domains for now.
     if isDomainType(T) then return;
 
     {
-      var readVal = f.reader().withDeserializer(FormatReader).read(T);
+      var readVal = f.reader(locking=false).withDeserializer(FormatReader).read(T);
       writeln("--- read: ---");
       stdout.withSerializer(defaultSerializer).writeln(readVal);
       writeln("-------------");

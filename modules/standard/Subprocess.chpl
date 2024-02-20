@@ -606,7 +606,7 @@ module Subprocess {
       // the file alive by referring to it.
       try {
         var stdin_file = new file(stdin_fd, own=true);
-        ret.stdin_channel = stdin_file.writer();
+        ret.stdin_channel = stdin_file.writer(locking=true);
       } catch e: SystemError {
         ret.spawn_error = e.err;
         return ret;
@@ -631,7 +631,7 @@ module Subprocess {
       ret.stdout_pipe = true;
       try {
         var stdout_file = new file(stdout_fd, own=true);
-        ret.stdout_channel = stdout_file.reader();
+        ret.stdout_channel = stdout_file.reader(locking=true);
       } catch e: SystemError {
         ret.spawn_error = e.err;
         return ret;
@@ -645,7 +645,7 @@ module Subprocess {
       ret.stderr_pipe = true;
       try {
         ret.stderr_file = new file(stderr_fd, own=true);
-        ret.stderr_channel = ret.stderr_file.reader();
+        ret.stderr_channel = ret.stderr_file.reader(locking=true);
       } catch e: SystemError {
         ret.spawn_error = e.err;
         return ret;

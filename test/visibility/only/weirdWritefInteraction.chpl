@@ -12,7 +12,7 @@ proc main()
     var a = ownA.borrow();
     writeln( a );
 
-    var file = openWriter( "test.dat" );
+    var file = openWriter( "test.dat" , locking=false);
 
     file.writef( "%10.3dr\n", 1.23 );
     // file.writeln( 1.23 );

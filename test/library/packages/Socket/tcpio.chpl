@@ -14,12 +14,12 @@ proc recv_string(test: borrowed Test) throws {
   sync {
     begin {
       var conn = server.accept();
-      var writer = conn.writer();
+      var writer = conn.writer(locking=false);
       writer.write("hello world\n");
     }
 
     var conn = connect(address);
-    var reader = conn.reader();
+    var reader = conn.reader(locking=false);
     var x:bytes;
     reader.readLine(x);
     test.assertEqual(x, b"hello world\n");
@@ -33,12 +33,12 @@ proc recv_number(test: borrowed Test) throws {
   sync {
     begin {
       var conn = server.accept();
-      var writer = conn.writer();
+      var writer = conn.writer(locking=false);
       writer.write(42, " ");
     }
 
     var conn = connect(address);
-    var reader = conn.reader();
+    var reader = conn.reader(locking=false);
     var y:int = reader.read(int);
     test.assertEqual(y, 42);
   }

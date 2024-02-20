@@ -4,14 +4,14 @@ var f = open("binary-output.bin", ioMode.cwr);
 
 var A = (1,2,3,4,5);
 {
-  var w = f.writer(serializer=new binarySerializer(endianness.big));
+  var w = f.writer(serializer=new binarySerializer(endianness.big), locking=false);
   writeln("Writing ", A);
   w.write(A);
   w.close();
 }
 
 {
-  var r = f.reader(deserializer=new binaryDeserializer(endianness.big));
+  var r = f.reader(deserializer=new binaryDeserializer(endianness.big), locking=false);
   var B = (0,0,0,0,0);
   r.read(B);
   writeln("Read ", B);
@@ -20,7 +20,7 @@ var A = (1,2,3,4,5);
 
 
 {
-  var r = f.reader(deserializer=new binaryDeserializer(endianness.big));
+  var r = f.reader(deserializer=new binaryDeserializer(endianness.big), locking=false);
   var num:int;
   var B = (0,0,0,0,0);
   var i=0;

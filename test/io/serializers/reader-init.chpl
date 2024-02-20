@@ -124,11 +124,11 @@ proc test(type FormatWriter, type FormatReader) {
 
   proc helper(val, type T) {
     {
-      f.writer().withSerializer(FormatWriter).write(val);
+      f.writer(locking=false).withSerializer(FormatWriter).write(val);
       print("wrote", val);
     }
     {
-      var read = f.reader().withDeserializer(FormatReader).read(T);
+      var read = f.reader(locking=false).withDeserializer(FormatReader).read(T);
       assert(val.equals(read));
       print("got", read);
     }

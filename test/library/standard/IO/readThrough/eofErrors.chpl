@@ -1,10 +1,10 @@
 use IO, Regex;
 
 // eof errors:
-readStringFromEOF(true, openReader("maxSizeInput.txt"));
-readStringFromEOF(false, openReader("maxSizeInput.txt"));
-readBytesFromEOF(true, openReader("maxSizeInput.txt"));
-readBytesFromEOF(false, openReader("maxSizeInput.txt"));
+readStringFromEOF(true, openReader("maxSizeInput.txt", locking=false));
+readStringFromEOF(false, openReader("maxSizeInput.txt", locking=false));
+readBytesFromEOF(true, openReader("maxSizeInput.txt", locking=false));
+readBytesFromEOF(false, openReader("maxSizeInput.txt", locking=false));
 
 // (the BadFormatError case is tested by 'readThroughMaxSize.chpl')
 

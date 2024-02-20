@@ -4,8 +4,8 @@ proc testReadWrite(dt) {
   var dt2: dt.type;
   // var mem = openMemFile();
   var mem = open("readwdt.tmp", ioMode.cwr);
-  mem.writer(serializer = new jsonSerializer()).write(dt);
-  mem.reader(deserializer = new jsonDeserializer()).read(dt2);
+  mem.writer(serializer = new jsonSerializer(), locking=false).write(dt);
+  mem.reader(deserializer = new jsonDeserializer(), locking=false).read(dt2);
 
   writeln(dt.type:string, ": ", dt == dt2);
 }

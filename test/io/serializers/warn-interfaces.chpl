@@ -240,16 +240,16 @@ proc test(type T, param read = mode.readVal) {
   writeln("----- ", T:string, " -----");
   var f = openMemFile();
   var val = new T(10);
-  f.writer().write(val);
+  f.writer(locking=false).write(val);
 
   if read == readVal {
     var newVal = new T();
-    f.reader().read(newVal);
+    f.reader(locking=false).read(newVal);
     writeln("got: ", newVal);
     const check = if isClassType(T) then newVal! else newVal;
     assert(check.x == 10);
   } else if read == readInit {
-    var newVal : T = f.reader().read(T);
+    var newVal : T = f.reader(locking=false).read(T);
     writeln("got: ", newVal);
     assert(newVal.x == 10);
   }

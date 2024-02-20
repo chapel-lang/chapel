@@ -4,7 +4,7 @@ config var filename = "test.txt";
 
 {
   var f = open(filename, ioMode.cw);
-  var w = f.writer();
+  var w = f.writer(locking=false);
   w.writeln("hello world from writeln");
   w.writeln("hello world from writeln again");
   w.close();
@@ -13,14 +13,14 @@ config var filename = "test.txt";
 
 {
   var f = open(filename, ioMode.a);
-  var a = f.writer();
+  var a = f.writer(locking=false);
   a.writeln("world hello");
   a.close();
   f.close();
 }
 
 {
-  var r = openReader(filename);
+  var r = openReader(filename, locking=false);
   var line: string;
   while r.readLine(line) {
     write(line);

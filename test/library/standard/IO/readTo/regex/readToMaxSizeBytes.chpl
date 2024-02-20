@@ -1,6 +1,6 @@
 use IO, Regex;
 
-var r = openReader("test.txt");
+var r = openReader("test.txt", locking=false);
 const bars = new regex(b"\\|{3,}");
 
 try {
@@ -11,10 +11,10 @@ try {
 }
 r.close();
 
-r = openReader("test.txt");
+r = openReader("test.txt", locking=false);
 write("before: ", r.readTo(bars, maxSize=10), " after: ", r.readAll());
 r.close();
 
-r = openReader("test.txt");
+r = openReader("test.txt", locking=false);
 write("before: ", r.readTo(bars, maxSize=15), " after: ", r.readAll());
 r.close();

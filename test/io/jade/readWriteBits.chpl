@@ -7,13 +7,13 @@ proc testio(x:int, numBits:int)
   if noisy then writeln("Testing ",x.type:string);
   var f = openTempFile();
   {
-    var ch = f.writer();
+    var ch = f.writer(locking=false);
     if noisy then writeln("Writing ", x:string);
     ch.writeBits(x, numBits);
     ch.close();
   }
   {
-    var ch = f.reader();
+    var ch = f.reader(locking=false);
     var y = x;
     var z = x;
     if noisy then writeln("Reading element");

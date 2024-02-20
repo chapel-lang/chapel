@@ -41,7 +41,7 @@ iter aawindow(W:range,H:range,filter_width:int,filter_height:int){
 proc main() {
 
   var infile = open(inputfile, ioMode.r);
-  var reader = infile.reader();
+  var reader = infile.reader(locking=false);
   const m = reader.read(int),
         n = reader.read(int);
 
@@ -57,7 +57,7 @@ proc main() {
   infile.close();
   
   var finfile = open(filterfile, ioMode.r);
-  var freader = finfile.reader();
+  var freader = finfile.reader(locking=false);
   
   const fx = freader.read(int), fy = freader.read(int); 
   const FilterDom = {0..((fx*fy)-1)};

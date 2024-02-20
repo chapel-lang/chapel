@@ -8,7 +8,7 @@ var smile2 = 0x1F602;
 
 
 {
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.writeCodepoint(smile1);
   w.writeln();
@@ -23,7 +23,7 @@ var smile2 = 0x1F602;
 }
 
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var got1, got2: int;
 
   got1 = r.readCodepoint();

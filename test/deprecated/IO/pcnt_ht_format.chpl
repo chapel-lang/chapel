@@ -9,11 +9,11 @@ record R {
 writeln("%ht \t %ht \t %ht".format("a string", 1, new R(1)));
 
 var f = openTempFile();
-f.writer().writef("%ht \t %ht \t %ht", "a string", 2, new R(2));
+f.writer(locking=false).writef("%ht \t %ht \t %ht", "a string", 2, new R(2));
 
 var s: string,
     i: int,
     r: R;
 
-f.reader().readf("%ht \t %ht \t %ht", s, i, r);
+f.reader(locking=false).readf("%ht \t %ht \t %ht", s, i, r);
 writeln((s, i, r));

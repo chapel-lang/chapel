@@ -6,14 +6,14 @@ config const n = 10000000;
 config const sourcePath = "moby.txt";
 
 var mobyFile = open(sourcePath, ioMode.r);
-var mobyReader = mobyFile.reader();
+var mobyReader = mobyFile.reader(locking=false);
 
 var Passage: [1..n] string;
 var word: string;
 for i in 1..n {
   var read = mobyReader.read(word);
   if !read {
-    mobyReader = mobyFile.reader();
+    mobyReader = mobyFile.reader(locking=false);
     continue;
   }
   Passage[i] = word;
