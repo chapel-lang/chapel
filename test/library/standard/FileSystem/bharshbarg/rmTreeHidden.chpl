@@ -5,7 +5,7 @@ const dirName = "rmTree_test";
 
 proc makeHiddenFile(dir:string, fname:string) {
   var fi = open(dir + "/." + fname, ioMode.cw);
-  var w  = fi.writer();
+  var w  = fi.writer(locking=false);
   w.writeln("Hello, world!");
   w.close();
   fi.close();

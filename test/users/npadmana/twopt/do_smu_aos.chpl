@@ -54,7 +54,7 @@ proc generateRandom(ref pp : []WeightedParticle3D) {
 
 
 proc countLines(fn : string) : int {
-  var fr = openReader(fn);
+  var fr = openReader(fn, locking=false);
   var ipart = 0;
   for iff in fr.lines() do ipart +=1;
   fr.close();
@@ -64,7 +64,7 @@ proc countLines(fn : string) : int {
 proc readFile(fn : string, ref pp : []WeightedParticle3D)  {
   const maxcols=25;
 
-  var fr = openReader(fn);
+  var fr = openReader(fn, locking=false);
   var cols : [1.. #maxcols] real;
   var icol=1;
   var ipart = 0;
@@ -312,7 +312,7 @@ proc doPairs() {
   if (!isTest) {
     writef("Time to tree paircount : %r \n", tt.elapsed());
     if !isPerf {
-      var ff = openWriter("%s.tree".format(pairfn));
+      var ff = openWriter("%s.tree".format(pairfn), locking=false);
       writeHist(ff,hh);
       ff.close();
     }

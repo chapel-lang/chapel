@@ -2,7 +2,7 @@ use IO;
 
 proc testOverflow(toWrite) {
     var f = open("./sbOverflow.bin", ioMode.cw);
-    var w = f.writer(region=0..5);
+    var w = f.writer(region=0..5, locking=false);
 
     // try writing a string/bytes that doesn't fit in the file's specified region
     try {

@@ -16,7 +16,8 @@ proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPe
     const eltSize = numBytes(A.eltType);
     const start = eltSize * if idx == offsetDom.low then 0 else cumulativeOffsets[idx-1];
     const end = eltSize * cumulativeOffsets[idx];
-    var ch = f.reader(region = start..#end, deserializer=new binaryDeserializer(endianness.native));
+    var ch = f.reader(region = start..#end,
+                      deserializer=new binaryDeserializer(endianness.native), locking=false);
 
     for sub in A.localSubdomains(targetLocs(idx)) {
       ch.read(A[sub]);
@@ -42,7 +43,7 @@ proc checkpointArray(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLoc
     const start = eltSize * if idx == offsetDom.low then 0 else cumulativeOffsets[idx-1];
     const end = eltSize * cumulativeOffsets[idx];
     var ch = f.writer(region = start..#end,
-                      serializer=new binarySerializer(endianness.native));
+                      serializer=new binarySerializer(endianness.native), locking=false);
     for sub in A.localSubdomains(targetLocs(idx)) {
       ch.write(A[sub]);
     }

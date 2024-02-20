@@ -23,10 +23,10 @@ proc ref map.readMe(r) throws {
 
 proc main() {
   var f = openMemFile();
-  f.writer().write("{a: b, c: d, e: f}");
+  f.writer(locking=false).write("{a: b, c: d, e: f}");
 
   var m : map(string, string);
-  var r = f.reader();
+  var r = f.reader(locking=false);
   r.readLiteral("{");
   try {
     m.readMe(r);

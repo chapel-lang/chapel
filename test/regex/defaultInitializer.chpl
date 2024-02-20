@@ -46,7 +46,7 @@ config type T = string;
   const testfile = "test.txt";
   {
     // make a test file
-    var w = openWriter(testfile);
+    var w = openWriter(testfile, locking=false);
     w.writeln("hello");
     w.writeln("world");
   }
@@ -54,7 +54,7 @@ config type T = string;
     try! {
       // search for the regex, triggers the bug
       var x: regex(T);
-      var r = openReader(testfile);
+      var r = openReader(testfile, locking=false);
       var m = r.search(x);
       writeln(m); // succeds empty match when comm!=none
     } catch e: SystemError {

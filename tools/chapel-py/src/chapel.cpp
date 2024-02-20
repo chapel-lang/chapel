@@ -62,6 +62,9 @@ PyMODINIT_FUNC PyInit_core() {
   if (ParamObject::ready() < 0) return nullptr;
   if (ErrorObject::ready() < 0) return nullptr;
   if (ErrorManagerObject::ready() < 0) return nullptr;
+  if (ResolvedExpressionObject::ready() < 0) return nullptr;
+  if (MostSpecificCandidateObject::ready() < 0) return nullptr;
+  if (TypedSignatureObject::ready() < 0) return nullptr;
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
@@ -79,6 +82,9 @@ PyMODINIT_FUNC PyInit_core() {
   if (ParamObject::addToModule(chapelModule) < 0) return nullptr;
   if (ErrorObject::addToModule(chapelModule) < 0) return nullptr;
   if (ErrorManagerObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ResolvedExpressionObject::addToModule(chapelModule) < 0) return nullptr;
+  if (MostSpecificCandidateObject::addToModule(chapelModule) < 0) return nullptr;
+  if (TypedSignatureObject::addToModule(chapelModule) < 0) return nullptr;
 
   return chapelModule;
 }

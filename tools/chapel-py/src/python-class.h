@@ -21,6 +21,7 @@
 #define CHAPEL_PY_PYTHON_CLASS_H
 #include "Python.h"
 #include "chpl/framework/Context.h"
+#include <optional>
 
 template <typename ObjectType>
 struct PerTypeMethods;
@@ -39,17 +40,14 @@ struct PythonClass {
   // If T is a pointer, allow ::create() to be called with nullptr, and
   // just return None.
   template <typename Q = T>
-  static typename std::enable_if<std::is_pointer_v<Q>, PyObject*>::type returnNoneIfNeeded(const Q& val) {
-    if (val == nullptr) {
-      Py_RETURN_NONE;
-    }
-    return nullptr;
+  static typename std::enable_if<std::is_pointer_v<Q>, bool>::type shouldReturnNone(const Q& val) {
+    return val == nullptr;
   }
 
   // If T is a not a pointer, we can't detect 'nullptr'.
   template <typename Q = T>
-  static typename std::enable_if<!std::is_pointer_v<Q>, PyObject*>::type returnNoneIfNeeded(const Q& val) {
-    return nullptr;
+  static typename std::enable_if<!std::is_pointer_v<Q>, bool>::type shouldReturnNone(const Q& val) {
+    return false;
   }
 
   UnwrappedT unwrap() { return value_; }
@@ -95,16 +93,25 @@ struct PythonClass {
 
   /** ===== Public convenience methods for using this object ===== */
 
-  static PyObject* create(T createFrom) {
-    if (auto obj = PythonClass<Self, T>::returnNoneIfNeeded(createFrom)) {
-      return obj;
+  static Self* create(T createFrom) {
+    if (PythonClass<Self, T>::shouldReturnNone(createFrom)) {
+      PyErr_SetString(PyExc_RuntimeError, "Attempt to create a Python object from nullptr.");
+      return nullptr;
     }
 
     auto selfObjectPy = PyObject_CallObject((PyObject *) &Self::PythonType, nullptr);
     auto& val = ((Self*) selfObjectPy)->value_;
 
     val = std::move(createFrom);
-    return selfObjectPy;
+    return (Self*) selfObjectPy;
+  }
+
+  static std::optional<Self*> tryCreate(T createFrom) {
+    if (PythonClass<Self, T>::shouldReturnNone(createFrom)) {
+      return {};
+    }
+
+    return Self::create(std::move(createFrom));
   }
 };
 
@@ -155,10 +162,11 @@ struct PythonClassWithObject : public PythonClass<Self, T> {
 
   ContextObject* context() { return (ContextObject*) contextObject; }
 
-  static PyObject* create(T createFrom) = delete; /* Don't you mention Liskov to me! */
-  static PyObject* create(ContextObject* context, T createFrom) {
-    if (auto obj = PythonClass<Self, T>::returnNoneIfNeeded(createFrom)) {
-      return obj;
+  static Self* create(T createFrom) = delete; /* Don't you mention Liskov to me! */
+  static Self* create(ContextObject* context, T createFrom) {
+    if (PythonClass<Self, T>::shouldReturnNone(createFrom)) {
+      PyErr_SetString(PyExc_RuntimeError, "Attempt to create a Python object from nullptr.");
+      return nullptr;
     }
 
     PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
@@ -166,7 +174,13 @@ struct PythonClassWithObject : public PythonClass<Self, T> {
     auto& val = ((Self*) selfObjectPy)->value_;
 
     val = std::move(createFrom);
-    return selfObjectPy;
+    return (Self*) selfObjectPy;
+  }
+  static std::optional<Self*> tryCreate(ContextObject* context, T createFrom) {
+    if (PythonClass<Self, T>::shouldReturnNone(createFrom)) {
+      return {};
+    }
+    return create(context, std::move(createFrom));
   }
 };
 

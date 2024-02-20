@@ -1,7 +1,7 @@
 use IO;
 
 var infile = open("readTuple.dat", ioMode.r);
-var reader = infile.reader();
+var reader = infile.reader(locking=false);
 
 var (a, b, c) = reader.read((int, int, int));
 var (x, y, z) = reader.read((real, string, bool));

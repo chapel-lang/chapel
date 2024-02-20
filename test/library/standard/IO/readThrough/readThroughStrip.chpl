@@ -1,24 +1,24 @@
 use IO, List;
 
 // string
-writeln(readIntoList(true, openReader("./listInput.txt"), ","));
-writeln(readIntoList(false, openReader("./listInput.txt"), ","));
+writeln(readIntoList(true, openReader("./listInput.txt", locking=false), ","));
+writeln(readIntoList(false, openReader("./listInput.txt", locking=false), ","));
 
-writeln(readIntoList(true, openReader("./listInputTrailing.txt"), ","));
-writeln(readIntoList(false, openReader("./listInputTrailing.txt"), ","));
+writeln(readIntoList(true, openReader("./listInputTrailing.txt", locking=false), ","));
+writeln(readIntoList(false, openReader("./listInputTrailing.txt", locking=false), ","));
 
-writeln(readIntoList(true, openReader("./listInputWeird.txt"), ",,||,,"));
-writeln(readIntoList(false, openReader("./listInputWeird.txt"), ",,||,,"));
+writeln(readIntoList(true, openReader("./listInputWeird.txt", locking=false), ",,||,,"));
+writeln(readIntoList(false, openReader("./listInputWeird.txt", locking=false), ",,||,,"));
 
 // bytes
-writeln(readIntoList(true, openReader("./listInput.txt"), b","));
-writeln(readIntoList(false, openReader("./listInput.txt"), b","));
+writeln(readIntoList(true, openReader("./listInput.txt", locking=false), b","));
+writeln(readIntoList(false, openReader("./listInput.txt", locking=false), b","));
 
-writeln(readIntoList(true, openReader("./listInputTrailing.txt"), b","));
-writeln(readIntoList(false, openReader("./listInputTrailing.txt"), b","));
+writeln(readIntoList(true, openReader("./listInputTrailing.txt", locking=false), b","));
+writeln(readIntoList(false, openReader("./listInputTrailing.txt", locking=false), b","));
 
-writeln(readIntoList(true, openReader("./listInputWeird.txt"), b",,||,,"));
-writeln(readIntoList(false, openReader("./listInputWeird.txt"), b",,||,,"));
+writeln(readIntoList(true, openReader("./listInputWeird.txt", locking=false), b",,||,,"));
+writeln(readIntoList(false, openReader("./listInputWeird.txt", locking=false), b",,||,,"));
 
 proc readIntoList(param reuseBuffer, r, separator: ?t) where reuseBuffer == true {
   var s : t,

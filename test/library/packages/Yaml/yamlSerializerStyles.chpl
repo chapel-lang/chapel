@@ -19,7 +19,8 @@ var a = sout.writer(
         YamlMappingStyle.Block,
         YamlScalarStyle.SingleQuoted,
         YamlDocumentStyle.Explicit
-        )
+        ),
+        locking=false
       );
 
 var b = sout.writer(
@@ -28,7 +29,8 @@ var b = sout.writer(
         YamlMappingStyle.Flow,
         YamlScalarStyle.Plain,
         YamlDocumentStyle.Implicit
-        )
+        ),
+        locking=false
       );
 
 var c = sout.writer(
@@ -37,12 +39,13 @@ var c = sout.writer(
         YamlMappingStyle.Flow,
         YamlScalarStyle.Folded,
         YamlDocumentStyle.Explicit
-        )
+        ),
+        locking=false
       );
 
-var d = sout.writer(serializer = new yamlSerializer());
+var d = sout.writer(serializer = new yamlSerializer(), locking=false);
 
-var defaultFormat = sout.writer();
+var defaultFormat = sout.writer(locking=false);
 
 const longString = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In in nisl lobortis, rhoncus \
   metus dapibus, molestie mi. Donec porta lacus vitae dignissim posuere. In non auctor lorem. Nullam nec dui \

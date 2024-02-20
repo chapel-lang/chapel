@@ -58,10 +58,10 @@ module FormatHelper {
        format == FormatKind.object {
       var f = openMemFile();
       {
-        var w = f.writer();
+        var w = f.writer(locking=false);
         w.withSerializer(FormatWriter).write(val);
       }
-      var r = f.reader();
+      var r = f.reader(locking=false);
       try {
         while true {
           stdout.writef("%02xu", r.readByte());

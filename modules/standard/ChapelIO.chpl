@@ -1085,8 +1085,8 @@ module ChapelIO {
       } else {
         const data = reader.read(string);
         var f = openMemFile();
-        f.writer().write(data);
-        readThis(f.reader());
+        f.writer(locking=false).write(data);
+        readThis(f.reader(locking=false));
       }
     }
   }

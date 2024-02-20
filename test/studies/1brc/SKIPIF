@@ -6,10 +6,17 @@
 # If something fails along the way (perhaps due to a network outage) we'll
 # skip executing the test.
 
-set -x
+# If we've already generated the input dataset no need to regenerate it
+if [[ -e measurements.txt ]]; then
+  echo "False"
+  exit
+fi
 
+# Download third party script to create input data
 if [[ ! -e create_measurements.py ]]; then
-  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/src/main/python/create_measurements.py; then
+  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/src/main/python/create_measurements.py 2> wget.out ; then
+    echo "failed to download create_measurements.py; output:" >&2
+    cat wget.out >&2
     echo "True"
     exit
   fi
@@ -17,15 +24,24 @@ if [[ ! -e create_measurements.py ]]; then
   sed -i.bak 's:\.\./\.\./\.\./data/measurements\.txt:measurements\.txt:' create_measurements.py
 fi
 
+# Download list of weather stations (used by create_measurements.py)
 if [[ ! -e weather_stations.csv ]]; then
-  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/data/weather_stations.csv; then
+  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/data/weather_stations.csv > wget.out; then
+    echo "failed to download weather_stations.csv; output:" >&2
+    cat wget.out >&2
     echo "True"
     exit
   fi
 fi
 
+# Create the input dataset
 if [[ ! -e measurements.txt ]]; then
-  python ./create_measurements.py 10_000_000
+  if ! python ./create_measurements.py 10_000_000 2> python.out; then
+    echo "creating input dataset failed; output:" >&2
+    cat python.out >&2
+    return "True"
+    exit
+  fi
 fi
 
-echo "false"
+echo "False"

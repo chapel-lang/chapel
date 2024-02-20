@@ -53,7 +53,7 @@ while sub.stdout.readLine(line) {
     }
     signaled = true;
     var f = open(signalFile, ioMode.cw);
-    var ch = f.writer();
+    var ch = f.writer(locking=false);
     ch.writeln();
     ch.close();
     f.close();

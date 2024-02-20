@@ -12,11 +12,11 @@ proc test(val) {
   printDebugFmt(val);
   var f = openTempFile();
   {
-    var w = f.writer(serializer=FormatWriter);
+    var w = f.writer(serializer=FormatWriter, locking=false);
     w.writef("%?\n", val);
   }
   {
-    var r = f.reader(deserializer=FormatReader);
+    var r = f.reader(deserializer=FormatReader, locking=false);
     var x : val.type;
     r.readf("%?\n", x);
 

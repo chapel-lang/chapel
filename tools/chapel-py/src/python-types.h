@@ -214,7 +214,7 @@ DEFINE_INOUT_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::
 DEFINE_INOUT_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(const chpl::types::Type*, "ChapelType", wrapType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(const chpl::types::Param*, "Param", wrapParam(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->value_);
-DEFINE_INOUT_TYPE(chpl::Location, "Location", LocationObject::create(TO_WRAP), ((LocationObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(chpl::Location, "Location", (PyObject*) LocationObject::create(TO_WRAP), ((LocationObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 DEFINE_INOUT_TYPE(PyObject*, "typing.Any", TO_WRAP, TO_UNWRAP);
 

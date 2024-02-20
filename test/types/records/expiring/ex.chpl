@@ -99,8 +99,8 @@ proc ioExample1LM() {
   var A = [1,2,3,4];
   var B:[A.domain] int;
 
-  tmp.writer().write(A);
-  tmp.reader().read(B);
+  tmp.writer(locking=false).write(A);
+  tmp.reader(locking=false).read(B);
   writeln("A: ", A);
   writeln("B: ", B);
 }

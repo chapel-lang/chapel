@@ -672,7 +672,7 @@ module Chai {
         proc ref save(path: string) throws {
             var file = IO.open(path, IO.ioMode.cw);
             var serializer = new IO.binarySerializer(IO.endianness.big);
-            var fw = file.writer(serializer=serializer);
+            var fw = file.writer(serializer=serializer, locking=false);
             // fw.write("[network]");
             fw.write(layers.size);
             for param i in 0..#(layers.size) {
@@ -684,7 +684,7 @@ module Chai {
         proc ref load(path: string) throws {
             var file = IO.open(path, IO.ioMode.rw);
             var deserializer = new IO.binaryDeserializer(IO.endianness.big);
-            var fr = file.reader(deserializer=deserializer);
+            var fr = file.reader(deserializer=deserializer, locking=false);
             var size = fr.read(int);
             if size != layers.size then err("Network load: size mismatch");
             for param i in 0..#(layers.size) {

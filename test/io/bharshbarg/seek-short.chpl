@@ -13,7 +13,7 @@ proc test(const n : int, seekRange: range(?), endian: endianness) {
   var f = openMemFile();
   {
     var A : [D] eltType = SENTINEL;
-    var w = f.writer(serializer=new binarySerializer(endian));
+    var w = f.writer(serializer=new binarySerializer(endian), locking=false);
     w.write(A);
   }
 

@@ -19,7 +19,7 @@ proc testMap(orig: map(?)) {
   writeln(header);
   var f = openMemFile();
   {
-    f.writer(serializer= new jsonSerializer()).writef("%?", orig);
+    f.writer(serializer= new jsonSerializer(), locking=false).writef("%?", orig);
     writeln("Writing map: ");
     writeln(orig);
     writeln();
@@ -28,7 +28,7 @@ proc testMap(orig: map(?)) {
     writeln();
   }
   {
-    var r = f.reader(deserializer = new jsonDeserializer());
+    var r = f.reader(deserializer = new jsonDeserializer(), locking=false);
     var m : orig.type;
     r.readf("%?", m);
     writeln("Read ", m.type:string, ": ");

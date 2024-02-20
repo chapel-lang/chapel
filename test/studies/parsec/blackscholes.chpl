@@ -133,14 +133,14 @@ proc bs() {
 }
 
 proc main() {
-	var infile = open(filename, ioMode.r).reader();
+	var infile = open(filename, ioMode.r).reader(locking=false);
 
 	// Given the input file, there are 1000 options. Manually read the input in.
 	for i in 0..#numOptions do {
 		data(i) = new OptionData();
 		if ((i % 1000 == 0) && (i > 999)) then {
 			infile.close();
-			infile = open(filename, ioMode.r).reader();
+			infile = open(filename, ioMode.r).reader(locking=false);
 		}
 
 		infile.read(data(i).s, data(i).strike, data(i).r, data(i).divq, 

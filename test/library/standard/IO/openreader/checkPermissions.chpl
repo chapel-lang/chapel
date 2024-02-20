@@ -3,7 +3,7 @@ use IO, OS.POSIX, FileSystem;
 var filename = "writeOnly.txt";
 
 try {
-  var f = openReader(filename);
+  var f = openReader(filename, locking=false);
   writeln("Uh oh, didn't trigger an error");
 } catch e: PermissionError {
   writeln(e.message());

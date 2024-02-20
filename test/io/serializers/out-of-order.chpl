@@ -37,32 +37,32 @@ proc main() {
   var f = openMemFile();
   {
     var data = new InOrder("hello", 5, 42.0);
-    f.writer().withSerializer(FormatWriter).write(data);
+    f.writer(locking=false).withSerializer(FormatWriter).write(data);
   }
 
   {
-    var reader = f.reader().withDeserializer(FormatReader);
+    var reader = f.reader(locking=false).withDeserializer(FormatReader);
     var r = reader.read(InOrder);
     writeln(r);
   }
   {
-    var reader = f.reader().withDeserializer(FormatReader);
+    var reader = f.reader(locking=false).withDeserializer(FormatReader);
     var r = reader.read(Alpha);
     writeln(r);
   }
   {
-    var reader = f.reader().withDeserializer(FormatReader);
+    var reader = f.reader(locking=false).withDeserializer(FormatReader);
     var r = reader.read(Reverse);
     writeln(r);
   }
   {
-    var reader = f.reader().withDeserializer(FormatReader);
+    var reader = f.reader(locking=false).withDeserializer(FormatReader);
     var r = reader.read(Missing);
     writeln(r);
   }
   {
     // Expecting an error in this case
-    var reader = f.reader().withDeserializer(FormatReader);
+    var reader = f.reader(locking=false).withDeserializer(FormatReader);
     var r = reader.read(Extra);
     writeln(r);
   }

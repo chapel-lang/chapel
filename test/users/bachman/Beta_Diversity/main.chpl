@@ -130,7 +130,7 @@ proc main(args: [] string) {
 
   // Open the text file that contains the number of rows and columns for the image.
   var infile = open(in_name + "_" + map_type + ".txt", ioMode.r);
-  var reader = infile.reader();
+  var reader = infile.reader(locking=false);
   // Read the number of rows and columns in the array in from the file.
   var rows = reader.read(int);
   var cols = reader.read(int);
@@ -141,7 +141,7 @@ proc main(args: [] string) {
   // Read in array
   //var f = open(in_array, ioMode.r);
   var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
-  var r = f.reader(deserializer=new binaryDeserializer());
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
 
   // Read in dissimilarity coefficients
   var dissimilarity_file = map_type + ".txt";
@@ -186,7 +186,7 @@ proc main(args: [] string) {
     // Read in array
     var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
     var first_point = locD_plus.first[0]*locD_plus.shape[1] + locD_plus.first[1];
-    var r = f.reader(deserializer=new binaryDeserializer(), region=first_point..);
+    var r = f.reader(deserializer=new binaryDeserializer(), region=first_point.., locking=false);
 
     for i in locD_plus.first[0]..locD_plus.last[0] {
       for j in locD_plus.first[1]..locD_plus.last[1] {

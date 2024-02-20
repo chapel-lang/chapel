@@ -4,11 +4,11 @@ use IO;
 config type t = string;
 writeln("RE TESTS");
 var f = openMemFile();
-var w = f.writer();
+var w = f.writer(locking=false);
 w.write("Baz9xzz");
 w.close();
 
-var r = f.reader();
+var r = f.reader(locking=false);
 var str:t;
 var ok:bool;
 
