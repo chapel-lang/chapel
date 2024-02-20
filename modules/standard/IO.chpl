@@ -5483,7 +5483,7 @@ proc openStringReader(const s: string, in deserializer: ?dt = defaultSerializeVa
   // populate a memory file with the contents of the string
   const slocal = s.localize();
   var f = openMemFile(),
-      w = f.writer();
+      w = f.writer(locking=false);
   w.write(slocal);
   w.close();
 
@@ -5516,7 +5516,7 @@ proc openBytesReader(const b: bytes, in deserializer: ?dt = defaultSerializeVal(
   // populate a memory file with the contents of the bytes
   const blocal = b.localize();
   var f = openMemFile(),
-      w = f.writer();
+      w = f.writer(locking=false);
   w.write(blocal);
   w.close();
 
