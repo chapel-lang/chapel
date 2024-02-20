@@ -1214,8 +1214,9 @@ def run_lsp():
             edits[nr.get_uri()].append(TextEdit(nr.rng, params.new_name))
 
         add_to_edits(node_and_loc)
-        for use in fi.uses_here[node_and_loc.node.unique_id()]:
-            add_to_edits(use)
+        for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
+            for use in uselist:
+                add_to_edits(use)
 
         return WorkspaceEdit(changes=edits)
 
