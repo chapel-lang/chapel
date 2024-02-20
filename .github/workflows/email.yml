@@ -48,6 +48,10 @@ jobs:
               echo 'EOF' >> $GITHUB_ENV
 
               diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
+              # Cut off long diff output after some number of lines
+              diff_max_lines=1000
+              diff=$(echo "$diff" | awk "NR <= $diff_max_lines; NR > $diff_max_lines { print \"(diff output truncated at $diff_max_lines lines)\"; exit }")
+
               echo "$diff" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
               echo "$diff" >> $GITHUB_ENV
