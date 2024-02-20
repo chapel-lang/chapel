@@ -2190,16 +2190,55 @@ static GenRet codegenSqrt(GenRet a) {
   GenRet av = codegenValue(a);
   if (info->cfile || ffloatOpt == -1 /*strict float*/) {
     ret = emitSqrtCMath(av);
-  }
-  else {
+  } else {
     ret = emitSqrtLLVMIntrinsic(av);
   }
   return ret;
 }
 
-static GenRet codegenAbs(GenRet a) {
+static GenRet emitAbsCMath(GenRet av) {
   GenRet ret;
-  INT_ASSERT("unimp");
+  if (av.chplType == dtReal[FLOAT_SIZE_64]) {
+    ret = codegenCallExpr("chpl_fabs64", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
+    ret = codegenCallExpr("chpl_fabs32", av);
+  } else {
+    INT_FATAL("The abs primitive can only evaluate floating point types!");
+  }
+  return ret;
+}
+
+static GenRet emitAbsLLVMIntrinsic(GenRet av) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The abs primitive can only evaluate floating point types!");
+  }
+  auto id = llvm::Intrinsic::fabs;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenAbs(GenRet a) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  GenRet av = codegenValue(a);
+  if (info->cfile || ffloatOpt == -1 /*strict float*/) {
+    ret = emitAbsCMath(av);
+  } else {
+    ret = emitAbsLLVMIntrinsic(av);
+  }
   return ret;
 }
 

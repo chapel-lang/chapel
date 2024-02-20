@@ -3454,4 +3454,17 @@ module ChapelBase {
     extern proc sqrtf(x: real(32)): real(32);
     return sqrtf(x);
   }
+
+    export inline proc chpl_fabs64(x: real(64)): real(64) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc fabs(x: real(64)): real(64);
+    return fabs(x);
+  }
+  export inline proc chpl_fabs32(x: real(32)): real(32) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc fabsf(x: real(32)): real(32);
+    return fabsf(x);
+  }
 }
