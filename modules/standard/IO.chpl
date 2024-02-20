@@ -7063,37 +7063,41 @@ proc fileReader.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 // Passing -1 to 'nCodepoints' tells this function to compute the number
 // of codepoints itself, and store the result in 'cachedNumCodepoints'.
 @chpldoc.nodoc
-proc readStringBytesData(ref s /*: string or bytes*/,
+proc readStringBytesData(ref s: ?t /*: string or bytes*/,
                                  _channel_internal:qio_channel_ptr_t,
                                  nBytes: int,
                                  nCodepoints: int): errorCode {
   import BytesStringCommon;
+  var sLoc: t;
+  ref sLocal = if s.locale == here then s else sLoc;
 
-  BytesStringCommon.resizeBuffer(s, nBytes);
+  BytesStringCommon.resizeBuffer(sLocal, nBytes);
 
   // TODO: if the fileReader is working with non-UTF-8 data
   // (which is a feature not yet implemented at all)
-  // this would need to call a read than can do character set conversion
+  // this would need to call a read that can do character set conversion
   // in the event that s.type == string.
 
   var len:c_ssize_t = nBytes.safeCast(c_ssize_t);
-  var err = qio_channel_read_amt(false, _channel_internal, s.buff, len);
+  var err = qio_channel_read_amt(false, _channel_internal, sLocal.buff, len);
   if !err {
-    s.buffLen = nBytes;
-    if nBytes != 0 then s.buff[nBytes] = 0; // include null-byte
-    if s.type == string {
+    sLocal.buffLen = nBytes;
+    if nBytes != 0 then sLocal.buff[nBytes] = 0; // include null-byte
+    if t == string {
       if nCodepoints == -1
-        then s.cachedNumCodepoints = BytesStringCommon.countNumCodepoints(s);
-        else s.cachedNumCodepoints = nCodepoints;
-      s.hasEscapes = false;
+        then sLocal.cachedNumCodepoints = BytesStringCommon.countNumCodepoints(sLocal);
+        else sLocal.cachedNumCodepoints = nCodepoints;
+      sLocal.hasEscapes = false;
     }
   } else {
-    s.buffLen = 0;
-    if s.type == string {
-      s.cachedNumCodepoints = 0;
-      s.hasEscapes = false;
+    sLocal.buffLen = 0;
+    if sLocal.type == string {
+      sLocal.cachedNumCodepoints = 0;
+      sLocal.hasEscapes = false;
     }
   }
+
+  if s.locale != here then s = sLoc;
   return err;
 }
 
