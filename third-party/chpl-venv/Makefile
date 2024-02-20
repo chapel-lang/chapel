@@ -19,6 +19,7 @@ all: test-venv chpldoc-venv
 
 clean: FORCE
 	rm -rf build
+	rm -rf $(CHPL_MAKE_HOME)/tools/chapel-py/build
 
 cleanall: FORCE clean
 
