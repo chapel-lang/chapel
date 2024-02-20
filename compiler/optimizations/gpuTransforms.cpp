@@ -1035,6 +1035,8 @@ class GpuKernel {
   bool lateGpuizationFailure_;
   CallExpr* blockSizeCall_;
   BlockStmt* gpuPrimitivesBlock_;
+  Symbol* blockSize_;
+  int64_t staticBlockSize_;
 
   int nReductionBufs_ = 0;
 
@@ -1046,7 +1048,7 @@ class GpuKernel {
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   CallExpr* blockSizeCall() const {return blockSizeCall_; }
   BlockStmt* gpuPrimitivesBlock() const { return gpuPrimitivesBlock_; }
-  SymExpr* blockSize() const {return blockSize_; }
+  Symbol* blockSize() const {return blockSize_; }
   int nReductionBufs() const {return nReductionBufs_; }
   void incReductionBufs() { nReductionBufs_ += 1; }
 
@@ -1074,6 +1076,8 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , lateGpuizationFailure_(false)
   , blockSizeCall_(nullptr)
   , gpuPrimitivesBlock_(nullptr)
+  , blockSize_(nullptr)
+  , staticBlockSize_(0)
 {
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
@@ -1276,8 +1280,23 @@ void GpuKernel::findGpuPrimitives() {
       blockSizeCall_ = callExpr;
     } else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
       gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
+
+      VarSymbol* arg = toVarSymbol(toSymExpr(callExpr->get(1))->symbol());
+      INT_ASSERT(arg);
+      if (Immediate* imm = getSymbolImmediate(arg)) {
+        staticBlockSize_ = imm->int_value();
+      }
+
+      blockSize_ = toSymExpr(callExpr->get(1))->symbol();
     }
   }
+
+  if (blockSize_ == nullptr) {
+    staticBlockSize_ = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
+    blockSize_ = new_IntSymbol(staticBlockSize_);
+  }
+
+  INT_ASSERT(blockSize_ != nullptr);
 }
 
 bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
@@ -1424,6 +1443,11 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
     CallExpr* blockReduce = new CallExpr(PRIM_GPU_BLOCK_REDUCE,
                                          symInLoop,
                                          interimResultFormal);
+
+    if (staticBlockSize_) {
+      std::cout << "Using specialized block-reduce" << std::endl;
+      blockReduce->insertAtTail(new_IntSymbol(staticBlockSize_));
+    }
 
     outlinedFunction->insertBeforeEpilogue(blockReduce);
   }
@@ -1645,18 +1669,11 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
 
   VarSymbol* numThreads = generateNumThreads(gpuBlock, gpuLoop);
-  SymExpr* blockSize = nullptr;
-  if (auto blockSizeCall = info.blockSizeCall()) {
-    blockSize = blockSizeCall->get(1)->copy();
-  } else {
-    const int blockSizeN = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
-    blockSize = new SymExpr(new_IntSymbol(blockSizeN));
-  }
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
   initCfgCall->insertAtTail(kernel.fn());
   initCfgCall->insertAtTail(numThreads);
-  initCfgCall->insertAtTail(blockSize);
+  initCfgCall->insertAtTail(kernel.blockSize());
   initCfgCall->insertAtTail(new_IntSymbol(kernel.kernelActuals().size()));
   initCfgCall->insertAtTail(new_IntSymbol(gpuLoop.pidGets().size()));
   initCfgCall->insertAtTail(new_IntSymbol(kernel.nReductionBufs()));

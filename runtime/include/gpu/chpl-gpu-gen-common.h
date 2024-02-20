@@ -30,10 +30,17 @@
 #include <cub/cub.cuh>
 
 __device__
-static inline void chpl_gpu_dev_block_reduce(double thread_val,
-                                             double* interim_res) {
+static inline void chpl_gpu_dev_block_reduce_256(double thread_val,
+                                                 double* interim_res) {
 
-  // Specialize BlockReduce for a 1D block of 128 threads of type int
+  printf("Not ready yet!\n");
+}
+
+__device__
+static inline void chpl_gpu_dev_block_reduce_512(double thread_val,
+                                                 double* interim_res) {
+
+  // Specialize BlockReduce for a 1D block of 512 threads of type int
   typedef cub::BlockReduce<double, 512> BlockReduce;
 
   // Allocate shared memory for BlockReduce

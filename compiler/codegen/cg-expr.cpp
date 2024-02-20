@@ -5452,9 +5452,19 @@ DEFINE_PRIM(GPU_PID_OFFLOAD) {
 DEFINE_PRIM(GPU_BLOCK_REDUCE) {
   auto threadData = call->get(1);
   auto interimResult = call->get(2);
-  ret = codegenCallExpr("chpl_gpu_dev_block_reduce", threadData->codegen(),
-                        interimResult->codegen());
 
+  std::string fnName = "chpl_gpu_dev_block_reduce";
+
+  // specialize for a given block size if statically available
+  if (call->numActuals() == 3) {
+    Immediate* imm = getSymbolImmediate(toSymExpr(call->get(3))->symbol());
+    INT_ASSERT(imm);
+
+    fnName += "_" + std::to_string(imm->int_value());
+  }
+
+  ret = codegenCallExpr(fnName.c_str(), threadData->codegen(),
+                        interimResult->codegen());
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
