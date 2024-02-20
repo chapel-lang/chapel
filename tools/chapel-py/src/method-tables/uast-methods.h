@@ -505,7 +505,10 @@ CLASS_BEGIN(NamedDecl)
   PLAIN_GETTER(NamedDecl, name, "Get the name of this NamedDecl node",
                chpl::UniqueString, return node->name())
   PLAIN_GETTER(NamedDecl, name_location, "Get the textual location of the NamedDecl node's name",
-               chpl::Location, return chpl::parsing::locateDeclNameWithAst(context, node))
+               chpl::Location,
+               auto loc = chpl::parsing::locateDeclNameWithAst(context, node);
+               /*isEmpty doesn't work since that only relies upon path, which is set*/
+               return (loc.line() != -1) ? loc : chpl::parsing::locateAst(context, node))
 CLASS_END(NamedDecl)
 
 CLASS_BEGIN(EnumElement)

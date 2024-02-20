@@ -1837,11 +1837,11 @@ ifvar:
 interface_stmt:
   TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
   {
-    $$ = context->buildInterfaceStmt(@$, $2, $4, @6, $6);
+    $$ = context->buildInterfaceStmt(@$, @2, $2, $4, @6, $6);
   }
 | TINTERFACE ident_def                       block_stmt
   {
-    $$ = context->buildInterfaceStmt(@$, $2, nullptr, @3, $3);
+    $$ = context->buildInterfaceStmt(@$, @2, $2, nullptr, @3, $3);
   }
 ;
 
@@ -2564,12 +2564,12 @@ named_formal:
 | opt_formal_intent_tag formal_ident_def opt_colon_formal_type
   formal_var_arg_expr
   {
-    $$ = context->buildVarArgFormal(@$, $1, $2, $3, $4);
+    $$ = context->buildVarArgFormal(@$, $1, $2, @2, $3, $4);
   }
 | pragma_ls opt_formal_intent_tag formal_ident_def opt_colon_formal_type
   formal_var_arg_expr
   {
-    $$ = context->buildVarArgFormal(@$, $2, $3, $4, $5, true);
+    $$ = context->buildVarArgFormal(@$, $2, $3, @3, $4, $5, true);
   }
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
   opt_colon_formal_type opt_init_expr
@@ -3021,7 +3021,7 @@ for_expr_base:
   }
 | for_loop_kw expr TDO expr %prec TFOR
   {
-    $$ = context->buildGeneralLoopExpr(@$, @$, @4, $1, nullptr, $2, $4);
+    $$ = context->buildGeneralLoopExpr(@$, @2, @4, $1, nullptr, $2, $4);
   }
 | for_loop_kw expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3048,7 +3048,7 @@ for_expr_base:
                                      context->consumeToBlock(@7, $7),
                                      /*isExpressionLevel*/ true);
     auto ifLoc = context->makeSpannedLocation(@4, @7);
-    $$ = context->buildGeneralLoopExpr(@$, @$, ifLoc, $1, nullptr, $2, ifExpr.release());
+    $$ = context->buildGeneralLoopExpr(@$, @2, ifLoc, $1, nullptr, $2, ifExpr.release());
   }
 ;
 
@@ -3164,6 +3164,7 @@ intent_expr:
                                  /*intent*/ $1,
                                  toOwned($3),
                                  toOwned($4));
+      BUILDER->noteDeclNameLocation(node.get(), LOC(@2));
       $$ = node.release();
     } else {
       $$ = context->syntax(@$, "expected identifier for task variable name.");
@@ -3171,11 +3172,11 @@ intent_expr:
   }
 | reduce_scan_op_expr TREDUCE ident_expr
   {
-    $$ = context->buildReduceIntent(@$, @1, $1, $3);
+    $$ = context->buildReduceIntent(@$, @1, $1, $3, @3);
   }
 | expr                TREDUCE ident_expr
   {
-    $$ = context->buildReduceIntent(@$, @1, $1, $3);
+    $$ = context->buildReduceIntent(@$, @1, $1, $3, @3);
   }
 ;
 
