@@ -427,7 +427,9 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[str, References] = field(init=False)
-    instantiations: Dict[str, Set[chapel.TypedSignature]] = field(init=False)
+    instantiations: Dict[str, Dict[chapel.TypedSignature, None]] = field(
+        init=False
+    )
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
     possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
@@ -534,7 +536,7 @@ class FileInfo:
             if not sig.is_instantiation() or sig in insts:
                 continue
 
-            insts.add(sig)
+            insts[sig] = None
             self._search_instantiations(fn, via=sig)
 
     def rebuild_index(self):
@@ -548,7 +550,7 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.instantiations = defaultdict(set)
+        self.instantiations = defaultdict(dict)
         for _, refs in self.uses_here.items():
             refs.clear()
         self.use_segments.clear()
@@ -613,6 +615,33 @@ class FileInfo:
             self.uri[len("file://") :]
         )
         return file_text.splitlines()
+
+    def nth_instantiation(
+        self, fn: chapel.Function, idx: int
+    ) -> chapel.TypedSignature:
+        """
+        Given a function, return its nth instantiation. This uses the list of
+        instantiations collected while rebuilding the index.
+        """
+        return next(
+            itertools.islice(self.instantiations[fn.unique_id()], idx, None)
+        )
+
+    def instantiation_index(
+        self, fn: chapel.Function, sig: chapel.TypedSignature
+    ) -> int:
+        """
+        Given a function and an instantiation of that function, returns the
+        instantiation's index in the list of all instantiations.
+        """
+        return next(
+            (
+                i
+                for i, s in enumerate(self.instantiations[fn.unique_id()])
+                if s == sig
+            ),
+            -1,
+        )
 
 
 class WorkspaceConfig:
@@ -1325,11 +1354,22 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(uri)
         decl = next(
-            decl
-            for decl in fi.def_segments.elts
-            if decl.node.unique_id() == unique_id
+            (
+                decl
+                for decl in fi.def_segments.elts
+                if decl.node.unique_id() == unique_id
+            ),
+            None,
         )
-        inst = list(fi.instantiations[unique_id])[i]
+
+        if decl is None:
+            return
+
+        node = decl.node
+        if not isinstance(node, chapel.Function):
+            return
+
+        inst = fi.nth_instantiation(node, i)
         fi.instantiation_segments.overwrite((decl, inst))
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
