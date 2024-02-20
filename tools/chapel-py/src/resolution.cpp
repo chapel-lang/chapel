@@ -30,8 +30,14 @@ using namespace types;
 static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* visibilityStmt, const AstNode* node) {
   if (visibilityStmt->isUse() || visibilityStmt->isImport()) {
     auto useParent = parsing::parentAst(context, visibilityStmt);
+    if (!useParent) return ID();
+
     auto scope = resolution::scopeForId(context, useParent->id());
+    if (!scope) return ID();
+
     auto reScope = resolution::resolveVisibilityStmts(context, scope);
+    if (!reScope) return ID();
+
     for (auto visCla: reScope->visibilityClauses()) {
       if(visCla.visibilityClauseId().contains(node->id())) {
         return visCla.scope()->id();
