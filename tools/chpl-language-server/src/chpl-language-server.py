@@ -125,6 +125,17 @@ from lsprotocol.types import (
     SemanticTokens,
     SemanticTokenTypes,
 )
+from lsprotocol.types import (
+    TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY,
+    CALL_HIERARCHY_INCOMING_CALLS,
+    CALL_HIERARCHY_OUTGOING_CALLS,
+    CallHierarchyPrepareParams,
+    CallHierarchyIncomingCallsParams,
+    CallHierarchyOutgoingCallsParams,
+    CallHierarchyItem,
+    CallHierarchyOutgoingCall,
+    CallHierarchyIncomingCall,
+)
 
 import argparse
 import configargparse
@@ -1012,6 +1023,27 @@ class ChapelLanguageServer(LanguageServer):
 
         return []
 
+    def fn_to_call_hierarchy_item(
+        self, sig: chapel.TypedSignature
+    ) -> CallHierarchyItem:
+        fn: chapel.Function = sig.ast()
+        loc = location_to_location(fn.location())
+        fi, _ = self.get_file_info(loc.uri)
+
+        inst_idx = -1
+        if sig.is_instantiation():
+            inst_idx = fi.instantiation_index(fn, sig)
+
+        return CallHierarchyItem(
+            name=fn.name(),
+            detail=str(SymbolSignature(fn)),
+            kind=SymbolKind.Function,
+            uri=loc.uri,
+            range=loc.range,
+            selection_range=location_to_range(fn.name_location()),
+            data=[fn.unique_id(), inst_idx],
+        )
+
 
 def run_lsp():
     """
@@ -1402,6 +1434,105 @@ def run_lsp():
                 )
 
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
+
+    @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)
+    async def prepare_call_hierarchy(
+        ls: ChapelLanguageServer, params: CallHierarchyPrepareParams
+    ):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        # Performance:
+        # since we don't have "call segments" (or segments for any other type
+        # of node), we have to iterate over all calls and check if they're in
+        # range. We can do better if we track segments for these.
+        call = None
+        for ast, _ in chapel.each_matching(fi.get_asts(), chapel.FnCall):
+            rng = location_to_range(ast.location())
+            if rng.start <= params.position <= rng.end:
+                call = ast
+
+        if call is None:
+            return None
+
+        instantiation = fi.get_inst_segment_at_position(params.position)
+        rr = (
+            call.resolve_via(instantiation) if instantiation else call.resolve()
+        )
+
+        if rr is None:
+            return None
+
+        msc = rr.most_specific_candidate()
+        if msc is None:
+            return None
+
+        return [ls.fn_to_call_hierarchy_item(msc.function())]
+
+    @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
+    async def call_hierarchy_incoming(
+        ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
+    ):
+        return []
+
+    @server.feature(CALL_HIERARCHY_OUTGOING_CALLS)
+    async def call_hierarchy_outgoing(
+        ls: ChapelLanguageServer, params: CallHierarchyOutgoingCallsParams
+    ):
+        item = params.item
+        if item.data is None:
+            return None
+        uid, idx = item.data
+
+        fi, _ = ls.get_file_info(item.uri)
+
+        # Performance:
+        # Once the Python bindings supports it, we can use the
+        # "ID to AST" function from parsing to do this without iterating.
+        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
+            if node.unique_id() == item.data[0]:
+                fn = node
+                break
+        else:
+            return None
+
+        instantiation = None
+        if idx != -1:
+            instantiation = fi.nth_instantiation(fn, idx)
+
+        outgoing_calls: Dict[
+            chapel.TypedSignature, List[chapel.FnCall]
+        ] = defaultdict(list)
+        for call, _ in chapel.each_matching(fn, chapel.FnCall):
+            rr = (
+                call.resolve_via(instantiation)
+                if instantiation
+                else call.resolve()
+            )
+
+            if rr is None:
+                continue
+
+            msc = rr.most_specific_candidate()
+            if msc is None:
+                continue
+
+            outgoing_calls[msc.function()].append(call)
+
+        to_return = []
+        for called_fn, calls in outgoing_calls.items():
+            item = ls.fn_to_call_hierarchy_item(called_fn)
+            to_return.append(
+                CallHierarchyOutgoingCall(
+                    item,
+                    from_ranges=[
+                        location_to_range(call.location()) for call in calls
+                    ],
+                )
+            )
+
+        return to_return
 
     server.start_io()
 
