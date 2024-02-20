@@ -1213,6 +1213,8 @@ def run_lsp():
                 edits[nr.get_uri()] = []
             edits[nr.get_uri()].append(TextEdit(nr.rng, params.new_name))
 
+        ls.eagerly_process_all_files(fi.context)
+
         add_to_edits(node_and_loc)
         for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
             for use in uselist:
