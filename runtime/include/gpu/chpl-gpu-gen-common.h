@@ -33,8 +33,6 @@ __device__
 static inline void chpl_gpu_dev_block_reduce(double thread_val,
                                              double* interim_res) {
 
-  //printf("(dev block %d) thread_val %ld %p\n", blockIdx.x, thread_val, interim_res);
-
   // Specialize BlockReduce for a 1D block of 128 threads of type int
   typedef cub::BlockReduce<double, 512> BlockReduce;
 
