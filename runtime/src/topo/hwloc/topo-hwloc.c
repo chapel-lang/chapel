@@ -93,6 +93,7 @@ static hwloc_cpuset_t logAccMask = NULL;
 
 static void cpuInfoInit(void);
 static void partitionResources(void);
+static const char *objTypeString(hwloc_obj_type_t t);
 
 // Accessible NUMA nodes
 
@@ -495,6 +496,19 @@ static void cpuInfoInit(void) {
   }
 }
 
+// Convert hwloc_obj_type_t into better names than hwloc_obj_type_string.
+static const char *objTypeString(hwloc_obj_type_t t) {
+  const char *str = NULL;
+  switch(t) {
+    case HWLOC_OBJ_PACKAGE: str = "socket"; break;
+    case HWLOC_OBJ_NUMANODE: str = "NUMA domain"; break;
+    case HWLOC_OBJ_CORE: str = "core"; break;
+    case HWLOC_OBJ_L3CACHE: str = "L3 cache"; break;
+    default: str = "unknown"; break;
+  }
+  return str;
+}
+
 //
 // Partitions resources when running with co-locales. Currently, only
 // partitioning based on sockets or NUMA domains is supported.
@@ -503,49 +517,47 @@ static void cpuInfoInit(void) {
 static void partitionResources(void) {
   hwloc_obj_t root = hwloc_get_root_obj(topology);
   hwloc_obj_type_t myRootType = 0;
-  int numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
-                      root->cpuset, HWLOC_OBJ_PACKAGE);
-  int numNumas = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
-                      root->cpuset, HWLOC_OBJ_NUMANODE);
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int numColocales = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
-  chpl_bool useSocket = false;
-  chpl_bool useNuma = false;
+  int unusedCores = 0;
 
-  const char *coloStr = chpl_env_rt_get("FORCE_COLOCALE", NULL);
-  if (coloStr != NULL) {
-    char msg[200];
-    if (numLocalesOnNode > 1) {
-      snprintf(msg, sizeof(msg),
-            "CHPL_RT_FORCE_COLOCALE ignored because there are %d co-locales",
-            numLocalesOnNode);
-      chpl_warning(msg, 0, 0);
+  const char *t = chpl_env_rt_get("COLOCALE_OBJ_TYPE", NULL);
+  if (t != NULL) {
+    if (!strcmp(t , "socket")) {
+      myRootType = HWLOC_OBJ_PACKAGE;
+    } else if (!strcmp(t , "numa")) {
+      myRootType = HWLOC_OBJ_NUMANODE;
+    } else if (!strcmp(t , "core")) {
+      myRootType = HWLOC_OBJ_CORE;
+    } else if (!strcmp(t , "cache")) {
+      myRootType = HWLOC_OBJ_L3CACHE;
     } else {
-      if (!strcasecmp(coloStr, "socket")) {
-        useSocket = true;
-      } else if (!strcasecmp(coloStr, "numa")) {
-        useNuma = true;
-      } else {
-        snprintf(msg, sizeof(msg),
-                 "\"%s\" is not a valid value for CHPL_RT_FORCE_COLOCALE.\n"
-                 "Must be either \"socket\" or \"numa\".",
-                 coloStr);
-        chpl_error(msg, 0, 0);
-      }
+      char msg[200];
+      snprintf(msg, sizeof(msg),
+               "CHPL_RT_COLOCALE_OBJ_TYPE is not a valid type: \"%s\"", t);
+      chpl_error(msg, 0, 0);
     }
   }
 
+
+  if (myRootType) {
+    _DBG_P("myRootType: %s\n", objTypeString(myRootType));
+  }
+
   int rank = chpl_get_local_rank();
+  _DBG_P("numLocalesOnNode: %d", numLocalesOnNode);
+  _DBG_P("numColocales: %d", numColocales);
+  _DBG_P("rank: %d", rank);
   if (numLocalesOnNode > 1) {
     oversubscribed = true;
   }
   logAccSets = sys_calloc(numLocalesOnNode, sizeof(hwloc_cpuset_t));
-  if ((numColocales > 0) || useSocket || useNuma) {
-    // We get our own socket or NUMA domain if we have exclusive access to the
-    // node, we know our local rank, and the number of locales on the node is
-    // less than or equal to the number of sockets or NUMA domains. It is an
-    // error if the number of locales on the node is greater than both of
-    // these and CHPL_RT_LOCALES_PER_NODE is set, otherwise we are
+  if (numColocales > 0) {
+    // We get our own socket/NUMA/cache/core object if we have exclusive
+    // access to the node, we know our local rank, and the number of locales
+    // on the node is less than or equal to the number of objects. It is an
+    // error if the number of locales on the node is greater than the number
+    // of objects and CHPL_RT_LOCALES_PER_NODE is set, otherwise we are
     // oversubscribed.
 
     // TODO: The oversubscription determination is incorrect. A node is only
@@ -553,22 +565,29 @@ static void partitionResources(void) {
     // to determine this accurately.
 
     if (rank != -1) {
-      if ((numColocales <= numSockets) && !useNuma) {
-        myRootType = HWLOC_OBJ_PACKAGE;
-        _DBG_P("confining ourself to socket %d", rank);
-      } else if (numColocales <= numNumas) {
-        myRootType = HWLOC_OBJ_NUMANODE;
-        _DBG_P("confining ourself to NUMA %d", rank);
-
-      }
       if (myRootType) {
-        // Use the socket/NUMA whose logical index corresponds to our local rank.
+        int numCores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+        int numObjs = hwloc_get_nbobjs_by_type(topology, myRootType);
+        if (numObjs < numLocalesOnNode) {
+          char msg[200];
+          snprintf(msg, sizeof(msg), "Node only has %d %s(s)", numObjs,
+                   objTypeString(myRootType));
+          chpl_error(msg, 0, 0);
+        }
+        if (numObjs > numLocalesOnNode) {
+          int coresPerLocale = numCores / numObjs;
+          unusedCores = (numObjs - numLocalesOnNode) * coresPerLocale;
+        }
+
+        // Use the object whose logical index corresponds to our local rank.
         CHK_ERR(myRoot = hwloc_get_obj_inside_cpuset_by_type(topology,
                                   root->cpuset, myRootType, rank));
 
-        // Compute the accessible PUs for all locales on this node based
-        // on the object each occupies. This is used to determine which
-        // NIC each locale should use.
+        _DBG_P("confining ourself to %s %d", objTypeString(myRootType), rank);
+
+        // Compute the accessible PUs for all locales on this node based on
+        // the object each occupies. This is used to determine which NIC each
+        // locale should use.
 
         for (int i = 0; i < numLocalesOnNode; i++) {
           hwloc_obj_t obj;
@@ -579,9 +598,7 @@ static void partitionResources(void) {
           logAccSets[i] = s;
         }
       } else {
-        int id;
-        int count = 0;
-        int locale = -1;
+        // Cores not tied to a root object
         int coresPerLocale = numCPUsPhysAcc / numLocalesOnNode;
         if (coresPerLocale < 1) {
           char msg[200];
@@ -589,12 +606,10 @@ static void partitionResources(void) {
                    numLocalesOnNode, numCPUsPhysAcc);
           chpl_error(msg, 0, 0);
         }
-        int leftovers = numCPUsPhysAcc % numLocalesOnNode;
-        if (leftovers != 0) {
-          char msg[200];
-          snprintf(msg, sizeof(msg), "%d cores are unused", leftovers);
-          chpl_warning(msg, 0, 0);
-        }
+        unusedCores = numCPUsPhysAcc % numLocalesOnNode;
+        int count = 0;
+        int locale = -1;
+        int id;
         hwloc_bitmap_foreach_begin(id, physAccSet) {
           if (count == 0) {
             locale++;
@@ -613,6 +628,11 @@ static void partitionResources(void) {
           count = (count + 1) % coresPerLocale;
         } hwloc_bitmap_foreach_end();
       }
+      if (unusedCores != 0) {
+        char msg[200];
+        snprintf(msg, sizeof(msg), "%d cores are unused", unusedCores);
+        chpl_warning(msg, 0, 0);
+      }
 
       // Limit our accessible cores and PUs to those in our cpuset.
 
@@ -623,7 +643,6 @@ static void partitionResources(void) {
       hwloc_bitmap_and(physAccSet, physAccSet, logAccSets[rank]);
       numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
       CHK_ERR(numCPUsPhysAcc > 0);
-
 
       if (debug) {
         char buf[1024];
