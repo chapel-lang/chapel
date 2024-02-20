@@ -5466,6 +5466,72 @@ private proc openReaderHelper(path:string,
 }
 
 /*
+  Create a :record:`fileReader` around a :type:`string`
+
+  Note that the string is copied into a local memory file, so it can be modified
+  after the ``fileReader`` is created without affecting the contents of the
+  ``fileReader``.
+
+  :arg s: the ``string`` to read from
+  :arg deserializer: deserializer to use when reading.
+
+  :returns: a ``fileReader`` reading from the string
+
+*/
+@unstable("'openStringReader' is an experimental feature; its name and behavior are subject to change")
+proc openStringReader(const s: string, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
+  // populate a memory file with the contents of the string
+  const slocal = s.localize();
+  var f = openMemFile(),
+      w = f.writer(locking=false);
+  w.write(slocal);
+  w.close();
+
+  // create a fileReader for the memory file
+  var err: errorCode = 0,
+      fr = new fileReader(
+        false, deserializer, f, err, ioHintSet.empty,
+        0, f.size, defaultIOStyleInternal()
+      );
+
+  if err then try fr._ch_ioerror(err, "in openStringReader");
+  return fr;
+}
+
+/*
+  Create a :record:`fileReader` around a :type:`bytes`
+
+  Note that the bytes is copied into a local memory file, so it can be modified
+  after the ``fileReader`` is created without affecting the contents of the
+  ``fileReader``.
+
+  :arg b: the ``bytes`` to read from
+  :arg deserializer: deserializer to use when reading.
+
+  :returns: a ``fileReader`` reading from the string
+
+*/
+@unstable("'openBytesReader' is an experimental feature; its name and behavior are subject to change")
+proc openBytesReader(const b: bytes, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
+  // populate a memory file with the contents of the bytes
+  const blocal = b.localize();
+  var f = openMemFile(),
+      w = f.writer(locking=false);
+  w.write(blocal);
+  w.close();
+
+  // create a fileReader for the memory file
+  var err: errorCode = 0,
+      fr = new fileReader(
+        false, deserializer, f, err, ioHintSet.empty,
+        0, f.size, defaultIOStyleInternal()
+      );
+
+  if err then try fr._ch_ioerror(err, "in openBytesReader");
+  return fr;
+}
+
+/*
   Controls the default value of the ``locking`` parameter for :proc:`openWriter`.
 
   When ``true``, a warning will be issued if ``locking`` is not set explicitly.
@@ -7270,10 +7336,12 @@ proc fileReader.readLine(ref s: string,
       nCodepoints -= 1;
     }
 
+    var sLoc: string;
+
     // now read the data into the string
     // readStringBytesData will advance the fileReader by exactly `nBytes`.
     // This may consume or leave the newline based on the logic above.
-    err = readStringBytesData(s, this._channel_internal, nBytes, nCodepoints);
+    err = readStringBytesData(sLoc, this._channel_internal, nBytes, nCodepoints);
     if foundNewline && stripNewline && !err {
       // pass the newline in the input
       err = qio_channel_read_char(false, this._channel_internal, chr);
@@ -7285,6 +7353,7 @@ proc fileReader.readLine(ref s: string,
 
     // return 'true' if we read anything
     ret = foundNewline || nBytes > 0;
+    s = sLoc;
   }
 
   return ret;
@@ -7355,10 +7424,12 @@ proc fileReader.readLine(ref b: bytes,
       nBytes -= 1;
     }
 
+    var bLoc: bytes;
+
     // now read the data into the bytes
     // readStringBytesData will advance the fileReader by exactly `nBytes`.
     // This may consume or leave the newline based on the logic above.
-    err = readStringBytesData(b, this._channel_internal, nBytes,
+    err = readStringBytesData(bLoc, this._channel_internal, nBytes,
                               nCodepoints=-1);
     if foundNewline && stripNewline && !err {
       // pass the newline in the input
@@ -7374,6 +7445,7 @@ proc fileReader.readLine(ref b: bytes,
 
     // return 'true' if we read anything
     ret = foundNewline || nBytes > 0;
+    b = bLoc;
   }
 
   return ret;

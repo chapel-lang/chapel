@@ -1,0 +1,5 @@
+openBytesReader.chpl:4: warning: 'openBytesReader' is an experimental feature; its name and behavior are subject to change
+openBytesReader.chpl:15: warning: 'openBytesReader' is an experimental feature; its name and behavior are subject to change
+(x = 3.14159, y = data)
+hello world!
+I'm a bytes!
