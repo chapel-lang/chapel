@@ -265,7 +265,7 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
           case 's': t = "socket"; invalid = false; break;
           case 'n': t = "numa";invalid = false; break;
           case 'c': t = "core"; invalid = false; break;
-          case '$': t = "cache"; invalid = false; break;
+          case 'L': t = "cache"; invalid = false; break;
         }
       }
       if (invalid) {
