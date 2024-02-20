@@ -3441,4 +3441,17 @@ module ChapelBase {
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
   }
+
+  export inline proc chpl_sqrt64(x: real(64)): real(64) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern "sqrt" proc sqrt64(x: real(64)): real(64);
+    return sqrt64(x);
+  }
+  export inline proc chpl_sqrt32(x: real(32)): real(32) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sqrtf(x: real(32)): real(32);
+    return sqrtf(x);
+  }
 }

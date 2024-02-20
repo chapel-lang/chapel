@@ -2150,6 +2150,60 @@ static GenRet codegenFma(GenRet a, GenRet b, GenRet c) {
   return ret;
 }
 
+static GenRet emitSqrtCMath(GenRet av) {
+  GenRet ret;
+  if (av.chplType == dtReal[FLOAT_SIZE_64]) {
+    ret = codegenCallExpr("chpl_sqrt64", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
+    ret = codegenCallExpr("chpl_sqrt32", av);
+  } else {
+    INT_FATAL("The sqrt primitive can only evaluate floating point types!");
+  }
+  return ret;
+}
+
+static GenRet emitSqrtLLVMIntrinsic(GenRet av) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The sqrt primitive can only evaluate floating point types!");
+  }
+  auto id = llvm::Intrinsic::sqrt;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenSqrt(GenRet a) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  GenRet av = codegenValue(a);
+  if (info->cfile || ffloatOpt == -1 /*strict float*/) {
+    ret = emitSqrtCMath(av);
+  }
+  else {
+    ret = emitSqrtLLVMIntrinsic(av);
+  }
+  return ret;
+}
+
+static GenRet codegenAbs(GenRet a) {
+  GenRet ret;
+  INT_ASSERT("unimp");
+  return ret;
+}
+
+
 
 static
 GenRet codegenLsh(GenRet a, GenRet b)
@@ -4623,10 +4677,10 @@ DEFINE_PRIM(UNARY_LNOT) {
   ret = codegenIsZero(call->get(1));
 }
 DEFINE_PRIM(SQRT) {
-  INT_FATAL(call, "not expecting to codegen primitive sqrt calls");
+  ret = codegenSqrt(call->get(1));
 }
 DEFINE_PRIM(ABS) {
-  INT_FATAL(call, "not expecting to codegen primitive abs calls");
+  ret = codegenAbs(call->get(1));
 }
 DEFINE_PRIM(ADD) {
     ret = codegenAdd(call->get(1), call->get(2));
