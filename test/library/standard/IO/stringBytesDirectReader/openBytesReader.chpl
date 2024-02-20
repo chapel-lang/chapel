@@ -1,4 +1,4 @@
-use IO, JSON, List;
+use IO, JSON;
 
 const myJsonData = b"{\"x\": 3.14159, \"y\": \"data\"}";
 var r = openBytesReader(myJsonData, deserializer = new jsonDeserializer());

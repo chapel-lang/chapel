@@ -5442,7 +5442,7 @@ private proc openReaderHelper(path:string,
 
 */
 @unstable("'openStringReader' is an experimental feature; its name and behavior are subject to change")
-proc openStringReader(in s: string, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
+proc openStringReader(const s: string, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
   // populate a memory file with the contents of the string
   const slocal = s.localize();
   var f = openMemFile(),
@@ -5475,7 +5475,7 @@ proc openStringReader(in s: string, in deserializer: ?dt = defaultSerializeVal(f
 
 */
 @unstable("'openBytesReader' is an experimental feature; its name and behavior are subject to change")
-proc openBytesReader(in b: bytes, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
+proc openBytesReader(const b: bytes, in deserializer: ?dt = defaultSerializeVal(false)): fileReader(false, dt) throws {
   // populate a memory file with the contents of the bytes
   const blocal = b.localize();
   var f = openMemFile(),
@@ -5490,7 +5490,7 @@ proc openBytesReader(in b: bytes, in deserializer: ?dt = defaultSerializeVal(fal
         0, f.size, defaultIOStyleInternal()
       );
 
-  if err then try fr._ch_ioerror(err, "in openStringReader");
+  if err then try fr._ch_ioerror(err, "in openBytesReader");
   return fr;
 }
 
