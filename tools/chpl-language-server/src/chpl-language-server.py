@@ -438,9 +438,13 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[str, References] = field(init=False)
-    instantiations: Dict[str, Dict[chapel.TypedSignature, List[Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]]]] = field(
-        init=False
-    )
+    instantiations: Dict[
+        str,
+        Dict[
+            chapel.TypedSignature,
+            List[Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]],
+        ],
+    ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
     possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
@@ -583,7 +587,9 @@ class FileInfo:
             with self.context.context.track_errors() as _:
                 self._search_instantiations(asts)
 
-    def called_function_at_position(self, position: Position) -> Optional[chapel.TypedSignature]:
+    def called_function_at_position(
+        self, position: Position
+    ) -> Optional[chapel.TypedSignature]:
         """
         Given a particular position, finds function being called at that
         position.
@@ -695,7 +701,9 @@ class FileInfo:
             -1,
         )
 
-    def concrete_instantiation_for(self, fn: chapel.Function) -> Optional[chapel.TypedSignature]:
+    def concrete_instantiation_for(
+        self, fn: chapel.Function
+    ) -> Optional[chapel.TypedSignature]:
         """
         If all we have is a function ID, we can still select a particular
         typed signature for it in some cases, even without calls: the
@@ -1115,9 +1123,21 @@ class ChapelLanguageServer(LanguageServer):
 
         return item
 
-    def unpack_call_hierarchy_item(self, item: CallHierarchyItem) -> Optional[Tuple[FileInfo, chapel.Function, Optional[chapel.TypedSignature]]]:
-        if item.data is None or not isinstance(item.data, list) or not isinstance(item.data[0], str) or not isinstance(item.data[1], int):
-            self.show_message("Call hierarchy item contains missing or invalid additional data", MessageType.Error)
+    def unpack_call_hierarchy_item(
+        self, item: CallHierarchyItem
+    ) -> Optional[
+        Tuple[FileInfo, chapel.Function, Optional[chapel.TypedSignature]]
+    ]:
+        if (
+            item.data is None
+            or not isinstance(item.data, list)
+            or not isinstance(item.data[0], str)
+            or not isinstance(item.data[1], int)
+        ):
+            self.show_message(
+                "Call hierarchy item contains missing or invalid additional data",
+                MessageType.Error,
+            )
             return None
         uid, idx = item.data
 
@@ -1595,8 +1615,10 @@ def run_lsp():
 
         calls = fi.instantiations[fn.unique_id()][instantiation]
         hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
-        incoming_calls: Dict[Union[chapel.TypedSignature, str], List[chapel.FnCall]] = defaultdict(list)
-        for (call, via) in calls:
+        incoming_calls: Dict[
+            Union[chapel.TypedSignature, str], List[chapel.FnCall]
+        ] = defaultdict(list)
+        for call, via in calls:
             # If the call is from an instantiation, use the instantiation
             # as the hierarchy item anchor.
             if via is not None:
