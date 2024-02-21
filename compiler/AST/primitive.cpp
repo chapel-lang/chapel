@@ -166,7 +166,7 @@ returnInfoAbs(CallExpr* call) {
     return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
   }
 
-  return QualifiedType(t, QUAL_VAL);
+  return call->get(1)->qualType();
 }
 
 
