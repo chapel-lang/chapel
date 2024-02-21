@@ -198,16 +198,44 @@ ofi         slurm-srun
 =========   =============
 
 There are two ways to create co-locales. The first is to set the
-``CHPL_RT_LOCALES_PER_NODE`` environment variable. If its value is greater
-than one and less than or equal to the number of sockets on a node, then the
-Chapel runtime will run each locale in its own socket. The second way to
-create co-locales is to use the command-line argument ``-nl NxL``, where ``N``
-is the number of nodes and ``L`` is the number of locales per node. The ``L``
-is optional; if it isn't specified then Chapel will run the "ideal" number of
-locales based on the node architecture. Currently this is limited to the
-value of ``CHPL_RT_LOCALES_PER_NODE``; in future releases we plan to include
-more sophisticated heuristics such as automatically running one locale per
-socket on nodes with multiple sockets.
+``CHPL_RT_LOCALES_PER_NODE`` environment variable. If set, Chapel will run
+the specified number of locales per node. The second way to create co-locales
+is to use the command-line argument ``-nl NxLt``, where ``N`` is the number
+of nodes, ``L`` is the number of locales per node, and ``t`` is an optional
+suffix indicating the architectural feature to which the co-locales should be
+bound. The ``L`` is optional; if it isn't specified then Chapel will run
+the "ideal" number of locales based on the node architecture. Currently this
+is limited to the value of ``CHPL_RT_LOCALES_PER_NODE``; in future releases
+we plan to include more sophisticated heuristics such as automatically
+running one locale per socket on nodes with multiple sockets.
+
+By default, Chapel will try to bind co-locales to an architectural feature.
+For example, launching a Chapel program with the argument ``-nl 1x2`` on a
+node with two sockets will bind each co-locale to its own socket. Chapel
+looks at the number of sockets, NUMA domains, Level 3 caches, and cores on
+the node, in that order, to determine if the co-locales can be bound to
+an architectural feature. If the number of co-locales does not match the
+number of a feature then Chapel simply assigns an equal number of cores
+to each co-locale. Any remaining cores are unused.
+
+You can force Chapel to bind co-locales to an architectural feature using a
+suffix to the ``-nl`` argument. The valid suffixes and their bindings are as
+follows:
+
+=========   =============
+Suffix      Binding
+=========   =============
+s           socket
+n           NUMA domain
+L           Level 3 cache
+c           core
+=========   =============
+
+It is an error if the number of co-locales is greater than the number of
+specified architectural features. For example, specifying ``-nl 1x2s`` on a
+node with a single socket results in an error. Any remaining cores are
+unused; for example, specifying ``-nl 1x1s`` on a node with two sockets
+will leave the cores in one socket unused.
 
 Troubleshooting
 +++++++++++++++
