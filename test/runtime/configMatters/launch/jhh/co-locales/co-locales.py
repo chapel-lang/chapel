@@ -62,24 +62,11 @@ def setup():
 class ColocaleArgs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        global numSockets
         # Should not be set by default
         if 'CHPL_RT_LOCALES_PER_NODE' in os.environ:
             del os.environ['CHPL_RT_LOCALES_PER_NODE']
-
-        # Determine the number of sockets per node
-        cmd = ["sinfo", "--format=%X", "--noheader", "--exact"]
-        partition = os.environ.get('CHPL_LAUNCHER_PARTITION', None)
-        partition = os.environ.get('SLURM_PARTITION', partition)
-        if partition is not None:
-            cmd += ["--partition", partition]
-            if verbose:
-                print("Partition: ", partition)
-
-        numSockets = int(runCmd(cmd))
-        if numSockets == 1:
-            self.skipTest("Node has only one socket.")
-
+        os.environ['CHPL_LAUNCHER_SLURM_VERSION'] = 'slurm'
+        os.environ['CHPL_LAUNCHER_CORES_PER_LOCALE'] = '256'
     def setUp(self):
         if skipReason is not None:
             self.skipTest(skipReason)
@@ -196,7 +183,6 @@ class ColocaleArgs(unittest.TestCase):
         """Arg overrides CHPL_RT_LOCALES_PER_NODE"""
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '4'
         output = self.runCmd("./hello -nl 3x2 -v --dry-run")
-        print(output)
         self.assertTrue('--nodes=3' in output or '-N 3' in output)
         self.assertIn('--ntasks=6', output)
 
@@ -213,7 +199,7 @@ class ColocaleArgs(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             output = self.runCmd("./hello -nl -3x2z -v --dry-run")
         self.assertEqual(cm.exception.stdout.strip(),
-            '<command-line arg>:1: error: "z" is not a valid suffix.')
+            '<command-line arg>:1: error: "2z" is not a valid number of co-locales.')
 
     def test_18_invalid_suffix2(self):
         """Reject invalid suffix that starts with a valid character"""
@@ -311,10 +297,6 @@ def main(argv):
     compiler = argv[1]
     name = os.path.join(getDir(compiler), argv[0])
     del argv[1]
-
-    # Add sbatch and srun to our path
-    path = os.environ['PATH']
-    os.environ['PATH'] = os.path.join(os.getcwd(), "bin") + ":" + path
 
     if skipReason is None:
         # Compile the test program
