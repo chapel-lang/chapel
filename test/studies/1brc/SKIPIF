@@ -14,7 +14,7 @@ fi
 
 # Download third party script to create input data
 if [[ ! -e create_measurements.py ]]; then
-  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/src/main/python/create_measurements.py 2> wget.out ; then
+  if ! wget --no-check-certificate https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/src/main/python/create_measurements.py 2> wget.out ; then
     echo "failed to download create_measurements.py; output:" >&2
     cat wget.out >&2
     echo "True"
@@ -26,7 +26,7 @@ fi
 
 # Download list of weather stations (used by create_measurements.py)
 if [[ ! -e weather_stations.csv ]]; then
-  if ! wget https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/data/weather_stations.csv > wget.out; then
+  if ! wget --no-check-certificate https://raw.githubusercontent.com/gunnarmorling/1brc/00a309e5c7e0b99907627014bfce53435e3c4c99/data/weather_stations.csv > wget.out; then
     echo "failed to download weather_stations.csv; output:" >&2
     cat wget.out >&2
     echo "True"
@@ -36,7 +36,7 @@ fi
 
 # Create the input dataset
 if [[ ! -e measurements.txt ]]; then
-  if ! python ./create_measurements.py 10_000_000 2> python.out; then
+  if ! python3 ./create_measurements.py 10_000_000 2> python.out; then
     echo "creating input dataset failed; output:" >&2
     cat python.out >&2
     return "True"
