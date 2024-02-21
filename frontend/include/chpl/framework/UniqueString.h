@@ -30,6 +30,8 @@
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/util/hash.h"
 
+#include "llvm/ADT/StringRef.h"
+
 #include <cstring>
 #include <string>
 
@@ -110,6 +112,13 @@ class UniqueString final {
    */
   static inline UniqueString get(Context* context, const std::string& s) {
     return UniqueString::get(context, s.c_str(), s.size());
+  }
+
+  /**
+    Get or create a unique string for an LLVM StringRef.
+   */
+  static inline UniqueString get(Context* context, llvm::StringRef s) {
+    return UniqueString::get(context, s.data(), s.size());
   }
 
   /**
