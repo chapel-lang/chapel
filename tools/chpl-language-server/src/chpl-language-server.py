@@ -355,6 +355,16 @@ class NodeAndRange:
         path = os.path.abspath(self.node.location().path())
         return f"file://{path}"
 
+    @staticmethod
+    def for_entire_node(node: chapel.AstNode):
+        """
+        Create a NodeAndRange whose location spans the entire AST node, rather
+        than its "relevant-for-hover" piece (i.e., its name).
+        """
+        res = NodeAndRange(node)
+        res.rng = location_to_range(node.location())
+        return res
+
 
 @dataclass
 class ResolvedPair:
@@ -1528,7 +1538,9 @@ def run_lsp():
             return
 
         inst = fi.nth_instantiation(node, i)
-        fi.instantiation_segments.overwrite((decl, inst))
+        fi.instantiation_segments.overwrite(
+            (NodeAndRange.for_entire_node(decl.node), inst)
+        )
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
