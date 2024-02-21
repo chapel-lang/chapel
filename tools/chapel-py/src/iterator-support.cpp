@@ -64,8 +64,8 @@ PyObject* AstIterObject_iter(AstIterObject *self) {
 
 PyObject* AstIterObject_next(AstIterObject *self) {
   if (self->iterAdapter) {
-    if (auto nextNode = self->iterAdapter->next()) {
-      return wrapGeneratedType((ContextObject*) self->contextObject, nextNode);
+    if (auto nextNode = self->iterAdapter->next((ContextObject*) self->contextObject)) {
+      return nextNode;
     }
   }
   PyErr_SetNone(PyExc_StopIteration);

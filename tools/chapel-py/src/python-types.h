@@ -201,6 +201,12 @@ std::string tupleTypeString() {
   return tupleTypeStringImpl<Elems...>(std::make_index_sequence<sizeof...(Elems)>());
 }
 
+template <typename T>
+std::string iteratorTypeString() {
+  return std::string("typing.Iterator[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
+
+
 /* Invoke the DEFINE_INOUT_TYPE macro for each type we want to support.
    New types should be added here. We might consider performing these invocations
    using X-macros for the entire AST class hierarchy if we wanted to be
@@ -228,6 +234,8 @@ template <typename T>
 T_DEFINE_INOUT_TYPE(std::optional<T>, optionalTypeString<T>(), wrapOptional(CONTEXT, TO_WRAP), unwrapOptional<T>(CONTEXT, TO_UNWRAP));
 template <typename ... Elems>
 T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
+template <typename ElemType>
+T_DEFINE_INOUT_TYPE(TypedIterAdapterBase<ElemType>*, iteratorTypeString<ElemType>(), wrapIterAdapter(CONTEXT, TO_WRAP), (TypedIterAdapterBase<ElemType>*) ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   DEFINE_INOUT_TYPE(const TYPE*, #NAME, wrapGeneratedType(CONTEXT, (ROOT_TYPE*) TO_WRAP), ((ROOT##Object*) TO_UNWRAP)->value_->to##NAME());
