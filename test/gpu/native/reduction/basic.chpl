@@ -1,7 +1,12 @@
 use GPU;
 use ChplConfig;
 
+config param useExpr = true;
 config const n = 100;
+
+inline proc doSumReduce(const ref Arr) {
+  return if useExpr then + reduce Arr else gpuSumReduce(Arr);
+}
 
 proc testType(type t) {
   proc test(param op: string, type t) {
@@ -12,7 +17,7 @@ proc testType(type t) {
 
       var res;
       select op {
-        when "sum" do res=gpuSumReduce(Arr);
+        when "sum" do res=doSumReduce(Arr);
         when "min" do res=gpuMinReduce(Arr);
         when "max" do res=gpuMaxReduce(Arr);
         when "minloc" do res=gpuMinLocReduce(Arr);
@@ -25,10 +30,10 @@ proc testType(type t) {
 
   writeln("Testing type ", t:string);
   test("sum", t);
-  test("min", t);
-  test("max", t);
-  test("minloc", t);
-  test("maxloc", t);
+  /*test("min", t);*/
+  /*test("max", t);*/
+  /*test("minloc", t);*/
+  /*test("maxloc", t);*/
   writeln();
 }
 

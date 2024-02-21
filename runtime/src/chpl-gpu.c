@@ -640,6 +640,7 @@ static void cfg_finalize_reductions(kernel_cfg* cfg) {
     CHPL_GPU_DEBUG("Reduce %p into %p\n", cfg->reduce_vars[i].buffer,
                   cfg->reduce_vars[i].outer_var);
 
+    // TODO fix this
     chpl_gpu_sum_reduce_double((double*)cfg->reduce_vars[i].buffer,
                                cfg->grd_dim_x,
                                (double*)cfg->reduce_vars[i].outer_var,
