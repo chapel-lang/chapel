@@ -35,7 +35,7 @@ proc runtest() {
         writeln("Copied ", nlines, " lines");
 
       // Now, try downloading the file and check against the local file.
-      var filereader = open(f, ioMode.r).reader();
+      var filereader = openReader(f);
       var urlreader = openUrlReader(outUrlFile);
       // Now check that the files match
       nlines = 0;
