@@ -1068,6 +1068,7 @@ class GpuKernel {
   //std::set<ReductionPair> redTemps_;
   std::map<Symbol*, ArgSymbol*> loopSymbolToInterimReductionFormal;
 
+  FnSymbol* generateFinalReductionWrapper(Symbol* symInLoop);
 };
 
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
@@ -1106,6 +1107,47 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   generateEarlyReturn();
 
   insertionPoint->insertBefore(new DefExpr(fn_));
+}
+
+FnSymbol* GpuKernel::generateFinalReductionWrapper(Symbol* symInLoop) {
+  SET_LINENO(gpuLoop.gpuLoop());
+
+  FnSymbol* ret = new FnSymbol("wrap_gpu_reduction");
+  ret->addFlag(FLAG_RESOLVED);
+
+  ArgSymbol* inData = new ArgSymbol(INTENT_IN, "in_data", dtCVoidPtr);
+  ArgSymbol* numElems = new ArgSymbol(INTENT_IN, "num_elems",
+                                      dtInt[INT_SIZE_32]);
+  ArgSymbol* outData = new ArgSymbol(INTENT_IN, "out_data", dtCVoidPtr);
+  ArgSymbol* outIdx = new ArgSymbol(INTENT_IN, "out_idx", dtCVoidPtr);
+
+  ret->insertFormalAtTail(inData);
+  ret->insertFormalAtTail(numElems);
+  ret->insertFormalAtTail(outData);
+  ret->insertFormalAtTail(outIdx);
+
+  std::string fnToCall = "chpl_gpu_sum_reduce_double";
+  Type* dataType = symInLoop->typeInfo()->getRefType();
+
+  VarSymbol* castInData = new VarSymbol("cast_in_data", dataType);
+  CallExpr* castInMove = new CallExpr(castInData, new CallExpr(PRIM_CAST,
+                                                               dataType,
+                                                               inData));
+  ret->insertAtTail(new DefExpr(castInData));
+  ret->insertAtTail(castInMove);
+
+  VarSymbol* castOutData = new VarSymbol("cast_out_data", dataType);
+  CallExpr* castOutMove = new CallExpr(castOutData, new CallExpr(PRIM_CAST,
+                                                                 dataType,
+                                                                 outData));
+  ret->insertAtTail(new DefExpr(castOutData));
+  ret->insertAtTail(castOutMove);
+
+  ret->insertAtTail(new CallExpr(fnToCall.c_str(), castInData, numElems,
+                                 castOutData, outIdx));
+  ret->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  return ret;
 }
 
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
