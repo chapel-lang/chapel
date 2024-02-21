@@ -1028,26 +1028,44 @@ class ChapelLanguageServer(LanguageServer):
 
         return []
 
-    def fn_to_call_hierarchy_item(
-        self, sig: chapel.TypedSignature
+    def sym_to_call_hierarchy_item(
+        self, sym: chapel.NamedDecl
     ) -> CallHierarchyItem:
-        fn: chapel.Function = sig.ast()
-        loc = location_to_location(fn.location())
-        fi, _ = self.get_file_info(loc.uri)
+        """
+        Given a Chapel symbol declaration as a NamedDecl, return the
+        corresponding call hierarchy item.
+        """
+        loc = location_to_location(sym.location())
 
         inst_idx = -1
-        if sig.is_instantiation():
-            inst_idx = fi.instantiation_index(fn, sig)
 
         return CallHierarchyItem(
-            name=fn.name(),
-            detail=str(SymbolSignature(fn)),
+            name=sym.name(),
+            detail=str(SymbolSignature(sym)),
             kind=SymbolKind.Function,
             uri=loc.uri,
             range=loc.range,
-            selection_range=location_to_range(fn.name_location()),
-            data=[fn.unique_id(), inst_idx],
+            selection_range=location_to_range(sym.name_location()),
+            data=[sym.unique_id(), inst_idx],
         )
+
+    def fn_to_call_hierarchy_item(
+        self, sig: chapel.TypedSignature
+    ) -> CallHierarchyItem:
+        """
+        Like sym_to_call_hierarchy_item, but for function instantiations.
+        The additional information can be used to represent call hierarchy
+        situations where only some instantiations of a function call
+        another function.
+        """
+        fn: chapel.Function = sig.ast()
+        item = self.sym_to_call_hierarchy_item(fn)
+        fi, _ = self.get_file_info(item.uri)
+
+        if sig.is_instantiation():
+            item.data[1] = fi.instantiation_index(fn, sig)
+
+        return item
 
 
 def run_lsp():
