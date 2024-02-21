@@ -65,7 +65,7 @@ PyObject* AstIterObject_iter(AstIterObject *self) {
 PyObject* AstIterObject_next(AstIterObject *self) {
   if (self->iterAdapter) {
     if (auto nextNode = self->iterAdapter->next()) {
-      return wrapAstNode((ContextObject*) self->contextObject, nextNode);
+      return wrapGeneratedType((ContextObject*) self->contextObject, nextNode);
     }
   }
   PyErr_SetNone(PyExc_StopIteration);
@@ -117,7 +117,7 @@ PyObject* AstCallIterObject_next(AstCallIterObject *self) {
     return nullptr;
   }
   auto argName = self->nameGetter(self->container, self->current);
-  auto child = wrapAstNode((ContextObject*) self->contextObject,
+  auto child = wrapGeneratedType((ContextObject*) self->contextObject,
                            self->childGetter(self->container, self->current));
   PyObject* toReturn = nullptr;
   if (!argName.isEmpty()) {

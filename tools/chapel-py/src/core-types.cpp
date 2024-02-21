@@ -200,7 +200,7 @@ PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
   return &ParamObject::PythonType;
 }
 
-PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
+PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
     Py_RETURN_NONE;
@@ -229,7 +229,7 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
   return toReturn;
 }
 
-PyObject* wrapType(ContextObject* context, const types::Type* node) {
+PyObject* wrapGeneratedType(ContextObject* context, const types::Type* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
     Py_RETURN_NONE;
@@ -258,7 +258,7 @@ PyObject* wrapType(ContextObject* context, const types::Type* node) {
   return toReturn;
 }
 
-PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
     Py_RETURN_NONE;

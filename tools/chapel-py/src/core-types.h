@@ -155,17 +155,17 @@ std::string generatePyiFile();
   Create a Python object of the class corresponding to the given AST node's
   type. For example, an Identifier node will be wrapped in a chapel.Identifier.
  */
-PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node);
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::uast::AstNode* node);
 
 /**
   Create a Python object of the class corresponding to the given Type*.
   For example, an ArrayType type will be wrapped in a chapel.ArrayType.
  */
-PyObject* wrapType(ContextObject* context, const chpl::types::Type* node);
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Type* node);
 
 /**
   Creates a Python object of the class corresponding to the given Param*.
  */
-PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* node);
 
 #endif
