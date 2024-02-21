@@ -1504,7 +1504,62 @@ def run_lsp():
     async def call_hierarchy_incoming(
         ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
     ):
-        return []
+        item = params.item
+        if item.data is None:
+            return None
+        uid, idx = item.data
+
+        fi, _ = ls.get_file_info(item.uri)
+
+        # Performance:
+        # Once the Python bindings supports it, we can use the
+        # "ID to AST" function from parsing to do this without iterating.
+        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
+            if node.unique_id() == item.data[0]:
+                fn = node
+                break
+        else:
+            return None
+
+        instantiation = None
+        if idx != -1:
+            instantiation = fi.nth_instantiation(fn, idx)
+
+        if instantiation is None:
+            return []
+
+        calls = fi.instantiations[fn.unique_id()][instantiation]
+        hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
+        incoming_calls: Dict[Union[chapel.TypedSignature, str], List[chapel.FnCall]] = defaultdict(list)
+        for (call, via) in calls:
+            # If the call is from an instantiation, use the instantiation
+            # as the hierarchy item anchor.
+            if via is not None:
+                incoming_calls[via].append(call)
+            # Otherwise, the call is from a concrete function or something else,
+            # like a module. Use the parent symbol's location as anchor.
+            else:
+                parent_sym: chapel.NamedDecl = call.parent_symbol()
+                hack_id_to_node[parent_sym.unique_id()] = parent_sym
+                incoming_calls[parent_sym.unique_id()].append(call)
+
+        to_return = []
+        for called_fn, calls in incoming_calls.items():
+            if isinstance(called_fn, str):
+                item = ls.sym_to_call_hierarchy_item(hack_id_to_node[called_fn])
+            else:
+                item = ls.fn_to_call_hierarchy_item(called_fn)
+
+            to_return.append(
+                CallHierarchyIncomingCall(
+                    item,
+                    from_ranges=[
+                        location_to_range(call.location()) for call in calls
+                    ],
+                )
+            )
+
+        return to_return
 
     @server.feature(CALL_HIERARCHY_OUTGOING_CALLS)
     async def call_hierarchy_outgoing(
