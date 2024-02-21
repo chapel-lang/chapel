@@ -200,3 +200,30 @@ def UnusedFormal(context, root):
 This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
+
+## Adding your own rules
+
+Developers may have their own preferences for their code they would like to be enforced by a linter. Rather than adding their own rule to `rules.py`, developers can load a custom rule file that contains all of their custom rules.
+
+For example, the following code is a complete definition of two new rules for chplcheck. Note that the top-level function must be named `rules` and take one argument.
+
+```python3
+# saved in file `myrules.py`
+import chapel
+
+def rules(driver):
+
+  @driver.basic_rule(chapel.Function)
+  def NoFunctionFoo(context, node):
+    return node.name() != "foo"
+
+  @driver.basic_rule(chapel.Variable, default=False)
+  def NoVariableBar(context, node):
+    return node.name() != "bar"
+```
+
+To load these custom rules into chplcheck, the additional command line argument is used.
+
+```bash
+chplcheck --add-rules path/to/my/myrules.py
+```
