@@ -2038,6 +2038,13 @@ static void warnDeprecatedFlags() {
 
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
+  // Force monolithic mode for AMD GPUs due to inconsistencies in ROCm 5's
+  // bundled LLVM (https://github.com/Cray/chapel-private/issues/5981).
+  if (!fDriverDoMonolithic &&
+      getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+    fDriverDoMonolithic = true;
+  }
+
   if (fDriverDoMonolithic) {
     // Prevent running if we are in monolithic mode but appear to be in a
     // sub-invocation, to ensure we are safe from contradictory flags down the
