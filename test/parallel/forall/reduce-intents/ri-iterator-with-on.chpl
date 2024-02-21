@@ -9,7 +9,7 @@ proc main {
   writeln(result);
 }
 
-iter AAA(): nothing {
+iter AAA(): int {
   halt("do not invoke me");
 }
 

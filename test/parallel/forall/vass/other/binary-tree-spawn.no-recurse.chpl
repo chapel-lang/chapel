@@ -13,7 +13,7 @@ proc main {
 
 inline proc ln do return 2**here.id;
 
-iter AAA(): nothing {
+iter AAA(): int {
   halt("do not invoke me");
 }
 

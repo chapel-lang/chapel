@@ -1,5 +1,5 @@
 // This program used used to not compile due to assertion error in [implementForallIntents.cpp:1125]
-iter myIter(): nothing {
+iter myIter(): 2*int {
   halt("Dummy serial iterator");
 }
 

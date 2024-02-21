@@ -4,7 +4,7 @@ config const n = 10;
 config const t = 2;
 
 
-iter myiter(nn: int, nt: int): nothing throws {
+iter myiter(nn: int, nt: int): int throws {
 
   throw new owned StringError("Test error");
 
@@ -16,7 +16,7 @@ iter myiter(nn: int, nt: int): nothing throws {
   }
 }
 
-iter myiter(nn: int, nt: int, param tag: iterKind): nothing throws where tag == iterKind.standalone {
+iter myiter(nn: int, nt: int, param tag: iterKind): int throws where tag == iterKind.standalone {
   throw new owned StringError("Test error");
 
   // This is not reachable.
@@ -28,7 +28,7 @@ iter myiter(nn: int, nt: int, param tag: iterKind): nothing throws where tag == 
 }
 
 // coforall loop in leader should NOT get vector pragma
-iter myiter(nn: int, nt: int, param tag: iterKind): nothing throws where tag == iterKind.leader {
+iter myiter(nn: int, nt: int, param tag: iterKind): range throws where tag == iterKind.leader {
   throw new owned StringError("Test error");
 
   // This is not reachable.
