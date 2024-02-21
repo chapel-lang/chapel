@@ -1613,6 +1613,9 @@ def run_lsp():
         if instantiation is None:
             return []
 
+        # Here too, because there's no chapel-py way to convert an ID back
+        # to a node, note the node whose ID we use in a dictionary (hack_id_to_node)
+        # to look up later.
         calls = fi.instantiations[fn.unique_id()][instantiation]
         hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
         incoming_calls: Dict[
