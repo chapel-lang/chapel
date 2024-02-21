@@ -5455,7 +5455,10 @@ DEFINE_PRIM(GPU_BLOCK_REDUCE) {
   auto interimResult = call->get(curArg++);
   auto blockSize = call->get(curArg++);
 
-  std::string fnName = "chpl_gpu_dev_block_reduce";
+
+  std::string fnName = "chpl_gpu_dev_sum_block_reduce";
+
+  fnName += "_" + std::string(threadData->typeInfo()->symbol->cname);
 
   // specialize for a given block size if statically available
   if (Immediate* imm = getSymbolImmediate(toSymExpr(blockSize)->symbol())) {
