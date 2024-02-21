@@ -26,6 +26,7 @@
 
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_os_ostream.h"
 
 #ifdef HAVE_LLVM
 #include "llvm/ADT/StringRef.h"
@@ -468,7 +469,10 @@ bool LibraryFile::readModuleSection(Context* context,
     info.astOffset = entry.astEntry;
     info.locationOffset = entry.locationEntry;
     {
-      std::string fullSymPath = moduleSymPath.str() + "." + lastSymId;
+      std::string fullSymPath = moduleSymPath.str();
+      if (!lastSymId.empty()) {
+        fullSymPath += "." + lastSymId;
+      }
       info.symbolPath = UniqueString::get(context, fullSymPath);
     }
     info.cnames = cnames;
@@ -767,6 +771,17 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
           }
         }
         s << "\n";
+      }
+
+
+      s << "     ### LLVM IR\n";
+      if (llvmMod.get()) {
+        auto err = llvmMod->materializeAll();
+        if (err) {
+          CHPL_ASSERT(false && "Failure to materialize a module");
+        }
+        auto llvmStream = llvm::raw_os_ostream(s);
+        llvmMod->print(llvmStream, /*AssemblyAnnotationWriter*/nullptr);
       }
     }
 
