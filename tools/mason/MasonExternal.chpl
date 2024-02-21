@@ -245,7 +245,7 @@ private proc generateYAML() {
   const reposOverride = 'repos:\n'+
                         '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
   var yamlFile = open(yamlFilePath,ioMode.cw);
-  var yamlWriter = yamlFile.writer();
+  var yamlWriter = yamlFile.writer(locking=false);
   yamlWriter.write(reposOverride);
   yamlWriter.close();
 }
