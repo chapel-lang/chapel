@@ -102,6 +102,8 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   PM.addPass(GlobalDCEPass());           // Delete unreachable globals
   PM.addPass(StripDeadDebugInfoPass());  // Remove dead debug info
   PM.addPass(StripDeadPrototypesPass()); // Remove dead func decls
+
+  PM.run(M, MAM);
 #else
   legacy::PassManager Passes;
 
