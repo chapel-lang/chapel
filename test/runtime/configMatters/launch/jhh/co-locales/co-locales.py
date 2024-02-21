@@ -199,7 +199,7 @@ class ColocaleArgs(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             output = self.runCmd("./hello -nl -3x2z -v --dry-run")
         self.assertEqual(cm.exception.stdout.strip(),
-            '<command-line arg>:1: error: "2z" is not a valid number of co-locales.')
+            '<command-line arg>:1: error: "z" is not a valid suffix.')
 
     def test_18_invalid_suffix2(self):
         """Reject invalid suffix that starts with a valid character"""
