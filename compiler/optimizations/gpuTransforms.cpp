@@ -1152,25 +1152,25 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
 
   std::string fnToCall = "chpl_gpu_sum_reduce_double";
   //Type* dataType = this->actual_->typeInfo()->getRefType();
-  Type* dataType = this->actual_->typeInfo()->getValType();
+  //Type* dataType = this->actual_->typeInfo()->getValType();
 
-  VarSymbol* castInData = new VarSymbol("cast_in_data", dataType);
-  CallExpr* castInMove = new CallExpr(PRIM_MOVE, castInData,
-                                      new CallExpr(PRIM_CAST, dataType->symbol,
-                                                   inData));
-  ret->insertAtTail(new DefExpr(castInData));
-  ret->insertAtTail(castInMove);
+  //VarSymbol* castInData = new VarSymbol("cast_in_data", dataType);
+  //CallExpr* castInMove = new CallExpr(PRIM_MOVE, castInData,
+                                      //new CallExpr(PRIM_CAST, dataType->symbol,
+                                                   //inData));
+  //ret->insertAtTail(new DefExpr(castInData));
+  //ret->insertAtTail(castInMove);
 
-  VarSymbol* castOutData = new VarSymbol("cast_out_data", dataType);
-  CallExpr* castOutMove = new CallExpr(PRIM_MOVE, castOutData,
-                                       new CallExpr(PRIM_CAST, dataType->symbol,
-                                                    outData));
-  ret->insertAtTail(new DefExpr(castOutData));
-  ret->insertAtTail(castOutMove);
+  //VarSymbol* castOutData = new VarSymbol("cast_out_data", dataType);
+  //CallExpr* castOutMove = new CallExpr(PRIM_MOVE, castOutData,
+                                       //new CallExpr(PRIM_CAST, dataType->symbol,
+                                                    //outData));
+  //ret->insertAtTail(new DefExpr(castOutData));
+  //ret->insertAtTail(castOutMove);
 
   ret->insertAtTail(new CallExpr(PRIM_GPU_REDUCE_WRAPPER,
                                  new_CStringSymbol(fnToCall.c_str()),
-                                 castInData, numElems, castOutData, outIdx));
+                                 inData, numElems, outData, outIdx));
   ret->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   return ret;

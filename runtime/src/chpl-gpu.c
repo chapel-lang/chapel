@@ -233,6 +233,7 @@ typedef struct reduce_var_s {
   void* outer_var;
   size_t elem_size;
   void* buffer;
+  reduce_wrapper_fn_t wrapper;
 } reduce_var;
 
 typedef struct kernel_cfg_s {
@@ -447,8 +448,9 @@ static bool cfg_can_reduce(kernel_cfg* cfg) {
           cfg->blk_dim_z == 1);
 }
 
-static void cfg_add_reduce_buffer_for_arg(kernel_cfg* cfg, void* arg,
-                                          size_t elem_size) {
+static void cfg_add_reduce_var_for_arg(kernel_cfg* cfg, void* arg,
+                                       size_t elem_size,
+                                       reduce_wrapper_fn_t wrapper) {
   // create the reduction buffer
   const int i = cfg->cur_reduce_var;
   assert(i < cfg->n_reduce_vars);
@@ -462,6 +464,7 @@ static void cfg_add_reduce_buffer_for_arg(kernel_cfg* cfg, void* arg,
   cfg->reduce_vars[i].buffer = buf;
   cfg->reduce_vars[i].outer_var = arg;
   cfg->reduce_vars[i].elem_size = elem_size;
+  cfg->reduce_vars[i].wrapper = wrapper;
 
   // pass that normally
   cfg_add_direct_param((kernel_cfg*)cfg, &(cfg->reduce_vars[i].buffer));
@@ -620,12 +623,14 @@ void chpl_gpu_arg_pass(void* _cfg, void* arg) {
   CHPL_GPU_DEBUG("\tAdded by-val param (at %d): %p\n", cfg->cur_param,  arg);
 }
 
-void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size) {
+void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
+                         reduce_wrapper_fn_t wrapper) {
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
   if (cfg_can_reduce(cfg)) {
     // pass the argument normally
     cfg_add_direct_param(cfg, arg);
-    cfg_add_reduce_buffer_for_arg(cfg, arg, elem_size);
+    cfg_add_reduce_var_for_arg(cfg, arg, elem_size, wrapper);
+
     CHPL_GPU_DEBUG("\tAdded by-reduce param (at %d): %p\n", cfg->cur_param, arg);
   }
   else {
@@ -637,14 +642,19 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size) {
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
 
   for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
-    CHPL_GPU_DEBUG("Reduce %p into %p\n", cfg->reduce_vars[i].buffer,
-                  cfg->reduce_vars[i].outer_var);
+    CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p %p\n", cfg->reduce_vars[i].buffer,
+                  cfg->reduce_vars[i].outer_var,
+                  cfg->reduce_vars[i].wrapper, (*(cfg->reduce_vars[i].wrapper)));
 
+    cfg->reduce_vars[i].wrapper((double*)cfg->reduce_vars[i].buffer,
+                                     cfg->grd_dim_x,
+                                     (double*)cfg->reduce_vars[i].outer_var,
+                                     NULL);
     // TODO fix this
-    chpl_gpu_sum_reduce_double((double*)cfg->reduce_vars[i].buffer,
-                               cfg->grd_dim_x,
-                               (double*)cfg->reduce_vars[i].outer_var,
-                               NULL);
+    /*chpl_gpu_sum_reduce_double((double*)cfg->reduce_vars[i].buffer,*/
+                               /*cfg->grd_dim_x,*/
+                               /*(double*)cfg->reduce_vars[i].outer_var,*/
+                               /*NULL);*/
   }
 }
 
@@ -1462,15 +1472,16 @@ bool chpl_gpu_can_sort(void) {
 }
 
 #define DEF_ONE_REDUCE(kind, data_type)\
-void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
-                                          data_type* val, int* idx) { \
+void chpl_gpu_##kind##_reduce_##data_type(void *data, int n, \
+                                          void* val, int* idx) { \
   CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " called\n"); \
   \
   int dev = chpl_task_getRequestedSubloc(); \
   chpl_gpu_impl_use_device(dev); \
   void* stream = get_stream(dev); \
   \
-  chpl_gpu_impl_##kind##_reduce_##data_type(data, n, val, idx, stream); \
+  chpl_gpu_impl_##kind##_reduce_##data_type((data_type*)data, n, \
+                                            (data_type*)val, idx, stream); \
   \
   if (chpl_gpu_sync_with_host) { \
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream); \
