@@ -2046,7 +2046,8 @@ static void checkCompilerDriverFlags() {
   // Force monolithic mode for AMD GPUs due to inconsistencies in ROCm 5's
   // bundled LLVM (https://github.com/Cray/chapel-private/issues/5981).
   if (!fDriverDoMonolithic &&
-      getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+      (usingGpuLocaleModel() &&
+       getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP)) {
     if (driverFlagSpecified) {
       USR_WARN(
           "--compiler-driver is overridden with --no-compiler-driver for AMD "
