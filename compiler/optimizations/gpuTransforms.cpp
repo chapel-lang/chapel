@@ -1433,12 +1433,8 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
        loopSymbolToInterimReductionFormal) {
     CallExpr* blockReduce = new CallExpr(PRIM_GPU_BLOCK_REDUCE,
                                          symInLoop,
-                                         interimResultFormal);
-
-    if (blockSize()->isImmediate()) {
-      std::cout << "Using specialized block-reduce" << std::endl;
-      blockReduce->insertAtTail(blockSize());
-    }
+                                         interimResultFormal,
+                                         blockSize());
 
     outlinedFunction->insertBeforeEpilogue(blockReduce);
   }
