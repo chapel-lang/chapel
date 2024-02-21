@@ -5179,9 +5179,12 @@ void makeBinaryLLVM(void) {
                      dotOFiles, clangLDArgs);
     }
 
+    // TODO: Library compiles can produce a '.a' archive as output which
+    // 'dsymutil' doesn't seem to know how to handle. So we'll probably
+    // need a more complicated invocation.
     const bool generateDarwinSymArchive =
-          strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0 &&
-          debugCCode;
+          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && debugCCode &&
+          !fLibraryCompile;
 
     if (generateDarwinSymArchive) {
       const char* bin = "dsymutil";
