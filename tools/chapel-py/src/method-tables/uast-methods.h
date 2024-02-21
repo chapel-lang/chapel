@@ -198,7 +198,7 @@ CLASS_END(ExternBlock)
 
 CLASS_BEGIN(FunctionSignature)
   PLAIN_GETTER(FunctionSignature, formals, "Get the formals for this FunctionSignature node",
-               IterAdapterBase*, return mkIterPair(node->formals()))
+               TypedIterAdapterBase<const chpl::uast::Decl*>*, return mkIterPair(node->formals()))
   PLAIN_GETTER(FunctionSignature, is_parenless, "Check if this FunctionSignature node is parenless",
                bool, return node->isParenless())
   PLAIN_GETTER(FunctionSignature, kind, "Get the kind of this FunctionSignature node",
@@ -235,7 +235,7 @@ CLASS_BEGIN(Import)
   PLAIN_GETTER(Import, visibility, "Get the visibility of this Import node",
                const char*, return Decl::visibilityToString(node->visibility()))
   PLAIN_GETTER(Import, visibility_clauses, "Get the visibility clauses of this Import node",
-               IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
+               TypedIterAdapterBase<const chpl::uast::VisibilityClause*>*, return mkIterPair(node->visibilityClauses()))
 CLASS_END(Import)
 
 CLASS_BEGIN(Include)
@@ -289,7 +289,7 @@ CLASS_BEGIN(Select)
   PLAIN_GETTER(Select, exprs, "Get the expression of this Select node",
                const chpl::uast::AstNode*, return node->expr())
   PLAIN_GETTER(Select, when_stmts, "Get the When statements of this Select node",
-               IterAdapterBase*, return mkIterPair(node->whenStmts()))
+               TypedIterAdapterBase<const chpl::uast::When*>*, return mkIterPair(node->whenStmts()))
 CLASS_END(Select)
 
 CLASS_BEGIN(Throw)
@@ -301,7 +301,7 @@ CLASS_BEGIN(Try)
   PLAIN_GETTER(Try, body, "Get the body of this Try node",
                const chpl::uast::Block*, return node->body())
   PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
-               IterAdapterBase*, return mkIterPair(node->handlers()))
+               TypedIterAdapterBase<const chpl::uast::Catch*>*, return mkIterPair(node->handlers()))
   PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",
                bool, return node->isExpressionLevel())
   PLAIN_GETTER(Try, is_try_bang, "Check if this Try node is a 'try!'",
@@ -312,7 +312,7 @@ CLASS_BEGIN(Use)
   PLAIN_GETTER(Use, visibility, "Get the visibility of this Use node",
                const char*, return Decl::visibilityToString(node->visibility()))
   PLAIN_GETTER(Use, visibility_clauses, "Get the visibility clauses of this Use node",
-               IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
+               TypedIterAdapterBase<const chpl::uast::VisibilityClause*>*, return mkIterPair(node->visibilityClauses()))
 CLASS_END(Use)
 
 CLASS_BEGIN(VisibilityClause)
@@ -493,7 +493,7 @@ CLASS_END(Decl)
 
 CLASS_BEGIN(TupleDecl)
   PLAIN_GETTER(TupleDecl, decls, "Get the declarations for this TupleDecl node",
-               IterAdapterBase*, return mkIterPair(node->decls()))
+               TypedIterAdapterBase<const chpl::uast::Decl*>*, return mkIterPair(node->decls()))
   PLAIN_GETTER(TupleDecl, init_expression, "Get the init expression of this TupleDecl node",
                const chpl::uast::AstNode*, return node->typeExpression())
   PLAIN_GETTER(TupleDecl, intent_or_kind, "Get the intent or kind of this TupleDecl node",
@@ -524,7 +524,7 @@ CLASS_END(EnumElement)
 
 CLASS_BEGIN(Function)
   PLAIN_GETTER(Function, formals, "Get the formals for this Function node",
-               IterAdapterBase*, return mkIterPair(node->formals()))
+               TypedIterAdapterBase<const chpl::uast::Decl*>*, return mkIterPair(node->formals()))
   PLAIN_GETTER(Function, body, "Get the body for this function",
                const chpl::uast::Block*, return node->body())
   METHOD(Function, formal, "Get the n'th Formal of this Function node",
