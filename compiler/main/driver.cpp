@@ -2050,8 +2050,8 @@ static void checkCompilerDriverFlags() {
        getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP)) {
     if (driverFlagSpecified) {
       USR_WARN(
-          "--compiler-driver is overridden with --no-compiler-driver for AMD "
-          "GPUs to work around a bug for the time being");
+          "--compiler-driver is overridden with --no-compiler-driver for "
+          "CHPL_GPU=amd to work around a bug for the time being");
     }
     fDriverDoMonolithic = true;
   }
