@@ -18,38 +18,38 @@
  */
 
 #ifndef GENERATED_TYPE
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS)
+#define GENERATED_TYPE(ROOT, NAME, TYPE, TAG, FLAGS)
 #endif
 
 #ifndef GENERATED_TYPE_BEGIN
-#define GENERATED_TYPE_BEGIN(ROOT, NAME, TAG, FLAGS)
+#define GENERATED_TYPE_BEGIN(ROOT, NAME, TYPE, TAG, FLAGS)
 #endif
 
 #ifndef GENERATED_TYPE_END
-#define GENERATED_TYPE_END(ROOT, NAME, TAG, FLAGS)
+#define GENERATED_TYPE_END(ROOT, NAME, TYPE, TAG, FLAGS)
 #endif
 
-#define TYPE_NODE(NAME) GENERATED_TYPE(ChapelType, NAME, chpl::types::typetags::NAME, Py_TPFLAGS_DEFAULT)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) GENERATED_TYPE(ChapelType, NAME, chpl::types::typetags::NAME, Py_TPFLAGS_DEFAULT)
-#define TYPE_BEGIN_SUBCLASSES(NAME) GENERATED_TYPE(ChapelType, NAME, chpl::types::typetags::START_##NAME, Py_TPFLAGS_BASETYPE) GENERATED_TYPE_BEGIN(ChapelType, NAME, chpl::types::typetags::START_##NAME, Py_TPFLAGS_BASETYPE)
-#define TYPE_END_SUBCLASSES(NAME) GENERATED_TYPE_END(ChapelType, NAME, chpl::types::typetags::END_##NAME, Py_TPFLAGS_BASETYPE)
+#define TYPE_NODE(NAME) GENERATED_TYPE(ChapelType, NAME, chpl::types::NAME, chpl::types::typetags::NAME, Py_TPFLAGS_DEFAULT)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) GENERATED_TYPE(ChapelType, NAME, chpl::types::NAME, chpl::types::typetags::NAME, Py_TPFLAGS_DEFAULT)
+#define TYPE_BEGIN_SUBCLASSES(NAME) GENERATED_TYPE(ChapelType, NAME, chpl::types::NAME, chpl::types::typetags::START_##NAME, Py_TPFLAGS_BASETYPE) GENERATED_TYPE_BEGIN(ChapelType, NAME, chpl::types::NAME, chpl::types::typetags::START_##NAME, Py_TPFLAGS_BASETYPE)
+#define TYPE_END_SUBCLASSES(NAME) GENERATED_TYPE_END(ChapelType, NAME, chpl::types::NAME, chpl::types::typetags::END_##NAME, Py_TPFLAGS_BASETYPE)
 #include "chpl/types/type-classes-list.h"
 #undef TYPE_NODE
 #undef BUILTIN_TYPE_NODE
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
 
-#define AST_NODE(NAME) GENERATED_TYPE(AstNode, NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_LEAF(NAME) GENERATED_TYPE(AstNode, NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_BEGIN_SUBCLASSES(NAME) GENERATED_TYPE(AstNode, NAME, chpl::uast::asttags::START_##NAME, Py_TPFLAGS_BASETYPE) GENERATED_TYPE_BEGIN(AstNode, NAME, chpl::uast::asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
-#define AST_END_SUBCLASSES(NAME) GENERATED_TYPE_END(AstNode, NAME, chpl::uast::asttags::END_##NAME, Py_TPFLAGS_BASETYPE)
+#define AST_NODE(NAME) GENERATED_TYPE(AstNode, NAME, chpl::uast::NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_LEAF(NAME) GENERATED_TYPE(AstNode, NAME, chpl::uast::NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_BEGIN_SUBCLASSES(NAME) GENERATED_TYPE(AstNode, NAME, chpl::uast::NAME, chpl::uast::asttags::START_##NAME, Py_TPFLAGS_BASETYPE) GENERATED_TYPE_BEGIN(AstNode, NAME, chpl::uast::NAME, chpl::uast::asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
+#define AST_END_SUBCLASSES(NAME) GENERATED_TYPE_END(AstNode, NAME, chpl::uast::NAME, chpl::uast::asttags::END_##NAME, Py_TPFLAGS_BASETYPE)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
 
-#define PARAM_NODE(NAME, TYPE) GENERATED_TYPE(Param, NAME, chpl::types::paramtags::NAME, Py_TPFLAGS_DEFAULT)
+#define PARAM_NODE(NAME, TYPE) GENERATED_TYPE(Param, NAME, chpl::uast::NAME, chpl::types::paramtags::NAME, Py_TPFLAGS_DEFAULT)
 #include "chpl/types/param-classes-list.h"
 #undef PARAM_NODE
 
