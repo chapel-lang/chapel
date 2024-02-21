@@ -3318,7 +3318,7 @@ private proc isBCPindex(type t) param do
   // An error overload for trying to iterate over '..'
   pragma "order independent yielding loops"
   @chpldoc.nodoc
-  iter range.these() where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
+  iter range.these(): nothing where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
     compilerError("iteration over a range with no bounds");
   }
 

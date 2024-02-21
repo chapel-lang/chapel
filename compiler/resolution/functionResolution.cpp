@@ -4417,28 +4417,6 @@ static void resolveNormalCallConstRef(CallExpr* call) {
   }
 }
 
-// Returns the element type, given an array type.
-static Type* arrayElementType(AggregateType* arrayType) {
-  Type* eltType = NULL;
-  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
-  Type* instType = arrayType->getField("_instance")->type;
-  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-  eltType = instClass->getField("eltType")->getValType();
-  return eltType;
-}
-
-// Returns the element type, given an array type.
-// Recurse into it if it is still an array.
-static Type* finalArrayElementType(AggregateType* arrayType) {
-  Type* eltType = NULL;
-  do {
-    eltType = arrayElementType(arrayType);
-    arrayType = toAggregateType(eltType);
-  } while (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
-
-  return eltType;
-}
-
 // Is it OK to default-initialize an array with this element type?
 static bool okForDefaultInitializedArray(Type* eltType) {
   return isDefaultInitializable(eltType);
@@ -4497,7 +4475,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          ! formal->hasFlag(FLAG_UNSAFE))
       if (AggregateType* actualType = toAggregateType(actualSym->getValType()))
        if (actualType->symbol->hasFlag(FLAG_ARRAY) &&
-           ! okForDefaultInitializedArray(finalArrayElementType(actualType)))
+           ! okForDefaultInitializedArray(actualType->finalArrayElementType()))
         //
         // Acceptable handling of the default actual is this:
         //   def default_arg_xxx: _array(...)
@@ -4513,7 +4491,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          USR_FATAL_CONT(call, "cannot default-initialize the array field"
                         " %s because it has a non-nilable element type '%s'",
                         userFieldNameForError(actualSym),
-                        toString(finalArrayElementType(actualType), true));
+                        toString(actualType->finalArrayElementType(), true));
 }
 
 static void resolveNormalCallFinalChecks(CallExpr* call) {
@@ -13075,7 +13053,7 @@ static void lowerRuntimeTypeInit(CallExpr* call,
       USR_FATAL(call, "noinit is only supported for arrays");
     } else if (fAllowNoinitArrayNotPod == false) {
       // noinit of an array
-      Type* eltType = arrayElementType(at);
+      Type* eltType = at->arrayElementType();
       bool notPOD = propagateNotPOD(eltType);
       if (notPOD) {
         USR_FATAL_CONT(call, "noinit is only supported for arrays of trivially copyable types");
@@ -13444,9 +13422,10 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
       name = val->name;
     }
 
-    INT_ASSERT(val->type != dtUnknown && val->type != dtAny);
+    INT_ASSERT(isAggregateType(val->type));
     if (name != NULL) {
-      Type* eltType = finalArrayElementType(toAggregateType(val->type));
+      auto at = toAggregateType(val->type);
+      Type* eltType = at->finalArrayElementType();
       if (! okForDefaultInitializedArray(eltType))
         USR_FATAL_CONT(call, "cannot default-initialize the array %s"
                        " because it has a non-nilable element type '%s'",

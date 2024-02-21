@@ -1,4 +1,4 @@
-iter yieldNothing() {
+iter yieldNothing(): nothing {
   writeln("In yieldNothing");
 }
 

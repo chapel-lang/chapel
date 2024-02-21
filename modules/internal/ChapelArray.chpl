@@ -935,6 +935,13 @@ module ChapelArray {
                              doiBulkTransferFromAny,  doiBulkTransferToAny,
                              chpl__serialize, chpl__deserialize;
 
+    // Hook into 'postinit' since arrays do not seem to offer 'init'.
+    proc postinit() {
+      if eltType == nothing {
+        compilerError("cannot initialize array with element type 'nothing'");
+      }
+    }
+
     @chpldoc.nodoc
     proc deinit() {
       _do_destroy_array(this);

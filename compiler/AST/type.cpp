@@ -1843,37 +1843,6 @@ bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
-// Returns the element type, given an array type.
-static Type* arrayElementType(AggregateType* arrayType) {
-  Type* eltType = nullptr;
-  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
-  Type* instType = arrayType->getField("_instance")->type;
-  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-  TypeSymbol* ts = getDataClassType(instClass->symbol);
-  // if no eltType here, go to the super class
-  while (ts == nullptr) {
-    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
-        instClass = toAggregateType(canonicalClassType(super->type));
-        ts = getDataClassType(instClass->symbol);
-    } else break;
-  }
-  if (ts != NULL) eltType = ts->type;
-
-  return eltType;
-}
-
-// Returns the element type, given an array type.
-// Recurse into it if it is still an array.
-static Type* finalArrayElementType(AggregateType* arrayType) {
-  Type* eltType = nullptr;
-  do {
-    eltType = arrayElementType(arrayType);
-    arrayType = toAggregateType(eltType);
-  } while (arrayType != nullptr && arrayType->symbol->hasFlag(FLAG_ARRAY));
-
-  return eltType;
-}
-
 static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
   if (type == nullptr) {
     return false;
@@ -1889,7 +1858,7 @@ static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
     if (AggregateType* at = toAggregateType(vt)) {
       // get backing array instance and recurse
       if (at->symbol->hasFlag(FLAG_ARRAY)) {
-        Type* eltType = finalArrayElementType(at);
+        Type* eltType = at->finalArrayElementType();
         if (isOrContains(eltType, flag, checkRefs)) return true;
       } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
         // if its a tuple, search the tuple type substitutions

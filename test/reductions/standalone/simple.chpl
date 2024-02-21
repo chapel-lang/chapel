@@ -1,6 +1,6 @@
 // This program used to produce the incorrect result (count == 0 instead of 5)
 // when the standalone iterator (incorrectly) had the 'ref' return intent
-iter myIter() {
+iter myIter(): int {
   halt("Dummy serial iterator");
 }
 

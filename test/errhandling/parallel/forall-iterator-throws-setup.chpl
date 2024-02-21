@@ -4,10 +4,11 @@ config const n = 10;
 config const t = 2;
 
 
-iter myiter(nn: int, nt: int) throws {
+iter myiter(nn: int, nt: int): int throws {
 
   throw new owned StringError("Test error");
 
+  // This is not reachable.
   for i in 0..#nt {
     for j in i*nn..#nn {
       yield j;
@@ -15,9 +16,10 @@ iter myiter(nn: int, nt: int) throws {
   }
 }
 
-iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.standalone {
+iter myiter(nn: int, nt: int, param tag: iterKind): int throws where tag == iterKind.standalone {
   throw new owned StringError("Test error");
 
+  // This is not reachable.
   coforall i in 0..#nt {
     for j in i*nn..#nn {
       yield j;
@@ -26,9 +28,10 @@ iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.
 }
 
 // coforall loop in leader should NOT get vector pragma
-iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.leader {
+iter myiter(nn: int, nt: int, param tag: iterKind): range throws where tag == iterKind.leader {
   throw new owned StringError("Test error");
 
+  // This is not reachable.
   coforall i in 0..#nt {
     yield i*nn..#nn;
   }
