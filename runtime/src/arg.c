@@ -260,12 +260,19 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       _argNumLocalesPerNode = c_string_to_int32_t_precise(lpn, &invalid,
                                                    invalidChars);
       const char *t = NULL;
-      if (invalidChars[1] == '\0') {
+      if (invalid) {
         switch(invalidChars[0]) {
           case 's': t = "socket"; invalid = false; break;
           case 'n': t = "numa";invalid = false; break;
           case 'c': t = "core"; invalid = false; break;
           case 'L': t = "cache"; invalid = false; break;
+        }
+        if (!invalid) {
+          // There should be only a single suffix character
+          char *s = strchr(lpn, invalidChars[0]);
+          if ((s == NULL) || (*(s+1) != '\0')) {
+            invalid = true;
+          }
         }
       }
       if (invalid) {
