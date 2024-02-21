@@ -774,8 +774,10 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (name, info->irBuilder->getInt8PtrTy()));
+                  (cname, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
+        if (fDynoLibGenOrUse)
+          globalValue->setLinkage(llvm::GlobalVariable::LinkOnceODRLinkage);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
                 gepTy, globalConstString, 0, 0)));
@@ -925,7 +927,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
 
       auto linkage = llvm::GlobalVariable::InternalLinkage;
       if (fDynoLibGenOrUse)
-        linkage = llvm::Function::WeakODRLinkage;
+        linkage = llvm::GlobalVariable::WeakODRLinkage;
       if (hasFlag(FLAG_EXPORT))
         linkage = llvm::GlobalVariable::ExternalLinkage;
 
