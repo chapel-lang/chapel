@@ -707,7 +707,12 @@ module String {
       // inserts padding for but we can't actually initialize the padding
       // without a memset
       if (chpl_warnUnstable && chpl_constArgChecking) {
+        var origIsOwned = ret.isOwned;
+        var origLocaleID = ret.locale_id;
+
         __primitive("zero variable", ret);
+        ret.isOwned = origIsOwned;
+        ret.locale_id = origLocaleID;
       }
 
       initWithBorrowedBuffer(ret, x, length, size);
