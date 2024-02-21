@@ -200,7 +200,7 @@ def completion_item_for_decl(
 
 
 def location_to_location(loc) -> Location:
-    return Location("file://" + loc.path(), location_to_range(loc))
+    return Location("file://" + os.path.abspath(loc.path()), location_to_range(loc))
 
 
 def get_symbol_information(
@@ -339,7 +339,7 @@ class NodeAndRange:
         return Location(self.get_uri(), self.rng)
 
     def get_uri(self):
-        path = self.node.location().path()
+        path = os.path.abspath(self.node.location().path())
         return f"file://{path}"
 
 
@@ -349,12 +349,29 @@ class ResolvedPair:
     resolved_to: NodeAndRange
 
 
+@dataclass
+class References:
+    in_file: "FileInfo"
+    uses: List[NodeAndRange]
+
+    def append(self, x: NodeAndRange):
+        self.uses.append(x)
+
+    def clear(self):
+        self.uses.clear()
+
+    def __iter__(self):
+        return iter(self.uses)
+
+
 class ContextContainer:
     def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
+        self.config: Optional["WorkspaceConfig"] = config
         self.file_paths: List[str] = []
         self.module_paths: List[str] = [file]
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
+        self.global_uses: Dict[str, List[References]] = defaultdict(list)
 
         if config:
             file_config = config.for_file(file)
@@ -407,7 +424,7 @@ class FileInfo:
     instantiation_segments: PositionList[
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
-    uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
+    uses_here: Dict[str, References] = field(init=False)
     instantiations: Dict[str, Set[chapel.TypedSignature]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
@@ -417,6 +434,7 @@ class FileInfo:
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
+        self.uses_here = {}
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.AstNode]:
@@ -436,6 +454,15 @@ class FileInfo:
         with self.context.context.track_errors() as _:
             return self.parse_file()
 
+    def _get_use_container(self, uid: str) -> References:
+        if uid in self.uses_here:
+            return self.uses_here[uid]
+
+        refs = References(self, [])
+        self.uses_here[uid] = refs
+        self.context.global_uses[uid].append(refs)
+        return refs
+
     def _note_reference(self, node: Union[chapel.Dot, chapel.Identifier]):
         """
         Given a node that can refer to another node, note what it refers
@@ -445,7 +472,7 @@ class FileInfo:
         if not to:
             return
 
-        self.uses_here[to.unique_id()].append(NodeAndRange(node))
+        self._get_use_container(to.unique_id()).append(NodeAndRange(node))
         self.use_segments.append(
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
@@ -482,7 +509,9 @@ class FileInfo:
                 self.possibly_visible_decls.append(child)
 
     def _search_instantiations(
-        self, root: Union[chapel.AstNode, List[chapel.AstNode]], via: Optional[chapel.TypedSignature] = None
+        self,
+        root: Union[chapel.AstNode, List[chapel.AstNode]],
+        via: Optional[chapel.TypedSignature] = None,
     ):
         for node in chapel.preorder(root):
             if not isinstance(node, chapel.FnCall):
@@ -517,8 +546,9 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.uses_here = defaultdict(list)
         self.instantiations = defaultdict(set)
+        for _, refs in self.uses_here.items():
+            refs.clear()
         self.use_segments.clear()
         self.def_segments.clear()
         self.visit(asts)
@@ -608,6 +638,9 @@ class WorkspaceConfig:
                 continue
 
             self.files[key] = compile_commands[0]
+
+    def file_paths(self) -> Iterable[str]:
+        return self.files.keys()
 
     def for_file(self, path: str) -> Optional[Dict[str, Any]]:
         if path in self.files:
@@ -703,6 +736,12 @@ class ChapelLanguageServer(LanguageServer):
         self.contexts[path] = context
 
         return context
+
+    def eagerly_process_all_files(self, context: ContextContainer):
+        cfg = context.config
+        if cfg:
+            for file in cfg.files:
+                self.get_file_info("file://" + file, do_update=False)
 
     def get_file_info(
         self, uri: str, do_update: bool = False
@@ -1018,9 +1057,12 @@ def run_lsp():
         if not node_and_loc:
             return None
 
+        ls.eagerly_process_all_files(fi.context)
+
         locations = [node_and_loc.get_location()]
-        for use in fi.uses_here[node_and_loc.node.unique_id()]:
-            locations.append(use.get_location())
+        for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
+            for use in uselist:
+                locations.append(use.get_location())
 
         return locations
 
@@ -1165,9 +1207,12 @@ def run_lsp():
                 edits[nr.get_uri()] = []
             edits[nr.get_uri()].append(TextEdit(nr.rng, params.new_name))
 
+        ls.eagerly_process_all_files(fi.context)
+
         add_to_edits(node_and_loc)
-        for use in fi.uses_here[node_and_loc.node.unique_id()]:
-            add_to_edits(use)
+        for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
+            for use in uselist:
+                add_to_edits(use)
 
         return WorkspaceEdit(changes=edits)
 
@@ -1225,7 +1270,7 @@ def run_lsp():
         highlights = [
             DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
         ]
-        for use in fi.uses_here[node_and_loc.node.unique_id()]:
+        for use in fi.uses_here.get(node_and_loc.node.unique_id(), []):
             highlights.append(
                 DocumentHighlight(use.rng, DocumentHighlightKind.Text)
             )
@@ -1305,9 +1350,7 @@ def run_lsp():
                 start_pos = location_to_range(ast.location()).start
                 instantiation = fi.get_inst_segment_at_position(start_pos)
                 tokens.extend(
-                    ls.get_dead_code_tokens(
-                        ast, fi.file_lines(), instantiation
-                    )
+                    ls.get_dead_code_tokens(ast, fi.file_lines(), instantiation)
                 )
 
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
