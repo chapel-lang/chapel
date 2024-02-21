@@ -2,7 +2,7 @@ config const n = 1_000;
 
 proc multiAbs(in n: real) {
   while n > 10.0 {
-    n = abs(n);
+    n = abs(n-1);
   }
   return n;
 }
