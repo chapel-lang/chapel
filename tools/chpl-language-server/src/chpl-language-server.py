@@ -659,6 +659,20 @@ class FileInfo:
             -1,
         )
 
+    def concrete_instantiation_for(self, fn: chapel.Function) -> Optional[chapel.TypedSignature]:
+        """
+        If all we have is a function ID, we can still select a particular
+        typed signature for it in some cases, even without calls: the
+        concrete signature when a function is non-generic. Return
+        that signature, if it exists for the given function.
+        """
+        uid = fn.unique_id()
+        if uid in self.instantiations:
+            for sig in self.instantiations[uid]:
+                if not sig.is_instantiation():
+                    return sig
+        return None
+
 
 class WorkspaceConfig:
     def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
@@ -1042,7 +1056,7 @@ class ChapelLanguageServer(LanguageServer):
         return CallHierarchyItem(
             name=sym.name(),
             detail=str(SymbolSignature(sym)),
-            kind=SymbolKind.Function,
+            kind=decl_kind(sym) or SymbolKind.Function,
             uri=loc.uri,
             range=loc.range,
             selection_range=location_to_range(sym.name_location()),
@@ -1061,11 +1075,37 @@ class ChapelLanguageServer(LanguageServer):
         fn: chapel.Function = sig.ast()
         item = self.sym_to_call_hierarchy_item(fn)
         fi, _ = self.get_file_info(item.uri)
-
-        if sig.is_instantiation():
-            item.data[1] = fi.instantiation_index(fn, sig)
+        item.data[1] = fi.instantiation_index(fn, sig)
 
         return item
+
+    def unpack_call_hierarchy_item(self, item: CallHierarchyItem) -> Optional[Tuple[FileInfo, chapel.Function, Optional[chapel.TypedSignature]]]:
+        if item.data is None or not isinstance(item.data, list) or not isinstance(item.data[0], str) or not isinstance(item.data[1], int):
+            self.show_message("Call hierarchy item contains missing or invalid additional data", MessageType.Error)
+            return None
+        uid, idx = item.data
+
+        fi, _ = self.get_file_info(item.uri)
+
+        # Performance:
+        # Once the Python bindings supports it, we can use the
+        # "ID to AST" function from parsing to do this without iterating.
+        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
+            if node.unique_id() == item.data[0]:
+                fn = node
+                break
+        else:
+            # The call hierarchy item could've been a module or something else.
+            # We don't handle that here.
+            return None
+
+        instantiation = None
+        if idx != -1:
+            instantiation = fi.nth_instantiation(fn, idx)
+        else:
+            instantiation = fi.concrete_instantiation_for(fn)
+
+        return (fi, fn, instantiation)
 
 
 def run_lsp():
@@ -1504,27 +1544,14 @@ def run_lsp():
     async def call_hierarchy_incoming(
         ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
     ):
-        item = params.item
-        if item.data is None:
-            return None
-        uid, idx = item.data
-
-        fi, _ = ls.get_file_info(item.uri)
-
-        # Performance:
-        # Once the Python bindings supports it, we can use the
-        # "ID to AST" function from parsing to do this without iterating.
-        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
-            if node.unique_id() == item.data[0]:
-                fn = node
-                break
-        else:
+        unpacked = ls.unpack_call_hierarchy_item(params.item)
+        if unpacked is None:
             return None
 
-        instantiation = None
-        if idx != -1:
-            instantiation = fi.nth_instantiation(fn, idx)
+        fi, fn, instantiation = unpacked
 
+        # If there are no signatures that we found, there are no calls that
+        # we are aware of.
         if instantiation is None:
             return []
 
@@ -1565,26 +1592,11 @@ def run_lsp():
     async def call_hierarchy_outgoing(
         ls: ChapelLanguageServer, params: CallHierarchyOutgoingCallsParams
     ):
-        item = params.item
-        if item.data is None:
-            return None
-        uid, idx = item.data
-
-        fi, _ = ls.get_file_info(item.uri)
-
-        # Performance:
-        # Once the Python bindings supports it, we can use the
-        # "ID to AST" function from parsing to do this without iterating.
-        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
-            if node.unique_id() == item.data[0]:
-                fn = node
-                break
-        else:
+        unpacked = ls.unpack_call_hierarchy_item(params.item)
+        if unpacked is None:
             return None
 
-        instantiation = None
-        if idx != -1:
-            instantiation = fi.nth_instantiation(fn, idx)
+        _, fn, instantiation = unpacked
 
         outgoing_calls: Dict[
             chapel.TypedSignature, List[chapel.FnCall]
