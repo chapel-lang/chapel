@@ -252,27 +252,43 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
   strcpy(expr, numPtr);
   char *x = strchr(expr, 'x');
   if (x != NULL) {
-    // parse locale expression of the form MxNt where N and t are optional
+    // parse locale expression of the form NxLt where L and t are optional
     *x = '\0';
     char *lpn = x+1;
     if (*lpn != '\0') {
-      // locales per node (N) was specified
+      // locales per node (L) was specified
       _argNumLocalesPerNode = c_string_to_int32_t_precise(lpn, &invalid,
                                                    invalidChars);
       const char *t = NULL;
       if (invalid) {
-        switch(invalidChars[0]) {
-          case 's': t = "socket"; invalid = false; break;
-          case 'n': t = "numa";invalid = false; break;
-          case 'c': t = "core"; invalid = false; break;
-          case 'L': t = "cache"; invalid = false; break;
+        char *suffix = strchr(lpn, invalidChars[0]);
+        assert(suffix);
+        if (suffix == lpn) {
+          // locales per node must be specified if there is a suffix
+          char *message = chpl_glom_strings(3, "\"", suffix,
+                          "\" is not a valid number of co-locales.");
+          chpl_error(message, lineno, filename);
         }
-        if (!invalid) {
-          // There should be only a single suffix character
-          char *s = strchr(lpn, invalidChars[0]);
-          if ((s == NULL) || (*(s+1) != '\0')) {
-            invalid = true;
+
+        chpl_bool invalidSuffix = false;
+        if (strlen(suffix) == 1) {
+          switch(*suffix) {
+            case 's': t = "socket"; break;
+            case 'n': t = "numa"; break;
+            case 'c': t = "core"; break;
+            case 'L': t = "cache"; break;
+            default: invalidSuffix = true; break;
           }
+          if (invalidSuffix == false) {
+            invalid = false;
+          }
+        } else {
+          invalidSuffix = true;
+        }
+        if (invalidSuffix) {
+          char *message = chpl_glom_strings(3, "\"", suffix,
+                          "\" is not a valid suffix.");
+          chpl_error(message, lineno, filename);
         }
       }
       if (invalid) {
@@ -293,7 +309,7 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       }
     } else {
 
-      // N wasn't specified, determine the default from
+      // L wasn't specified, determine the default from
       // CHPL_RT_LOCALES_PER_NODE. It is an error if it is not set.
 
       if (!chpl_env_rt_get("LOCALES_PER_NODE", NULL)) {
