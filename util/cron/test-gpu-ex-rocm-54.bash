@@ -20,4 +20,4 @@ export CHPL_GPU_ARCH=gfx90a
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-rocm-54"
-$CWD/nightly -cron -compopts --no-compiler-driver ${nightly_args}
+$CWD/nightly -cron ${nightly_args}
