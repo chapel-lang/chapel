@@ -310,6 +310,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_ARG:
   case PRIM_GPU_PID_OFFLOAD:
   case PRIM_GPU_BLOCK_REDUCE:
+  case PRIM_GPU_REDUCE_WRAPPER:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.

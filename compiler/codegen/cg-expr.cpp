@@ -5431,6 +5431,7 @@ DEFINE_PRIM(GPU_ARG) {
   else if (kind & GpuArgKind::REDUCE) {
     fnName = "chpl_gpu_arg_reduce";
     args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
+    args.push_back(call->get(4)->codegen());
 
   }
   else {
@@ -5452,12 +5453,13 @@ DEFINE_PRIM(GPU_PID_OFFLOAD) {
 DEFINE_PRIM(GPU_BLOCK_REDUCE) {
   int curArg = 1;
   auto threadData = call->get(curArg++);
-  auto interimResult = call->get(curArg++);
+  auto buffer = call->get(curArg++);
   auto blockSize = call->get(curArg++);
 
 
   std::string fnName = "chpl_gpu_dev_sum_breduce";
 
+  // append typename
   fnName += "_" + std::string(threadData->typeInfo()->symbol->cname);
 
   // specialize for a given block size if statically available
@@ -5466,7 +5468,22 @@ DEFINE_PRIM(GPU_BLOCK_REDUCE) {
   }
 
   ret = codegenCallExpr(fnName.c_str(), threadData->codegen(),
-                        interimResult->codegen());
+                        buffer->codegen());
+}
+
+DEFINE_PRIM(GPU_REDUCE_WRAPPER) {
+  VarSymbol* fnNameSym = toVarSymbol(toSymExpr(call->get(1))->symbol());
+  INT_ASSERT(isCStringImmediate(fnNameSym));
+
+  const char* fnName = fnNameSym->immediate->string_value();
+
+  std::vector<GenRet> args;
+
+  for (int i=2 ; i<=call->numActuals() ; i++) {
+    args.push_back(call->get(i)->codegen());
+  }
+
+  ret = codegenCallExprWithArgs(fnName, args);
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
