@@ -438,7 +438,7 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[str, References] = field(init=False)
-    instantiations: Dict[str, Dict[chapel.TypedSignature, None]] = field(
+    instantiations: Dict[str, Dict[chapel.TypedSignature, List[Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]]]] = field(
         init=False
     )
     siblings: chapel.SiblingMap = field(init=False)
@@ -543,11 +543,16 @@ class FileInfo:
             sig = candidate.function()
             fn = sig.ast()
 
+            # Even if we don't descend into it (and even if it's not an
+            # instantiation), track the call that invoked this function.
+            # This will help with call hierarchy.
             insts = self.instantiations[fn.unique_id()]
-            if not sig.is_instantiation() or sig in insts:
+            already_visited = sig in insts
+            insts[sig].append((node, via))
+
+            if not sig.is_instantiation() or already_visited:
                 continue
 
-            insts[sig] = None
             self._search_instantiations(fn, via=sig)
 
     def rebuild_index(self):
@@ -561,7 +566,7 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.instantiations = defaultdict(dict)
+        self.instantiations = defaultdict(lambda: defaultdict(list))
         for _, refs in self.uses_here.items():
             refs.clear()
         self.use_segments.clear()
@@ -1361,6 +1366,13 @@ def run_lsp():
             ):
                 insts = fi.instantiations[decl.node.unique_id()]
                 for i, inst in enumerate(insts):
+                    # Skip over "concrete" instantiations. They're in
+                    # the list to track calls to concrete functions,
+                    # but they don't have any type substitutions, so there's
+                    # nothing to show.
+                    if not inst.is_instantiation():
+                        continue
+
                     action = CodeLens(
                         data=(decl.node.unique_id(), i),
                         command=Command(
