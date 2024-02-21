@@ -48,7 +48,7 @@ PyMODINIT_FUNC PyInit_core() {
   setupGeneratedTypes();
 
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
-#define GENERATED_TYPE(ROOT, NAME, TYPE, TAG, FLAGS) READY_TYPE(NAME)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) READY_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE
   READY_TYPE(AstIter)
@@ -70,7 +70,7 @@ PyMODINIT_FUNC PyInit_core() {
   if (!chapelModule) return nullptr;
 
 #define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) &NAME##Type) < 0) return nullptr;
-#define GENERATED_TYPE(ROOT, NAME, TYPE, TAG, FLAGS) ADD_TYPE(NAME)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) ADD_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE
 

@@ -70,7 +70,7 @@ struct ParentTypeInfo {
   static PyTypeObject* parentTypeObject() { return nullptr; }
 };
 
-#define GENERATED_TYPE(ROOT, NAME, TYPE, TAG, FLAGS) \
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   template <> \
   struct ParentTypeInfo<NAME##Object> { \
     static PyTypeObject* parentTypeObject() { \
@@ -134,7 +134,7 @@ std::string generatePyiFile() {
       ss << "    pass" << std::endl; \
     } \
 
-  #define GENERATED_TYPE(ROOT, NAME, TYPE, TAG, FLAGS) ENSURE_ALL_CLASSES(NAME, TAG)
+  #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) ENSURE_ALL_CLASSES(NAME, TAG)
   #include "generated-types-list.h"
   #undef ENSURE_ALL_CLASSES
 
