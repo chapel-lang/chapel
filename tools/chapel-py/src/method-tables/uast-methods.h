@@ -34,7 +34,7 @@ CLASS_BEGIN(AstNode)
   PLAIN_GETTER(AstNode, tag, "Get a string representation of the AST node's type",
                const char*, return chpl::uast::asttags::tagToString(node->tag()))
   PLAIN_GETTER(AstNode, attribute_group, "Get the attribute group, if any, associated with this node",
-               const chpl::uast::AstNode*, return node->attributeGroup())
+               const chpl::uast::AttributeGroup*, return node->attributeGroup())
   PLAIN_GETTER(AstNode, location, "Get the location of this AST node in its file",
                chpl::Location, return chpl::parsing::locateAst(context, node))
   PLAIN_GETTER(AstNode, parent, "Get the parent node of this AST node",
@@ -128,21 +128,21 @@ CLASS_END(AttributeGroup)
 
 CLASS_BEGIN(Break)
   PLAIN_GETTER(Break, target, "Get the target from this Break node",
-               const chpl::uast::AstNode*, return node->target())
+               const chpl::uast::Identifier*, return node->target())
 CLASS_END(Break)
 
 CLASS_BEGIN(Catch)
   PLAIN_GETTER(Catch, target, "Get the error from this Catch node",
-               const chpl::uast::AstNode*, return node->error())
+               const chpl::uast::Variable*, return node->error())
   PLAIN_GETTER(Catch, body, "Get the body from this Catch node",
-               const chpl::uast::AstNode*, return node->body())
+               const chpl::uast::Block*, return node->body())
   PLAIN_GETTER(Catch, has_parens_around_error, "Check if this Catch uses parentheses",
                bool, return node->hasParensAroundError())
 CLASS_END(Catch)
 
 CLASS_BEGIN(Cobegin)
   PLAIN_GETTER(Cobegin, with_clause, "Get the WithClause from this Cobegin node",
-               const chpl::uast::AstNode*, return node->withClause())
+               const chpl::uast::WithClause*, return node->withClause())
   PLAIN_GETTER(Cobegin, task_bodies, "Get tasks from this Cobegin node",
                IterAdapterBase*, return mkIterPair(node->taskBodies()))
 CLASS_END(Cobegin)
@@ -151,11 +151,11 @@ CLASS_BEGIN(Conditional)
   PLAIN_GETTER(Conditional, condition, "Get the condition of this Conditional node",
                const chpl::uast::AstNode*, return node->condition())
   PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
-               const chpl::uast::AstNode*, return node->elseBlock())
+               const chpl::uast::Block*, return node->elseBlock())
   PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
                bool, return node->isExpressionLevel())
   PLAIN_GETTER(Conditional, then_block, "Get the then block of this Conditional node",
-               const chpl::uast::AstNode*, return node->thenBlock())
+               const chpl::uast::Block*, return node->thenBlock())
 CLASS_END(Conditional)
 
 CLASS_BEGIN(Comment)
@@ -165,7 +165,7 @@ CLASS_END(Comment)
 
 CLASS_BEGIN(Continue)
   PLAIN_GETTER(Continue, target, "Get the target from this Continue node",
-               const chpl::uast::AstNode*, return node->target())
+               const chpl::uast::Identifier*, return node->target())
 CLASS_END(Continue)
 
 CLASS_BEGIN(Delete)
@@ -208,7 +208,7 @@ CLASS_BEGIN(FunctionSignature)
   PLAIN_GETTER(FunctionSignature, return_type, "Get the return type for this FunctionSignature node",
                const chpl::uast::AstNode*, return node->returnType())
   PLAIN_GETTER(FunctionSignature, this_formal, "Get the this formal for this FunctionSignature node",
-               const chpl::uast::AstNode*, return node->thisFormal())
+               const chpl::uast::Formal*, return node->thisFormal())
   PLAIN_GETTER(FunctionSignature, throws, "Check if this FunctionSignature node is marked throws",
                bool, return node->throws())
 CLASS_END(FunctionSignature)
@@ -217,7 +217,7 @@ CLASS_BEGIN(Implements)
   PLAIN_GETTER(Implements, interface_name, "Get the interface name of this Implements node",
                chpl::UniqueString, return node->interfaceName())
   PLAIN_GETTER(Implements, type_ident, "Get the type identifier from this Implements node",
-               const chpl::uast::AstNode*, return node->typeIdent())
+               const chpl::uast::Identifier*, return node->typeIdent())
   PLAIN_GETTER(Implements, interface_expr, "Get the interface expression from this Implements node",
                const chpl::uast::AstNode*, return node->interfaceExpr())
   PLAIN_GETTER(Implements, is_expression_level, "Check if this Implements node is expression level",
@@ -249,12 +249,12 @@ CLASS_END(Include)
 
 CLASS_BEGIN(Init)
   PLAIN_GETTER(Init, target, "Get the target of this Init node",
-               const chpl::uast::AstNode*, return node->target())
+               const chpl::uast::Identifier*, return node->target())
 CLASS_END(Init)
 
 CLASS_BEGIN(Label)
   PLAIN_GETTER(Label, loop, "Get the loop this Label node is attached to",
-               const chpl::uast::AstNode*, return node->loop())
+               const chpl::uast::Loop*, return node->loop())
   PLAIN_GETTER(Label, name, "Get the name of this Label node",
                chpl::UniqueString, return node->name())
 CLASS_END(Label)
@@ -299,7 +299,7 @@ CLASS_END(Throw)
 
 CLASS_BEGIN(Try)
   PLAIN_GETTER(Try, body, "Get the body of this Try node",
-               const chpl::uast::AstNode*, return node->body())
+               const chpl::uast::Block*, return node->body())
   PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
                IterAdapterBase*, return mkIterPair(node->handlers()))
   PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",
@@ -337,7 +337,7 @@ CLASS_END(SimpleBlockLike)
 
 CLASS_BEGIN(Begin)
   PLAIN_GETTER(Begin, with_clause, "Get the WithClause of this Begin node",
-               const chpl::uast::AstNode*, return node->withClause())
+               const chpl::uast::WithClause*, return node->withClause())
 CLASS_END(Begin)
 
 CLASS_BEGIN(Local)
@@ -364,7 +364,7 @@ CLASS_BEGIN(When)
   PLAIN_GETTER(When, block_style, "Get the block style of this When node",
                const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(When, body, "Get the body of this When node",
-               const chpl::uast::AstNode*, return node->body())
+               const chpl::uast::Block*, return node->body())
   PLAIN_GETTER(When, case_exprs, "Get the case expressions of this When node",
                IterAdapterBase*, return mkIterPair(node->caseExprs()))
   PLAIN_GETTER(When, is_otherwise, "Check if this When node uses the otherwise keyword",
@@ -375,7 +375,7 @@ CLASS_BEGIN(Loop)
   PLAIN_GETTER(Loop, block_style, "Get the block style of this Loop node",
                const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(Loop, body, "Get the body of this Loop node",
-               const chpl::uast::AstNode*, return node->body())
+               const chpl::uast::Block*, return node->body())
 CLASS_END(Loop)
 
 CLASS_BEGIN(DoWhile)
@@ -390,13 +390,13 @@ CLASS_END(While)
 
 CLASS_BEGIN(IndexableLoop)
   PLAIN_GETTER(IndexableLoop, index, "Get the index of this IndexableLoop node",
-               const chpl::uast::AstNode*, return node->index())
+               const chpl::uast::Decl*, return node->index())
   PLAIN_GETTER(IndexableLoop, is_expression_level, "Check if this IndexableLoop node is expression level",
                bool, return node->isExpressionLevel())
   PLAIN_GETTER(IndexableLoop, iterand, "Get the iterand of this IndexableLoop node",
                const chpl::uast::AstNode*, return node->iterand())
   PLAIN_GETTER(IndexableLoop, with_clause, "Get the WithClause of this IndexableLoop node",
-               const chpl::uast::AstNode*, return node->withClause())
+               const chpl::uast::WithClause*, return node->withClause())
 CLASS_END(IndexableLoop)
 
 CLASS_BEGIN(BracketLoop)
@@ -526,9 +526,9 @@ CLASS_BEGIN(Function)
   PLAIN_GETTER(Function, formals, "Get the formals for this Function node",
                IterAdapterBase*, return mkIterPair(node->formals()))
   PLAIN_GETTER(Function, body, "Get the body for this function",
-               const chpl::uast::AstNode*, return node->body())
+               const chpl::uast::Block*, return node->body())
   METHOD(Function, formal, "Get the n'th Formal of this Function node",
-         const chpl::uast::AstNode*(int), return node->formal(std::get<0>(args)))
+         const chpl::uast::Decl*(int), return node->formal(std::get<0>(args)))
   PLAIN_GETTER(Function, is_anonymous, "Check if this Function node is anonymous",
                bool, return node->isAnonymous())
   PLAIN_GETTER(Function, is_inline, "Check if this Function node is marked inline",
@@ -552,7 +552,7 @@ CLASS_BEGIN(Function)
   PLAIN_GETTER(Function, return_type, "Get the return type for this Function node",
                const chpl::uast::AstNode*, return node->returnType())
   PLAIN_GETTER(Function, this_formal, "Get the this formal for this Function node",
-               const chpl::uast::AstNode*, return node->thisFormal())
+               const chpl::uast::Decl*, return node->thisFormal())
   PLAIN_GETTER(Function, throws, "Check if this Function node is marked throws",
                bool, return node->throws())
   PLAIN_GETTER(Function, where_clause, "Get the where clause for this Function node",
