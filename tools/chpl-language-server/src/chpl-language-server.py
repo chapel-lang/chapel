@@ -583,6 +583,42 @@ class FileInfo:
             with self.context.context.track_errors() as _:
                 self._search_instantiations(asts)
 
+    def called_function_at_position(self, position: Position) -> Optional[chapel.TypedSignature]:
+        """
+        Given a particular position, finds function being called at that
+        position.
+
+        Note: this function implies using resolution, and should only
+        be called if the resolver is enabled.
+        """
+
+        # Performance:
+        # since we don't have "call segments" (or segments for any other type
+        # of node), we have to iterate over all calls and check if they're in
+        # range. We can do better if we track segments for these.
+        call = None
+        for ast, _ in chapel.each_matching(self.get_asts(), chapel.FnCall):
+            rng = location_to_range(ast.location())
+            if rng.start <= position <= rng.end:
+                call = ast
+
+        if call is None:
+            return None
+
+        instantiation = self.get_inst_segment_at_position(position)
+        rr = (
+            call.resolve_via(instantiation) if instantiation else call.resolve()
+        )
+
+        if rr is None:
+            return None
+
+        msc = rr.most_specific_candidate()
+        if msc is None:
+            return None
+
+        return msc.function()
+
     def get_use_segment_at_position(
         self, position: Position
     ) -> Optional[ResolvedPair]:
@@ -1509,36 +1545,38 @@ def run_lsp():
     async def prepare_call_hierarchy(
         ls: ChapelLanguageServer, params: CallHierarchyPrepareParams
     ):
+        if not ls.use_resolver:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        # Performance:
-        # since we don't have "call segments" (or segments for any other type
-        # of node), we have to iterate over all calls and check if they're in
-        # range. We can do better if we track segments for these.
-        call = None
-        for ast, _ in chapel.each_matching(fi.get_asts(), chapel.FnCall):
-            rng = location_to_range(ast.location())
-            if rng.start <= params.position <= rng.end:
-                call = ast
+        # Get function from a particular call under the cursor.
+        sigs: List[chapel.TypedSignature] = []
+        called_sig = fi.called_function_at_position(params.position)
+        if called_sig is not None:
+            sigs.append(called_sig)
 
-        if call is None:
-            return None
+        # To also handle the case where the user asked for a call hiearrchy
+        # for a function declaration, see if there's a function under the
+        # cursor.
+        decl = fi.get_def_segment_at_position(params.position)
+        node = decl.node if decl else None
+        if isinstance(node, chapel.Function):
+            # Get all the signatures we've found so far, unless the user
+            # has already clicked "show instantiation" on this function.
+            uid = node.unique_id()
 
-        instantiation = fi.get_inst_segment_at_position(params.position)
-        rr = (
-            call.resolve_via(instantiation) if instantiation else call.resolve()
-        )
+            instantiation = fi.get_inst_segment_at_position(params.position)
+            if instantiation and instantiation.ast().unique_id() == uid:
+                sigs.append(instantiation)
+            elif uid in fi.instantiations:
+                sigs.extend(fi.instantiations[uid].keys())
 
-        if rr is None:
-            return None
-
-        msc = rr.most_specific_candidate()
-        if msc is None:
-            return None
-
-        return [ls.fn_to_call_hierarchy_item(msc.function())]
+        # Oddly, returning multiple here makes for no child nodes in the VSCode
+        # UI. Just take one signature for now.
+        return next(([ls.fn_to_call_hierarchy_item(sig)] for sig in sigs), [])
 
     @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
     async def call_hierarchy_incoming(
