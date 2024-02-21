@@ -77,15 +77,18 @@ CLASS_END(Location)
 
 CLASS_BEGIN(Scope)
   PLAIN_GETTER(Scope, used_imported_modules, "Get the modules that were used or imported in this scope",
-               std::vector<const chpl::uast::AstNode*>,
+               std::vector<const chpl::uast::Module*>,
 
                auto& moduleIds = resolution::findUsedImportedModules(context, node);
                std::set<ID> reportedIds;
-               std::vector<const chpl::uast::AstNode*> toReturn;
+               std::vector<const chpl::uast::Module*> toReturn;
                for (size_t i = 0; i < moduleIds.size(); i++) {
                  auto& id = moduleIds[i];
                  if (!reportedIds.insert(id).second) continue;
-                 toReturn.push_back(parsing::idToAst(context, id));
+                 auto ast = parsing::idToAst(context, id);
+                 if (auto mod = ast->toModule()) {
+                   toReturn.push_back(mod);
+                 }
                }
                return toReturn)
 CLASS_END(Scope)
