@@ -2729,7 +2729,13 @@ static bool shouldOnlyClonePrototype(llvm::StringRef name,
   // Does the name contain a '.' indicating it's in a module?
   // Is it in a different module from the one requested?
   if (llvm::StringRef::npos != name.find('.')) {
-    if (!name.starts_with(modPrefix)) {
+    bool startsWithMod = false;
+#if HAVE_LLVM_VER >= 170
+    startsWithMod = name.starts_with(modPrefix);
+#else
+    startsWithMod = name.startswith(modPrefix);
+#endif
+    if (!startsWithMod) {
       return true; // just use a prototype
     }
   }
