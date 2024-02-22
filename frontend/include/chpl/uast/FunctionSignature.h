@@ -150,8 +150,8 @@ class FunctionSignature final : public AstNode {
     Return a way to iterate over the formals, including the method
     receiver, if present, as the first formal.
   */
-  AstListIteratorPair<AstNode> formals() const {
-    return childRange<AstNode>(formalsChildNum_, numFormals_);
+  AstListIteratorPair<Decl> formals() const {
+    return childRange<Decl>(formalsChildNum_, numFormals_);
   }
 
   /**
