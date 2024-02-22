@@ -34,6 +34,7 @@ class State(Enum):
     TARGET_ARCH =       7
     COMM_SUBSTRATE =    8
     GASNET_SEGMENT =    9
+    GASNET_VERSION =    10
 
 # Maps component prefix to corresponding environment variable.
 
@@ -71,7 +72,8 @@ varNames = {
     State.PREFIX:           None,
     State.TARGET_ARCH:      'CHPL_TARGET_ARCH',
     State.COMM_SUBSTRATE:   'CHPL_COMM_SUBSTRATE',
-    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT'
+    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT',
+    State.GASNET_VERSION:   'CHPL_GASNET_VERSION'
 }
 
 # State transitions. This isn't a true state machine because some of the transitions are
@@ -86,7 +88,8 @@ nextStates = {
     State.HWLOC:            State.RE2,
     State.RE2:              State.PREFIX,
     State.COMM_SUBSTRATE:   State.GASNET_SEGMENT,
-    State.GASNET_SEGMENT:   State.PREFIX
+    State.GASNET_SEGMENT:   State.GASNET_VERSION,
+    State.GASNET_VERSION:   State.PREFIX
 }
 
 # Some of the CHPL_*_DEBUG variables add a "-debug" suffix to the component
