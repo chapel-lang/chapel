@@ -436,6 +436,9 @@ class ContextContainer:
         return errors
 
 
+CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
+CallsInTypeContext = List[CallInTypeContext]
+
 @dataclass
 @visitor
 class FileInfo:
@@ -450,10 +453,7 @@ class FileInfo:
     uses_here: Dict[str, References] = field(init=False)
     instantiations: Dict[
         str,
-        Dict[
-            chapel.TypedSignature,
-            List[Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]],
-        ],
+        Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
@@ -601,14 +601,14 @@ class FileInfo:
         self, position: Position
     ) -> Optional[chapel.TypedSignature]:
         """
-        Given a particular position, finds function being called at that
+        Given a particular position, finds the function being called at that
         position.
 
         Note: this function implies using resolution, and should only
         be called if the resolver is enabled.
         """
 
-        # Performance:
+        # TODO: Performance:
         # since we don't have "call segments" (or segments for any other type
         # of node), we have to iterate over all calls and check if they're in
         # range. We can do better if we track segments for these.
@@ -684,7 +684,7 @@ class FileInfo:
         )
         return file_text.splitlines()
 
-    def nth_instantiation(
+    def instantiation_at_index(
         self, fn: chapel.Function, idx: int
     ) -> chapel.TypedSignature:
         """
@@ -695,7 +695,7 @@ class FileInfo:
             itertools.islice(self.instantiations[fn.unique_id()], idx, None)
         )
 
-    def instantiation_index(
+    def index_of_instantiation(
         self, fn: chapel.Function, sig: chapel.TypedSignature
     ) -> int:
         """
@@ -1129,7 +1129,7 @@ class ChapelLanguageServer(LanguageServer):
         fn: chapel.Function = sig.ast()
         item = self.sym_to_call_hierarchy_item(fn)
         fi, _ = self.get_file_info(item.uri)
-        item.data[1] = fi.instantiation_index(fn, sig)
+        item.data[1] = fi.index_of_instantiation(fn, sig)
 
         return item
 
@@ -1153,7 +1153,7 @@ class ChapelLanguageServer(LanguageServer):
 
         fi, _ = self.get_file_info(item.uri)
 
-        # Performance:
+        # TODO: Performance:
         # Once the Python bindings supports it, we can use the
         # "ID to AST" function from parsing to do this without iterating.
         for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
@@ -1167,7 +1167,7 @@ class ChapelLanguageServer(LanguageServer):
 
         instantiation = None
         if idx != -1:
-            instantiation = fi.nth_instantiation(fn, idx)
+            instantiation = fi.instantiation_at_index(fn, idx)
         else:
             instantiation = fi.concrete_instantiation_for(fn)
 
@@ -1537,7 +1537,7 @@ def run_lsp():
         if not isinstance(node, chapel.Function):
             return
 
-        inst = fi.nth_instantiation(node, i)
+        inst = fi.instantiation_at_index(node, i)
         fi.instantiation_segments.overwrite(
             (NodeAndRange.for_entire_node(decl.node), inst)
         )
@@ -1614,6 +1614,9 @@ def run_lsp():
     async def call_hierarchy_incoming(
         ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
     ):
+        if not ls.use_resolver:
+            return None
+
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
             return None
@@ -1625,6 +1628,7 @@ def run_lsp():
         if instantiation is None:
             return []
 
+        # TODO:
         # Here too, because there's no chapel-py way to convert an ID back
         # to a node, note the node whose ID we use in a dictionary (hack_id_to_node)
         # to look up later.
@@ -1667,6 +1671,9 @@ def run_lsp():
     async def call_hierarchy_outgoing(
         ls: ChapelLanguageServer, params: CallHierarchyOutgoingCallsParams
     ):
+        if not ls.use_resolver:
+            return None
+
         unpacked = ls.unpack_call_hierarchy_item(params.item)
         if unpacked is None:
             return None
