@@ -236,6 +236,8 @@ GenRet codegenTypeByName(const char* type_name);
 
 void registerPrimitiveCodegens();
 
+void linkInDynoFiles();
+
 void closeCodegenFiles();
 
 #endif //CODEGEN_H

@@ -927,7 +927,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
 
       auto linkage = llvm::GlobalVariable::InternalLinkage;
       if (fDynoLibGenOrUse)
-        linkage = llvm::GlobalVariable::WeakODRLinkage;
+        linkage = llvm::GlobalVariable::LinkOnceODRLinkage;
       if (hasFlag(FLAG_EXPORT))
         linkage = llvm::GlobalVariable::ExternalLinkage;
 
@@ -2477,7 +2477,9 @@ void FnSymbol::codegenPrototype() {
 
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
     if (fDynoLibGenOrUse) {
-      linkage = llvm::Function::WeakODRLinkage;
+      linkage = llvm::Function::LinkOnceODRLinkage;
+      if (this == chpl_gen_main)
+        linkage = llvm::Function::ExternalLinkage;
     }
     if (hasFlag(FLAG_EXPORT) || generatingGPUKernel) {
       linkage = llvm::Function::ExternalLinkage;
