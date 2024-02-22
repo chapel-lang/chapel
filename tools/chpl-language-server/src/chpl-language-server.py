@@ -211,7 +211,9 @@ def completion_item_for_decl(
 
 
 def location_to_location(loc) -> Location:
-    return Location("file://" + os.path.abspath(loc.path()), location_to_range(loc))
+    return Location(
+        "file://" + os.path.abspath(loc.path()), location_to_range(loc)
+    )
 
 
 def get_symbol_information(
@@ -317,6 +319,9 @@ class PositionList(Generic[EltT]):
         rng = self.get_range(elt)
         start, end = self._get_range(rng)
         self.elts[start:end] = [elt]
+
+    def remove_if(self, pred: Callable[[EltT], bool]):
+        self.elts = [x for x in self.elts if not pred(x)]
 
     def clear(self):
         self.elts.clear()
@@ -438,6 +443,7 @@ class ContextContainer:
 
 CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
 CallsInTypeContext = List[CallInTypeContext]
+
 
 @dataclass
 @visitor
@@ -1193,7 +1199,7 @@ def run_lsp():
     add_bool_flag("param-inlays", "param_inlays", True)
     add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
     add_bool_flag("dead-code", "dead_code", True)
-    add_bool_flag('evaluate-expressions', 'eval_expressions', True)
+    add_bool_flag("evaluate-expressions", "eval_expressions", True)
 
     server = ChapelLanguageServer(parser.parse_args())
 
@@ -1489,6 +1495,7 @@ def run_lsp():
                 and decl.node.unique_id() in fi.instantiations
             ):
                 insts = fi.instantiations[decl.node.unique_id()]
+                actions_per_decl = []
                 for i, inst in enumerate(insts):
                     # Skip over "concrete" instantiations. They're in
                     # the list to track calls to concrete functions,
@@ -1510,7 +1517,23 @@ def run_lsp():
                         ),
                         range=decl.rng,
                     )
+                    actions_per_decl.append(action)
+
+                if len(actions_per_decl) > 0:
+                    action = CodeLens(
+                        data=decl.node.unique_id(),
+                        command=Command(
+                            "Show Generic",
+                            "chpl-language-server/showGeneric",
+                            [
+                                params.text_document.uri,
+                                decl.node.unique_id(),
+                            ],
+                        ),
+                        range=decl.rng,
+                    )
                     actions.append(action)
+                    actions.extend(actions_per_decl)
 
         return actions
 
@@ -1540,6 +1563,18 @@ def run_lsp():
         inst = fi.instantiation_at_index(node, i)
         fi.instantiation_segments.overwrite(
             (NodeAndRange.for_entire_node(decl.node), inst)
+        )
+
+        ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
+        ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
+
+    @server.command("chpl-language-server/showGeneric")
+    async def show_generic(ls: ChapelLanguageServer, data: Tuple[str, str]):
+        uri, unique_id = data
+
+        fi, _ = ls.get_file_info(uri)
+        fi.instantiation_segments.remove_if(
+            lambda x: x[0].node.unique_id() == unique_id
         )
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
@@ -1680,9 +1715,9 @@ def run_lsp():
 
         _, fn, instantiation = unpacked
 
-        outgoing_calls: Dict[
-            chapel.TypedSignature, List[chapel.FnCall]
-        ] = defaultdict(list)
+        outgoing_calls: Dict[chapel.TypedSignature, List[chapel.FnCall]] = (
+            defaultdict(list)
+        )
         for call, _ in chapel.each_matching(fn, chapel.FnCall):
             rr = (
                 call.resolve_via(instantiation)
