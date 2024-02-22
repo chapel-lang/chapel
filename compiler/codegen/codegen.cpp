@@ -2923,9 +2923,6 @@ void linkInDynoFiles() {
   llvm::Module* DstMod = info->module;
   llvm::IRMover irMover(*DstMod);
 
-  fflush(stdout); fflush(stderr);
-  fprintf(stderr, "Linking in a module\n");
-
   for (auto& pair : info->precompiledMods) {
     GenInfo::PrecompiledModule& pm = pair.second;
     std::vector<llvm::GlobalValue*> ValuesToLink;
