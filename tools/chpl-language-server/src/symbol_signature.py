@@ -63,7 +63,7 @@ class SymbolSignature:
         self.node = node
         self._signature = _get_symbol_signature(self.node)
 
-    def compute_type(self):
+    def compute_type(self, via: Optional[chapel.TypedSignature] = None):
         """
         if types aren't textually present, try to resolve them
 
@@ -73,17 +73,17 @@ class SymbolSignature:
             tag = self._signature[i].tag
             node = self._signature[i].node
             if tag == ComponentTag.TYPE and node is not None:
-                type_str = _resolve_type_str(node)
+                type_str = _resolve_type_str(node, via)
                 if type_str:
                     self._signature[i] = _wrap_str(": " + type_str)
 
-    def compute_value(self):
+    def compute_value(self, via: Optional[chapel.TypedSignature] = None):
         """evaluate expressions"""
         for i in range(len(self._signature)):
             tag = self._signature[i].tag
             node = self._signature[i].node
             if tag == ComponentTag.PARAM_VALUE and node is not None:
-                param_str = _resolve_param_str(node)
+                param_str = _resolve_param_str(node, via)
                 if param_str:
                     self._signature[i] = _wrap_str(" = " + param_str)
 
@@ -91,20 +91,33 @@ class SymbolSignature:
         return Component.to_string(self._signature)
 
 
-def _resolve_type_str(node: chapel.AstNode) -> Optional[str]:
+def _resolve_type_str(
+    node: chapel.AstNode, via: Optional[chapel.TypedSignature] = None
+) -> Optional[str]:
     """Resolve a type expression to a string"""
-    qt = node.type()
+    rr = node.resolve_via(via) if via else node.resolve()
+    if not rr:
+        return None
+
+    qt = rr.type()
     if not qt:
         return None
+
     _, type_, _ = qt
     if isinstance(type_, chapel.ErroneousType):
         return None
     return str(type_)
 
 
-def _resolve_param_str(node: chapel.AstNode) -> Optional[str]:
+def _resolve_param_str(
+    node: chapel.AstNode, via: Optional[chapel.TypedSignature] = None
+) -> Optional[str]:
     """Resolve a type expression to a string"""
-    qt = node.type()
+    rr = node.resolve_via(via) if via else node.resolve()
+    if not rr:
+        return None
+
+    qt = rr.type()
     if not qt:
         return None
     _, _, param = qt
