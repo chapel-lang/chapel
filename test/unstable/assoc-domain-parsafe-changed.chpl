@@ -63,10 +63,10 @@ proc test3() {
   const c: domain(int, parSafe=true); // warn-unstable
   acceptsInFormal(a); // warns at formal declaration
   acceptsConstInFormal(a);
-  if !parSafeOnByDefault then acceptsExplicitFormal(a);
+  if !assocParSafeDefault then acceptsExplicitFormal(a);
   acceptsInFormal(b); // warns at formal declaration, because we can't differentiate between default and not
   acceptsConstInFormal(b);
-  if !parSafeOnByDefault then acceptsExplicitFormal(b);
+  if !assocParSafeDefault then acceptsExplicitFormal(b);
   acceptsInFormal(c); // not warn at formal declaration, because it couldn't possible be the default
   acceptsConstInFormal(c);
 }

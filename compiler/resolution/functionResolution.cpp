@@ -14320,10 +14320,10 @@ static bool parSafeWarningSilencedByUser(){
   VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
                                                   "noParSafeWarning",
                                                   /*cachedValue*/nullptr);
-  bool parSafeOnByDefaultSet = isSetCmdLineConfig(
+  bool assocParSafeDefaultSet = isSetCmdLineConfig(
                                /*modName*/"ChapelBase",
-                               /*paramName*/"parSafeOnByDefault");
-  bool silenced = parSafeOnByDefaultSet || (noParSafeWarning == gTrue);
+                               /*paramName*/"assocParSafeDefault");
+  bool silenced = assocParSafeDefaultSet || (noParSafeWarning == gTrue);
   return silenced;
 }
 
@@ -14405,7 +14405,7 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
                      "parSafe argument (ex: domain(int, parSafe=false)), or "
                      "compile with '-snoParSafeWarning'. "
                      "To use the old default of parSafe=true, compile with "
-                     "'-sparSafeOnByDefault'.",
+                     "'-sassocParSafeDefault=true'.",
                      sym->name);
           }
         }

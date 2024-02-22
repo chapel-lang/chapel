@@ -79,7 +79,7 @@ module ChapelDomain {
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist, type idxType,
-                                    param parSafe: bool = parSafeOnByDefault) type {
+                                    param parSafe: bool = assocParSafeDefault) type {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
     return new _domain(dist, idxType, parSafe);
