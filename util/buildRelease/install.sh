@@ -3,7 +3,6 @@
 STAGE=""
 STAGE_SET=0
 PREFIX=""
-BUILD_CHPLDOC=0
 # Different from DESTDIR, which is for staged installs
 # this variable is for installing the Chapel directory in one place
 # (to mirror release / source checkout)
@@ -25,10 +24,6 @@ do
       fi
       shift
       ;;
-    --chpldoc)
-      BUILD_CHPLDOC=1
-      shift
-      ;;
     *)
       echo
       echo "Usage: $0 [--stage=DESTDIR]"
@@ -36,8 +31,6 @@ do
       echo "       --stage=DESTDIR prepends DESTDIR to prefix"
       echo "                e.g. for staged installation as with"
       echo "                     the DESTDIR Makefile variable"
-      echo
-      echo "       --chpldoc install chpldoc with chpl"
       echo
       exit -1
     ;;
@@ -113,6 +106,12 @@ esac
 CHPL_PYTHON=`"$CHPL_HOME"/util/config/find-python.sh`
 CHPL_BIN_SUBDIR=`"$CHPL_PYTHON" "$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 VERS=`$CHPL_HOME/bin/$CHPL_BIN_SUBDIR/chpl --version`
+if [ $? -ne 0 ]
+then
+  echo "Error: failed to run chpl --version; Have you already built the compiler using make?"
+  echo "       If not, please run 'make' before running this script."
+  exit -1
+fi
 # Remove the "chpl version " part
 VERS=${VERS#chpl version }
 # Replace the periods with spaces.
@@ -322,7 +321,7 @@ do
 
   # chpl-venv also needs to copy chpldoc-sphinx-project
   # but this never contains executables so should go in DEST_CHPL_HOME
-  if [ -d third-party/"$dir"/chpldoc-sphinx-project ] && [ $BUILD_CHPLDOC -eq 1 ]
+  if [ -d third-party/"$dir"/chpldoc-sphinx-project ]
   then
     myinstalldir "third-party/$dir/chpldoc-sphinx-project" "$DEST_CHPL_HOME/third-party/$dir/chpldoc-sphinx-project/"
   fi

@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_executable(fieldsUsed "fieldsUsed.cpp")
+add_executable(fieldsUsed EXCLUDE_FROM_ALL "fieldsUsed.cpp")
 
 # store it in the build directory
 set_target_properties(fieldsUsed  PROPERTIES RUNTIME_OUTPUT_DIRECTORY . )

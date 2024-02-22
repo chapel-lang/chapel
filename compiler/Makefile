@@ -240,16 +240,11 @@ $(COMPILER_BUILD):
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
-install-chpl-chpldoc: $(CHPL) $(CHPLDOC)
+install-chpl-chpldoc: FORCE $(CHPL_CONFIG_CHECK)
 # this target is called from the install.sh script, bypassing the normal
 # way of building chpldoc.  So we need to make sure the venv is built
-	@if [ -z "$$CHPL_DONT_BUILD_CHPLDOC_VENV" ]; then \
-	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chpldoc-venv; \
-	fi
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) install
 
-install-chpl: $(CHPL)
-	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) install
 #
 # include standard footer for compiler
 #
