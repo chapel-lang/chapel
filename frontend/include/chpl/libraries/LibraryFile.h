@@ -174,8 +174,12 @@ class LibraryFile {
              stringSectionLen == other.stringSectionLen &&
              locationSectionData == other.locationSectionData &&
              locationSectionLen == other.locationSectionLen &&
+             genCodeSectionData == other.genCodeSectionData &&
+             genCodeSectionLen == other.genCodeSectionLen &&
              nStrings == other.nStrings &&
-             stringOffsetsTable == other.stringOffsetsTable;
+             stringOffsetsTable == other.stringOffsetsTable &&
+             llvmIrData == other.llvmIrData &&
+             llvmIrDataLen == other.llvmIrDataLen;
     }
     bool operator!=(const ModuleSection& other) const {
       return !(*this == other);
