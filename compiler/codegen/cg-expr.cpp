@@ -5452,12 +5452,15 @@ DEFINE_PRIM(GPU_PID_OFFLOAD) {
 
 DEFINE_PRIM(GPU_BLOCK_REDUCE) {
   int curArg = 1;
+  auto fnNameExpr = call->get(curArg++);
   auto threadData = call->get(curArg++);
   auto buffer = call->get(curArg++);
   auto blockSize = call->get(curArg++);
 
 
-  std::string fnName = "chpl_gpu_dev_sum_breduce";
+  VarSymbol* fnNameSym = toVarSymbol(toSymExpr(fnNameExpr)->symbol());
+  INT_ASSERT(fnNameSym);
+  std::string fnName = fnNameSym->immediate->string_value();
 
   // append typename
   fnName += "_" + std::string(threadData->typeInfo()->symbol->cname);

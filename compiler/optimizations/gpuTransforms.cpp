@@ -1005,7 +1005,7 @@ struct KernelActual {
   int8_t kind;  // assigned to one or more values of GpuArgKind or'd together
 };
 
-enum ReduceKind { sum, min, max };
+enum ReductionKind { SUM, MIN, MAX, UNSUPPORTED };
 
 struct ReductionInfo {
   Symbol* symInLoop;
@@ -1013,7 +1013,11 @@ struct ReductionInfo {
                       // reduction buffer
   FnSymbol* wrapper;  // function that wraps around the "fake-generic" runtime
                       // function and casts void* to correct data type 
-  ReduceKind kind;
+  ReductionKind kind;  // we don't support user-defined reductions, yet. So we
+                       // have to determine the reduction kind in order to call
+                       // the correct CUB function
+  //std::string devFnName;  // the device function that should be invoked at the
+                          //// end of the kernel
 };
 
 class KernelArg {
@@ -1029,15 +1033,17 @@ class KernelArg {
     int8_t kind() { return kind_; }
     ArgSymbol* formal() { return formal_; }
 
+    bool eligible();
     ArgSymbol* reduceBuffer();
     FnSymbol* reduceWrapper();
     CallExpr* generatePrimGpuArg(Symbol* cfg);
     CallExpr* generatePrimGpuBlockReduce(Symbol* blockSize);
+    std::string generateDevFnName();
 
   private:
     bool isReduce() const { return kind_&GpuArgKind::REDUCE; }
     FnSymbol* generateFinalReductionWrapper();
-    void deduceReduceKind();
+    void findReduceKind();
 };
 
 
@@ -1137,15 +1143,34 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   insertionPoint->insertBefore(new DefExpr(fn_));
 }
 
-void KernelArg::deduceReduceKind() {
+void KernelArg::findReduceKind() {
   for_SymbolUses (use, this->actual_) {
     if (CallExpr* parentCall = toCallExpr(use->parentExpr)) {
       if (parentCall->isPrimitive(PRIM_ADD) ||
           parentCall->isNamed("accumulate")) {
-        nprint_view(parentCall->get(1)->typeInfo());
+        Type* reduceType = parentCall->get(1)->typeInfo();
+        const char* reduceTypeName = reduceType->symbol->name;
+
+        std::cout << reduceTypeName << std::endl;
+
+        if (startsWith(reduceTypeName, "SumReduceScanOp")) {
+          this->redInfo_.kind = ReductionKind::SUM;
+        }
+        else if (startsWith(reduceTypeName, "MinReduceScanOp")) {
+          this->redInfo_.kind = ReductionKind::MIN;
+        }
+        else if (startsWith(reduceTypeName, "MaxReduceScanOp")) {
+          this->redInfo_.kind = ReductionKind::MAX;
+        }
+        else {
+          this->redInfo_.kind = ReductionKind::UNSUPPORTED;
+        }
       }
     }
   }
+}
+bool KernelArg::eligible() {
+  return !this->isReduce() || this->redInfo_.kind!= ReductionKind::UNSUPPORTED;
 }
 
 FnSymbol* KernelArg::generateFinalReductionWrapper() {
@@ -1236,8 +1261,31 @@ KernelArg::KernelArg(Symbol* symInLoop, CForLoop* loop) {
                                          symInLoop->getRefType());
     this->redInfo_.wrapper = this->generateFinalReductionWrapper();
 
-    this->deduceReduceKind();
+    this->findReduceKind();
   }
+}
+
+std::string KernelArg::generateDevFnName() {
+  std::string ret = "chpl_gpu_dev_";
+
+  switch (this->redInfo_.kind) {
+    case ReductionKind::SUM:
+      ret += "sum";
+      break;
+    case ReductionKind::MIN:
+      ret += "min";
+      break;
+    case ReductionKind::MAX:
+      ret += "max";
+      break;
+    case ReductionKind::UNSUPPORTED:
+      ret += "unsupported";
+      break;
+  }
+
+  ret += "_breduce";
+
+  return ret;
 }
 
 ArgSymbol* KernelArg::reduceBuffer() {
@@ -1273,8 +1321,12 @@ CallExpr* KernelArg::generatePrimGpuArg(Symbol* cfg) {
 
 CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) {
   if (this->isReduce()) {
-    return new CallExpr(PRIM_GPU_BLOCK_REDUCE, this->actual_,
-                        this->redInfo_.buffer, blockSize);
+    std::string devFnName = this->generateDevFnName();
+    return new CallExpr(PRIM_GPU_BLOCK_REDUCE,
+                        new_CStringSymbol(devFnName.c_str()),
+                        this->actual_,
+                        this->redInfo_.buffer,
+                        blockSize);
   }
   return nullptr;
 }
@@ -1298,6 +1350,12 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   }
 
   kernelActuals_.push_back(arg);
+
+  // Engin: we can probably do this right after initializing arg, but I am not
+  // sure if skipping the rest of this function is safe.
+  if (!arg.eligible()) {
+    this->lateGpuizationFailure_ = true;
+  }
 
   return formal;
 }

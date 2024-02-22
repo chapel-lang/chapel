@@ -47,7 +47,7 @@
   GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, _real64) \
 
 
-#define DEF_ONE_DEV_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type, block_size) \
+#define DEF_ONE_DEV_SUM_REDUCE(impl_kind, chpl_kind, data_type, block_size) \
 __device__ static inline void \
 chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
                                                               data_type* interim_res) { \
@@ -60,7 +60,24 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
   } \
 }
 
-GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Sum, sum);
+GPU_DEV_REDUCE(DEF_ONE_DEV_SUM_REDUCE, Sum, sum);
+
+#undef DEF_ONE_DEV_SUM_REDUCE
+
+#define DEF_ONE_DEV_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type, block_size) \
+__device__ static inline void \
+chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
+                                                              data_type* interim_res) { \
+\
+  typedef cub::BlockReduce<data_type, block_size> BlockReduce; \
+  __shared__ typename BlockReduce::TempStorage temp_storage; \
+  data_type res = BlockReduce(temp_storage).Reduce(thread_val, cub::Min()); \
+  if (threadIdx.x == 0) { \
+    interim_res[blockIdx.x] = res; \
+  } \
+}
+
+GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Min, min);
 
 #undef DEF_ONE_DEV_REDUCE_RET_VAL
 
