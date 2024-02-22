@@ -34,7 +34,7 @@ from typing import (
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_left, bisect_right
-from symbol_signature import get_symbol_signature
+from symbol_signature import SymbolSignature
 import itertools
 import os
 import json
@@ -215,8 +215,10 @@ def get_symbol_information(
         # using symbol information for now, as it sort-of autogets the tree
         # structure
         is_deprecated = chapel.is_deprecated(decl)
-        name = get_symbol_signature(decl)
-        return SymbolInformation(loc, name, kind, deprecated=is_deprecated)
+        signature = SymbolSignature(decl)
+        return SymbolInformation(
+            loc, str(signature), kind, deprecated=is_deprecated
+        )
     return None
 
 
@@ -593,16 +595,16 @@ class FileInfo:
         of a definition: its type, references to it, etc. However, it is
         convenient to be able to "find references" and "go to type definition"
         from references to a definition too. Thus, this method returns
-        a definition when it can, and falls back to references otherwise.
+        a reference when it can, and falls back to definition otherwise.
         """
 
-        segment = self.get_def_segment_at_position(position)
+        segment = self.get_use_segment_at_position(position)
         if segment:
-            return segment
+            return segment.resolved_to
         else:
-            segment = self.get_use_segment_at_position(position)
+            segment = self.get_def_segment_at_position(position)
             if segment:
-                return segment.resolved_to
+                return segment
 
         return None
 
@@ -669,6 +671,7 @@ class ChapelLanguageServer(LanguageServer):
         self.literal_arg_inlays: bool = config.literal_arg_inlays
         self.param_inlays: bool = config.param_inlays
         self.dead_code: bool = config.dead_code
+        self.eval_expressions: bool = config.eval_expressions
 
         self._setup_regexes()
 
@@ -936,7 +939,12 @@ class ChapelLanguageServer(LanguageServer):
     def get_tooltip(
         self, node: chapel.AstNode, siblings: chapel.SiblingMap
     ) -> str:
-        signature = get_symbol_signature(node)
+        signature = SymbolSignature(node)
+        if self.use_resolver:
+            signature.compute_type()
+            if self.eval_expressions:
+                signature.compute_value()
+
         docstring = chapel.get_docstring(node, siblings)
         text = f"```chapel\n{signature}\n```"
         if docstring:
@@ -995,6 +1003,7 @@ def run_lsp():
     add_bool_flag("param-inlays", "param_inlays", True)
     add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
     add_bool_flag("dead-code", "dead_code", True)
+    add_bool_flag('evaluate-expressions', 'eval_expressions', True)
 
     server = ChapelLanguageServer(parser.parse_args())
 
@@ -1123,15 +1132,14 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
-        segment = fi.get_use_segment_at_position(params.position)
+        segment = fi.get_use_or_def_segment_at_position(params.position)
         if not segment:
             return None
-        resolved_to = segment.resolved_to
-        node_fi, _ = ls.get_file_info(resolved_to.get_uri())
+        node_fi, _ = ls.get_file_info(segment.get_uri())
 
-        text = ls.get_tooltip(resolved_to.node, node_fi.siblings)
+        text = ls.get_tooltip(segment.node, node_fi.siblings)
         content = MarkupContent(MarkupKind.Markdown, text)
-        return Hover(content, range=resolved_to.get_location().range)
+        return Hover(content, range=segment.get_location().range)
 
     @server.feature(TEXT_DOCUMENT_COMPLETION, CompletionOptions())
     async def complete(ls: ChapelLanguageServer, params: CompletionParams):
