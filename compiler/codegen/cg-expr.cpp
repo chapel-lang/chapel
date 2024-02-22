@@ -2188,7 +2188,7 @@ static GenRet codegenSqrt(GenRet a) {
   GenRet ret;
   if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
   GenRet av = codegenValue(a);
-  if (info->cfile || ffloatOpt == -1 /*strict float*/) {
+  if (info->cfile) {
     ret = emitSqrtCMath(av);
   } else {
     ret = emitSqrtLLVMIntrinsic(av);
@@ -2234,7 +2234,7 @@ static GenRet codegenAbs(GenRet a) {
   GenRet ret;
   if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
   GenRet av = codegenValue(a);
-  if (info->cfile || ffloatOpt == -1 /*strict float*/) {
+  if (info->cfile) {
     ret = emitAbsCMath(av);
   } else {
     ret = emitAbsLLVMIntrinsic(av);
