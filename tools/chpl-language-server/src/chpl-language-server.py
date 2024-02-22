@@ -556,6 +556,8 @@ class FileInfo:
 
             sig = candidate.function()
             fn = sig.ast()
+            if not fn:
+                continue
 
             # Even if we don't descend into it (and even if it's not an
             # instantiation), track the call that invoked this function.
@@ -1289,6 +1291,9 @@ def run_lsp():
             return None
 
         decl = type_.decl()
+        if not decl:
+            return None
+
         return location_to_location(decl.location())
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
