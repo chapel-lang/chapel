@@ -125,6 +125,17 @@ from lsprotocol.types import (
     SemanticTokens,
     SemanticTokenTypes,
 )
+from lsprotocol.types import (
+    TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY,
+    CALL_HIERARCHY_INCOMING_CALLS,
+    CALL_HIERARCHY_OUTGOING_CALLS,
+    CallHierarchyPrepareParams,
+    CallHierarchyIncomingCallsParams,
+    CallHierarchyOutgoingCallsParams,
+    CallHierarchyItem,
+    CallHierarchyOutgoingCall,
+    CallHierarchyIncomingCall,
+)
 
 import argparse
 import configargparse
@@ -344,6 +355,16 @@ class NodeAndRange:
         path = os.path.abspath(self.node.location().path())
         return f"file://{path}"
 
+    @staticmethod
+    def for_entire_node(node: chapel.AstNode):
+        """
+        Create a NodeAndRange whose location spans the entire AST node, rather
+        than its "relevant-for-hover" piece (i.e., its name).
+        """
+        res = NodeAndRange(node)
+        res.rng = location_to_range(node.location())
+        return res
+
 
 @dataclass
 class ResolvedPair:
@@ -415,6 +436,9 @@ class ContextContainer:
         return errors
 
 
+CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
+CallsInTypeContext = List[CallInTypeContext]
+
 @dataclass
 @visitor
 class FileInfo:
@@ -427,7 +451,10 @@ class FileInfo:
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
     uses_here: Dict[str, References] = field(init=False)
-    instantiations: Dict[str, Set[chapel.TypedSignature]] = field(init=False)
+    instantiations: Dict[
+        str,
+        Dict[chapel.TypedSignature, CallsInTypeContext],
+    ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
     possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
@@ -530,11 +557,16 @@ class FileInfo:
             sig = candidate.function()
             fn = sig.ast()
 
+            # Even if we don't descend into it (and even if it's not an
+            # instantiation), track the call that invoked this function.
+            # This will help with call hierarchy.
             insts = self.instantiations[fn.unique_id()]
-            if not sig.is_instantiation() or sig in insts:
+            already_visited = sig in insts
+            insts[sig].append((node, via))
+
+            if not sig.is_instantiation() or already_visited:
                 continue
 
-            insts.add(sig)
             self._search_instantiations(fn, via=sig)
 
     def rebuild_index(self):
@@ -548,7 +580,7 @@ class FileInfo:
 
         # Use this class as an AST visitor to rebuild the use and definition segment
         # table, as well as the list of references.
-        self.instantiations = defaultdict(set)
+        self.instantiations = defaultdict(lambda: defaultdict(list))
         for _, refs in self.uses_here.items():
             refs.clear()
         self.use_segments.clear()
@@ -564,6 +596,44 @@ class FileInfo:
         if self.use_resolver:
             with self.context.context.track_errors() as _:
                 self._search_instantiations(asts)
+
+    def called_function_at_position(
+        self, position: Position
+    ) -> Optional[chapel.TypedSignature]:
+        """
+        Given a particular position, finds the function being called at that
+        position.
+
+        Note: this function implies using resolution, and should only
+        be called if the resolver is enabled.
+        """
+
+        # TODO: Performance:
+        # since we don't have "call segments" (or segments for any other type
+        # of node), we have to iterate over all calls and check if they're in
+        # range. We can do better if we track segments for these.
+        call = None
+        for ast, _ in chapel.each_matching(self.get_asts(), chapel.FnCall):
+            rng = location_to_range(ast.location())
+            if rng.start <= position <= rng.end:
+                call = ast
+
+        if call is None:
+            return None
+
+        instantiation = self.get_inst_segment_at_position(position)
+        rr = (
+            call.resolve_via(instantiation) if instantiation else call.resolve()
+        )
+
+        if rr is None:
+            return None
+
+        msc = rr.most_specific_candidate()
+        if msc is None:
+            return None
+
+        return msc.function()
 
     def get_use_segment_at_position(
         self, position: Position
@@ -613,6 +683,49 @@ class FileInfo:
             self.uri[len("file://") :]
         )
         return file_text.splitlines()
+
+    def instantiation_at_index(
+        self, fn: chapel.Function, idx: int
+    ) -> chapel.TypedSignature:
+        """
+        Given a function, return its nth instantiation. This uses the list of
+        instantiations collected while rebuilding the index.
+        """
+        return next(
+            itertools.islice(self.instantiations[fn.unique_id()], idx, None)
+        )
+
+    def index_of_instantiation(
+        self, fn: chapel.Function, sig: chapel.TypedSignature
+    ) -> int:
+        """
+        Given a function and an instantiation of that function, returns the
+        instantiation's index in the list of all instantiations.
+        """
+        return next(
+            (
+                i
+                for i, s in enumerate(self.instantiations[fn.unique_id()])
+                if s == sig
+            ),
+            -1,
+        )
+
+    def concrete_instantiation_for(
+        self, fn: chapel.Function
+    ) -> Optional[chapel.TypedSignature]:
+        """
+        If all we have is a function ID, we can still select a particular
+        typed signature for it in some cases, even without calls: the
+        concrete signature when a function is non-generic. Return
+        that signature, if it exists for the given function.
+        """
+        uid = fn.unique_id()
+        if uid in self.instantiations:
+            for sig in self.instantiations[uid]:
+                if not sig.is_instantiation():
+                    return sig
+        return None
 
 
 class WorkspaceConfig:
@@ -983,6 +1096,83 @@ class ChapelLanguageServer(LanguageServer):
 
         return []
 
+    def sym_to_call_hierarchy_item(
+        self, sym: chapel.NamedDecl
+    ) -> CallHierarchyItem:
+        """
+        Given a Chapel symbol declaration as a NamedDecl, return the
+        corresponding call hierarchy item.
+        """
+        loc = location_to_location(sym.location())
+
+        inst_idx = -1
+
+        return CallHierarchyItem(
+            name=sym.name(),
+            detail=str(SymbolSignature(sym)),
+            kind=decl_kind(sym) or SymbolKind.Function,
+            uri=loc.uri,
+            range=loc.range,
+            selection_range=location_to_range(sym.name_location()),
+            data=[sym.unique_id(), inst_idx],
+        )
+
+    def fn_to_call_hierarchy_item(
+        self, sig: chapel.TypedSignature
+    ) -> CallHierarchyItem:
+        """
+        Like sym_to_call_hierarchy_item, but for function instantiations.
+        The additional information can be used to represent call hierarchy
+        situations where only some instantiations of a function call
+        another function.
+        """
+        fn: chapel.Function = sig.ast()
+        item = self.sym_to_call_hierarchy_item(fn)
+        fi, _ = self.get_file_info(item.uri)
+        item.data[1] = fi.index_of_instantiation(fn, sig)
+
+        return item
+
+    def unpack_call_hierarchy_item(
+        self, item: CallHierarchyItem
+    ) -> Optional[
+        Tuple[FileInfo, chapel.Function, Optional[chapel.TypedSignature]]
+    ]:
+        if (
+            item.data is None
+            or not isinstance(item.data, list)
+            or not isinstance(item.data[0], str)
+            or not isinstance(item.data[1], int)
+        ):
+            self.show_message(
+                "Call hierarchy item contains missing or invalid additional data",
+                MessageType.Error,
+            )
+            return None
+        uid, idx = item.data
+
+        fi, _ = self.get_file_info(item.uri)
+
+        # TODO: Performance:
+        # Once the Python bindings supports it, we can use the
+        # "ID to AST" function from parsing to do this without iterating.
+        for node, _ in chapel.each_matching(fi.get_asts(), chapel.Function):
+            if node.unique_id() == item.data[0]:
+                fn = node
+                break
+        else:
+            # The call hierarchy item could've been a module or something else.
+            # We don't handle that here.
+            return None
+
+        instantiation = None
+        if idx != -1:
+            instantiation = fi.instantiation_at_index(fn, idx)
+        else:
+            instantiation = fi.concrete_instantiation_for(fn)
+
+        return (fi, fn, instantiation)
+
 
 def run_lsp():
     """
@@ -1300,6 +1490,13 @@ def run_lsp():
             ):
                 insts = fi.instantiations[decl.node.unique_id()]
                 for i, inst in enumerate(insts):
+                    # Skip over "concrete" instantiations. They're in
+                    # the list to track calls to concrete functions,
+                    # but they don't have any type substitutions, so there's
+                    # nothing to show.
+                    if not inst.is_instantiation():
+                        continue
+
                     action = CodeLens(
                         data=(decl.node.unique_id(), i),
                         command=Command(
@@ -1325,12 +1522,25 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(uri)
         decl = next(
-            decl
-            for decl in fi.def_segments.elts
-            if decl.node.unique_id() == unique_id
+            (
+                decl
+                for decl in fi.def_segments.elts
+                if decl.node.unique_id() == unique_id
+            ),
+            None,
         )
-        inst = list(fi.instantiations[unique_id])[i]
-        fi.instantiation_segments.overwrite((decl, inst))
+
+        if decl is None:
+            return
+
+        node = decl.node
+        if not isinstance(node, chapel.Function):
+            return
+
+        inst = fi.instantiation_at_index(node, i)
+        fi.instantiation_segments.overwrite(
+            (NodeAndRange.for_entire_node(decl.node), inst)
+        )
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
@@ -1362,6 +1572,146 @@ def run_lsp():
                 )
 
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
+
+    @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)
+    async def prepare_call_hierarchy(
+        ls: ChapelLanguageServer, params: CallHierarchyPrepareParams
+    ):
+        if not ls.use_resolver:
+            return None
+
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        # Get function from a particular call under the cursor.
+        sigs: List[chapel.TypedSignature] = []
+        called_sig = fi.called_function_at_position(params.position)
+        if called_sig is not None:
+            sigs.append(called_sig)
+
+        # To also handle the case where the user asked for a call hiearrchy
+        # for a function declaration, see if there's a function under the
+        # cursor.
+        decl = fi.get_def_segment_at_position(params.position)
+        node = decl.node if decl else None
+        if isinstance(node, chapel.Function):
+            # Get all the signatures we've found so far, unless the user
+            # has already clicked "show instantiation" on this function.
+            uid = node.unique_id()
+
+            instantiation = fi.get_inst_segment_at_position(params.position)
+            if instantiation and instantiation.ast().unique_id() == uid:
+                sigs.append(instantiation)
+            elif uid in fi.instantiations:
+                sigs.extend(fi.instantiations[uid].keys())
+
+        # Oddly, returning multiple here makes for no child nodes in the VSCode
+        # UI. Just take one signature for now.
+        return next(([ls.fn_to_call_hierarchy_item(sig)] for sig in sigs), [])
+
+    @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
+    async def call_hierarchy_incoming(
+        ls: ChapelLanguageServer, params: CallHierarchyIncomingCallsParams
+    ):
+        if not ls.use_resolver:
+            return None
+
+        unpacked = ls.unpack_call_hierarchy_item(params.item)
+        if unpacked is None:
+            return None
+
+        fi, fn, instantiation = unpacked
+
+        # If there are no signatures that we found, there are no calls that
+        # we are aware of.
+        if instantiation is None:
+            return []
+
+        # TODO:
+        # Here too, because there's no chapel-py way to convert an ID back
+        # to a node, note the node whose ID we use in a dictionary (hack_id_to_node)
+        # to look up later.
+        calls = fi.instantiations[fn.unique_id()][instantiation]
+        hack_id_to_node: Dict[str, chapel.NamedDecl] = {}
+        incoming_calls: Dict[
+            Union[chapel.TypedSignature, str], List[chapel.FnCall]
+        ] = defaultdict(list)
+        for call, via in calls:
+            # If the call is from an instantiation, use the instantiation
+            # as the hierarchy item anchor.
+            if via is not None:
+                incoming_calls[via].append(call)
+            # Otherwise, the call is from a concrete function or something else,
+            # like a module. Use the parent symbol's location as anchor.
+            else:
+                parent_sym: chapel.NamedDecl = call.parent_symbol()
+                hack_id_to_node[parent_sym.unique_id()] = parent_sym
+                incoming_calls[parent_sym.unique_id()].append(call)
+
+        to_return = []
+        for called_fn, calls in incoming_calls.items():
+            if isinstance(called_fn, str):
+                item = ls.sym_to_call_hierarchy_item(hack_id_to_node[called_fn])
+            else:
+                item = ls.fn_to_call_hierarchy_item(called_fn)
+
+            to_return.append(
+                CallHierarchyIncomingCall(
+                    item,
+                    from_ranges=[
+                        location_to_range(call.location()) for call in calls
+                    ],
+                )
+            )
+
+        return to_return
+
+    @server.feature(CALL_HIERARCHY_OUTGOING_CALLS)
+    async def call_hierarchy_outgoing(
+        ls: ChapelLanguageServer, params: CallHierarchyOutgoingCallsParams
+    ):
+        if not ls.use_resolver:
+            return None
+
+        unpacked = ls.unpack_call_hierarchy_item(params.item)
+        if unpacked is None:
+            return None
+
+        _, fn, instantiation = unpacked
+
+        outgoing_calls: Dict[
+            chapel.TypedSignature, List[chapel.FnCall]
+        ] = defaultdict(list)
+        for call, _ in chapel.each_matching(fn, chapel.FnCall):
+            rr = (
+                call.resolve_via(instantiation)
+                if instantiation
+                else call.resolve()
+            )
+
+            if rr is None:
+                continue
+
+            msc = rr.most_specific_candidate()
+            if msc is None:
+                continue
+
+            outgoing_calls[msc.function()].append(call)
+
+        to_return = []
+        for called_fn, calls in outgoing_calls.items():
+            item = ls.fn_to_call_hierarchy_item(called_fn)
+            to_return.append(
+                CallHierarchyOutgoingCall(
+                    item,
+                    from_ranges=[
+                        location_to_range(call.location()) for call in calls
+                    ],
+                )
+            )
+
+        return to_return
 
     server.start_io()
 

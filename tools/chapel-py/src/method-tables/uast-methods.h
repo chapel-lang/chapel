@@ -39,6 +39,12 @@ CLASS_BEGIN(AstNode)
                chpl::Location, return chpl::parsing::locateAst(context, node))
   PLAIN_GETTER(AstNode, parent, "Get the parent node of this AST node",
                const chpl::uast::AstNode*, return chpl::parsing::parentAst(context, node))
+  PLAIN_GETTER(AstNode, parent_symbol, "Get the parent symbol of this AST node (e.g., module, variable, etc.)",
+               const chpl::uast::AstNode*,
+
+               auto id = node->id();
+               auto parentId = id.parentSymbolId(context);
+               return parsing::idToAst(context, parentId))
   PLAIN_GETTER(AstNode, pragmas, "Get the pragmas of this AST node",
                std::set<std::string>,
 
