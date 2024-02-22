@@ -2299,6 +2299,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
   return fngen;
 }
 
+#ifdef HAVE_LLVM
 static bool shouldUsePrecompiled(FnSymbol* fn) {
   // this is a temporary measure while development continues
   // on separate compilation
@@ -2312,7 +2313,6 @@ static bool shouldUsePrecompiled(FnSymbol* fn) {
          !fn->hasFlag(FLAG_INSTANTIATED_GENERIC);*/
 }
 
-#ifdef HAVE_LLVM
 static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
   GenInfo *info = gGenInfo;
   UniqueString modSymPath = modId.symbolPath();

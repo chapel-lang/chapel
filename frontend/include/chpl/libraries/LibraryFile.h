@@ -405,6 +405,7 @@ class LibraryFile {
                 int symbolTableEntryIndex,
                 const uast::AstNode* symbolTableEntryAst) const;
 
+#ifdef HAVE_LLVM
   /**
     Load LLVM IR from a this LibraryFile for a particular module path.
     For a toplevel module, the module path is just the module name.
@@ -415,6 +416,7 @@ class LibraryFile {
    */
   owned<llvm::Module> loadGenCodeModule(Context* context,
                                         UniqueString moduleSymPath) const;
+#endif
 };
 
 

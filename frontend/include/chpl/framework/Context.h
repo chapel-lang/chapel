@@ -752,7 +752,12 @@ class Context {
                                 UniqueString filePath,
                                 UniqueString libPath);
 
+#ifdef HAVE_LLVM
+  /**
+    Get the LLVMContext associated with this Context
+   */
   llvm::LLVMContext& llvmContext();
+#endif
 
   /**
     This function increments the current revision number stored

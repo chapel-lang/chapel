@@ -755,8 +755,10 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
     const ModuleSection* mod = loadModuleSection(context, i);
     if (mod) {
 
+#ifdef HAVE_LLVM
       owned<llvm::Module> llvmMod =
         loadGenCodeModule(context, modInfo.moduleSymPath);
+#endif
 
       s << "     ### symbols\n";
 
@@ -765,14 +767,17 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
         s << "         " << symPath.str();
         for (auto cname : symInfo.cnames) {
           s << " " << cname;;
+#ifdef HAVE_LLVM
           if (!cname.isEmpty() && llvmMod->getFunction(cname.str())) {
             s << "[llvm]";
           }
+#endif
         }
         s << "\n";
       }
 
 
+#ifdef HAVE_LLVM
       s << "     ### LLVM IR\n";
       if (llvmMod.get()) {
         auto err = llvmMod->materializeAll();
@@ -782,6 +787,7 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
         auto llvmStream = llvm::raw_os_ostream(s);
         llvmMod->print(llvmStream, /*AssemblyAnnotationWriter*/nullptr);
       }
+#endif
     }
 
     s << "\n";
@@ -1046,13 +1052,13 @@ LibraryFile::loadLocations(Context* context,
                             symbolTableEntryIndex, symbolTableEntryAst);
 }
 
+#ifdef HAVE_LLVM
 owned<llvm::Module>
 LibraryFile::loadLlvmModuleImpl(Context* context,
                                 const LibraryFile* f,
                                 int moduleIndex) {
   owned<llvm::Module> result;
 
-#ifdef HAVE_LLVM
   if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
     const ModuleSection* ms = f->loadModuleSection(context, moduleIndex);
     if (ms != nullptr && ms->llvmIrData != nullptr && ms->llvmIrDataLen != 0) {
@@ -1073,7 +1079,6 @@ LibraryFile::loadLlvmModuleImpl(Context* context,
                               /*ShouldLazyLoadMetadata*/ false);
     }
   }
-#endif
 
   return result;
 }
@@ -1094,6 +1099,7 @@ LibraryFile::loadGenCodeModule(Context* context,
 
   return nullptr;
 }
+#endif
 
 
 } // end namespace libraries

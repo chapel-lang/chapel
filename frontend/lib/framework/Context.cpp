@@ -780,6 +780,7 @@ void Context::registerLibraryForModule(ID moduleId,
   setFilePathForModuleId(moduleId, filePath);
 }
 
+#ifdef HAVE_LLVM
 llvm::LLVMContext& Context::llvmContext() {
   if (llvmContext_.get() == nullptr) {
     llvmContext_ = toOwned(new llvm::LLVMContext());
@@ -787,6 +788,7 @@ llvm::LLVMContext& Context::llvmContext() {
 
   return *llvmContext_;
 }
+#endif
 
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
