@@ -1345,14 +1345,15 @@ CallResolutionResult resolvePrimCall(Context* context,
       if (ci.numActuals() == 2) {
         auto lhs = ci.actual(0).type();
         auto rhs = ci.actual(1).type();
-        CHPL_ASSERT(lhs.type() == rhs.type());
-        CHPL_ASSERT(lhs.isParam() && rhs.isParam());
-        CHPL_ASSERT(lhs.type()->isStringType() || lhs.type()->isBytesType());
 
-        auto lstr = lhs.param()->toStringParam()->value();
-        auto rstr = rhs.param()->toStringParam()->value();
-        auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
-        type = QualifiedType(QualifiedType::PARAM, lhs.type(), StringParam::get(context, concat));
+        if (lhs.type() == rhs.type() &&
+            lhs.isParam() && rhs.isParam() &&
+            (lhs.type()->isStringType() || lhs.type()->isBytesType())) {
+          auto lstr = lhs.param()->toStringParam()->value();
+          auto rstr = rhs.param()->toStringParam()->value();
+          auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
+          type = QualifiedType(QualifiedType::PARAM, lhs.type(), StringParam::get(context, concat));
+        }
       }
       break;
     }
