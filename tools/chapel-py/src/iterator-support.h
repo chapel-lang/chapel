@@ -32,7 +32,7 @@ struct IterAdapterBase {
 
 template <typename T>
 struct TypedIterAdapterBase : IterAdapterBase {
-  virtual ~IterAdapterBase() = default;
+  virtual ~TypedIterAdapterBase() = default;
   virtual T typedNext() = 0;
 
   PyObject* next(ContextObject* contextObject) override {
