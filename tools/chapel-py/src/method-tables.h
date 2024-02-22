@@ -67,6 +67,14 @@
 #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR)
 #endif
 
+//
+// Forward declares a prototype for __iter__, which due to current limitations
+// cannot be implemented in method tables. The TYPE argument is the (C++)
+// type yielded by the iterator.
+#ifndef ITER_PROTOTYPE
+#define ITER_PROTOTYPE(NODE, TYPE)
+#endif
+
 #include "method-tables/core-methods.h"
 #include "method-tables/param-methods.h"
 #include "method-tables/type-methods.h"
@@ -80,3 +88,4 @@
 #undef METHOD
 #undef PLAIN_GETTER
 #undef METHOD_PROTOTYPE
+#undef ITER_PROTOTYPE

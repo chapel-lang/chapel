@@ -77,15 +77,18 @@ CLASS_END(Location)
 
 CLASS_BEGIN(Scope)
   PLAIN_GETTER(Scope, used_imported_modules, "Get the modules that were used or imported in this scope",
-               std::vector<const chpl::uast::AstNode*>,
+               std::vector<const chpl::uast::Module*>,
 
                auto& moduleIds = resolution::findUsedImportedModules(context, node);
                std::set<ID> reportedIds;
-               std::vector<const chpl::uast::AstNode*> toReturn;
+               std::vector<const chpl::uast::Module*> toReturn;
                for (size_t i = 0; i < moduleIds.size(); i++) {
                  auto& id = moduleIds[i];
                  if (!reportedIds.insert(id).second) continue;
-                 toReturn.push_back(parsing::idToAst(context, id));
+                 auto ast = parsing::idToAst(context, id);
+                 auto mod = ast->toModule();
+                 CHPL_ASSERT(mod != nullptr);
+                 toReturn.push_back(mod);
                }
                return toReturn)
 CLASS_END(Scope)
@@ -180,5 +183,5 @@ CLASS_BEGIN(TypedSignature)
   PLAIN_GETTER(TypedSignature, is_instantiation, "Check if this function is an instantiation of a generic function",
                bool, return node.signature->instantiatedFrom() != nullptr)
   PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
-               const chpl::uast::AstNode*, return chpl::parsing::idToAst(context, node.signature->id()))
+               Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node.signature->id()))
 CLASS_END(TypedSignature)

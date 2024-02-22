@@ -70,7 +70,7 @@ struct ParentTypeInfo {
   static PyTypeObject* parentTypeObject() { return nullptr; }
 };
 
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) \
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
   template <> \
   struct ParentTypeInfo<NAME##Object> { \
     static PyTypeObject* parentTypeObject() { \
@@ -117,6 +117,10 @@ std::string generatePyiFile() {
     ss << "        " << DOCSTR << std::endl; \
     ss << "        \"\"\"" << std::endl; \
     ss << "        ..." << std::endl << std::endl;
+  #define ITER_PROTOTYPE(NODE, TYPE) \
+    printedAnything = true; \
+    ss << "    def __iter__(self) -> typing.Iterator[" << PythonReturnTypeInfo<TYPE>::typeString() << "]:" << std::endl; \
+    ss << "        ..." << std::endl << std::endl;
   #define CLASS_END(NODE) \
     if (!printedAnything) { \
       ss << "    pass" << std::endl; \
@@ -134,7 +138,7 @@ std::string generatePyiFile() {
       ss << "    pass" << std::endl; \
     } \
 
-  #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) ENSURE_ALL_CLASSES(NAME, TAG)
+  #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) ENSURE_ALL_CLASSES(NAME, TAG)
   #include "generated-types-list.h"
   #undef ENSURE_ALL_CLASSES
 
@@ -200,10 +204,11 @@ PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
   return &ParamObject::PythonType;
 }
 
-PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
+PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {
@@ -229,10 +234,11 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
   return toReturn;
 }
 
-PyObject* wrapType(ContextObject* context, const types::Type* node) {
+PyObject* wrapGeneratedType(ContextObject* context, const types::Type* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {
@@ -258,10 +264,11 @@ PyObject* wrapType(ContextObject* context, const types::Type* node) {
   return toReturn;
 }
 
-PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {

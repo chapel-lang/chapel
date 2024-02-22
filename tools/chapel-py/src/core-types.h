@@ -27,6 +27,19 @@
 #include "error-tracker.h"
 #include "python-class.h"
 
+/* Tiny helper class to support marshaling to and from Python types.
+   This wraps regular pointers. However, during marshaling, instead of
+   throwing Python exceptions when the underlying pointer is 'null', it
+   returns None. */
+template <typename T>
+struct Nilable {
+  T value;
+
+  Nilable() : value(nullptr) {}
+  Nilable(T value) : value(value) {}
+};
+
+
 PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
@@ -57,7 +70,7 @@ struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::u
   }
 };
 
-using QualifiedTypeTuple = std::tuple<const char*, const chpl::types::Type*, const chpl::types::Param*>;
+using QualifiedTypeTuple = std::tuple<const char*, Nilable<const chpl::types::Type*>, Nilable<const chpl::types::Param*>>;
 
 struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*> {
   static constexpr const char* Name = "ChapelType";
@@ -155,17 +168,17 @@ std::string generatePyiFile();
   Create a Python object of the class corresponding to the given AST node's
   type. For example, an Identifier node will be wrapped in a chapel.Identifier.
  */
-PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node);
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::uast::AstNode* node);
 
 /**
   Create a Python object of the class corresponding to the given Type*.
   For example, an ArrayType type will be wrapped in a chapel.ArrayType.
  */
-PyObject* wrapType(ContextObject* context, const chpl::types::Type* node);
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Type* node);
 
 /**
   Creates a Python object of the class corresponding to the given Param*.
  */
-PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
+PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* node);
 
 #endif

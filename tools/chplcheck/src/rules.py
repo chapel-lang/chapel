@@ -118,6 +118,8 @@ def register_rules(driver):
             if isinstance(node, MultiDecl):
                 for child in node:
                     if isinstance(child, Variable): var_node = child
+                else:
+                    return None
             elif isinstance(node, Variable):
                 var_node = node
             else:
