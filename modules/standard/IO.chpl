@@ -7263,13 +7263,13 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
     }
   } else {
     sLocal.buffLen = 0;
-    if sLocal.type == string {
+    if t == string {
       sLocal.cachedNumCodepoints = 0;
       sLocal.hasEscapes = false;
     }
   }
 
-  if s.locale != here then s = sLoc;
+  if s.locale != here then s <=> sLoc;
   return err;
 }
 
