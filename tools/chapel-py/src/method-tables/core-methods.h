@@ -86,9 +86,9 @@ CLASS_BEGIN(Scope)
                  auto& id = moduleIds[i];
                  if (!reportedIds.insert(id).second) continue;
                  auto ast = parsing::idToAst(context, id);
-                 if (auto mod = ast->toModule()) {
-                   toReturn.push_back(mod);
-                 }
+                 auto mod = ast->toModule();
+                 CHPL_ASSERT(mod != nullptr);
+                 toReturn.push_back(mod);
                }
                return toReturn)
 CLASS_END(Scope)

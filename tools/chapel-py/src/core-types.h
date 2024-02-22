@@ -27,9 +27,10 @@
 #include "error-tracker.h"
 #include "python-class.h"
 
-/* Tiny helper class to support marshalling to and from Python types.
-   This wraps a regular pointers, but instead of throwing Python exceptions
-   when the underlying pointer is 'null', it returns None. */
+/* Tiny helper class to support marshaling to and from Python types.
+   This wraps regular pointers. However, during marshaling, instead of
+   throwing Python exceptions when the underlying pointer is 'null', it
+   returns None. */
 template <typename T>
 struct Nilable {
   T value;
