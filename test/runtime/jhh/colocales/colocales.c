@@ -74,11 +74,12 @@ int main(int argc, char* argv[]) {
   }
   setenv("CHPL_RT_LOCALES_PER_NODE", numLocalesStr, 1);
   chpl__init_colocales(0, 0); // unsure why this is needed
+  chpl_topo_pre_comm_init(mask);
+  chpl_comm_init(NULL, NULL);
   chpl_set_num_locales_on_node(numLocales);
   if (rank != -1) {
     chpl_set_local_rank(rank);
   }
-  chpl_topo_pre_comm_init(mask);
   chpl_topo_post_comm_init();
   chpl_topo_post_args_init();
 
