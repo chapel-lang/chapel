@@ -2773,8 +2773,6 @@ extractModuleCode(ModuleSymbol* modSym,
   }
 
   for (FnSymbol* fn : fns) {
-    printf("processing fn %s %s\n", fn->name, fn->cname);
-
     if (fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
       // skip chpl_gen_main
     } else {
