@@ -267,8 +267,8 @@ check-chpldoc: chpldoc third-party-test-venv
 install: comprt
 	@bash $(CHPL_MAKE_HOME)/util/buildRelease/install.sh --stage=${DESTDIR}
 
-install-chpl: comprt
-	@bash $(CHPL_MAKE_HOME)/util/buildRelease/install.sh --stage=${DESTDIR} --no-chpldoc
+# install-chpldoc:
+# 	@bash $(CHPL_MAKE_HOME)/util/buildRelease/install.sh --stage=${DESTDIR} --chpldoc
 
 -include Makefile.devel
 

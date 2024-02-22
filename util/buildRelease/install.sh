@@ -3,7 +3,7 @@
 STAGE=""
 STAGE_SET=0
 PREFIX=""
-BUILD_CHPLDOC=1
+BUILD_CHPLDOC=0
 # Different from DESTDIR, which is for staged installs
 # this variable is for installing the Chapel directory in one place
 # (to mirror release / source checkout)
@@ -25,8 +25,8 @@ do
       fi
       shift
       ;;
-    --no-chpldoc)
-      BUILD_CHPLDOC=0
+    --chpldoc)
+      BUILD_CHPLDOC=1
       shift
       ;;
     *)
@@ -37,7 +37,7 @@ do
       echo "                e.g. for staged installation as with"
       echo "                     the DESTDIR Makefile variable"
       echo
-      echo "       --no-chpldoc don't install chpldoc with chpl"
+      echo "       --chpldoc install chpldoc with chpl"
       echo
       exit -1
     ;;
@@ -240,14 +240,12 @@ myinstallfileto () {
   fi
 }
 
-# run 'cmake' to install the compiler library, 'chpl', and optionally 'chpldoc'
-if [ $BUILD_CHPLDOC -eq 1 ]
-then
-  (cd compiler && "$MAKE" install-chpl-chpldoc)
-else
-  (cd compiler && "$MAKE" install-chpl)
-fi
-# (cd compiler && "$MAKE" install-chpl-chpldoc)
+# these makefile targets run 'cmake' to install the compiler library, 'chpl',
+# and optionally 'chpldoc'
+# if [ $BUILD_CHPLDOC -eq 1 ]
+# then
+(cd compiler && "$MAKE" install-chpl-chpldoc)
+
 
 # copy compiler and runtime lib
 myinstalldir  lib                     "$DEST_RUNTIME_LIB"
