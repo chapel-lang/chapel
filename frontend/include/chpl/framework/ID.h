@@ -81,6 +81,16 @@ class ID final {
   UniqueString symbolPath() const { return symbolPath_; }
 
   /**
+    Return a path to the ID symbol scope, but without taking into account
+    repeated names within a symbol. In particular, M.f#0 and M.f#1 would
+    both return M.f.
+
+    This is useful for exposing a "user-facing" path, such as one that a user
+    can specify from the command line.
+   */
+  UniqueString symbolPathWithoutRepeats(Context* context) const;
+
+  /**
     Returns the numbering of this node in a postorder traversal
     of a symbol's nodes. When the AST node defines a new ID symbol scope,
     (as with Function or Module) this will return -1.
