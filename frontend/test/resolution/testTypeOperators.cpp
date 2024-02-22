@@ -70,9 +70,27 @@ static void test3() {
   assert(qt1.isParamFalse());
 }
 
+static void test4() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  QualifiedType qt1 =  resolveTypeOfXInit(context,
+                         R""""(
+                         record R {}
+
+                         var y : R;
+                         param x = y.type:string;
+                         )"""");
+
+  assert(qt1.isParam() && qt1.type()->isStringType());
+  assert(qt1.param()->toStringParam()->value() == "R");
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
   return 0;
 }
