@@ -20,6 +20,23 @@
 
 // Stub file for atomics-specific set up
 //
+pragma "atomic module"
 module NetworkAtomics {
+  private use ChapelStandard;
 
+  pragma "atomic type"
+  pragma "ignore noinit"
+  record RAtomicBool : writeSerializable {
+    proc type valType type { return bool; }
+    proc valType type { return bool; }
+
+    var _v: int(64);
+  }
+
+  pragma "atomic type"
+  pragma "ignore noinit"
+  record RAtomicT : writeSerializable {
+    type valType;
+    var _v: valType;
+  }
 }
