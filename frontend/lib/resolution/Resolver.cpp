@@ -2132,6 +2132,8 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (asttags::isAggregateDecl(tag)) {
     const Type* t = initialTypeForTypeDecl(context, id);
     return QualifiedType(QualifiedType::TYPE, t);
+  } else if (asttags::isModule(tag)) {
+    return QualifiedType(QualifiedType::MODULE, nullptr);
   }
 
   if (asttags::isFunction(tag)) {
@@ -2154,14 +2156,14 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);
-  auto parentTag = asttags::Module;
+  auto parentTag = asttags::AST_TAG_UNKNOWN;
   if (!parentId.isEmpty()) {
     parentTag = parsing::idToTag(context, parentId);
   }
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
-    bool isCurrentModule = !parentId.isEmpty() &&
+    bool isCurrentModule =
         parsing::idToAst(context, parentId)->toModule() == symbol->toModule();
     return typeForModuleLevelSymbol(context, id, isCurrentModule);
   }
