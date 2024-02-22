@@ -2301,12 +2301,16 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 }
 
 static bool shouldUsePrecompiled(FnSymbol* fn) {
+  // this is a temporary measure while development continues
+  // on separate compilation
+  return false;
+  /*
   return fn->hasFlag(FLAG_PRECOMPILED) &&
          !fn->astloc.id().isEmpty() &&
          // don't do this for generic instantiations for now
          // TODO: figure out how to get LibraryFile to
          // differentiate between instantiations
-         !fn->hasFlag(FLAG_INSTANTIATED_GENERIC);
+         !fn->hasFlag(FLAG_INSTANTIATED_GENERIC);*/
 }
 
 #ifdef HAVE_LLVM
