@@ -106,10 +106,6 @@ module AutoMath {
   pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_float_isnan(x: real(32)): c_int;
 
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  private extern proc fabs(x: real(64)): real(64);
-
 
   //
   //////////////////////////////////////////////////////////////////////////
@@ -138,7 +134,7 @@ module AutoMath {
   proc abs(param x : integral) param do return if x < 0 then -x else x;
 
   /* Returns the magnitude of the real argument `x`. */
-  inline proc abs(x : real(64)):real(64) do return fabs(x);
+  inline proc abs(x : real(64)):real(64) do return __primitive("abs", x);
 
   /* Return the absolute value of a param real(64) as a param */
   proc abs(param x: real(64)) param :real(64) {
@@ -146,12 +142,7 @@ module AutoMath {
   }
 
   /* Returns the magnitude of the real argument `x`. */
-  inline proc abs(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc fabsf(x: real(32)): real(32);
-    return fabsf(x);
-  }
+  inline proc abs(x : real(32)): real(32) do return __primitive("abs", x);
 
   /* Return the absolute value of a param real(32) as a param */
   proc abs(param x: real(32)) param : real(32) {
@@ -159,7 +150,7 @@ module AutoMath {
   }
 
   /* Returns the real magnitude of the imaginary argument `x`. */
-  inline proc abs(x : imag(64)): real(64) do return fabs(_i2r(x));
+  inline proc abs(x : imag(64)): real(64) do return __primitive("abs", _i2r(x));
 
   /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
   */
@@ -168,12 +159,7 @@ module AutoMath {
   }
 
   /* Returns the real magnitude of the imaginary argument `x`. */
-  inline proc abs(x: imag(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc fabsf(x: real(32)): real(32);
-    return fabsf(_i2r(x));
-  }
+  inline proc abs(x: imag(32)): real(32) do return __primitive("abs", _i2r(x));
 
   /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
   */
@@ -619,9 +605,7 @@ module AutoMath {
 
      It is an error if the `x` is less than zero.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc sqrt(x: real(64)): real(64);
+  inline proc sqrt(x: real(64)): real(64) do return __primitive("sqrt", x);
 
   /* Returns the square root of the argument `x`.
 
@@ -638,12 +622,7 @@ module AutoMath {
 
      It is an error if  `x` is less than zero.
   */
-  inline proc sqrt(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc sqrtf(x: real(32)): real(32);
-    return sqrtf(x);
-  }
+  inline proc sqrt(x : real(32)): real(32) do return __primitive("sqrt", x);
 
   /* Returns the square root of the argument `x`.
 

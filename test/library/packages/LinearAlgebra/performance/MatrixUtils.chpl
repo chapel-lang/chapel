@@ -2,7 +2,7 @@
 proc writeMatrix(fname, mat) where isCSArr(mat) {
   use IO;
   var f = open(fname, ioMode.cw);
-  var c = f.writer();
+  var c = f.writer(locking=false);
   var (m,n) = mat.shape;
   c.writeln(m);
   c.writeln(n);

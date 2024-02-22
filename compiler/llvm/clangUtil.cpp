@@ -5120,7 +5120,8 @@ void makeBinaryLLVM(void) {
     // to avoid unused argument errors for optimization flags.
 
     if(debugCCode) {
-      options += " -g";
+      bool isDarwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+      options += isDarwin ? "-gfull" : "-g";
     }
 
     // We used to supply link args here *and* later on
@@ -5176,6 +5177,27 @@ void makeBinaryLLVM(void) {
       // Runs the LLVM link command for executables.
       runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
                      dotOFiles, clangLDArgs);
+    }
+
+    // TODO: Library compiles can produce a '.a' archive as output which
+    // 'dsymutil' doesn't seem to know how to handle. So we'll probably
+    // need a more complicated invocation.
+    const bool generateDarwinSymArchive =
+          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && debugCCode &&
+          !fLibraryCompile;
+
+    if (generateDarwinSymArchive) {
+      const char* bin = "dsymutil";
+      const char* sfx = ".dSYM";
+      const char* tmp = astr(tmpbinname, sfx);
+      const char* out = astr(executableFilename, sfx);
+
+      // TODO: The innermost binary in the .dSYM with all the DWARF info
+      // will have the name "executable.tmp", is there a way to give it a
+      // better name?
+      std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
+      mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
+      moveResultFromTmp(out, tmp);
     }
 
     // If we're not using a launcher, copy the program here
@@ -5574,18 +5596,36 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
 }
 
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
+  const bool targetExists = llvm::sys::fs::exists(resultName);
+  bool isTargetDirectory = false;
   std::error_code err;
 
-  // rm -f hello
-  if( printSystemCommands )
-    printf("rm -f %s\n", resultName);
+  if (targetExists) {
+    err = llvm::sys::fs::is_directory(tmpbinname, isTargetDirectory);
+    if (err) {
+      USR_FATAL("Failed to determine if '%s' is a directory: %s\n",
+                tmpbinname,
+                err.message().c_str());
+    }
 
-  err = llvm::sys::fs::remove(resultName);
-  if (err) {
-    USR_FATAL("removing file %s failed: %s\n",
-              resultName,
-              err.message().c_str());
+    // Debug message, e.g., 'rm -f hello'
+    if (printSystemCommands) {
+      const char* hdr = isTargetDirectory ? "Removing directory: rm -rf"
+                                          : "Removing file: rm -f";
+      printf("%s %s\n", hdr, resultName);
+    }
+
+    err = isTargetDirectory
+          ? llvm::sys::fs::remove_directories(resultName, false)
+          : llvm::sys::fs::remove(resultName);
+    if (err) {
+      const char* hdr = isTargetDirectory
+            ? "Removing directory"
+            : "Removing file";
+      USR_FATAL("%s %s failed: %s\n", hdr, resultName, err.message().c_str());
+    }
   }
+
   // mv tmp/hello.tmp hello
   if( printSystemCommands )
     printf("mv %s %s\n", tmpbinname, resultName);

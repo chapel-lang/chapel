@@ -79,10 +79,6 @@ module ConcurrentMap {
   */
   config param MULTIPLIER_NUM_BUCKETS : real = 2;
 
-  // Note: Once this becomes distributed, we have to make it per-locale
-  @chpldoc.nodoc
-  var seedRNG = new owned RandomStream(uint(64), parSafe=true);
-
   @chpldoc.nodoc
   const E_AVAIL = 1;
 
@@ -213,7 +209,7 @@ module ConcurrentMap {
   // tasks _must_ be in the current epoch to even get this far, so
   // this Bucket, even if the lock value is BUCKET_DESTROYED, should
   // not be destroyed until no it is safe to do so.
-  class Bucket : Base {
+  class Bucket : Base(?), hashable {
     var count : uint;
     var keys : BUCKET_NUM_ELEMS * keyType;
     var values : BUCKET_NUM_ELEMS * valType;
@@ -235,7 +231,7 @@ module ConcurrentMap {
   }
 
   @chpldoc.nodoc
-  class Buckets : Base {
+  class Buckets : Base(?), hashable {
     var seed : uint(64);
     var size : int;
     var bucketsDom = {0..-1};
@@ -245,14 +241,14 @@ module ConcurrentMap {
     proc init(type keyType, type valType) {
       super.init(keyType, valType);
       this.lock.write(P_INNER);
-      this.seed = seedRNG.getNext();
+      this.seed = (new randomStream(int)).next();
       this.size = DEFAULT_NUM_BUCKETS;
       this.bucketsDom = {0..#DEFAULT_NUM_BUCKETS};
     }
 
     proc init(parent : unmanaged Buckets(?keyType, ?valType)) {
       super.init(keyType, valType);
-      this.seed = seedRNG.getNext();
+      this.seed = (new randomStream(int)).next();
       this.lock.write(P_INNER);
       this.parent = parent;
       this.size = round(parent.buckets.size * MULTIPLIER_NUM_BUCKETS):int;
@@ -276,7 +272,7 @@ module ConcurrentMap {
     // proc size return buckets.size;
   }
 
-  class ConcurrentMap : Base {
+  class ConcurrentMap : Base(?), serializable {
     @chpldoc.nodoc
     var root : unmanaged Buckets(keyType, valType);
 
@@ -284,7 +280,7 @@ module ConcurrentMap {
     var _manager = new owned LocalEpochManager();
 
     @chpldoc.nodoc
-    var iterRNG = new owned RandomStream(uint(64), parSafe=true);
+    var iterRNG = new randomStream(uint(64));
 
     @chpldoc.nodoc
     type stackType = (unmanaged Buckets(keyType, valType)?, int, int);
@@ -484,7 +480,7 @@ module ConcurrentMap {
       var deferred : unmanaged DeferredNode(deferredType)?;
       var restore = true;
       var curr : unmanaged Buckets(keyType, valType)? = root;
-      var start = ((iterRNG.getNext())%(curr!.buckets.size):uint):int;
+      var start = ((iterRNG.next())%(curr!.buckets.size):uint):int;
       var startIndex = 0;
 
       while (true) {
@@ -501,7 +497,7 @@ module ConcurrentMap {
               var stackElem = (curr, start, i);
               recursionStack.push(stackElem);
               curr = bucketBase : unmanaged Buckets(keyType, valType)?;
-              start = ((iterRNG.getNext())%(curr!.buckets.size):uint):int;
+              start = ((iterRNG.next())%(curr!.buckets.size):uint):int;
               startIndex = 0;
               restore = false;
               break;
@@ -535,7 +531,7 @@ module ConcurrentMap {
               if (bucketBase!.lock.read() == P_INNER) {
                 delete head;
                 curr = bucketBase : unmanaged Buckets(keyType, valType)?;
-                start = ((iterRNG.getNext())%(curr!.size):uint):int;
+                start = ((iterRNG.next())%(curr!.size):uint):int;
                 startIndex = 0;
                 continueFlag = true;
                 break;
@@ -604,7 +600,7 @@ module ConcurrentMap {
       var _workListTok : owned TokenWrapper = workList.getToken();
       var deferredList = new LockFreeQueue(deferredType);
       var _deferredListTok : owned TokenWrapper = deferredList.getToken();
-      var _startIdx = ((iterRNG.getNext())%(root.buckets.size):uint):int;
+      var _startIdx = ((iterRNG.next())%(root.buckets.size):uint):int;
       var started : chpl__processorAtomicType(int);
       var finished : chpl__processorAtomicType(int);
 
@@ -656,7 +652,7 @@ module ConcurrentMap {
             }
           } else finished.add(1);
 
-          var startIdx = ((iterRNG.getNext())%(_node!.buckets.size):uint):int;
+          var startIdx = ((iterRNG.next())%(_node!.buckets.size):uint):int;
           for i in 0..(_node!.buckets.size-1) {
             var idx = (startIdx + i)%_node!.buckets.size;
             var bucketBase = _node!.buckets[idx].read();
@@ -807,6 +803,36 @@ module ConcurrentMap {
       elist!.lock.write(E_AVAIL);
       tok.unpin();
       return (found, res);
+    }
+
+    /* Atomically update an entry in the map in place
+
+      `updater` should define a `this` method that takes a single argument of
+      the element type by `ref` intent.
+
+      If the key isn't already present, applies the updater to a default-initialized
+      instance of the element type.
+    */
+    proc update(key: keyType, updater, tok : owned TokenWrapper = getToken()) throws {
+      tok.pin();
+      var elist = getEList(key, true, tok),
+          found = false;
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          updater(elist!.values[i]);
+          found = true;
+          break;
+        }
+      }
+      if !found {
+        var v: valType;
+        updater(v);
+        elist!.count += 1;
+        elist!.keys[elist!.count-1] = key;
+        elist!.values[elist!.count-1] = v;
+      }
+      elist!.lock.write(E_AVAIL);
+      tok.unpin();
     }
 
     /*
@@ -1042,8 +1068,7 @@ module ConcurrentMap {
       return A;
     }
 
-    @chpldoc.nodoc
-    proc readThis(f) throws {
+    proc ref deserialize(reader: fileReader(?), ref deserializer) throws {
       compilerWarning("Reading a ConcurrentMap is not supported");
     }
 
@@ -1053,27 +1078,13 @@ module ConcurrentMap {
       compilerWarning("Deserializing a ConcurrentMap is not yet supported");
     }
 
-    /*
-      Writes the contents of this map to a channel. The format looks like:
-
-        .. code-block:: chapel
-
-           {k1: v1, k2: v2, .... , kn: vn}
-
-      :arg ch: A channel to write to.
-    */
-    proc writeThis(ch) throws {
-      ch.write("{");
-      var first = true;
+    proc serialize(writer: fileWriter(?), ref serializer) throws {
+      var ser = serializer.startMap(writer, this.stack.count);
       for (key, val) in this {
-        if first {
-          ch.write(key, ": ", val);
-          first = false;
-        } else {
-          ch.write(", ", key, ": ", val);
-        }
+        ser.writeKey(key);
+        ser.writeValue(val);
       }
-      ch.write("}");
+      ser.endMap();
     }
   }
 

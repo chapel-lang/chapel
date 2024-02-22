@@ -8,7 +8,7 @@ class basicClass {
 
 config const n = 20;
 
-proc concurrentlyUpgrade(s) {
+proc concurrentlyUpgrade(const ref s) {
     const wp = new weak(s);
     var correct: atomic bool = true;
 

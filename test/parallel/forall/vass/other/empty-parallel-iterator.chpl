@@ -1,6 +1,6 @@
 
-iter badIterator() {}
-iter badIterator(param tag : iterKind) where tag == iterKind.standalone {
+iter badIterator(): nothing {}
+iter badIterator(param tag : iterKind): nothing where tag == iterKind.standalone {
   writeln("in badIterator");
 }
 

@@ -116,6 +116,6 @@ proc info(x) {
     writeln("\tshared: '", x, "' \ttype: '", x.type:string, "' \t\tsc: ", x.chpl_pn!.strongCount.read());
 }
 
-proc weak_info(x) {
+proc weak_info(const ref x) {
     writeln("\tweak: '", x, "' \ttype: '", x.type:string, "' \tsc: ", x.getStrongCount(),  "\t wc: ", x.getWeakCount());
 }

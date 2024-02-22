@@ -1452,6 +1452,9 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   bool found = false;
 
   forv_Vec(FnSymbol, method, at->methods) {
+    // Happens because we can set slots to 'nullptr' in 'cleanAst'...
+    if (method == nullptr) continue;
+
     if (method->isPostInitializer()) {
       if (method->throwsError() == true) {
         USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");

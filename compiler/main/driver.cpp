@@ -144,6 +144,7 @@ static bool fBaseline = false;
 static bool fRungdb = false;
 static bool fRunlldb = false;
 bool fDriverCompilationPhase = false;
+bool driverFlagSpecified = false;
 bool fDriverMakeBinaryPhase = false;
 bool fDriverDoMonolithic = false;
 bool driverDebugPhaseSpecified = false;
@@ -946,6 +947,10 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
   }
 }
 
+static void setDriverFlagSpecified(const ArgumentDescription* desc, const char* ignored) {
+  driverFlagSpecified = true;
+}
+
 static void setSubInvocation(const ArgumentDescription* desc, const char* arg) {
   driverInSubInvocation = true;
 }
@@ -1477,7 +1482,7 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver (internal use flag)", "P", &driverTmpDir, NULL, NULL},
- {"compiler-driver", ' ', NULL, "Enable [disable] compiler driver mode", "n", &fDriverDoMonolithic, NULL, NULL},
+ {"compiler-driver", ' ', NULL, "Enable [disable] compiler driver mode", "n", &fDriverDoMonolithic, NULL, setDriverFlagSpecified},
  {"driver-compilation-phase", ' ', NULL, "Run driver compilation phase (internal use flag)", "F", &fDriverCompilationPhase, NULL, setSubInvocation},
  {"driver-makebinary-phase", ' ', NULL, "Run driver makeBinary phase (internal use flag)", "F", &fDriverMakeBinaryPhase, NULL, setSubInvocation},
  {"driver-debug-phase", ' ', "<phase>", "Specify driver phase to run when debugging: compilation, makeBinary, all", "S", NULL, NULL, setDriverDebugPhase},
@@ -2038,6 +2043,19 @@ static void warnDeprecatedFlags() {
 
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
+  // Force monolithic mode for AMD GPUs due to inconsistencies in ROCm 5's
+  // bundled LLVM (https://github.com/Cray/chapel-private/issues/5981).
+  if (!fDriverDoMonolithic &&
+      (usingGpuLocaleModel() &&
+       getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP)) {
+    if (driverFlagSpecified) {
+      USR_WARN(
+          "--compiler-driver is overridden with --no-compiler-driver for "
+          "CHPL_GPU=amd to work around a bug for the time being");
+    }
+    fDriverDoMonolithic = true;
+  }
+
   if (fDriverDoMonolithic) {
     // Prevent running if we are in monolithic mode but appear to be in a
     // sub-invocation, to ensure we are safe from contradictory flags down the

@@ -1,0 +1,3 @@
+-scase=1 #Issue21265.1.good
+-scase=2 #Issue21265.2.good
+-scase=3 #Issue21265.3.good

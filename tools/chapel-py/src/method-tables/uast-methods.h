@@ -39,6 +39,12 @@ CLASS_BEGIN(AstNode)
                chpl::Location, return chpl::parsing::locateAst(context, node))
   PLAIN_GETTER(AstNode, parent, "Get the parent node of this AST node",
                const chpl::uast::AstNode*, return chpl::parsing::parentAst(context, node))
+  PLAIN_GETTER(AstNode, parent_symbol, "Get the parent symbol of this AST node (e.g., module, variable, etc.)",
+               const chpl::uast::AstNode*,
+
+               auto id = node->id();
+               auto parentId = id.parentSymbolId(context);
+               return parsing::idToAst(context, parentId))
   PLAIN_GETTER(AstNode, pragmas, "Get the pragmas of this AST node",
                std::set<std::string>,
 
@@ -505,7 +511,10 @@ CLASS_BEGIN(NamedDecl)
   PLAIN_GETTER(NamedDecl, name, "Get the name of this NamedDecl node",
                chpl::UniqueString, return node->name())
   PLAIN_GETTER(NamedDecl, name_location, "Get the textual location of the NamedDecl node's name",
-               chpl::Location, return chpl::parsing::locateDeclNameWithAst(context, node))
+               chpl::Location,
+               auto loc = chpl::parsing::locateDeclNameWithAst(context, node);
+               /*isEmpty doesn't work since that only relies upon path, which is set*/
+               return (loc.line() != -1) ? loc : chpl::parsing::locateAst(context, node))
 CLASS_END(NamedDecl)
 
 CLASS_BEGIN(EnumElement)

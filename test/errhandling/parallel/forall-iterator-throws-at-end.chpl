@@ -20,7 +20,7 @@ iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.
 }
 
 // for loop in follower with yield should get vector pragma
-iter myiter(nn:int, nt: int, followThis, param tag: iterKind) throws where tag == iterKind.follower {
+iter myiter(nn:int, nt: int, followThis, param tag: iterKind): int throws where tag == iterKind.follower {
   throw new owned StringError("Test error");
 }
 
