@@ -1120,7 +1120,9 @@ static void uniquifyName(Symbol* sym,
            (set2 && (set2->find(newName)!=set2->end()))) {
       char numberTmp[64];
       snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
-      if (fIdBasedMunging) {
+      if (fIdBasedMunging && !isVarSymbol(sym)) {
+        // use a special character to mark instantiations
+        // (but don't worry about it for local variables)
         newName = astr(name, "`", numberTmp);
       } else {
         newName = astr(name, numberTmp);
