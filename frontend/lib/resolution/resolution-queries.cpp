@@ -2874,19 +2874,19 @@ static bool resolveFnCallSpecial(Context* context,
 
   // explicit param casts are resolved here
   if (ci.name() == USTR(":")) {
-    auto lhs = ci.actual(0).type();
-    auto rhs = ci.actual(1).type();
+    auto fromValue = ci.actual(0).type();
+    auto toType = ci.actual(1).type();
 
-    bool isRhsType = rhs.kind() == QualifiedType::TYPE;
-    bool isParamTypeCast = lhs.kind() == QualifiedType::PARAM && isRhsType;
+    bool isToType = toType.kind() == QualifiedType::TYPE;
+    bool isParamTypeCast = fromValue.kind() == QualifiedType::PARAM && isToType;
 
     if (isParamTypeCast) {
         exprTypeOut = Param::fold(context, uast::PrimitiveTag::PRIM_CAST,
-                                  lhs, rhs);
+                                  fromValue, toType);
         return true;
-    } else if (!isRhsType) {
+    } else if (!isToType) {
       // trying to cast to something that's not a type
-      auto typeName = tagToString(rhs.type()->tag());
+      auto typeName = tagToString(toType.type()->tag());
       context->error(astForErr, "bad cast to %s", typeName);
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
