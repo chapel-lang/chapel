@@ -79,7 +79,6 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
-//#include "llvm/Linker/IRMover.h"
 #include "llvm/Target/TargetIntrinsicInfo.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
@@ -2343,9 +2342,6 @@ static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
     if (pm.mod.get() == nullptr) {
       USR_FATAL("could not load module %s", modSymPath.c_str());
     }
-
-    fprintf(stderr, "Importing Module\n");
-    //pm.mod->dump();
   }
 
   return pm;
@@ -2358,16 +2354,10 @@ importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
 
   INT_ASSERT(fIdBasedMunging && "expected ID based munging");
 
-  printf("%s was precompiled!\n", cname);
   chpl::ID modId = chpl::parsing::idToParentModule(gContext, fnId);
   CHPL_ASSERT(!modId.isEmpty());
 
   GenInfo::PrecompiledModule& pm = getPrecompiledModule(modId);
-
-  fprintf(stderr, "Preparing to import function %s\n", cname);
-
-  fprintf(stderr, "Current Module\n");
-  //info->module->dump();
 
   // check to see if the library's LLVM IR contains the symbol
   // find the function
@@ -2379,8 +2369,6 @@ importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
   }
 
   llvm::Module* DstM = info->module;
-
-  printf("Found function %s\n", cname);
 
   // copy over just the function signature
   // c.f. IRLinker::copyFunctionProto in LLVM's IRMover.cpp
@@ -2397,22 +2385,6 @@ importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
   // record the fact that the function was probably needed
   UniqueString ucname = UniqueString::get(gContext, cname);
   pm.neededGlobalNames.push_back(ucname);
-
-#if 0
-  llvm::IRMover irMover(*info->module);
-  llvm::Error err = irMover.move(std::move(mod), {f},
-                                 /*LazyCallback*/ nullptr,
-                                 /*IsPerformingImport*/ false);
-
-  if (err) {
-    INT_FATAL("Failure in IRMover");
-  } else {
-    ret = f;
-  }
-#endif
-
-  fprintf(stderr, "After Module\n");
-  //info->module->dump();
 
   return ret;
 }

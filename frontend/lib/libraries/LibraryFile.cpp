@@ -36,7 +36,6 @@
 #endif
 
 #include <cstring>
-//#include <chrono>
 
 namespace chpl {
 namespace libraries {
@@ -1053,8 +1052,6 @@ LibraryFile::loadLlvmModuleImpl(Context* context,
                                 int moduleIndex) {
   owned<llvm::Module> result;
 
-  //auto start = std::chrono::steady_clock::now();
-
 #ifdef HAVE_LLVM
   if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
     const ModuleSection* ms = f->loadModuleSection(context, moduleIndex);
@@ -1077,10 +1074,6 @@ LibraryFile::loadLlvmModuleImpl(Context* context,
     }
   }
 #endif
-
-  //auto end = std::chrono::steady_clock::now();
-  //std::chrono::duration<double> elapsed = end - start;
-  //printf("time: %lf\n", (double) elapsed.count());
 
   return result;
 }

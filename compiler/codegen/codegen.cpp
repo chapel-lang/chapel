@@ -2846,8 +2846,6 @@ extractModuleCode(ModuleSymbol* modSym,
         if (!gv->isDeclaration()) {
           // IRMover does not like to move declarations
           ValuesToLink.push_back(gv);
-          //printf("Will Include\n");
-          //gv->dump();
         }
       }
     }
@@ -2905,7 +2903,6 @@ static void generateDynoLibFile() {
     {
       llvm::raw_string_ostream OS(generatedCodeBuffer);
       llvm::WriteBitcodeToFile(*M.get(), OS);
-      //M->dump();
     }
 
     auto modName = UniqueString::get(gContext, genMod->name);
@@ -2939,13 +2936,7 @@ void linkInDynoFiles() {
       if (err) {
         INT_FATAL("Failure to materialize a GlobalValue");
       }
-
-      fprintf(stderr, "Will link %s\n", name.c_str());
-      //GV->dump();
     }
-
-    fprintf(stderr, "Module Before Linking\n");
-    //DstMod->dump();
 
     // take the mod from the PrecompiledModule map
     std::unique_ptr<llvm::Module> takeMod;
@@ -2990,10 +2981,6 @@ void linkInDynoFiles() {
       printf("TODO something about %s\n", cname.c_str());
       INT_FATAL("case not handled yet");
     }
-
-    fprintf(stderr, "Module After Linking\n");
-    //DstMod->dump();
-    llvm::verifyModule(*DstMod);
   }
 }
 

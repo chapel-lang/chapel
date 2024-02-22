@@ -1777,8 +1777,6 @@ VarSymbol *new_CStringSymbol(const char *str) {
   if (fIdBasedMunging) {
     // compute a SHA hash of the C string to use as a string cname
     std::string unescapedString = chpl::unescapeStringC(str);
-    //if (unescapedString == "hello")
-    //  gdbShouldBreakHere();
     std::string hashHex = hashUnescapedString(unescapedString);
     s->cname = astr("~cstr~" + hashHex);
   }
