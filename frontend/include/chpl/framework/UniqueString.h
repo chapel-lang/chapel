@@ -153,6 +153,13 @@ class UniqueString final {
     return std::string(c_str(), length());
   }
 
+  /**
+    Returns a reference to the string as an llvm::StringRef
+   */
+  llvm::StringRef stringRef() {
+    return llvm::StringRef(c_str(), length());
+  }
+
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
