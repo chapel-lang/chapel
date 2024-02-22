@@ -206,6 +206,29 @@ std::string iteratorTypeString() {
   return std::string("typing.Iterator[") + PythonReturnTypeInfo<T>::typeString() + "]";
 }
 
+template <typename T>
+PyObject* wrapNilable(ContextObject* context, const Nilable<T>& opt) {
+  if (opt.value) {
+    return PythonReturnTypeInfo<T>::wrap(context, opt.value);
+  } else {
+    Py_RETURN_NONE;
+  }
+}
+
+template <typename T>
+Nilable<T> unwrapNilable(ContextObject* context, PyObject* opt) {
+  if (opt == Py_None) {
+    return {nullptr};
+  } else {
+    return PythonReturnTypeInfo<T>::unwrap(context, opt);
+  }
+}
+
+template <typename T>
+std::string nilableTypeString() {
+  return std::string("typing.Optional[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
+
 
 /* Invoke the DEFINE_INOUT_TYPE macro for each type we want to support.
    New types should be added here. We might consider performing these invocations
@@ -232,6 +255,8 @@ template <typename T>
 T_DEFINE_INOUT_TYPE(std::set<T>, setTypeString<T>(), wrapSet(CONTEXT, TO_WRAP), unwrapSet<T>(CONTEXT, TO_UNWRAP));
 template <typename T>
 T_DEFINE_INOUT_TYPE(std::optional<T>, optionalTypeString<T>(), wrapOptional(CONTEXT, TO_WRAP), unwrapOptional<T>(CONTEXT, TO_UNWRAP));
+template <typename T>
+T_DEFINE_INOUT_TYPE(Nilable<T>, nilableTypeString<T>(), wrapNilable(CONTEXT, TO_WRAP), unwrapNilable<T>(CONTEXT, TO_UNWRAP));
 template <typename ... Elems>
 T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
 template <typename ElemType>

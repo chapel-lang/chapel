@@ -203,7 +203,8 @@ PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
 PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {
@@ -232,7 +233,8 @@ PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
 PyObject* wrapGeneratedType(ContextObject* context, const types::Type* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {
@@ -261,7 +263,8 @@ PyObject* wrapGeneratedType(ContextObject* context, const types::Type* node) {
 PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_RuntimeError, "implementation attempted to wrap a null pointer");
+    return nullptr;
   }
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {

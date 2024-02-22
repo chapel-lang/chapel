@@ -27,6 +27,18 @@
 #include "error-tracker.h"
 #include "python-class.h"
 
+/* Tiny helper class to support marshalling to and from Python types.
+   This wraps a regular pointers, but instead of throwing Python exceptions
+   when the underlying pointer is 'null', it returns None. */
+template <typename T>
+struct Nilable {
+  T value;
+
+  Nilable() : value(nullptr) {}
+  Nilable(T value) : value(value) {}
+};
+
+
 PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
@@ -57,7 +69,7 @@ struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::u
   }
 };
 
-using QualifiedTypeTuple = std::tuple<const char*, const chpl::types::Type*, const chpl::types::Param*>;
+using QualifiedTypeTuple = std::tuple<const char*, Nilable<const chpl::types::Type*>, Nilable<const chpl::types::Param*>>;
 
 struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*> {
   static constexpr const char* Name = "ChapelType";

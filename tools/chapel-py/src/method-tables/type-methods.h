@@ -33,5 +33,5 @@ CLASS_END(ChapelType)
 
 CLASS_BEGIN(CompositeType)
   PLAIN_GETTER(CompositeType, decl, "Get the chpl::uast::AstNode that declares this CompositeType",
-               const chpl::uast::AstNode*, return parsing::idToAst(context, node->id()))
+               Nilable<const chpl::uast::AstNode*>, return parsing::idToAst(context, node->id()))
 CLASS_END(CompositeType)
