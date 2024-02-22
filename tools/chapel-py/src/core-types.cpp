@@ -117,6 +117,10 @@ std::string generatePyiFile() {
     ss << "        " << DOCSTR << std::endl; \
     ss << "        \"\"\"" << std::endl; \
     ss << "        ..." << std::endl << std::endl;
+  #define ITER_PROTOTYPE(NODE, TYPE) \
+    printedAnything = true; \
+    ss << "    def __iter__(self) -> typing.Iterator[" << PythonReturnTypeInfo<TYPE>::typeString() << "]:" << std::endl; \
+    ss << "        ..." << std::endl << std::endl;
   #define CLASS_END(NODE) \
     if (!printedAnything) { \
       ss << "    pass" << std::endl; \

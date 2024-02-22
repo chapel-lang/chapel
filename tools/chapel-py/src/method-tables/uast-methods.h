@@ -29,6 +29,7 @@
 //
 
 CLASS_BEGIN(AstNode)
+  ITER_PROTOTYPE(AstNode, const chpl::uast::AstNode*)
   PLAIN_GETTER(AstNode, dump, "Dump the internal representation of the given AST node",
                void, node->dump())
   PLAIN_GETTER(AstNode, tag, "Get a string representation of the AST node's type",
