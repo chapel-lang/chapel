@@ -947,6 +947,7 @@ class ChapelLanguageServer(LanguageServer):
         decl: NodeAndRange,
         qt: chapel.QualifiedType,
         siblings: chapel.SiblingMap,
+        via: Optional[chapel.TypedSignature] = None,
     ) -> List[InlayHint]:
         if not self.type_inlays:
             return []
@@ -969,7 +970,7 @@ class ChapelLanguageServer(LanguageServer):
             typedecl = type_.decl()
 
             if typedecl:
-                text = self.get_tooltip(typedecl, siblings)
+                text = self.get_tooltip(typedecl, siblings, via)
                 content = MarkupContent(MarkupKind.Markdown, text)
                 label.tooltip = content
                 label.location = location_to_location(typedecl.location())
@@ -1003,7 +1004,7 @@ class ChapelLanguageServer(LanguageServer):
 
         inlays = []
         inlays.extend(self._get_param_inlays(decl, qt))
-        inlays.extend(self._get_type_inlays(decl, qt, siblings))
+        inlays.extend(self._get_type_inlays(decl, qt, siblings, via))
         return inlays
 
     def get_call_inlays(
@@ -1050,13 +1051,16 @@ class ChapelLanguageServer(LanguageServer):
         return inlays
 
     def get_tooltip(
-        self, node: chapel.AstNode, siblings: chapel.SiblingMap
+        self,
+        node: chapel.AstNode,
+        siblings: chapel.SiblingMap,
+        via: Optional[chapel.TypedSignature] = None,
     ) -> str:
         signature = SymbolSignature(node)
         if self.use_resolver:
-            signature.compute_type()
+            signature.compute_type(via)
             if self.eval_expressions:
-                signature.compute_value()
+                signature.compute_value(via)
 
         docstring = chapel.get_docstring(node, siblings)
         text = f"```chapel\n{signature}\n```"
@@ -1323,11 +1327,12 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
         segment = fi.get_use_or_def_segment_at_position(params.position)
+        instantiation = fi.get_inst_segment_at_position(params.position)
         if not segment:
             return None
         node_fi, _ = ls.get_file_info(segment.get_uri())
 
-        text = ls.get_tooltip(segment.node, node_fi.siblings)
+        text = ls.get_tooltip(segment.node, node_fi.siblings, instantiation)
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=segment.get_location().range)
 
