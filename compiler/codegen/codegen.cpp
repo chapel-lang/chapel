@@ -2839,7 +2839,12 @@ extractModuleCode(ModuleSymbol* modSym,
     llvm::Value* val = VMap[gv];
     if (val != nullptr) {
       if (llvm::GlobalValue* gv = llvm::dyn_cast<llvm::GlobalValue>(val)) {
-        ValuesToLink.push_back(gv);
+        if (!gv->isDeclaration()) {
+          // IRMover does not like to move declarations
+          ValuesToLink.push_back(gv);
+          //printf("Will Include\n");
+          //gv->dump();
+        }
       }
     }
   }
@@ -2939,7 +2944,7 @@ void linkInDynoFiles() {
     }
 
     fprintf(stderr, "Module Before Linking\n");
-    DstMod->dump();
+    //DstMod->dump();
 
     // take the mod from the PrecompiledModule map
     std::unique_ptr<llvm::Module> takeMod;
@@ -2986,7 +2991,7 @@ void linkInDynoFiles() {
     }
 
     fprintf(stderr, "Module After Linking\n");
-    DstMod->dump();
+    //DstMod->dump();
     llvm::verifyModule(*DstMod);
   }
 }
