@@ -119,6 +119,7 @@ void Type::gatherBuiltins(Context* context,
   auto localeType = CompositeType::getLocaleType(context);
   gatherType(context, map, "locale", localeType);
   gatherType(context, map, "_locale", localeType);
+  gatherType(context, map, "chpl_localeID_t", CompositeType::getLocaleIDType(context));
 
   auto rangeType = CompositeType::getRangeType(context);
   gatherType(context, map, "range", rangeType);

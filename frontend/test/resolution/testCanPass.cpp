@@ -103,6 +103,7 @@ static void test1() {
   QualifiedType int32(QualifiedType::VAR, IntType::get(context, 32));
   QualifiedType int64(QualifiedType::VAR, IntType::get(context, 64));
   QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
+  QualifiedType complex128(QualifiedType::VAR, ComplexType::get(context, 0));
 
   CanPassResult r;
   r = canPass(c, int0, int0); assert(passesAsIs(r));
@@ -136,6 +137,9 @@ static void test1() {
   r = canPass(c, int0, int16); assert(doesNotPass(r));
   r = canPass(c, int0, int32); assert(doesNotPass(r));
   r = canPass(c, int0, int64); assert(passesAsIs(r));
+
+  r = canPass(c, int0, complex128); assert(passesNumeric(r));
+  r = canPass(c, complex128, real0); assert(doesNotPass(r));
 }
 
 static void test2() {

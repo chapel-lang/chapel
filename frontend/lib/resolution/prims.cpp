@@ -1318,7 +1318,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* string operations */
     case PRIM_STRING_COMPARE:
     case PRIM_STRING_CONTAINS:
-    case PRIM_STRING_CONCAT:
     case PRIM_STRING_LENGTH_BYTES:
     {
       if (ci.numActuals() > 0) {
@@ -1332,13 +1331,31 @@ CallResolutionResult resolvePrimCall(Context* context,
                                IntParam::get(context, s));
           break;
         } else if (actualType.type()->isStringType() ||
-                   actualType.type()->isBytesType()) {
+                   actualType.type()->isBytesType() ||
+                   actualType.type()->isCStringType()) {
           // for non-param string/bytes, the return type is just a default int
           type = QualifiedType(QualifiedType::CONST_VAR,
                                IntType::get(context, 0));
           break;
         }
       }
+    }
+    case PRIM_STRING_CONCAT:
+    {
+      if (ci.numActuals() == 2) {
+        auto lhs = ci.actual(0).type();
+        auto rhs = ci.actual(1).type();
+
+        if (lhs.type() == rhs.type() &&
+            lhs.isParam() && rhs.isParam() &&
+            (lhs.type()->isStringType() || lhs.type()->isBytesType())) {
+          auto lstr = lhs.param()->toStringParam()->value();
+          auto rstr = rhs.param()->toStringParam()->value();
+          auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
+          type = QualifiedType(QualifiedType::PARAM, lhs.type(), StringParam::get(context, concat));
+        }
+      }
+      break;
     }
     case PRIM_STRING_LENGTH_CODEPOINTS:
     case PRIM_ASCII:
@@ -1617,6 +1634,10 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 32));
       break;
+    case PRIM_ON_LOCALE_NUM:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CompositeType::getLocaleIDType(context));
+      break;
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
     case PRIM_TUPLE_EXPAND:
@@ -1641,7 +1662,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_LOGICAL_FOLDER:
     case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
-    case PRIM_ON_LOCALE_NUM:
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
     case PRIM_PRIVATE_BROADCAST:

@@ -1514,7 +1514,8 @@ ApplicabilityResult instantiateSignature(Context* context,
 
   const TypedFnSignature* parentFnTyped = nullptr;
   if (sig->parentFn()) {
-    CHPL_ASSERT(false && "generic child functions not yet supported");
+    CHPL_UNIMPL("generic child functions not yet supported");
+    return ApplicabilityResult::failure(sig->id(), FAIL_CANDIDATE_OTHER);
     // TODO: how to compute parentFn for the instantiation?
     // Does the parent function need to be instantiated in some case?
     // Set parentFnTyped somehow.
@@ -2900,6 +2901,21 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
+  if (ci.isOpCall() && ci.name() == USTR(":")) {
+    auto src = ci.actual(0).type();
+    auto dst = ci.actual(1).type();
+
+    if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
+      std::ostringstream oss;
+      src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      auto ustr = UniqueString::get(context, oss.str());
+      exprTypeOut = QualifiedType(QualifiedType::PARAM,
+                                  RecordType::getStringType(context),
+                                  StringParam::get(context, ustr));
+      return true;
+    }
+  }
+
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
       context->error(astForErr, "bad call to %s", ci.name().c_str());
@@ -2912,6 +2928,21 @@ static bool resolveFnCallSpecial(Context* context,
     exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                 BoolParam::get(context, result));
     return true;
+  }
+
+  if (ci.name() == USTR("this") && ci.numActuals() == 2) {
+    // compiler-defined 'this' operator for param-indexed tuples
+    auto thisType = ci.actual(0).type();
+    auto second = ci.actual(1).type();
+    if (thisType.hasTypePtr() && thisType.type()->isTupleType() &&
+        second.isParam() && second.hasParamPtr() &&
+        second.type()->isIntType()) {
+      auto tup = thisType.type()->toTupleType();
+      auto val = second.param()->toIntParam()->value();
+      auto member = tup->elementType(val);
+      exprTypeOut = member;
+      return true;
+    }
   }
 
   return false;
@@ -2965,53 +2996,6 @@ static bool resolveFnCallSpecialType(Context* context,
   return false;
 }
 
-static void buildReaderWriterTypeCtor(
-    Context* context, const CallInfo& ci, const TypedFnSignature* initial,
-    CandidatesAndForwardingInfo& initialCandidates) {
-  std::vector<UntypedFnSignature::FormalDetail> formals;
-  // Move 'kind' to the end and allow the first two args to just be
-  // 'locking' and  '(de)serializerType'
-  //
-  // TODO: The '_serializerWrapper' arg should _not_ be considered
-  // part of the type constructor...
-  std::vector<int> order = {1, 2, 3, 0};
-  for (auto i : order) {
-    auto un = initial->untyped();
-    auto d = UntypedFnSignature::FormalDetail(un->formalName(i),
-                                              un->formalHasDefault(i),
-                                              un->formalDecl(i),
-                                              un->formalIsVarArgs(i));
-    formals.push_back(d);
-  }
-
-  std::vector<types::QualifiedType> formalTypes;
-  for (auto i : order) {
-    formalTypes.push_back(initial->formalType(i));
-  }
-
-  auto untyped = UntypedFnSignature::get(context,
-                                         initial->id(), ci.name(),
-                                         /* isMethod */ false,
-                                         /* isTypeConstructor */ true,
-                                         /* isCompilerGenerated */ true,
-                                         /* throws */ false,
-                                         uast::asttags::Record,
-                                         Function::PROC,
-                                         std::move(formals),
-                                         /* whereClause */ nullptr);
-
-  auto result = TypedFnSignature::get(context,
-                                      untyped,
-                                      std::move(formalTypes),
-                                      TypedFnSignature::WHERE_NONE,
-                                      /* needsInstantiation */ true,
-                                      /* instantiatedFrom */ nullptr,
-                                      /* parentFn */ nullptr,
-                                      /* formalsInstantiated */ Bitmap());
-
-  initialCandidates.addCandidate(result);
-}
-
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
                          const CallInfo& ci,
@@ -3027,20 +3011,6 @@ resolveFnCallForTypeCtor(Context* context,
 
   auto initial = typeConstructorInitial(context, ci.calledType().type());
   initialCandidates.addCandidate(initial);
-
-  //
-  // Adds an alternative type constructor for fileReader/Writer to support
-  // the deprecated 'kind' field, as in PR #23007.
-  //
-  // TODO: Remove this code when the 'kind' field is finally removed.
-  //
-  if (auto rt = ci.calledType().type()->toRecordType()) {
-    if (parsing::idIsInBundledModule(context, rt->id())) {
-      if (ci.name() == "fileWriter" || ci.name() == "fileReader") {
-        buildReaderWriterTypeCtor(context, ci, initial, initialCandidates);
-      }
-    }
-  }
 
   // TODO: do something for partial instantiation
 
