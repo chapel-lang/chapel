@@ -1,0 +1,9 @@
+
+Poses     : 65536
+Iterations: 8
+Ligands   : 26
+Proteins  : 938
+Deck      : miniBUDE/data/bm1
+
+Largest difference was less than 0.020%.
+

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# Skip if not doing performance testing
+#if [ -z "$CHPL_TEST_PERF" ]; then
+#  echo "True"
+#  exit
+##fi
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+MINIBUDE_URL=${MINIBUDE_URL:-git@github.com:xianghao-wang/miniBUDE.git}
+MINIBUDE_BRANCH=${MINIBUDE_BRANCH:-benchmark}
+
+# Clone ChOp, skipif clone failed, add extra output to fail nightly job
+rm -rf miniBUDE
+if ! git clone ${MINIBUDE_URL} --branch=${MINIBUDE_BRANCH} --depth=1 2>gitClone.out; then
+  echo "git clone failed; output:" >&2
+  cat gitClone.out >&2
+  echo "True"
+  exit
+fi
+
+# Apply patches, if any
+if ! (for p in $(find patches -name "*patch"); do git -C miniBUDE apply ../$p; done) 2>gitPatch.out; then
+  echo "Patching failed; output:" >&2
+  cat gitPatch.out >&2
+  echo "True"
+  exit
+fi
+
+echo "False"
