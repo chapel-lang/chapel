@@ -338,6 +338,19 @@ then
   fi
 fi
 
+C2CHAPEL="bin/$CHPL_BIN_SUBDIR"/c2chapel
+
+# copy c2chapel
+if [ -f "$C2CHAPEL" ]
+then
+  if [ ! -z "$PREFIX" ]
+  then
+    myinstallfile "$C2CHAPEL" "$PREFIX/bin"
+  else
+    myinstallfile "$C2CHAPEL" "$DEST_CHPL_HOME/tools/c2chapel"
+    ln -s "$DEST_CHPL_HOME/tools/c2chapel/c2chapel" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/c2chapel
+  fi
+fi
 
 # copy chplconfig
 if [ -f chplconfig ]
