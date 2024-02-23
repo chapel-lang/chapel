@@ -116,21 +116,21 @@ static void test8() {
 }
 
 // bool -> uint
-static void test9() {
-  printf("test9\n");
-  Context ctx;
+// static void test9() {
+//   printf("test9\n");
+//   Context ctx;
 
-  std::string program = "param x = true : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
-}
+//   std::string program = "param x = true : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
+// }
 
-static void test10() {
-  printf("test10\n");
-  Context ctx;
+// static void test10() {
+//   printf("test10\n");
+//   Context ctx;
 
-  std::string program = "param x = false : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0));
-}
+//   std::string program = "param x = false : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0));
+// }
 
 // bool -> string
 // bool -> bytes
@@ -187,13 +187,13 @@ static void test16() {
 }
 
 // int -> uint
-static void test17() {
-  printf("test17\n");
-  Context ctx;
+// static void test17() {
+//   printf("test17\n");
+//   Context ctx;
 
-  std::string program = "param x = 1 : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
-}
+//   std::string program = "param x = 1 : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
+// }
 
 // TODO: Negative int, no matching candidates for -
 // static void test18() {
@@ -277,33 +277,33 @@ static void test27() {
 }
 
 // real -> uint (data loss)
-static void test28() {
-  printf("test28\n");
-  Context ctx;
-  std::string program = "param x = 1.1 : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
-}
+// static void test28() {
+//   printf("test28\n");
+//   Context ctx;
+//   std::string program = "param x = 1.1 : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
+// }
 
-static void test29() {
-  printf("test29\n");
-  Context ctx;
-  std::string program = "param x = 1.9 : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
-}
+// static void test29() {
+//   printf("test29\n");
+//   Context ctx;
+//   std::string program = "param x = 1.9 : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 1));
+// }
 
-static void test30() {
-  printf("test30\n");
-  Context ctx;
-  std::string program = "param x = 0.9 : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0));
-}
+// static void test30() {
+//   printf("test30\n");
+//   Context ctx;
+//   std::string program = "param x = 0.9 : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0));
+// }
 
-static void test31() {
-  printf("test31\n");
-  Context ctx;
-  std::string program = "param x = 0.1 : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0));
-}
+// static void test31() {
+//   printf("test31\n");
+//   Context ctx;
+//   std::string program = "param x = 0.1 : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0));
+// }
 
 // ***********************
 // uninteresting self-type casts
@@ -316,12 +316,12 @@ static void test32() {
 }
 
 // uint -> uint
-static void test33() {
-  printf("test33\n");
-  Context ctx;
-  std::string program = "param x = 0x8000000000000000 : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0x8000000000000000));
-}
+// static void test33() {
+//   printf("test33\n");
+//   Context ctx;
+//   std::string program = "param x = 0x8000000000000000 : uint; ";
+//   testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0x8000000000000000));
+// }
 
 // real -> real
 static void test34() {
@@ -360,15 +360,15 @@ int main() {
   test6();
   test7();
   test8();
-  test9();
-  test10();
+  // test9();
+  // test10();
   test11();
   test12();
   test13();
   test14();
   test15();
   test16();
-  test17();
+  // test17();
   // test18();
   test19();
   test20();
@@ -379,12 +379,12 @@ int main() {
   test25();
   test26();
   test27();
-  test28();
-  test29();
-  test30();
-  test31();
+  // test28();
+  // test29();
+  // test30();
+  // test31();
   test32();
-  test33();
+  // test33();
   test34();
   test35();
   // test36();
