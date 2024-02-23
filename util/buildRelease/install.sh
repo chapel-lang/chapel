@@ -343,12 +343,48 @@ C2CHAPEL="bin/$CHPL_BIN_SUBDIR"/c2chapel
 # copy c2chapel
 if [ -f "$C2CHAPEL" ]
 then
+  myinstalldir "tools/c2chapel/install" "$DEST_CHPL_HOME/tools/c2chapel/install"
+  myinstallfile "tools/c2chapel/c2chapel" "$DEST_CHPL_HOME/tools/c2chapel"
+  myinstallfile "tools/c2chapel/c2chapel.py" "$DEST_CHPL_HOME/tools/c2chapel"
+  myinstallfile "tools/c2chapel/utils/custom.h" "$DEST_CHPL_HOME/tools/c2chapel/util"
+
   if [ ! -z "$PREFIX" ]
   then
-    myinstallfile "$C2CHAPEL" "$PREFIX/bin"
+    ln -s "$DEST_CHPL_HOME/tools/c2chapel/c2chapel" "$PREFIX/bin"/c2chapel
   else
-    myinstallfile "$C2CHAPEL" "$DEST_CHPL_HOME/tools/c2chapel"
     ln -s "$DEST_CHPL_HOME/tools/c2chapel/c2chapel" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/c2chapel
+  fi
+fi
+
+CHPLCHECK="bin/$CHPL_BIN_SUBDIR"/chplcheck
+
+# copy chplcheck
+if [ -f "$CHPLCHECK" ]
+then
+  myinstallfile "tools/chplcheck/chplcheck" "$DEST_CHPL_HOME/tools/chplcheck"
+  myinstalldir "tools/chplcheck/src" "$DEST_CHPL_HOME/tools/chplcheck/src"
+
+  if [ ! -z "$PREFIX" ]
+  then
+    ln -s "$DEST_CHPL_HOME/tools/chplcheck/chplcheck" "$PREFIX/bin"/chplcheck
+  else
+    ln -s "$DEST_CHPL_HOME/tools/chplcheck/chplcheck" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/chplcheck
+  fi
+fi
+
+CHPL_LANGUAGE_SERVER="bin/$CHPL_BIN_SUBDIR"/chpl-language-server
+
+# copy chpl-language-server
+if [ -f "$CHPL_LANGUAGE_SERVER" ]
+then
+  myinstallfile "tools/chpl-language-server/chpl-language-server" "$DEST_CHPL_HOME/tools/chpl-language-server"
+  myinstalldir "tools/chpl-language-server/src" "$DEST_CHPL_HOME/tools/chpl-language-server/src"
+
+  if [ ! -z "$PREFIX" ]
+  then
+    ln -s "$DEST_CHPL_HOME/tools/chpl-language-server/chpl-language-server" "$PREFIX/bin"/chpl-language-server
+  else
+    ln -s "$DEST_CHPL_HOME/tools/chpl-language-server/chpl-language-server" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/chpl-language-server
   fi
 fi
 
