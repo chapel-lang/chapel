@@ -118,6 +118,33 @@ static ImmString getImmediateValueOrEmpty(const StringParam* p) {
   return UniqueString().podUniqueString();
 }
 
+static paramtags::ParamTag guessParamTagFromType(const Type* t) {
+  if (t->isBoolType()) {
+    return paramtags::BoolParam;
+  } else if (t->isComplexType()) {
+    return paramtags::ComplexParam;
+  } else if (t->isIntType()) {
+    return paramtags::IntParam;
+  } else if (t->isUintType()) {
+    return paramtags::UintParam;
+  } else if (t->isRealType()) {
+    return paramtags::RealParam;
+  } else if (t->isImagType()) {
+    return paramtags::RealParam;
+  } else if (t->isStringType()) {
+    return paramtags::StringParam;
+  } else if (t->isBytesType()) {
+    return paramtags::StringParam;
+  } else if (t->isCStringType()) {
+    return paramtags::StringParam;
+  } else if (t->isNothingType()) {
+    return paramtags::NoneParam;
+  } else {
+    CHPL_ASSERT(false && "case not handled");
+  }
+  return paramtags::NoneParam;
+}
+
 /*
   Get the immediate value from a Param in the proper type. Pass nullptr as param
   to get an empty immediate for a param of Type t.
@@ -125,133 +152,155 @@ static ImmString getImmediateValueOrEmpty(const StringParam* p) {
 static
 Immediate paramToImmediate(const Param* p, const Type* t) {
   Immediate ret;
+  paramtags::ParamTag tag = p ? p->tag() : guessParamTagFromType(t);
 
-  if (t->isBoolType()) {
-    auto bp = (const BoolParam*) p;
-    ret.v_bool = getImmediateValueOrEmpty<bool, BoolParam>(bp);
-    ret.const_kind = NUM_KIND_BOOL;
-    ret.num_index = BOOL_SIZE_SYS;
-    return ret;
-  } else if (t->isComplexType()) {
-    auto cp = (const ComplexParam*) p;
-    auto ct = t->toComplexType();
-    CHPL_ASSERT(ct);
-    if (ct == nullptr) return ret;
-    ret.const_kind = NUM_KIND_COMPLEX;
-    if (ct->bitwidth() == 64) {
-      ret.num_index = COMPLEX_SIZE_64;
-      auto v = getImmediateValueOrEmpty(cp);
-      ret.v_complex64.r = v.re;
-      ret.v_complex64.i = v.im;
-    } else if (ct->bitwidth() == 128) {
-      ret.num_index = COMPLEX_SIZE_128;
-      auto v = getImmediateValueOrEmpty(cp);
-      ret.v_complex128.r = v.re;
-      ret.v_complex128.i = v.im;
-    } else {
-      CHPL_ASSERT(false && "case not handled");
-    }
-    return ret;
-  } else if (t->isIntType()) {
-    auto ip = (const IntParam*) p;
-    auto it = t->toIntType();
-    CHPL_ASSERT(it);
-    if (it == nullptr) return ret;
-    ret.const_kind = NUM_KIND_INT;
-    if (it->bitwidth() == 8) {
-      ret.num_index = INT_SIZE_8;
-      ret.v_int8 = getImmediateValueOrEmpty<int8_t, IntParam>(ip);
-    } else if (it->bitwidth() == 16) {
-      ret.num_index = INT_SIZE_16;
-      ret.v_int16 = getImmediateValueOrEmpty<int16_t, IntParam>(ip);
-    } else if (it->bitwidth() == 32) {
-      ret.num_index = INT_SIZE_32;
-      ret.v_int32 = getImmediateValueOrEmpty<int32_t, IntParam>(ip);
-    } else if (it->bitwidth() == 64) {
-      ret.num_index = INT_SIZE_64;
-      ret.v_int64 = getImmediateValueOrEmpty<int64_t, IntParam>(ip);
-    } else {
-      CHPL_ASSERT(false && "case not handled");
-    }
-    return ret;
-  } else if (t->isUintType()) {
-    auto up = (const UintParam*) p;
-    auto ut = t->toUintType();
-    CHPL_ASSERT(ut);
-    if (ut == nullptr) return ret;
-    ret.const_kind = NUM_KIND_UINT;
-    if (ut->bitwidth() == 8) {
-      ret.num_index = INT_SIZE_8;
-      ret.v_uint8 = getImmediateValueOrEmpty<uint8_t, UintParam>(up);
-    } else if (ut->bitwidth() == 16) {
-      ret.num_index = INT_SIZE_16;
-      ret.v_uint16 = getImmediateValueOrEmpty<uint16_t, UintParam>(up);
-    } else if (ut->bitwidth() == 32) {
-      ret.num_index = INT_SIZE_32;
-      ret.v_uint32 = getImmediateValueOrEmpty<uint32_t, UintParam>(up);
-    } else if (ut->bitwidth() == 64) {
-      ret.num_index = INT_SIZE_64;
-      ret.v_uint64 = getImmediateValueOrEmpty<uint64_t, UintParam>(up);
-    } else {
-      CHPL_ASSERT(false && "case not handled");
-    }
-  } else if (t->isRealType()) {
-    auto rp = (const RealParam*) p;
-    if (auto rt = t->toRealType()) {
-      ret.const_kind = NUM_KIND_REAL;
-      if (rt->bitwidth() == 32) {
-        ret.num_index = FLOAT_SIZE_32;
-        ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
-      } else if (rt->bitwidth() == 64) {
-        ret.num_index = FLOAT_SIZE_64;
-        ret.v_float64 = getImmediateValueOrEmpty<double, RealParam>(rp);
-      } else {
+  switch (tag) {
+    case paramtags::BoolParam:
+      {
+        auto bp = (const BoolParam*) p;
+        auto v = getImmediateValueOrEmpty<bool, BoolParam>(bp);
+        ret.const_kind = NUM_KIND_BOOL;
+        ret.num_index = BOOL_SIZE_SYS;
+        ret.v_bool = v;
+        return ret;
+      }
+    case paramtags::ComplexParam:
+      {
+        auto cp = (const ComplexParam*) p;
+        auto v = getImmediateValueOrEmpty(cp);
+        auto ct = t->toComplexType();
+        CHPL_ASSERT(ct);
+        if (ct == nullptr) return ret;
+        ret.const_kind = NUM_KIND_COMPLEX;
+        if (ct->bitwidth() == 64) {
+          ret.num_index = COMPLEX_SIZE_64;
+          ret.v_complex64.r = v.re;
+          ret.v_complex64.i = v.im;
+        } else if (ct->bitwidth() == 128) {
+          ret.num_index = COMPLEX_SIZE_128;
+          ret.v_complex128.r = v.re;
+          ret.v_complex128.i = v.im;
+        } else {
+          CHPL_ASSERT(false && "case not handled");
+        }
+        return ret;
+      }
+    case paramtags::EnumParam:
+      {
         CHPL_ASSERT(false && "case not handled");
       }
-    }
-  } else if (t->isImagType()) {
-    auto rp = (const RealParam*) p;
-    if (auto it = t->toImagType()) {
-      ret.const_kind = NUM_KIND_IMAG;
-      if (it->bitwidth() == 32) {
-        ret.num_index = FLOAT_SIZE_32;
-        ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
-      } else if (it->bitwidth() == 64) {
-        ret.num_index = FLOAT_SIZE_64;
-        ret.v_float64 = getImmediateValueOrEmpty<double,RealParam>(rp);
-      } else {
-        CHPL_ASSERT(false && "case not handled");
+    case paramtags::IntParam:
+      {
+        auto ip = (const IntParam*) p;
+        // auto v = ip->value();
+        auto it = t->toIntType();
+        CHPL_ASSERT(it);
+        if (it == nullptr) return ret;
+        ret.const_kind = NUM_KIND_INT;
+        if (it->bitwidth() == 8) {
+          ret.num_index = INT_SIZE_8;
+          ret.v_int8 = getImmediateValueOrEmpty<int8_t, IntParam>(ip);
+        } else if (it->bitwidth() == 16) {
+          ret.num_index = INT_SIZE_16;
+          ret.v_int16 = getImmediateValueOrEmpty<int16_t, IntParam>(ip);
+        } else if (it->bitwidth() == 32) {
+          ret.num_index = INT_SIZE_32;
+          ret.v_int32 = getImmediateValueOrEmpty<int32_t, IntParam>(ip);
+        } else if (it->bitwidth() == 64) {
+          ret.num_index = INT_SIZE_64;
+          ret.v_int64 = getImmediateValueOrEmpty<int64_t, IntParam>(ip);
+        } else {
+          CHPL_ASSERT(false && "case not handled");
+        }
+        return ret;
       }
-    }
-  } else if (t->isStringType()) {
-    auto sp = (const StringParam*) p;
-    ret.const_kind = CONST_KIND_STRING;
-    ret.string_kind = STRING_KIND_STRING;
-    ret.num_index = 0;
-    ret.v_string = getImmediateValueOrEmpty(sp);
-    return ret;
-  } else if (t->isBytesType()) {
-    auto sp = (const StringParam*) p;
-    ret.const_kind = CONST_KIND_STRING;
-    ret.string_kind = STRING_KIND_BYTES;
-    ret.num_index = 0;
-    ret.v_string = getImmediateValueOrEmpty(sp);
-    return ret;
-  } else if (t->isCStringType()) {
-    auto sp = (const StringParam*) p;
-    ret.const_kind = CONST_KIND_STRING;
-    ret.string_kind = STRING_KIND_C_STRING;
-    ret.num_index = 0;
-    ret.v_string = getImmediateValueOrEmpty(sp);
-    return ret;
-  } else if (t->isNothingType()) {
-    ret.const_kind = NUM_KIND_BOOL;
-    ret.num_index = BOOL_SIZE_SYS;
-    ret.v_bool = false;
-    return ret;
-  } else {
-    CHPL_ASSERT(false && "case not handled");
+    case paramtags::NoneParam:
+      {
+        ret.const_kind = NUM_KIND_BOOL;
+        ret.num_index = BOOL_SIZE_SYS;
+        ret.v_bool = false;
+        return ret;
+      }
+    case paramtags::RealParam:
+      {
+        auto rp = (const RealParam*) p;
+        // auto v = rp->value();
+        if (auto rt = t->toRealType()) {
+          ret.const_kind = NUM_KIND_REAL;
+          if (rt->bitwidth() == 32) {
+            ret.num_index = FLOAT_SIZE_32;
+            ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
+          } else if (rt->bitwidth() == 64) {
+            ret.num_index = FLOAT_SIZE_64;
+            ret.v_float64 =  getImmediateValueOrEmpty<double, RealParam>(rp);
+          } else {
+            CHPL_ASSERT(false && "case not handled");
+          }
+        } else if (auto it = t->toImagType()) {
+          ret.const_kind = NUM_KIND_IMAG;
+          if (it->bitwidth() == 32) {
+            ret.num_index = FLOAT_SIZE_32;
+            ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
+          } else if (it->bitwidth() == 64) {
+            ret.num_index = FLOAT_SIZE_64;
+            ret.v_float64 = getImmediateValueOrEmpty<double, RealParam>(rp);
+          } else {
+            CHPL_ASSERT(false && "case not handled");
+          }
+        } else {
+          CHPL_ASSERT(false && "case not handled");
+        }
+        return ret;
+      }
+    case paramtags::StringParam:
+      {
+        auto sp = (const StringParam*) p;
+        auto v = getImmediateValueOrEmpty(sp);
+        ret.const_kind = CONST_KIND_STRING;
+        if (t->isStringType()) {
+          ret.string_kind = STRING_KIND_STRING;
+          ret.num_index = 0;
+          ret.v_string = v;
+        } else if (t->isBytesType()) {
+          ret.string_kind = STRING_KIND_BYTES;
+          ret.num_index = 0;
+          ret.v_string = v;
+        } else if (t->isCStringType()) {
+          ret.string_kind = STRING_KIND_C_STRING;
+          ret.num_index = 0;
+          ret.v_string = v;
+        } else {
+          CHPL_ASSERT(false && "case not handled");
+        }
+        return ret;
+      }
+    case paramtags::UintParam:
+      {
+        auto up = (const UintParam*) p;
+        // auto v = up->value();
+        auto ut = t->toUintType();
+        CHPL_ASSERT(ut);
+        if (ut == nullptr) return ret;
+        ret.const_kind = NUM_KIND_UINT;
+        if (ut->bitwidth() == 8) {
+          ret.num_index = INT_SIZE_8;
+          ret.v_uint8 = getImmediateValueOrEmpty<uint8_t, UintParam>(up);;
+        } else if (ut->bitwidth() == 16) {
+          ret.num_index = INT_SIZE_16;
+          ret.v_uint16 = getImmediateValueOrEmpty<uint16_t, UintParam>(up);;
+        } else if (ut->bitwidth() == 32) {
+          ret.num_index = INT_SIZE_32;
+          ret.v_uint32 = getImmediateValueOrEmpty<uint32_t, UintParam>(up);
+        } else if (ut->bitwidth() == 64) {
+          ret.num_index = INT_SIZE_64;
+          ret.v_uint64 = getImmediateValueOrEmpty<uint64_t, UintParam>(up);
+        } else {
+          CHPL_ASSERT(false && "case not handled");
+        }
+        return ret;
+      }
   }
+  CHPL_ASSERT(false && "case not handled");
   return ret;
 }
 
@@ -329,23 +378,23 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
       default:
         CHPL_ASSERT(false && "case not handled");
     }
-  // case NUM_KIND_UINT:
-  // switch (imm.num_index) {
-  //     case INT_SIZE_8:
-  //       return {UintParam::get(context, imm.v_uint8),
-  //               UintType::get(context, 8)};
-  //     case INT_SIZE_16:
-  //       return {UintParam::get(context, imm.v_uint16),
-  //               UintType::get(context, 16)};
-  //     case INT_SIZE_32:
-  //       return {UintParam::get(context, imm.v_uint32),
-  //               UintType::get(context, 32)};
-  //     case INT_SIZE_64:
-  //       return {UintParam::get(context, imm.v_uint64),
-  //               UintType::get(context, 64)};
-  //     default:
-  //       CHPL_ASSERT(false && "case not handled");
-  //   }
+  case NUM_KIND_UINT:
+  switch (imm.num_index) {
+      case INT_SIZE_8:
+        return {UintParam::get(context, imm.v_uint8),
+                UintType::get(context, 8)};
+      case INT_SIZE_16:
+        return {UintParam::get(context, imm.v_uint16),
+                UintType::get(context, 16)};
+      case INT_SIZE_32:
+        return {UintParam::get(context, imm.v_uint32),
+                UintType::get(context, 32)};
+      case INT_SIZE_64:
+        return {UintParam::get(context, imm.v_uint64),
+                UintType::get(context, 64)};
+      default:
+        CHPL_ASSERT(false && "case not handled");
+    }
   default:
     CHPL_ASSERT(false && "case not handled");
   }
