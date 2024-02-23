@@ -23,7 +23,6 @@
 #include "test-parsing.h"
 
 #include "chpl/resolution/resolution-types.h"
-#include "chpl/types/QualifiedType.h"
 
 // forward declare classes and namespaces
 namespace chpl {

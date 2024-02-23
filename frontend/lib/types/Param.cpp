@@ -329,6 +329,23 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
       default:
         CHPL_ASSERT(false && "case not handled");
     }
+  case NUM_KIND_UINT:
+  switch (imm.num_index) {
+      case INT_SIZE_8:
+        return {UintParam::get(context, imm.v_uint8),
+                UintType::get(context, 8)};
+      case INT_SIZE_16:
+        return {UintParam::get(context, imm.v_uint16),
+                UintType::get(context, 16)};
+      case INT_SIZE_32:
+        return {UintParam::get(context, imm.v_uint32),
+                UintType::get(context, 32)};
+      case INT_SIZE_64:
+        return {UintParam::get(context, imm.v_uint64),
+                UintType::get(context, 64)};
+      default:
+        CHPL_ASSERT(false && "case not handled");
+    }
   default:
     CHPL_ASSERT(false && "case not handled");
   }
