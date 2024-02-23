@@ -93,14 +93,16 @@ module ChapelBase {
   // compiler, since we already always have a reference to baseModule
   // in the production compiler.
 
-  /* Compile with ``-sassocParSafeDefault`` to use ``parSafe=true``
-     by default for associative domains and arrays */
+  /* Compile with ``-sassocParSafeDefault=true`` to use ``parSafe=true``
+     by default for associative domains and arrays.
+     Compiling with an explicit ``-sassocParSafeDefault[=false]`` will
+     turn off the par safe warning, just like ``-snoParSafeWarning``*/
   @chpldoc.nodoc
   config param assocParSafeDefault = false;
 
   /* Compile with ``-snoParSafeWarning`` to suppress the warning
      about a missing explicit ``parSafe`` parameter and
-     about the default parSafe-ty mode for associative domains
+     about the default parSafe mode for associative domains
      and arrays changing from ``true`` to ``false``. */
   @chpldoc.nodoc
   config param noParSafeWarning = false;
