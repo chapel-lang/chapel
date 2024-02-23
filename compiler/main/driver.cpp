@@ -343,6 +343,7 @@ static bool fPrintLicense = false;
 static bool fPrintSettingsHelp = false;
 static bool fPrintVersion = false;
 static bool fPrintChplHome = false;
+static bool fPrintInstallPrefix = false;
 
 std::string llvmFlags;
 std::string llvmRemarksFilters;
@@ -1421,6 +1422,7 @@ static ArgumentDescription arg_desc[] = {
  {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue},
  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and exit", "F", &fPrintChplHome, NULL,NULL},
+ {"print-install-prefix", ' ', NULL, "Print the installation prefix, if any, and exit", "F", &fPrintInstallPrefix, NULL,NULL},
  {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL},
 
  // NOTE: Developer flags should not have 1-character equivalents
@@ -1648,6 +1650,10 @@ static void printStuff(const char* argv0) {
   }
   if( fPrintChplHome ) {
     printf("%s\n", CHPL_HOME);
+    printedSomething = true;
+  }
+  if ( fPrintInstallPrefix ) {
+    printf("%s\n", get_configured_prefix());
     printedSomething = true;
   }
   if ( fPrintChplLoc ) {
