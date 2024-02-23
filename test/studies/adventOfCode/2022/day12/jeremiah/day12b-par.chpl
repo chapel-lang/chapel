@@ -17,7 +17,7 @@ proc readElevations() {
         start, end = (0, 0);
 
     for (row, i) in zip(elevBytes.split(b"\n"), 0..) {
-        foreach (byte, j) in zip(row, 0..) with (ref start, ref end, ref elevs) {
+        foreach (byte, j) in zip(row, 0..) with (ref start, ref end) {
             select byte {
                 when S do start = (i, j);
                 when E do end = (i, j);

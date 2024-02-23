@@ -200,6 +200,8 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
     loop->orderIndependentSet(true);
   }
 
+  // We want to apply implicit intents only to user
+  // written foreach loops
   if (!isForeach || isLoweredForall || isForExpr) {
     loop->exemptFromImplicitIntents();
   }

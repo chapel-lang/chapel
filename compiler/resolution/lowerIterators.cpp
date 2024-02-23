@@ -1562,7 +1562,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         // IOW: coming out of this case we'll add something that looks like this:
         //
         //   var capX = x;
-        //   var taskIndX = PRIM_TASK_IND_CAPTURE_OF(capX);
+        //   var taskIndX = PRIM_TASK_INDEPENDENT_SVAR_CAPTURE(capX);
         //   # note: there's also a flag on taskIndX marking it as being a "task"-independent variable
 
         SET_LINENO(forLoop);
@@ -1570,16 +1570,25 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         VarSymbol* capturedSvar = new VarSymbol(astr("cap_", svar->name), svar->type);
         forLoop->insertBefore(new DefExpr(capturedSvar));
 
+        // Shadow variables have an "initBlock", we want to use this block to
+        // get a copy of the variable. An example of svar->initBlock() might
+        // look like this:
+        //
+        //  (BlockStmt
+        //    (CallExpr move
+        //      (SymExpr 'const-val this')
+        //        (CallExpr
+        //          (SymExpr 'fn chpl__initCopy')
+        //          (SymExpr 'const-val INP_this')))
+        //
+        // But we rather than getting a copy of INP_this we want to get a copy of
+        // the outer variable that the shadow variable is shadowing (i.e.
+        // outerVarSE).
         CallExpr *initMove = toCallExpr(svar->initBlock()->body.first());
         SymbolMap map1;
         map1.put(svar->ParentvarForIN(), svar->outerVarSE->symbol());
         Expr *copiedInitialization = initMove->get(2)->copy(&map1);
         forLoop->insertBefore(new CallExpr(PRIM_MOVE, capturedSvar, copiedInitialization));
-
-        SymbolMap map2;
-        map2.put(svar->ParentvarForIN(), capturedSvar);
-        Expr *copiedInitialization2 = initMove->get(2)->copy(&map2);
-        (void)copiedInitialization2;
 
         VarSymbol* taskIndVar = new VarSymbol(astr("taskInd_", svar->name), svar->type);
         taskIndVar->addFlag(FLAG_TASK_PRIVATE_VARIABLE);

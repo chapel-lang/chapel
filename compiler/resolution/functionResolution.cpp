@@ -10605,14 +10605,19 @@ static void        resolveExprMaybeIssueError(CallExpr* call);
 
 static bool        isMentionOfFnTriggeringCapture(SymExpr* se);
 
+// Note: this function really only makes sense in the context of resolveExpr.
+// It gets passed a symexpr, and we check to see if its parent is a foreach
+// loop. We only want to process the loop one time and since there are multiple
+// symexprs that are children of a foreach, we fix this to only return true when
+// we're at the symexpr for the index variable.
 static LoopWithShadowVarsInterface*
   isForeachWhoseShadowVarsShouldBeResolved(SymExpr *se)
 {
   ForLoop* pfl = toForLoop(se->parentExpr);
   if(pfl && pfl->isOrderIndependent() && se == pfl->indexGet() &&
-     !pfl->shouldExemptFromImplicitIntents())
+     !pfl->isExemptFromImplicitIntents())
   {
-    return pfl;
+     return pfl;
   }
   return nullptr;
 }
@@ -10664,7 +10669,9 @@ Expr* resolveExpr(Expr* expr) {
       // If this is a loop that we'll convert into a forall
       // then ignore this for the time being (we'll process
       // implicit shadow variables for the forall later)
-      if(!shouldReplaceForLoopWithForall(toForLoop(loop->asExpr()))) { //*AIS* to see fail: arrays/bradc/workarounds/arrayOfArray-workaround.chpl
+      // If you want a test that will fail in the absence of this see
+      // arrays/bradc/workarounds/arrayOfArray-workaround.chpl
+      if (!shouldReplaceForLoopWithForall(toForLoop(loop->asExpr()))) {
         setupAndResolveShadowVars(loop);
       }
       retval = resolveExprPhase2(expr, fn, expr);

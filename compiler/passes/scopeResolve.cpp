@@ -430,7 +430,7 @@ static void scopeResolveForeachLoop(ForLoop* foreach,
 {
   INT_ASSERT(foreach->isOrderIndependent());
 
-  BlockStmt*    loopBody     = foreach->loopBody();
+  BlockStmt*    loopBody  = foreach->loopBody();
   ResolveScope* bodyScope = new ResolveScope(loopBody, parent);
 
   for_shadow_vars_and_defs(svar, sdef, temp, foreach) {

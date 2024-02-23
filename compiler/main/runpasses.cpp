@@ -243,6 +243,8 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   if (fPrintStatistics[0] != '\0' && passIndex > 0)
     printStatistics("clean");
 
+  breakOnID = 28241;
+
   (*(info->passFunction))();
 
   //

@@ -66,7 +66,7 @@ void LoopStmt::exemptFromImplicitIntents() {
   mExemptFromImplicitIntents = true;
 }
 
-bool LoopStmt::shouldExemptFromImplicitIntents() const {
+bool LoopStmt::isExemptFromImplicitIntents() const {
   return mExemptFromImplicitIntents;
 }
 

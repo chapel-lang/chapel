@@ -47,7 +47,7 @@ public:
   void                    orderIndependentSet(bool b);
 
   void                    exemptFromImplicitIntents();
-  bool                    shouldExemptFromImplicitIntents()               const;
+  bool                    isExemptFromImplicitIntents()                   const;
 
   // for RV rv.loop.vectorize.enable
   bool                    hasVectorizationHazard()                        const;
