@@ -14319,7 +14319,9 @@ static bool assocParSafeWarningSilencedByUser(){
   // by using the old default behavior of parSafe=true
   static bool silencedParSafeWarning = false;
   static bool silencedParSafeWarningLegal = false;
-  if (! silencedParSafeWarningLegal) {
+  // --minimal-modules causes issues, so we bypass this logic
+  // in that case for now
+  if (! silencedParSafeWarningLegal && !fMinimalModules) {
     if (!baseModule->initFn || !baseModule->initFn->isResolved()) {
       return false;
     }
