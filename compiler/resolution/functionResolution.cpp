@@ -14312,19 +14312,28 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
   }
 }
 
-static bool parSafeWarningSilencedByUser(){
+static bool assocParSafeWarningSilencedByUser(){
   // Don't worry about warning if the user is silencing the warnings
   // by using the silencing flag (noParSafeWarnings), or
   // by explicitly opting for the new default parSafe=false, or
   // by using the old default behavior of parSafe=true
-  VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
-                                                  "noParSafeWarning",
-                                                  /*cachedValue*/nullptr);
-  bool assocParSafeDefaultSet = isSetCmdLineConfig(
-                               /*modName*/"ChapelBase",
-                               /*paramName*/"assocParSafeDefault");
-  bool silenced = assocParSafeDefaultSet || (noParSafeWarning == gTrue);
-  return silenced;
+  static bool silencedParSafeWarning = false;
+  static bool silencedParSafeWarningLegal = false;
+  if (! silencedParSafeWarningLegal) {
+    if (!baseModule->initFn || !baseModule->initFn->isResolved()) {
+      return false;
+    }
+    // These checks are expensive so we do them only once
+    silencedParSafeWarningLegal = true;
+    VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
+                                                    "noParSafeWarning",
+                                                    /*cachedValue*/nullptr);
+    bool assocParSafeDefaultSet = isSetCmdLineConfig(
+                                /*modName*/"ChapelBase",
+                                /*paramName*/"assocParSafeDefault");
+    silencedParSafeWarning = assocParSafeDefaultSet || (noParSafeWarning == gTrue);
+  }
+  return silencedParSafeWarning;
 }
 
 void handleDefaultAssociativeWarnings(Symbol* sym,
@@ -14335,6 +14344,9 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
     return;
   }
 
+  if(assocParSafeWarningSilencedByUser()){
+    return;
+  }
   if (forFieldInHere && forFieldInHere->symbol->hasFlag(FLAG_REF)) {
     // no need to warn for creating a ref(assoc domain) type
     return;
@@ -14393,12 +14405,6 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
               }
             }
 
-            // These checks are expensive so we do them last
-            // Doing them earlier also causes the check to be done before
-            // ChapelBase is resolved which causes errors
-            if(parSafeWarningSilencedByUser()){
-              return;
-            }
             USR_WARN(sym, "The default parSafe mode for associative domains "
                      "and arrays (like '%s') is changing from 'true' to "
                      "'false'. To suppress this warning, use an explicit "
