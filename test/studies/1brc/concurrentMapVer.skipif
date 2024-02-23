@@ -13,3 +13,7 @@ CHPL_TARGET_COMPILER==intel
 CHPL_TARGET_COMPILER==cray-prgenv-intel
 # AtomicObjects uses x86-64 instructions in the inline assembly
 CHPL_TARGET_ARCH != x86_64
+
+# The concurrentMap leaks memory
+CHPL_NIGHTLY_TEST_CONFIG_NAME==memleaks
+CHPL_NIGHTLY_TEST_CONFIG_NAME==valgrind
