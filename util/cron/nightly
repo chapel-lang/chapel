@@ -70,6 +70,8 @@ $mason_build = 0;
 $protobuf_build = 0;
 $python2 = 0;
 $pythonDep = 0;
+$testblog = 0;
+$blogonly = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -164,6 +166,11 @@ while (@ARGV) {
         $mason_build = 1;
     } elsif ($flag eq "-protobuf") {
         $protobuf_build = 1;
+    } elsif ($flag eq "-testblog") {
+        $testblog = 1;
+    } elsif ($flag eq "-blogonly") {
+        $blogonly = 1;
+        $testblog = 1;
     } else {
         $printusage = 1;
         last;
@@ -202,6 +209,7 @@ if ($printusage == 1) {
     print "\t-debug                         : check out sources and run for individual user (default)\n";
     print "\t-cron                          : use for nightly cron runs only\n";
     print "\t-baseline                      : run testins using --baseline\n";
+    print "\t-blogonly                      : clone and run the chapel blog tests only\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
@@ -235,6 +243,7 @@ if ($printusage == 1) {
    #print "\t-retaintree                    : \$retaintree=1 ?\n";
     print "\t-startdate <date>              : run performance tests providing a common start date to all the graphs\n";
     print "\t-sync-dir-suffix <suffix>      : \$syncsuffix = <suffix> ?\n";
+    print "\t-testblog                      : clone and copy chapel-blog sources to test directory\n";
     print "\t-valgrind                      : run tests in valgrind mode\n";
     print "\t-valgrindexe                   : run tests in valgrindexe mode\n";
     print "\t-verify                        : -compopts --verify ?\n";
@@ -546,6 +555,19 @@ if ($multilocale == 1) {
 }
 
 #
+# clone blog repo if blog testing requested
+#
+if ($testblog == 1) {
+    print "Cloning blog repo\n";
+    mysystem("cd $basetmpdir && git clone https://github.com/chapel-lang/chapel-blog", "cloning blog repo", 0, 1, 1);
+    if ($blogonly == 0) {
+        mysystem("mkdir -p $testdir/copied-chapel-blog/", "making chpl-src directory", 1, 1);
+        mysystem("cp -r $basetmpdir/chapel-blog/chpl-src $testdir/copied-chapel-blog", "cloning chpl-src repo", 0, 1, 1);
+        mysystem("cp -r $basetmpdir/chapel-blog/scripts $testdir/copied-chapel-blog/", "checking out revision in chpl-src", 0, 1, 1);
+    }
+}
+
+#
 # don't bother making the spec tests if we're only testing hello, world programs;
 # and they'll get made automatically if we're testing everything; so we only need
 # to make them if we're testing the examples directory.
@@ -573,6 +595,13 @@ if ($parnodefile eq "") {
 if (!($dist eq "")) {
     $testdirs .= " distributions/robust/arithmetic";
     $testflags = "$testflags distributions/robust/arithmetic";
+}
+
+if ($testblog == 1) {
+    $testdirs .= " $basetmpdir/chapel-blog/chpl-src";
+    if ($blogonly == 1) {
+        $testflags = "$testflags $basetmpdir/chapel-blog/chpl-src";
+    }
 }
 
 if ($hello == 1) {
