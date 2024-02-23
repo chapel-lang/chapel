@@ -2868,31 +2868,37 @@ static bool resolveFnCallSpecial(Context* context,
                                  const AstNode* astForErr,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
-  // TODO: cast
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
   // explicit param casts are resolved here
-  if (ci.name() == USTR(":")) {
-    auto fromValue = ci.actual(0).type();
-    auto toType = ci.actual(1).type();
+  if (ci.isOpCall() && ci.name() == USTR(":")) {
+    auto src = ci.actual(0).type();
+    auto dst = ci.actual(1).type();
 
-    bool isToType = toType.kind() == QualifiedType::TYPE;
-    bool isParamTypeCast = fromValue.kind() == QualifiedType::PARAM && isToType;
+    bool isDstType = dst.kind() == QualifiedType::TYPE;
+    bool isParamTypeCast = src.kind() == QualifiedType::PARAM && isDstType;
 
     if (isParamTypeCast) {
         exprTypeOut = Param::fold(context, uast::PrimitiveTag::PRIM_CAST,
-                                  fromValue, toType);
+                                  src, dst);
         return true;
-    } else if (!isToType) {
+    } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
+      std::ostringstream oss;
+      src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      auto ustr = UniqueString::get(context, oss.str());
+      exprTypeOut = QualifiedType(QualifiedType::PARAM,
+                                  RecordType::getStringType(context),
+                                  StringParam::get(context, ustr));
+      return true;
+    } else if (!isDstType) {
       // trying to cast to something that's not a type
-      auto typeName = tagToString(toType.type()->tag());
+      auto typeName = tagToString(dst.type()->tag());
       context->error(astForErr, "bad cast to %s", typeName);
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
       return true;
     }
-    return false;
   }
 
   if ((ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
@@ -2920,21 +2926,6 @@ static bool resolveFnCallSpecial(Context* context,
       exprTypeOut = qt.param()->fold(context,
                                      chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
                                      qt, QualifiedType());
-      return true;
-    }
-  }
-
-  if (ci.isOpCall() && ci.name() == USTR(":")) {
-    auto src = ci.actual(0).type();
-    auto dst = ci.actual(1).type();
-
-    if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
-      std::ostringstream oss;
-      src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-      auto ustr = UniqueString::get(context, oss.str());
-      exprTypeOut = QualifiedType(QualifiedType::PARAM,
-                                  RecordType::getStringType(context),
-                                  StringParam::get(context, ustr));
       return true;
     }
   }
