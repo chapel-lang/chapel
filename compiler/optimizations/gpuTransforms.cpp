@@ -1143,15 +1143,44 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   insertionPoint->insertBefore(new DefExpr(fn_));
 }
 
+// Engin: This is one of my least favorite functions in the compiler:
 void KernelArg::findReduceKind() {
+  // let's first assume that this is unsupported
+  this->redInfo_.kind = ReductionKind::UNSUPPORTED;
+
+  // do some pattern matching in the AST to find the reduce kind
+  // This should be OK except that `accumulate` in SumReduceScanOp is the only
+  // accumulate proc that's inlined. So, we'll have to do some matching on the
+  // inlined function, which is never great. Morever, if we inline another
+  // accumulate function in one of the other reduction types, it'll probably be
+  // an unsupported reduction.
+  //
+  // Cherry on top: we match based on Reduction types' names..
   for_SymbolUses (use, this->actual_) {
     if (CallExpr* parentCall = toCallExpr(use->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_ADD) ||
-          parentCall->isNamed("accumulate")) {
-        Type* reduceType = parentCall->get(1)->typeInfo();
-        const char* reduceTypeName = reduceType->symbol->name;
+      Type* reduceType = nullptr;
 
-        std::cout << reduceTypeName << std::endl;
+      if (parentCall->isNamed("accumulate")) {
+        reduceType = parentCall->get(1)->typeInfo();
+      }
+      else if (parentCall->isPrimitive(PRIM_ADD_ASSIGN)) {
+        // maybe we can consider turning these assertions to just unsupported
+        // reductions?
+        Symbol* tmpSymbol = toSymExpr(parentCall->get(1))->symbol();
+        CallExpr* tmpSymbolMove = toCallExpr(parentCall->prev);
+        INT_ASSERT(tmpSymbolMove);
+        INT_ASSERT(tmpSymbolMove->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(toSymExpr(tmpSymbolMove->get(1))->symbol() == tmpSymbol);
+
+        CallExpr* getValue = toCallExpr(tmpSymbolMove->get(2));
+        INT_ASSERT(getValue);
+        INT_ASSERT(getValue->isPrimitive(PRIM_GET_MEMBER));
+
+        reduceType = getValue->get(1)->typeInfo();
+      }
+
+      if (reduceType) {
+        const char* reduceTypeName = reduceType->symbol->name;
 
         if (startsWith(reduceTypeName, "SumReduceScanOp")) {
           this->redInfo_.kind = ReductionKind::SUM;
@@ -1162,13 +1191,11 @@ void KernelArg::findReduceKind() {
         else if (startsWith(reduceTypeName, "MaxReduceScanOp")) {
           this->redInfo_.kind = ReductionKind::MAX;
         }
-        else {
-          this->redInfo_.kind = ReductionKind::UNSUPPORTED;
-        }
       }
     }
   }
 }
+
 bool KernelArg::eligible() {
   return !this->isReduce() || this->redInfo_.kind!= ReductionKind::UNSUPPORTED;
 }

@@ -3205,7 +3205,9 @@ GenRet codegenCallExprWithArgs(const char* fnName,
   } else {
 #ifdef HAVE_LLVM
     fn.val = getFunctionLLVM(fnName);
-    INT_ASSERT(fn.val);
+    if (fn.val == nullptr) {
+      INT_FATAL(fnSym, "unable to find function %s\n", fnName);
+    }
     return codegenCallExprWithArgs(fn, args, fnName,
                                    fnSym, FD, defaultToValues);
 #endif
