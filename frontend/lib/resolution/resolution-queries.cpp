@@ -2884,6 +2884,7 @@ static bool resolveFnCallSpecial(Context* context,
                                   src, dst);
         return true;
     } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
+      // handle casting a type name to a string
       std::ostringstream oss;
       src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
       auto ustr = UniqueString::get(context, oss.str());
