@@ -970,17 +970,9 @@ const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
-                    VarSymbol* cachedValue) {
-  getConfigParamBool(modSym, configParamName, cachedValue);
-  bool ret = (cachedValue == gTrue);
-  return ret;
-}
-
 bool usePointerImplementation(void) {
-  static VarSymbol* cachedValue = nullptr;
-  return readConfigParamBool(baseModule, "fcfsUsePointerImplementation",
-                             cachedValue);
+  return getConfigParamBool(baseModule, "fcfsUsePointerImplementation",
+         /*cachedValue*/nullptr) == gTrue;
 }
 
 Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {
