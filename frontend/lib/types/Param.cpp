@@ -92,8 +92,8 @@ bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
 
 
 /*
-These helpers get the immediate value from a Param in the proper type if the
-param exists. Otherwise, they return an empty value of the proper type.
+  These helpers get the value from a Param and into the appropriate type for an
+  Immediate. If the Param is nullptr, the default value for the type is returned.
 */
 template<typename T, typename S>
 static T getImmediateValueOrEmpty(const S* p) {
@@ -146,8 +146,8 @@ static paramtags::ParamTag guessParamTagFromType(const Type* t) {
 }
 
 /*
-  Get the immediate value from a Param in the proper type. If p is nullptr, will
-  return an immediate representing the default value of Type t.
+  Get the Immediate value from a Param in the proper type. If p is nullptr, will
+  return an Immediate representing the default value of Type t.
 */
 static
 Immediate paramToImmediate(const Param* p, const Type* t) {
@@ -393,6 +393,7 @@ static QualifiedType handleParamCast(Context* context,
                                      QualifiedType b) {
   // convert Param to Immediate
   Immediate aImm = paramToImmediate(a.param(), a.type());
+  // get an Immediate for the default value of b's Type
   Immediate bImm = paramToImmediate(nullptr, b.type());
 
   coerce_immediate(context, &aImm, &bImm);
