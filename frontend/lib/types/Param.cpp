@@ -146,8 +146,8 @@ static paramtags::ParamTag guessParamTagFromType(const Type* t) {
 }
 
 /*
-  Get the immediate value from a Param in the proper type. Pass nullptr as param
-  to get an empty immediate for a param of Type t.
+  Get the immediate value from a Param in the proper type. If p is nullptr, will
+  return an immediate representing the default value of Type t.
 */
 static
 Immediate paramToImmediate(const Param* p, const Type* t) {
@@ -192,7 +192,6 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
     case paramtags::IntParam:
       {
         auto ip = (const IntParam*) p;
-        // auto v = ip->value();
         auto it = t->toIntType();
         CHPL_ASSERT(it);
         if (it == nullptr) return ret;
@@ -224,29 +223,22 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
     case paramtags::RealParam:
       {
         auto rp = (const RealParam*) p;
-        // auto v = rp->value();
+        int bw = 0;
         if (auto rt = t->toRealType()) {
           ret.const_kind = NUM_KIND_REAL;
-          if (rt->bitwidth() == 32) {
-            ret.num_index = FLOAT_SIZE_32;
-            ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
-          } else if (rt->bitwidth() == 64) {
-            ret.num_index = FLOAT_SIZE_64;
-            ret.v_float64 =  getImmediateValueOrEmpty<double, RealParam>(rp);
-          } else {
-            CHPL_ASSERT(false && "case not handled");
-          }
+          bw = rt->bitwidth();
         } else if (auto it = t->toImagType()) {
           ret.const_kind = NUM_KIND_IMAG;
-          if (it->bitwidth() == 32) {
-            ret.num_index = FLOAT_SIZE_32;
-            ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
-          } else if (it->bitwidth() == 64) {
-            ret.num_index = FLOAT_SIZE_64;
-            ret.v_float64 = getImmediateValueOrEmpty<double, RealParam>(rp);
-          } else {
-            CHPL_ASSERT(false && "case not handled");
-          }
+          bw = it->bitwidth();
+        } else {
+          CHPL_ASSERT(false && "case not handled");
+        }
+        if (bw == 32) {
+          ret.num_index = FLOAT_SIZE_32;
+          ret.v_float32 = getImmediateValueOrEmpty<float, RealParam>(rp);
+        } else if (bw == 64) {
+          ret.num_index = FLOAT_SIZE_64;
+          ret.v_float64 =  getImmediateValueOrEmpty<double, RealParam>(rp);
         } else {
           CHPL_ASSERT(false && "case not handled");
         }
@@ -259,35 +251,30 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
         ret.const_kind = CONST_KIND_STRING;
         if (t->isStringType()) {
           ret.string_kind = STRING_KIND_STRING;
-          ret.num_index = 0;
-          ret.v_string = v;
         } else if (t->isBytesType()) {
           ret.string_kind = STRING_KIND_BYTES;
-          ret.num_index = 0;
-          ret.v_string = v;
         } else if (t->isCStringType()) {
           ret.string_kind = STRING_KIND_C_STRING;
-          ret.num_index = 0;
-          ret.v_string = v;
         } else {
           CHPL_ASSERT(false && "case not handled");
         }
+        ret.num_index = 0;
+        ret.v_string = v;
         return ret;
       }
     case paramtags::UintParam:
       {
         auto up = (const UintParam*) p;
-        // auto v = up->value();
         auto ut = t->toUintType();
         CHPL_ASSERT(ut);
         if (ut == nullptr) return ret;
         ret.const_kind = NUM_KIND_UINT;
         if (ut->bitwidth() == 8) {
           ret.num_index = INT_SIZE_8;
-          ret.v_uint8 = getImmediateValueOrEmpty<uint8_t, UintParam>(up);;
+          ret.v_uint8 = getImmediateValueOrEmpty<uint8_t, UintParam>(up);
         } else if (ut->bitwidth() == 16) {
           ret.num_index = INT_SIZE_16;
-          ret.v_uint16 = getImmediateValueOrEmpty<uint16_t, UintParam>(up);;
+          ret.v_uint16 = getImmediateValueOrEmpty<uint16_t, UintParam>(up);
         } else if (ut->bitwidth() == 32) {
           ret.num_index = INT_SIZE_32;
           ret.v_uint32 = getImmediateValueOrEmpty<uint32_t, UintParam>(up);
