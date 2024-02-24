@@ -20,19 +20,13 @@
 #
 
 if [ -z "$CHPL_HOME" ]; then
-  # compute the chpl home directory
-
-  # first try using 'chpl' in PATH
-  if output=$(chpl --print-chpl-home); then
-    export CHPL_HOME="$output"
-
-    # Since we have chpl in path, use it to infer the third-party directory,
-    # which is needed for the virtual environments.
-    if prefix=$(chpl --print-install-prefix) && [ -n "$prefix" ]; then
-      export CHPL_THIRD_PARTY="$prefix/lib/chapel/1.34/third-party/"
-    fi
+  # We need CHPL_HOME to find run-in-venv.bash. Try falling back to a
+  # compiler in PATH.
+  if output=$(chpl --print-bootstrap-commands); then
+    eval "$output"
   else
-    export CHPL_HOME=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
+    echo "Error: CHPL_HOME is not set" 1>&2
+    exit 1
   fi
 fi
 
