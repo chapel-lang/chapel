@@ -508,9 +508,38 @@ static void setupChplHome(const char* argv0) {
     }
   }
 
+  // Compute a predefined location based on the prefix. If we find that
+  // the CHPL_HOME lies in this location, we can reason that this is
+  // a prefix-based installation, and install should be true.
+  //
+  // Check for Chapel libraries at installed prefix
+  // e.g. /usr/share/chapel/<vers>
+
+  char home_from_prefix[FILENAME_MAX+1] = "";
+
+  int rc;
+  rc = snprintf(home_from_prefix, FILENAME_MAX, "%s/%s/%s",
+              get_configured_prefix(), // e.g. /usr
+              "share/chapel",
+              majMinorVers);
+  if ( rc >= FILENAME_MAX ) {
+    // This is just a check, and we might well find a working path some
+    // other way, so do not report errors.
+    home_from_prefix[0] = '\0';
+  } else if (!isMaybeChplHome(home_from_prefix)) {
+    // If it's not a valid file, skip using it from now on.
+    home_from_prefix[0] = '\0';
+  }
+
   if( chpl_home ) {
     if( strlen(chpl_home) > FILENAME_MAX )
       USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
+
+    if ( isSameFile(chpl_home, home_from_prefix) ) {
+      // We have env var and it matches the prefix-based guess.
+      // Assume we're in a prefix-based installation.
+      installed = true;
+    }
 
     if( guess == NULL ) {
       // Could not find exe path, but have a env var set
@@ -527,22 +556,15 @@ static void setupChplHome(const char* argv0) {
     strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
   } else {
 
-    // Check in a default location too
+    // Having exhausted the guess and the environment variable, our last
+    // resort is the prefix-based guess.
     if( guess == NULL ) {
-      char TEST_HOME[FILENAME_MAX+1] = "";
-
-      // Check for Chapel libraries at installed prefix
-      // e.g. /usr/share/chapel/<vers>
-      int rc;
-      rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "share/chapel",
-                  majMinorVers);
       if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
-      if( isMaybeChplHome(TEST_HOME) ) {
-        guess = strdup(TEST_HOME);
-
+      // If we dind't discard it earlier (too long, not valid directory),
+      // use the prefix-based guess.
+      if (home_from_prefix[0]) {
+        guess = strdup(home_from_prefix);
         installed = true;
       }
     }
