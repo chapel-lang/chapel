@@ -121,6 +121,7 @@ _chpl ()
 --io-deserialize-readThis \
 --io-gen-serialization \
 --io-serialize-writeThis \
+--iterator-contexts \
 --launcher \
 --ldflags \
 --lib-linkage \
@@ -347,6 +348,7 @@ _chpl ()
 --report-auto-aggregation \
 --report-auto-local-access \
 --report-blocking \
+--report-context-adjustments \
 --report-dead-blocks \
 --report-dead-modules \
 --report-gpu \

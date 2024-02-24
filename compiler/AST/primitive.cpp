@@ -176,6 +176,11 @@ returnInfoFirst(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoFirstAsValue(CallExpr* call) {
+  return QualifiedType(Qualifier::QUAL_CONST_VAL, call->get(1)->qualType().type());
+}
+
+static QualifiedType
 returnInfoFirstDeref(CallExpr* call) {
   QualifiedType tmp = call->get(1)->qualType();
   Type* type = tmp.type()->getValType();
@@ -710,6 +715,10 @@ void
 initPrimitive() {
   // use for any primitives not in this list
   primitives[PRIM_UNKNOWN] = NULL;
+
+  prim_def(PRIM_INNERMOST_CONTEXT, "innermost context", returnInfoFirstAsValue);
+  prim_def(PRIM_OUTER_CONTEXT, "outer context", returnInfoFirst);
+  prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);

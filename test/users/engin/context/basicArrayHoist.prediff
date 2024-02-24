@@ -1,0 +1,5 @@
+#!/bin/sh
+
+grep -c "allocate.*array elements" $2 > $2.prediffed
+grep -i 'error\|warning' $2 >> $2.prediffed
+mv $2.prediffed $2

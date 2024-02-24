@@ -35,6 +35,7 @@ set(SRCS
     loopDetails.cpp
     lowerForalls.cpp
     lowerIterators.cpp
+    lowerLoopContexts.cpp
     nilChecking.cpp
     postFold.cpp
     preFold.cpp

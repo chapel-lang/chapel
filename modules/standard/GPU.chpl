@@ -244,6 +244,13 @@ module GPU
     }
   }
 
+  @chpldoc.nodoc
+  inline proc createSharedCArray(type theType : c_array(?t, ?k)) ref {
+    var voidPtr = __primitive("gpu allocShared", numBytes(t) * k);
+    var arrayPtr = voidPtr : c_ptr(theType);
+    return arrayPtr.deref();
+  }
+
   /*
     Set the block size for kernels launched on the GPU.
    */

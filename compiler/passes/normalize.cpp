@@ -130,6 +130,40 @@ static TypeSymbol* expandTypeAlias(SymExpr* se);
 *                                                                             *
 ************************************** | *************************************/
 
+static void handleSharedCArrays() {
+  forv_expanding_Vec(CallExpr, call, gCallExprs)
+   if (call->isPrimitive(PRIM_HOIST_TO_CONTEXT))
+
+    // The particular definition we expect is a default-init c_array, which is:
+    //
+    //    unknown myArray;
+    //    unknown call_tmp;
+    //    call_tmp = c_array(t, k);
+    //    __primitive("default init var", myArray, call_tmp);
+
+    if (DefExpr* hoistDefExpr = toSymExpr(call->get(2))->symbol()->defPoint)
+     if (DefExpr* typeDefExpr = toDefExpr(hoistDefExpr->next))
+      if (CallExpr* typeAssign = toCallExpr(typeDefExpr->next))
+       if (typeAssign->isPrimitive(PRIM_MOVE))
+        if (CallExpr* typeCall = toCallExpr(typeAssign->get(2)))
+         if (CallExpr* initCall = toCallExpr(typeAssign->next))
+          if (initCall->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+           if (SymExpr* typeConstructor = toSymExpr(typeCall->baseExpr))
+            if (typeConstructor->symbol()->hasFlag(FLAG_C_ARRAY))
+   // if all the above conditions succeeded, add a shared variant
+   {
+    SET_LINENO(hoistDefExpr);
+    auto newBlock = new BlockStmt();
+    auto newArr = new VarSymbol(astr("shared_", hoistDefExpr->sym->name));
+    newArr->qual = Qualifier::QUAL_REF;
+    newBlock->insertAtTail(new DefExpr(newArr));
+    newBlock->insertAtTail(new CallExpr(PRIM_MOVE, newArr,
+                new CallExpr("createSharedCArray", typeDefExpr->sym)));
+    initCall->insertAfter(newBlock);
+   }
+}
+
+
 void normalize() {
 
   insertModuleInit();
@@ -263,6 +297,9 @@ void normalize() {
 
     }
   }
+
+  if (fIteratorContexts)
+    handleSharedCArrays();
 
   find_printModuleInit_stuff();
 }

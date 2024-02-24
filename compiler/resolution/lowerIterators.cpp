@@ -27,6 +27,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "lowerLoopContexts.h"
 #include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
@@ -3197,6 +3198,8 @@ void lowerIterators() {
   handlePolymorphicIterators();
 
   reconstructIRautoCopyAutoDestroy();
+
+  lowerContexts();
 
   cleanupTemporaryVectors();
   cleanupIteratorBreakToken();

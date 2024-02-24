@@ -1,0 +1,1 @@
+basicArrayHoist-link-for-memleaks.chpl:17: error: could not find the 4-th outer context in the iterator for the enclosing loop

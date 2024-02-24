@@ -1,0 +1,4 @@
+# I want to be able to control threads per locale for this test
+# I can't do that with fifo, however
+
+CHPL_TASKS!=qthreads
