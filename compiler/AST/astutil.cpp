@@ -1172,19 +1172,43 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
   }
 }
 
+static bool shouldRemoveSymBeforeCodeGeneration(Symbol* sym) {
+  if (!sym || !sym->inTree() || !sym->type) return false;
 
-void cleanupAfterTypeRemoval()
-{
+  // Do not remove symbols with at least one use.
+  if (sym->firstSymExpr()) return false;
+
+  // Do not remove formals or functions.
+  if (isArgSymbol(sym) || isFnSymbol(sym)) return false;
+
+  // Do not remove fields.
+  if (isTypeSymbol(sym->defPoint->parentSymbol)) return false;
+
+  if (sym->type == dtUninstantiated &&
+      sym != dtUninstantiated->symbol) {
+    return true;
+  }
+  return false;
+}
+
+void cleanupAfterTypeRemoval() {
   //
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->inTree()                             &&
-        def->sym->type                   != NULL  &&
-        isAggregateType(def->sym->type)  ==  true &&
-        isTypeSymbol(def->sym)           == false &&
-        def->sym->type->symbol->inTree() == false)
-      def->sym->type = dtNothing;
+    auto sym = def->sym;
+    if (!def->inTree() || !sym || !sym->type) continue;
+
+    if (!sym->type->symbol->inTree() && isAggregateType(sym->type) &&
+        !isTypeSymbol(sym)) {
+      sym->type = dtNothing;
+    }
+
+    // Some types must never reach code generation, as they have no runtime
+    // representation. E.g., 'uninstantiated' is one of these types.
+    // Temporaries can be introduced with this type when resolving methods
+    // over any partially-instantiated type.
+    if (shouldRemoveSymBeforeCodeGeneration(sym)) def->remove();
   }
 
   // Clear out any uses of removed types in Type::substitutionsPostResolve
