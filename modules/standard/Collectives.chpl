@@ -138,6 +138,7 @@ module Collectives {
       bar.reset(nTasks);
     }
 
+    // This method is used in the WIP implementation of iterator contexts.
     @chpldoc.nodoc
     proc multiply(n: int) {
       try! reset((bar:(unmanaged aBarrier)).n*n);

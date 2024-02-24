@@ -24,7 +24,7 @@ forall i in simpleOneDim(n) {  // context should be coming from a new syntax
   var b;
   { // AST is too complicated without this block
     b = new barrier(1);
-    b.multiply(1);
+    b.multiply(1); // this no-op ensures multiply() is available to compiler
   }
   __primitive("hoist to context", localeContext, b);
 
