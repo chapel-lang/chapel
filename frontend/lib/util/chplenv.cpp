@@ -119,7 +119,7 @@ bool isMaybeChplHome(std::string path) {
   return llvm::sys::fs::exists(path);
 }
 
-std::error_code findChplHome(char* argv0, void* mainAddr,
+std::error_code findChplHome(const char* argv0, void* mainAddr,
                              std::string& chplHomeOut,
                              bool& installed, bool& fromEnv,
                              std::string& diagnosticMessage) {
