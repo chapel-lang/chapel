@@ -84,10 +84,10 @@ proc main(args:[] string) {
   // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int) ) dmapped hashedDist(idxType=(int, int));
+    var Pairs: domain( (int, int), parSafe=false) dmapped hashedDist(idxType=(int, int));
     run(todo, Pairs);
   } else {
-    var Pairs: domain( (int, int) );
+    var Pairs: domain( (int, int), parSafe=false);
     run(todo, Pairs);
   }
 }
@@ -292,7 +292,7 @@ proc create_and_analyze_graph(ref Pairs)
   var nmutual = 0;
 
   // Build idToNode
-  var userIds:domain(int);
+  var userIds:domain(int, parSafe=true);
 
   forall (id, other_id) in Pairs with (ref userIds) {
     if Pairs.contains( (other_id, id) ) {
@@ -474,7 +474,7 @@ proc create_and_analyze_graph(ref Pairs)
         writeln("on node ", vid, " currently in group ", labels[vid]);
 
       // label -> count
-      var foundLabels:domain(int(32));
+      var foundLabels:domain(int(32), parSafe=false);
       var counts:[foundLabels] int;
 
       for nid in G.Neighbors(vid) {

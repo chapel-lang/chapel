@@ -78,9 +78,8 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
-  @unstable("Associative domains are unstable and their behavior may change in the future")
   proc chpl__buildDomainRuntimeType(dist, type idxType,
-                                    param parSafe: bool = true) type {
+                                    param parSafe: bool = assocParSafeDefault) type {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
     return new _domain(dist, idxType, parSafe);
@@ -204,7 +203,6 @@ module ChapelDomain {
   }
 
   // definedConst is added only for interface consistency
-  @unstable("Associative domains are unstable and their behavior may change in the future")
   proc chpl__buildDomainExpr(const keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string

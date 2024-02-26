@@ -463,7 +463,7 @@ Indices can be added to associative arrays through the array’s domain.
 
    .. code-block:: chapel
 
-      var D : domain(string);
+      var D : domain(string, parSafe=false);
       var A : [D] int;
 
    the array A initially contains no elements. We can change that by

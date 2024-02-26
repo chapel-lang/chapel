@@ -1,2 +1,2 @@
 -sparSafe=true
--sparSafe=false
+-snoParSafeWarning -sparSafe=false

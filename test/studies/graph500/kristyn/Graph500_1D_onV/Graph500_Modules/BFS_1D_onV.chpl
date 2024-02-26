@@ -15,7 +15,7 @@ use Graph500_defs;
 proc BFS ( root : vertex_id, ref ParentTree, G )
 {
 
-  type Vertex_List = domain (index(vertex_domain) );
+  type Vertex_List = domain (index(vertex_domain), parSafe=true);
   var visited : [vertex_domain] sync int = -1;
 
   use ReplicatedVar;

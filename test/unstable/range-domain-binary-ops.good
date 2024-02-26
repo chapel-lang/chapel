@@ -5,7 +5,8 @@ range-domain-binary-ops.chpl:12: warning: '-' on ranges is unstable and may chan
 range-domain-binary-ops.chpl:13: warning: '-=' on ranges is unstable and may change in the future
 range-domain-binary-ops.chpl:15: warning: (range * range) is unstable and may change in the future
 range-domain-binary-ops.chpl:16: warning: (range ** integer) is unstable and may change in the future
-range-domain-binary-ops.chpl:22: warning: Associative domains are unstable and their behavior may change in the future
+range-domain-binary-ops.chpl:22: warning: The default parSafe mode for associative domains and arrays (like 'd2') is changing from 'true' to 'false'. To suppress this warning, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
+range-domain-binary-ops.chpl:22: warning: The default parSafe mode for associative domains and arrays (like 'd3') is changing from 'true' to 'false'. To suppress this warning, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
 range-domain-binary-ops.chpl:25: warning: '+' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:26: warning: '+' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:27: warning: '+=' on domains is unstable and may change in the future
@@ -16,13 +17,10 @@ range-domain-binary-ops.chpl:31: warning: '-' on domains is unstable and may cha
 range-domain-binary-ops.chpl:32: warning: '+=' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:33: warning: '-=' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:34: warning: '-=' on domains is unstable and may change in the future
-range-domain-binary-ops.chpl:35: warning: Associative domains are unstable and their behavior may change in the future
 range-domain-binary-ops.chpl:36: warning: '-' on domains is unstable and may change in the future
-range-domain-binary-ops.chpl:37: warning: Associative domains are unstable and their behavior may change in the future
 range-domain-binary-ops.chpl:37: warning: '-' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:38: warning: '-=' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:39: warning: '-=' on domains is unstable and may change in the future
-range-domain-binary-ops.chpl:44: warning: Associative domains are unstable and their behavior may change in the future
 range-domain-binary-ops.chpl:45: warning: '|' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:46: warning: '|=' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:47: warning: '&' on domains is unstable and may change in the future

@@ -680,9 +680,8 @@ must be made to implement the ``hashable`` interface.
       // Creating an associative domain with an 'idxType' of 'R'
       // invokes R.hash() as part of its implementation
 
-      var D: domain(R);
       var r = new R(42);
-      D += r;
+      const D = {r};
       writeln(D);
 
    .. BLOCK-test-chapeloutput

@@ -25,6 +25,146 @@ module ChapelDistribution {
   use ChapelHashtable;
 
   //
+  // Distribution wrapper record
+  //
+  pragma "distribution"
+  pragma "ignore noinit"
+  @chpldoc.nodoc
+  record _distribution : writeSerializable, readDeserializable {
+    var _pid:int;  // only used when privatized
+    pragma "owned"
+    var _instance; // generic, but an instance of a subclass of BaseDist
+    var _unowned:bool; // 'true' for the result of 'getDistribution',
+                       // in which case, the record destructor should
+                       // not attempt to delete the _instance.
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this._pid      = _pid;
+      this._instance = _instance;
+      this._unowned  = _unowned;
+    }
+
+    proc init(value) {
+      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      this._instance = _to_unmanaged(value);
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : _distribution) {
+      var value = other._value.dsiClone();
+      this.init(value);
+    }
+
+    inline proc _value {
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
+      } else {
+        return _instance;
+      }
+    }
+
+    forwarding _value except targetLocales;
+
+    inline proc _do_destroy() {
+      if ! _unowned && ! _instance.singleton() {
+        on _instance {
+          // Count the number of domains that refer to this distribution.
+          // and mark the distribution to be freed when that number reaches 0.
+          // If the number is 0, .remove() returns the distribution
+          // that should be freed.
+          var distToFree = _instance.remove();
+          if distToFree != nil {
+            _delete_dist(distToFree!, _isPrivatized(_instance));
+          }
+        }
+      }
+    }
+
+    proc deinit() {
+      _do_destroy();
+    }
+
+    proc clone() {
+      return new _distribution(_value.dsiClone());
+    }
+
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
+                           ranges: rank*range(idxType, boundKind.both, strides),
+                           definedConst: bool = false) {
+      var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+
+      x.definedConst = definedConst;
+
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+    }
+
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
+                           definedConst: bool = false) {
+      var ranges: rank*range(idxType, boundKind.both, strides);
+      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
+    }
+
+    proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+    }
+
+    proc newSparseDom(param rank: int, type idxType, dom: domain) {
+      var x = _value.dsiNewSparseDom(rank, idxType, dom);
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+    }
+
+    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
+
+    proc readThis(f) throws {
+      f.read(_value);
+    }
+
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
+    }
+
+    // TODO: Can't this be an initializer?
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
+      var ret : this;
+      ret.readThis(reader);
+      return ret;
+    }
+
+    proc writeThis(f) throws {
+      f.write(_value);
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writer.write(_value);
+    }
+
+    proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    /*
+       Return an array of locales over which this distribution was declared.
+    */
+    proc targetLocales() const ref {
+      return _value.dsiTargetLocales();
+    }
+  }  // record _distribution
+
+  //
   // Abstract distribution class
   //
   pragma "base dist"

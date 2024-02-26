@@ -34,6 +34,7 @@
 #include "callInfo.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "config.h"
 #include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
@@ -8315,6 +8316,10 @@ void resolveInitVar(CallExpr* call) {
     if (moveIsAcceptable(call) == false)
       moveHaltMoveIsUnacceptable(call);
 
+    handleDefaultAssociativeWarnings(dst, targetTypeExpr,
+                                     /* initExpr */ nullptr,
+                                     /*for field*/ nullptr);
+
     bool genericTgt = targetType->symbol->hasFlag(FLAG_GENERIC);
     // If the target type is generic, compute the appropriate instantiation
     // type.
@@ -8382,6 +8387,8 @@ void resolveInitVar(CallExpr* call) {
     }
   } else {
     targetType = srcType;
+    handleDefaultAssociativeWarnings(dst, /*typeExpr*/ nullptr, srcExpr,
+                                     /*for field*/ nullptr);
   }
 
   bool srcSyncSingle = isSyncType(srcType->getValType()) ||
@@ -13241,6 +13248,7 @@ static void resolvePrimInit(CallExpr* call) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       checkSurprisingGenericDecls(val, typeExpr, nullptr);
+      handleDefaultAssociativeWarnings(val, typeExpr, nullptr, nullptr);
       resolvePrimInit(call, val, resolveTypeAlias(se));
     } else {
       USR_FATAL(call, "invalid type specification");
@@ -14129,6 +14137,7 @@ static bool computeIsField(Symbol*& sym, AggregateType* forFieldInHere) {
   return isField;
 }
 
+
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere) {
   if (sym == nullptr || typeExpr == nullptr) {
@@ -14298,6 +14307,116 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                   "the %s is marked generic with (?) "
                   "but the type '%s' is not generic",
                   thing, toString(declType, /*decorators*/ false));
+      }
+    }
+  }
+}
+
+static bool assocParSafeWarningSilencedByUser(){
+  // Don't worry about warning if the user is silencing the warnings
+  // by using the silencing flag (noParSafeWarnings), or
+  // by explicitly opting for the new default parSafe=false, or
+  // by using the old default behavior of parSafe=true
+  static bool silencedParSafeWarning = false;
+  static bool silencedParSafeWarningLegal = false;
+  // --minimal-modules causes issues, so we bypass this logic
+  // in that case for now
+  if (! silencedParSafeWarningLegal && !fMinimalModules) {
+    if (!baseModule->initFn || !baseModule->initFn->isResolved()) {
+      return false;
+    }
+    // These checks are expensive so we do them only once
+    silencedParSafeWarningLegal = true;
+    VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
+                                                    "noParSafeWarning",
+                                                    /*cachedValue*/nullptr);
+    bool assocParSafeDefaultSet = isSetCmdLineConfig(
+                                /*modName*/"ChapelBase",
+                                /*paramName*/"assocParSafeDefault");
+    silencedParSafeWarning = assocParSafeDefaultSet || (noParSafeWarning == gTrue);
+  }
+  return silencedParSafeWarning;
+}
+
+void handleDefaultAssociativeWarnings(Symbol* sym,
+                                      Expr* typeExpr, Expr* initExpr,
+                                      AggregateType* forFieldInHere) {
+
+  if (sym == nullptr) {
+    return;
+  }
+
+  if(assocParSafeWarningSilencedByUser()){
+    return;
+  }
+  if (forFieldInHere && forFieldInHere->symbol->hasFlag(FLAG_REF)) {
+    // no need to warn for creating a ref(assoc domain) type
+    return;
+  }
+
+  Type* t = sym->getValType();
+  if (t == nullptr || t == dtUnknown) {
+    if (typeExpr) {
+      t = typeExpr->getValType();
+    } else if (initExpr) {
+      t = initExpr->getValType();
+    }
+  }
+
+  if (t == nullptr || t == dtUnknown) {
+    return;
+  }
+
+  // don't worry about it, it had e.g. parSafe=true
+  if (sym->hasFlag(FLAG_EXPLICIT_PAR_SAFE)) {
+    return;
+  }
+
+  // don't worry about it if the variable is const
+  if (sym->isConstant()) {
+    return;
+  }
+
+  // Don't worry about it for non-user code
+  ModuleSymbol* mod = sym->defPoint->getModule();
+  if (mod->modTag != MOD_USER) {
+    return;
+  }
+
+
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isRecordWrappedType(at)) {
+      Symbol* instanceField = at->getField("_instance", false);
+      if (instanceField) {
+        Type* implType = canonicalDecoratedClassType(instanceField->type);
+        if (isDomImplType(implType)) {
+          // It is a domain, but is it an associative domain?
+          const char* typeNameAstr = implType->symbol->name;
+          if (startsWith(typeNameAstr, "DefaultAssociativeDom")) {
+            // in some cases it is impossible to distinguish between
+            // parSafe=false because of default argument or being explicitly
+            // specified by the user
+            // we do our best and we don't warn if the parsafe value
+            // couldn't be the default because it's true
+            if (AggregateType* implAt = toAggregateType(implType)) {
+              const char* parSafeAstr = astr("parSafe");
+              if (Symbol* value = implAt->getSubstitution(parSafeAstr)) {
+                if (value == gTrue) {
+                  return;
+                }
+              }
+            }
+
+            USR_WARN(sym, "The default parSafe mode for associative domains "
+                     "and arrays (like '%s') is changing from 'true' to "
+                     "'false'. To suppress this warning, use an explicit "
+                     "parSafe argument (ex: domain(int, parSafe=false)), or "
+                     "compile with '-snoParSafeWarning'. "
+                     "To use the old default of parSafe=true, compile with "
+                     "'-sassocParSafeDefault=true'.",
+                     sym->name);
+          }
+        }
       }
     }
   }
