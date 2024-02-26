@@ -516,10 +516,13 @@ static const char *objTypeString(hwloc_obj_type_t t) {
 
 static void partitionResources(void) {
   hwloc_obj_t root = hwloc_get_root_obj(topology);
-  hwloc_obj_type_t myRootType = 0;
+  hwloc_obj_type_t myRootType = HWLOC_OBJ_TYPE_MAX;
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int numColocales = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
   int unusedCores = 0;
+  hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_PACKAGE, HWLOC_OBJ_NUMANODE,
+                                  HWLOC_OBJ_L3CACHE, HWLOC_OBJ_CORE,
+                                  HWLOC_OBJ_TYPE_MAX};
 
   const char *t = chpl_env_rt_get("COLOCALE_OBJ_TYPE", NULL);
   if (t != NULL) {
@@ -539,10 +542,6 @@ static void partitionResources(void) {
     }
   }
 
-
-  if (myRootType) {
-    _DBG_P("myRootType: %s\n", objTypeString(myRootType));
-  }
 
   int rank = chpl_get_local_rank();
   _DBG_P("numLocalesOnNode: %d", numLocalesOnNode);
@@ -565,7 +564,17 @@ static void partitionResources(void) {
     // to determine this accurately.
 
     if (rank != -1) {
-      if (myRootType) {
+      if (myRootType == HWLOC_OBJ_TYPE_MAX) {
+        for (int i = 0; rootTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
+          int numObjs = hwloc_get_nbobjs_by_type(topology, rootTypes[i]);
+          if (numObjs == numColocales) {
+            myRootType = rootTypes[i];
+            break;
+          }
+        }
+      }
+      if (myRootType != HWLOC_OBJ_TYPE_MAX) {
+        _DBG_P("myRootType: %s", objTypeString(myRootType));
         int numCores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
         int numObjs = hwloc_get_nbobjs_by_type(topology, myRootType);
         if (numObjs < numLocalesOnNode) {
@@ -710,7 +719,7 @@ void chpl_topo_post_args_init(void) {
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
     printf("%d: using core(s) %s", chpl_nodeID, buf);
     if (myRoot) {
-      printf(" in %s %d\n", hwloc_obj_type_string(myRoot->type),
+      printf(" in %s %d\n", objTypeString(myRoot->type),
              myRoot->logical_index);
     } else {
       putchar('\n');

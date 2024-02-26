@@ -13,6 +13,8 @@
 #include "lib/colocales.h"
 #include <hwloc.h>
 
+extern int verbosity;
+
 void Usage(char *name) {
   fprintf(stderr, "Usage: %s [-m mask] [-N nic] [-n numColocales] [-r rank]\n", name);
   fprintf(stderr, "\t-m <mask>\tMask off accessible PUs\n");
@@ -33,7 +35,7 @@ int main(int argc, char* argv[]) {
   char *numLocalesStr = "1";
   char *nic = NULL;
 
-  while ((opt = getopt(argc, argv, "m:N:n:r:")) != -1) {
+  while ((opt = getopt(argc, argv, "m:N:n:r:v")) != -1) {
     switch(opt) {
       case 'm':
         mask = optarg;
@@ -47,6 +49,9 @@ int main(int argc, char* argv[]) {
         break;
       case 'N':
         nic = optarg;
+        break;
+      case 'v':
+        verbosity++;
         break;
       case 'h':
         Usage(argv[0]);
@@ -69,12 +74,14 @@ int main(int argc, char* argv[]) {
   }
   setenv("CHPL_RT_LOCALES_PER_NODE", numLocalesStr, 1);
   chpl__init_colocales(0, 0); // unsure why this is needed
+  chpl_topo_pre_comm_init(mask);
+  chpl_comm_init(NULL, NULL);
   chpl_set_num_locales_on_node(numLocales);
   if (rank != -1) {
     chpl_set_local_rank(rank);
   }
-  chpl_topo_pre_comm_init(mask);
   chpl_topo_post_comm_init();
+  chpl_topo_post_args_init();
 
   hwloc_topology_t topology = (hwloc_topology_t) chpl_topo_getHwlocTopology();
 
