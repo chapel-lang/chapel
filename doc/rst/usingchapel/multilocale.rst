@@ -213,9 +213,9 @@ By default, Chapel will try to bind co-locales to an architectural feature.
 For example, launching a Chapel program with the argument ``-nl 1x2`` on a
 node with two sockets will bind each co-locale to its own socket. Chapel
 looks at the number of sockets, NUMA domains, Level 3 caches, and cores on
-the node, in that order, to determine if the co-locales can be bound to
-an architectural feature. If the number of co-locales does not match the
-number of a feature then Chapel simply assigns an equal number of cores
+the node, in that order, to determine if the co-locales can be bound to an
+architectural feature. If the number of co-locales requested does not match
+the number of any feature then Chapel simply assigns an equal number of cores
 to each co-locale. Any remaining cores are unused.
 
 You can force Chapel to bind co-locales to an architectural feature using a
@@ -231,8 +231,8 @@ L           Level 3 cache
 c           core
 =========   =============
 
-It is an error if the number of co-locales is greater than the number of
-specified architectural features. For example, specifying ``-nl 1x2s`` on a
+It is an error to specify a number of co-locales greater than the number of
+the specified architectural feature. For example, specifying ``-nl 1x2s`` on a
 node with a single socket results in an error. Any remaining cores are
 unused; for example, specifying ``-nl 1x1s`` on a node with two sockets
 will leave the cores in one socket unused.
