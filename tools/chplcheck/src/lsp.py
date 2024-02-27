@@ -67,6 +67,13 @@ def run_lsp(driver):
 
         return context.parse(uri[len("file://"):])
 
+    def get_location(node: chapel.AstNode):
+        if isinstance(node, chapel.NamedDecl):
+            return chapel.lsp.location_to_range(node.name_location())
+        else:
+            return chapel.lsp.location_to_range(node.location())
+
+
     def build_diagnostics(uri):
         """
         Parse a file at a particular URI, run the linter rules on the resulting
@@ -83,7 +90,7 @@ def run_lsp(driver):
             diagnostics = []
             for (node, rule) in driver.run_checks(context, asts):
                 diagnostic = Diagnostic(
-                    range=chapel.lsp.location_to_range(node.location()),
+                    range=get_location(node),
                     message="Lint: rule [{}] violated".format(rule),
                     severity=DiagnosticSeverity.Warning
                 )

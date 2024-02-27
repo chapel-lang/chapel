@@ -950,7 +950,8 @@ module_decl_start:
         .attributeGroup=context->buildAttributeGroup(@$).release(),
         .visibility=$1,
         .kind=$2,
-        .name=$4
+        .name=$4,
+        .locName=@4
       };
 
       $$ = parts;
@@ -972,6 +973,7 @@ module_decl_stmt:
                                parts.name,
                                parts.kind,
                                context->consumeList(body));
+      BUILDER->noteDeclNameLocation(mod.get(), LOC(parts.locName));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -987,6 +989,7 @@ module_decl_stmt:
                                parts.name,
                                parts.kind,
                                context->consumeList(body));
+      BUILDER->noteDeclNameLocation(mod.get(), LOC(parts.locName));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }
@@ -1000,6 +1003,7 @@ module_decl_stmt:
                                parts.name,
                                parts.kind,
                                context->consumeList(body));
+      BUILDER->noteDeclNameLocation(mod.get(), LOC(parts.locName));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
     }

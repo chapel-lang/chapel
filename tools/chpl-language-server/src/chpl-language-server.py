@@ -652,7 +652,7 @@ class FileInfo:
     def get_inst_segment_at_position(
         self, position: Position
     ) -> Optional[chapel.TypedSignature]:
-        """lookup a def segment based upon a Position, likely a user mouse location"""
+        """lookup a instantiation segment based upon a Position, likely a user mouse location"""
         segment = self.instantiation_segments.find(position)
         if segment:
             return segment[1]
