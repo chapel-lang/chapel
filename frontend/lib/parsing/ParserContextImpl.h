@@ -909,6 +909,7 @@ ParserContext::buildBeginStmt(YYLTYPE location, YYLTYPE locBegin,
                            toOwned(withClause),
                            blockStyle,
                            std::move(stmts));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(locBegin));
   CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
   return finishStmt(ret);
 }
@@ -1047,6 +1048,7 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
 }
 
 CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
+                                               YYLTYPE locHeader,
                                                ParserExprList* managerExprs,
                                                YYLTYPE locBlockOrDo,
                                                BlockOrDo blockOrDo) {
@@ -1065,6 +1067,7 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                             std::move(managers),
                             blockStyle,
                             std::move(stmts));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(locHeader));
 
   CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
 
@@ -1377,6 +1380,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                            std::move(body));
 
   builder->noteDeclNameLocation(f.get(), identNameLoc);
+  builder->noteDeclHeaderLocation(f.get(), convertLocation(fp.headerLoc));
 
   // If we are not a method then the receiver intent is discarded,
   // because there is no receiver formal to store it in.
@@ -1921,7 +1925,8 @@ ParserContext::prepareStmtPieces(std::vector<ParserComment>*& outComments,
 }
 
 CommentsAndStmt
-ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
+ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
+                                    YYLTYPE locHeader,
                                     YYLTYPE locIndex,
                                     YYLTYPE locBodyAnchor,
                                     ParserExprList* indexExprs,
@@ -1935,7 +1940,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   ParserExprList* exprLst;
   BlockStyle blockStyle;
 
-  prepareStmtPieces(comments, exprLst, blockStyle, locLeftBracket,
+  prepareStmtPieces(comments, exprLst, blockStyle, locLoop,
                     false,
                     locBodyAnchor,
                     cs);
@@ -1955,7 +1960,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
 
-  auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
+  auto node = BracketLoop::build(builder, convertLocation(locLoop),
                                  std::move(index),
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
@@ -1963,11 +1968,12 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  std::move(body),
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
-
+  builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
   return { .comments=comments, .stmt=node.release() };
 }
 
-CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
+CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
+                                                    YYLTYPE locHeader,
                                                     YYLTYPE locIterExprs,
                                                     YYLTYPE locBodyAnchor,
                                                     ParserExprList* iterExprs,
@@ -1979,7 +1985,7 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   ParserExprList* exprLst;
   BlockStyle blockStyle;
 
-  prepareStmtPieces(comments, exprLst, blockStyle, locLeftBracket,
+  prepareStmtPieces(comments, exprLst, blockStyle, locLoop,
                     false,
                     locBodyAnchor,
                     cs);
@@ -1998,7 +2004,7 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
 
-  auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
+  auto node = BracketLoop::build(builder, convertLocation(locLoop),
                                  /*index*/ nullptr,
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
@@ -2006,12 +2012,13 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  std::move(body),
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
-
+  builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
   return { .comments=comments, .stmt=node.release() };
 }
 
-CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
+CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
                                                     YYLTYPE locIndex,
+                                                    YYLTYPE locHeader,
                                                     YYLTYPE locBodyAnchor,
                                                     PODUniqueString loopType,
                                                     AstNode* indexExpr,
@@ -2025,7 +2032,7 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
   ParserExprList* exprLst;
   BlockStyle blockStyle;
 
-  prepareStmtPieces(comments, exprLst, blockStyle, locKw,
+  prepareStmtPieces(comments, exprLst, blockStyle, locLoop,
                     locBodyAnchor,
                     blockOrDo);
 
@@ -2037,10 +2044,10 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
   ErroneousExpression* error = nullptr;
   if (loopTypeUstr == USTR("for")) {
     if (withClause) {
-      error = syntax(locKw,
+      error = syntax(locLoop,
                      "'with' clauses are not supported on 'for' loops.");
     } else {
-      result = For::build(builder, convertLocation(locKw),
+      result = For::build(builder, convertLocation(locLoop),
                           std::move(index),
                           toOwned(iterandExpr),
                           blockStyle,
@@ -2050,7 +2057,7 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
                           this->popLoopAttributeGroup()).release();
     }
   } else if (loopTypeUstr == USTR("foreach")) {
-    result = Foreach::build(builder, convertLocation(locKw),
+    result = Foreach::build(builder, convertLocation(locLoop),
                             std::move(index),
                             toOwned(iterandExpr),
                             toOwned(withClause),
@@ -2059,7 +2066,7 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
                             /* isExpressionLevel */ false,
                             this->popLoopAttributeGroup()).release();
   } else if (loopTypeUstr == USTR("forall")) {
-    result = Forall::build(builder, convertLocation(locKw),
+    result = Forall::build(builder, convertLocation(locLoop),
                            std::move(index),
                            toOwned(iterandExpr),
                            toOwned(withClause),
@@ -2074,6 +2081,7 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
     return { .comments=comments, .stmt=error };
   } else {
     CHPL_ASSERT(result);
+    builder->noteLoopHeaderLocation(result, convertLocation(locHeader));
     return { .comments=comments, .stmt=result };
   }
 }
@@ -2124,6 +2132,7 @@ AstNode* ParserContext::buildGeneralLoopExpr(YYLTYPE locWhole,
 }
 
 CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
+                                                     YYLTYPE locHeader,
                                                      YYLTYPE locIndex,
                                                      YYLTYPE locBodyAnchor,
                                                      AstNode* indexExpr,
@@ -2151,6 +2160,7 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               blockStyle,
                               std::move(body),
                               this->popLoopAttributeGroup());
+  builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -2652,6 +2662,7 @@ void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
 
 CommentsAndStmt
 ParserContext::buildAggregateTypeDecl(YYLTYPE location,
+                                      YYLTYPE headerLoc,
                                       TypeDeclParts parts,
                                       YYLTYPE inheritLoc,
                                       ParserExprList* optInherit,
@@ -2734,6 +2745,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   }
 
   builder->noteDeclNameLocation(decl, convertLocation(parts.locName));
+  builder->noteDeclHeaderLocation(decl, convertLocation(headerLoc));
 
   cs.stmt = decl;
   return cs;
