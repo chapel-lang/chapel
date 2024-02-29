@@ -80,6 +80,9 @@ module ChapelArray {
   @chpldoc.nodoc
   config param logAllArrEltAccess = false;
 
+  @chpldoc.nodoc
+  config const shortArrayTransferThreshold = 50;
+
   proc _isPrivatized(value) param do
     return (!compiledForSingleLocale() || CHPL_LOCALE_MODEL=="gpu") &&
            ((_privatization && value!.dsiSupportsPrivatization()) ||
@@ -2084,7 +2087,7 @@ module ChapelArray {
     }
   }
 
-  proc chpl__serializeAssignment(a: [], b) param {
+  proc chpl__serializeAssignment(a, b) param {
     if a.rank != 1 && isRange(b) then
       return true;
 
@@ -2109,7 +2112,7 @@ module ChapelArray {
   }
 
   // This must be a param function
-  proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
+  proc chpl__compatibleForBulkTransfer(a, b, param kind:_tElt) param {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if kind==_tElt.move then return true;
@@ -2159,7 +2162,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
+  proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = a._value.dom.dsiDims(),
             bDims = b._value.dom.dsiDims();
@@ -2176,9 +2179,17 @@ module ChapelArray {
     }
   }
 
-  pragma "find user line"
-  @chpldoc.nodoc
-  inline operator =(ref a: [], b:[]) {
+  proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
+
+  proc isArrayOrProtoSlice(a) param {
+    return isArray(a) || isProtoSlice(a);
+  }
+
+  proc areBothArraysOrProtoSlices(a,b) {
+    return isArrayOrProtoSlice(a) && isArrayOrProtoSlice(b);
+  }
+
+  private inline proc arrayOrProtoSliceAssign(ref a, b) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
 
@@ -2202,6 +2213,19 @@ module ChapelArray {
       checkArrayShapesUponAssignment(a, b);
 
     chpl__uncheckedArrayTransfer(a, b, kind=_tElt.assign);
+  }
+
+
+  pragma "find user line"
+  @chpldoc.nodoc
+  inline operator =(ref a: [], b: []) {
+    arrayOrProtoSliceAssign(a, b);
+  }
+
+  pragma "find user line"
+  @chpldoc.nodoc
+  inline operator =(ref a: chpl__protoSlice, b: chpl__protoSlice) {
+    arrayOrProtoSliceAssign(a, b);
   }
 
   // what kind of transfer to do for each element?
@@ -2310,30 +2334,64 @@ module ChapelArray {
     }
   }
 
-  pragma "find user line"
-  inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[], param kind) {
+  private proc chpl__staticCheckShortArrayTransfer(a, b) param {
+    // this is the case I'm focusing on in the initial PR. This can definitely
+    // be loosened up... by a lot.
+    return isProtoSlice(a) && isProtoSlice(b);
+  }
 
-    var done = false;
-    if !chpl__serializeAssignment(a, b) {
-      if chpl__compatibleForBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferArray(a, b);
+  private inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
+    param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
+    const sizeOk = a.sizeAs(uint) < shortArrayTransferThreshold;
+    if localCompilation {
+      return sizeOk;
+    }
+    else {
+      // No `.locale` to avoid overheads. Note that this is an optimization for
+      // fast-running code. Small things matter.
+      return sizeOk &&
+             __primitive("_wide_get_locale", a) ==
+             __primitive("_wide_get_locale", b);
+    }
+  }
+
+  pragma "find user line"
+  inline proc chpl__uncheckedArrayTransfer(ref a, b, param kind) {
+    if chpl__serializeAssignment(a, b) {
+      chpl__transferArray(a, b, kind);
+    }
+    else if chpl__staticCheckShortArrayTransfer(a, b) &&
+            chpl__dynamicCheckShortArrayTransfer(a, b) {
+      chpl__transferArray(a, b, kind, alwaysSerialize=true);
+    }
+    else if chpl__compatibleForBulkTransfer(a, b, kind) {
+      if chpl__bulkTransferArray(a, b) {
+        chpl__initAfterBulkTransfer(a, kind);
       }
-      else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferPtrArray(a, b);
-      }
-      // If we did a bulk transfer, it just bit copied, so need to
-      // run copy initializer still
-      if done {
-        if kind==_tElt.initCopy && !isPODType(a.eltType) {
-          initCopyAfterTransfer(a);
-        } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
-                                       isSubtype(a.eltType, _domain)) {
-          fixEltRuntimeTypesAfterTransfer(a);
-        }
+      else {
+        chpl__transferArray(a, b, kind);
       }
     }
-    if !done {
+    else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
+      if chpl__bulkTransferPtrArray(a, b) {
+        chpl__initAfterBulkTransfer(a, kind);
+      }
+      else {
+        chpl__transferArray(a, b, kind);
+      }
+    }
+    else {
       chpl__transferArray(a, b, kind);
+
+    }
+  }
+
+  inline proc chpl__initAfterBulkTransfer(ref a, param kind) {
+    if kind==_tElt.initCopy && !isPODType(a.eltType) {
+      initCopyAfterTransfer(a);
+    } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
+        isSubtype(a.eltType, _domain)) {
+      fixEltRuntimeTypesAfterTransfer(a);
     }
   }
 
@@ -2377,11 +2435,89 @@ module ChapelArray {
   inline proc chpl__bulkTransferArray(ref a: [?AD], b : [?BD]) {
     return chpl__bulkTransferArray(a, AD, b, BD);
   }
-  inline proc chpl__bulkTransferArray(ref a: [], AD : domain, const ref b: [], BD : domain) {
+
+  inline proc chpl__bulkTransferArray(ref a: chpl__protoSlice,
+                                      b: chpl__protoSlice) {
+    return chpl__bulkTransferArray(a.ptrToArr.deref(), a.domOrRange,
+                                   b.ptrToArr.deref(), b.domOrRange);
+  }
+  inline proc chpl__bulkTransferArray(ref a: [], AD, const ref b: [], BD) {
     return chpl__bulkTransferArray(a._value, AD, b._value, BD);
   }
 
-  inline proc chpl__bulkTransferArray(destClass, destDom : domain, srcClass, srcDom : domain) {
+  record chpl__protoSlice {
+    var ptrToArr; // I want this to be a `forwarding ref` to the array
+    var slicingExprs;
+
+    proc init=(other: chpl__protoSlice) {
+      this.ptrToArr = other.ptrToArr;
+      this.slicingExprs = other.slicingExprs;
+      init this;
+      extern proc printf(s...);
+      printf("this is probably not what you want\n");
+    }
+
+    inline proc domOrRange where rank==1 {
+      return slicingExprs;
+    }
+
+    inline proc domOrRange where rank>1 {
+      return {(...slicingExprs)};
+    }
+
+    inline proc rank param { return ptrToArr.deref().rank; }
+    inline proc eltType type { return ptrToArr.deref().eltType; }
+    inline proc _value { return ptrToArr.deref()._value; }
+    inline proc sizeAs(type t) { return slicingExprs.sizeAs(t); }
+    inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
+
+    iter these() ref {
+      ref arrInst = ptrToArr.deref()._instance;
+      if rank == 1 then {
+        foreach elem in chpl__serialViewIter1D(arrInst, domOrRange) {
+          yield elem;
+        }
+      }
+      else {
+        const viewDomInst = domOrRange._instance;
+        foreach elem in chpl__serialViewIter(arrInst, viewDomInst) {
+          yield elem;
+        }
+      }
+    }
+
+    iter these(param tag: iterKind) where tag==iterKind.leader {
+      for followThis in domOrRange.these(iterKind.leader) {
+        yield followThis;
+      }
+    }
+
+    iter these(param tag: iterKind, followThis) ref where tag==iterKind.follower {
+      ref arr = ptrToArr.deref();
+      foreach i in domOrRange.these(iterKind.follower, followThis) {
+        yield arr[i];
+      }
+    }
+  }
+
+  proc chpl__createProtoSlice(ref Arr, slicingExprs) {
+    return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
+  }
+
+  pragma "last resort"
+  proc chpl__createProtoSlice(ref Arr, slicingExprs...) {
+    return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
+  }
+
+  proc chpl__basesSupportViewTransfer(a, b) param {
+    return chpl__isDROrDRView(a) && chpl__isDROrDRView(b);
+  }
+
+  proc chpl__slicingExprsSupportViewTransfer(x...) param {
+    return (isHomogeneousTuple(x) && isRange(x[0]));
+  }
+
+  inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
     var success = false;
 
     inline proc bulkTransferDebug(msg:string) {
@@ -2389,6 +2525,8 @@ module ChapelArray {
     }
 
     bulkTransferDebug("in chpl__bulkTransferArray");
+    bulkTransferDebug("destView.type: " + destView.type:string +
+                      "srcView.type: " + srcView.type:string);
 
     //
     // BHARSH TODO: I would prefer to hoist these 'canResolveMethod' calls into
@@ -2398,21 +2536,21 @@ module ChapelArray {
     // TODO: should we attempt other bulk transfer methods if one fails?
     //
     if Reflection.canResolveMethod(destClass, "doiBulkTransferFromKnown",
-                                   destDom, srcClass, srcDom) {
+                                   destView, srcClass, srcView) {
       bulkTransferDebug("attempting doiBulkTransferFromKnown");
-      success = destClass.doiBulkTransferFromKnown(destDom, srcClass, srcDom);
+      success = destClass.doiBulkTransferFromKnown(destView, srcClass, srcView);
     } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToKnown",
-                                          srcDom, destClass, destDom) {
+                                          srcView, destClass, destView) {
       bulkTransferDebug("attempting doiBulkTransferToKnown");
-      success = srcClass.doiBulkTransferToKnown(srcDom, destClass, destDom);
+      success = srcClass.doiBulkTransferToKnown(srcView, destClass, destView);
     } else if Reflection.canResolveMethod(destClass, "doiBulkTransferFromAny",
-                                          destDom, srcClass, srcDom) {
+                                          destView, srcClass, srcView) {
       bulkTransferDebug("attempting doiBulkTransferFromAny");
-      success = destClass.doiBulkTransferFromAny(destDom, srcClass, srcDom);
+      success = destClass.doiBulkTransferFromAny(destView, srcClass, srcView);
     } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToAny",
-                                          srcDom, destClass, destDom) {
+                                          srcView, destClass, destView) {
       bulkTransferDebug("attempting doiBulkTransferToAny");
-      success = srcClass.doiBulkTransferToAny(srcDom, destClass, destDom);
+      success = srcClass.doiBulkTransferToAny(srcView, destClass, destView);
     }
 
     if success then
@@ -2425,8 +2563,9 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "ignore transfer errors"
-  inline proc chpl__transferArray(ref a: [], const ref b,
-                           param kind=_tElt.assign) lifetime a <= b {
+  inline proc chpl__transferArray(ref a, const ref b,
+                           param kind=_tElt.assign,
+                           param alwaysSerialize=false) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
 
@@ -2454,7 +2593,7 @@ module ChapelArray {
           aa = b;
         }
       }
-    } else if chpl__serializeAssignment(a, b) {
+    } else if alwaysSerialize || chpl__serializeAssignment(a, b) {
       if kind==_tElt.move {
         if needsInitWorkaround(a.eltType) {
           for (ai, bb) in zip(a.domain, b) {
