@@ -2329,6 +2329,11 @@ bool Resolver::enter(const uast::Conditional* cond) {
       auto t = reVar.type().type();
       bool ok = t->isClassType() || t->isBasicClassType();
       if (!ok) CHPL_REPORT(context, IfVarNonClassType, cond, reVar.type());
+      /* if (auto ct = t->toClassType()) { */
+      /*   reVar.setType(QualifiedType( */
+      /*       reVar.type().kind(), */
+      /*       ct->withDecorator(context, ct->decorator().addNonNil()))); */
+      /* } */
     }
   }
 
