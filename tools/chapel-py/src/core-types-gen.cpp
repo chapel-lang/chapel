@@ -65,6 +65,14 @@ static const char* opKindToString(Range::OpKind kind) {
   }
 }
 
+static std::optional<chpl::Location> getValidLocation(const chpl::Location& loc) {
+  /*isEmpty doesn't work since that only relies upon path, which is set*/
+  if (loc.line() != -1) {
+    return loc;
+  }
+  return std::nullopt;
+}
+
 template <typename T> struct InvokeHelper {};
 
 template <typename Ret, typename... Args>

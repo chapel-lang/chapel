@@ -319,6 +319,7 @@ class AstNode {
   #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
   #define AST_END_SUBCLASSES(NAME)
   /// \endcond
+  bool isAstNode() const { return true; }
   // Apply the above macros to uast-classes-list.h
   #include "chpl/uast/uast-classes-list.h"
   // clear the macros
@@ -344,6 +345,7 @@ class AstNode {
   #define AST_BEGIN_SUBCLASSES(NAME) AST_TO(NAME)
   #define AST_END_SUBCLASSES(NAME)
   /// \endcond
+  AST_TO(AstNode)
   // Apply the above macros to uast-classes-list.h
   #include "chpl/uast/uast-classes-list.h"
   // clear the macros
