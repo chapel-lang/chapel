@@ -266,6 +266,27 @@ def range_to_tokens(
     return tokens
 
 
+def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
+    """
+    Convert a Chapel location to a string. If the location spans multiple
+    lines, it gets truncated into 1 line. The lines and columns are
+    zero-indexed.
+    """
+
+    (line_start, char_start) = rng.start()
+    (line_end, char_end) = rng.end()
+
+    if line_start == line_end:
+        return lines[line_start - 1][char_start - 1 : char_end - 1]
+
+    text = [lines[line_start - 1][char_start - 1 :]]
+    for line in range(line_start + 1, line_end):
+        text.append(lines[line - 1])
+    text.append(lines[line_end - 1][: char_end - 1])
+
+    return " ".join([t.strip() for t in text])
+
+
 def encode_deltas(
     tokens: List[Tuple[int, int, int]], token_type: int, token_modifiers: int
 ) -> List[int]:
@@ -779,20 +800,88 @@ class WorkspaceConfig:
         return None
 
 
+class CLSConfig:
+    def __init__(self):
+        self._construct_parser()
+        self.args = dict()
+
+    def _construct_parser(self):
+        self.parser = configargparse.ArgParser(
+            default_config_files=[],  # Empty for now because cwd() is odd with VSCode etc.
+            config_file_parser_class=configargparse.YAMLConfigFileParser,
+        )
+
+        def add_bool_flag(name: str, dest: str, default: bool):
+            self.parser.add_argument(
+                f"--{name}", dest=dest, action="store_true"
+            )
+            self.parser.add_argument(
+                f"--no-{name}", dest=dest, action="store_false"
+            )
+            self.parser.set_defaults(**{dest: default})
+
+        add_bool_flag("resolver", "resolver", False)
+        add_bool_flag("type-inlays", "type_inlays", True)
+        add_bool_flag("param-inlays", "param_inlays", True)
+        add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
+        add_bool_flag("dead-code", "dead_code", True)
+        add_bool_flag("evaluate-expressions", "eval_expressions", True)
+        self.parser.add_argument("--end-markers", default="none")
+        self.parser.add_argument("--end-marker-threshold", type=int, default=10)
+
+    def _parse_end_markers(self):
+        self.args["end_markers"] = [
+            a.strip() for a in self.args["end_markers"].split(",")
+        ]
+
+    def _validate_end_markers(self):
+        valid_choices = ["all", "loop", "decl", "block", "none"]
+        for marker in self.args["end_markers"]:
+            if marker not in valid_choices:
+                raise argparse.ArgumentError(
+                    None, f"Invalid end marker choice: {marker}"
+                )
+        if (
+            "none" in self.args["end_markers"]
+            and len(self.args["end_markers"]) > 1
+        ):
+            raise argparse.ArgumentError(
+                None, "Cannot specify 'none' with other end marker choices"
+            )
+        if (
+            "all" in self.args["end_markers"]
+            and len(self.args["end_markers"]) > 1
+        ):
+            raise argparse.ArgumentError(
+                None, "Cannot specify 'all' with other end marker choices"
+            )
+
+    def parse_args(self):
+        self.args = vars(self.parser.parse_args())
+        self._parse_end_markers()
+        self._validate_end_markers()
+
+    def get(self, key: str):
+        return self.args[key]
+
+
 class ChapelLanguageServer(LanguageServer):
-    def __init__(self, config: argparse.Namespace):
+    def __init__(self, config: CLSConfig):
         super().__init__("chpl-language-server", "v0.1")
 
         self.contexts: Dict[str, ContextContainer] = {}
         self.file_infos: Dict[str, FileInfo] = {}
         self.configurations: Dict[str, WorkspaceConfig] = {}
 
-        self.use_resolver: bool = config.resolver
-        self.type_inlays: bool = config.type_inlays
-        self.literal_arg_inlays: bool = config.literal_arg_inlays
-        self.param_inlays: bool = config.param_inlays
-        self.dead_code: bool = config.dead_code
-        self.eval_expressions: bool = config.eval_expressions
+        self.use_resolver: bool = config.get("resolver")
+        self.type_inlays: bool = config.get("type_inlays")
+        self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
+        self.param_inlays: bool = config.get("param_inlays")
+        self.dead_code: bool = config.get("dead_code")
+        self.eval_expressions: bool = config.get("eval_expressions")
+        self.end_markers: List[str] = config.get("end_markers")
+        self.end_marker_threshold: int = config.get("end_marker_threshold")
+        self.end_marker_patterns = self._make_end_marker_patterns()
 
         self._setup_regexes()
 
@@ -807,6 +896,8 @@ class ChapelLanguageServer(LanguageServer):
         pat2 = f"{prefix}{chars}use{chars}(?P<tick>[`' ])(?P<replace2>{ident})(?P=tick){chars}instead{chars}"
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
+
+        self._curly_bracket_with_comment = re.compile(r"\}.*//")
 
     def get_deprecation_replacement(
         self, text: str
@@ -951,11 +1042,7 @@ class ChapelLanguageServer(LanguageServer):
         ]
 
     def _get_type_inlays(
-        self,
-        decl: NodeAndRange,
-        qt: chapel.QualifiedType,
-        siblings: chapel.SiblingMap,
-        via: Optional[chapel.TypedSignature] = None,
+        self, decl: NodeAndRange, qt: chapel.QualifiedType
     ) -> List[InlayHint]:
         if not self.type_inlays:
             return []
@@ -976,13 +1063,10 @@ class ChapelLanguageServer(LanguageServer):
         label = InlayHintLabelPart(str(type_))
         if isinstance(type_, chapel.CompositeType):
             typedecl = type_.decl()
-
-            if typedecl:
-                text = self.get_tooltip(typedecl, siblings, via)
-                content = MarkupContent(MarkupKind.Markdown, text)
-                label.tooltip = content
+            if typedecl and isinstance(typedecl, chapel.NamedDecl):
+                label.location = location_to_location(typedecl.name_location())
+            elif typedecl:
                 label.location = location_to_location(typedecl.location())
-
         return [
             InlayHint(
                 position=name_rng.end,
@@ -996,7 +1080,6 @@ class ChapelLanguageServer(LanguageServer):
     def get_decl_inlays(
         self,
         decl: NodeAndRange,
-        siblings: chapel.SiblingMap,
         via: Optional[chapel.TypedSignature] = None,
     ) -> List[InlayHint]:
         if not self.use_resolver:
@@ -1012,7 +1095,7 @@ class ChapelLanguageServer(LanguageServer):
 
         inlays = []
         inlays.extend(self._get_param_inlays(decl, qt))
-        inlays.extend(self._get_type_inlays(decl, qt, siblings, via))
+        inlays.extend(self._get_type_inlays(decl, qt))
         return inlays
 
     def get_call_inlays(
@@ -1185,29 +1268,89 @@ class ChapelLanguageServer(LanguageServer):
 
         return (fi, fn, instantiation)
 
+    def _all_end_marker_patterns(self) -> Dict[str, Tuple]:
+        return {
+            "loop": (chapel.Loop,),
+            "decl": (chapel.NamedDecl,),
+            "block": (
+                chapel.On,
+                chapel.Cobegin,
+                chapel.Begin,
+                chapel.Defer,
+                chapel.Serial,
+                chapel.Sync,
+                chapel.Local,
+                chapel.Manage,
+            ),
+        }
+
+    def _make_end_marker_patterns(self) -> Set[chapel.AstNode]:
+        to_match = set()
+        patterns = self._all_end_marker_patterns()
+        if "all" in self.end_markers:
+            for pat in patterns.values():
+                to_match.update(pat)
+        elif "none" not in self.end_markers:
+            for marker in self.end_markers:
+                to_match.update(patterns[marker])
+        return to_match
+
+    def get_end_marker(
+        self, node: chapel.AstNode, file_lines: List[str]
+    ) -> Optional[InlayHint]:
+        """
+        Get inlay hints that mark the end of a significant block of code. This
+        function assumes the feature is enabled for the node type, but does
+        check if the block is less than some threshold.
+        """
+        end_loc = location_to_range(node.location()).end
+        header_loc: Optional[chapel.Location] = None
+        goto_loc: Optional[chapel.Location] = None
+        if isinstance(node, chapel.Loop) and node.block_style() != "implicit":
+            header_loc = node.header_location()
+        elif isinstance(node, chapel.NamedDecl):
+            header_loc = node.header_location()
+            goto_loc = node.name_location()
+        elif isinstance(
+            node, self._all_end_marker_patterns().get("block", ())
+        ) and (
+            not isinstance(node, chapel.SimpleBlockLike)
+            or node.block_style() != "implicit"
+        ):
+            # show the header for all "block" types, but if that block has a
+            # block style only show the explicit blocks
+            header_loc = node.block_header()
+
+        if header_loc is None:
+            return None
+
+        # skip blocks that are smaller than the threshold
+        # ls.show_message_log(f"{end_loc}, {header_loc.en} lines")
+        if end_loc.line - header_loc.end()[0] < self.end_marker_threshold:
+            return None
+
+        # skip blocks where the comment is already added
+        curly_line = file_lines[end_loc.line]
+        if re.search(self._curly_bracket_with_comment, curly_line):
+            return None
+
+        text = range_to_text(header_loc, file_lines)
+        loc = location_to_location(goto_loc) if goto_loc else None
+        inlay = InlayHint(
+            position=end_loc,
+            padding_left=True,
+            label=[InlayHintLabelPart(text, location=loc)],
+        )
+        return inlay
+
 
 def run_lsp():
     """
     Start a language server on the standard input/output
     """
-    parser = configargparse.ArgParser(
-        default_config_files=[],  # Empty for now because cwd() is odd with VSCode etc.
-        config_file_parser_class=configargparse.YAMLConfigFileParser,
-    )
-
-    def add_bool_flag(name: str, dest: str, default: bool):
-        parser.add_argument(f"--{name}", dest=dest, action="store_true")
-        parser.add_argument(f"--no-{name}", dest=dest, action="store_false")
-        parser.set_defaults(**{dest: default})
-
-    add_bool_flag("resolver", "resolver", False)
-    add_bool_flag("type-inlays", "type_inlays", True)
-    add_bool_flag("param-inlays", "param_inlays", True)
-    add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
-    add_bool_flag("dead-code", "dead_code", True)
-    add_bool_flag("evaluate-expressions", "eval_expressions", True)
-
-    server = ChapelLanguageServer(parser.parse_args())
+    config = CLSConfig()
+    config.parse_args()
+    server = ChapelLanguageServer(config)
 
     # The following functions are handlers for LSP events received by the server.
 
@@ -1253,9 +1396,9 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
-        segment = fi.get_use_segment_at_position(params.position)
+        segment = fi.get_use_or_def_segment_at_position(params.position)
         if segment:
-            return segment.resolved_to.get_location()
+            return segment.get_location()
         return None
 
     @server.feature(TEXT_DOCUMENT_REFERENCES)
@@ -1432,39 +1575,42 @@ def run_lsp():
 
     @server.feature(TEXT_DOCUMENT_INLAY_HINT)
     async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
+        inlays: List[InlayHint] = []
+
         # The get_decl_inlays and get_call_inlays methods also check
         # and return early if the resolver is not being used, but for
         # the time being all hints are resolver-based, so we may
         # as well save ourselves the work of finding declarations and
         # calls to feed to those methods.
-        if not ls.use_resolver:
-            return None
-
-        text_doc = ls.workspace.get_text_document(params.text_document.uri)
-
-        fi, _ = ls.get_file_info(text_doc.uri)
-
-        decls = fi.def_segments.range(params.range)
-        calls = list(
-            call
-            for call, _ in chapel.each_matching(
-                fi.get_asts(), chapel.core.FnCall
+        if ls.use_resolver:
+            decls = fi.def_segments.range(params.range)
+            calls = list(
+                call
+                for call, _ in chapel.each_matching(
+                    fi.get_asts(), chapel.core.FnCall
+                )
             )
-        )
 
-        inlays: List[InlayHint] = []
-        with fi.context.context.track_errors() as _:
-            for decl in decls:
-                instantiation = fi.get_inst_segment_at_position(decl.rng.start)
-                inlays.extend(
-                    ls.get_decl_inlays(decl, fi.siblings, instantiation)
-                )
+            with fi.context.context.track_errors() as _:
+                for decl in decls:
+                    instantiation = fi.get_inst_segment_at_position(
+                        decl.rng.start
+                    )
+                    inlays.extend(ls.get_decl_inlays(decl, instantiation))
 
-            for call in calls:
-                instantiation = fi.get_inst_segment_at_position(
-                    location_to_range(call.location()).start
-                )
-                inlays.extend(ls.get_call_inlays(call, instantiation))
+                for call in calls:
+                    instantiation = fi.get_inst_segment_at_position(
+                        location_to_range(call.location()).start
+                    )
+                    inlays.extend(ls.get_call_inlays(call, instantiation))
+
+        file_lines = fi.file_lines()
+        for node, _ in chapel.each_matching(fi.get_asts(), ls.end_marker_patterns):
+            inlay = ls.get_end_marker(node, file_lines)
+            if inlay:
+                inlays.append(inlay)
 
         return inlays
 
