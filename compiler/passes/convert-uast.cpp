@@ -4814,6 +4814,8 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     }
 
     se->setSymbol(sym);
+    fixedUp.insert(se);
+
     // Not all symExprs are noted as fixups (due to lowering and AST
     // transformations), so visit the temporary conversion symbol's recorded
     // symExprs to try handle these stragglers.
