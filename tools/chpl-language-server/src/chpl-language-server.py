@@ -396,7 +396,7 @@ class ContextContainer:
     def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
         self.config: Optional["WorkspaceConfig"] = config
         self.file_paths: List[str] = []
-        self.module_paths: List[str] = [file]
+        self.module_paths: List[str] = [os.path.dirname(os.path.abspath(file))]
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
         self.global_uses: Dict[str, List[References]] = defaultdict(list)
