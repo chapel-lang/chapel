@@ -305,6 +305,9 @@ def match_pattern(ast, pattern):
                     return False
 
             return True
+        elif isinstance(pat, set):
+            # check if any of patterns in the set match
+            return any(match_inner(ast, p) for p in pat)
         elif issubclass(pat, AstNode):
             # Just check if the AST node matches
             return isinstance(ast, pat)
