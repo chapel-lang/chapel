@@ -241,8 +241,10 @@ $(CHPL_BIN_DIR):
 	mkdir -p $@
 
 install-chpl-chpldoc: FORCE $(CHPL_CONFIG_CHECK)
-# this target is called from the install.sh script, bypassing the normal
-# way of building chpldoc.  So we need to make sure the venv is built
+# this target is called by the install.sh script which is called by a `make install`
+# from the top-level directory.
+# CMake will ensure chpl is built and optionally install chpldoc if it was already
+# built
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) install
 
 #
