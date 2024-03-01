@@ -6081,6 +6081,13 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+/*
+static void warnSurprisingImpConvReal(Vec<ResolutionCandidate*>&   candidates,
+                                      const DisambiguationContext& DC,
+                                      std::vector<bool>&           discarded) {
+}*/
+
+
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
 static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
@@ -6091,6 +6098,10 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
   // we already know it can not be the best match
   // because it is a less good match than another candidate.
   std::vector<bool> notBest(candidates.n, false);
+
+  // warn in some cases, using notBest for temporary space,
+  // and clearing notBest at the end.
+  //warnSurprisingImpConvReal(candidates, DC, discarded);
 
   for (int i = 0; i < candidates.n; ++i) {
     if (discarded[i]) {
@@ -8174,13 +8185,13 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
 }
 
 
-void warnForIntUintConversion(BaseAST* context,
-                              Type* formalType,
-                              Type* actualType,
-                              Symbol* actual) {
+void warnForSomeNumericConversions(BaseAST* context,
+                                   Type* formalType,
+                                   Type* actualType,
+                                   Symbol* actual) {
+  Type* formalVt = formalType->getValType();
+  Type* actualVt = actualType->getValType();
   if (fWarnIntUint || shouldWarnUnstableFor(context)) {
-    Type* formalVt = formalType->getValType();
-    Type* actualVt = actualType->getValType();
     if (is_uint_type(formalVt) && is_int_type(actualVt)) {
       if (get_width(formalVt) <= get_width(actualVt)) {
         bool isParam = false;
@@ -8205,6 +8216,20 @@ void warnForIntUintConversion(BaseAST* context,
                     toString(formalVt));
         }
       }
+    }
+  }
+
+  // also check for small int/uint -> real
+  if (is_real_type(formalVt) &&
+      (is_uint_type(actualVt) || is_int_type(actualVt))) {
+    if (get_width(formalVt) != 64 &&
+        get_width(actualVt) != get_width(formalVt)) {
+      USR_WARN(context, "potentially surprising implicit conversion from '%s' to '%s'", toString(actualVt), toString(formalVt));
+      if (shouldWarnUnstableFor(context)) {
+        USR_WARN(context, "such an implicit conversion is unstable");
+      }
+      USR_PRINT(context, "add a cast :%s to avoid this warning",
+                toString(formalVt));
     }
   }
 }
