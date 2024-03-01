@@ -96,7 +96,7 @@ void RemoveUnnecessaryAutoCopyCalls::process(FnSymbol* fn)
     // may have AST like this:
     //
     //  task_ind_x = PRIM_TASK_INDEPENDENT_SVAR_CAPTURE(chpl__initCopy(x))
-    //  
+    //
     // To proceed, we basically ignore the primitive on the RHS of the
     // assignment and process as if it were written
     // `task_ind_x = chpl_initCopy(x)`.
