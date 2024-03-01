@@ -166,7 +166,7 @@ while (@ARGV) {
         $mason_build = 1;
     } elsif ($flag eq "-protobuf") {
         $protobuf_build = 1;
-    } elsif ($flag eq "-testblog") {
+    } elsif ($flag eq "-blog") {
         $testblog = 1;
     } elsif ($flag eq "-blogonly") {
         $blogonly = 1;
@@ -209,7 +209,8 @@ if ($printusage == 1) {
     print "\t-debug                         : check out sources and run for individual user (default)\n";
     print "\t-cron                          : use for nightly cron runs only\n";
     print "\t-baseline                      : run testins using --baseline\n";
-    print "\t-blogonly                      : clone and run the chapel blog tests only\n";
+    print "\t-blog                          : test the chapel blog with nightly tests\n";
+    print "\t-blogonly                      : only run the chapel blog tests\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
@@ -243,7 +244,6 @@ if ($printusage == 1) {
    #print "\t-retaintree                    : \$retaintree=1 ?\n";
     print "\t-startdate <date>              : run performance tests providing a common start date to all the graphs\n";
     print "\t-sync-dir-suffix <suffix>      : \$syncsuffix = <suffix> ?\n";
-    print "\t-testblog                      : clone and copy chapel-blog sources to test directory\n";
     print "\t-valgrind                      : run tests in valgrind mode\n";
     print "\t-valgrindexe                   : run tests in valgrindexe mode\n";
     print "\t-verify                        : -compopts --verify ?\n";
