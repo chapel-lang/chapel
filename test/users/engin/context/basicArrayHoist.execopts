@@ -1,1 +1,1 @@
---memTrack
+--memTrack --doVerboseMem=true

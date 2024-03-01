@@ -6,7 +6,7 @@ use Iterators.SimpleOneDim;
 config param hoistArray = true;
 
 config const n = 20;
-config const doVerboseMem = true;
+config const doVerboseMem = false;
 
 if doVerboseMem then startVerboseMem();
 forall i in simpleOneDim(n) {  // context should be coming from a new syntax
