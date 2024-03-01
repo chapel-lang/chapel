@@ -5429,14 +5429,21 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
 }
 
 DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
+  // We can probably make this a basic primitive as it pretty much turns
+  // directly into a runtime call. But I like to have consistency across GPU
+  // primitives.
+
   std::vector<GenRet> args;
-  auto numKernelArgs = call->get(1);
-  auto numKernelPids = call->get(2);
+  int curArg = 1;
+  auto numKernelArgs = call->get(curArg++);
+  auto numKernelPids = call->get(curArg++);
+  auto ln = call->get(curArg++);
+  auto fn = call->get(curArg++);
 
   args.push_back(numKernelArgs->codegen());
   args.push_back(numKernelPids->codegen());
-  args.push_back(new_IntSymbol(call->astloc.lineno()));
-  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+  args.push_back(ln->codegen());
+  args.push_back(fn->codegen());
 
   ret = codegenCallExprWithArgs("chpl_gpu_init_kernel_cfg", args);
 }
