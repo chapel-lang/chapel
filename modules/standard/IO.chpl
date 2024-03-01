@@ -768,14 +768,6 @@ extern const QIO_FDFLAG_WRITEABLE:c_int;
 extern const QIO_FDFLAG_SEEKABLE:c_int;
 
 @chpldoc.nodoc
-@deprecated(notes="QIO_CH_ALWAYS_UNBUFFERED is deprecated")
-extern const QIO_CH_ALWAYS_UNBUFFERED:c_int;
-@chpldoc.nodoc
-extern const QIO_CH_ALWAYS_BUFFERED:c_int;
-@chpldoc.nodoc
-extern const QIO_CH_BUFFERED:c_int;
-
-@chpldoc.nodoc
 extern const QIO_METHOD_DEFAULT:c_int;
 @chpldoc.nodoc
 extern const QIO_METHOD_READWRITE:c_int;
