@@ -1,9 +1,23 @@
+miniBUDE:  2.0
+compile_commands:
+   - ""
+~
+deck:
+  path:         "miniBUDE/data/bm1"
+  poses:        65536
+  proteins:     938
+  ligands:      26
+  forcefields:  34
+config:
+  iterations:   8
+  poses:        65536
+  ppwi:
+    available:  [4]
+    selected:   [4]
+  wgsize:       [64]
+device: { index: 0, name: "Chapel CPU" }
 
-Poses     : 65536
-Iterations: 8
-Ligands   : 26
-Proteins  : 938
-Deck      : miniBUDE/data/bm1
+Running Chapel on 1 GPU
 
 Largest difference was less than 0.020%.
 
