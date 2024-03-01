@@ -191,7 +191,7 @@ frontend-docs: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 
 frontend-linters: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Making the frontend linters"
-	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && cd frontend/util && $(MAKE)
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && cd frontend/util/linters && $(MAKE) fieldsUsed
 
 run-frontend-linters: frontend-linters
 	@echo "Running the frontend linters"
