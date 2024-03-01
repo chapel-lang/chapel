@@ -260,6 +260,13 @@ IntentTag blankIntentForExternFnArg(Type* type) {
 // behavior in the future, so want to generate a warning if it occurs (and one
 // of the primitives will handle generating that warning).
 static void warnForInferredConstRef(ArgSymbol* arg) {
+  // Exit early if the argument is a _RuntimeTypeInfo, that should only be used
+  // to replace type arguments and types are never changed after they are
+  // created (so wouldn't cause problems)
+  if (strcmp(arg->type->symbol->name, astr("_RuntimeTypeInfo")) == 0) {
+    return;
+  }
+
   SET_LINENO(arg);
 
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
