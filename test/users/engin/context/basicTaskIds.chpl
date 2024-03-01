@@ -1,13 +1,10 @@
 use IO;
-use MemDiagnostics;
 
 use ChapelContextSupport;
 use Iterators.SimpleOneDim;
 
 config const n = 20;
-config const doVerboseMem = true;
 
-if doVerboseMem then startVerboseMem();
 forall i in simpleOneDim(n) {  // context should be coming from a new syntax
   const context = new Context();
   const vectorContext = __primitive("outer context", context);
@@ -20,4 +17,3 @@ forall i in simpleOneDim(n) {  // context should be coming from a new syntax
             preLocaleTaskContext);
   }
 }
-if doVerboseMem then stopVerboseMem();
