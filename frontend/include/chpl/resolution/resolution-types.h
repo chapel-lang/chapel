@@ -38,6 +38,29 @@
 namespace chpl {
 namespace resolution {
 
+/**
+
+  In some situations, we may decide not to resolve a call. This could
+  happen if we believe it to already be ill-formed (e.g., why would we resolve
+  f(x) if x is ill-typed?
+
+  This enum contains reasons why we might want that to do that.
+ */
+enum SkipCallResolutionReason {
+  NONE = 0,
+
+  /* an unknown param (e.g. param int, without a value) */
+  UNKNOWN_PARAM,
+  /* a type that is a generic type unless there are substitutions */
+  GENERIC_TYPE,
+  /* a value of generic type */
+  GENERIC_VALUE,
+  /* UnknownType, ErroneousType */
+  UNKNOWN_ACT, ERRONEOUS_ACT,
+  /* other reason to skip */
+  OTHER_REASON,
+};
+
 enum struct DefaultsPolicy {
   /** Do not use default values when determining field type. */
   IGNORE_DEFAULTS,

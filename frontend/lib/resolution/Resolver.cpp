@@ -3311,20 +3311,7 @@ void Resolver::exit(const Call* call) {
                              &actualAsts);
 
   // With some exceptions (see below), don't try to resolve a call that accepts:
-  enum SkipReason {
-    NONE = 0,
-
-    /* an unknown param (e.g. param int, without a value) */
-    UNKNOWN_PARAM,
-    /* a type that is a generic type unless there are substitutions */
-    GENERIC_TYPE,
-    /* a value of generic type */
-    GENERIC_VALUE,
-    /* UnknownType, ErroneousType */
-    UNKNOWN_ACT, ERRONEOUS_ACT,
-    /* other reason to skip */
-    OTHER_REASON,
-  } skip = NONE;
+  SkipCallResolutionReason skip = NONE;
   // EXCEPT, to handle split-init with an 'out' formal,
   // the actual argument can have unknown / generic type if it
   // refers directly to a particular variable.
