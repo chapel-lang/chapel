@@ -29,8 +29,8 @@ module SSCA2_driver
 
   class Generated_Subgraph {
     type vertex;
-    var nodes : domain (vertex, parSafe=false);
-    var edges : domain (2*vertex, parSafe=false);
+    var nodes : domain (vertex, parSafe=true);
+    var edges : domain (2*vertex, parSafe=true);
   }
 
        
