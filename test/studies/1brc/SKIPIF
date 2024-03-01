@@ -6,6 +6,12 @@
 # If something fails along the way (perhaps due to a network outage) we'll
 # skip executing the test.
 
+# Skip these tests in the valgrind config (runtime is too long)
+if [[ ${CHPL_NIGHTLY_TEST_CONFIG_NAME} == "valgrind" ]]; then
+  echo "True"
+  exit
+fi
+
 # If we've already generated the input dataset no need to regenerate it
 if [[ -e measurements.txt ]]; then
   echo "False"
@@ -39,7 +45,7 @@ if [[ ! -e measurements.txt ]]; then
   if ! python3 ./create_measurements.py 10_000_000 2> python.out; then
     echo "creating input dataset failed; output:" >&2
     cat python.out >&2
-    return "True"
+    echo "True"
     exit
   fi
 fi
