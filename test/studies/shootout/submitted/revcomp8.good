@@ -1,5 +1,3 @@
-revcomp8.chpl:29: warning: QIO_CH_ALWAYS_UNBUFFERED is deprecated
-revcomp8.chpl:31: warning: QIO_CH_ALWAYS_UNBUFFERED is deprecated
 revcomp8.chpl:28: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
 revcomp8.chpl:28: warning: reader with a 'kind' argument is deprecated, please use Serializers instead
 revcomp8.chpl:28: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
