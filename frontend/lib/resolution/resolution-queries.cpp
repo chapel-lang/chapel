@@ -2880,6 +2880,36 @@ static bool resolveFnCallSpecial(Context* context,
     bool isParamTypeCast = src.kind() == QualifiedType::PARAM && isDstType;
 
     if (isParamTypeCast) {
+        auto srcEnumType = src.type()->toEnumType();
+        auto dstEnumType = dst.type()->toEnumType();
+        if (srcEnumType && srcEnumType->isAbstract()) {
+          auto toName = tagToString(dst.type()->tag());
+          auto fromName = tagToString(src.type()->tag());
+          context->error(astForErr,
+                         "can't cast from an abstract enum ('%s') to %s",
+                         fromName,
+                         toName);
+          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                      ErroneousType::get(context));
+          return true;
+        } else if (dstEnumType && dstEnumType->isAbstract()) {
+          auto toName = tagToString(dst.type()->tag());
+          auto fromName = tagToString(src.type()->tag());
+          context->error(astForErr,
+                         "can't cast from %s to an abstract enum type ('%s')",
+                         fromName,
+                         toName);
+          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                      ErroneousType::get(context));
+          return true;
+        } else if (srcEnumType && dst.type()->toNothingType()) {
+          auto fromName = tagToString(src.type()->tag());
+          context->error(astForErr, "illegal cast from %s to nothing", fromName);
+          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                      ErroneousType::get(context));
+          return true;
+        }
+
         exprTypeOut = Param::fold(context, uast::PrimitiveTag::PRIM_CAST,
                                   src, dst);
         return true;
@@ -2894,8 +2924,9 @@ static bool resolveFnCallSpecial(Context* context,
       return true;
     } else if (!isDstType) {
       // trying to cast to something that's not a type
-      auto typeName = tagToString(dst.type()->tag());
-      context->error(astForErr, "bad cast to %s", typeName);
+      auto toName = tagToString(dst.type()->tag());
+      auto fromName = tagToString(src.type()->tag());
+      context->error(astForErr, "illegal cast from %s to %s", fromName, toName);
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
       return true;

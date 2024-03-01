@@ -18,12 +18,13 @@
  */
 
 #include "test-resolution.h"
+#include "chpl/resolution/resolution-queries.h"
 
 
 static void testHelper(Context* context, std::string program, const Type* expectedType,
                        const Param* expectedParam) {
 
-  QualifiedType qt = getTypeForFirstStmt(context, program);
+  QualifiedType qt = resolveQualifiedTypeOfX(context, program);
 
   assert(qt.hasTypePtr());
   assert(qt.hasParamPtr());
@@ -350,6 +351,67 @@ static void test35() {
 //   testHelper(&ctx, program, ComplexType::get(&ctx, 0), ComplexParam::get(&ctx, Param::ComplexDouble(1.1, 2.2)));
 // }
 
+// TODO: enum to int cast
+// static void test37() {
+//   printf("test37\n");
+//   Context ctx;
+//   std::string program = "enum E { A=0, B, C } param x = E.A : int; ";
+//   testHelper(&ctx, program, IntType::get(&ctx, 0), IntParam::get(&ctx, 0));
+// }
+
+// TODO: int to enum cast
+// static void test38() {
+//   printf("test38\n");
+//   Context ctx;
+//   std::string program = "enum E { A=0, B, C } param x = 0 : E; ";
+//   testHelper(&ctx, program, EnumType::get(&ctx, 0), EnumParam::get(&ctx, 0));
+// }
+
+
+// enum to nothing cast (error)
+static void test39() {
+  printf("test39\n");
+  Context ctx;
+  ErrorGuard guard(&ctx);
+  std::string program = "enum E { A=0, B, C } param x = E.A : nothing; ";
+  auto m = parseModule(&ctx, std::move(program));
+  resolveModule(&ctx, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "illegal cast from EnumType to nothing");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+// abstract enum to int cast (error)
+static void test40() {
+  printf("test40\n");
+  Context ctx;
+  ErrorGuard guard(&ctx);
+  std::string program = "enum E { A, B, C } param x = E.A : int; ";
+  auto m = parseModule(&ctx, std::move(program));
+  resolveModule(&ctx, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "can't cast from an abstract enum ('EnumType') to IntType");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+// int to abstract enum cast (error)
+static void test41() {
+  printf("test41\n");
+  Context ctx;
+  ErrorGuard guard(&ctx);
+  std::string program = "enum E { A, B, C } param x = 0 : E; ";
+  auto m = parseModule(&ctx, std::move(program));
+  resolveModule(&ctx, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "can't cast from IntType to an abstract enum type ('EnumType')");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
 
 int main() {
   test1();
@@ -388,6 +450,11 @@ int main() {
   test34();
   test35();
   // test36();
+  // test37();
+  // test38();
+  test39();
+  test40();
+  test41();
 
   return 0;
 }
