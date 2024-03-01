@@ -3402,6 +3402,11 @@ void Resolver::exit(const Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+  } else {
+    // We're skipping the call, but explicitly store the 'unknown type'
+    // in the map.
+    ResolvedExpression& r = byPostorder.byAst(call);
+    r.setType(QualifiedType());
   }
 
   inLeafCall = nullptr;
