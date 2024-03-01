@@ -1,1 +1,1 @@
-miniBUDE/chapel-multi-gpu/Bude.chpl
+miniBUDE/src/chapel/Bude.chpl

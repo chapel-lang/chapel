@@ -7,8 +7,11 @@ if [ -z "$CHPL_TEST_PERF" ]; then
 fi
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-MINIBUDE_URL=${MINIBUDE_URL:-git@github.com:xianghao-wang/miniBUDE.git}
-MINIBUDE_BRANCH=${MINIBUDE_BRANCH:-benchmark}
+
+# We're currently using Josh's fork, at some point this may get integrated into
+# the main minbude repos here: git@github.com:xianghao-wang/miniBUDE.git
+MINIBUDE_URL=${MINIBUDE_URL:-git@github.com:milthorpe/miniBUDE.git}
+MINIBUDE_BRANCH=${MINIBUDE_BRANCH:-v2}
 
 # Clone miniBUDE, skipif clone failed, add extra output to fail nightly job
 rm -rf miniBUDE

@@ -1,33 +1,32 @@
-diff --git a/chapel-multi-gpu/Bude.chpl b/chapel-multi-gpu/Bude.chpl
-index 2be17ba..2998fd5 100644
---- a/chapel-multi-gpu/Bude.chpl
-+++ b/chapel-multi-gpu/Bude.chpl
-@@ -5,14 +5,19 @@ module Bude {
-   use CTypes;
+diff --git a/src/chapel/Bude.chpl b/src/chapel/Bude.chpl
+index f8c2dff..8ff58e6 100644
+--- a/src/chapel/Bude.chpl
++++ b/src/chapel/Bude.chpl
+@@ -7,6 +7,7 @@ module Bude {
    use ArgumentParser;
    use Path;
+   use ChplConfig;
 +  use Math;
  
-   // Program context parameters
-   param DEFAULT_ITERS = 8;
+   config param VERSION_STRING = "2.0";
+   config param MINIBUDE_COMPILE_COMMANDS = "";
+@@ -17,7 +18,10 @@ module Bude {
    param DEFAULT_NPOSES = 65536;
-   param DEFAULT_WGSIZE = 64;
--  param DEFAULT_NGPU = 2;
-+  // in the base implementation this is 2, but it is not used at all and that
-+  // value causes issues if you only have 1 GPU. Engin
-+  param DEFAULT_NGPU = 1;
+   param DEFAULT_WGSIZE = 1;
    param REF_NPOSES = 65536;
--  param DATA_DIR = "../data/bm1";
+-  param DATA_DIR = "../../data/bm1";
++  // PATCH:
 +  // in the base implementation, the following is not a `config`. I am changing
-+  // that to `config` to be able to use it in our nightly config. Engin
++  // that to `config` to be able to use it in our nightly config.
 +  config param DATA_DIR = "../data/bm1";
    param FILE_LIGAND = "/ligand.in";
    param FILE_PROTEIN = "/protein.in";
    param FILE_FORCEFIELD = "/forcefield.in";
-@@ -30,6 +35,12 @@ module Bude {
-   // Configurations
-   config param NUM_TD_PER_THREAD: int = 4; // Work per core
+@@ -42,6 +46,13 @@ module Bude {
+   config param PPWI: int(32) = 4; // "poses per work item" = work per Chapel task
+   // TODO allow multiple choices for PPWI
  
++  // PATCH:
 +  // set this to true for nightly correctness testing in Chapel's testing suite
 +  config const correctness = false;
 +  // in nightly correctness testing, we want deterministic output. So, we just
@@ -37,36 +36,29 @@ index 2be17ba..2998fd5 100644
    record atom {
      var x, y, z: real(32);
      var aType: int(32);
-@@ -129,13 +140,13 @@ module Bude {
-       // Load data
-       var length: int;
-       var aFile: file;
--      var reader: fileReader();
-+      var reader: fileReader(locking=false, ?);
-       
-       // Read ligand
+@@ -162,7 +173,7 @@ module Bude {
        aFile = openFile(this.deckDir + FILE_LIGAND, length);
        this.natlig = length / c_sizeof(atom): int;
        this.ligandDomain = {0..<this.natlig};
--      reader = aFile.reader(kind=iokind.native, region=0..);
+-      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
 +      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
        reader.read(this.ligand);
        reader.close(); aFile.close();
  
-@@ -143,7 +154,7 @@ module Bude {
+@@ -170,7 +181,7 @@ module Bude {
        aFile = openFile(this.deckDir + FILE_PROTEIN, length);
        this.natpro = length / c_sizeof(atom): int;
        this.proteinDomain = {0..<this.natpro};
--      reader = aFile.reader(kind=iokind.native, region=0..);
+-      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
 +      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
        reader.read(this.protein);
        reader.close(); aFile.close();
  
-@@ -151,14 +162,14 @@ module Bude {
+@@ -178,14 +189,14 @@ module Bude {
        aFile = openFile(this.deckDir + FILE_FORCEFIELD, length);
        this.ntypes = length / c_sizeof(ffParams): int;
        this.forcefieldDomain = {0..<this.ntypes};
--      reader = aFile.reader(kind=iokind.native, region=0..);
+-      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
 +      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
        reader.read(this.forcefield);
        reader.close(); aFile.close();
@@ -74,12 +66,12 @@ index 2be17ba..2998fd5 100644
        // Read poses
        this.posesDomain = {0..<6, 0..<this.nposes};
        aFile = openFile(this.deckDir + FILE_POSES, length);
--      reader = aFile.reader(kind=iokind.native, region=0.., locking=false);
+-      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
 +      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
-       var available = length / (6 * c_sizeof(real(32)): int);
+       var available = (length / (6 * c_sizeof(real(32)): int));
        var current = 0;
        while (current < this.nposes) {
-@@ -206,7 +217,7 @@ module Bude {
+@@ -282,7 +293,7 @@ module Bude {
        writeln("Only validating the first ", REF_NPOSES, " poses");
        n_ref_poses = REF_NPOSES;
      }
@@ -88,49 +80,32 @@ index 2be17ba..2998fd5 100644
      for i in 0..<n_ref_poses {
        try! reader.read(e);
        if (abs(e) < 1.0 && abs(energies(i)) < 1.0) {
-@@ -217,12 +228,18 @@ module Bude {
+@@ -293,7 +304,16 @@ module Bude {
          maxdiff = diff;
        }
      }
 -    writef("\nLargest difference was %{.###}%%.\n\n", 100 * maxdiff);
 +
++    // PATCH:
++    //writef("\nLargest difference was %{.###}%%.\n\n", 100 * maxdiff);
 +    if correctness && (100*maxdiff < threshold) {
 +      writef("\nLargest difference was less than %{.###}%%.\n\n", threshold);
 +    }
 +    else {
 +      writef("\nLargest difference was %{.###}%%.\n\n", 100 * maxdiff);
 +    }
-   }
++
+   } // main
  
-   proc compute(results: [] real(32)) {
-     var times: [0..<context.ngpu] real;
--    coforall (gpu, gpuID) in zip(here.gpus, here.gpus.domain) do on gpu {
-+    coforall (gpu, gpuID) in zip(here.gpus, here.gpus.domain) with (ref times) do on gpu {
-       const iterations = context.iterations: int(32);
-       const nposes = (context.nposes / context.ngpu) : int(32);
-       const natlig = context.natlig: int(32);
-@@ -232,7 +249,7 @@ module Bude {
-       const protein = context.protein;
-       const ligand = context.ligand;
-       const forcefield = context.forcefield;
--      const poses: [{0..<6, 0..<nposes}] real(32) = context.poses[{0..<6, gpuID*nposes..<(gpuID+1)*nposes}];
-+      const poses: [{0:int(32)..<6:int(32), 0..<nposes}] real(32) = context.poses[{0..<6, gpuID*nposes..<(gpuID+1)*nposes}];
-       var buffer: [0..<nposes] real(32);
- 
-       times[gpuID] = timestampMS();
-@@ -384,7 +401,7 @@ module Bude {
+   proc compute(ref results: [] real(32)) {
+@@ -338,7 +358,9 @@ module Bude {
        times[gpuID] = timestampMS() - times[gpuID];
      }
  
 -    printTimings(max reduce times);
++    // PATCH:
++    //printTimings(max reduce times);
 +    if !correctness then printTimings(max reduce times);
-   } // main
- 
-   proc openFile(fileName: string, ref length: int): file {
-@@ -420,4 +437,4 @@ module Bude {
-     writef("- Interactions/s: %7.3dr billion\n", (interactions_per_sec / 1e9));
-     writef("- GFLOP/s:        %7.3dr\n", gflops);
    }
--}
-\ No newline at end of file
-+}
+ 
+   proc cpukernel(ref context: params, ref results: [] real(32)) {
