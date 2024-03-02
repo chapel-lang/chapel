@@ -92,7 +92,8 @@ void denormalize(void) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       // remove unused epilogue labels
       removeUnnecessaryGotos(fn, true);
-      if (fn->hasFlag(FLAG_FN_RETARG)) undoReturnByRef(fn);
+      if (!fReturnByRef && fn->hasFlag(FLAG_FN_RETARG))
+        undoReturnByRef(fn);
 
       bool isFirstRound = true;
       do {
@@ -862,8 +863,10 @@ static bool okSymbol(Symbol* sym) {
 static bool okToCollapse(SymExpr* dest, SymExpr* source) {
   Symbol *destSym = dest->symbol(), *sourceSym = source->symbol();
   return
-    destSym->type == sourceSym->type                     &&
-    ! sourceSym->hasEitherFlag(FLAG_CONFIG, FLAG_EXPORT) &&
+    destSym->type == sourceSym->type        &&
+    ! sourceSym->hasFlag(FLAG_CONFIG)       &&
+    ! sourceSym->hasFlag(FLAG_EXPORT)       &&
+    ! sourceSym->hasFlag(FLAG_EXTERN)       &&
     okSymbol(destSym) && okSymbol(sourceSym);
 }
 
@@ -907,10 +910,11 @@ static CallExpr* singleMoveTo(CallExpr* move2, SymExpr* sourceSE) {
 }
 
 static void collapseTrivialMoves() {
-// Empirically, running collapseTrivialMoves() the second time
-// would not result in any additional removals.
-// This work could be done on a per-function basis using collectCallExprs().
-// Simply traversing 'gCallExprs' avoids the overhead of collectCallExprs().
+  // Empirically, running collapseTrivialMoves() the second time
+  // would not result in any additional removals. So, do it just once.
+  //
+  // This work could be done on a per-function basis using collectCallExprs().
+  // Simply traversing 'gCallExprs' avoids the overhead of collectCallExprs().
   for_alive_in_Vec(CallExpr, move2, gCallExprs) {
    if (move2->isPrimitive(PRIM_MOVE))
     if (SymExpr* dest = toSymExpr(move2->get(1)))

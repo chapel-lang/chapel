@@ -229,6 +229,7 @@ _chpl ()
 --no-io-deserialize-readThis \
 --no-io-gen-serialization \
 --no-io-serialize-writeThis \
+--no-iterator-contexts \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
@@ -278,6 +279,7 @@ _chpl ()
 --no-report-auto-local-access \
 --no-report-blocking \
 --no-resolve-concrete-fns \
+--no-return-by-ref \
 --no-scalar-replacement \
 --no-specialize \
 --no-split-initialization \
@@ -363,6 +365,7 @@ _chpl ()
 --report-scalar-replace \
 --report-vectorized-loops \
 --resolve-concrete-fns \
+--return-by-ref \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
