@@ -18,6 +18,7 @@
 comp_unit_test(testArrays)
 comp_unit_test(testCallInitDeinit)
 comp_unit_test(testCanPass)
+comp_unit_test(testCast)
 comp_unit_test(testCatch)
 comp_unit_test(testClasses)
 comp_unit_test(testClassPrimitives)

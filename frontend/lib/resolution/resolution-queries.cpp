@@ -2868,9 +2868,70 @@ static bool resolveFnCallSpecial(Context* context,
                                  const AstNode* astForErr,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
-  // TODO: cast
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
+
+  // explicit param casts are resolved here
+  if (ci.isOpCall() && ci.name() == USTR(":")) {
+    auto src = ci.actual(0).type();
+    auto dst = ci.actual(1).type();
+
+    bool isDstType = dst.kind() == QualifiedType::TYPE;
+    bool isParamTypeCast = src.kind() == QualifiedType::PARAM && isDstType;
+
+    if (isParamTypeCast) {
+        auto srcEnumType = src.type()->toEnumType();
+        auto dstEnumType = dst.type()->toEnumType();
+        if (srcEnumType && srcEnumType->isAbstract()) {
+          auto toName = tagToString(dst.type()->tag());
+          auto fromName = tagToString(src.type()->tag());
+          context->error(astForErr,
+                         "can't cast from an abstract enum ('%s') to %s",
+                         fromName,
+                         toName);
+          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                      ErroneousType::get(context));
+          return true;
+        } else if (dstEnumType && dstEnumType->isAbstract()) {
+          auto toName = tagToString(dst.type()->tag());
+          auto fromName = tagToString(src.type()->tag());
+          context->error(astForErr,
+                         "can't cast from %s to an abstract enum type ('%s')",
+                         fromName,
+                         toName);
+          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                      ErroneousType::get(context));
+          return true;
+        } else if (srcEnumType && dst.type()->toNothingType()) {
+          auto fromName = tagToString(src.type()->tag());
+          context->error(astForErr, "illegal cast from %s to nothing", fromName);
+          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                      ErroneousType::get(context));
+          return true;
+        }
+
+        exprTypeOut = Param::fold(context, uast::PrimitiveTag::PRIM_CAST,
+                                  src, dst);
+        return true;
+    } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
+      // handle casting a type name to a string
+      std::ostringstream oss;
+      src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      auto ustr = UniqueString::get(context, oss.str());
+      exprTypeOut = QualifiedType(QualifiedType::PARAM,
+                                  RecordType::getStringType(context),
+                                  StringParam::get(context, ustr));
+      return true;
+    } else if (!isDstType) {
+      // trying to cast to something that's not a type
+      auto toName = tagToString(dst.type()->tag());
+      auto fromName = tagToString(src.type()->tag());
+      context->error(astForErr, "illegal cast from %s to %s", fromName, toName);
+      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                  ErroneousType::get(context));
+      return true;
+    }
+  }
 
   if ((ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
       ci.numActuals() == 2) {
@@ -2897,21 +2958,6 @@ static bool resolveFnCallSpecial(Context* context,
       exprTypeOut = qt.param()->fold(context,
                                      chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
                                      qt, QualifiedType());
-      return true;
-    }
-  }
-
-  if (ci.isOpCall() && ci.name() == USTR(":")) {
-    auto src = ci.actual(0).type();
-    auto dst = ci.actual(1).type();
-
-    if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
-      std::ostringstream oss;
-      src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-      auto ustr = UniqueString::get(context, oss.str());
-      exprTypeOut = QualifiedType(QualifiedType::PARAM,
-                                  RecordType::getStringType(context),
-                                  StringParam::get(context, ustr));
       return true;
     }
   }
