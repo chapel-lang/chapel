@@ -69,7 +69,7 @@ record cluster {
     returns:   random point within range
 ***/
 proc random_ranged(ref rand : randomStream(?), rng : range) : rng.idxType {
-  const elt = rng.size * rand.getNext();      /* scale random to range */
+  const elt = rng.size * rand.next();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
      value.  That way we wouldn't have to worry about the type. */

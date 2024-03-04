@@ -98,7 +98,7 @@ proc main() {
   var data : [1..nelt] real;            /* array to sort */
   var passed = true;                    /* verification flag */
 
-  for i in 1..nelt do data(i) = rand.getNext();
+  for i in 1..nelt do data(i) = rand.next();
 
   quicksort(data);
 

@@ -541,7 +541,7 @@ inline proc quadrant(corner1 : corner, corner2 : corner) : int {
     returns:   random point within range
 ***/
 proc random_ranged(ref rand : randomStream(?), rng : range) : rng.idxType {
-  const elt = rng.size * rand.getNext();      /* scale random to range */
+  const elt = rng.size * rand.next();      /* scale random to range */
 
   /* It would be nice to have a method on ranges that returns the i'th
      value.  That way we wouldn't have to worry about the type. */
@@ -556,7 +556,7 @@ proc random_ranged(ref rand : randomStream(?), rng : range) : rng.idxType {
 ***/
 proc random_bound(ref rand : randomStream(?), rmin : int, rmax : int) : int {
   const len = (rmax - rmin + 1) : real;
-  const elt = len * rand.getNext();             /* scale random to range */
+  const elt = len * rand.next();             /* scale random to range */
   const res = rmin + nearbyint(elt-0.5) : int;  /* random number */
   return res;
 }

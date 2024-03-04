@@ -73,17 +73,15 @@ record cluster : serializable {
   }
 }
 
-/*
-  NOTE: I don't know how to handle iostyle(precision=17, realfmt=1) using a
-  (de)serializer.
-*/
-
 proc main() {
   var kout : [1..10] cluster;           /* original data we write to disk */
   var kin : [1..10] cluster;            /* read-back from file */
-  var style =                           /* general write/read setup */
-    if (binout) then new iostyle(binary=1)
-    else new iostyle(precision=17, realfmt=1);
+  var s = new binarySerializer(); /* general write setup */
+          /* TODO: I don't know how to handle iostyle(precision=17, realfmt=1)
+          with a serializer */
+  var d = new binaryDeserializer(); /* general read setup */
+          /* TODO: I don't know how to handle iostyle(precision=17, realfmt=1)
+          with a deserializer */
   /* This causes a mismatch on read-back - reals are written with 6 digits,
      not enough. */
 
@@ -100,14 +98,14 @@ proc main() {
   /* No error checking - see main version for full usage.  We first open
      the file, then a write/read channel to it, then close in the opposite
      order. */
-  var fout = open("tst.out", ioMode.cw, style=style);
-  var chout = fout.writer();
+  var fout = open("tst.out", ioMode.cw);
+  var chout = fout.writer(serializer = s);
   chout.write(kout);
   chout.close();
   fout.close();
 
-  var fin = open("tst.out", ioMode.r, style=style);
-  var chin = fin.reader();
+  var fin = open("tst.out", ioMode.r);
+  var chin = fin.reader(deserializer = d);
   chin.read(kin);
   chin.close();
   fin.close();
