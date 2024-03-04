@@ -1754,11 +1754,11 @@ ApplicabilityResult instantiateSignature(Context* context,
 
   const TypedFnSignature* parentFnTyped = nullptr;
   if (sig->parentFn()) {
-    CHPL_UNIMPL("generic child functions not yet supported");
-    return ApplicabilityResult::failure(sig->id(), FAIL_CANDIDATE_OTHER);
-    // TODO: how to compute parentFn for the instantiation?
-    // Does the parent function need to be instantiated in some case?
-    // Set parentFnTyped somehow.
+    if (nullptr != computeOuterVariables(context, sig->id())) {
+      CHPL_UNIMPL("generic child functions that refer to outer variables "
+                  "are not yet supported");
+      return ApplicabilityResult::failure(sig->id(), FAIL_CANDIDATE_OTHER);
+    }
   }
 
   auto faMap = FormalActualMap(sig, call);
@@ -2379,12 +2379,17 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
 const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope) {
+  // If there were outer variables, then do not bother trying to resolve.
+  if (computeOuterVariables(context, sig->id())) return nullptr;
   return helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ false);
 }
 
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (id.isEmpty())
     return nullptr;
+
+  // If there were outer variables, then do not bother trying to resolve.
+  if (computeOuterVariables(context, id)) return nullptr;
 
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
@@ -2403,20 +2408,31 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   return ret;
 }
 
-static const owned<ResolvedFunction>&
-scopeResolveFunctionQuery(Context* context, ID id) {
-  QUERY_BEGIN(scopeResolveFunctionQuery, context, id);
+// This should be set when performing 'scopeResolveFunction', below.
+static const owned<OuterVariables>&
+computeOuterVariablesQuery(Context* context, ID id) {
+  QUERY_BEGIN(computeOuterVariablesQuery, context, id);
+  owned<OuterVariables> ret;
+  CHPL_ASSERT(false && "Should not be called directly!");
+  return QUERY_END(ret);
+}
 
+static owned<ResolvedFunction>
+scopeResolveFunctionQueryBody(Context* context, ID id, bool computeOuterVars) {
   const AstNode* ast = parsing::idToAst(context, id);
   const Function* fn = ast->toFunction();
 
   ResolutionResultByPostorderID resolutionById;
   const TypedFnSignature* sig = nullptr;
   owned<ResolvedFunction> result;
+  owned<OuterVariables> outerVars = computeOuterVars
+      ? toOwned(new OuterVariables(context, id))
+      : nullptr;
 
   if (fn) {
     auto visitor =
-      Resolver::createForScopeResolvingFunction(context, fn, resolutionById);
+      Resolver::createForScopeResolvingFunction(context, fn, resolutionById,
+                                                std::move(outerVars));
 
     // visit the children of fn to scope resolve
     // (visiting the children because visiting a function will not
@@ -2435,14 +2451,55 @@ scopeResolveFunctionQuery(Context* context, ID id) {
     checkForParenlessMethodFieldRedefinition(context, fn, visitor);
 
     sig = visitor.typedSignature;
+
+    if (!visitor.outerVars->isEmpty()) {
+      std::swap(outerVars, visitor.outerVars);
+    }
   }
+
+  QUERY_STORE_RESULT(computeOuterVariablesQuery,
+                     context,
+                     std::move(outerVars),
+                     id);
 
   result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                                         std::move(resolutionById),
                                         PoiInfo(),
                                         QualifiedType()));
+  return result;
+}
 
-  return QUERY_END(result);
+static const owned<ResolvedFunction>&
+scopeResolveFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveFunctionQuery, context, id);
+  const bool computeOuterVars = true;
+  owned<ResolvedFunction> ret;
+  ret = scopeResolveFunctionQueryBody(context, id, computeOuterVars);
+  return QUERY_END(ret);
+}
+
+const OuterVariables* computeOuterVariables(Context* context, ID id) {
+
+  // For now, preemptively return 'nullptr' if 'id' is not a function.
+  if (!parsing::idIsNestedFunction(context, id)) return nullptr;
+
+  if (!context->hasCurrentResultForQuery(computeOuterVariablesQuery, { id })) {
+    if (!context->isQueryRunning(scopeResolveFunctionQuery, { id })) {
+
+      // The 'computeOuterVariablesQuery' is set as a side effect of
+      // performing scope resolution, since both require a traversal.
+      std::ignore = scopeResolveFunction(context, id);
+
+    // Just return 'nullptr', we have no results to use, yet. The caller
+    // can only be the Resolver set up for scope-resolve if this branch
+    // is happening.
+    } else {
+      return nullptr;
+    }
+  }
+
+  // We should have a result at this point.
+  return computeOuterVariablesQuery(context, id).get();
 }
 
 const ResolvedFunction* scopeResolveFunction(Context* context,

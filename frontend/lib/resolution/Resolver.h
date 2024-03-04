@@ -63,6 +63,7 @@ struct Resolver {
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
+  owned<OuterVariables> outerVars;
 
   // results of the resolution process
 
@@ -91,7 +92,8 @@ struct Resolver {
            const PoiScope* poiScope)
     : context(context), symbol(symbol),
       poiScope(poiScope),
-      byPostorder(byPostorder), poiInfo(makePoiInfo(poiScope)) {
+      byPostorder(byPostorder),
+      poiInfo(makePoiInfo(poiScope)) {
 
     tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
@@ -143,7 +145,8 @@ struct Resolver {
   // set up Resolver to scope resolve a Function
   static Resolver
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
-                                  ResolutionResultByPostorderID& byPostorder);
+                                  ResolutionResultByPostorderID& byPostorder,
+                                  owned <OuterVariables> outerVars);
 
   static Resolver createForScopeResolvingField(Context* context,
                                          const uast::AggregateDecl* ad,

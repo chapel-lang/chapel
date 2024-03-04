@@ -40,6 +40,33 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+void OuterVariables::add(Context* context, ID mention, ID var) {
+  ID mentionParent = mention.parentSymbolId(context);
+  ID symbolParent = symbol_.parentSymbolId(context);
+  ID varParent = var.parentSymbolId(context);
+  const bool isReachingUse = symbolParent != varParent;
+  const bool isChildUse = mentionParent != symbol_;
+
+  CHPL_ASSERT(varParent != symbol_);
+  if (!isReachingUse) {
+    CHPL_ASSERT(mention && symbol_.contains(mention));
+  }
+
+  auto it = variableToMentionIdx_.find(var);
+  auto& p = variableToMentionIdx_[var];
+  if (it == variableToMentionIdx_.end()) {
+    p.first = variables_.size();
+    variables_.push_back(var);
+    if (isReachingUse) numReachingVariables_++;
+  }
+
+  // Don't bother storing the mention for a child use.
+  if (!isChildUse) {
+    p.second.push_back(mentions_.size());
+    mentions_.push_back(mention);
+  }
+}
+
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
