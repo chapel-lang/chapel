@@ -16,6 +16,6 @@
 .pre{ color: #000}
 
 /* Override the default padding added by the RTD theme so that procs render nicely */
-em.property {
+.sig.sig-object.chpl em.property:not(:first-child) {
   padding-right: 0px !important;
 }
