@@ -44,10 +44,12 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   void* temp = NULL; \
   size_t temp_bytes = 0; \
   ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, \
-                                            (data_type*)result, n));\
+                                            (data_type*)result, n, \
+                                            (hipStream_t)stream));\
   ROCM_CALL(hipMalloc(((hipDeviceptr_t*)&temp), temp_bytes)); \
   ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, \
-                                            (data_type*)result, n));\
+                                            (data_type*)result, n, \
+                                            (hipStream_t)stream));\
   ROCM_CALL(hipMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (hipStream_t)stream)); \
   ROCM_CALL(hipFree(result)); \
