@@ -1,0 +1,5 @@
+perfkeys: Chapel Calculated:, Chapel Lookup:, C Calculated:, C Lookup:, Chapel Calculated:, Chapel Lookup:, Chapel Calculated:, Chapel Lookup:, Chapel Calculated:, Chapel Lookup:
+files: chplSin.dat, chplSin.dat, chplSinReplicated.dat, chplSinReplicated.dat, chplSinReplicated.dat, chplSinReplicated.dat, chplSinReplicatedReplicand.dat, chplSinReplicatedReplicand.dat, chplSinBlock.dat, chplSinBlock.dat
+graphkeys: No Comm Calculated, No Comm Lookup, C Calculated, C Lookup, Replicated Calculated, Replicated Lookup, Replicand Calculated, Replicand Lookup, Block Calculated, Block Lookup
+ylabel: Time (seconds)
+graphtitle: Sin LUT multilocale overall
