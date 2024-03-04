@@ -120,7 +120,7 @@ struct LoopAttributeInfo {
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
-  // The @blockSize attribute, if one is provided by the user.
+  // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
 
   void insertGpuEligibilityAssertion(BlockStmt* body);
@@ -411,7 +411,7 @@ struct Converter {
       toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
     }
     toReturn.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
-    toReturn.blockSizeAttr = attrs->getAttributeNamed(USTR("blockSize"));
+    toReturn.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
 
     return toReturn;
   }
@@ -4083,7 +4083,9 @@ void LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
 void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
   if (blockSizeAttr) {
     if (blockSizeAttr->numActuals() != 1) {
-      USR_FATAL(blockSizeAttr->id(), "'@blockSize' attribute must have exactly one argument: the block size");
+      USR_FATAL(blockSizeAttr->id(),
+                "'@gpu.blockSize' attribute must have exactly one argument: "
+                "the block size");
     }
 
     Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));

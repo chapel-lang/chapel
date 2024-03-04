@@ -19,7 +19,7 @@ proc fooFn(blockSize: int(32)) {
 proc fooAttr(blockSize: int(32)) {
   var A: [1..10] int;
   @assertOnGpu
-  @blockSize(blockSize)
+  @gpu.blockSize(blockSize)
   foreach a in A {
     a = 1;
   }
