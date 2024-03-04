@@ -1339,7 +1339,6 @@ static ArgumentDescription arg_desc[] = {
  {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue},
  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and exit", "F", &fPrintChplHome, NULL,NULL},
- {"print-bootstrap-commands", ' ', NULL, "Print the installation prefix, if any, and exit", "F", &fPrintBootstrapCommands, NULL,NULL},
  {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL},
 
  // NOTE: Developer flags should not have 1-character equivalents
@@ -1369,6 +1368,7 @@ static ArgumentDescription arg_desc[] = {
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"debug-short-loc", ' ', NULL, "Display long [short] location in certain debug outputs", "N", &debugShortLoc, "CHPL_DEBUG_SHORT_LOC", NULL},
+ {"print-bootstrap-commands", ' ', NULL, "Print a Bash bootstrap script to be executed by scripts to determine necessary environment variables.", "F", &fPrintBootstrapCommands, NULL,NULL},
  {"print-emitted-code-size", ' ', NULL, "Print emitted code size", "F", &fPrintEmittedCodeSize, NULL, NULL},
  {"print-module-resolution", ' ', NULL, "Print name of module being resolved", "F", &fPrintModuleResolution, "CHPL_PRINT_MODULE_RESOLUTION", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
