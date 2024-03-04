@@ -635,7 +635,7 @@ module AutoMath {
     return __primitive("sqrt", x);
   }
 
-  /* Returns the square root of the argument `z`. */
+  /* Returns the square root of the argument `x`. */
   inline proc sqrt(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -643,12 +643,12 @@ module AutoMath {
     return csqrtf(x);
   }
 
-  /* Returns the square root of the argument `z`. */
-  proc sqrt(param x: complex(64)) param :complex(64) {
+  /* Returns the square root of the argument `x`. */
+  proc sqrt(param x: complex(64)) param : complex(64) {
     return __primitive("sqrt", x);
   }
 
-  /* Returns the square root of the argument `z`. */
+  /* Returns the square root of the argument `x`. */
   inline proc sqrt(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -656,8 +656,8 @@ module AutoMath {
     return csqrt(x);
   }
 
-  /* Returns the square root of the argument `z`. */
-  proc sqrt(param x: complex(128)) param :complex(128) {
+  /* Returns the square root of the argument `x`. */
+  proc sqrt(param x: complex(128)) param : complex(128) {
     return __primitive("sqrt", x);
   }
 
