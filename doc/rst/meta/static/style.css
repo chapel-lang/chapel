@@ -15,3 +15,7 @@
 /* Inlined code is black (instead of default red) */
 .pre{ color: #000}
 
+/* Override the default padding added by the RTD theme so that procs render nicely */
+em.property {
+  padding-right: 0px !important;
+}
