@@ -229,16 +229,16 @@ class GeneralError : public BasicError {
   class Error##NAME__ : public ErrorBase {\
    private:\
     using ErrorInfo = std::tuple<EINFO__>;\
-    ErrorInfo info;\
+    ErrorInfo info_;\
 \
     Error##NAME__(const Error##NAME__& other) = default;\
     Error##NAME__(ErrorInfo info) :\
-      ErrorBase(KIND__, NAME__), info(std::move(info)) {}\
+      ErrorBase(KIND__, NAME__), info_(std::move(info)) {}\
 \
    protected:\
     bool contentsMatchInner(const ErrorBase* other) const override {\
       auto otherCast = static_cast<const Error##NAME__*>(other);\
-      return info == otherCast->info;\
+      return info_ == otherCast->info_;\
     }\
    public:\
     ~Error##NAME__() = default;\
@@ -247,11 +247,13 @@ class GeneralError : public BasicError {
     void write(ErrorWriterBase& writer) const override;\
     void mark(Context* context) const override {\
       ::chpl::mark<ErrorInfo> marker;\
-      marker(context, info);\
+      marker(context, info_);\
     }\
     owned<ErrorBase> clone() const override {\
       return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
+\
+    ErrorInfo info() const { return info_; }\
   };
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS

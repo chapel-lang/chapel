@@ -1,2 +1,1 @@
 externProcInClassShouldBeError.chpl:114: error: cannot declare class types as export or extern
-externProcInClassShouldBeError.chpl:11: warning: an implicit module named 'externProcInClassShouldBeError' is being introduced to contain file-scope code

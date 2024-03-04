@@ -29,5 +29,3 @@ warning: 'M.a' at deprecated.chpl:52 is undocumented
 warning: 'M.E' at deprecated.chpl:53 is undocumented
 warning: 'M.A' at deprecated.chpl:53 is undocumented
 warning: 'chpl_bar' at deprecated.chpl:59 is undocumented
-================================================================================
-deprecated.chpl:2: warning: an implicit module named 'deprecated' is being introduced to contain file-scope code

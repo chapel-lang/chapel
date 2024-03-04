@@ -18,5 +18,3 @@ warning: 'M7' at nesting.chpl:42 is undocumented
 warning: 'M7.SubModule' at nesting.chpl:43 is undocumented
 warning: 'M9' at nesting.chpl:56 is undocumented
 warning: 'main' at nesting.chpl:63 is undocumented
-================================================================================
-nesting.chpl:63: warning: an implicit module named 'nesting' is being introduced to contain file-scope code
