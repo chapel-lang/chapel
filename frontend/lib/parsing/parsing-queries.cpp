@@ -147,7 +147,7 @@ const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
   UniqueString libPath;
-  if (context->pathHasLibrary(path, libPath)) {
+  if (context->pathIsInLibrary(path, libPath)) {
     auto lib = libraries::LibraryFile::load(context, libPath);
     return lib->loadSourceAst(context, path);
   } else {

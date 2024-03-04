@@ -136,13 +136,14 @@ static ConvertedSymbolsMap gConvertedSyms;
 
 struct Converter {
   struct ModStackEntry {
-    const uast::Module* mod;
+    const uast::Module* mod = nullptr;
     // If we detect a module use and the module is already converted, store it here.
     std::vector<ModuleSymbol*> usedModules;
     // If we detect a module use and the module is not converted, store the ID here.
     std::vector<ID> usedModuleIds;
-    ModStackEntry(const uast::Module* mod)
-      : mod(mod) {
+    bool isFromLibraryFile = false;
+    ModStackEntry(const uast::Module* mod, bool isFromLibraryFile)
+      : mod(mod), isFromLibraryFile(isFromLibraryFile) {
     }
   };
   struct SymStackEntry {
@@ -438,6 +439,11 @@ struct Converter {
   }
 
   void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
+    if (modStack.size() > 0 && modStack.back().isFromLibraryFile) {
+      // If we are converting a symbol in a module from a .dyno
+      // file, mark the symbol as precompiled.
+      sym->addFlag(FLAG_PRECOMPILED);
+    }
 
     const uast::AttributeGroup* attr;
     // use the query to get the AttributeGroup or you might miss the attributes
@@ -3422,7 +3428,9 @@ struct Converter {
 
     // Push the current module name before descending into children.
     // Add a ModStackEntry to the end of the modStack
-    this->modStack.emplace_back(node);
+    UniqueString unused;
+    bool isFromLibraryFile = context->moduleIsInLibrary(node->id(), unused);
+    this->modStack.push_back(ModStackEntry(node, isFromLibraryFile));
 
     // Also add to symStack
     pushToSymStack(node, resolved);
@@ -3779,6 +3787,37 @@ struct Converter {
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
+
+    if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
+      // is it a module-scope variable?
+      bool moduleScopeVar = false;
+      const uast::Module* mod = nullptr;
+      if (symStack.size() > 0 && modStack.size() > 0) {
+        const uast::AstNode* sym = symStack.back().ast;
+        mod = modStack.back().mod;
+        if (mod == sym) {
+          // it's not in a function/type/etc.
+          // is it within a block or within the module directly?
+          moduleScopeVar = true;
+          // TODO: make this a parsing query
+          for (auto ast = parsing::parentAst(context, node);
+               ast != nullptr && ast != mod;
+               ast = parsing::parentAst(context, ast)) {
+            if (ast->isTupleDecl() || ast->isMultiDecl()) {
+              // these are OK and still declare a top-level variable
+            } else {
+              moduleScopeVar = false;
+            }
+          }
+        }
+      }
+      // adjust the cname for module-scope variables
+      if (moduleScopeVar && mod) {
+        varSym->cname = astr(mod->id().symbolPath().c_str(),
+                             ".",
+                             varSym->name);
+      }
+    }
 
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
     attachSymbolStorage(node->kind(), varSym);

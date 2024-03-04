@@ -1,1 +1,1 @@
-error: --dyno-gen-std cannot be used with --dyno-gen-lib
+error: cannot have multiple --dyno-gen-lib / --dyno-gen-std flags

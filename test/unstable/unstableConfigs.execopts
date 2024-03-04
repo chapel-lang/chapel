@@ -2,4 +2,3 @@
 --myUnstableConfig=12 --myUserConfig=1 #unstableConfigs.good
 --printModuleInitOrder=false #unstableConfigs.initorder.good
 --dataParTasksPerLocale=2 --dataParIgnoreRunningTasks=false --dataParMinGranularity=10 #unstableConfigs.datapar.good
---debugGpu=true --gpuNoCpuModeWarning=true --enableGpuP2P=true #unstableConfigs.gpu.good

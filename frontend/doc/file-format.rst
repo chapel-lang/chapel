@@ -134,12 +134,8 @@ Each module section begins with a header that consists of:
  * 8 bytes of long strings table end offset
  * 8 bytes of location section start offset
  * 8 bytes of location section end offset
- * 8 bytes of types section start offset
- * 8 bytes of types section end offset
- * 8 bytes of functions section start offset
- * 8 bytes of functions section end offset
- * 8 bytes of dependencies section start offset
- * 8 bytes of dependencies section end offset
+ * 8 bytes of generated LLVM IR section start offset
+ * 8 bytes of generated LLVM IR section end offset
  * a string storing the module symbol ID
    (e.g. "TopLevelModule" or "MyModule.SubModule")
    (note that this string does not use the long strings table)

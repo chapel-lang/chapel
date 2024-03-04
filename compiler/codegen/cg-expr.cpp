@@ -287,7 +287,7 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
   const llvm::DataLayout& layout = info->module->getDataLayout();
-  llvm::LLVMContext &ctx = info->llvmContext;
+  llvm::LLVMContext &ctx = gContext->llvmContext();
   llvm::Value* val = NULL;
   llvm::AllocaInst* alloca = NULL;
 
@@ -472,7 +472,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
     if (isOpaquePointer(addrType)) {
 #if HAVE_LLVM_VER >= 140
-      locAddrType = llvm::PointerType::getUnqual(info->llvmContext);
+      locAddrType = llvm::PointerType::getUnqual(gContext->llvmContext());
 #endif
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
@@ -565,7 +565,7 @@ void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
     return;
 
   llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
-      llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+      llvm::Type::getInt64Ty(gContext->llvmContext()), sizeInBytes);
 
   info->irBuilder->CreateInvariantStart(addr, size);
 }
@@ -2681,7 +2681,7 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
     // See Swift irgen::emitForeignParameter
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
     unsigned int addrSpace = layout.getAllocaAddrSpace();
     const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
@@ -2842,7 +2842,7 @@ static GenRet codegenCallExprInner(GenRet function,
     // See Swift irgen::emitForeignParameter
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
 
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
@@ -3497,13 +3497,13 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     src = codegenValue(src);
     size = codegenValue(size);
 
-    llvm::Type *int8Ty = llvm::Type::getInt8Ty(info->llvmContext);
+    llvm::Type *int8Ty = llvm::Type::getInt8Ty(gContext->llvmContext());
     llvm::Type *types[3];
     unsigned addrSpaceDest = llvm::cast<llvm::PointerType>(dest.val->getType())->getAddressSpace();
     unsigned addrSpaceSrc = llvm::cast<llvm::PointerType>(src.val->getType())->getAddressSpace();
     types[0] = llvm::PointerType::get(int8Ty, addrSpaceDest);
     types[1] = llvm::PointerType::get(int8Ty, addrSpaceSrc);
-    types[2] = llvm::Type::getInt64Ty(info->llvmContext);
+    types[2] = llvm::Type::getInt64Ty(gContext->llvmContext());
     //types[3] = llvm::Type::getInt32Ty(info->llvmContext);
     //types[4] = llvm::Type::getInt1Ty(info->llvmContext);
 
@@ -4136,7 +4136,7 @@ static void codegenEmbedChapelAstMetadata(GenRet& gr, BaseAST* ast) {
   #ifdef HAVE_LLVM
   if (gGenInfo->cfile == nullptr && gr.val && fGenIDS) {
     if (auto insn = llvm::dyn_cast<llvm::Instruction>(gr.val)) {
-      llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+      llvm::LLVMContext& ctx = gContext->llvmContext();
       llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
       llvm::Constant* c = llvm::ConstantInt::get(int64Ty, ast->id);
       llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
@@ -5504,7 +5504,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
   int bytesToAlloc = toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
 
   // Create a type for the shared array.
-  llvm::Type* elementType = llvm::Type::getInt8Ty(info->llvmContext);
+  llvm::Type* elementType = llvm::Type::getInt8Ty(gContext->llvmContext());
   auto* arrayType = llvm::ArrayType::get(elementType, bytesToAlloc);
 
   // Allocate the shared array in GPU shared memory.
@@ -5514,7 +5514,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
       llvm::GlobalValue::NotThreadLocal, 3, false);
 
   // Get a void* pointer to the shared array.
-  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(info->llvmContext, 3);
+  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(gContext->llvmContext(), 3);
   llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
 
   ret.val = sharedArrayPtr;
@@ -6351,7 +6351,7 @@ DEFINE_PRIM(NO_ALIAS_SET) {
 
     Symbol* sym = toSymExpr(call->get(1))->symbol();
 
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
 
     if (info->noAliasDomain == NULL) {
       auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");

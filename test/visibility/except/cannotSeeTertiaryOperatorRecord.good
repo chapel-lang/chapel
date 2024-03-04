@@ -6,4 +6,4 @@ $CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 'x: c_pt
 cannotSeeTertiaryOperatorRecord.chpl:11: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(8), b: int(8))
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(16), b: int(16))
-note: and 98 other candidates, use --print-all-candidates to see them
+note: and 97 other candidates, use --print-all-candidates to see them

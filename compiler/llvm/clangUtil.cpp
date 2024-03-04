@@ -1365,7 +1365,7 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
-          info->llvmContext);
+          gContext->llvmContext());
 
         INT_ASSERT(Builder);
         INT_ASSERT(!info->module);
@@ -2045,7 +2045,8 @@ static void loadModuleFromBitcode() {
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
   auto bitcodeResult =
-      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext);
+      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(),
+                             gContext->llvmContext());
   INT_ASSERT(bitcodeResult &&
              "could not deserialize module from loaded bitcode");
   info->module = bitcodeResult.get().release();
@@ -2309,6 +2310,11 @@ void finishCodegenLLVM() {
 
   if(debug_info)debug_info->finalize();
 
+  // finish bringing in symbols from separately compiled .dyno files
+  if (fDynoLibGenOrUse && !fDynoGenLib) {
+    linkInDynoFiles();
+  }
+
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
@@ -2319,7 +2325,7 @@ void finishCodegenLLVM() {
     }
   }
 
-  // Run all LLVM optimizations.
+  // Run all LLVM optimizations and save to .bc files.
   llvmRunOptimizations();
 
 #ifdef HAVE_LLVM
@@ -2500,7 +2506,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
   PassInstrumentationCallbacks PIC;
   StandardInstrumentations SI(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
@@ -2644,7 +2650,7 @@ void prepareCodegenLLVM()
   info->PIC = new PassInstrumentationCallbacks();
   info->SI = new StandardInstrumentations(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
@@ -3327,7 +3333,8 @@ llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
 #if HAVE_LLVM_VER >= 120
-  llvm::Type* t = llvm::StructType::getTypeByName(info->llvmContext, name);
+  llvm::Type* t = llvm::StructType::getTypeByName(gContext->llvmContext(),
+                                                  name);
 #else
   llvm::Type* t = info->module->getTypeByName(name);
 #endif
@@ -4449,7 +4456,7 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   // load into new module
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
-                                 info->llvmContext);
+                                 gContext->llvmContext());
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();

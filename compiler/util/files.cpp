@@ -479,6 +479,12 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
       }
     }
 
+    if (isDynoLib(filename[i])) {
+      // Note that we are using a .dyno file if one is present on the
+      // command line.
+      fDynoLibGenOrUse = true;
+    }
+
     //
     // Don't add the same file twice -- it's unnecessary and can mess
     // up things like unprotected headers

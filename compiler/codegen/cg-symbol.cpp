@@ -62,6 +62,9 @@
 
 #include "global-ast-vecs.h"
 
+#include "chpl/libraries/LibraryFile.h"
+#include "chpl/parsing/parsing-queries.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -770,8 +773,10 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (name, info->irBuilder->getInt8PtrTy()));
+                  (cname, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
+        if (fDynoLibGenOrUse)
+          globalValue->setLinkage(llvm::GlobalVariable::LinkOnceODRLinkage);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
                 gepTy, globalConstString, 0, 0)));
@@ -919,13 +924,18 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       llvm::Type* llTy = type->codegen().type;
       INT_ASSERT(llTy);
 
+      auto linkage = llvm::GlobalVariable::InternalLinkage;
+      if (fDynoLibGenOrUse)
+        linkage = llvm::GlobalVariable::LinkOnceODRLinkage;
+      if (hasFlag(FLAG_EXPORT))
+        linkage = llvm::GlobalVariable::ExternalLinkage;
+
       llvm::GlobalVariable *gVar =
         new llvm::GlobalVariable(
             *info->module,
             llTy,
             false, /* is constant */
-            hasFlag(FLAG_EXPORT) ? llvm::GlobalVariable::ExternalLinkage
-                                 : llvm::GlobalVariable::InternalLinkage,
+            linkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type), type);
@@ -1979,7 +1989,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   // This function is inspired by clang's CodeGenTypes::GetFunctionType
   // and CodeGenModule::ConstructAttributeList
 
-  llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+  llvm::LLVMContext& ctx = gContext->llvmContext();
   const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
   const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
@@ -2289,6 +2299,97 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
   return fngen;
 }
 
+#ifdef HAVE_LLVM
+static bool shouldUsePrecompiled(FnSymbol* fn) {
+  // this is a temporary measure while development continues
+  // on separate compilation
+  return false;
+  /*
+  return fn->hasFlag(FLAG_PRECOMPILED) &&
+         !fn->astloc.id().isEmpty() &&
+         // don't do this for generic instantiations for now
+         // TODO: figure out how to get LibraryFile to
+         // differentiate between instantiations
+         !fn->hasFlag(FLAG_INSTANTIATED_GENERIC);*/
+}
+
+static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
+  GenInfo *info = gGenInfo;
+  UniqueString modSymPath = modId.symbolPath();
+
+  // look for a cached result; if nothing was in the map, create
+  // an entry with nullptr
+  GenInfo::PrecompiledModule& pm = info->precompiledMods[modSymPath];
+
+  if (pm.lf == nullptr) {
+    fprintf(stderr, "Reading Library File\n");
+    // get the LibraryFile
+    chpl::UniqueString libPath;
+    bool inLib = gContext->moduleIsInLibrary(modId, libPath);
+    CHPL_ASSERT(inLib && "or sym should not be marked with FLAG_PRECOMPILED");
+    CHPL_ASSERT(!libPath.isEmpty());
+
+    pm.lf = chpl::libraries::LibraryFile::load(gContext, libPath);
+    if (pm.lf == nullptr) {
+      USR_FATAL("could not load library file %s", libPath.c_str());
+    }
+  }
+
+  if (pm.mod.get() == nullptr) {
+    // need to load the LLVM module!
+    pm.mod = pm.lf->loadGenCodeModule(gContext, modSymPath);
+
+    if (pm.mod.get() == nullptr) {
+      USR_FATAL("could not load module %s", modSymPath.c_str());
+    }
+  }
+
+  return pm;
+}
+
+static llvm::Function*
+importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
+  llvm::Function* ret = nullptr;
+  GenInfo *info = gGenInfo;
+
+  INT_ASSERT(fIdBasedMunging && "expected ID based munging");
+
+  chpl::ID modId = chpl::parsing::idToParentModule(gContext, fnId);
+  CHPL_ASSERT(!modId.isEmpty());
+
+  GenInfo::PrecompiledModule& pm = getPrecompiledModule(modId);
+
+  // check to see if the library's LLVM IR contains the symbol
+  // find the function
+  llvm::Function* SF = pm.mod->getFunction(cname);
+
+  if (SF == nullptr) {
+    USR_FATAL("could not find %s in library file", cname);
+    return nullptr;
+  }
+
+  llvm::Module* DstM = info->module;
+
+  // copy over just the function signature
+  // c.f. IRLinker::copyFunctionProto in LLVM's IRMover.cpp
+  auto *F = llvm::Function::Create(SF->getFunctionType(),
+                                   llvm::GlobalValue::ExternalLinkage,
+                                   SF->getAddressSpace(),
+                                   SF->getName(),
+                                   DstM);
+  F->copyAttributesFrom(SF);
+
+  // also copy the metadata
+  F->copyMetadata(SF, 0);
+
+  // record the fact that the function was probably needed
+  UniqueString ucname = UniqueString::get(gContext, cname);
+  pm.neededGlobalNames.push_back(ucname);
+
+  return ret;
+}
+#endif
+
 void FnSymbol::codegenPrototype() {
   if (id == breakOnCodegenID) gdbShouldBreakHere();
   if (breakOnCodegenCname[0] && !strcmp(cname, breakOnCodegenCname)) {
@@ -2313,6 +2414,11 @@ void FnSymbol::codegenPrototype() {
     fprintf(info->cfile, ";\n");
   } else {
 #ifdef HAVE_LLVM
+    if (shouldUsePrecompiled(this)) {
+      importPrecompiledFunctionProto(astloc.id(), cname);
+      return;
+    }
+
     std::vector<const char*> argNames;
     llvm::AttributeList argAttrs;
     llvm::FunctionType *fTy = codegenFunctionTypeLLVM(this,
@@ -2346,6 +2452,11 @@ void FnSymbol::codegenPrototype() {
     bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN));
 
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
+    if (fDynoLibGenOrUse) {
+      linkage = llvm::Function::LinkOnceODRLinkage;
+      if (this == chpl_gen_main)
+        linkage = llvm::Function::ExternalLinkage;
+    }
     if (hasFlag(FLAG_EXPORT) || generatingGPUKernel) {
       linkage = llvm::Function::ExternalLinkage;
     }
@@ -2546,6 +2657,12 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
+    if (shouldUsePrecompiled(this)) {
+      // the definition should have been imported along side the
+      // declaration in codegenPrototype.
+      return;
+    }
+
     // Mark local reference/ptr variables that must refer to
     // memory outside of all order-independent loops.
     // (This is necessary for llvm.loop.parallel_accesses metadata).
@@ -2820,7 +2937,7 @@ void FnSymbol::codegenDef() {
     // if --gen-ids is enabled, add metadata mapping the
     // function back to Chapel AST id
     if (fGenIDS) {
-      llvm::LLVMContext& ctx = info->llvmContext;
+      llvm::LLVMContext& ctx = gContext->llvmContext();
 
       llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
       llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);

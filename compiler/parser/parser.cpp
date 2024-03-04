@@ -499,11 +499,26 @@ static std::set<UniqueString> gatherStdModuleNames() {
   gatherStdModuleNamesInDir(modulesDir + "/internal", modNames);
   gatherStdModuleNamesInDir(modulesDir + "/layouts", modNames);
   // skip minimal
-  gatherStdModuleNamesInDir(modulesDir + "/packages", modNames);
+  // skip packages (see below)
   gatherStdModuleNamesInDir(modulesDir + "/standard", modNames);
 
-  // leave out Treap since it is an 'include module' for SortedSet
-  modNames.erase(UniqueString::get(gContext, "Treap"));
+  // add select packages that don't have dependencies at compile time
+  // these particular ones are compiled by default even for "hello world"
+  std::vector<const char*> pkgModules = {"CopyAggregation",
+                                         "NPBRandom",
+                                         "RangeChunk",
+                                         "Search",
+                                         "Sort"};
+
+  for (auto name : pkgModules) {
+    modNames.insert(UniqueString::get(gContext, name));
+  }
+
+  // Workaround: if compiling for CHPL_LOCALE_MODEL!=gpu,
+  // then ignore the GPU module, to avoid later compilation errors.
+  if (!usingGpuLocaleModel()) {
+    modNames.erase(UniqueString::get(gContext, "GPU"));
+  }
 
   return modNames;
 }
@@ -603,7 +618,7 @@ static void parseCommandLineFiles() {
     mod->addDefaultUses();
   }
 
-  if (!gDynoGenLibOutput.empty()) {
+  if (fDynoGenLib) {
     std::vector<UniqueString> genLibPaths;
 
     if (fDynoGenStdLib) {
