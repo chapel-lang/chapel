@@ -64,7 +64,7 @@ static void test3() {
   auto context = &ctx;
   QualifiedType qt1 =  resolveTypeOfXInit(context,
                          R""""(
-                         param p : int;
+                         param p : int = 0;
                          var x = p == 1;
                          )"""");
   assert(qt1.isParamFalse());

@@ -3351,7 +3351,10 @@ void Resolver::exit(const Call* call) {
       if (t != nullptr && t->isErroneousType()) {
         // always skip if there is an ErroneousType
         skip = ERRONEOUS_ACT;
-      } else if (!toId.isEmpty() && !isNonOutFormal) {
+      } else if (!toId.isEmpty() && !isNonOutFormal &&
+                 qt.kind() != QualifiedType::PARAM &&
+                 qt.kind() != QualifiedType::TYPE &&
+                 qt.isRef() == false) {
         // don't skip because it could be initialized with 'out' intent,
         // but not for non-out formals because they can't be split-initialized.
       } else {
