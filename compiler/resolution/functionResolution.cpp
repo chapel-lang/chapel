@@ -8220,14 +8220,19 @@ void warnForSomeNumericConversions(BaseAST* context,
   }
 
   // also check for small int/uint -> real
-  if (is_real_type(formalVt) &&
-      (is_uint_type(actualVt) || is_int_type(actualVt))) {
-    if (get_width(formalVt) != 64 &&
-        get_width(actualVt) != get_width(formalVt)) {
+  bool formalFloatingPoint = is_real_type(formalVt) ||
+                             is_imag_type(formalVt) ||
+                             is_complex_type(formalVt);
+  bool actualFloatingPoint = is_real_type(actualVt) ||
+                             is_imag_type(actualVt) ||
+                             is_complex_type(actualVt);
+
+  if (formalFloatingPoint && actualFloatingPoint) {
+    if (get_width(actualVt) < get_width(formalVt)) {
       USR_WARN(context, "potentially surprising implicit conversion from '%s' to '%s'", toString(actualVt), toString(formalVt));
-      if (shouldWarnUnstableFor(context)) {
-        USR_WARN(context, "such an implicit conversion is unstable");
-      }
+      //if (shouldWarnUnstableFor(context)) {
+      //  USR_WARN(context, "such an implicit conversion is unstable");
+      //}
       USR_PRINT(context, "add a cast :%s to avoid this warning",
                 toString(formalVt));
     }
