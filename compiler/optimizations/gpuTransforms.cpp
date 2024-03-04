@@ -1025,6 +1025,7 @@ class GpuKernel {
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
   CallExpr* blockSizeCall_;
+  BlockStmt* gpuPrimitivesBlock_;
 
   public:
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1033,10 +1034,11 @@ class GpuKernel {
   const std::vector<KernelActual>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   CallExpr* blockSizeCall() const {return blockSizeCall_; }
+  BlockStmt* gpuPrimitivesBlock() const { return gpuPrimitivesBlock_; }
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
-  void determineBlockSize();
+  void findGpuPrimitives();
   void populateBody(FnSymbol *outlinedFunction);
   void normalizeOutlinedFunction();
   void setLateGpuizationFailure(bool flag);
@@ -1053,10 +1055,11 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
   , lateGpuizationFailure_(false)
   , blockSizeCall_(nullptr)
+  , gpuPrimitivesBlock_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
-  determineBlockSize();
+  findGpuPrimitives();
   populateBody(fn_);
   if(!lateGpuizationFailure_) {
     finalize();
@@ -1217,7 +1220,7 @@ void GpuKernel::generateEarlyReturn() {
   fn_->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
 }
 
-void GpuKernel::determineBlockSize() {
+void GpuKernel::findGpuPrimitives() {
   std::vector<CallExpr*> callExprsInBody;
   for_alist(node, gpuLoop.gpuLoop()->body) {
     collectCallExprs(node, callExprsInBody);
@@ -1229,6 +1232,8 @@ void GpuKernel::determineBlockSize() {
         USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
       }
       blockSizeCall_ = callExpr;
+    } else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
+      gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
     }
   }
 }
@@ -1569,28 +1574,24 @@ static CallExpr* generateGPUCall(GpuKernel& info, BlockStmt* gpuBlock, VarSymbol
 
   call->insertAtTail(numThreads);  // total number of GPU threads
 
-  if (auto blockSizeCall = info.blockSizeCall()) {
-    // sets blockSize if specified with by "gpu set BlockSize" primitive
-    debuggerBreakHere();
-
-    // If the parent of the call is 'gpu primitives' block, it was constructed
-    // specifically to 'fence off' GPU primitives. There may be
-    // some additional temps etc. that are used for computing block size.
-    // We need to lift them, too. Since we're "consuming" the GPU loop,
-    // just modify the parent block in place.
-    if (auto callParent = toBlockStmt(blockSizeCall->parentExpr)) {
-      if (callParent->isGpuPrimitivesBlock()) {
-        for_alist(expr, callParent->body) {
-          if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
-            expr->remove();
-          }
-        }
-
-        gpuBlock->insertAtTail(callParent->remove());
-        callParent->flattenAndRemove();
+  // If the parent of the call is 'gpu primitives' block, it was constructed
+  // specifically to 'fence off' GPU primitives. There may be
+  // some additional temps etc. that are used for computing block size.
+  // We need to lift them, too. Since we're "consuming" the GPU loop,
+  // just modify the parent block in place.
+  if (auto primitivesBlock = info.gpuPrimitivesBlock()) {
+    INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
+    for_alist(expr, primitivesBlock->body) {
+      if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
+        expr->remove();
       }
     }
 
+    gpuBlock->insertAtTail(primitivesBlock->remove());
+    primitivesBlock->flattenAndRemove();
+  }
+
+  if (auto blockSizeCall = info.blockSizeCall()) {
     call->insertAtTail(info.blockSizeCall()->get(1)->copy());
   } else {
     int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
