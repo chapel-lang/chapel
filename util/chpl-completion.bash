@@ -317,6 +317,7 @@ _chpl ()
 --preserve-inlined-line-numbers \
 --print-additional-errors \
 --print-all-candidates \
+--print-bootstrap-commands \
 --print-callgraph \
 --print-callstack-on-error \
 --print-chpl-home \

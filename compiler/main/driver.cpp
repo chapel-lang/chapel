@@ -345,6 +345,7 @@ static bool fPrintLicense = false;
 static bool fPrintSettingsHelp = false;
 static bool fPrintVersion = false;
 static bool fPrintChplHome = false;
+static bool fPrintBootstrapCommands = false;
 
 std::string llvmFlags;
 std::string llvmRemarksFilters;
@@ -409,12 +410,6 @@ std::vector<UniqueString> gDynoGenLibSourcePaths;
 // what top-level module names as astrs were requested to be stored in the lib?
 std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
-static bool isMaybeChplHome(const char* path)
-{
-  return chpl::isMaybeChplHome(std::string(path));
-
-}
-
 static void setChplHomeDerivedVars() {
   int rc;
   rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
@@ -470,112 +465,35 @@ static bool restoreChplHomeDerivedFromEnv() {
   return haveAll;
 }
 
+int main(int argc, char* argv[]);
+
 static void setupChplHome(const char* argv0) {
-  const char* chpl_home = getenv("CHPL_HOME");
-  char*       guess     = NULL;
-  bool        installed = false;
   char        majMinorVers[64];
+  std::string foundChplHome;
+  bool        installed = false;
+  bool        fromEnv   = false;
+  std::string diagnosticMsg;
 
   // Get major.minor version string (used below)
   get_major_minor_version(majMinorVers, sizeof(majMinorVers));
 
-  // Get the executable path.
-  guess = findProgramPath(argv0);
+  auto err = chpl::findChplHome(argv0, (void*) main, foundChplHome,
+                                installed, fromEnv, diagnosticMsg);
 
-  if (guess) {
-    // Determine CHPL_HOME based on the exe path.
-    // Determined exe path, but don't have a env var set
-    // Look for ../../../util/chplenv
-    // Remove the /bin/some-platform/chpl part
-    // from the path.
-    if( guess[0] ) {
-      int j = strlen(guess) - 5; // /bin and '\0'
-      for( ; j >= 0; j-- ) {
-        if( guess[j] == '/' &&
-            guess[j+1] == 'b' &&
-            guess[j+2] == 'i' &&
-            guess[j+3] == 'n' ) {
-          guess[j] = '\0';
-          break;
-        }
-      }
-    }
-
-    if( isMaybeChplHome(guess) ) {
-      // OK!
+  if (!diagnosticMsg.empty()) {
+    if (err) {
+      USR_FATAL("%s\n", diagnosticMsg.c_str());
     } else {
-      // Maybe we are in e.g. /usr/bin.
-      free(guess);
-      guess = NULL;
+      USR_WARN("%s\n", diagnosticMsg.c_str());
     }
+  } else if (err) {
+    USR_FATAL("$CHPL_HOME must be set to run chpl");
   }
 
-  if( chpl_home ) {
-    if( strlen(chpl_home) > FILENAME_MAX )
-      USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
-
-    if( guess == NULL ) {
-      // Could not find exe path, but have a env var set
-    } else {
-      // We have env var and found exe path.
-      // Check that they match and emit a warning if not.
-      if( ! isSameFile(chpl_home, guess) ) {
-        // Not the same. Emit warning.
-        USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
-                 chpl_home, guess);
-      }
-    }
-    // Since we have an enviro var, always use that.
-    strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
-  } else {
-
-    // Check in a default location too
-    if( guess == NULL ) {
-      char TEST_HOME[FILENAME_MAX+1] = "";
-
-      // Check for Chapel libraries at installed prefix
-      // e.g. /usr/share/chapel/<vers>
-      int rc;
-      rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "share/chapel",
-                  majMinorVers);
-      if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-
-      if( isMaybeChplHome(TEST_HOME) ) {
-        guess = strdup(TEST_HOME);
-
-        installed = true;
-      }
-    }
-
-    if( guess == NULL ) {
-      // Could not find enviro var, and could not
-      // guess at exe's path name.
-      USR_FATAL("$CHPL_HOME must be set to run chpl");
-    } else {
-      int rc;
-
-      if( strlen(guess) > FILENAME_MAX )
-        USR_FATAL("chpl guessed home %s too long", guess);
-
-      // Determined exe path, but don't have a env var set
-      strncpy(CHPL_HOME, guess, FILENAME_MAX);
-      // Also need to setenv in this case.
-      rc = setenv("CHPL_HOME", guess, 0);
-      if( rc ) USR_FATAL("Could not setenv CHPL_HOME");
-    }
+  if (foundChplHome.size() > FILENAME_MAX) {
+    USR_FATAL("$CHPL_HOME=%s path too long", foundChplHome.c_str());
   }
-
-  // Check that the resulting path is a Chapel distribution.
-  if( ! isMaybeChplHome(CHPL_HOME) ) {
-    // Bad enviro var.
-    USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
-  }
-
-  if( guess )
-    free(guess);
-
+  strncpy(CHPL_HOME, foundChplHome.c_str(), FILENAME_MAX);
 
 
   // Get derived-from-home vars
@@ -1472,6 +1390,7 @@ static ArgumentDescription arg_desc[] = {
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"debug-short-loc", ' ', NULL, "Display long [short] location in certain debug outputs", "N", &debugShortLoc, "CHPL_DEBUG_SHORT_LOC", NULL},
+ {"print-bootstrap-commands", ' ', NULL, "Print a Bash bootstrap script to be executed by scripts to determine necessary environment variables.", "F", &fPrintBootstrapCommands, NULL,NULL},
  {"print-emitted-code-size", ' ', NULL, "Print emitted code size", "F", &fPrintEmittedCodeSize, NULL, NULL},
  {"print-module-resolution", ' ', NULL, "Print name of module being resolved", "F", &fPrintModuleResolution, "CHPL_PRINT_MODULE_RESOLUTION", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
@@ -1672,6 +1591,11 @@ static void printStuff(const char* argv0) {
   }
   if( fPrintChplHome ) {
     printf("%s\n", CHPL_HOME);
+    printedSomething = true;
+  }
+  if ( fPrintBootstrapCommands ) {
+    printf("export CHPL_HOME='%s'\n", CHPL_HOME);
+    printf("export CHPL_THIRD_PARTY='%s'\n", CHPL_THIRD_PARTY);
     printedSomething = true;
   }
   if ( fPrintChplLoc ) {
