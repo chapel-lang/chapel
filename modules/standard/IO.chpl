@@ -1481,12 +1481,6 @@ record ioHintSet {
       else new ioHintSet(IOHINTS_NOMMAP);
   }
 
-  /* Suggests that 'mmap' should not be used to access the file contents.
-  Instead, pread/pwrite are used.
-  */
-  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintSet.mmap(false)` instead")
-  proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
-
   @chpldoc.nodoc
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
 }
@@ -1820,10 +1814,6 @@ proc file.fsync() throws {
   }
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
-
-@chpldoc.nodoc
-@deprecated("'filePathAbsolute' is deprecated and inactive. 'file.path' now returns an absolute path")
-config param filePathAbsolute = false;
 
 /*
 
@@ -2207,13 +2197,6 @@ record fileReader {
 @unstable("The 'fileReader.getFile()' method may change based on feedback")
 proc fileReader.getFile() do return chpl_fileFromReaderOrWriter(this);
 
-/* Returns a bool indicating whether the fileReader is used for writing.  It is
-   always ``false`` */
-@deprecated(notes="'fileReader.writing' is deprecated and will be removed in a future release")
-proc fileReader.writing param: bool {
-  return false;
-}
-
 @chpldoc.nodoc
 proc fileReader._writing param: bool do return false;
 
@@ -2274,13 +2257,6 @@ record fileWriter {
   // Therefore further locking by the same task is not necessary.
   @chpldoc.nodoc
   var _readWriteThisFromLocale = nilLocale;
-}
-
-/* Returns a bool indicating whether the fileWriter is used for writing.  It is
-   always ``true`` */
-@deprecated(notes="'fileWriter.writing' is deprecated and will be removed in a future release")
-proc fileWriter.writing param: bool {
-  return true;
 }
 
 /*
