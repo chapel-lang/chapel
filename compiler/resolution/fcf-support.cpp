@@ -971,8 +971,14 @@ const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
 ************************************** | *************************************/
 
 bool usePointerImplementation(void) {
-  return getConfigParamBool(baseModule, "fcfsUsePointerImplementation",
-         /*cachedValue*/nullptr) == gTrue;
+  static bool fcfsUsePointerImplementation = false;
+  static bool fcfsUsePointerImplementationLegal = false;
+  if(!fcfsUsePointerImplementationLegal) {
+    fcfsUsePointerImplementation = getConfigParamBool(baseModule,
+        "fcfsUsePointerImplementation") == gTrue;
+    fcfsUsePointerImplementationLegal = true;
+  }
+  return fcfsUsePointerImplementation;
 }
 
 Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {

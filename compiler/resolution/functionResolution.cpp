@@ -14328,8 +14328,7 @@ static bool assocParSafeWarningSilencedByUser(){
     // These checks are expensive so we do them only once
     silencedParSafeWarningLegal = true;
     VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
-                                                    "noParSafeWarning",
-                                                    /*cachedValue*/nullptr);
+                                                    "noParSafeWarning");
     bool assocParSafeDefaultSet = isSetCmdLineConfig(
                                 /*modName*/"ChapelBase",
                                 /*paramName*/"assocParSafeDefault");
