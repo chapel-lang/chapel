@@ -1385,6 +1385,24 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
     if (node->isForall() || node->isForeach()) return;
 
     CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+  } else if (attr->name() == USTR("functionStatic")) {
+    if (!node->isVariable()) {
+      error(node, "the '@functionStatic' attribute can only be applied to variables.");
+      return;
+    } else {
+      auto parentSymId = node->id().parentSymbolId(context_);
+      auto parentSymAst = parsing::idToAst(context_, parentSymId);
+      auto parentSymFunction = parentSymAst->toFunction();
+
+      if (!parentSymFunction) {
+        error(node, "the '@functionStatic' attribute can only be applied to variables in functions.");
+        return;
+      }
+
+      if (parentSymFunction->isMethod()) {
+        error(node, "the '@functionStatic' attribute cannot be applied to variables in methods.");
+      }
+    }
   }
 }
 
