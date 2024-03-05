@@ -15,7 +15,12 @@
 /* Inlined code is black (instead of default red) */
 .pre{ color: #000}
 
-/* Override the default padding added by the RTD theme so that procs render nicely */
+/*
+Override the default padding added by the RTD theme so that procs render
+nicely. This fixes an issue where the padding before a `where` is too large and
+looks funky. Note this should run on everything but the first child
+(`proc`/`iter`) so it is unaffected.
+*/
 .sig.sig-object.chpl em.property:not(:first-child) {
   padding-right: 0px !important;
 }
