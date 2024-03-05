@@ -1338,16 +1338,22 @@ void Visitor::checkParenfulDeprecation(const AttributeGroup* node) {
 void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   // Store attributes we recognize in "all-global-strings.h"
   // then a USTR() on the attribute name will work or not work
-  if (node->name() == USTR("deprecated") ||
-      node->name() == USTR("unstable") ||
-      node->name() == USTR("stable") ||
-      node->name() == USTR("functionStatic") ||
-      node->name() == USTR("assertOnGpu") ||
-      node->name() == USTR("gpu.blockSize") ||
-      node->name().startsWith(USTR("chpldoc.")) ||
-      node->name().startsWith(USTR("llvm."))) {
-      // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
-      return;
+
+  if (node->name() == USTR("functionStatic")) {
+    // Recognized but instable.
+    if (shouldEmitUnstableWarning(node)) {
+      warn(node, "function-static variables using @functionStatic are unstable.");
+    }
+  } else if (node->name() == USTR("deprecated") ||
+             node->name() == USTR("unstable") ||
+             node->name() == USTR("stable") ||
+             node->name() == USTR("functionStatic") ||
+             node->name() == USTR("assertOnGpu") ||
+             node->name() == USTR("gpu.blockSize") ||
+             node->name().startsWith(USTR("chpldoc.")) ||
+             node->name().startsWith(USTR("llvm."))) {
+    // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
+    return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
     error(node, "Unknown top-level attribute '%s'", node->name().c_str());
