@@ -1082,6 +1082,8 @@ class GpuKernel {
 
   int nReductionBufs_ = 0;
 
+  BlockStmt* earlyReturnBlock_;
+
   public:
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
 
@@ -1509,6 +1511,9 @@ void GpuKernel::generateEarlyReturn() {
   fn_->insertAtTail(new CallExpr(PRIM_MOVE, isOOB, comparison));
 
   BlockStmt* thenBlock = new BlockStmt();
+  earlyReturnBlock_ = new BlockStmt(); // we'll use this block to add new
+                                       // statements right before early return
+  thenBlock->insertAtTail(earlyReturnBlock_);
   thenBlock->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   fn_->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
 }
@@ -1681,6 +1686,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
   for (auto actual: this->kernelActuals()) {
     if (CallExpr* reduceCall = actual.generatePrimGpuBlockReduce(blockSize())) {
       outlinedFunction->insertBeforeEpilogue(reduceCall);
+      this->earlyReturnBlock_->insertAtTail(reduceCall->copy());
     }
 
   }
