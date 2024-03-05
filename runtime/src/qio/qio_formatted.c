@@ -4717,9 +4717,6 @@ qioerr qio_conv_parse(c_string fmt,
         at_flag = 1;
       } else if( fmt[i] == '0' ) {
         zero_flag = 1;
-      } else if( fmt[i] == '-' ) {
-        left_alignment_flag = 1;
-        chpl_warning("left justification with \"%-\" is deprecated; please use \"%<\" instead.", lineno, filename);
       } else if( fmt[i] == '<' ) {
         left_alignment_flag = 1;
       } else if( fmt[i] == '^' ) {
