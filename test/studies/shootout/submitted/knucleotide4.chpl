@@ -21,16 +21,20 @@ proc main(args: [] string) {
       lineSize = 0,
       numRead = 0;
 
-  while stdinNoLock.readLine(buff, lineSize) && !startsWithThree(buff) do
+  do {
+    lineSize = stdinNoLock.readLine(buff);
     numRead += lineSize;
+  } while lineSize > 0 && !startsWithThree(buff);
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  while stdinNoLock.readLine(data, lineSize, idx) do
+  do {
+    lineSize = stdinNoLock.readLine(data[idx..]);
     idx += lineSize - 1;
+  } while lineSize > 0;
 
   // Resize our array to the amount actually read
   dataDom = {1..idx};
