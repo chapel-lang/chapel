@@ -82,23 +82,4 @@ GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Max, max);
 
 #undef DEF_ONE_DEV_REDUCE_RET_VAL
 
-//__device__
-//static inline void chpl_gpu_dev_sum_block_reduce__real64_512(double thread_val,
-                                                             //double* interim_res) {
-
-  //// Specialize BlockReduce for a 1D block of 512 threads of type int
-  //typedef cub::BlockReduce<_real64, 512> BlockReduce;
-
-  //// Allocate shared memory for BlockReduce
-  //__shared__ typename BlockReduce::TempStorage temp_storage;
-  ////
-  //_real64 res = BlockReduce(temp_storage).Sum(thread_val);
-
-  //// Compute the block-wide sum for thread0
-  //if (threadIdx.x == 0) {
-    //interim_res[blockIdx.x] = res;
-  //}
-//}
-
-
 #endif  // _CHPL_GPU_DEV_REDUCE_H
