@@ -1,6 +1,162 @@
 Release Changes List
 ====================
 
+version 2.0
+===========
+
+released March 21, 2024
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+Language Feature Improvements
+-----------------------------
+
+Semantic Changes / Changes to the Chapel Language
+-------------------------------------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Namespace Changes
+-----------------
+
+Standard Library Modules
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Changes / Feature Improvements in Libraries
+-------------------------------------------
+
+Name Changes in Libraries
+-------------------------
+
+Package Modules
+---------------
+
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
+
+GPU Computing
+-------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+
+Memory Improvements
+-------------------
+
+Tool Improvements
+-----------------
+
+Documentation Improvements
+--------------------------
+
+Example Codes
+-------------
+
+Syntax Highlighting
+-------------------
+
+Configuration / Build / Packaging Changes
+-----------------------------------------
+
+Portability / Platform-specific Improvements
+--------------------------------------------
+
+Compiler Improvements
+---------------------
+
+Compiler Flags
+--------------
+
+Launchers
+---------
+
+Generated Executable Flags
+--------------------------
+
+Runtime Library Changes
+-----------------------
+
+Launchers
+---------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Bug Fixes
+---------
+
+Bug Fixes for Build Issues
+--------------------------
+
+Bug Fixes for GPU Computing
+---------------------------
+
+Bug Fixes for Libraries
+-----------------------
+
+Bug Fixes for Tools
+-------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Process
+-----------------------------------
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Syntactic / Naming Changes
+------------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+
+Developer-oriented changes: Makefile / Build-time changes
+---------------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements / changes
+-----------------------------------------------------------
+
+Developer-oriented changes: 'dyno' Compiler improvements / changes
+------------------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Platform-specific bug fixes
+-------------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+
+Developer-oriented changes: Utilities
+-------------------------------------
+
+
 version 1.33.0
 ==============
 
