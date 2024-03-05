@@ -173,6 +173,17 @@ static Expr* postFoldNormal(CallExpr* call) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
     if (ret != NULL && ret->immediate != NULL) {
+
+      // warn for certain numeric implicit conversions before we forget
+      // everything about the call
+      for_formals_actuals(formal, actual, call) {
+        if (SymExpr* actualSe = toSymExpr(actual)) {
+          warnForSomeNumericConversions(call,
+                                        formal->typeInfo(), actual->typeInfo(),
+                                        actualSe->symbol());
+        }
+      }
+
       retval = new SymExpr(ret);
 
       call->replace(retval);
