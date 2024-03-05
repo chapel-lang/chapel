@@ -17,7 +17,8 @@ proc computeExpensiveTable(seed1: real, seed2: real) : c_array(real, tableSize) 
 }
 
 proc getNthElement(x: int): real {
-    ref table = __primitive("static function var", computeExpensiveTable(1, 1));
+    @functionStatic
+    ref table = computeExpensiveTable(1, 1);
     // var table = computeExpensiveTable(1, 1);
     return table[x];
 }

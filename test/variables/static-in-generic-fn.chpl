@@ -4,7 +4,8 @@ proc newInt() {
 }
 
 proc doIt(x: ?t) {
-  ref xx = __primitive("static function var", newInt());
+  @functionStatic
+  ref xx = newInt();
   xx += x;
   writeln("In ", t:string, ", version, xx is: ", xx);
 }

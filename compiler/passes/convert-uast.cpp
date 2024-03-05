@@ -3786,6 +3786,16 @@ struct Converter {
                            bool useLinkageName) {
     astlocMarker markAstLoc(node->id());
 
+    bool isStatic = false;
+    if (auto ag = node->attributeGroup()) {
+      if (ag->getAttributeNamed(USTR("functionStatic"))) {
+        if (!node->initExpression()) {
+          USR_FATAL(node->id(), "function-static variables must have an initializer.");
+        }
+        isStatic = true;
+      }
+    }
+
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
 
@@ -3864,14 +3874,18 @@ struct Converter {
     if (const uast::AstNode* ie = node->initExpression()) {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
-          auto convArrayType = convertArrayType(bkt);
+        auto convArrayType = convertArrayType(bkt);
 
-          // Use this builder because it is performing checks for skyline
-          // arrays amongst other things (that are too arcane for me).
-          initExpr = buildForallLoopExprFromArrayType(convArrayType);
-        } else {
-          initExpr = convertAST(ie);
-        }
+        // Use this builder because it is performing checks for skyline
+        // arrays amongst other things (that are too arcane for me).
+        initExpr = buildForallLoopExprFromArrayType(convArrayType);
+      } else {
+        initExpr = convertAST(ie);
+      }
+
+      if (isStatic) {
+        initExpr = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
+      }
     } else {
       initExpr = convertExprOrNull(node->initExpression());
     }

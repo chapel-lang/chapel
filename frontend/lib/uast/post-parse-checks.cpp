@@ -1341,6 +1341,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   if (node->name() == USTR("deprecated") ||
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
+      node->name() == USTR("functionStatic") ||
       node->name() == USTR("assertOnGpu") ||
       node->name() == USTR("gpu.blockSize") ||
       node->name().startsWith(USTR("chpldoc.")) ||
