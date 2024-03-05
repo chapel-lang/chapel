@@ -5477,18 +5477,23 @@ DEFINE_PRIM(GPU_BLOCK_REDUCE) {
 }
 
 DEFINE_PRIM(GPU_REDUCE_WRAPPER) {
-  VarSymbol* fnNameSym = toVarSymbol(toSymExpr(call->get(1))->symbol());
+  int curArg = 1;
+  VarSymbol* fnNameSym = toVarSymbol(toSymExpr(call->get(curArg++))->symbol());
   INT_ASSERT(isCStringImmediate(fnNameSym));
 
-  const char* fnName = fnNameSym->immediate->string_value();
+  TypeSymbol *redTypeSym = toTypeSymbol(toSymExpr(call->get(curArg++))->symbol());
+  INT_ASSERT(redTypeSym);
 
   std::vector<GenRet> args;
-
-  for (int i=2 ; i<=call->numActuals() ; i++) {
-    args.push_back(call->get(i)->codegen());
+  for ( ; curArg<=call->numActuals() ; curArg++) {
+    args.push_back(call->get(curArg)->codegen());
   }
 
-  ret = codegenCallExprWithArgs(fnName, args);
+  std::string fnName = std::string(fnNameSym->immediate->string_value());
+  fnName += "_";
+  fnName += std::string(redTypeSym->cname);
+
+  ret = codegenCallExprWithArgs(fnName.c_str(), args);
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }

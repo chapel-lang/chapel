@@ -1032,6 +1032,7 @@ class KernelArg {
     KernelArg(Symbol* symInLoop, CForLoop* loop);
     int8_t kind() { return kind_; }
     ArgSymbol* formal() { return formal_; }
+    Type* getType() { return actual_->typeInfo(); }
 
     bool eligible();
     ArgSymbol* reduceBuffer();
@@ -1039,6 +1040,7 @@ class KernelArg {
     CallExpr* generatePrimGpuArg(Symbol* cfg);
     CallExpr* generatePrimGpuBlockReduce(Symbol* blockSize);
     std::string generateDevFnName();
+    std::string reduceKindFnName();
 
   private:
     bool isReduce() const { return kind_&GpuArgKind::REDUCE; }
@@ -1218,7 +1220,10 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   ret->insertFormalAtTail(outData);
   ret->insertFormalAtTail(outIdx);
 
-  std::string fnToCall = "chpl_gpu_sum_reduce_double";
+  std::string fnToCall = "chpl_gpu_";
+  fnToCall += this->reduceKindFnName();
+  fnToCall += "_reduce";
+
   //Type* dataType = this->actual_->typeInfo()->getRefType();
   //Type* dataType = this->actual_->typeInfo()->getValType();
 
@@ -1236,9 +1241,15 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   //ret->insertAtTail(new DefExpr(castOutData));
   //ret->insertAtTail(castOutMove);
 
-  ret->insertAtTail(new CallExpr(PRIM_GPU_REDUCE_WRAPPER,
-                                 new_CStringSymbol(fnToCall.c_str()),
-                                 inData, numElems, outData, outIdx));
+  CallExpr* finalReduce = new CallExpr(PRIM_GPU_REDUCE_WRAPPER);
+  finalReduce->insertAtTail(new_CStringSymbol(fnToCall.c_str()));
+  finalReduce->insertAtTail(new SymExpr(this->getType()->symbol));
+  finalReduce->insertAtTail(new SymExpr(inData));
+  finalReduce->insertAtTail(new SymExpr(numElems));
+  finalReduce->insertAtTail(new SymExpr(outData));
+  finalReduce->insertAtTail(new SymExpr(outIdx));
+
+  ret->insertAtTail(finalReduce);
   ret->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   return ret;
@@ -1286,30 +1297,28 @@ KernelArg::KernelArg(Symbol* symInLoop, CForLoop* loop) {
     this->redInfo_.buffer = new ArgSymbol(INTENT_IN,
                                          astr(symInLoop->name, "_interim"),
                                          symInLoop->getRefType());
-    this->redInfo_.wrapper = this->generateFinalReductionWrapper();
-
     this->findReduceKind();
+    this->redInfo_.wrapper = this->generateFinalReductionWrapper();
   }
+}
+
+std::string KernelArg::reduceKindFnName() {
+  switch (this->redInfo_.kind) {
+    case ReductionKind::SUM:
+      return "sum";
+    case ReductionKind::MIN:
+      return "min";
+    case ReductionKind::MAX:
+      return "max";
+    default:
+      break;
+  }
+  return "unsupported";
 }
 
 std::string KernelArg::generateDevFnName() {
   std::string ret = "chpl_gpu_dev_";
-
-  switch (this->redInfo_.kind) {
-    case ReductionKind::SUM:
-      ret += "sum";
-      break;
-    case ReductionKind::MIN:
-      ret += "min";
-      break;
-    case ReductionKind::MAX:
-      ret += "max";
-      break;
-    case ReductionKind::UNSUPPORTED:
-      ret += "unsupported";
-      break;
-  }
-
+  ret += this->reduceKindFnName();
   ret += "_breduce";
 
   return ret;

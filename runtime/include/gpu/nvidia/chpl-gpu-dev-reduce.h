@@ -73,7 +73,6 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
   __shared__ typename BlockReduce::TempStorage temp_storage; \
   data_type res = BlockReduce(temp_storage).Reduce(thread_val, cub::impl_kind()); \
   if (threadIdx.x == 0) { \
-    printf("interim result = %f\n", res); \
     interim_res[blockIdx.x] = res; \
   } \
 }
