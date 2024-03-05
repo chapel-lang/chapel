@@ -1334,6 +1334,7 @@ static FnSymbol* finalizeHolder(ImplementsStmt* istm, FnSymbol*   reqFn,
     wrapper->insertAtTail("'return'(%S)", gVoid);
   } else {
     VarSymbol* retTemp = newTemp("ret", wrapper->retType);
+    retTemp->addFlag(FLAG_RVV);
     // If this is violated, need to handle that case.
     INT_ASSERT(call->parentExpr == wrapper->body);
     call->insertBefore(new DefExpr(retTemp));

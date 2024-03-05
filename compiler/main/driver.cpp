@@ -263,6 +263,8 @@ bool fNoEarlyDeinit = false;
 bool fNoCopyElision = false;
 bool fCompileTimeNilChecking = true;
 bool fInferImplementsStmts = false;
+bool fIteratorContexts = false;
+bool fReturnByRef = true;
 bool fOverrideChecking = true;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
@@ -295,7 +297,6 @@ bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
 bool fReportGpu = false;
-bool fIteratorContexts = false;
 bool fReportContextAdj = false;
 bool fReportDeadBlocks = false;
 bool fReportDeadModules = false;
@@ -1411,7 +1412,6 @@ static ArgumentDescription arg_desc[] = {
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
  {"report-gpu", ' ', NULL, "Print information about what loops are and are not GPU eligible", "F", &fReportGpu, NULL, NULL},
- {"iterator-contexts", ' ', NULL, "Handle iterator contexts", "F", &fIteratorContexts, NULL, NULL},
  {"report-context-adjustments", ' ', NULL, "Print debugging information while handling iterator contexts", "F", &fReportContextAdj, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
@@ -1441,6 +1441,7 @@ static ArgumentDescription arg_desc[] = {
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_COMPILE_TIME_NIL_CHECKS", NULL},
  {"infer-implements-decls", ' ', NULL, "Enable [disable] inference of implements-declarations", "N", &fInferImplementsStmts, "CHPL_INFER_IMPLEMENTS_DECLS", NULL},
  {"interleave-memory", ' ', NULL, "Enable [disable] memory interleaving", "N", &fEnableMemInterleaving, "CHPL_INTERLEAVE_MEMORY", NULL},
+ {"iterator-contexts", ' ', NULL, "Handle iterator contexts", "N", &fIteratorContexts, NULL, NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-user-errors", ' ', NULL, "[Don't] attempt to ignore user errors", "N", &ignore_user_errors, "CHPL_IGNORE_USER_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -1477,6 +1478,7 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
+ {"return-by-ref", ' ', NULL, "Enable return-by-ref of structs in the generated code", "N", &fReturnByRef, NULL, NULL},
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},

@@ -80,7 +80,7 @@ executable. This can be done in two steps.
 
    .. code-block:: bash
 
-        chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents <source_file>
+        chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
 
 For more details on these settings, read the rest of this section.
 
@@ -101,7 +101,7 @@ Building the Application
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following flags can be useful for making the generated C more amenable to
-debugging.
+debugging. Any of them can be omitted as desired.
 
   ===================================  =========================================
   Flag                                 Description
@@ -113,13 +113,16 @@ debugging.
   ``--preserve-inlined-line-numbers``  When code gets inlined (e.g. replacing a
                                        function call with the function body)
                                        maintain the filename and line number
-                                       information of the original function
-                                       call.
+                                       information of the original function.
   ``--no-munge-user-idents``           Don't munge user identifiers (e.g.
                                        variable or function names). Munging
                                        typically prevents conflicts with
                                        identifiers in external code but makes
                                        debugging harder.
+  ``--no-return-by-ref``               Don't use an extra reference argument
+                                       when compiling a Chapel function that
+                                       returns a record.
+  ``--no-inline``                      Avoid inlining in many cases.
   ===================================  =========================================
 
 Notes on munging
