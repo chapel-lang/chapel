@@ -8217,10 +8217,8 @@ void warnForSomeNumericConversions(BaseAST* context,
   }
 
   bool userModule = false;
-  if (DefExpr* def = actual->defPoint) {
-    if (ModuleSymbol* mod = def->getModule()) {
-      userModule = mod->modTag == MOD_USER;
-    }
+  if (ModuleSymbol* mod = context->getModule()) {
+    userModule = mod->modTag == MOD_USER;
   }
 
   // consider warning for int -> uint implicit conversion
@@ -8242,7 +8240,8 @@ void warnForSomeNumericConversions(BaseAST* context,
 
       // If it's a param, warn only if it is negative.
       // Otherwise, warn.
-      if (isNegParam || !isParam || fWarnParamImplicitNumericConversions) {
+      if (isNegParam || !isParam ||
+          (fWarnParamImplicitNumericConversions && userModule)) {
         if (fWarnIntUint) {
           USR_WARN(context, "potentially surprising implicit conversion "
                             "from '%s' to '%s'",
