@@ -272,18 +272,9 @@ def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
     lines, it gets truncated into 1 line. The lines and columns are
     zero-indexed.
     """
-
-    (line_start, char_start) = rng.start()
-    (line_end, char_end) = rng.end()
-
-    if line_start == line_end:
-        return lines[line_start - 1][char_start - 1 : char_end - 1]
-
-    text = [lines[line_start - 1][char_start - 1 :]]
-    for line in range(line_start + 1, line_end):
-        text.append(lines[line - 1])
-    text.append(lines[line_end - 1][: char_end - 1])
-
+    text = []
+    for (line, column, length) in range_to_tokens(rng, lines):
+        text.append(lines[line][column : column + length + 1])
     return " ".join([t.strip() for t in text])
 
 
