@@ -2755,9 +2755,6 @@ record defaultSerializer {
   }
 }
 
-@deprecated(notes="'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead")
-type DefaultSerializer = defaultSerializer;
-
 /*
   The default Deserializer used by ``fileReader``.
 
@@ -3230,8 +3227,6 @@ record defaultDeserializer {
   }
 }
 
-@deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
-type DefaultDeserializer = defaultDeserializer;
 
 @unstable("This config param is unstable and may be removed without advance notice")
 /*
@@ -3645,8 +3640,6 @@ record binarySerializer {
   }
 }
 
-@deprecated(notes="'BinarySerializer' is deprecated; please use 'binarySerializer' instead")
-type BinarySerializer = binarySerializer;
 
 /*
   A binary Deserializer that implements a simple binary format.
@@ -4179,8 +4172,6 @@ record binaryDeserializer {
   }
 }
 
-@deprecated(notes="'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead")
-type BinaryDeserializer = binaryDeserializer;
 
 @chpldoc.nodoc
 operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
@@ -4473,22 +4464,6 @@ proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
 }
 
 
-/*
-
-Represents a newline character or character sequence (ie ``\n``). I/O routines
-(such as :proc:`fileReader.read` and :proc:`fileWriter.write`) can use arguments
-of this type in order to read or write a newline. This is different from ``\n``
-because an ioNewline always produces an actual newline, but in some cases
-writing ``\n`` will produce an escaped string (such as ``"\n"``).
-
-When reading an ioNewline, read routines will skip any character sequence
-(including, e.g., letters and numbers) to get to the newline character unless
-``skipWhitespaceOnly`` is set to true.
-
- */
-@deprecated(notes=":type:`ioNewline` is deprecated; please use :proc:`fileReader.readNewline`, :proc:`fileReader.matchNewline`, or :proc:`fileWriter.writeNewline` instead")
-type ioNewline = chpl_ioNewline;
-
 @chpldoc.nodoc
 record chpl_ioNewline : writeSerializable {
   /*
@@ -4514,19 +4489,6 @@ inline operator :(x: chpl_ioNewline, type t:string) {
   return "\n";
 }
 
-
-/*
-
-Used to represent a constant string we want to read or write.
-
-When writing, the ``ioLiteral`` is output without any quoting or escaping.
-
-When reading, the ``ioLiteral`` must be matched exactly - or else the read call
-will return an error for incorrectly formatted input
-
-*/
-@deprecated(notes=":type:`ioLiteral` is deprecated; please use :proc:`fileReader.readLiteral`, :proc:`fileReader.matchLiteral`, or :proc:`fileWriter.writeLiteral` instead")
-type ioLiteral = chpl_ioLiteral;
 
 @chpldoc.nodoc
 record chpl_ioLiteral : writeSerializable {
@@ -6447,34 +6409,6 @@ proc fileWriter.writeIt(const x) throws {
     try! this.lock(); defer { this.unlock(); }
     try _writeOne(_iokind.dynamic, x, origLocale);
   }
-}
-
-/* Explicit call for reading or writing a literal. Equivalent to calling
-    :proc:`fileReader.readLiteral`.
-*/
-@deprecated(notes=":proc:`fileReader.readWriteLiteral` is deprecated; please use :proc:`fileReader.readLiteral` instead")
-inline
-proc fileReader.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
-{
-  // This method was more interesting when it could be for either a reader or a
-  // writer channel.  However, we don't think it was used much in practice so
-  // will ultimately get deprecated
-  var iolit = new chpl_ioLiteral(lit:string, ignoreWhiteSpace);
-  this.readIt(iolit);
-}
-
-/* Explicit call for reading or writing a literal. Equivalent to calling
-    :proc:`fileWriter.writeLiteral`
-*/
-@deprecated(notes=":proc:`fileWriter.readWriteLiteral` is deprecated; please use :proc:`fileWriter.writeLiteral` instead")
-inline
-proc fileWriter.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
-{
-  // This method was more interesting when it could be for either a reader or a
-  // writer channel.  However, we don't think it was used much in practice so
-  // will ultimately get deprecated
-  var iolit = new chpl_ioLiteral(lit:string, ignoreWhiteSpace);
-  this.writeIt(iolit);
 }
 
 private proc literalErrorHelper(x: ?t, action: string,

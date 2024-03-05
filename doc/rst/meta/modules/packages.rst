@@ -56,7 +56,6 @@ File Formats and I/O
 .. toctree::
    :maxdepth: 1
 
-   BinaryIO <packages/BinaryIO>
    ChplFormat <packages/ChplFormat>
    HDF5 <packages/HDF5>
    HDFS <packages/HDFS>
