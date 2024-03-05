@@ -131,7 +131,7 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
 
   // First, Try figuring CHPL_HOME out from the binary's location.
   // If we're running from /path/to/folder/bin/darwin/chpl,
-  // CHPL_HOMe might be /path/to/folder.
+  // CHPL_HOME might be /path/to/folder.
   if (!guessFromBinaryPath.empty()) {
     // truncate path at /bin
     auto binIdx = guessFromBinaryPath.rfind("/bin");
