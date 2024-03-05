@@ -216,7 +216,6 @@ def match_pattern(ast, pattern):
 
     """
 
-    variables = {}
     counts = {}
 
     def fresh(metavar):
@@ -236,7 +235,7 @@ def match_pattern(ast, pattern):
         count = counts[metavar]
         return metavar if count == 0 else metavar + str(count - 1)
 
-    def check_var(ast, pat):
+    def check_var(ast, pat, variables: Dict):
         # Empty pattern is wildcard
         if len(pat) == 0:
             return True
@@ -256,15 +255,15 @@ def match_pattern(ast, pattern):
             print("Equality constrait:", variables[variable], ast)
             return True
 
-    def match_inner(ast, pat):
+    def match_inner(ast, pat, variables: Dict) -> bool:
         if isinstance(pat, str):
-            return check_var(ast, pat)
+            return check_var(ast, pat, variables)
         elif isinstance(pat, tuple):
             (pat_name, node_type) = pat
 
             if not isinstance(ast, node_type):
                 return False
-            if not check_var(ast, pat_name):
+            if not check_var(ast, pat_name, variables):
                 return False
 
             return True
@@ -279,7 +278,7 @@ def match_pattern(ast, pattern):
 
             if not isinstance(ast, node_type):
                 return False
-            if pat_name is not None and not check_var(ast, pat_name):
+            if pat_name is not None and not check_var(ast, pat_name, variables):
                 return False
 
             idx += 1
@@ -293,7 +292,7 @@ def match_pattern(ast, pattern):
                 if child_pat == "rest":
                     # Special case rest pattern; subsequent children allowed.
                     break
-                if not match_inner(child, child_pat):
+                if not match_inner(child, child_pat, variables):
                     return False
                 idx += 1
             else:
@@ -307,14 +306,19 @@ def match_pattern(ast, pattern):
             return True
         elif isinstance(pat, set):
             # check if any of patterns in the set match
-            return any(match_inner(ast, p) for p in pat)
+            for p in pat:
+                local_variables = variables.copy()
+                if match_inner(ast, p, local_variables):
+                    return True
+            return False
         elif issubclass(pat, AstNode):
             # Just check if the AST node matches
             return isinstance(ast, pat)
         else:
             raise Exception("Invalid pattern!")
 
-    return variables if match_inner(ast, pattern) else None
+    variables = {}
+    return variables if match_inner(ast, pattern, variables) else None
 
 
 def each_matching(node, pattern, iterator=preorder):
