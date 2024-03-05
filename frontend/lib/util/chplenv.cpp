@@ -175,7 +175,7 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
 
     // Emit a warning if we could guess the CHPL_HOME from the binary's path,
     // but it's not the same path as the environment variable.
-    if (!guessFromBinaryPath.empty() && 
+    if (!guessFromBinaryPath.empty() &&
         !isSameFile(chplHomeEnv, guessFromBinaryPath.c_str())) {
       diagnosticMessage = "$CHPL_HOME=" + std::string(chplHomeEnv) +
                        " is mismatched with executable home=" +
@@ -187,7 +187,7 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
 
     installed = true;
 
-    if (setenv("CHPL_HOME", guessFromBinaryPath.c_str(), 0)) {
+    if (setenv("CHPL_HOME", guessFromPrefix.c_str(), 0)) {
       return std::error_code(errno, std::system_category());
     }
 
