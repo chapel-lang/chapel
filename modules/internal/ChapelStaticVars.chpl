@@ -20,6 +20,7 @@
 
 module ChapelStaticVars {
   use OwnedObject;
+  use Atomics;
 
   class _staticWrapperContainer {
     var value;
@@ -27,17 +28,36 @@ module ChapelStaticVars {
 
   record _staticWrapper {
     type valueType;
-    var container: owned _staticWrapperContainer(valueType)? = nil;
+    var container: owned _staticWrapperContainer(valueType)?;
+
+    // Values of inited:
+    //   0, initial state -- needs a value.
+    //   1, a caller is computing the required value.
+    //   2, the value has been computed.
+
+    var inited: atomic int;
+
+    proc init(type valueType) {
+      this.valueType = valueType;
+      this.container = nil;
+      this.inited = 0;
+    }
 
     inline proc ref setValue(in v: valueType) {
       this.container = new _staticWrapperContainer(v);
+      this.inited.write(2);
     }
 
     inline proc ref getValue() ref : valueType {
+      this.inited.waitFor(2);
       return this.container!.value;
     }
 
-    inline proc needsInitialization() do return this.container == nil;
+    inline proc ref callerShouldComputeValue() do {
+      if this.inited.read() == 2 then return false;
+      var expected = 0;
+      return this.inited.compareExchange(expected, 1);
+    }
   }
 
 }

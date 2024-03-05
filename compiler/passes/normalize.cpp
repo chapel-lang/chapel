@@ -369,7 +369,7 @@ static void preNormalizeHandleStaticVars() {
       auto setValueCall = new CallExpr("setValue", gMethodToken, wrapperVar,
                                        computeValueSym);
       computeValueBlock->insertAtTail(setValueCall);
-      auto readyPred = new CallExpr("needsInitialization", gMethodToken,
+      auto readyPred = new CallExpr("callerShouldComputeValue", gMethodToken,
                                     wrapperVar);
       auto readyCond = new CondStmt(readyPred, computeValueBlock);
       anchor->insertBefore(readyCond);
