@@ -1317,7 +1317,6 @@ private extern const QIO_CONV_ARG_TYPE_BINARY_COMPLEX:c_int;
 private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
-private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
 private extern const QIO_CONV_ARG_TYPE_SERDE:c_int;
 private extern const QIO_CONV_ARG_TYPE_REGEX:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL:c_int;
@@ -9566,14 +9565,10 @@ Integral Conversions
  a decimal integer center-justified (padded equally on the left and right) to 17 columns
 ``%>17i``
  a decimal integer right-justified (padded on the left) to 17 columns — equivalent to ``%17i``
-``%-17i``
- a decimal integer left-justified (padded on the right) to 17 columns *(deprecated)*
 ``%+i``
  a decimal integer showing ``+`` for positive numbers
 ``% i``
  a decimal integer with a space for positive numbers
-``%|4i``
- output 4 raw, binary bytes of the passed integer in native endianness *(deprecated)*
 
 Real Conversions
 ++++++++++++++++
@@ -9590,8 +9585,6 @@ Real Conversions
  as with ``%r`` but padded equally on the left and right to 6 columns (i.e., center-justified)
 ``%>6r``
  equivalent to ``%6r``
-``%-6r``
- as with ``%r`` but padded on the right to 6 columns (i.e., left-justified) *(deprecated)*
 ``%.4r``
  as with ``%r`` but with 4 significant digits
 ``%.*r``
@@ -9624,9 +9617,6 @@ Real Conversions
 ``%xer``
  hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
 
-``%|4r``
- emit 4 raw, binary bytes of the passed number in native endianness *(deprecated)*
-
 Complex and Imaginary Conversions
 +++++++++++++++++++++++++++++++++
 
@@ -9646,11 +9636,6 @@ Complex and Imaginary Conversions
  print a and b with ``%dr``
 ``%ez``
  print a and b with ``%er``
-
-``%|4m``
- same as ``%|4r`` *(deprecated)*
-``%|8z``
- emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes) *(deprecated)*
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
@@ -9675,8 +9660,6 @@ String and Bytes Conversions
   * when writing - a string left padded (right justified) to 17 columns
   * when reading - read up to 17 bytes or a whitespace, whichever comes
     first, rounding down to whole characters
-``%-17s``
- * when writing - a string right padded (left justified) to 17 columns *(deprecated)*
 ``%.17s``
  * when writing - a string truncated to 17 columns. When combined
    with quoting strings, for example ``%.17"S``, the conversion
@@ -9686,12 +9669,6 @@ String and Bytes Conversions
    string is ``""...``  Generally, you won't be able to read
    these back in.
  * when reading - read exactly 17 Unicode codepoints
-``%|17s``
- * when writing - emit string but cause runtime error if length
-   does not match *(deprecated)*
- * when reading - read exactly 17 bytes (error if we read < 17 bytes) *(deprecated)*
-``%|*s``
-  as with %17s but the length is specified in the argument before the string.  *(deprecated)*
 ``%"S``
  use double-quotes to delimit string
 ``%'S``
@@ -9703,31 +9680,6 @@ String and Bytes Conversions
  parens could be replaced by arbitrary characters
 ``%*S``
  quoted string, the arg before the string to specifies quote character
-``%|0S``
- write a string null-terminated or read bytes until a null-terminator *(deprecated)*
-``%|*S``
- means read bytes until a terminator byte. The terminator byte is read
- from the argument before the string. *(deprecated)*
-``%|1S`` ``%|2S`` ``%|4S`` and ``%|8S``
-  work with encoded strings storing a length
-  and then the string data. The digit before ``S`` is
-  the number of bytes of length which is by default
-  stored native endian. ``<``, ``|``, ``>`` can be used
-  to specify the endianness of the length field,
-  for example ``%<8S`` is 8 bytes of little-endian length
-  and then string data. *(deprecated)*
-``%|vS``
- as with ``%|1S``-``%|8S`` but the string length is encoded using a
- variable-length byte scheme (which is always the same no matter what
- endianness). In this scheme, the high bit of each encoded length byte
- records whether or not there are more length bytes (and the remaining
- bits encode the length in a big-endian manner). *(deprecated)*
-
-``%|*vS`` or ``%|*0S``
- read an encoded string but limit it to a number of bytes
- read from the argument before the string; when writing
- cause a runtime error if the string is longer than the
- maximum. *(deprecated)*
 
 ``%/a+/``
  where any regular expression can be used instead of ``a+``
@@ -9750,73 +9702,31 @@ String and Bytes Conversions
 
 .. (comment) the above started a nested comment, so here we end it */
 
-General Conversions
-+++++++++++++++++++
-
-``%t``
- read or write the object according to its readThis/writeThis routine
-
-  .. warning::
-    ``%t`` is deprecated and should be replaced with ``%?`` which will invoke
-    the ``fileReader``/``fileWriter``'s serializer/deserializer to execute IO
-    operations for the associated argument.
-
-``%jt``
- read or write an object in JSON format using readThis/writeThis
-
-  .. warning::
-    ``%jt`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
-    or ``fileReader`` configured with the JSON Serializer or Deserializer
-    respectively. Example:
-
-    .. code-block:: chapel
-
-      use IO, JSON;
-
-      record R {
-        // fields...
-      }
-
-      var f = open("data.json"),
-          r: R;
-
-      // write an 'R' in JSON format
-      f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
-
-      // read into an 'R' from JSON format
-      f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
-
-``%ht``
- read or write an object in Chapel syntax using readThis/writeThis
-
-  .. warning::
-    ``%ht`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
-    or ``fileReader`` configured with the Chapel-Format Serializer or
-    Deserializer respectively. Example:
-
-    .. code-block:: chapel
-
-      use IO, ChplFormat;
-
-      record R {
-        // fields...
-      }
-
-      var f = open("data.txt"),
-          r: R;
-
-      // write an 'R' in Chapel Syntax format
-      f.writer(serializer = new chplSerializer()).writef("%?", new R(/* ... */))
-
-      // read into an 'R' from Chapel Syntax format
-      f.reader(deserializer = new chplDeserializer()).readf("%?", r);
-
-``%|t``
- read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
+General Conversion
+++++++++++++++++++
 
 ``%?``
- Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
- or read a value.
+  Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
+  or read a value.
+
+  For example, read and write a record in JSON format:
+
+  .. code-block:: chapel
+
+        use IO, JSON;
+
+        record R {
+          // fields...
+        }
+
+        var f = open("data.json", ioMode.cwr),
+            r: R;
+
+        // write an 'R' in JSON format
+        f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
+
+        // read into an 'R' from JSON format
+        f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -9828,7 +9738,7 @@ contrast, ``" "`` matches at least one space character of any kind.
 When writing, whitespace is printed from the format string just like any
 other literal would be.
 
-Finally, space characters after a binary conversion will be ignored, so
+Finally, space characters after a revcom will be ignored, so
 that a binary format string can appear more readable.
 
 .. _about-io-formatted-io-in-detail:
@@ -9917,8 +9827,6 @@ In general, a ``%`` specifier consists of either text or binary conversions:
 
 ::
 
- %
- [optional endian flag (binary conversions only) *(deprecated)*]
  [optional flags]
  [optional field width or size in bytes]
  [optional . then precision]
@@ -9941,10 +9849,6 @@ Going through each section for text conversions:
   ``" "``
    (a space) leaves a blank before a positive number
    (in order to help line up with negative numbers)
-  ``-``
-   left-justify the converted value instead of right-justifying.
-   Note, if both ``0`` and ``-`` are given, the effect is as if only ``-``
-   were given. *(deprecated)*
   ``<``
    left-justify the converted value instead of right-justifying.
    Note, if both ``0`` and ``<`` are given, the effect is as if only ``<``
@@ -9955,11 +9859,6 @@ Going through each section for text conversions:
    left of the numerical value
   ``>``
    explicitly denote right-justification
-  ``~``
-   when reading a record or class instance, skip over fields in the input not
-   present in the Chapel type. This flag currently only works in combination
-   with the JSON format.  This flag allows a Chapel program to describe only the
-   relevant fields in a record when the input might contain many more fields.
 
 
 [optional field width]
@@ -10021,10 +9920,6 @@ Going through each section for text conversions:
     exponential ``-12.34E+56``
 
 [conversion type]
-   ``t``
-    means *type-based* or *thing* - uses writeThis/readThis but ignores
-    width. Precision will impact any floating point values output
-    in this conversion.
    ``n``
     means type-based number, allowing width and precision
    ``i``
@@ -10055,32 +9950,7 @@ Going through each section for text conversions:
     means a Unicode character - either the first character in a string
     or an integral character code
 
-For binary conversions *(deprecated)*:
-
-[optional endian flag] *(deprecated)*
-   ``|``
-    means native-endian *(deprecated)*
-
-[optional size in bytes] *(deprecated)*
-   This is the number of bytes the format should read or write in this
-   conversion. For integral conversions (e.g. ``%|i``) it specifies the number
-   of bytes in the integer, and 1, 2, 4, and 8 are supported. For real and
-   imaginary conversions, 4 and 8 are supported. For complex conversions,
-   8 and 16 are supported. The size in bytes is *required* for binary
-   integral and floating-point conversions. *(deprecated)*
-
-   The size can be ``*``, which means that the number of bytes is read
-   from the argument before the conversion. *(deprecated)*
-
-   For strings, if a terminator or length field is specified, exactly this
-   number is the maximum size in bytes; if the terminator or length is not
-   specified, the string must be exactly that size (and if the argument is not
-   exactly that number of bytes it will cause an error even when writing).
-   *(deprecated)*
-
 [conversion type]
-   ``t``
-    means *type-based* or *thing* - to read or write with readThis/writeThis
    ``n``
     means type-based number (size is not mandatory)
    ``i``
@@ -10097,19 +9967,7 @@ For binary conversions *(deprecated)*:
     means complex. Note that the size is mandatory for binary complex
     conversions
    ``s``
-    * means string binary I/O *(deprecated)*
-    * ``%|17s`` means exactly 17 byte string *(deprecated)*
-   ``0S``/``1S``/``2S``/``4S``/``8S``
-    * mean encoded string binary I/O *(deprecated)*:
-    * ``%|0S`` means null-terminated string *(deprecated)*
-    * ``%{|S*}`` means  next-argument specifies string terminator byte
-      *(deprecated)*
-    * ``%|1S`` means a one-byte length and then the string *(deprecated)*
-    * ``%|2S`` means a two-byte length and then the string *(deprecated)*
-    * ``%|4S`` means a four-byte length and then the string *(deprecated)*
-    * ``%|8S`` means an eight-byte length and then the string *(deprecated)*
-    * ``%|vS`` means a variable-byte-encoded length and then the string
-      *(deprecated)*
+    means string
    ``c``
     means a Unicode character - either the first character in a string
     or an integral character code
@@ -10129,15 +9987,6 @@ Formatted I/O Examples
   writef("%2.4z\n", 43.291 + 279.112i);
        // outputs:
        // 43.29 + 279.1i
-
-  writef("%|0S\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 7465 7374 000a
-  writef("%|1S\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 0474 6573 740a
 
   writef('%"S\n', "test \"\" \'\' !");
        // outputs:
@@ -11222,16 +11071,6 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
       } when QIO_CONV_ARG_TYPE_REGEX { // It's not so clear what to do when printing
         // a regex. So we just don't handle it.
         err = qio_format_error_write_regex();
-      } when QIO_CONV_ARG_TYPE_REPR {
-        select style.aggregate_style {
-          when QIO_AGGREGATE_FORMAT_BRACES do // %t
-            warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead");
-          when QIO_AGGREGATE_FORMAT_CHPL do  // %ht
-            warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Serializer instead");
-          when QIO_AGGREGATE_FORMAT_JSON do  // %jt
-            warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Serializer instead");
-        }
-        try _writeOne(_iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
         if serializerType != nothing {
           if serializerType == binarySerializer {
@@ -11565,16 +11404,6 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                   }
                 }
               }
-            } when QIO_CONV_ARG_TYPE_REPR {
-              select style.array_style {
-                when QIO_ARRAY_FORMAT_SPACE do // %t
-                  warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'deserialize' method instead");
-                when QIO_ARRAY_FORMAT_CHPL do  // %ht
-                  warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Deserializer instead");
-                when QIO_ARRAY_FORMAT_JSON do  // %jt
-                  warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead");
-              }
-              try _readOne(_iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_ARG_TYPE_SERDE {
               if deserializerType != nothing {
                 if deserializerType == binaryDeserializer {
