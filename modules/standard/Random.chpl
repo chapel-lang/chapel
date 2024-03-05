@@ -1008,7 +1008,7 @@ module Random {
     /*
       Sample ``n`` random indices from a domain.
 
-      :arg d: The 1D rectangular domain to sample from. Its ``idxType`` should:q:q
+      :arg d: The 1D rectangular domain to sample from. Its ``idxType`` should
               be coercible from this stream's ``eltType``.
       :arg n: The number of indices to sample
       :arg withReplacement: Whether or not to sample with replacement
