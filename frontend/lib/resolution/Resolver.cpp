@@ -3827,6 +3827,13 @@ bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamLoop = forLoop != nullptr && forLoop->isParam();
 
+  // whether this is a param or regular loop, before entering its body
+  // or considering its iterand, resolve expressions in the loop's attribute
+  // group.
+  if (auto ag = loop->attributeGroup()) {
+    ag->traverse(*this);
+  }
+
   if (isParamLoop) {
     const AstNode* iterand = loop->iterand();
     iterand->traverse(*this);
