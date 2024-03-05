@@ -344,7 +344,7 @@ static void preNormalizeHandleStaticVars() {
       // module code.
       auto wrapperTypeTemp = newTemp("staticVarType");
       auto wrapperTypeDef = new DefExpr(wrapperTypeTemp,
-        new CallExpr(new SymExpr(dtStatic->symbol),
+        new CallExpr("chpl__functionStaticVariableWrapperType",
                      new CallExpr(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE,
                                   new CallExpr(PRIM_TYPEOF, initVarTemp))));
       wrapperTypeTemp->addFlag(FLAG_TYPE_VARIABLE);

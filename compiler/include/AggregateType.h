@@ -306,6 +306,5 @@ extern AggregateType* dtLocale;
 extern AggregateType* dtRange;
 extern AggregateType* dtOwned;
 extern AggregateType* dtShared;
-extern AggregateType* dtStatic;
 
 #endif

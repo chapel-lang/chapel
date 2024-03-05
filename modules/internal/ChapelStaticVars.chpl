@@ -60,4 +60,6 @@ module ChapelStaticVars {
     }
   }
 
+  proc chpl__functionStaticVariableWrapperType(type valueType) type
+    do return _staticWrapper(valueType);
 }

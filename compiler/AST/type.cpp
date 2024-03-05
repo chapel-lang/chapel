@@ -1103,9 +1103,6 @@ void initPrimitiveTypes() {
   dtShared                             = new AggregateType(AGGREGATE_RECORD);
   dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
-  dtStatic                             = new AggregateType(AGGREGATE_RECORD);
-  dtStatic->symbol                     = new TypeSymbol("_staticWrapper", dtStatic);
-
   dtBool                               = createPrimitiveType("bool", "chpl_bool");
 
   gFalse                               = createSymbol(dtBool, "false");
