@@ -600,9 +600,9 @@ BlockStmt::isCForLoop() const {
   return false;
 }
 
-static CallExpr* getMarker(BlockStmt* stmt, PrimitiveTag markerType) {
-  if (!stmt->body.empty()) {
-    if (auto call = toCallExpr(stmt->body.first())) {
+CallExpr* BlockStmt::getMarkerPrimIfExists(PrimitiveTag markerType) {
+  if (!this->body.empty()) {
+    if (auto call = toCallExpr(this->body.first())) {
       if (call->isPrimitive(markerType)) {
         return call;
       }
@@ -615,14 +615,14 @@ static CallExpr* getMarker(BlockStmt* stmt, PrimitiveTag markerType) {
 // in primitive.cpp for what they do.
 
 bool BlockStmt::isGpuAttributeBlock() {
-  return getMarker(this, PRIM_GPU_ATTRIBUTE_BLOCK);
+  return getMarkerPrimIfExists(PRIM_GPU_ATTRIBUTE_BLOCK) != nullptr;
 }
 
 bool BlockStmt::isGpuPrimitivesBlock() {
-  return getMarker(this, PRIM_GPU_PRIMITIVE_BLOCK);
+  return getMarkerPrimIfExists(PRIM_GPU_PRIMITIVE_BLOCK) != nullptr;
 }
 
-bool BlockStmt::isForGpuAttributes() {
+bool BlockStmt::isGpuMetadata() {
   return this->isGpuAttributeBlock() ||
          this->isGpuPrimitivesBlock();
 }
@@ -637,7 +637,7 @@ BlockStmt* BlockStmt::getPrimitivesBlock() {
 }
 
 void BlockStmt::noteUseOfGpuAttributeBlock(FnSymbol* user) {
-  auto marker = getMarker(this, PRIM_GPU_ATTRIBUTE_BLOCK);
+  auto marker = getMarkerPrimIfExists(PRIM_GPU_ATTRIBUTE_BLOCK);
   INT_ASSERT(marker);
   marker->insertAtTail(user);
 }

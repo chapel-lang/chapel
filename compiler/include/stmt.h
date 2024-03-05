@@ -153,7 +153,7 @@ public:
 
   bool isGpuAttributeBlock();
   bool isGpuPrimitivesBlock();
-  bool isForGpuAttributes();
+  bool isGpuMetadata();
   BlockStmt* getPrimitivesBlock();
   void noteUseOfGpuAttributeBlock(FnSymbol* user);
 
@@ -203,6 +203,7 @@ public:
   CallExpr*           byrefVars;     // task intents - task constructs only
 
 private:
+  CallExpr*           getMarkerPrimIfExists(PrimitiveTag markerType);
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
 
   CallExpr*           blockInfo;

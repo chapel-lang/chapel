@@ -256,7 +256,7 @@ static void cleanup(ModuleSymbol* module) {
         // If the scopeless block is for applying GPU attributes to promoted
         // expressions, do not flatten it. The bounds of the block denote
         // where the GPU attribute is applied.
-        if (!block->isForGpuAttributes()) {
+        if (!block->isGpuMetadata()) {
           block->flattenAndRemove();
         }
       }

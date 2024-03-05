@@ -3949,7 +3949,8 @@ struct Converter {
     }
 
     auto def = new DefExpr(varSym, initExpr, typeExpr);
-    VariableDefInfo ret = { def, def };
+    VariableDefInfo ret = { def, /* entireExpr */ nullptr };
+    // Note: entierExpr is set below depending on if there are any attributes.
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
     if (!loopFlags.empty()) {
@@ -3963,6 +3964,8 @@ struct Converter {
       loopFlags.insertPrimitives(*this, primBlock);
 
       ret.entireExpr = block;
+    } else {
+      ret.entireExpr = def;
     }
 
     // If the init expression of this variable is a domain and this
