@@ -50,7 +50,7 @@ serialization and deserialization.
 In Chapel 1.32, Serializers and Deserializers are enabled by default. Users
 wishing to opt-out of this capability can recompile their programs with
 the config param ``useIOSerializers`` set to ``false``. This config param
-will be available through the Chapel 1.34 release at minimum.
+will be available through the Chapel 2.0 release at minimum.
 
 API Changes to Standard IO
 --------------------------
