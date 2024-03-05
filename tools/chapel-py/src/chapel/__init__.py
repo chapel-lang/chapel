@@ -309,6 +309,7 @@ def match_pattern(ast, pattern):
             for p in pat:
                 local_variables = variables.copy()
                 if match_inner(ast, p, local_variables):
+                    variables.update(local_variables)
                     return True
             return False
         elif issubclass(pat, AstNode):
