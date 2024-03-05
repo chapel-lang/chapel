@@ -42,6 +42,7 @@
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelAutoAggregation.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelGpuSupport.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelContext.chpl") 
+2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelStaticVars.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/stopInitCommDiags.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelLocks.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ByteBufferHelpers.chpl") 
