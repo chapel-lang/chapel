@@ -8189,47 +8189,125 @@ void warnForSomeNumericConversions(BaseAST* context,
                                    Type* formalType,
                                    Type* actualType,
                                    Symbol* actual) {
+
   Type* formalVt = formalType->getValType();
   Type* actualVt = actualType->getValType();
-  if (fWarnIntUint || shouldWarnUnstableFor(context)) {
-    if (is_uint_type(formalVt) && is_int_type(actualVt)) {
-      if (get_width(formalVt) <= get_width(actualVt)) {
-        bool isParam = false;
-        bool isNegParam = false;
+  bool formalFloatingPoint = is_real_type(formalVt) ||
+                             is_imag_type(formalVt) ||
+                             is_complex_type(formalVt);
+  bool actualFloatingPoint = is_real_type(actualVt) ||
+                             is_imag_type(actualVt) ||
+                             is_complex_type(actualVt);
+  bool formalIntUint = is_int_type(formalVt) || is_uint_type(formalVt);
+  bool actualIntUint = is_int_type(actualVt) || is_uint_type(actualVt);
 
-        if (VarSymbol* var = toVarSymbol(actual)) {
-          if (Immediate* imm = var->immediate) {
-            isParam = true;
-            isNegParam = is_negative(imm);
-          }
-        }
+  // nothing to do if the formal is not numeric
+  if (!formalFloatingPoint && !formalIntUint) return;
+  // nothing to do if the actual is not numeric
+  if (!actualFloatingPoint && !actualIntUint) return;
 
-        // If it's a param, warn only if it is negative.
-        // Otherwise, warn.
-        if (isNegParam || !isParam) {
-          if (fWarnIntUint) {
-            USR_WARN(context, "potentially surprising int->uint implicit conversion");
-          } else {
-            USR_WARN(context, "int->uint implicit conversion is unstable");
-          }
-          USR_PRINT(context, "add a cast :%s to avoid this warning",
-                    toString(formalVt));
+  int formalWidth = get_component_width(formalVt);
+  int actualWidth = get_component_width(actualVt);
+
+  bool actualIsParam = false;
+  if (VarSymbol* var = toVarSymbol(actual)) {
+    if (var->immediate != nullptr) {
+      actualIsParam = true;
+    }
+  }
+
+  bool userModule = false;
+  if (DefExpr* def = actual->defPoint) {
+    if (ModuleSymbol* mod = def->getModule()) {
+      userModule = mod->modTag == MOD_USER;
+    }
+  }
+
+  // consider warning for int -> uint implicit conversion
+  if (formalIntUint && actualIntUint &&
+      is_int_type(actualVt) && is_uint_type(formalVt)) {
+    // note: used to check formalWidth <= actualWidth
+    // but that doesn't make sense to me; if the concern is
+    // it could a be negative int, the widths don't matter
+
+    if (fWarnIntUint || shouldWarnUnstableFor(context)) {
+      bool isParam = actualIsParam;
+      bool isNegParam = false;
+
+      if (VarSymbol* var = toVarSymbol(actual)) {
+        if (Immediate* imm = var->immediate) {
+          isNegParam = is_negative(imm);
         }
+      }
+
+      // If it's a param, warn only if it is negative.
+      // Otherwise, warn.
+      if (isNegParam || !isParam || fWarnParamImplicitNumericConversions) {
+        if (fWarnIntUint) {
+          USR_WARN(context, "potentially surprising implicit conversion "
+                            "from '%s' to '%s'",
+                            toString(actualVt), toString(formalVt));
+        } else {
+          USR_WARN(context, "int->uint implicit conversion is unstable");
+        }
+        USR_PRINT(context, "add a cast :%s to avoid this warning",
+                  toString(formalVt));
+        return;
       }
     }
   }
 
-  // also check for small int/uint -> real
-  if (is_real_type(formalVt) &&
-      (is_uint_type(actualVt) || is_int_type(actualVt))) {
-    if (get_width(formalVt) != 64 &&
-        get_width(actualVt) < 64) {
-      USR_WARN(context, "potentially surprising implicit conversion from '%s' to '%s'", toString(actualVt), toString(formalVt));
-      if (shouldWarnUnstableFor(context)) {
-        USR_WARN(context, "such an implicit conversion is unstable");
+  // consider warning for small int -> small real implicit conversion
+  if (actualIntUint && formalFloatingPoint &&
+      actualWidth < 64 && formalWidth != 64) {
+    if (fWarnSmallIntegralReal || shouldWarnUnstableFor(context)) {
+      if (fWarnSmallIntegralReal) {
+        USR_WARN(context, "potentially surprising implicit conversion "
+                          "from '%s' to '%s'",
+                          toString(actualVt), toString(formalVt));
+      } else {
+        USR_WARN(context, "implicit conversion from non-default-sized integral "
+                          "types to non-default sized floating point "
+                          "types is unstable");
       }
       USR_PRINT(context, "add a cast :%s to avoid this warning",
                 toString(formalVt));
+      return;
+    }
+  }
+
+  // consider warning for any int -> real implicit conversion
+  if (fWarnIntegralReal && actualIntUint && formalFloatingPoint && userModule) {
+    if (!actualIsParam || fWarnParamImplicitNumericConversions) {
+      USR_WARN(context, "implicit conversion from '%s' to '%s'",
+               toString(actualVt), toString(formalVt));
+      USR_PRINT(context, "add a cast :%s to avoid this warning",
+                toString(formalVt));
+      return;
+    }
+  }
+
+  // consider warning for real(t) -> real(u) implicit conversion
+  if (fWarnRealReal && actualFloatingPoint && formalFloatingPoint &&
+      actualWidth != formalWidth && userModule) {
+    if (!actualIsParam || fWarnParamImplicitNumericConversions) {
+      USR_WARN(context, "implicit conversion from '%s' to '%s'",
+               toString(actualVt), toString(formalVt));
+      USR_PRINT(context, "add a cast :%s to avoid this warning",
+                toString(formalVt));
+      return;
+    }
+  }
+
+  // consider warning for int/uint -> int/uint implicit conversion
+  if (fWarnIntegralIntegral && actualIntUint && formalIntUint &&
+      actualWidth != formalWidth && userModule) {
+    if (!actualIsParam || fWarnParamImplicitNumericConversions) {
+      USR_WARN(context, "implicit conversion from '%s' to '%s'",
+               toString(actualVt), toString(formalVt));
+      USR_PRINT(context, "add a cast :%s to avoid this warning",
+                toString(formalVt));
+      return;
     }
   }
 }

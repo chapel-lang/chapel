@@ -219,9 +219,18 @@ FILE* printPassesFile = NULL;
 // flag for llvmWideOpt
 bool fLLVMWideOpt = false;
 
+// warnings for various implicit numeric conversions
+bool fWarnIntUint = false;
+bool fWarnSmallIntegralReal = true;
+bool fWarnIntegralReal = false;
+bool fWarnRealReal = false;
+bool fWarnIntegralIntegral = false;
+bool fWarnImplicitNumericConversions = false;
+bool fWarnParamImplicitNumericConversions = false;
+
+// other warnings
 bool fWarnArrayOfRange = true;
 bool fWarnConstLoops = true;
-bool fWarnIntUint = false;
 bool fWarnUnstable = false;
 bool fWarnUnstableStandard = false;
 bool fWarnUnstableInternal = false;
@@ -743,6 +752,17 @@ static void addUsingAttributeToolname(const ArgumentDescription* desc,
                                       const char* arg) {
   UniqueString name = UniqueString::get(gContext, arg);
   usingAttributeToolNames.push_back(name);
+}
+
+/* called for --warn-implicit-numeric-conversions to enable the warnings */
+static void setNumericWarnings(const ArgumentDescription* desc,
+                               const char* arg) {
+  bool shouldWarn = fWarnImplicitNumericConversions;
+  fWarnIntUint = shouldWarn;
+  fWarnSmallIntegralReal = shouldWarn;
+  fWarnIntegralReal = shouldWarn;
+  fWarnRealReal = shouldWarn;
+  fWarnIntegralIntegral = shouldWarn;
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -1294,12 +1314,19 @@ static ArgumentDescription arg_desc[] = {
  {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
 
  {"", ' ', NULL, "Warning and Language Control Options", NULL, NULL, NULL, NULL},
- {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
+ {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled thrown errors; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_WARNINGS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
  {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
-{"warn-potential-races", ' ', NULL, "Enable [disable] output of warnings for potential race conditions", "N", &fWarnPotentialRaces, "CHPL_WARN_POTENTIAL_RACES", NULL},
+ {"warn-potential-races", ' ', NULL, "Enable [disable] output of warnings for potential race conditions", "N", &fWarnPotentialRaces, "CHPL_WARN_POTENTIAL_RACES", NULL},
+ {"warn-int-uint", ' ', NULL, "Enable [disable] warnings for potentially negative 'int' values implicitly converted to 'uint'", "N", &fWarnIntUint, "CHPL_WARN_INT_UINT", NULL},
+ {"warn-small-integral-real", ' ', NULL, "Enable [disable] warnings for implicitly converting a small int/uint to a small real/complex", "N", &fWarnSmallIntegralReal, "CHPL_WARN_SMALL_INTEGRAL_REAL", NULL},
+ {"warn-integral-real", ' ', NULL, "Enable [disable] warnings for implicitly converting an int/uint to a real/complex", "N", &fWarnIntegralReal, "CHPL_WARN_INTEGRAL_REAL", NULL},
+ {"warn-real-real", ' ', NULL, "Enable [disable] warnings for implicitly converting a real/imag/complex to a real/imag/complex with different precision", "N", &fWarnRealReal, "CHPL_WARN_REAL_REAL", NULL},
+ {"warn-integral-integral", ' ', NULL, "Enable [disable] warnings for implicitly converting an int/uint to an int/uint with different size", "N", &fWarnIntegralIntegral, "CHPL_WARN_INTEGRAL_INTEGRAL", NULL},
+ {"warn-implicit-numeric-conversions", ' ', NULL, "Enable [disable] warnings for implicitly converting a value of numeric type to a different numeric type", "N", &fWarnImplicitNumericConversions, "CHPL_WARN_IMPLICIT_NUMERIC_CONVERSIONS", setNumericWarnings},
+ {"warn-param-implicit-numeric-conversions", ' ', NULL, "Enable [disable] int-uint, real-real, and integral-integral implicit conversion warnings to apply to 'param' values", "F", &fWarnParamImplicitNumericConversions, "CHPL_WARN_PARAM_IMPLICIT_NUMERIC_CONVERSIONS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
@@ -1548,7 +1575,6 @@ static ArgumentDescription arg_desc[] = {
  {"warn-array-of-range", ' ', NULL, "Enable [disable] warnings about arrays of range literals", "N", &fWarnArrayOfRange, "CHPL_WARN_ARRAY_OF_RANGE", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
- {"warn-int-uint", ' ', NULL, "Enable [disable] warnings for potentially negative 'int' values implicitly converted to 'uint'", "N", &fWarnIntUint, "CHPL_WARN_INT_UINT", NULL},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
  {"warn-unstable-internal", ' ', NULL, "Enable [disable] unstable warnings in internal modules", "N", &fWarnUnstableInternal, NULL, NULL},

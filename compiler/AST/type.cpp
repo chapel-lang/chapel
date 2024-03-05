@@ -1502,6 +1502,13 @@ int get_width(Type *t) {
   return 0;
 }
 
+int get_component_width(Type *t) {
+  if (is_complex_type(t)) {
+    return get_width(t) / 2;
+  }
+  return get_width(t);
+}
+
 // numbers between -2**width .. 2**width
 // will fit exactly in a floating-point representation.
 int get_mantissa_width(Type *t) {
