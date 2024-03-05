@@ -1592,7 +1592,7 @@ static CallExpr* generateGPUCall(GpuKernel& info, BlockStmt* gpuBlock, VarSymbol
   }
 
   if (auto blockSizeCall = info.blockSizeCall()) {
-    call->insertAtTail(info.blockSizeCall()->get(1)->copy());
+    call->insertAtTail(blockSizeCall->get(1)->copy());
   } else {
     int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
     call->insertAtTail(new_IntSymbol(blockSize));
