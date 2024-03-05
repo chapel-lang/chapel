@@ -8223,7 +8223,7 @@ void warnForSomeNumericConversions(BaseAST* context,
   if (is_real_type(formalVt) &&
       (is_uint_type(actualVt) || is_int_type(actualVt))) {
     if (get_width(formalVt) != 64 &&
-        get_width(actualVt) != get_width(formalVt)) {
+        get_width(actualVt) < 64) {
       USR_WARN(context, "potentially surprising implicit conversion from '%s' to '%s'", toString(actualVt), toString(formalVt));
       if (shouldWarnUnstableFor(context)) {
         USR_WARN(context, "such an implicit conversion is unstable");
