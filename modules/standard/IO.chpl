@@ -6715,31 +6715,6 @@ proc fileWriter.writeNewline() : void throws {
   }
 }
 
-/* Explicit call for reading or writing a newline. Equivalent to
-    :proc:`fileReader.readNewline`.
-*/
-@deprecated(notes=":proc:`fileReader.readWriteNewline` is deprecated; please use :proc:`fileReader.readNewline` instead")
-inline proc fileReader.readWriteNewline() throws
-{
-  var ionl = new chpl_ioNewline();
-  this.readIt(ionl);
-}
-
-/* Explicit call for reading or writing a newline. Equivalent to
-    :proc:`fileWriter.writeNewline`.
-*/
-@deprecated(notes=":proc:`fileWriter.readWriteNewline` is deprecated; please use :proc:`fileWriter.writeNewline` instead")
-inline proc fileWriter.readWriteNewline() throws
-{
-  var ionl = new chpl_ioNewline();
-  this.writeIt(ionl);
-}
-
-/* Returns `true` if this fileReader is configured for binary I/O.
- */
-@deprecated(notes="'fileReader.binary()' is deprecated; please use 'fileReader.deserializerType' to check for a binary deserializer instead")
-proc fileReader.binary(): bool do return this._binary();
-
 @chpldoc.nodoc
 proc fileReader._binary():bool {
   var ret:uint(8);
@@ -6748,11 +6723,6 @@ proc fileReader._binary():bool {
   }
   return ret != 0;
 }
-
-/* Returns `true` if this fileWriter is configured for binary I/O.
- */
-@deprecated(notes="'fileWriter.binary()' is deprecated; please use 'fileWriter.serializerType' to check for a binary serializer instead")
-proc fileWriter.binary(): bool do return this._binary();
 
 @chpldoc.nodoc
 proc fileWriter._binary():bool {
@@ -6834,20 +6804,6 @@ iter fileReader.lines(stripNewline = false) {
 }
 
 public use ChapelIOStringifyHelper;
-
-// Note that stringify is called with primitive/range/tuple arguments
-// in modules that are loaded early. To avoid module ordering issues,
-// it supports such types directly via stringify_simple.
-/*
-    Creates a string representing the result of writing the arguments.
-
-    Writes each argument, possibly using a `writeThis` method,
-    to a string and returns the result.
-  */
-@deprecated("'stringify(x)' is deprecated; please use 'try! \"%?\".format(x)' from IO.FormattedIO instead");
-proc stringify(const args ...?k):string {
-  return chpl_stringify((...args));
-}
 
 @chpldoc.nodoc
 proc chpl_stringify(const args ...?k):string {
@@ -11781,29 +11737,6 @@ proc readf(fmt:string):bool throws {
   return try stdin.readf(fmt);
 }
 
-
-/*
-   Skip a field in the current aggregate format. This method is currently only
-   supported for JSON format and returns ENOTSUP for other formats. In other
-   formats, it may not be possible in general to know when a field ends.
-
-   The field skipped includes a field name and value but not a following
-   separator. For example, for a JSON format fileReader, given the input:
-
-   ::
-
-      "fieldName":"fieldValue", "otherField":3
-
-   this function will skip to (but leave unread) the comma after
-   the first field value.
-
-   :throws UnexpectedEofError: If EOF encountered skipping field.
-   :throws SystemError: If the field could not be skipped.
- */
-@deprecated("skipField is deprecated, please use jsonDeserializer instead.")
-proc fileReader.skipField() throws {
-  this._skipField();
-}
 
 @chpldoc.nodoc
 proc fileReader._skipField() throws {

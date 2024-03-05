@@ -1,4 +1,0 @@
-binaryQuery.chpl:15: warning: 'fileWriter.binary()' is deprecated; please use 'fileWriter.serializerType' to check for a binary serializer instead
-binaryQuery.chpl:16: warning: 'fileReader.binary()' is deprecated; please use 'fileReader.deserializerType' to check for a binary deserializer instead
-true
-true
