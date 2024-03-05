@@ -680,7 +680,7 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
 /////////////////////////////////////////////////////////////////////////////
 // undoReturnByRef()
 //
-// Ultimately we want to avoid introducing return by ref.
+// Ultimately we may want to avoid introducing return by ref.
 // For now, simply undo it as a denormalization step.
 
 ///////////
@@ -691,15 +691,14 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
 // with:
 //   return(something)
 
-class DefInfoRR {
-public:
+struct ReturnByRefDef {
   FnSymbol*  fn;           // the function that returns by ref
-  ArgSymbol* refArg;       // the function's formal implementing that
+  ArgSymbol* refArg;       // the function's formal used for indirect return
   bool       skipLnFnArgs; // if true, refArg is fn's 3rd-last formal
 };
 
-static bool isGoodRefArg(FnSymbol* fn,              DefInfoRR& info,
-                         bool      skippedLnFnArgs, Expr*      argDef) {
+static bool isGoodRefArg(FnSymbol* fn, ReturnByRefDef& info,
+                         bool skippedLnFnArgs, Expr* argDef) {
   ArgSymbol* refArg = toArgSymbol(toDefExpr(argDef)->sym);
   if (!refArg->hasFlag(FLAG_RETARG))
     return false; // give up; maybe look harder?
@@ -710,7 +709,7 @@ static bool isGoodRefArg(FnSymbol* fn,              DefInfoRR& info,
   return true;
 }
 
-static bool acceptableDef(FnSymbol* fn, DefInfoRR& info) {
+static bool acceptableDef(FnSymbol* fn, ReturnByRefDef& info) {
   // isGoodRefArg() fills 'info'
   if (! isGoodRefArg(fn, info, false, fn->formals.tail)             &&
       ! (fn->numFormals() >= 3 &&
@@ -733,7 +732,7 @@ static bool acceptableDef(FnSymbol* fn, DefInfoRR& info) {
   return true;
 }
 
-static void transformRetTempDef(DefInfoRR& info) {
+static void transformRetTempDef(ReturnByRefDef& info) {
   SymExpr* refUse = nullptr;
   for_SymbolSymExprs(refSE, info.refArg) {
     if (CallExpr* call = toCallExpr(refSE->parentExpr))
@@ -749,7 +748,7 @@ static void transformRetTempDef(DefInfoRR& info) {
   CallExpr* assignCall = toCallExpr(refUse->parentExpr);
   Expr* refValueExpr = assignCall->get(2)->remove();
   INT_ASSERT(isSymExpr(refValueExpr)); // ensure it can be used in 'return'
-  // Do we need to add FLAG_RVV to refValueExpr->symbol()?
+  // Todo: do we need to add FLAG_RVV to refValueExpr->symbol()?
   // At this point temps with FLAG_RVV may occur anywhere due to inlining.
   assignCall->remove();
 
@@ -772,15 +771,14 @@ static void transformRetTempDef(DefInfoRR& info) {
 //
 // collapseTrivialMoves() will reduce to the original 'call_temp = fn(...)'
 
-class UseInfoRR {
-public:             // in 'call fn(args, ret_tmp)' above, the SymExprs for:
+struct ReturnByRefUse {
   SymExpr* fnSE;    //  'fn'
   SymExpr* tempSE;  //  'ret_tmp'
 };
 
 // Return true if the desired pattern is present.
-static bool acceptableUse(DefInfoRR& defInfo, SymExpr* fnUse,
-                          UseInfoRR& useInfo) {
+static bool acceptableUse(ReturnByRefDef& defInfo, SymExpr* fnUse,
+                          ReturnByRefUse& useInfo) {
   CallExpr* call = toCallExpr(fnUse->parentExpr);
   if (call == nullptr || call->resolvedFunction() != defInfo.fn)
     return false;
@@ -795,10 +793,9 @@ static bool acceptableUse(DefInfoRR& defInfo, SymExpr* fnUse,
   return true;
 }
 
-static void transformRetTempUse(UseInfoRR& info) {
+static void transformRetTempUse(ReturnByRefUse& info) {
   Expr*   fnCall  = info.fnSE->parentExpr;
   Symbol* retTemp = info.tempSE->symbol();
-  //fyi:
   INT_ASSERT(! retTemp->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF));
 
   // replace:
@@ -809,7 +806,7 @@ static void transformRetTempUse(UseInfoRR& info) {
   SET_LINENO(fnCall);
 
   Expr* anchor = fnCall->prev;
-  BlockStmt* encl = anchor ? NULL : toBlockStmt(fnCall->parentExpr);
+  BlockStmt* encl = anchor ? nullptr : toBlockStmt(fnCall->parentExpr);
   Expr* move   = new CallExpr(retTemp->isRef() ? PRIM_ASSIGN : PRIM_MOVE,
                               info.tempSE->remove(), fnCall->remove());
   if (anchor) anchor->insertAfter(move);
@@ -822,22 +819,22 @@ static void transformRetTempUse(UseInfoRR& info) {
 static void undoReturnByRef(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_VIRTUAL)) return;  // skip these for now
 
-  DefInfoRR defInfo;
+  ReturnByRefDef defInfo;
   if (! acceptableDef(fn, defInfo))
     return;
 
   // Make changes only if we can handle all uses of 'fn'.
   // While checking, store some findings for later use.
-  std::vector<UseInfoRR> infos;
+  std::vector<ReturnByRefUse> infos;
   for_SymbolSymExprs(use, fn) {
-    UseInfoRR useInfo;
+    ReturnByRefUse useInfo;
     if (acceptableUse(defInfo, use, useInfo))
       infos.push_back(useInfo);
     else
       return;
   }
 
-  for (UseInfoRR& info: infos)
+  for (ReturnByRefUse& info: infos)
     transformRetTempUse(info);
 
   transformRetTempDef(defInfo);
@@ -860,7 +857,7 @@ static bool okSymbol(Symbol* sym) {
   return sym->qual == QUAL_VAL || sym->qual == QUAL_CONST_VAL;
 }
 
-static bool okToCollapse(SymExpr* dest, SymExpr* source) {
+static bool canCollapseMoveBetween(SymExpr* dest, SymExpr* source) {
   Symbol *destSym = dest->symbol(), *sourceSym = source->symbol();
   return
     destSym->type == sourceSym->type        &&
@@ -920,14 +917,13 @@ static void collapseTrivialMoves() {
     if (SymExpr* dest = toSymExpr(move2->get(1)))
      while (true) {
       if (SymExpr* source = toSymExpr(move2->get(2)))
-       if (okToCollapse(dest, source))
-        if (CallExpr* move1 = singleMoveTo(move2, source))
-         {
-           move1->remove();
-           source->replace(move1->get(2)->remove());
-           source->symbol()->defPoint->remove();
-           continue; // will check for another move1 to reduce with move2
-         }
+       if (canCollapseMoveBetween(dest, source))
+        if (CallExpr* move1 = singleMoveTo(move2, source)) {
+          move1->remove();
+          source->replace(move1->get(2)->remove());
+          source->symbol()->defPoint->remove();
+          continue; // will check for another move1 to reduce with move2
+        }
       break; // no further opportunities with move2
      } // while
   } // for
