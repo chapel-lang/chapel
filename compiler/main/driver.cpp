@@ -1326,7 +1326,7 @@ static ArgumentDescription arg_desc[] = {
  {"warn-real-real", ' ', NULL, "Enable [disable] warnings for implicitly converting a real/imag/complex to a real/imag/complex with different precision", "N", &fWarnRealReal, "CHPL_WARN_REAL_REAL", NULL},
  {"warn-integral-integral", ' ', NULL, "Enable [disable] warnings for implicitly converting an int/uint to an int/uint with different size", "N", &fWarnIntegralIntegral, "CHPL_WARN_INTEGRAL_INTEGRAL", NULL},
  {"warn-implicit-numeric-conversions", ' ', NULL, "Enable [disable] warnings for implicitly converting a value of numeric type to a different numeric type", "N", &fWarnImplicitNumericConversions, "CHPL_WARN_IMPLICIT_NUMERIC_CONVERSIONS", setNumericWarnings},
- {"warn-param-implicit-numeric-conversions", ' ', NULL, "Enable [disable] int-uint, real-real, and integral-integral implicit conversion warnings to apply to 'param' values", "F", &fWarnParamImplicitNumericConversions, "CHPL_WARN_PARAM_IMPLICIT_NUMERIC_CONVERSIONS", NULL},
+ {"warn-param-implicit-numeric-conversions", ' ', NULL, "Enable [disable] int-uint, real-real, and integral-integral implicit conversion warnings to apply to 'param' values", "N", &fWarnParamImplicitNumericConversions, "CHPL_WARN_PARAM_IMPLICIT_NUMERIC_CONVERSIONS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
