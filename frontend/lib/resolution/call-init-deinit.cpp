@@ -475,8 +475,11 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
       for (const auto& pair : subs) {
         const ID& id = pair.first;
         const QualifiedType& qt = pair.second;
-        UniqueString fname = parsing::fieldIdToName(context, id);
-        actuals.push_back(CallInfoActual(qt, fname));
+        auto fieldAst = parsing::idToAst(context, id)->toVarLikeDecl();
+        if (fieldAst->storageKind() == QualifiedType::TYPE ||
+            fieldAst->storageKind() == QualifiedType::PARAM) {
+          actuals.push_back(CallInfoActual(qt, fieldAst->name()));
+        }
       }
     }
 
