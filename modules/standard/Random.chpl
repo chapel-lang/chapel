@@ -993,8 +993,6 @@ module Random {
     proc ref sample(const ref arr: [?d] ?t, n: int, withReplacement=false): [] t throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
-      use CopyAggregation;
-
       if d.size < 1 then
         throw new IllegalArgumentError("Cannot sample from an empty array");
 
@@ -1003,8 +1001,7 @@ module Random {
 
       const ds = this.sample(d, n, withReplacement);
       var res: [0..<n] t;
-      forall (i, di) in zip(res.domain, ds) with (var agg = new DstAggregator(t))
-        do agg.copy(res[i], arr[di]); // res[i] = arr[di];
+      forall (i, di) in zip(res.domain, ds) do res[i] = arr[di];
       return res;
     }
 
