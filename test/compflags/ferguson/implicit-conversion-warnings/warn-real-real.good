@@ -1,0 +1,3 @@
+warn-real-real.chpl:3: In function 'test1':
+warn-real-real.chpl:5: warning: implicit conversion from 'real(32)' to 'real(64)'
+warn-real-real.chpl:5: note: add a cast :real(64) to avoid this warning
