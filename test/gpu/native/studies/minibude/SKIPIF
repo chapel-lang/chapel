@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-# Skip if not doing performance testing
-if [ -z "$CHPL_TEST_PERF" ]; then
-  echo "True"
-  exit
-fi
-
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # We're currently using Josh's fork, at some point this may get integrated into
