@@ -63,11 +63,11 @@ FROM chapel-base as chapel-build
 COPY . .
 
 # build Chapel for both C and LLVM backends
-RUN CHPL_TARGET_COMPILER=llvm make -j10 \
-    && CHPL_TARGET_COMPILER=gnu make -j10
-RUN make chpldoc test-venv mason -j10
-RUN make chapel-py-venv chplcheck chpl-language-server -j10
-RUN make cleanall -j10
+RUN CHPL_TARGET_COMPILER=llvm make \
+    && CHPL_TARGET_COMPILER=gnu make
+RUN make chpldoc test-venv mason
+RUN make chapel-py-venv chplcheck chpl-language-server
+RUN make cleanall
 
 # Hack to get access to Chapel binaries
 RUN cd $CHPL_HOME/bin && ln -s */* .
