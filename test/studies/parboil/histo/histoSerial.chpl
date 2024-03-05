@@ -102,7 +102,7 @@ proc dumpHisto(histo: [] uint(8), height: uint(32), width: uint(32), outFilename
       if value == 0 then
         (pixMap[pos].R, pixMap[pos].G, pixMap[pos].B) = (0:uint(8),0:uint(8),0:uint(8));
       else
-        pixMap[pos] = HSVtoRGB(0.0, 1.0, cbrt(1+63.0*value/max(uint(8)))/4);
+        pixMap[pos] = HSVtoRGB(0.0, 1.0, cbrt(1+63.0*value:real/max(uint(8)))/4);
     }
   }
   createBMP(pixMap, height, width, outFilename);

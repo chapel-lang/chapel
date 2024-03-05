@@ -20,8 +20,8 @@ param m64negOne:imag(64) = -1.0i; testabs(m64negOne);
 
 proc testabs(param x) {
   param p = abs(x);
-  assert(p == 1.0);
+  assert(p:real == 1.0);
   // also check non-param version, just for good measure
   var v = x;
-  assert(abs(v) == 1.0);
+  assert(abs(v):real == 1.0);
 }

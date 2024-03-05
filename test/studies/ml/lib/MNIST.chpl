@@ -27,7 +27,7 @@ proc loadImages(num: int, fileName: string = "week2/emnist/data/train-images-idx
                 raw[i,j] = fr.read(uint(8));
             }
         }
-        var image: [imageDomain] real = raw / 255.0;
+        var image: [imageDomain] real = raw:real / 255.0;
         return image;
     }
     const imageBatchDomain = {0..#num};

@@ -1,2 +1,10 @@
+int8toReal32.chpl:22: warning: potentially surprising implicit conversion from 'int(8)' to 'real(32)'
+int8toReal32.chpl:22: note: add a cast :real(32) to avoid this warning
+int8toReal32.chpl:23: warning: potentially surprising implicit conversion from 'uint(8)' to 'real(32)'
+int8toReal32.chpl:23: note: add a cast :real(32) to avoid this warning
+int8toReal32.chpl:24: warning: potentially surprising implicit conversion from 'int(16)' to 'real(32)'
+int8toReal32.chpl:24: note: add a cast :real(32) to avoid this warning
+int8toReal32.chpl:25: warning: potentially surprising implicit conversion from 'uint(16)' to 'real(32)'
+int8toReal32.chpl:25: note: add a cast :real(32) to avoid this warning
 (55.0, 66.0, 77.0, 88.0)
 (11.0, 22.0, 33.0, 44.0)
