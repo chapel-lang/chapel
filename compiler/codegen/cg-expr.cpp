@@ -5493,6 +5493,8 @@ DEFINE_PRIM(GPU_REDUCE_WRAPPER) {
   fnName += "_";
   fnName += std::string(redTypeSym->cname);
 
+  std::cout << "Generating call to " << fnName << std::endl;
+
   ret = codegenCallExprWithArgs(fnName.c_str(), args);
 }
 

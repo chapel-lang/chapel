@@ -1020,16 +1020,20 @@ struct ReductionInfo {
                           //// end of the kernel
 };
 
+class GpuKernel;
+
 class KernelArg {
+  static std::map<std::string, int> wrapperDisambigMap;
+
   private:
     Symbol* actual_;
+    GpuKernel* kernel_;
     ArgSymbol* formal_;
     int8_t kind_;
     ReductionInfo redInfo_;
-    CForLoop* loop_;
 
   public:
-    KernelArg(Symbol* symInLoop, CForLoop* loop);
+    KernelArg(Symbol* symInLoop, GpuKernel* kernel);
     int8_t kind() { return kind_; }
     ArgSymbol* formal() { return formal_; }
     Type* getType() { return actual_->typeInfo(); }
@@ -1074,6 +1078,7 @@ class GpuKernel {
   CallExpr* blockSizeCall_;
   BlockStmt* gpuPrimitivesBlock_;
   Symbol* blockSize_;
+  std::string name_;
 
   int nReductionBufs_ = 0;
 
@@ -1081,6 +1086,7 @@ class GpuKernel {
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
 
   FnSymbol* fn() const { return fn_; }
+  std::string name();
   const std::vector<KernelArg>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   CallExpr* blockSizeCall() const {return blockSizeCall_; }
@@ -1113,6 +1119,7 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , blockSizeCall_(nullptr)
   , gpuPrimitivesBlock_(nullptr)
   , blockSize_(nullptr)
+  , name_("")
 {
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
@@ -1123,15 +1130,23 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   }
 }
 
-static const char* getLoopName(CForLoop* loop) {
-  auto filename = loop->astloc.filename();
-  auto line = loop->astloc.stringLineno();
-  auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
-  return astr("chpl_gpu_kernel_", moduleName.c_str(), "_line_", line, "_");
+std::string GpuKernel::name() {
+  if (name_ == "") {
+    auto filename = gpuLoop.gpuLoop()->astloc.filename();
+    auto line = gpuLoop.gpuLoop()->astloc.stringLineno();
+    auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
+    name_ = std::string("chpl_gpu_kernel_") +
+            moduleName +
+            std::string("_line_") +
+            std::string(line) +
+            std::string("_");
+  }
+
+  return name_;
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
-  fn_ = new FnSymbol(getLoopName(gpuLoop.gpuLoop()));
+  fn_ = new FnSymbol(this->name().c_str());
 
   fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 
@@ -1203,9 +1218,20 @@ bool KernelArg::eligible() {
 }
 
 FnSymbol* KernelArg::generateFinalReductionWrapper() {
-  //SET_LINENO(gpuLoop.gpuLoop());
+  
+  // here, we need to create an unambiguous name for the wrapper. This is
+  // because we are marking it an `export`. export-ed functions don't get unique
+  // names during codegen, so wires get crossed.
+  std::string loopName = this->kernel_->name();
+  if (KernelArg::wrapperDisambigMap.count(loopName) == 0) {
+    KernelArg::wrapperDisambigMap[loopName] = 0;
+  }
+  const int nCurId = KernelArg::wrapperDisambigMap[loopName];
+  KernelArg::wrapperDisambigMap[loopName] = nCurId+1;
 
-  FnSymbol* ret = new FnSymbol("wrap_gpu_reduction");
+  std::string fnName = "reduce_" + std::to_string(nCurId) + "_" + loopName;
+
+  FnSymbol* ret = new FnSymbol(fnName.c_str());
   ret->addFlag(FLAG_RESOLVED);
   ret->addFlag(FLAG_EXPORT);
 
@@ -1255,10 +1281,10 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   return ret;
 }
 
+std::map<std::string, int> KernelArg::wrapperDisambigMap;
 
-KernelArg::KernelArg(Symbol* symInLoop, CForLoop* loop) {
-  this->loop_ = loop;
-  this->actual_ = symInLoop;
+KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel) :
+  actual_(symInLoop), kernel_(kernel) {
 
   Type* symType = symInLoop->typeInfo();
   Type* symValType = symType->getValType();
@@ -1368,7 +1394,7 @@ CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) {
 }
 
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
-  KernelArg arg(symInLoop, gpuLoop.gpuLoop());
+  KernelArg arg(symInLoop, this);
 
   ArgSymbol* formal = arg.formal();
   INT_ASSERT(formal);
