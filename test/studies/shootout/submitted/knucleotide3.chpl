@@ -22,7 +22,7 @@ proc main(args: [] string) {
       lineSize = 0,
       numRead = 0;
 
-  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
+  while stdinNoLock.readLine(buff, lineSize) && !startsWithThree(buff) do
     numRead += lineSize;
 
   // Read in the rest of the file
@@ -30,7 +30,7 @@ proc main(args: [] string) {
       data: [dataDom] uint(8),
       idx = 1;
 
-  while stdinNoLock.readline(data, lineSize, idx) do
+  while stdinNoLock.readLine(data, lineSize, idx) do
     idx += lineSize - 1;
 
   // Resize our array to the amount actually read

@@ -3,10 +3,6 @@ knucleotide4.chpl:17: warning: 'ionative' is deprecated, please use Serializers 
 knucleotide4.chpl:15: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
 knucleotide4.chpl:17: warning: reader with a 'kind' argument is deprecated, please use Serializers instead
 knucleotide4.chpl:17: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-knucleotide4.chpl:24: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
-knucleotide4.chpl:24: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
-knucleotide4.chpl:32: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
-knucleotide4.chpl:32: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
 $CHPL_HOME/modules/standard/Map.chpl:nnnn: In method 'this':
 $CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'hashVal' has a hash function that is being used by the standard library. However, 'hashVal' does not implement hashable. In the future, this will result in an error.
 $CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: to make 'hashVal' implement hashable, add the interface to its declaration: 'record hashVal : hashable'

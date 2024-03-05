@@ -6902,55 +6902,6 @@ inline proc fileReader.read(ref args ...?k):bool throws {
 }
 
 /*
-  Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
-  The ``\n`` is returned in the array.
-
-  Note that this routine currently requires a 1D rectangular non-strided array.
-
-  Throws a SystemError if a line could not be read from the fileReader.
-
-  :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
-  :arg numRead: The number of bytes read.
-  :arg start: Index to begin reading into.
-  :arg amount: The maximum amount of bytes to read.
-  :returns: true if the bytes were read without error.
-*/
-@deprecated(notes="fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
-proc fileReader.readline(ref arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
-                      amount = arg.domain.highBound - start + 1) : bool throws
-                      where arg.rank == 1 && arg.isRectangular() {
-  if arg.size == 0 || !arg.domain.contains(start) ||
-     amount <= 0 || (start + amount - 1 > arg.domain.highBound) then return false;
-
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    param newLineChar = 0x0A;
-    var got: int;
-    var i = start;
-    const maxIdx = start + amount - 1;
-    while i <= maxIdx {
-      got = qio_channel_read_byte(false, this._channel_internal);
-      if got < 0 then break;
-      arg[i] = got:uint(8);
-      i += 1;
-      if got == newLineChar then break;
-    }
-    numRead = i - start;
-    if i == start && got < 0 then err = (-got):errorCode;
-  }
-
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in fileReader.readline(arg : [] uint(8))");
-  }
-  return false;
-}
-
-/*
   Read a line into an array of bytes.
 
   Reads bytes from the ``fileReader`` until a ``\n`` is reached. Values are
@@ -7045,40 +6996,6 @@ pragma "last resort"
 inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                                 stripNewline=false): int throws {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
-}
-
-/*
-  Read a line into a Chapel string or bytes. Reads until a ``\n`` is reached.
-  The ``\n`` is included in the resulting value.
-
-  :arg arg: a string or bytes to receive the line
-  :returns: `true` if a line was read without error, `false` upon EOF
-
-  :throws UnexpectedEofError: If unexpected EOF encountered while reading.
-  :throws SystemError: If data could not be read from the fileReader.
-*/
-@deprecated(notes="fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
-proc fileReader.readline(ref arg: ?t): bool throws where t==string || t==bytes {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  try {
-    on this._home {
-      try this.lock(); defer { this.unlock(); }
-      var saveStyle: iostyleInternal = this._styleInternal();
-      defer {
-        this._set_styleInternal(saveStyle);
-      }
-      var myStyle = saveStyle.text();
-      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
-      myStyle.string_end = 0x0a; // ascii newline.
-      this._set_styleInternal(myStyle);
-      try _readOne(_iokind.dynamic, arg, origLocale);
-    }
-  } catch err: EofError {
-    return false;
-  }
-
-  return true;
 }
 
 // Helper function to replace the contents of a string or bytes
@@ -9311,20 +9228,6 @@ pragma "last resort"
 proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
-}
-
-/* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
-@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
-proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
-              amount = arg.domain.highBound - start + 1) : bool throws
-                where arg.rank == 1 && arg.isRectangular() {
-  return stdin.readline(arg, numRead, start, amount);
-}
-
-/* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
-@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
-proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
-  return stdin.readline(arg);
 }
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
