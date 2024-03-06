@@ -22,3 +22,7 @@ proc file.writer(kind: iokind, param locking: bool, hints = ioHintSet.empty) {
   fw._set_styleInternal(st);
   return fw;
 }
+
+proc _array.writeThis(f) {
+  _value.dsiSerialWrite(f);
+}

@@ -2512,7 +2512,9 @@ record defaultSerializer {
     } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
       _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
-      val.writeThis(writer);
+      // From ChapelIO
+      // Note: Some kind of weird resolution bug with ChapelIO.writeThis...
+      writeThisDefaultImpl(writer, val);
     } else {
       val.serialize(writer=writer, serializer=this);
     }
