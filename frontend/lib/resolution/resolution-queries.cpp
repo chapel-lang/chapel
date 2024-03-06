@@ -1524,6 +1524,59 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   return QUERY_END(result);
 }
 
+const QualifiedType& computeUnderlyingTypeOfEnum(Context* context, ID element) {
+  QUERY_BEGIN(computeUnderlyingTypeOfEnum, context, element);
+
+  auto result = QualifiedType();
+  auto numericValues = computeNumericValuesOfEnumElements(context, element);
+
+  // Find the first non-unknown value, and return its type.
+  for (auto& pair : numericValues) {
+    if (!pair.second.isUnknown()) {
+      result = QualifiedType(QualifiedType::TYPE, pair.second.type());
+      break;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const QualifiedType&
+computeNumericValueOfEnumElement(Context* context, ID node) {
+  QUERY_BEGIN(computeNumericValueOfEnumElement, context, node);
+  auto nodeTag = parsing::idToTag(context, node);
+  auto result = QualifiedType();
+
+  if (nodeTag != uast::asttags::EnumElement) {
+    return QUERY_END(result);
+  }
+
+  auto parentId = parsing::idToParentId(context, node);
+  auto parentTag = parsing::idToTag(context, parentId);
+  if (parentTag != uast::asttags::Enum) {
+    return QUERY_END(result);
+  }
+
+  auto& numericValues = computeNumericValuesOfEnumElements(context, parentId);
+  result = numericValues.at(node);
+
+  return QUERY_END(result);
+}
+
+ID lookupEnumElementByNumericValue(Context* context,
+                                   const ID& node,
+                                   const QualifiedType& value) {
+  auto& numericValues = computeNumericValuesOfEnumElements(context, node);
+
+  for (auto& pair : numericValues) {
+    if (pair.second == value) {
+      return pair.first;
+    }
+  }
+
+  return ID();
+}
+
 static bool varArgCountMatch(const VarArgFormal* formal,
                              ResolutionResultByPostorderID& r) {
   QualifiedType formalType = r.byAst(formal).type();
