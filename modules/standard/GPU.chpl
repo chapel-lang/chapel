@@ -895,6 +895,47 @@ module GPU
 
   private import Time;
 
+
+  proc gpuCubSort(ref gpuInputArr : [] ?t) {
+    param cTypeName = if      t==int(8)   then "int8_t"
+                      else if t==int(16)  then "int16_t"
+                      else if t==int(32)  then "int32_t"
+                      else if t==int(64)  then "int64_t"
+                      else if t==uint(8)  then "uint8_t"
+                      else if t==uint(16) then "uint16_t"
+                      else if t==uint(32) then "uint32_t"
+                      else if t==uint(64) then "uint64_t"
+                      else if t==real(32) then "float"
+                      else if t==real(64) then "double"
+                      else                     "unknown";
+
+    if cTypeName == "unknown" {
+      compilerError("Arrays with ", t:string,
+                    " elements cannot be sorted with gpuCubSort functions");
+    }
+
+    proc getExternFuncName(param op: string, type t) param: string {
+      return "chpl_gpu_sort_"+op+"_"+cTypeName;
+    }
+
+    // find the extern function we'll use
+    // (there's only one right now, the infrastructure allows more)
+    param externFunc = getExternFuncName("keys", t);
+    extern externFunc proc sort_fn(data, temp, size);
+
+    // Make another array which is needed for the sort
+    var temp : gpuInputArr.type;
+
+    const basePtr = c_ptrToConst(gpuInputArr);
+    const tempPtr = c_ptrTo(temp);
+    // Do the sort
+    sort_fn(basePtr, tempPtr, gpuInputArr.size);
+
+    // The sorted values are in temp, so we need to copy them back
+    // to the original array
+    gpuInputArr = temp;
+  }
+
   /*
     Sort an array on the GPU.
     The array must be in GPU-accessible memory and the function must
@@ -912,8 +953,17 @@ module GPU
   */
   proc gpuSort(ref gpuInputArr : [] uint) {
     if !here.isGpu() then halt("gpuSort must be run on a gpu locale");
-
     if gpuInputArr.size == 0 then return;
+
+    extern proc chpl_gpu_can_cub_sort(): bool;
+    if chpl_gpu_can_cub_sort() {
+      gpuCubSort(gpuInputArr);
+      return;
+    }
+    if CHPL_GPU=="cpu" {
+      // TODO sort on CPU
+      return;
+    }
     // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
     // TODO better heuristic here?
     var chunkSize = Math.divCeil(gpuInputArr.size, 2000);

@@ -153,6 +153,10 @@ bool chpl_gpu_impl_can_reduce(void) {
   return false;
 }
 
+bool chpl_gpu_impl_can_cub_sort(void){
+  return false;
+}
+
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\

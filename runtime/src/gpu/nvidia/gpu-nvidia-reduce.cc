@@ -81,5 +81,30 @@ GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
 
+#define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream) {\
+  void* temp = NULL; \
+  size_t temp_bytes = 0; \
+  cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (CUstream)stream); \
+  CUDA_CALL(cuMemAlloc(((CUdeviceptr*)&temp), temp_bytes)); \
+  cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (CUstream)stream); \
+  CUDA_CALL(cuMemFree((CUdeviceptr*)&temp));\
+}
+  // CUDA_CALL(cuMemcpyDtoDAsync((CUdeviceptr)data_in,
+  //                             (CUdeviceptr)data_out, n * sizeof(data_type),
+  //                             (CUstream)stream));
+
+GPU_IMPL_SORT_TYPES(DEF_ONE_SORT, SortKeys, keys)
+
+#undef DEF_ONE_SORT
+
 #endif // HAS_GPU_LOCALE
 
