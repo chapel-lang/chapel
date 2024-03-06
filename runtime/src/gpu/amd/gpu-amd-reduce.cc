@@ -115,12 +115,12 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
   ROCM_CALL(hipcub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
                                  n, /*beginBit*/0, \
                                  /*endBit*/ sizeof(data_type)*8,\
-                                 (CUstream)stream)); \
+                                 (hipStream_t)stream)); \
   ROCM_CALL(hipMalloc(&temp, temp_bytes)); \
   ROCM_CALL(hipcub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
                                  n, /*beginBit*/0, \
                                  /*endBit*/ sizeof(data_type)*8,\
-                                 (CUstream)stream)); \
+                                 (hipStream_t)stream)); \
   ROCM_CALL(hipFree(temp));\
 }
 #else
