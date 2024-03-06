@@ -28,6 +28,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -402,6 +403,53 @@ class References:
 
     def __iter__(self):
         return iter(self.uses)
+
+
+@dataclass
+class EndMarkerPattern:
+    pattern: Union[Type, Set[Type]]
+    header_location: Callable[[chapel.AstNode], Optional[chapel.Location]]
+    goto_location: Callable[[chapel.AstNode], Optional[chapel.Location]]
+
+    @classmethod
+    def all(cls) -> Dict[str, "EndMarkerPattern"]:
+        return {
+            "loop": EndMarkerPattern(
+                chapel.Loop,
+                lambda node: (
+                    node.header_location()
+                    if node.block_style() != "implicit"
+                    else None
+                ),
+                lambda _: None,
+            ),
+            "decl": EndMarkerPattern(
+                chapel.NamedDecl,
+                lambda node: node.header_location(),
+                lambda node: node.name_location(),
+            ),
+            "block": EndMarkerPattern(
+                set(
+                    [
+                        chapel.On,
+                        chapel.Cobegin,
+                        chapel.Begin,
+                        chapel.Defer,
+                        chapel.Serial,
+                        chapel.Sync,
+                        chapel.Local,
+                        chapel.Manage,
+                    ]
+                ),
+                lambda node: (
+                    node.block_header()
+                    if not isinstance(node, chapel.SimpleBlockLike)
+                    or node.block_style() != "implicit"
+                    else None
+                ),
+                lambda _: None,
+            ),
+        }
 
 
 class ContextContainer:
@@ -1259,52 +1307,12 @@ class ChapelLanguageServer(LanguageServer):
 
         return (fi, fn, instantiation)
 
-    def _all_end_marker_patterns(self) -> Dict[str, Dict]:
-        """Returns all possible patterns for end markers"""
-        return {
-            "loop": {
-                "pattern": chapel.Loop,
-                "header_location": lambda node: (
-                    node.header_location()
-                    if node.block_style() != "implicit"
-                    else None
-                ),
-                "goto_location": lambda _: None,
-            },
-            "decl": {
-                "pattern": chapel.NamedDecl,
-                "header_location": lambda node: node.header_location(),
-                "goto_location": lambda node: node.name_location(),
-            },
-            "block": {
-                "pattern": set(
-                    [
-                        chapel.On,
-                        chapel.Cobegin,
-                        chapel.Begin,
-                        chapel.Defer,
-                        chapel.Serial,
-                        chapel.Sync,
-                        chapel.Local,
-                        chapel.Manage,
-                    ]
-                ),
-                "header_location": lambda node: (
-                    node.block_header()
-                    if not isinstance(node, chapel.SimpleBlockLike)
-                    or node.block_style() != "implicit"
-                    else None
-                ),
-                "goto_location": lambda _: None,
-            },
-        }
-
-    def _get_end_marker_patterns(self) -> Dict[str, Dict]:
+    def _get_end_marker_patterns(self) -> Dict[str, EndMarkerPattern]:
         """
         Returns the patterns for the active end markers, based upon `--end-markers`
         """
         active_patterns = dict()
-        patterns = self._all_end_marker_patterns()
+        patterns = EndMarkerPattern.all()
         if "all" in self.end_markers:
             active_patterns = patterns
         elif "none" not in self.end_markers:
@@ -1323,24 +1331,17 @@ class ChapelLanguageServer(LanguageServer):
         inlays = []
 
         for pattern in self.end_marker_patterns.values():
-            for node, _ in chapel.each_matching(ast, pattern["pattern"]):
+            for node, _ in chapel.each_matching(ast, pattern.pattern):
 
                 end_loc = location_to_range(node.location()).end
-                header_loc: Optional[chapel.Location] = pattern[
-                    "header_location"
-                ](node)
-                goto_loc: Optional[chapel.Location] = pattern["goto_location"](
-                    node
-                )
+                header_loc = pattern.header_location(node)
+                goto_loc = pattern.goto_location(node)
 
                 if header_loc is None:
                     continue
                 # skip blocks that are smaller than the threshold
-                # ls.show_message_log(f"{end_loc}, {header_loc.en} lines")
-                if (
-                    end_loc.line - header_loc.end()[0]
-                    < self.end_marker_threshold
-                ):
+                block_size = end_loc.line - header_loc.end()[0]
+                if block_size < self.end_marker_threshold:
                     continue
                 # skip blocks where the comment is already added
                 curly_line = file_lines[end_loc.line]
