@@ -215,7 +215,8 @@ optional<Immediate> paramToImmediate(Context* context,
             // do not override existing values in outTypeOnError. This way,
             // if a previous call reported ErroneousType, we don't overwrite
             // it with the less-specific UnknownType.
-            if (outTypeOnError.isUnknown()) outTypeOnError = qt;
+            if (!outTypeOnError.type()) outTypeOnError = qt;
+            return {};
           }
 
           auto np = numericValueOpt->param();
@@ -240,7 +241,7 @@ optional<Immediate> paramToImmediate(Context* context,
             // do not override existing values in outTypeOnError. This way,
             // if a previous call reported ErroneousType, we don't overwrite
             // it with the less-specific UnknownType.
-            if (outTypeOnError.isUnknown()) outTypeOnError = qt;
+            if (!outTypeOnError.type()) outTypeOnError = qt;
             return {};
           }
 
