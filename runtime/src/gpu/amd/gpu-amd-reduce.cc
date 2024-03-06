@@ -105,5 +105,36 @@ GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
 
+#if ROCM_VERSION_MAJOR >= 5
+#define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream) {\
+  void* temp = NULL; \
+  size_t temp_bytes = 0; \
+  ROCM_CALL(hipcub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (CUstream)stream)); \
+  ROCM_CALL(hipMalloc(&temp, temp_bytes)); \
+  ROCM_CALL(hipcub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (CUstream)stream)); \
+  ROCM_CALL(hipFree(temp));\
+}
+#else
+#define DEF_ONE_SORT(impl_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream) {\
+  chpl_internal_error("Sorting via runtime calls is not supported with AMD GPUs using ROCm version <5\n");\
+}
+#endif // ROCM version Check
+
+GPU_IMPL_SORT_TYPES(DEF_ONE_SORT, SortKeys, keys)
+
+#undef DEF_ONE_SORT
+
 #endif // HAS_GPU_LOCALE
 
