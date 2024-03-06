@@ -1,4 +1,6 @@
-This directory is for our nightly performance testing of miniBudert.
+This directory is for our nightly performance testing of miniBude
+<https://github.com/UoB-HPC/miniBUDE>. Currently, the Chapel implementation
+we're testing in a fork hosted at <https://github.com/milthorpe/miniBUDE>.
 
 Note that the executable .skipif file runs before we start doing any testing
 and will download the "latest and greatest" version of miniBUDE and the input
