@@ -34,7 +34,7 @@ Input/output (I/O) facilities in Chapel include the types :record:`file`,
   currently contains some minor inconsistencies.
 
 
-Automaticlly Available Symbols
+Automatically Available Symbols
 -------------------------------
 
 .. note::

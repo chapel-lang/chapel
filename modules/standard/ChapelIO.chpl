@@ -22,7 +22,9 @@
 
 Automatically included IO symbols
 
-All Chapel programs include :proc:`~IO.write`, :proc:`~IO.writeln` and :proc:`~IO.writef` by default. This allows for a simple implementation of a Hello World program:
+All Chapel programs include :proc:`~IO.write`, :proc:`~IO.writeln` and
+:proc:`~IO.writef` by default. This allows for a simple implementation of a
+Hello World program:
 
 .. code-block:: chapel
 
