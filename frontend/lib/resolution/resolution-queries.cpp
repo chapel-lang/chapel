@@ -1431,25 +1431,25 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
       auto type = qt.type();
 
       if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
-        continue;
+        // Don't propagate errors if they're unrelated; leave value unknown.
       } else if (!type->isIntType() && !type->isUintType()) {
         value = CHPL_TYPE_ERROR(context, EnumInitializerNotInteger, elem, qt);
-        continue;
       } else if (!qt.isParam()) {
         value = CHPL_TYPE_ERROR(context, EnumInitializerNotParam, elem, qt);
-        continue;
+      } else {
+        value = qt;
       }
-
-      value = qt;
     } else {
-      if (valuesAndAsts.empty()) {
-        // First element, and it doesn't have an initialization expression.
-        // We won't report a numeric value for it; leave 'value' null.
+      if (valuesAndAsts.empty() || std::get<2>(valuesAndAsts.back()) == nullptr) {
+        // we're either the first value, or all the previous values have
+        // been abstract. We're abstract too -- encode this using a 'null'
+        // elem.
+        elem = nullptr;
       } else {
         auto& lastValueInfo = valuesAndAsts.back();
         auto lastQt = std::get<0>(lastValueInfo);
-        if (!lastQt.isUnknown()) {
-          // Previous value was 'valid', so add one to it.
+        if (lastQt.isParam()) {
+          // Previous value was valid, so add one to it.
           value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
         } else {
           // Previous value was unknown, so we can't add one to it.
@@ -1478,6 +1478,11 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
     auto& qt = std::get<0>(valueInfo);
     auto signedness = std::get<1>(valueInfo);
     auto elem = std::get<2>(valueInfo);
+    if (elem == nullptr) {
+      // abstract value; skip it.
+      continue;
+    }
+
     if (signedness == RS_SIGNED) {
       if (!needsSigned) {
         needsSigned = elem;
@@ -1500,23 +1505,29 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
     useUnsigned = true;
   }
 
-  // We've now picked what type we're going to use. Convert the values to
+  // We've now picked what type we're going to use. Convert the non-abstract values to
   // that type if they can be converted, and leave them unknown if they can't.
   for (auto& valueInfo : valuesAndAsts) {
     auto qt = std::get<0>(valueInfo);
     auto signedness = std::get<1>(valueInfo);
     auto elem = std::get<2>(valueInfo);
-    auto resultType = QualifiedType();
 
+    if (!elem) {
+      // abstract value; don't store it in the map.
+      continue;
+    }
+
+    auto resultType = QualifiedType();
     optional<int64_t> signedValue = {};
-    bool useErroneous = false;
     if (useUnsigned && signedness == RS_SIGNED)  {
       // This value was known before, but it doesn't fit in the type.
       // We'll mark it with 'erroneous type'. The error has already been
       // issued above.
-      useErroneous = true;
+      resultType = QualifiedType(QualifiedType::UNKNOWN,
+                                 ErroneousType::get(context));
     } else if (!qt.param()) {
-      // The value is already unknown, so leave it unknown.
+      // The value is already unknown, so preserve it.
+      resultType = qt;
     } else if (auto intParam = qt.param()->toIntParam()) {
       signedValue = intParam->value();
     } else if (auto uintParam = qt.param()->toUintParam()) {
@@ -1533,9 +1544,6 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
                                    IntType::get(context, 0),
                                    IntParam::get(context, *signedValue));
       }
-    } else if (useErroneous) {
-      resultType = QualifiedType(QualifiedType::UNKNOWN,
-                                 ErroneousType::get(context));
     }
 
     result[elem->id()] = resultType;
@@ -1544,32 +1552,32 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   return QUERY_END(result);
 }
 
-const QualifiedType& computeUnderlyingTypeOfEnum(Context* context, ID element) {
+const chpl::optional<QualifiedType>& computeUnderlyingTypeOfEnum(Context* context, ID element) {
   QUERY_BEGIN(computeUnderlyingTypeOfEnum, context, element);
 
-  auto result = QualifiedType();
+  chpl::optional<QualifiedType> result;
   auto numericValues = computeNumericValuesOfEnumElements(context, element);
 
   // Find the first non-unknown value, and return its type. As a fallack,
   // return either the default unknown value or, if we've encountered an error,
   // the erroneous type.
   for (auto& pair : numericValues) {
-    if (pair.second.isErroneousType() && result.isUnknown()) {
-      result = pair.second;
-    } else if (!pair.second.isUnknown()) {
+    if (pair.second.isParam()) {
       result = QualifiedType(QualifiedType::TYPE, pair.second.type());
       break;
+    } else if (!result) {
+      result = pair.second;
     }
   }
 
   return QUERY_END(result);
 }
 
-const QualifiedType&
+const chpl::optional<QualifiedType>&
 computeNumericValueOfEnumElement(Context* context, ID node) {
   QUERY_BEGIN(computeNumericValueOfEnumElement, context, node);
   auto nodeTag = parsing::idToTag(context, node);
-  auto result = QualifiedType();
+  chpl::optional<QualifiedType> result = {};
 
   if (nodeTag != uast::asttags::EnumElement) {
     return QUERY_END(result);
@@ -1582,7 +1590,10 @@ computeNumericValueOfEnumElement(Context* context, ID node) {
   }
 
   auto& numericValues = computeNumericValuesOfEnumElements(context, parentId);
-  result = numericValues.at(node);
+  auto it = numericValues.find(node);
+  if (it != numericValues.end()) {
+    result = it->second;
+  }
 
   return QUERY_END(result);
 }

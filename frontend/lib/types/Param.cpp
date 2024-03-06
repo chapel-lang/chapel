@@ -204,26 +204,26 @@ optional<Immediate> paramToImmediate(Context* context,
         CHPL_ASSERT(et);
 
         if (ep) {
-          auto numericValue =
+          auto numericValueOpt =
             computeNumericValueOfEnumElement(context, ep->value());
 
-          auto np = numericValue.param();
-          auto nt = numericValue.type();
-          if (!np) {
+          if (!numericValueOpt) {
             auto eltAst = parsing::idToAst(context, ep->value())->toEnumElement();
+            auto qt = CHPL_TYPE_ERROR(context, EnumValueAbstract, astForErr, et, eltAst);
 
-            // If we encountered an unrelated error trying to compute the
-            // numeric value of this enum element, no need to report another
-            // error about it being abstract.
-            if (!(nt && nt->isErroneousType())) {
-              auto qt = CHPL_TYPE_ERROR(context, EnumValueAbstract, astForErr, et, eltAst);
+            // In order to be able to compose multiple calls to this function,
+            // do not override existing values in outTypeOnError. This way,
+            // if a previous call reported ErroneousType, we don't overwrite
+            // it with the less-specific UnknownType.
+            if (outTypeOnError.isUnknown()) outTypeOnError = qt;
+          }
 
-              // In order to be able to compose multiple calls to this function,
-              // do not override existing values in outTypeOnError. This way,
-              // if a previous call reported ErroneousType, we don't overwrite
-              // it with the less-specific UnknownType.
-              if (outTypeOnError.isUnknown()) outTypeOnError = qt;
-            }
+          auto np = numericValueOpt->param();
+          auto nt = numericValueOpt->type();
+          if (!np) {
+            // The numeric value should exist, but an unrelated error occurred
+            // while computing it (e.g., the user tried to use a string
+            // instead of an integer). Do not issue another error on top of it.
             return {};
           }
 
@@ -231,10 +231,9 @@ optional<Immediate> paramToImmediate(Context* context,
           // an immediate from that.
           return paramToImmediate(context, astForErr, np, nt, outTypeOnError);
         } else {
-          auto qt = computeUnderlyingTypeOfEnum(context, et->id());
+          auto qtOpt = computeUnderlyingTypeOfEnum(context, et->id());
 
-          auto nt = qt.type();
-          if (!nt) {
+          if (!qtOpt) {
             auto qt = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, et);
 
             // In order to be able to compose multiple calls to this function,
@@ -243,7 +242,10 @@ optional<Immediate> paramToImmediate(Context* context,
             // it with the less-specific UnknownType.
             if (outTypeOnError.isUnknown()) outTypeOnError = qt;
             return {};
-          } else if (qt.isErroneousType()) {
+          }
+
+          auto nt = qtOpt->type();
+          if (!qtOpt->isParam()) {
             // An unrelated error occurred when computing the numeric values
             // of the enum. Do not issue another error on top of it.
             return {};

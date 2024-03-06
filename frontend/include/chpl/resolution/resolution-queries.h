@@ -79,7 +79,7 @@ types::QualifiedType getInstantiationType(Context* context,
 const std::map<ID, types::QualifiedType>&
 computeNumericValuesOfEnumElements(Context* context, ID node);
 
-const types::QualifiedType&
+const chpl::optional<types::QualifiedType>&
 computeUnderlyingTypeOfEnum(Context* context, ID element);
 
 /**
@@ -87,7 +87,7 @@ computeUnderlyingTypeOfEnum(Context* context, ID element);
   The caller is responsible for validating that element is an enum element ID.
   If an invalid ID is given, an unknown QualifiedType is returned.
  */
-const types::QualifiedType&
+const chpl::optional<types::QualifiedType>&
 computeNumericValueOfEnumElement(Context* context, ID element);
 
 ID lookupEnumElementByNumericValue(Context* context,

@@ -89,6 +89,20 @@ defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin) {
 }
 
 template<typename T>
+static inline bool
+defaultUpdateOptional(chpl::optional<T>& keep, chpl::optional<T>& addin) {
+  if (keep && addin) {
+    chpl::update<T> combiner;
+    return combiner(*keep, *addin);
+  } else if (keep || addin) {
+    keep.swap(addin);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+template<typename T>
 static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
   // are they both null?
   if (keep.get() == nullptr && addin.get() == nullptr)
@@ -160,6 +174,12 @@ template<> struct update<bool> {
 template<typename T> struct update<std::vector<T>> {
   bool operator()(std::vector<T>& keep, std::vector<T>& addin) const {
     return defaultUpdateVec(keep, addin);
+  }
+};
+
+template<typename T> struct update<chpl::optional<T>> {
+  bool operator()(chpl::optional<T>& keep, chpl::optional<T>& addin) const {
+    return defaultUpdateOptional(keep, addin);
   }
 };
 
