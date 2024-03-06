@@ -559,11 +559,13 @@ if ($multilocale == 1) {
 #
 if ($testblog == 1) {
     print "Cloning blog repo\n";
-    mysystem("cd $basetmpdir && git clone https://github.com/chapel-lang/chapel-blog", "cloning blog repo", 0, 1, 1);
+    mysystem("cd $basetmpdir && git clone https://github.com/chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
+    mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
     if ($blogonly == 0) {
-        mysystem("mkdir -p $testdir/copied-chapel-blog/", "making chpl-src directory", 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/chpl-src $testdir/copied-chapel-blog", "cloning chpl-src repo", 0, 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/scripts $testdir/copied-chapel-blog/", "checking out revision in chpl-src", 0, 1, 1);
+        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", 1, 1, 1);
+        mysystem("cp -r $basetmpdir/chapel-blog/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
+        mysystem("cp -r $basetmpdir/chapel-blog/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
+        mysystem("cp -r $basetmpdir/chapel-blog/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", 1, 1, 1);
     }
 }
 
@@ -598,9 +600,9 @@ if (!($dist eq "")) {
 }
 
 if ($testblog == 1) {
-    $testdirs .= " $basetmpdir/chapel-blog/chpl-src";
+    $testdirs .= " $basetmpdir/chapel-blog/chpl-src $basetmpdir/chapel-blog/content/posts";
     if ($blogonly == 1) {
-        $testflags = "$testflags $basetmpdir/chapel-blog/chpl-src";
+        $testflags = "$testflags $basetmpdir/chapel-blog/chpl-src $basetmpdir/chapel-blog/content/posts";
     }
 }
 
