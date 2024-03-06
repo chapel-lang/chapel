@@ -1263,7 +1263,7 @@ class ChapelLanguageServer(LanguageServer):
         """Returns all possible patterns for end markers"""
         return {
             "loop": {
-                "pattern": (chapel.Loop,),
+                "pattern": chapel.Loop,
                 "header_location": lambda node: (
                     node.header_location()
                     if node.block_style() != "implicit"
@@ -1272,12 +1272,12 @@ class ChapelLanguageServer(LanguageServer):
                 "goto_location": lambda _: None,
             },
             "decl": {
-                "pattern": (chapel.NamedDecl,),
+                "pattern": chapel.NamedDecl,
                 "header_location": lambda node: node.header_location(),
                 "goto_location": lambda node: node.name_location(),
             },
             "block": {
-                "pattern": (
+                "pattern": set([
                     chapel.On,
                     chapel.Cobegin,
                     chapel.Begin,
@@ -1286,7 +1286,7 @@ class ChapelLanguageServer(LanguageServer):
                     chapel.Sync,
                     chapel.Local,
                     chapel.Manage,
-                ),
+                ]),
                 "header_location": lambda node: (
                     node.block_header()
                     if not isinstance(node, chapel.SimpleBlockLike)
