@@ -966,13 +966,19 @@ module GPU
       sort(gpuInputArr);
       return;
     }
+    fallBackRadixSort(gpuInputArr);
+  }
+
+  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where t==uint{
     // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
     // TODO better heuristic here?
     var chunkSize = Math.divCeil(gpuInputArr.size, 2000);
-    // TODO assert type is uint
-    // parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
+    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
   }
 
+  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where t!=uint{
+    compilerError("Womp Womp");
+  }
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
   proc parallelRadixSort(ref gpuInputArr : [] uint, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
