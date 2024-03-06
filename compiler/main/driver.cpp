@@ -221,7 +221,7 @@ bool fLLVMWideOpt = false;
 
 // warnings for various implicit numeric conversions
 bool fWarnIntUint = false;
-bool fWarnSmallIntegralReal = true;
+bool fWarnSmallIntegralReal = false;
 bool fWarnIntegralReal = false;
 bool fWarnRealReal = false;
 bool fWarnIntegralIntegral = false;

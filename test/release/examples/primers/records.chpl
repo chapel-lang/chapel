@@ -47,7 +47,7 @@ writeln(myColor); // output: (red = 0, green = 0, blue = 0)
 // Note that inside of a method, the fields may be accessed
 // by name. Additionally `this` refers to the entire record.
 proc Color.luminance() {
-  return 0.2126*red:real + 0.7152*green:real + 0.0722*blue:real;
+  return 0.2126*red + 0.7152*green + 0.0722*blue;
 }
 writeln(taupe.luminance());
 
