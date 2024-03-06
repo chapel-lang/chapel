@@ -125,7 +125,8 @@ exclude_patterns = ['Makefile',
                     'builtins/OwnedObject.rst',
                     'builtins/SharedObject.rst',
                     'builtins/String.rst',
-                    'modules/standard/AutoMath.rst'
+                    'modules/standard/AutoMath.rst',
+                    'modules/standard/ChapelIO.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all

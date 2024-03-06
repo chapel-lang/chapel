@@ -23,10 +23,6 @@
 
 Support for a variety of kinds of input and output.
 
-.. note:: All Chapel programs automatically include :proc:`~ChapelIO.write`,
-          :proc:`~ChapelIO.writeln` and :proc:`~ChapelIO.writef`.  These symbols
-          can also be accessed using ``IO.`` as their qualified access prefix.
-
 Input/output (I/O) facilities in Chapel include the types :record:`file`,
 :record:`fileReader` and :record:`fileWriter`; the constants :record:`stdin`,
 :record:`stdout` and :record:`stderr`; the functions :proc:`open`,
@@ -36,6 +32,20 @@ Input/output (I/O) facilities in Chapel include the types :record:`file`,
 .. warning::
   Please be aware, the IO Module documentation is under development and
   currently contains some minor inconsistencies.
+
+
+Automaticlly Available Symbols
+-------------------------------
+
+.. note::
+
+   These symbols can also be accessed using ``IO.`` as their qualified access
+   prefix.
+
+.. include:: ChapelIO.rst
+  :start-line: 7
+  :start-after: Automatically included IO symbols
+  :end-before: .. function::
 
 .. _about-io-overview:
 
@@ -142,7 +152,267 @@ because of the race condition between ``fseek`` and ``fwrite``. Because of these
 issues, Chapel programmers wishing to perform I/O will need to know how to open
 files as well as create fileReaders and fileWriters.
 
+.. _serialize-deserialize:
 
+The 'serialize' and 'deserialize' Methods
+-----------------------------------------
+
+A Chapel program can implement ``serialize`` and ``deserialize`` methods
+on a user-defined data type to define how that type is deserialized from a
+``fileReader`` or serialized to a ``fileWriter``. The method signatures for
+non-class types are:
+
+.. code-block:: chapel
+
+   proc T.serialize(writer: fileWriter(locking=false, ?),
+                    ref serializer: ?st) throws
+
+   proc ref T.deserialize(reader: fileReader(locking=false, ?),
+                          ref deserializer: ?dt) throws
+
+The signatures for classes are slightly different:
+
+.. code-block:: chapel
+
+   override proc T.serialize(writer: fileWriter(locking=false, ?),
+                             ref serializer: ?st) throws
+
+   override proc T.deserialize(reader: fileReader(locking=false, ?),
+                               ref deserializer: ?dt) throws
+
+The ``serializer`` and ``deserializer`` arguments must satisfy the
+:ref:`Serializer API<io-serializer-API>` and the
+:ref:`Deserializer API<io-deserializer-API>`, respectively.
+
+Basic Usage
+~~~~~~~~~~~
+
+Implementations of ``serialize`` and ``deserialize`` methods are not
+necessarily required to utilize their ``serializer`` and ``deserializer``
+arguments, and can instead trivially read and write from their ``fileReader``
+and ``fileWriter`` arguments. For example:
+
+.. code-block:: chapel
+
+  // A record 'R' that serializes as an integer
+  record R : writeSerializable {
+    var x : int;
+
+    proc serialize(writer: fileWriter(locking=false, ?),
+                   ref serializer: ?st) {
+      writer.write(x);
+    }
+  }
+
+  var val = new R(5);
+  writeln(val); // prints '5'
+
+Using Serializers and Deserializers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:ref:`Serializers<io-serializer-user-API>` and
+:ref:`Deserializers<io-deserializer-user-API>` support a variety of methods
+to support serializing various kinds of types. These methods can be used
+to serialize or deserialize a type in a format-agnostic way. For example,
+consider a simple 'point' type:
+
+.. code-block:: chapel
+
+  record point : writeSerializable {
+    var x : int;
+    var y : int;
+  }
+
+The default implementation of ``point``'s ``serialize`` method will naturally
+serialize ``point`` as a record. In the default serialization format, this
+would look something like ``(x = 2, y = 4)``. In the JSON serialization format,
+the output would instead be ``{"x":4, "y":2}``. While this may be perfectly
+acceptable, what if the author of ``point`` wished to always serialize a
+``point`` as a tuple?
+
+Serializers and Deserializers have "start" methods that begin serialization
+or deserialization of a type, and then return a helper object that implements
+methods to continue the process. To begin serializing ``point`` as a tuple,
+a user may invoke the ``startTuple`` method on the ``serializer``, passing in
+the ``fileWriter`` to use when writing serialized output and the number of
+elements in the tuple. The returned value from ``startTuple`` is a helper
+object that implements ``writeElement`` and ``endTuple`` methods:
+
+.. code-block:: chapel
+
+    proc point.serialize(writer: fileWriter(locking=false, ?),
+                         ref serializer: ?st) {
+      // Start serializing and get the helper object
+      // '2' represents the number of tuple elements to be serialized
+      var ser = serializer.startTuple(writer, 2);
+
+      ser.writeElement(x); // serialize 'x' as a tuple element
+      ser.writeElement(y); // serialize 'y' as a tuple element
+
+      // End serialization of the tuple
+      ser.endTuple();
+    }
+
+Now, when using different Serializers like the :type:`~IO.defaultSerializer` or
+the :type:`~JSON.jsonSerializer`, the ``point`` type can be serialized without
+introducing special cases for each format:
+
+.. code-block:: chapel
+
+  use IO, JSON;
+
+  var p = new point(4, 2);
+
+  // Prints '(4, 2)' in the default serialization format
+  stdout.writeln(p);
+
+  // Prints '[4, 2]' in the JSON serialization format
+  var jsonWriter = stdout.withSerializer(jsonSerializer);
+  jsonWriter.writeln(p);
+
+A similar API exists for deserialization that would allow for deserializing a
+``point`` as a tuple. Please refer to the
+:ref:`IO Serializers technote<ioSerializers>` for more detail on the various
+kinds of types that can be serialized and deserialized. As of Chapel 1.32 the
+supported type-kinds are Classes, Records, Tuples, Arrays, Lists, and Maps.
+
+.. _about-io-generated-default-methods:
+
+Compiler-Generated Default Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Default ``serialize`` methods are created for all types for which a
+user-defined ``serialize`` method is not provided.
+
+Classes will be serialized as a 'Class' type-kind using the Serializer API,
+and will invoke their parent ``serialize`` method before serializing their
+own fields.
+
+Records will be serialized as a 'Record' type-kind using the Serializer API,
+and will serialize each field in the record.
+
+Default ``deserialize`` methods are created for all types for which a
+user-defined ``deserialize`` method is not provided.  The default
+``deserialize`` methods will mirror the relevant API calls in the default
+``serialize`` methods.
+
+For more information on the default serialization format, please refer to the
+:type:`~IO.defaultSerializer` and :type:`~IO.defaultDeserializer` types.
+
+If the compiler sees a user-defined implementation of the ``serialize`` method,
+the ``deserialize`` method, or the deserializing initializer, then the compiler
+may choose to not automatically generate any of the other unimplemented
+methods. This is out of concern that the user has intentionally deviated from
+the default implementation of serialization and deserialization.
+
+Types with compiler-generated versions of these methods do not need to
+explicitly indicate that they satisfy any of the relevant serialization
+interfaces (such as ``writeSerializable``).
+
+.. note::
+
+  Note that it is not currently possible to read and write circular
+  data structures with these mechanisms.
+
+.. _readThis-writeThis:
+
+The readThis() and writeThis() Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+  ``readThis`` and ``writeThis`` methods are deprecated. Please use
+  :ref:`serialize and deserialize<serialize-deserialize>` methods instead.
+  Until ``readThis`` and ``writeThis`` methods are removed, any
+  compiler-generated implementations of the 'serialize' and 'deserialize'
+  methods will attempt to invoke ``readThis`` and ``writeThis`` methods for
+  the sake of compatibility.
+
+A Chapel program can implement ``readThis`` and ``writeThis`` methods on a
+custom data type to define how that type is read from a fileReader or written to
+a fileWriter.  ``readThis`` accepts a fileReader as its only argument and the
+file must be readable.  ``writeThis`` accepts a fileWriter as its only argument
+and the file must be writable. If neither of these methods is defined, a default
+version of ``readThis`` and ``writeThis`` will be generated by the compiler.
+
+Note that arguments to ``readThis`` and ``writeThis`` may be locked; as a
+result, calling methods on the fileReader or fileWriter in parallel from within
+a ``readThis`` or ``writeThis`` may cause undefined behavior.  Additionally,
+performing I/O on a global fileReader or fileWriter that is the same as the one
+``readThis`` or ``writeThis`` is operating on can result in a deadlock. In
+particular, these methods should not refer to :var:`~IO.stdin`,
+:var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or implicitly (such as by
+calling the global :proc:`writeln` function).  Instead, these methods should
+only perform I/O on the fileReader or fileWriter passed as an argument.
+
+Note that the procedures :proc:`~IO.fileReader.readLiteral` and
+:proc:`~IO.fileWriter.writeLiteral` may be useful when implementing ``readThis``
+and ``writeThis`` methods. These methods are not included by default.
+
+This example defines a writeThis method - so that there will be a function
+resolution error if the record NoRead is read.
+
+.. code-block:: chapel
+
+  record NoRead {
+    var x: int;
+    var y: int;
+    proc writeThis(f) throws {
+      f.write("hello");
+    }
+    // Note that no readThis function will be generated.
+  }
+  var nr = new NoRead();
+  write(nr);
+  // prints out
+  // hello
+
+  // Note that read(nr) will generate a compiler error.
+
+.. _default-readThis-writeThis:
+
+Default writeThis and readThis Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default ``writeThis`` methods are created for all types for which a
+user-defined ``writeThis`` method is not provided.  They have the following
+semantics:
+
+* for a class: outputs the values within the fields of the class prefixed by
+  the name of the field and the character ``=``.  Each field is separated by a
+  comma.  The output is delimited by ``{`` and ``}``.
+* for a record: outputs the values within the fields of the class prefixed by
+  the name of the field and the character ``=``.  Each field is separated by a
+  comma.  The output is delimited by ``(`` and ``)``.
+
+Default ``readThis`` methods are created for all types for which a user-defined
+``readThis`` method is not provided.  The default ``readThis`` methods are
+defined to read in the output of the default ``writeThis`` method.
+
+Additionally, the Chapel implementation includes ``writeThis`` methods for
+built-in types as follows:
+
+* for an array: outputs the elements of the array in row-major order
+  where rows are separated by line-feeds and blank lines are used to separate
+  other dimensions.
+* for a domain: outputs the dimensions of the domain enclosed by
+  ``{`` and ``}``.
+* for a range: output the lower bound of the range, output ``..``,
+  then output the upper bound of the range.  If the stride of the range
+  is not ``1``, output the word ``by`` and then the stride of the range.
+  If the range has special alignment, output the word ``align`` and then the
+  alignment.
+* for tuples, outputs the components of the tuple in order delimited by ``(``
+  and ``)``, and separated by commas.
+
+These types also include ``readThis`` methods to read the corresponding format.
+Note that when reading an array, the domain of the array must be set up
+appropriately before the elements can be read.
+
+.. note::
+
+  Note that it is not currently possible to read and write circular
+  data structures with these mechanisms.
 
 .. _about-io-files:
 
@@ -583,6 +853,12 @@ and/or fileWriters must be created and used.
 ``fflush()`` in C.  However, ``fflush()`` is not necessarily called in
 :proc:`fileWriter.flush()`, unlike ``fsync()``, which is actually called by
 :proc:`file.fsync()` in Chapel.
+
+Automatically Included IO Functions
+-----------------------------------
+
+.. include:: ChapelIO.rst
+  :start-after:  // Hello, World!
 
 IO Functions and Types
 ----------------------
