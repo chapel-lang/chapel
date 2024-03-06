@@ -19,6 +19,7 @@ module Zarr {
   require "-lblosc";
 
   module Blosc {
+    use CTypes;
     extern proc blosc_init();
     extern proc blosc_compress(clevel: c_int, doshuffle: c_int, typesize: c_size_t,
                               nbytes: c_size_t, src: c_ptrConst(void), 
@@ -56,7 +57,7 @@ module Zarr {
     throw Error("Unexpected data type, only real and int types are supported.");
   }
 
-  proc getMetadata(directoryPath: string) {
+  proc getMetadata(directoryPath: string) throws {
     var metadataPath = joinPath(directoryPath, ".zarray");
     var r = openReader(metadataPath, deserializer = new jsonDeserializer(), locking=false);
     var md: zarrMetadataV2;
@@ -243,7 +244,7 @@ module Zarr {
     :arg bloscThreads: The number of threads to use during decompression 
       (default=1)
   */
-  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1) {
+  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1) throws {
     var md = getMetadata(directoryPath);
     validateMetadata(md, dtype, dimCount);
     // Size and shape tuples
@@ -309,7 +310,7 @@ module Zarr {
     :arg bloscLevel: Compression level to use. 0 indicates no compression,
       9 (default) indicates maximum compression. 
   */
-  proc writeZarrArray(directoryPath: string, ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscThreads: int(32) = 1, bloscLevel: int(32) = 9) {
+  proc writeZarrArray(directoryPath: string, ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscThreads: int(32) = 1, bloscLevel: int(32) = 9) throws {
 
     // Create the metadata record that is written before the chunks
     var shape, chunks: list(int);
