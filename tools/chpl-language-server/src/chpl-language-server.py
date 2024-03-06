@@ -1277,16 +1277,18 @@ class ChapelLanguageServer(LanguageServer):
                 "goto_location": lambda node: node.name_location(),
             },
             "block": {
-                "pattern": set([
-                    chapel.On,
-                    chapel.Cobegin,
-                    chapel.Begin,
-                    chapel.Defer,
-                    chapel.Serial,
-                    chapel.Sync,
-                    chapel.Local,
-                    chapel.Manage,
-                ]),
+                "pattern": set(
+                    [
+                        chapel.On,
+                        chapel.Cobegin,
+                        chapel.Begin,
+                        chapel.Defer,
+                        chapel.Serial,
+                        chapel.Sync,
+                        chapel.Local,
+                        chapel.Manage,
+                    ]
+                ),
                 "header_location": lambda node: (
                     node.block_header()
                     if not isinstance(node, chapel.SimpleBlockLike)
