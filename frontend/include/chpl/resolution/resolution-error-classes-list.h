@@ -41,7 +41,7 @@ ERROR_CLASS(ConstRefCoercion, const uast::AstNode*, resolution::MostSpecificCand
 WARNING_CLASS(Deprecation, std::string, const uast::AstNode*, const uast::NamedDecl*)
 ERROR_CLASS(DotExprInUseImport, const uast::VisibilityClause*, const uast::VisibilityClause::LimitationKind, const uast::Dot*)
 ERROR_CLASS(DotTypeOnType, const uast::Dot*, const types::Type*, ID)
-ERROR_CLASS(EnumAbstract, const uast::AstNode*, const types::EnumType*)
+ERROR_CLASS(EnumAbstract, const uast::AstNode*, std::string, const types::EnumType*, const types::Type*)
 ERROR_CLASS(EnumInitializerNotParam, const uast::EnumElement*, types::QualifiedType)
 ERROR_CLASS(EnumInitializerNotInteger, const uast::EnumElement*, types::QualifiedType)
 ERROR_CLASS(EnumValueAbstract, const uast::AstNode*, const types::EnumType*, const uast::EnumElement*)

@@ -234,7 +234,7 @@ optional<Immediate> paramToImmediate(Context* context,
           auto qtOpt = computeUnderlyingTypeOfEnum(context, et->id());
 
           if (!qtOpt) {
-            auto qt = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, et);
+            auto qt = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", et, nullptr);
 
             // In order to be able to compose multiple calls to this function,
             // do not override existing values in outTypeOnError. This way,

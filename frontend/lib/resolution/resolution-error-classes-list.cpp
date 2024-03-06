@@ -359,9 +359,20 @@ void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
 
 void ErrorEnumAbstract::write(ErrorWriterBase& wr) const {
   auto location = std::get<const uast::AstNode*>(info_);
+  auto& direction = std::get<std::string>(info_);
   auto enumType = std::get<const types::EnumType*>(info_);
+  auto otherType = std::get<const types::Type*>(info_);
 
-  wr.heading(kind_, type_, location, "cannot get numeric value from abstract 'enum'");
+  if (direction == "from" && otherType) {
+    wr.heading(kind_, type_, location,
+               "cannot cast from abstract enumeration type '", enumType->name(),"' to '", otherType, "'.");
+  } else if (direction == "to" && otherType) {
+    wr.heading(kind_, type_, location,
+               "cannot cast from '", otherType, "' to abstract enumeration type '", enumType->name(),"'.");
+  } else {
+    wr.heading(kind_, type_, location, "enumeration type '", enumType->name(),
+               "' is abstract and cannot be converted to a numeric value.");
+  }
   wr.code(location);
   wr.message("The enumeration type '", enumType->name(), "' is declared here:");
   wr.codeForLocation(enumType->id());

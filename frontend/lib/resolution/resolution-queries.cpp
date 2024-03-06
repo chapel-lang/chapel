@@ -3113,24 +3113,10 @@ static bool resolveFnCallSpecial(Context* context,
         auto srcEnumType = src.type()->toEnumType();
         auto dstEnumType = dst.type()->toEnumType();
         if (srcEnumType && srcEnumType->isAbstract()) {
-          auto toName = tagToString(dst.type()->tag());
-          auto fromName = tagToString(src.type()->tag());
-          context->error(astForErr,
-                         "can't cast from an abstract enum ('%s') to %s",
-                         fromName,
-                         toName);
-          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                      ErroneousType::get(context));
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcEnumType, dst.type());
           return true;
         } else if (dstEnumType && dstEnumType->isAbstract()) {
-          auto toName = tagToString(dst.type()->tag());
-          auto fromName = tagToString(src.type()->tag());
-          context->error(astForErr,
-                         "can't cast from %s to an abstract enum type ('%s')",
-                         fromName,
-                         toName);
-          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                      ErroneousType::get(context));
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstEnumType, src.type());
           return true;
         } else if (srcEnumType && dst.type()->toNothingType()) {
           auto fromName = tagToString(src.type()->tag());
