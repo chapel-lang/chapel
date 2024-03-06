@@ -25,9 +25,9 @@ Warning and Language Control Options:
                                       source
       --[no-]warn-potential-races     Enable [disable] output of warnings for
                                       potential race conditions
-      --[no-]warn-int-to-uint         Enable [disable] warnings for
-                                      potentially negative 'int' values
-                                      implicitly converted to 'uint'
+      --[no-]warn-int-to-uint         Enable [disable] warnings for implicitly
+                                      converting a potentially negative int
+                                      value of any width to a uint
       --[no-]warn-small-integral-to-float
                                       Enable [disable] warnings for implicitly
                                       converting a small int/uint to a small
