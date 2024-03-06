@@ -273,7 +273,7 @@ def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
     zero-indexed.
     """
     text = []
-    for (line, column, length) in range_to_tokens(rng, lines):
+    for line, column, length in range_to_tokens(rng, lines):
         text.append(lines[line][column : column + length + 1])
     return " ".join([t.strip() for t in text])
 
@@ -872,7 +872,7 @@ class ChapelLanguageServer(LanguageServer):
         self.eval_expressions: bool = config.get("eval_expressions")
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
-        self.end_marker_patterns = self._make_end_marker_patterns()
+        self.end_marker_patterns = self._get_end_marker_patterns()
 
         self._setup_regexes()
 
@@ -1259,80 +1259,101 @@ class ChapelLanguageServer(LanguageServer):
 
         return (fi, fn, instantiation)
 
-    def _all_end_marker_patterns(self) -> Dict[str, Tuple]:
+    def _all_end_marker_patterns(self) -> Dict[str, Dict]:
+        """Returns all possible patterns for end markers"""
         return {
-            "loop": (chapel.Loop,),
-            "decl": (chapel.NamedDecl,),
-            "block": (
-                chapel.On,
-                chapel.Cobegin,
-                chapel.Begin,
-                chapel.Defer,
-                chapel.Serial,
-                chapel.Sync,
-                chapel.Local,
-                chapel.Manage,
-            ),
+            "loop": {
+                "pattern": (chapel.Loop,),
+                "header_location": lambda node: (
+                    node.header_location()
+                    if node.block_style() != "implicit"
+                    else None
+                ),
+                "goto_location": lambda _: None,
+            },
+            "decl": {
+                "pattern": (chapel.NamedDecl,),
+                "header_location": lambda node: node.header_location(),
+                "goto_location": lambda node: node.name_location(),
+            },
+            "block": {
+                "pattern": (
+                    chapel.On,
+                    chapel.Cobegin,
+                    chapel.Begin,
+                    chapel.Defer,
+                    chapel.Serial,
+                    chapel.Sync,
+                    chapel.Local,
+                    chapel.Manage,
+                ),
+                "header_location": lambda node: (
+                    node.block_header()
+                    if not isinstance(node, chapel.SimpleBlockLike)
+                    or node.block_style() != "implicit"
+                    else None
+                ),
+                "goto_location": lambda _: None,
+            },
         }
 
-    def _make_end_marker_patterns(self) -> Set[chapel.AstNode]:
-        to_match = set()
+    def _get_end_marker_patterns(self) -> Dict[str, Dict]:
+        """
+        Returns the patterns for the active end markers, based upon `--end-markers`
+        """
+        active_patterns = dict()
         patterns = self._all_end_marker_patterns()
         if "all" in self.end_markers:
-            for pat in patterns.values():
-                to_match.update(pat)
+            active_patterns = patterns
         elif "none" not in self.end_markers:
             for marker in self.end_markers:
-                to_match.update(patterns[marker])
-        return to_match
+                active_patterns[marker] = patterns[marker]
+        return active_patterns
 
-    def get_end_marker(
-        self, node: chapel.AstNode, file_lines: List[str]
-    ) -> Optional[InlayHint]:
+    def get_end_markers(
+        self, ast: List[chapel.AstNode], file_lines: List[str]
+    ) -> List[InlayHint]:
         """
-        Get inlay hints that mark the end of a significant block of code. This
-        function assumes the feature is enabled for the node type, but does
-        check if the block is less than some threshold.
+        Get the inlay hints that mark the end of significant blocks of code.
+        This is based upon the active patterns in `end_marker_patterns`. This
+        function also checks if the block is less than some threshold.
         """
-        end_loc = location_to_range(node.location()).end
-        header_loc: Optional[chapel.Location] = None
-        goto_loc: Optional[chapel.Location] = None
-        if isinstance(node, chapel.Loop) and node.block_style() != "implicit":
-            header_loc = node.header_location()
-        elif isinstance(node, chapel.NamedDecl):
-            header_loc = node.header_location()
-            goto_loc = node.name_location()
-        elif isinstance(
-            node, self._all_end_marker_patterns().get("block", ())
-        ) and (
-            not isinstance(node, chapel.SimpleBlockLike)
-            or node.block_style() != "implicit"
-        ):
-            # show the header for all "block" types, but if that block has a
-            # block style only show the explicit blocks
-            header_loc = node.block_header()
+        inlays = []
 
-        if header_loc is None:
-            return None
+        for pattern in self.end_marker_patterns.values():
+            for node, _ in chapel.each_matching(ast, pattern["pattern"]):
 
-        # skip blocks that are smaller than the threshold
-        # ls.show_message_log(f"{end_loc}, {header_loc.en} lines")
-        if end_loc.line - header_loc.end()[0] < self.end_marker_threshold:
-            return None
+                end_loc = location_to_range(node.location()).end
+                header_loc: Optional[chapel.Location] = pattern[
+                    "header_location"
+                ](node)
+                goto_loc: Optional[chapel.Location] = pattern["goto_location"](
+                    node
+                )
 
-        # skip blocks where the comment is already added
-        curly_line = file_lines[end_loc.line]
-        if re.search(self._curly_bracket_with_comment, curly_line):
-            return None
+                if header_loc is None:
+                    continue
+                # skip blocks that are smaller than the threshold
+                # ls.show_message_log(f"{end_loc}, {header_loc.en} lines")
+                if (
+                    end_loc.line - header_loc.end()[0]
+                    < self.end_marker_threshold
+                ):
+                    continue
+                # skip blocks where the comment is already added
+                curly_line = file_lines[end_loc.line]
+                if re.search(self._curly_bracket_with_comment, curly_line):
+                    continue
 
-        text = range_to_text(header_loc, file_lines)
-        loc = location_to_location(goto_loc) if goto_loc else None
-        inlay = InlayHint(
-            position=end_loc,
-            padding_left=True,
-            label=[InlayHintLabelPart(text, location=loc)],
-        )
-        return inlay
+                text = range_to_text(header_loc, file_lines)
+                loc = location_to_location(goto_loc) if goto_loc else None
+                inlay = InlayHint(
+                    position=end_loc,
+                    padding_left=True,
+                    label=[InlayHintLabelPart(text, location=loc)],
+                )
+                inlays.append(inlay)
+        return inlays
 
 
 def run_lsp():
@@ -1598,10 +1619,10 @@ def run_lsp():
                     inlays.extend(ls.get_call_inlays(call, instantiation))
 
         file_lines = fi.file_lines()
-        for node, _ in chapel.each_matching(fi.get_asts(), ls.end_marker_patterns):
-            inlay = ls.get_end_marker(node, file_lines)
-            if inlay:
-                inlays.append(inlay)
+        ast = fi.get_asts()
+        block_inlays = ls.get_end_markers(ast, file_lines)
+        if len(block_inlays) > 0:
+            inlays.extend(block_inlays)
 
         return inlays
 
