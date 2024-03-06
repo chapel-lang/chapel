@@ -49,3 +49,11 @@ proc test6() {
   writeln("test6 ", x, " : ", x.type:string);
 }
 test6();
+
+proc test7fn(arg: real(32)) { }
+
+proc test7() {
+  var myInt32: int(32);
+  test7fn(myInt32);
+}
+test7();

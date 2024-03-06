@@ -20,6 +20,9 @@ warn-small-integral-real.chpl:41: note: add a cast :real(32) to avoid this warni
 warn-small-integral-real.chpl:47: In function 'test6':
 warn-small-integral-real.chpl:48: warning: potentially surprising implicit conversion from 'int(16)' to 'real(32)'
 warn-small-integral-real.chpl:48: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:55: In function 'test7':
+warn-small-integral-real.chpl:57: warning: potentially surprising implicit conversion from 'int(32)' to 'real(32)'
+warn-small-integral-real.chpl:57: note: add a cast :real(32) to avoid this warning
 test1fn() = 1.8596 : real(32)
 sin(myInt16) = 0.841471 : real(32)
 z = 1.9093 : real(64)
