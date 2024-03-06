@@ -239,8 +239,16 @@ extern bool ignore_errors;
 extern bool ignore_user_errors;
 extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
-extern bool fWarnConstLoops;
+
 extern bool fWarnIntUint;
+extern bool fWarnSmallIntegralFloat;
+extern bool fWarnIntegralFloat;
+extern bool fWarnFloatFloat;
+extern bool fWarnIntegralIntegral;
+extern bool fWarnImplicitNumericConversions;
+extern bool fWarnParamImplicitNumericConversions;
+
+extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
 extern bool fWarnUnstableStandard;
 extern bool fWarnUnstableInternal;

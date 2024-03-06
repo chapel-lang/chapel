@@ -1,0 +1,12 @@
+warn-param.chpl:2: In function 'checkPositiveIntUint':
+warn-param.chpl:4: warning: potentially surprising implicit conversion from 'int(64)' to 'uint(64)'
+warn-param.chpl:4: note: add a cast :uint(64) to avoid this warning
+warn-param.chpl:9: In function 'checkRealReal':
+warn-param.chpl:11: warning: implicit conversion from 'real(32)' to 'real(64)'
+warn-param.chpl:11: note: add a cast :real(64) to avoid this warning
+warn-param.chpl:16: In function 'checkIntInt':
+warn-param.chpl:18: warning: implicit conversion from 'int(16)' to 'int(64)'
+warn-param.chpl:18: note: add a cast :int(64) to avoid this warning
+warn-param.chpl:22: In function 'checkUintUint':
+warn-param.chpl:24: warning: implicit conversion from 'uint(16)' to 'uint(64)'
+warn-param.chpl:24: note: add a cast :uint(64) to avoid this warning

@@ -2763,7 +2763,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     INT_ASSERT(toValType == toType->type);
 
     // generate a warning in some cases for int->uint implicit conversion
-    warnForIntUintConversion(insertBefore, toValType, fromValType, from);
+    warnForSomeNumericConversions(insertBefore, toValType, fromValType, from);
   }
 
   // seemingly redundant toType->type->symbol is for lowered runtime type vars

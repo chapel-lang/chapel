@@ -1,1 +1,1 @@
-../compflags/ferguson/warn-int-uint.chpl
+../compflags/ferguson/implicit-conversion-warnings/warn-int-uint.chpl
