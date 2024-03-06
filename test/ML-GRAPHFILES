@@ -13,6 +13,9 @@ studies/ssca2/main/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 studies/isx/isx.ml-time.graph
+studies/sinLUT/sinlut-ml.graph
+studies/sinLUT/sinlut-ml-locale0.graph
+studies/sinLUT/sinlut-ml-locale1.graph
 
 # suite: <empty>
 # suite: All (perf)
