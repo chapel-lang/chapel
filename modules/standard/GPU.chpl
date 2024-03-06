@@ -961,7 +961,8 @@ module GPU
       return;
     }
     if CHPL_GPU=="cpu" {
-      // TODO sort on CPU
+      use Sort only sort;
+      sort(gpuInputArr);
       return;
     }
     // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
