@@ -36,8 +36,8 @@ proc main() {
 
   // generic composite not ok
   // using nil value and not checking it, as these can't be instantiated
-  checkNo(GenericRecord, nil, onlyType = true);
-  checkNo(GenericRecordWithSomeDefaults, nil, onlyType = true);
+  checkNo(GenericRecord(?), nil, onlyType = true);
+  checkNo(GenericRecordWithSomeDefaults(?), nil, onlyType = true);
 
   // generic with all defaults ok
   checkNormal(GenericRecordWithSomeDefaults(int, real), grSomeDefaultsFilledIn);

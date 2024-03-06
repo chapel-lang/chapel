@@ -7,6 +7,6 @@ record K {
 }
 
 {
-  writeln(isGeneric(K));
+  writeln(isGeneric(K(?)));
   var kk = new K(new GRD(int));
 }
