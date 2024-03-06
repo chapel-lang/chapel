@@ -1406,30 +1406,29 @@ CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) {
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   KernelArg arg(symInLoop, this);
 
-  ArgSymbol* formal = arg.formal();
-  INT_ASSERT(formal);
-
-  fn_->insertFormalAtTail(formal);
-  copyMap_.put(symInLoop, formal);
-
-  if (ArgSymbol* reduceBuffer = arg.reduceBuffer()) {
-    fn_->insertFormalAtTail(reduceBuffer);
-    this->incReductionBufs();
-  }
-
-  if (FnSymbol* reduceWrapper = arg.reduceWrapper()) {
-    fn_->defPoint->insertBefore(new DefExpr(reduceWrapper));
-  }
-
-  kernelActuals_.push_back(arg);
-
-  // Engin: we can probably do this right after initializing arg, but I am not
-  // sure if skipping the rest of this function is safe.
   if (!arg.eligible()) {
     this->lateGpuizationFailure_ = true;
+    return nullptr;
   }
+  else {
+    ArgSymbol* formal = arg.formal();
+    INT_ASSERT(formal);
 
-  return formal;
+    fn_->insertFormalAtTail(formal);
+    copyMap_.put(symInLoop, formal);
+
+    if (ArgSymbol* reduceBuffer = arg.reduceBuffer()) {
+      fn_->insertFormalAtTail(reduceBuffer);
+      this->incReductionBufs();
+    }
+
+    if (FnSymbol* reduceWrapper = arg.reduceWrapper()) {
+      fn_->defPoint->insertBefore(new DefExpr(reduceWrapper));
+    }
+    kernelActuals_.push_back(arg);
+
+    return formal;
+  }
 }
 
 Symbol* GpuKernel::addLocalVariable(Symbol* symInLoop) {
