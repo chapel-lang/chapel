@@ -96,7 +96,7 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                  n, /*beginBit*/0, \
                                  /*endBit*/ sizeof(data_type)*8,\
                                  (CUstream)stream); \
-  CUDA_CALL(cuMemFree((CUdeviceptr*)&temp));\
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp));\
 }
   // CUDA_CALL(cuMemcpyDtoDAsync((CUdeviceptr)data_in,
   //                             (CUdeviceptr)data_out, n * sizeof(data_type),
