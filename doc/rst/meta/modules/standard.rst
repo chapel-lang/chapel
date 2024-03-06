@@ -18,6 +18,7 @@ default:
 
    Errors <standard/Errors>
    Types <standard/Types>
+   A subset of the IO symbols <standard/IO>
    A subset of the Math symbols <standard/Math>
 
 
