@@ -70,8 +70,8 @@ proc main()
     table.stop();
     write("Chapel Lookup: ");
     if correctness
-      then writeln(calc_res);
-      else writeln(calc.elapsed(), " seconds");
+      then writeln(table_res);
+      else writeln(table.elapsed(), " seconds");
 
     var resArray = allocate(real(32), iterations);
 
@@ -80,16 +80,16 @@ proc main()
     c_calc.stop();
     write("C Calculated: ");
     if correctness
-      then writeln(calc_res);
-      else writeln(calc.elapsed(), " seconds");
+      then writeln(c_calc_res);
+      else writeln(c_calc.elapsed(), " seconds");
 
     c_lookup.start();
     var table_calc_res = c_table(size, iterations, resArray);
     c_lookup.stop();
     write("C Lookup: ");
     if correctness
-      then writeln(calc_res);
-      else writeln(calc.elapsed(), " seconds");
+      then writeln(table_calc_res);
+      else writeln(c_lookup.elapsed(), " seconds");
 
     deallocate(resArray);
 }
