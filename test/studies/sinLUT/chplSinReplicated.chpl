@@ -5,11 +5,17 @@ use Math;
 use CTypes;
 use ReplicatedDist;
 
-config const seed = 314159;
+config const seed: uint(32) = 314159;
 config const correctness = false;
 
-extern proc c_sin(size: uint(32), iterations: int(32), resArray: c_ptr(real(32))): real(32);
-extern proc c_table(size: uint(32), iterations: int(32), resArray: c_ptr(real(32))): real(32);
+extern proc c_sin(size: uint(32),
+                  iterations: int(32),
+                  seed: uint(32),
+                  resArray: c_ptr(real(32))): real(32);
+extern proc c_table(size: uint(32),
+                    iterations: int(32),
+                    seed: uint(32),
+                    resArray: c_ptr(real(32))): real(32);
 
 proc sin_calc(size: uint(32), iterations : int(32)): real(32) {
 
@@ -114,7 +120,7 @@ proc main()
     var resArray = allocate(real(32), iterations);
 
     c_calc.start();
-    var c_calc_res = c_sin(size, iterations, resArray);
+    var c_calc_res = c_sin(size, iterations, seed, resArray);
     c_calc.stop();
     write("C Calculated: ");
     if correctness
@@ -122,7 +128,7 @@ proc main()
       else writeln(c_calc.elapsed(), " seconds");
 
     c_lookup.start();
-    var table_calc_res = c_table(size, iterations, resArray);
+    var table_calc_res = c_table(size, iterations, seed, resArray);
     c_lookup.stop();
     write("C Lookup: ");
     if correctness
