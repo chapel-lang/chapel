@@ -144,7 +144,7 @@ attachSuperThis(AggregateType* super,
                 bool throws);
 
 static FnSymbol*
-attachSuperWriteMethod(AggregateType* super, const char* name);
+attachSuperSerializeMethod(AggregateType* super);
 
 static AggregateType*
 insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
@@ -155,9 +155,8 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
                 FnSymbol* payload);
 
 static FnSymbol*
-attachChildWriteMethod(const SharedFcfSuperInfo info, AggregateType* child,
-                       FnSymbol* payload,
-                       const char* name);
+attachChildSerializeMethod(const SharedFcfSuperInfo info, AggregateType* child,
+                       FnSymbol* payload);
 
 static FnSymbol*
 attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
@@ -323,10 +322,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->thisMethod = attachSuperThis(v->type, formals, retTag,
                                   retType,
                                   throws);
-  std::ignore = attachSuperWriteMethod(v->type, "writeThis");
-  if (!fNoIOGenSerialization) {
-    std::ignore = attachSuperWriteMethod(v->type, "serialize");
-  }
+  std::ignore = attachSuperSerializeMethod(v->type);
 
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
 
@@ -564,9 +560,9 @@ attachSuperThis(AggregateType* super,
 }
 
 static FnSymbol*
-attachSuperWriteMethod(AggregateType* super, const char* name) {
+attachSuperSerializeMethod(AggregateType* super) {
   ArgSymbol* fileArg = nullptr;
-  auto ret = buildWriteThisFnSymbol(super, &fileArg, name);
+  auto ret = buildSerializeFnSymbol(super, &fileArg);
   ret->throwsErrorInit();
   normalize(ret);
   return ret;
@@ -688,14 +684,12 @@ generateWriteThisOutput(FnSymbol* fn) {
 }
 
 static FnSymbol*
-attachChildWriteMethod(const SharedFcfSuperInfo info,
+attachChildSerializeMethod(const SharedFcfSuperInfo info,
                      AggregateType* child,
-                     FnSymbol* payload,
-                     const char* name) {
+                     FnSymbol* payload) {
   ArgSymbol* fileArg = NULL;
-  FnSymbol* ret = buildWriteThisFnSymbol(child, &fileArg, name);
+  FnSymbol* ret = buildSerializeFnSymbol(child, &fileArg);
 
-  // All compiler generated writeThis routines now throw.
   ret->throwsErrorInit();
 
   if (ioModule == NULL) {
@@ -821,10 +815,7 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   auto child = insertChildWrapperAtPayload(info, fn);
   std::ignore = attachChildThis(info, child, fn);
 
-  std::ignore = attachChildWriteMethod(info, child, fn, "writeThis");
-  if (!fNoIOGenSerialization) {
-    std::ignore = attachChildWriteMethod(info, child, fn, "serialize");
-  }
+  std::ignore = attachChildSerializeMethod(info, child, fn);
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);
   auto factory = insertSharedParentFactory(info, child, fn);
