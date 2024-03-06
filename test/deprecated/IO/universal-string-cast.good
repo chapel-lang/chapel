@@ -1,2 +1,0 @@
-universal-string-cast.chpl:5: warning: universal 'x:string' is deprecated; please define a cast-to-string operator on the type 'r', or use 'try! "%?".format(x)' from IO.FormattedIO instead
-r: (x = 1, y = 2)

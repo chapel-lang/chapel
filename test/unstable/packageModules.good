@@ -2,7 +2,6 @@ packageModules.chpl:XX: warning: AllLocalesBarriers is unstable
 packageModules.chpl:XX: warning: ArgumentParser is unstable.
 packageModules.chpl:XX: warning: AtomicObjects is unstable
 packageModules.chpl:XX: warning: BLAS is unstable
-packageModules.chpl:XX: warning: BinaryIO module is deprecated; please use the IO module instead
 packageModules.chpl:XX: warning: Buffers is unstable
 packageModules.chpl:XX: warning: Channel is unstable
 packageModules.chpl:XX: warning: ChplFormat module is considered unstable pending naming changes

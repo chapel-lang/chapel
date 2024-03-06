@@ -1,3 +1,0 @@
-jsonSerializer.chpl:5: warning: 'JsonSerializer' is deprecated; please use 'jsonSerializer' instead
-jsonSerializer.chpl:8: warning: 'JsonDeserializer' is deprecated; please use 'jsonDeserializer' instead
-hello!

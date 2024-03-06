@@ -1177,24 +1177,4 @@ module ChapelIO {
   operator :(x, type t:string) where isFcfType(x.type) do
     return chpl_stringify_wrapper(x);
 
-  //
-  // Catch all
-  //
-  // Convert 'x' to a string just the way it would be written out.
-  //
-  // This is marked as last resort so it doesn't take precedence over
-  // generated casts for types like enums
-  //
-  // This version only applies to non-primitive types
-  // (primitive types should support :string directly)
-  pragma "last resort"
-  @chpldoc.nodoc
-  operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    compilerWarning(
-      "universal 'x:string' is deprecated; please define a cast-to-string operator on the type '" +
-      x.type:string +
-      "', or use 'try! \"%?\".format(x)' from IO.FormattedIO instead"
-    );
-    return chpl_stringify_wrapper(x);
-  }
 }

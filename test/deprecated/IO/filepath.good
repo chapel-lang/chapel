@@ -1,3 +1,0 @@
-warning: 'filePathAbsolute' is deprecated and inactive. 'file.path' now returns an absolute path
-note: 'filePathAbsolute' was set via a compiler flag
-true

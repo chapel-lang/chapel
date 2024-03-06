@@ -768,14 +768,6 @@ extern const QIO_FDFLAG_WRITEABLE:c_int;
 extern const QIO_FDFLAG_SEEKABLE:c_int;
 
 @chpldoc.nodoc
-@deprecated(notes="QIO_CH_ALWAYS_UNBUFFERED is deprecated")
-extern const QIO_CH_ALWAYS_UNBUFFERED:c_int;
-@chpldoc.nodoc
-extern const QIO_CH_ALWAYS_BUFFERED:c_int;
-@chpldoc.nodoc
-extern const QIO_CH_BUFFERED:c_int;
-
-@chpldoc.nodoc
 extern const QIO_METHOD_DEFAULT:c_int;
 @chpldoc.nodoc
 extern const QIO_METHOD_READWRITE:c_int;
@@ -1325,7 +1317,6 @@ private extern const QIO_CONV_ARG_TYPE_BINARY_COMPLEX:c_int;
 private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
-private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
 private extern const QIO_CONV_ARG_TYPE_SERDE:c_int;
 private extern const QIO_CONV_ARG_TYPE_REGEX:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL:c_int;
@@ -1488,12 +1479,6 @@ record ioHintSet {
       then new ioHintSet(IOHINTS_MMAP)
       else new ioHintSet(IOHINTS_NOMMAP);
   }
-
-  /* Suggests that 'mmap' should not be used to access the file contents.
-  Instead, pread/pwrite are used.
-  */
-  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintSet.mmap(false)` instead")
-  proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
   @chpldoc.nodoc
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
@@ -1828,10 +1813,6 @@ proc file.fsync() throws {
   }
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
-
-@chpldoc.nodoc
-@deprecated("'filePathAbsolute' is deprecated and inactive. 'file.path' now returns an absolute path")
-config param filePathAbsolute = false;
 
 /*
 
@@ -2215,13 +2196,6 @@ record fileReader {
 @unstable("The 'fileReader.getFile()' method may change based on feedback")
 proc fileReader.getFile() do return chpl_fileFromReaderOrWriter(this);
 
-/* Returns a bool indicating whether the fileReader is used for writing.  It is
-   always ``false`` */
-@deprecated(notes="'fileReader.writing' is deprecated and will be removed in a future release")
-proc fileReader.writing param: bool {
-  return false;
-}
-
 @chpldoc.nodoc
 proc fileReader._writing param: bool do return false;
 
@@ -2282,13 +2256,6 @@ record fileWriter {
   // Therefore further locking by the same task is not necessary.
   @chpldoc.nodoc
   var _readWriteThisFromLocale = nilLocale;
-}
-
-/* Returns a bool indicating whether the fileWriter is used for writing.  It is
-   always ``true`` */
-@deprecated(notes="'fileWriter.writing' is deprecated and will be removed in a future release")
-proc fileWriter.writing param: bool {
-  return true;
 }
 
 /*
@@ -2787,9 +2754,6 @@ record defaultSerializer {
   }
 }
 
-@deprecated(notes="'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead")
-type DefaultSerializer = defaultSerializer;
-
 /*
   The default Deserializer used by ``fileReader``.
 
@@ -3262,8 +3226,6 @@ record defaultDeserializer {
   }
 }
 
-@deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
-type DefaultDeserializer = defaultDeserializer;
 
 @unstable("This config param is unstable and may be removed without advance notice")
 /*
@@ -3677,8 +3639,6 @@ record binarySerializer {
   }
 }
 
-@deprecated(notes="'BinarySerializer' is deprecated; please use 'binarySerializer' instead")
-type BinarySerializer = binarySerializer;
 
 /*
   A binary Deserializer that implements a simple binary format.
@@ -4211,8 +4171,6 @@ record binaryDeserializer {
   }
 }
 
-@deprecated(notes="'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead")
-type BinaryDeserializer = binaryDeserializer;
 
 @chpldoc.nodoc
 operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
@@ -4505,22 +4463,6 @@ proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
 }
 
 
-/*
-
-Represents a newline character or character sequence (ie ``\n``). I/O routines
-(such as :proc:`fileReader.read` and :proc:`fileWriter.write`) can use arguments
-of this type in order to read or write a newline. This is different from ``\n``
-because an ioNewline always produces an actual newline, but in some cases
-writing ``\n`` will produce an escaped string (such as ``"\n"``).
-
-When reading an ioNewline, read routines will skip any character sequence
-(including, e.g., letters and numbers) to get to the newline character unless
-``skipWhitespaceOnly`` is set to true.
-
- */
-@deprecated(notes=":type:`ioNewline` is deprecated; please use :proc:`fileReader.readNewline`, :proc:`fileReader.matchNewline`, or :proc:`fileWriter.writeNewline` instead")
-type ioNewline = chpl_ioNewline;
-
 @chpldoc.nodoc
 record chpl_ioNewline : writeSerializable {
   /*
@@ -4546,19 +4488,6 @@ inline operator :(x: chpl_ioNewline, type t:string) {
   return "\n";
 }
 
-
-/*
-
-Used to represent a constant string we want to read or write.
-
-When writing, the ``ioLiteral`` is output without any quoting or escaping.
-
-When reading, the ``ioLiteral`` must be matched exactly - or else the read call
-will return an error for incorrectly formatted input
-
-*/
-@deprecated(notes=":type:`ioLiteral` is deprecated; please use :proc:`fileReader.readLiteral`, :proc:`fileReader.matchLiteral`, or :proc:`fileWriter.writeLiteral` instead")
-type ioLiteral = chpl_ioLiteral;
 
 @chpldoc.nodoc
 record chpl_ioLiteral : writeSerializable {
@@ -6481,34 +6410,6 @@ proc fileWriter.writeIt(const x) throws {
   }
 }
 
-/* Explicit call for reading or writing a literal. Equivalent to calling
-    :proc:`fileReader.readLiteral`.
-*/
-@deprecated(notes=":proc:`fileReader.readWriteLiteral` is deprecated; please use :proc:`fileReader.readLiteral` instead")
-inline
-proc fileReader.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
-{
-  // This method was more interesting when it could be for either a reader or a
-  // writer channel.  However, we don't think it was used much in practice so
-  // will ultimately get deprecated
-  var iolit = new chpl_ioLiteral(lit:string, ignoreWhiteSpace);
-  this.readIt(iolit);
-}
-
-/* Explicit call for reading or writing a literal. Equivalent to calling
-    :proc:`fileWriter.writeLiteral`
-*/
-@deprecated(notes=":proc:`fileWriter.readWriteLiteral` is deprecated; please use :proc:`fileWriter.writeLiteral` instead")
-inline
-proc fileWriter.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
-{
-  // This method was more interesting when it could be for either a reader or a
-  // writer channel.  However, we don't think it was used much in practice so
-  // will ultimately get deprecated
-  var iolit = new chpl_ioLiteral(lit:string, ignoreWhiteSpace);
-  this.writeIt(iolit);
-}
-
 private proc literalErrorHelper(x: ?t, action: string,
                                 isLiteral: bool): string {
   // Error message construction is handled here so that messages are
@@ -6813,31 +6714,6 @@ proc fileWriter.writeNewline() : void throws {
   }
 }
 
-/* Explicit call for reading or writing a newline. Equivalent to
-    :proc:`fileReader.readNewline`.
-*/
-@deprecated(notes=":proc:`fileReader.readWriteNewline` is deprecated; please use :proc:`fileReader.readNewline` instead")
-inline proc fileReader.readWriteNewline() throws
-{
-  var ionl = new chpl_ioNewline();
-  this.readIt(ionl);
-}
-
-/* Explicit call for reading or writing a newline. Equivalent to
-    :proc:`fileWriter.writeNewline`.
-*/
-@deprecated(notes=":proc:`fileWriter.readWriteNewline` is deprecated; please use :proc:`fileWriter.writeNewline` instead")
-inline proc fileWriter.readWriteNewline() throws
-{
-  var ionl = new chpl_ioNewline();
-  this.writeIt(ionl);
-}
-
-/* Returns `true` if this fileReader is configured for binary I/O.
- */
-@deprecated(notes="'fileReader.binary()' is deprecated; please use 'fileReader.deserializerType' to check for a binary deserializer instead")
-proc fileReader.binary(): bool do return this._binary();
-
 @chpldoc.nodoc
 proc fileReader._binary():bool {
   var ret:uint(8);
@@ -6846,11 +6722,6 @@ proc fileReader._binary():bool {
   }
   return ret != 0;
 }
-
-/* Returns `true` if this fileWriter is configured for binary I/O.
- */
-@deprecated(notes="'fileWriter.binary()' is deprecated; please use 'fileWriter.serializerType' to check for a binary serializer instead")
-proc fileWriter.binary(): bool do return this._binary();
 
 @chpldoc.nodoc
 proc fileWriter._binary():bool {
@@ -6932,20 +6803,6 @@ iter fileReader.lines(stripNewline = false) {
 }
 
 public use ChapelIOStringifyHelper;
-
-// Note that stringify is called with primitive/range/tuple arguments
-// in modules that are loaded early. To avoid module ordering issues,
-// it supports such types directly via stringify_simple.
-/*
-    Creates a string representing the result of writing the arguments.
-
-    Writes each argument, possibly using a `writeThis` method,
-    to a string and returns the result.
-  */
-@deprecated("'stringify(x)' is deprecated; please use 'try! \"%?\".format(x)' from IO.FormattedIO instead");
-proc stringify(const args ...?k):string {
-  return chpl_stringify((...args));
-}
 
 @chpldoc.nodoc
 proc chpl_stringify(const args ...?k):string {
@@ -7045,55 +6902,6 @@ inline proc fileReader.read(ref args ...?k):bool throws {
 }
 
 /*
-  Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
-  The ``\n`` is returned in the array.
-
-  Note that this routine currently requires a 1D rectangular non-strided array.
-
-  Throws a SystemError if a line could not be read from the fileReader.
-
-  :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
-  :arg numRead: The number of bytes read.
-  :arg start: Index to begin reading into.
-  :arg amount: The maximum amount of bytes to read.
-  :returns: true if the bytes were read without error.
-*/
-@deprecated(notes="fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
-proc fileReader.readline(ref arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
-                      amount = arg.domain.highBound - start + 1) : bool throws
-                      where arg.rank == 1 && arg.isRectangular() {
-  if arg.size == 0 || !arg.domain.contains(start) ||
-     amount <= 0 || (start + amount - 1 > arg.domain.highBound) then return false;
-
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    param newLineChar = 0x0A;
-    var got: int;
-    var i = start;
-    const maxIdx = start + amount - 1;
-    while i <= maxIdx {
-      got = qio_channel_read_byte(false, this._channel_internal);
-      if got < 0 then break;
-      arg[i] = got:uint(8);
-      i += 1;
-      if got == newLineChar then break;
-    }
-    numRead = i - start;
-    if i == start && got < 0 then err = (-got):errorCode;
-  }
-
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in fileReader.readline(arg : [] uint(8))");
-  }
-  return false;
-}
-
-/*
   Read a line into an array of bytes.
 
   Reads bytes from the ``fileReader`` until a ``\n`` is reached. Values are
@@ -7188,40 +6996,6 @@ pragma "last resort"
 inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                                 stripNewline=false): int throws {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
-}
-
-/*
-  Read a line into a Chapel string or bytes. Reads until a ``\n`` is reached.
-  The ``\n`` is included in the resulting value.
-
-  :arg arg: a string or bytes to receive the line
-  :returns: `true` if a line was read without error, `false` upon EOF
-
-  :throws UnexpectedEofError: If unexpected EOF encountered while reading.
-  :throws SystemError: If data could not be read from the fileReader.
-*/
-@deprecated(notes="fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
-proc fileReader.readline(ref arg: ?t): bool throws where t==string || t==bytes {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  try {
-    on this._home {
-      try this.lock(); defer { this.unlock(); }
-      var saveStyle: iostyleInternal = this._styleInternal();
-      defer {
-        this._set_styleInternal(saveStyle);
-      }
-      var myStyle = saveStyle.text();
-      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
-      myStyle.string_end = 0x0a; // ascii newline.
-      this._set_styleInternal(myStyle);
-      try _readOne(_iokind.dynamic, arg, origLocale);
-    }
-  } catch err: EofError {
-    return false;
-  }
-
-  return true;
 }
 
 // Helper function to replace the contents of a string or bytes
@@ -9456,20 +9230,6 @@ proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
-/* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
-@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
-proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
-              amount = arg.domain.highBound - start + 1) : bool throws
-                where arg.rank == 1 && arg.isRectangular() {
-  return stdin.readline(arg, numRead, start, amount);
-}
-
-/* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
-@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
-proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
-  return stdin.readline(arg);
-}
-
 /* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
 proc readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
   return stdin.readLine(s, maxSize, stripNewline);
@@ -9708,14 +9468,10 @@ Integral Conversions
  a decimal integer center-justified (padded equally on the left and right) to 17 columns
 ``%>17i``
  a decimal integer right-justified (padded on the left) to 17 columns — equivalent to ``%17i``
-``%-17i``
- a decimal integer left-justified (padded on the right) to 17 columns *(deprecated)*
 ``%+i``
  a decimal integer showing ``+`` for positive numbers
 ``% i``
  a decimal integer with a space for positive numbers
-``%|4i``
- output 4 raw, binary bytes of the passed integer in native endianness *(deprecated)*
 
 Real Conversions
 ++++++++++++++++
@@ -9732,8 +9488,6 @@ Real Conversions
  as with ``%r`` but padded equally on the left and right to 6 columns (i.e., center-justified)
 ``%>6r``
  equivalent to ``%6r``
-``%-6r``
- as with ``%r`` but padded on the right to 6 columns (i.e., left-justified) *(deprecated)*
 ``%.4r``
  as with ``%r`` but with 4 significant digits
 ``%.*r``
@@ -9766,9 +9520,6 @@ Real Conversions
 ``%xer``
  hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
 
-``%|4r``
- emit 4 raw, binary bytes of the passed number in native endianness *(deprecated)*
-
 Complex and Imaginary Conversions
 +++++++++++++++++++++++++++++++++
 
@@ -9788,11 +9539,6 @@ Complex and Imaginary Conversions
  print a and b with ``%dr``
 ``%ez``
  print a and b with ``%er``
-
-``%|4m``
- same as ``%|4r`` *(deprecated)*
-``%|8z``
- emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes) *(deprecated)*
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
@@ -9817,8 +9563,6 @@ String and Bytes Conversions
   * when writing - a string left padded (right justified) to 17 columns
   * when reading - read up to 17 bytes or a whitespace, whichever comes
     first, rounding down to whole characters
-``%-17s``
- * when writing - a string right padded (left justified) to 17 columns *(deprecated)*
 ``%.17s``
  * when writing - a string truncated to 17 columns. When combined
    with quoting strings, for example ``%.17"S``, the conversion
@@ -9828,12 +9572,6 @@ String and Bytes Conversions
    string is ``""...``  Generally, you won't be able to read
    these back in.
  * when reading - read exactly 17 Unicode codepoints
-``%|17s``
- * when writing - emit string but cause runtime error if length
-   does not match *(deprecated)*
- * when reading - read exactly 17 bytes (error if we read < 17 bytes) *(deprecated)*
-``%|*s``
-  as with %17s but the length is specified in the argument before the string.  *(deprecated)*
 ``%"S``
  use double-quotes to delimit string
 ``%'S``
@@ -9845,31 +9583,6 @@ String and Bytes Conversions
  parens could be replaced by arbitrary characters
 ``%*S``
  quoted string, the arg before the string to specifies quote character
-``%|0S``
- write a string null-terminated or read bytes until a null-terminator *(deprecated)*
-``%|*S``
- means read bytes until a terminator byte. The terminator byte is read
- from the argument before the string. *(deprecated)*
-``%|1S`` ``%|2S`` ``%|4S`` and ``%|8S``
-  work with encoded strings storing a length
-  and then the string data. The digit before ``S`` is
-  the number of bytes of length which is by default
-  stored native endian. ``<``, ``|``, ``>`` can be used
-  to specify the endianness of the length field,
-  for example ``%<8S`` is 8 bytes of little-endian length
-  and then string data. *(deprecated)*
-``%|vS``
- as with ``%|1S``-``%|8S`` but the string length is encoded using a
- variable-length byte scheme (which is always the same no matter what
- endianness). In this scheme, the high bit of each encoded length byte
- records whether or not there are more length bytes (and the remaining
- bits encode the length in a big-endian manner). *(deprecated)*
-
-``%|*vS`` or ``%|*0S``
- read an encoded string but limit it to a number of bytes
- read from the argument before the string; when writing
- cause a runtime error if the string is longer than the
- maximum. *(deprecated)*
 
 ``%/a+/``
  where any regular expression can be used instead of ``a+``
@@ -9892,73 +9605,31 @@ String and Bytes Conversions
 
 .. (comment) the above started a nested comment, so here we end it */
 
-General Conversions
-+++++++++++++++++++
-
-``%t``
- read or write the object according to its readThis/writeThis routine
-
-  .. warning::
-    ``%t`` is deprecated and should be replaced with ``%?`` which will invoke
-    the ``fileReader``/``fileWriter``'s serializer/deserializer to execute IO
-    operations for the associated argument.
-
-``%jt``
- read or write an object in JSON format using readThis/writeThis
-
-  .. warning::
-    ``%jt`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
-    or ``fileReader`` configured with the JSON Serializer or Deserializer
-    respectively. Example:
-
-    .. code-block:: chapel
-
-      use IO, JSON;
-
-      record R {
-        // fields...
-      }
-
-      var f = open("data.json"),
-          r: R;
-
-      // write an 'R' in JSON format
-      f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
-
-      // read into an 'R' from JSON format
-      f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
-
-``%ht``
- read or write an object in Chapel syntax using readThis/writeThis
-
-  .. warning::
-    ``%ht`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
-    or ``fileReader`` configured with the Chapel-Format Serializer or
-    Deserializer respectively. Example:
-
-    .. code-block:: chapel
-
-      use IO, ChplFormat;
-
-      record R {
-        // fields...
-      }
-
-      var f = open("data.txt"),
-          r: R;
-
-      // write an 'R' in Chapel Syntax format
-      f.writer(serializer = new chplSerializer()).writef("%?", new R(/* ... */))
-
-      // read into an 'R' from Chapel Syntax format
-      f.reader(deserializer = new chplDeserializer()).readf("%?", r);
-
-``%|t``
- read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
+General Conversion
+++++++++++++++++++
 
 ``%?``
- Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
- or read a value.
+  Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
+  or read a value.
+
+  For example, read and write a record in JSON format:
+
+  .. code-block:: chapel
+
+        use IO, JSON;
+
+        record R {
+          // fields...
+        }
+
+        var f = open("data.json", ioMode.cwr),
+            r: R;
+
+        // write an 'R' in JSON format
+        f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
+
+        // read into an 'R' from JSON format
+        f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -9970,7 +9641,7 @@ contrast, ``" "`` matches at least one space character of any kind.
 When writing, whitespace is printed from the format string just like any
 other literal would be.
 
-Finally, space characters after a binary conversion will be ignored, so
+Finally, space characters after a revcom will be ignored, so
 that a binary format string can appear more readable.
 
 .. _about-io-formatted-io-in-detail:
@@ -10059,8 +9730,6 @@ In general, a ``%`` specifier consists of either text or binary conversions:
 
 ::
 
- %
- [optional endian flag (binary conversions only) *(deprecated)*]
  [optional flags]
  [optional field width or size in bytes]
  [optional . then precision]
@@ -10083,10 +9752,6 @@ Going through each section for text conversions:
   ``" "``
    (a space) leaves a blank before a positive number
    (in order to help line up with negative numbers)
-  ``-``
-   left-justify the converted value instead of right-justifying.
-   Note, if both ``0`` and ``-`` are given, the effect is as if only ``-``
-   were given. *(deprecated)*
   ``<``
    left-justify the converted value instead of right-justifying.
    Note, if both ``0`` and ``<`` are given, the effect is as if only ``<``
@@ -10097,11 +9762,6 @@ Going through each section for text conversions:
    left of the numerical value
   ``>``
    explicitly denote right-justification
-  ``~``
-   when reading a record or class instance, skip over fields in the input not
-   present in the Chapel type. This flag currently only works in combination
-   with the JSON format.  This flag allows a Chapel program to describe only the
-   relevant fields in a record when the input might contain many more fields.
 
 
 [optional field width]
@@ -10163,10 +9823,6 @@ Going through each section for text conversions:
     exponential ``-12.34E+56``
 
 [conversion type]
-   ``t``
-    means *type-based* or *thing* - uses writeThis/readThis but ignores
-    width. Precision will impact any floating point values output
-    in this conversion.
    ``n``
     means type-based number, allowing width and precision
    ``i``
@@ -10197,32 +9853,7 @@ Going through each section for text conversions:
     means a Unicode character - either the first character in a string
     or an integral character code
 
-For binary conversions *(deprecated)*:
-
-[optional endian flag] *(deprecated)*
-   ``|``
-    means native-endian *(deprecated)*
-
-[optional size in bytes] *(deprecated)*
-   This is the number of bytes the format should read or write in this
-   conversion. For integral conversions (e.g. ``%|i``) it specifies the number
-   of bytes in the integer, and 1, 2, 4, and 8 are supported. For real and
-   imaginary conversions, 4 and 8 are supported. For complex conversions,
-   8 and 16 are supported. The size in bytes is *required* for binary
-   integral and floating-point conversions. *(deprecated)*
-
-   The size can be ``*``, which means that the number of bytes is read
-   from the argument before the conversion. *(deprecated)*
-
-   For strings, if a terminator or length field is specified, exactly this
-   number is the maximum size in bytes; if the terminator or length is not
-   specified, the string must be exactly that size (and if the argument is not
-   exactly that number of bytes it will cause an error even when writing).
-   *(deprecated)*
-
 [conversion type]
-   ``t``
-    means *type-based* or *thing* - to read or write with readThis/writeThis
    ``n``
     means type-based number (size is not mandatory)
    ``i``
@@ -10239,19 +9870,7 @@ For binary conversions *(deprecated)*:
     means complex. Note that the size is mandatory for binary complex
     conversions
    ``s``
-    * means string binary I/O *(deprecated)*
-    * ``%|17s`` means exactly 17 byte string *(deprecated)*
-   ``0S``/``1S``/``2S``/``4S``/``8S``
-    * mean encoded string binary I/O *(deprecated)*:
-    * ``%|0S`` means null-terminated string *(deprecated)*
-    * ``%{|S*}`` means  next-argument specifies string terminator byte
-      *(deprecated)*
-    * ``%|1S`` means a one-byte length and then the string *(deprecated)*
-    * ``%|2S`` means a two-byte length and then the string *(deprecated)*
-    * ``%|4S`` means a four-byte length and then the string *(deprecated)*
-    * ``%|8S`` means an eight-byte length and then the string *(deprecated)*
-    * ``%|vS`` means a variable-byte-encoded length and then the string
-      *(deprecated)*
+    means string
    ``c``
     means a Unicode character - either the first character in a string
     or an integral character code
@@ -10271,15 +9890,6 @@ Formatted I/O Examples
   writef("%2.4z\n", 43.291 + 279.112i);
        // outputs:
        // 43.29 + 279.1i
-
-  writef("%|0S\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 7465 7374 000a
-  writef("%|1S\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 0474 6573 740a
 
   writef('%"S\n', "test \"\" \'\' !");
        // outputs:
@@ -11364,16 +10974,6 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
       } when QIO_CONV_ARG_TYPE_REGEX { // It's not so clear what to do when printing
         // a regex. So we just don't handle it.
         err = qio_format_error_write_regex();
-      } when QIO_CONV_ARG_TYPE_REPR {
-        select style.aggregate_style {
-          when QIO_AGGREGATE_FORMAT_BRACES do // %t
-            warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead");
-          when QIO_AGGREGATE_FORMAT_CHPL do  // %ht
-            warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Serializer instead");
-          when QIO_AGGREGATE_FORMAT_JSON do  // %jt
-            warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Serializer instead");
-        }
-        try _writeOne(_iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
         if serializerType != nothing {
           if serializerType == binarySerializer {
@@ -11707,16 +11307,6 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                   }
                 }
               }
-            } when QIO_CONV_ARG_TYPE_REPR {
-              select style.array_style {
-                when QIO_ARRAY_FORMAT_SPACE do // %t
-                  warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'deserialize' method instead");
-                when QIO_ARRAY_FORMAT_CHPL do  // %ht
-                  warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Deserializer instead");
-                when QIO_ARRAY_FORMAT_JSON do  // %jt
-                  warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead");
-              }
-              try _readOne(_iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_ARG_TYPE_SERDE {
               if deserializerType != nothing {
                 if deserializerType == binaryDeserializer {
@@ -11879,29 +11469,6 @@ proc readf(fmt:string):bool throws {
   return try stdin.readf(fmt);
 }
 
-
-/*
-   Skip a field in the current aggregate format. This method is currently only
-   supported for JSON format and returns ENOTSUP for other formats. In other
-   formats, it may not be possible in general to know when a field ends.
-
-   The field skipped includes a field name and value but not a following
-   separator. For example, for a JSON format fileReader, given the input:
-
-   ::
-
-      "fieldName":"fieldValue", "otherField":3
-
-   this function will skip to (but leave unread) the comma after
-   the first field value.
-
-   :throws UnexpectedEofError: If EOF encountered skipping field.
-   :throws SystemError: If the field could not be skipped.
- */
-@deprecated("skipField is deprecated, please use jsonDeserializer instead.")
-proc fileReader.skipField() throws {
-  this._skipField();
-}
 
 @chpldoc.nodoc
 proc fileReader._skipField() throws {

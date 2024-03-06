@@ -584,9 +584,6 @@ module JSON {
     return (m, lastPos);
   }
 
-  @deprecated(notes="'JsonSerializer' is deprecated; please use 'jsonSerializer' instead")
-  type JsonSerializer = jsonSerializer;
-
   /*
     A JSON format deserializer to be used by :record:`~IO.fileReader`.
 
@@ -1174,7 +1171,4 @@ module JSON {
       }
     }
   }
-
-  @deprecated(notes="'JsonDeserializer' is deprecated; please use 'jsonDeserializer' instead")
-  type JsonDeserializer = jsonDeserializer;
 }
