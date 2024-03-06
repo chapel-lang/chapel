@@ -245,7 +245,7 @@ optional<Immediate> paramToImmediate(Context* context,
           }
 
           auto nt = qtOpt->type();
-          if (!qtOpt->isParam()) {
+          if (!nt->isIntType() && !nt->isUintType()) {
             // An unrelated error occurred when computing the numeric values
             // of the enum. Do not issue another error on top of it.
             return {};
