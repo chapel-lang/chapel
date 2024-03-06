@@ -206,7 +206,7 @@ operator =(ref a: hashedDist(?), b: hashedDist(?)) {
 
 
 @deprecated("'Hashed' is deprecated, please use 'hashedDist' instead")
-type Hashed = hashedDist;
+type Hashed = hashedDist(?);
 
 
 class HashedImpl : BaseDist, writeSerializable {

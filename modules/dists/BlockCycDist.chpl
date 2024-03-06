@@ -279,7 +279,7 @@ operator =(ref a: blockCycDist(?), b: blockCycDist(?)) {
 
 
 @deprecated("'BlockCyclic' is deprecated, please use 'blockCycDist' instead")
-type BlockCyclic = blockCycDist;
+type BlockCyclic = blockCycDist(?);
 
 
 class BlockCyclicImpl : BaseDist, writeSerializable {

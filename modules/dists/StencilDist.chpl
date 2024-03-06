@@ -445,7 +445,7 @@ operator =(ref a: stencilDist(?), b: stencilDist(?)) {
 
 
 @deprecated("'Stencil' is deprecated, please use 'stencilDist' instead")
-type Stencil = stencilDist;
+type Stencil = stencilDist(?);
 
 
 class StencilImpl : BaseDist, writeSerializable {
