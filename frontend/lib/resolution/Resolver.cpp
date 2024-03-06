@@ -1454,6 +1454,9 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
       // ambiguity between candidates
       context->error(astForErr, "Cannot resolve call to '%s': ambiguity",
                      ci.name().c_str());
+    } else if (auto primCall = astForErr->toPrimCall()) {
+      // if a call to a primitive failed, trust that the primitive resolution
+      // code has already issued an error if needed.
     } else {
       // could not find a most specific candidate
       std::vector<ApplicabilityResult> rejected;

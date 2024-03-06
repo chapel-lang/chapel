@@ -157,7 +157,11 @@ static paramtags::ParamTag guessParamTagFromType(const Type* t) {
   return an Immediate representing the default value of Type t.
 */
 static
-optional<Immediate> paramToImmediate(Context* context, const AstNode* astForErr, const Param* p, const Type* t) {
+optional<Immediate> paramToImmediate(Context* context,
+                                     const AstNode* astForErr,
+                                     const Param* p,
+                                     const Type* t,
+                                     QualifiedType& outTypeOnError) {
   Immediate ret;
   paramtags::ParamTag tag = p ? p->tag() : guessParamTagFromType(t);
 
@@ -207,23 +211,45 @@ optional<Immediate> paramToImmediate(Context* context, const AstNode* astForErr,
           auto nt = numericValue.type();
           if (!np) {
             auto eltAst = parsing::idToAst(context, ep->value())->toEnumElement();
-            CHPL_REPORT(context, EnumValueAbstract, astForErr, et, eltAst);
+
+            // If we encountered an unrelated error trying to compute the
+            // numeric value of this enum element, no need to report another
+            // error about it being abstract.
+            if (!(nt && nt->isErroneousType())) {
+              auto qt = CHPL_TYPE_ERROR(context, EnumValueAbstract, astForErr, et, eltAst);
+
+              // In order to be able to compose multiple calls to this function,
+              // do not override existing values in outTypeOnError. This way,
+              // if a previous call reported ErroneousType, we don't overwrite
+              // it with the less-specific UnknownType.
+              if (outTypeOnError.isUnknown()) outTypeOnError = qt;
+            }
             return {};
           }
 
           // Having converted the param to a numeric representation, get
           // an immediate from that.
-          return paramToImmediate(context, astForErr, np, nt);
+          return paramToImmediate(context, astForErr, np, nt, outTypeOnError);
         } else {
           auto qt = computeUnderlyingTypeOfEnum(context, et->id());
 
           auto nt = qt.type();
           if (!nt) {
-            CHPL_REPORT(context, EnumAbstract, astForErr, et);
+            auto qt = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, et);
+
+            // In order to be able to compose multiple calls to this function,
+            // do not override existing values in outTypeOnError. This way,
+            // if a previous call reported ErroneousType, we don't overwrite
+            // it with the less-specific UnknownType.
+            if (outTypeOnError.isUnknown()) outTypeOnError = qt;
+            return {};
+          } else if (qt.isErroneousType()) {
+            // An unrelated error occurred when computing the numeric values
+            // of the enum. Do not issue another error on top of it.
             return {};
           }
 
-          return paramToImmediate(context, astForErr, nullptr, nt);
+          return paramToImmediate(context, astForErr, nullptr, nt, outTypeOnError);
         }
       }
     case paramtags::IntParam:
@@ -460,15 +486,15 @@ static QualifiedType handleParamCast(Context* context,
                                      const AstNode* astForErr,
                                      QualifiedType a,
                                      QualifiedType b) {
+  QualifiedType typeToReturnOnError;
   // convert Param to Immediate
-  auto aImmOpt = paramToImmediate(context, astForErr, a.param(), a.type());
+  auto aImmOpt = paramToImmediate(context, astForErr, a.param(), a.type(), typeToReturnOnError);
   // get an Immediate for the default value of b's Type
-  auto bImmOpt = paramToImmediate(context, astForErr, nullptr, b.type());
+  auto bImmOpt = paramToImmediate(context, astForErr, nullptr, b.type(), typeToReturnOnError);
 
   if (!aImmOpt || !bImmOpt) {
     // Error would've already been reported by paramToImmediate.
-    return QualifiedType(QualifiedType::UNKNOWN,
-                         ErroneousType::get(context));
+    return typeToReturnOnError;
   }
 
   Immediate aImm = *aImmOpt;
@@ -491,12 +517,12 @@ QualifiedType Param::fold(Context* context,
                           QualifiedType b) {
   CHPL_ASSERT(a.hasTypePtr() && a.hasParamPtr());
 
+  QualifiedType typeToReturnOnError;
   // convert Param to Immediate
-  auto aImmOpt = paramToImmediate(context, astForErr, a.param(), a.type());
+  auto aImmOpt = paramToImmediate(context, astForErr, a.param(), a.type(), typeToReturnOnError);
   if (!aImmOpt) {
     // Error would've already been reported by paramToImmediate.
-    return QualifiedType(QualifiedType::UNKNOWN,
-                         ErroneousType::get(context));
+    return typeToReturnOnError;
   }
   Immediate aImm = *aImmOpt;
   Immediate result;
@@ -522,11 +548,10 @@ QualifiedType Param::fold(Context* context,
   } else {
     CHPL_ASSERT(b.hasTypePtr() && b.hasParamPtr());
 
-    auto bImmOpt = paramToImmediate(context, astForErr, b.param(), b.type());
+    auto bImmOpt = paramToImmediate(context, astForErr, b.param(), b.type(), typeToReturnOnError);
     if (!bImmOpt) {
       // Error would've already been reported by paramToImmediate.
-      return QualifiedType(QualifiedType::UNKNOWN,
-                           ErroneousType::get(context));
+      return typeToReturnOnError;
     }
     Immediate bImm = *bImmOpt;
     fold_constant(context, immOp, &aImm, &bImm, &result);
