@@ -8253,14 +8253,17 @@ void warnForSomeNumericConversions(BaseAST* context,
         USR_WARN(context, "potentially surprising implicit conversion "
                           "from '%s' to '%s'",
                           toString(actualVt), toString(formalVt));
-      } else {
-        USR_WARN(context, "implicit conversion from non-default-sized integral "
-                          "types to non-default sized floating point "
-                          "types is unstable");
+        USR_PRINT(context, "add a cast :%s to avoid this warning",
+                  toString(formalVt));
+        return;
+      } else if (actualWidth < 32) {
+        // unstable warning focuses on 8 and 16 bit int/uint
+        USR_WARN(context, "implicit conversion from 8- and 16- bit integral "
+                          "types to 'real(32)' is unstable");
+        USR_PRINT(context, "add a cast :%s to avoid this warning",
+                  toString(formalVt));
+        return;
       }
-      USR_PRINT(context, "add a cast :%s to avoid this warning",
-                toString(formalVt));
-      return;
     }
   }
 
