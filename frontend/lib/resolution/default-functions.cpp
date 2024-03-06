@@ -155,6 +155,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (name == "domain" || name == "eltType") {
       return true;
     }
+  } else if (type->isCPtrType()) {
+    if (name == "eltType") {
+      return true;
+    }
   }
 
   return false;
@@ -678,6 +682,40 @@ generateRecordComparison(Context* context, const CompositeType* lhsType) {
                                       /*rhs*/  QualifiedType::CONST_REF);
 }
 
+static const TypedFnSignature*
+generateCPtrMethod(Context* context, const CPtrType * cpt, UniqueString name) {
+  // Build a basic function signature for methods on an array
+  // TODO: we should really have a way to just set the return type here
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, cpt));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ cpt->getId(context),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, cpt->getId(context)),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, const Type* type,
                                 UniqueString name, bool parenless) {
@@ -686,9 +724,10 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
   const TypedFnSignature* result = nullptr;
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
+    
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType);
-
+    CHPL_ASSERT(compType || type->isCPtrType());
+    
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
     } else if (name == USTR("init=")) {
@@ -709,6 +748,8 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       } else {
         CHPL_ASSERT(false && "record method not implemented yet!");
       }
+    } else if (auto cPtrType = type->toCPtrType()) {
+      result = generateCPtrMethod(context, cPtrType, name);
     } else {
       CHPL_ASSERT(false && "should not be reachable");
     }
