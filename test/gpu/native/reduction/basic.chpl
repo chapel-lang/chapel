@@ -37,11 +37,11 @@ proc testType(type t) {
   }
 
   writeln("Testing type ", t:string);
-  /*test("sum", t);*/
-  /*test("min", t);*/
+  test("sum", t);
+  test("min", t);
   test("max", t);
-  /*test("minloc", t);*/
-  /*test("maxloc", t);*/
+  test("minloc", t);
+  test("maxloc", t);
   writeln();
 }
 

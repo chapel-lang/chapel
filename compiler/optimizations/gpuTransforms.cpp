@@ -1162,7 +1162,9 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   insertionPoint->insertBefore(new DefExpr(fn_));
 }
 
-// Engin: This is one of my least favorite functions in the compiler:
+// Engin: This is one of my least favorite functions in the compiler. The only
+// way out of this is probably a proper implementation for user-defined
+// reductions, which is _very_ hard to prioritize.
 void KernelArg::findReduceKind() {
   // let's first assume that this is unsupported
   this->redInfo_.kind = ReductionKind::UNSUPPORTED;
@@ -1216,7 +1218,7 @@ void KernelArg::findReduceKind() {
 }
 
 bool KernelArg::eligible() {
-  return !this->isReduce() || this->redInfo_.kind!= ReductionKind::UNSUPPORTED;
+  return !this->isReduce() || this->redInfo_.kind != ReductionKind::UNSUPPORTED;
 }
 
 FnSymbol* KernelArg::generateFinalReductionWrapper() {
@@ -1326,7 +1328,13 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel) :
                                          astr(symInLoop->name, "_interim"),
                                          symInLoop->getRefType());
     this->findReduceKind();
-    this->redInfo_.wrapper = this->generateFinalReductionWrapper();
+    if (this->eligible()) {
+      // we create the reduction wrapper only if this arg is eligible for GPU
+      // execution. That's because we'll thwart gpuization later in compilation
+      // and we don't want to create this useless wrapper that might try to call
+      // a function that doesn't exist.
+      this->redInfo_.wrapper = this->generateFinalReductionWrapper();
+    }
   }
 }
 
