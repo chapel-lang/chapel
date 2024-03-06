@@ -31,7 +31,7 @@ Expr* getCmdLineConfig(const char *);
 void  useCmdLineConfig(const char *, VarSymbol*);
 VarSymbol* isUsedCmdLineConfig(const char *);
 bool isSetCmdLineConfig(const char *, const char *);
-VarSymbol* getConfigParamBool(ModuleSymbol*, const char*,VarSymbol*);
+VarSymbol* getConfigParamBool(ModuleSymbol*, const char*);
 
 extern bool mainHasArgs;
 extern bool mainPreserveDelimiter;
