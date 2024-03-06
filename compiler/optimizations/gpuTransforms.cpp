@@ -1771,7 +1771,7 @@ static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
 // remove it.
 static void cleanupTaskIndependentCapturePrimitives() {
   for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
-    if(callExpr->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE))
+    if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE))
       cleanupTaskIndependentCapturePrimitive(callExpr);
 }
 

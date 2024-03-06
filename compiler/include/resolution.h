@@ -167,6 +167,7 @@ void convertFieldsOfRecordThis(FnSymbol* fn);
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
 void  resolveForallStmts2();
+bool shouldReplaceForLoopWithForall(ForLoop *forLoop);
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);

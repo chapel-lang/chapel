@@ -5,7 +5,7 @@ proc loops() {
   // CHECK-LABEL: @loops
   var sum = 0;
   @llvm.metadata("loop.attr.byitself")
-  foreach i in 0..<512 {
+  foreach i in 0..<512 with (ref sum) {
     // CHECK-LABEL: loop_start
     loop_start();
 
@@ -18,7 +18,7 @@ proc loops() {
     // CHECK-SAME: !llvm.loop ![[LOOP1:[0-9]+]]
   }
   @llvm.metadata(("loop.attr.num", 1))
-  foreach i in 0..<512 {
+  foreach i in 0..<512 with (ref sum) {
     // CHECK-LABEL: loop_start
     loop_start();
 
@@ -31,7 +31,7 @@ proc loops() {
     // CHECK-SAME: !llvm.loop ![[LOOP2:[0-9]+]]
   }
   @llvm.metadata(("loop.attr.str", "strVal"))
-  foreach i in 0..<512 {
+  foreach i in 0..<512 with (ref sum) {
     // CHECK-LABEL: loop_start
     loop_start();
 
@@ -44,7 +44,7 @@ proc loops() {
     // CHECK-SAME: !llvm.loop ![[LOOP3:[0-9]+]]
   }
   @llvm.metadata(("loop.attr.bool", true))
-  foreach i in 0..<512 {
+  foreach i in 0..<512 with (ref sum) {
     // CHECK-LABEL: loop_start
     loop_start();
 
@@ -57,7 +57,7 @@ proc loops() {
     // CHECK-SAME: !llvm.loop ![[LOOP4:[0-9]+]]
   }
   @llvm.metadata(("loop.attr.nested", ("loop.attr.inner", 1)))
-  foreach i in 0..<512 {
+  foreach i in 0..<512 with (ref sum) {
     // CHECK-LABEL: loop_start
     loop_start();
 
@@ -70,7 +70,7 @@ proc loops() {
     // CHECK-SAME: !llvm.loop ![[LOOP5:[0-9]+]]
   }
   @llvm.metadata(("loop.attr.multi1", 9), "loop.attr.byitself", ("loop.attr.multi2", false))
-  foreach i in 0..<512 {
+  foreach i in 0..<512 with (ref sum) {
     // CHECK-LABEL: loop_start
     loop_start();
 

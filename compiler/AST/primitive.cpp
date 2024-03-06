@@ -1339,8 +1339,8 @@ initPrimitive() {
 
   // we need to carry information about 'in' intents lowered from foreach loops
   // until gpu transforms. To do that we add an assignment
-  //   `taskIndVar = TASK_INDEPENDENT_SVAR_CAPTURE(capturedVar)` into the AST.
-  prim_def(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE, "task independent svar capture", returnInfoUnknown);
+  //   `taskIndVar = TASK_PRIVATE_SVAR_CAPTURE(capturedVar)` into the AST.
+  prim_def(PRIM_TASK_PRIVATE_SVAR_CAPTURE, "task private svar capture", returnInfoUnknown);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
