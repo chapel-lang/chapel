@@ -646,6 +646,7 @@ static void cfg_finalize_reductions(kernel_cfg* cfg) {
                   cfg->reduce_vars[i].outer_var,
                   cfg->reduce_vars[i].wrapper, (*(cfg->reduce_vars[i].wrapper)));
 
+    // TODO drop cast
     cfg->reduce_vars[i].wrapper((double*)cfg->reduce_vars[i].buffer,
                                      cfg->grd_dim_x,
                                      (double*)cfg->reduce_vars[i].outer_var,
