@@ -1601,11 +1601,20 @@ computeNumericValueOfEnumElement(Context* context, ID node) {
 ID lookupEnumElementByNumericValue(Context* context,
                                    const ID& node,
                                    const QualifiedType& value) {
+  // Maps don't store the order of insertion, so we can't rely on iterating
+  // the numeric value map. Instead, iterate the enum constants and
+  // try find their numeric values.
+  auto ast = parsing::idToAst(context, node);
+  if (!ast) return ID();
+  auto enumAst = ast->toEnum();
+  if (!enumAst) return ID();
+
   auto& numericValues = computeNumericValuesOfEnumElements(context, node);
 
-  for (auto& pair : numericValues) {
-    if (pair.second == value) {
-      return pair.first;
+  for (auto elt : enumAst->enumElements()) {
+    auto it = numericValues.find(elt->id());
+    if (it != numericValues.end() && it->second == value) {
+      return elt->id();
     }
   }
 

@@ -393,8 +393,8 @@ static void test40() {
   resolveModule(&ctx, m->id());
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "can't cast from an abstract enum ('EnumType') to IntType");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.error(0)->type() == ErrorType::EnumAbstract);
   assert(guard.realizeErrors() == 1);
 }
 
