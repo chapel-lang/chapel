@@ -895,7 +895,8 @@ module GPU
 
   private import Time;
 
-
+  // We no doc it so we can test this independently
+  @chpldoc.nodoc
   proc gpuCubSort(ref gpuInputArr : [] ?t) {
     param cTypeName = if      t==int(8)   then "int8_t"
                       else if t==int(16)  then "int16_t"
@@ -951,7 +952,7 @@ module GPU
          writeln(Arr); // [1, 2, 3, 4, 5]
        }
   */
-  proc gpuSort(ref gpuInputArr : [] uint) {
+  proc gpuSort(ref gpuInputArr : [] ?t) {
     if !here.isGpu() then halt("gpuSort must be run on a gpu locale");
     if gpuInputArr.size == 0 then return;
 
@@ -968,7 +969,8 @@ module GPU
     // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
     // TODO better heuristic here?
     var chunkSize = Math.divCeil(gpuInputArr.size, 2000);
-    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
+    // TODO assert type is uint
+    // parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
   }
 
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
