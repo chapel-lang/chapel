@@ -22,14 +22,14 @@ config type eltType = uint(32);
 
 config const seed = NPBRandom.oddTimeSeed();
 
-var methods = ["default", "gpuCub", /*"gpuRadix"*/];
+var methods = ["default", "gpuCub", "gpuRadix"];
 
 proc testsort(ref input, method) {
 
   if method == "gpuCub" {
       GPU.gpuCubSort(input);
   } else if method == "gpuRadix" {
-    // GPU.parallelRadixSort(input, bitsAtATime, chunkSize, false);
+    GPU.parallelRadixSort(input, bitsAtATime, chunkSize, false);
   } else if method == "default" {
     GPU.gpuSort(input);
   } else {
