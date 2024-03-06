@@ -8248,8 +8248,8 @@ void warnForSomeNumericConversions(BaseAST* context,
   // consider warning for small int -> small real implicit conversion
   if (actualIntUint && formalFloatingPoint &&
       actualWidth < 64 && formalWidth != 64) {
-    if (fWarnSmallIntegralReal || shouldWarnUnstableFor(context)) {
-      if (fWarnSmallIntegralReal) {
+    if (fWarnSmallIntegralFloat || shouldWarnUnstableFor(context)) {
+      if (fWarnSmallIntegralFloat) {
         USR_WARN(context, "potentially surprising implicit conversion "
                           "from '%s' to '%s'",
                           toString(actualVt), toString(formalVt));
@@ -8268,7 +8268,8 @@ void warnForSomeNumericConversions(BaseAST* context,
   }
 
   // consider warning for any int -> real implicit conversion
-  if (fWarnIntegralReal && actualIntUint && formalFloatingPoint && userModule) {
+  if (fWarnIntegralFloat && userModule &&
+      actualIntUint && formalFloatingPoint) {
     if (!actualIsParam || fWarnParamImplicitNumericConversions) {
       USR_WARN(context, "implicit conversion from '%s' to '%s'",
                toString(actualVt), toString(formalVt));
@@ -8279,7 +8280,7 @@ void warnForSomeNumericConversions(BaseAST* context,
   }
 
   // consider warning for real(t) -> real(u) implicit conversion
-  if (fWarnRealReal && actualFloatingPoint && formalFloatingPoint &&
+  if (fWarnFloatFloat && actualFloatingPoint && formalFloatingPoint &&
       actualWidth != formalWidth && userModule) {
     if (!actualIsParam || fWarnParamImplicitNumericConversions) {
       USR_WARN(context, "implicit conversion from '%s' to '%s'",

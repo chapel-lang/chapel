@@ -221,9 +221,9 @@ bool fLLVMWideOpt = false;
 
 // warnings for various implicit numeric conversions
 bool fWarnIntUint = false;
-bool fWarnSmallIntegralReal = false;
-bool fWarnIntegralReal = false;
-bool fWarnRealReal = false;
+bool fWarnSmallIntegralFloat = false;
+bool fWarnIntegralFloat = false;
+bool fWarnFloatFloat = false;
 bool fWarnIntegralIntegral = false;
 bool fWarnImplicitNumericConversions = false;
 bool fWarnParamImplicitNumericConversions = false;
@@ -759,9 +759,9 @@ static void setNumericWarnings(const ArgumentDescription* desc,
                                const char* arg) {
   bool shouldWarn = fWarnImplicitNumericConversions;
   fWarnIntUint = shouldWarn;
-  fWarnSmallIntegralReal = shouldWarn;
-  fWarnIntegralReal = shouldWarn;
-  fWarnRealReal = shouldWarn;
+  fWarnSmallIntegralFloat = shouldWarn;
+  fWarnIntegralFloat = shouldWarn;
+  fWarnFloatFloat = shouldWarn;
   fWarnIntegralIntegral = shouldWarn;
 }
 
@@ -1320,13 +1320,13 @@ static ArgumentDescription arg_desc[] = {
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
  {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
  {"warn-potential-races", ' ', NULL, "Enable [disable] output of warnings for potential race conditions", "N", &fWarnPotentialRaces, "CHPL_WARN_POTENTIAL_RACES", NULL},
- {"warn-int-uint", ' ', NULL, "Enable [disable] warnings for potentially negative 'int' values implicitly converted to 'uint'", "N", &fWarnIntUint, "CHPL_WARN_INT_UINT", NULL},
- {"warn-small-integral-real", ' ', NULL, "Enable [disable] warnings for implicitly converting a small int/uint to a small real/complex", "N", &fWarnSmallIntegralReal, "CHPL_WARN_SMALL_INTEGRAL_REAL", NULL},
- {"warn-integral-real", ' ', NULL, "Enable [disable] warnings for implicitly converting an int/uint to a real/complex", "N", &fWarnIntegralReal, "CHPL_WARN_INTEGRAL_REAL", NULL},
- {"warn-real-real", ' ', NULL, "Enable [disable] warnings for implicitly converting a real/imag/complex to a real/imag/complex with different precision", "N", &fWarnRealReal, "CHPL_WARN_REAL_REAL", NULL},
- {"warn-integral-integral", ' ', NULL, "Enable [disable] warnings for implicitly converting an int/uint to an int/uint with different size", "N", &fWarnIntegralIntegral, "CHPL_WARN_INTEGRAL_INTEGRAL", NULL},
+ {"warn-int-to-uint", ' ', NULL, "Enable [disable] warnings for potentially negative 'int' values implicitly converted to 'uint'", "N", &fWarnIntUint, "CHPL_WARN_INT_TO_UINT", NULL},
+ {"warn-small-integral-to-float", ' ', NULL, "Enable [disable] warnings for implicitly converting a small int/uint to a small real/complex", "N", &fWarnSmallIntegralFloat, "CHPL_WARN_SMALL_INTEGRAL_TO_FLOAT", NULL},
+ {"warn-integral-to-float", ' ', NULL, "Enable [disable] warnings for implicitly converting an int/uint to a real/complex of any width", "N", &fWarnIntegralFloat, "CHPL_WARN_INTEGRAL_TO_FLOAT", NULL},
+ {"warn-float-to-float", ' ', NULL, "Enable [disable] warnings for implicitly converting a real/imag/complex to a real/imag/complex with different precision", "N", &fWarnFloatFloat, "CHPL_WARN_REAL_REAL", NULL},
+ {"warn-integral-to-integral", ' ', NULL, "Enable [disable] warnings for implicitly converting an int/uint to an int/uint with different size", "N", &fWarnIntegralIntegral, "CHPL_WARN_INTEGRAL_TO_INTEGRAL", NULL},
  {"warn-implicit-numeric-conversions", ' ', NULL, "Enable [disable] warnings for implicitly converting a value of numeric type to a different numeric type", "N", &fWarnImplicitNumericConversions, "CHPL_WARN_IMPLICIT_NUMERIC_CONVERSIONS", setNumericWarnings},
- {"warn-param-implicit-numeric-conversions", ' ', NULL, "Enable [disable] int-uint, real-real, and integral-integral implicit conversion warnings to apply to 'param' values", "N", &fWarnParamImplicitNumericConversions, "CHPL_WARN_PARAM_IMPLICIT_NUMERIC_CONVERSIONS", NULL},
+ {"warn-param-implicit-numeric-conversions", ' ', NULL, "Enable [disable] int-to-uint, real-to-real, and integral-to-integral implicit conversion warnings to apply to 'param' values", "N", &fWarnParamImplicitNumericConversions, "CHPL_WARN_PARAM_IMPLICIT_NUMERIC_CONVERSIONS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},

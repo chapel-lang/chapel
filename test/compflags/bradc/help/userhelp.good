@@ -25,19 +25,22 @@ Warning and Language Control Options:
                                       source
       --[no-]warn-potential-races     Enable [disable] output of warnings for
                                       potential race conditions
-      --[no-]warn-int-uint            Enable [disable] warnings for
+      --[no-]warn-int-to-uint         Enable [disable] warnings for
                                       potentially negative 'int' values
                                       implicitly converted to 'uint'
-      --[no-]warn-small-integral-real Enable [disable] warnings for implicitly
+      --[no-]warn-small-integral-to-float
+                                      Enable [disable] warnings for implicitly
                                       converting a small int/uint to a small
                                       real/complex
-      --[no-]warn-integral-real       Enable [disable] warnings for implicitly
+      --[no-]warn-integral-to-float   Enable [disable] warnings for implicitly
                                       converting an int/uint to a real/complex
-      --[no-]warn-real-real           Enable [disable] warnings for implicitly
+                                      of any width
+      --[no-]warn-float-to-float      Enable [disable] warnings for implicitly
                                       converting a real/imag/complex to a
                                       real/imag/complex with different
                                       precision
-      --[no-]warn-integral-integral   Enable [disable] warnings for implicitly
+      --[no-]warn-integral-to-integral
+                                      Enable [disable] warnings for implicitly
                                       converting an int/uint to an int/uint
                                       with different size
       --[no-]warn-implicit-numeric-conversions
@@ -45,10 +48,10 @@ Warning and Language Control Options:
                                       converting a value of numeric type to a
                                       different numeric type
       --[no-]warn-param-implicit-numeric-conversions
-                                      Enable [disable] int-uint, real-real,
-                                      and integral-integral implicit
-                                      conversion warnings to apply to 'param'
-                                      values
+                                      Enable [disable] int-to-uint,
+                                      real-to-real, and integral-to-integral
+                                      implicit conversion warnings to apply to
+                                      'param' values
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]

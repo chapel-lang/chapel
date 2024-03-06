@@ -239,9 +239,9 @@ extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 
 extern bool fWarnIntUint;
-extern bool fWarnSmallIntegralReal;
-extern bool fWarnIntegralReal;
-extern bool fWarnRealReal;
+extern bool fWarnSmallIntegralFloat;
+extern bool fWarnIntegralFloat;
+extern bool fWarnFloatFloat;
 extern bool fWarnIntegralIntegral;
 extern bool fWarnImplicitNumericConversions;
 extern bool fWarnParamImplicitNumericConversions;

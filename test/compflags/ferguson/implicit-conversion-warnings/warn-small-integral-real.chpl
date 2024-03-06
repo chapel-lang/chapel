@@ -1,5 +1,5 @@
 use Math;
-
+// test warnings from --warn-small-integral-to-float / --warn-unstable
 proc test1fn() {
   var red: uint(8) = 1;
   var green: uint(8) = 2;

@@ -1,2 +1,2 @@
---warn-int-uint
+--warn-int-to-uint
 --warn-implicit-numeric-conversions

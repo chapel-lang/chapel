@@ -1,2 +1,2 @@
---warn-real-real
+--warn-float-to-float
 --warn-implicit-numeric-conversions

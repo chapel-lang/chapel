@@ -143,12 +143,12 @@ OPTIONS
     operation may be race condition and will warn with this flag. Defaults to
     not printing race condition warnings.
 
-**\--[no-]warn-int-uint**
+**\--[no-]warn-int-to-uint**
 
     Enable [disable] compilation warnings for when implicitly converting
     from a value of ``int`` type of any width to a ``uint`` value.
 
-**\--[no-]warn-small-integral-real**
+**\--[no-]warn-small-integral-to-float**
 
     Enable [disable] compilation warnings for when implicitly converting
     from a value of small integral type to a small floating-point value.
@@ -156,20 +156,20 @@ OPTIONS
     of type ``int(t)`` or ``uint(t)`` where ``t<64``, to something of
     type ``real(u)`` or ``complex(2*u)`` where ``u<64``.
 
-**\--[no-]warn-integral-real**
+**\--[no-]warn-integral-to-float**
 
     Enable [disable] compilation warnings for when implicitly converting
     from a value of ``int`` or ``uint`` type of any width to a ``real``
     or ``complex`` type of any width.
 
-**\--[no-]warn-real-real**
+**\--[no-]warn-float-to-float**
 
     Enable [disable] compilation warnings for when implicitly converting
     from a floating-point type of one precision to another. That includes
     implicitly converting from ``real(32)`` to ``real(64)`` as well as
     similar cases with ``imag`` and ``complex`` types.
 
-**\--[no-]warn-integral-integral**
+**\--[no-]warn-integral-to-integral**
 
     Enable [disable] compilation warnings for when implicitly converting
     from a value of integral type to another integral type of different width.
