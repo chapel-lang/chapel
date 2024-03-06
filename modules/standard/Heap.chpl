@@ -376,17 +376,11 @@ module Heap {
 
     /*
       Write the contents of this heap to a channel in arbitrary order.
-
-      :arg ch: A channel to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
-      _enter();
-      ch.write(this._data);
-      _leave();
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      _enter();
+      writer.write(this._data);
+      _leave();
     }
   }
 

@@ -370,16 +370,6 @@ module OwnedObject {
   }
 
   @chpldoc.nodoc
-  proc _owned.readThis(f) throws {
-    _readWriteHelper(f);
-  }
-
-  @chpldoc.nodoc
-  proc _owned.writeThis(f) throws {
-    _readWriteHelper(f);
-  }
-
-  @chpldoc.nodoc
   proc _owned.serialize(writer, ref serializer) throws {
     _readWriteHelper(writer);
   }

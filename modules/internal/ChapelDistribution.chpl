@@ -129,26 +129,19 @@ module ChapelDistribution {
 
     proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
 
-    proc readThis(f) throws {
-      f.read(_value);
-    }
-
     @chpldoc.nodoc
     proc ref deserialize(reader, ref deserializer) throws {
-      readThis(reader);
+      reader.read(_value);
     }
 
     // TODO: Can't this be an initializer?
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(reader);
+      ret.deserialize(reader, deserializer);
       return ret;
     }
 
-    proc writeThis(f) throws {
-      f.write(_value);
-    }
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
       writer.write(_value);

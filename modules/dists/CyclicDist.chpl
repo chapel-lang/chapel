@@ -332,11 +332,8 @@ record cyclicDist : writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -580,15 +577,12 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(0);
 }
 
-proc CyclicImpl.writeThis(x) throws {
-  x.writeln("cyclicDist");
-  x.writeln("----------");
-  for locid in targetLocDom do
-    x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
-      locDist(locid).myChunk);
-}
 override proc CyclicImpl.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.writeln("cyclicDist");
+  writer.writeln("----------");
+  for locid in targetLocDom do
+    writer.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
+      locDist(locid).myChunk);
 }
 
 proc CyclicImpl.targetLocsIdx(i: idxType) {
@@ -1279,9 +1273,6 @@ class LocCyclicArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
-  }
   override proc serialize(writer, ref serializer) throws {
     halt("LocCyclicArr.serialize() is not implemented / should not be needed");
   }

@@ -185,10 +185,6 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of sync vars.
-    proc readThis(x) throws {
-      compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
-    }
-
     proc deserialize(reader, ref deserializer) throws {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
@@ -201,10 +197,6 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit writes of sync vars.
-    proc writeThis(x) throws {
-      compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
-     }
-
     proc serialize(writer, ref serializer) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
     }
@@ -873,10 +865,6 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of single vars.
-    proc readThis(x) throws {
-      compilerError("single variables cannot currently be read - use writeEF instead");
-    }
-
     proc deserialize(reader, ref deserializer) throws {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
@@ -889,10 +877,6 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit writes of single vars.
-    proc writeThis(x) throws {
-      compilerError("single variables cannot currently be written - apply readFF() to those variables first");
-     }
-
     proc serialize(writer, ref serializer) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
     }
@@ -1264,21 +1248,18 @@ private module AlignedTSupport {
   }
 
   // read/write support
-  proc aligned_t.writeThis(f) throws {
-    var tmp : uint(64) = this : uint(64);
-    f.write(tmp);
-  }
-  proc aligned_t.readThis(f) throws {
-    this = f.read(uint(64)) : aligned_t;
+  proc aligned_t.deserialize(reader, ref deserializer) throws {
+    this = reader.read(uint(64)) : aligned_t;
   }
 
   @chpldoc.nodoc
   proc aligned_t.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    var tmp : uint(64) = this : uint(64);
+    writer.write(tmp);
   }
-  proc type aligned_t.readThis(f) throws {
+  proc type aligned_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : aligned_t;
-    ret.readThis(f);
+    ret.deserialize(reader, deserializer);
     return ret;
   }
 }

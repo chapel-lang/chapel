@@ -471,12 +471,8 @@ record blockDist : writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -638,10 +634,6 @@ class LocBlockArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocBlockArr.writeThis() is not implemented / should not be needed");
-  }
-
   override proc serialize(writer, ref serializer) throws {
     halt("LocBlockArr.serialize() is not implemented / should not be needed");
   }
@@ -860,20 +852,16 @@ override proc BlockImpl.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockImpl.writeThis(x) throws {
-  x.writeln("blockDist");
-  x.writeln("---------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
-  for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
-      " owns chunk: ", locDist(locid).myChunk);
-}
-
 override proc BlockImpl.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.writeln("blockDist");
+  writer.writeln("---------");
+  writer.writeln("distributes: ", boundingBox);
+  writer.writeln("across locales: ", targetLocales);
+  writer.writeln("indexed via: ", targetLocDom);
+  writer.writeln("resulting in: ");
+  for locid in targetLocDom do
+    writer.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+      " owns chunk: ", locDist(locid).myChunk);
 }
 
 proc BlockImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -2180,7 +2168,6 @@ class BoxedSync : writeSerializable {
   }
 
   // guard against dynamic dispatch trying to resolve write()ing the sync
-  override proc writeThis(f) throws { }
   override proc serialize(writer, ref serializer) throws { }
 }
 

@@ -234,12 +234,8 @@ inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
 }
 
 @chpldoc.nodoc
-proc ipAddr.writeThis(f) throws {
-  f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
-}
-@chpldoc.nodoc
 proc ipAddr.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
 
 /*
@@ -328,12 +324,8 @@ inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
 }
 
 @chpldoc.nodoc
-proc tcpConn.writeThis(f) throws {
-  f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
-}
-@chpldoc.nodoc
 proc tcpConn.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.write("(","addr:",this.addr,",fd:",this.socketFd,")");
 }
 
 @chpldoc.nodoc
@@ -784,12 +776,8 @@ inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
 }
 
 @chpldoc.nodoc
-proc tcpListener.writeThis(f) throws {
-  f.write("(","addr:",this.addr,",fd:",this.socketFd);
-}
-@chpldoc.nodoc
 proc tcpListener.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 @chpldoc.nodoc
@@ -1238,12 +1226,8 @@ inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
 }
 
 @chpldoc.nodoc
-proc udpSocket.writeThis(f) throws {
-  f.write("(","addr:",this.addr,",fd:",this.socketFd);
-}
-@chpldoc.nodoc
 proc udpSocket.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 

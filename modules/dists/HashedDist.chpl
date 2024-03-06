@@ -177,12 +177,8 @@ record hashedDist : writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -331,19 +327,15 @@ class HashedImpl : BaseDist, writeSerializable {
   //
   // print out the distribution
   //
-  proc writeThis(x) throws {
-    x.writeln("hashedDist");
-    x.writeln("----------");
-    x.writeln("distributed using: ", mapper);
-    x.writeln("across locales: ", targetLocales);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
-    //for locid in targetLocDom do
-    //  x.writeln("  [", locid, "] ", locDist(locid));
-  }
-
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.writeln("hashedDist");
+    writer.writeln("----------");
+    writer.writeln("distributed using: ", mapper);
+    writer.writeln("across locales: ", targetLocales);
+    writer.writeln("indexed via: ", targetLocDom);
+    writer.writeln("resulting in: ");
+    //for locid in targetLocDom do
+    //  writer.writeln("  [", locid, "] ", locDist(locid));
   }
 
   //
@@ -756,12 +748,8 @@ class LocUserMapAssocDom : writeSerializable {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) throws {
-    x.write(myInds);
-  }
-
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(myInds);
   }
 
 
@@ -1160,15 +1148,11 @@ class LocUserMapAssocArr : writeSerializable {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
-  }
-
-  override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(myElems);
   }
 
   //

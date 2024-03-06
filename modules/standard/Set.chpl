@@ -544,7 +544,7 @@ module Set {
     }
 
     @chpldoc.nodoc
-    proc const writeThis(ch: fileWriter) throws {
+    proc const _defaultWriteHelper(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
 
@@ -572,7 +572,7 @@ module Set {
     */
     proc const serialize(writer:fileWriter(?), ref serializer) throws {
       if serializer.type == IO.defaultSerializer {
-        writeThis(writer);
+        _defaultWriteHelper(writer);
       } else {
         on this {
           _enter(); defer _leave();
