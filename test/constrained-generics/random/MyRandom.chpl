@@ -72,8 +72,8 @@ module MyRandom {
   /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
   param defaultRNG = RNG.PCG;
 
-  type RandomStream = if defaultRNG == RNG.PCG then PCGRandomStream
-                                               else NPBRandomStream;
+  type RandomStream = if defaultRNG == RNG.PCG then PCGRandomStream(?)
+                                               else NPBRandomStream(?);
 
   // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the
   // :arg <type> <name>: form or else switching the order to

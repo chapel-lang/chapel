@@ -40,7 +40,7 @@ assert( (shared C(int))? == shared C(int)?);
 assert( (borrowed C(int))? == borrowed C(int)?);
 assert( (unmanaged C(int))? == unmanaged C(int)?);
 
-type A = C?; // nilable C, not knowing further instantiation information
+type A = C(?)?; // nilable C, not knowing further instantiation information
 type B = A(int); // could consider this as literally ``C?(int)`` via aliasing
 var c0 = new A(int);
 writeln("c0 ", c0.type:string, " ", c0);

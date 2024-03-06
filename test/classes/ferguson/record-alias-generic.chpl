@@ -2,7 +2,7 @@ record A {
   var x;
 }
 
-type C = A;
+type C = A(?);
 
 var c = new C(1);
 writeln(c);

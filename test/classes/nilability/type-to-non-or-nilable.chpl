@@ -39,29 +39,29 @@ class D {
   var y;
 }
 
-type do_b = owned D;
-type do_q = owned D?;
+type do_b = owned D(?);
+type do_q = owned D(?)?;
 compilerWarning("owned D -> nil  ", _to_nilable(do_b):string);
 compilerWarning("owned D -> non  ", _to_nonnil(do_b):string);
 compilerWarning("owned D? -> nil  ", _to_nilable(do_q):string);
 compilerWarning("owned D? -> non  ", _to_nonnil(do_q):string);
 
-type ds_b = shared D;
-type ds_q = shared D?;
+type ds_b = shared D(?);
+type ds_q = shared D(?)?;
 compilerWarning("shared D -> nil  ", _to_nilable(ds_b):string);
 compilerWarning("shared D -> non  ", _to_nonnil(ds_b):string);
 compilerWarning("shared D? -> nil  ", _to_nilable(ds_q):string);
 compilerWarning("shared D? -> non  ", _to_nonnil(ds_q):string);
 
-type db_b = borrowed D;
-type db_q = borrowed D?;
+type db_b = borrowed D(?);
+type db_q = borrowed D(?)?;
 compilerWarning("borrowed D -> nil  ", _to_nilable(db_b):string);
 compilerWarning("borrowed D -> non  ", _to_nonnil(db_b):string);
 compilerWarning("borrowed D? -> nil  ", _to_nilable(db_q):string);
 compilerWarning("borrowed D? -> non  ", _to_nonnil(db_q):string);
 
-type du_b = unmanaged D;
-type du_q = unmanaged D?;
+type du_b = unmanaged D(?);
+type du_q = unmanaged D(?)?;
 compilerWarning("unmanaged D -> nil  ", _to_nilable(du_b):string);
 compilerWarning("unmanaged D -> non  ", _to_nonnil(du_b):string);
 compilerWarning("unmanaged D? -> nil  ", _to_nilable(du_q):string);
