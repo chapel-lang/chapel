@@ -1454,9 +1454,6 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
       // ambiguity between candidates
       context->error(astForErr, "Cannot resolve call to '%s': ambiguity",
                      ci.name().c_str());
-    } else if (auto primCall = astForErr->toPrimCall()) {
-      // if a call to a primitive failed, trust that the primitive resolution
-      // code has already issued an error if needed.
     } else {
       // could not find a most specific candidate
       std::vector<ApplicabilityResult> rejected;
@@ -1536,7 +1533,10 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
   if (!c.exprType().hasTypePtr()) {
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     r.setMostSpecific(c.mostSpecific());
-    return true;
+
+    // If the call was specially handled, assume special-case logic has already
+    // issued its own error.
+    return !c.speciallyHandled();
   } else {
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
@@ -1595,7 +1595,7 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
                                             const CallResolutionResult& c,
                                             AssociatedAction::Action action,
                                             ID id) {
-  if (!c.exprType().hasTypePtr()) {
+  if (!c.exprType().hasTypePtr() && !c.speciallyHandled()) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   } else {
     // save candidates as associated functions
