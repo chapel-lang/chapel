@@ -19,10 +19,12 @@
 
 #include "chpl/types/Param.h"
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/UniqueString-detail.h"
 #include "chpl/types/EnumType.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ComplexType.h"
@@ -155,7 +157,7 @@ static paramtags::ParamTag guessParamTagFromType(const Type* t) {
   return an Immediate representing the default value of Type t.
 */
 static
-Immediate paramToImmediate(Context* context, const Param* p, const Type* t) {
+optional<Immediate> paramToImmediate(Context* context, const AstNode* astForErr, const Param* p, const Type* t) {
   Immediate ret;
   paramtags::ParamTag tag = p ? p->tag() : guessParamTagFromType(t);
 
@@ -193,27 +195,35 @@ Immediate paramToImmediate(Context* context, const Param* p, const Type* t) {
     case paramtags::EnumParam:
       {
         auto ep = (const EnumParam*) p;
+        auto et = t->toEnumType();
+        // How else could we have possibly guessed an 'enum' tag?
+        CHPL_ASSERT(et);
+
         if (ep) {
           auto numericValue =
             computeNumericValueOfEnumElement(context, ep->value());
 
           auto np = numericValue.param();
           auto nt = numericValue.type();
-          if (!np) CHPL_ASSERT(false && "it's possible for en enum param to have no immediate value");
+          if (!np) {
+            auto eltAst = parsing::idToAst(context, ep->value())->toEnumElement();
+            CHPL_REPORT(context, EnumValueAbstract, astForErr, et, eltAst);
+            return {};
+          }
 
           // Having converted the param to a numeric representation, get
           // an immediate from that.
-          return paramToImmediate(context, np, nt);
+          return paramToImmediate(context, astForErr, np, nt);
         } else {
-          auto et = t->toEnumType();
-          // How else could we have possibly guessed an 'enum' tag?
-          CHPL_ASSERT(et);
           auto qt = computeUnderlyingTypeOfEnum(context, et->id());
 
           auto nt = qt.type();
-          if (!nt) CHPL_ASSERT(false && "it's possible for an enum type to have no underlying type");
+          if (!nt) {
+            CHPL_REPORT(context, EnumAbstract, astForErr, et);
+            return {};
+          }
 
-          return paramToImmediate(context, nullptr, nt);
+          return paramToImmediate(context, astForErr, nullptr, nt);
         }
       }
     case paramtags::IntParam:
@@ -419,6 +429,7 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
 // a numeric value of the backing type. Otherwise, return the original param
 // value.
 static QualifiedType enumParamFromNumericValue(Context* context,
+                                               const AstNode* astForErr,
                                                const Type* targetType,
                                                const QualifiedType &numericValue) {
   // Even if it's an enum, it's in the right type already.
@@ -437,7 +448,8 @@ static QualifiedType enumParamFromNumericValue(Context* context,
                            enumType,
                            EnumParam::get(context, elemId));
     } else {
-      CHPL_ASSERT(false && "TODO");
+      return CHPL_TYPE_ERROR(context, NoMatchingEnumValue,
+                             astForErr, enumType, numericValue);
     }
   }
 
@@ -445,30 +457,48 @@ static QualifiedType enumParamFromNumericValue(Context* context,
 }
 
 static QualifiedType handleParamCast(Context* context,
+                                     const AstNode* astForErr,
                                      QualifiedType a,
                                      QualifiedType b) {
   // convert Param to Immediate
-  Immediate aImm = paramToImmediate(context, a.param(), a.type());
+  auto aImmOpt = paramToImmediate(context, astForErr, a.param(), a.type());
   // get an Immediate for the default value of b's Type
-  Immediate bImm = paramToImmediate(context, nullptr, b.type());
+  auto bImmOpt = paramToImmediate(context, astForErr, nullptr, b.type());
+
+  if (!aImmOpt || !bImmOpt) {
+    // Error would've already been reported by paramToImmediate.
+    return QualifiedType(QualifiedType::UNKNOWN,
+                         ErroneousType::get(context));
+  }
+
+  Immediate aImm = *aImmOpt;
+  Immediate bImm = *bImmOpt;
 
   coerce_immediate(context, &aImm, &bImm);
   std::pair<const Param*, const Type*> pair = immediateToParam(context, bImm);
 
   auto resultParam = QualifiedType(Qualifier::PARAM, pair.second, pair.first);
-  resultParam = enumParamFromNumericValue(context, b.type(), resultParam);
+  resultParam = enumParamFromNumericValue(context, astForErr,
+                                          b.type(), resultParam);
 
   return resultParam;
 }
 
 QualifiedType Param::fold(Context* context,
+                          const AstNode* astForErr,
                           chpl::uast::PrimitiveTag op,
                           QualifiedType a,
                           QualifiedType b) {
   CHPL_ASSERT(a.hasTypePtr() && a.hasParamPtr());
 
   // convert Param to Immediate
-  Immediate aImm = paramToImmediate(context, a.param(), a.type());
+  auto aImmOpt = paramToImmediate(context, astForErr, a.param(), a.type());
+  if (!aImmOpt) {
+    // Error would've already been reported by paramToImmediate.
+    return QualifiedType(QualifiedType::UNKNOWN,
+                         ErroneousType::get(context));
+  }
+  Immediate aImm = *aImmOpt;
   Immediate result;
 
   // fold
@@ -476,11 +506,11 @@ QualifiedType Param::fold(Context* context,
 
   if (op == chpl::uast::PrimitiveTag::PRIM_CAST) {
     // valid param casts should always be foldable
-    return handleParamCast(context, a, b);
+    return handleParamCast(context, astForErr, a, b);
   }
 
   if (a.type()->isEnumType() || (b.type() && b.type()->isEnumType())) {
-    CHPL_ASSERT(false && "TODO");
+    context->error(astForErr, "enum types are not supported in param operations other than casting");
   }
 
   if (!Param::isParamOpFoldable(op)) {
@@ -492,7 +522,13 @@ QualifiedType Param::fold(Context* context,
   } else {
     CHPL_ASSERT(b.hasTypePtr() && b.hasParamPtr());
 
-    Immediate bImm = paramToImmediate(context, b.param(), b.type());
+    auto bImmOpt = paramToImmediate(context, astForErr, b.param(), b.type());
+    if (!bImmOpt) {
+      // Error would've already been reported by paramToImmediate.
+      return QualifiedType(QualifiedType::UNKNOWN,
+                           ErroneousType::get(context));
+    }
+    Immediate bImm = *bImmOpt;
     fold_constant(context, immOp, &aImm, &bImm, &result);
   }
 

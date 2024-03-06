@@ -356,6 +356,55 @@ void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
   }
 }
 
+
+void ErrorEnumAbstract::write(ErrorWriterBase& wr) const {
+  auto location = std::get<const uast::AstNode*>(info_);
+  auto enumType = std::get<const types::EnumType*>(info_);
+
+  wr.heading(kind_, type_, location, "cannot get numeric value from abstract 'enum'");
+  wr.code(location);
+  wr.message("The enumeration type '", enumType->name(), "' is declared here:");
+  wr.codeForLocation(enumType->id());
+  wr.message("The type is abstract because none of its constants have been assigned numeric values.");
+}
+
+void ErrorEnumInitializerNotParam::write(ErrorWriterBase& wr) const {
+  auto enumElement = std::get<const uast::EnumElement*>(info_);
+  auto qt = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, enumElement,
+             "only 'param' values can be associated with enumeration constants");
+  wr.codeForLocation(enumElement);
+  wr.message("The initialization expression of '", enumElement->name(), "' is ", qt);
+}
+
+void ErrorEnumInitializerNotInteger::write(ErrorWriterBase& wr) const {
+  auto enumElement = std::get<const uast::EnumElement*>(info_);
+  auto qt = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, enumElement,
+             "only integer (signed or unsigned) values can be associated with enumeration constants");
+  wr.codeForLocation(enumElement);
+  wr.message("The initialization expression of '", enumElement->name(), "' produces ", qt.param(), ", ", qt);
+}
+
+void ErrorEnumValueAbstract::write(ErrorWriterBase& wr) const {
+  auto location = std::get<const uast::AstNode*>(info_);
+  auto enumType = std::get<const types::EnumType*>(info_);
+  auto enumElement = std::get<const uast::EnumElement*>(info_);
+
+  wr.heading(kind_, type_, location,
+             "cannot get numeric value from abstract enumeration constant '",
+             enumElement->name(), "'");
+  wr.code(location);
+  wr.message("The constant '", enumElement->name(),
+             "' is declared here:");
+  wr.codeForLocation(enumElement);
+  wr.message("The constant is abstract because neither it nor any of the "
+             "preceding constants in '", enumType->name(),
+             "' have been assigned numeric values.");
+}
+
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
   auto externBlockId = std::get<ID>(info_);
   auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info_);
@@ -859,6 +908,20 @@ void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   wr.code(iterand, { iterand });
 }
 
+void ErrorNoMatchingEnumValue::write(ErrorWriterBase& wr) const {
+  auto location = std::get<const uast::AstNode*>(info_);
+  auto& enumType = std::get<const types::EnumType*>(info_);
+  auto& numericValue = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, location, "the value '", numericValue.param(),
+             "' of type '", numericValue.type(),
+             "' is not associated with any constant of the enumeration '",
+             enumType->name(), "'.");
+  wr.codeForLocation(location);
+  wr.message("Only values that were associated with an enumeration's constant "
+             "can be converted back to the enumeration type.");
+}
+
 void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   const uast::Dot* dot = std::get<0>(info_);
   //ID moduleId = std::get<1>(info_);
@@ -898,6 +961,20 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   //wr.note(moduleId, "module '", moduleName, "' declared here");
 
   return;
+}
+
+void ErrorNoTypeForEnumElem::write(ErrorWriterBase& wr) const {
+  auto enumAst = std::get<const uast::Enum*>(info_);
+  auto signedElt = std::get<1>(info_);
+  auto signedQt = std::get<2>(info_);
+  auto unsignedElt = std::get<3>(info_);
+  auto unsignedQt = std::get<4>(info_);
+
+  wr.heading(kind_, type_, enumAst, "cannot pick single numeric type to represent the elements of enum '", enumAst->name(), "'");
+  wr.note(signedElt, "the constant '", signedElt->name(), "' is associated with ", signedQt.param(), ", ", signedQt, ", which requires a signed integer type.");
+  wr.codeForLocation(signedElt);
+  wr.note(unsignedElt, "however, the constant '", unsignedElt->name(), "' is associated with ", unsignedQt.param(), ", ", unsignedQt, ", which requires an unsigned integer type.");
+  wr.codeForLocation(unsignedElt);
 }
 
 void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {

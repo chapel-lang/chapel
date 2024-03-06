@@ -155,6 +155,7 @@ class Param {
   static bool isParamOpFoldable(chpl::uast::PrimitiveTag op);
 
   static QualifiedType fold(Context* context,
+                            const chpl::uast::AstNode* astForErr,
                             chpl::uast::PrimitiveTag op,
                             QualifiedType a,
                             QualifiedType b);

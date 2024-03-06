@@ -1070,9 +1070,9 @@ CallResolutionResult resolvePrimCall(Context* context,
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim) && allParam) {
     if (ci.numActuals() == 2) {
-      type = Param::fold(context, prim, ci.actual(0).type(), ci.actual(1).type());
+      type = Param::fold(context, call, prim, ci.actual(0).type(), ci.actual(1).type());
     } else if (ci.numActuals() == 1) {
-      type = Param::fold(context, prim, ci.actual(0).type(), QualifiedType());
+      type = Param::fold(context, call, prim, ci.actual(0).type(), QualifiedType());
     } else {
       CHPL_ASSERT(false && "unsupported param folding");
     }

@@ -1433,10 +1433,10 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
       if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
         continue;
       } else if (!type->isIntType() && !type->isUintType()) {
-        context->error(elem, "TODO");
+        value = CHPL_TYPE_ERROR(context, EnumInitializerNotInteger, elem, qt);
         continue;
       } else if (!qt.isParam()) {
-        context->error(elem, "TODO");
+        value = CHPL_TYPE_ERROR(context, EnumInitializerNotParam, elem, qt);
         continue;
       }
 
@@ -1450,7 +1450,7 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
         auto lastQt = std::get<0>(lastValueInfo);
         if (!lastQt.isUnknown()) {
           // Previous value was 'valid', so add one to it.
-          value = Param::fold(context, chpl::uast::PRIM_ADD, lastQt, one);
+          value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
         } else {
           // Previous value was unknown, so we can't add one to it.
         }
@@ -1470,20 +1470,31 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   }
 
   const EnumElement* needsSigned = nullptr;
+  QualifiedType valueNeedsSigned;
   const EnumElement* needsUnsigned = nullptr;
+  QualifiedType valueNeedsUnsigned;
+
   for (auto& valueInfo : valuesAndAsts) {
+    auto& qt = std::get<0>(valueInfo);
     auto signedness = std::get<1>(valueInfo);
     auto elem = std::get<2>(valueInfo);
     if (signedness == RS_SIGNED) {
-      if (!needsSigned) needsSigned = elem;
+      if (!needsSigned) {
+        needsSigned = elem;
+        valueNeedsSigned = qt;
+      }
     } else if (signedness == RS_UNSIGNED) {
-      if (!needsUnsigned) needsUnsigned = elem;
+      if (!needsUnsigned) {
+        needsUnsigned = elem;
+        valueNeedsUnsigned = qt;
+      }
     }
   }
 
   bool useUnsigned = false;
   if (needsSigned && needsUnsigned) {
-    context->error(needsSigned, "TODO");
+    CHPL_REPORT(context, NoTypeForEnumElem, enumNode,
+                needsSigned, valueNeedsSigned, needsUnsigned, valueNeedsUnsigned);
   }
   if (needsUnsigned) {
     useUnsigned = true;
@@ -1498,8 +1509,14 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
     auto resultType = QualifiedType();
 
     optional<int64_t> signedValue = {};
-    if (!qt.param() || (useUnsigned && signedness == RS_SIGNED)) {
-      // This value is either already unknown or we can't fit it.
+    bool useErroneous = false;
+    if (useUnsigned && signedness == RS_SIGNED)  {
+      // This value was known before, but it doesn't fit in the type.
+      // We'll mark it with 'erroneous type'. The error has already been
+      // issued above.
+      useErroneous = true;
+    } else if (!qt.param()) {
+      // The value is already unknown, so leave it unknown.
     } else if (auto intParam = qt.param()->toIntParam()) {
       signedValue = intParam->value();
     } else if (auto uintParam = qt.param()->toUintParam()) {
@@ -1516,6 +1533,9 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
                                    IntType::get(context, 0),
                                    IntParam::get(context, *signedValue));
       }
+    } else if (useErroneous) {
+      resultType = QualifiedType(QualifiedType::UNKNOWN,
+                                 ErroneousType::get(context));
     }
 
     result[elem->id()] = resultType;
@@ -1530,9 +1550,13 @@ const QualifiedType& computeUnderlyingTypeOfEnum(Context* context, ID element) {
   auto result = QualifiedType();
   auto numericValues = computeNumericValuesOfEnumElements(context, element);
 
-  // Find the first non-unknown value, and return its type.
+  // Find the first non-unknown value, and return its type. As a fallack,
+  // return either the default unknown value or, if we've encountered an error,
+  // the erroneous type.
   for (auto& pair : numericValues) {
-    if (!pair.second.isUnknown()) {
+    if (pair.second.isErroneousType() && result.isUnknown()) {
+      result = pair.second;
+    } else if (!pair.second.isUnknown()) {
       result = QualifiedType(QualifiedType::TYPE, pair.second.type());
       break;
     }
@@ -3096,8 +3120,8 @@ static bool resolveFnCallSpecial(Context* context,
           return true;
         }
 
-        exprTypeOut = Param::fold(context, uast::PrimitiveTag::PRIM_CAST,
-                                  src, dst);
+        exprTypeOut = Param::fold(context, astForErr,
+                                  uast::PrimitiveTag::PRIM_CAST, src, dst);
         return true;
     } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
       // handle casting a type name to a string
@@ -3141,7 +3165,7 @@ static bool resolveFnCallSpecial(Context* context,
     auto qt = ci.actual(0).type();
     if (qt.kind() == QualifiedType::PARAM && qt.hasParamPtr() &&
         qt.hasTypePtr() && qt.type()->isBoolType()) {
-      exprTypeOut = qt.param()->fold(context,
+      exprTypeOut = qt.param()->fold(context, astForErr,
                                      chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
                                      qt, QualifiedType());
       return true;
