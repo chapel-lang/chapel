@@ -10013,7 +10013,12 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
       if (!isMethodReceiver && !genericWithDefaults) {
         gdbShouldBreakHere();
         checkSurprisingGenericDecls(se->symbol(), se, nullptr);
-        USR_WARN(se, "foo foo foo");
+        if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
+          USR_WARN(se, "please add '(?)' to type '%s' because it is generic", se->symbol()->name);
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
+        }
       }
     }
 
