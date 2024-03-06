@@ -61,6 +61,8 @@ static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
     return QualifiedType::MODULE;
   } else if (isTypeDecl(tag)) {
     return QualifiedType::TYPE;
+  } else if (asttags::isEnumElement(tag)) {
+    return QualifiedType::CONST_VAR;
   }
 
   return QualifiedType::UNKNOWN;
