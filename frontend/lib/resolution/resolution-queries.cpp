@@ -1391,6 +1391,139 @@ QualifiedType getInstantiationType(Context* context,
   return QualifiedType();
 }
 
+const std::map<ID, QualifiedType>&
+computeNumericValuesOfEnumElements(Context* context, ID node) {
+  QUERY_BEGIN(computeNumericValuesOfEnumElements, context, node);
+
+  std::map<ID, types::QualifiedType> result;
+  auto ast = parsing::idToAst(context, node);
+  if (!ast) return QUERY_END(result);
+  auto enumNode = ast->toEnum();
+  if (!enumNode) return QUERY_END(result);
+
+  ResolutionResultByPostorderID byPostorder;
+  Resolver res = Resolver::createForEnumElements(context, enumNode, byPostorder);
+
+  // The constant 'one' for adding
+  auto one = QualifiedType(QualifiedType::PARAM,
+                           IntType::get(context, 0),
+                           IntParam::get(context, 1));
+
+  // A type to track what kind of signedness a value needs.
+  enum RequiredSignedness {
+    RS_NONE,
+    RS_SIGNED,
+    RS_UNSIGNED,
+  };
+
+  // First collect all the values, no matter what types they are.
+  using ValueVector = std::vector<std::tuple<QualifiedType,
+                                             RequiredSignedness,
+                                             const EnumElement*>>;
+  ValueVector valuesAndAsts;
+  for (auto elem : enumNode->enumElements()) {
+    elem->traverse(res);
+    QualifiedType value = {};
+
+    // Found an initialization expression; use its type.
+    if (elem->initExpression()) {
+      auto qt = byPostorder.byAst(elem->initExpression()).type();
+      auto type = qt.type();
+
+      if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
+        continue;
+      } else if (!type->isIntType() && !type->isUintType()) {
+        context->error(elem, "TODO");
+        continue;
+      } else if (!qt.isParam()) {
+        context->error(elem, "TODO");
+        continue;
+      }
+
+      value = qt;
+    } else {
+      if (valuesAndAsts.empty()) {
+        // First element, and it doesn't have an initialization expression.
+        // We won't report a numeric value for it; leave 'value' null.
+      } else {
+        auto& lastValueInfo = valuesAndAsts.back();
+        auto lastQt = std::get<0>(lastValueInfo);
+        if (!lastQt.isUnknown()) {
+          // Previous value was 'valid', so add one to it.
+          value = Param::fold(context, chpl::uast::PRIM_ADD, lastQt, one);
+        } else {
+          // Previous value was unknown, so we can't add one to it.
+        }
+      }
+    }
+
+    RequiredSignedness signedness = RS_NONE;
+    if (!value.param()) {
+      // Do nothing.
+    } else if (auto intParam = value.param()->toIntParam()) {
+      signedness = intParam->value() < 0 ? RS_SIGNED : RS_NONE;
+    } else if (auto uintParam = value.param()->toUintParam()) {
+      signedness = uintParam->value() > INT64_MAX ? RS_UNSIGNED : RS_NONE;
+    }
+
+    valuesAndAsts.emplace_back(value, signedness, elem);
+  }
+
+  const EnumElement* needsSigned = nullptr;
+  const EnumElement* needsUnsigned = nullptr;
+  for (auto& valueInfo : valuesAndAsts) {
+    auto signedness = std::get<1>(valueInfo);
+    auto elem = std::get<2>(valueInfo);
+    if (signedness == RS_SIGNED) {
+      if (!needsSigned) needsSigned = elem;
+    } else if (signedness == RS_UNSIGNED) {
+      if (!needsUnsigned) needsUnsigned = elem;
+    }
+  }
+
+  bool useUnsigned = false;
+  if (needsSigned && needsUnsigned) {
+    context->error(needsSigned, "TODO");
+  }
+  if (needsUnsigned) {
+    useUnsigned = true;
+  }
+
+  // We've now picked what type we're going to use. Convert the values to
+  // that type if they can be converted, and leave them unknown if they can't.
+  for (auto& valueInfo : valuesAndAsts) {
+    auto qt = std::get<0>(valueInfo);
+    auto signedness = std::get<1>(valueInfo);
+    auto elem = std::get<2>(valueInfo);
+    auto resultType = QualifiedType();
+
+    optional<int64_t> signedValue = {};
+    if (!qt.param() || (useUnsigned && signedness == RS_SIGNED)) {
+      // This value is either already unknown or we can't fit it.
+    } else if (auto intParam = qt.param()->toIntParam()) {
+      signedValue = intParam->value();
+    } else if (auto uintParam = qt.param()->toUintParam()) {
+      signedValue = (int64_t) uintParam->value();
+    }
+
+    if (signedValue) {
+      if (useUnsigned) {
+        resultType = QualifiedType(QualifiedType::PARAM,
+                                   UintType::get(context, 0),
+                                   UintParam::get(context, (uint64_t) *signedValue));
+      } else {
+        resultType = QualifiedType(QualifiedType::PARAM,
+                                   IntType::get(context, 0),
+                                   IntParam::get(context, *signedValue));
+      }
+    }
+
+    result[elem->id()] = resultType;
+  }
+
+  return QUERY_END(result);
+}
+
 static bool varArgCountMatch(const VarArgFormal* formal,
                              ResolutionResultByPostorderID& r) {
   QualifiedType formalType = r.byAst(formal).type();

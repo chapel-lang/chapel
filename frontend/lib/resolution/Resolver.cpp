@@ -322,6 +322,15 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   return ret;
 }
 
+Resolver
+Resolver::createForEnumElements(Context* context,
+                                const uast::Enum* enumNode,
+                                ResolutionResultByPostorderID& byPostorder) {
+  auto ret = Resolver(context, enumNode, byPostorder, nullptr);
+  ret.byPostorder.setupForSymbol(enumNode);
+  return ret;
+}
+
 // set up Resolver to resolve instantiated field declaration types
 // without knowing the CompositeType
 Resolver

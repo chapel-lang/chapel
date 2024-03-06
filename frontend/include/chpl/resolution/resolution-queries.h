@@ -71,6 +71,9 @@ types::QualifiedType getInstantiationType(Context* context,
                                           types::QualifiedType actualType,
                                           types::QualifiedType formalType);
 
+const std::map<ID, types::QualifiedType>&
+computeNumericValuesOfEnumElements(Context* context, ID node);
+
 
 /////// function resolution
 
