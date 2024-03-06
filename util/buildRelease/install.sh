@@ -239,10 +239,8 @@ myinstallfileto () {
   fi
 }
 
-# these makefile targets run 'cmake' to install the compiler library, 'chpl',
-# and optionally 'chpldoc'
-# if [ $BUILD_CHPLDOC -eq 1 ]
-# then
+# this makefile target runs 'cmake' to install the compiler library, 'chpl',
+# and optionally 'chpldoc' if it was built
 (cd compiler && "$MAKE" install-chpl-chpldoc)
 
 
