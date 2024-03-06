@@ -323,6 +323,9 @@ module Math {
     return casin(x);
   }
 
+  @unstable("The return type of 'asin' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc asin(x: imag): complex do return asin(x:complex);
+
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -352,6 +355,9 @@ module Math {
     return casinh(x);
   }
 
+  @unstable("The return type of 'asinh' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc asinh(x: imag): complex do return asinh(x:complex);
+
   /* Returns the arc tangent of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -380,6 +386,9 @@ module Math {
     extern proc catan(z: complex(128)): complex(128);
     return catan(x);
   }
+
+  @unstable("The return type of 'atan' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc atan(x: imag): complex do return atan(x:complex);
 
   /* Returns the arc tangent of the ratio of the two arguments.
 
@@ -435,6 +444,9 @@ module Math {
     return catanh(x);
   }
 
+  @unstable("The return type of 'atanh' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc atanh(x: imag): complex do return atanh(x:complex);
+
   /* Returns the cosine of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -464,6 +476,9 @@ module Math {
     return ccos(x);
   }
 
+  @unstable("The return type of 'cos' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc cos(x: imag): complex do return cos(x:complex);
+
   /* Returns the hyperbolic cosine of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -492,6 +507,9 @@ module Math {
     extern proc ccosh(z: complex(128)): complex(128);
     return ccosh(x);
   }
+
+  @unstable("The return type of 'cosh' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc cosh(x: imag): complex do return cosh(x:complex);
 
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
@@ -1135,6 +1153,10 @@ module Math {
     return csin(x);
   }
 
+  @unstable("The return type of 'sin' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc sin(x: imag): complex do return sin(x:complex);
+
+
   /* Returns the hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -1163,6 +1185,10 @@ module Math {
     extern proc csinh(z: complex(128)): complex(128);
     return csinh(x);
   }
+
+  @unstable("The return type of 'sinh' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc sinh(x: imag): complex do return sinh(x:complex);
+
 
   /* Returns the tangent of the argument `x`. */
   pragma "fn synchronization free"
@@ -1193,6 +1219,10 @@ module Math {
     return ctan(x);
   }
 
+  @unstable("The return type of 'tan' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc tan(x: imag): complex do return tan(x:complex);
+
+
   /* Returns the hyperbolic tangent of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -1221,6 +1251,10 @@ module Math {
     extern proc ctanh(z: complex(128)): complex(128);
     return ctanh(x);
   }
+
+  @unstable("The return type of 'tanh' when called with an 'imag' argument is unstable and may change in the future.")
+  inline proc tanh(x: imag): complex do return tanh(x:complex);
+
 
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
