@@ -6081,13 +6081,6 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
-/*
-static void warnSurprisingImpConvReal(Vec<ResolutionCandidate*>&   candidates,
-                                      const DisambiguationContext& DC,
-                                      std::vector<bool>&           discarded) {
-}*/
-
-
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
 static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
@@ -6098,10 +6091,6 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
   // we already know it can not be the best match
   // because it is a less good match than another candidate.
   std::vector<bool> notBest(candidates.n, false);
-
-  // warn in some cases, using notBest for temporary space,
-  // and clearing notBest at the end.
-  //warnSurprisingImpConvReal(candidates, DC, discarded);
 
   for (int i = 0; i < candidates.n; ++i) {
     if (discarded[i]) {
