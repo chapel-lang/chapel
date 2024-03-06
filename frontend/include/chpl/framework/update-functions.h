@@ -95,7 +95,7 @@ defaultUpdateOptional(chpl::optional<T>& keep, chpl::optional<T>& addin) {
     chpl::update<T> combiner;
     return combiner(*keep, *addin);
   } else if (keep || addin) {
-    keep.swap(addin);
+    std::swap(keep, addin);
     return true;
   } else {
     return false;
