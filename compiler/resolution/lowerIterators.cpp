@@ -1562,7 +1562,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         // IOW: coming out of this case we'll add something that looks like this:
         //
         //   var capX = x;
-        //   var taskIndX = PRIM_TASK_INDEPENDENT_SVAR_CAPTURE(capX);
+        //   var taskIndX = PRIM_TASK_PRIVATE_SVAR_CAPTURE(capX);
         //   # note: there's also a flag on taskIndX marking it as being a "task"-independent variable
 
         SET_LINENO(forLoop);
@@ -1595,7 +1595,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         forLoop->insertBefore(new DefExpr(taskIndVar));
         forLoop->insertBefore(new CallExpr(
             PRIM_MOVE, taskIndVar,
-            new CallExpr(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE, copiedInitialization->copy())));
+            new CallExpr(PRIM_TASK_PRIVATE_SVAR_CAPTURE, copiedInitialization->copy())));
 
         map->put(svar, taskIndVar);
         }

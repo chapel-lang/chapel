@@ -91,16 +91,16 @@ void RemoveUnnecessaryAutoCopyCalls::process(FnSymbol* fn)
     // created a task independent captured version of the variable. The
     // exact way to do that depends on whether the loop is ultimately
     // cpu or gpu bound so at this point of compilation we represent
-    // this using an assignment to PRIM_TASK_INDEPENDENT_SVAR_CAPTURE.
+    // this using an assignment to PRIM_TASK_PRIVATE_SVAR_CAPTURE.
     // In cases where the 'in' intent'ed variable is an object we
     // may have AST like this:
     //
-    //  task_ind_x = PRIM_TASK_INDEPENDENT_SVAR_CAPTURE(chpl__initCopy(x))
+    //  task_ind_x = PRIM_TASK_PRIVATE_SVAR_CAPTURE(chpl__initCopy(x))
     //
     // To proceed, we basically ignore the primitive on the RHS of the
     // assignment and process as if it were written
     // `task_ind_x = chpl_initCopy(x)`.
-    if (callParent->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE)) {
+    if (callParent->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE)) {
       callParent = toCallExpr(callParent->parentExpr);
     }
     INT_ASSERT(isMoveOrAssign(callParent));
