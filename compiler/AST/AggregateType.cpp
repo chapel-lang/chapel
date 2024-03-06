@@ -1299,6 +1299,11 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
 
         if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
           if (Symbol* sym = resolveFieldDefault(field, call, callString)) {
+            if (sym->hasFlag(FLAG_GENERIC)) {
+              USR_FATAL(field,
+                        "cannot use a generic type as the default "
+                        "for a type field, '%s'", field->name);
+            }
             retval = retval->getInstantiation(sym, index, insnPoint);
           }
         } else if (field->defPoint->init != NULL) {
@@ -1835,12 +1840,6 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   instantiations.push_back(retval);
 
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) &&
-      symType->symbol->hasFlag(FLAG_GENERIC)) {
-    USR_FATAL(field,
-              "cannot use a generic type as the default for a type field, '%s'",
-              field->name);
-  }
   checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
 
   handleDefaultAssociativeWarnings(field, field->defPoint->exprType,
