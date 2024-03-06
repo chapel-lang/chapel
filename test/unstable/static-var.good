@@ -1,0 +1,5 @@
+static-var.chpl:1: In function 'test':
+static-var.chpl:2: warning: function-static variables using @functionStatic are unstable
+Variable: 42
+Variable: 43
+Variable: 44

@@ -52,6 +52,7 @@
 
 bool normalized = false;
 
+static void        preNormalizeHandleStaticVars();
 static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
@@ -165,6 +166,7 @@ static void handleSharedCArrays() {
 
 
 void normalize() {
+  preNormalizeHandleStaticVars();
 
   insertModuleInit();
 
@@ -320,6 +322,63 @@ void normalize(FnSymbol* fn) {
 void normalize(Expr* expr) {
   normalizeBase(expr, false);
 }
+
+static void preNormalizeHandleStaticVars() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR)) {
+      SET_LINENO(call);
+
+      Expr* anchor = call;
+      while (anchor && !anchor->list) anchor = anchor->parentExpr;
+      INT_ASSERT(anchor);
+
+      // Put the 'static variable' into its own temp. The initialization code
+      // will also be copied into the conditional, but we need it here above
+      // to make sure that the static wrapper has the right type.
+      auto initVarTemp = newTemp("staticVarInit");
+      auto initVarDef = new DefExpr(initVarTemp, call->get(1)->remove());
+      auto initVarBlock = new BlockStmt(BLOCK_SCOPELESS);
+      initVarBlock->insertAtTail(initVarDef);
+
+      // Create the container for the static variable. This is defined in
+      // module code.
+      auto wrapperTypeTemp = newTemp("staticVarType");
+      auto wrapperTypeDef = new DefExpr(wrapperTypeTemp,
+        new CallExpr("chpl__functionStaticVariableWrapperType",
+                     new CallExpr(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE,
+                                  new CallExpr(PRIM_TYPEOF, initVarTemp))));
+      wrapperTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+
+      auto wrapperVar = new VarSymbol("staticWrapper", dtUnknown);
+      auto wrapperDef = new DefExpr(wrapperVar, nullptr, wrapperTypeTemp);
+      auto wrapperBlock = new BlockStmt(BLOCK_SCOPELESS);
+      wrapperBlock->insertAtTail(wrapperTypeDef);
+      wrapperBlock->insertAtTail(wrapperDef);
+      wrapperBlock->insertAtTail(new CallExpr(PRIM_STATIC_FUNCTION_VAR_WRAPPER,
+                                              wrapperVar, initVarTemp));
+      wrapperBlock->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
+
+      anchor->insertBefore(initVarBlock);
+      anchor->insertBefore(wrapperBlock);
+
+      // Copy the variable initialization code. The _copy_ will be kept, inside
+      // the condition, to initialize the variable only if necessary.
+      SymbolMap map;
+      auto computeValueBlock = initVarBlock->copy(&map);
+      auto computeValueSym = map.get(initVarTemp);
+      auto setValueCall = new CallExpr("setValue", gMethodToken, wrapperVar,
+                                       computeValueSym);
+      computeValueBlock->insertAtTail(setValueCall);
+      auto readyPred = new CallExpr("callerShouldComputeValue", gMethodToken,
+                                    wrapperVar);
+      auto readyCond = new CondStmt(readyPred, computeValueBlock);
+      anchor->insertBefore(readyCond);
+
+      call->replace(new CallExpr("getValue", gMethodToken, wrapperVar));
+    }
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *

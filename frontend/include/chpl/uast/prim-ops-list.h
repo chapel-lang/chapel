@@ -134,6 +134,10 @@ PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
 PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
 
+PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper")
+
 PRIMITIVE_G(ADDR_OF, "addr of")
 PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")

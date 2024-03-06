@@ -195,6 +195,16 @@ returnInfoFirstDeref(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoFirstDerefNoRtti(CallExpr* call) {
+  auto qt = returnInfoFirstDeref(call);
+  if (qt.type()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+    USR_FATAL(call, "static variables do not support types with"
+                    "runtime type information (such as arrays)");
+  }
+  return qt;
+}
+
+static QualifiedType
 returnInfoScalarPromotionType(CallExpr* call) {
   QualifiedType tmp = call->get(1)->qualType();
   Type* type = tmp.type()->getValType();
@@ -975,6 +985,11 @@ initPrimitive() {
   // For an array, returns the compile-time type only.
   // There might be uninitialized memory if the run-time type is used.
   prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
+
+  prim_def(PRIM_STATIC_FUNCTION_VAR, "static function var", returnInfoFirst);
+  prim_def(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type", returnInfoFirstDerefNoRtti);
+  prim_def(PRIM_STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper", returnInfoVoid);
+
 
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
   // a type only. Returns the scalar promotion type (i.e. the type of the
