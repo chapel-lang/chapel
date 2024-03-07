@@ -51,7 +51,7 @@ proc factory1(type t) {
 proc factory2(type t) {
   return new t(1);
 }
-var d0 = factory1(C?);
+var d0 = factory1(C(?)?);
 writeln("d0 ", d0.type:string, " ", d0);
 var d1 = factory2(C(int)?);
 writeln("d1 ", d1.type:string, " ", d1);

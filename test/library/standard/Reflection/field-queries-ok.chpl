@@ -32,15 +32,15 @@ class CGen {
   var f1, f2, f3, f4, f5, f6;
 }
 
-test(CGen);
-test(CGen: owned class);
-test(CGen: owned class?);
-test(CGen: shared class);
-test(CGen: shared class?);
-test(CGen: borrowed class);
-test(CGen: borrowed class?);
-test(CGen: unmanaged class);
-test(CGen: unmanaged class?);
+test(CGen(?));
+test(CGen(?): owned class);
+test(CGen(?): owned class?);
+test(CGen(?): shared class);
+test(CGen(?): shared class?);
+test(CGen(?): borrowed class);
+test(CGen(?): borrowed class?);
+test(CGen(?): unmanaged class);
+test(CGen(?): unmanaged class?);
 
 
 record RCon {
@@ -54,7 +54,7 @@ record RGen {
   var f1, f2, f3, f4, f5, f6;
 }
 
-test(RGen);
+test(RGen(?));
 
 
 union UCon {
@@ -68,7 +68,7 @@ union UGen {
   var f1, f2, f3, f4, f5, f6;
 }
 
-test(UGen);
+test(UGen(?));
 
 
 compilerError("=== done ===");

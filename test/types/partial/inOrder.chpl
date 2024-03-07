@@ -36,7 +36,7 @@ proc testAliases() {
 }
 
 proc testFunctions() {
-  var A = makeR(R, int, string, 5);
+  var A = makeR(R(?), int, string, 5);
   writeln(A.type:string);
   writeln(A);
 

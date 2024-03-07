@@ -3837,6 +3837,78 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
   }
 }
 
+static bool suppressWarnGenericActual(CallExpr* call) {
+  // not finding a call happens for specified return types,
+  // so suppress the warning there
+  if (!call) return true;
+
+  // we generate other warnings for these cases, no need to warn here.
+  if (call->isPrimitive()) return true;
+
+  // and, don't emit a warning for calls to a function marked
+  // with a flag to suppress this warning
+  FnSymbol* fn = call->resolvedOrVirtualFunction();
+  if (fn && fn->hasFlag(FLAG_SUPPRESS_GENERIC_ACTUAL_WARNING))
+    return true;
+
+  // otherwise, don't suppress the warning
+  return false;
+}
+
+static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
+  if (isManagedPtrType(type)) {
+    type = getManagedPtrBorrowType(type);
+  }
+  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+    type = dt->getCanonicalClass();
+  }
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) &&
+        !se->symbol()->hasFlag(FLAG_MARKED_GENERIC) &&
+        !isBuiltinGenericType(type)) {
+      bool isMethodReceiver = false;
+      if (SymExpr* prevSe = toSymExpr(se->prev)) {
+        if (prevSe->symbol() == gMethodToken) {
+          isMethodReceiver = true;
+        }
+      }
+      bool genericWithDefaults = at->isGenericWithDefaults();
+
+      if (!isMethodReceiver && !genericWithDefaults) {
+        checkSurprisingGenericDecls(se->symbol(), se, nullptr);
+        if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
+          const char* name = se->symbol()->name;
+          if (se->symbol()->hasFlag(FLAG_TEMP)) {
+            name = toString(type, /* decorate classes */ false);
+          }
+          USR_WARN(se, "please add '(?)' to type '%s' because it is generic",
+                   name);
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
+        }
+      }
+    }
+  }
+}
+
+static void maybeWarnGenericActuals(CallExpr* call) {
+  if (!suppressWarnGenericActual(call)) {
+    for_actuals(actual, call) {
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+          maybeWarnGenericActual(se, ts->type, call);
+        } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
+          if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+            maybeWarnGenericActual(se, vs->typeInfo(), call);
+          }
+        }
+      }
+    }
+  }
+}
+
 static
 FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;
@@ -3900,6 +3972,10 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
 
     if (state == CHECK_FAILED)
       retval = NULL;
+  }
+
+  if (checkState == CHECK_NORMAL_CALL && retval != NULL) {
+    maybeWarnGenericActuals(call);
   }
 
   return retval;
@@ -9937,11 +10013,20 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* resolveGenericActual(SymExpr* se, bool resolvePartials = false);
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials = false);
 static Type* resolveGenericActual(SymExpr* se, Type* type);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
-  return resolveGenericActual(se, /* resolvePartials */ true);
+  CallExpr* inCall = nullptr;
+  // compute the call it is contained in, if any
+  for (Expr* e = se; e != nullptr; e = e->parentExpr) {
+    if (CallExpr* c = toCallExpr(e)) {
+      inCall = c;
+      break;
+    }
+  }
+  return resolveGenericActual(se, inCall, /* resolvePartials */ true);
 }
 
 void resolveGenericActuals(CallExpr* call) {
@@ -9955,12 +10040,13 @@ void resolveGenericActuals(CallExpr* call) {
     }
 
     if (SymExpr*   se = toSymExpr(safeActual))   {
-      resolveGenericActual(se);
+      resolveGenericActual(se, call);
     }
   }
 }
 
-static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials) {
   Type* retval = se->typeInfo();
 
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -9977,8 +10063,8 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
         vs->type = resolveTypeAlias(se);
       }
 
+      Type* origType = vs->typeInfo();
       if (resolvePartials) {
-        Type* origType = vs->typeInfo();
         retval = resolveGenericActual(se, origType);
       }
     }

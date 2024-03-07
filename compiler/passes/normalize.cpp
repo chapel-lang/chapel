@@ -2800,7 +2800,10 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 ************************************** | *************************************/
 
 static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
-  propagateMarkedGeneric(var, init);
+  if (var->hasFlag(FLAG_TEMP)) {
+    // propagate (?) through type temps for 'owned MyClass(?)' etc
+    propagateMarkedGeneric(var, init);
+  }
 
   // Generate a type constructor call for generic-with-defaults types
   // (Note, this does not work correctly during resolution).

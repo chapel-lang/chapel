@@ -114,9 +114,11 @@ proc isEnumType(type t) param {
 }
 
 /* Return true if ``t`` is a class type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isClassType(type t) param do return __primitive("is class type", t);
 
 /* Return true if ``t`` is a record type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isRecordType(type t) param {
   if __primitive("is record type", t) == false then
     return false;
@@ -138,6 +140,7 @@ proc isRecordType(type t) param {
 }
 
 /* Return true if ``t`` is a union type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isUnionType(type t) param do return __primitive("is union type", t);
 
 /* Returns ``true`` if its argument is a tuple type.  */
@@ -455,8 +458,10 @@ proc isSingle(type t)    param do  return isSingleType(t);
 @chpldoc.nodoc
 proc isAtomic(type t)    param do  return isAtomicType(t);
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc
 proc isGeneric(type t)   param do  return isGenericType(t);
+
 @chpldoc.nodoc
 proc isHomogeneousTuple(type t)  param do  return isHomogeneousTupleType(t);
 @chpldoc.nodoc

@@ -12,7 +12,7 @@ proc main() {
     f.writer(locking=false).write(new R(int, 5));
   }
   {
-    var val = f.reader(locking=false).read(R);
+    var val = f.reader(locking=false).read(R(?));
     writeln(val);
   }
 }

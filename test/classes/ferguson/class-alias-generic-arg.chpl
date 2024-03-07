@@ -9,5 +9,5 @@ proc doit(type C)
   writeln(c.x);
 }
 
-doit(A);
+doit(A(?));
 

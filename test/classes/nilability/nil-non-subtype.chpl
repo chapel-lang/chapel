@@ -20,7 +20,7 @@ proc test(type A, type B) {
 
 proc main() {
   test(C, C?);
-  test(G, G?);
+  test(G(?), G?(?));
   test(G(int), G(int)?);
   test(D, C?);
 }

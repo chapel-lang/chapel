@@ -47,7 +47,7 @@ proc main() {
     writeln(b);
   }
   {
-    helper(W, "hello");
-    helper(W, 1234);
+    helper(W(?), "hello");
+    helper(W(?), 1234);
   }
 }

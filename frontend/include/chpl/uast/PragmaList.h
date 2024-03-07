@@ -569,6 +569,7 @@ PRAGMA(SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol shoul
 PRAGMA(SUPER_CLASS, npr, "super class", ncm)
 PRAGMA(SUPER_TEMP, npr, "temporary of super field", ncm)
 PRAGMA(SUPPRESS_LVALUE_ERRORS, ypr, "suppress lvalue error", "do not report an lvalue error if it occurs in a function with this flag")
+PRAGMA(SUPPRESS_GENERIC_ACTUAL_WARNING, ypr, "suppress generic actual warning", "do not report a generic actual warning for calls to this function")
 
 // represents an interface formal, assoc. type, or required function
 // within a constrained generic function
