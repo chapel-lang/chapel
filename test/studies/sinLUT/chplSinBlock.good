@@ -1,4 +1,2 @@
-Chapel Calculated: -1.2311
-Chapel Lookup: -1.2311
-C Calculated: -4.23134
-C Lookup: -4.23134
+Chapel Calculated == Chapel Lookup
+C Calculated == C Lookup
