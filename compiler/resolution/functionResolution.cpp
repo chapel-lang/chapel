@@ -9998,8 +9998,10 @@ static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
 }
 
 static bool suppressWarnGenericActual(CallExpr* call) {
-  if (!call) return false;
-  return call->isPrimitive(PRIM_DEFAULT_INIT_VAR);
+  // not finding a call happens for specified return types
+  if (!call) return true;
+  // we generate other warnings for these cases, no need to warn here.
+  return call->isPrimitive();
 }
 
 static Type* resolveGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
