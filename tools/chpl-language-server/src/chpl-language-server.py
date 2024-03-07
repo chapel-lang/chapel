@@ -1597,7 +1597,13 @@ def run_lsp():
     async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         fi, _ = ls.get_file_info(text_doc.uri)
+        ast = fi.get_asts()
         inlays: List[InlayHint] = []
+
+        file_lines = fi.file_lines()
+        block_inlays = ls.get_end_markers(ast, file_lines)
+        if len(block_inlays) > 0:
+            inlays.extend(block_inlays)
 
         # The get_decl_inlays and get_call_inlays methods also check
         # and return early if the resolver is not being used, but for
@@ -1605,32 +1611,23 @@ def run_lsp():
         # as well save ourselves the work of finding declarations and
         # calls to feed to those methods.
         if ls.use_resolver:
-            decls = fi.def_segments.range(params.range)
-            calls = list(
-                call
-                for call, _ in chapel.each_matching(
-                    fi.get_asts(), chapel.core.FnCall
+            return inlays
+
+        decls = fi.def_segments.range(params.range)
+        calls = list(
+            call for call, _ in chapel.each_matching(ast, chapel.core.FnCall)
+        )
+
+        with fi.context.context.track_errors() as _:
+            for decl in decls:
+                instantiation = fi.get_inst_segment_at_position(decl.rng.start)
+                inlays.extend(ls.get_decl_inlays(decl, instantiation))
+
+            for call in calls:
+                instantiation = fi.get_inst_segment_at_position(
+                    location_to_range(call.location()).start
                 )
-            )
-
-            with fi.context.context.track_errors() as _:
-                for decl in decls:
-                    instantiation = fi.get_inst_segment_at_position(
-                        decl.rng.start
-                    )
-                    inlays.extend(ls.get_decl_inlays(decl, instantiation))
-
-                for call in calls:
-                    instantiation = fi.get_inst_segment_at_position(
-                        location_to_range(call.location()).start
-                    )
-                    inlays.extend(ls.get_call_inlays(call, instantiation))
-
-        file_lines = fi.file_lines()
-        ast = fi.get_asts()
-        block_inlays = ls.get_end_markers(ast, file_lines)
-        if len(block_inlays) > 0:
-            inlays.extend(block_inlays)
+                inlays.extend(ls.get_call_inlays(call, instantiation))
 
         return inlays
 
