@@ -3862,7 +3862,8 @@ static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) &&
-        !se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
+        !se->symbol()->hasFlag(FLAG_MARKED_GENERIC) &&
+        !isBuiltinGenericType(type)) {
       bool isMethodReceiver = false;
       if (SymExpr* prevSe = toSymExpr(se->prev)) {
         if (prevSe->symbol() == gMethodToken) {

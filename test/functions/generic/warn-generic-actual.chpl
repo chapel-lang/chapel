@@ -52,3 +52,8 @@ proc test4() {
   g(genericRecord); // do not warn (suppressed by pragma)
 }
 test4();
+
+proc test5() {
+  f(integral); // do not warn (built in generic type)
+}
+test5();
