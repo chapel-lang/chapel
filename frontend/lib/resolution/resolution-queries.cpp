@@ -1667,20 +1667,23 @@ static QualifiedType getVarArgTupleElemType(const QualifiedType& varArgType) {
   }
 }
 
-static Resolver createResolverForFnOrAd(Context* context,
-                                        const Function* fn,
-                                        const AggregateDecl* ad,
-                                        const SubstitutionsMap& substitutions,
-                                        const PoiScope* poiScope,
-                                        ResolutionResultByPostorderID& r) {
+static Resolver createResolverForAst(Context* context,
+                                     const Function* fn,
+                                     const AggregateDecl* ad,
+                                     const Enum* ed,
+                                     const SubstitutionsMap& substitutions,
+                                     const PoiScope* poiScope,
+                                     ResolutionResultByPostorderID& r) {
   if (fn != nullptr) {
     return Resolver::createForInstantiatedSignature(context, fn, substitutions,
                                                     poiScope, r);
-  } else {
-    CHPL_ASSERT(ad != nullptr);
+  } else if (ad != nullptr) {
     return Resolver::createForInstantiatedSignatureFields(context, ad,
                                                           substitutions,
                                                           poiScope, r);
+  } else {
+    CHPL_ASSERT(ed != nullptr);
+    return Resolver::createForEnumElements(context, ed, r);
   }
 }
 
@@ -1740,11 +1743,13 @@ ApplicabilityResult instantiateSignature(Context* context,
   const AstNode* ast = nullptr;
   const Function* fn = nullptr;
   const AggregateDecl* ad = nullptr;
+  const Enum* ed = nullptr;
 
   if (!untypedSignature->id().isEmpty()) {
     ast = parsing::idToAst(context, untypedSignature->id());
     fn = ast->toFunction();
     ad = ast->toAggregateDecl();
+    ed = ast->toEnum();
   }
 
   const TypedFnSignature* parentFnTyped = nullptr;
@@ -1766,13 +1771,22 @@ ApplicabilityResult instantiateSignature(Context* context,
   Bitmap formalsInstantiated;
   int formalIdx = 0;
 
+  // this vector is used when creating a typed signature below, after checking
+  // instantiations. For functions and aggregates, it's populated from
+  // substitutions after they are computed formal-by-formal below.
+  //
+  // For compiler-generated candidates that aren't tied to functions or records,
+  // we don't have an AST, so we can't store anything into substitutions.
+  // Instead, we'll populate the formal types right away.
+  std::vector<types::QualifiedType> formalTypes;
+
   bool instantiateVarArgs = false;
   std::vector<QualifiedType> varargsTypes;
   int varArgIdx = -1;
 
   ResolutionResultByPostorderID r;
-  auto visitor = createResolverForFnOrAd(context, fn, ad, substitutions,
-                                         poiScope, r);
+  auto visitor = createResolverForAst(context, fn, ad, ed, substitutions,
+                                      poiScope, r);
 
   QualifiedType varArgType;
   for (const FormalActual& entry : faMap.byFormals()) {
@@ -1796,9 +1810,13 @@ ApplicabilityResult instantiateSignature(Context* context,
         varArgType = r.byAst(formal).type();
       }
       formalType = getVarArgTupleElemType(varArgType);
-    } else {
+    } else if (formal) {
       formal->traverse(visitor);
       formalType = getProperFormalType(r, entry, ad, formal);
+    } else {
+      // without a formal AST, assume that the originally provided formal type
+      // is right.
+      formalType = entry.formalType();
     }
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
@@ -1878,12 +1896,15 @@ ApplicabilityResult instantiateSignature(Context* context,
     } else {
       // add the substitution if we identified that we need to
       if (addSub) {
-        // add it to the substitutions map
-        substitutions.insert({entry.formal()->id(), useType});
-        // Explicitly override the type in the resolver to make it available
-        // to later fields without re-visiting and re-constructing the resolver.
-        // TODO: is this too hacky?
-        r.byAst(entry.formal()).setType(useType);
+        if (formal) {
+          // add it to the substitutions map
+          substitutions.insert({entry.formal()->id(), useType});
+          // Explicitly override the type in the resolver to make it available
+          // to later fields without re-visiting and re-constructing the resolver.
+          // TODO: is this too hacky?
+          r.byAst(entry.formal()).setType(useType);
+        }
+
         // note that a substitution was used here
         if ((size_t) formalIdx >= formalsInstantiated.size()) {
           formalsInstantiated.resize(sig->numFormals());
@@ -1892,6 +1913,12 @@ ApplicabilityResult instantiateSignature(Context* context,
       }
 
       formalIdx++;
+    }
+
+    if (!formal && ed) {
+      // we're in an enum-based generated method; note the type in
+      // formalTypes.
+      formalTypes.push_back(useType);
     }
 
     // At this point, we have computed the instantiated type for this
@@ -1906,7 +1933,7 @@ ApplicabilityResult instantiateSignature(Context* context,
             visitor.resolveTypeQueries(te, useType);
         }
       }
-    } else {
+    } else if (formal) {
       // Substitutions have been updated; re-run resolution to get better
       // intents, vararg info, and to extract type query info.
       formal->traverse(visitor);
@@ -1918,34 +1945,35 @@ ApplicabilityResult instantiateSignature(Context* context,
     // using substitutions, and to preserve previously computed type query
     // info. This way, we'll get as output the type expression's QualifiedType
     // which incorporates type query info.
-    if (auto vld = formal->toVarLikeDecl()) {
-      if (vld->typeExpression()) {
-        visitor.ignoreSubstitutionFor = formal;
-        visitor.skipTypeQueries = true;
+    if (formal) {
+      if (auto vld = formal->toVarLikeDecl()) {
+        if (vld->typeExpression()) {
+          visitor.ignoreSubstitutionFor = formal;
+          visitor.skipTypeQueries = true;
+        }
       }
-    }
-    formal->traverse(visitor);
-    auto qFormalType = getProperFormalType(r, entry, ad, formal);
+      formal->traverse(visitor);
+      auto qFormalType = getProperFormalType(r, entry, ad, formal);
+      if (entry.isVarArgEntry()) {
+        // We only need to canPass the tuple element types.
+        qFormalType = getVarArgTupleElemType(qFormalType);
+      } else {
+        // Explicitly override the type in the resolver to what we have found it
+        // to be before the type-query-aware traversal.
+        r.byAst(entry.formal()).setType(formalType);
+      }
 
-    if (entry.isVarArgEntry()) {
-      // We only need to canPass the tuple element types.
-      qFormalType = getVarArgTupleElemType(qFormalType);
-    } else {
-      // Explicitly override the type in the resolver to what we have found it
-      // to be before the type-query-aware traversal.
-      r.byAst(entry.formal()).setType(formalType);
-    }
+      auto checkType = !useType.isUnknown() ? useType : formalType;
+      // With the type and query-aware type known, make sure that they're compatible
+      auto passResult = canPass(context, checkType, qFormalType);
+      if (!passResult.passes()) {
+        // Type query constraints were not satisfied
+        return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
+      }
 
-    auto checkType = !useType.isUnknown() ? useType : formalType;
-    // With the type and query-aware type known, make sure that they're compatible
-    auto passResult = canPass(context, checkType, qFormalType);
-    if (!passResult.passes()) {
-      // Type query constraints were not satisfied
-      return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
-    }
-
-    if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
-      visitor.setCompositeType(qFormalType.type()->toCompositeType());
+      if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
+        visitor.setCompositeType(qFormalType.type()->toCompositeType());
+      }
     }
   }
 
@@ -1972,11 +2000,10 @@ ApplicabilityResult instantiateSignature(Context* context,
   }
 
   // use the existing signature if there were no substitutions
-  if (substitutions.size() == 0) {
+  if (substitutions.size() == 0 && formalTypes.size() == 0) {
     return ApplicabilityResult::success(sig);
   }
 
-  std::vector<types::QualifiedType> formalTypes;
   bool needsInstantiation = false;
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
@@ -2029,6 +2056,7 @@ ApplicabilityResult instantiateSignature(Context* context,
     // add formals according to the parent class type
 
     // now pull out the field types
+    CHPL_ASSERT(formalTypes.empty());
     int nFormals = sig->numFormals();
     for (int i = 0; i < nFormals; i++) {
       const Decl* fieldDecl = untypedSignature->formalDecl(i);
@@ -2045,6 +2073,9 @@ ApplicabilityResult instantiateSignature(Context* context,
     needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                      untypedSignature,
                                                      &substitutions);
+  } else if (ed) {
+    // Fine; formal types were stored into formalTypes earlier since we're
+    // considering a compiler-generated candidate on an enum.
   } else {
     CHPL_ASSERT(false && "case not handled");
   }
@@ -3298,15 +3329,14 @@ resolveFnCallForTypeCtor(Context* context,
   return mostSpecific;
 }
 
-static void
-considerCompilerGeneratedCandidates(Context* context,
-                                   const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
-                                   CandidatesAndForwardingInfo& candidates) {
-
+static const TypedFnSignature*
+considerCompilerGeneratedMethods(Context* context,
+                                 const CallInfo& ci,
+                                 const Scope* inScope,
+                                 const PoiScope* inPoiScope,
+                                 CandidatesAndForwardingInfo& candidates) {
   // only consider compiler-generated methods and opcalls, for now
-  if (!ci.isMethodCall() && !ci.isOpCall()) return;
+  if (!ci.isMethodCall() && !ci.isOpCall()) return nullptr;
 
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
@@ -3317,13 +3347,58 @@ considerCompilerGeneratedCandidates(Context* context,
   // if not compiler-generated, then nothing to do
   if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
                                    ci.isParenless())) {
-    return;
+    return nullptr;
   }
 
   // get the compiler-generated function, may be generic
   auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
                                         ci.isParenless());
   CHPL_ASSERT(tfs);
+  return tfs;
+}
+
+// not all compiler-generated procs are method. For instance, the compiler
+// generates to-and-from integral casts for enums. In the to-casts, the
+// receiver (or lhs) is an integral, not an enum.
+//
+// This helper serves to consider compiler-generated functions that can't
+// be guessed based on the first argument.
+static const TypedFnSignature*
+considerCompilerGeneratedOperators(Context* context,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope,
+                                   CandidatesAndForwardingInfo& candidates) {
+  if (!ci.isOpCall()) return nullptr;
+
+  // Avoid invoking the query if we don't need a binary operation here.
+  if (ci.name() != USTR(":") || ci.numActuals() != 2) return nullptr;
+
+  auto lhsType = ci.actual(0).type();
+  auto rhsType = ci.actual(1).type();
+  if (!(lhsType.type() && lhsType.type()->isEnumType()) &&
+      !(rhsType.type() && rhsType.type()->isEnumType())) {
+    return nullptr;
+  }
+
+  auto tfs = getCompilerGeneratedBinaryOp(context, lhsType, rhsType, ci.name());
+  return tfs;
+}
+
+static void
+considerCompilerGeneratedCandidates(Context* context,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope,
+                                   CandidatesAndForwardingInfo& candidates) {
+  const TypedFnSignature* tfs = nullptr;
+
+  tfs = considerCompilerGeneratedMethods(context, ci, inScope, inPoiScope, candidates);
+  if (tfs == nullptr) {
+    tfs = considerCompilerGeneratedOperators(context, ci, inScope, inPoiScope, candidates);
+  }
+
+  if (!tfs) return;
 
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
@@ -3344,7 +3419,6 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            ci,
                                                            poi);
   CHPL_ASSERT(instantiated.success());
-  CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction());
   CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
 
   candidates.addCandidate(instantiated.candidate());
