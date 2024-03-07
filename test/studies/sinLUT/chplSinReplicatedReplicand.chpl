@@ -92,7 +92,7 @@ proc fast_sin(size: uint(32), iterations : int(32)): real(32) {
 
 proc main()
 {
-    var iterations : int(32) = 100_000_000;
+    var iterations = if !correctness then 100_000_000:int(32) else 1_000:int(32);
     const size:uint(32) = 256;
 
     var calc = new stopwatch();
