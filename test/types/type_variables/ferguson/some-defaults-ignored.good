@@ -1,5 +1,6 @@
 some-defaults-ignored.chpl:19: warning: unstable type construction with some generic defaults
 some-defaults-ignored.chpl:1: note: this type construction might ignore field defaults in the type declared here but that may change
+some-defaults-ignored.chpl:19: warning: please add '(?)' to type 'call_tmp' because it is generic
 R
 .t is uninstantiated
 .rank is uninstantiated
