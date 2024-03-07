@@ -874,7 +874,7 @@ class CLSConfig:
         ]
 
     def _validate_end_markers(self):
-        valid_choices = ["all", "loop", "decl", "block", "none"]
+        valid_choices = ["all", "none"] + list(EndMarkerPattern.all().keys())
         for marker in self.args["end_markers"]:
             if marker not in valid_choices:
                 raise argparse.ArgumentError(
@@ -893,6 +893,10 @@ class CLSConfig:
         ):
             raise argparse.ArgumentError(
                 None, "Cannot specify 'all' with other end marker choices"
+            )
+        if len(self.args["end_markers"]) != len(set(self.args["end_markers"])):
+            raise argparse.ArgumentError(
+                None, "Cannot specify the same end marker multiple times"
             )
 
     def parse_args(self):
