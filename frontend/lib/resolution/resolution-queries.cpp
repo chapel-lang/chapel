@@ -3298,15 +3298,14 @@ resolveFnCallForTypeCtor(Context* context,
   return mostSpecific;
 }
 
-static void
-considerCompilerGeneratedCandidates(Context* context,
-                                   const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
-                                   CandidatesAndForwardingInfo& candidates) {
-
+static const TypedFnSignature*
+considerCompilerGeneratedMethods(Context* context,
+                                 const CallInfo& ci,
+                                 const Scope* inScope,
+                                 const PoiScope* inPoiScope,
+                                 CandidatesAndForwardingInfo& candidates) {
   // only consider compiler-generated methods and opcalls, for now
-  if (!ci.isMethodCall() && !ci.isOpCall()) return;
+  if (!ci.isMethodCall() && !ci.isOpCall()) return nullptr;
 
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
@@ -3317,13 +3316,59 @@ considerCompilerGeneratedCandidates(Context* context,
   // if not compiler-generated, then nothing to do
   if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
                                    ci.isParenless())) {
-    return;
+    return nullptr;
   }
 
   // get the compiler-generated function, may be generic
   auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
                                         ci.isParenless());
   CHPL_ASSERT(tfs);
+  return tfs;
+}
+
+// not all compiler-generated procs are method. For instance, the compiler
+// generates to-and-from integral casts for enums. In the to-casts, the
+// receiver (or lhs) is an integral, not an enum.
+//
+// This helper serves to consider compiler-generated functions that can't
+// be guessed based on the first argument.
+static const TypedFnSignature*
+considerCompilerGeneratedOperators(Context* context,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope,
+                                   CandidatesAndForwardingInfo& candidates) {
+  if (!ci.isOpCall()) return nullptr;
+
+  // Avoid invoking the query if we don't need a binary operation here.
+  if (ci.name() != USTR(":") || ci.numActuals() != 2) return nullptr;
+
+  auto lhsType = ci.actual(0).type();
+  auto rhsType = ci.actual(1).type();
+  if (!(lhsType.type() && lhsType.type()->isEnumType()) &&
+      !(rhsType.type() && rhsType.type()->isEnumType())) {
+    return nullptr;
+  }
+
+  debuggerBreakHere();
+  auto tfs = getCompilerGeneratedBinaryOp(context, lhsType, rhsType, ci.name());
+  return tfs;
+}
+
+static void
+considerCompilerGeneratedCandidates(Context* context,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope,
+                                   CandidatesAndForwardingInfo& candidates) {
+  const TypedFnSignature* tfs = nullptr;
+
+  tfs = considerCompilerGeneratedMethods(context, ci, inScope, inPoiScope, candidates);
+  if (tfs == nullptr) {
+    tfs = considerCompilerGeneratedOperators(context, ci, inScope, inPoiScope, candidates);
+  }
+
+  if (!tfs) return;
 
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);

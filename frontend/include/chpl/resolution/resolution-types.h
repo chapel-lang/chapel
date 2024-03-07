@@ -170,7 +170,8 @@ class UntypedFnSignature {
            idTag == uast::asttags::Record   ||
            idTag == uast::asttags::Tuple    ||
            idTag == uast::asttags::Union    ||
-           idTag == uast::asttags::Variable);
+           idTag == uast::asttags::Variable ||
+           idTag == uast::asttags::Enum);
   }
 
   static const owned<UntypedFnSignature>&
