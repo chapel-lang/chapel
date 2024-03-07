@@ -318,7 +318,14 @@ module DefaultAssociative {
 
     // returns the number of indices added
     // todo: when is it better to have a ref or const ref intent for 'idx'?
-    override proc dsiAdd(in idx: idxType) {
+    // Ideally, we would like to restrict `idx: idxType`. If we do, however,
+    // then the compiler will choose BaseAssociativeDom.dsiAdd(), undesirably,
+    // when the actual is not of idxType, however is coercible to it. Ex:
+    //   test/domains/sungeun/assoc/parSafeMember.chpl
+    override proc dsiAdd(in idx) {
+      // domain.add(idx) ensures the following:
+      compilerAssert(isCoercible(idx.type, idxType));
+
       var retVal = 0;
 
       on this {

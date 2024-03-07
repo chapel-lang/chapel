@@ -544,7 +544,8 @@ module ChapelDomain {
   // This is perhaps an approximation, for use in error messages.
   private proc canBeIteratedOver(const ref arg) param {
     use Reflection;
-    return canResolveMethod(arg, "these");
+    return isSubtype(arg.type, _iteratorRecord) ||
+           canResolveMethod(arg, "these");
   }
 
   private proc domainDescription(const ref d) param do return
@@ -2145,7 +2146,9 @@ module ChapelDomain {
         compilerError("Cannot add indices to a rectangular domain");
 
       // 'idx' is an index
-      if isCoercible(idx.type, fullIdxType) then
+      if isCoercible(idx.type, fullIdxType) ||
+          // sparse 1-d domains also allow adding 1-tuples
+          isSparse() && rank == 1 && isCoercible(idx.type, 1*idxType) then
         return _value.dsiAdd(idx);
 
       // allow promotion
@@ -2153,13 +2156,13 @@ module ChapelDomain {
       if isCoercible(promoType, fullIdxType) {
         // sparse domains are currently not parSafe
         if isAssociative() && this.parSafe {
-          return + reduce dsiAdd(idx);
+          return + reduce [oneIdx in idx] _value.dsiAdd(oneIdx);
         }
         else {
           // not parSafe, so execute serially
           var addCount = 0;
           for oneIdx in idx do
-            addCount += dsiAdd(oneIdx);
+            addCount += _value.dsiAdd(oneIdx);
           return addCount;
         }
       }
