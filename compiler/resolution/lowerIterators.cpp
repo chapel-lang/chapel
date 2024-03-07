@@ -1584,9 +1584,26 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         // But we rather than getting a copy of INP_this we want to get a copy of
         // the outer variable that the shadow variable is shadowing (i.e.
         // outerVarSE).
+        //
         CallExpr *initMove = toCallExpr(svar->initBlock()->body.first());
         SymbolMap map1;
-        map1.put(svar->ParentvarForIN(), svar->outerVarSE->symbol());
+        Symbol* outerVarSym = svar->outerVarSE->symbol();
+
+        // When the shadow variable is owned/shared, we may have created a
+        // borrow for it. In that case, we'll need to find that borrow as the
+        // outerVar
+        if (DefExpr* prevDef = toDefExpr(svar->defPoint->prev)) {
+          if (ShadowVarSymbol* castTemp = toShadowVarSymbol(prevDef->sym)) {
+            if (castTemp->isCompilerAdded()) {
+              Symbol* castOuter = castTemp->outerVarSE->symbol();
+              if (castOuter->hasFlag(FLAG_TFI_BORROW_TEMP)) {
+                outerVarSym = castOuter;
+              }
+            }
+          }
+        }
+
+        map1.put(svar->ParentvarForIN(), outerVarSym);
         Expr *copiedInitialization = initMove->get(2)->copy(&map1);
         forLoop->insertBefore(new CallExpr(PRIM_MOVE, capturedSvar, copiedInitialization));
 

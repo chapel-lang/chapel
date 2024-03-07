@@ -568,6 +568,7 @@ static ShadowVarSymbol* create_IN_Parentvar(LoopWithShadowVarsInterface* fs,
     CallExpr*  cast    = createCast(userOuterVar, SI->type->symbol);
     VarSymbol* inptemp = newTempConst("INPtemp", SI->type);
     inptemp->qual      = QUAL_CONST_VAL;
+    inptemp->addFlag(FLAG_TFI_BORROW_TEMP);
 
     fs->asExpr()->insertBefore(holder);
     holder->insertAtTail(new DefExpr(inptemp));
