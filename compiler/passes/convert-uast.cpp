@@ -282,6 +282,7 @@ struct Converter {
   bool inTupleAssign = false;
   bool inImportOrUse = false;
   bool inForwardingDecl = false;
+  bool inTypeExpression = false;
   bool canScopeResolve = false;
   bool trace = false;
   int delegateCounter = 0;
@@ -1869,6 +1870,7 @@ struct Converter {
   // be handled by a separate builder, as those are array types.
   Expr* visit(const uast::BracketLoop* node) {
     if (node->isExpressionLevel()) {
+      if (inTypeExpression) return convertArrayType(node);
       return convertBracketLoopExpr(node);
     } else {
       INT_ASSERT(node->iterand());
@@ -3175,15 +3177,7 @@ struct Converter {
       }
     }
 
-    Expr* retType = nullptr;
-    if (auto retTypeExpr = node->returnType()) {
-      if (auto arrayTypeExpr = retTypeExpr->toBracketLoop()) {
-        retType = convertArrayType(arrayTypeExpr);
-      } else {
-        retType = convertAST(retTypeExpr);
-      }
-    }
-
+    Expr* retType = convertTypeExpressionOrNull(node->returnType());
     Expr* whereClause = convertExprOrNull(node->whereClause());
 
     Expr* lifetimeConstraints = nullptr;
@@ -3343,9 +3337,7 @@ struct Converter {
 
     RetTag retTag = convertRetTag(node->returnIntent());
     auto nodeRetType = node->returnType();
-    Expr* retType = (nodeRetType && nodeRetType->isBracketLoop())
-            ? convertArrayType(nodeRetType->toBracketLoop())
-            : convertExprOrNull(nodeRetType);
+    Expr* retType = convertTypeExpressionOrNull(nodeRetType);
 
     // TODO: I'd like to get rid of these build calls (if Michael
     // has not already gotten rid of them on main), as there's not
@@ -3557,22 +3549,24 @@ struct Converter {
     return INTENT_BLANK;
   }
 
-  Expr* convertTypeExpression(const uast::AstNode* node,
-                              bool isFormalType=false) {
-    if (!node) return nullptr;
-    Expr* ret = nullptr;
+  Expr* convertTypeExpression(const uast::AstNode* node) {
+    INT_ASSERT(node != nullptr);
 
     astlocMarker markAstLoc(node->id());
 
-    if (auto bkt = node->toBracketLoop()) {
-      ret = convertArrayType(bkt, isFormalType);
-    } else {
-      ret = convertAST(node);
-    }
+    bool oldInTypeExpression = inTypeExpression;
+    inTypeExpression = true;
+    Expr* ret = convertAST(node);
+    inTypeExpression = oldInTypeExpression;
 
     INT_ASSERT(ret);
 
     return ret;
+  }
+
+  Expr* convertTypeExpressionOrNull(const uast::AstNode* node) {
+    if (!node) return nullptr;
+    return convertTypeExpression(node);
   }
 
   DefExpr* visit(const uast::Formal* node) {
@@ -3580,7 +3574,7 @@ struct Converter {
 
     astlocMarker markAstLoc(node->id());
 
-    Expr* typeExpr = convertTypeExpression(node->typeExpression(), true);
+    Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
     auto ret =  buildArgDefExpr(intentTag, node->name().c_str(),
@@ -3622,18 +3616,10 @@ struct Converter {
   Expr* visit(const uast::VarArgFormal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
 
-    Expr* typeExpr = nullptr;
+    Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = nullptr;
 
     INT_ASSERT(!node->initExpression());
-
-    if (node->typeExpression()) {
-      if (auto bkt = node->typeExpression()->toBracketLoop()) {
-        typeExpr = convertArrayType(bkt);
-      } else {
-        typeExpr = convertAST(node->typeExpression());
-      }
-    }
 
     Expr* varargsVariable = convertExprOrNull(node->count());
     if (!varargsVariable) {
@@ -3661,7 +3647,7 @@ struct Converter {
     ShadowVarPrefix prefix = convertTaskVarIntent(node);
     // TODO: can we avoid this UnresolvedSymExpr ?
     Expr* nameExp = new UnresolvedSymExpr(node->name().c_str());
-    Expr* type = convertTypeExpression(node->typeExpression());
+    Expr* type = convertTypeExpressionOrNull(node->typeExpression());
     Expr* init = convertExprOrNull(node->initExpression());
 
     auto ret = ShadowVarSymbol::buildForPrefix(prefix, nameExp, type, init);
@@ -3735,8 +3721,7 @@ struct Converter {
     return false;
   }
 
-  CallExpr* convertArrayType(const uast::BracketLoop* node,
-                             bool isFormalType=false) {
+  CallExpr* convertArrayType(const uast::BracketLoop* node) {
     astlocMarker markAstLoc(node->id());
 
     INT_ASSERT(node->isExpressionLevel());
@@ -3774,7 +3759,6 @@ struct Converter {
 
       // If there is a type query, extract it from the domain.
       if (lastTypeQuery) {
-        CHPL_ASSERT(isFormalType);
         CHPL_ASSERT(!domActuals);
         domActuals = convertAST(lastTypeQuery);
       }
@@ -3915,18 +3899,7 @@ struct Converter {
       varSym->cname = convertLinkageNameAstr(node);
     }
 
-    Expr* typeExpr = nullptr;
-
-    // If there is a bracket loop it is almost certainly an array type, so
-    // special case it. Otherwise, just use the generic conversion call.
-    if (const uast::AstNode* te = node->typeExpression()) {
-      if (const uast::BracketLoop* bkt = te->toBracketLoop()) {
-        typeExpr = convertArrayType(bkt);
-      } else {
-        typeExpr = toExpr(convertAST(te));
-      }
-    }
-
+    Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = nullptr;
 
     if (const uast::AstNode* ie = node->initExpression()) {
