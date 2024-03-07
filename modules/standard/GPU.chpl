@@ -897,7 +897,7 @@ module GPU
 
   // We no doc it so we can test this independently
   @chpldoc.nodoc
-  proc gpuCubSort(ref gpuInputArr : [] ?t) {
+  proc gpuExternSort(ref gpuInputArr : [] ?t) {
     param cTypeName = if      t==int(8)   then "int8_t"
                       else if t==int(16)  then "int16_t"
                       else if t==int(32)  then "int32_t"
@@ -912,23 +912,23 @@ module GPU
 
     if cTypeName == "unknown" {
       compilerError("Arrays with ", t:string,
-                    " elements cannot be sorted with gpuCubSort functions");
+                    " elements cannot be sorted with gpuExternSort functions");
     }
 
-    // Only useful when calling gpuCubSort directly
-    extern proc chpl_gpu_can_cub_sort(): bool;
-    if !chpl_gpu_can_cub_sort() {
+    // Only useful when calling gpuExternSort directly
+    extern proc chpl_gpu_can_extern_sort(): bool;
+    if !chpl_gpu_can_extern_sort() {
       gpuSort(gpuInputArr);
       return;
     }
 
-    proc getExternFuncName(param op: string, type t) param: string {
+    proc getExternFuncName(param op: string) param: string {
       return "chpl_gpu_sort_"+op+"_"+cTypeName;
     }
 
     // find the extern function we'll use
     // (there's only one right now, the infrastructure allows more)
-    param externFunc = getExternFuncName("keys", t);
+    param externFunc = getExternFuncName("keys");
     extern externFunc proc sort_fn(data, temp, size);
 
     // Make another array which is needed for the sort
@@ -941,6 +941,7 @@ module GPU
 
     // The sorted values are in temp, so we need to copy them back
     // to the original array
+    // TODO: Maybe change this to a  <=> to just swap pointers
     gpuInputArr = temp;
   }
 
@@ -969,9 +970,9 @@ module GPU
       return;
     }
 
-    extern proc chpl_gpu_can_cub_sort(): bool;
-    if chpl_gpu_can_cub_sort() {
-      gpuCubSort(gpuInputArr);
+    extern proc chpl_gpu_can_extern_sort(): bool;
+    if chpl_gpu_can_extern_sort() {
+      gpuExternSort(gpuInputArr);
       return;
     }
 
@@ -986,12 +987,15 @@ module GPU
   }
 
   private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where !isCoercible(t, uint){
-    compilerError("GPU Based sorting without CUB is only supported for arrays of type uint. Please check your ROCM Version and make sure it's >= 5.0.0");
+    compilerError("GPU Based sorting is only supported for arrays of type uint for ROCm version <5.0.0. Upgrade your ROCm install to sort all primitive numeric types");
   }
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
-  proc parallelRadixSort(ref gpuInputArr : [] ?t, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
-                         const distributed : bool = false) where isCoercible(t, uint){ // The last argument is for multi GPU sort that is pending a patch before it can work
+  proc parallelRadixSort(ref gpuInputArr : [] ?t, const bitsAtATime : int = 8,
+                         const chunkSize : int = 512, const noisy : bool = false,
+                         const distributed : bool = false) where isCoercible(t, uint){
+    // The last argument (distributed) is for multi GPU sort that is pending a
+    // patch before it can work
     if !here.isGpu() then halt("parallelRadixSort must be run on a gpu locale");
     if gpuInputArr.size == 0 then return;
     if CHPL_GPU=="cpu" {

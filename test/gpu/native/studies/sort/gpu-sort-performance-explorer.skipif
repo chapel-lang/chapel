@@ -1,1 +1,1 @@
-CHPL_GPU==cpu # Times out
+CHPL_GPU==cpu

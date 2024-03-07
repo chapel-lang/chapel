@@ -378,7 +378,7 @@ bool chpl_gpu_impl_can_reduce(void) {
   return ROCM_VERSION_MAJOR>=5;
 }
 
-bool chpl_gpu_impl_can_cub_sort(void){
+bool chpl_gpu_impl_can_extern_sort(void){
   return chpl_gpu_impl_can_reduce();
 }
 

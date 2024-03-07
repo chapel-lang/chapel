@@ -153,7 +153,7 @@ bool chpl_gpu_impl_can_reduce(void) {
   return false;
 }
 
-bool chpl_gpu_impl_can_cub_sort(void){
+bool chpl_gpu_impl_can_extern_sort(void){
   return false;
 }
 
@@ -166,9 +166,9 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                       "the module code\n");\
 }
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Min, min)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Min, min)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
@@ -181,8 +181,8 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                       "the module code\n");\
 }
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
 
@@ -195,7 +195,7 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                       "the module code\n");\
 }
 
-GPU_IMPL_SORT_TYPES(DEF_ONE_SORT, SortKeys, keys)
+GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
 
 #undef DEF_ONE_SORT
 #endif // HAS_GPU_LOCALE

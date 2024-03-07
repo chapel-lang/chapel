@@ -1344,8 +1344,8 @@ bool chpl_gpu_can_reduce(void) {
   return chpl_gpu_impl_can_reduce();
 }
 
-bool chpl_gpu_can_cub_sort(void) {
-  return chpl_gpu_impl_can_cub_sort();
+bool chpl_gpu_can_extern_sort(void) {
+  return chpl_gpu_impl_can_extern_sort();
 }
 
 #define DEF_ONE_REDUCE(kind, data_type)\
@@ -1367,11 +1367,11 @@ void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
   CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " returned\n"); \
 }
 
-GPU_REDUCE(DEF_ONE_REDUCE, sum)
-GPU_REDUCE(DEF_ONE_REDUCE, min)
-GPU_REDUCE(DEF_ONE_REDUCE, max)
-GPU_REDUCE(DEF_ONE_REDUCE, minloc)
-GPU_REDUCE(DEF_ONE_REDUCE, maxloc)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, sum)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, min)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, max)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, minloc)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, maxloc)
 
 #undef DEF_ONE_REDUCE
 
@@ -1395,7 +1395,7 @@ void chpl_gpu_sort_##chpl_kind##_##data_type(data_type* data_in, \
   CHPL_GPU_DEBUG("chpl_gpu_sort_" #chpl_kind "_" #data_type " returned\n"); \
 }
 
-GPU_SORT_TYPES(DEF_ONE_SORT, keys)
+GPU_CUB_WRAP(DEF_ONE_SORT, keys)
 
 #undef DEF_ONE_SORT
 

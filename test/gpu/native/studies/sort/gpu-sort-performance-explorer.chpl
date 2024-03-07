@@ -1,3 +1,4 @@
+// Adapted from test/library/packages/Sort/performance/sort-performance-explorer.chpl
 // This tester allows exploration of sort performance
 // for differing algorithms, input data distributions, and input sizes.
 
@@ -27,7 +28,7 @@ var methods = ["default", "gpuCub", "gpuRadix"];
 proc testsort(ref input, method) {
 
   if method == "gpuCub" {
-      GPU.gpuCubSort(input);
+      GPU.gpuExternSort(input);
   } else if method == "gpuRadix" {
     GPU.parallelRadixSort(input, bitsAtATime, chunkSize, false);
   } else if method == "default" {
@@ -152,8 +153,8 @@ proc testsize(size:int) {
       }
     }
     var mibs = mibibytes * ntrials / t.elapsed();
-    // if printStats then writef(" % 12s sec  ", t.elapsed():string);
-    if printStats then writef(" % 12s MiB/s", mibs:string);
+    if printStats then writef(" % 12s sec  ", t.elapsed():string);
+    if printStats then writef(" % 9s MiB/s", mibs:string);
 
     assert(isSorted(input));
   }
@@ -171,7 +172,7 @@ proc main() {
 
   for m in methods {
     if printStats then
-      writef(" % 16s", m);
+      writef(" % 30s", m);
   }
   if printStats then
     writeln();
