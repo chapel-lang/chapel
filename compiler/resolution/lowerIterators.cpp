@@ -2717,7 +2717,8 @@ expandForLoop(ForLoop* forLoop) {
     // scope to another if done in mid-transformation.
     CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop, map);
 
-    if (fNoInlineIterators) {
+    // workaround for --baseline with implicit foreach intents
+    if (fNoInlineIterators && forLoop->isOrderIndependent()) {
       update_symbols(cforLoop, &map);
     }
 
