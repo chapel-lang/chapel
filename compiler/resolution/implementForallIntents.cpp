@@ -1003,7 +1003,6 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
     anchor = fs->asExpr();
   }
   else {
-    std::cout << fs->loopBody()->stringLoc() << std::endl;
     CallExpr* noop = new CallExpr(PRIM_NOOP);
     fs->loopBody()->insertAtHead(noop);
     anchor = noop;
