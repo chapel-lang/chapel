@@ -418,10 +418,11 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   wr.note(clause, "only identifiers and 'dot' expressions are supported");
 }
 
-void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info_);
-  // auto attr = std::get<const uast::Attribute*>(info_);
-
+static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
+                                            const uast::AstNode* node,
+                                            const uast::Attribute* attr,
+                                            ErrorBase::Kind kind,
+                                            ErrorType type) {
   const char* loopTypes = nullptr;
   if (node->isFor()) {
     loopTypes = "for";
@@ -433,23 +434,43 @@ void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
     loopTypes = "coforall";
   }
 
+  // For now, attribute locations aren't correctly computed, so this is unhelpful.
+  // wr.note(attr, "marked for GPU execution here:");
+  // wr.codeForLocation(attr);
+
   const char* whatIsAffected = "statement";
   if (loopTypes) {
-    wr.heading(kind_, type_, node, "loop marked with @assertOnGpu, but '", loopTypes, "' loops don't support GPU execution.");
+    wr.heading(kind, type, node, "loop marked with @", attr->name(),
+               ", but '", loopTypes, "' loops don't support GPU execution.");
     whatIsAffected = "loop";
   } else if (node->isFunction()) {
-    wr.heading(kind_, type_, node, "functions do not currently support the @assertOnGpu attribute.");
+    wr.heading(kind, type, node, "functions do not currently support the @",
+               attr->name(), " attribute.");
     whatIsAffected = "function";
+  } else if (node->isVariable() && node->toVariable()->isField()) {
+    wr.heading(kind, type, node, "fields do not support the @",
+               attr->name(), " attribute.");
   } else {
-    wr.heading(kind_, type_, node, "statement does not support the @assertOnGpu attribute.");
+    wr.heading(kind, type, node, "statement does not support the @",
+               attr->name(), " attribute.");
   }
 
   wr.message("The affected ", whatIsAffected, " is here:");
   wr.codeForLocation(node);
+}
 
-  // For now, attribute locations aren't correctly computed, so this is unhelpful.
-  // wr.note(attr, "marked for GPU execution here:");
-  // wr.codeForLocation(attr);
+void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto attr = std::get<const uast::Attribute*>(info_);
+
+  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
+}
+
+void ErrorInvalidBlockSize::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto attr = std::get<const uast::Attribute*>(info_);
+
+  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
 }
 
 void ErrorInvalidImplementsIdent::write(ErrorWriterBase& wr) const {
