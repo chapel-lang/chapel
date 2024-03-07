@@ -915,6 +915,13 @@ module GPU
                     " elements cannot be sorted with gpuCubSort functions");
     }
 
+    // Only useful when calling gpuCubSort directly
+    extern proc chpl_gpu_can_cub_sort(): bool;
+    if !chpl_gpu_can_cub_sort() {
+      gpuSort(gpuInputArr);
+      return;
+    }
+
     proc getExternFuncName(param op: string, type t) param: string {
       return "chpl_gpu_sort_"+op+"_"+cTypeName;
     }
@@ -961,6 +968,7 @@ module GPU
       gpuCubSort(gpuInputArr);
       return;
     }
+
     if CHPL_GPU=="cpu" {
       use Sort only sort;
       sort(gpuInputArr);
