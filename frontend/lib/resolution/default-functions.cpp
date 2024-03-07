@@ -684,7 +684,7 @@ generateRecordComparison(Context* context, const CompositeType* lhsType) {
 
 static const TypedFnSignature*
 generateCPtrMethod(Context* context, const CPtrType * cpt, UniqueString name) {
-  // Build a basic function signature for methods on an array
+  // Build a basic function signature for methods on a cptr
   // TODO: we should really have a way to just set the return type here
   const TypedFnSignature* result = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> formals;
@@ -724,7 +724,6 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
   const TypedFnSignature* result = nullptr;
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
-    
     auto compType = type->getCompositeType();
     CHPL_ASSERT(compType || type->isCPtrType());
     

@@ -1094,7 +1094,6 @@ static void testSelectParams() {
   }
 }
 
-
 static void testCPtrEltType() {
   { 
     //works for c_ptr
@@ -1127,8 +1126,6 @@ static void testCPtrEltType() {
     assert(qt.type()->isUintType());
   }
 }
-
-
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
