@@ -318,6 +318,8 @@ class AstNode {
   #define AST_LEAF(NAME) AST_IS(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
   #define AST_END_SUBCLASSES(NAME)
+  // Used for macro-based casting
+  bool isAstNode() const { return true; }
   /// \endcond
   // Apply the above macros to uast-classes-list.h
   #include "chpl/uast/uast-classes-list.h"
@@ -343,6 +345,8 @@ class AstNode {
   #define AST_LEAF(NAME) AST_TO(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_TO(NAME)
   #define AST_END_SUBCLASSES(NAME)
+  // Used for macro-based casting
+  AST_TO(AstNode)
   /// \endcond
   // Apply the above macros to uast-classes-list.h
   #include "chpl/uast/uast-classes-list.h"

@@ -89,6 +89,10 @@ CLASS_BEGIN(AstNode)
          auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
          auto r = resolvedFn->byAstOrNull(node);
          return ResolvedExpressionObject::tryCreate(contextObject, r))
+  PLAIN_GETTER(AstNode, block_header, "Get the header Location of this block-like AstNode node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateBlockHeaderWithAst(context, node);
+               return getValidLocation(loc))
 CLASS_END(AstNode)
 
 CLASS_BEGIN(AnonFormal)
@@ -376,7 +380,11 @@ CLASS_BEGIN(Loop)
   PLAIN_GETTER(Loop, block_style, "Get the block style of this Loop node",
                const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(Loop, body, "Get the body of this Loop node",
-               const chpl::uast::Block*, return node->body())
+               const chpl::uast::AstNode*, return node->body())
+  PLAIN_GETTER(IndexableLoop, header_location, "Get the Location of this Loop node's header",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateLoopHeaderWithAst(context, node);
+               return getValidLocation(loc))
 CLASS_END(Loop)
 
 CLASS_BEGIN(DoWhile)
@@ -513,9 +521,12 @@ CLASS_BEGIN(NamedDecl)
                chpl::UniqueString, return node->name())
   PLAIN_GETTER(NamedDecl, name_location, "Get the textual location of the NamedDecl node's name",
                chpl::Location,
-               auto loc = chpl::parsing::locateDeclNameWithAst(context, node);
-               /*isEmpty doesn't work since that only relies upon path, which is set*/
-               return (loc.line() != -1) ? loc : chpl::parsing::locateAst(context, node))
+               auto loc = getValidLocation(chpl::parsing::locateDeclNameWithAst(context, node));
+               return loc ? *loc : chpl::parsing::locateAst(context, node))
+  PLAIN_GETTER(NamedDecl, header_location, "Get the Location of this NamedDecl node's header",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateDeclHeaderWithAst(context, node);
+               return getValidLocation(loc))
 CLASS_END(NamedDecl)
 
 CLASS_BEGIN(EnumElement)
