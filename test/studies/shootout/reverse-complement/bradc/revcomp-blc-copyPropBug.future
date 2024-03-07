@@ -1,0 +1,6 @@
+bug: internal error in copy propagation pass
+
+#19598
+
+The 'in' argument of 'lo' is the problem; replacing it with a temp
+fixes things.
