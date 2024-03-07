@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+
+# only do this if '-scorrectness=true'
+if [[ "$5" != *"-scorrectness=true"* ]]; then
+  exit 0
+fi
+
 cp $2 $2.prediff.tmp
 > $2
 
