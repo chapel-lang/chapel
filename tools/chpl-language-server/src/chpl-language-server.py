@@ -882,6 +882,7 @@ class CLSConfig:
                 )
         n_markers = len(self.args["end_markers"])
         if n_markers != len(set(self.args["end_markers"])):
+
             raise argparse.ArgumentError(
                 None, "Cannot specify the same end marker multiple times"
             )
@@ -1349,10 +1350,16 @@ class ChapelLanguageServer(LanguageServer):
 
                 text = range_to_text(header_loc, file_lines)
                 loc = location_to_location(goto_loc) if goto_loc else None
+                to_insert = " // " + text
+                edit = TextEdit(
+                    Range(end_loc, Position(end_loc.line, len(to_insert))),
+                    to_insert,
+                )
                 inlay = InlayHint(
                     position=end_loc,
                     padding_left=True,
                     label=[InlayHintLabelPart(text, location=loc)],
+                    text_edits=[edit],
                 )
                 inlays.append(inlay)
         return inlays
