@@ -3381,7 +3381,6 @@ considerCompilerGeneratedOperators(Context* context,
     return nullptr;
   }
 
-  debuggerBreakHere();
   auto tfs = getCompilerGeneratedBinaryOp(context, lhsType, rhsType, ci.name());
   return tfs;
 }
