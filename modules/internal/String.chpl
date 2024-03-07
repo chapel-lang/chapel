@@ -87,11 +87,8 @@ module String {
     proc init=(other: byteIndex) { _bindex = other._bindex; }
     proc init=(i: int) { _bindex = i; }
 
-    proc writeThis(f) throws {
-      f.write(_bindex);
-    }
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(_bindex);
     }
 
     operator :(val: byteIndex, type t:string) {
@@ -113,12 +110,8 @@ module String {
     proc init=(i: int) { _cpindex = i; }
     proc init=(cpi: codepointIndex) { _cpindex = cpi._cpindex; }
 
-    proc writeThis(f) throws {
-      f.write(_cpindex);
-    }
-
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(_cpindex);
     }
 
     operator :(val: codepointIndex, type t:string) {
@@ -889,17 +882,8 @@ module String {
     }
 
     // These should never be called (but are default functions for records)
-    proc writeThis(f) throws {
-      compilerError("not implemented: writeThis");
-    }
-
-    // These should never be called (but are default functions for records)
     proc serialize(writer, ref serializer) throws {
       compilerError("not implemented: serialize");
-    }
-
-    proc readThis(f) throws {
-      compilerError("not implemented: readThis");
     }
 
     // assumes that 'this' is already local

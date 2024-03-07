@@ -1852,15 +1852,10 @@ module Random {
     }
 
     @chpldoc.nodoc
-    proc writeThis(f) throws {
-      f.write("RandomStreamInterface(eltType=", eltType:string);
-      f.write(", parSafe=", parSafe);
-      f.write(", seed=", seed, ")");
-    }
-
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("RandomStreamInterface(eltType=", eltType:string);
+      writer.write(", parSafe=", parSafe);
+      writer.write(", seed=", seed, ")");
     }
   }
 

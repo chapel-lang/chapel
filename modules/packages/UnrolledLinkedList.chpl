@@ -1158,30 +1158,23 @@ module UnrolledLinkedList {
 
     /*
       Write the contents of this unrolledLinkedList to a channel.
-
-      :arg ch: A channel to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
+    proc serialize(writer, ref serializer) throws {
       _enter();
 
-      ch.write("[");
+      writer.write("[");
 
       var first = true;
 
       for x in this {
-        if !first then ch.write(", ");
+        if !first then writer.write(", ");
         else first = false;
-        ch.write(x);
+        writer.write(x);
       }
 
-      ch.write("]");
+      writer.write("]");
 
       _leave();
-    }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
     }
 
     /*

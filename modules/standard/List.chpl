@@ -1814,65 +1814,8 @@ module List {
     }
 
     /*
-      Write the contents of this list to a channel.
-
-      :arg ch: A channel to write to.
+      Write the contents of this list to a ``fileWriter``.
     */
-    proc writeThis(ch: fileWriter) throws {
-      var isBinary = ch._binary();
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-
-      if isJson {
-        _writeJson(ch);
-        return;
-      }
-
-      _enter();
-
-      if isBinary {
-        // Write the number of elements
-        ch.write(_size);
-      } else {
-        ch.writeLiteral("[");
-      }
-
-      for i in 0..(_size - 2) {
-        ch.write(_getRef(i));
-        if !isBinary {
-          ch.writeLiteral(", ");
-        }
-      }
-
-      if _size > 0 then
-        ch.write(_getRef(_size-1));
-
-      if !isBinary {
-        ch.writeLiteral("]");
-      }
-
-      _leave();
-    }
-
-    @chpldoc.nodoc
-    proc _writeJson(ch: fileWriter) throws {
-      _enter();
-
-      ch.writeLiteral("[");
-
-      for i in 0..(_size - 2) {
-        ch.writef("%jt", _getRef(i));
-        ch.writeLiteral(", ");
-      }
-
-      if _size > 0 then
-        ch.writef("%jt", _getRef(_size-1));
-
-      ch.writeLiteral("]");
-
-      _leave();
-    }
-
-    @chpldoc.nodoc
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter();
 
@@ -1880,104 +1823,6 @@ module List {
       for i in 0..<this._size do
         ser.writeElement(_getRef(i));
       ser.endList();
-
-      _leave();
-    }
-
-    /*
-     Read the contents of this list from a channel.
-
-     :arg ch: A channel to read from.
-     */
-    proc ref readThis(ch: fileReader) throws {
-      //
-      // Special handling for reading in order to handle reading an arbitrary
-      // size.
-      //
-      const isBinary = ch._binary();
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-      if isJson then {
-        _readJson(ch);
-        return;
-      }
-
-      _enter();
-
-      _clearLocked();
-
-      if isBinary {
-        // How many elements should we read (for binary mode)?
-        const num = ch.read(int);
-        for i in 0..#num {
-          pragma "no auto destroy"
-          var elt: eltType = ch.read(eltType);
-          _appendByRef(elt);
-        }
-      } else {
-        var isFirst = true;
-        var hasReadEnd = false;
-
-        ch.readLiteral("[");
-
-        while !hasReadEnd {
-          if isFirst {
-            isFirst = false;
-
-            // Try reading an end bracket. If we don't, then continue on.
-            try {
-              ch.readLiteral("]");
-              hasReadEnd = true;
-              break;
-            } catch err: BadFormatError {
-              // Continue on if we didn't read an end bracket.
-            }
-          } else {
-
-            // Try to read a comma. Break if we don't.
-            try {
-              ch.readLiteral(",");
-            } catch err: BadFormatError {
-              break;
-            }
-          }
-
-          // read an element
-          pragma "no auto destroy"
-          var elt: eltType = ch.read(eltType);
-          _appendByRef(elt);
-        }
-
-        if !hasReadEnd {
-          ch.readLiteral("]");
-        }
-      }
-
-      _leave();
-    }
-
-    @chpldoc.nodoc
-    proc ref _readJson(ch: fileReader) throws {
-      var isFirst = true;
-      var hasReadEnd = false;
-
-      _enter();
-      _clearLocked();
-
-      ch.readLiteral("[");
-
-      while !ch.matchLiteral("]") {
-        if isFirst {
-          isFirst = false;
-        } else {
-          ch.readLiteral(",");
-        }
-
-        // read an element
-        pragma "no auto destroy"
-        var elt: eltType;
-        ch.readf("%jt", elt);
-        _appendByRef(elt);
-      }
 
       _leave();
     }
@@ -2012,7 +1857,9 @@ module List {
       _leave();
     }
 
-    @chpldoc.nodoc
+    /*
+     Read the contents of this list from a ``fileReader``.
+     */
     proc ref deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader, deserializer);
     }

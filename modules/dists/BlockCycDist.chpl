@@ -250,12 +250,8 @@ record blockCycDist: writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -418,19 +414,16 @@ override proc BlockCyclicImpl.dsiNewRectangularDom(param rank: int, type idxType
 //
 // output distribution
 //
-proc BlockCyclicImpl.writeThis(x) throws {
-  x.writeln("blockCycDist");
-  x.writeln("------------");
-  x.writeln("distributes: ", lowIdx, "...");
-  x.writeln("in chunks of: ", blocksize);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
-  for locid in targetLocDom do
-    x.writeln("  [", locid, "] ", locDist(locid));
-}
 override proc BlockCyclicImpl.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.writeln("blockCycDist");
+  writer.writeln("------------");
+  writer.writeln("distributes: ", lowIdx, "...");
+  writer.writeln("in chunks of: ", blocksize);
+  writer.writeln("across locales: ", targetLocales);
+  writer.writeln("indexed via: ", targetLocDom);
+  writer.writeln("resulting in: ");
+  for locid in targetLocDom do
+    writer.writeln("  [", locid, "] ", locDist(locid));
 }
 
 //
@@ -588,15 +581,12 @@ class LocBlockCyclic : writeSerializable {
 }
 
 
-proc LocBlockCyclic.writeThis(x) throws {
+override proc LocBlockCyclic.serialize(writer, ref serializer) throws {
   var localeid: int;
   on this {
     localeid = here.id;
   }
-  x.write("locale ", localeid, " owns blocks: ", myStarts);
-}
-override proc LocBlockCyclic.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.write("locale ", localeid, " owns blocks: ", myStarts);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -893,11 +883,8 @@ proc LocBlockCyclicDom.computeFlatInds() {
 //
 // output local domain piece
 //
-proc LocBlockCyclicDom.writeThis(x) throws {
-  x.write(myStarts);
-}
 override proc LocBlockCyclicDom.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.write(myStarts);
 }
 
 proc LocBlockCyclicDom.enumerateBlocks() {
@@ -1317,9 +1304,6 @@ class LocBlockCyclicArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocBlockCyclicArr.writeThis() is not implemented / should not be needed");
-  }
   override proc serialize(writer, ref serializer) throws {
     halt("LocBlockCyclicArr.serialize() is not implemented / should not be needed");
   }

@@ -200,12 +200,8 @@ module Version {
     param commit: string = "";
 
     @chpldoc.nodoc
-    proc writeThis(s) throws {
-      s.write(this:string);
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(this:string);
     }
 
     @chpldoc.nodoc
@@ -368,12 +364,8 @@ module Version {
 
 
     @chpldoc.nodoc
-    proc writeThis(s) throws {
-      s.write(this:string);
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(this:string);
     }
 
     @chpldoc.nodoc

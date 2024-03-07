@@ -318,14 +318,8 @@ module Bytes {
       }
     }
 
-    proc writeThis(f) throws {
-      compilerError("not implemented: writeThis");
-    }
     proc serialize(writer, ref serializer) throws {
       compilerError("not implemented: serialize");
-    }
-    proc readThis(f) throws {
-      compilerError("not implemented: readThis");
     }
     proc ref deserialize(reader, ref deserialize) throws {
       compilerError("not implemented: deserialize");

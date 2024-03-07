@@ -338,10 +338,6 @@ module ChapelLocale {
       return hname;
     }
 
-    override proc writeThis(f) throws {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
     override proc serialize(writer, ref serializer) throws {
       HaltWrappers.pureVirtualMethodHalt();
     }

@@ -312,21 +312,17 @@ module WeakPointer {
     lhs.chpl_pn = chpl_pn_tmp;
   }
 
-  proc weak.writeThis(ch) throws {
+  proc weak.serialize(writer, ref serializer) throws {
     if const ptr = this.chpl_p {
       if this.chpl_pn!.strongCount.read() > 0 {
         // ptr could be invalidated between /\ and \/ (not worrying about that for now).
-        ch.write(ptr);
+        writer.write(ptr);
       } else {
-        ch.write("invalid-ptr");
+        writer.write("invalid-ptr");
       }
     } else {
-      ch.write("nil-object");
+      writer.write("nil-object");
     }
-  }
-
-  proc weak.serialize(writer, ref serializer) throws {
-    writeThis(writer);
   }
 
 }

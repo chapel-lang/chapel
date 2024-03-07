@@ -57,7 +57,7 @@
    in order for record assignment to work, the read() functions
    need to be able to work with a const RHS.
 
-   To enable that, the read/waitFor/writeThis functions take in `this`
+   To enable that, the read/waitFor functions take in `this`
    with const intent. That is reasonable even if the atomic is
    implemented with a lock because the programmer can view it
    as constant, and on good hardware it really will be. If we change
@@ -412,10 +412,6 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc const writeThis(x) throws {
-      x.write(read());
-    }
-
     proc const serialize(writer, ref serializer) throws {
       writer.write(read());
     }
@@ -757,10 +753,6 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc const writeThis(x) throws {
-      x.write(read());
-    }
-
     proc const serialize(writer, ref serializer) throws {
       writer.write(read());
     }

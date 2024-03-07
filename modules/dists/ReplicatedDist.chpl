@@ -168,13 +168,8 @@ record replicatedDist : writeSerializable {
   }
 
   @chpldoc.nodoc
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
-  @chpldoc.nodoc
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -554,10 +549,6 @@ class LocReplicatedArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocReplicatedArr.writeThis() is not implemented / should not be needed");
-  }
-
   @chpldoc.nodoc
   override proc serialize(writer, ref serializer) throws {
     halt("LocReplicatedArr.serialize() is not implemented / should not be needed");

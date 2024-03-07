@@ -547,19 +547,11 @@ module SharedObject {
   }
 
   @chpldoc.nodoc
-  proc _shared.readThis(f) throws {
-    _readWriteHelper(f);
-  }
-
   proc ref _shared.deserialize(reader, ref deserializer) throws {
     _readWriteHelper(reader);
   }
 
   @chpldoc.nodoc
-  proc _shared.writeThis(f) throws {
-    _readWriteHelper(f);
-  }
-
   proc _shared.serialize(writer, ref serializer) throws {
     _readWriteHelper(writer);
   }

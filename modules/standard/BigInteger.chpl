@@ -411,16 +411,11 @@ module BigInteger {
       return ret;
     }
 
-    @chpldoc.nodoc
-    proc writeThis(writer) throws {
+    /* Writes this number to a :type:`~IO.fileWriter` */
+    proc serialize(writer, ref serializer) throws {
       var s: string;
       s = this.getStr();
       writer.write(s);
-    }
-
-    /* Writes this number to a :type:`~IO.fileWriter` */
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
     }
 
     /* Read this number from a :type:`~IO.fileReader` */

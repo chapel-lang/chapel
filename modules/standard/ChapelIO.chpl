@@ -553,22 +553,11 @@ module ChapelIO {
     }
 
   @chpldoc.nodoc
-  proc locale.writeThis(f) throws {
-    // FIXME this doesn't resolve without `this`
-    f.write(this._instance);
-  }
-
-  @chpldoc.nodoc
   proc locale.serialize(writer, ref serializer) throws {
+    // FIXME this doesn't resolve without `this`
     writer.write(this._instance);
   }
   locale implements writeSerializable;
-
-  @chpldoc.nodoc
-  proc _ddata.writeThis(f) throws {
-    compilerWarning("printing _ddata class");
-    f.write("<_ddata class cannot be printed>");
-  }
 
   @chpldoc.nodoc
   proc _ddata.serialize(writer, ref serializer) throws {
@@ -577,89 +566,22 @@ module ChapelIO {
   }
   implements writeSerializable(_ddata);
 
-  proc chpl_taskID_t.writeThis(f) throws {
-    f.write(this : uint(64));
+  proc chpl_taskID_t.serialize(writer, ref serializer) throws {
+    writer.write(this : uint(64));
   }
-  proc chpl_taskID_t.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  proc chpl_taskID_t.readThis(f) throws {
-    this = f.read(uint(64)) : chpl_taskID_t;
+  proc ref chpl_taskID_t.deserialize(reader, ref deserializer) throws {
+    this = reader.read(uint(64)) : chpl_taskID_t;
   }
 
   proc type chpl_taskID_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : chpl_taskID_t;
-    ret.readThis(reader);
+    ret.deserialize(reader, deserializer);
     return ret;
   }
 
   @chpldoc.nodoc
-  proc nothing.writeThis(f) {}
-  @chpldoc.nodoc
   proc nothing.serialize(writer, ref serializer) {}
-
-  @chpldoc.nodoc
-  proc ref _tuple.readThis(f) throws {
-    _readWriteHelper(f);
-  }
-
-  @chpldoc.nodoc
-  proc ref _tuple.writeThis(f) throws {
-    _readWriteHelper(f);
-  }
-
-  // Moved here to avoid circular dependencies in ChapelTuple.
-  @chpldoc.nodoc
-  proc ref _tuple._readWriteHelper(f) throws {
-    const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
-    const isJson = st == QIO_TUPLE_FORMAT_JSON;
-    const binary = f._binary();
-
-    // Returns a 4-tuple containing strings representing:
-    // - start of a tuple
-    // - the comma/separator between elements
-    // - a comma/separator for 1-tuples
-    // - end of a tuple
-    proc getLiterals() : 4*string {
-      if st == QIO_TUPLE_FORMAT_SPACE {
-        return ("", " ", "", "");
-      } else if isJson {
-        return ("[", ", ", "", "]");
-      } else {
-        return ("(", ", ", ",", ")");
-      }
-    }
-
-    const (start, comma, comma1tup, end) = getLiterals();
-
-    proc helper(const ref arg) throws where f._writing { f.write(arg); }
-    proc helper(ref arg) throws where !f._writing { arg = f.read(arg.type); }
-
-    proc rwLiteral(lit:string) throws {
-      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
-    }
-
-    if !binary {
-      rwLiteral(start);
-    }
-    if size > 1 {
-      helper(this(0));
-      for param i in 1..size-1 {
-        if !binary {
-          rwLiteral(comma);
-        }
-        helper(this(i));
-      }
-    } else if size == 1 {
-      helper(this(0));
-      if !binary then
-        rwLiteral(comma1tup);
-    } else {
-      // size < 1, print nothing
-    }
-    if !binary {
-      rwLiteral(end);
-    }
-  }
 
   @chpldoc.nodoc
   proc type _tuple.deserializeFrom(reader, ref deserializer) throws {
@@ -693,7 +615,7 @@ module ChapelIO {
   implements writeSerializable(_tuple);
 
   @chpldoc.nodoc
-  proc _iteratorRecord.writeThis(f) throws {
+  proc _iteratorRecord._defaultWriteHelper(f) throws {
     var first: bool = true;
     for e in this {
       if !first then
@@ -707,7 +629,7 @@ module ChapelIO {
   @chpldoc.nodoc
   proc _iteratorRecord.serialize(writer, ref serializer) throws {
     if serializer.type == IO.defaultSerializer {
-      writeThis(writer);
+      _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then
         compilerWarning("Serialization of iterators with non-default Serializer is unstable, and may change in the future");
@@ -721,7 +643,7 @@ module ChapelIO {
   // Write implementation for ranges
   // Follows operator :(range, string)
   @chpldoc.nodoc
-  proc range.writeThis(f) throws
+  proc range._defaultWriteHelper(f) throws
   {
     if hasLowBound() then
       f.write(lowBound);
@@ -753,7 +675,7 @@ module ChapelIO {
   @chpldoc.nodoc
   proc range.serialize(writer, ref serializer) throws {
     if serializer.type == defaultSerializer {
-      writeThis(writer);
+      _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then
         compilerWarning("Serialization of ranges with non-default Serializer is unstable, and may change in the future");
@@ -767,7 +689,7 @@ module ChapelIO {
   implements writeSerializable(range);
 
   @chpldoc.nodoc
-  proc ref range.readThis(f) throws {
+  proc ref range._defaultReadHelper(f) throws {
     if hasLowBound() then _low = f.read(_low.type);
 
     f.readLiteral("..");
@@ -808,7 +730,7 @@ module ChapelIO {
   @chpldoc.nodoc
   proc ref range.deserialize(reader, ref deserializer) throws {
     if deserializer.type == IO.defaultDeserializer {
-      readThis(reader);
+      _defaultReadHelper(reader);
     } else {
       if chpl_warnUnstable then
         compilerWarning("Deserialization of ranges with non-default Deserializer is unstable, and may change in the future");
@@ -819,7 +741,7 @@ module ChapelIO {
         const data = reader.read(string);
         var f = openMemFile();
         f.writer(locking=false).write(data);
-        readThis(f.reader(locking=false));
+        _defaultReadHelper(f.reader(locking=false));
       }
     }
   }
@@ -837,14 +759,9 @@ module ChapelIO {
   implements initDeserializable(range);
 
   @chpldoc.nodoc
-  override proc LocaleModel.writeThis(f) throws {
-    f.writeLiteral("LOCALE");
-    f.write(chpl_id());
-  }
-
-  @chpldoc.nodoc
   override proc LocaleModel.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.writeLiteral("LOCALE");
+    writer.write(chpl_id());
   }
   LocaleModel implements writeSerializable;
 
@@ -852,11 +769,6 @@ module ChapelIO {
      show information about the error including the result
      of calling :proc:`Error.message`.
   */
-  @chpldoc.nodoc
-  override proc Error.writeThis(f) throws {
-    f.write(chpl_describe_error(this));
-  }
-
   @chpldoc.nodoc
   override proc Error.serialize(writer, ref serializer) throws {
     writer.write(chpl_describe_error(this));

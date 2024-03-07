@@ -2662,22 +2662,13 @@ module ChapelDomain {
       return _value.dsiGetIndices();
 
     @chpldoc.nodoc
-    proc writeThis(f) throws {
-      _value.dsiSerialWrite(f);
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
       _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
-    proc ref readThis(f) throws {
-      _value.dsiSerialRead(f);
-    }
-
-    @chpldoc.nodoc
     proc ref deserialize(reader, ref deserializer) throws {
-      readThis(reader);
+      _value.dsiSerialRead(reader);
     }
 
     // TODO: Can we convert this to an initializer despite the potential issues
@@ -2685,7 +2676,7 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(reader);
+      ret.deserialize(reader, deserializer);
       return ret;
     }
 
