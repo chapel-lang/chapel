@@ -57,3 +57,9 @@ proc test5() {
   f(integral); // do not warn (built in generic type)
 }
 test5();
+
+proc type C.typeMethod() { }
+proc test6() {
+  C.typeMethod(); // do not warn (method receiver)
+}
+test6();
