@@ -129,7 +129,7 @@ inline proc addTime(ref t: real) {
 
 }
 
-const reportFormat = "%-24s " + fmt + "\n";
+const reportFormat = "%<24s " + fmt + "\n";
 inline proc reportTime(title: string, time: real) {
   info.writef(reportFormat, title, time);
 }
