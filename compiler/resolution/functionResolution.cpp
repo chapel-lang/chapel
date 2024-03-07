@@ -3856,6 +3856,9 @@ static bool suppressWarnGenericActual(CallExpr* call) {
 }
 
 static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
+  if (isManagedPtrType(type)) {
+    type = getManagedPtrBorrowType(type);
+  }
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     type = dt->getCanonicalClass();
   }
@@ -3876,7 +3879,12 @@ static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
         gdbShouldBreakHere();
         checkSurprisingGenericDecls(se->symbol(), se, nullptr);
         if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
-          USR_WARN(se, "please add '(?)' to type '%s' because it is generic", se->symbol()->name);
+          const char* name = se->symbol()->name;
+          if (se->symbol()->hasFlag(FLAG_TEMP)) {
+            name = toString(type, /* decorate classes */ false);
+          }
+          USR_WARN(se, "please add '(?)' to type '%s' because it is generic",
+                   name);
           if (fWarnUnstable) {
             USR_PRINT("this warning may be an error in the future");
           }

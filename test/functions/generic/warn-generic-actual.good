@@ -10,6 +10,6 @@ warn-generic-actual.chpl:33: warning: please add '(?)' to type 'T' because it is
 warn-generic-actual.chpl:39: In function 'test3':
 warn-generic-actual.chpl:40: warning: please add '(?)' to type 'C' because it is generic
 warn-generic-actual.chpl:41: warning: please add '(?)' to type 'C' because it is generic
-warn-generic-actual.chpl:42: warning: please add '(?)' to type 'unmanaged C' because it is generic
-warn-generic-actual.chpl:43: warning: please add '(?)' to type 'call_tmp' because it is generic
-warn-generic-actual.chpl:44: warning: please add '(?)' to type 'call_tmp' because it is generic
+warn-generic-actual.chpl:42: warning: please add '(?)' to type 'C' because it is generic
+warn-generic-actual.chpl:43: warning: please add '(?)' to type 'C' because it is generic
+warn-generic-actual.chpl:44: warning: please add '(?)' to type 'C' because it is generic
