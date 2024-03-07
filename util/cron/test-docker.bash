@@ -23,7 +23,7 @@ containerid= docker image ls | grep $imageName | awk '{print$3}'
 cd ${CHPL_HOME}/util/cron
 echo 'writeln("Hello, world!");' > hello.chpl
 
-docker run  -i $imageName  <  $script
+docker run --rm -i $imageName  <  $script
  
 CONTAINER_RUN=$?
 if [ $CONTAINER_RUN -ne 0 ]
