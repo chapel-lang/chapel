@@ -172,6 +172,72 @@ void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
+void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
+  auto root = std::get<const uast::OpCall*>(info_);
+  auto& ops = std::get<std::vector<const uast::OpCall*>>(info_);
+  auto& operands = std::get<std::vector<const uast::AstNode*>>(info_);
+
+  bool allSimple = std::all_of(operands.begin(), operands.end(), [](auto operand) {
+    return operand->isLiteral() || operand->isIdentifier();
+  });
+
+  // Bitfield: 001 for < or <=, 010 for > or >=, 100 for == or !=
+  // We only want to suggest the "normalized" form if all operators are
+  // in the same direction, and if no equality constraints are present.
+  //
+  // The reason for the latter is, how would you desugar x != y != z?
+  //     x != y && y != z
+  // or
+  //     x != y && y != z && x != z
+  // It's best not to guess there.
+  int types = 0; 
+  for (auto op : ops) {
+    if (op->op() == "<" || op->op() == "<=") {
+      types |= 0b1;
+    } else if (op->op() == ">" || op->op() == ">=") {
+      types |= 0b10;
+    } else if (op->op() == "==" || op->op() == "!=") {
+      types |= 0b100;
+    }
+  }
+
+  wr.heading(kind_, type_, ops.front(),
+             "comparison operators are not associative.");
+  wr.codeForLocation(ops.front());
+  wr.message("Comparisons such as 'a < b < c' are not supported.");
+
+  if (allSimple && (types == 0b1 || types == 0b10)) {
+    std::ostringstream oss;
+    // Print out what the user's code would look like elementwise
+    bool needsAnd = false;
+    for (size_t idx = 0; idx < ops.size(); idx++) {
+      if (needsAnd) {
+        oss << " && ";
+      }
+
+      needsAnd = true;
+      operands[idx]->stringify(oss, CHPL_SYNTAX);
+      oss << " " << ops[idx]->op() << " ";
+      operands[idx + 1]->stringify(oss, CHPL_SYNTAX);
+    }
+
+    // TODO: this uses explicit indentation using spaces, which is probably bad.
+    wr.message("If you wanted to perform elementwise comparison, consider using the following instead:");
+    wr.message("    ", oss.str());
+  }
+
+  const uast::OpCall* firstNonRoot = nullptr;
+  for (auto op : ops) {
+    if (op != root) {
+      firstNonRoot = op;
+      break;
+    }
+  }
+
+  wr.message("If you wanted to use the boolean result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:");
+  wr.code(root, { firstNonRoot });
+}
+
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info_);
   auto expr = std::get<const uast::AstNode*>(info_);
