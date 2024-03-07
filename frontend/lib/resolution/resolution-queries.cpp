@@ -1496,14 +1496,19 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
     }
   }
 
-  bool useUnsigned = false;
   if (needsSigned && needsUnsigned) {
     CHPL_REPORT(context, NoTypeForEnumElem, enumNode,
                 needsSigned, valueNeedsSigned, needsUnsigned, valueNeedsUnsigned);
+
+    // Though not all elements of the enum fit in the one type that we'll
+    // pick (which will be unsigned), we'll proceed on a best-effort basis,
+    // and store all results that don't need unsigned values. This way,
+    // an enum with two elements, one negative and one too big to fit in int(64),
+    // will be determined to have at least one properly-computed constant.
+    // This will help provide more resolution information to the user.
   }
-  if (needsUnsigned) {
-    useUnsigned = true;
-  }
+
+  // Use unsigned if any value needed it; otherwise, use signed.
 
   // We've now picked what type we're going to use. Convert the non-abstract values to
   // that type if they can be converted, and leave them unknown if they can't.
@@ -1519,7 +1524,7 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
 
     auto resultType = QualifiedType();
     optional<int64_t> signedValue = {};
-    if (useUnsigned && signedness == RS_SIGNED)  {
+    if (needsUnsigned && signedness == RS_SIGNED)  {
       // This value was known before, but it doesn't fit in the type.
       // We'll mark it with 'erroneous type'. The error has already been
       // issued above.
@@ -1535,7 +1540,7 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
     }
 
     if (signedValue) {
-      if (useUnsigned) {
+      if (needsUnsigned) {
         resultType = QualifiedType(QualifiedType::PARAM,
                                    UintType::get(context, 0),
                                    UintParam::get(context, (uint64_t) *signedValue));
