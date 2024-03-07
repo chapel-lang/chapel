@@ -1391,6 +1391,241 @@ QualifiedType getInstantiationType(Context* context,
   return QualifiedType();
 }
 
+const std::map<ID, QualifiedType>&
+computeNumericValuesOfEnumElements(Context* context, ID node) {
+  QUERY_BEGIN(computeNumericValuesOfEnumElements, context, node);
+
+  std::map<ID, types::QualifiedType> result;
+  auto ast = parsing::idToAst(context, node);
+  if (!ast) return QUERY_END(result);
+  auto enumNode = ast->toEnum();
+  if (!enumNode) return QUERY_END(result);
+
+  ResolutionResultByPostorderID byPostorder;
+  Resolver res = Resolver::createForEnumElements(context, enumNode, byPostorder);
+
+  // The constant 'one' for adding
+  auto one = QualifiedType(QualifiedType::PARAM,
+                           IntType::get(context, 0),
+                           IntParam::get(context, 1));
+
+  // A type to track what kind of signedness a value needs.
+  enum RequiredSignedness {
+    RS_NONE,
+    RS_SIGNED,
+    RS_UNSIGNED,
+  };
+
+  // First collect all the values, no matter what types they are.
+  using ValueVector = std::vector<std::tuple<QualifiedType,
+                                             RequiredSignedness,
+                                             const EnumElement*>>;
+  ValueVector valuesAndAsts;
+  for (auto elem : enumNode->enumElements()) {
+    elem->traverse(res);
+    QualifiedType value = {};
+
+    // Found an initialization expression; use its type.
+    if (elem->initExpression()) {
+      auto qt = byPostorder.byAst(elem->initExpression()).type();
+      auto type = qt.type();
+
+      if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
+        // Don't propagate errors if they're unrelated; leave value unknown.
+      } else if (!type->isIntType() && !type->isUintType()) {
+        value = CHPL_TYPE_ERROR(context, EnumInitializerNotInteger, elem, qt);
+      } else if (!qt.isParam()) {
+        value = CHPL_TYPE_ERROR(context, EnumInitializerNotParam, elem, qt);
+      } else {
+        value = qt;
+      }
+    } else {
+      if (valuesAndAsts.empty() || std::get<2>(valuesAndAsts.back()) == nullptr) {
+        // we're either the first value, or all the previous values have
+        // been abstract. We're abstract too -- encode this using a 'null'
+        // elem.
+        elem = nullptr;
+      } else {
+        auto& lastValueInfo = valuesAndAsts.back();
+        auto lastQt = std::get<0>(lastValueInfo);
+        if (lastQt.isParam()) {
+          // Previous value was valid, so add one to it.
+          value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
+        } else {
+          // Previous value was unknown, so we can't add one to it.
+        }
+      }
+    }
+
+    RequiredSignedness signedness = RS_NONE;
+    if (!value.param()) {
+      // Do nothing.
+    } else if (auto intParam = value.param()->toIntParam()) {
+      signedness = intParam->value() < 0 ? RS_SIGNED : RS_NONE;
+    } else if (auto uintParam = value.param()->toUintParam()) {
+      signedness = uintParam->value() > INT64_MAX ? RS_UNSIGNED : RS_NONE;
+    }
+
+    valuesAndAsts.emplace_back(value, signedness, elem);
+  }
+
+  const EnumElement* needsSigned = nullptr;
+  QualifiedType valueNeedsSigned;
+  const EnumElement* needsUnsigned = nullptr;
+  QualifiedType valueNeedsUnsigned;
+
+  for (auto& valueInfo : valuesAndAsts) {
+    auto& qt = std::get<0>(valueInfo);
+    auto signedness = std::get<1>(valueInfo);
+    auto elem = std::get<2>(valueInfo);
+    if (elem == nullptr) {
+      // abstract value; skip it.
+      continue;
+    }
+
+    if (signedness == RS_SIGNED) {
+      if (!needsSigned) {
+        needsSigned = elem;
+        valueNeedsSigned = qt;
+      }
+    } else if (signedness == RS_UNSIGNED) {
+      if (!needsUnsigned) {
+        needsUnsigned = elem;
+        valueNeedsUnsigned = qt;
+      }
+    }
+  }
+
+  if (needsSigned && needsUnsigned) {
+    CHPL_REPORT(context, NoTypeForEnumElem, enumNode,
+                needsSigned, valueNeedsSigned, needsUnsigned, valueNeedsUnsigned);
+
+    // Though not all elements of the enum fit in the one type that we'll
+    // pick (which will be unsigned), we'll proceed on a best-effort basis,
+    // and store all results that don't need unsigned values. This way,
+    // an enum with two elements, one negative and one too big to fit in int(64),
+    // will be determined to have at least one properly-computed constant.
+    // This will help provide more resolution information to the user.
+  }
+
+  // Use unsigned if any value needed it; otherwise, use signed.
+
+  // We've now picked what type we're going to use. Convert the non-abstract values to
+  // that type if they can be converted, and leave them unknown if they can't.
+  for (auto& valueInfo : valuesAndAsts) {
+    auto qt = std::get<0>(valueInfo);
+    auto signedness = std::get<1>(valueInfo);
+    auto elem = std::get<2>(valueInfo);
+
+    if (!elem) {
+      // abstract value; don't store it in the map.
+      continue;
+    }
+
+    auto resultType = QualifiedType();
+    optional<int64_t> signedValue = {};
+    if (needsUnsigned && signedness == RS_SIGNED)  {
+      // This value was known before, but it doesn't fit in the type.
+      // We'll mark it with 'erroneous type'. The error has already been
+      // issued above.
+      resultType = QualifiedType(QualifiedType::UNKNOWN,
+                                 ErroneousType::get(context));
+    } else if (!qt.param()) {
+      // The value is already unknown, so preserve it.
+      resultType = qt;
+    } else if (auto intParam = qt.param()->toIntParam()) {
+      signedValue = intParam->value();
+    } else if (auto uintParam = qt.param()->toUintParam()) {
+      signedValue = (int64_t) uintParam->value();
+    }
+
+    if (signedValue) {
+      if (needsUnsigned) {
+        resultType = QualifiedType(QualifiedType::PARAM,
+                                   UintType::get(context, 0),
+                                   UintParam::get(context, (uint64_t) *signedValue));
+      } else {
+        resultType = QualifiedType(QualifiedType::PARAM,
+                                   IntType::get(context, 0),
+                                   IntParam::get(context, *signedValue));
+      }
+    }
+
+    result[elem->id()] = resultType;
+  }
+
+  return QUERY_END(result);
+}
+
+const chpl::optional<QualifiedType>& computeUnderlyingTypeOfEnum(Context* context, ID element) {
+  QUERY_BEGIN(computeUnderlyingTypeOfEnum, context, element);
+
+  chpl::optional<QualifiedType> result;
+  auto numericValues = computeNumericValuesOfEnumElements(context, element);
+
+  // Find the first non-unknown value, and return its type. As a fallack,
+  // return either the default unknown value or, if we've encountered an error,
+  // the erroneous type.
+  for (auto& pair : numericValues) {
+    if (pair.second.isParam()) {
+      result = QualifiedType(QualifiedType::TYPE, pair.second.type());
+      break;
+    } else if (!result) {
+      result = pair.second;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const chpl::optional<QualifiedType>&
+computeNumericValueOfEnumElement(Context* context, ID node) {
+  QUERY_BEGIN(computeNumericValueOfEnumElement, context, node);
+  auto nodeTag = parsing::idToTag(context, node);
+  chpl::optional<QualifiedType> result = {};
+
+  if (nodeTag != uast::asttags::EnumElement) {
+    return QUERY_END(result);
+  }
+
+  auto parentId = parsing::idToParentId(context, node);
+  auto parentTag = parsing::idToTag(context, parentId);
+  if (parentTag != uast::asttags::Enum) {
+    return QUERY_END(result);
+  }
+
+  auto& numericValues = computeNumericValuesOfEnumElements(context, parentId);
+  auto it = numericValues.find(node);
+  if (it != numericValues.end()) {
+    result = it->second;
+  }
+
+  return QUERY_END(result);
+}
+
+ID lookupEnumElementByNumericValue(Context* context,
+                                   const ID& node,
+                                   const QualifiedType& value) {
+  // Maps don't store the order of insertion, so we can't rely on iterating
+  // the numeric value map. Instead, iterate the enum constants and
+  // try find their numeric values.
+  auto ast = parsing::idToAst(context, node);
+  if (!ast) return ID();
+  auto enumAst = ast->toEnum();
+  if (!enumAst) return ID();
+
+  auto& numericValues = computeNumericValuesOfEnumElements(context, node);
+
+  for (auto elt : enumAst->enumElements()) {
+    auto it = numericValues.find(elt->id());
+    if (it != numericValues.end() && it->second == value) {
+      return elt->id();
+    }
+  }
+
+  return ID();
+}
+
 static bool varArgCountMatch(const VarArgFormal* formal,
                              ResolutionResultByPostorderID& r) {
   QualifiedType formalType = r.byAst(formal).type();
@@ -2883,24 +3118,10 @@ static bool resolveFnCallSpecial(Context* context,
         auto srcEnumType = src.type()->toEnumType();
         auto dstEnumType = dst.type()->toEnumType();
         if (srcEnumType && srcEnumType->isAbstract()) {
-          auto toName = tagToString(dst.type()->tag());
-          auto fromName = tagToString(src.type()->tag());
-          context->error(astForErr,
-                         "can't cast from an abstract enum ('%s') to %s",
-                         fromName,
-                         toName);
-          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                      ErroneousType::get(context));
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcEnumType, dst.type());
           return true;
         } else if (dstEnumType && dstEnumType->isAbstract()) {
-          auto toName = tagToString(dst.type()->tag());
-          auto fromName = tagToString(src.type()->tag());
-          context->error(astForErr,
-                         "can't cast from %s to an abstract enum type ('%s')",
-                         fromName,
-                         toName);
-          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                      ErroneousType::get(context));
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstEnumType, src.type());
           return true;
         } else if (srcEnumType && dst.type()->toNothingType()) {
           auto fromName = tagToString(src.type()->tag());
@@ -2910,8 +3131,8 @@ static bool resolveFnCallSpecial(Context* context,
           return true;
         }
 
-        exprTypeOut = Param::fold(context, uast::PrimitiveTag::PRIM_CAST,
-                                  src, dst);
+        exprTypeOut = Param::fold(context, astForErr,
+                                  uast::PrimitiveTag::PRIM_CAST, src, dst);
         return true;
     } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
       // handle casting a type name to a string
@@ -2955,7 +3176,7 @@ static bool resolveFnCallSpecial(Context* context,
     auto qt = ci.actual(0).type();
     if (qt.kind() == QualifiedType::PARAM && qt.hasParamPtr() &&
         qt.hasTypePtr() && qt.type()->isBoolType()) {
-      exprTypeOut = qt.param()->fold(context,
+      exprTypeOut = qt.param()->fold(context, astForErr,
                                      chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
                                      qt, QualifiedType());
       return true;

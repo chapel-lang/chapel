@@ -133,6 +133,10 @@ class QualifiedType final {
     if (genericParam || kind_ == TYPE_QUERY)
       return Type::GENERIC;
 
+    // params with know values (hasParamPtr()) can't be generic.
+    if (kind_ == PARAM)
+      return Type::CONCRETE;
+
     return typeGenericity();
   }
 
