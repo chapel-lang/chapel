@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -585,6 +585,14 @@ checkReturnPaths(FnSymbol* fn) {
   }
 }
 
+static void checkIteratorContextPrimitives(CallExpr* call) {
+  if (call->isPrimitive(PRIM_INNERMOST_CONTEXT) ||
+      call->isPrimitive(PRIM_OUTER_CONTEXT)     ||
+      call->isPrimitive(PRIM_HOIST_TO_CONTEXT)  )
+    USR_FATAL_CONT(call,
+      "use of this feature requires compiling with --iterator-contexts");
+}
+
 static void
 checkBadAddrOf(CallExpr* call)
 {
@@ -633,8 +641,11 @@ checkBadAddrOf(CallExpr* call)
 static void
 checkCalls()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  forv_Vec(CallExpr, call, gCallExprs) {
     checkBadAddrOf(call);
+    if (! fIteratorContexts)
+      checkIteratorContextPrimitives(call);
+  }
 }
 
 // This function checks that the passed type is an acceptable

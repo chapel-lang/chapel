@@ -1,4 +1,4 @@
-use NPBRandom;
+use Random;
 
 config const n = 100000,
              tasksPerLocale = here.maxTaskPar,
@@ -50,16 +50,16 @@ coforall loc in Locales with (ref counts) {
     // delete the RandomStream object.
     //
     coforall tid in 0..#tasksPerLocale with (ref locCounts) {
-      var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+      var rs = new randomStream(real, seed);
       const locNPerTask = locN/tasksPerLocale,
             extras = locN%tasksPerLocale;
-      rs.skipToNth(2*(locFirstPt +
-                      tid*locNPerTask + (if tid < extras then tid else extras))
-                   );
+      rs.skipTo(2*(locFirstPt +
+                  tid*locNPerTask + (if tid < extras then tid else extras))
+                );
 
       var count = 0;
       for i in 1..locNPerTask + (tid < extras) do
-        count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
+        count += (rs.next()**2 + rs.next()**2) <= 1.0;
 
       locCounts[tid] = count;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -109,6 +109,23 @@ static void test1() {
     { "shared Parent?", "shared Parent", shouldReturnTrue },
     { "shared Parent", "shared Parent?", shouldReturnFalse },
     { "shared Parent?", "shared Parent?", shouldReturnTrue },
+    /* borrow cases follow */
+    { "borrowed Parent", "owned Parent", shouldReturnTrue },
+    { "borrowed Parent?", "owned Parent", shouldReturnTrue },
+    { "borrowed Parent?", "owned Parent?", shouldReturnTrue },
+    { "owned Parent", "borrowed Parent", shouldReturnFalse },
+    { "owned Parent?", "borrowed Parent", shouldReturnFalse },
+    { "owned Parent?", "borrowed Parent?", shouldReturnFalse },
+    { "borrowed Parent", "shared Parent", shouldReturnTrue },
+    { "borrowed Parent?", "shared Parent?", shouldReturnTrue },
+    { "shared Parent", "borrowed Parent", shouldReturnFalse },
+    { "shared Parent?", "borrowed Parent", shouldReturnFalse },
+    { "shared Parent?", "borrowed Parent?", shouldReturnFalse },
+    { "borrowed Parent", "unmanaged Parent", shouldReturnTrue },
+    { "borrowed Parent?", "unmanaged Parent", shouldReturnTrue },
+    { "borrowed Parent?", "unmanaged Parent?", shouldReturnTrue },
+    { "unmanaged Parent", "borrowed Parent", shouldReturnFalse },
+    { "unmanaged Parent?", "borrowed Parent?", shouldReturnFalse },
   });
 }
 
@@ -138,6 +155,15 @@ static void test2() {
     { "shared Parent?", "shared Child", shouldReturnTrue },
     { "shared Parent", "shared Child?", shouldReturnFalse },
     { "shared Parent?", "shared Child?", shouldReturnTrue },
+    /* borrow cases follow */
+    { "borrowed Parent", "owned Child", shouldReturnTrue },
+    { "borrowed Parent?", "owned Child", shouldReturnTrue },
+    { "borrowed Parent", "owned Child?", shouldReturnFalse },
+    { "borrowed Parent?", "owned Child?", shouldReturnTrue },
+    { "borrowed Parent", "shared Child", shouldReturnTrue },
+    { "borrowed Parent?", "shared Child", shouldReturnTrue },
+    { "borrowed Parent", "shared Child?", shouldReturnFalse },
+    { "borrowed Parent?", "shared Child?", shouldReturnTrue },
   });
 }
 

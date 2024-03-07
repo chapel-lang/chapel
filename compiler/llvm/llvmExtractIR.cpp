@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,16 @@
 #include "llvm/IR/Verifier.h"
 
 #include "llvmUtil.h"
+
+#if HAVE_LLVM_VER >= 170
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
+#include "llvm/Transforms/IPO/GlobalDCE.h"
+#include "llvm/Transforms/IPO/StripSymbols.h"
+#include "llvm/Transforms/IPO/StripDeadPrototypes.h"
+#endif
 
 #include <map>
 
@@ -73,17 +83,8 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
     }
   }
 
-  // TODO: update per LLVM 16's version of llvm-extract
-  // which uses the newer PassManager and the new in 16 ExtractGV pass.
-
   // cleanup a-la llvm-extract
-  legacy::PassManager Passes;
-
-  Passes.add(createGlobalDCEPass());           // Delete unreachable globals
-  Passes.add(createStripDeadDebugInfoPass());  // Remove dead debug info
-  Passes.add(createStripDeadPrototypesPass()); // Remove dead func decls
-
-  Passes.run(M);
+  removeUnreferencedLLVM(&M);
 
   // Put the linkage for functions back
   for (const auto& pair: saveLinkage) {
@@ -95,6 +96,40 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   }
 
   return ownedM;
+}
+
+void removeUnreferencedLLVM(llvm::Module* mod) {
+  Module& M = *mod;
+
+#if HAVE_LLVM_VER >= 170
+  LoopAnalysisManager LAM;
+  FunctionAnalysisManager FAM;
+  CGSCCAnalysisManager CGAM;
+  ModuleAnalysisManager MAM;
+
+  PassBuilder PB;
+
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+  ModulePassManager PM;
+  PM.addPass(GlobalDCEPass());           // Delete unreachable globals
+  PM.addPass(StripDeadDebugInfoPass());  // Remove dead debug info
+  PM.addPass(StripDeadPrototypesPass()); // Remove dead func decls
+
+  PM.run(M, MAM);
+#else
+  legacy::PassManager Passes;
+
+  Passes.add(createGlobalDCEPass());           // Delete unreachable globals
+  Passes.add(createStripDeadDebugInfoPass());  // Remove dead debug info
+  Passes.add(createStripDeadPrototypesPass()); // Remove dead func decls
+
+  Passes.run(M);
+#endif
 }
 
 void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*> *gvs) {

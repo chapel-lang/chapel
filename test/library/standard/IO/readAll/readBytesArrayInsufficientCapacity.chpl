@@ -27,5 +27,5 @@ proc testInsuffCapError(ch: fileReader(?)) {
     writeln(s_from_array + s_remaining);
 }
 
-testInsuffCapError(openReader("./jab.txt"));
-testInsuffCapError(openReader("./jab.txt", region=..1032));
+testInsuffCapError(openReader("./jab.txt", locking=false));
+testInsuffCapError(openReader("./jab.txt", region=..1032, locking=false));

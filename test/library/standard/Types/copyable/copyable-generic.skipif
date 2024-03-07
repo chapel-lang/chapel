@@ -1,0 +1,2 @@
+# errors for use of integral type in baseline (bug #24113)
+COMPOPTS <= --baseline

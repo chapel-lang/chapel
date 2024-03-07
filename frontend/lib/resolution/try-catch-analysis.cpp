@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -232,7 +232,7 @@ struct TryCatchAnalyzer {
                 break;
               }
             }
-            if (!foundCatchAll) {
+            if (!foundCatchAll && !canThrow()) {
               context->error(ast, "call to throwing function '%s' is "
                                   "in a try but not handled",
                                   bestResFn->untyped()->name().c_str());

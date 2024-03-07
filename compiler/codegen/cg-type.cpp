@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -78,7 +78,7 @@ void FunctionType::codegenDef() {
     #ifdef HAVE_LLVM
     llvm::Type* returnTy = this->returnType()->symbol->getLLVMType();
     std::vector<llvm::Type*> argTys;
-    auto& ctx = info->llvmContext;
+    auto& ctx = gContext->llvmContext();
 
     // Handle the void type specifically.
     if (this->returnType() == dtVoid || this->returnType() == dtNothing) {
@@ -436,7 +436,7 @@ void AggregateType::codegenDef() {
           // stops us from doing 0-byte memory allocation
           // (comes up with ioNewline and --no-local RA)
           // TODO - don't ever allocate 0-byte structures
-          params.push_back(llvm::Type::getInt32Ty(info->llvmContext));
+          params.push_back(llvm::Type::getInt32Ty(gContext->llvmContext()));
         }
         for_fields(field, this) {
           if (field->type != dtNothing && field->type != dtVoid) {
@@ -470,7 +470,7 @@ void AggregateType::codegenDef() {
         if (isOpaquePointer(llBaseType)) {
 #if HAVE_LLVM_VER >= 140
           // No need to compute the element type for an opaque pointer
-          globalPtrTy = llvm::PointerType::get(info->llvmContext,
+          globalPtrTy = llvm::PointerType::get(gContext->llvmContext(),
                                                globalAddressSpace);
 #endif
         } else {

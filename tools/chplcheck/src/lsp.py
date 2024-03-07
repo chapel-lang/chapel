@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,24 +17,12 @@
 # limitations under the License.
 #
 
-import chapel.core
+import chapel
+import chapel.lsp
 from pygls.server import LanguageServer
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
-
-def location_to_range(location):
-    """
-    Convert a Chapel location into a lsprotocol.types Range, which is
-    used for e.g. reporting diagnostics.
-    """
-
-    start = location.start()
-    end = location.end()
-    return Range(
-        start=Position(start[0]-1, start[1]-1),
-        end=Position(end[0]-1, end[1]-1)
-    )
 
 def run_lsp(driver):
     """
@@ -64,8 +51,10 @@ def run_lsp(driver):
         if uri in contexts:
             context = contexts[uri]
             context.advance_to_next_revision(False)
+            context.set_module_paths([], [])
         else:
             context = chapel.core.Context()
+            context.set_module_paths([], [])
             contexts[uri] = context
         return context
 
@@ -77,6 +66,13 @@ def run_lsp(driver):
         """
 
         return context.parse(uri[len("file://"):])
+
+    def get_location(node: chapel.AstNode):
+        if isinstance(node, chapel.NamedDecl):
+            return chapel.lsp.location_to_range(node.name_location())
+        else:
+            return chapel.lsp.location_to_range(node.location())
+
 
     def build_diagnostics(uri):
         """
@@ -94,26 +90,15 @@ def run_lsp(driver):
             diagnostics = []
             for (node, rule) in driver.run_checks(context, asts):
                 diagnostic = Diagnostic(
-                    range= location_to_range(node.location()),
+                    range=get_location(node),
                     message="Lint: rule [{}] violated".format(rule),
                     severity=DiagnosticSeverity.Warning
                 )
                 diagnostics.append(diagnostic)
 
-        kind_to_severity = {
-            "error": DiagnosticSeverity.Error,
-            "syntax": DiagnosticSeverity.Error,
-            "note": DiagnosticSeverity.Information,
-            "warning": DiagnosticSeverity.Warning,
-        }
-
-        for error in errors:
-            diagnostic = Diagnostic(
-                range= location_to_range(error.location()),
-                message="{}: [{}]: {}".format(error.kind().capitalize(), error.type(), error.message()),
-                severity=kind_to_severity[error.kind()]
-            )
-            diagnostics.append(diagnostic)
+        # process the errors from syntax/scope resolution
+        # TODO: should chplcheck still do this?
+        diagnostics += list([chapel.lsp.error_to_diagnostic(e) for e in errors])
         return diagnostics
 
     # The following functions are handlers for LSP events received by the server.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,13 +61,23 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+
+#if HAVE_LLVM_VER >= 170
+#include "llvm/TargetParser/SubtargetFeature.h"
+#else
 #include "llvm/MC/SubtargetFeature.h"
+#endif
+
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/FileSystem.h"
+#if HAVE_LLVM_VER >= 170
+#include "llvm/TargetParser/Host.h"
+#else
 #include "llvm/Support/Host.h"
+#endif
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
@@ -76,7 +86,9 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/Internalize.h"
+#if HAVE_LLVM_VER < 170
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#endif
 #include "llvm/Transforms/Utils/Cloning.h"
 
 #if HAVE_LLVM_VER >= 140
@@ -1353,7 +1365,7 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
-          info->llvmContext);
+          gContext->llvmContext());
 
         INT_ASSERT(Builder);
         INT_ASSERT(!info->module);
@@ -1689,6 +1701,10 @@ void setupClang(GenInfo* info, std::string mainFile)
   std::unique_ptr<clang::driver::Compilation> C(
       TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
 
+  if (diagClient->getNumErrors() > 0) {
+    USR_FATAL("error in back-end LLVM compilation");
+  }
+
   clang::driver::Command* job = NULL;
 
   if (usingGpuLocaleModel() == false) {
@@ -1944,11 +1960,14 @@ static llvm::TargetOptions getTargetOptions(
   Options.UniqueBasicBlockSectionNames =
       CodeGenOpts.UniqueBasicBlockSectionNames;
   Options.TLSSize = CodeGenOpts.TLSSize;
-  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
-#if HAVE_LLVM_VER >= 160
+#if HAVE_LLVM_VER >= 170
+  Options.EmulatedTLS = true;
+#elif HAVE_LLVM_VER >= 160
   Options.ExplicitEmulatedTLS = true;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
 #else
   Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
 #endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
@@ -1966,7 +1985,11 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.ValueTrackingVariableLocations;
 #endif
 #endif
+#if HAVE_LLVM_VER >= 170
+  Options.XRayFunctionIndex = CodeGenOpts.XRayFunctionIndex;
+#else
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
+#endif
 #if HAVE_LLVM_VER >= 140
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
 #endif
@@ -2022,7 +2045,8 @@ static void loadModuleFromBitcode() {
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
   auto bitcodeResult =
-      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext);
+      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(),
+                             gContext->llvmContext());
   INT_ASSERT(bitcodeResult &&
              "could not deserialize module from loaded bitcode");
   info->module = bitcodeResult.get().release();
@@ -2178,6 +2202,16 @@ static void cleanupFunctionOptManagers() {
     info->FunctionSimplificationPM = nullptr;
   }
 
+  if (info->SI) {
+    delete info->SI;
+    info->SI = nullptr;
+  }
+
+  if (info->PIC) {
+    delete info->PIC;
+    info->PIC = nullptr;
+  }
+
   if (info->MAM) {
     delete info->MAM;
     info->MAM = nullptr;
@@ -2276,6 +2310,11 @@ void finishCodegenLLVM() {
 
   if(debug_info)debug_info->finalize();
 
+  // finish bringing in symbols from separately compiled .dyno files
+  if (fDynoLibGenOrUse && !fDynoGenLib) {
+    linkInDynoFiles();
+  }
+
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
@@ -2286,7 +2325,7 @@ void finishCodegenLLVM() {
     }
   }
 
-  // Run all LLVM optimizations.
+  // Run all LLVM optimizations and save to .bc files.
   llvmRunOptimizations();
 
 #ifdef HAVE_LLVM
@@ -2361,6 +2400,7 @@ llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
 }
 #endif
 
+#ifdef LLVM_USE_OLD_PASSES
 // This has code based on clang's EmitAssemblyHelper::CreatePasses
 // in BackendUtil.cpp.
 static
@@ -2427,10 +2467,33 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
 
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
+#endif
 
 #ifndef LLVM_USE_OLD_PASSES
 
 static void registerDumpIrExtensions(PassBuilder& PB);
+
+// expose a command line option from LLVM
+// we set it via a chpl command line option
+namespace llvm {
+extern cl::opt<bool> PrintPipelinePasses;
+}
+static PassBuilder constructPassBuilder(
+  llvm::TargetMachine* targetMachine,
+  PassInstrumentationCallbacks* PIC,
+  bool forFunction) {
+  // this is required to be set, or LLVM will not properly populate the pass
+  // names. technically this flag enables extra printing to the dbg() output,
+  // but we only keep the flag long enough to populate the pass names.
+  // this must always be set so that `--print-before` (and similar commands) will
+  // still work with their nice pass name
+  llvm::PrintPipelinePasses = true;
+  chpl::optional<PGOOptions> PGOOpt;
+  PassBuilder PB(targetMachine, createPipelineOptions(forFunction), PGOOpt, PIC);
+  llvm::PrintPipelinePasses = false;
+  return PB;
+}
+
 
 static void runModuleOptPipeline(bool addWideOpts) {
   GenInfo* info = gGenInfo;
@@ -2443,15 +2506,16 @@ static void runModuleOptPipeline(bool addWideOpts) {
   PassInstrumentationCallbacks PIC;
   StandardInstrumentations SI(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
+#if HAVE_LLVM_VER >= 170
+  SI.registerCallbacks(PIC, &MAM);
+#else
   SI.registerCallbacks(PIC, &FAM);
+#endif
 
-  chpl::optional<PGOOptions> PGOOpt;
-  PassBuilder PB(info->targetMachine, createPipelineOptions(false),
-                 PGOOpt, &PIC);
-
+  PassBuilder PB = constructPassBuilder(info->targetMachine, &PIC, false);
 
   // some FAM add-ins
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
@@ -2492,11 +2556,23 @@ static void runModuleOptPipeline(bool addWideOpts) {
   if (addWideOpts) {
     if (optLvl != LlvmOptimizationLevel::O0) {
       auto globalSpace = info->globalToWideInfo.globalSpace;
+      PIC.addClassToPassName("AggregateGlobalOpsOptPass", "aggregate-global-ops");
       MPM.addPass(llvm::createModuleToFunctionPassAdaptor(
                            AggregateGlobalOpsOptPass(globalSpace)));
     }
+    PIC.addClassToPassName("GlobalToWidePass", "global-to-wide");
     MPM.addPass(GlobalToWidePass(&info->globalToWideInfo,
                                  info->clangInfo->asmTargetLayoutStr));
+  }
+
+  if (fLlvmPrintPasses) {
+    std::string Pipeline;
+    llvm::raw_string_ostream SOS(Pipeline);
+    MPM.printPipeline(SOS, [&PIC](StringRef ClassName) {
+      auto PassName = PIC.getPassNameForClassName(ClassName);
+      return PassName.empty() ? ClassName : PassName;
+    });
+    llvm::errs() << "Module Pipeline: '" << Pipeline << "'\n";
   }
 
   // Run the opts
@@ -2509,12 +2585,11 @@ void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
 
+#ifdef LLVM_USE_OLD_PASSES
   llvm::legacy::FunctionPassManager *fpm = new llvm::legacy::FunctionPassManager(info->module);
 
   PassManagerBuilder PMBuilder;
-
   // Set up the optimizer pipeline.
-
   // Add the TransformInfo pass
   fpm->add(createTargetTransformInfoWrapperPass(
            info->targetMachine->getTargetIRAnalysis()));
@@ -2527,11 +2602,10 @@ void prepareCodegenLLVM()
   configurePMBuilder(PMBuilder, /*for function passes*/ true);
   PMBuilder.populateFunctionPassManager(*fpm);
 
-  // Even when using the new pass manager,
-  // we run doInitialization with the legacy passes to make sure to
-  // update the module's DataLayout based on the target information.
-  // TODO: there is probably a nicer way to do this using the new pass manager
+  // run doInitialization to make sure to update the module's DataLayout
+  // based on the target information.
   fpm->doInitialization();
+#endif
 
   // Set the floating point optimization level
   // see also code setting targetOptions.UnsafeFPMath etc
@@ -2558,9 +2632,6 @@ void prepareCodegenLLVM()
 #ifdef LLVM_USE_OLD_PASSES
   info->FPM_postgen = fpm;
 #else
-  // if not using the old optimization pipeline, we didn't save
-  // fpm in info, so need to delete it now.
-  delete fpm;
 
   // if using the new optimization pipeline, set up the various
   // AnalysisManagers
@@ -2569,10 +2640,27 @@ void prepareCodegenLLVM()
   info->CGAM = new CGSCCAnalysisManager();
   info->MAM = new ModuleAnalysisManager();
 
-  info->FAM->registerPass([&] { return TargetLibraryAnalysis(TLII); });
+  info->FAM->registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
+
+  // Add the TargetLibraryInfo pass
+  Triple TargetTriple(info->module->getTargetTriple());
+  llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+  info->FAM->registerPass([&TLII] { return TargetLibraryAnalysis(TLII); });
+
+  info->PIC = new PassInstrumentationCallbacks();
+  info->SI = new StandardInstrumentations(
+#if HAVE_LLVM_VER >= 160
+                              gContext->llvmContext(),
+#endif
+                              /* DebugLogging */ false);
+#if HAVE_LLVM_VER >= 170
+  info->SI->registerCallbacks(*info->PIC, info->MAM);
+#else
+  info->SI->registerCallbacks(*info->PIC, info->FAM);
+#endif
 
   // Construct a function simplification pass manager
-  PassBuilder PB(info->targetMachine, createPipelineOptions(true));
+  PassBuilder PB = constructPassBuilder(info->targetMachine, info->PIC, true);
 
   // Register all the basic analyses with the managers.
   PB.registerModuleAnalyses(*info->MAM);
@@ -2585,6 +2673,16 @@ void prepareCodegenLLVM()
   if (lvl != LlvmOptimizationLevel::O0) {
     info->FunctionSimplificationPM = new FunctionPassManager(
         PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+
+    if (fLlvmPrintPasses) {
+      std::string Pipeline;
+      llvm::raw_string_ostream SOS(Pipeline);
+      info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
+        auto PassName = info->PIC->getPassNameForClassName(ClassName);
+        return PassName.empty() ? ClassName : PassName;
+      });
+      llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
+    }
   }
 #endif
 }
@@ -2662,6 +2760,12 @@ static bool isTargetCpuValid(const char* targetCpu) {
 static std::string generateClangGpuLangArgs() {
   std::string args = "";
   if (isFullGpuCodegen()) {
+
+    if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+      // workaround an issue with __float128 not being supported by clang in device code
+      args += "-D__STRICT_ANSI__=1 ";
+    }
+
     args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -2739,11 +2843,6 @@ static void helpComputeClangArgs(std::string& clangCC,
     "-Wno-strict-aliasing",
     NULL};
 
-  const char* clang_debug = "-g";
-  const char* clang_opt = "-O3";
-  const char* clang_fast_float = "-ffast-math";
-  const char* clang_ieee_float = "-fno-fast-math";
-
   BumpPtrAllocator A;
   StringSaver Saver(A);
 
@@ -2807,13 +2906,13 @@ static void helpComputeClangArgs(std::string& clangCC,
 
   // Add debug flags
   if (debugCCode) {
-    clangCCArgs.push_back(clang_debug);
+    clangCCArgs.push_back("-g");
     clangCCArgs.push_back("-DCHPL_DEBUG");
   }
 
   // Add optimize flags
   if (optimizeCCode) {
-    clangCCArgs.push_back(clang_opt);
+    clangCCArgs.push_back("-O3");
     clangCCArgs.push_back("-DCHPL_OPTIMIZE");
   }
 
@@ -2848,11 +2947,16 @@ static void helpComputeClangArgs(std::string& clangCC,
 
   // Passing -ffast-math is important to get approximate versions
   // of cabs but it appears to slow down simple complex multiplication.
-  if (ffloatOpt > 0) // --no-ieee-float
-    clangCCArgs.push_back(clang_fast_float); // --ffast-math
-
-  if (ffloatOpt < 0) // --ieee-float
-    clangCCArgs.push_back(clang_ieee_float); // -fno-fast-math
+  if (ffloatOpt > 0) { // --no-ieee-float
+    clangCCArgs.push_back("-ffast-math");
+  } else {
+    if (ffloatOpt < 0) { // --ieee-float
+      clangCCArgs.push_back("-fno-fast-math"); // -fno-fast-math
+    }
+    // always disable math functions setting errno since
+    // this does not make sense in a Chapel context
+    clangCCArgs.push_back("-fno-math-errno");
+  }
 
   // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
@@ -2985,7 +3089,6 @@ void runClang(const char* just_parse_filename) {
 
       // Include the contents of the server bundle...
       clangOtherArgs.push_back("-include");
-      INT_ASSERT(gMultiLocaleLibServerFile != NULL);
       clangOtherArgs.push_back(gMultiLocaleLibServerFile);
 
       // As well as the path to extra code for the client and server.
@@ -3230,7 +3333,8 @@ llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
 #if HAVE_LLVM_VER >= 120
-  llvm::Type* t = llvm::StructType::getTypeByName(info->llvmContext, name);
+  llvm::Type* t = llvm::StructType::getTypeByName(gContext->llvmContext(),
+                                                  name);
 #else
   llvm::Type* t = info->module->getTypeByName(name);
 #endif
@@ -4152,6 +4256,11 @@ static void addDumpIrModule(ModulePassManager& MPM,
                             llvmStageNum::llvmStageNum_t stage) {
   MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
 }
+static void addDumpIrCG(CGSCCPassManager& CPM,
+                        LlvmOptimizationLevel v,
+                        llvmStageNum::llvmStageNum_t stage) {
+  CPM.addPass(DumpIRPass(stage));
+}
 static void addDumpIrFunction(FunctionPassManager& FPM,
                               LlvmOptimizationLevel v,
                               llvmStageNum::llvmStageNum_t stage) {
@@ -4181,6 +4290,12 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
                       "with the new pass manager\n");
           }
           break;
+        case llvmStageNum::LateLoopOptimizer:
+          PB.registerLateLoopOptimizationsEPCallback(
+            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
+                      addDumpIrLoop(LPM, v, stage);
+                    });
+          break;
         case llvmStageNum::LoopOptimizerEnd:
           PB.registerLoopOptimizerEndEPCallback(
             [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
@@ -4193,10 +4308,28 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
                       addDumpIrFunction(FPM, v, stage);
                     });
           break;
+        case llvmStageNum::EarlySimplification:
+          PB.registerPipelineEarlySimplificationEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::OptimizerEarly:
+          PB.registerOptimizerEarlyEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
         case llvmStageNum::OptimizerLast:
           PB.registerOptimizerLastEPCallback(
             [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
                       addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::CGSCCOptimizerLate:
+          PB.registerCGSCCOptimizerLateEPCallback(
+            [stage](CGSCCPassManager &CPM, LlvmOptimizationLevel v) {
+                      addDumpIrCG(CPM, v, stage);
                     });
           break;
         case llvmStageNum::VectorizerStart:
@@ -4264,14 +4397,29 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
     case llvmStageNum::ModuleOptimizerEarly:
       dumpIrPoint = PassManagerBuilder::EP_ModuleOptimizerEarly;
       return true;
+    case llvmStageNum::LateLoopOptimizer:
+      USR_FATAL("Cannot use llvm-print-ir-stage late-loop-optimizer "
+                      "with the old pass manager\n");
+      return false;
     case llvmStageNum::LoopOptimizerEnd:
       dumpIrPoint = PassManagerBuilder::EP_LoopOptimizerEnd;
       return true;
     case llvmStageNum::ScalarOptimizerLate:
       dumpIrPoint = PassManagerBuilder::EP_ScalarOptimizerLate;
       return true;
+    case llvmStageNum::EarlySimplification:
+      USR_FATAL("Cannot use llvm-print-ir-stage early-simplification "
+                      "with the old pass manager\n");
+      return false;
+    case llvmStageNum::OptimizerEarly:
+      USR_FATAL("Cannot use llvm-print-ir-stage optimizer-early "
+                      "with the old pass manager\n");
+      return false;
     case llvmStageNum::OptimizerLast:
       dumpIrPoint = PassManagerBuilder::EP_OptimizerLast;
+      return true;
+    case llvmStageNum::CGSCCOptimizerLate:
+      dumpIrPoint = PassManagerBuilder::EP_CGSCCOptimizerLate;
       return true;
     case llvmStageNum::VectorizerStart:
       dumpIrPoint = PassManagerBuilder::EP_VectorizerStart;
@@ -4308,7 +4456,7 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   // load into new module
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
-                                 info->llvmContext);
+                                 gContext->llvmContext());
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
@@ -4585,7 +4733,7 @@ static llvm::CodeGenFileType getCodeGenFileType() {
 static std::string findSiblingClangToolPath(const std::string &toolName) {
   // Find path to a tool that is a sibling to clang
   // note that if we have /path/to/clang-14, this logic
-  // will loop for /path/to/${toolName}-14.
+  // will look for /path/to/${toolName}-14.
   //
   // If such suffixes do not turn out to matter in practice, it would
   // be nice to update this code to use sys::path::parent_path().
@@ -4849,11 +4997,7 @@ void makeBinaryLLVM(void) {
 
     initializeGenInfo();
 
-    // setup filenames to be referenced
     setupLLVMCodegenFilenames();
-    setupDefaultFilenames();
-    restoreAdditionalSourceFiles();
-    restoreLibraryAndIncludeInfo();
 
     // regenerate ClangInfo
     assert(!gGenInfo->clangInfo);
@@ -4983,7 +5127,8 @@ void makeBinaryLLVM(void) {
     // to avoid unused argument errors for optimization flags.
 
     if(debugCCode) {
-      options += " -g";
+      bool isDarwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+      options += isDarwin ? "-gfull" : "-g";
     }
 
     // We used to supply link args here *and* later on
@@ -5039,6 +5184,27 @@ void makeBinaryLLVM(void) {
       // Runs the LLVM link command for executables.
       runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
                      dotOFiles, clangLDArgs);
+    }
+
+    // TODO: Library compiles can produce a '.a' archive as output which
+    // 'dsymutil' doesn't seem to know how to handle. So we'll probably
+    // need a more complicated invocation.
+    const bool generateDarwinSymArchive =
+          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && debugCCode &&
+          !fLibraryCompile;
+
+    if (generateDarwinSymArchive) {
+      const char* bin = "dsymutil";
+      const char* sfx = ".dSYM";
+      const char* tmp = astr(tmpbinname, sfx);
+      const char* out = astr(executableFilename, sfx);
+
+      // TODO: The innermost binary in the .dSYM with all the DWARF info
+      // will have the name "executable.tmp", is there a way to give it a
+      // better name?
+      std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
+      mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
+      moveResultFromTmp(out, tmp);
     }
 
     // If we're not using a launcher, copy the program here
@@ -5369,6 +5535,8 @@ static void handlePrintAsm(std::string dotOFile) {
       fflush(stdout);
       std::vector<std::string> cmd;
       cmd.push_back(llvmObjDump);
+      // use this flag to get human-readable labels
+      cmd.push_back("--symbolize-operands");
       std::string arg = disSymArg; // e.g. --disassemble=
       arg += name;
       cmd.push_back(arg);
@@ -5435,18 +5603,36 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
 }
 
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
+  const bool targetExists = llvm::sys::fs::exists(resultName);
+  bool isTargetDirectory = false;
   std::error_code err;
 
-  // rm -f hello
-  if( printSystemCommands )
-    printf("rm -f %s\n", resultName);
+  if (targetExists) {
+    err = llvm::sys::fs::is_directory(tmpbinname, isTargetDirectory);
+    if (err) {
+      USR_FATAL("Failed to determine if '%s' is a directory: %s\n",
+                tmpbinname,
+                err.message().c_str());
+    }
 
-  err = llvm::sys::fs::remove(resultName);
-  if (err) {
-    USR_FATAL("removing file %s failed: %s\n",
-              resultName,
-              err.message().c_str());
+    // Debug message, e.g., 'rm -f hello'
+    if (printSystemCommands) {
+      const char* hdr = isTargetDirectory ? "Removing directory: rm -rf"
+                                          : "Removing file: rm -f";
+      printf("%s %s\n", hdr, resultName);
+    }
+
+    err = isTargetDirectory
+          ? llvm::sys::fs::remove_directories(resultName, false)
+          : llvm::sys::fs::remove(resultName);
+    if (err) {
+      const char* hdr = isTargetDirectory
+            ? "Removing directory"
+            : "Removing file";
+      USR_FATAL("%s %s failed: %s\n", hdr, resultName, err.message().c_str());
+    }
   }
+
   // mv tmp/hello.tmp hello
   if( printSystemCommands )
     printf("mv %s %s\n", tmpbinname, resultName);

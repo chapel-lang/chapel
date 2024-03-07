@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -380,7 +380,7 @@ module ChapelHashtable {
       var currentSlot = chpl__defaultHashWrapper(key):uint;
       const mask = numSlots-1;
 
-      foreach probe in 1..numSlots {
+      foreach probe in 1..numSlots with (ref currentSlot) {
         var uprobe = probe:uint;
 
         yield (currentSlot&mask):int;

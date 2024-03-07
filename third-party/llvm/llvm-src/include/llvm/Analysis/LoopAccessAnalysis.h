@@ -19,6 +19,7 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/Pass.h"
+#include <optional>
 
 namespace llvm {
 
@@ -183,7 +184,7 @@ public:
   ///
   /// Only checks sets with elements in \p CheckDeps.
   bool areDepsSafe(DepCandidates &AccessSets, MemAccessInfoList &CheckDeps,
-                   const ValueToValueMap &Strides);
+                   const DenseMap<Value *, const SCEV *> &Strides);
 
   /// No memory dependence was encountered that would inhibit
   /// vectorization.
@@ -315,7 +316,7 @@ private:
   /// Otherwise, this function returns true signaling a possible dependence.
   Dependence::DepType isDependent(const MemAccessInfo &A, unsigned AIdx,
                                   const MemAccessInfo &B, unsigned BIdx,
-                                  const ValueToValueMap &Strides);
+                                  const DenseMap<Value *, const SCEV *> &Strides);
 
   /// Check whether the data dependence could prevent store-load
   /// forwarding.
@@ -451,10 +452,10 @@ public:
   // pairs that can be used to prove that there are no vectorization-preventing
   // dependencies at runtime. There are is a vectorization-preventing dependency
   // if any pointer-difference is <u VF * InterleaveCount * access size. Returns
-  // None if pointer-difference checks cannot be used.
-  Optional<ArrayRef<PointerDiffInfo>> getDiffChecks() const {
+  // std::nullopt if pointer-difference checks cannot be used.
+  std::optional<ArrayRef<PointerDiffInfo>> getDiffChecks() const {
     if (!CanUseDiffCheck)
-      return None;
+      return std::nullopt;
     return {DiffChecks};
   }
 
@@ -587,10 +588,9 @@ public:
   static bool blockNeedsPredication(BasicBlock *BB, Loop *TheLoop,
                                     DominatorTree *DT);
 
-  /// Returns true if the value V is uniform within the loop.
-  bool isUniform(Value *V) const;
+  /// Returns true if value \p V is loop invariant.
+  bool isInvariant(Value *V) const;
 
-  uint64_t getMaxSafeDepDistBytes() const { return MaxSafeDepDistBytes; }
   unsigned getNumStores() const { return NumStores; }
   unsigned getNumLoads() const { return NumLoads;}
 
@@ -611,10 +611,9 @@ public:
 
   /// If an access has a symbolic strides, this maps the pointer value to
   /// the stride symbol.
-  const ValueToValueMap &getSymbolicStrides() const { return SymbolicStrides; }
-
-  /// Pointer has a symbolic stride.
-  bool hasStride(Value *V) const { return StrideSet.count(V); }
+  const DenseMap<Value *, const SCEV *> &getSymbolicStrides() const {
+    return SymbolicStrides;
+  }
 
   /// Print the information about the memory accesses in the loop.
   void print(raw_ostream &OS, unsigned Depth = 0) const;
@@ -626,7 +625,7 @@ public:
   }
 
   /// Return the list of stores to invariant addresses.
-  const ArrayRef<StoreInst *> getStoresToInvariantAddresses() const {
+  ArrayRef<StoreInst *> getStoresToInvariantAddresses() const {
     return StoresToInvariantAddresses;
   }
 
@@ -698,13 +697,8 @@ private:
 
   /// If an access has a symbolic strides, this maps the pointer value to
   /// the stride symbol.
-  ValueToValueMap SymbolicStrides;
-
-  /// Set of symbolic strides values.
-  SmallPtrSet<Value *, 8> StrideSet;
+  DenseMap<Value *, const SCEV *> SymbolicStrides;
 };
-
-Value *stripIntegerCast(Value *V);
 
 /// Return the SCEV corresponding to a pointer with the symbolic stride
 /// replaced with constant one, assuming the SCEV predicate associated with
@@ -715,12 +709,13 @@ Value *stripIntegerCast(Value *V);
 ///
 /// \p PtrToStride provides the mapping between the pointer value and its
 /// stride as collected by LoopVectorizationLegality::collectStridedAccess.
-const SCEV *replaceSymbolicStrideSCEV(PredicatedScalarEvolution &PSE,
-                                      const ValueToValueMap &PtrToStride,
-                                      Value *Ptr);
+const SCEV *
+replaceSymbolicStrideSCEV(PredicatedScalarEvolution &PSE,
+                          const DenseMap<Value *, const SCEV *> &PtrToStride,
+                          Value *Ptr);
 
 /// If the pointer has a constant stride return it in units of the access type
-/// size.  Otherwise return zero.
+/// size.  Otherwise return std::nullopt.
 ///
 /// Ensure that it does not wrap in the address space, assuming the predicate
 /// associated with \p PSE is true.
@@ -729,20 +724,26 @@ const SCEV *replaceSymbolicStrideSCEV(PredicatedScalarEvolution &PSE,
 /// to \p PtrToStride and therefore add further predicates to \p PSE.
 /// The \p Assume parameter indicates if we are allowed to make additional
 /// run-time assumptions.
-int64_t getPtrStride(PredicatedScalarEvolution &PSE, Type *AccessTy, Value *Ptr,
-                     const Loop *Lp,
-                     const ValueToValueMap &StridesMap = ValueToValueMap(),
-                     bool Assume = false, bool ShouldCheckWrap = true);
+///
+/// Note that the analysis results are defined if-and-only-if the original
+/// memory access was defined.  If that access was dead, or UB, then the
+/// result of this function is undefined.
+std::optional<int64_t>
+getPtrStride(PredicatedScalarEvolution &PSE, Type *AccessTy, Value *Ptr,
+             const Loop *Lp,
+             const DenseMap<Value *, const SCEV *> &StridesMap = DenseMap<Value *, const SCEV *>(),
+             bool Assume = false, bool ShouldCheckWrap = true);
 
 /// Returns the distance between the pointers \p PtrA and \p PtrB iff they are
 /// compatible and it is possible to calculate the distance between them. This
 /// is a simple API that does not depend on the analysis pass.
 /// \param StrictCheck Ensure that the calculated distance matches the
 /// type-based one after all the bitcasts removal in the provided pointers.
-Optional<int> getPointersDiff(Type *ElemTyA, Value *PtrA, Type *ElemTyB,
-                              Value *PtrB, const DataLayout &DL,
-                              ScalarEvolution &SE, bool StrictCheck = false,
-                              bool CheckType = true);
+std::optional<int> getPointersDiff(Type *ElemTyA, Value *PtrA, Type *ElemTyB,
+                                   Value *PtrB, const DataLayout &DL,
+                                   ScalarEvolution &SE,
+                                   bool StrictCheck = false,
+                                   bool CheckType = true);
 
 /// Attempt to sort the pointers in \p VL and return the sorted indices
 /// in \p SortedIndices, if reordering is required.
@@ -763,46 +764,28 @@ bool sortPtrAccesses(ArrayRef<Value *> VL, Type *ElemTy, const DataLayout &DL,
 bool isConsecutiveAccess(Value *A, Value *B, const DataLayout &DL,
                          ScalarEvolution &SE, bool CheckType = true);
 
-/// This analysis provides dependence information for the memory accesses
-/// of a loop.
-///
-/// It runs the analysis for a loop on demand.  This can be initiated by
-/// querying the loop access info via LAA::getInfo.  getInfo return a
-/// LoopAccessInfo object.  See this class for the specifics of what information
-/// is provided.
-class LoopAccessLegacyAnalysis : public FunctionPass {
-public:
-  static char ID;
-
-  LoopAccessLegacyAnalysis();
-
-  bool runOnFunction(Function &F) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  /// Query the result of the loop access information for the loop \p L.
-  ///
-  /// If there is no cached result available run the analysis.
-  const LoopAccessInfo &getInfo(Loop *L);
-
-  void releaseMemory() override {
-    // Invalidate the cache when the pass is freed.
-    LoopAccessInfoMap.clear();
-  }
-
-  /// Print the result of the analysis when invoked with -analyze.
-  void print(raw_ostream &OS, const Module *M = nullptr) const override;
-
-private:
+class LoopAccessInfoManager {
   /// The cache.
   DenseMap<Loop *, std::unique_ptr<LoopAccessInfo>> LoopAccessInfoMap;
 
   // The used analysis passes.
-  ScalarEvolution *SE = nullptr;
+  ScalarEvolution &SE;
+  AAResults &AA;
+  DominatorTree &DT;
+  LoopInfo &LI;
   const TargetLibraryInfo *TLI = nullptr;
-  AAResults *AA = nullptr;
-  DominatorTree *DT = nullptr;
-  LoopInfo *LI = nullptr;
+
+public:
+  LoopAccessInfoManager(ScalarEvolution &SE, AAResults &AA, DominatorTree &DT,
+                        LoopInfo &LI, const TargetLibraryInfo *TLI)
+      : SE(SE), AA(AA), DT(DT), LI(LI), TLI(TLI) {}
+
+  const LoopAccessInfo &getInfo(Loop &L);
+
+  void clear() { LoopAccessInfoMap.clear(); }
+
+  bool invalidate(Function &F, const PreservedAnalyses &PA,
+                  FunctionAnalysisManager::Invalidator &Inv);
 };
 
 /// This analysis provides dependence information for the memory
@@ -818,9 +801,9 @@ class LoopAccessAnalysis
   static AnalysisKey Key;
 
 public:
-  typedef LoopAccessInfo Result;
+  typedef LoopAccessInfoManager Result;
 
-  Result run(Loop &L, LoopAnalysisManager &AM, LoopStandardAnalysisResults &AR);
+  Result run(Function &F, FunctionAnalysisManager &AM);
 };
 
 inline Instruction *MemoryDepChecker::Dependence::getSource(

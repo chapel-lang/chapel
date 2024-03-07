@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -297,8 +297,8 @@ module Futures {
     Asynchronously execute a function (taking arguments) and return a
     :record:`Future` that will eventually hold the result of the function call.
 
-    :arg taskFn: A function taking arguments with types matching `args...`
-    :arg args...: Arguments to `taskFn`
+    :arg taskFn: A function taking arguments with types matching `args`
+    :arg args: Arguments to `taskFn`
     :returns: A future of the return type of `taskFn`
    */
   proc async(in taskFn, args...) {
@@ -330,7 +330,7 @@ module Futures {
     Bundle a set of futures and return a :record:`Future` that will hold a
     tuple of the results of its arguments (themselves futures).
 
-    :arg futures...: A variable-length argument list of futures
+    :arg futures: A variable-length argument list of futures
     :returns: A future with a return type that is a tuple of the return type of
        the arguments
    */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1039,12 +1039,12 @@ module ArgumentParser {
     :arg name: a friendly name to give this argument. This would typically be
                displayed in the `help` or `usage` message.
 
+    :arg numArgs: an exact number of values expected from the command line.
+                  An ArgumentError will be thrown if more or fewer values are entered.
+
     :arg defaultValue: a value to assign the argument when it is not provided
                        on the command line. If `numArgs` is greater than 1,
                        an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: an exact number of values expected from the command line.
-                  An ArgumentError will be thrown if more or fewer values are entered.
 
     :arg help: a message to display for this argument when help is requested
 
@@ -1093,15 +1093,15 @@ module ArgumentParser {
     :arg name: a friendly name to give this argument. This would typically be
                displayed in the `help` or `usage` message.
 
-    :arg defaultValue: a value to assign the argument when it is not provided
-                       on the command line. If `numArgs` is greater than 1,
-                       an array or list may be passed. Defaults to `none`.
-
     :arg numArgs: a range of values expected from the command line. If using a
                   range, the argument must be the only positional that accepts a range,
                   and must be specified last relative to other positional arguments
                   to avoid ambiguity.
                   An ArgumentError will be thrown if more or fewer values are entered.
+
+    :arg defaultValue: a value to assign the argument when it is not provided
+                       on the command line. If `numArgs` is greater than 1,
+                       an array or list may be passed. Defaults to `none`.
 
     :arg help: a message to display for this argument when help is requested
 
@@ -1177,6 +1177,10 @@ module ArgumentParser {
                 Defaults to a long version of the `name` field with leading double
                 dashes ``--``.
 
+    :arg numArgs: the exact number of values expected to follow the option on the
+                  command line. An ArgumentError will be thrown if more or fewer
+                  values are entered.
+
     :arg required: a bool to set this option as a required command line argument.
                     If set to `true`, an ArgumentError will be thrown if the user
                     fails to enter the option on the command line. Defaults to `false`.
@@ -1184,10 +1188,6 @@ module ArgumentParser {
     :arg defaultValue: a value to assign the argument when an option is not required,
                         and a is not entered on the command line. If `numArgs` is
                         greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: the exact number of values expected to follow the option on the
-                  command line. An ArgumentError will be thrown if more or fewer
-                  values are entered.
 
     :arg help: a message to display for this option when help is requested
 
@@ -1252,6 +1252,11 @@ module ArgumentParser {
                 Defaults to a long version of the `name` field with leading double
                 dashes ``--``.
 
+    :arg numArgs: a range of values expected to follow the option on the
+                  command line. This may be a fully-bound range like ``1..10``
+                  or a lower-bound range like ``1..``. An ArgumentError will be
+                  thrown if more or fewer values are entered.
+
     :arg required: a bool to set this option as a required command line argument.
                     If set to `true`, an ArgumentError will be thrown if the user
                     fails to enter the option on the command line. Defaults to `false`.
@@ -1259,11 +1264,6 @@ module ArgumentParser {
     :arg defaultValue: a value to assign the argument when an option is not required,
                         and a is not entered on the command line. If `numArgs` is
                         greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: a range of values expected to follow the option on the
-                  command line. This may be a fully-bound range like ``1..10``
-                  or a lower-bound range like ``1..``. An ArgumentError will be
-                  thrown if more or fewer values are entered.
 
     :arg help: a message to display for this option when help is requested
 

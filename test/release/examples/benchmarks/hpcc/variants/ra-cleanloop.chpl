@@ -124,9 +124,9 @@ proc main() {
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
-  // i in TableSpace".  "with (ref T)" is required since we are modifying "T".
+  // i in TableSpace".
   //
-  [i in TableSpace with (ref T)] T[i] = i;
+  [i in TableSpace] T[i] = i;
 
   const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
@@ -149,11 +149,11 @@ proc main() {
   // to the current level of analysis and optimization of on-clauses.
   //
   if (useOn) then
-    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
+    forall (_, r) in zip(Updates, RAStream()) do
       on T[r & indexMask] do
         T[r & indexMask] ^= r;
   else
-    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
+    forall (_, r) in zip(Updates, RAStream()) do
       T[r & indexMask] ^= r;
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
@@ -210,14 +210,14 @@ proc verifyResults(ref T) {
   // it safely in the "local" statement.
   //
   if (useOn) then
-    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do
+    forall (_, r) in zip(Updates, RAStream()) do
       on T[r & indexMask] do {
         locks[r & lockIndexMask].lock();
         T[r & indexMask] ^= r;
         locks[r & lockIndexMask].unlock();
       }
   else
-    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do {
+    forall (_, r) in zip(Updates, RAStream()) do {
       locks[r & lockIndexMask].lock();
       T[r & indexMask] ^= r;
       locks[r & lockIndexMask].unlock();

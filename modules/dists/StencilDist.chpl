@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1561,6 +1561,7 @@ proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
+pragma "not called from gpu"
 proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {

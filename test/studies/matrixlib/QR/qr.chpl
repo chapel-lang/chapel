@@ -125,7 +125,7 @@ proc norm(X: [?D]) {
 proc main() {
 
   // Open the input file, read in the array size, ensure it's square
-  var infile = open(inputfile, ioMode.r).reader();
+  var infile = open(inputfile, ioMode.r).reader(locking=false);
   const m = infile.read(int),
         n = infile.read(int);
 

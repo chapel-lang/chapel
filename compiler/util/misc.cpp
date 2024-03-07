@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -516,7 +516,7 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
 // Print instantiation information for err_fn.
 // Should be called at USR_STOP or just before the next
 // error changing err_fn is printed.
-static void printCallstackForLastError() {
+void printCallstackForLastError() {
   if (err_fn_header_printed && err_fn) {
     // Clear out err_fn to avoid infinite loop if an error
     // is encountered when printing the call stack.

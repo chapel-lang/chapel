@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -252,18 +252,31 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
   strcpy(expr, numPtr);
   char *x = strchr(expr, 'x');
   if (x != NULL) {
-    // parse locale expression of the form MxN where N is optional
+    // parse locale expression of the form MxNt where N and t are optional
     *x = '\0';
     char *lpn = x+1;
     if (*lpn != '\0') {
       // locales per node (N) was specified
       _argNumLocalesPerNode = c_string_to_int32_t_precise(lpn, &invalid,
                                                    invalidChars);
+      const char *t = NULL;
+      if (invalidChars[1] == '\0') {
+        switch(invalidChars[0]) {
+          case 's': t = "socket"; invalid = false; break;
+          case 'n': t = "numa";invalid = false; break;
+          case 'c': t = "core"; invalid = false; break;
+          case 'L': t = "cache"; invalid = false; break;
+        }
+      }
       if (invalid) {
         char *message = chpl_glom_strings(3, "\"", lpn,
-                              "\" is not a valid number of locales per node.");
+                            "\" is not a valid number of co-locales.");
         chpl_error(message, lineno, filename);
       }
+      if (t) {
+        chpl_env_set("CHPL_RT_COLOCALE_OBJ_TYPE", t, 1);
+      }
+
       if (_argNumLocalesPerNode < 1) {
         chpl_error("Number of locales per node must be > 0.",
                    lineno, filename);

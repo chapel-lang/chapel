@@ -1,2 +1,0 @@
-deprecateMul_2exp.chpl:6: warning: mul_2exp is deprecated - please use mul2Exp instead
-16

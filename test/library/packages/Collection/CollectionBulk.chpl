@@ -1,5 +1,5 @@
 use DistributedDeque;
-use DistributedBag;
+use DistributedBagDeprecated;
 
 
 
@@ -25,7 +25,7 @@ assert(successfulInsertions == nElems);
 assert(c.getSize() == nElems);
 
 // Remove Bulk Test
-// We simply remove the range of elements we added. 
+// We simply remove the range of elements we added.
 var iterations = 0;
 for elt in c.removeBulk(nElems) {
 	iterations += 1;

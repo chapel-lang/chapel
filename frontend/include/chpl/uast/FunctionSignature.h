@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -150,8 +150,8 @@ class FunctionSignature final : public AstNode {
     Return a way to iterate over the formals, including the method
     receiver, if present, as the first formal.
   */
-  AstListIteratorPair<AstNode> formals() const {
-    return childRange<AstNode>(formalsChildNum_, numFormals_);
+  AstListIteratorPair<Decl> formals() const {
+    return childRange<Decl>(formalsChildNum_, numFormals_);
   }
 
   /**

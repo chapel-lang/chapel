@@ -3,7 +3,7 @@ use oneofs;
 
 var messageObj = new Foo();
 var file = open("out", ioMode.r);
-var readingChannel = file.reader();
+var readingChannel = file.reader(locking=false);
 
 messageObj.deserialize(readingChannel);
 

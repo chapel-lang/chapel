@@ -1,4 +1,4 @@
-use NPBRandom;
+use Random;
 
 //
 // Replace config const n with epsilon since we're now computing n
@@ -14,7 +14,7 @@ const pi = 3.14159265358979323846;
 writef("Epsilon             = %{#.#################}\n", epsilon);
 writeln("Random number seed  = ", seed);
 
-var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+var rs = new randomStream(real, seed);
 
 //
 // keep track of the number of points we generate before converging
@@ -22,7 +22,7 @@ var rs = new owned NPBRandomStream(real, seed, parSafe=false);
 var n = 0, count = 0;
 do {
   n += 1;
-  count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
+  count += (rs.next()**2 + rs.next()**2) <= 1.0;
 } while abs((count * 4.0 / n) - pi) > epsilon;
 
 writef("Approximation of pi = %{#.###############}\n", count * 4.0 / n);

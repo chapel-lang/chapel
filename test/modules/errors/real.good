@@ -1,0 +1,2 @@
+error: 'real' has multiple definitions, redefined at:
+  real.chpl:1

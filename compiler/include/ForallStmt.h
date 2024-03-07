@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -248,8 +248,5 @@ bool fsGotFollower(Expr* anchor, Symbol* followThis, Symbol* iterSym);
 void fsCheckNumIdxVarsVsIterables(ForallStmt* fs, int numIdx, int numIter);
 
 /// done ///
-
-// used to deprecate ref-maybe-const forall intents
-extern std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
 
 #endif

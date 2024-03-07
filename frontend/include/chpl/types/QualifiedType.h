@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -187,6 +187,19 @@ class QualifiedType final {
   bool isImmutable() const {
     return uast::isImmutableQualifier(kind_);
   }
+  /**
+    Returns true if the value is a reference, whether constant or mutable.
+   */
+  bool isRef() const {
+    return uast::isRefQualifier(kind_);
+  }
+  /**
+    Returns true if the value is an in-intent formal, whether constant or
+    mutable.
+   */
+  bool isIn() const {
+    return uast::isInQualifier(kind_);
+  }
 
   /**
     Returns true if the kind is one of the non-concrete intents
@@ -195,6 +208,11 @@ class QualifiedType final {
   bool isNonConcreteIntent() const {
     return uast::isGenericQualifier(kind_);
   }
+
+  /**
+    Returns true if the type might need to get more info from split-init.
+  */
+  bool needsSplitInitTypeInfo(Context* context) const;
 
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&

@@ -118,12 +118,16 @@ List
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List
 RadixSortHelp
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort.RadixSortHelp
+ShallowCopy
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort.ShellSort.ShallowCopy
 ShellSort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort.ShellSort
 MSBRadixSort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort
-ShallowCopy
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort.ShallowCopy
+TwoArrayPartitioning
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.TwoArrayRadixSort.TwoArrayPartitioning
+TwoArrayRadixSort
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.TwoArrayRadixSort
 InsertionSort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort.InsertionSort
 QuickSort
@@ -186,22 +190,12 @@ CopyAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation
 ChapelAutoAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation
-BitOps_internal
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.BitOps.BitOps_internal
-BitOps
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.BitOps
-Map
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.Time.JSON.Map
-JSON
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.Time.JSON
-Time
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.Time
-GPU
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU
 ChapelGpuSupport
   from print-module-resolution.ChapelStandard.ChapelGpuSupport
 ChapelContext
   from print-module-resolution.ChapelStandard.ChapelContext
+ChapelStaticVars
+  from print-module-resolution.ChapelStandard.ChapelStaticVars
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard

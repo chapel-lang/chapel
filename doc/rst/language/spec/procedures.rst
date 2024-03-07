@@ -1515,11 +1515,12 @@ according to the concrete intent of :math:`X_i`:
  * if :math:`X_i` uses ``ref`` intent, then :math:`T(A_i)`
    must be the same type as :math:`T(X_i)`
  * if :math:`X_i` uses ``const ref`` intent, then :math:`T(A_i)` and
-   :math:`T(X_i)` must be the same type or a subtype of :math:`T(X_i)` (see
-   :ref:`Subtype_Arg_Conversions`)
- * if :math:`X_i` uses ``in`` or ``inout`` intent, then :math:`T(A_i)`
-   must be the same type, a subtype of, or implicitly convertible to
-   :math:`T(X_i)`.
+   :math:`T(X_i)` must be the same type or a subtype of :math:`T(X_i)`
+   (see :ref:`Subtype_Arg_Conversions`) or a ``param``
+   (see :ref:`Implicit_Compile_Time_Constant_Conversions`)
+ * if :math:`X_i` uses ``in``, ``const in``, ``inout``, ``const``, or
+   default intent, then :math:`T(A_i)` must be the same type, a subtype
+   of, or implicitly convertible to :math:`T(X_i)`.
  * if :math:`X_i` uses  the ``out`` intent, it is always a legal
    argument mapping regardless of the type of the actual and formal.
    In the event that setting :math:`T(A_i)` from :math:`X_i` is not

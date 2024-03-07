@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,9 @@
 //
 // Block-cyclic dimension specifier - for use with DimensionalDist2D.
 //
+
+@unstable("BlockCycDim is intended for use with DimensionalDist2D, which is unstable")
+prototype module BlockCycDim {
 
 private use DimensionalDist2D;
 import RangeChunk;
@@ -813,4 +816,6 @@ iter BlockCyclic1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) 
       foreach stoIdx in stoIxs do
         yield (locNo, stoIdx);
   }
+}
+
 }

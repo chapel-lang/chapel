@@ -63,7 +63,7 @@ An external procedure declaration has the following syntax:
 .. code-block:: syntax
 
    external-procedure-declaration-statement:
-     'extern' external-name[OPT] 'proc' identifier argument-list return-intent[OPT] return-type[OPT]
+     'extern' external-name[OPT] 'proc' identifier argument-list return-intent[OPT] return-type[OPT] ;
 
 Chapel code will call the external function using the parameter types
 supplied in the ``extern`` declaration. Therefore, in general, the type

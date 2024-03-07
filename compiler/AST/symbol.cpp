@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,7 @@
 #include "type.h"
 #include "wellknown.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/util/filesystem.h"
 #include "chpl/util/filtering.h"
 
 #include "global-ast-vecs.h"
@@ -57,7 +58,6 @@ Symbol *gDummyRef = NULL;
 Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
-Symbol *gStrideOne = NULL, *gStrideAny = NULL; // deprecated by Vass in 1.31
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gSplitInit = NULL;
@@ -467,7 +467,7 @@ const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>> dedupDeprecationWarnings;
+std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupDeprecationWarnings;
 
 void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   if (!this->hasFlag(FLAG_DEPRECATED)) return;
@@ -536,7 +536,7 @@ static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
   return fWarnUnstable;
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>> dedupUnstableWarnings;
+std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupUnstableWarnings;
 
 //based on maybeGenerateDeprecationWarning
 void Symbol::maybeGenerateUnstableWarning(Expr* context) {
@@ -1626,6 +1626,10 @@ bool isValidString(std::string str, int64_t* numCodepoints) {
   return chpl_enc_validate_buf(str.c_str(), str.length(), numCodepoints) == 0;
 }
 
+static std::string hashUnescapedString(std::string s) {
+  return chpl::fileHashToHex(chpl::hashString(s));
+}
+
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
@@ -1651,6 +1655,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   // after normalization we need to insert everything in normalized form. We
   // also need to disable parts of normalize from running on literals inserted
   // at parse time.
+
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
@@ -1681,6 +1686,12 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   if (!invalid) {
     stringLiteralsHash.put(s->immediate, s);
+  }
+
+  if (fIdBasedMunging) {
+    // compute a SHA hash of the string to use as a string cname
+    std::string hashHex = hashUnescapedString(unescapedString);
+    s->cname = astr("~str~" + hashHex);
   }
 
   // String literal init function should be not created yet.
@@ -1721,6 +1732,13 @@ VarSymbol *new_BytesSymbol(const char *str) {
   *s->immediate = imm;
   bytesLiteralsHash.put(s->immediate, s);
 
+  if (fIdBasedMunging) {
+    // compute a SHA hash of the bytes to use as a string cname
+    std::string unescapedString = chpl::unescapeStringC(str);
+    std::string hashHex = hashUnescapedString(unescapedString);
+    s->cname = astr("~bstr~" + hashHex);
+  }
+
   // String literal init function should be not created yet.
   // Otherwise, the new bytes global will not be initialized.
   INT_ASSERT(initStringLiterals == NULL);
@@ -1755,6 +1773,14 @@ VarSymbol *new_CStringSymbol(const char *str) {
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
+
+  if (fIdBasedMunging) {
+    // compute a SHA hash of the C string to use as a string cname
+    std::string unescapedString = chpl::unescapeStringC(str);
+    std::string hashHex = hashUnescapedString(unescapedString);
+    s->cname = astr("~cstr~" + hashHex);
+  }
+
   return s;
 }
 

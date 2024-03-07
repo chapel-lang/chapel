@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -94,6 +94,14 @@ static Expr* convertPointerToChplType(ModuleSymbol* module,
   }
 }
 
+static unsigned getMinSignedBits(const llvm::APInt& size) {
+#if HAVE_LLVM_VER >= 170
+  return size.getSignificantBits();
+#else
+  return size.getMinSignedBits();
+#endif
+}
+
 static
 Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module,
                                       const clang::ConstantArrayType* arrayType,
@@ -104,7 +112,7 @@ Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module,
 
   Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr());
 
-  if (size.getMinSignedBits() > 64)
+  if (getMinSignedBits(size) > 64)
     USR_FATAL("C array is too large");
 
   int64_t isize = size.getSExtValue();

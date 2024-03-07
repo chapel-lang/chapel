@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -187,6 +187,8 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
 
 PRAGMA(NO_PROMOTION_WHEN_BY_REF, ypr, "no promotion when by ref", ncm)
 
+PRAGMA(CONTEXT_TYPE, ypr, "context type", ncm)
+
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
 PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)
 PRAGMA(DESTRUCTOR, npr,
@@ -226,6 +228,7 @@ PRAGMA(EPILOGUE_LABEL, npr,
 PRAGMA(ERROR_LABEL, ypr, "error label", ncm)
 PRAGMA(EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 PRAGMA(EXPAND_TUPLES_WITH_VALUES, ypr, "expand tuples with values", ncm)
+PRAGMA(EXPLICIT_PAR_SAFE, npr, "explicit par safe", "an associative domain explicitly marked par safe by the user")
 PRAGMA(EXPORT, npr, "export", ncm)
 PRAGMA(EXPORT_INIT, ypr,
        "export init",
@@ -286,6 +289,7 @@ PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function 
 PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "generate both GPU and CPU code")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
 PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", ncm)
+PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "this function will never be called from a gpu")
 PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
 
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
@@ -546,6 +550,7 @@ PRAGMA(REMOVABLE_AUTO_COPY, ypr, "removable auto copy", ncm)
 PRAGMA(REMOVABLE_AUTO_DESTROY, ypr, "removable auto destroy", ncm)
 PRAGMA(COMPILER_ADDED_REMOTE_FENCE, ypr, "compiler added remote fence", ncm)
 PRAGMA(RESOLVED, npr, "resolved", "this function has been resolved")
+PRAGMA(PRECOMPILED, npr, "precompiled in library file", "this function has already been compiled in a library file")
 PRAGMA(RETARG, npr, "symbol is a _retArg", ncm)
 PRAGMA(RETURNS_ALIASING_ARRAY, ypr, "fn returns aliasing array", "array alias/slice/reindex/rank change function")
 PRAGMA(FN_RETURNS_ITERATOR, ypr, "fn returns iterator", "proc that can return an iterator instead of promoting it to an array")
@@ -633,6 +638,8 @@ PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then
 PRAGMA(EXEMPT_INSTANTIATION_LIMIT, ypr, "fn exempt instantiation limit", "compiler will not limit the number of instantiations of this function")
 
 PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify the internal chpl_computeUnifiedTypeHelp() routine")
+PRAGMA(DO_NOT_RESOLVE_UNLESS_CALLED, npr, "do not resolve unless called", "do not resolve this function unless it is called (e.g. if it contains only compilerError)")
+PRAGMA(TASK_PRIVATE_VARIABLE, npr, "task private variable", ncm)
 
 #undef ypr
 #undef npr

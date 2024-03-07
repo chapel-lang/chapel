@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,7 +33,7 @@ module ChapelArray {
   use ChapelDebugPrint;
   use CTypes;
   use ChapelPrivatization;
-  use ChplConfig only compiledForSingleLocale;
+  use ChplConfig only compiledForSingleLocale, CHPL_LOCALE_MODEL;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are
@@ -81,7 +81,7 @@ module ChapelArray {
   config param logAllArrEltAccess = false;
 
   proc _isPrivatized(value) param do
-    return !compiledForSingleLocale() &&
+    return (!compiledForSingleLocale() || CHPL_LOCALE_MODEL=="gpu") &&
            ((_privatization && value!.dsiSupportsPrivatization()) ||
             value!.dsiRequiresPrivatization());
     // _privatization is controlled by --[no-]privatization
@@ -255,10 +255,6 @@ module ChapelArray {
   config param arrayLiteralLowBound = defaultLowBound;
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
-
-  @chpldoc.nodoc
-  @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
-  config param useNewArrayFind = false;
 
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
@@ -707,181 +703,6 @@ module ChapelArray {
     return new _distribution(owned.release(x));
   }
 
-  //
-  // Distribution wrapper record
-  //
-  pragma "distribution"
-  pragma "ignore noinit"
-  @chpldoc.nodoc
-  record _distribution : writeSerializable, readDeserializable {
-    var _pid:int;  // only used when privatized
-    pragma "owned"
-    var _instance; // generic, but an instance of a subclass of BaseDist
-    var _unowned:bool; // 'true' for the result of 'getDistribution',
-                       // in which case, the record destructor should
-                       // not attempt to delete the _instance.
-
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this._pid      = _pid;
-      this._instance = _instance;
-      this._unowned  = _unowned;
-    }
-
-    proc init(value) {
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-      this._instance = _to_unmanaged(value);
-    }
-
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : _distribution) {
-      var value = other._value.dsiClone();
-      this.init(value);
-    }
-
-    inline proc _value {
-      if _isPrivatized(_instance) {
-        return chpl_getPrivatizedCopy(_instance.type, _pid);
-      } else {
-        return _instance;
-      }
-    }
-
-    forwarding _value except targetLocales;
-
-    inline proc _do_destroy() {
-      if ! _unowned && ! _instance.singleton() {
-        on _instance {
-          // Count the number of domains that refer to this distribution.
-          // and mark the distribution to be freed when that number reaches 0.
-          // If the number is 0, .remove() returns the distribution
-          // that should be freed.
-          var distToFree = _instance.remove();
-          if distToFree != nil {
-            _delete_dist(distToFree!, _isPrivatized(_instance));
-          }
-        }
-      }
-    }
-
-    proc deinit() {
-      _do_destroy();
-    }
-
-    proc clone() {
-      return new _distribution(_value.dsiClone());
-    }
-
-    /* This is a workaround for an internal failure I experienced when
-       this code was part of newRectangularDom() and relied on split init:
-       var x;
-       if __prim(...) then x = ...;
-       else if __prim(...) then x = ...;
-       else compilerError(...); */
-    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
-
-      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
-      // we use "method call resolves" instead of just "resolves".
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, strides, ranges) {
-        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-      }
-
-      // The following supports deprecation by Vass in 1.31 to implement #17131
-      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
-      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
-      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
-
-      param stridable = strides.toStridable();
-      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, stridable, ranges2) {
-
-        compilerWarning("the domain map '", _value.type:string,
-          "' needs to be updated from 'stridable: bool' to",
-          " 'strides: strideKind' because 'stridable' is deprecated");
-
-        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
-      }
-
-      compilerError("rectangular domains are not supported by",
-                    " the distribution ", this.type:string);
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
-
-      x.definedConst = definedConst;
-
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           definedConst: bool = false) {
-      var ranges: rank*range(idxType, boundKind.both, strides);
-      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
-    }
-
-    proc newAssociativeDom(type idxType, param parSafe: bool=true) {
-      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newSparseDom(param rank: int, type idxType, dom: domain) {
-      var x = _value.dsiNewSparseDom(rank, idxType, dom);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-
-    proc readThis(f) throws {
-      f.read(_value);
-    }
-
-    @chpldoc.nodoc
-    proc ref deserialize(reader, ref deserializer) throws {
-      readThis(reader);
-    }
-
-    // TODO: Can't this be an initializer?
-    @chpldoc.nodoc
-    proc type deserializeFrom(reader, ref deserializer) throws {
-      var ret : this;
-      ret.readThis(reader);
-      return ret;
-    }
-
-    proc writeThis(f) throws {
-      f.write(_value);
-    }
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writer.write(_value);
-    }
-
-    proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
-
-    /*
-       Return an array of locales over which this distribution was declared.
-    */
-    proc targetLocales() const ref {
-      return _value.dsiTargetLocales();
-    }
-  }  // record _distribution
 
   @chpldoc.nodoc
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
@@ -931,22 +752,6 @@ module ChapelArray {
     return false;
   }
 
-  // supports deprecation by Vass in 1.31 to implement #17131
-  // A compatibility wrapper that allows code to work with domain maps
-  // whether they have been converted from stridable to strides or not.
-  proc chpl_dsiNewRectangularDom(dist, param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-    if __primitive("resolves",
-                   dist.dsiNewRectangularDom(rank, idxType, strides, ranges))
-    then
-      return dist.dsiNewRectangularDom(rank, idxType, strides, ranges);
-    else
-      return dist.dsiNewRectangularDom(rank, idxType,
-                                       strides.toStridable(), ranges);
-  }
-
   // Array wrapper record
   pragma "array"
   pragma "has runtime type"
@@ -991,6 +796,13 @@ module ChapelArray {
                              doiBulkTransferFromAny,  doiBulkTransferToAny,
                              chpl__serialize, chpl__deserialize;
 
+    // Hook into 'postinit' since arrays do not seem to offer 'init'.
+    proc postinit() {
+      if eltType == nothing {
+        compilerError("cannot initialize array with element type 'nothing'");
+      }
+    }
+
     @chpldoc.nodoc
     proc deinit() {
       _do_destroy_array(this);
@@ -1008,9 +820,6 @@ module ChapelArray {
        :proc:`idxType` above.  For a multidimensional array, it will be
        :proc:`rank` * :proc:`idxType`. */
     proc fullIdxType type do return this.domain.fullIdxType;
-
-    @deprecated("'.intIdxType' on arrays is deprecated; please let us know if you're relying on it")
-    proc intIdxType type do return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
@@ -2013,7 +1822,7 @@ module ChapelArray {
     }
 
     proc chpl_isNonDistributedArray() param {
-      return domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
+      return chpl_domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
     }
 
     /* Return true if the argument ``a`` is an array with a rectangular
@@ -3692,6 +3501,21 @@ module ChapelArray {
           __primitive("=", r, copy);
         }
       }
+    } else if chpl_iteratorFromForeachExpr(ir) {
+      if needsInitWorkaround(result.eltType) {
+        foreach (ri, src) in zip(result.domain, ir) {
+          ref r = result[ri];
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      } else {
+        foreach (r, src) in zip(result, ir) {
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      }
     } else {
       if needsInitWorkaround(result.eltType) {
         forall (ri, src) in zip(result.domain, ir) with (ref result) {
@@ -3864,7 +3688,7 @@ module ChapelArray {
   // 'castToVoidStar' says whether we should cast the result to c_ptr(void)
 
   proc chpl_arrayToPtrErrorHelper(const ref arr: []) {
-    if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
+    if (!arr.isRectangular() || !chpl_domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=3);
 
     if (arr._value.locale != here) then

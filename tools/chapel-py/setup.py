@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -25,7 +24,7 @@ import os
 import sys
 import glob
 
-chpl_home = os.getenv('CHPL_HOME')
+chpl_home = str(os.getenv('CHPL_HOME'))
 chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
 chpl_variables_lines = subprocess.check_output([chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]).decode(sys.stdout.encoding).strip().splitlines()
 chpl_variables = dict()
@@ -34,9 +33,10 @@ for line in chpl_variables_lines:
     if len(elms) == 2:
         chpl_variables[elms[0].strip()] = elms[1].strip()
 
-llvm_config = chpl_variables.get("CHPL_LLVM_CONFIG")
+llvm_config = str(chpl_variables.get("CHPL_LLVM_CONFIG"))
 
-chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
+host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
+chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
 
 CXXFLAGS = []
 CXXFLAGS += ["-Wno-c99-designator"]
@@ -49,6 +49,6 @@ LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontendShared", "-Wl,-rpath", 
 setup(name = "chapel",
       version = "0.1",
       package_dir = {'': 'src'},
-      packages = ['chapel', 'chapel.replace'],
+      packages = ['chapel', 'chapel.replace', 'chapel.visitor', 'chapel.lsp'],
       ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       )

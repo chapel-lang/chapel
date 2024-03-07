@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -281,14 +281,9 @@ r.x("hello");
 
 static const char* errorOther = R"""(
 ─── error in file.chpl:6 [NoMatchingCandidates] ───
-  Unable to resolve call to 'x': no matching candidates.
+  Unable to resolve call to 'this': no matching candidates.
       |
     6 | r.x("hello");
-      |
-  
-  The following candidate didn't match:
-      |
-    2 |     var x: int;
       |
 )""";
 

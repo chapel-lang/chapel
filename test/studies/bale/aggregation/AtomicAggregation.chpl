@@ -1,13 +1,23 @@
 module AtomicAggregation {
+  use ChplConfig;
   use CTypes;
   use AggregationPrimitives;
 
+  private param defaultBuffSize =
+    if CHPL_TARGET_PLATFORM == "hpe-cray-ex" then 1024
+    else if CHPL_COMM == "ugni" then 4096
+    else 8192;
+
   private config const yieldFrequency = getEnvInt("AGGREGATION_YIELD_FREQUENCY", 1024);
-  private config const amoBuffSize = getEnvInt("AGGREGATION_AMO_BUFF_SIZE", 8096);
+  private config const amoBuffSize = getEnvInt("AGGREGATION_AMO_BUFF_SIZE", defaultBuffSize*2);
+
+  private config param aggregate = CHPL_COMM != "none";
 
   proc AggregatedAtomic(type T) type {
     return chpl__processorAtomicType(T);
   }
+
+
   /*
    * Aggregates atomic increments. e.g. atomic.add(1). This is a specialization
    * of a non-fetching atomic aggregator that does not have to buffer values.
@@ -16,26 +26,55 @@ module AtomicAggregation {
    */
   record AtomicIncAggregator {
     type elemType;
+    @chpldoc.nodoc
+    var agg: if aggregate then AtomicIncAggregatorImpl(elemType) else nothing;
+    inline proc ref inc(ref dst: AggregatedAtomic(elemType)) {
+      if aggregate then agg.inc(dst);
+                   else dst.add(1, memoryOrder.relaxed);
+    }
+    inline proc copy(ref dst: elemType, const in srcVal: elemType) {
+      if aggregate then agg.copy(dst, srcVal);
+                   else dst = srcVal;
+    }
+    inline proc flush() {
+      if aggregate then agg.flush();
+    }
+  }
+
+  @chpldoc.nodoc
+  record AtomicIncAggregatorImpl {
+    type elemType;
     type aggType = c_ptr(AggregatedAtomic(elemType));
     const bufferSize = amoBuffSize;
-    const myLocaleSpace = LocaleSpace;
+    const myLocaleSpace = 0..<numLocales;
+    var lastLocale: int;
     var opsUntilYield = yieldFrequency;
-    var lBuffers: [myLocaleSpace] [0..#bufferSize] aggType;
+    var lBuffers:  c_ptr(c_ptr(aggType));
     var rBuffers: [myLocaleSpace] remoteBuffer(aggType);
-    var bufferIdxs: [myLocaleSpace] int;
+    var bufferIdxs: c_ptr(int);
 
     proc ref postinit() {
+      lBuffers = allocate(c_ptr(aggType), numLocales:c_size_t);
+      bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
+        lBuffers[loc] = allocate(aggType, bufferSize:c_size_t);
+        bufferIdxs[loc] = 0;
         rBuffers[loc] = new remoteBuffer(aggType, bufferSize, loc);
       }
     }
 
     proc ref deinit() {
       flush();
+      for loc in myLocaleSpace {
+        deallocate(lBuffers[loc]);
+      }
+      deallocate(lBuffers);
+      deallocate(bufferIdxs);
     }
 
     proc ref flush() {
-      for loc in myLocaleSpace {
+      for offsetLoc in myLocaleSpace + lastLocale {
+        const loc = offsetLoc % numLocales;
         _flushBuffer(loc, bufferIdxs[loc], freeData=true);
       }
     }
@@ -43,6 +82,7 @@ module AtomicAggregation {
     inline proc ref inc(ref dst: AggregatedAtomic(elemType)) {
       // Get the locale of dst and the local address on that locale
       const loc = dst.locale.id;
+      lastLocale = loc;
       const dstAddr = getAddr(dst);
 
       // Get our current index into the buffer for dst's locale

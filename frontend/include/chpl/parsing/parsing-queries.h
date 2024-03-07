@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -96,6 +96,12 @@ parseFileToBuilderResult(Context* context, UniqueString path,
 const uast::BuilderResult&
 parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
                                  UniqueString parentSymbolPath);
+
+std::vector<const uast::AstNode*>
+introspectParsedTopLevelExpressions(Context* context);
+
+std::vector<UniqueString>
+introspectParsedFiles(Context* context);
 
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
@@ -355,6 +361,16 @@ bool idIsPrivateDecl(Context* context, ID id);
  Returns true if the ID is a function.
  */
 bool idIsFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is marked 'extern'.
+ */
+bool idIsExtern(Context* context, ID id);
+
+/**
+ Returns true if the ID is marked 'export'.
+ */
+bool idIsExport(Context* context, ID id);
 
 /**
  Returns true if the ID is a method.

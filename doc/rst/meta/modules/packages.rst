@@ -41,6 +41,7 @@ Data Structures
 
    ConcurrentMap <packages/ConcurrentMap>
    DistributedBag <packages/DistributedBag>
+   DistributedBagDeprecated <packages/DistributedBagDeprecated>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
    LinkedLists <packages/LinkedLists>
@@ -55,11 +56,11 @@ File Formats and I/O
 .. toctree::
    :maxdepth: 1
 
-   BinaryIO <packages/BinaryIO>
    ChplFormat <packages/ChplFormat>
    HDF5 <packages/HDF5>
    HDFS <packages/HDFS>
    NetCDF <packages/NetCDF>
+   ParallelIO <packages/ParallelIO>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>

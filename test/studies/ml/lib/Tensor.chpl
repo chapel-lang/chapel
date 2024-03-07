@@ -90,7 +90,7 @@ module Tensor {
         for param i in 0..#rank {
             const dim = shape[rank - i - 1];
             idxs[rank - i - 1] = n % dim;
-            n = Math.divfloor(n,dim);
+            n = Math.divFloor(n,dim);
         }
         return idxs;
     }
@@ -409,7 +409,7 @@ module Tensor {
             err("Trying to apply a vector of shape ",lhs.shape, " to a matrix of shape ", rhs.shape, ". m needs to be 1");
         
         var b = new Tensor({0..#p, 0..#n},eltType=eltType);
-        foreach (i,j) in {0..#p, 0..#n} {
+        foreach (i,j) in {0..#p, 0..#n} with (ref b, ref lhs, ref rhs) {
             b[i,j] = lhs[i] * rhs[0,j];
         }
         return b; 

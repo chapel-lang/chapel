@@ -33,7 +33,7 @@ var reader: fileReader(locking=true);
 
 if initFromFile {
   infile = open(filename, ioMode.r);
-  reader = infile.reader();
+  reader = infile.reader(locking=true);
 }
 
 
@@ -128,7 +128,7 @@ proc initGreekVars(ref lxim, ref lxip, ref letam, ref letap, ref lzetam, ref lze
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
       reader.read(xm,xp,em,ep,zm,zp);
   } else {
-    forall num in lxim.domain with (ref letam, ref letap, ref lxip, ref lzetam, ref lzetap, ref lxim) {
+    forall num in lxim.domain {
       const (i,j,k) = elemIdxTo3D(num);
 
       lxim[num] = if (k == 0)

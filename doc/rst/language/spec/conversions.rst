@@ -512,8 +512,12 @@ types (:ref:`Subtype_Arg_Conversions`).
 
 Additionally, an implicit conversion for a function call occurs when the
 actual type is a subtype of the formal type. This rule applies to ``in``,
-``const in``, ``const ref``, and ``type`` intent formals and includes
-generic formal types. See :ref:`Subtype_Arg_Conversions`.
+``const in``, ``const ref``, ``const``, ``type``, and default intent formals
+and includes generic formal types. See :ref:`Subtype_Arg_Conversions`.
+
+Lastly, implicit conversion from a compile-time constant is always
+allowed when passing to a ``const ref`` formal. See
+:ref:`Implicit_Compile_Time_Constant_Conversions`.
 
 Implicit conversions are not applied for actual arguments passed to
 ``ref`` formal arguments.

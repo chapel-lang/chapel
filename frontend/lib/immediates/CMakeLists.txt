@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,10 +18,14 @@
 target_sources(ChplFrontend-obj
                PRIVATE
 
-               ifa_vars.cpp
+               # C sources
+               complex-support.h
+               complex-support.c
+
+               # C++ sources
                hash_multipliers.cpp
+               ifa_vars.cpp
                num.cpp
                num.h
                prim_data.h
-
               )

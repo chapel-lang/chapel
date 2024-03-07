@@ -1,7 +1,7 @@
 proc z(param i) {
   param depth = 2;
   compilerWarning("param = ", i:string, "  depth = ", depth:string, depth);
-  writeln("z("+i+")");
+  writeln("z(", i, ")");
 }
 
 proc y1(param i) {

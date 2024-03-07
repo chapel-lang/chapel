@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,9 +30,10 @@ namespace types {
 
 const owned<CPtrType>& CPtrType::getCPtrType(Context* context,
                                              const CPtrType* instantiatedFrom,
-                                             const Type* eltType) {
-  QUERY_BEGIN(getCPtrType, context, instantiatedFrom, eltType);
-  auto result = toOwned(new CPtrType(instantiatedFrom, eltType));
+                                             const Type* eltType,
+                                             bool isConst) {
+  QUERY_BEGIN(getCPtrType, context, instantiatedFrom, eltType, isConst);
+  auto result = toOwned(new CPtrType(instantiatedFrom, eltType, isConst));
   return QUERY_END(result);
 }
 
@@ -47,13 +48,31 @@ bool CPtrType::isEltTypeInstantiationOf(Context* context, const CPtrType* other)
 const CPtrType* CPtrType::get(Context* context) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ nullptr,
-                               /* eltType */ nullptr).get();
+                               /* eltType */ nullptr,
+                               /* isConst */ false).get();
 }
 
 const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ CPtrType::get(context),
-                               eltType).get();
+                               eltType,
+                               /* isConst */ false).get();
+}
+
+// TODO: need to treat the elttype kind as const
+const CPtrType* CPtrType::getConst(Context* context) {
+  return CPtrType::getCPtrType(context,
+                               /* instantiatedFrom */ nullptr,
+                               /* eltType */ nullptr,
+                               /* isConst */ true).get();
+}
+
+// TODO: need to treat the elt type kind as const
+const CPtrType* CPtrType::getConst(Context* context, const Type* eltType) {
+  return CPtrType::getCPtrType(context,
+                               /* instantiatedFrom */ CPtrType::getConst(context),
+                               eltType,
+                               /*isConst*/ true).get();
 }
 
 const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
@@ -67,9 +86,46 @@ const ID& CPtrType::getId(Context* context) {
   return QUERY_END(result);
 }
 
+const CPtrType* CPtrType::withoutConst(Context* context) const {
+  const CPtrType* instFrom = nullptr;
+  if (instantiatedFrom_) {
+    instFrom = instantiatedFrom_->withoutConst(context);
+  }
+
+  return CPtrType::getCPtrType(context, instFrom, eltType_, /* isConst */ false).get();
+}
+
+const ID& CPtrType::getConstId(Context* context) {
+  QUERY_BEGIN(getConstId, context);
+  UniqueString path = UniqueString::get(context, "CTypes.c_ptrConst");
+  ID result { path, -1, 0 };
+  return QUERY_END(result);
+}
+
+bool CPtrType::isInstantiationOf(Context* context, const CPtrType* genericType) const {
+  auto thisFrom = instantiatedFromCPtrType();
+  auto argFrom = genericType->instantiatedFromCPtrType();
+  if (argFrom == nullptr) {
+    // if genericType is not a partial instantiation
+    return (thisFrom != nullptr && thisFrom == genericType);
+  }
+
+  if (thisFrom == argFrom) {
+    // handle the case of genericType being partly instantiated
+    // (or instantiated with a generic type)
+    return isEltTypeInstantiationOf(context, genericType);
+  }
+
+  return false;
+}
+
 void CPtrType::stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const {
-  USTR("c_ptr").stringify(ss, stringKind);
+  if (isConst_) {
+    ss << "c_ptrConst";
+  } else {
+    ss << "c_ptr";
+  }
 
   if (eltType_) {
     ss << "(";

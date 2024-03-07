@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -132,11 +132,11 @@ static void test3b() {
   helpTest3(theFunction);
 }
 
-
 int main() {
   test1();
   test2();
   test3a();
   test3b();
+
   return 0;
 }

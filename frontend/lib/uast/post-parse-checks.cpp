@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,6 +146,10 @@ struct Visitor {
   void checkLambdaDeprecated(const Function* node);
   void checkCStringLiteral(const CStringLiteral* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
+  void checkOtherwiseAfterWhens(const Select* sel);
+  void checkUnstableSerial(const Serial* ser);
+  void checkLocalBlock(const Local* node);
+
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -186,9 +190,12 @@ struct Visitor {
   void visit(const FunctionSignature* node);
   void visit(const Implements* node);
   void visit(const Import* node);
+  void visit(const Local* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
+  void visit(const Select* node);
+  void visit(const Serial* node);
   void visit(const TypeQuery* node);
   void visit(const Union* node);
   void visit(const Use* node);
@@ -1331,14 +1338,22 @@ void Visitor::checkParenfulDeprecation(const AttributeGroup* node) {
 void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   // Store attributes we recognize in "all-global-strings.h"
   // then a USTR() on the attribute name will work or not work
-  if (node->name() == USTR("deprecated") ||
-      node->name() == USTR("unstable") ||
-      node->name() == USTR("stable") ||
-      node->name() == USTR("assertOnGpu") ||
-      node->name().startsWith(USTR("chpldoc.")) ||
-      node->name().startsWith(USTR("llvm."))) {
-      // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
-      return;
+
+  if (node->name() == USTR("functionStatic")) {
+    // Recognized but instable.
+    if (shouldEmitUnstableWarning(node)) {
+      warn(node, "function-static variables using @functionStatic are unstable.");
+    }
+  } else if (node->name() == USTR("deprecated") ||
+             node->name() == USTR("unstable") ||
+             node->name() == USTR("stable") ||
+             node->name() == USTR("functionStatic") ||
+             node->name() == USTR("assertOnGpu") ||
+             node->name() == USTR("gpu.blockSize") ||
+             node->name().startsWith(USTR("chpldoc.")) ||
+             node->name().startsWith(USTR("llvm."))) {
+    // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
+    return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
     error(node, "Unknown top-level attribute '%s'", node->name().c_str());
@@ -1370,6 +1385,24 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
     if (node->isForall() || node->isForeach()) return;
 
     CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+  } else if (attr->name() == USTR("functionStatic")) {
+    if (!node->isVariable()) {
+      error(node, "the '@functionStatic' attribute can only be applied to variables.");
+      return;
+    } else {
+      auto parentSymId = node->id().parentSymbolId(context_);
+      auto parentSymAst = parsing::idToAst(context_, parentSymId);
+      auto parentSymFunction = parentSymAst->toFunction();
+
+      if (!parentSymFunction) {
+        error(node, "the '@functionStatic' attribute can only be applied to variables in functions.");
+        return;
+      }
+
+      if (parentSymFunction->isMethod()) {
+        error(node, "the '@functionStatic' attribute cannot be applied to variables in methods.");
+      }
+    }
   }
 }
 
@@ -1536,6 +1569,44 @@ void Visitor::visit(const Return* node) {
   if (!checkParentsForControlFlow(parents_, nodeAllowsReturn, node, blockingNode, allowingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
   }
+}
+
+void Visitor::visit(const Select* node) {
+  checkOtherwiseAfterWhens(node);
+}
+
+void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
+  const When* seenOtherwise = nullptr;
+  for(int i = 0; i < sel->numWhenStmts(); i++) {
+    auto when = sel->whenStmt(i);
+    if (seenOtherwise && !when->isOtherwise()) {
+      CHPL_REPORT(context_, WhenAfterOtherwise, sel, seenOtherwise, when);
+      break;
+    } 
+    if (when->isOtherwise())  seenOtherwise = when;
+  }
+}
+
+void Visitor::visit(const Serial* node) {
+  checkUnstableSerial(node);
+}
+
+void Visitor::checkUnstableSerial(const Serial* ser) {
+  if (shouldEmitUnstableWarning(ser)) {
+    warn(ser, "'serial' statements are unstable "
+              "and likely to be deprecated in a future release");
+  }
+}
+
+void Visitor::checkLocalBlock(const Local* node){
+  if (shouldEmitUnstableWarning(node))
+    warn(node, "local blocks are unstable,"
+          " their behavior is likely to change in the future.");
+}
+
+
+void Visitor::visit(const Local* node){
+  checkLocalBlock(node);
 }
 
 void Visitor::visit(const Yield* node) {

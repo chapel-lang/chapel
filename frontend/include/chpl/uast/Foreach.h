@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -53,6 +53,7 @@ class Foreach final : public IndexableLoop {
           int8_t withClauseChildNum,
           BlockStyle blockStyle,
           int loopBodyChildNum,
+          bool isExpressionLevel,
           int attributeGroupChildNum)
     : IndexableLoop(asttags::Foreach, std::move(children),
                     indexChildNum,
@@ -60,7 +61,7 @@ class Foreach final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    /*isExpressionLevel*/ false,
+                    isExpressionLevel,
                     attributeGroupChildNum) {
 
   }
@@ -91,6 +92,7 @@ class Foreach final : public IndexableLoop {
                               owned<WithClause> withClause,
                               BlockStyle blockStyle,
                               owned<Block> body,
+                              bool isExpressionLevel,
                               owned<AttributeGroup> attributeGroup = nullptr);
 };
 

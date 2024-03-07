@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -198,6 +198,12 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   if (isForeach) {
     loop->orderIndependentSet(true);
+  }
+
+  // We want to apply implicit intents only to user
+  // written foreach loops
+  if (!isForeach || isLoweredForall || isForExpr) {
+    loop->exemptFromImplicitIntents();
   }
 
   // Unzippered loop, treat all objects (including tuples) the same
@@ -406,6 +412,7 @@ ForLoop::ForLoop() : LoopStmt(0)
   mZippered = false;
   mLoweredForall = false;
   mIsForExpr = false;
+  fShadowVars.parent = this;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
@@ -427,12 +434,16 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
 {
   ForLoop*   retval         = new ForLoop();
 
+  for_alist(expr, fShadowVars)
+    retval->fShadowVars.insertAtTail(COPY_INT(expr));
+
   retval->astloc            = astloc;
   retval->blockTag          = blockTag;
 
   retval->mBreakLabel       = mBreakLabel;
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
+  retval->mExemptFromImplicitIntents = mExemptFromImplicitIntents;
   retval->mLLVMMetadataList = mLLVMMetadataList;
 
   retval->mIndex            = mIndex->copy(map, true),

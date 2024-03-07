@@ -35,7 +35,7 @@ proc main() {
   // to tasks.  At each depth, create the required trees, compute
   // their sums, and free them.
   //
-  forall depth in dynamic(depths) with (ref stats) {
+  forall depth in dynamic(depths) {
     const iterations = 2**(maxDepth - depth + minDepth);
     var sum = 0;
 

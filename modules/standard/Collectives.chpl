@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -137,6 +137,13 @@ module Collectives {
     inline proc reset(nTasks: int) {
       bar.reset(nTasks);
     }
+
+    // This method is used in the WIP implementation of iterator contexts.
+    @chpldoc.nodoc
+    proc multiply(n: int) {
+      try! reset((bar:(unmanaged aBarrier)).n*n);
+    }
+
   }
 
   /* The BarrierBaseType class provides an abstract base type for barriers
@@ -291,4 +298,3 @@ module Collectives {
     }
   }
 }
-

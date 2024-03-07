@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -104,6 +104,7 @@ chpl_bool chpl_topo_isOversubscribed(void) {
 
 chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
                                             chpl_topo_pci_addr_t *outAddr) {
-  return NULL;
+  *outAddr = *inAddr;
+  return outAddr;
 }
 

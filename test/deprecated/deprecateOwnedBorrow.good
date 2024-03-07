@@ -1,2 +1,0 @@
-deprecateOwnedBorrow.chpl:6: warning: calling `.borrow()` on an `owned` type is deprecated - please use a cast to `borrowed` instead
-true

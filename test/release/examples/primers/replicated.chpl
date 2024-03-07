@@ -142,7 +142,7 @@ writeln();
 // Here, we have each locale update its own copy of `RA` to store its
 // locale ID, which results in a modification to each replicand:
 //
-coforall loc in Locales with (ref RA) do on loc do
+coforall loc in Locales do on loc do
   RA = loc.id;
 
 writeln("Replicated Array after assigning on each locale:");

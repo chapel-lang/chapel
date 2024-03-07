@@ -11,8 +11,8 @@ proc normalReturn(doWhat: bool): bool {
   // this test.
   var f1 = open("filename.txt", ioMode.r);
   var f2 = open("file2.txt", ioMode.cw);
-  var c1 = f1.reader();
-  var c2 = f2.writer();
+  var c1 = f1.reader(locking=false);
+  var c2 = f2.writer(locking=false);
   var line: string;
   while (c1.readLine(line)) {
     c2.write(line);
@@ -35,8 +35,8 @@ proc outReturn(out res: bool, doWhat: bool) {
   // this test.
   var f1 = open("filename.txt", ioMode.r);
   var f2 = open("file2.txt", ioMode.cw);
-  var c1 = f1.reader();
-  var c2 = f2.writer();
+  var c1 = f1.reader(locking=false);
+  var c2 = f2.writer(locking=false);
   var line: string;
   while (c1.readLine(line)) {
     c2.write(line);

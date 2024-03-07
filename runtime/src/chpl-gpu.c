@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,9 +29,11 @@ bool chpl_gpu_use_stream_per_task = true;
 
 #ifdef HAS_GPU_LOCALE
 
+
 // #define CHPL_GPU_ENABLE_PROFILE
 
 #include "chplrt.h"
+#include "chpl-atomics.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "chpl-gpu-diags.h"
@@ -42,10 +44,13 @@ bool chpl_gpu_use_stream_per_task = true;
 #include "chpl-env-gen.h"
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
+#include "chpl-privatization.h"
 
 #include "gpu/chpl-gpu-reduce-util.h"
 
 #include <inttypes.h>
+
+static atomic_spinlock_t* priv_table_lock = NULL;
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -83,6 +88,15 @@ void chpl_gpu_init(void) {
 #ifndef GPU_RUNTIME_CPU
     }
 #endif
+  }
+
+  // TODO these should be freed
+  priv_table_lock = chpl_mem_alloc(chpl_gpu_num_devices *
+                                   sizeof(atomic_spinlock_t),
+                                   CHPL_RT_MD_GPU_UTIL, 0, 0);
+
+  for (int i=0 ; i<chpl_gpu_num_devices ; i++) {
+    atomic_init_spinlock_t(&priv_table_lock[i]);
   }
 }
 
@@ -210,67 +224,432 @@ void chpl_gpu_support_module_finished_initializing(void) {
                  chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
-inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                                   const char* name,
-                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                   int nargs, ...) {
+typedef struct priv_inst {
+  int64_t pid;
+  void* dev_instance;
+} priv_inst;
 
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
-  void* stream = get_stream(dev);
+typedef struct kernel_cfg_s {
+  int dev;
 
-  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
-                 "\tLocation: %s:%d\n"
-                 "\tKernel: %s\n"
-                 "\tNumArgs: %d\n",
-                 chpl_task_getRequestedSubloc(),
-                 chpl_lookupFilename(fn),
-                 ln,
-                 name,
-                 nargs);
+  int ln;
+  int32_t fn;
 
-  va_list args;
-  va_start(args, nargs);
+  int n_params;
+  int cur_param;
+  void*** kernel_params;
 
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+  // Keep track of kernel parameters we dynamically allocate memory for so
+  // later on we know what we need to free.
+  bool* param_dyn_allocated;
 
-  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
+  // these are used while still collecting pids during kernel launch prologue
+  int n_pids;
+  int cur_pid;
+  int64_t max_pid;
+  priv_inst* priv_insts;
+
+  chpl_privateObject_t* priv_table_host; //used for initial staging on the host
+  chpl_privateObject_t* priv_table_dev; //actual table on the device
+
+  bool has_priv_table_lock;
+
+  // we need this in the config so that we can offload data using this stream,
+  // and in the future allocate/deallocate on this stream, too
+  void* stream;
+} kernel_cfg;
+
+static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
+                     int32_t fn) {
+  cfg->dev = chpl_task_getRequestedSubloc();
+  cfg->stream = get_stream(cfg->dev);
+
+  cfg->ln = ln;
+  cfg->fn = fn;
+
+  //+2 for the ln and fn arguments that we add to the end of the array
+  cfg->n_params = n_params+2;
+  cfg->cur_param = 0;
+
+  cfg->kernel_params = chpl_mem_alloc(cfg->n_params * sizeof(void **),
+                                      CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  assert(cfg->kernel_params);
+
+
+  cfg->param_dyn_allocated = chpl_mem_alloc(cfg->n_params * sizeof(bool),
+                                            CHPL_RT_MD_GPU_KERNEL_PARAM_META,
+                                            ln, fn);
+  assert(cfg->param_dyn_allocated);
+
+  // add the ln and fn arguments to the end of the array These arguments only
+  // make sense when the kernel lives inside of standard module code and
+  // CHPL_DEVELOPER is not set since the generated kernel function will have two
+  // extra formals to account for the line and file num.  If CHPL_DEVELOPER is
+  // set, these arguments are dropped on the floor
+  cfg->kernel_params[cfg->n_params-2] = (void**)(&ln);
+  cfg->kernel_params[cfg->n_params-1] = (void**)(&fn);
+
+  cfg->param_dyn_allocated[cfg->n_params-2] = false;
+  cfg->param_dyn_allocated[cfg->n_params-1] = false;
+
+  cfg->n_pids = n_pids;
+  cfg->cur_pid = 0;
+  cfg->max_pid = -1;
+  cfg->priv_insts = chpl_mem_alloc(cfg->n_pids * sizeof(priv_inst),
+                                   CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+
+  cfg->priv_table_host = NULL;
+  cfg->priv_table_dev = NULL;
+
+  cfg->has_priv_table_lock = false;
+}
+
+static void cfg_deinit_params(kernel_cfg* cfg) {
+  // free GPU memory allocated for kernel parameters
+  for (int i=0 ; i<cfg->n_params ; i++) {
+    if (cfg->param_dyn_allocated[i]) {
+      chpl_gpu_mem_free(*(cfg->kernel_params[i]), cfg->ln, cfg->fn);
+      chpl_mem_free(cfg->kernel_params[i], cfg->ln, cfg->fn);
+    }
+  }
+
+  // deallocate these two in reverse order for ease of verbose mem debugging
+  chpl_mem_free(cfg->param_dyn_allocated, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->kernel_params, cfg->ln, cfg->fn);
+}
+
+static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
+  const int i = cfg->cur_param;
+  assert(i < cfg->n_params-2); // -2 because last two params are always ln and fn
+
+  cfg->param_dyn_allocated[i] = true;
+
+  cfg->kernel_params[i] = chpl_mem_alloc(sizeof(void*),
+                                         CHPL_RT_MD_GPU_KERNEL_PARAM, cfg->ln,
+                                         cfg->fn);
+
+  // TODO this doesn't work on EX, why?
+  // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
+  *(cfg->kernel_params[i]) = chpl_gpu_mem_alloc(size, CHPL_RT_MD_GPU_KERNEL_ARG,
+                                                cfg->ln, cfg->fn);
+
+  chpl_gpu_impl_copy_host_to_device(*(cfg->kernel_params[i]), arg, size,
+                                    cfg->stream);
+
+  cfg->cur_param++;
+}
+
+static void cfg_add_direct_param(kernel_cfg* cfg, void* arg) {
+  const int i = cfg->cur_param;
+  assert(i < cfg->n_params-2); // -2 because last two params are always ln and fn
+
+  cfg->param_dyn_allocated[i] = false;
+  cfg->kernel_params[i] = arg;
+
+  cfg->cur_param++;
+}
+
+static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
+  const int i = cfg->cur_pid;
+  assert(i < cfg->n_pids);
+  cfg->priv_insts[i].pid = pid;
+
+  if (pid < 0) {
+    // array/domain that is not privatized
+    CHPL_GPU_DEBUG("\tIgnoring pid: %" PRId64 "\n", pid);
+    cfg->priv_insts[i].dev_instance = NULL;
+  }
+  else {
+    CHPL_GPU_DEBUG("\t offloading pid %" PRId64 "\n", pid);
+
+    // adjust max_pid
+    if (pid > cfg->max_pid) {
+      cfg->max_pid = pid;
+    }
+
+    // create and stash a device instance. Note that we currently don't know how
+    // large the privatization table is. So, there's no table on the device to
+    // put the instance, yet. cfg_finalize_priv_table will create the actual
+    // table
+    void* dev_instance = chpl_gpu_mem_array_alloc(size,
+                                            CHPL_RT_MD_GPU_KERNEL_ARG,
+                                            cfg->ln, cfg->fn);
+
+    CHPL_GPU_DEBUG("\tprivatized device instance %p\n", dev_instance);
+
+    chpl_gpu_impl_copy_host_to_device(dev_instance,
+                                      chpl_privateObjects[pid].obj,
+                                      size,
+                                      cfg->stream);
+    cfg->priv_insts[i].dev_instance = dev_instance;
+
+    CHPL_GPU_DEBUG("\t offloaded pid %" PRId64 "\n", pid);
+  }
+
+  cfg->cur_pid++;
+}
+
+static void cfg_finalize_priv_table(kernel_cfg *cfg) {
+  // n_pids is what the compiler asks for. There can be some arrays
+  // with pid=-1 and n_pids will include those. But we don't need to offload
+  // them. Checking for `max_pid` is a more robust thing to do here
+  if (cfg->max_pid < 0) {
+    CHPL_GPU_DEBUG("No real private instances were found");
+    return;
+  }
+
+  if (cfg->cur_pid != cfg->n_pids) {
+    chpl_internal_error("All pids must have been added by now");
+  }
+
+  assert(cfg->priv_table_dev == NULL); // we'll create this now.
+
+  const size_t offload_size = (cfg->max_pid+1)*sizeof(chpl_privateObject_t);
+
+  // Engin: Here we can either:
+  // 1. Allocate and stage a table on the host, offload it to the device in one
+  // go or
+  // 2. Allocate a table directly on the device, offload instances one by one
+  //
+  // My instinct is that 1 is the faster/better approach, but I am not very
+  // confident in that. We can revisit that, especially if this turns out to be
+  // slower than we'd like.
+
+  // allocate and stage a table on the host side:
+  cfg->priv_table_host = chpl_mem_alloc(offload_size,
+                                    CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
+                                    cfg->ln, cfg->fn);
+
+  // we use `priv_insts` to populate the actual table
+  for (int i=0 ; i<cfg->n_pids ; i++) {
+    int64_t pid = cfg->priv_insts[i].pid;
+    void* dev_instance = cfg->priv_insts[i].dev_instance;
+
+    cfg->priv_table_host[pid].obj = dev_instance;
+  }
+
+  for (int i=0 ; i<cfg->max_pid+1 ; i++) {
+    CHPL_GPU_DEBUG("\tpriv_table[%d] = %p\n", i, cfg->priv_table_host[i].obj);
+  }
+
+  // allocate a table on the device and copy the staged table there:
+  cfg->priv_table_dev = chpl_gpu_mem_array_alloc(offload_size,
+                                                 CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
+                                                 cfg->ln, cfg->fn);
+
+  CHPL_GPU_DEBUG("Allocated privatization table %p\n",
+                 cfg->priv_table_dev);
+
+  chpl_gpu_impl_copy_host_to_device(cfg->priv_table_dev,
+                                    cfg->priv_table_host,
+                                    offload_size,
+                                    cfg->stream);
+
+  // set the global pointer on the device so the kernels can find the table:
+  void* dev_global = NULL;
+  size_t priv_table_ptr_size;
+  chpl_gpu_impl_load_global("chpl_privateObjects", &dev_global,
+                            &priv_table_ptr_size);
+  assert(dev_global);
+
+  CHPL_GPU_DEBUG("Global for the device table: %p\n", dev_global);
+
+  atomic_spinlock_t* lock = &(priv_table_lock[cfg->dev]);
+  while(!atomic_try_lock_spinlock_t(lock)) {
+    chpl_task_yield();
+  }
+
+  cfg->has_priv_table_lock = true;
+
+  if (chpl_gpu_impl_is_device_ptr(dev_global)) {
+    chpl_gpu_impl_copy_host_to_device(dev_global,
+                                      &(cfg->priv_table_dev),
+                                      sizeof(void*), cfg->stream);
+  }
+  else {
+    // the device global is not actually a device pointer. This means we are
+    // running in cpu-as-device mode. We shouldn't fiddle with
+    // `chpl_privateObjects` as that's the base table.
+  }
+
+  CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
+}
+
+void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn) {
+  void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
+                             CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
+  cfg_init((kernel_cfg*)ret, n_params, n_pids, ln, fn);
+
+  CHPL_GPU_DEBUG("Initialized kernel config for %d params and %d pids\n",
+                 n_params, n_pids);
+
+  return ret;
+}
+
+void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+
+  // unlock the privatization table on the device
+  if (cfg->has_priv_table_lock) {
+    atomic_unlock_spinlock_t(&(priv_table_lock[cfg->dev]));
+  }
+
+  // free GPU memory allocated for privatization
+  for (int i=0 ; i<cfg->n_pids ; i++) {
+    CHPL_GPU_DEBUG("Freeing privatized instance pid: %" PRId64 ", ptr: %p\n",
+                   cfg->priv_insts[i].pid,
+                   cfg->priv_insts[i].dev_instance);
+    chpl_gpu_mem_free(cfg->priv_insts[i].dev_instance, cfg->ln, cfg->fn);
+  }
+
+  if (cfg->priv_table_host) {
+    CHPL_GPU_DEBUG("Freeing priv_table_host %p\n", cfg->priv_table_host);
+    chpl_mem_free(cfg->priv_table_host, cfg->ln, cfg->fn);
+  }
+
+  if (cfg->priv_table_dev) {
+    CHPL_GPU_DEBUG("Freeing priv_table_dev %p\n", cfg->priv_table_dev);
+    chpl_gpu_mem_free(cfg->priv_table_dev, cfg->ln, cfg->fn);
+  }
+
+  chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
+  CHPL_GPU_DEBUG("Deinitialized kernel config\n");
+}
+
+void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size) {
+  CHPL_GPU_DEBUG("\tAdding pid: %" PRId64 " with size %zu\n", pid, size);
+  cfg_add_pid((kernel_cfg*)cfg, pid, size);
+  CHPL_GPU_DEBUG("\tAdded pid: %" PRId64 " with size %zu\n", pid, size);
+}
+
+void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
+  cfg_add_offload_param((kernel_cfg*)cfg, arg, size);
+  CHPL_GPU_DEBUG("\tAdded by-offload param: %p\n", arg);
+}
+
+void chpl_gpu_arg_pass(void* cfg, void* arg) {
+  cfg_add_direct_param((kernel_cfg*)cfg, arg);
+  CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
+}
+
+static void launch_kernel(const char* name,
+                          int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                          int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                          kernel_cfg* cfg) {
+  chpl_gpu_impl_use_device(cfg->dev);
+
+  chpl_gpu_diags_verbose_launch(cfg->ln, cfg->fn, cfg->dev,
                                 blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
 
-  chpl_gpu_impl_launch_kernel(ln, fn,
-                              name,
+  CHPL_GPU_START_TIMER(load_time);
+
+  CHPL_GPU_DEBUG("Kernel configuration %p\n", cfg);
+
+  CHPL_GPU_DEBUG("Loading function named %s\n", name);
+  void* function = chpl_gpu_impl_load_function(name);
+  assert(function);
+  CHPL_GPU_DEBUG("\tFunction Address: %p\n", function);
+
+  CHPL_GPU_STOP_TIMER(load_time);
+
+  CHPL_GPU_DEBUG("Creating kernel parameters\n");
+  CHPL_GPU_DEBUG("\tgridDims=(%d, %d, %d), blockDims(%d, %d, %d)\n",
+      grd_dim_x, grd_dim_y, grd_dim_z,
+      blk_dim_x, blk_dim_y, blk_dim_z);
+
+  for (int i = 0; i < cfg->n_params ; i++) {
+    CHPL_GPU_DEBUG("\tArg: %p\n", cfg->kernel_params[i]);
+    CHPL_GPU_DEBUG("\t\tVal: %p\n", *(cfg->kernel_params[i]));
+  }
+
+  cfg_finalize_priv_table(cfg);
+
+  CHPL_GPU_START_TIMER(kernel_time);
+
+  CHPL_GPU_DEBUG("Calling impl's launcher %s\n", name);
+  chpl_gpu_impl_launch_kernel(function,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
-                              stream,
-                              nargs, args);
+                              cfg->stream, (void**)(cfg->kernel_params));
+  CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
+
+
+#ifdef CHPL_GPU_ENABLE_PROFILE
+  chpl_gpu_impl_stream_synchronize(cfg->stream);
+#endif
+  CHPL_GPU_STOP_TIMER(kernel_time);
+
+  chpl_task_yield();
+
+  CHPL_GPU_START_TIMER(teardown_time);
+
+  // deinit them before synch as a (premature?) optimization
+  cfg_deinit_params(cfg);
+
+  CHPL_GPU_STOP_TIMER(teardown_time);
+
+  CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
+      "Prep: %Lf, "
+      "Kernel: %Lf, "
+      "Teardown: %Lf\n",
+      name, load_time, prep_time, kernel_time, teardown_time);
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    wait_stream(stream);
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg->stream);
+    wait_stream(cfg->stream);
   }
 #else
   chpl_gpu_impl_synchronize();
 #endif
 
-  va_end(args);
-
-  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n",
-                 chpl_task_getRequestedSubloc(),
-                 name);
 }
 
-inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
-                                        const char* name,
-                                        int64_t num_threads, int blk_dim, int nargs,
-                                        ...) {
 
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
-  void* stream = get_stream(dev);
+inline void chpl_gpu_launch_kernel(const char* name,
+                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                   void* _cfg) {
+
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+
+  chpl_gpu_impl_use_device(cfg->dev);
+
+  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tLocation: %s:%d\n"
+                 "\tKernel: %s\n"
+                 "\tNumArgs: %d\n",
+                 cfg->dev,
+                 chpl_lookupFilename(cfg->fn),
+                 cfg->ln,
+                 name,
+                 cfg->n_params);
+
+  launch_kernel(name,
+                grd_dim_x, grd_dim_y, grd_dim_z,
+                blk_dim_x, blk_dim_y, blk_dim_z,
+                cfg);
+
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg->stream);
+    wait_stream(cfg->stream);
+  }
+#else
+  chpl_gpu_impl_synchronize();
+#endif
+
+  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
+                 "\tKernel: %s\n", cfg->dev, name);
+}
+
+inline void chpl_gpu_launch_kernel_flat(const char* name,
+                                        int64_t num_threads, int blk_dim,
+                                        void* _cfg) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+
+  chpl_gpu_impl_use_device(cfg->dev);
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
@@ -278,45 +657,33 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  "\tStream: %p\n"
                  "\tNumArgs: %d\n"
                  "\tNumThreads: %"PRId64"\n",
-                 chpl_task_getRequestedSubloc(),
-                 chpl_lookupFilename(fn),
-                 ln,
+                 cfg->dev,
+                 chpl_lookupFilename(cfg->fn),
+                 cfg->ln,
                  name,
-                 stream,
-                 nargs,
+                 cfg->stream,
+                 cfg->n_params,
                  num_threads);
 
-  va_list args;
-  va_start(args, nargs);
-
   if (num_threads > 0){
-    chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
-        blk_dim, 1, 1);
-    chpl_gpu_diags_incr(kernel_launch);
+    int grd_dim_x = (num_threads+blk_dim-1)/blk_dim;
+    int grd_dim_y = 1;
+    int grd_dim_z = 1;
+    int blk_dim_x = blk_dim;
+    int blk_dim_y = 1;
+    int blk_dim_z = 1;
 
-    chpl_gpu_impl_launch_kernel_flat(ln, fn,
-                                     name,
-                                     num_threads, blk_dim,
-                                     stream,
-                                     nargs, args);
+    launch_kernel(name,
+                  grd_dim_x, grd_dim_y, grd_dim_z,
+                  blk_dim_x, blk_dim_y, blk_dim_z,
+                  cfg);
 
-#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    if (chpl_gpu_sync_with_host) {
-      CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-      wait_stream(stream);
-    }
-#else
-    chpl_gpu_impl_synchronize();
-#endif
   } else {
-  CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
+    CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
   }
-  va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n",
-                 chpl_task_getRequestedSubloc(),
-                 name);
+                 "\tKernel: %s\n", cfg->dev, name);
 }
 
 extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,

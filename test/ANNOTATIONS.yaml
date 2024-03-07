@@ -564,6 +564,9 @@ all:
   09/15/23:
     - text: Use per-task, per-device GPU streams for asynchronous execution (#23307)
       config: 1-node-p100, 1-node-mi60
+  01/11/24:
+    - text: Remove the old slicing rule (#24154)
+      config: chapcs
 
 # End all
 
@@ -2235,6 +2238,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Yield tuples by value when appropriate (#21789)
   03/14/23:
     - Eliminate extra destructions when yielding tuples (#21887)
+  12/01/23:
+    - Move the GpuSort Module code into the GPU module (#23989)
+  01/18/24:
+    - Remove 'use GPU' from ChapelGpuSupport (#24185)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2417,6 +2424,12 @@ arkouda: &arkouda-base
     - Scaffolding for multi-dimensional arrays (Bears-R-Us/arkouda#2829)
   11/21/23:
     - Update Arkouda release testing from 1.31 to 1.32 (#23900)
+  12/07/23:
+    - Array creation perf patch (Bears-R-Us/arkouda#2869)
+  12/11/23:
+    - Closes 2873 Short strings optimization for multicol groupby (Bears-R-Us/arkouda#2877)
+  01/07/24:
+    - Array API infrastructure and partial implementation (Bears-R-Us/arkouda#2865)
 
 
 arkouda-string:
@@ -2457,7 +2470,7 @@ arkouda-comp:
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
 
-shoc-triad-bw-lg:
+shoc-triad-all-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
 

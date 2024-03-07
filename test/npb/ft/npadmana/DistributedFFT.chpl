@@ -340,7 +340,7 @@ prototype module DistributedFFT {
       Iterate over the range ``r`` but in an offset manner based
       on the locale id.
   */
-  iter offset(r: range) { halt("Serial offset not implemented"); }
+  iter offset(r: range): int { halt("Serial offset not implemented"); }
 
   @chpldoc.nodoc
   iter offset(param tag: iterKind, r: range) where (tag==iterKind.standalone) {
@@ -391,7 +391,7 @@ prototype module DistributedFFT {
       this.planLg = setupPlan(arrType, ftType, dom, parDim, batchSizeLg, signOrKind, flags);
     }
 
-    iter batch() {
+    iter batch(): int {
       halt("Serial iterator not implemented");
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -132,8 +132,11 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleReturn(const uast::Return* ast, RV& rv) override;
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
+  void handleDisjunction(const AstNode * node, 
+                         VarFrame * currentFrame,
+                         const std::vector<VarFrame*>& frames, 
+                         bool total, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -472,8 +475,11 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
       for (const auto& pair : subs) {
         const ID& id = pair.first;
         const QualifiedType& qt = pair.second;
-        UniqueString fname = parsing::fieldIdToName(context, id);
-        actuals.push_back(CallInfoActual(qt, fname));
+        auto fieldAst = parsing::idToAst(context, id)->toVarLikeDecl();
+        if (fieldAst->storageKind() == QualifiedType::TYPE ||
+            fieldAst->storageKind() == QualifiedType::PARAM) {
+          actuals.push_back(CallInfoActual(qt, fieldAst->name()));
+        }
       }
     }
 
@@ -993,25 +999,6 @@ void CallInitDeinit::handleYield(const uast::Yield* ast, RV& rv) {
   processReturnThrowYield(ast, rv);
 }
 
-
-void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
-  // Any outer variables inited in the 'then' frame can be propagated up
-  VarFrame* frame = currentFrame();
-  VarFrame* parent = currentParentFrame();
-  VarFrame* thenFrame = currentThenFrame();
-  VarFrame* elseFrame = currentElseFrame();
-
-  // process end-of-block deinits in then/else blocks and then propagate
-  if (thenFrame && !thenFrame->returnsOrThrows) {
-    processDeinitsAndPropagate(thenFrame, frame, rv);
-  }
-  if (elseFrame && !elseFrame->returnsOrThrows) {
-    processDeinitsAndPropagate(elseFrame, frame, rv);
-  }
-
-  // propagate information out of Conditional itself
-  processDeinitsAndPropagate(frame, parent, rv);
-}
 void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
@@ -1027,12 +1014,27 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   // propagate information out of the Try itself
   processDeinitsAndPropagate(frame, parent, rv);
 }
+
+void CallInitDeinit::handleDisjunction(const uast::AstNode * node, 
+                                 VarFrame* currentFrame, 
+                                 const std::vector<VarFrame*>& frames, 
+                                 bool total, RV& rv) {
+  
+  for (auto frame : frames) {
+    if(!frame->returnsOrThrows) {
+      processDeinitsAndPropagate(frame, currentFrame, rv);
+    }
+  }
+
+  //propagate out of the disjunction itself
+  processDeinitsAndPropagate(currentFrame, currentParentFrame(), rv);
+}
+
 void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
   processDeinitsAndPropagate(frame, parent, rv);
 }
-
 
 void callInitDeinit(Resolver& resolver) {
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
@@ -1051,9 +1053,16 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
-  CallInitDeinit uv(resolver.context, resolver,
-                    splitInitedVars, elidedCopyFromIds);
-  uv.process(resolver.symbol, resolver.byPostorder);
+  // TODO: Run this for module initializer code as well. Currently if enabled,
+  // it breaks a large number of dyno tests that have module-initializer code
+  // containing things we can't resolve default-init for yet, such as
+  // fully-defaulted generic types. Either adjust the tests to expect the errors
+  // for unsupported code, or add the support, then enable this on modules.
+  if (!resolver.symbol->isModule()) {
+    CallInitDeinit uv(resolver.context, resolver,
+                      splitInitedVars, elidedCopyFromIds);
+    uv.process(resolver.symbol, resolver.byPostorder);
+  }
 }
 
 

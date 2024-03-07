@@ -15,6 +15,7 @@
 #ifndef LLVM_CLANG_BASIC_IDENTIFIERTABLE_H
 #define LLVM_CLANG_BASIC_IDENTIFIERTABLE_H
 
+#include "clang/Basic/DiagnosticIDs.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/TokenKinds.h"
 #include "llvm/ADT/DenseMapInfo.h"
@@ -49,6 +50,12 @@ enum class ReservedIdentifierStatus {
   ContainsDoubleUnderscore,
 };
 
+enum class ReservedLiteralSuffixIdStatus {
+  NotReserved = 0,
+  NotStartsWithUnderscore,
+  ContainsDoubleUnderscore,
+};
+
 /// Determine whether an identifier is reserved for use as a name at global
 /// scope. Such identifiers might be implementation-specific global functions
 /// or variables.
@@ -74,6 +81,21 @@ using IdentifierLocPair = std::pair<IdentifierInfo *, SourceLocation>;
 enum { IdentifierInfoAlignment = 8 };
 
 static constexpr int ObjCOrBuiltinIDBits = 16;
+
+/// The "layout" of ObjCOrBuiltinID is:
+///  - The first value (0) represents "not a special identifier".
+///  - The next (NUM_OBJC_KEYWORDS - 1) values represent ObjCKeywordKinds (not
+///    including objc_not_keyword).
+///  - The next (NUM_INTERESTING_IDENTIFIERS - 1) values represent
+///    InterestingIdentifierKinds (not including not_interesting).
+///  - The rest of the values represent builtin IDs (not including NotBuiltin).
+static constexpr int FirstObjCKeywordID = 1;
+static constexpr int LastObjCKeywordID =
+    FirstObjCKeywordID + tok::NUM_OBJC_KEYWORDS - 2;
+static constexpr int FirstInterestingIdentifierID = LastObjCKeywordID + 1;
+static constexpr int LastInterestingIdentifierID =
+    FirstInterestingIdentifierID + tok::NUM_INTERESTING_IDENTIFIERS - 2;
+static constexpr int FirstBuiltinID = LastInterestingIdentifierID + 1;
 
 /// One of these records is kept for each identifier that
 /// is lexed.  This contains information about whether the token was \#define'd,
@@ -289,7 +311,9 @@ public:
   ///
   /// For example, 'class' will return tok::objc_class if ObjC is enabled.
   tok::ObjCKeywordKind getObjCKeywordID() const {
-    if (ObjCOrBuiltinID < tok::NUM_OBJC_KEYWORDS)
+    static_assert(FirstObjCKeywordID == 1,
+                  "hard-coding this assumption to simplify code");
+    if (ObjCOrBuiltinID <= LastObjCKeywordID)
       return tok::ObjCKeywordKind(ObjCOrBuiltinID);
     else
       return tok::objc_not_keyword;
@@ -300,15 +324,30 @@ public:
   ///
   /// 0 is not-built-in. 1+ are specific builtin functions.
   unsigned getBuiltinID() const {
-    if (ObjCOrBuiltinID >= tok::NUM_OBJC_KEYWORDS)
-      return ObjCOrBuiltinID - tok::NUM_OBJC_KEYWORDS;
+    if (ObjCOrBuiltinID >= FirstBuiltinID)
+      return 1 + (ObjCOrBuiltinID - FirstBuiltinID);
     else
       return 0;
   }
   void setBuiltinID(unsigned ID) {
-    ObjCOrBuiltinID = ID + tok::NUM_OBJC_KEYWORDS;
-    assert(ObjCOrBuiltinID - unsigned(tok::NUM_OBJC_KEYWORDS) == ID
-           && "ID too large for field!");
+    assert(ID != 0);
+    ObjCOrBuiltinID = FirstBuiltinID + (ID - 1);
+    assert(getBuiltinID() == ID && "ID too large for field!");
+  }
+  void clearBuiltinID() { ObjCOrBuiltinID = 0; }
+
+  tok::InterestingIdentifierKind getInterestingIdentifierID() const {
+    if (ObjCOrBuiltinID >= FirstInterestingIdentifierID &&
+        ObjCOrBuiltinID <= LastInterestingIdentifierID)
+      return tok::InterestingIdentifierKind(
+          1 + (ObjCOrBuiltinID - FirstInterestingIdentifierID));
+    else
+      return tok::not_interesting;
+  }
+  void setInterestingIdentifierID(unsigned ID) {
+    assert(ID != tok::not_interesting);
+    ObjCOrBuiltinID = FirstInterestingIdentifierID + (ID - 1);
+    assert(getInterestingIdentifierID() == ID && "ID too large for field!");
   }
 
   unsigned getObjCOrBuiltinID() const { return ObjCOrBuiltinID; }
@@ -458,6 +497,10 @@ public:
   /// 7.1.3, C++ [lib.global.names]).
   ReservedIdentifierStatus isReserved(const LangOptions &LangOpts) const;
 
+  /// Determine whether \p this is a name reserved for future standardization or
+  /// the implementation (C++ [usrlit.suffix]).
+  ReservedLiteralSuffixIdStatus isReservedLiteralSuffixId() const;
+
   /// If the identifier is an "uglified" reserved name, return a cleaned form.
   /// e.g. _Foo => Foo. Otherwise, just returns the name.
   StringRef deuglifiedName() const;
@@ -594,7 +637,7 @@ public:
   /// Return the identifier token info for the specified named
   /// identifier.
   IdentifierInfo &get(StringRef Name) {
-    auto &Entry = *HashTable.insert(std::make_pair(Name, nullptr)).first;
+    auto &Entry = *HashTable.try_emplace(Name, nullptr).first;
 
     IdentifierInfo *&II = Entry.second;
     if (II) return *II;
@@ -668,6 +711,12 @@ public:
   /// Populate the identifier table with info about the language keywords
   /// for the language specified by \p LangOpts.
   void AddKeywords(const LangOptions &LangOpts);
+
+  /// Returns the correct diagnostic to issue for a future-compat diagnostic
+  /// warning. Note, this function assumes the identifier passed has already
+  /// been determined to be a future compatible keyword.
+  diag::kind getFutureCompatDiagKind(const IdentifierInfo &II,
+                                     const LangOptions &LangOpts);
 };
 
 /// A family of Objective-C methods.

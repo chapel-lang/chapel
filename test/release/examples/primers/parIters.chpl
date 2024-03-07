@@ -182,7 +182,7 @@ Using the standalone parallel 'count' iterator
 // iteration, the standalone version of the ``count()`` iterator is
 // used.
 //
-forall i in count(probSize) with (ref A) do
+forall i in count(probSize) do
   A[i] = i:real;
 
 writeln("After parallel initialization, A is:");
@@ -192,7 +192,7 @@ writeln();
 //
 // Invoking it again with a different low value:
 //
-forall i in count(n=probSize/2, low=probSize/4) with (ref A) do
+forall i in count(n=probSize/2, low=probSize/4) do
   A[i] = -A[i];
 
 writeln("After negating the middle of A in parallel:");

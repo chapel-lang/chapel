@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,10 +44,12 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   void* temp = NULL; \
   size_t temp_bytes = 0; \
   ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, \
-                                            (data_type*)result, n));\
+                                            (data_type*)result, n, \
+                                            (hipStream_t)stream));\
   ROCM_CALL(hipMalloc(((hipDeviceptr_t*)&temp), temp_bytes)); \
   ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, \
-                                            (data_type*)result, n));\
+                                            (data_type*)result, n, \
+                                            (hipStream_t)stream));\
   ROCM_CALL(hipMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (hipStream_t)stream)); \
   ROCM_CALL(hipFree(result)); \
@@ -77,11 +79,11 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipMalloc(&result, sizeof(kvp))); \
   void* temp = NULL; \
   size_t temp_bytes = 0; \
-  hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, n,\
-                                  (hipStream_t)stream);\
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, \
+                                            n, (hipStream_t)stream)); \
   ROCM_CALL(hipMalloc(&temp, temp_bytes)); \
-  hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, n,\
-                                  (hipStream_t)stream);\
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, \
+                                            n, (hipStream_t)stream)); \
   kvp result_host; \
   ROCM_CALL(hipMemcpyDtoHAsync(&result_host, result, sizeof(kvp),\
                                (hipStream_t)stream)); \

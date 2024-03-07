@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -731,6 +731,42 @@ static void testRelevantInit(void) {
   std::ignore = resolveModule(ctx, mod->id());
 }
 
+static void testOwnedUserInit(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  // Ensure we can resolve a user-defined initializer call for an owned class,
+  // which requires an implicit borrowing conversion of the receiver from owned
+  // to borrowed. In particular, test this for a class with a parent class that
+  // also defines an init, to ensure implicit subtype conversion to the parent
+  // class doesn't make it a candidate.
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + otherOps + R""""(
+    class Parent {
+      proc init() {}
+    }
+    class Child : Parent {
+      proc init() {
+        super.init();
+      }
+    }
+    var c = new owned Child();
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -760,6 +796,7 @@ int main() {
   testNotThisDot();
 
   testRelevantInit();
+  testOwnedUserInit();
 
   return 0;
 }

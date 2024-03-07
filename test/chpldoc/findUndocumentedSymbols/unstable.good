@@ -29,5 +29,3 @@ warning: 'M.a' at unstable.chpl:52 is undocumented
 warning: 'M.E' at unstable.chpl:53 is undocumented
 warning: 'M.A' at unstable.chpl:53 is undocumented
 warning: 'chpl_bar' at unstable.chpl:59 is undocumented
-================================================================================
-unstable.chpl:2: warning: an implicit module named 'unstable' is being introduced to contain file-scope code

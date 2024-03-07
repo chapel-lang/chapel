@@ -50,7 +50,7 @@ loop2();
 // CHECK: void @loop3
 proc loop3() {
   var tup: nn * int(32);
-  foreach i in 0..n {
+  foreach i in 0..n with (ref tup) {
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP3:[0-9]+]]
     tup[i] = i:int(32);
@@ -69,7 +69,7 @@ var globalTup: nn * int(32);
 
 // CHECK: void @loop4
 proc loop4() {
-  foreach i in 0..n {
+  foreach i in 0..n with (ref globalTup) {
     // CHECK: store i32 %
     // CHECK-SAME: !llvm.access.group ![[GROUP4:[0-9]+]]
     globalTup[i] = i:int(32);

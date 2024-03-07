@@ -104,7 +104,7 @@ param ZETA_P_FREE = 0x800;
 
 config const filename = "sedov15oct.lmesh";
 var infile = open(filename, ioMode.r);
-var reader = infile.reader();
+var reader = infile.reader(locking=false);
 
 if debug then writeln("Reading problem size...");
 const (numElems, numNodes) = reader.read(int, int);

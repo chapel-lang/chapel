@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -61,7 +61,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._writeOne(dc._kind, val, here);
+      dc._writeOne(_iokind.dynamic, val, here);
     }
 
     /* Serialize a value into a :record:`~IO.fileWriter` in JSON format */
@@ -524,10 +524,10 @@ module JSON {
           // it as a proper key for the map.
           var f = openMemFile();
           {
-            f.writer().withSerializer(jsonSerializer).write(key);
+            f.writer(locking=false).withSerializer(jsonSerializer).write(key);
           }
           var tmp : string;
-          f.reader().readAll(tmp);
+          f.reader(locking=false).readAll(tmp);
           writer.write(tmp);
         }
       }
@@ -584,9 +584,6 @@ module JSON {
     return (m, lastPos);
   }
 
-  @deprecated(notes="'JsonSerializer' is deprecated; please use 'jsonSerializer' instead")
-  type JsonSerializer = jsonSerializer;
-
   /*
     A JSON format deserializer to be used by :record:`~IO.fileReader`.
 
@@ -627,7 +624,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._readOne(dc._kind, val, here);
+      dc._readOne(_iokind.dynamic, val, here);
     }
 
     /*
@@ -657,7 +654,7 @@ module JSON {
       // - escaped strings
       if isNumericType(readType) || isBoolType(readType) {
         var x : readType;
-        reader._readOne(reader._kind, x, here);
+        reader._readOne(_iokind.dynamic, x, here);
         return x;
       } else if isStringType(readType) || isBytesType(readType) {
         // TODO: Ideally something like:
@@ -1109,9 +1106,9 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(defaultSerializer).write(s);
+            f.writer(locking=false).withSerializer(defaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(jsonDeserializer).read(keyType);
+          return f.reader(locking=false).withDeserializer(jsonDeserializer).read(keyType);
         }
       }
 
@@ -1130,9 +1127,9 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(defaultSerializer).write(s);
+            f.writer(locking=false).withSerializer(defaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(jsonDeserializer).read(key);
+          return f.reader(locking=false).withDeserializer(jsonDeserializer).read(key);
         }
       }
 
@@ -1174,7 +1171,4 @@ module JSON {
       }
     }
   }
-
-  @deprecated(notes="'JsonDeserializer' is deprecated; please use 'jsonDeserializer' instead")
-  type JsonDeserializer = jsonDeserializer;
 }

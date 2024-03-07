@@ -1,2 +1,1 @@
-innerModuleSharesName-topLevel-useInDiffScope.chpl:9: warning: an implicit module named 'innerModuleSharesName-topLevel-useInDiffScope' is being introduced to contain file-scope code
 whee

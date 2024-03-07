@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,11 @@ MAYBE_GPU static inline int chpl_macro_double_isnan(double x) { return isnan(x);
 MAYBE_GPU static inline int chpl_macro_float_isnan(float x) { return isnan(x); }
 MAYBE_GPU static inline int chpl_macro_double_signbit(double x) { return signbit(x); }
 MAYBE_GPU static inline int chpl_macro_float_signbit(float x) { return signbit(x); }
+
+MAYBE_GPU static inline double chpl_sqrt64(double x) { return sqrt(x);  }
+MAYBE_GPU static inline float  chpl_sqrt32(float x)  { return sqrtf(x); }
+MAYBE_GPU static inline double chpl_fabs64(double x) { return fabs(x);  }
+MAYBE_GPU static inline float  chpl_fabs32(float x)  { return fabsf(x); }
 
 // 32-bit Bessel functions aren't available on all platforms. For cases where
 // we know they're available use them since they should be faster, but in other

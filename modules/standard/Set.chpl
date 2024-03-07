@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -216,8 +216,8 @@ module Set {
       set, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
+      :arg eltType: The type of the elements of this set.
       :arg iterable: A collection of elements to add to this set.
-      :arg parSafe: If `true`, this set will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
       :arg initialCapacity: Integer value that specifies starting map size. The
@@ -516,8 +516,9 @@ module Set {
       :yields: A constant reference to an element in this set.
     */
     iter const these() const ref {
-      foreach idx in 0..#_htb.tableSize do
+      foreach idx in 0..#_htb.tableSize with (const ref this) {
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      }
     }
 
     @chpldoc.nodoc

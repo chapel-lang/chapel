@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,7 +40,7 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
   if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
       t->isOpaqueType() || t->isTaskIdType()  || t->isNilType() ||
       t->isCStringType() || t->isCVoidPtrType() || t->isCFnPtrType() ||
-      t->isNothingType() || t->isVoidType())
+      t->isNothingType() || t->isVoidType() || t->isCPtrType())
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||

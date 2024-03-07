@@ -191,6 +191,9 @@
   "2c837c22-d1aa-11e8-954d-10ddb1d4c3d5": [
     "compiler/llvm/llvmDebug.cpp"
   ],
+  "15d77cf4-bd7b-11ee-b488-ff57a08c3497": [
+    "compiler/llvm/llvmExtractIR.cpp"
+  ],
   "1de0f71c-d1aa-11e8-954d-10ddb1d4c3d5": [
     "compiler/llvm/llvmGlobalToWide.cpp"
   ],
@@ -677,6 +680,9 @@
   "a9aa4b58-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/RealType.h"
   ],
+  "868a79d8-bd7b-11ee-b488-ff57a08c3497": [
+    "frontend/include/chpl/types/Type.h"
+  ],
   "16268030-9f71-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/UnknownType.h"
   ],
@@ -986,6 +992,9 @@
   "7003a24e-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/framework/error-classes-list.cpp"
   ],
+  "b04803a8-bd7b-11ee-b488-ff57a08c3497": [
+    "frontend/lib/immediates/complex-support.c"
+  ],
   "360f852e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/immediates/num.cpp"
   ],
@@ -1067,6 +1076,9 @@
   "bd49d274-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/types/Param.cpp"
   ],
+  "ca233edc-bd7b-11ee-b488-ff57a08c3497": [
+    "frontend/lib/types/Type.cpp"
+  ],
   "2c60856a-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/uast/AstNode.cpp"
   ],
@@ -1105,6 +1117,9 @@
   ],
   "eda6a798-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/terminal.cpp"
+  ],
+  "43c3e828-bd85-11ee-b488-ff57a08c3497": [
+    "frontend/test/resolution/testScopeResolve.cpp"
   ],
   "3eb6fb72-300f-11ed-b71b-d7492178b4dc": [
     "frontend/tools/chpldoc/arg.cpp"
@@ -1260,8 +1275,11 @@
   "2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/Curl.chpl"
   ],
-  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+  "386cfb80-bd7c-11ee-b488-ff57a08c3497": [
     "modules/packages/DistributedBag.chpl"
+  ],
+  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "modules/packages/DistributedBagDeprecated.chpl"
   ],
   "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "modules/packages/DistributedDeque.chpl"
@@ -1301,6 +1319,9 @@
   ],
   "8885f7a4-9250-11ee-8bda-4776592287bc": [
     "modules/packages/NPBRandom.chpl"
+  ],
+  "1f7f5960-bd7c-11ee-b488-ff57a08c3497": [
+    "modules/packages/ParallelIO.chpl"
   ],
   "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
     "modules/packages/ProtobufProtocolSupport.chpl"

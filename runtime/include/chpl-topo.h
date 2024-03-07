@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -163,7 +163,6 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 // Returns True if the node is oversubscribed (locales are sharing
 // cores).
 chpl_bool chpl_topo_isOversubscribed(void);
-
 
 #ifdef __cplusplus
 } // end extern "C"

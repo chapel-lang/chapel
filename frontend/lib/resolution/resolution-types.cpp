@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -322,34 +322,13 @@ CallInfo CallInfo::create(Context* context,
     }
   }
 
-  // Check for method call, maybe construct a receiver.
-  if (!call->isOpCall()) {
-    if (auto called = call->calledExpression()) {
-      if (auto calledDot = called->toDot()) {
-
-        const AstNode* receiver = calledDot->receiver();
-        const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
-        const QualifiedType& qtReceiver = reReceiver.type();
-
-        // Check to make sure the receiver is a value or type.
-        if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
-            qtReceiver.kind() != QualifiedType::FUNCTION &&
-            qtReceiver.kind() != QualifiedType::MODULE) {
-
-          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-          if (actualAsts != nullptr) {
-            actualAsts->push_back(receiver);
-          }
-          calledType = qtReceiver;
-          isMethodCall = true;
-        }
-      }
-    }
-  }
-
-  // Get the type of the called expression.
-  if (isMethodCall == false) {
-    if (auto calledExpr = call->calledExpression()) {
+  // Set up a method call if relevant.
+  if (auto calledExpr = call->calledExpression()) {
+    // It shouldn't be possible to have definitions that could match either a
+    // normal method call or a call to 'this' on a field, so no need to
+    // disambiguate here; assume it'll be one or the other.
+    if (byPostorder.hasAst(calledExpr)) {
+      // If we have a resolved type for the expression, call its 'this'.
       const ResolvedExpression& r = byPostorder.byAst(calledExpr);
       calledType = r.type();
 
@@ -367,6 +346,27 @@ CallInfo CallInfo::create(Context* context,
         }
         // and reset calledType
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      }
+    } else if (!call->isOpCall()) {
+      // Check for normal method call, maybe construct a receiver.
+      if (auto called = call->calledExpression()) {
+        if (auto calledDot = called->toDot()) {
+          const AstNode* receiver = calledDot->receiver();
+          const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
+          const QualifiedType& qtReceiver = reReceiver.type();
+
+          // Check to make sure the receiver is a value or type.
+          if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
+              qtReceiver.kind() != QualifiedType::FUNCTION &&
+              qtReceiver.kind() != QualifiedType::MODULE) {
+            actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+            if (actualAsts != nullptr) {
+              actualAsts->push_back(receiver);
+            }
+            calledType = qtReceiver;
+            isMethodCall = true;
+          }
+        }
       }
     }
   }
@@ -763,6 +763,19 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+void CandidatesAndForwardingInfo::stringify(
+    std::ostream& ss, chpl::StringifyKind stringKind) const {
+  ss << "CandidatesAndForwardingInfo: ";
+  ss << "(candidates) ";
+  for (const auto& candidate : candidates) {
+    candidate->stringify(ss, stringKind);
+  }
+  ss << "(forwarding info) ";
+  for (const auto& info : forwardingInfo) {
+    info.stringify(ss, stringKind);
+  }
+}
+
 void CallInfoActual::stringify(std::ostream& ss,
                                chpl::StringifyKind stringKind) const {
   if (!byName_.isEmpty()) {
@@ -844,7 +857,7 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
     }
   }
 
-  return MostSpecificCandidate(fn, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, faMap, coercionFormal, coercionActual);
 }
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,

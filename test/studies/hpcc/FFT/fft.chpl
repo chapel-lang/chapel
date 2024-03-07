@@ -11,7 +11,7 @@
 // Use standard modules for less common Math functions, Bit operations, Random
 // numbers, Timing, and blockDist and Cyclic distributions
 //
-use Math, BitOps, NPBRandom, Time, BlockDist, CyclicDist;
+use Math, BitOps, Random, Time, BlockDist, CyclicDist;
 
 //
 // Use shared user module for computing HPCC problem sizes

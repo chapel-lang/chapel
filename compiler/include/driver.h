@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -193,6 +193,8 @@ extern bool fNoEarlyDeinit;
 extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
 extern bool fInferImplementsStmts;
+extern bool fIteratorContexts;
+extern bool fReturnByRef;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -237,11 +239,20 @@ extern bool ignore_errors;
 extern bool ignore_user_errors;
 extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
-extern bool fWarnConstLoops;
+
 extern bool fWarnIntUint;
+extern bool fWarnSmallIntegralFloat;
+extern bool fWarnIntegralFloat;
+extern bool fWarnFloatFloat;
+extern bool fWarnIntegralIntegral;
+extern bool fWarnImplicitNumericConversions;
+extern bool fWarnParamImplicitNumericConversions;
+
+extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
 extern bool fWarnUnstableStandard;
 extern bool fWarnUnstableInternal;
+extern bool fWarnPotentialRaces;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
@@ -252,6 +263,7 @@ extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;
 extern bool fReportGpu;
+extern bool fReportContextAdj;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 extern bool fReportGpuTransformTime;
@@ -301,6 +313,7 @@ extern bool fIncrementalCompilation;
 extern std::string llvmFlags;
 extern std::string llvmRemarksFilters;
 extern std::vector<std::string> llvmRemarksFunctionsToShow;
+extern bool fLlvmPrintPasses;
 
 extern bool fPrintAdditionalErrors;
 
@@ -310,8 +323,14 @@ extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
 extern bool fDynoVerifySerialization;
+extern bool fDynoGenLib;
+extern bool fDynoGenStdLib;
+extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
+
+extern bool fResolveConcreteFns;
+extern bool fIdBasedMunging;
 
 extern bool fNoIOGenSerialization;
 extern bool fNoIOSerializeWriteThis;

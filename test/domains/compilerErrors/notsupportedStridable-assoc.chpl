@@ -1,6 +1,6 @@
 use notsupportedCommon;
 
-writeln(dfltAssociativeBase.stridable);
+writeln(dfltAssociativeBase.strides);
 // also errors:
-writeln(dfltAssociativeSubdomain.stridable);
-//writeln(dfltAssociativeSparseSub.stridable);
+writeln(dfltAssociativeSubdomain.strides);
+//writeln(dfltAssociativeSparseSub.strides);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,10 +72,6 @@ module Time {
                                            out yday:    int(32),
                                            out isdst:   int(32));
 
-  /* Specifies the units to be used when certain functions return a time */
-  @deprecated(notes="The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.")
-  enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
-
   /* Begin day-of-week enums */
 
   /* Controls whether :type:`dayOfWeek` starts with `Monday = 0` or
@@ -143,15 +139,10 @@ module Time {
     Sunday
   }
 
-  @deprecated(notes="enum 'Day' is deprecated. Please use :enum:`day` instead")
-  enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
   /* Specifies the day of the week */
   @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-  @chpldoc.nodoc
-  proc DayOfWeek {
-    compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
-  }
+
   /* Days in the week, starting with `Monday` = 1 */
   @deprecated(notes="enum 'isoDayOfWeek' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum isoDayOfWeek {
@@ -162,10 +153,6 @@ module Time {
     Friday =    5,
     Saturday =  6,
     Sunday =    7
-  }
-  @chpldoc.nodoc
-  proc ISODayOfWeek {
-    compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
   }
 
   /* End day-of-week enums */
@@ -334,7 +321,7 @@ module Time {
   /* Return the number of days in month `month` during the year `year`.
      The number for a month can change from year to year due to leap years.
 
-     :throws IllegalArgumentError: Thrown if `month` is out of range.
+     :throws IllegalArgumentError: If `month` is out of range.
 */
   proc daysInMonth(year: int, month: int) : int throws {
     if month < 1 || month > 12 then
@@ -430,25 +417,6 @@ module Time {
     chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
 
     return new date(year + 1900, month + 1, mday);
-  }
-
-  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
-  proc type date.fromTimestamp(timestamp) : date {
-    return date.createFromTimestamp(timestamp);
-  }
-
-  /* The date that is `timestamp` seconds from the epoch */
-  @deprecated(notes="'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
-  proc type date.createFromTimestamp(timestamp: real) : date {
-    const sec = timestamp: int;
-    const us = ((timestamp-sec) * 1000000 + 0.5): int;
-    const td = new timeDelta(seconds=sec, microseconds=us);
-    return unixEpoch.getDate() + td;
-  }
-
-  @deprecated(notes="'date.fromOrdinal' is deprecated, please use 'date.createFromOrdinal' instead")
-  proc type date.fromOrdinal(ord) : date {
-    return date.createFromOrdinal(ord);
   }
 
   /* The `date` that is `ordinal` days from 1-1-0001 */
@@ -757,12 +725,6 @@ module Time {
     @unstable("timezone is unstable")
     proc timezone : shared Timezone? {
       return chpl_tz;
-    }
-
-    @chpldoc.nodoc
-    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
-    proc tzinfo {
-      return timezone;
     }
 
     /* The minimum representable `time` */
@@ -1144,9 +1106,6 @@ module Time {
     }
   }
 
-  @deprecated(notes="'datetime' is deprecated, please use :record:`dateTime` instead")
-  type datetime = dateTime;
-
   /* A record representing a combined `date` and `time` */
   record dateTime : serializable {
     var chpl_date: date;
@@ -1206,12 +1165,6 @@ module Time {
     @unstable("timezone is unstable")
     proc timezone : shared Timezone? {
       return chpl_time.timezone;
-    }
-
-    @chpldoc.nodoc
-    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
-    proc tzinfo {
-      return timezone;
     }
   }
 
@@ -1290,17 +1243,6 @@ module Time {
     return unixEpoch + td;
   }
 
-  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
-  proc type dateTime.fromTimestamp(timestamp: real) : dateTime {
-    return dateTime.createFromTimestamp(timestamp, nil);
-  }
-
-  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
-  proc type dateTime.fromTimestamp(timestamp: real,
-                                   in tz: shared Timezone?) : dateTime {
-    return dateTime.createFromTimestamp(timestamp, tz);
-  }
-
   /* The `dateTime` that is `timestamp` seconds from the epoch,
      in naive local time.
   */
@@ -1323,11 +1265,6 @@ module Time {
       var dt = dateTime.createUtcFromTimestamp(timestamp);
       return (dt + tz!.utcOffset(dt)).replace(tz=tz);
     }
-  }
-
-  @deprecated(notes="'dateTime.utcFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp' instead")
-  proc type dateTime.utcFromTimestamp(timestamp) : dateTime {
-    return dateTime.createUtcFromTimestamp(timestamp);
   }
 
   /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
@@ -1354,23 +1291,9 @@ module Time {
 
   /* Methods on dateTime values */
 
-  @deprecated(notes="'dateTime.getdate' is deprecated. Please use :proc:`dateTime.getDate` instead")
-  proc dateTime.getdate() : date {
-    return chpl_date;
-  }
-
   /* Get the `date` portion of the `dateTime` value */
   proc dateTime.getDate() : date {
     return chpl_date;
-  }
-
-  @deprecated(notes="'dateTime.gettime' is deprecated. Please use :proc:`dateTime.getTime` instead")
-  proc dateTime.gettime() : time {
-    if chpl_time.timezone.borrow() == nil then
-      return chpl_time;
-    else
-      return new time(hour=hour, minute=minute,
-                      second=second, microsecond=microsecond);
   }
 
   /* Get the `time` portion of the `dateTime` value, with `tz` = nil */
@@ -1517,23 +1440,11 @@ module Time {
     return getDate().isoWeekday();
   }
 
-  @chpldoc.nodoc
-  @deprecated(notes="`dateTime.isoweekday` is deprecated, please use `dateTime.getDate().weekday()` instead")
-  proc dateTime.isoweekday() : isoDayOfWeek {
-    return isoWeekday();
-  }
-
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
      and ISO day of the week
    */
   @deprecated(notes="`dateTime.isoCalendar` is deprecated; use `dateTime.getDate().isoWeekDate()` instead")
   proc dateTime.isoCalendar() : (int, int, int) {
-    return getDate().isoCalendar();
-  }
-
-  @chpldoc.nodoc
-  @deprecated(notes="`dateTime.isocalendar` is deprecated, please use `dateTime.getDate().isoWeekDate()` instead")
-  proc dateTime.isocalendar() : (int, int, int) {
     return getDate().isoCalendar();
   }
 
@@ -1941,9 +1852,6 @@ module Time {
     }
   }
 
-
-  @deprecated(notes="'timedelta' is deprecated. Please use :record:`timeDelta` instead")
-  type timedelta = timeDelta;
   /* A record representing an amount of time.  A `timeDelta` has fields
      representing days, seconds, and microseconds.  These fields are always
      kept within the following ranges:
@@ -2105,7 +2013,7 @@ module Time {
   }
 
   @chpldoc.nodoc
-  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : timeDelta {
+  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : bool {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls > rs then return true;
@@ -2152,6 +2060,7 @@ module Time {
 
   @chpldoc.nodoc
   operator :(t: timeDelta, type s:string) : string {
+    import Math;
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";
@@ -2167,13 +2076,13 @@ module Time {
     str += hours: string + ":";
     if minutes < 10 then
       str += "0";
-    str += minutes + ":";
+    str += minutes:string + ":";
     if seconds < 10 then
       str += "0";
-    str += seconds;
+    str += seconds:string;
     if microseconds != 0 {
       str += ".";
-      const usLog10 = log10(microseconds): int;
+      const usLog10 = Math.log10(microseconds): int;
       for i in 1..(5-usLog10) {
         str += "0";
       }
@@ -2182,10 +2091,6 @@ module Time {
     }
     return str;
   }
-
-  @chpldoc.nodoc
-  @deprecated(notes="'TZInfo' is deprecated, please use 'Timezone' instead")
-  class TZInfo: Timezone { }
 
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
@@ -2217,18 +2122,6 @@ module Time {
 
   // TODO: Add a timezone class implementation
 
-
-/*
-   :arg  unit: The units for the returned value
-   :type unit: :type:`TimeUnits`
-
-   :returns: The elapsed time since midnight, local time, in the units specified
-   :rtype:   `real(64)`
- */
-@deprecated(notes="'getCurrentTime()' is deprecated please use 'timeSinceEpoch().totalSeconds()' instead")
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
-  return _convert_microseconds(unit, chpl_now_time());
-
 /*
    :returns:  (year, month, day) as a tuple of 3 ints
 
@@ -2254,29 +2147,6 @@ proc getCurrentDayOfWeek() : day {
   chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
 
   return try! wday : day;
-}
-
-/*
-   Delay a task for a duration in the units specified. This function
-   will return without sleeping and emit a warning if the duration is
-   negative.
-
-   :arg  t: The duration for the time to sleep
-   :type t: `real`
-
-   :arg  unit: The units for the duration
-   :type unit: :type:`TimeUnits`
-*/
-@deprecated(notes="'sleep' with a 'TimeUnits' argument is deprecated. Please use 'sleep' with a time in seconds")
-inline proc sleep(t: real, unit: TimeUnits) : void {
-  use CTypes;
-  extern proc chpl_task_sleep(s:c_double) : void;
-
-  if t < 0 {
-    warning("sleep() called with negative time parameter: '", t, "'");
-    return;
-  }
-  chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
 }
 
 /*
@@ -2366,30 +2236,6 @@ record stopwatch {
   }
 
   /*
-     Returns the cumulative elapsed time, in the units specified, between
-     all pairs of calls to :proc:`start` and :proc:`stop`
-     since the timer was created or the last call to :proc:`clear`.
-     If the timer is running, the elapsed time since the last call to
-     :proc:`start` is added to the return value.
-
-     :arg  unit: The units for the returned value
-     :type unit: :type:`TimeUnits`
-
-     :returns: The elapsed time in the units specified
-     :rtype:   `real(64)`
-  */
-  @deprecated(notes="'stopwatch.elapsed' with a 'TimeUnits' argument is deprecated. Please call 'stopwatch.elapsed' without an argument and assume it returns a time in seconds.")
-  proc elapsed(unit: TimeUnits) : real {
-    if running {
-      var time2: _timevalue = chpl_now_timevalue();
-
-      return _convert_microseconds(unit, accumulated + _diff_time(time2, time));
-    } else {
-      return _convert_microseconds(unit, accumulated);
-    }
-  }
-
-  /*
      Returns the cumulative elapsed time, in seconds, between
      all pairs of calls to :proc:`start` and :proc:`stop`
      since the timer was created or the last call to :proc:`clear`.
@@ -2410,76 +2256,6 @@ record stopwatch {
   }
 }
 
-@deprecated(notes="'Timer' is deprecated, please use 'stopwatch' instead")
-record Timer {
-  @chpldoc.nodoc
-  var time:        _timevalue = chpl_null_timevalue();
-
-  @chpldoc.nodoc
-  var accumulated: real       = 0.0;
-
-  @chpldoc.nodoc
-  var running:     bool       = false;
-
-  /*
-     Clears the elapsed time. If the timer is running then it is restarted
-     otherwise it remains in the stopped state.
-  */
-  proc clear() : void {
-    accumulated = 0.0;
-
-    if running {
-      time = chpl_now_timevalue();
-    }
-  }
-
-  /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc ref start() : void {
-    if !running {
-      running = true;
-      time    = chpl_now_timevalue();
-    } else {
-      warning("start called on a timer that has not been stopped");
-    }
-  }
-
-  /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc ref stop() : void {
-    if running {
-      var time2: _timevalue = chpl_now_timevalue();
-
-      accumulated += _diff_time(time2, time);
-      running      = false;
-    } else {
-      warning("stop called on a timer that has not been started");
-    }
-  }
-
-  /*
-     Returns the cumulative elapsed time, in the units specified, between
-     all pairs of calls to :proc:`start` and :proc:`stop`
-     since the timer was created or the last call to :proc:`clear`.
-     If the timer is running, the elapsed time since the last call to
-     :proc:`start` is added to the return value.
-
-     :arg  unit: The units for the returned value
-     :type unit: :type:`TimeUnits`
-
-     :returns: The elapsed time in the units specified
-     :rtype:   `real(64)`
-  */
-  @deprecated(notes="'Timer.elapsed' with a 'TimeUnits' argument is deprecated. Please call 'stopwatch.elapsed' without an argument and assume it returns a time in seconds.")
-  proc elapsed(unit: TimeUnits = TimeUnits.seconds) : real {
-    if running {
-      var time2: _timevalue = chpl_now_timevalue();
-
-      return _convert_microseconds(unit, accumulated + _diff_time(time2, time));
-    } else {
-      return _convert_microseconds(unit, accumulated);
-    }
-  }
-}
-
 // returns diff of two time values in microseconds
 private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   extern proc chpl_timevalue_seconds(t:_timevalue):      int(64);
@@ -2492,34 +2268,6 @@ private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   var us2 = chpl_timevalue_microseconds(t2);
 
   return (s1 * 1.0e+6 + us1) - (s2 * 1.0e+6 + us2);
-}
-
-// converts a time specified by unit into seconds
-@deprecated(notes="'_convert_to_seconds' is deprecated without replacement")
-private proc _convert_to_seconds(unit: TimeUnits, us: real) {
-  select unit {
-    when TimeUnits.microseconds do return us *    1.0e-6;
-    when TimeUnits.milliseconds do return us *    1.0e-3;
-    when TimeUnits.seconds      do return us;
-    when TimeUnits.minutes      do return us *   60.0;
-    when TimeUnits.hours        do return us * 3600.0;
-  }
-
-  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-}
-
-// converts microseconds to another unit
-@deprecated(notes="'_convert_microseconds' is deprecated without replacement")
-private proc _convert_microseconds(unit: TimeUnits, us: real) {
-  select unit {
-    when TimeUnits.microseconds do return us;
-    when TimeUnits.milliseconds do return us /    1.0e+3;
-    when TimeUnits.seconds      do return us /    1.0e+6;
-    when TimeUnits.minutes      do return us /   60.0e+6;
-    when TimeUnits.hours        do return us / 3600.0e+6;
-  }
-
-  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
 }
 
 }

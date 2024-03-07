@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,7 +63,7 @@ module ObjectSerialization {
         st.str_style = iostringstyleInternal.data_toeof: int(64);
 
       dc._set_styleInternal(st);
-      dc._writeOne(dc._kind, val, here);
+      dc._writeOne(_iokind.dynamic, val, here);
     }
 
     /*
@@ -447,7 +447,7 @@ module ObjectSerialization {
         st.str_style = iostringstyleInternal.data_toeof: int(64);
 
       dc._set_styleInternal(st);
-      dc._readOne(dc._kind, val, here);
+      dc._readOne(_iokind.dynamic, val, here);
     }
 
     @chpldoc.nodoc

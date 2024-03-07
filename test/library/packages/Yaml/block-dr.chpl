@@ -15,10 +15,10 @@ proc main() {
 
   var f = openTempFile();
   {
-    f.writer(serializer=FormatWriter).writeln(B);
+    f.writer(serializer=FormatWriter, locking=false).writeln(B);
   }
   {
-    var DR = f.reader(deserializer=FormatReader).read([D] int);
+    var DR = f.reader(deserializer=FormatReader, locking=false).read([D] int);
     printDebugFmt(DR);
 
     assert(&& reduce (B == DR));

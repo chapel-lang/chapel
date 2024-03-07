@@ -101,8 +101,8 @@ void SIPostRABundler::collectUsedRegUnits(const MachineInstr &MI,
     assert(!Op.getSubReg() &&
            "subregister indexes should not be present after RA");
 
-    for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units)
-      UsedRegUnits.set(*Units);
+    for (MCRegUnit Unit : TRI->regunits(Reg))
+      UsedRegUnits.set(Unit);
   }
 }
 
@@ -131,6 +131,15 @@ bool SIPostRABundler::runOnMachineFunction(MachineFunction &MF) {
 
   bool Changed = false;
   for (MachineBasicBlock &MBB : MF) {
+    bool HasIGLPInstrs = llvm::any_of(MBB.instrs(), [](MachineInstr &MI) {
+      unsigned Opc = MI.getOpcode();
+      return Opc == AMDGPU::SCHED_GROUP_BARRIER || Opc == AMDGPU::IGLP_OPT;
+    });
+
+    // Don't cluster with IGLP instructions.
+    if (HasIGLPInstrs)
+      continue;
+
     MachineBasicBlock::instr_iterator Next;
     MachineBasicBlock::instr_iterator B = MBB.instr_begin();
     MachineBasicBlock::instr_iterator E = MBB.instr_end();

@@ -1,4 +1,0 @@
-depLgamma.chpl:6: warning: 'lgamma' has been deprecated in favor of lnGamma, please use that instead
-depLgamma.chpl:7: warning: 'lgamma' has been deprecated in favor of lnGamma, please use that instead
-true
-true

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -132,10 +132,10 @@ module Heap {
 
       :arg eltType: The type of the elements
 
-      :arg comparator: The comparator to use
-
       :arg parSafe: If `true`, this heap will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg comparator: The comparator to use
     */
     proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
       _checkType(eltType);
@@ -407,6 +407,9 @@ module Heap {
     :arg x: The list to initialize the heap from.
     :type x: `list(?t)`
 
+    :arg parSafe: If `true`, this heap will use parallel safe operations.
+    :type parSafe: `param bool`
+
     :arg comparator: The comparator to use
 
     :rtype: heap(t, comparator)
@@ -422,6 +425,9 @@ module Heap {
 
     :arg x: The array to initialize the heap from.
     :type x: `[?d] ?t`
+
+    :arg parSafe: If `true`, this heap will use parallel safe operations.
+    :type parSafe: `param bool`
 
     :arg comparator: The comparator to use
 

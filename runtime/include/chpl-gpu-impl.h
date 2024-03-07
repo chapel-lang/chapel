@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,17 +27,14 @@ extern "C" {
 
 void chpl_gpu_impl_init(int* num_devices);
 
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 const char* name,
+void* chpl_gpu_impl_load_function(const char* kernel_name);
+void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
+                               size_t* size);
+void chpl_gpu_impl_launch_kernel(void* kernel,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                  void* stream,
-                                 int nargs, va_list args);
-void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 void* stream,
-                                 int nargs, va_list args);
+                                 void** kernel_params);
 
 void* chpl_gpu_impl_mem_alloc(size_t size);
 void* chpl_gpu_impl_mem_array_alloc(size_t size);

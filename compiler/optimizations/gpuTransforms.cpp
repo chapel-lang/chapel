@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -84,6 +84,15 @@ static bool isFieldAccessPrimitive(CallExpr *call) {
       call->isPrimitive(PRIM_SET_SVEC_MEMBER);
 }
 
+static bool isPrivatizationTable(Symbol* sym) {
+  if (sym->defPoint->getModule()->modTag == MOD_INTERNAL) {
+    if (sym->name == astr("chpl_privateObjects")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // If any SymExpr is referring to a variable defined outside the
 // function return the SymExpr. Otherwise return nullptr
 static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
@@ -92,6 +101,11 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
+        if (isPrivatizationTable(var)) {
+          // TODO consider adding a flag to skip other variables, too
+          // we're covering this elsewhere
+          continue;
+        }
         if (!var->isParameter() && var != gVoid && var != gNil) {
           if (CallExpr* parent = toCallExpr(se->parentExpr)) {
             if (isFieldAccessPrimitive(parent)) {
@@ -360,6 +374,145 @@ void CreateGpuFunctionSpecializations::doit() {
   rewriteSpecializationsToCallOtherSpecializations();
 }
 
+class GpuAssertionReporter {
+ private:
+  CallExpr* compileTimeGpuAssertion_;
+  std::vector<CallExpr*> callStack_;
+
+  // Internal mutable state for printing the trace.
+  BaseAST* lastPrinted;
+
+  static bool shouldSkipInStaticTrace(CallExpr* call) {
+    if (developer) return false;
+
+    if (call->linenum() > 0 &&
+        call->getModule()->modTag == MOD_USER &&
+        !call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
+      return false;
+
+    return true;
+  }
+
+  static const char* maybeGetCallName(CallExpr* call) {
+    if (SymExpr* base = toSymExpr(call->baseExpr)) {
+      return base->symbol()->name;
+    }
+    return nullptr;
+  }
+
+  static const char* maybeSayLoopBody(ssize_t idx) {
+    if (idx == 0) return " in loop body";
+    return "";
+  }
+
+  /* Find the first element of the call stack that we should print. We shouldn't
+     print everything because module code is probably not relevant to the
+     general user, unless --developer is thrown.
+   */
+  ssize_t findFirstPrintableStackElement() const {
+    for (ssize_t i = ((ssize_t) callStack_.size()) - 1; i >= 0; i--) {
+      CallExpr* from = callStack_[i];
+      if (!shouldSkipInStaticTrace(from)) return i;
+    }
+
+    return -1;
+  }
+
+  void printNonGpuizableError(CallExpr* assertion, Expr* loc) const {
+    debuggerBreakHere();
+    const char* reason = "contains assertOnGpu()";
+    auto isAttributeSym = toSymExpr(assertion->get(1));
+    INT_ASSERT(isAttributeSym);
+    if (isAttributeSym->symbol() == gTrue) {
+      reason = "is marked with @assertOnGpu";
+    }
+    USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
+  }
+
+  ssize_t printNonGpuizableTraceHeader(BaseAST* ast, const char* msg) {
+    ssize_t traceFrom = ((ssize_t) callStack_.size()) - 1;
+    ssize_t firstPrintableStackElement = findFirstPrintableStackElement();
+    // If the call is in user code, we can print it as usual.
+    // But if it's in module code, maybe we don't want to show the exact reason
+    // gpuization failed (it's an implementation detail). Instead, we want
+    // to call out a standard function as being ineligible for GPU execution.
+    //
+    // If no stack element is printable, begrudgingly print the call anyway.
+    if (developer || ast->getModule()->modTag == MOD_USER || firstPrintableStackElement == -1) {
+      USR_PRINT(ast, "%s", msg);
+      lastPrinted = ast;
+    } else {
+      const char* functionName = "";
+      auto call = callStack_.at(firstPrintableStackElement);
+      if (auto name = maybeGetCallName(call)) {
+        functionName = astr(" '", name, "'");
+      }
+      USR_PRINT(call, "use of ineligible standard library function%s%s",
+                functionName, maybeSayLoopBody(firstPrintableStackElement));
+      lastPrinted = call;
+
+      // Since we printed a call partway in the stack, start the rest of the
+      // trace after that.
+      traceFrom = firstPrintableStackElement - 1;
+    }
+
+    return traceFrom;
+  }
+
+  void printRestOfGpuizableTrace(ssize_t traceFrom) {
+    for (ssize_t i = traceFrom; i >= 0; i--) {
+      CallExpr* from = callStack_[i];
+
+      if (shouldSkipInStaticTrace(from)) {
+        if (lastPrinted) {
+          USR_PRINT(lastPrinted, "  reached via standard library code");
+          lastPrinted = nullptr;
+        }
+        continue;
+      }
+
+      const char* functionName = maybeGetCallName(from);
+      const char* extra = maybeSayLoopBody(i);
+      if (functionName) {
+        USR_PRINT(from, "  reached via call to '%s'%s here", functionName, extra);
+      } else {
+        USR_PRINT(from, "  reached via this call%s", extra);
+      }
+
+      lastPrinted = from;
+    }
+  }
+
+ public:
+  void noteGpuizableAssertion(CallExpr* assertion) {
+    this->compileTimeGpuAssertion_ = assertion;
+  }
+
+  void pushCall(CallExpr* enter) {
+    callStack_.push_back(enter);
+  }
+
+  void popCall() {
+    callStack_.pop_back();
+  }
+
+  void fallbackReportGpuizationFailure(BlockStmt* blk) {
+    if(this->compileTimeGpuAssertion_) {
+      printNonGpuizableError(this->compileTimeGpuAssertion_, blk);
+      USR_STOP();
+    }
+  }
+
+  void reportNotGpuizable(CForLoop* loop, BaseAST* ast, const char *msg) {
+    if(this->compileTimeGpuAssertion_) {
+      printNonGpuizableError(this->compileTimeGpuAssertion_, loop);
+
+      ssize_t traceFrom = printNonGpuizableTraceHeader(ast, msg);
+      printRestOfGpuizableTrace(traceFrom);
+      USR_STOP();
+    }
+  }
+};
 
 // ----------------------------------------------------------------------------
 // GpuizableLoop
@@ -375,13 +528,15 @@ class GpuizableLoop {
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
   std::vector<CallExpr*> gpuAssertions_;
-  CallExpr* compileTimeGpuAssertion_;
-  const char* reason = nullptr;
+
+  GpuAssertionReporter assertionReporter_;
 
   CondStmt* gpuCond_ = nullptr;
   BlockStmt* cpuBlock_ = nullptr;
   BlockStmt* gpuBlock_ = nullptr;
   CForLoop* gpuLoop_ = nullptr;
+
+  std::vector<CallExpr*> pidGets_;
 
   // To allow move constructor
   GpuizableLoop() {}
@@ -431,6 +586,8 @@ public:
   void makeGpuOnly() const;
   void fixupNonGpuPath() const;
 
+  const std::vector<CallExpr*>& pidGets() const { return pidGets_; }
+
 private:
   CallExpr* findCompileTimeGpuAssertions();
   void printNonGpuizableError(CallExpr* assertion, Expr* loc);
@@ -438,26 +595,30 @@ private:
   void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
+  Symbol* getPidFieldForPrivatizationOffload(SymExpr* sym);
   bool symsInBodyAreGpuizable();
   bool callsInBodyAreGpuizable();
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
   bool extractUpperBound();
-  void reportNotGpuizable(const BaseAST* ast, const char *msg);
 
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
                                    std::set<FnSymbol*> visitedFns);
+
+  FnSymbol* createErroringStubForGpu(FnSymbol* fn);
 };
 
 std::unordered_map<CForLoop*, GpuizableLoop> eligibleLoops;
+std::unordered_set<CondStmt*> gpuBranches;
 
 GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   INT_ASSERT(blk->getFunction());
 
   this->loop_ = toCForLoop(blk);
+
   this->parentFn_ = toFnSymbol(blk->getFunction());
-  this->compileTimeGpuAssertion_ = findCompileTimeGpuAssertions();
+  this->assertionReporter_.noteGpuizableAssertion(findCompileTimeGpuAssertions());
   this->isEligible_ = evaluateLoop();
 
   // Ideally we should error out earlier than this with a more specific
@@ -465,12 +626,8 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   // There's one use case we want to exempt, which is failure to
   // gpuize a nested loop. In this case if there was a failure to gpuize
   // the outer loop we already would have errored.
-  if(this->compileTimeGpuAssertion_ &&
-    !this->isEligible_ &&
-    !isAlreadyInGpuKernel())
-  {
-    printNonGpuizableError(this->compileTimeGpuAssertion_, blk);
-    USR_STOP();
+  if(!this->isEligible_ && !isAlreadyInGpuKernel()) {
+    this->assertionReporter_.fallbackReportGpuizationFailure(blk);
   }
 
   cleanupAssertGpuizable();
@@ -519,17 +676,6 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   return nullptr;
 }
 
-void GpuizableLoop::printNonGpuizableError(CallExpr* assertion, Expr* loc) {
-    debuggerBreakHere();
-    const char* reason = "contains assertOnGpu()";
-    auto isAttributeSym = toSymExpr(assertion->get(1));
-    INT_ASSERT(isAttributeSym);
-    if (isAttributeSym->symbol() == gTrue) {
-      reason = "is marked with @assertOnGpu";
-    }
-    USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
-}
-
 bool GpuizableLoop::isAlreadyInGpuKernel() {
   return this->parentFn_->hasFlag(FLAG_GPU_CODEGEN);
 }
@@ -537,7 +683,7 @@ bool GpuizableLoop::isAlreadyInGpuKernel() {
 bool GpuizableLoop::evaluateLoop() {
   return isReportWorthy() &&
          parentFnAllowsGpuization() &&
-         !symsInBodyAreGpuizable() &&
+         symsInBodyAreGpuizable() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
 }
@@ -555,7 +701,7 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   FnSymbol *cur = this->parentFn_;
   while (cur) {
     if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-      reportNotGpuizable(cur, "parent function disallows execution on a GPU");
+      assertionReporter_.reportNotGpuizable(loop_, cur, "parent function disallows execution on a GPU");
       return false;
     }
 
@@ -572,25 +718,106 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   return true;
 }
 
+static bool symbolIsAField(SymExpr* expr) {
+  if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
+    if (isFieldAccessPrimitive(parent)) {
+      if (expr == parent->get(2)) {  // this is a field
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Symbol* GpuizableLoop::getPidFieldForPrivatizationOffload(SymExpr* symExpr) {
+  Symbol* sym = symExpr->symbol();
+  if (!isDefinedInTheLoops(sym, {this->loop_}) &&
+      !symbolIsAField(symExpr) &&
+      isRecordWrappedType(sym->type)) {
+    AggregateType* aggType = toAggregateType(sym->type);
+    INT_ASSERT(aggType);
+
+    return aggType->getField("_pid", /*fatal=*/ false);
+  }
+  return NULL;
+}
+
+static bool symbolIsAPid(SymExpr* expr) {
+  if (CallExpr *parent = toCallExpr(expr->parentExpr)) {
+    if (parent->isPrimitive(PRIM_ARRAY_GET) && parent->get(2) == expr) {
+      SymExpr* theArray = toSymExpr(parent->get(1));
+      INT_ASSERT(theArray);
+      if (theArray->symbol()->name == astr("chpl_privateObjects")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 bool GpuizableLoop::symsInBodyAreGpuizable() {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(this->loop_, symExprs);
   for(auto *symExpr : symExprs) {
+    Symbol* sym = symExpr->symbol();
     // forall loops that contain a reduction intent introduce a temporary
     // variable with a special flag that we'll look for (for the time being we
     // want to not gpuize these loops).
-    if(symExpr->symbol()->hasFlag(FLAG_REDUCTION_TEMP)) {
-      return true;
+    if(sym->hasFlag(FLAG_REDUCTION_TEMP)) {
+      return false;
     }
     // gotos that jump outside the loop cannot be gpuized
     if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
       if (auto label = toSymExpr(gotostmt->label)) {
-        if (!isDefinedInTheLoops(label->symbol(), {this->loop_})) return true;
+        if (!isDefinedInTheLoops(label->symbol(), {this->loop_}))
+          return false;
       }
     }
+
+    // TODO: at this point we should just record privatized symbols used in the
+    // loop body. Currently, the compiler can sometimes generate two `pidGets`
+    // for the same thing. This should be OK; but runtime is probably doing
+    // redundant work.
+    if(Symbol* pidField = getPidFieldForPrivatizationOffload(symExpr)) {
+      // the symbol is an array/domain record with `_pid` field
+      SET_LINENO(symExpr);
+      CallExpr* pidGet = new CallExpr(PRIM_GET_MEMBER_VALUE, sym, pidField);
+      pidGets_.push_back(pidGet);
+    }
+    else if (symbolIsAPid(symExpr)) {
+      // the symbol is an index into `chpl_privateObjects`
+      CallExpr* move = toCallExpr(sym->getSingleDef()->getStmtExpr());
+      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+
+      CallExpr* rhs = toCallExpr(move->get(2));
+      INT_ASSERT(rhs && rhs->isPrimitive(PRIM_GET_MEMBER_VALUE));
+
+      pidGets_.push_back(rhs);
+    }
   }
-  return false;
+
+  return true;
+}
+
+FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
+  SET_LINENO(fn);
+
+  // set up the new function
+  FnSymbol* gpuCopy = fn->copy();
+  gpuCopy->addFlag(FLAG_GPU_CODEGEN);
+  fn->defPoint->insertBefore(new DefExpr(gpuCopy));
+
+  // modify its body
+  BlockStmt* gpuCopyBody = new BlockStmt();
+  VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
+
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_INT_ERROR));
+  gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
+
+  gpuCopy->body->replace(gpuCopyBody);
+
+  return gpuCopy;
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizable() {
@@ -628,7 +855,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
       if ((is != FAST_AND_LOCAL)) {
-        reportNotGpuizable(call, "primitive is not fast and local");
+        assertionReporter_.reportNotGpuizable(loop_, call, "call to a primitive that is not fast and local");
         return false;
       }
     } else if (call->isResolved()) {
@@ -637,8 +864,26 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
       FnSymbol *fn = call->resolvedFunction();
 
+      // nonLocalAccess function is really complicated, on a quick look it has:
+      // - allocation (RAD cache)
+      // - atomics
+      // - communication
+      // I tried adding stubs for these to just to get it to compile, but it
+      // spiraled out too fast. So, we'll just make a new copy for GPU here that
+      // just errors. We don't expect this function to be called until we have
+      // GPU-driven communication.
+      if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU)) {
+        FnSymbol* gpuCopy = createErroringStubForGpu(fn);
+        call->setResolvedFunction(gpuCopy);
+
+        // now, this call is safe
+        continue;
+      }
+
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-        reportNotGpuizable(fn, "function is marked as not eligible for GPU execution");
+        assertionReporter_.pushCall(call);
+        assertionReporter_.reportNotGpuizable(loop_, fn, "function is marked as not eligible for GPU execution");
+        assertionReporter_.popCall();
         return false;
       }
 
@@ -649,18 +894,25 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         std::string msg = "function calls out to extern function (";
         msg += fn->name;
         msg += "), which is not marked as GPU eligible";
-        reportNotGpuizable(fn, msg.c_str());
+        assertionReporter_.reportNotGpuizable(loop_, fn, msg.c_str());
         return false;
       }
 
       if (hasOuterVarAccesses(fn)) {
-        reportNotGpuizable(call, "call has outer var access");
+        assertionReporter_.pushCall(call);
+        assertionReporter_.reportNotGpuizable(loop_, fn, "called function has outer var access");
+        assertionReporter_.popCall();
         return false;
       }
 
       indentGPUChecksLevel += 2;
-      if (okFns.count(fn) != 0 ||
-          callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns)) {
+      bool ok = okFns.count(fn) != 0;
+      if (!ok) {
+        assertionReporter_.pushCall(call);
+        ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns);
+        assertionReporter_.popCall();
+      }
+      if (ok) {
         indentGPUChecksLevel -= 2;
         okFns.insert(fn);
       } else {
@@ -700,7 +952,7 @@ bool GpuizableLoop::extractIndicesAndLowerBounds() {
     INT_ASSERT(bs->body.length == (int)this->loopIndices_.size());
     INT_ASSERT(bs->body.length == (int)this->lowerBounds_.size());
   } else {
-    reportNotGpuizable(loop_, "loop indices do not match expected pattern for GPU execution");
+    assertionReporter_.reportNotGpuizable(loop_, loop_, "loop indices do not match expected pattern for GPU execution");
     return false;
   }
 
@@ -727,20 +979,16 @@ bool GpuizableLoop::extractUpperBound() {
   }
 
   if(upperBound_ == nullptr) {
-    reportNotGpuizable(loop_, "upper bound does not match expected pattern for GPU execution");
+    assertionReporter_.reportNotGpuizable(loop_, loop_, "upper bound does not match expected pattern for GPU execution");
     return false;
   }
   return true;
 }
 
-void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
-  this->reason = msg;
-  if(this->compileTimeGpuAssertion_) {
-    printNonGpuizableError(this->compileTimeGpuAssertion_, loop_);
-    USR_PRINT(ast, "%s", msg);
-    USR_STOP();
-  }
-}
+struct KernelActual {
+  Symbol* sym;
+  int8_t kind;  // assigned to one or more values of GpuArgKind or'd together
+};
 
 // ----------------------------------------------------------------------------
 // GpuKernel
@@ -758,7 +1006,7 @@ class GpuKernel {
   const GpuizableLoop &gpuLoop;
   FnSymbol* fn_;
   std::vector<Symbol*> kernelIndices_;
-  std::vector<Symbol*> kernelActuals_;
+  std::vector<KernelActual> kernelActuals_;
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
   SymExpr* blockSize_;
@@ -767,7 +1015,7 @@ class GpuKernel {
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
 
   FnSymbol* fn() const { return fn_; }
-  const std::vector<Symbol*>& kernelActuals() { return kernelActuals_; }
+  const std::vector<KernelActual>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   SymExpr* blockSize() const {return blockSize_; }
 
@@ -777,6 +1025,7 @@ class GpuKernel {
   static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
   void populateBody(FnSymbol *outlinedFunction);
   void normalizeOutlinedFunction();
+  void setLateGpuizationFailure(bool flag);
   void finalize();
 
   void generateIndexComputation();
@@ -824,11 +1073,40 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
 
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   Type* symType = symInLoop->typeInfo();
+  Type* symValType = symType->getValType();
+
   IntentTag intent = symInLoop->isRef() ? INTENT_REF : INTENT_IN;
   ArgSymbol* newFormal = new ArgSymbol(intent, symInLoop->name, symType);
   fn_->insertFormalAtTail(newFormal);
 
-  kernelActuals_.push_back(symInLoop);
+
+  KernelActual actual;
+  actual.sym = symInLoop;
+
+  if (isClass(symValType) ||
+      (!symInLoop->isRef() && !isAggregateType(symValType))) {
+    // class: must be on GPU memory
+    // scalar: can be passed as an argument directly
+    actual.kind = GpuArgKind::ADDROF;
+  }
+  else if (symInLoop->isRef()) {
+    // ref: we assume that it is not on GPU memory to be safe, so offload it,
+    // but while doing so, we don't need to get the address of it. Because we
+    // just copy the value pointed by it.
+    // ENGIN: it is questionable whether we want to do this. This is creating
+    // a copy of something that was referred to by this `ref`. Accessing a
+    // `ref` shouldn't trigger a copy, unless... it was put to a "task
+    // private" variable:
+    // ref x = y; foreach ... with (var inBody = x)
+    // Consider [const] ref array formals
+    actual.kind = GpuArgKind::OFFLOAD;
+  }
+  else {
+    // we don't know what this is: offload
+    actual.kind = GpuArgKind::ADDROF | GpuArgKind::OFFLOAD;
+  }
+
+  kernelActuals_.push_back(actual);
   copyMap_.put(symInLoop, newFormal);
 
   return newFormal;
@@ -1015,6 +1293,9 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
         else if (gpuLoop.isIndexVariable(sym)) {
           // These are handled already, nothing to do
         }
+        else if (sym->name == astr("chpl_privateObjects")) {
+          // we are covering this elsewhere
+        }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
             if (isFieldAccessPrimitive(parent)) {
@@ -1027,7 +1308,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
                 addKernelArgument(sym);
               }
               else {
-                INT_FATAL("Malformed PRIM_GET_MEMBER_*");
+                this->setLateGpuizationFailure(true);
               }
             }
             else if (parent->isPrimitive()) {
@@ -1043,7 +1324,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
               }
             }
             else {
-              INT_FATAL("Unexpected call expression");
+              this->setLateGpuizationFailure(true);
             }
           } else if (CondStmt* cond = toCondStmt(symExpr->parentExpr)) {
             // Parent is a conditional statement.
@@ -1051,7 +1332,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
               addKernelArgument(sym);
             }
           } else {
-            INT_FATAL("Unexpected symbol expression");
+            this->setLateGpuizationFailure(true);
           }
         }
       }
@@ -1065,6 +1346,9 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
   update_symbols(outlinedFunction->body, &copyMap_);
 }
 
+void GpuKernel::setLateGpuizationFailure(bool flag) {
+  this->lateGpuizationFailure_ = flag;
+}
 
 void GpuKernel::normalizeOutlinedFunction() {
   normalize(fn_);
@@ -1076,7 +1360,7 @@ void GpuKernel::normalizeOutlinedFunction() {
   collectDefExprs(fn_, defExprsInBody);
   for_vector (DefExpr, def, defExprsInBody) {
     if(def->sym->type == dtUnknown) {
-      this->lateGpuizationFailure_ = true;
+      this->setLateGpuizationFailure(true);
     }
   }
 
@@ -1262,10 +1546,6 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
     call->insertAtTail(new_IntSymbol(blockSize));
   }
 
-  for_vector (Symbol, actual, info.kernelActuals()) {
-    call->insertAtTail(new SymExpr(actual));
-  }
-
   return call;
 }
 
@@ -1273,10 +1553,45 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                                   GpuKernel &kernel) {
   BlockStmt* gpuBlock = new BlockStmt();
 
+  VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
+
+  CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
+                    new_IntSymbol(kernel.kernelActuals().size()),
+                    new_IntSymbol(gpuLoop.pidGets().size()));
+  gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
+
+  // first, add pids
+  for (auto pidGet: gpuLoop.pidGets()) {
+    Type* pidType = pidGet->get(2)->typeInfo();
+    Symbol* pid = new VarSymbol("pid_tmp", pidType);
+    gpuBlock->insertAtTail(new DefExpr(pid));
+    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
+
+    AggregateType* privUserType = toAggregateType(pidGet->get(1)->typeInfo());
+    Symbol* instanceSym = privUserType->getField("_instance");
+    Symbol* instanceSize = new VarSymbol("instance_size", dtInt[INT_SIZE_64]);
+
+    gpuBlock->insertAtTail(new DefExpr(instanceSize));
+    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
+                                        new CallExpr(PRIM_SIZEOF_BUNDLE,
+                                                     instanceSym)));
+
+    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
+                                        instanceSize));
+  }
+
+  // now, add kernel actuals
+  for (auto actual: kernel.kernelActuals()) {
+    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actual.sym,
+                                        new_IntSymbol(actual.kind)));
+  }
+
   // populate the gpu block
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
+  gpuCall->insertAtTail(new SymExpr(cfg));
   gpuBlock->insertAtTail(gpuCall);
+  gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
   gpuLoop.gpuLoop()->replace(gpuBlock);
 
   FnSymbol *fnContainingLoop = gpuBlock->getFunction();
@@ -1293,7 +1608,6 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
     // the conditional.
     gpuLoop.fixupNonGpuPath();
   }
-
 }
 
 static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
@@ -1441,6 +1755,64 @@ static void logGpuizableLoops() {
   }
 }
 
+static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
+  Expr* snippedChild = call->get(1)->remove();
+  call->replace(snippedChild);
+}
+
+// iterator lowering inserts AST like this in order to carry information about 'in'
+// intent variables to gpu lowering.
+//
+//   (given an 'in' intent for a variable 'x'):
+//     const capturedX = copy-of(x);
+//     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(capturedX));
+//
+// Once we're done with gpu lowering we no longer need this primitive and so we
+// remove it.
+static void cleanupTaskIndependentCapturePrimitives() {
+  for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
+    if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE))
+      cleanupTaskIndependentCapturePrimitive(callExpr);
+}
+
+static void reportErrorsForBadBlockSizeCalls() {
+  CallExpr* explainAnchor = nullptr;
+  for_alive_in_Vec(CallExpr, callExpr, gCallExprs) {
+    if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+      if (callExpr->getFunction()->hasFlag(FLAG_GPU_SPECIALIZATION)) {
+        // Assume that this primitive got here by being copied, and that the
+        // other location will error about it. Since both copies of the primitive
+        // will have the same location, erroring here would lead to duplicates.
+        continue;
+      }
+
+      USR_FATAL_CONT(callExpr, "'setBlockSize' can only be used in bodies of GPU-eligible loops");
+      explainAnchor = callExpr;
+
+      // Search forward to try find the CForLoop corresponding to the GPU loop.
+      // This is just a heuristic to detect common erroneous uses for setBlockSize.
+      auto search = callExpr->next;
+      while (search) {
+        // Try recognizing a GPU-eligible loop that the blockSize call could've
+        // applied to by detecting the loop's dynamic launch check (i.e.,
+        // the "if runningOnGpuLocale()" conditional).
+
+        auto condStmt = toCondStmt(search);
+        if (gpuBranches.count(condStmt) > 0) {
+          USR_PRINT(condStmt, "if you meant to set the block size of this GPU "
+                              "loop, move the 'setBlockSize' call into the loop "
+                              "body");
+          break;
+        }
+
+        search = search->next;
+      }
+    }
+  }
+  if (explainAnchor) {}
+  USR_STOP();
+}
+
 // ----------------------------------------------------------------------------
 
 void lateGpuTransforms() {
@@ -1461,6 +1833,9 @@ void lateGpuTransforms() {
                    gpuTransformTimer.elapsedSecs() << std::endl;
     }
   }
+
+  cleanupTaskIndependentCapturePrimitives();
+  reportErrorsForBadBlockSizeCalls();
 }
 
 bool isLoopGpuBound(CForLoop* loop) {
@@ -1526,6 +1901,7 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
   // easier to wrangle the CondStmt AST elsewhere (c.f. makeCpuOnly,
   // makeGpuOnly).
   CondStmt* cond = new CondStmt(condExpr, gpuBlock, cpuBlock);
+  gpuBranches.insert(cond);
 
   // first, make sure the conditional is in place
   cpuLoop()->insertBefore(cond);

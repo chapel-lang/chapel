@@ -85,7 +85,7 @@ proc main() {
   // *** Fragment control so that we have a single task running on
   // *** every locale.
   //
-  coforall loc in Locales with (ref minTimes, ref validAnswers) do on loc {
+  coforall loc in Locales do on loc {
 
     var execTime: [1..numTrials] real;
 

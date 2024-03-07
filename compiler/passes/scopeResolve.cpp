@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,7 +70,8 @@ using VisitedModulesSet = std::set<std::pair<ModuleSymbol*, const char*>>;
 // key: pair of module symbol and name to lookup
 // value: vector of Symbol* that it resolved to
 static std::unordered_map<std::pair<ModuleSymbol*, const char*>,
-                          std::vector<Symbol*>> modSymsCache;
+                          std::vector<Symbol*>,
+                          chpl::detail::hasher<std::pair<ModuleSymbol*, const char*>>> modSymsCache;
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
@@ -424,6 +425,23 @@ static void scopeResolve(ForallStmt*         forall,
   scopeResolve(loopBody->body, bodyScope);
 }
 
+static void scopeResolveForeachLoop(ForLoop* foreach,
+                                    const ResolveScope* parent)
+{
+  INT_ASSERT(foreach->isOrderIndependent());
+
+  BlockStmt*    loopBody  = foreach->loopBody();
+  ResolveScope* bodyScope = new ResolveScope(loopBody, parent);
+
+  for_shadow_vars_and_defs(svar, sdef, temp, foreach) {
+    bodyScope->extend(svar);
+    if (sdef->init != NULL)
+      scopeResolveExpr(sdef->init, bodyScope);
+  }
+
+  scopeResolve(loopBody->body, bodyScope);
+}
+
 static void scopeResolve(FnSymbol*           fn,
                          const ResolveScope* parent) {
   ResolveScope* scope = new ResolveScope(fn, parent);
@@ -634,6 +652,13 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
       if (def->init != NULL) {
         scopeResolveExpr(def->init, scope);
+      }
+
+    } else if (ForLoop* forLoop = toForLoop(stmt)) {
+      if(forLoop->isOrderIndependent()) {
+        scopeResolveForeachLoop(forLoop, scope);
+      } else {
+        scopeResolveExpr(stmt, scope);
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
@@ -890,29 +915,6 @@ static bool callSpecifiesClassKind(CallExpr* call) {
           call->isNamed("chpl__distributed"));
 }
 
-// Supports deprecation by Vass in 1.31 to implement #17131.
-static bool tryReplaceStridableSR(const char* name, UnresolvedSymExpr* use) {
-  CallExpr* pCall = toCallExpr(use->parentExpr);
-  if (pCall == nullptr)
-    if (NamedExpr* pNamed = toNamedExpr(use->parentExpr))
-      pCall = toCallExpr(pNamed->parentExpr);
-  return tryReplaceStridable(pCall, name, use);
-}
-
-// Supports deprecation by Vass in 1.31 to implement #17131.
-// Sometimes lookupAndCount() will return a type method 'stridable'.
-// This is more likely a bug. So we steamroll over it.
-static bool tryReplaceStridableSR(const char* name, UnresolvedSymExpr* use,
-                                Symbol* sym) {
-  if (!strcmp(name, "stridable"))
-    if (FnSymbol* symFn = toFnSymbol(sym))
-      if (symFn->thisTag == INTENT_TYPE)
-        if (symFn->getModule()->modTag == MOD_INTERNAL)
-          // ignore 'sym'
-          return tryReplaceStridableSR(name, use);
-  return false;
-}
-
 static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                          bool returnRename) {
   SET_LINENO(usymExpr);
@@ -950,11 +952,7 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   Symbol* sym = lookupAndCount(name, usymExpr, nSymbols, returnRename,
                                &renameLoc);
   if (sym != NULL) {
-    if (!tryReplaceStridableSR(name, usymExpr, sym))
-      resolveUnresolvedSymExpr(usymExpr, sym);
-
-  } else if (tryReplaceStridableSR(name, usymExpr)) {
-    // handled
+    resolveUnresolvedSymExpr(usymExpr, sym);
 
   } else {
     updateMethod(usymExpr);
@@ -3241,7 +3239,6 @@ static void processGetVisibleSymbols() {
     }
   }
 }
-
 
 void scopeResolve() {
   addToSymbolTable();

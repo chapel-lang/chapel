@@ -170,8 +170,7 @@ SymbolManager::getRegionValueSymbol(const TypedValueRegion* R) {
   void *InsertPos;
   SymExpr *SD = DataSet.FindNodeOrInsertPos(profile, InsertPos);
   if (!SD) {
-    SD = (SymExpr*) BPAlloc.Allocate<SymbolRegionValue>();
-    new (SD) SymbolRegionValue(SymbolCounter, R);
+    SD = new (BPAlloc) SymbolRegionValue(SymbolCounter, R);
     DataSet.InsertNode(SD, InsertPos);
     ++SymbolCounter;
   }
@@ -189,8 +188,7 @@ const SymbolConjured* SymbolManager::conjureSymbol(const Stmt *E,
   void *InsertPos;
   SymExpr *SD = DataSet.FindNodeOrInsertPos(profile, InsertPos);
   if (!SD) {
-    SD = (SymExpr*) BPAlloc.Allocate<SymbolConjured>();
-    new (SD) SymbolConjured(SymbolCounter, E, LCtx, T, Count, SymbolTag);
+    SD = new (BPAlloc) SymbolConjured(SymbolCounter, E, LCtx, T, Count, SymbolTag);
     DataSet.InsertNode(SD, InsertPos);
     ++SymbolCounter;
   }
@@ -206,8 +204,7 @@ SymbolManager::getDerivedSymbol(SymbolRef parentSymbol,
   void *InsertPos;
   SymExpr *SD = DataSet.FindNodeOrInsertPos(profile, InsertPos);
   if (!SD) {
-    SD = (SymExpr*) BPAlloc.Allocate<SymbolDerived>();
-    new (SD) SymbolDerived(SymbolCounter, parentSymbol, R);
+    SD = new (BPAlloc) SymbolDerived(SymbolCounter, parentSymbol, R);
     DataSet.InsertNode(SD, InsertPos);
     ++SymbolCounter;
   }
@@ -222,8 +219,7 @@ SymbolManager::getExtentSymbol(const SubRegion *R) {
   void *InsertPos;
   SymExpr *SD = DataSet.FindNodeOrInsertPos(profile, InsertPos);
   if (!SD) {
-    SD = (SymExpr*) BPAlloc.Allocate<SymbolExtent>();
-    new (SD) SymbolExtent(SymbolCounter, R);
+    SD = new (BPAlloc) SymbolExtent(SymbolCounter, R);
     DataSet.InsertNode(SD, InsertPos);
     ++SymbolCounter;
   }
@@ -240,8 +236,7 @@ SymbolManager::getMetadataSymbol(const MemRegion* R, const Stmt *S, QualType T,
   void *InsertPos;
   SymExpr *SD = DataSet.FindNodeOrInsertPos(profile, InsertPos);
   if (!SD) {
-    SD = (SymExpr*) BPAlloc.Allocate<SymbolMetadata>();
-    new (SD) SymbolMetadata(SymbolCounter, R, S, T, LCtx, Count, SymbolTag);
+    SD = new (BPAlloc) SymbolMetadata(SymbolCounter, R, S, T, LCtx, Count, SymbolTag);
     DataSet.InsertNode(SD, InsertPos);
     ++SymbolCounter;
   }
@@ -257,8 +252,7 @@ SymbolManager::getCastSymbol(const SymExpr *Op,
   void *InsertPos;
   SymExpr *data = DataSet.FindNodeOrInsertPos(ID, InsertPos);
   if (!data) {
-    data = (SymbolCast*) BPAlloc.Allocate<SymbolCast>();
-    new (data) SymbolCast(Op, From, To);
+    data = new (BPAlloc) SymbolCast(Op, From, To);
     DataSet.InsertNode(data, InsertPos);
   }
 
@@ -275,8 +269,7 @@ const SymIntExpr *SymbolManager::getSymIntExpr(const SymExpr *lhs,
   SymExpr *data = DataSet.FindNodeOrInsertPos(ID, InsertPos);
 
   if (!data) {
-    data = (SymIntExpr*) BPAlloc.Allocate<SymIntExpr>();
-    new (data) SymIntExpr(lhs, op, v, t);
+    data = new (BPAlloc) SymIntExpr(lhs, op, v, t);
     DataSet.InsertNode(data, InsertPos);
   }
 
@@ -293,8 +286,7 @@ const IntSymExpr *SymbolManager::getIntSymExpr(const llvm::APSInt& lhs,
   SymExpr *data = DataSet.FindNodeOrInsertPos(ID, InsertPos);
 
   if (!data) {
-    data = (IntSymExpr*) BPAlloc.Allocate<IntSymExpr>();
-    new (data) IntSymExpr(lhs, op, rhs, t);
+    data = new (BPAlloc) IntSymExpr(lhs, op, rhs, t);
     DataSet.InsertNode(data, InsertPos);
   }
 
@@ -311,8 +303,7 @@ const SymSymExpr *SymbolManager::getSymSymExpr(const SymExpr *lhs,
   SymExpr *data = DataSet.FindNodeOrInsertPos(ID, InsertPos);
 
   if (!data) {
-    data = (SymSymExpr*) BPAlloc.Allocate<SymSymExpr>();
-    new (data) SymSymExpr(lhs, op, rhs, t);
+    data = new (BPAlloc) SymSymExpr(lhs, op, rhs, t);
     DataSet.InsertNode(data, InsertPos);
   }
 
@@ -327,8 +318,7 @@ const UnarySymExpr *SymbolManager::getUnarySymExpr(const SymExpr *Operand,
   void *InsertPos;
   SymExpr *data = DataSet.FindNodeOrInsertPos(ID, InsertPos);
   if (!data) {
-    data = (UnarySymExpr *)BPAlloc.Allocate<UnarySymExpr>();
-    new (data) UnarySymExpr(Operand, Opc, T);
+    data = new (BPAlloc) UnarySymExpr(Operand, Opc, T);
     DataSet.InsertNode(data, InsertPos);
   }
 
@@ -398,7 +388,7 @@ void SymbolReaper::markDependentsLive(SymbolRef sym) {
 
   if (const SymbolRefSmallVectorTy *Deps = SymMgr.getDependentSymbols(sym)) {
     for (const auto I : *Deps) {
-      if (TheLiving.find(I) != TheLiving.end())
+      if (TheLiving.contains(I))
         continue;
       markLive(I);
     }
@@ -411,8 +401,12 @@ void SymbolReaper::markLive(SymbolRef sym) {
 }
 
 void SymbolReaper::markLive(const MemRegion *region) {
-  RegionRoots.insert(region->getBaseRegion());
+  LiveRegionRoots.insert(region->getBaseRegion());
   markElementIndicesLive(region);
+}
+
+void SymbolReaper::markLazilyCopied(const clang::ento::MemRegion *region) {
+  LazilyCopiedRegionRoots.insert(region->getBaseRegion());
 }
 
 void SymbolReaper::markElementIndicesLive(const MemRegion *region) {
@@ -420,8 +414,8 @@ void SymbolReaper::markElementIndicesLive(const MemRegion *region) {
        SR = dyn_cast<SubRegion>(SR->getSuperRegion())) {
     if (const auto ER = dyn_cast<ElementRegion>(SR)) {
       SVal Idx = ER->getIndex();
-      for (auto SI = Idx.symbol_begin(), SE = Idx.symbol_end(); SI != SE; ++SI)
-        markLive(*SI);
+      for (SymbolRef Sym : Idx.symbols())
+        markLive(Sym);
     }
   }
 }
@@ -437,8 +431,7 @@ bool SymbolReaper::isLiveRegion(const MemRegion *MR) {
   // is not used later in the path, we can diagnose a leak of a value within
   // that field earlier than, say, the variable that contains the field dies.
   MR = MR->getBaseRegion();
-
-  if (RegionRoots.count(MR))
+  if (LiveRegionRoots.count(MR))
     return true;
 
   if (const auto *SR = dyn_cast<SymbolicRegion>(MR))
@@ -454,6 +447,15 @@ bool SymbolReaper::isLiveRegion(const MemRegion *MR) {
   return isa<AllocaRegion, CXXThisRegion, MemSpaceRegion, CodeTextRegion>(MR);
 }
 
+bool SymbolReaper::isLazilyCopiedRegion(const MemRegion *MR) const {
+  // TODO: See comment in isLiveRegion.
+  return LazilyCopiedRegionRoots.count(MR->getBaseRegion());
+}
+
+bool SymbolReaper::isReadableRegion(const MemRegion *MR) {
+  return isLiveRegion(MR) || isLazilyCopiedRegion(MR);
+}
+
 bool SymbolReaper::isLive(SymbolRef sym) {
   if (TheLiving.count(sym)) {
     markDependentsLive(sym);
@@ -464,7 +466,7 @@ bool SymbolReaper::isLive(SymbolRef sym) {
 
   switch (sym->getKind()) {
   case SymExpr::SymbolRegionValueKind:
-    KnownLive = isLiveRegion(cast<SymbolRegionValue>(sym)->getRegion());
+    KnownLive = isReadableRegion(cast<SymbolRegionValue>(sym)->getRegion());
     break;
   case SymExpr::SymbolConjuredKind:
     KnownLive = false;

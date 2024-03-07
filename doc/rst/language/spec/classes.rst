@@ -192,9 +192,10 @@ specified, may appear in the inheritance lists of other class
 declarations.
 
 If a class type's memory management strategy is unspecified, it will be
-generic. (This is not the case for instances of classes. When a new class
-instance is created with an unspecified memory management strategy it
-will default to ``owned``.)
+generic. (This is not the case for class instances created using the
+``new`` expression (see :ref:`Class_New`). When a ``new`` expression
+does not specify a memory management strategy, then the management will
+default to ``owned``.)
 
 Variables of class type cannot store ``nil`` unless the class type is
 nilable (:ref:`Nilable_Classes`).

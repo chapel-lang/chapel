@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,6 +39,14 @@
 #include <vector>
 
 #include "llvm/ADT/DenseMap.h"
+
+#ifdef HAVE_LLVM
+#include "llvm/IR/LLVMContext.h"
+#endif
+
+namespace llvm {
+  class LLVMContext;
+}
 
 namespace chpl {
   class Context;
@@ -324,6 +332,10 @@ class Context {
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
   querydetail::RevisionNumber gcCounter = 1;
 
+#ifdef HAVE_LLVM
+  owned<llvm::LLVMContext> llvmContext_ = nullptr;
+#endif
+
   // --------- end all Context fields ---------
 
   void setupGlobalStrings();
@@ -386,7 +398,7 @@ class Context {
   getResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
             const std::tuple<ArgTs...>& tupleOfArgs);
 
-  void haltForRecursiveQuery(const querydetail::QueryMapResultBase* r);
+  void emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -436,6 +448,10 @@ class Context {
             const querydetail::QueryMapResultBase* resultEntry);
 
   void doNotCollectUniqueCString(const char *s);
+
+  void gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
+                            const querydetail::QueryMapResultBase* result,
+                            std::vector<TraceElement>& trace) const;
 
   // Future Work: make the context thread-safe
 
@@ -557,6 +573,8 @@ class Context {
     errorCollectionStack.pop_back();
     return result;
   }
+
+  optional<std::vector<TraceElement>> recoverFromSelfRecursion() const;
 
   /**
     Get or create a unique string and return it as a C string. If the passed
@@ -718,7 +736,14 @@ class Context {
 
     Returns the library's path by setting 'pathOut'.
    */
-  bool pathHasLibrary(UniqueString filePath, UniqueString& pathOut);
+  bool pathIsInLibrary(UniqueString filePath, UniqueString& pathOut);
+
+  /**
+    Return 'true' if the given module ID is supported by a library file.
+
+    Returns the library's path by setting 'pathOut'.
+   */
+  bool moduleIsInLibrary(ID moduleId, UniqueString& pathOut);
 
   /**
     Register a module ID and file path to be supported by a library file.
@@ -726,6 +751,13 @@ class Context {
   void registerLibraryForModule(ID moduleId,
                                 UniqueString filePath,
                                 UniqueString libPath);
+
+#ifdef HAVE_LLVM
+  /**
+    Get the LLVMContext associated with this Context
+   */
+  llvm::LLVMContext& llvmContext();
+#endif
 
   /**
     This function increments the current revision number stored
@@ -891,6 +923,15 @@ class Context {
        const ResultType& (*queryFunction)(Context* context, ArgTs...),
        const std::tuple<ArgTs...>& tupleOfArgs);
 
+  template<typename ResultType,
+           typename... ArgTs>
+  const typename querydetail::QueryMap<ResultType, ArgTs...>::MapType*
+  querySavedResults(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...));
+
+  bool isResultUpToDate(const querydetail::QueryMapResultBase& resultEntry) const {
+    return resultEntry.lastChanged == this->currentRevisionNumber;
+  }
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly

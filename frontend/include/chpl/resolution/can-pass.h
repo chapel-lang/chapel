@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,6 +52,10 @@ class CanPassResult {
     NUMERIC,
     /** A conversion that implements subtyping */
     SUBTYPE,
+    /** A conversion that borrows a managed type (without subtyping) */
+    BORROWS,
+    /** A conversion that implements subtyping AND borrows a managed type */
+    BORROWS_SUBTYPE,
     /** Non-subtype conversion that doesn't produce a param */
     OTHER,
   };
@@ -114,6 +118,10 @@ class CanPassResult {
                                          const types::ClassType* actualCt,
                                          const types::ClassType* formalCt);
 
+  static CanPassResult canPassSubtypeOrBorrowing(Context* context,
+                                                 const types::Type* actualT,
+                                                 const types::Type* formalT);
+
   static CanPassResult canPassSubtype(Context* context,
                                       const types::Type* actualT,
                                       const types::Type* formalT);
@@ -139,29 +147,33 @@ class CanPassResult {
   ~CanPassResult() = default;
 
   /** Returns true if the argument is passable */
-  bool passes() { return !failReason_; }
+  bool passes() const { return !failReason_; }
 
-  PassingFailureReason reason() {
+  PassingFailureReason reason() const {
     CHPL_ASSERT((bool) failReason_);
     return *failReason_;
   }
 
   /** Returns true if passing the argument will require instantiation */
-  bool instantiates() { return instantiates_; }
+  bool instantiates() const { return instantiates_; }
 
   /** Returns true if passing the argument will require promotion */
-  bool promotes() { return promotes_; }
+  bool promotes() const { return promotes_; }
 
   /** Returns true if implicit conversion is required */
-  bool converts() { return conversionKind_ != NONE; }
+  bool converts() const { return conversionKind_ != NONE; }
 
   /** What type of implicit conversion, if any, is needed? */
-  ConversionKind conversionKind() { return conversionKind_; }
+  ConversionKind conversionKind() const { return conversionKind_; }
 
   /** Returns true if an implicit param narrowing conversion is required */
-  bool convertsWithParamNarrowing(){
+  bool convertsWithParamNarrowing() const {
     return conversionKind_ == PARAM_NARROWING;
   }
+
+  /** Returns true if an implicit borrowing conversion is required.
+      Does not include borrowing with implicit subtyping. */
+  bool convertsWithBorrowing() const { return conversionKind_ == BORROWS; }
 
   // implementation of canPass to allow use of private fields
   static CanPassResult canPass(Context* context,
@@ -184,6 +196,63 @@ CanPassResult canPass(Context* context,
                       const types::QualifiedType& formalType) {
   return CanPassResult::canPass(context, actualType, formalType);
 }
+
+/* When trying to combine two kinds, you can't just pick one.
+   For instance, if any type in the list is a value, the result
+   should be a value, and if any type in the list is const, the
+   result should be const. Thus, combining `const ref` and `var`
+   should result in `const var`.
+
+   This class is used to describe the "mixing rules" of various kinds.
+   To this end, it breaks them down into their properties (const-ness,
+   ref-ness, etc) each of which are processed independently from
+   the others. */
+class KindProperties {
+ private:
+  bool isConst = false;
+  bool isRef = false;
+  bool isType = false;
+  bool isParam = false;
+  bool isValid = false;
+
+  KindProperties() {}
+
+  KindProperties(bool isConst, bool isRef, bool isType,
+                 bool isParam)
+    : isConst(isConst), isRef(isRef), isType(isType),
+      isParam(isParam), isValid(true) {}
+
+ private:
+  void invalidate();
+
+ public:
+  /* Decompose a qualified type kind into its properties. */
+  static KindProperties fromKind(types::QualifiedType::Kind kind);
+
+  /* Set the refness property to the given one. */
+  void setRef(bool isRef);
+
+  /* Set the paramness property to the given one. */
+  void setParam(bool isParam);
+
+  /* Combine two sets of kind properties into this one. The resulting
+     set of properties is compatible with both arguments (e.g. ref + val = val,
+     since values can't be made into references). */
+  void combineWith(const KindProperties& other);
+
+  /* Combine two sets of kind properties, strictly enforcing properties of
+     the receiver (e.g. (receiver) param + (other) value = invalid, because
+     param-ness is required).
+
+     const-ness and ref-ness mismatch doesn't raise issues here since const/ref
+     checking is a separate pass. */
+  void strictCombineWith(const KindProperties& other);
+
+  /* Convert the set of kind properties back into a kind. */
+  types::QualifiedType::Kind toKind() const;
+
+  bool valid() const { return isValid; }
+};
 
 /**
   An optional additional constraint on the kind of a type. Used in

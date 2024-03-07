@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1514,6 +1514,32 @@ static void test18b() {
     });
 }
 
+static void test19() {
+  testActions("test19",
+      R"""(
+      record G {
+        type T;
+        var y : T;
+      }
+
+      record R {
+        type T;
+        var x : G(T);
+      }
+
+      proc R.init(type T) {
+        this.T=T;
+      }
+
+      proc test() {
+        var r : R(int);
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "r",          ""},
+        {AssociatedAction::DEINIT,       "test19.test@4",   "r"}
+      } );
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1593,6 +1619,8 @@ int main() {
 
   test18a();
   test18b();
+
+  test19();
 
   return 0;
 }

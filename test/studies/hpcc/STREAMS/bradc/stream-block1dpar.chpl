@@ -1,4 +1,4 @@
-use Time, Types, NPBRandom;
+use Time, Types, Random;
 use BradsBlock1DPar;
 
 use HPCCProblemSize;
@@ -11,10 +11,9 @@ config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
 
 config const numTrials = 10,
-             epsilon = 0.0;
+             epsilon = 1e-15;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then oddTimeSeed() else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -88,12 +87,14 @@ proc initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
   coforall loc in B.dom.dist.targetLocDom {
     on B.dom.dist.targetLocs(loc) {
-      var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
+      var randlist = if useRandomSeed
+        then new randomStream(eltType=real)
+        else new randomStream(eltType=real, seed=314159265);
       // TODO: Need to clean this up to use more normal method names
-      randlist.skipToNth(B.locArr(loc)!.locDom.low-1);
-      randlist.fillRandom(B.locArr(loc)!.myElems);
-      randlist.skipToNth(B.size + C.locArr(loc)!.locDom.low-1);
-      randlist.fillRandom(C.locArr(loc)!.myElems);
+      randlist.skipTo(B.locArr(loc)!.locDom.low-1);
+      randlist.fill(B.locArr(loc)!.myElems);
+      randlist.skipTo(B.size + C.locArr(loc)!.locDom.low-1);
+      randlist.fill(C.locArr(loc)!.myElems);
     }
   }
 

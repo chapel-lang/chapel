@@ -24,7 +24,7 @@ proc main() {
 
   {
     var wfd = fs.open(path, ioMode.cw);
-    var w = wfd.writer(serializer=new binarySerializer());
+    var w = wfd.writer(serializer=new binarySerializer(), locking=false);
 
     for i in 0..#n {
       w.write(i);
@@ -36,7 +36,7 @@ proc main() {
 
   {
     var rfd = fs.open(path, ioMode.r);
-    var r = rfd.reader(deserializer=new binaryDeserializer());
+    var r = rfd.reader(deserializer=new binaryDeserializer(), locking=false);
 
     for i in 0..#n {
       var offset = r.offset();

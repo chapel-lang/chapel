@@ -12,7 +12,7 @@ as adopted by C11, C++11, Java, UPC, and Fortran 2008.
 
 Sequential consistency (SC) means that all Chapel tasks agree on the
 interleaving of memory operations and this interleaving results in an
-order is consistent with the order of operations in the program source
+order that is consistent with the order of operations in the program source
 code. *Conflicting memory operations*, i.e., operations to the same
 variable, or memory location, and one of which is a write, form a data
 race if they are from different Chapel tasks and can be executed

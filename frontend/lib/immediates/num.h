@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,10 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 
+extern "C" {
+  #include "complex-support.h"
+}
+
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
@@ -37,15 +41,6 @@
 #endif
 
 extern unsigned int open_hash_multipliers[256];
-
-struct complex64 {
-  float r;
-  float i;
-};
-struct complex128 {
-  double r;
-  double i;
-};
 
 using ImmString = chpl::detail::PODUniqueString;
 

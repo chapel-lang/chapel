@@ -318,10 +318,17 @@ it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.
 
-Each formal argument of a task function or iterator has the default
-intent by default.  See also :ref:`The_Default_Intent`. Note that the
-default intent allows the compiler to assume that the value will not be
+The implicit formals of task functions and iterators generally have
+:ref:`the default argument intent <The_Default_Intent>` by default. Note that
+the default intent allows the compiler to assume that the value will not be
 concurrently modified, except for values of ``sync`` or ``atomic`` type.
+
+Implicit formals of array types are an exception: they inherit their default
+intent from the array actual. An immutable array has a default intent of
+``const`` and a mutable array has a default intent of ``ref``. This allows
+arrays to be modified inside the body of a forall if it is modifiable outside
+the body of the forall. A mutable array can have an explicit ``const`` forall
+intent to make it immutable inside the body of a forall.
 
 For variables of primitive, enum, and class types,
 this has the effect of capturing the value of the variable at task
@@ -649,7 +656,7 @@ and :ref:`Parallel_Iterators` for parallel iteration.
 
 Consider a function ``f`` with formal arguments ``s1``, ``s2``, ... that
 are promoted and formal arguments ``a1``, ``a2``, ... that are not
-promoted. The call 
+promoted. The call
 
 .. code-block:: chapel
 
@@ -775,25 +782,21 @@ which results in the promoted expression:
 
    [b in B] A[b]
 
-However, it is an error to modify promoted expressions like this one.
-For example, the following is an error:
+Modifying promoted expressions may introduce undesirable race conditions in
+code. For example, the following code will potentially result in an incorrect
+result:
 
 .. code-block:: chapel
 
+   B = [1, 2, 1];
    A[B] += 3;
 
-If this was promoted, it would become the following:
+To avoid this race, the above code could be written using an explicit loop
+statement and the proper intents, for example:
 
 .. code-block:: chapel
 
-   [b in B] A[b] += 3;
-
-This is illegal, as ``A`` cannot be modified without an explicit ``ref`` intent.
-An explicit loop statement must be used, for example:
-
-.. code-block:: chapel
-
-   [b in B with (ref A)] A[b] += 3;
+   [b in B with (+ reduce A)] A[b] += 3;
 
 .. _Reductions_and_Scans:
 

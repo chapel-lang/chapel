@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -422,6 +422,24 @@ module CTypes {
     return __primitive("cast", c_ptr(void), x);
   }
 
+  // Enable fn_ptr == nil syntax for checking whether a function pointer is NULL
+  @chpldoc.nodoc
+  inline operator ==(a: c_fn_ptr, b: _nilType) {
+    return a:c_ptr(void) == b;
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: _nilType, b: c_fn_ptr) {
+    return b == a;
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: c_fn_ptr, b: _nilType) {
+    return !(a == b);
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: _nilType, b: c_fn_ptr) {
+    return b != a;
+  }
+
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
   /* Helper function for determining if casting between two types as pointee
@@ -475,12 +493,6 @@ module CTypes {
           "' casts a c_ptr to a pointer of non-equivalent, non-char " +
           "element type, which can cause undefined behavior.");
     }
-    return __primitive("cast", t, x);
-  }
-  // c_ptr(void) specialization to allow implicit conversion of casted value
-  pragma "last resort"
-  @chpldoc.nodoc
-  inline operator :(x:c_ptr(void), type t:c_ptr) {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
@@ -545,6 +557,8 @@ module CTypes {
   inline operator :(x:c_ptrConst, type t:c_ptrConst(void)) {
     return __primitive("cast", t, x);
   }
+  // c_ptr(void) specialization of c_ptr->c_ptr cast, to enable implicit
+  // conversion of casted value to c_ptr(void)
   @chpldoc.nodoc
   inline operator :(x:c_ptr(void), type t:c_ptr) {
     return __primitive("cast", t, x);
@@ -571,7 +585,7 @@ module CTypes {
   }
   pragma "last resort"
   @chpldoc.nodoc
-  inline operator :(x:c_ptr(void), type t:_anyManagementAnyNilable) {
+  inline operator :(x:c_ptr(void), type t:class) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_ptr(void) to "+ t:string +
                     " - cast to "+ _to_nilable(t):string +" instead");

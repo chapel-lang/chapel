@@ -1,4 +1,0 @@
-depIsNan.chpl:1: warning: 'isnan' is deprecated in favor of isNan, please use that instead
-depIsNan.chpl:2: warning: 'isnan' is deprecated in favor of isNan, please use that instead
-false
-true

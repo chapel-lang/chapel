@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -635,7 +635,7 @@ module SharedObject {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
-    var p = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
+    var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -644,7 +644,7 @@ module SharedObject {
     where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // the following line can throw ClassCastError
-    var p = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
+    var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -656,7 +656,7 @@ module SharedObject {
     where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var p = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
   @chpldoc.nodoc
@@ -664,7 +664,7 @@ module SharedObject {
     where isProperSubtype(t.chpl_t, x.chpl_t:class?)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var p = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
 

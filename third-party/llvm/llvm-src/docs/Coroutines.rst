@@ -285,7 +285,7 @@ The LLVM IR for this coroutine looks like this:
 
 .. code-block:: llvm
 
-  define i8* @f(i32 %n) {
+  define i8* @f(i32 %n) presplitcoroutine {
   entry:
     %id = call token @llvm.coro.id(i32 0, i8* null, i8* null, i8* null)
     %size = call i32 @llvm.coro.size.i32()
@@ -1705,7 +1705,7 @@ and `coro.promise`_ intrinsics.
 
 CoroSplit
 ---------
-The pass CoroSplit buides coroutine frame and outlines resume and destroy parts
+The pass CoroSplit builds coroutine frame and outlines resume and destroy parts
 into separate functions.
 
 CoroElide

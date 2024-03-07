@@ -100,7 +100,7 @@ class ForceEAM : Force {
   proc init() {}
 
   proc init(potDir:string, potFile:string, potType:string) {
-    this.complete();
+    init this;
 
     this.potName = "EAM";
     var input_file = potDir + "/" + potFile;

@@ -60,7 +60,7 @@ class ForceEAM : Force  {
   proc coeff(fname : string) {
     funcfl.eamFile = fname;
     var fchan = open(fname, ioMode.r);
-    var rd = fchan.reader();
+    var rd = fchan.reader(locking=false);
 
     rd.readln(); // skip header info
     rd.read(int); // skip atomic number

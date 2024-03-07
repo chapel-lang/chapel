@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   param rank=ranges.size;
   type EC = uint; // type for element counts
   var numElems = 1:EC;
-  for param i in 0..rank-1 do {
+  for param i in 0..rank-1 {
     numElems *= ranges(i).sizeAs(EC);
   }
 
@@ -65,7 +65,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   var maxDim = -1;
   var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
-  for /* param */ i in 0..rank-1 do {
+  for /* param */ i in 0..rank-1 {
     const curElems = ranges(i).sizeAs(EC);
     if curElems >= numChunks:EC {
       parDim = i;
@@ -721,47 +721,11 @@ record chpl_PrivatizedDistHelper : writeSerializable {
     _do_destroy();
   }
 
-  /* This is a workaround for an internal failure I experienced when
-     this code was part of newRectangularDom() and relied on split init:
-     var x;
-     if __prim(...) then x = ...;
-     else if __prim(...) then x = ...;
-     else compilerError(...); */
-  proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
-
-    // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
-    // we use "method call resolves" instead of just "resolves".
-    if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                   rank, idxType, strides, ranges) {
-      return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-    }
-
-    // The following supports deprecation by Vass in 1.31 to implement #17131
-    // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
-    //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
-    // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
-
-    param stridable = strides.toStridable();
-    const ranges2 = chpl_convertRangeTuple(ranges, stridable);
-    if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                   rank, idxType, stridable, ranges2) {
-
-      compilerWarning("the domain map '", _value.type:string,
-                      "' needs to be updated from 'stridable: bool' to",
-                      " 'strides: strideKind' because 'stridable' is deprecated");
-
-      return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
-    }
-
-    compilerError("rectangular domains are not supported by",
-                  " the distribution ", this.type:string);
-  }
-
   proc newRectangularDom(param rank: int, type idxType,
                          param strides: strideKind,
                          ranges: rank*range(idxType, boundKind.both, strides),
                          definedConst: bool = false) {
-    var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
+    var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
 
     x.definedConst = definedConst;
 

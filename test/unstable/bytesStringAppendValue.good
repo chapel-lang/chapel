@@ -1,0 +1,2 @@
+bytesStringAppendValue.chpl:2: warning: 'string.appendCodepointValues' is unstable and may change in the future
+bytesStringAppendValue.chpl:4: warning: 'bytes.appendByteValues' is unstable and may change in the future

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,31 +76,33 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
 
   auto haveQt = QualifiedType(QualifiedType::VAR, type);
 
-  // loop through IDs and see if any are methods on the same type
+  // loop through IDs and see if any are methods or operators (method or
+  // standalone) on the same type
   for (auto& ids : vec) {
     for (const auto& id : ids) {
       auto node = parsing::idToAst(context, id);
       CHPL_ASSERT(node);
 
       if (auto fn = node->toFunction()) {
-        if (fn->isMethod()) {
+        if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
           ResolutionResultByPostorderID r;
           auto vis = Resolver::createForInitialSignature(context, fn, r);
-          fn->thisFormal()->traverse(vis);
-          auto receiverQualType = vis.byPostorder.byAst(fn->thisFormal()).type();
+          // use receiver for method, first formal for standalone operator
+          auto checkFormal =
+              (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
+          checkFormal->traverse(vis);
+          auto receiverQualType = vis.byPostorder.byAst(checkFormal).type();
 
-          // return true if the receiver type matches or
-          // if the receiver type is a generic type and we have
-          // an instantiation.
+          // Return true if:
+          // * the receiver type matches
+          // * the receiver type is a generic type and we have an instantiation
+          // * the receiver type converts via implicit borrowing
           auto result = canPass(context, haveQt, receiverQualType);
-          if (result.passes() && !result.converts() && !result.promotes()) {
+          if (result.passes() &&
+              (!result.converts() || result.convertsWithBorrowing()) &&
+              !result.promotes()) {
             return true;
           }
-        } else if (fn->kind()==Function::Kind::OPERATOR) {
-          // TODO: There should probably be some more checks happening in here,
-          // but unsure of what they should be currently and this seems to work
-          // in basic testing.
-          return true;
         }
       }
     }
@@ -125,6 +127,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (!areOverloadsPresentInDefiningScope(context, type, name)) {
       return true;
     }
+  }
+
+  if (type->isTupleType() && name == "size") {
+    return true;
   }
 
   // Some basic getter methods for domain properties
@@ -440,6 +446,41 @@ generateArrayMethod(Context* context,
   return result;
 }
 
+static const TypedFnSignature*
+generateTupleMethod(Context* context,
+                    const TupleType* at,
+                    UniqueString name) {
+  // TODO: we should really have a way to just set the return type here
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, at));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ at->id(),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ asttags::Tuple,
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 fieldAccessorQuery(Context* context,
                    const types::CompositeType* compType,
@@ -658,6 +699,8 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       result = generateDomainMethod(context, domainType, name);
     } else if (auto arrayType = type->toArrayType()) {
       result = generateArrayMethod(context, arrayType, name);
+    } else if (auto tupleType = type->toTupleType()) {
+      result = generateTupleMethod(context, tupleType, name);
     } else if (auto recordType = type->toRecordType()) {
       if (name == USTR("==")) {
         result = generateRecordComparison(context, recordType);

@@ -24,6 +24,9 @@ class LetDummies {
   list<SchedReadWrite> SchedRW;
   list<Register> Uses;
   list<Register> Defs;
+  list<Predicate> OtherPredicates;
+  Predicate AssemblerPredicate;
+  string DecoderNamespace;
 }
 
 class VOP <string opName> {
@@ -61,6 +64,8 @@ class VOP_Pseudo <string opName, string suffix, VOPProfile P, dag outs, dag ins,
   let UseNamedOperandTable = 1;
 
   string Mnemonic = opName;
+  Instruction Opcode = !cast<Instruction>(NAME);
+  bit IsTrue16 = P.IsTrue16;
   VOPProfile Pfl = P;
 
   string AsmOperands;
@@ -1263,7 +1268,7 @@ class VOP3InstBase<string OpName, VOPProfile P, SDPatternOperator node = null_fr
 multiclass VOP3Inst<string OpName, VOPProfile P, SDPatternOperator node = null_frag> {
   def _e64 : VOP3InstBase<OpName, P, node>;
   let SubtargetPredicate = isGFX11Plus in {
-    foreach _ = BoolToList<P.HasExtVOP3DPP>.ret in
+    if P.HasExtVOP3DPP then
       def _e64_dpp : VOP3_DPP_Pseudo <OpName, P>;
   } // end SubtargetPredicate = isGFX11Plus
 }
@@ -1324,11 +1329,11 @@ let AssemblerPredicate = isGFX11Only,
                                   bit isSingle = 0> {
     defvar ps = !cast<VOP_Pseudo>(opName#"_e64");
     let IsSingle = !or(isSingle, ps.Pfl.IsSingle) in {
-    foreach _ = BoolToList<ps.Pfl.HasOpSel>.ret in
+    if ps.Pfl.HasOpSel then
       def _e64_gfx11 :
         VOP3_Real<ps, SIEncodingFamily.GFX11>,
         VOP3OpSel_gfx11<op, ps.Pfl>;
-    foreach _ = BoolToList<!not(ps.Pfl.HasOpSel)>.ret in
+    if !not(ps.Pfl.HasOpSel) then
       def _e64_gfx11 :
         VOP3_Real<ps, SIEncodingFamily.GFX11>,
         VOP3e_gfx11<op, ps.Pfl>;
@@ -1348,17 +1353,16 @@ let AssemblerPredicate = isGFX11Only,
     defvar ps = !cast<VOP_Pseudo>(opName#"_e64");
     let AsmString = asmName # ps.AsmOperands,
         IsSingle = !or(isSingle, ps.Pfl.IsSingle) in {
-    foreach _ = BoolToList<ps.Pfl.HasOpSel>.ret in
+    if ps.Pfl.HasOpSel then
       def _e64_gfx11 :
         VOP3_Real<ps, SIEncodingFamily.GFX11>,
-        VOP3OpSel_gfx11<op, ps.Pfl>,
-        MnemonicAlias<ps.Mnemonic, asmName>, Requires<[isGFX11Plus]>;
-    foreach _ = BoolToList<!not(ps.Pfl.HasOpSel)>.ret in
+        VOP3OpSel_gfx11<op, ps.Pfl>;
+    if !not(ps.Pfl.HasOpSel) then
       def _e64_gfx11 :
         VOP3_Real<ps, SIEncodingFamily.GFX11>,
-        VOP3e_gfx11<op, ps.Pfl>,
-        MnemonicAlias<ps.Mnemonic, asmName>, Requires<[isGFX11Plus]>;
+        VOP3e_gfx11<op, ps.Pfl>;
     }
+    def _gfx11_VOP3_alias : MnemonicAlias<ps.Mnemonic, asmName>, Requires<[isGFX11Plus]>, LetDummies;
   }
   // for READLANE/WRITELANE
   multiclass VOP3_Real_No_Suffix_gfx11<bits<10> op, string opName = NAME> {
@@ -1461,6 +1465,10 @@ multiclass VOP3Only_Realtriple_with_name_gfx11<bits<10> op, string opName,
                                                string asmName> :
   VOP3_Realtriple_with_name_gfx11<op, opName, asmName, 1>;
 
+multiclass VOP3Only_Realtriple_t16_gfx11<bits<10> op, string asmName,
+                                     string opName = NAME>
+    : VOP3Only_Realtriple_with_name_gfx11<op, opName, asmName>;
+
 multiclass VOP3be_Realtriple_gfx11<
     bits<10> op, bit isSingle = 0, string opName = NAME,
     string asmName = !cast<VOP_Pseudo>(opName#"_e64").Mnemonic> :
@@ -1478,6 +1486,21 @@ include "VOP3Instructions.td"
 include "VOP3PInstructions.td"
 include "VOPDInstructions.td"
 
+class ClassPat<Instruction inst, ValueType vt> : GCNPat <
+  (is_fpclass (vt (VOP3ModsNonCanonicalizing vt:$src0, i32:$src0_mods)), (i32 timm:$mask)),
+  (inst i32:$src0_mods, vt:$src0, (V_MOV_B32_e32 timm:$mask))
+>;
+
+def : ClassPat<V_CMP_CLASS_F16_e64, f16> {
+  let OtherPredicates = [NotHasTrue16BitInsts, Has16BitInsts];
+}
+
+def : ClassPat<V_CMP_CLASS_F16_t16_e64, f16> {
+  let OtherPredicates = [HasTrue16BitInsts];
+}
+
+def : ClassPat<V_CMP_CLASS_F32_e64, f32>;
+def : ClassPat<V_CMP_CLASS_F64_e64, f64>;
 
 class VOPInfoTable <string Format> : GenericTable {
   let FilterClass = Format # "_Real";
@@ -1503,3 +1526,12 @@ class VOPC64Table <string Format> : GenericTable {
 
 def VOPC64DPPTable : VOPC64Table<"DPP">;
 def VOPC64DPP8Table : VOPC64Table<"DPP8">;
+
+def VOPTrue16Table : GenericTable {
+  let FilterClass = "VOP_Pseudo";
+  let CppTypeName = "VOPTrue16Info";
+  let Fields = ["Opcode", "IsTrue16"];
+
+  let PrimaryKey = ["Opcode"];
+  let PrimaryKeyName = "getTrue16OpcodeHelper";
+}

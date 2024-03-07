@@ -158,7 +158,10 @@ def main(argv):
 
     compiler = argv[1]
     del argv[1]
-    localDir = sub_test.get_local_dir(sub_test.get_chpl_base(compiler))
+    baseDir = sub_test.get_chpl_base(compiler)
+    homeDir = sub_test.get_chpl_home(baseDir)
+    testDir = sub_test.get_test_dir(homeDir)
+    localDir = sub_test.get_local_dir(testDir)
     name = os.path.join(localDir, argv[0])
     base = os.path.splitext(os.path.basename(argv[0]))[0]
 

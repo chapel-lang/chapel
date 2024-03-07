@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -293,16 +293,6 @@ module OwnedObject {
     }
   }
 
-  @deprecated("calling `.borrow()` on an `owned` type is deprecated - please use a cast to `borrowed` instead")
-  proc type _owned.borrow() type {
-    if _to_nilable(chpl_t) == chpl_t {
-      return chpl_t;
-    } else {
-      return _to_nonnil(chpl_t);
-    }
-  }
-
-
   /*
     Assignment between two :type:`owned` transfers ownership of the object
     managed by ``rhs`` to ``lhs``. This is done by setting ``rhs`` to `nil` and
@@ -421,7 +411,7 @@ module OwnedObject {
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class?)    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
     return new _owned(castPtr);
@@ -432,7 +422,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class?, type t:owned class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
     return new _owned(castPtr);
@@ -443,7 +433,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a non-nilable type
     return new _owned(castPtr!);
@@ -454,7 +444,7 @@ module OwnedObject {
   inline operator :(in x:owned class?, type t:owned class) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr == nil {
       throw new owned NilClassError();
     }
@@ -472,7 +462,7 @@ module OwnedObject {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
-    var castPtr = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
+    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
@@ -481,7 +471,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
-    var castPtr = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
+    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
@@ -493,7 +483,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
     }
@@ -505,7 +495,7 @@ module OwnedObject {
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
     }

@@ -1,1 +1,1 @@
-MyMod.dyno chpl_standard.dyno --dyno-debug-trace
+MyMod.dyno chpl_standard.dyno

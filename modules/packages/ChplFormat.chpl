@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,7 +51,7 @@ module ChplFormat {
       st.tuple_style = QIO_TUPLE_FORMAT_CHPL:uint(8);
       st.pad_char = 0x20;
       dc._set_styleInternal(st);
-      dc._writeOne(dc._kind, val, here);
+      dc._writeOne(_iokind.dynamic, val, here);
     }
 
     proc ref serializeValue(writer: _writeType, const val:?t) throws {
@@ -59,6 +59,8 @@ module ChplFormat {
         _oldWrite(writer, val);
       } else if isNumericType(t) || isBoolType(t) {
         _oldWrite(writer, val);
+      } else if (isDomainType(t) && val.isRectangular()) || isRangeType(t) {
+        writer.withSerializer(defaultSerializer).write(val);
       } else if isClassType(t) {
         if val == nil {
           writer.writeLiteral("nil");
@@ -249,7 +251,7 @@ module ChplFormat {
       st.tuple_style = QIO_TUPLE_FORMAT_CHPL:uint(8);
       st.pad_char = 0x20;
       dc._set_styleInternal(st);
-      dc._readOne(dc._kind, val, here);
+      dc._readOne(_iokind.dynamic, val, here);
     }
 
     proc ref deserializeType(reader:_readerType, type readType) : readType throws {
@@ -259,7 +261,7 @@ module ChplFormat {
 
       if isNumericType(readType) || isBoolType(readType) {
         var x : readType;
-        reader._readOne(reader._kind, x, here);
+        reader._readOne(_iokind.dynamic, x, here);
         return x;
       } else if isStringType(readType) || isBytesType(readType) {
         var tmp : readType;
@@ -268,6 +270,8 @@ module ChplFormat {
       } else if isEnumType(readType) {
         var ret = reader.withDeserializer(defaultDeserializer).read(readType);
         return ret;
+      } else if isDomainType(readType) || isRangeType(readType) {
+        return reader.withDeserializer(defaultDeserializer).read(readType);
       } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
                 isArrayType(readType) {
         if isArrayType(readType) && chpl__domainFromArrayRuntimeType(readType).rank > 1 then
@@ -279,6 +283,12 @@ module ChplFormat {
     }
 
     proc ref deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
+      // Shortcut for domains/ranges to just use the default format
+      if isDomainType(readType) || isRangeType(readType) {
+        reader.withDeserializer(defaultDeserializer).read(val);
+        return;
+      }
+
       if canResolveMethod(val, "deserialize", reader, this) {
         if isArrayType(readType) && val.rank > 1 then
           throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");

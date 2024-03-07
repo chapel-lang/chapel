@@ -10,7 +10,8 @@ CaseRules.chpl:24: node violates rule CamelOrPascalCaseVariables
 CaseRules.chpl:28: node violates rule CamelOrPascalCaseVariables
 CaseRules.chpl:32: node violates rule PascalCaseModules
 CaseRules.chpl:34: node violates rule PascalCaseModules
-CaseRules.chpl:39: node violates rule PascalCaseClasses
 CaseRules.chpl:37: node violates rule PascalCaseClasses
+CaseRules.chpl:39: node violates rule PascalCaseClasses
 CaseRules.chpl:42: node violates rule CamelOrPascalCaseVariables
 CaseRules.chpl:43: node violates rule CamelOrPascalCaseVariables
+CaseRules.chpl:70: node violates rule CamelCaseFunctions

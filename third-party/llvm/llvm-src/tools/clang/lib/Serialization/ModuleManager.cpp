@@ -59,11 +59,7 @@ ModuleFile *ModuleManager::lookupByModuleName(StringRef Name) const {
 }
 
 ModuleFile *ModuleManager::lookup(const FileEntry *File) const {
-  auto Known = Modules.find(File);
-  if (Known == Modules.end())
-    return nullptr;
-
-  return Known->second;
+  return Modules.lookup(File);
 }
 
 std::unique_ptr<llvm::MemoryBuffer>
@@ -249,7 +245,7 @@ ModuleManager::addModule(StringRef FileName, ModuleKind Type,
   return NewlyLoaded;
 }
 
-void ModuleManager::removeModules(ModuleIterator First, ModuleMap *modMap) {
+void ModuleManager::removeModules(ModuleIterator First) {
   auto Last = end();
   if (First == Last)
     return;
@@ -280,19 +276,10 @@ void ModuleManager::removeModules(ModuleIterator First, ModuleMap *modMap) {
     }
   }
 
-  // Delete the modules and erase them from the various structures.
-  for (ModuleIterator victim = First; victim != Last; ++victim) {
+  // Delete the modules.
+  for (ModuleIterator victim = First; victim != Last; ++victim)
     Modules.erase(victim->File);
 
-    if (modMap) {
-      StringRef ModuleName = victim->ModuleName;
-      if (Module *mod = modMap->findModule(ModuleName)) {
-        mod->setASTFile(None);
-      }
-    }
-  }
-
-  // Delete the modules.
   Chain.erase(Chain.begin() + (First - begin()), Chain.end());
 }
 
@@ -453,14 +440,14 @@ void ModuleManager::visit(llvm::function_ref<bool(ModuleFile &M)> Visitor,
 
 bool ModuleManager::lookupModuleFile(StringRef FileName, off_t ExpectedSize,
                                      time_t ExpectedModTime,
-                                     Optional<FileEntryRef> &File) {
-  File = None;
+                                     OptionalFileEntryRef &File) {
+  File = std::nullopt;
   if (FileName == "-")
     return false;
 
   // Open the file immediately to ensure there is no race between stat'ing and
   // opening the file.
-  Optional<FileEntryRef> FileOrErr =
+  OptionalFileEntryRef FileOrErr =
       expectedToOptional(FileMgr.getFileRef(FileName, /*OpenFile=*/true,
                                             /*CacheFailure=*/false));
   if (!FileOrErr)

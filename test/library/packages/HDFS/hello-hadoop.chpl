@@ -10,7 +10,7 @@ proc main() {
   var msg = "This is a test\n";
   {
     var f = fs.open(path, ioMode.cw);
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(msg);
     w.close();
     f.close();
@@ -18,7 +18,7 @@ proc main() {
 
   {
     var f = fs.open(path, ioMode.r);
-    var r = f.reader();
+    var r = f.reader(locking=false);
     var s:string;
     r.readLine(s);
     assert(s == msg);

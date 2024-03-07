@@ -64,7 +64,7 @@ proc main(args:[] string) {
 
 proc loadImage(filename: string) {
   var f = open(filename, ioMode.r);
-  var r = f.reader(deserializer=new binaryDeserializer());
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
   var width, height: uint(16);
 
   r.read(width);
@@ -154,7 +154,7 @@ proc write_subblocks(w, subblockArray: [] uint(16),
 
 proc writeSads(filename: string, width: int, height: int, sads: [] uint(16)) {
   var f = open(filename, ioMode.cw);
-  var w = f.writer(serializer=new binarySerializer());
+  var w = f.writer(serializer=new binarySerializer(), locking=false);
   const mbs = width*height;
   const rowInds = [0, 1, height/2 - 1, height/2, height - 2, height - 1];
   write32u(w, (width*6):uint(32));

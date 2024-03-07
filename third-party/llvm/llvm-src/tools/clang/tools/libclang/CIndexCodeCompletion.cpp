@@ -537,6 +537,7 @@ static unsigned long long getContextsForContextKind(
     case CodeCompletionContext::CCC_Other:
     case CodeCompletionContext::CCC_ObjCInterface:
     case CodeCompletionContext::CCC_ObjCImplementation:
+    case CodeCompletionContext::CCC_ObjCClassForwardDecl:
     case CodeCompletionContext::CCC_NewName:
     case CodeCompletionContext::CCC_MacroName:
     case CodeCompletionContext::CCC_PreprocessorExpression:
@@ -869,7 +870,7 @@ CXCodeCompleteResults *clang_codeCompleteAt(CXTranslationUnit TU,
   auto CodeCompleteAtImpl = [=, &result]() {
     result = clang_codeCompleteAt_Impl(
         TU, complete_filename, complete_line, complete_column,
-        llvm::makeArrayRef(unsaved_files, num_unsaved_files), options);
+        llvm::ArrayRef(unsaved_files, num_unsaved_files), options);
   };
 
   llvm::CrashRecoveryContext CRC;

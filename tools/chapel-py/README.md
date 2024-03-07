@@ -11,7 +11,6 @@ anywhere in `myfile.chpl`.
 
 ```Python
 from chapel import *
-from chapel.core import *
 
 ctx = Context()
 ast = ctx.parse("myfile.chpl")
@@ -48,36 +47,44 @@ myfile
 ```
 
 ## Installation
+
 Make sure that you have a from-source build of Chapel available in your
 `CHPL_HOME`, and that the Dyno compiler library has been built (this usually
-happens if you build the compiler, or run `make test-frontend`). Currently,
-the build script also requires having LLVM available in your path. With
-those constraints met, you can just run `pip install`:
+happens if you build the compiler, or run `make test-frontend`). Currently, the
+build script also requires having LLVM available in your path. The build script
+also requires that the development package of python be installed (for many
+package managers this is called `python3-devel`). With those constraints met,
+you can just run `pip install`:
 
 ```Bash
 python3 -m pip install -e .
 ```
 
 ## Usage
+
 Check the `chplcheck.py` file in the root directory to see the library
 in action.
 
 The library is split into three major components:
 
-* The `chapel.core` module which provides the parts of this library that are
-  bridged from C++. This includes the AST node class hierarchy, the `Context`
-  object, and some other supporting code.
-* The `chapel` module provides higher-level, pure Python implementations of
-  certain utility functions. For instance, it provides the `preorder` and `postorder`
-  traversal iterators, and a `match` function to perform AST pattern matching.
+* The `chapel` module provides the AST node class hierarchy and the `Context`
+  object. It also provides some higher-level, pure Python implementations of
+  certain utility functions. For instance, it provides the `preorder` and
+  `postorder`, traversal iterators, and a `match` function to perform AST
+  pattern matching.
 * The `chapel.replace` module provides the "replacer API", which is intended
   to perform transformations on existing Chapel files for various reasons. For
   instance, deprecations and syntax changes can be performed automatically using
   the replacer API, by finding AST patterns and performing string substitution.
+* The `chapel.lsp` module provides a few helpers to tranform Dyno types to LSP
+  (Language Server Protocol) types.
+* The `chapel.core` module which provides the parts of this library that are
+  bridged from C++. Most users should not need to use this library, as all symbols are forwarded to `chapel`.
 
 The following sections document the three modules.
 
-### `chapel.core`
+### `chapel`
+
 The main entry point to the Chapel Python API is the `Context` object. This
 is a wrapper around the C++ construct of the same name. The Context in 'dyno'
 is responsible of memoizing computations, interning strings, and more. The
@@ -144,14 +151,13 @@ METHOD_TABLE(START_NamedDecl,
 );
 ```
 
-### `chapel`
-
-The `chapel` module provides convenience functions for working with the library.
+The `chapel` module also provides convenience functions for working with the library.
 For instance, it provides the `postorder` and `preorder` iterators (the
 implementation of the former is included above). It also provides a couple
 of more advanced helpers for dealing with Chapel ASTs.
 
 #### `chapel.parse_attribute`
+
 The `parse_attribute` function, given a "description" of an attribute (its
 name and formal list), tries to parse an `Attribute` AST node. This function
 accounts for named and unnamed actuals, reordering, etc. For instance, given
@@ -193,6 +199,7 @@ def ignores_rule(node, rulename):
 ```
 
 #### `chapel.match_pattern`
+
 This function provides general pattern matching functionality to enable users
 of the Python API to rapidly find "interesting" locations in the AST. It
 supports arbitrary levels of nesting, as well as "named variables" to easily
@@ -455,4 +462,3 @@ def tag_aggregates_with_io_interfaces(rc, root):
 
         yield (record, new_text)
 ```
-

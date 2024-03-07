@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "iterator-support.h"
 #include "error-tracker.h"
-#include "core-types.h"
+#include "core-types-gen.h"
 #include <utility>
 
 static PyMethodDef ChapelMethods[] = {
@@ -43,57 +43,50 @@ extern "C" {
 PyMODINIT_FUNC PyInit_core() {
   PyObject* chapelModule = nullptr;
 
-  setupContextType();
-  setupErrorType();
-  setupErrorManagerType();
-  setupLocationType();
   setupAstIterType();
   setupAstCallIterType();
-  setupAstNodeType();
-  setupPerNodeTypes();
+  setupGeneratedTypes();
 
-  if (PyType_Ready(&ContextType) < 0) return nullptr;
-  if (PyType_Ready(&ErrorType) < 0) return nullptr;
-  if (PyType_Ready(&ErrorManagerType) < 0) return nullptr;
-  if (PyType_Ready(&LocationType) < 0) return nullptr;
-  if (PyType_Ready(&AstIterType) < 0) return nullptr;
-  if (PyType_Ready(&AstCallIterType) < 0) return nullptr;
-  if (PyType_Ready(&AstNodeType) < 0) return nullptr;
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
-#define AST_NODE(NAME) READY_TYPE(NAME)
-#define AST_LEAF(NAME) READY_TYPE(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) READY_TYPE(NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) READY_TYPE(NAME)
+#include "generated-types-list.h"
+#undef GENERATED_TYPE
+  READY_TYPE(AstIter)
+  READY_TYPE(AstCallIter)
+
+  if (ContextObject::ready() < 0) return nullptr;
+  if (LocationObject::ready() < 0) return nullptr;
+  if (ScopeObject::ready() < 0) return nullptr;
+  if (AstNodeObject::ready() < 0) return nullptr;
+  if (ChapelTypeObject::ready() < 0) return nullptr;
+  if (ParamObject::ready() < 0) return nullptr;
+  if (ErrorObject::ready() < 0) return nullptr;
+  if (ErrorManagerObject::ready() < 0) return nullptr;
+  if (ResolvedExpressionObject::ready() < 0) return nullptr;
+  if (MostSpecificCandidateObject::ready() < 0) return nullptr;
+  if (TypedSignatureObject::ready() < 0) return nullptr;
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
 
 #define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) &NAME##Type) < 0) return nullptr;
-#define AST_NODE(NAME) ADD_TYPE(NAME)
-#define AST_LEAF(NAME) ADD_TYPE(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) ADD_TYPE(NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-  ADD_TYPE(AstNode);
-  if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
-    Py_DECREF(&ContextType);
-    Py_DECREF(chapelModule);
-    return NULL;
-  }
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) ADD_TYPE(NAME)
+#include "generated-types-list.h"
+#undef GENERATED_TYPE
+
+  if (ContextObject::addToModule(chapelModule) < 0) return nullptr;
+  if (LocationObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ScopeObject::addToModule(chapelModule) < 0) return nullptr;
+  if (AstNodeObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ChapelTypeObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ParamObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ErrorObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ErrorManagerObject::addToModule(chapelModule) < 0) return nullptr;
+  if (ResolvedExpressionObject::addToModule(chapelModule) < 0) return nullptr;
+  if (MostSpecificCandidateObject::addToModule(chapelModule) < 0) return nullptr;
+  if (TypedSignatureObject::addToModule(chapelModule) < 0) return nullptr;
+
   return chapelModule;
 }
 
-}
-
-int main() {
-  chpl::Context myContext;
 }

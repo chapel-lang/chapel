@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,35 +23,19 @@
 #include "Python.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
+#include "python-class.h"
 
-typedef struct {
-  PyObject_HEAD
-  chpl::owned<chpl::ErrorBase> error;
-  PyObject* contextObject;
-} ErrorObject;
-extern PyTypeObject ErrorType;
+struct ContextObject;
 
-void setupErrorType();
+struct ErrorObject : public PythonClassWithObject<ErrorObject, chpl::owned<chpl::ErrorBase>> {
+  static constexpr const char* Name = "Error";
+  static constexpr const char* DocStr = "An error that occurred as part of processing a file with the Chapel compiler frontend";
+};
 
-int ErrorObject_init(ErrorObject* self, PyObject* args, PyObject* kwargs);
-void ErrorObject_dealloc(ErrorObject* self);
-PyObject* ErrorObject_location(ErrorObject* self, PyObject* args);
-PyObject* ErrorObject_message(ErrorObject* self, PyObject* args);
-PyObject* ErrorObject_kind(ErrorObject* self, PyObject* args);
-PyObject* ErrorObject_type(ErrorObject* self, PyObject* args);
-
-typedef struct {
-  PyObject_HEAD
-  PyObject* contextObject;
-} ErrorManagerObject;
-extern PyTypeObject ErrorManagerType;
-
-void setupErrorManagerType();
-
-int ErrorManagerObject_init(ErrorManagerObject* self, PyObject* args, PyObject* kwargs);
-void ErrorManagerObject_dealloc(ErrorManagerObject* self);
-PyObject* ErrorManagerObject_enter(ErrorManagerObject* self, PyObject* args);
-PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args);
+struct ErrorManagerObject : public PythonClassWithObject<ErrorManagerObject, std::tuple<>> {
+  static constexpr const char* Name = "ErrorManager";
+  static constexpr const char* DocStr = "A wrapper container to help track the errors from a Context.";
+};
 
 class PythonErrorHandler : public chpl::Context::ErrorHandler {
  private:

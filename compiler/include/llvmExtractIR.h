@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,10 +33,13 @@ namespace llvm
 }
 
 // creates a new module by extracting just the 'gvs' passed
-// and creating prototypes for other things.
+// and creating prototypes for other things referenced.
 std::unique_ptr<llvm::Module>
 extractLLVM(const llvm::Module* fromModule,
             std::set<const llvm::GlobalValue*> &gvs);
+
+// removes dead code / unreferenced functions as is done in extractLLVM
+void removeUnreferencedLLVM(llvm::Module* mod);
 
 // extracts only the functions in 'gvs' and prints those
 void extractAndPrintFunctionsLLVM(std::set<const llvm::GlobalValue*> *gvs);

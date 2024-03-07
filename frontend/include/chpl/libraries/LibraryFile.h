@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,8 +29,14 @@
 #include <system_error>
 #include <unordered_map>
 
+#ifdef HAVE_LLVM
+#include "llvm/IR/Module.h"
+#endif
+
 // forward declare LLVM Support Library dependencies
 namespace llvm {
+  class Module;
+
   namespace sys {
     namespace fs {
       class mapped_file_region;
@@ -107,10 +113,14 @@ class LibraryFile {
       uint32_t symbolEntryOffset = 0;
       uint32_t astOffset = 0;
       uint32_t locationOffset = 0;
+      UniqueString symbolPath;
+      std::vector<UniqueString> cnames;
       bool operator==(const SymbolInfo& other) const {
         return symbolEntryOffset == other.symbolEntryOffset &&
                astOffset == other.astOffset &&
-               locationOffset == other.locationOffset;
+               locationOffset == other.locationOffset &&
+               symbolPath == other.symbolPath &&
+               cnames == other.cnames;
       }
       bool operator!=(const SymbolInfo& other) const {
         return !(*this == other);
@@ -140,9 +150,16 @@ class LibraryFile {
     const unsigned char* locationSectionData = nullptr;
     size_t locationSectionLen = 0;
 
+    const unsigned char* genCodeSectionData = nullptr;
+    size_t genCodeSectionLen = 0;
+
     // To support deserializing UniqueStrings
     int nStrings = 0;
     const uint32_t* stringOffsetsTable = nullptr;
+
+    // To support reading LLVM IR
+    const unsigned char* llvmIrData = nullptr;
+    size_t llvmIrDataLen = 0;
 
     ModuleSection() { }
    public:
@@ -157,8 +174,12 @@ class LibraryFile {
              stringSectionLen == other.stringSectionLen &&
              locationSectionData == other.locationSectionData &&
              locationSectionLen == other.locationSectionLen &&
+             genCodeSectionData == other.genCodeSectionData &&
+             genCodeSectionLen == other.genCodeSectionLen &&
              nStrings == other.nStrings &&
-             stringOffsetsTable == other.stringOffsetsTable;
+             stringOffsetsTable == other.stringOffsetsTable &&
+             llvmIrData == other.llvmIrData &&
+             llvmIrDataLen == other.llvmIrDataLen;
     }
     bool operator!=(const ModuleSection& other) const {
       return !(*this == other);
@@ -191,6 +212,7 @@ class LibraryFile {
     void mark(Context* context) const;
   };
 
+
  private:
   struct ModuleInfo {
     UniqueString moduleSymPath;
@@ -210,6 +232,9 @@ class LibraryFile {
 
   // stores module symbol IDs and the file paths they came from
   std::vector<ModuleInfo> modules;
+
+  // maps from the moduleSymPath to the index in 'modules' above
+  std::map<UniqueString, size_t> moduleSymPathToIdx;
 
   LibraryFile() { }
 
@@ -231,6 +256,7 @@ class LibraryFile {
   // returns 'true' if everything is OK, 'false' if there were errors.
   bool readModuleSection(Context* context,
                          Region moduleRegion,
+                         UniqueString moduleSymPath,
                          ModuleSection& mod) const;
 
   // reads the module metadata (including the symbol table)
@@ -313,6 +339,9 @@ class LibraryFile {
                      int symbolTableEntryIndex,
                      const uast::AstNode* symbolTableEntryAst);
 
+  static owned<llvm::Module>
+  loadLlvmModuleImpl(Context* context, const LibraryFile* f, int moduleIndex);
+
  public:
   ~LibraryFile();
 
@@ -344,6 +373,11 @@ class LibraryFile {
   std::vector<UniqueString> containedFilePaths() const;
 
   /**
+    Print a summary of a LibraryFile.
+    */
+  void summarize(Context* context, std::ostream& s) const;
+
+  /**
     Load uAST from this LibraryFile for a particular source path.
    */
   const uast::BuilderResult& loadSourceAst(Context* context,
@@ -371,7 +405,18 @@ class LibraryFile {
                 int symbolTableEntryIndex,
                 const uast::AstNode* symbolTableEntryAst) const;
 
-  // TODO: reading LLVM IR, getLazyIRModule con work with a MemoryBuffer
+#ifdef HAVE_LLVM
+  /**
+    Load LLVM IR from a this LibraryFile for a particular module path.
+    For a toplevel module, the module path is just the module name.
+    For a submodule M of a parent module P, it would be P.M.
+
+    Returns nullptr if no such module is found in this LibraryFile
+    or if an error occurred.
+   */
+  owned<llvm::Module> loadGenCodeModule(Context* context,
+                                        UniqueString moduleSymPath) const;
+#endif
 };
 
 

@@ -31,5 +31,3 @@ warning: 'M.a' at missingDocs.chpl:40 is undocumented
 warning: 'M.E' at missingDocs.chpl:41 is undocumented
 warning: 'M.A' at missingDocs.chpl:41 is undocumented
 warning: 'chpl_bar' at missingDocs.chpl:46 is undocumented
-================================================================================
-missingDocsIgnoreDeprecated.chpl:1: warning: an implicit module named 'missingDocsIgnoreDeprecated' is being introduced to contain file-scope code

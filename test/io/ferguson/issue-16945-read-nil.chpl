@@ -7,7 +7,7 @@ class C {
 var f = openMemFile();
 
 var x: owned C? = nil;
-f.writer().write(x);
+f.writer(locking=false).write(x);
 
-f.reader().read(x);
+f.reader(locking=false).read(x);
 writeln(x);

@@ -12,7 +12,7 @@ proc main() {
   masonNew(args);
 
   assert(isDir("newTest") == true);
-  const fr = openReader("newTest/Mason.toml");
+  const fr = openReader("newTest/Mason.toml", locking=false);
   for line in fr.lines() do write(line);
   fr.close();
 

@@ -1,4 +1,4 @@
-iter foo() {
+iter foo(): nothing {
   writeln("In foo");
 }
 

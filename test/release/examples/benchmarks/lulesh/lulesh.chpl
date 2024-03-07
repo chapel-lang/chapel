@@ -317,7 +317,7 @@ proc main() {
 
   if printCoords {
     var writer = if coordsStdout then stdout
-                                 else open("coords.out", ioMode.cw).writer();
+                                 else open("coords.out", ioMode.cw).writer(locking=true);
     var fmtstr = if debug then "%1.9re %1.9er %1.9er\n"
                           else "%1.4er %1.4er %1.4er\n";
     for i in Nodes do
@@ -362,7 +362,7 @@ proc initMasses() {
   // without losing updates by using 'atomic' variables
   var massAccum: [Nodes] atomic real;
 
-  forall eli in Elems with (ref elemMass, ref massAccum, ref volo) {
+  forall eli in Elems {
     var x_local, y_local, z_local: 8*real;
     localizeNeighborNodes(eli, x, x_local, y, y_local, z, z_local);
 
@@ -378,7 +378,7 @@ proc initMasses() {
   // which point the massAccum array can go away (and will at the
   // procedure's return
 
-  forall i in Nodes with (ref nodalMass) do
+  forall i in Nodes do
     nodalMass[i] = massAccum[i].read() / 8.0;
 
   if debug {
@@ -394,14 +394,14 @@ proc initMasses() {
 proc initBoundaryConditions() {
   var surfaceNode: [Nodes] int;
 
-  forall n in XSym with (ref surfaceNode) do
+  forall n in XSym do
     surfaceNode[n] = 1;
-  forall n in YSym with (ref surfaceNode) do
+  forall n in YSym do
     surfaceNode[n] = 1;
-  forall n in ZSym with (ref surfaceNode) do
+  forall n in ZSym do
     surfaceNode[n] = 1;
 
-  forall e in Elems with (ref elemBC) do {
+  forall e in Elems do {
     var mask: int;
     for i in 0..<nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << i;
@@ -447,10 +447,10 @@ proc initBoundaryConditions() {
   // initialize the free surface
   initFreeSurface(freeSurface);
 
-  forall n in freeSurface with (ref surfaceNode) do
+  forall n in freeSurface do
     surfaceNode[n] = 1;
 
-  forall e in Elems with (ref elemBC) do {
+  forall e in Elems do {
     var mask: int;
     for i in 0..<nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << i;
@@ -556,7 +556,7 @@ proc CalcElemVolume(x, y, z) {
 }
 
 proc InitStressTermsForElems(p, q, ref sigxx, ref sigyy, ref sigzz: [?D] real) {
-  forall i in D with (ref sigxx, ref sigyy, ref sigzz) {
+  forall i in D {
     sigxx[i] = -p[i] - q[i];
     sigyy[i] = -p[i] - q[i];
     sigzz[i] = -p[i] - q[i];
@@ -834,13 +834,13 @@ proc CalcPressureForElems(ref p_new: [?D] real, ref bvc, ref pbvc,
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in D with (ref bvc, ref pbvc) /*do local */ {
+  forall i in D /*do local */ {
     const c1s = 2.0 / 3.0;
     bvc[i] = c1s * (compression[i] + 1.0);
     pbvc[i] = c1s;
   }
 
-  forall i in D with (ref p_new) {
+  forall i in D {
     p_new[i] = bvc[i] * e_old[i];
 
     if abs(p_new[i]) < p_cut then p_new[i] = 0.0;
@@ -1006,7 +1006,7 @@ proc CalcVolumeForceForElems() {
 
 
 proc IntegrateStressForElems(sigxx, sigyy, sigzz, ref determ) {
-  forall k in Elems with (ref determ, ref fx, ref fy, ref fz) {
+  forall k in Elems {
     var b_x, b_y, b_z: 8*real;
     var x_local, y_local, z_local: 8*real;
     localizeNeighborNodes(k, x, x_local, y, y_local, z, z_local);
@@ -1036,7 +1036,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, ref determ) {
 proc CalcHourglassControlForElems(ref determ) {
   var dvdx, dvdy, dvdz, x8n, y8n, z8n: [Elems] 8*real;
 
-  forall eli in Elems with (ref determ, ref dvdx, ref dvdy, ref dvdz, ref x8n, ref y8n, ref z8n) {
+  forall eli in Elems {
     /* Collect domain nodes to elem nodes */
     var x1, y1, z1: 8*real;
     localizeNeighborNodes(eli, x, x1, y, y1, z, z1);
@@ -1076,7 +1076,7 @@ const gammaCoef: 4*(8*real) = // WAS: [1..4, 1..8] real =
 proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
   /* compute the hourglass modes */
-  forall eli in Elems with (ref fx, ref fy, ref fz) {
+  forall eli in Elems {
     var hourgam: 8*(4*real);
     const volinv = 1.0 / determ[eli];
     var ss1, mass1, volume13: real;
@@ -1127,7 +1127,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
 
 proc CalcAccelerationForNodes() {
-  forall noi in Nodes with (ref xdd, ref ydd, ref zdd) do local {
+  forall noi in Nodes do local {
       xdd[noi] = fx[noi].read() / nodalMass[noi];
       ydd[noi] = fy[noi].read() / nodalMass[noi];
       zdd[noi] = fz[noi].read() / nodalMass[noi];
@@ -1142,14 +1142,14 @@ proc ApplyAccelerationBoundaryConditionsForNodes() {
   // ydd[YSym] = 0.0;
   // zdd[ZSym] = 0.0;
 
-  forall x in XSym with (ref xdd) do xdd[x] = 0.0;
-  forall y in YSym with (ref ydd) do ydd[y] = 0.0;
-  forall z in ZSym with (ref zdd) do zdd[z] = 0.0;
+  forall x in XSym do xdd[x] = 0.0;
+  forall y in YSym do ydd[y] = 0.0;
+  forall z in ZSym do zdd[z] = 0.0;
 }
 
 
 proc CalcVelocityForNodes(dt: real, u_cut: real) {
-  forall i in Nodes with (ref xd, ref yd, ref zd) do local {
+  forall i in Nodes do local {
     var xdtmp = xd[i] + xdd[i] * dt,
         ydtmp = yd[i] + ydd[i] * dt,
         zdtmp = zd[i] + zdd[i] * dt;
@@ -1164,7 +1164,7 @@ proc CalcVelocityForNodes(dt: real, u_cut: real) {
 
 
 proc CalcPositionForNodes(dt: real) {
-  forall ijk in Nodes with (ref x, ref y, ref z) {
+  forall ijk in Nodes {
     x[ijk] += xd[ijk] * dt;
     y[ijk] += yd[ijk] * dt;
     z[ijk] += zd[ijk] * dt;
@@ -1178,7 +1178,7 @@ proc CalcLagrangeElements() {
   CalcKinematicsForElems(dxx, dyy, dzz, deltatime);
 
   // element loop to do some stuff not included in the elemlib function.
-  forall k in Elems with (ref dxx, ref dyy, ref dzz, ref vdov) do local {
+  forall k in Elems do local {
     vdov[k] = dxx[k] + dyy[k] + dzz[k];
     var vdovthird = vdov[k] / 3.0;
     dxx[k] -= vdovthird;
@@ -1196,7 +1196,7 @@ proc CalcLagrangeElements() {
 
 proc CalcKinematicsForElems(ref dxx, ref dyy, ref dzz, const dt: real) {
   // loop over all elements
-  forall k in Elems with (ref arealg, ref delv, ref dxx, ref dyy, ref dzz, ref vnew) {
+  forall k in Elems {
     var b_x, b_y, b_z: 8*real,
         d: 6*real,
         detJ: real;
@@ -1275,7 +1275,7 @@ var vnewc: [MatElems] real;
 /* Expose all of the variables needed for material evaluation */
 proc ApplyMaterialPropertiesForElems() {
 
-  forall i in MatElems with (ref vnewc) do vnewc[i] = vnew[i];
+  forall i in MatElems do vnewc[i] = vnew[i];
 
   if eosvmin != 0.0 then
     [c in vnewc] if c < eosvmin then c = eosvmin;
@@ -1302,7 +1302,7 @@ proc ApplyMaterialPropertiesForElems() {
 
 
 proc UpdateVolumesForElems() {
-  forall i in Elems with (ref v) do local {
+  forall i in Elems do local {
     var tmpV = vnew[i];
     if abs(tmpV-1.0) < v_cut then tmpV = 1.0;
     v[i] = tmpV;
@@ -1312,7 +1312,7 @@ proc UpdateVolumesForElems() {
 
 proc CalcMonotonicQGradientsForElems(ref delv_xi, ref delv_eta, ref delv_zeta,
                                      ref delx_xi, ref delx_eta, ref delx_zeta) {
-  forall eli in Elems with (ref delv_eta, ref delv_xi, ref delv_zeta, ref delx_eta, ref delx_xi, ref delx_zeta) {
+  forall eli in Elems {
     const ptiny = 1.0e-36;
     var xl, yl, zl: 8*real;
     localizeNeighborNodes(eli, x, xl, y, yl, z, zl);
@@ -1398,7 +1398,7 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                             delx_xi, delx_eta, delx_zeta) {
   //got rid of call through to "CalcMonotonicQRegionForElems"
 
-  forall i in MatElems with (ref ql, ref qq) {
+  forall i in MatElems {
     const ptiny = 1.0e-36;
     const bcMask = elemBC[i];
     var norm, delvm, delvp: real;
@@ -1524,7 +1524,7 @@ proc EvalEOSForElems(vnewc) {
     qq_old, ql_old, work, p_new, e_new, q_new, bvc, pbvc: [Elems] real;
 
   /* compress data, minimal set */
-  forall i in MatElems with (ref delvc, ref e_old, ref p_old, ref q_old, ref ql_old, ref qq_old) {
+  forall i in MatElems {
     e_old[i]  = e[i];
     delvc[i]  = delv[i];
     p_old[i]  = p[i];
@@ -1536,7 +1536,7 @@ proc EvalEOSForElems(vnewc) {
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in Elems with (ref compHalfStep, ref compression) /* do local */ {
+  forall i in Elems /* do local */ {
     compression[i] = 1.0 / vnewc[i] - 1.0;
     const vchalf = vnewc[i] - delvc[i] * 0.5;
     compHalfStep[i] = 1.0 / vchalf - 1.0;
@@ -1545,12 +1545,12 @@ proc EvalEOSForElems(vnewc) {
   /* Check for v > eosvmax or v < eosvmin */
   // (note: I think this was already checked for in calling function!)
   if eosvmin != 0.0 {
-    forall i in Elems with (ref compHalfStep) {
+    forall i in Elems {
       if vnewc[i] <= eosvmin then compHalfStep[i] = compression[i];
     }
   }
   if eosvmax != 0.0 {
-    forall i in Elems with (ref compHalfStep, ref compression, ref p_old) {
+    forall i in Elems {
       if vnewc[i] >= eosvmax {
         p_old[i] = 0.0;
         compression[i] = 0.0;
@@ -1563,7 +1563,7 @@ proc EvalEOSForElems(vnewc) {
                      p_old, e_old, q_old, compression, compHalfStep,
                      vnewc, work, delvc, qq_old, ql_old);
 
-  forall i in MatElems with (ref e, ref p, ref q) {
+  forall i in MatElems {
     p[i] = p_new[i];
     e[i] = e_new[i];
     q[i] = q_new[i];
@@ -1584,7 +1584,7 @@ proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
 
   var pHalfStep: [MatElems] real;
 
-  forall i in Elems with (ref e_new) {
+  forall i in Elems {
     e_new[i] = e_old[i] - 0.5 * delvc[i] * (p_old[i] + q_old[i])
                         + 0.5 * work[i];
     if e_new[i] < emin then e_new[i] = emin;
@@ -1593,7 +1593,7 @@ proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
   CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep,
                        vnewc, pmin, p_cut, eosvmax);
 
-  forall i in Elems with (ref e_new, ref q_new) {
+  forall i in Elems {
     const vhalf = 1.0 / (1.0 + compHalfStep[i]);
 
     if delvc[i] > 0.0 {
@@ -1608,7 +1608,7 @@ proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
     e_new[i] += 0.5 * delvc[i]
       * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
   }
-  forall i in Elems with (ref e_new) {
+  forall i in Elems {
     e_new[i] += 0.5 * work[i];
     if abs(e_new[i] < e_cut) then e_new[i] = 0.0;
     if e_new[i] < emin then e_new[i] = emin;
@@ -1617,7 +1617,7 @@ proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin,
                        p_cut, eosvmax);
 
-  forall i in Elems with (ref e_new) {
+  forall i in Elems {
     var q_tilde:real;
 
     if delvc[i] > 0.0 {
@@ -1643,7 +1643,7 @@ proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in Elems with (ref q_new) /* do local */ {
+  forall i in Elems /* do local */ {
     if delvc[i] <= 0.0 {
       var ssc = (pbvc[i] * e_new[i] + vnewc[i]**2 * bvc[i] * p_new[i] ) / rho0;
       if ssc <= 0.0 then ssc = 0.333333e-36;
@@ -1660,7 +1660,7 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
   // be zeroed and accumulated into, and (b) updated atomically to
   // avoid losing updates?  (Jeff will go back and think on this)
   //
-  forall i in MatElems with (ref ss) {
+  forall i in MatElems {
     var ssTmp = (pbvc[i] * enewc[i] + vnewc[i]**2 * bvc[i] * pnewc[i]) / rho0;
     if ssTmp <= 1.111111e-36 then ssTmp = 1.111111e-36;
     ss[i] = sqrt(ssTmp);

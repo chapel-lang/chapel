@@ -3,7 +3,7 @@ use OS.POSIX;
 
 var filename = "doesNotExist.txt";
 try {
-  var f = openReader(filename);
+  var f = openReader(filename, locking=false);
   writeln("Uh oh, didn't trigger error");
 
 } catch e: FileNotFoundError {

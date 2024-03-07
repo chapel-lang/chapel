@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -287,7 +287,7 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
   const llvm::DataLayout& layout = info->module->getDataLayout();
-  llvm::LLVMContext &ctx = info->llvmContext;
+  llvm::LLVMContext &ctx = gContext->llvmContext();
   llvm::Value* val = NULL;
   llvm::AllocaInst* alloca = NULL;
 
@@ -472,7 +472,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
     if (isOpaquePointer(addrType)) {
 #if HAVE_LLVM_VER >= 140
-      locAddrType = llvm::PointerType::getUnqual(info->llvmContext);
+      locAddrType = llvm::PointerType::getUnqual(gContext->llvmContext());
 #endif
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
@@ -565,7 +565,7 @@ void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
     return;
 
   llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
-      llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+      llvm::Type::getInt64Ty(gContext->llvmContext()), sizeInBytes);
 
   info->irBuilder->CreateInvariantStart(addr, size);
 }
@@ -2150,6 +2150,99 @@ static GenRet codegenFma(GenRet a, GenRet b, GenRet c) {
   return ret;
 }
 
+static GenRet emitSqrtCMath(GenRet av) {
+  GenRet ret;
+  if (av.chplType == dtReal[FLOAT_SIZE_64]) {
+    ret = codegenCallExpr("chpl_sqrt64", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
+    ret = codegenCallExpr("chpl_sqrt32", av);
+  } else {
+    INT_FATAL("The sqrt primitive can only evaluate floating point types!");
+  }
+  return ret;
+}
+
+static GenRet emitSqrtLLVMIntrinsic(GenRet av) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The sqrt primitive can only evaluate floating point types!");
+  }
+  auto id = llvm::Intrinsic::sqrt;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenSqrt(GenRet a) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  GenRet av = codegenValue(a);
+  if (info->cfile) {
+    ret = emitSqrtCMath(av);
+  } else {
+    ret = emitSqrtLLVMIntrinsic(av);
+  }
+  return ret;
+}
+
+static GenRet emitAbsCMath(GenRet av) {
+  GenRet ret;
+  if (av.chplType == dtReal[FLOAT_SIZE_64]) {
+    ret = codegenCallExpr("chpl_fabs64", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
+    ret = codegenCallExpr("chpl_fabs32", av);
+  } else {
+    INT_FATAL("The abs primitive can only evaluate floating point types!");
+  }
+  return ret;
+}
+
+static GenRet emitAbsLLVMIntrinsic(GenRet av) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The abs primitive can only evaluate floating point types!");
+  }
+  auto id = llvm::Intrinsic::fabs;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenAbs(GenRet a) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  GenRet av = codegenValue(a);
+  if (info->cfile) {
+    ret = emitAbsCMath(av);
+  } else {
+    ret = emitAbsLLVMIntrinsic(av);
+  }
+  return ret;
+}
+
+
 
 static
 GenRet codegenLsh(GenRet a, GenRet b)
@@ -2588,7 +2681,7 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
     // See Swift irgen::emitForeignParameter
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
     unsigned int addrSpace = layout.getAllocaAddrSpace();
     const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
@@ -2749,7 +2842,7 @@ static GenRet codegenCallExprInner(GenRet function,
     // See Swift irgen::emitForeignParameter
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
 
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
@@ -3404,13 +3497,13 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     src = codegenValue(src);
     size = codegenValue(size);
 
-    llvm::Type *int8Ty = llvm::Type::getInt8Ty(info->llvmContext);
+    llvm::Type *int8Ty = llvm::Type::getInt8Ty(gContext->llvmContext());
     llvm::Type *types[3];
     unsigned addrSpaceDest = llvm::cast<llvm::PointerType>(dest.val->getType())->getAddressSpace();
     unsigned addrSpaceSrc = llvm::cast<llvm::PointerType>(src.val->getType())->getAddressSpace();
     types[0] = llvm::PointerType::get(int8Ty, addrSpaceDest);
     types[1] = llvm::PointerType::get(int8Ty, addrSpaceSrc);
-    types[2] = llvm::Type::getInt64Ty(info->llvmContext);
+    types[2] = llvm::Type::getInt64Ty(gContext->llvmContext());
     //types[3] = llvm::Type::getInt32Ty(info->llvmContext);
     //types[4] = llvm::Type::getInt1Ty(info->llvmContext);
 
@@ -4043,7 +4136,7 @@ static void codegenEmbedChapelAstMetadata(GenRet& gr, BaseAST* ast) {
   #ifdef HAVE_LLVM
   if (gGenInfo->cfile == nullptr && gr.val && fGenIDS) {
     if (auto insn = llvm::dyn_cast<llvm::Instruction>(gr.val)) {
-      llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+      llvm::LLVMContext& ctx = gContext->llvmContext();
       llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
       llvm::Constant* c = llvm::ConstantInt::get(int64Ty, ast->id);
       llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
@@ -4608,7 +4701,7 @@ DEFINE_PRIM(UNARY_PLUS) {
     else
       ret = tmp; // nothing is necessary.
   }
-  DEFINE_PRIM(UNARY_NOT) {
+DEFINE_PRIM(UNARY_NOT) {
     GenRet tmp = codegenValue(call->get(1));
 
     if (gGenInfo->cfile) {
@@ -4621,6 +4714,12 @@ DEFINE_PRIM(UNARY_PLUS) {
 }
 DEFINE_PRIM(UNARY_LNOT) {
   ret = codegenIsZero(call->get(1));
+}
+DEFINE_PRIM(SQRT) {
+  ret = codegenSqrt(call->get(1));
+}
+DEFINE_PRIM(ABS) {
+  ret = codegenAbs(call->get(1));
 }
 DEFINE_PRIM(ADD) {
     ret = codegenAdd(call->get(1), call->get(2));
@@ -5287,13 +5386,10 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
 
   // number of arguments that are not kernel params
   int nNonKernelParamArgs = is3d ? 7:3;
-  int nKernelParamArgs = call->numActuals() - nNonKernelParamArgs;
 
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
-  args.push_back(new_IntSymbol(call->astloc.lineno()));
-  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
@@ -5313,30 +5409,10 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
     else if (curArg <= nNonKernelParamArgs) {  // grid and block size args
       args.push_back(actual->codegen());
 
-      // if we finished adding non-kernel parameters, add number of kernel
-      // parameters first before the parameters themselves.
-      if (curArg == nNonKernelParamArgs) {
-        GenRet numParams = new_IntSymbol(nKernelParamArgs);
-        args.push_back(numParams);
-      }
     }
     else { // kernel args
-      Type* actualValType = actual->typeInfo()->getValType();
-
-      // TODO can we use codegenArgForFormal instead of this logic?
-      if (isClass(actualValType) || (!actualSym->isRef() &&
-                                     !isAggregateType(actualValType))) {
-        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        args.push_back(new_IntSymbol(0));
-      }
-      else if (actualSym->isRef()) {
-        args.push_back(actual->codegen());
-        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      }
-      else {
-        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      }
+      // must be the cfg arg
+      args.push_back(actual->codegen());
     }
     curArg++;
   }
@@ -5350,6 +5426,63 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
 
 DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
   ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+}
+
+DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
+  std::vector<GenRet> args;
+  auto numKernelArgs = call->get(1);
+  auto numKernelPids = call->get(2);
+
+  args.push_back(numKernelArgs->codegen());
+  args.push_back(numKernelPids->codegen());
+  args.push_back(new_IntSymbol(call->astloc.lineno()));
+  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+
+  ret = codegenCallExprWithArgs("chpl_gpu_init_kernel_cfg", args);
+}
+
+DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {
+  ret = codegenCallExpr("chpl_gpu_deinit_kernel_cfg", call->get(1)->codegen());
+}
+
+DEFINE_PRIM(GPU_ARG) {
+  std::vector<GenRet> args;
+
+  // the config
+  args.push_back(call->get(1)->codegen());
+
+  SymExpr* kindSE = toSymExpr(call->get(3));
+  INT_ASSERT(kindSE);
+
+  Immediate* imm = getSymbolImmediate(kindSE->symbol());
+  int8_t kind = imm->v_int8;
+
+  if ((kind & 1<<0) == GpuArgKind::ADDROF) {
+    args.push_back(codegenAddrOf(codegenValuePtr(call->get(2))));
+  }
+  else {
+    args.push_back(call->get(2)->codegen());
+  }
+
+  const char* fnName;
+  if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
+    fnName = "chpl_gpu_arg_offload";
+    args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
+  }
+  else {
+    fnName = "chpl_gpu_arg_pass";
+  }
+
+  ret = codegenCallExprWithArgs(fnName, args);
+}
+
+DEFINE_PRIM(GPU_PID_OFFLOAD) {
+  auto cfg = call->get(1);
+  auto pid = call->get(2);
+  auto size = call->get(3);
+
+  ret = codegenCallExpr("chpl_gpu_pid_offload", cfg->codegen(),
+                        pid->codegen(), size->codegen());
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
@@ -5371,7 +5504,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
   int bytesToAlloc = toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
 
   // Create a type for the shared array.
-  llvm::Type* elementType = llvm::Type::getInt8Ty(info->llvmContext);
+  llvm::Type* elementType = llvm::Type::getInt8Ty(gContext->llvmContext());
   auto* arrayType = llvm::ArrayType::get(elementType, bytesToAlloc);
 
   // Allocate the shared array in GPU shared memory.
@@ -5381,7 +5514,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
       llvm::GlobalValue::NotThreadLocal, 3, false);
 
   // Get a void* pointer to the shared array.
-  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(info->llvmContext, 3);
+  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(gContext->llvmContext(), 3);
   llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
 
   ret.val = sharedArrayPtr;
@@ -6218,7 +6351,7 @@ DEFINE_PRIM(NO_ALIAS_SET) {
 
     Symbol* sym = toSymExpr(call->get(1))->symbol();
 
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
 
     if (info->noAliasDomain == NULL) {
       auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");

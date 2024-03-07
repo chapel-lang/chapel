@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 #define _PASSES_H_
 
 #include "FnSymbol.h"
+#include "LoopExpr.h"
 #include "symbol.h"
 #include "PassManager.h"
 #include "pass-manager-passes.h"
@@ -134,9 +135,10 @@ void  handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
 
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
-                                 bool fromForExpr);
+                                 LoopExprType type);
 void setIteratorRecordShape(CallExpr* call);
 bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
+bool checkIteratorFromForeachExpr(Expr* ref, Symbol* shape);
 
 // LoopExpr.cpp
 bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr);
@@ -154,9 +156,6 @@ void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 Expr* partOfNonNormalizableExpr(Expr* expr);
-// support for deprecation by Vass in 1.31 to implement #17131
-bool tryReplaceStridable(CallExpr* parentCall, const char* name,
-                         UnresolvedSymExpr* use);
 void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr);
 
 // parallel.cpp

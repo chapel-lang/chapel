@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -255,10 +255,47 @@ typedef struct chpl_main_argument_s {
 } chpl_main_argument;
 
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
+// though CMPLX works for some C++ compilers, it doesn't work for all in our
+// test environments, so dodge it to be safe;  Currently, we only compile
+// this header using a C++ compiler when compiling our re2 stubs, which
+// don't seem to use this routine anyway.
+#if defined(CMPLX) && !defined(__cplusplus)
+  return CMPLX(re, im);
+#else
+#ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
+#define cmplx_re64(c) (((double *)&(c))[0])
+#define cmplx_im64(c) (((double *)&(c))[1])
+  _complex128 val;
+  cmplx_re64(val) = re;
+  cmplx_im64(val) = im;
+  return val;
+#else
+  // This can generate bad values in the face of inf/nan values
   return re + im*_Complex_I;
+#endif
+#endif
 }
+
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
+// though CMPLXF works for some C++ compilers, it doesn't work for all in our
+// test environments, so dodge it to be safe;  Currently, we only compile
+// this header using a C++ compiler when compiling our re2 stubs, which
+// don't seem to use this routine anyway.
+#if defined(CMPLXF) && !defined(__cplusplus)
+  return CMPLXF(re, im);
+#else
+#ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
+#define cmplx_re32(c) (((float *)&(c))[0])
+#define cmplx_im32(c) (((float *)&(c))[1])
+  _complex64 val;
+  cmplx_re32(val) = re;
+  cmplx_im32(val) = im;
+  return val;
+#else
+  // This can generate bad values in the face of inf/nan values
   return re + im*_Complex_I;
+#endif
+#endif
 }
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {

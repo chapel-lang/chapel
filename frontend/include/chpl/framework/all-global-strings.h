@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,12 +39,18 @@ X(bytes          , "bytes")
 X(complex_       , "complex")
 X(complete       , "complete")
 X(c_ptr          , "c_ptr")
+X(c_ptrConst     , "c_ptrConst")
 X(class_         , "class")
 X(deinit         , "deinit")
 X(dmapped        , "dmapped")
 X(domain         , "domain")
 X(false_         , "false")
+X(for_           , "for")
+X(forall         , "forall")
+X(foreach        , "foreach")
+X(functionStatic , "functionStatic")
 X(generate       , "generate")
+X(gpuBlockSize   , "gpu.blockSize")
 X(imag_          , "imag")
 X(index          , "index")
 X(init           , "init")

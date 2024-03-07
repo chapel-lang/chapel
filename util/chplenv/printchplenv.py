@@ -40,12 +40,15 @@ Options:
   --make        Print variables in format: CHPL_MAKE_KEY=VALUE
   --path        Print variables in format: VALUE1/VALUE2/...
                  this flag always excludes CHPL_HOME and CHPL_MAKE
+  --bash        Print variables in format: export CHPL_KEY=VALUE
+  --csh         Print variables in format: setenv CHPL_KEY VALUE
 """
 
 from collections import namedtuple
 from functools import partial
 import optparse
 import os
+import re
 import unittest
 from sys import stdout, path
 
@@ -363,6 +366,22 @@ def _filter_content(chpl_env, contents=None):
     return chpl_env.content.intersection(contents)
 
 
+"""Quote and/or escape spaces and [some] special symbols in 'value',
+for use in a shell.
+"""
+def forShell(value):
+    # For simplicity, just wrap 'value' in single quotes, when needed.
+    # TODO: also handle single quotes occurring in 'value'.
+    # needEscapingRE is the RE that has the following symbols within []:
+    # \ " SPACE \t \n \r \f \v ~ ` # $ & * | ; " < > ? ! ( ) [ ] { }
+    needEscapingRE = "[\\\"" + \
+      r" \t\n\r\f\v\~\`\#\$\&\*\|\;\"\<\>\?\!\(\)\[\]\{\}]"
+    if re.search(needEscapingRE, value):
+        return "'" + value + "'"
+    else:
+        return value
+
+
 """Return string to be printed for a given variable and print_format
 Requires a print_format argument
 """
@@ -384,6 +403,10 @@ def _print_var(key, value, print_format=None, shortname=None):
         else:
             ret = "{0}".format(value)
         return ret + '/'
+    elif print_format == 'bash':
+        return "export {0}={1}\n".format(key_stripped, forShell(value))
+    elif print_format == 'csh':
+        return "setenv {0} {1}\n".format(key_stripped, forShell(value))
     else:
         raise ValueError("Invalid format '{0}'".format(print_format))
 
@@ -445,8 +468,6 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
                 value += '-debug'
             elif env.name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
                 value += '-debug'
-        if env.name == 'CHPL_LOCALE_MODEL' and value == 'numa' and print_format == 'pretty':
-                value += ' (deprecated)'
         ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path
@@ -494,6 +515,8 @@ def parse_args():
     parser.add_option('--make',   action='store_const', dest='format', const='make')
     parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
+    parser.add_option('--bash',   action='store_const', dest='format', const='bash')
+    parser.add_option('--csh',    action='store_const', dest='format', const='csh')
 
     #[hidden]
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')

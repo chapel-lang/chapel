@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -167,13 +167,16 @@ frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 frontend-shared: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) ChplFrontendShared
 
-test-frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
-	@echo "Making and running the frontend tests..."
+test-frontend: FORCE frontend-tests $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Running the frontend tests..."
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
+
+frontend-tests: $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making the frontend tests..."
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests
 	@echo "Making symbolic link to frontend tests in build/frontend-test"
 	@cd ../build && rm -f frontend-test && ln -s $(COMPILER_BUILD)/frontend/test frontend-test
-	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
-	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
 	@echo "frontend tests are available in build/frontend-test"
 
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
@@ -188,11 +191,15 @@ frontend-docs: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 
 frontend-linters: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Making the frontend linters"
-	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && cd frontend/util && $(MAKE)
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && cd frontend/util/linters && $(MAKE) fieldsUsed
 
 run-frontend-linters: frontend-linters
 	@echo "Running the frontend linters"
-	@env PATH=$(COMPILER_BUILD)/frontend/util/linters:$(PATH) $(CHPL_MAKE_HOME)/frontend/util/lint --compile-commands $(COMPILER_BUILD) --jobs=-1
+	@if [ "$(CHPL_MAKE_HOST_COMPILER)" != "clang" ]; then \
+	  echo error: run-frontend-linters requires CHPL_HOST_COMPILER=clang ; \
+	  exit 1 ; \
+	fi
+	env PATH=$(COMPILER_BUILD)/frontend/util/linters:$(PATH) $(CHPL_MAKE_HOME)/frontend/util/lint --compile-commands $(COMPILER_BUILD) --jobs=-1
 
 parser: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) parser
@@ -233,12 +240,11 @@ $(COMPILER_BUILD):
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
-install-chpl-chpldoc: $(CHPL) $(CHPLDOC)
-# this target is called from the install.sh script, bypassing the normal
-# way of building chpldoc.  So we need to make sure the venv is built
-	@if [ -z "$$CHPL_DONT_BUILD_CHPLDOC_VENV" ]; then \
-	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chpldoc-venv; \
-	fi
+install-chpl-chpldoc: FORCE $(CHPL_CONFIG_CHECK)
+# this target is called by the install.sh script which is called by a `make install`
+# from the top-level directory.
+# CMake will ensure chpl is built and optionally install chpldoc if it was already
+# built
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) install
 
 #

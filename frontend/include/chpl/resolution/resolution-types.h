@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -145,6 +145,7 @@ class UntypedFnSignature {
     CHPL_ASSERT(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
            idTag == uast::asttags::Record   ||
+           idTag == uast::asttags::Tuple    ||
            idTag == uast::asttags::Union    ||
            idTag == uast::asttags::Variable);
   }
@@ -796,6 +797,10 @@ class TypedFnSignature {
     return untypedSignature_;
   }
 
+  inline bool isCompilerGenerated() const {
+    return untyped()->isCompilerGenerated();
+  }
+
   /** Returns the result of evaluating the where clause */
   WhereClauseResult whereClauseResult() const {
     return whereClauseResult_;
@@ -878,6 +883,92 @@ class TypedFnSignature {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+// Container for resolution candidates and (if applicable) their correponding
+// forwarding-to types.
+struct CandidatesAndForwardingInfo {
+ private:
+  std::vector<const TypedFnSignature*> candidates;
+  // Note we have a (small) storage footprint for forwardingInfo even in the
+  // relatively common case where it is unused; could potentially use something
+  // lighter than this struct for candidates without forwarding info.
+  std::vector<types::QualifiedType> forwardingInfo;
+
+ public:
+  using const_iterator = std::vector<const TypedFnSignature*>::const_iterator;
+
+  // Add a candidate without forwarding info.
+  void addCandidate(const TypedFnSignature* candidate) {
+    candidates.push_back(candidate);
+  }
+
+  // Compute and fill in forwarding info for a range of newly-added candidates.
+  void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
+    CHPL_ASSERT(forwardingInfo.size() <= start);
+    forwardingInfo.resize(start);
+    types::QualifiedType forwardingReceiverActualType = fci.calledType();
+    for (size_t i = start; i < candidates.size(); i++) {
+      forwardingInfo.push_back(forwardingReceiverActualType);
+    }
+  }
+
+  // Move the contents of another container into this one, clearing out the
+  // other.
+  void takeFromOther(CandidatesAndForwardingInfo& other) {
+    candidates.insert(candidates.end(),
+                      std::make_move_iterator(other.candidates.begin()),
+                      std::make_move_iterator(other.candidates.end()));
+    forwardingInfo.insert(forwardingInfo.end(),
+                          std::make_move_iterator(other.forwardingInfo.begin()),
+                          std::make_move_iterator(other.forwardingInfo.end()));
+    other.candidates.clear();
+    other.forwardingInfo.clear();
+  }
+
+  // Get the candidate at the provided index with no bounds checking.
+  inline const TypedFnSignature* get(size_t i) const { return candidates[i]; }
+
+  // Get the forwarding info at the provided index.
+  // Fails if there isn't forwarding info saved for each candidate.
+  inline const types::QualifiedType& getForwardingInfo(size_t i) const {
+    CHPL_ASSERT(candidates.size() == forwardingInfo.size());
+    return forwardingInfo[i];
+  }
+
+  // Check if any candidates are present
+  inline bool empty() const { return candidates.empty(); }
+
+  // Get the number of candidates
+  inline size_t size() const { return candidates.size(); }
+
+  // Return true if this container stores any forwarding info
+  inline bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
+
+  // Iterator over contained candidates
+  const_iterator begin() const { return candidates.begin(); }
+  const_iterator end() const { return candidates.end(); }
+
+  /* Query system supporting functions */
+
+  static bool update(CandidatesAndForwardingInfo& keep,
+                     CandidatesAndForwardingInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  size_t hash() const { return chpl::hash(candidates, forwardingInfo); }
+  void mark(Context* context) const {
+    chpl::mark<decltype(candidates)>{}(context, candidates);
+    chpl::mark<decltype(forwardingInfo)>{}(context, forwardingInfo);
+  }
+  bool operator==(const CandidatesAndForwardingInfo& other) const {
+    return candidates == other.candidates &&
+           forwardingInfo == other.forwardingInfo;
+  }
+  void swap(CandidatesAndForwardingInfo& other) {
+    std::swap(candidates, other.candidates);
+    std::swap(forwardingInfo, other.forwardingInfo);
+  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /**
@@ -1062,8 +1153,141 @@ class ApplicabilityResult {
   inline int formalIdx() const { return formalIdx_; }
 };
 
-class FormalActualMap;
-class MostSpecificCandidates;
+/** FormalActual holds information on a function formal and its binding (if any) */
+class FormalActual {
+ friend class FormalActualMap;
+ private:
+  types::QualifiedType formalType_;
+  types::QualifiedType actualType_;
+  const uast::Decl* formal_ = nullptr;
+  int formalIdx_ = -1;
+  int actualIdx_ = -1;
+  bool hasActual_ = false; // == false means uses formal default value
+  bool formalInstantiated_ = false;
+  bool hasDefault_ = false;
+  bool isVarArgEntry_ = false;
+
+ public:
+  bool operator==(const FormalActual& other) const {
+    return formalType_ == other.formalType_ &&
+           actualType_ == other.actualType_ &&
+           formal_ == other.formal_ &&
+           formalIdx_ == other.formalIdx_ &&
+           actualIdx_ == other.actualIdx_ &&
+           hasActual_ == other.hasActual_ &&
+           formalInstantiated_ == other.formalInstantiated_ &&
+           hasDefault_ == other.hasDefault_ &&
+           isVarArgEntry_ == other.isVarArgEntry_;
+  }
+  bool operator!=(const FormalActual& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    formalType_.mark(context);
+    actualType_.mark(context);
+    context->markPointer(formal_);
+    (void) formalIdx_; // nothing to mark
+    (void) actualIdx_; // nothing to mark
+    (void) hasActual_; // nothing to mark
+    (void) formalInstantiated_; // nothing to mark
+    (void) hasDefault_; // nothing to mark
+    (void) isVarArgEntry_; // nothing to mark
+  }
+
+  size_t hash() const {
+    return chpl::hash(formalType_, actualType_, formal_, formalIdx_, actualIdx_,
+                      hasActual_, formalInstantiated_, hasDefault_, isVarArgEntry_);
+  }
+
+  const types::QualifiedType& formalType() const { return formalType_; }
+  const types::QualifiedType& actualType() const { return actualType_; }
+  const uast::Decl* formal() const { return formal_; }
+  int formalIdx() const { return formalIdx_; }
+  int actualIdx() const { return actualIdx_; }
+  bool hasActual() const { return hasActual_; }
+  bool formalInstantiated() const { return formalInstantiated_; }
+  bool hasDefault() const { return hasDefault_; }
+  bool isVarArgEntry() const { return isVarArgEntry_; }
+};
+
+/** FormalActualMap maps formals to actuals */
+class FormalActualMap {
+ private:
+  std::vector<FormalActual> byFormalIdx_;
+  std::vector<int> actualIdxToFormalIdx_;
+  bool mappingIsValid_ = false;
+  int failingActualIdx_ = -1;
+  int failingFormalIdx_ = -1;
+
+ public:
+
+  using FormalActualIterable = Iterable<std::vector<FormalActual>>;
+
+  FormalActualMap(const UntypedFnSignature* sig, const CallInfo& call) {
+    mappingIsValid_ = computeAlignment(sig, nullptr, call);
+  }
+  FormalActualMap(const TypedFnSignature* sig, const CallInfo& call) {
+    mappingIsValid_ = computeAlignment(sig->untyped(), sig, call);
+  }
+
+  bool operator==(const FormalActualMap& other) const {
+    return byFormalIdx_ == other.byFormalIdx_ &&
+           actualIdxToFormalIdx_ == other.actualIdxToFormalIdx_ &&
+           mappingIsValid_ == other.mappingIsValid_ &&
+           failingActualIdx_ == other.failingActualIdx_ &&
+           failingFormalIdx_ == other.failingFormalIdx_;
+  }
+
+  bool operator!=(const FormalActualMap& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    for (auto const &elt : byFormalIdx_) {
+      elt.mark(context);
+    }
+    (void) actualIdxToFormalIdx_; // nothing to mark
+    (void) mappingIsValid_; // nothing to mark
+    (void) failingActualIdx_; // nothing to mark
+    (void) failingFormalIdx_; // nothing to mark
+  }
+
+  size_t hash() const {
+    return chpl::hash(byFormalIdx_, actualIdxToFormalIdx_, mappingIsValid_,
+                      failingActualIdx_, failingFormalIdx_);
+  }
+
+  /** check if mapping is valid */
+  bool isValid() const { return mappingIsValid_; }
+
+  /** get the FormalActuals in the order of the formal arguments */
+  FormalActualIterable byFormals() const {
+    return FormalActualIterable(byFormalIdx_);
+  }
+
+  /** get the FormalActual for a particular formal index */
+  const FormalActual& byFormalIdx(int formalIdx) const {
+    CHPL_ASSERT(0 <= formalIdx && (size_t) formalIdx < byFormalIdx_.size());
+    return byFormalIdx_[formalIdx];
+  }
+
+  /** get the FormalActual for a particular actual index,
+      and returns nullptr if none was found. */
+  const FormalActual* byActualIdx(int actualIdx) const {
+    if (actualIdx < 0 || (size_t) actualIdx >= actualIdxToFormalIdx_.size())
+      return nullptr;
+    int formalIdx = actualIdxToFormalIdx_[actualIdx];
+    if (formalIdx < 0 || (size_t) formalIdx >= byFormalIdx_.size())
+      return nullptr;
+    return &byFormalIdx_[formalIdx];
+  }
+
+ private:
+  bool computeAlignment(const UntypedFnSignature* untyped,
+                        const TypedFnSignature* typed, const CallInfo& call);
+};
+
 
 /**
   Stores a function candidate. This information includes both the
@@ -1077,21 +1301,37 @@ class MostSpecificCandidate {
   friend class MostSpecificCandidates;
 
   const TypedFnSignature* fn_;
+  owned<FormalActualMap> faMap_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
 
   MostSpecificCandidate(const TypedFnSignature* fn,
+                        FormalActualMap faMap,
                         int constRefCoercionFormal,
                         int constRefCoercionActual)
-    : fn_(fn),
+    : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
       constRefCoercionFormal_(constRefCoercionFormal),
       constRefCoercionActual_(constRefCoercionActual) {}
 
  public:
   MostSpecificCandidate()
-    : fn_(nullptr),
+    : fn_(nullptr), faMap_(),
       constRefCoercionFormal_(-1),
       constRefCoercionActual_(-1) {}
+
+  MostSpecificCandidate& operator=(MostSpecificCandidate&& other) = default;
+  MostSpecificCandidate& operator=(const MostSpecificCandidate& other) {
+    fn_ = other.fn_;
+    if (other.faMap_) {
+      faMap_ = toOwned(new FormalActualMap(*other.faMap_));
+    }
+    constRefCoercionFormal_ = other.constRefCoercionFormal_;
+    constRefCoercionActual_ = other.constRefCoercionActual_;
+    return *this;
+  }
+
+  MostSpecificCandidate(MostSpecificCandidate&& other) = default;
+  MostSpecificCandidate(const MostSpecificCandidate& other) { *this = other; }
 
   static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
@@ -1102,6 +1342,8 @@ class MostSpecificCandidate {
                                         const CallInfo& info);
 
   const TypedFnSignature* fn() const { return fn_; }
+
+  const FormalActualMap& formalActualMap() const { return *faMap_; }
 
   int constRefCoercionFormal() const { return constRefCoercionFormal_; }
 
@@ -1115,7 +1357,16 @@ class MostSpecificCandidate {
   }
 
   bool operator==(const MostSpecificCandidate& other) const {
+    bool faMapsEqual = faMap_ == other.faMap_;
+    if (!faMapsEqual && faMap_ && other.faMap_) {
+      // Try a deep comparison to avoid unnecessary cache invalidation when
+      // bumping generations. The pointers may differ, but the contained
+      // maps can be equivalent.
+      faMapsEqual = *faMap_ == *other.faMap_;
+    }
+
     return fn_ == other.fn_ &&
+           faMapsEqual &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
            constRefCoercionActual_ == other.constRefCoercionActual_;
   }
@@ -1126,12 +1377,25 @@ class MostSpecificCandidate {
 
   void mark(Context* context) const {
     context->markPointer(fn_);
+    if (faMap_) faMap_->mark(context);
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, constRefCoercionFormal_, constRefCoercionActual_);
+    return chpl::hash(fn_, faMap_, constRefCoercionFormal_, constRefCoercionActual_);
+  }
+
+  static bool update(MostSpecificCandidate& keep,
+                     MostSpecificCandidate& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void swap(MostSpecificCandidate& other) {
+    std::swap(fn_, other.fn_);
+    std::swap(faMap_, other.faMap_);
+    std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
+    std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -1235,7 +1499,9 @@ class MostSpecificCandidates {
     If there is exactly one candidate, return that candidate.
     Otherwise, return an empty candidate.
    */
-  MostSpecificCandidate only() const {
+  const MostSpecificCandidate& only() const {
+    static MostSpecificCandidate empty;
+
     const MostSpecificCandidate* ret = nullptr;
     int nPresent = 0;
     for (const MostSpecificCandidate& sig : *this) {
@@ -1245,7 +1511,7 @@ class MostSpecificCandidates {
       }
     }
     if (nPresent != 1) {
-      return MostSpecificCandidate();
+      return empty;
     }
 
     // if there is only one candidate, it should be in slot ONLY
@@ -1752,82 +2018,6 @@ class ResolvedFunction {
   }
 };
 
-/** FormalActual holds information on a function formal and its binding (if any) */
-class FormalActual {
- friend class FormalActualMap;
- private:
-  types::QualifiedType formalType_;
-  types::QualifiedType actualType_;
-  const uast::Decl* formal_ = nullptr;
-  int formalIdx_ = -1;
-  int actualIdx_ = -1;
-  bool hasActual_ = false; // == false means uses formal default value
-  bool formalInstantiated_ = false;
-  bool hasDefault_ = false;
-  bool isVarArgEntry_ = false;
-
- public:
-  const types::QualifiedType& formalType() const { return formalType_; }
-  const types::QualifiedType& actualType() const { return actualType_; }
-  const uast::Decl* formal() const { return formal_; }
-  int formalIdx() const { return formalIdx_; }
-  int actualIdx() const { return actualIdx_; }
-  bool hasActual() const { return hasActual_; }
-  bool formalInstantiated() const { return formalInstantiated_; }
-  bool hasDefault() const { return hasDefault_; }
-  bool isVarArgEntry() const { return isVarArgEntry_; }
-};
-
-/** FormalActualMap maps formals to actuals */
-class FormalActualMap {
- private:
-  std::vector<FormalActual> byFormalIdx_;
-  std::vector<int> actualIdxToFormalIdx_;
-  bool mappingIsValid_ = false;
-  int failingActualIdx_ = -1;
-  int failingFormalIdx_ = -1;
-
- public:
-
-  using FormalActualIterable = Iterable<std::vector<FormalActual>>;
-
-  FormalActualMap(const UntypedFnSignature* sig, const CallInfo& call) {
-    mappingIsValid_ = computeAlignment(sig, nullptr, call);
-  }
-  FormalActualMap(const TypedFnSignature* sig, const CallInfo& call) {
-    mappingIsValid_ = computeAlignment(sig->untyped(), sig, call);
-  }
-
-  /** check if mapping is valid */
-  bool isValid() const { return mappingIsValid_; }
-
-  /** get the FormalActuals in the order of the formal arguments */
-  FormalActualIterable byFormals() const {
-    return FormalActualIterable(byFormalIdx_);
-  }
-
-  /** get the FormalActual for a particular formal index */
-  const FormalActual& byFormalIdx(int formalIdx) const {
-    CHPL_ASSERT(0 <= formalIdx && (size_t) formalIdx < byFormalIdx_.size());
-    return byFormalIdx_[formalIdx];
-  }
-
-  /** get the FormalActual for a particular actual index,
-      and returns nullptr if none was found. */
-  const FormalActual* byActualIdx(int actualIdx) const {
-    if (actualIdx < 0 || (size_t) actualIdx >= actualIdxToFormalIdx_.size())
-      return nullptr;
-    int formalIdx = actualIdxToFormalIdx_[actualIdx];
-    if (formalIdx < 0 || (size_t) formalIdx >= byFormalIdx_.size())
-      return nullptr;
-    return &byFormalIdx_[formalIdx];
-  }
-
- private:
-  bool computeAlignment(const UntypedFnSignature* untyped,
-                        const TypedFnSignature* typed, const CallInfo& call);
-};
-
 /** ResolvedFields represents the fully resolved fields for a
     class/record/union/tuple type.
 
@@ -2057,6 +2247,60 @@ class ResolvedParamLoop {
 /** See the documentation for types::CompositeType::SubstitutionsMap. */
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
+// Represents result info on either a type's copyability or assignability, from
+// ref and/or from const.
+struct CopyableAssignableInfo {
+ private:
+  bool fromConst_ = false;
+  bool fromRef_ = false;
+
+  CopyableAssignableInfo(bool fromConst, bool fromRef)
+      : fromConst_(fromConst), fromRef_(fromRef) {
+    assert(!fromConst || fromRef);
+  }
+
+ public:
+  CopyableAssignableInfo() {}
+
+  bool isFromConst() const { return fromConst_; }
+  bool isFromRef() const { return fromRef_; }
+
+  static CopyableAssignableInfo fromConst() {
+    return CopyableAssignableInfo(true, true);
+  }
+
+  static CopyableAssignableInfo fromRef() {
+    return CopyableAssignableInfo(false, true);
+  }
+
+  static CopyableAssignableInfo fromNone() {
+    return CopyableAssignableInfo(false, false);
+  }
+
+  // Set this to the "minimum" copyability between this and other.
+  void intersectWith(const CopyableAssignableInfo& other) {
+    fromConst_ &= other.fromConst_;
+    fromRef_ &= other.fromRef_;
+  }
+
+  bool operator==(const CopyableAssignableInfo& other) const {
+    return fromConst_ == other.fromConst_ &&
+           fromRef_ == other.fromRef_;
+  }
+  bool operator!=(const CopyableAssignableInfo& other) const {
+    return !(*this == other);
+  }
+  void swap(CopyableAssignableInfo& other) {
+    std::swap(fromConst_, other.fromConst_);
+    std::swap(fromRef_, other.fromRef_);
+  }
+  static bool update(CopyableAssignableInfo& keep,
+                     CopyableAssignableInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+  }
+};
 
 } // end namespace resolution
 
@@ -2141,6 +2385,14 @@ template<> struct hash<chpl::resolution::CallInfo>
   }
 };
 
+template <>
+struct hash<chpl::resolution::CandidatesAndForwardingInfo> {
+  size_t operator()(
+      const chpl::resolution::CandidatesAndForwardingInfo& key) const {
+    return key.hash();
+  }
+};
+
 template<> struct hash<chpl::resolution::PoiInfo>
 {
   size_t operator()(const chpl::resolution::PoiInfo& key) const {
@@ -2169,6 +2421,19 @@ template<> struct hash<chpl::resolution::PassingFailureReason>
   }
 };
 
+template<> struct hash<chpl::resolution::FormalActual>
+{
+  size_t operator()(const chpl::resolution::FormalActual& key) const {
+    return key.hash();
+  }
+};
+
+template<> struct hash<chpl::resolution::FormalActualMap>
+{
+  size_t operator()(const chpl::resolution::FormalActualMap& key) const {
+    return key.hash();
+  }
+};
 
 } // end namespace std
 

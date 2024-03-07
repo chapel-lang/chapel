@@ -1,7 +1,0 @@
-ref-maybe-const-task-intent.chpl:2: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'y'
-ref-maybe-const-task-intent.chpl:8: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'z'
-ref-maybe-const-task-intent.chpl:9: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'z'
-ref-maybe-const-task-intent.chpl:14: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'w'
-ref-maybe-const-task-intent.chpl:24: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'x'
-ref-maybe-const-task-intent.chpl:25: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'y'
-ref-maybe-const-task-intent.chpl:36: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'this'

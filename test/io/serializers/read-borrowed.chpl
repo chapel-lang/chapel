@@ -9,7 +9,7 @@ class C {
 proc main() {
   var c = new C(5);
   var f = openMemFile();
-  f.writer(serializer=FormatWriter).write(c);
-  var x = f.reader(deserializer=FormatReader).read(borrowed C);
+  f.writer(serializer=FormatWriter, locking=false).write(c);
+  var x = f.reader(deserializer=FormatReader, locking=false).read(borrowed C);
   writeln(x);
 }

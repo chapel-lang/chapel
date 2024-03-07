@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -589,7 +589,12 @@ bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
 bool isLegalParamType(Type*);
+// returns the width in bytes of a numeric type
 int  get_width(Type*);
+// returns the component width in bytes of a numeric type
+// like get_width but for complex types, returns get_width/2
+// since that is the width of the real or imaginary component.
+int  get_component_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged

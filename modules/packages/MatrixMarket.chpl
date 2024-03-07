@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,7 +96,7 @@ module MatrixMarket {
       proc init(type eltype, const fname:string) {
          this.eltype = eltype;
          fd = open(fname, ioMode.cw);
-         fout = fd.writer(region=0..);
+         fout = fd.writer(region=0.., locking=true);
          headers_written=false;
       }
 
@@ -129,7 +129,7 @@ module MatrixMarket {
         // before we try to update it with a separate channel.
         fout.flush();
 
-         var tfout = fd.writer(region=HEADER_LINE.numBytes..);
+         var tfout = fd.writer(region=HEADER_LINE.numBytes.., locking=true);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
 
          tfout.close();
@@ -204,7 +204,7 @@ class MMReader {
 
    proc init(const fname:string) {
       fd = open(fname, ioMode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
-      fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch);
+      fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch, locking=true);
    }
 
    proc read_header() {
@@ -224,7 +224,7 @@ class MMReader {
        // didn't find a percentage, rewind channel by length of read string...
        if percentfound.find("%") == -1 {
          fin.close();
-         fin = fd.reader(region=offset.., hints=ioHintSet.sequential|ioHintSet.prefetch);
+         fin = fd.reader(region=offset.., hints=ioHintSet.sequential|ioHintSet.prefetch, locking=true);
          pctflag = true;
        }
      }

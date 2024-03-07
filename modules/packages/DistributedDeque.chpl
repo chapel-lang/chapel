@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -158,7 +158,7 @@
   Planned Improvements
   ____________________
 
-  1.  Double the size of each successor up to some maximum, similar to :mod:`DistributedBag` for unroll blocks.
+  1.  Double the size of each successor up to some maximum, similar to :mod:`DistributedBag` for segments.
       Currently they are fixed-sized, but it can benefit from improved locality if a lot of elements are added at
       once.
 

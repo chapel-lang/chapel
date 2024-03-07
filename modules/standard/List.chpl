@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -115,6 +115,9 @@ module List {
       }
       compilerError("list element type cannot currently be generic");
       // In the future we might support it if the list is not default-inited
+    }
+    if eltType == nothing {
+      compilerError("cannot initialize list with element type 'nothing'");
     }
   }
 
@@ -518,8 +521,16 @@ module List {
     @chpldoc.nodoc
     proc ref _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
-      for x in iterable do
-        pushBack(x);
+      if isSubtype(this.eltType, list) {
+        for x in iterable {
+          var subList: this.eltType = x;
+          pushBack(subList);
+        }
+      } else {
+        for x in iterable {
+          pushBack(x);
+        }
+      }
     }
 
     @chpldoc.nodoc

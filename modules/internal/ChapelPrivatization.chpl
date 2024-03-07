@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@ module ChapelPrivatization {
     var obj:c_ptr(void);
   }
 
+  pragma "codegen for CPU and GPU"
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
   pragma "fn returns infinite lifetime"

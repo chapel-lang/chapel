@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -177,6 +177,8 @@ public:
 
   Type*                       cArrayElementType()                        const;
   int64_t                     cArrayLength()                             const;
+  Type*                       arrayElementType()                         const;
+  Type*                       finalArrayElementType()                    const;
 
   //
   // Public fields
@@ -297,13 +299,7 @@ private:
   bool                        mIsGenericWithSomeDefaults;
 };
 
-// support for deprecation by Vass in 1.31 to implement #17131
-AggregateType* dsiTypeBeingConstructed(CallExpr* parentCall);
-AggregateType* baseRectDsiParent(AggregateType* ag);
-Symbol* stridesFieldInDsiContext(Expr* use);
-
 extern AggregateType* dtObject;
-
 extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;

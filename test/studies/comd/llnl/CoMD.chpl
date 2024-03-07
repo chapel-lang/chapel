@@ -13,6 +13,8 @@ use rand;
 var vSim  : Validate;
 var f : unmanaged Force?;
 
+proc getCurrentHour() do return timeSinceEpoch().totalSeconds()/3600;
+
 proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
   simLow  = (0.0,0.0,0.0);
   const simSize = (nx:real, ny:real, nz:real) * latticeConstant;
@@ -542,7 +544,7 @@ tArray[timerEnum.F1].stop();
   writeln();
 
   var yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Initialization Finished");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " Initialization Finished");
 }
 
 // TODO: const ref these...
@@ -742,7 +744,7 @@ if useChplVis then pauseVdebug();
   writeln("Mini-Application Version: ", 1.0);
 
   var yyyymmdd = getCurrentDate();
-  writeln("Run Date/Time: ", yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), "(number of hours since midnight)");
+  writeln("Run Date/Time: ", yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), "(number of hours since midnight)");
 
   writeln("Command Line Parameters:");
   writeln("   doeam               : ", doeam);
@@ -779,7 +781,7 @@ tArray[timerEnum.INIT].stop();
   writeln();
 
   yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Starting simulation");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " Starting simulation");
   writeln();
   writeln("#                                                                                         Performance");
   writeln("#  Loop   Time(fs)       Total Energy   Potential Energy     Kinetic Energy  Temperature   (us/atom)     # Atoms");
@@ -808,7 +810,7 @@ tArray[timerEnum.TOTAL].stop();
 
   yyyymmdd = getCurrentDate();
   writeln();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Ending simulation");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " Ending simulation");
   writeln();
 
   const eInitial = vSim.eInit/vSim.nAtomsInit;
@@ -848,7 +850,7 @@ tArray[timerEnum.TOTAL].stop();
 
   writeln();
   yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " CoMD Ending");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " CoMD Ending");
 
   // Cleanup
   for g in Grid do delete g;

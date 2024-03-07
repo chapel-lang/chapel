@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,7 +18,7 @@
 #
 
 import chapel
-import chapel.core
+import chapel
 import functools
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
@@ -52,10 +51,12 @@ class LintDriver:
     for registering new rules.
     """
 
-    def __init__(self):
+    def __init__(self, skip_unstable, internal_prefixes):
         self.SilencedRules = []
         self.BasicRules = []
         self.AdvancedRules = []
+        self.skip_unstable = skip_unstable
+        self.internal_prefixes = internal_prefixes
 
     def disable_rules(self, *rules):
         """
@@ -81,6 +82,37 @@ class LintDriver:
 
         return True
 
+    def _has_internal_name(self, node):
+        if not hasattr(node, "name"): return False
+        return any(node.name().startswith(p) for p in self.internal_prefixes)
+
+    def _is_unstable_module(node):
+        if isinstance(node, chapel.Module):
+            attrs = node.attribute_group()
+            if attrs:
+                if attrs.is_unstable():
+                    return True
+        return False
+
+    def _in_unstable_module(node):
+        while node is not None:
+            if LintDriver._is_unstable_module(node): return True
+            node = node.parent()
+        return False
+
+    def _preorder_skip_unstable_modules(self, node):
+        if not self.skip_unstable:
+            yield from chapel.preorder(node)
+            return
+
+        def recurse(node):
+            if LintDriver._is_unstable_module(node):return
+
+            yield node
+            for child in node:
+                yield from recurse(child)
+        yield from recurse(node)
+
     def _check_basic_rule(self, context, root, rule):
         (name, nodetype, func) = rule
 
@@ -89,7 +121,7 @@ class LintDriver:
         if not self._should_check_rule(name):
             return
 
-        for (node, _) in chapel.each_matching(root, nodetype):
+        for (node, _) in chapel.each_matching(root, nodetype, iterator=self._preorder_skip_unstable_modules):
             if not self._should_check_rule(name, node):
                 continue
 
@@ -108,6 +140,13 @@ class LintDriver:
             # It's not clear how, if it all, advanced rules should be silenced
             # by attributes (i.e., where do you put the @chplcheck.ignore
             # attribute?). For now, do not silence them on a per-node basis.
+
+            # For advanced rules, the traversal of the AST is out of our hands,
+            # so we can't stop it from going into unstable modules. Instead,
+            # once the rule emits a warning, check by traversing the AST
+            # if the warning target should be skipped.
+            if self.skip_unstable and LintDriver._in_unstable_module(node):
+                continue
 
             yield (node, name)
 
@@ -166,7 +205,15 @@ class LintDriver:
 
         for ast in asts:
             for rule in self.BasicRules:
-                yield from self._check_basic_rule(context, ast, rule)
+                for toreport in self._check_basic_rule(context, ast, rule):
+                    if self._has_internal_name(toreport[0]):
+                        continue
+
+                    yield toreport
 
             for rule in self.AdvancedRules:
-                yield from self._check_advanced_rule(context, ast, rule)
+                for toreport in self._check_advanced_rule(context, ast, rule):
+                    if self._has_internal_name(toreport[0]):
+                        continue
+
+                    yield toreport

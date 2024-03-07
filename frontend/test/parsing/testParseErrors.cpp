@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,6 +67,15 @@ static void test3(Parser* parser) {
   assert(guard.realizeErrors() == 1);
 }
 
+
+static void test4(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
+      "pragma \"lineno ok\"\n"
+      "use foo;\n");
+  assert(guard.realizeErrors() == 1);
+}
+
 int main() {
   Context::Configuration config_devel;
   config_devel.chplEnvOverrides.insert({"CHPL_DEVELOPER", "1"});
@@ -87,6 +96,8 @@ int main() {
   test2(p);
   test3(pd);
   test3(p);
+  test4(pd);
+  test4(p);
 
   return 0;
 }

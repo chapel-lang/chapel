@@ -1,2 +1,0 @@
-$CHPL_HOME/modules/internal/localeModels/numa/LocaleModel.chpl:33: warning: Compiling with 'CHPL_LOCALE_MODEL=numa' is deprecated; please use the 'flat' locale model instead
-hi

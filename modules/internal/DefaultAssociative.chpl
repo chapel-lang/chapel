@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -98,7 +98,7 @@ module DefaultAssociative {
 
       // set the rehash helpers
       this.table.rehashHelpers =
-        new DefaultAssociativeDomRehashHelper(_to_unmanaged(this));
+        new DefaultAssociativeDomRehashHelper(this:unmanaged);
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here
@@ -111,7 +111,7 @@ module DefaultAssociative {
       return new unmanaged DefaultAssociativeArr(eltType=eltType,
                                                  idxType=idxType,
                                                  parSafeDom=parSafe,
-                                                 dom=_to_unmanaged(this),
+                                                 dom=this:unmanaged,
                                                  initElts=initElts);
     }
 
@@ -448,7 +448,7 @@ module DefaultAssociative {
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
-        return _getDomain(_to_unmanaged(this));
+        return _getDomain(this:unmanaged);
       } else {
         var a: domain(idxType, parSafe=parSafe);
         return a;

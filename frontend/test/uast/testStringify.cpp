@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -445,7 +445,14 @@ static void test3(Parser* parser) {
                    "multiDimension(arg2: 3*(4*complex))")
   TEST_USER_STRING("proc multiDimension(): [1..3, 2..8] string {}",
                    "multiDimension()")
-
+  TEST_USER_STRING("proc cPtrConstProc(x: c_ptrConst(int)) {}",
+                   "cPtrConstProc(x: c_ptrConst(int))")
+  TEST_USER_STRING("proc cPtrProc(x: c_ptrConst(int)) {}",
+                   "cPtrProc(x: c_ptrConst(int))")
+  TEST_USER_STRING("proc cPtrVoidProc(x: c_ptr(void)) {}",
+                   "cPtrVoidProc(x: c_ptr(void))")
+  TEST_USER_STRING("operator ==(a: c_ptrConst(uint), b: c_ptrConst(uint)) {}",
+                   "==(a: c_ptrConst(uint), b: c_ptrConst(uint))")
 }
 
 static void test4(Parser* parser) {
@@ -524,7 +531,13 @@ static void testDecl(Parser* parser) {
                    "var domain1: domain(keyType, parSafe = true);")
   TEST_CHPL_SYNTAX("var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;",
                    "var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;")
+  TEST_CHPL_SYNTAX("var x:c_ptrConst(int);", "var x: c_ptrConst(int);")
+  TEST_CHPL_SYNTAX("var x:c_ptr(uint);", "var x: c_ptr(uint);")
+  TEST_CHPL_SYNTAX("var x:  c_ptrConst(c_ptrConst(int));",
+                   "var x: c_ptrConst(c_ptrConst(int));")
+  TEST_CHPL_SYNTAX("var x:  c_ptr(void); ", "var x: c_ptr(void);")
 }
+
 
 //TODO: Write many more specific tests for the format of different node types
 

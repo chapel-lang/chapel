@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@ ERROR_CLASS(AsWithUseExcept, const uast::Use*, const uast::As*)
 ERROR_CLASS(ConstRefCoercion, const uast::AstNode*, resolution::MostSpecificCandidate)
 WARNING_CLASS(Deprecation, std::string, const uast::AstNode*, const uast::NamedDecl*)
 ERROR_CLASS(DotExprInUseImport, const uast::VisibilityClause*, const uast::VisibilityClause::LimitationKind, const uast::Dot*)
+ERROR_CLASS(DotTypeOnType, const uast::Dot*, const types::Type*, ID)
 ERROR_CLASS(ExternCCompilation, ID, std::vector<std::pair<Location, std::string>>)
 ERROR_CLASS(IfVarNonClassType, const uast::Conditional*, types::QualifiedType)
 WARNING_CLASS(ImplicitFileModule, const uast::AstNode*, const uast::Module*, const uast::Module*)
@@ -67,9 +68,13 @@ ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(ProcDefExplicitAnonFormal, const uast::Function*, const uast::Formal*)
 ERROR_CLASS(ProcTypeUnannotatedFormal, const uast::FunctionSignature*, const uast::AnonFormal*)
 ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
+ERROR_CLASS(Recursion, UniqueString)
+ERROR_CLASS(RecursionFieldDecl, const uast::AstNode*, const uast::AggregateDecl*, const types::CompositeType*, std::vector<TraceElement>)
+ERROR_CLASS(RecursionModuleStmt, const uast::AstNode*, const uast::Module*, std::vector<TraceElement>)
 ERROR_CLASS(Redefinition, ID, UniqueString, std::vector<resolution::BorrowedIdsWithName>, std::vector<resolution::ResultVisibilityTrace>)
 ERROR_CLASS(ReductionInvalidName, const uast::AstNode*, UniqueString, types::QualifiedType)
 ERROR_CLASS(ReductionNotReduceScanOp, const uast::AstNode*, types::QualifiedType)
+ERROR_CLASS(SplitInitMismatchedConditionalTypes, const uast::Variable*, const uast::AstNode*, const types::QualifiedType, const types::QualifiedType, const int, const int)
 ERROR_CLASS(SuperFromTopLevelModule, const uast::AstNode*, const uast::Module*, resolution::VisibilityStmtKind)
 WARNING_CLASS(TertiaryUseImportUnstable, UniqueString, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, resolution::VisibilityStmtKind)
 ERROR_CLASS(TupleDeclMismatchedElems, const uast::TupleDecl*, const types::TupleType*)

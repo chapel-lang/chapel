@@ -9,8 +9,8 @@
 /// \file
 /// This file defines the SymbolGraphSerializer class.
 ///
-/// Implement an APISerializer for the Symbol Graph format for ExtractAPI.
-/// See https://github.com/apple/swift-docc-symbolkit.
+/// Implement an APISetVisitor to serialize the APISet into the Symbol Graph
+/// format for ExtractAPI. See https://github.com/apple/swift-docc-symbolkit.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -18,25 +18,31 @@
 #define LLVM_CLANG_EXTRACTAPI_SERIALIZATION_SYMBOLGRAPHSERIALIZER_H
 
 #include "clang/ExtractAPI/API.h"
+#include "clang/ExtractAPI/APIIgnoresList.h"
 #include "clang/ExtractAPI/Serialization/SerializerBase.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/VersionTuple.h"
 #include "llvm/Support/raw_ostream.h"
+#include <optional>
 
 namespace clang {
 namespace extractapi {
 
 using namespace llvm::json;
 
-/// The serializer that organizes API information in the Symbol Graph format.
+/// Common options to customize the visitor output.
+struct SymbolGraphSerializerOption {
+  /// Do not include unnecessary whitespaces to save space.
+  bool Compact;
+};
+
+/// The visitor that organizes API information in the Symbol Graph format.
 ///
 /// The Symbol Graph format (https://github.com/apple/swift-docc-symbolkit)
 /// models an API set as a directed graph, where nodes are symbol declarations,
 /// and edges are relationships between the connected symbols.
-class SymbolGraphSerializer : public APISerializer {
-  virtual void anchor();
-
+class SymbolGraphSerializer : public APISetVisitor<SymbolGraphSerializer> {
   /// A JSON array of formatted symbols in \c APISet.
   Array Symbols;
 
@@ -46,24 +52,9 @@ class SymbolGraphSerializer : public APISerializer {
   /// The Symbol Graph format version used by this serializer.
   static const VersionTuple FormatVersion;
 
-  using PathComponentStack = llvm::SmallVector<llvm::StringRef, 4>;
-  /// The current path component stack.
-  ///
-  /// Note: this is used to serialize the ``pathComponents`` field of symbols in
-  /// the Symbol Graph.
-  PathComponentStack PathComponents;
-
-  /// A helper type to manage PathComponents correctly using RAII.
-  struct PathComponentGuard {
-    PathComponentGuard(PathComponentStack &PC, StringRef Component) : PC(PC) {
-      PC.emplace_back(Component);
-    }
-
-    ~PathComponentGuard() { PC.pop_back(); }
-
-  private:
-    PathComponentStack &PC;
-  };
+  /// Indicates whether child symbols should be visited. This is mainly
+  /// useful for \c serializeSingleSymbolSGF.
+  bool ShouldRecurse;
 
 public:
   /// Serialize the APIs in \c APISet in the Symbol Graph format.
@@ -72,9 +63,16 @@ public:
   /// Symbol Graph.
   Object serialize();
 
-  /// Implement the APISerializer::serialize interface. Wrap serialize(void) and
-  /// write out the serialized JSON object to \p os.
-  void serialize(raw_ostream &os) override;
+  ///  Wrap serialize(void) and write out the serialized JSON object to \p os.
+  void serialize(raw_ostream &os);
+
+  /// Serialize a single symbol SGF. This is primarily used for libclang.
+  ///
+  /// \returns an optional JSON Object representing the payload that libclang
+  /// expects for providing symbol information for a single symbol. If this is
+  /// not a known symbol returns \c std::nullopt.
+  static std::optional<Object> serializeSingleSymbolSGF(StringRef USR,
+                                                        const APISet &API);
 
   /// The kind of a relationship between two symbols.
   enum RelationshipKind {
@@ -95,6 +93,9 @@ public:
   static StringRef getRelationshipString(RelationshipKind Kind);
 
 private:
+  /// Just serialize the currently recorded objects in Symbol Graph format.
+  Object serializeCurrentGraph();
+
   /// Synthesize the metadata section of the Symbol Graph format.
   ///
   /// The metadata section describes information about the Symbol Graph itself,
@@ -120,10 +121,10 @@ private:
   /// This method also checks if the given \p Record should be skipped during
   /// serialization.
   ///
-  /// \returns \c None if this \p Record should be skipped, or a JSON object
-  /// containing common symbol information of \p Record.
+  /// \returns \c std::nullopt if this \p Record should be skipped, or a JSON
+  /// object containing common symbol information of \p Record.
   template <typename RecordTy>
-  Optional<Object> serializeAPIRecord(const RecordTy &Record) const;
+  std::optional<Object> serializeAPIRecord(const RecordTy &Record) const;
 
   /// Helper method to serialize second-level member records of \p Record and
   /// the member-of relationships.
@@ -138,38 +139,44 @@ private:
   void serializeRelationship(RelationshipKind Kind, SymbolReference Source,
                              SymbolReference Target);
 
-  /// Serialize a global function record.
-  void serializeGlobalFunctionRecord(const GlobalFunctionRecord &Record);
-
-  /// Serialize a global variable record.
-  void serializeGlobalVariableRecord(const GlobalVariableRecord &Record);
-
-  /// Serialize an enum record.
-  void serializeEnumRecord(const EnumRecord &Record);
-
-  /// Serialize a struct record.
-  void serializeStructRecord(const StructRecord &Record);
-
-  /// Serialize an Objective-C container record.
-  void serializeObjCContainerRecord(const ObjCContainerRecord &Record);
-
-  /// Serialize a macro defintion record.
-  void serializeMacroDefinitionRecord(const MacroDefinitionRecord &Record);
-
-  /// Serialize a typedef record.
-  void serializeTypedefRecord(const TypedefRecord &Record);
-
-  /// Push a component to the current path components stack.
+protected:
+  /// The list of symbols to ignore.
   ///
-  /// \param Component The component to push onto the path components stack.
-  /// \return A PathComponentGuard responsible for removing the latest
-  /// component from the stack on scope exit.
-  LLVM_NODISCARD PathComponentGuard makePathComponentGuard(StringRef Component);
+  /// Note: This should be consulted before emitting a symbol.
+  const APIIgnoresList &IgnoresList;
+
+  SymbolGraphSerializerOption Options;
 
 public:
-  SymbolGraphSerializer(const APISet &API, StringRef ProductName,
-                        APISerializerOption Options = {})
-      : APISerializer(API, ProductName, Options) {}
+  /// Visit a global function record.
+  void visitGlobalFunctionRecord(const GlobalFunctionRecord &Record);
+
+  /// Visit a global variable record.
+  void visitGlobalVariableRecord(const GlobalVariableRecord &Record);
+
+  /// Visit an enum record.
+  void visitEnumRecord(const EnumRecord &Record);
+
+  /// Visit a struct record.
+  void visitStructRecord(const StructRecord &Record);
+
+  /// Visit an Objective-C container record.
+  void visitObjCContainerRecord(const ObjCContainerRecord &Record);
+
+  /// Visit a macro definition record.
+  void visitMacroDefinitionRecord(const MacroDefinitionRecord &Record);
+
+  /// Visit a typedef record.
+  void visitTypedefRecord(const TypedefRecord &Record);
+
+  /// Serialize a single record.
+  void serializeSingleRecord(const APIRecord *Record);
+
+  SymbolGraphSerializer(const APISet &API, const APIIgnoresList &IgnoresList,
+                        SymbolGraphSerializerOption Options = {},
+                        bool ShouldRecurse = true)
+      : APISetVisitor(API), ShouldRecurse(ShouldRecurse),
+        IgnoresList(IgnoresList), Options(Options) {}
 };
 
 } // namespace extractapi

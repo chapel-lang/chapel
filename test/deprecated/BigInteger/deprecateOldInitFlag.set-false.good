@@ -1,4 +1,0 @@
-warning: bigint initializers will now always throw instead of halt, this config no longer impacts code and will be removed in a future release
-note: 'bigintInitThrows' was set via a compiler flag
-deprecateOldInitFlag.chpl:3: warning: bigint initializers will now always throw instead of halt, this config no longer impacts code and will be removed in a future release
-false

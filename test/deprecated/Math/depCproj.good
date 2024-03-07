@@ -1,4 +1,0 @@
-depCproj.chpl:2: In function 'testTypes':
-depCproj.chpl:3: warning: 'cproj' has been deprecated, please use riemProj instead
-depCproj.chpl:2: In function 'testTypes':
-depCproj.chpl:3: warning: 'cproj' has been deprecated, please use riemProj instead

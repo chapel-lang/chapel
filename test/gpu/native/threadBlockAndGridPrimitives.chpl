@@ -50,9 +50,18 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   const N = gdimX * gdimY * gdimZ * bdimX * bdimY * bdimZ * VALS_PER_THREAD;
 
   var X : [0..<N] real(32);
+
+  // arguments are: number of parameters, line no, file no
+  var cfg = __primitive("gpu init kernel cfg", 1, 0, 0);
+
+  // 1 is an enum value that says: "pass the address of this to the
+  //   kernel_params, while not offloading anything". I am not entirely sure why
+  //   we need to do that for C pointers
+  __primitive("gpu arg", cfg, c_ptrTo(X), 1);
+
   __primitive("gpu kernel launch", "add_nums":chpl_c_string,
               gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
-              c_ptrTo(X));
+              cfg);
 
   writef("     |--- thread idx --|--- block idx ---|--- block size --|--- grid size --|\n");
   writef("  idx tid_x tid_y tid_z bid_x bid_y bid_z bdm_x bdm_y bdm_z gdm_x gdm_y gdm_z\n");

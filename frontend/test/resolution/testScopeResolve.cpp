@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -450,7 +450,7 @@ static void test11() {
 }
 
 // multiple imports / uses of the same module don't block finding symbols
-// via the second visibility statment onwards.
+// via the second visibility statement onwards.
 static void test12() {
   printf("test12\n");
   Context ctx;
@@ -545,7 +545,7 @@ static void test13() {
   assert(guard.realizeErrors());
 }
 
-// There's specal handling for the rightmost field access. Make sure this
+// There's special handling for the rightmost field access. Make sure this
 // special handling properly handles super.
 static void test14() {
   printf("test14\n");

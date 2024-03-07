@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -219,7 +219,7 @@ module ChapelTuple {
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
-    foreach i in 0..#this.size {
+    foreach i in 0..#this.size with (ref this) {
       yield(this(i));
     }
   }
@@ -256,7 +256,7 @@ module ChapelTuple {
 
     var fThis = followThis(0);
 
-    foreach i in fThis {
+    foreach i in fThis with (ref this) {
       yield this(i);
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1423,6 +1423,8 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
   :type level: `int(32)`
   :arg optname: option to set.
   :type optname: `int(32)`
+  :arg buflen: buffer length
+  :type buflen: `uint(16)`
   :return: value of socket option
   :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon incompatible arguments

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
 #include "buildDefaultFunctions.h"
+#include "config.h"
 #include "DecoratedClassType.h"
 #include "passes.h"
 #include "resolution.h"
@@ -969,52 +970,15 @@ const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool
-readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
-                    VarSymbol*& cachedValue) {
-
-  // TODO: This is O(n) number of params, we need a better way to look
-  // things up after resolve. I think that 'dyno' can always do the
-  // elegant thing here. Just preserve the ID for 'ChapelBase', and then
-  // use it in conjunction with a lookup for the config name. You fetch
-  // the 'ResolvedExpression' and you're done.
-  if (!cachedValue) {
-    if (!modSym->initFn || !modSym->initFn->isResolved()) {
-      INT_FATAL(modSym, "Called before '%s' is resolved",
-                        modSym->name);
-    }
-
-    form_Map(SymbolMapElem, e, paramMap) {
-      auto sym = e->key;
-      if (sym->defPoint && sym->defPoint->getModule() == modSym) {
-        if (!strcmp(sym->name, configParamName)) {
-          auto vs = toVarSymbol(e->value);
-          if (!vs || (vs != gTrue && vs != gFalse)) {
-            INT_FATAL("Unexpected config param type or bad AST");
-            return false;
-          }
-          cachedValue = vs;
-          break;
-        }
-      }
-    }
-
-    // Provide a hint, just in case.
-    if (!cachedValue) {
-      INT_FATAL("Could not find '%s', is it declared in '%s'?",
-                configParamName,
-                modSym->name);
-    }
-  }
-
-  bool ret = (cachedValue == gTrue);
-  return ret;
-}
-
 bool usePointerImplementation(void) {
-  static VarSymbol* cachedValue = nullptr;
-  return readConfigParamBool(baseModule, "fcfsUsePointerImplementation",
-                             cachedValue);
+  static bool fcfsUsePointerImplementation = false;
+  static bool fcfsUsePointerImplementationLegal = false;
+  if(!fcfsUsePointerImplementationLegal) {
+    fcfsUsePointerImplementation = getConfigParamBool(baseModule,
+        "fcfsUsePointerImplementation") == gTrue;
+    fcfsUsePointerImplementationLegal = true;
+  }
+  return fcfsUsePointerImplementation;
 }
 
 Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {

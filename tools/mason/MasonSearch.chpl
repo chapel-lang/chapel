@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -186,7 +186,7 @@ proc rankResults(results: list(string), query: string): [] string {
 
 /* Creates an empty cache file if its not found in registry */
 proc touch(pathToReg: string) {
-  const fileWriter = open(pathToReg, ioMode.cw).writer();
+  const fileWriter = open(pathToReg, ioMode.cw).writer(locking=false);
   fileWriter.write("");
   fileWriter.close();
 }

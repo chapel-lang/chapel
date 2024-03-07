@@ -1,4 +1,0 @@
-# The outputs differ based on configuration
-
-COMPOPTS <= --baseline
-COMPOPTS <= --no-local

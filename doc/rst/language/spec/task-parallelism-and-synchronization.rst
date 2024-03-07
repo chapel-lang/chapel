@@ -67,7 +67,10 @@ Tasks are considered to be created when execution reaches the start of a
 actually executed depends on the Chapel implementation and run-time
 execution state.
 
-A task is represented as a call to a *task function*, whose body
+Tasks created by ``begin``, ``cobegin``, and ``coforall`` can depend upon
+each other, even if that leads to the program not being serializable.
+
+A task is implemented as a call to a *task function*, whose body
 contains the Chapel code for the task. Variables defined in outer scopes
 are considered to be passed into a task function by default intent,
 unless a different *task intent* is specified explicitly by a
@@ -471,13 +474,17 @@ it is passed as an actual argument to the task function and all
 references to the field within the task function implicitly refer to the
 corresponding shadow variable.
 
-Each formal argument of a task function has the default argument intent
-by default. See also :ref:`The_Default_Intent`. Note that the default
-intent usually allows the compiler to assume that the value will not be
-concurrently modified. For variables of primitive and class types, this
-has the effect of capturing the value of the variable at task creation
-time and referencing that value instead of the original variable within
-the lexical scope of the task construct.
+The implicit formals of task functions generally have
+:ref:`the default argument intent <The_Default_Intent>` by default. Note that
+the default intent usually allows the compiler to assume that the value will
+not be concurrently modified. That assumption is useful for the compiler to, for example, make a per-task copy of an outer variable of ``int`` type.
+
+Implicit formals of array types are an exception: they inherit their default
+intent from the array actual. An immutable array has a default intent of
+``const`` and a mutable array has a default intent of ``ref``. This allows
+arrays to be modified inside the body of a task function if it is modifiable
+outside the body of the task function. A mutable array can have an explicit
+``const`` task intent to make it immutable inside the body of a task function.
 
 A formal can be given another argument intent explicitly by listing it
 with that intent in the optional ``task-intent-clause``. For example,
@@ -707,6 +714,10 @@ continue statements may not be used to exit a sync statement block.
 
 The Serial Statement
 --------------------
+
+.. note::
+
+   The ``serial`` statement is unstable and likely to be deprecated.
 
 The ``serial`` statement can be used to dynamically disable parallelism.
 The syntax is:

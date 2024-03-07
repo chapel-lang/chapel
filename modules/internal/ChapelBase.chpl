@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,11 +45,13 @@ module ChapelBase {
   inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
     __primitive("=", a, b);
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this(args...) {
@@ -84,6 +86,26 @@ module ChapelBase {
   @unstable
   var chpl_unstableInternalSymbolForTesting: int;
   chpl_unstableInternalSymbolForTesting;
+
+
+  // We have the following two config params here instead of in
+  // ChapelDomain so to make it easy for us to access these in the
+  // compiler, since we already always have a reference to baseModule
+  // in the production compiler.
+
+  /* Compile with ``-sassocParSafeDefault=true`` to use ``parSafe=true``
+     by default for associative domains and arrays.
+     Compiling with an explicit ``-sassocParSafeDefault[=false]`` will
+     turn off the par safe warning, just like ``-snoParSafeWarning``*/
+  @chpldoc.nodoc
+  config param assocParSafeDefault = false;
+
+  /* Compile with ``-snoParSafeWarning`` to suppress the warning
+     about a missing explicit ``parSafe`` parameter and
+     about the default parSafe mode for associative domains
+     and arrays changing from ``true`` to ``false``. */
+  @chpldoc.nodoc
+  config param noParSafeWarning = false;
 
   pragma "object class"
   pragma "global type symbol"
@@ -1320,10 +1342,6 @@ module ChapelBase {
       return x;
     } else if (isCoercible(t, int) || isCoercible(t, uint)) {
       return x != 0:x.type;
-    } else if t == strideKind {
-      // to support deprecation by Vass in 1.31 to implement #17131
-      compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
-      return x.toStridable();
     } else {
       compilerError("invalid type ", t:string, " used in if or while condition");
     }
@@ -1379,6 +1397,9 @@ module ChapelBase {
   inline proc ref chpl_anycomplex.re ref {
     return __primitive("complex_get_real", this);
   }
+  proc param chpl_anycomplex.re param {
+    return __primitive("complex_get_real", this);
+  }
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
       pragma "fn synchronization free"
@@ -1391,6 +1412,9 @@ module ChapelBase {
     }
   }
   inline proc ref chpl_anycomplex.im ref {
+    return __primitive("complex_get_imag", this);
+  }
+  proc param chpl_anycomplex.im param {
     return __primitive("complex_get_imag", this);
   }
   inline proc chpl_anycomplex.im {
@@ -1626,6 +1650,19 @@ module ChapelBase {
       _ddata_allocate_postalloc(ret, size);
     }
 
+    return ret;
+  }
+
+  pragma "llvm return noalias"
+  proc _ddata_allocate_noinit_gpu_shared(type eltType, size: integral,
+                                         out callPostAlloc: bool,
+                                         subloc = c_sublocid_none) {
+    if CHPL_LOCALE_MODEL != "gpu" then
+      compilerError("_ddata_allocate_noinit_gpu_shared can't be called in this config");
+
+    var ret: _ddata(eltType);
+    // TODO why fixed size?
+    ret = __primitive("cast", ret.type, __primitive("gpu allocShared", 4096*8));
     return ret;
   }
 
@@ -2216,28 +2253,47 @@ module ChapelBase {
     compilerError("cannot cast nil to " + t:string);
   }
 
+  proc chpl_castUnmanagedError(param typeStr: string) param do
+    compilerError("cannot cast to a '" + typeStr +
+                  "' with an implicit borrow; try adding an explicit '.borrow()'");
+
+
+  pragma "last resort"
+  operator :(x:owned class, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class?, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class?, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+
+  pragma "last resort"
+  operator :(x:shared class, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class?, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class?, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+
   // casting to unmanaged?, no class downcast
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
-    where isSubtype(_to_unmanaged(x.type),t)
-  {
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
 
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-  {
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     return __primitive("cast", t, x);
@@ -2245,13 +2301,7 @@ module ChapelBase {
 
   // casting to unmanaged, no class downcast
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class)
-    where isSubtype(_to_unmanaged(x.type),t)
-  {
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
@@ -2280,16 +2330,7 @@ module ChapelBase {
 
   // casting away nilability, no class downcast
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class)  throws
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-  {
-    if x == nil {
-      throw new owned NilClassError();
-    }
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class?, type t:unmanaged class)  throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
@@ -2327,7 +2368,6 @@ module ChapelBase {
 
   // this version handles downcast to non-nil unmanaged
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
@@ -2341,23 +2381,9 @@ module ChapelBase {
 
     return _to_nonnil(_to_unmanaged(tmp));
   }
-  inline operator :(x:unmanaged class?, type t:unmanaged class) throws
-    where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
-  {
-    if x == nil {
-      throw new owned NilClassError();
-    }
-    var tmp = __primitive("dynamic_cast", t, x);
-    if tmp == nil {
-      throw new owned ClassCastError();
-    }
-
-    return _to_nonnil(_to_unmanaged(tmp));
-  }
 
   // this version handles downcast to nilable unmanaged
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
   {
@@ -2367,29 +2393,10 @@ module ChapelBase {
     var tmp = __primitive("dynamic_cast", t, x);
     return _to_nilable(_to_unmanaged(tmp));
   }
-  inline operator :(x:unmanaged class?, type t:unmanaged class?)
-    where isProperSubtype(t,_to_unmanaged(x.type))
-  {
-    if x == nil {
-      return nil;
-    }
-    var tmp = __primitive("dynamic_cast", t, x);
-    return _to_nilable(_to_unmanaged(tmp));
-  }
 
   // this version handles downcast to nilable unmanaged
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
-    where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
-  {
-    if x == nil {
-      return nil;
-    }
-    var tmp = __primitive("dynamic_cast", t, x);
-    return _to_nilable(_to_unmanaged(tmp));
-  }
-  inline operator :(x:unmanaged class, type t:unmanaged class?)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
   {
     if x == nil {

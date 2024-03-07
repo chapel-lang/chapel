@@ -205,7 +205,7 @@ PerfJITEventListener::PerfJITEventListener()
 
   Dumpstream = std::make_unique<raw_fd_ostream>(DumpFd, true);
 
-  LLVMPerfJitHeader Header = {0};
+  LLVMPerfJitHeader Header = {0, 0, 0, 0, 0, 0, 0, 0};
   if (!FillMachine(Header))
     return;
 
@@ -417,7 +417,7 @@ void PerfJITEventListener::NotifyCode(Expected<llvm::StringRef> &Symbol,
   rec.Prefix.Timestamp = perf_get_timestamp();
 
   rec.CodeSize = CodeSize;
-  rec.Vma = 0;
+  rec.Vma = CodeAddr;
   rec.CodeAddr = CodeAddr;
   rec.Pid = Pid;
   rec.Tid = get_threadid();

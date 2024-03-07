@@ -5,8 +5,8 @@ var otherlist: mylist.type;
 
 var f = openMemFile();
 
-f.writer(serializer=new binarySerializer()).write(mylist);
-f.reader(deserializer=new binaryDeserializer()).read(otherlist);
+f.writer(serializer=new binarySerializer(), locking=false).write(mylist);
+f.reader(deserializer=new binaryDeserializer(), locking=false).read(otherlist);
 
 assert(mylist.size == otherlist.size);
 assert(mylist == otherlist);

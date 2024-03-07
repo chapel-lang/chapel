@@ -3,31 +3,31 @@ use IO;
 var f = openMemFile();
 
 {
-  f.writer().write("+10");
+  f.writer(locking=false).write("+10");
 }
 
 {
   var x:int;
-  f.reader().read(x);
+  f.reader(locking=false).read(x);
   writeln(x);
 }
 
 {
-  f.writer().write("+100.0");
+  f.writer(locking=false).write("+100.0");
 }
 
 {
   var x:real;
-  f.reader().read(x);
+  f.reader(locking=false).read(x);
   writeln(x);
 }
 
 {
-  f.writer().write("+10000.0i");
+  f.writer(locking=false).write("+10000.0i");
 }
 
 {
   var x:imag;
-  f.reader().read(x);
+  f.reader(locking=false).read(x);
   writeln(x);
 }

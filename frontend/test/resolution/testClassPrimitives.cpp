@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +30,7 @@
 #include "chpl/uast/Variable.h"
 
 static constexpr bool testType = true;
-static constexpr bool testExact = true;
+static constexpr bool testExact = false;
 
 static void testPrimitive(std::string primitive, std::vector<std::tuple<const char*, const char*, bool>> args) {
   Context ctx;

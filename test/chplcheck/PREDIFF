@@ -4,6 +4,10 @@ $CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
   --enable-rule UseExplicitModules \
   --enable-rule UnusedFormal \
   --enable-rule CamelOrPascalCaseVariables \
+  --enable-rule NestedCoforalls \
+  --internal-prefix "myprefix_" --internal-prefix "_" \
+  --skip-unstable \
   $1.chpl >> $2
-sed -i .tmp "s#$(pwd)/##" $2 # strip the working directory from output
-rm $2.tmp
+if sed "s#$(pwd)/##" $2 >$2.tmp; then
+    mv $2.tmp $2
+fi

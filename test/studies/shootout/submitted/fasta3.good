@@ -1,6 +1,6 @@
-fasta3.chpl:83: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 fasta3.chpl:83: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
 fasta3.chpl:83: warning: writer with a 'kind' argument is deprecated, please use Serializers instead
+fasta3.chpl:83: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 fasta3.chpl:70: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'alphabet'
 >ONE Homo sapiens alu
 GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA

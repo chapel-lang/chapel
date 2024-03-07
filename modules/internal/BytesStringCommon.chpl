@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -999,7 +999,7 @@ module BytesStringCommon {
 
         if curMargin == '':t {
           // An unindented non-empty line means no margin exists, return early
-          margin = '';
+          margin = '':t;
           break;
         } else if margin == '':t {
           // Initialize margin
@@ -1035,6 +1035,37 @@ module BytesStringCommon {
     }
 
 
+  // Resize the buffer in lhs to make room for appending n bytes
+  // assumes this is already running within an 'on' statement
+  // that makes the string/bytes buffer local.
+  // The n bytes can be appended to the buffer after this call.
+  // Returns the new length of the buffer, which should probably
+  // be stored in the new buffLen field.
+  proc resizeBufferForAppend(ref lhs: ?t, n: int): int {
+    assertArgType(t, "resizeBufferForAppend");
+
+    if !safeAdd(lhs.buffLen,n) then
+      halt("Buffer overflow allocating string copy data");
+    const newLength = lhs.buffLen + n;
+    //resize the buffer if needed
+    if lhs.buffSize <= newLength {
+      const requestedSize = max(newLength+1,
+                                (lhs.buffLen*chpl_stringGrowthFactor):int);
+      if lhs.isOwned {
+        var (newBuff, allocSize) = bufferRealloc(lhs.buff, requestedSize);
+        lhs.buff = newBuff;
+        lhs.buffSize = allocSize;
+      } else {
+        var (newBuff, allocSize) = bufferAlloc(requestedSize);
+        bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.buffLen);
+        lhs.buff = newBuff;
+        lhs.buffSize = allocSize;
+        lhs.isOwned = true;
+      }
+    }
+
+    return newLength;
+  }
 
   proc doAppend(ref lhs: ?t, const ref rhs: t) {
     assertArgType(t, "doAppend");
@@ -1044,31 +1075,39 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      if !safeAdd(lhs.buffLen,rhs.buffLen) then
-        halt("Buffer overflow allocating string copy data");
-      const newLength = lhs.buffLen + rhs.buffLen;
-      //resize the buffer if needed
-      if lhs.buffSize <= newLength {
-        const requestedSize = max(newLength+1,
-                                  (lhs.buffLen*chpl_stringGrowthFactor):int);
-        if lhs.isOwned {
-          var (newBuff, allocSize) = bufferRealloc(lhs.buff, requestedSize);
-          lhs.buff = newBuff;
-          lhs.buffSize = allocSize;
-        } else {
-          var (newBuff, allocSize) = bufferAlloc(requestedSize);
-          bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.buffLen);
-          lhs.buff = newBuff;
-          lhs.buffSize = allocSize;
-          lhs.isOwned = true;
-        }
-      }
+      // resize the buffer to make room and amortize resize time for
+      // repeated appends
+      const newLength = resizeBufferForAppend(lhs, rhs.buffLen);
       // copy the data from rhs
       bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhs.buffLen,
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
       if t == string then lhs.cachedNumCodepoints += rhs.cachedNumCodepoints;
+    }
+  }
+
+  /* Take n bytes from byteCArr and append it to the string/bytes
+     in lhs */
+  proc doAppendSomeBytes(ref lhs: ?t,
+                         n: int,
+                         byteCArr: c_array(uint(8), ?),
+                         nCodepoints: int) {
+
+    assertArgType(t, "doAppendSomeBytes");
+
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+      // resize the buffer to make room and amortize resize time for
+      // repeated appends
+      const newLength = resizeBufferForAppend(lhs, n);
+      // copy the data into the buffer, but only the n bytes requested
+      var byteCArrCopy = byteCArr; // now it is local and mutable
+      bufferMemcpyLocal(dst=lhs.buff, src=c_ptrTo(byteCArrCopy(0)), len=n,
+                        dst_off=lhs.buffLen);
+      lhs.buffLen = newLength;
+      lhs.buff[newLength] = 0;
+      if t == string then lhs.cachedNumCodepoints += nCodepoints;
     }
   }
 

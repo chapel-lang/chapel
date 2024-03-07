@@ -121,7 +121,7 @@ isSimpleEnoughValueToCommit(Constant *C,
 }
 
 void Evaluator::MutableValue::clear() {
-  if (auto *Agg = Val.dyn_cast<MutableAggregate *>())
+  if (auto *Agg = dyn_cast_if_present<MutableAggregate *>(Val))
     delete Agg;
   Val = nullptr;
 }
@@ -130,9 +130,9 @@ Constant *Evaluator::MutableValue::read(Type *Ty, APInt Offset,
                                         const DataLayout &DL) const {
   TypeSize TySize = DL.getTypeStoreSize(Ty);
   const MutableValue *V = this;
-  while (const auto *Agg = V->Val.dyn_cast<MutableAggregate *>()) {
+  while (const auto *Agg = dyn_cast_if_present<MutableAggregate *>(V->Val)) {
     Type *AggTy = Agg->Ty;
-    Optional<APInt> Index = DL.getGEPIndexForOffset(AggTy, Offset);
+    std::optional<APInt> Index = DL.getGEPIndexForOffset(AggTy, Offset);
     if (!Index || Index->uge(Agg->Elements.size()) ||
         !TypeSize::isKnownLE(TySize, DL.getTypeStoreSize(AggTy)))
       return nullptr;
@@ -140,11 +140,11 @@ Constant *Evaluator::MutableValue::read(Type *Ty, APInt Offset,
     V = &Agg->Elements[Index->getZExtValue()];
   }
 
-  return ConstantFoldLoadFromConst(V->Val.get<Constant *>(), Ty, Offset, DL);
+  return ConstantFoldLoadFromConst(cast<Constant *>(V->Val), Ty, Offset, DL);
 }
 
 bool Evaluator::MutableValue::makeMutable() {
-  Constant *C = Val.get<Constant *>();
+  Constant *C = cast<Constant *>(Val);
   Type *Ty = C->getType();
   unsigned NumElements;
   if (auto *VT = dyn_cast<FixedVectorType>(Ty)) {
@@ -171,12 +171,12 @@ bool Evaluator::MutableValue::write(Constant *V, APInt Offset,
   MutableValue *MV = this;
   while (Offset != 0 ||
          !CastInst::isBitOrNoopPointerCastable(Ty, MV->getType(), DL)) {
-    if (MV->Val.is<Constant *>() && !MV->makeMutable())
+    if (isa<Constant *>(MV->Val) && !MV->makeMutable())
       return false;
 
-    MutableAggregate *Agg = MV->Val.get<MutableAggregate *>();
+    MutableAggregate *Agg = cast<MutableAggregate *>(MV->Val);
     Type *AggTy = Agg->Ty;
-    Optional<APInt> Index = DL.getGEPIndexForOffset(AggTy, Offset);
+    std::optional<APInt> Index = DL.getGEPIndexForOffset(AggTy, Offset);
     if (!Index || Index->uge(Agg->Elements.size()) ||
         !TypeSize::isKnownLE(TySize, DL.getTypeStoreSize(AggTy)))
       return false;
@@ -413,16 +413,28 @@ bool Evaluator::EvaluateBlock(BasicBlock::iterator CurInst, BasicBlock *&NextBB,
           }
 
           Constant *Val = getVal(MSI->getValue());
-          APInt Len = LenC->getValue();
-          while (Len != 0) {
-            Constant *DestVal = ComputeLoadResult(GV, Val->getType(), Offset);
-            if (DestVal != Val) {
-              LLVM_DEBUG(dbgs() << "Memset is not a no-op at offset "
-                                << Offset << " of " << *GV << ".\n");
+          // Avoid the byte-per-byte scan if we're memseting a zeroinitializer
+          // to zero.
+          if (!Val->isNullValue() || MutatedMemory.contains(GV) ||
+              !GV->hasDefinitiveInitializer() ||
+              !GV->getInitializer()->isNullValue()) {
+            APInt Len = LenC->getValue();
+            if (Len.ugt(64 * 1024)) {
+              LLVM_DEBUG(dbgs() << "Not evaluating large memset of size "
+                                << Len << "\n");
               return false;
             }
-            ++Offset;
-            --Len;
+
+            while (Len != 0) {
+              Constant *DestVal = ComputeLoadResult(GV, Val->getType(), Offset);
+              if (DestVal != Val) {
+                LLVM_DEBUG(dbgs() << "Memset is not a no-op at offset "
+                                  << Offset << " of " << *GV << ".\n");
+                return false;
+              }
+              ++Offset;
+              --Len;
+            }
           }
 
           LLVM_DEBUG(dbgs() << "Ignoring no-op memset.\n");
@@ -626,10 +638,8 @@ bool Evaluator::EvaluateFunction(Function *F, Constant *&RetVal,
   CallStack.push_back(F);
 
   // Initialize arguments to the incoming values specified.
-  unsigned ArgNo = 0;
-  for (Function::arg_iterator AI = F->arg_begin(), E = F->arg_end(); AI != E;
-       ++AI, ++ArgNo)
-    setVal(&*AI, ActualArgs[ArgNo]);
+  for (const auto &[ArgNo, Arg] : llvm::enumerate(F->args()))
+    setVal(&Arg, ActualArgs[ArgNo]);
 
   // ExecutedBlocks - We only handle non-looping, non-recursive code.  As such,
   // we can only evaluate any one basic block at most once.  This set keeps

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -700,6 +700,21 @@ module String {
       // same names, because "wellknown" implementation in the compiler does not
       // allow overloads.
       var ret: string;
+
+      // 2024/02/15 Lydia NOTE: This avoids a valgrind warning when performing
+      // checks about arguments passed by default/const intent when they could
+      // be implicitly modified.  The string type has boolean fields, which C
+      // inserts padding for but we can't actually initialize the padding
+      // without a memset
+      if (chpl_warnUnstable && chpl_constArgChecking) {
+        var origIsOwned = ret.isOwned;
+        var origLocaleID = ret.locale_id;
+
+        __primitive("zero variable", ret);
+        ret.isOwned = origIsOwned;
+        ret.locale_id = origLocaleID;
+      }
+
       initWithBorrowedBuffer(ret, x, length, size);
       ret.cachedNumCodepoints = numCodepoints;
       return ret;
@@ -2261,6 +2276,36 @@ module String {
   */
   operator string.+=(ref lhs: string, const ref rhs: string) : void {
     doAppend(lhs, rhs);
+  }
+
+  /*
+     Appends the codepoint values passed to the :type:`string` `this`.
+
+     Any argument not in 0..0x10FFFF is not valid Unicode codepoint.
+     This function will append the replacement character 0xFFFD instead of
+     such invalid arguments.
+   */
+  @unstable("'string.appendCodepointValues' is unstable and may change in the future")
+  proc ref string.appendCodepointValues(codepoints: int ...) : void {
+    var nbytesTotal = 0;
+    var buf: c_array(uint(8), 4*codepoints.size);
+    // TODO: make c_ptrTo(myCArray) work
+    for param i in 0..<codepoints.size {
+      var cp = codepoints(i);
+      if 0 <= cp && cp <= 0x10FFFF {
+        // it is a valid Unicode codepoint
+      } else {
+        // it is invalid. Use the replacement character.
+        cp = 0xFFFD;
+      }
+      var nbytes = qio_nbytes_char(cp: int(32));
+      if boundsChecking {
+        assert(0 <= nbytes && nbytes <= 4);
+      }
+      qio_encode_char_buf(c_ptrTo(buf[nbytesTotal]), cp: int(32));
+      nbytesTotal += nbytes;
+    }
+    doAppendSomeBytes(this, nbytesTotal, buf, nCodepoints=codepoints.size);
   }
 
   //

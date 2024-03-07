@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -227,8 +227,9 @@ UniqueString UniqueString::deserialize(Deserializer& des) {
   if ((byte & 0x80) == 0) {
     // string is inline here, byte is the length
     uint64_t len = byte;
-    char buf[128];
+    char buf[128]; // max size is 127, plus room for null terminating
     des.readData(buf, len);
+    buf[len] = '\0';
     return get(des.context(), buf, len);
   } else {
     // compute the index to look up in the strings table

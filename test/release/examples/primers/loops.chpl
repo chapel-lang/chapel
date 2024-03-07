@@ -512,13 +512,13 @@ use IO;  // enable access to the readln() call that we use below
   var B: [1..n] real;
 
 
-  forall i in 1..n with (ref B) do
+  forall i in 1..n do
     B[i] = i: real;
 
   writeln("After the forall loop over a range, B is: ", B);
 
 
-  forall i in B.domain with (ref B) do
+  forall i in B.domain do
     B[i] = A[i % A.size];
 
   writeln("After the forall loop over a domain, B is: ", B);
@@ -570,7 +570,7 @@ use IO;  // enable access to the readln() call that we use below
   const BlockDom = blockDist.createDomain({1..n, 1..n});
   var C: [BlockDom] real;
 
-  forall (i,j) in BlockDom with (ref C) do
+  forall (i,j) in BlockDom do
     C[i,j] = (100 * here.id) + i + j/1000.0;
 
   writeln("After the forall loop over a distributed domain, C is:\n",C);
@@ -601,7 +601,7 @@ use IO;  // enable access to the readln() call that we use below
 
 */
 
-  [i in 1..n with (ref B)] B[i] -= 0.001;
+  [i in 1..n] B[i] -= 0.001;
 
   writeln("After the first square bracket loop, B is:\n", B);
 
@@ -691,7 +691,7 @@ use IO;  // enable access to the readln() call that we use below
   var D = [i in 1..n] (i**2): real;
 
   writeln("Before the race-y averaging loop, D is: ", D);
-  forall i in 2..<n with (ref D) do
+  forall i in 2..<n do
     D[i] = (D[i-1] + D[i+1]) / 2;
 
   // if the following line were uncommented, you would likely see
@@ -717,7 +717,7 @@ use IO;  // enable access to the readln() call that we use below
 
   writeln("Before the safe averaging loop, E is: ", E);
 
-  forall i in 2..<n with (ref F) do
+  forall i in 2..<n do
     F[i] = (E[i-1] + E[i+1]) / 2;
 
   writeln("After the safe averaging loop, F is: ", F);
@@ -735,7 +735,7 @@ use IO;  // enable access to the readln() call that we use below
   D = [i in 1..n] (i**2): real;
 
   writeln("Before the third averaging loop, D is: ", D);
-  forall i in 2..<n by 2 with (ref D) do
+  forall i in 2..<n by 2 do
     D[i] = (D[i-1] + D[i+1]) / 2;
 
   writeln("After the third averaging loop, D is: ", D);
@@ -986,7 +986,7 @@ use IO;  // enable access to the readln() call that we use below
 
   // attempt (but fail) to iterate over G's elements in a parallel,
   // distributed manner
-  forall i in 1..10 with (ref G) do
+  forall i in 1..10 do
     G[i] = i;
 
   writeln("After the non-distributed forall, G is: ", G);
@@ -1008,7 +1008,7 @@ use IO;  // enable access to the readln() call that we use below
 
 */
   
-  forall i in 1..10 with (ref G) do
+  forall i in 1..10 do
     G[i] = here.id;
 
   writeln("The locales assigning to G (range version) were: ", G);
@@ -1035,7 +1035,7 @@ use IO;  // enable access to the readln() call that we use below
 
   G = -1;  // reset G
 
-  forall i in G.domain with (ref G) do
+  forall i in G.domain do
     G[i] = here.id;
 
   writeln("The locales assigning to G (domain version) were: ", G);

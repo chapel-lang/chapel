@@ -1,5 +1,0 @@
-perfkeys: TriadBdwth BlckSz: 16384KB Median:, TriadBdwth BlckSz: 16384KB Median:, TriadBdwth BlckSz: 16384KB Median:, TriadBdwth BlckSz: 16384KB Median:, TriadBdwth BlckSz: 16384KB Median:
-files: triad.dat, triadalt1.dat, triadalt2.dat, triadchpl.dat, triadAsync.dat
-graphkeys: Transliteration, NoSliceLHS, NoSlice, Idiomatic, Async
-ylabel: Bandwidth (GB/s)
-graphtitle: SHOC Triad - Bandwidth - 16384KB

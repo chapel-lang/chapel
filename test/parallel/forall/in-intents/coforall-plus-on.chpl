@@ -1,8 +1,3 @@
-// This tests mimicks the coforall+on in the range leader iterator
-// when compiling under numa. Which caused compiler assertion failure on:
-//   parallel/forall/in-intents/both-arr-dom-const-const.chpl
-//   parallel/forall/in-intents/both-arr-dom-var-const.chpl
-
 var ARR = [555, 666];
 var DOM = {555..666};
 var sy: sync int;

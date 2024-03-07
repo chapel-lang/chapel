@@ -194,6 +194,7 @@ gasnet      gasnetrun_*
 gasnet      pbs-gasnetrun_ibv
 gasnet      slurm-gasnetrun_*
 gasnet      slurm-srun
+gasnet      smp
 ofi         slurm-srun
 =========   =============
 

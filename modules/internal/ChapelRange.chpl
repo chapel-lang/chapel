@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,13 +35,15 @@ module ChapelRange {
   @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
 
-  /* Compile with ``-snewSliceRule`` to switch to using the new slicing rule
+  /* This flag, when set to `true`, used to switch to using the new slicing rule
      and to turn off the deprecation warning for using the old rule.
+     Now the new rule is always enabled regardless of this flag's value.
      When slicing with a range with a negative stride, the old rule
      preserves the direction of the original range or domain/array dimension
      whereas the new rule reverses such direction. */
   @chpldoc.nodoc
-  config param newSliceRule = false;
+  @deprecated("'newSliceRule' is deprecated and will be removed in a future release; it is now 'true' by default; slicing with a range with a negative stride now always reverses the direction of the original range or domain/array dimension, regardless of the value of 'newSliceRule'")
+  config param newSliceRule = true;
 
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
      for determining the idxType of a range literal with param integral bounds
@@ -58,32 +60,6 @@ module ChapelRange {
   // This enum is documented directly in the spec to fit the presentation flow.
   @chpldoc.nodoc
   enum boundKind { both, low, high, neither };
-
-  /*
-    The ``BoundedRangeType`` enum is used to specify the types of bounds a
-    range is required to have.
-
-    * ``bounded`` - The range has finite low and high bounds.
-    * ``boundedLow`` - The range starts at a given low bound, but conceptually goes up to infinity.
-    * ``boundedHigh`` - The range conceptually starts at negative infinity and ends at a given high bound.
-    * ``boundedNone`` - The range conceptually runs from negative infinity to infinity.
-
-    This is currently documented manually in the spec because it fit into
-    the flow of the document better.
-   */
-  @chpldoc.nodoc
-  @deprecated("BoundedRangeType is deprecated; please use 'boundKind' instead")
-  proc BoundedRangeType type do return boundKind;
-//was: enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
-//deprecated by Vass in 1.31 to implement #17126
-  @deprecated("'bounded' is deprecated; please use 'boundKind.both' instead")
-  proc type boundKind.bounded param do return boundKind.both;
-  @deprecated("'boundedLow' is deprecated; please use 'boundKind.low' instead")
-  proc type boundKind.boundedLow param do return boundKind.low;
-  @deprecated("'boundedHigh' is deprecated; please use 'boundKind.high' instead")
-  proc type boundKind.boundedHigh param do return boundKind.high;
-  @deprecated("'boundedNone' is deprecated; please use 'boundKind.neither' instead")
-  proc type boundKind.boundedNone param do return boundKind.neither;
 
   // This enum is documented directly in the spec to fit the presentation flow.
   @chpldoc.nodoc
@@ -118,22 +94,6 @@ module ChapelRange {
     type idxType = int;                            // element type
     param bounds: boundKind = boundKind.both;      // lower/upper bounds
     param strides: strideKind = strideKind.one;    // what stride(s) are legal
-
-    // deprecated by Vass in 1.31 to implement #17126
-    @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
-    proc boundedType param do return bounds;
-
-    // deprecated by Vass in 1.31 to implement #17126
-    @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
-    proc type boundedType param do return bounds;
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("range.stridable is deprecated; please use '.strides' instead")
-    proc stridable param do return !hasUnitStride();
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("range.stridable is deprecated; please use '.strides' instead")
-    proc type stridable param do return ! strides.isOne();
 
     var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound
     var _high      : chpl__idxTypeToIntIdxType(idxType);  // upper bound
@@ -353,7 +313,7 @@ module ChapelRange {
     param bounds  = if this.type.bounds  == ? then b else this.type.bounds;
     param strides = if this.type.strides == ? then s else this.type.strides;
 
-    if ! assignmentIsLegal(idxType, i, b) then
+    if ! assignmentIsLegal(idxType, i) then
       compilerError("initializing a range with idxType ", idxType:string,
                            " from a range with idxType ", i:string);
     if bounds != b then
@@ -362,11 +322,6 @@ module ChapelRange {
     if ! chpl_assignStrideIsSafe(strides, s) then
       compilerError("initializing a range with strideKind.", strides:string,
                            " from a range with strideKind.", s:string);
-
-    if isDeprecatedUnboundedAssignment(idxType, other.idxType, bounds) then
-      compilerWarning("initializing an unbounded range with idxType ",
-             idxType:string, " from an unbounded range with idxType ",
-       other.idxType:string, " is deprecated");
 
     param isEnumBool = isFiniteIdxType(idxType);
     type bt = other.chpl_integralIdxType;
@@ -704,17 +659,6 @@ module ChapelRange {
   @chpldoc.nodoc proc range.isAligned() param where hasParamAligned() do
     return true;
 
-  /* Returns ``true`` if the range's alignment is unambiguous,
-     ``false`` otherwise. */
-  pragma "no where doc"
-  @deprecated("'range.aligned' is deprecated; please use '.isAligned()' instead")
-  inline proc range.aligned where !hasParamAligned() do
-    return isAligned();
-
-  @deprecated("'range.aligned' is deprecated; please use '.isAligned()' instead")
-  @chpldoc.nodoc proc range.aligned param where hasParamAligned() do
-    return isAligned();
-
   // Does this kind of range store the stride/alignment/aligned at runtime
   //  and/or is its stride/alignment/aligned a param?
 
@@ -741,27 +685,6 @@ module ChapelRange {
   //################################################################################
   //# Predicates
   //#
-
-  // isBoundedRange(r) = true if 'r' is a (fully) bounded range
-  @chpldoc.nodoc
-  @deprecated("'isBoundedRange()' is deprecated; use 'isRangeValue()' instead")
-  proc isBoundedRange(r)           param do
-    return false;
-  /* Returns ``true`` if argument ``r`` is a fully bounded range,
-     ``false`` otherwise. */
-  @deprecated("'isBoundedRange()' is deprecated; use 'isRangeValue()' and check the range's '.bounds' field directly instead")
-  proc isBoundedRange(r: range(?)) param do
-    return isBoundedRange(r.bounds);
-
-  @chpldoc.nodoc
-  @deprecated("'isBoundedRange()' is deprecated; compare against 'boundKind.both' directly instead")
-  proc isBoundedRange(param B: boundKind) param do
-    return B == boundKind.both;
-
-  /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
-  @deprecated("'range.isBounded()' is deprecated; check the range's '.bounds' field directly, comparing to 'boundKind.both'")
-  proc range.isBounded() param do
-    return bounds == boundKind.both;
 
   /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
      and ``false`` otherwise. */
@@ -829,49 +752,6 @@ module ChapelRange {
 
   @chpldoc.nodoc proc param strideKind.defaultStride() param
     do return if isNegative() then -1 else 1;
-
-  // these support deprecation by Vass in 1.31 to implement #17131
-
-  proc chpl_strideKind(param stridable: bool) param
-    do return if stridable then strideKind.any else strideKind.one;
-
-  proc chpl_stridable(param strides: strideKind) param
-    do return strides.toStridable();
-
-  proc chpl_stridable(strides: strideKind)
-    do return strides != strideKind.one;
-
-  @chpldoc.nodoc proc param strideKind.toStridable() param
-    do return this != strideKind.one;
-
-  // Supports deprecation by Vass in 1.31 to implement #17131,
-  // when stridable-based code unwittingly creates ranges with
-  // the overly-general strideKind=any.
-  // It simply changes 'from' ranges from strideKind.* to strideKind.any.
-  proc chpl_convertRangeTuple(from: _tuple, param stridable: bool) {
-    if from(0).strides == chpl_strideKind(stridable) then
-      return from;
-
-    param rank = from.size;
-    type idxType = from(0).idxType;
-    param bounds = from(0).bounds;
-    param strides = strideKind.any;
-
-    var result: rank * range(idxType, bounds, strides);
-    for param i in 0..rank-1 do transfer(result(i), from(i));
-    return result;
-
-    inline proc transfer(ref dest, src) {
-      // It would be simpler to use a cast: dest = src: dest.type
-      // however the cast can throw, creating more code and execution cost.
-      dest._low  = src._low;
-      dest._high = src._high;
-      if ! dest.hasParamStrideAltvalAld() {
-        dest._stride    = src._stride;
-        dest._alignment = src._alignment;
-      }
-    }
-  }
 
   // Counterparts to hasPositiveStride() and hasNegativeStride()
   // for use when there is no range.
@@ -1044,20 +924,10 @@ module ChapelRange {
     return lhs.isPositive() && rhs.isNegative() ||
            lhs.isNegative() && rhs.isPositive();
 
-  private proc assignmentIsLegal(type to, type from, param fromBounds) param {
+  private proc assignmentIsLegal(type to, type from) param {
     if to == from then return true;
-    // can assign between `..` ranges of any idxType (deprecated)
-    if fromBounds == boundKind.neither then return true;
     var toVar: to, fromVar: from;
     return canResolve("=", toVar, fromVar);
-  }
-
-  private proc isDeprecatedUnboundedAssignment(type to, type from,
-                                               param bounds) param {
-    // an assignment may be deprecated only between unbounded ranges
-    if bounds != boundKind.neither then return false;
-    // assignment is deprecated if it would be illegal between bounded ranges
-    return !assignmentIsLegal(to, from, boundKind.both);
   }
 
   private proc verifyAppropriateStride(param strides, stride) {
@@ -1110,18 +980,6 @@ module ChapelRange {
       compilerError("can't query the low bound of a range without one");
     }
     return chpl_intToIdx(this.alignedLowAsInt);
-  }
-
-
-  /* Return the range's aligned low bound.  Note that this is a
-     synonym for :proc:`range.low`.
-  */
-  @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
-  inline proc range.alignedLow: idxType {
-    if !hasLowBound() {
-      compilerError("can't query the low bound of a range without one");
-    }
-    return this.low;
   }
 
   @chpldoc.nodoc
@@ -1210,18 +1068,6 @@ module ChapelRange {
     return chpl_intToIdx(this.alignedHighAsInt);
   }
 
-
-  /* Returns the range's aligned high bound.  Note that this is a
-     synonym for :proc:`range.high`.
-  */
-  @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
-  inline proc range.alignedHigh: idxType {
-    if !hasHighBound() {
-      compilerError("can't query the high bound of a range without one");
-    }
-    return this.high;
-  }
-
   @chpldoc.nodoc
   inline proc range.alignedHighAsInt {
     if ! isAligned() then
@@ -1248,19 +1094,6 @@ module ChapelRange {
     return h - chpl__diffMod(h, a: h.type, s);
   }
 
-  /* Returns ``true`` if this range is naturally aligned, ``false``
-     otherwise. */
-  pragma "no where doc"
-  @deprecated("'range.isNaturallyAligned()' is deprecated; please feel encouraged to file a GitHub issue requesting it: https://github.com/chapel-lang/chapel/issues")
-  proc range.isNaturallyAligned()
-    where ! hasPosNegUnitStride() && bounds != boundKind.neither
-  do return chpl_isNaturallyAligned();
-
-  @deprecated("'range.isNaturallyAligned()' is deprecated; please feel encouraged to file a GitHub issue requesting it: https://github.com/chapel-lang/chapel/issues")
-  @chpldoc.nodoc proc range.isNaturallyAligned() param
-    where hasPosNegUnitStride() || bounds == boundKind.neither
-  do return chpl_isNaturallyAligned();
-
   // tells whether omitting the 'align' clause results in the same range
   pragma "no where doc"
   proc range.chpl_isNaturallyAligned()
@@ -1281,17 +1114,6 @@ module ChapelRange {
   proc range.chpl_isNaturallyAligned() param
     where hasPosNegUnitStride() || bounds == boundKind.neither
     do return hasPosNegUnitStride();
-
-  /* Returns ``true`` if the range is ambiguously aligned, ``false``
-     otherwise. */
-  pragma "no where doc"
-  @deprecated("'range.isAmbiguous()' is deprecated; please use '! range.isAligned()' instead")
-  proc range.isAmbiguous() param where hasPosNegUnitStride() do
-    return ! isAligned();
-
-  @deprecated("'range.isAmbiguous()' is deprecated; please use '! range.isAligned()' instead")
-  @chpldoc.nodoc proc range.isAmbiguous() where ! hasPosNegUnitStride() do
-    return ! isAligned();
 
   private inline proc hasAmbiguousAlignmentForIter(r) param
     where r.hasPosNegUnitStride() || isFiniteIdxType(r.idxType) {
@@ -1657,7 +1479,7 @@ module ChapelRange {
     if this.bounds == boundKind.both && this.sizeAs(uint) == 0 then
       return other.bounds == boundKind.both && other.sizeAs(uint) == 0;
 
-    var slice = this.chpl_slice(other, forceNewRule=true);
+    var slice = this[other];
 
     // Slicing reversed the direction of 'other' if this.stride < 0.
     // Switch it back before comparing.
@@ -1787,13 +1609,6 @@ module ChapelRange {
     return false;
   }
 
-  // If the parameters don't match, then the two ranges cannot be identical.
-  @chpldoc.nodoc
-  @deprecated(notes="ident() on ranges is deprecated; please let us know if this is problematic for you")
-  proc ident(r1: range(?), r2: range(?)) param {
-    return false;
-  }
-
   //////////////////////////////////////////////////////////////////////////////////
   // Range Casts
   //
@@ -1806,62 +1621,6 @@ module ChapelRange {
   if this.strides.isOne() then return this;
   return new range(this.idxType, this.bounds, strideKind.one,
                    this.alignedLowAsInt, this.alignedHighAsInt, none, none);
-}
-
-/* Casts a range to another range type. If the old type is stridable and the
-   new type is not stridable, ensure at runtime that the old stride was 1.
- */
-@chpldoc.nodoc
-@deprecated("range.safeCast() is deprecated; instead consider using a cast ':'")
-proc range.safeCast(type t: range(?)) {
-
-  // safeCast is used in domain assignment, so we need to support enums:
-  //   var D1: domain(1, myEnum, positive);
-  //   var D2: domain(1, myEnum, any) = D1;
-
-  if (isEnumType(this.idxType) || isEnumType(t.idxType)) &&
-     (this.idxType != t.idxType) then
-    compilerError("safeCast() on ranges does not yet support enum ranges");
-
-  if t.bounds != this.bounds then
-    compilerError("safeCast() to a range with boundKind.", t.bounds:string,
-                          " from a range with boundKind.", this.bounds:string);
-
-  if chpl_assignStrideIsUnsafe(t.strides, this.strides) then
-    compilerError("safeCast() to a range with strideKind.", t.strides:string,
-                        " from a range with strideKind.", this.strides:string);
-
-  var needHalt = false;
-  select t.strides {
-    when strideKind.one      do needHalt = (this.stride != 1);
-    when strideKind.negOne   do needHalt = (this.stride != -1);
-    when strideKind.positive do needHalt = (this.stride < 0);
-    when strideKind.negative do needHalt = (this.stride > 0);
-    when strideKind.any      do; // any stride is OK
-  }
-  if needHalt then
-    HaltWrappers.safeCastCheckHalt("illegal safeCast from stride " +
-      this.stride:string + " to strideKind." + t.strides:string);
-
-  if t.idxType == this.idxType then return
-    if this.hasParamStrideAltvalAld() && ! t.hasParamStrideAltvalAld()
-    then new range(t.idxType, t.bounds, t.strides,
-                   this._low, this._high, this.stride, 0)
-    else new range(t.idxType, t.bounds, t.strides,
-                   this._low, this._high, this._stride, this._alignment);
-
-  var tmp: t;
-
-  if ! tmp.hasParamStrideAltvalAld() {
-    tmp._stride = this.stride.safeCast(tmp.strType);
-    tmp._alignment = if isNothingValue(this._alignment) then 0
-                     else this._alignment.safeCast(tmp.strType);
-  }
-
-  tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.chpl_integralIdxType);
-  tmp._high = if this.hasHighBound() then chpl__idxToInt(this.highBound.safeCast(tmp.idxType)) else this._high.safeCast(tmp.chpl_integralIdxType);
-
-  return tmp;
 }
 
 /* Casts a range to a new range type. Throws an IllegalArgumentError when
@@ -2063,7 +1822,7 @@ proc chpl_castIsSafe(r: range(?), type t: range(?)) param do
 
 proc chpl_idxCastIsSafe(type to, type from) param do
   return ( !( isUint(to) && isInt(from) ) //'aUint=anInt' is unsafe yet allowed
-           && assignmentIsLegal(to, from, boundKind.both) )
+           && assignmentIsLegal(to, from) )
      ||  ( to == int && isBCPindex(from) );
      // todo: allow also to==int && 'from' is a fully-concrete enum
 
@@ -2079,14 +1838,6 @@ private proc isBCPindex(type t) param do
   //////////////////////////////////////////////////////////////////////////////////
   // Bounds checking
   //
-
-  /* Returns ``true`` if ``other`` lies entirely within this range and
-     ``false`` otherwise.  Returns ``false`` if either range is
-     ambiguously aligned.
-   */
-  @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
-  inline proc range.boundsCheck(other: range(?e,?b,?s))
-    do return this.chpl_boundsCheck(other);
 
   inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
     where b == boundKind.neither
@@ -2140,12 +1891,6 @@ private proc isBCPindex(type t) param do
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
-
-  /* Returns ``true`` if ``other`` is contained in this range and ``false``
-     otherwise. */
-  @deprecated("range.boundsCheck() is deprecated, please use range.contains() instead")
-  inline proc range.boundsCheck(other: idxType) do
-    return contains(other);
 
   // used in checkRankChange(args) where each args(i) can be
   // either a range or an individual index
@@ -2460,7 +2205,7 @@ private proc isBCPindex(type t) param do
   @chpldoc.nodoc
   inline operator =(ref r1: range(?), r2: range(?))
   {
-    if ! assignmentIsLegal(r1.idxType, r2.idxType, r2.bounds) then
+    if ! assignmentIsLegal(r1.idxType, r2.idxType) then
       compilerError("assigning to a range with idxType ", r1.idxType:string,
                            " from a range with idxType ", r2.idxType:string,
                            " without an explicit cast");
@@ -2472,11 +2217,6 @@ private proc isBCPindex(type t) param do
       compilerError("assigning to a range with strideKind.", r1.strides:string,
                            " from a range with strideKind.", r2.strides:string,
                            " without an explicit cast");
-
-    if isDeprecatedUnboundedAssignment(r1.idxType, r2.idxType, r2.bounds) then
-      compilerWarning("assignment to an unbounded range with idxType ",
-           r1.idxType:string, " from an unbounded range with idxType ",
-           r2.idxType:string, " is deprecated");
 
     r1._low = r2._low: r1.chpl_integralIdxType;
     r1._high = r2._high: r1.chpl_integralIdxType;
@@ -2711,12 +2451,7 @@ private proc isBCPindex(type t) param do
   // Slicing, implementing the slice semantics in #20462.
   // Return the intersection of this and other.
   @chpldoc.nodoc
-  inline proc const range.this(other: range(?))
-  {
-    return this.chpl_slice(other, forceNewRule=false);
-  }
-
-  proc const range.chpl_slice(other: range(?), param forceNewRule: bool)
+  proc const range.this(other: range(?))
   {
     // Disallow slicing of an unaligned range, at least for now.
     if ! this.isAligned() then
@@ -2853,25 +2588,7 @@ private proc isBCPindex(type t) param do
     // abs(result.stride) = LCM(st1, st2)
     // sign(result.stride) = sign(this.stride) * sign(other.stride)
 
-    param multiplyStrideSigns = newSliceRule || forceNewRule;
-    param newStrideKind = computeStrideKind(this, other, multiplyStrideSigns);
-
-    proc computeStrideKind(r1, r2, param multiplyStrideSigns) param do
-      if multiplyStrideSigns then
-        return chpl_strideProduct(r1, r2);
-      else {
-        // preserve the sign of r1
-        use strideKind;
-        select r1.strides {
-          when one      do return if r2.hasPosNegUnitStride() then one
-                                                              else positive;
-          when negOne   do return if r2.hasPosNegUnitStride() then negOne
-                                                              else negative;
-          when positive do return positive;
-          when negative do return negative;
-          when any      do return any;
-        }
-      }
+    param newStrideKind = chpl_strideProduct(this, other);
 
     var newStride = st1, newAbsStride = st1;
     var gcd, x: strType;
@@ -2886,32 +2603,16 @@ private proc isBCPindex(type t) param do
         newAbsStride = newStride;
       }
 
-      if multiplyStrideSigns {
-        // sign of resulting stride = sign of 'this' * sign of 'other'
-        if this.hasPositiveStride() && other.hasNegativeStride() ||
-           this.hasNegativeStride() && other.hasPositiveStride()
-        then
-          newStride = -newStride;
+      // sign of resulting stride = sign of 'this' * sign of 'other'
+      if this.hasPositiveStride() && other.hasNegativeStride() ||
+        this.hasNegativeStride() && other.hasPositiveStride()
+      then
+        newStride = -newStride;
 
-      } else {
-        // sign of resulting stride = sign of 'this'
-        if this.hasNegativeStride() then
-          newStride = - newStride;
-      }
     } else {  // newStrideKind.isPosNegOne()
       compilerAssert(this.hasPosNegUnitStride());
       // we must have newStride == newAbsStride == 1
       if newStrideKind.isNegOne() then newStride = -1;
-    }
-
-    if ! multiplyStrideSigns && other.hasNegativeStride() {
-      if other.strides.isNegative() then // we know it at compile time
-        compilerWarning("when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning");
-
-      // Due to how our implementation caches compile-time warnings,
-      // the above compilerWarning() will print only for the first location.
-      // Therefore issue a runtime warning regardless of the above.
-      warning("when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ", this, " with ", other);
     }
 
     /////////// allocate the result ///////////
@@ -3617,7 +3318,7 @@ private proc isBCPindex(type t) param do
   // An error overload for trying to iterate over '..'
   pragma "order independent yielding loops"
   @chpldoc.nodoc
-  iter range.these() where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
+  iter range.these(): nothing where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
     compilerError("iteration over a range with no bounds");
   }
 

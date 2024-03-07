@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -478,10 +478,6 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     // Clean up the attribute parts.
     resetAttributeGroupPartsState();
   } else {
-    // CHPL_ASSERT(numAttributesBuilt == 0);
-    if(cs.stmt)
-      CHPL_ASSERT(hasAttributeGroupParts);
-
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
 
@@ -1155,12 +1151,15 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
                            toOwned(fp.where),
                            this->consumeList(fp.lifetime),
                            std::move(body));
+  builder->noteDeclNameLocation(f.get(), identNameLoc);
   ret = f.release();
   return ret;
 }
 
 AstNode*
-ParserContext::buildFormal(YYLTYPE location, Formal::Intent intent,
+ParserContext::buildFormal(YYLTYPE location,
+                           YYLTYPE locName,
+                           Formal::Intent intent,
                            PODUniqueString name,
                            AstNode* typeExpr,
                            AstNode* initExpr,
@@ -1170,6 +1169,7 @@ ParserContext::buildFormal(YYLTYPE location, Formal::Intent intent,
   auto node = Formal::build(builder, loc, std::move(attr), name, intent,
                             toOwned(typeExpr),
                             toOwned(initExpr));
+  builder->noteDeclNameLocation(node.get(), convertLocation(locName));
   this->noteIsBuildingFormal(false);
   if (consumeAttributeGroup) resetAttributeGroupPartsState();
   return node.release();
@@ -1178,6 +1178,7 @@ ParserContext::buildFormal(YYLTYPE location, Formal::Intent intent,
 AstNode*
 ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
                                  PODUniqueString name,
+                                 YYLTYPE nameLocation,
                                  AstNode* typeExpr,
                                  AstNode* initExpr,
                                  bool consumeAttributeGroup) {
@@ -1188,6 +1189,7 @@ ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
                                   toOwned(typeExpr),
                                   toOwned(initExpr));
   this->noteIsBuildingFormal(false);
+  builder->noteDeclNameLocation(node.get(), convertLocation(nameLocation));
   if (consumeAttributeGroup) resetAttributeGroupPartsState();
   return node.release();
 }
@@ -1448,8 +1450,6 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
     auto identNameLoc = builder->getLocation(identName.get());
     CHPL_ASSERT(!identNameLoc.isEmpty());
 
-    // TODO: Right now this location is the start of the function, and
-    // it seems more natural for the location to be the symbol.
     auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributeGroup),
                              Decl::DEFAULT_VISIBILITY,
@@ -1469,6 +1469,7 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
                              toOwned(fp.where),
                              this->consumeList(fp.lifetime),
                              std::move(body));
+    builder->noteDeclNameLocation(f.get(), identNameLoc);
     ret = f.release();
   } else {
     ret = fp.errorExpr;
@@ -1685,7 +1686,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
-    return Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
+    auto var = Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
@@ -1695,11 +1696,13 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
+    builder->noteDeclNameLocation(var.get(), convLoc);
+    return var;
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
     AstList elements;
     for (auto expr : tup->actuals()) {
-      auto decl = buildLoopIndexDecl(location, expr);
+      auto decl = buildLoopIndexDecl(locationFromChplLocation(expr), expr);
       if (decl.get() != nullptr) {
         CHPL_ASSERT(decl->isDecl());
         elements.push_back(std::move(decl));
@@ -2007,14 +2010,14 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   return { .comments=comments, .stmt=node.release() };
 }
 
-CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
-                                                   YYLTYPE locIndex,
-                                                   YYLTYPE locBodyAnchor,
-                                                   AstNode* indexExpr,
-                                                   AstNode* iterandExpr,
-                                                   WithClause* withClause,
-                                                   BlockOrDo blockOrDo) {
-                                                  //  AttributeGroup* attributeGroup) {
+CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locKw,
+                                                    YYLTYPE locIndex,
+                                                    YYLTYPE locBodyAnchor,
+                                                    PODUniqueString loopType,
+                                                    AstNode* indexExpr,
+                                                    AstNode* iterandExpr,
+                                                    WithClause* withClause,
+                                                    BlockOrDo blockOrDo) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -2022,86 +2025,102 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
   ParserExprList* exprLst;
   BlockStyle blockStyle;
 
-  prepareStmtPieces(comments, exprLst, blockStyle, locForall,
+  prepareStmtPieces(comments, exprLst, blockStyle, locKw,
                     locBodyAnchor,
                     blockOrDo);
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
 
-  auto node = Forall::build(builder, convertLocation(locForall),
+  // UniqueString supports '==' on interned strings.
+  UniqueString loopTypeUstr = loopType;
+  IndexableLoop* result = nullptr;
+  ErroneousExpression* error = nullptr;
+  if (loopTypeUstr == USTR("for")) {
+    if (withClause) {
+      error = syntax(locKw,
+                     "'with' clauses are not supported on 'for' loops.");
+    } else {
+      result = For::build(builder, convertLocation(locKw),
+                          std::move(index),
+                          toOwned(iterandExpr),
+                          blockStyle,
+                          std::move(body),
+                          /*isExpressionLevel*/ false,
+                          /*isParam*/ false,
+                          this->popLoopAttributeGroup()).release();
+    }
+  } else if (loopTypeUstr == USTR("foreach")) {
+    result = Foreach::build(builder, convertLocation(locKw),
                             std::move(index),
                             toOwned(iterandExpr),
                             toOwned(withClause),
                             blockStyle,
                             std::move(body),
-                            /*isExpressionLevel*/ false,
-                            this->popLoopAttributeGroup());
+                            /* isExpressionLevel */ false,
+                            this->popLoopAttributeGroup()).release();
+  } else if (loopTypeUstr == USTR("forall")) {
+    result = Forall::build(builder, convertLocation(locKw),
+                           std::move(index),
+                           toOwned(iterandExpr),
+                           toOwned(withClause),
+                           blockStyle,
+                           std::move(body),
+                           /*isExpressionLevel*/ false,
+                           this->popLoopAttributeGroup()).release();
+  }
 
-  return { .comments=comments, .stmt=node.release() };
+  if (error) {
+    CHPL_ASSERT(!result);
+    return { .comments=comments, .stmt=error };
+  } else {
+    CHPL_ASSERT(result);
+    return { .comments=comments, .stmt=result };
+  }
 }
 
-CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
-                                                    YYLTYPE locIndex,
-                                                    YYLTYPE locBodyAnchor,
-                                                    AstNode* indexExpr,
-                                                    AstNode* iterandExpr,
-                                                    WithClause* withClause,
-                                                    BlockOrDo blockOrDo) {
-                                                    // AttributeGroup* attributeGroup) {
+AstNode* ParserContext::buildGeneralLoopExpr(YYLTYPE locWhole,
+                                                   YYLTYPE locIndex,
+                                                   YYLTYPE locBodyAnchor,
+                                                   PODUniqueString loopType,
+                                                   AstNode* indexExpr,
+                                                   AstNode* iterandExpr,
+                                                   AstNode* bodyExpr) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
+  auto body = consumeToBlock(locBodyAnchor, bodyExpr);
 
-  std::vector<ParserComment>* comments;
-  ParserExprList* exprLst;
-  BlockStyle blockStyle;
+  UniqueString loopTypeUstr = loopType;
+  IndexableLoop* result = nullptr;
+  ErroneousExpression* error = nullptr;
 
-  prepareStmtPieces(comments, exprLst, blockStyle, locForeach,
-                    locBodyAnchor,
-                    blockOrDo);
+  if (loopTypeUstr == USTR("for")) {
+    result = For::build(builder, convertLocation(locWhole),
+                        std::move(index), toOwned(iterandExpr),
+                        BlockStyle::IMPLICIT,
+                        std::move(body),
+                        /*isExpressionLevel*/ true,
+                        /*isParam*/ false,
+                        this->popLoopAttributeGroup()).release();
+  } else if (loopTypeUstr == USTR("foreach")) {
+    result = Foreach::build(builder, convertLocation(locWhole),
+                            std::move(index), toOwned(iterandExpr),
+                           /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            std::move(body),
+                            /*isExpressionLevel*/ true,
+                            this->popLoopAttributeGroup()).release();
+  } else if (loopTypeUstr == USTR("forall")) {
+    result = Forall::build(builder, convertLocation(locWhole),
+                           std::move(index), toOwned(iterandExpr),
+                           /*withClause*/ nullptr,
+                           BlockStyle::IMPLICIT,
+                           std::move(body),
+                           /*isExpressionLevel*/ true,
+                           this->popLoopAttributeGroup()).release();
+  }
 
-  auto body = consumeToBlock(locBodyAnchor, exprLst);
-
-  auto node = Foreach::build(builder, convertLocation(locForeach),
-                             std::move(index),
-                             toOwned(iterandExpr),
-                             toOwned(withClause),
-                             blockStyle,
-                             std::move(body),
-                             this->popLoopAttributeGroup());
-
-  return { .comments=comments, .stmt=node.release() };
-}
-
-CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
-                                                YYLTYPE locIndex,
-                                                YYLTYPE locBodyAnchor,
-                                                AstNode* indexExpr,
-                                                AstNode* iterandExpr,
-                                                BlockOrDo blockOrDo) {
-                                                // AttributeGroup* attributeGroup) {
-  auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
-                         : nullptr;
-
-  std::vector<ParserComment>* comments;
-  ParserExprList* exprLst;
-  BlockStyle blockStyle;
-
-  prepareStmtPieces(comments, exprLst, blockStyle, locFor,
-                    locBodyAnchor,
-                    blockOrDo);
-
-  auto body = consumeToBlock(locBodyAnchor, exprLst);
-
-  auto node = For::build(builder, convertLocation(locFor),
-                         std::move(index),
-                         toOwned(iterandExpr),
-                         blockStyle,
-                         std::move(body),
-                         /*isExpressionLevel*/ false,
-                         /*isParam*/ false,
-                         this->popLoopAttributeGroup());
-
-  return { .comments=comments, .stmt=node.release() };
+  if (error) return error;
+  return result;
 }
 
 CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
@@ -2742,15 +2761,17 @@ AstNode* ParserContext::buildReduce(YYLTYPE location,
 AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
                                           YYLTYPE locOp,
                                           PODUniqueString op,
-                                          AstNode* iterand) {
+                                          AstNode* iterand,
+                                          YYLTYPE iterandLoc) {
   auto ident = buildIdent(locOp, op);
-  return buildReduceIntent(location, locOp, ident, iterand);
+  return buildReduceIntent(location, locOp, ident, iterand, iterandLoc);
 }
 
 AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
                                           YYLTYPE locOp,
                                           AstNode* op,
-                                          AstNode* iterand) {
+                                          AstNode* iterand,
+                                          YYLTYPE iterandLoc) {
   (void) locOp;
   const Identifier* ident = iterand->toIdentifier();
   if (ident == nullptr) {
@@ -2759,6 +2780,7 @@ AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
   auto node = ReduceIntent::build(builder, convertLocation(location),
                                   toOwned(op),
                                   ident->name());
+  builder->noteDeclNameLocation(node.get(), convertLocation(iterandLoc));
   return node.release();
 }
 
@@ -2788,6 +2810,13 @@ AstNode* ParserContext::buildTypeQuery(YYLTYPE location,
   const char* adjust = queriedIdent.c_str() + 1;
   auto name = UniqueString::get(context(), adjust);
   auto node = TypeQuery::build(builder, convertLocation(location), name);
+  // this is a bit of a hack, since the query is reported as a single token
+  auto identLoc = Location(this->filename,
+                  location.first_line,
+                  location.first_column+1, // skip the '?'
+                  location.last_line,
+                  location.last_column);
+  builder->noteDeclNameLocation(node.get(), identLoc);
   return node.release();
 }
 
@@ -2995,14 +3024,16 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 }
 
 AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
+                                             YYLTYPE locName,
                                              PODUniqueString name) {
-  return buildFormal(location, Formal::Intent::TYPE, name,
+  return buildFormal(location, locName, Formal::Intent::TYPE, name,
                     /* typeExpr */ nullptr,
                     /* initExpr */ nullptr,
                     /* consumeAttributeGroup */ false);
 }
 
 CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
+                                                  YYLTYPE identLocation,
                                                   PODUniqueString name,
                                                   ParserExprList* formals,
                                                   YYLTYPE locBody,
@@ -3021,7 +3052,7 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
     formalList = consumeList(formals);
   } else {
     auto selfStr = PODUniqueString::get(context(), "Self");
-    formalList.push_back(toOwned(buildInterfaceFormal(location, selfStr)));
+    formalList.push_back(toOwned(buildInterfaceFormal(location, {}, selfStr)));
   }
 
   AstList bodyStmts = bodyExprLst
@@ -3036,6 +3067,7 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
                                isFormalListPresent,
                                std::move(formalList),
                                std::move(bodyStmts));
+  builder->noteDeclNameLocation(node.get(), convertLocation(identLocation));
 
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };

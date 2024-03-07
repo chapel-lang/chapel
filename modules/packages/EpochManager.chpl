@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -574,7 +574,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     /*
       Default initialize the manager.
@@ -608,7 +608,7 @@ module EpochManager {
       }
       tok!.is_registered.write(true);
       // return tok;
-      return new owned TokenWrapper(tok!, _to_unmanaged(this));
+      return new owned TokenWrapper(tok!, this:unmanaged);
     }
 
     @chpldoc.nodoc
@@ -861,7 +861,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted on current locale
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     //  Vector for bulk transfer of remote objects marked deleted on current
     //  locale
@@ -936,7 +936,7 @@ module EpochManager {
       }
       tok!.is_registered.write(true);
       // return tok;
-      return new owned DistTokenWrapper(tok!, _to_unmanaged(this));
+      return new owned DistTokenWrapper(tok!, this:unmanaged);
     }
 
     @chpldoc.nodoc

@@ -153,7 +153,7 @@ forall (v1, v2, v3) in zip(V[2..9], V[1..8], V[3..10]) do
   v1 = (v2 + v3)/2.0;
 writeln(V);
 
-forall i in 2..9 with (ref V) do
+forall i in 2..9 do
   V[i] = (V[i-1] + V[i+1]) / 2.0;
 writeln(V);
 

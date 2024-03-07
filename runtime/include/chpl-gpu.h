@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -89,15 +89,19 @@ void chpl_gpu_task_end(void);
 void chpl_gpu_task_fence(void);
 void chpl_gpu_support_module_finished_initializing(void);
 
-void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                            const char* name,
+void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn);
+void chpl_gpu_deinit_kernel_cfg(void* cfg);
+void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size);
+void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size);
+void chpl_gpu_arg_pass(void* cfg, void* arg);
+void chpl_gpu_launch_kernel_flat(const char* name,
+                                 int64_t num_threads, int blk_dim,
+                                 void* cfg);
+
+void chpl_gpu_launch_kernel(const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            int nargs, ...);
-void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 int nargs, ...);
+                            void* cfg);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                    int32_t lineno, int32_t filename);

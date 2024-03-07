@@ -404,7 +404,7 @@ the indices does not match a compiler error will be issued.
 
    .. code-block:: chapel
 
-      var D : domain(string) = {"bar", "foo"};
+      const D : domain(string) = {"bar", "foo"};
       writeln(D);
 
    produces the output

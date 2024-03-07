@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,7 +17,7 @@
 # limitations under the License.
 #
 
-from chapel.core import *
+from chapel import *
 from chapel.replace import run, fuse, rename_formals, rename_named_actuals
 import chapel
 from collections import defaultdict

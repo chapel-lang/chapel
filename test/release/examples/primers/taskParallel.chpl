@@ -121,11 +121,16 @@ construct gets its own set of shadow variables, one per outer variable.
 
  - Each shadow variable is deallocated at the end of its task.
 
-The default argument intent (:ref:`The_Default_Intent`) is used by default.
-For most types this implies that the shadow variable is ``const``
-and cannot be modified from within the tasks.
-Synchronization variables (``sync`` and ``atomic``) are passed by
-reference (:ref:`primers-syncs`, :ref:`primers-atomics`).
+For most types, forall intents use the default argument intent
+(:ref:`The_Default_Intent`). For numeric types, this implies capturing the
+value of the outer variable by the time the task starts executing. Sync and
+atomic variables are passed by reference (:ref:`primers-syncs`,
+:ref:`primers-atomics`). Arrays infer their default intent based upon the
+declaration of the array. Mutable arrays (e.g. declared with ``var`` or passed
+by ``ref`` intent) have a default intent of ``ref``, while immutable arrays
+(e.g. declared with ``const`` or passed by ``const`` intent) have a default
+intent of ``const``. These defaults are described in :ref:`the language spec
+<Task_Intents>`.
 
 ``begin`` statements currently capture the values of outer variables
 of numeric types into their shadow variables at task creation time.

@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -28,4 +28,4 @@ RUNTIME_CFLAGS += -Wno-strict-prototypes
 
 $(RUNTIME_OBJ_DIR)/gpu-amd-reduce.o: gpu-amd-reduce.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
-	PATH=$(PATH):$(CHPL_MAKE_ROCM_PATH)/llvm/bin $(CXX) -c -std=c++14 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	PATH=$(PATH):$(CHPL_MAKE_ROCM_PATH)/llvm/bin $(CXX) -c -std=c++17 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

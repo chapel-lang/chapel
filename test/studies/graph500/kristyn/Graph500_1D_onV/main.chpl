@@ -4,7 +4,7 @@ module Graph500_main
 
   use BlockDist;
   use Time;
-  use NPBRandom;
+  use Random;
   use Sort;
 
   use Graph500_defs;
@@ -225,9 +225,9 @@ module Graph500_main
 
   // Generate a list of valid starting roots
   // Valid starting roots have at least one edge to another node
-  var Rand_Gen = new owned NPBRandomStream (seed = 9);
+  var Rand_Gen = new randomStream (eltType = real, seed = 9);
   var Unif_Random: [1..NUM_CANDIDATES] real;
-  Rand_Gen.fillRandom ( Unif_Random );
+  Rand_Gen.fill ( Unif_Random );
   var runID: int = 1;
   var candidate: int = 1;
   var root: vertex_id;

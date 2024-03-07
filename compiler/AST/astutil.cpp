@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,6 +48,7 @@
 
 #include "global-ast-vecs.h"
 
+#include <set>
 #include <vector>
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
@@ -149,6 +150,40 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
     if (SymExpr* labelSE = toSymExpr(gt->label))
       if (labelSE->symbol()->inTree())
         GOTOs.push_back(gt);
+}
+
+std::set<Symbol*> findAllDetupledComponents(Symbol* sym) {
+  std::set<Symbol*> ret;
+
+  if (!sym->typeInfo()->symbol->hasFlag(FLAG_TUPLE) ||
+      !sym->hasFlag(FLAG_TEMP)) {
+    return ret;
+  }
+
+  for_SymbolSymExprs(se1, sym) {
+    auto c1 = toCallExpr(se1->parentExpr);
+    if (c1 && c1->baseExpr == se1) {
+      auto c2 = toCallExpr(c1->parentExpr);
+      if (c2 && c2->isPrimitive(PRIM_MOVE)) {
+        auto seTemp = toSymExpr(c2->get(1));
+        if (seTemp && seTemp->symbol()->hasFlag(FLAG_TEMP)) {
+          for_SymbolSymExprs(se2, seTemp->symbol()) {
+            auto c3 = toCallExpr(se2->parentExpr);
+            if (c3 && c3->isPrimitive(PRIM_INIT_VAR) &&
+                c3 != c2 &&
+                c3->get(2) == se2) {
+              auto seFound = toSymExpr(c3->get(1));
+              INT_ASSERT(seFound);
+              auto sym = seFound->symbol();
+              INT_ASSERT(ret.find(sym) == ret.end());
+              ret.insert(sym);
+            }
+          }
+        }
+      }
+    }
+  }
+  return ret;
 }
 
 //
@@ -1000,6 +1035,49 @@ pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 }
 
 
+static ModuleSymbol* getToplevelModule(FnSymbol* fn) {
+  if (fn->defPoint == nullptr) {
+    return nullptr;
+  }
+
+  // find the top-level module
+  ModuleSymbol* topLevelModule = nullptr;
+  for (ModuleSymbol* cur = fn->defPoint->getModule();
+       cur && cur->defPoint;
+       cur = cur->defPoint->getModule()) {
+    if (isModuleSymbol(cur) && cur != theProgram && cur != rootModule) {
+      topLevelModule = cur;
+    }
+  }
+
+  return topLevelModule;
+}
+
+static bool separatelyCompilingModule(ModuleSymbol* topLevelModule) {
+  return gDynoGenLibModuleNameAstrs.count(topLevelModule->name) > 0;
+}
+
+static bool keepFnForSeparateCompilation(FnSymbol* fn) {
+  if (!fDynoGenLib) {
+    return false;
+  }
+
+  ModuleSymbol* mod = getToplevelModule(fn);
+  if (mod && separatelyCompilingModule(mod)) {
+    // Workaround: don't keep 'iteratorIndex' functions in
+    // ChapelIteratorSupport because these can call 'getValue' functions
+    // that contain partial and invalid AST.
+    if (0 == strcmp(mod->name, "ChapelIteratorSupport") &&
+        0 == strcmp(fn->name, "iteratorIndex")) {
+      return false;
+    }
+
+    // generally, keep functions in modules being separately compiled
+    return true;
+  }
+  return false;
+}
+
 // Visit and mark functions (and types) which are reachable from
 // externally visible symbols.
 static void
@@ -1027,10 +1105,17 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
 
-  // Mark exported symbols and module init/deinit functions as visible.
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE))
+  // Mark things to consider always visible:
+  //  * exported symbols
+  //  * always-resolve functions
+  //  * functions in modules being separately compiled
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_EXPORT) ||
+        fn->hasFlag(FLAG_ALWAYS_RESOLVE) ||
+        keepFnForSeparateCompilation(fn)) {
       pruneVisit(fn, fns, types);
+    }
+  }
 
   // Mark well-known functions as visible
   std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
@@ -1137,19 +1222,43 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
   }
 }
 
+static bool shouldRemoveSymBeforeCodeGeneration(Symbol* sym) {
+  if (!sym || !sym->inTree() || !sym->type) return false;
 
-void cleanupAfterTypeRemoval()
-{
+  // Do not remove symbols with at least one use.
+  if (sym->firstSymExpr()) return false;
+
+  // Do not remove formals or functions.
+  if (isArgSymbol(sym) || isFnSymbol(sym)) return false;
+
+  // Do not remove fields.
+  if (isTypeSymbol(sym->defPoint->parentSymbol)) return false;
+
+  if (sym->type == dtUninstantiated &&
+      sym != dtUninstantiated->symbol) {
+    return true;
+  }
+  return false;
+}
+
+void cleanupAfterTypeRemoval() {
   //
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->inTree()                             &&
-        def->sym->type                   != NULL  &&
-        isAggregateType(def->sym->type)  ==  true &&
-        isTypeSymbol(def->sym)           == false &&
-        def->sym->type->symbol->inTree() == false)
-      def->sym->type = dtNothing;
+    auto sym = def->sym;
+    if (!def->inTree() || !sym || !sym->type) continue;
+
+    if (!sym->type->symbol->inTree() && isAggregateType(sym->type) &&
+        !isTypeSymbol(sym)) {
+      sym->type = dtNothing;
+    }
+
+    // Some types must never reach code generation, as they have no runtime
+    // representation. E.g., 'uninstantiated' is one of these types.
+    // Temporaries can be introduced with this type when resolving methods
+    // over any partially-instantiated type.
+    if (shouldRemoveSymBeforeCodeGeneration(sym)) def->remove();
   }
 
   // Clear out any uses of removed types in Type::substitutionsPostResolve
@@ -1198,6 +1307,11 @@ static void removeVoidMoves()
   }
 }
 
+static void removeStatementLevelUsesOfNone() {
+  for_SymbolSymExprs(se, gNone) {
+    if (se == se->getStmtExpr()) se->remove();
+  }
+}
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.
@@ -1219,6 +1333,8 @@ prune() {
   pruneUnusedTypes(types);
 
   removeVoidMoves();
+
+  removeStatementLevelUsesOfNone();
 }
 
 

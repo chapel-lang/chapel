@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2269,13 +2269,13 @@ class ChpldocErrorHandler : public Context::ErrorHandler {
 
 int main(int argc, char** argv) {
   Args args = parseArgs(argc, argv, (void*)main);
-  std::string warningMsg;
+  std::string diagnosticMsg;
   bool foundEnv = false;
   bool installed = false;
   // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
     std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME,
-                                       installed, foundEnv, warningMsg);
+                                       installed, foundEnv, diagnosticMsg);
     if (installed) {
       // need to determine and update third-party location before calling
       // getChplDepsApp to make sure we get an updated path in the case
@@ -2285,12 +2285,16 @@ int main(int argc, char** argv) {
       CHPL_THIRD_PARTY += getMajorMinorVersion();
       CHPL_THIRD_PARTY += "/third-party";
     }
-    if (!warningMsg.empty()) {
-      fprintf(stderr, "%s\n", warningMsg.c_str());
-    }
-    if (err) {
+
+    // When error code is set, diagnosticMsg contains the error.
+    if (!diagnosticMsg.empty()) {
+      fprintf(stderr, "%s\n", diagnosticMsg.c_str());
+    } else if (err) {
       fprintf(stderr, "CHPL_HOME not set to a valid value. Please set CHPL_HOME or pass a value "
                       "using the --home option\n" );
+    }
+
+    if (err) {
       clean_exit(1);
     }
   }

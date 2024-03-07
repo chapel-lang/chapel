@@ -46,10 +46,11 @@ proc main(){
     var ADev, BDev, CDev : [0..#numMaxFloats] real(32);
 
     for pass in 0..#passes{
+      timer.start();
       ADev = A;
       BDev = B;
 
-      timer.start();
+      kernelTimer.start();
       // forall i in 0..#numMaxFloats {
       //     C[i] = A[i] * alpha + B[i];
       // }
@@ -63,12 +64,15 @@ proc main(){
       // OR
 
       CDev = ADev * alpha + BDev;
+      kernelTimer.stop();
 
+      C = CDev;
       timer.stop();
+
       var timeElapsedInNanoseconds = timer.elapsed() * 1e9;
       var triad = (numMaxFloats * 2.0) / timeElapsedInNanoseconds;
-      var bdwth = (numMaxFloats * numBytes(real(32)) * 3.0)
-        /timeElapsedInNanoseconds;
+      var bdwth = (numMaxFloats * numBytes(real(32)) * 3.0) /
+                  timeElapsedInNanoseconds;
 
       if noisy {
         writeln("TriadFlops\t",
@@ -87,9 +91,8 @@ proc main(){
       flopsDB.addToDatabase("%{#####}".format(maxProblemSize), triad);
       bdwthDB.addToDatabase("%{#####}".format(maxProblemSize), bdwth);
       triadDB.addToDatabase("%{#####}".format(maxProblemSize), timer.elapsed());
-      timer.clear();
-
-      C = CDev;
+      kernelDB.addToDatabase("%{#####}".format(maxProblemSize),
+                             kernelTimer.elapsed());
 
       on host {
         // Error Checking for the correct anwer
@@ -127,10 +130,12 @@ proc main(){
     flopsDB.printDatabaseStats();
     bdwthDB.printDatabaseStats();
     triadDB.printDatabaseStats();
+    kernelDB.printDatabaseStats();
   }
   if(perftest){
     bdwthDB.printPerfStats();
     triadDB.printPerfStats();
+    kernelDB.printPerfStats();
   }
   else {
     stopGpuDiagnostics();

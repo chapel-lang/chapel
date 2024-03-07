@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -77,12 +77,8 @@ configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
                ${CHPL_INCLUDE_DIR}/chpl/config/config.h)
 
 
-# request C++14 -- or C++17 if using LLVM 16
-if (CHPL_LLVM_VERSION VERSION_LESS 16.0)
-  set(CMAKE_CXX_STANDARD 14)
-else()
-  set(CMAKE_CXX_STANDARD 17)
-endif()
+# request C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # request C11

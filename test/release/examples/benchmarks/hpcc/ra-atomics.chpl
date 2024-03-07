@@ -104,9 +104,9 @@ proc main() {
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
-  // i in TableSpace".  "with (ref T)" is required since we are modifying "T".
+  // i in TableSpace".
   //
-  [i in TableSpace with (ref T)] T(i).poke(i);
+  [i in TableSpace] T(i).poke(i);
 
   const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
@@ -117,7 +117,7 @@ proc main() {
   // in r.  Compute the update using r both to compute the index and
   // as the update value.
   //
-  forall (_, r) in zip(Updates, RAStream()) with (ref T) do
+  forall (_, r) in zip(Updates, RAStream()) do
     T(r & indexMask).xor(r);
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
@@ -151,7 +151,7 @@ proc verifyResults(ref T) {
   //
   // Reverse the updates by recomputing them.
   //
-   forall (_, r) in zip(Updates, RAStream()) with (ref T) do
+   forall (_, r) in zip(Updates, RAStream()) do
      T(r & indexMask).xor(r);
 
   //

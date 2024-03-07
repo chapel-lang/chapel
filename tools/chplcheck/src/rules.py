@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,13 +18,11 @@
 #
 
 import chapel
-from chapel.core import *
+from chapel import *
 import re
 
 def name_for_linting(node):
     name = node.name()
-    if name.startswith("chpl_"):
-        name = name.removeprefix("chpl_")
 
     # Strip dollar signs.
     name = name.replace("$", "")
@@ -33,10 +30,10 @@ def name_for_linting(node):
     return name
 
 def check_camel_case(node):
-    return re.fullmatch(r'_?([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?', name_for_linting(node))
+    return re.fullmatch(r'([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?', name_for_linting(node))
 
 def check_pascal_case(node):
-    return re.fullmatch(r'_?(([A-Z][a-z]*|\d+)+|[A-Z]+)?', name_for_linting(node))
+    return re.fullmatch(r'(([A-Z][a-z]*|\d+)+|[A-Z]+)?', name_for_linting(node))
 
 def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -51,8 +48,14 @@ def register_rules(driver):
 
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context, node):
+        # Override functions / methods can't control the name, that's up
+        # to the parent.
+        if node.is_override(): return True
+
         if node.linkage() == 'extern': return True
         if node.kind() == 'operator': return True
+        if node.name() == 'init=': return True
+
         return check_camel_case(node)
 
     @driver.basic_rule(Class)
@@ -71,7 +74,7 @@ def register_rules(driver):
     def DoKeywordAndBlock(context, node):
         return node.block_style() != "unnecessary"
 
-    @driver.basic_rule(Coforall)
+    @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context, node):
         parent = node.parent()
         while parent is not None:
@@ -115,6 +118,8 @@ def register_rules(driver):
             if isinstance(node, MultiDecl):
                 for child in node:
                     if isinstance(child, Variable): var_node = child
+                else:
+                    return None
             elif isinstance(node, Variable):
                 var_node = node
             else:
@@ -139,7 +144,8 @@ def register_rules(driver):
             var_kind = var_node.kind()
 
             var_attributes = ''
-            if var_attribute_group := var_node.attribute_group():
+            var_attribute_group = var_node.attribute_group()
+            if var_attribute_group:
                 var_attributes = " ".join(
                     [a.name() for a in var_attribute_group if a is not None])
 
@@ -222,7 +228,8 @@ def register_rules(driver):
             formals[formal.unique_id()] = formal
 
         for (use, _) in chapel.each_matching(root, Identifier):
-            if refersto := use.to_node():
+            refersto = use.to_node()
+            if refersto:
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
@@ -235,7 +242,7 @@ def register_rules(driver):
 
         def variables(node):
             if isinstance(node, Variable):
-                yield node
+                if node.name() != "_": yield node
             elif isinstance(node, TupleDecl):
                 for child in node:
                     yield from variables(child)
@@ -247,7 +254,8 @@ def register_rules(driver):
                 indices[index.unique_id()] = index
 
         for (use, _) in chapel.each_matching(root, Identifier):
-            if refersto := use.to_node():
+            refersto = use.to_node()
+            if refersto:
                 uses.add(refersto.unique_id())
 
         for unused in indices.keys() - uses:

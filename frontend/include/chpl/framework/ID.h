@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,6 +79,16 @@ class ID final {
     new ID symbol scopes.
    */
   UniqueString symbolPath() const { return symbolPath_; }
+
+  /**
+    Return a path to the ID symbol scope, but without taking into account
+    repeated names within a symbol. In particular, M.f#0 and M.f#1 would
+    both return M.f.
+
+    This is useful for exposing a "user-facing" path, such as one that a user
+    can specify from the command line.
+   */
+  UniqueString symbolPathWithoutRepeats(Context* context) const;
 
   /**
     Returns the numbering of this node in a postorder traversal

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,11 +27,27 @@
 
 struct IterAdapterBase {
   virtual ~IterAdapterBase() = default;
-  virtual const chpl::uast::AstNode* next() = 0;
+  virtual PyObject* next(ContextObject*) = 0;
+};
+
+template <typename T>
+struct TypedIterAdapterBase : IterAdapterBase {
+  virtual ~TypedIterAdapterBase() = default;
+  virtual T typedNext() = 0;
+
+  PyObject* next(ContextObject* contextObject) override {
+    if (auto nextVal = typedNext()) {
+      return wrapGeneratedType(contextObject, nextVal);
+    }
+    return nullptr;
+  }
 };
 
 template <typename IterPair>
-struct IterAdapter : IterAdapterBase {
+using IterPairValueType = typename decltype(std::declval<IterPair>().begin())::value_type;
+
+template <typename IterPair>
+struct IterAdapter : TypedIterAdapterBase<IterPairValueType<IterPair>> {
  private:
   using IterType = decltype(std::declval<IterPair>().begin());
   IterType current;
@@ -40,17 +56,17 @@ struct IterAdapter : IterAdapterBase {
  public:
   IterAdapter(IterPair pair) : current(pair.begin()), end(pair.end()) {}
 
-  const chpl::uast::AstNode* next() override {
+  IterPairValueType<IterPair> typedNext() override {
     if (current == end) return nullptr;
     return *(current++);
   }
 };
 
-typedef struct {
+struct AstIterObject {
   PyObject_HEAD
   IterAdapterBase* iterAdapter;
   PyObject* contextObject;
-} AstIterObject;
+};
 extern PyTypeObject AstIterType;
 
 void setupAstIterType();
@@ -60,7 +76,7 @@ void AstIterObject_dealloc(AstIterObject* self);
 PyObject* AstIterObject_iter(AstIterObject *self);
 PyObject* AstIterObject_next(AstIterObject *self);
 
-typedef struct {
+struct AstCallIterObject {
   PyObject_HEAD
   int current;
   int num;
@@ -68,7 +84,7 @@ typedef struct {
   chpl::UniqueString (*nameGetter)(const void*, int);
   const chpl::uast::AstNode* (*childGetter)(const void*, int);
   PyObject* contextObject;
-} AstCallIterObject;
+};
 extern PyTypeObject AstCallIterType;
 
 void setupAstCallIterType();
@@ -82,7 +98,7 @@ PyObject* AstCallIterObject_next(AstCallIterObject *self);
 PyObject* wrapIterAdapter(ContextObject* context, IterAdapterBase* iterAdapter);
 
 template <typename IterPair>
-static IterAdapterBase* mkIterPair(const IterPair& pair) {
+static TypedIterAdapterBase<IterPairValueType<IterPair>>* mkIterPair(const IterPair& pair) {
   return new IterAdapter<decltype(pair)>(pair);
 }
 

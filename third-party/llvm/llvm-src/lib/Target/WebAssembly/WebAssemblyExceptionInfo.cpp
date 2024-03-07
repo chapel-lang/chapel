@@ -80,7 +80,7 @@ void WebAssemblyExceptionInfo::recalculate(
     const MachineDominanceFrontier &MDF) {
   // Postorder traversal of the dominator tree.
   SmallVector<std::unique_ptr<WebAssemblyException>, 8> Exceptions;
-  for (auto DomNode : post_order(&MDT)) {
+  for (auto *DomNode : post_order(&MDT)) {
     MachineBasicBlock *EHPad = DomNode->getBlock();
     if (!EHPad->isEHPad())
       continue;
@@ -121,6 +121,7 @@ void WebAssemblyExceptionInfo::recalculate(
   // and A's unwind destination is B and B's is C. When we visit B before A, we
   // end up extracting C only out of B but not out of A.
   const auto *EHInfo = MF.getWasmEHFuncInfo();
+  assert(EHInfo);
   SmallVector<std::pair<WebAssemblyException *, WebAssemblyException *>>
       UnwindWEVec;
   for (auto *DomNode : depth_first(&MDT)) {
@@ -238,7 +239,7 @@ void WebAssemblyExceptionInfo::recalculate(
   }
 
   // Add BBs to exceptions' block vector
-  for (auto DomNode : post_order(&MDT)) {
+  for (auto *DomNode : post_order(&MDT)) {
     MachineBasicBlock *MBB = DomNode->getBlock();
     WebAssemblyException *WE = getExceptionFor(MBB);
     for (; WE; WE = WE->getParentException())

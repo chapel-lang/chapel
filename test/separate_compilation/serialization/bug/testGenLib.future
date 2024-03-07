@@ -1,3 +1,0 @@
-bug: using the NPBRandom and Set modules causes an internal compiler error when generating a library
-
-#23929

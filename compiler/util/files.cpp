@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -479,6 +479,12 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
       }
     }
 
+    if (isDynoLib(filename[i])) {
+      // Note that we are using a .dyno file if one is present on the
+      // command line.
+      fDynoLibGenOrUse = true;
+    }
+
     //
     // Don't add the same file twice -- it's unnecessary and can mess
     // up things like unprotected headers
@@ -510,6 +516,15 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
         additionalFilenamesListFilename,
         std::vector<const char*>(inputFilenames + firstAddedIdx,
                                  inputFilenames + cursor));
+  }
+
+
+  // turn on ID-based munging if any .dyno files are present
+  int i = 0;
+  while (auto fname = nthFilename(i++)) {
+    if (isDynoLib(fname)) {
+      fIdBasedMunging = true;
+    }
   }
 }
 
@@ -880,8 +895,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* client = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibClientFile);
-    const char* server = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibServerFile);
+    const char* client = genIntermediateFilename(gMultiLocaleLibClientFile);
+    const char* server = genIntermediateFilename(gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -249,7 +249,9 @@ static void setRecordCopyableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -308,7 +310,9 @@ static void setRecordAssignableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 
@@ -1937,9 +1941,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // Keep in sync with setIteratorRecordShape(CallExpr* call).
       INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
       Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
-      Symbol* fromForLoop = toSymExpr(call->get(3))->symbol();
-      retval = setIteratorRecordShape(call, ir, shapeSpec,
-                 getSymbolImmediate(fromForLoop)->bool_value());
+      Symbol* fromLoop = toSymExpr(call->get(3))->symbol();
+      auto loopType = (LoopExprType) getSymbolImmediate(fromLoop)->int_value();
+      retval = setIteratorRecordShape(call, ir, shapeSpec, loopType);
       call->replace(retval);
     }
 
@@ -1961,12 +1965,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
+    // the typeof was nested inside this, so just replace with the call result.
+    retval = call->get(1)->remove();
+    call->replace(retval);
+    break;
+
   case PRIM_TYPEOF: {
     SymExpr* se = toSymExpr(call->get(1));
     Type* type = se->getValType();
 
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "can't apply '.type' to a type (%s)",
+      USR_FATAL_CONT(call, "can't apply '.type' to a type ('%s')",
                      toString(se->typeInfo()));
     } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
       retval = new CallExpr("chpl__convertValueToRuntimeType",
@@ -2969,29 +2979,6 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
-// Deprecated by Vass in 1.31: redirect, with a deprecation warning,
-// from `range(boundedType=?b)` or `range(stridable=?s`)`
-// to   `range(bounds=?b)`      or `s = <arg>.stridable`
-static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
-                                   VarSymbol* var, Symbol*& retval) {
-  if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
-    const char* requested = var->immediate->v_string.c_str();
-    if (!strcmp(requested, "boundedType")) {
-      USR_WARN(call,
-        "range.boundedType is deprecated; please use '.bounds' instead");
-      retval = at->getField("bounds");
-    } else if (!strcmp(requested, "stridable")) {
-      USR_WARN(call,
-        "range.stridable is deprecated; please use '.strides' instead");
-
-      // White lie: return a bogus value just so that the PRIM_QUERY case
-      // in preFoldPrimOp() generates the call 'var.stridable'.
-      retval = new VarSymbol(requested);
-      retval->addFlag(FLAG_PARAM);
-    }
-  }
-}
-
 //
 // determine field associated with query expression
 //
@@ -3004,7 +2991,6 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
-    checkRangeDeprecations(at, call, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

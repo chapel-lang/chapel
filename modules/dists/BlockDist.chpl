@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -797,7 +797,7 @@ proc BlockImpl.dsiClone() {
 }
 
 override proc BlockImpl.dsiDestroyDist() {
-  coforall ld in locDist do {
+  coforall ld in locDist {
     on ld do
       delete ld;
   }
@@ -837,7 +837,7 @@ override proc BlockImpl.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, strides, sparseLayoutType,
-                                   _to_unmanaged(this), locDomsTemp, whole);
+                                   this:unmanaged, locDomsTemp, whole);
 
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -1504,6 +1504,7 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
 }
 
 pragma "fn unordered safe"
+pragma "not called from gpu"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if const myLocArr = this.myLocArr {
@@ -1788,14 +1789,14 @@ proc type BlockDom.chpl__deserialize(data) {
 
 override proc BlockDom.dsiSupportsPrivatization() param do return true;
 
-record BlockDomPrvData {
+record blockDomPrvData {
   var distpid;
   var dims;
   var locdoms;  //todo rvf its elements along with the rest of the record
 }
 
 proc BlockDom.dsiGetPrivatizeData() {
-  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms);
+  return new blockDomPrvData(dist.pid, whole.dims(), locDoms);
 }
 
 proc BlockDom.dsiPrivatize(privatizeData) {
@@ -1836,13 +1837,13 @@ proc type BlockArr.chpl__deserialize(data) {
 
 override proc BlockArr.dsiSupportsPrivatization() param do return true;
 
-record BlockArrPrvData {
+record blockArrPrvData {
   var dompid;
   var locarr;  //todo rvf its elements along with the rest of the record
 }
 
 proc BlockArr.dsiGetPrivatizeData() {
-  return new BlockArrPrvData(dom.pid, locArr);
+  return new blockArrPrvData(dom.pid, locArr);
 }
 
 proc BlockArr.dsiPrivatize(privatizeData) {

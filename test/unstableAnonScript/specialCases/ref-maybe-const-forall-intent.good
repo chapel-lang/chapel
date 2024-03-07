@@ -1,2 +1,0 @@
-Hey, if you're modifying the output of this test, maybe it's time to remove this special case from the script?
-13 instances of "warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for <var-name>"

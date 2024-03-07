@@ -6,8 +6,10 @@ Start
 0 (cpu): diags.chpl:nn: free xxB of _EndCount(atomic int(64),int(64)) at 0xPREDIFFED
 0 (gpu 0): diags.chpl:nn: allocate xxB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
 0 (gpu 0): diags.chpl:nn: allocate xxB of array elements at 0xPREDIFFED
+0 (gpu 0): diags.chpl:nn: allocate xxB of metadata about kernel parameters at 0xPREDIFFED
 0 (gpu 0): diags.chpl:nn: allocate xxB of array of pointers to kernel args at 0xPREDIFFED
 0 (gpu 0): diags.chpl:nn: allocate xxB of metadata about kernel parameters at 0xPREDIFFED
+0 (gpu 0): diags.chpl:nn: free xxB of metadata about kernel parameters at 0xPREDIFFED
 0 (gpu 0): diags.chpl:nn: free xxB of array of pointers to kernel args at 0xPREDIFFED
 0 (gpu 0): diags.chpl:nn: free xxB of metadata about kernel parameters at 0xPREDIFFED
 0 (gpu 0): diags.chpl:nn: free xxB of array elements at 0xPREDIFFED

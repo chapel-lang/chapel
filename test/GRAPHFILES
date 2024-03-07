@@ -78,6 +78,8 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 studies/jacobi/jacobi.graph
 library/standard/List/perf/listBenchmark1.graph
+studies/1brc/1brc.graph
+studies/sinLUT/sinlut.graph
 # suite: HPC Challenge
 studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph

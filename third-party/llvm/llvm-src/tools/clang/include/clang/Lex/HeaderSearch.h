@@ -145,7 +145,7 @@ public:
 /// This structure is used to record entries in our framework cache.
 struct FrameworkCacheEntry {
   /// The directory entry which should be used for the cached framework.
-  Optional<DirectoryEntryRef> Directory;
+  OptionalDirectoryEntryRef Directory;
 
   /// Whether this framework has been "user-specified" to be treated as if it
   /// were a system framework (even if it was found outside a system framework
@@ -249,6 +249,14 @@ class HeaderSearch {
   unsigned SystemDirIdx = 0;
   bool NoCurDirSearch = false;
 
+  /// Maps HeaderMap keys to SearchDir indices. When HeaderMaps are used
+  /// heavily, SearchDirs can start with thousands of HeaderMaps, so this Index
+  /// lets us avoid scanning them all to find a match.
+  llvm::StringMap<unsigned, llvm::BumpPtrAllocator> SearchDirHeaderMapIndex;
+
+  /// The index of the first SearchDir that isn't a header map.
+  unsigned FirstNonHeaderMapSearchDirIdx = 0;
+
   /// \#include prefixes for which the 'system header' property is
   /// overridden.
   ///
@@ -269,6 +277,9 @@ class HeaderSearch {
 
   /// Keeps track of each lookup performed by LookupFile.
   struct LookupFileCacheInfo {
+    // The requesting module for the lookup we cached.
+    const Module *RequestingModule = nullptr;
+
     /// Starting search directory iterator that the cached search was performed
     /// from. If there is a hit and this value doesn't match the current query,
     /// the cache has to be ignored.
@@ -284,7 +295,9 @@ class HeaderSearch {
     /// Default constructor -- Initialize all members with zero.
     LookupFileCacheInfo() = default;
 
-    void reset(ConstSearchDirIterator NewStartIt) {
+    void reset(const Module *NewRequestingModule,
+               ConstSearchDirIterator NewStartIt) {
+      RequestingModule = NewRequestingModule;
       StartIt = NewStartIt;
       MappedName = nullptr;
     }
@@ -329,6 +342,10 @@ class HeaderSearch {
 
   /// Entity used to look up stored header file information.
   ExternalHeaderFileInfoSource *ExternalSource = nullptr;
+
+  /// Scan all of the header maps at the beginning of SearchDirs and
+  /// map their keys to the SearchDir index of their header map.
+  void indexInitialHeaderMaps();
 
 public:
   HeaderSearch(std::shared_ptr<HeaderSearchOptions> HSOpts,
@@ -467,14 +484,15 @@ public:
   /// found in any of searched SearchDirs. Will be set to false if a framework
   /// is found only through header maps. Doesn't guarantee the requested file is
   /// found.
-  Optional<FileEntryRef> LookupFile(
+  OptionalFileEntryRef LookupFile(
       StringRef Filename, SourceLocation IncludeLoc, bool isAngled,
       ConstSearchDirIterator FromDir, ConstSearchDirIterator *CurDir,
-      ArrayRef<std::pair<const FileEntry *, const DirectoryEntry *>> Includers,
+      ArrayRef<std::pair<const FileEntry *, DirectoryEntryRef>> Includers,
       SmallVectorImpl<char> *SearchPath, SmallVectorImpl<char> *RelativePath,
       Module *RequestingModule, ModuleMap::KnownHeader *SuggestedModule,
       bool *IsMapped, bool *IsFrameworkFound, bool SkipCache = false,
-      bool BuildSystemModule = false);
+      bool BuildSystemModule = false, bool OpenFile = true,
+      bool CacheFailures = true);
 
   /// Look up a subframework for the specified \#include file.
   ///
@@ -482,7 +500,7 @@ public:
   /// within ".../Carbon.framework/Headers/Carbon.h", check to see if
   /// HIToolbox is a subframework within Carbon.framework.  If so, return
   /// the FileEntry for the designated file, otherwise return null.
-  Optional<FileEntryRef> LookupSubframeworkHeader(
+  OptionalFileEntryRef LookupSubframeworkHeader(
       StringRef Filename, const FileEntry *ContextFileEnt,
       SmallVectorImpl<char> *SearchPath, SmallVectorImpl<char> *RelativePath,
       Module *RequestingModule, ModuleMap::KnownHeader *SuggestedModule);
@@ -540,10 +558,10 @@ public:
   /// macro.
   ///
   /// This routine does not consider the effect of \#import
-  bool isFileMultipleIncludeGuarded(const FileEntry *File);
+  bool isFileMultipleIncludeGuarded(const FileEntry *File) const;
 
   /// Determine whether the given file is known to have ever been \#imported.
-  bool hasFileBeenImported(const FileEntry *File) {
+  bool hasFileBeenImported(const FileEntry *File) const {
     const HeaderFileInfo *FI = getExistingFileInfo(File);
     return FI && FI->isImport;
   }
@@ -624,9 +642,9 @@ public:
                        bool AllowExtraModuleMapSearch = false);
 
   /// Try to find a module map file in the given directory, returning
-  /// \c nullptr if none is found.
-  const FileEntry *lookupModuleMapFile(const DirectoryEntry *Dir,
-                                       bool IsFramework);
+  /// \c nullopt if none is found.
+  OptionalFileEntryRef lookupModuleMapFile(DirectoryEntryRef Dir,
+                                           bool IsFramework);
 
   /// Determine whether there is a module map that may map the header
   /// with the given file name to a (sub)module.
@@ -646,14 +664,23 @@ public:
   ///
   /// \param File The header that we wish to map to a module.
   /// \param AllowTextual Whether we want to find textual headers too.
-  ModuleMap::KnownHeader findModuleForHeader(const FileEntry *File,
-                                             bool AllowTextual = false) const;
+  ModuleMap::KnownHeader findModuleForHeader(FileEntryRef File,
+                                             bool AllowTextual = false,
+                                             bool AllowExcluded = false) const;
 
   /// Retrieve all the modules corresponding to the given file.
   ///
+  /// \param AllowCreation Whether to allow inference of a new submodule, or to
+  ///        only return existing known modules.
+  ///
   /// \ref findModuleForHeader should typically be used instead of this.
   ArrayRef<ModuleMap::KnownHeader>
-  findAllModulesForHeader(const FileEntry *File) const;
+  findAllModulesForHeader(FileEntryRef File) const;
+
+  /// Like \ref findAllModulesForHeader, but do not attempt to infer module
+  /// ownership from umbrella headers if we've not already done so.
+  ArrayRef<ModuleMap::KnownHeader>
+  findResolvedModulesForHeader(const FileEntry *File) const;
 
   /// Read the contents of the given module map file.
   ///
@@ -668,8 +695,8 @@ public:
   ///        used to resolve paths within the module (this is required when
   ///        building the module from preprocessed source).
   /// \returns true if an error occurred, false otherwise.
-  bool loadModuleMapFile(const FileEntry *File, bool IsSystem,
-                         FileID ID = FileID(), unsigned *Offset = nullptr,
+  bool loadModuleMapFile(FileEntryRef File, bool IsSystem, FileID ID = FileID(),
+                         unsigned *Offset = nullptr,
                          StringRef OriginalModuleMapFile = StringRef());
 
   /// Collect the set of all known, top-level modules.
@@ -738,8 +765,7 @@ private:
   ///
   /// \return \c true if the file can be used, \c false if we are not permitted to
   ///         find this file due to requirements from \p RequestingModule.
-  bool findUsableModuleForHeader(const FileEntry *File,
-                                 const DirectoryEntry *Root,
+  bool findUsableModuleForHeader(FileEntryRef File, const DirectoryEntry *Root,
                                  Module *RequestingModule,
                                  ModuleMap::KnownHeader *SuggestedModule,
                                  bool IsSystemHeaderDir);
@@ -750,16 +776,17 @@ private:
   /// \return \c true if the file can be used, \c false if we are not permitted to
   ///         find this file due to requirements from \p RequestingModule.
   bool findUsableModuleForFrameworkHeader(
-      const FileEntry *File, StringRef FrameworkName, Module *RequestingModule,
+      FileEntryRef File, StringRef FrameworkName, Module *RequestingModule,
       ModuleMap::KnownHeader *SuggestedModule, bool IsSystemFramework);
 
   /// Look up the file with the specified name and determine its owning
   /// module.
-  Optional<FileEntryRef>
+  OptionalFileEntryRef
   getFileAndSuggestModule(StringRef FileName, SourceLocation IncludeLoc,
                           const DirectoryEntry *Dir, bool IsSystemHeaderDir,
                           Module *RequestingModule,
-                          ModuleMap::KnownHeader *SuggestedModule);
+                          ModuleMap::KnownHeader *SuggestedModule,
+                          bool OpenFile = true, bool CacheFailures = true);
 
   /// Cache the result of a successful lookup at the given include location
   /// using the search path at \c HitIt.
@@ -798,6 +825,10 @@ public:
   }
 
   ConstSearchDirIterator search_dir_begin() const { return quoted_dir_begin(); }
+  ConstSearchDirIterator search_dir_nth(size_t n) const {
+    assert(n < SearchDirs.size());
+    return {*this, n};
+  }
   ConstSearchDirIterator search_dir_end() const { return system_dir_end(); }
   ConstSearchDirRange search_dir_range() const {
     return {search_dir_begin(), search_dir_end()};
@@ -844,7 +875,7 @@ public:
   ///        path is relative to a system header directory.
   std::string suggestPathToFileForDiagnostics(const FileEntry *File,
                                               llvm::StringRef MainFile,
-                                              bool *IsSystem = nullptr);
+                                              bool *IsSystem = nullptr) const;
 
   /// Suggest a path by which the specified file could be found, for use in
   /// diagnostics to suggest a #include. Returned path will only contain forward
@@ -858,7 +889,7 @@ public:
   std::string suggestPathToFileForDiagnostics(llvm::StringRef File,
                                               llvm::StringRef WorkingDir,
                                               llvm::StringRef MainFile,
-                                              bool *IsSystem = nullptr);
+                                              bool *IsSystem = nullptr) const;
 
   void PrintStats();
 
@@ -881,8 +912,7 @@ private:
     LMM_InvalidModuleMap
   };
 
-  LoadModuleMapResult loadModuleMapFileImpl(const FileEntry *File,
-                                            bool IsSystem,
+  LoadModuleMapResult loadModuleMapFileImpl(FileEntryRef File, bool IsSystem,
                                             DirectoryEntryRef Dir,
                                             FileID ID = FileID(),
                                             unsigned *Offset = nullptr);

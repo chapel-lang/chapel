@@ -1,8 +1,0 @@
-binaryQuery.chpl:4: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-binaryQuery.chpl:5: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-binaryQuery.chpl:4: warning: writer with a 'kind' argument is deprecated, please use Serializers instead
-binaryQuery.chpl:5: warning: reader with a 'kind' argument is deprecated, please use Deserializers instead
-binaryQuery.chpl:7: warning: 'fileWriter.binary()' is deprecated; please use 'fileWriter.serializerType' to check for a binary serializer instead
-binaryQuery.chpl:8: warning: 'fileReader.binary()' is deprecated; please use 'fileReader.deserializerType' to check for a binary deserializer instead
-true
-true

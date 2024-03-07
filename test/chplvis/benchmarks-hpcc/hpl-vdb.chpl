@@ -5,7 +5,7 @@ use VisualDebug;
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use LinearAlgebra, NPBRandom, Time;
+use LinearAlgebra, Random, Time;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -42,8 +42,7 @@ config const epsilon = 2.0e-15;
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then oddTimeSeed() else 31415;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -367,7 +366,7 @@ proc printConfiguration() {
 // it to be in the range -1.0..1.0
 //
 proc initAB(ref Ab: [] elemType) {
-  fillRandom(Ab, seed);
+  if useRandomSeed then fillRandom(Ab); else fillRandom(Ab, 31415);
   Ab = Ab * 2.0 - 1.0;
 }
 

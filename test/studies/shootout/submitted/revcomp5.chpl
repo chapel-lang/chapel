@@ -19,10 +19,8 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 
 
 proc main(args: [] string) {
-  var stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-      stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+  var stdinBin  = openfd(0).reader(iokind.native, locking=false),
+      stdoutBin = openfd(1).writer(iokind.native, locking=false),
       bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
@@ -79,4 +77,4 @@ proc revcomp(buf, lo, hi) {
   forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
     (buf[i], buf[j]) = (cmpl[buf[j]], cmpl[buf[i]]);
 }
-use Compat;
+use Compat, CompatIOKind;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,14 @@
 
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_os_ostream.h"
+
+#ifdef HAVE_LLVM
+#include "llvm/ADT/StringRef.h"
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/SourceMgr.h"
+#endif
 
 #include <cstring>
 
@@ -253,6 +261,9 @@ bool LibraryFile::readHeaders(Context* context) {
     info.moduleRegion = makeRegion(offset, nextOffset);
 
     modules.push_back(std::move(info));
+
+    // and update the map to store the appropriate index
+    moduleSymPathToIdx[info.moduleSymPath] = modules.size()-1;
   }
 
   return true;
@@ -277,6 +288,7 @@ LibraryFile::loadLibraryFileQuery(Context* context, UniqueString libPath) {
 
 bool LibraryFile::readModuleSection(Context* context,
                                     Region r, // file offsets
+                                    UniqueString moduleSymPath,
                                     ModuleSection& mod) const {
 
   const ModuleHeader* modHdr = (const ModuleHeader*) (fileData + r.start);
@@ -290,6 +302,8 @@ bool LibraryFile::readModuleSection(Context* context,
   uint64_t longStringsSectionLen = longStrings.end - longStrings.start;
   Region locations = modHdr->locationSection;
   uint64_t locSectionLen = locations.end - locations.start;
+  Region genCodeSection = modHdr->genCodeSection;
+  uint64_t genCodeSectionLen = genCodeSection.end - genCodeSection.start;
   if (modHdr->magic != MODULE_SECTION_MAGIC ||
       r.start > fileLen || r.end > fileLen || r.start >= r.end ||
       r.start + symTable.start + sizeof(SymbolTableHeader) > r.end ||
@@ -299,7 +313,9 @@ bool LibraryFile::readModuleSection(Context* context,
       r.start + longStrings.start + sizeof(LongStringsTableHeader) > r.end ||
       r.start + longStrings.end > r.end ||
       r.start + locations.start + sizeof(LocationSectionHeader) > r.end ||
-      r.start + locations.end > r.end) {
+      r.start + locations.end > r.end ||
+      r.start + genCodeSection.start + sizeof(LocationSectionHeader) > r.end ||
+      r.start + genCodeSection.end > r.end) {
     invalidFileError(context);
     return false;
   }
@@ -342,6 +358,12 @@ bool LibraryFile::readModuleSection(Context* context,
     return false;
   }
 
+  const GenCodeSectionHeader* genHeader =
+    (const GenCodeSectionHeader*) (fileData + r.start + genCodeSection.start);
+  if (genHeader->magic != GEN_CODE_SECTION_MAGIC) {
+    return false;
+  }
+
   mod.symbolTableData = (const unsigned char*) symTableHeader;
   mod.symbolTableLen = symTableSectionLen;
 
@@ -354,9 +376,16 @@ bool LibraryFile::readModuleSection(Context* context,
   mod.locationSectionData = (const unsigned char*) locHeader;
   mod.locationSectionLen = locSectionLen;
 
+  mod.genCodeSectionData = (const unsigned char*) genHeader;
+  mod.genCodeSectionLen = genCodeSectionLen;
+
   mod.nStrings = strTableHeader->nLongStrings;
   // string offsets start just after the header
   mod.stringOffsetsTable = (const uint32_t*) (strTableHeader+1);
+
+  // LLVM IR data just after the header
+  mod.llvmIrData = (const unsigned char*)(genHeader+1);
+  mod.llvmIrDataLen = genCodeSectionLen - sizeof(GenCodeSectionHeader);
 
   LibraryFileDeserializationHelper helper = setupHelper(context, &mod);
 
@@ -370,6 +399,8 @@ bool LibraryFile::readModuleSection(Context* context,
   uint32_t n = symTableHeader->nEntries;
   std::string lastSymId;
   std::string lastCname;
+  std::vector<UniqueString> cnames;
+
   for (uint32_t i = 0; i < n; i++) {
     uint64_t pos = des.position();
 
@@ -403,6 +434,7 @@ bool LibraryFile::readModuleSection(Context* context,
 
     // consider the code-generated versions
     unsigned nGenerated = des.readVUint();
+    cnames.clear();
     // read the data from each code-generated version
     for (unsigned int j = 0; j < nGenerated; j++) {
       des.readByte(); // isInstantiation
@@ -426,6 +458,8 @@ bool LibraryFile::readModuleSection(Context* context,
       lastCname.resize(nCommonPrefix+nSuffix);
       // read the string data
       des.readData(&lastCname[nCommonPrefix], nSuffix);
+      // note the cname
+      cnames.push_back(UniqueString::get(context, lastCname));
     }
 
     // record the information
@@ -433,8 +467,17 @@ bool LibraryFile::readModuleSection(Context* context,
     info.symbolEntryOffset = pos;
     info.astOffset = entry.astEntry;
     info.locationOffset = entry.locationEntry;
+    {
+      std::string fullSymPath = moduleSymPath.str();
+      if (!lastSymId.empty()) {
+        fullSymPath += "." + lastSymId;
+      }
+      info.symbolPath = UniqueString::get(context, fullSymPath);
+    }
+    info.cnames = cnames;
     mod.symbols.push_back(info);
     mod.offsetToSymIdx[info.astOffset] = i;
+
 
     // check that the deserializer did not encounter an error
     // check that the SymbolTableEntry offsets are realistic
@@ -463,7 +506,8 @@ LibraryFile::loadModuleSectionQuery(Context* context,
     const ModuleInfo& info = f->modules[moduleIndex];
     Region moduleRegion = info.moduleRegion;
     result = toOwned(new ModuleSection());
-    bool ok = f->readModuleSection(context, moduleRegion, *result.get());
+    bool ok = f->readModuleSection(context, moduleRegion, info.moduleSymPath,
+                                   *result.get());
     if (!ok) {
       // should have already raised an error.
       // clear 'result' so we don't return a partial result.
@@ -681,6 +725,76 @@ std::vector<UniqueString> LibraryFile::containedFilePaths() const {
   return ret;
 }
 
+void LibraryFile::summarize(Context* context, std::ostream& s) const {
+  s << "# Summary of library file " << libPath.str() << "\n";
+
+  const FileHeader* fileHeader = (const FileHeader*) fileData;
+  if (fileHeader->magic != FILE_HEADER_MAGIC)
+    return;
+
+  s << "  file format version = "
+       << fileHeader->fileFormatVersionMajor
+       << "." << fileHeader->fileFormatVersionMinor << "\n";
+  s << "  chpl version = "
+       << fileHeader->chplVersionMajor
+       << "." << fileHeader->chplVersionMinor
+       << "." << fileHeader->chplVersionUpdate << "\n";
+  s << "  nModules = " << fileHeader->nModules << "\n";
+  s << "  file hash = " << llvm::toHex(fileHash) << "\n";
+  s << "  file size = " << fileLen << "\n";
+
+  s << "\n";
+
+  int i = 0;
+  for (auto modInfo : modules) {
+    s << "  ## module " << modInfo.moduleSymPath.str() << "\n";
+    s << "     path = " << modInfo.sourceFilePath.str() << "\n";
+    Region modRegion = modInfo.moduleRegion;
+    s << "     size = " << modRegion.end - modRegion.start << "\n";
+
+    const ModuleSection* mod = loadModuleSection(context, i);
+    if (mod) {
+
+#ifdef HAVE_LLVM
+      owned<llvm::Module> llvmMod =
+        loadGenCodeModule(context, modInfo.moduleSymPath);
+#endif
+
+      s << "     ### symbols\n";
+
+      for (const auto& symInfo : mod->symbols) {
+        UniqueString symPath = symInfo.symbolPath;
+        s << "         " << symPath.str();
+        for (auto cname : symInfo.cnames) {
+          s << " " << cname;;
+#ifdef HAVE_LLVM
+          if (!cname.isEmpty() && llvmMod->getFunction(cname.str())) {
+            s << "[llvm]";
+          }
+#endif
+        }
+        s << "\n";
+      }
+
+
+#ifdef HAVE_LLVM
+      s << "     ### LLVM IR\n";
+      if (llvmMod.get()) {
+        auto err = llvmMod->materializeAll();
+        if (err) {
+          CHPL_ASSERT(false && "Failure to materialize a module");
+        }
+        auto llvmStream = llvm::raw_os_ostream(s);
+        llvmMod->print(llvmStream, /*AssemblyAnnotationWriter*/nullptr);
+      }
+#endif
+    }
+
+    s << "\n";
+    i++;
+  }
+}
+
 const uast::BuilderResult&
 LibraryFile::loadSourceAst(Context* context,
                            UniqueString fromSourcePath) const {
@@ -692,9 +806,13 @@ LibraryFile::loadModuleAst(Context* context,
                            UniqueString moduleSymPath) const {
   // figure out which source file has the requested module
   UniqueString sourceFilePath;
-  for (const auto& modInfo : modules) {
-    if (modInfo.moduleSymPath == moduleSymPath) {
-      sourceFilePath = modInfo.sourceFilePath;
+  auto search = moduleSymPathToIdx.find(moduleSymPath);
+  if (search != moduleSymPathToIdx.end()) {
+    size_t moduleIdx = search->second;
+    if (0 <= moduleIdx && moduleIdx < modules.size()) {
+      sourceFilePath = modules[moduleIdx].sourceFilePath;
+    } else {
+      CHPL_ASSERT(false && "moduleSymPathToIdx has out of bounds index");
     }
   }
 
@@ -933,6 +1051,55 @@ LibraryFile::loadLocations(Context* context,
   return loadLocationsQuery(context, this, moduleIndex,
                             symbolTableEntryIndex, symbolTableEntryAst);
 }
+
+#ifdef HAVE_LLVM
+owned<llvm::Module>
+LibraryFile::loadLlvmModuleImpl(Context* context,
+                                const LibraryFile* f,
+                                int moduleIndex) {
+  owned<llvm::Module> result;
+
+  if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
+    const ModuleSection* ms = f->loadModuleSection(context, moduleIndex);
+    if (ms != nullptr && ms->llvmIrData != nullptr && ms->llvmIrDataLen != 0) {
+      auto inputData = llvm::StringRef((const char*)ms->llvmIrData,
+                                       ms->llvmIrDataLen);
+      std::string bufferName =
+        f->libPath.str() + "-" +
+        f->modules[moduleIndex].moduleSymPath.str() + "-llvm";
+      bool reqNullTerm = false; /* RequiresNullTerminator */;
+      auto ownedMemBuf =
+        llvm::MemoryBuffer::getMemBuffer(inputData, bufferName, reqNullTerm);
+      llvm::SMDiagnostic err;
+
+      result =
+        llvm::getLazyIRModule(std::move(ownedMemBuf),
+                              err,
+                              context->llvmContext(),
+                              /*ShouldLazyLoadMetadata*/ false);
+    }
+  }
+
+  return result;
+}
+
+owned<llvm::Module>
+LibraryFile::loadGenCodeModule(Context* context,
+                               UniqueString moduleSymPath) const {
+  auto search = moduleSymPathToIdx.find(moduleSymPath);
+  if (search != moduleSymPathToIdx.end()) {
+    size_t moduleIdx = search->second;
+    if (0 <= moduleIdx && moduleIdx < modules.size()) {
+      // Load a copy of the LLVM IR
+      return loadLlvmModuleImpl(context, this, moduleIdx);
+    } else {
+      CHPL_ASSERT(false && "moduleSymPathToIdx has out of bounds index");
+    }
+  }
+
+  return nullptr;
+}
+#endif
 
 
 } // end namespace libraries

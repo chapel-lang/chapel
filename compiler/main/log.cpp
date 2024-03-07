@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -125,9 +125,13 @@ void setupLogfiles() {
     fLog = true;
 
   if (fLog || fdump_html || *deletedIdFilename) {
-    // Remove the log directory to make sure there is no stale data
-    deleteDir(log_dir);
-    ensureDirExists(log_dir, "ensuring directory for log files exists");
+    // Remove the log directory to make sure there is no stale data.
+    // Only do this for the driver compilation phase (or monolithic mode) to
+    // avoid overwriting.
+    if (fDriverDoMonolithic || fDriverCompilationPhase) {
+      deleteDir(log_dir);
+      ensureDirExists(log_dir, "ensuring directory for log files exists");
+    }
   }
 
   if (log_dir[strlen(log_dir) - 1] != '/') {

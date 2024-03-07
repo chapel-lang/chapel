@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -307,7 +307,7 @@ module ChapelLocale {
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
     @chpldoc.nodoc
-    const parent = nilLocale;
+    const parent : locale = nilLocale;
 
     @chpldoc.nodoc var nPUsLogAcc: int;     // HW threads, accessible
     @chpldoc.nodoc var nPUsLogAll: int;     // HW threads, all
@@ -558,12 +558,12 @@ module ChapelLocale {
     // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
-    proc getDefaultLocaleSpace() const ref {
+    proc getDefaultLocaleSpace() const ref : chpl_emptyLocaleSpace.type {
       HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocaleSpace;
     }
 
-    proc getDefaultLocaleArray() const ref {
+    proc getDefaultLocaleArray() const ref : chpl_emptyLocales.type {
       HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocales;
     }

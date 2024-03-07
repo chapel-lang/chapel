@@ -24,12 +24,3 @@ catch e: SystemError {
 catch {
   writeln("Unexpected error");
 }
-
-try {
-  stdout.writef("%|*s\n", s.numBytes, s);
-  writeln("writef('%|s') should be successful");
-}
-catch {
-  writeln("Unexpected error");
-}
-

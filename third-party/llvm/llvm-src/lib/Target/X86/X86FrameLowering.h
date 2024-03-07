@@ -54,10 +54,11 @@ public:
   /// the number of bytes to probe in RAX/EAX.
   /// \p InstrNum optionally contains a debug-info instruction number for the
   ///    new stack pointer.
-  void emitStackProbe(
-      MachineFunction &MF, MachineBasicBlock &MBB,
-      MachineBasicBlock::iterator MBBI, const DebugLoc &DL, bool InProlog,
-      Optional<MachineFunction::DebugInstrOperandPair> InstrNum = None) const;
+  void emitStackProbe(MachineFunction &MF, MachineBasicBlock &MBB,
+                      MachineBasicBlock::iterator MBBI, const DebugLoc &DL,
+                      bool InProlog,
+                      std::optional<MachineFunction::DebugInstrOperandPair>
+                          InstrNum = std::nullopt) const;
 
   bool stackProbeFunctionModifiesSP() const override;
 
@@ -192,6 +193,8 @@ public:
 
   Register getInitialCFARegister(const MachineFunction &MF) const override;
 
+  DwarfFrameBase getDwarfFrameBase(const MachineFunction &MF) const override;
+
   /// Return true if the function has a redzone (accessible bytes past the
   /// frame of the top of stack function) as part of it's ABI.
   bool has128ByteRedZone(const MachineFunction& MF) const;
@@ -207,7 +210,7 @@ private:
   void emitStackProbeCall(
       MachineFunction &MF, MachineBasicBlock &MBB,
       MachineBasicBlock::iterator MBBI, const DebugLoc &DL, bool InProlog,
-      Optional<MachineFunction::DebugInstrOperandPair> InstrNum) const;
+      std::optional<MachineFunction::DebugInstrOperandPair> InstrNum) const;
 
   /// Emit target stack probe as an inline sequence.
   void emitStackProbeInline(MachineFunction &MF, MachineBasicBlock &MBB,

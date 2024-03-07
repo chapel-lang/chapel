@@ -134,7 +134,7 @@ proc main(args: [] string) {
     // Read in array
     if inputSize == -1 {
       var f = open(in_array, ioMode.r);
-      var r = f.reader(deserializer=new binaryDeserializer());
+      var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
       for i in 1..5 {
         for j in 1..x {
           for k in 1..y {

@@ -1,6 +1,6 @@
 use IO;
 
-const r = openReader("pattern.txt");
+const r = openReader("pattern.txt", locking=false);
 try {
     r.readTo("");
 } catch e {

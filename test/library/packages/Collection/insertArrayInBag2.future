@@ -1,2 +1,2 @@
-bug: nil dereference when inserting record storing an array into DistributedBag
+bug: nil dereference when inserting record storing an array into DistributedBagDeprecated
 #19859

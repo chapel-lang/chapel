@@ -1,5 +1,5 @@
 BootStrap: docker
-From: alpine:3.17
+From: alpine:3.18
 
 %files
     ../../provision-scripts/* /provision-scripts/

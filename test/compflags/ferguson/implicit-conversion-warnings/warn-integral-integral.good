@@ -1,0 +1,3 @@
+warn-integral-integral.chpl:3: In function 'test1':
+warn-integral-integral.chpl:5: warning: implicit conversion from 'int(32)' to 'int(64)'
+warn-integral-integral.chpl:5: note: add a cast :int(64) to avoid this warning

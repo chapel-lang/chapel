@@ -43,17 +43,17 @@ tagVdebug("init phase");
 // Initialize Temp because the computation step
 // copies Temp and then computes a new Temp
 
-forall (i,j) in BigR with (ref A) {
+forall (i,j) in BigR {
   A(i,j) = 0.0;
 }
 
-forall (i,j) in R with (ref Temp) {
+forall (i,j) in R {
   Temp(i,j) = 0.0;
 }
 
 tagVdebug("boundary");
 
-forall (i,j) in South with (ref A) {
+forall (i,j) in South {
   A(i,j) = 1.0;
 }
 
@@ -76,15 +76,15 @@ while (delta > epsilon) {
   tagVdebug("computation");
 
   for t in 1 .. compLoop do {
-    forall (i,j) in R with (ref A) do
+    forall (i,j) in R do
       A(i,j) = Temp(i,j);
-    forall (i,j) in R with (ref Temp) do
+    forall (i,j) in R do
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   }
   
   // tag the reduction part of this loop.
   tagVdebug("max");
-  forall (i,j) in R with (ref Diff) {
+  forall (i,j) in R {
     Diff(i,j) = abs(Temp(i,j)-A(i,j));
   }
   delta = max reduce Diff;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,7 +68,7 @@ LoopExpr::LoopExpr(Expr* indices,
                    Expr* iteratorExpr,
                    Expr* cond,
                    Expr* loopBody,
-                   bool forall,
+                   LoopExprType type,
                    bool zippered,
                    bool maybeArrayType) :
   Expr(E_LoopExpr),
@@ -76,13 +76,13 @@ LoopExpr::LoopExpr(Expr* indices,
   iteratorExpr(iteratorExpr),
   cond(cond),
   loopBody(NULL),
-  forall(forall),
+  type(type),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
 {
 
-  if (forall == false && maybeArrayType) {
-    INT_FATAL("For-exprs cannot possibly result in an array type");
+  if (type != LoopExprType::FORALL_EXPR && maybeArrayType) {
+    INT_FATAL("For-exprs and foreach-exprs cannot possibly result in an array type");
   }
 
   // 'expr' should be a BlockStmt so that any nested functions remain within
@@ -100,13 +100,13 @@ LoopExpr::LoopExpr(Expr* indices,
   gLoopExprs.add(this);
 }
 
-LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
+LoopExpr::LoopExpr(LoopExprType type, bool zippered, bool maybeArrayType) :
   Expr(E_LoopExpr),
   indices(NULL),
   iteratorExpr(NULL),
   cond(NULL),
   loopBody(NULL),
-  forall(forall),
+  type(type),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
 {
@@ -114,7 +114,7 @@ LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
 }
 
 LoopExpr* LoopExpr::copyInner(SymbolMap* map) {
-  LoopExpr* ret = new LoopExpr(forall, zippered, maybeArrayType);
+  LoopExpr* ret = new LoopExpr(type, zippered, maybeArrayType);
 
   ret->indices        = COPY_INT(indices);
   ret->iteratorExpr   = COPY_INT(iteratorExpr);
@@ -174,7 +174,7 @@ static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
 static void addIterRecShape(CallExpr* forallExprCall,
-                            bool parallel, bool zippered);
+                            LoopExprType type, bool zippered);
 
 class LowerLoopExprVisitor final : public AstVisitorTraverse
 {
@@ -219,7 +219,7 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     // Do not preserve the shape if there is a filtering predicate.
     if (noFilter) {
       normalize(replacement); // for addIterRecShape()
-      addIterRecShape(replacement, node->forall, node->zippered);
+      addIterRecShape(replacement, node->type, node->zippered);
     }
   }
 
@@ -243,7 +243,7 @@ static Expr* getShapeForZippered(Expr* tupleRef) {
 // 'forallExprCall', during resolution, returns an iterator record
 // for the forall expression. Ensure it will get a shape.
 static void addIterRecShape(CallExpr* forallExprCall,
-                            bool parallel, bool zippered) {
+                            LoopExprType type, bool zippered) {
   if (CallExpr* move = toCallExpr(forallExprCall->parentExpr)) {
     if (move->isPrimitive(PRIM_MOVE)) {
       Expr* dest = move->get(1)->copy();
@@ -251,7 +251,8 @@ static void addIterRecShape(CallExpr* forallExprCall,
       if (zippered) shape = getShapeForZippered(shape);
       move->getStmtExpr()->insertAfter(
         new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest,
-                     shape->copy(), parallel ? gFalse : gTrue));
+                     shape->copy(),
+                     new_IntSymbol(type)));
     }
   }
 }
@@ -742,7 +743,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   Expr* cond           = removeOrNull(loopExpr->cond);
   bool  maybeArrayType = loopExpr->maybeArrayType;
   bool  zippered       = loopExpr->zippered;
-  bool  forall         = loopExpr->forall;
+  bool  forall         = loopExpr->type == FORALL_EXPR;
 
   const char* wrapperName = forall ? astr_forallexpr : astr_forexpr;
   FnSymbol* fn = new FnSymbol(astr(wrapperName, istr(loopexpr_uid++)));

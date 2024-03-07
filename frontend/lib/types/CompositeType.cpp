@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -148,6 +148,14 @@ const RecordType* CompositeType::getLocaleType(Context* context) {
   auto symbolPath = UniqueString::get(context, "ChapelLocale._locale");
   auto name = UniqueString::get(context, "locale");
   auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
+const RecordType* CompositeType::getLocaleIDType(Context* context) {
+  auto name = UniqueString::get(context, "chpl_localeID_t");
+  auto id = ID();
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -120,6 +120,10 @@ class Select final : public AstNode {
         : children_.end();
     auto end = begin + numWhenStmts_;
     return AstListIteratorPair<When>(begin, end);
+  }
+
+  bool hasOtherwise() const {
+    return whenStmt(numWhenStmts()-1)->isOtherwise();
   }
 };
 

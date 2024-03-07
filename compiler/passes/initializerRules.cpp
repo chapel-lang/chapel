@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1452,6 +1452,9 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   bool found = false;
 
   forv_Vec(FnSymbol, method, at->methods) {
+    // Happens because we can set slots to 'nullptr' in 'cleanAst'...
+    if (method == nullptr) continue;
+
     if (method->isPostInitializer()) {
       if (method->throwsError() == true) {
         USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");

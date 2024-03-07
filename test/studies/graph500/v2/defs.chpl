@@ -4,7 +4,7 @@
 module Graph500_defs
 {
 
-  use BlockDist;
+//  use BlockDist;
 //  config param DISTRIBUTION_TYPE = "BLOCK";
   config param DISTRIBUTION_TYPE = "";
   config param REPRODUCIBLE_PROBLEMS = true;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -854,10 +854,16 @@ static void cleanupNothingVarsAndFields() {
             seenNothing = true;
           }
         }
-        if (seenNothing && fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-          INT_ASSERT(call->numActuals() == 0);
+        if (seenNothing) {
           // A 0-arg call to autoDestroy would upset later passes.
-          call->remove();
+          if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+            INT_ASSERT(call->numActuals() == 0);
+            call->remove();
+          } else if (fn->name == astr_initCopy &&
+                     fn->retType == dtNothing) {
+            SET_LINENO(call);
+            call->replace(new SymExpr(gNone));
+          }
         }
       }
   }
@@ -884,11 +890,14 @@ static void cleanupNothingVarsAndFields() {
       }
   }
 
-  // Set for loop index variables that are nothing to the global nothing value
+  // Set for loop index variables that are nothing to the global nothing value.
+  // TODO: If we follow this through, does it actually make it past the pass
+  // 'lowerIterators'?
   for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
-      if (loop->indexGet() && loop->indexGet()->typeInfo() == dtNothing) {
-        loop->indexGet()->setSymbol(gNone);
+      auto idx = loop->indexGet();
+      if (idx && idx->typeInfo() == dtNothing) {
+        for_SymbolSymExprs(se, idx->symbol()) se->setSymbol(gNone);
       }
     }
   }
@@ -896,24 +905,25 @@ static void cleanupNothingVarsAndFields() {
   // Now that uses of nothing have been cleaned up, remove the
   // DefExprs for nothing variables.
   for_alive_in_Vec(DefExpr, def, gDefExprs) {
-      if (isNothingType(def->sym->type) ||
-          def->sym->type == dtNothing->refType) {
-        if (VarSymbol* var = toVarSymbol(def->sym)) {
-          // Avoid removing the "_val" field from refs
-          // and forall statements' induction/shadow variables.
-          if (! def->parentSymbol->hasFlag(FLAG_REF) &&
-              ! isForallIterVarDef(def)              &&
-              ! preserveShadowVar(var)               ) {
-            if (var != gNone) {
-              def->remove();
-            }
-          }
+    if (isNothingType(def->sym->type) ||
+        def->sym->type == dtNothing->refType) {
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        // Avoid removing the "_val" field from refs
+        // and forall statements' induction/shadow variables.
+        if (!def->parentSymbol->hasFlag(FLAG_REF) &&
+            !isForallIterVarDef(def) &&
+            !preserveShadowVar(var) &&
+            var != gNone) {
+          // Otherwise we may be left with SymExpr that point to garbage.
+          for_SymbolSymExprs(se, var) se->setSymbol(gNone);
+          def->remove();
         }
       } else if (def->sym->type == dtUninstantiated &&
                  isVarSymbol(def->sym) &&
                  !def->parentSymbol->hasFlag(FLAG_REF)) {
         def->remove();
       }
+    }
   }
 
   adjustNothingShadowVariables();
@@ -923,10 +933,19 @@ static void cleanupNothingVarsAndFields() {
   // be left in the tree if optimizations are disabled, and can cause codegen
   // failures later on (at least under LLVM).
   //
-  // Solution: Remove SymExprs to none if the expr is at the
-  // statement level.
+  // Solution: Remove SymExprs to none if the expr is at the statement level.
   for_SymbolSymExprs(se, gNone) {
+    bool removeParent = false;
+    bool remove = false;
     if (se == se->getStmtExpr()) {
+      remove = true;
+    } else if (auto call = toCallExpr(se->parentExpr)) {
+      remove = call->isPrimitive(PRIM_END_OF_STATEMENT);
+      removeParent = remove && call->numActuals() == 1;
+    }
+    if (removeParent) {
+      se->parentExpr->remove();
+    } else if (remove) {
       se->remove();
     }
   }

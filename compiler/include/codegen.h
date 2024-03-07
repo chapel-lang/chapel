@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,11 +46,19 @@ namespace clang {
   }
 }
 
+// and some chpl frontend things
+namespace chpl {
+  namespace libraries {
+    class LibraryFile;
+  }
+}
+
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/PassManager.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
@@ -91,6 +99,17 @@ struct LLVMGenFilenames {
  * or LLVM module in which to generate.
  */
 struct GenInfo {
+
+  /* Stores information about precompiled llvm Modules */
+  struct PrecompiledModule {
+#ifdef HAVE_LLVM
+    const chpl::libraries::LibraryFile* lf = nullptr;
+    std::unique_ptr<llvm::Module> mod;
+    // the names of the globals needed from this module
+    std::vector<UniqueString> neededGlobalNames;
+#endif
+  };
+
   // If we're generating C, this is the FILE* to print to
   // TODO: Rename cfile to just 'file' since it's also used when
   //       generating Fortran and Python interfaces.
@@ -132,8 +151,6 @@ struct GenInfo {
   std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
-  llvm::LLVMContext llvmContext;
-
   // tbaa information
   llvm::MDNode* tbaaRootNode;
   llvm::MDNode* tbaaUnionsNode;
@@ -163,9 +180,16 @@ struct GenInfo {
   llvm::CGSCCAnalysisManager* CGAM = nullptr;
   llvm::ModuleAnalysisManager* MAM = nullptr;
   llvm::FunctionPassManager* FunctionSimplificationPM = nullptr;
+  llvm::PassInstrumentationCallbacks* PIC = nullptr;
+  llvm::StandardInstrumentations* SI = nullptr;
 
   // pointer to clang support info
   ClangInfo* clangInfo = nullptr;
+
+  // When using a separately compiled .dyno file,
+  // keep track of the LLVM IR modules that have been used
+  // for the separately compiled information.
+  std::map<UniqueString, PrecompiledModule> precompiledMods;
 #endif
 
   GenInfo();
@@ -211,6 +235,8 @@ void gatherTypesForCodegen(void);
 GenRet codegenTypeByName(const char* type_name);
 
 void registerPrimitiveCodegens();
+
+void linkInDynoFiles();
 
 void closeCodegenFiles();
 

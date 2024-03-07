@@ -136,6 +136,58 @@ OPTIONS
     "unknown tool name" warning. To provide multiple tool names, use one
     **\--using-attribute-toolname** flag per name.
 
+**\--[no-]warn-potential-races**
+
+    Enable [disable] the printing of compiler warnings for potential race
+    conditions. For example, modifying the result of a promoted array indexing
+    operation may be race condition and will warn with this flag. Defaults to
+    not printing race condition warnings.
+
+**\--[no-]warn-int-to-uint**
+
+    Enable [disable] compilation warnings for when implicitly converting
+    from a value of ``int`` type of any width to a ``uint`` value.
+
+**\--[no-]warn-small-integral-to-float**
+
+    Enable [disable] compilation warnings for when implicitly converting
+    from a value of small integral type to a small floating-point value.
+    More specifically, it will warn when implicitly converting something
+    of type ``int(t)`` or ``uint(t)`` where ``t<64``, to something of
+    type ``real(u)`` or ``complex(2*u)`` where ``u<64``.
+
+**\--[no-]warn-integral-to-float**
+
+    Enable [disable] compilation warnings for when implicitly converting
+    from a value of ``int`` or ``uint`` type of any width to a ``real``
+    or ``complex`` type of any width.
+
+**\--[no-]warn-float-to-float**
+
+    Enable [disable] compilation warnings for when implicitly converting
+    from a floating-point type of one precision to another. That includes
+    implicitly converting from ``real(32)`` to ``real(64)`` as well as
+    similar cases with ``imag`` and ``complex`` types.
+
+**\--[no-]warn-integral-to-integral**
+
+    Enable [disable] compilation warnings for when implicitly converting
+    from a value of integral type to another integral type of different width.
+    (An integral type is an ``int`` or ``uint`` type).
+
+**\--[no-]warn-implicit-numeric-conversions**
+
+    Enable [disable] the above compilation warnings for implicitly
+    converting between numeric types.
+
+**\--[no-]warn-param-implicit-numeric-conversions**
+
+    When used in conjunction with ``warn-int-uint``,
+    ``--warn-real-real``, or ``--warn-integral-integral``, this flag
+    enables [or disables] these compilation warnings about implicitly
+    converting between numeric types to also apply when the converted
+    value is a ``param``.
+
 *Parallelism Control Options*
 
 **\--[no-]local**
@@ -825,5 +877,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

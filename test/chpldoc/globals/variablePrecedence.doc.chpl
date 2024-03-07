@@ -68,9 +68,11 @@ module variablePrecedence {
   var Ll = (a<<b)<<c;
   var lL = a<<(b<<c);
 
-  var ee = a == b == c;
   var Ee = (a == b) == c;
   var eE = a == (b == c);
+
+  var Gg = (a > b) > c;
+  var gG = a > (b > c);
 
   // ** is right-associative
   var xx = a**b**c;

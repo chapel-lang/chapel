@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -332,7 +332,11 @@ static std::string buildProgram(Qualifier formalIntent,
   }
   stream << "..." << count;
   stream << ") {\n";
-  stream << "  var varArgRet : args.type;\n";
+
+  stream << "  var varArgRet : args";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
+
   stream << "  return varArgRet;\n";
   stream << "}\n\n";
 
@@ -358,7 +362,9 @@ static std::string buildProgram(Qualifier formalIntent,
     if (i > 0) stream << ", ";
     stream << "formal_" << std::to_string(i);
   }
-  stream << ").type;\n";
+  stream << ")";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
   stream << "  return ret;\n";
   stream << "}\n\n";
 
@@ -649,7 +655,7 @@ static void testConcrete() {
   testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
               ArgInfo({"int", "int(8)", "int(32)"}));
 
-  // varargs specifiying a tuple as the formal type
+  // varargs specifying a tuple as the formal type
   testMatcher(Qualifier::DEFAULT_INTENT, "(int,int,int)", "",
               ArgInfo(3, "(int,int,int)"));
 

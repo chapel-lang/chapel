@@ -1,4 +1,4 @@
-use CTypes, IO, Time, Sort, Subprocess, ChplConfig;
+use CTypes, IO, Time, Sort, Subprocess, ChplConfig, GPU;
 
 config const N = 1024 * 1024 * 1024; // Setting to 8 GB causes an error?
 config const NUM_TRIALS = 3;         // Setting to 16 causes an error?
@@ -57,17 +57,18 @@ proc doPrintTimes(times) {
 }
 
 proc turnOnPeerAccess() {
-  extern proc chpl_gpu_can_access_peer(i : c_int, j : c_int) : bool;
-  extern proc chpl_gpu_set_peer_access(
-    i : c_int, j : c_int, shouldEnable : bool) : bool;
   var n = 0;
 
-  for (i,j) in {gGpuRange, gGpuRange} {
-    if chpl_gpu_can_access_peer(i : c_int, j : c_int) {
+  for i in gGpuRange {
+   for j in gGpuRange {
+    if canAccessPeer(here.gpus[i], here.gpus[j]) {
       n += 1;
       if verbose then writef("ENABLE ACCESS: %i -> %i\n", i, j);
-      chpl_gpu_set_peer_access(i : c_int, j : c_int, true);
+      setPeerAccess(here.gpus[i], here.gpus[j], true);
+      if ChplConfig.CHPL_GPU == "cpu" then
+        writef("ERROR: chpl_gpu_can_access_peer()=true for %i -> %i\n", i, j);
     }
+   }
   }
   return n;
 }
@@ -130,6 +131,7 @@ proc checkNumAccessEnabled(valFromChpl) {
   select ChplConfig.CHPL_GPU {
     when "nvidia" do checkNumAccessEnabled_cuda(valFromChpl);
     when "amd" do checkNumAccessEnabled_rocm(valFromChpl);
+    when "cpu" do assert(valFromChpl == 0);
     otherwise do compilerError("Update test to check for new runtime lib");
   }
 }

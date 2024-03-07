@@ -72,7 +72,7 @@ proc main() {
   fillRandom(A, seed=314159265);
 
   startDiag();
-  TwoArrayRadixSort.twoArrayRadixSort(A);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A);
   endDiag("Sort");
   assert(isSorted(A));
 }

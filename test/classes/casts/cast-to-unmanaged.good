@@ -1,0 +1,35 @@
+warning: flat casting
+error: cannot cast to a 'unmanaged A' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged A' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged A?' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged A?' with an implicit borrow; try adding an explicit '.borrow()'
+warning:
+warning:
+error: cannot cast to a 'unmanaged A' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged A' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged A?' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged A?' with an implicit borrow; try adding an explicit '.borrow()'
+warning:
+warning: upcasting
+error: cannot cast to a 'unmanaged Parent' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Parent' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Parent?' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Parent?' with an implicit borrow; try adding an explicit '.borrow()'
+warning:
+warning:
+error: cannot cast to a 'unmanaged Parent' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Parent' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Parent?' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Parent?' with an implicit borrow; try adding an explicit '.borrow()'
+warning:
+warning: downcasting
+error: cannot cast to a 'unmanaged Child' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Child' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Child?' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Child?' with an implicit borrow; try adding an explicit '.borrow()'
+warning:
+warning:
+error: cannot cast to a 'unmanaged Child' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Child' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Child?' with an implicit borrow; try adding an explicit '.borrow()'
+error: cannot cast to a 'unmanaged Child?' with an implicit borrow; try adding an explicit '.borrow()'

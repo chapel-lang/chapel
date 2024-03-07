@@ -50,7 +50,7 @@ here.chdir(dirname1);
 
 writeln("Creating file");
 var f = open(filename1, ioMode.cw);
-var writer = f.writer();
+var writer = f.writer(locking=false);
 writer.write("test file");
 writer.close();
 f.close();

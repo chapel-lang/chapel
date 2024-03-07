@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -187,9 +187,6 @@ module Map {
 
       :arg other: The map to initialize from.
       :type other: map
-
-      :arg parSafe: If `true`, this map will use parallel safe operations.
-      :type parSafe: bool
     */
     proc init=(ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
 

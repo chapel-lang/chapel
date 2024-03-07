@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,22 @@ static bool passesParamNarrowing(CanPassResult r) {
          r.conversionKind() == CanPassResult::PARAM_NARROWING;
 }
 
+static bool passesBorrowing(CanPassResult r) {
+  return r.passes() &&
+         !r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS;
+}
+
+static bool passesBorrowingSubtype(CanPassResult r) {
+  return r.passes() &&
+         !r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS_SUBTYPE;
+}
+
 static bool passesSubtype(CanPassResult r) {
   return r.passes() &&
          !r.instantiates() &&
@@ -87,6 +103,7 @@ static void test1() {
   QualifiedType int32(QualifiedType::VAR, IntType::get(context, 32));
   QualifiedType int64(QualifiedType::VAR, IntType::get(context, 64));
   QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
+  QualifiedType complex128(QualifiedType::VAR, ComplexType::get(context, 0));
 
   CanPassResult r;
   r = canPass(c, int0, int0); assert(passesAsIs(r));
@@ -120,6 +137,9 @@ static void test1() {
   r = canPass(c, int0, int16); assert(doesNotPass(r));
   r = canPass(c, int0, int32); assert(doesNotPass(r));
   r = canPass(c, int0, int64); assert(passesAsIs(r));
+
+  r = canPass(c, int0, complex128); assert(passesNumeric(r));
+  r = canPass(c, complex128, real0); assert(doesNotPass(r));
 }
 
 static void test2() {
@@ -357,6 +377,7 @@ static void test7() {
 
   // test that we can pass a child class to its parent class type
   // but that we can't do the inverse.
+  // Also test we can pass a class to its borrowed version.
 
   ID emptyId;
 
@@ -464,22 +485,22 @@ static void test7() {
   r = canPass(c, borrowedChildQ,   ownedChildQ);      assert(doesNotPass(r));
 
   // unmanaged - borrowed
-  r = canPass(c, unmanagedChild,   borrowedChild);    assert(passesSubtype(r));
-  r = canPass(c, unmanagedChild,   borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedChild);    assert(passesBorrowing(r));
+  r = canPass(c, unmanagedChild,   borrowedChildQ);   assert(passesBorrowingSubtype(r));
   r = canPass(c, unmanagedChildQ,  borrowedChild);    assert(doesNotPass(r));
-  r = canPass(c, unmanagedChildQ,  borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, unmanagedChildQ,  borrowedChildQ);   assert(passesBorrowing(r));
 
-  // unamanaged - owned
+  // unmanaged - owned
   r = canPass(c, unmanagedChild,   ownedChild);       assert(doesNotPass(r));
   r = canPass(c, unmanagedChild,   ownedChildQ);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedChild);       assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedChildQ);      assert(doesNotPass(r));
 
   // owned - borrowed
-  r = canPass(c, ownedChild,       borrowedChild);    assert(passesSubtype(r));
-  r = canPass(c, ownedChild,       borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedChild);    assert(passesBorrowing(r));
+  r = canPass(c, ownedChild,       borrowedChildQ);   assert(passesBorrowingSubtype(r));
   r = canPass(c, ownedChildQ,      borrowedChild);    assert(doesNotPass(r));
-  r = canPass(c, ownedChildQ,      borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, ownedChildQ,      borrowedChildQ);   assert(passesBorrowing(r));
 
   // owned - unmanaged
   r = canPass(c, ownedChild,       unmanagedChild);   assert(doesNotPass(r));
@@ -501,22 +522,22 @@ static void test7() {
   r = canPass(c, borrowedChildQ,   ownedParentQ);     assert(doesNotPass(r));
 
   // unmanaged - borrowed
-  r = canPass(c, unmanagedChild,   borrowedParent);   assert(passesSubtype(r));
-  r = canPass(c, unmanagedChild,   borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedParent);   assert(passesBorrowingSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedParentQ);  assert(passesBorrowingSubtype(r));
   r = canPass(c, unmanagedChildQ,  borrowedParent);   assert(doesNotPass(r));
-  r = canPass(c, unmanagedChildQ,  borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, unmanagedChildQ,  borrowedParentQ);  assert(passesBorrowingSubtype(r));
 
-  // unamanaged - owned
+  // unmanaged - owned
   r = canPass(c, unmanagedChild,   ownedParent);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChild,   ownedParentQ);     assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedParent);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedParentQ);     assert(doesNotPass(r));
 
   // owned - borrowed
-  r = canPass(c, ownedChild,       borrowedParent);   assert(passesSubtype(r));
-  r = canPass(c, ownedChild,       borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedParent);   assert(passesBorrowingSubtype(r));
+  r = canPass(c, ownedChild,       borrowedParentQ);  assert(passesBorrowingSubtype(r));
   r = canPass(c, ownedChildQ,      borrowedParent);   assert(doesNotPass(r));
-  r = canPass(c, ownedChildQ,      borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, ownedChildQ,      borrowedParentQ);  assert(passesBorrowingSubtype(r));
 
   // owned - unmanaged
   r = canPass(c, ownedChild,       unmanagedParent);  assert(doesNotPass(r));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -4574,19 +4574,6 @@ int _qio_regex_flags_then_rcurly(const char* ptr, int * len)
   return 0;
 }
 
-static
-void deprecated_binary_warning(const char *conversion, int32_t len,
-                               int32_t lineno, int32_t filename) {
-  static char last[100] = {0};
-  char msg[100];
-  snprintf(msg, sizeof(msg), "binary conversion \"%.*s\" is deprecated.",
-           len, conversion);
-  if (strcmp(last, msg)) {
-    chpl_warning(msg, lineno, filename);
-    strncpy(last, msg, sizeof(last));
-  }
-}
-
 qioerr qio_conv_parse(c_string fmt,
                       size_t start,
                       uint64_t* end,
@@ -4611,15 +4598,12 @@ qioerr qio_conv_parse(c_string fmt,
   int cent_alignment_flag = 0;
   int space_flag = 0;
   int plus_flag = 0;
-  int sloppy_flag = 0;
   char base_flag = 0;
   char specifier = 0;
-  char binary = 0;
   char exponential = 0;
   char S_encoding = 0;
   qioerr err = 0;
   int after_percent = 0;
-  int percent = 0;
 
   qio_conv_init(spec_out);
   qio_style_init_default(style_out);
@@ -4676,7 +4660,6 @@ qioerr qio_conv_parse(c_string fmt,
 
   // do we have a % conversion to match?
   if( fmt[i] == '%' ) {
-    percent = i;
     i++; // pass %
 
     if( fmt[i] == '{' ) {
@@ -4695,12 +4678,6 @@ qioerr qio_conv_parse(c_string fmt,
       goto done;
     }
 
-    // Are we working with binary?
-    if( fmt[i] == '|' ) {
-      binary = fmt[i];
-      i++;
-    }
-
     // Read some flags.
     for( ; fmt[i]; i++ ) {
       /* Should we have something like these?
@@ -4717,9 +4694,6 @@ qioerr qio_conv_parse(c_string fmt,
         at_flag = 1;
       } else if( fmt[i] == '0' ) {
         zero_flag = 1;
-      } else if( fmt[i] == '-' ) {
-        left_alignment_flag = 1;
-        chpl_warning("left justification with \"%-\" is deprecated; please use \"%<\" instead.", lineno, filename);
       } else if( fmt[i] == '<' ) {
         left_alignment_flag = 1;
       } else if( fmt[i] == '^' ) {
@@ -4733,12 +4707,11 @@ qioerr qio_conv_parse(c_string fmt,
       } else if( fmt[i] == '~' ) {
         // ~ might one day mean allow non-quoted JSON field names
         // but it also means to skip JSON fields not in use.
-        sloppy_flag = 1;
       } else {
         break;
       }
     }
-    // a '-' or '<' overrides a 0 if both are given
+    // '<' overrides a 0 if both are given
     if( left_alignment_flag ) zero_flag = 0;
 
     // Read the width. *S has different meaning.
@@ -4819,96 +4792,7 @@ qioerr qio_conv_parse(c_string fmt,
 
     // Consume the width, precision, flags and base arguments,
     // updating the style appropriately.
-    if( binary ) {
-      deprecated_binary_warning(&fmt[percent], i - percent, lineno, filename);
-      // Binary conversions silently consume space characters after the
-      // conversion.
-      while( fmt[i] == ' ' ) i++;
-
-      // Do Binary.
-      style_out->binary = 1;
-
-      // Handle endianness flags
-      if( binary == '|' ) style_out->byteorder = QIO_NATIVE;
-      else if( binary == '<' ) style_out->byteorder = QIO_LITTLE;
-      else if( binary == '>' ) style_out->byteorder = QIO_BIG;
-
-      if( specifier == 't' ) {
-        // Does nothing at all with width.
-        spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
-      } else if ( specifier == '?' ) {
-        spec_out->argType = QIO_CONV_ARG_TYPE_SERDE;
-      } else if( specifier == 'n' ) {
-        spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
-      } else if( specifier == 'i' || specifier == 'u' ||
-                 specifier == 'r' || specifier == 'm' || specifier == 'z') {
-        // Handle width. Precision doesn't do anything for these.
-        if( width != WIDTH_NOT_SET ) {
-          if( width == WIDTH_IN_ARG ) {
-            spec_out->preArg1 = QIO_CONV_SET_MAX_WIDTH_BYTES;
-          } else {
-            style_out->max_width_bytes = width;
-          }
-        } else {
-          // Width is required for binary conversions of these types.
-          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Width is required for binary numeric conversions");
-          goto done;
-        }
-
-        // Set the conversion type.
-        if( specifier == 'i' ) {
-          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_SIGNED;
-        } else if( specifier == 'u' ) {
-          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_UNSIGNED;
-        } else if( specifier == 'r' ) {
-          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_REAL;
-        } else if( specifier == 'm' ) {
-          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_IMAG;
-        } else if( specifier == 'z' ) {
-          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_COMPLEX;
-        }
-      } else if( specifier == 's' || specifier == 'S') {
-        char type = 's';
-        if( S_encoding ) type = S_encoding;
-
-        // Handle width. Precision doesn't do anything for %s
-        // If there's no other encoding info, width is exact str len
-        if( width != WIDTH_NOT_SET ) {
-          if( width == WIDTH_IN_ARG ) {
-            if( type == 's' ) spec_out->preArg1 = QIO_CONV_SET_STRINGLEN;
-            else spec_out->preArg1 = QIO_CONV_SET_MAX_WIDTH_BYTES;
-          } else {
-            if( type == 's' ) style_out->str_style = width;
-            else style_out->max_width_bytes = width;
-          }
-        }
-
-        // s conversions without following encoding type must have a width.
-        if( type == 's' && width == WIDTH_NOT_SET ) {
-          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
-          goto done;
-        }
-
-        if( type == 's' ) ; // OK
-        else if( type == '0' ) style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
-        else if( type == 'v' ) style_out->str_style = QIO_STRSTYLE_VLEN; // variable length
-        else if( type == '1' ) style_out->str_style = -1; // 1b length before
-        else if( type == '2' ) style_out->str_style = -2; // 2b length before
-        else if( type == '4' ) style_out->str_style = -4; // 4b length before
-        else if( type == '8' ) style_out->str_style = -8; // 8b length before
-        else if( type == '*' ) {
-          style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
-          // need to overwrite str_style
-          spec_out->preArg3 = QIO_CONV_SET_TERMINATOR;
-        } else {
-          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary %S conversion");
-        }
-
-        spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_STRING;
-      } else {
-        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary conversion");
-      }
-    } else if( istype(specifier, "niurmz" ) ) {
+    if( istype(specifier, "niurmz" ) ) {
       // For numeric conversions
 
       // Handle width and precision
@@ -5126,65 +5010,6 @@ qioerr qio_conv_parse(c_string fmt,
           spec_out->regex_flags = (int8_t*) &fmt[flagsstart];
         }
       }
-    } else if( specifier == 't' ) {
-      style_out->base = 10;
-      style_out->pad_char = ' ';
-      style_out->realfmt = 2;
-      style_out->string_format = QIO_STRING_FORMAT_CHPL;
-      style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
-
-      // Handle precision
-      if( precision != WIDTH_NOT_SET ) {
-        // These settings have no effect when scanning
-        if( precision == WIDTH_IN_ARG ) {
-          spec_out->preArg2 = QIO_CONV_SET_PRECISION;
-        } else {
-          style_out->precision = precision;
-        }
-      }
-
-      if( sloppy_flag ) {
-        style_out->skip_unknown_fields = 1;
-      }
-
-      if( base_flag == 'j' ) {
-        style_out->realfmt = 2;
-        style_out->string_format = QIO_STRING_FORMAT_JSON;
-        style_out->array_style = QIO_ARRAY_FORMAT_JSON;
-        style_out->aggregate_style = QIO_AGGREGATE_FORMAT_JSON;
-        style_out->tuple_style = QIO_TUPLE_FORMAT_JSON;
-        style_out->showpointzero = 0;
-      } else if( base_flag == 'h' ) {
-        style_out->realfmt = 2;
-        style_out->string_format = QIO_STRING_FORMAT_CHPL;
-        style_out->array_style = QIO_ARRAY_FORMAT_CHPL;
-        style_out->aggregate_style = QIO_AGGREGATE_FORMAT_CHPL;
-        style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
-        style_out->showpointzero = 0;
-        style_out->pad_char = ' ';
-      } else if( base_flag == 'x' ) {
-        style_out->prefix_base = 1;
-        style_out->base = 16;
-      } else if( base_flag == 'X' ) {
-        style_out->prefix_base = 1;
-        style_out->base = 16;
-        style_out->uppercase = 1;
-      } else if( base_flag == 'b' ) {
-        style_out->prefix_base = 1;
-        style_out->base = 2;
-      } else if( base_flag == 'd' ) {
-        style_out->prefix_base = 0;
-        style_out->base = 10;
-      } else if( base_flag == '\'' ) {
-        style_out->string_format = QIO_STRING_FORMAT_BASIC;
-        style_out->string_start = '\'';
-        style_out->string_end = '\'';
-      } else if( base_flag == '"' ) {
-        style_out->string_format = QIO_STRING_FORMAT_BASIC;
-        style_out->string_start = '"';
-        style_out->string_end = '"';
-      }
-      spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
     } else if ( specifier == '?' ) {
       style_out->base = 10;
       style_out->pad_char = ' ';

@@ -20,7 +20,6 @@
 #include "ARMISelLowering.h"
 #include "ARMMachineFunctionInfo.h"
 #include "ARMSelectionDAGInfo.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/GlobalISel/CallLowering.h"
 #include "llvm/CodeGen/GlobalISel/InstructionSelector.h"
@@ -32,6 +31,7 @@
 #include "llvm/MC/MCSchedule.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Triple.h"
 #include <memory>
 #include <string>
 
@@ -94,10 +94,6 @@ protected:
     RClass
   };
   enum ARMArchEnum {
-    ARMv2,
-    ARMv2a,
-    ARMv3,
-    ARMv3m,
     ARMv4,
     ARMv4t,
     ARMv5,
@@ -123,6 +119,7 @@ protected:
     ARMv86a,
     ARMv87a,
     ARMv88a,
+    ARMv89a,
     ARMv8a,
     ARMv8mBaseline,
     ARMv8mMainline,
@@ -132,6 +129,7 @@ protected:
     ARMv91a,
     ARMv92a,
     ARMv93a,
+    ARMv94a,
   };
 
 public:
@@ -307,8 +305,6 @@ public:
   bool GETTER() const { return ATTRIBUTE; }
 #include "ARMGenSubtargetInfo.inc"
 
-  void computeIssueWidth();
-
   /// @{
   /// These functions are obsolete, please consider adding subtarget features
   /// or properties instead of calling them.
@@ -350,7 +346,7 @@ public:
   bool useSjLjEH() const { return UseSjLjEH; }
   bool hasBaseDSP() const {
     if (isThumb())
-      return hasDSP();
+      return hasThumb2() && hasDSP();
     else
       return hasV5TEOps();
   }
@@ -393,7 +389,8 @@ public:
   }
   bool isTargetMuslAEABI() const {
     return (TargetTriple.getEnvironment() == Triple::MuslEABI ||
-            TargetTriple.getEnvironment() == Triple::MuslEABIHF) &&
+            TargetTriple.getEnvironment() == Triple::MuslEABIHF ||
+            TargetTriple.getEnvironment() == Triple::OpenHOS) &&
            !isTargetDarwin() && !isTargetWindows();
   }
 
@@ -404,6 +401,10 @@ public:
   }
 
   bool isTargetHardFloat() const;
+
+  bool isReadTPSoft() const {
+    return !(isReadTPTPIDRURW() || isReadTPTPIDRURO() || isReadTPTPIDRPRW());
+  }
 
   bool isTargetAndroid() const { return TargetTriple.isAndroid(); }
 
@@ -496,6 +497,11 @@ public:
   /// stack frame on entry to the function and which must be maintained by every
   /// function for this subtarget.
   Align getStackAlignment() const { return stackAlignment; }
+
+  // Returns the required alignment for LDRD/STRD instructions
+  Align getDualLoadStoreAlignment() const {
+    return Align(hasV7Ops() || allowsUnalignedMem() ? 4 : 8);
+  }
 
   unsigned getMaxInterleaveFactor() const { return MaxInterleaveFactor; }
 

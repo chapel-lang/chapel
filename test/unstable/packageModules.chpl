@@ -2,7 +2,6 @@ import AllLocalesBarriers;
 import ArgumentParser;
 import AtomicObjects;
 import BLAS;
-import BinaryIO;
 import Buffers;
 import Channel;
 import ChplFormat;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -113,18 +113,19 @@ struct ConvertedSymbolsMap {
   void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
 };
 
+struct Converter;
+
 struct LoopAttributeInfo {
   // LLVM metadata from various @llvm attributes.
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
+  // The @gpu.blockSize attribute, if one is provided by the user.
+  const uast::Attribute* blockSizeAttr = nullptr;
 
-  void insertGpuEligibilityAssertion(BlockStmt* body) {
-    if (assertOnGpuAttr) {
-      body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                      new SymExpr(gTrue)));
-    }
-  }
+  void insertGpuEligibilityAssertion(BlockStmt* body);
+  void insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  void insertPrimitives(Converter& converter, BlockStmt* body);
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -136,13 +137,14 @@ static ConvertedSymbolsMap gConvertedSyms;
 
 struct Converter {
   struct ModStackEntry {
-    const uast::Module* mod;
+    const uast::Module* mod = nullptr;
     // If we detect a module use and the module is already converted, store it here.
     std::vector<ModuleSymbol*> usedModules;
     // If we detect a module use and the module is not converted, store the ID here.
     std::vector<ID> usedModuleIds;
-    ModStackEntry(const uast::Module* mod)
-      : mod(mod) {
+    bool isFromLibraryFile = false;
+    ModStackEntry(const uast::Module* mod, bool isFromLibraryFile)
+      : mod(mod), isFromLibraryFile(isFromLibraryFile) {
     }
   };
   struct SymStackEntry {
@@ -398,7 +400,6 @@ struct Converter {
 
     auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
     auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
-    auto assertOnGpu = UniqueString::get(context, "assertOnGpu");
 
     LoopAttributeInfo toReturn;
 
@@ -409,7 +410,8 @@ struct Converter {
     if (auto a = attrs->getAttributeNamed(assertVectorized)) {
       toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
     }
-    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(assertOnGpu);
+    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    toReturn.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
 
     return toReturn;
   }
@@ -438,6 +440,11 @@ struct Converter {
   }
 
   void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
+    if (modStack.size() > 0 && modStack.back().isFromLibraryFile) {
+      // If we are converting a symbol in a module from a .dyno
+      // file, mark the symbol as precompiled.
+      sym->addFlag(FLAG_PRECOMPILED);
+    }
 
     const uast::AttributeGroup* attr;
     // use the query to get the AttributeGroup or you might miss the attributes
@@ -1405,7 +1412,6 @@ struct Converter {
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
-        //if(fForeachIntents && parent->toForeach()) {
         if(parent->toForeach()) {
           USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
         }
@@ -1834,7 +1840,7 @@ struct Converter {
       }
 
       auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1854,6 +1860,30 @@ struct Converter {
     return buildThunk(buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
   }
 
+  Expr* tryExtractFilterCond(const uast::IndexableLoop* node, Expr*& cond) {
+    INT_ASSERT(node->isExpressionLevel());
+    INT_ASSERT(node->numStmts() == 1);
+
+    Expr* ret = nullptr;
+    // Unpack things differently if body is a conditional.
+    if (auto origCond = node->stmt(0)->toConditional()) {
+      INT_ASSERT(origCond->numThenStmts() == 1);
+      if (!origCond->hasElseBlock()) {
+        ret = singleExprFromStmts(origCond->thenStmts());
+        cond = toExpr(convertAST(origCond->condition()));
+      } else {
+        INT_ASSERT(origCond->numElseStmts() == 1);
+      }
+    }
+
+    if (!ret) {
+      ret = singleExprFromStmts(node->stmts());
+    }
+
+    INT_ASSERT(ret);
+    return ret;
+  }
+
   Expr* visit(const uast::For* node) {
     Expr* ret = nullptr;
 
@@ -1866,29 +1896,11 @@ struct Converter {
     bool isForExpr = node->isExpressionLevel();
 
     if (node->isExpressionLevel()) {
-      INT_ASSERT(node->numStmts() == 1);
-
-      // Unpack things differently if body is a conditional.
-      if (auto origCond = node->stmt(0)->toConditional()) {
-        INT_ASSERT(origCond->numThenStmts() == 1);
-        if (!origCond->hasElseBlock()) {
-          body = singleExprFromStmts(origCond->thenStmts());
-          cond = toExpr(convertAST(origCond->condition()));
-        } else {
-          INT_ASSERT(origCond->numElseStmts() == 1);
-        }
-      }
-
-      if (!body) {
-        body = singleExprFromStmts(node->stmts());
-      }
-
-      INT_ASSERT(body);
+      body = tryExtractFilterCond(node, cond);
 
       ret = buildForLoopExpr(index, iteratorExpr, body, cond,
                              maybeArrayType,
                              zippered);
-
     // Param loops use the index variable name as 'const char*'.
     } else if (node->isParam()) {
       INT_ASSERT(node->index() && node->index()->isVariable());
@@ -1937,18 +1949,7 @@ struct Converter {
     bool zippered = node->iterand()->isZip();
 
     // An 'if-expr' without an else is special pattern for the builder.
-    if (auto noElseCond = node->stmt(0)->toConditional()) {
-      if (!noElseCond->hasElseBlock()) {
-        expr = singleExprFromStmts(noElseCond->thenStmts());
-        cond = toExpr(convertAST(noElseCond->condition()));
-        INT_ASSERT(cond);
-      }
-    }
-
-    if (!expr) {
-      INT_ASSERT(!cond);
-      expr = singleExprFromStmts(node->stmts());
-    }
+    expr = tryExtractFilterCond(node, cond);
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
@@ -1970,38 +1971,37 @@ struct Converter {
       bool serialOK = false;
 
       auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
   }
 
-  BlockStmt* visit(const uast::Foreach* node) {
-
-    // Does not appear possible right now, from reading the grammar.
-    INT_ASSERT(!node->isExpressionLevel());
-
-    if (!fForeachIntents && node->withClause()) {
-      USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
-                                               "support task intents");
-    }
+  Expr* visit(const uast::Foreach* node) {
+    Expr* ret = nullptr;
 
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     CallExpr* intents = convertWithClause(node->withClause(), node);
-    auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
+    Expr* cond = nullptr;
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
+    bool maybeArrayType = false;
 
-    // convert these for now, despite the error, so that symbols are converted.
-    convertWithClause(node->withClause(), node);
+    if (node->isExpressionLevel()) {
+      auto body = tryExtractFilterCond(node, cond);
 
-    auto loopAttributes = buildLoopAttributes(node);
-    loopAttributes.insertGpuEligibilityAssertion(body);
-    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
-                                         zippered,
-                                         isForExpr, std::move(loopAttributes.llvmMetadata));
+      ret = buildForeachLoopExpr(indices, iteratorExpr, body, cond,
+                                 maybeArrayType, zippered);
+    } else {
+      auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertPrimitives(*this, body);
+      ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
+                                      zippered,
+                                      isForExpr, std::move(loopAttributes.llvmMetadata));
+    }
 
     return ret;
   }
@@ -3086,6 +3086,13 @@ struct Converter {
     // used to be buildFunctionSymbol
     fn->cname = fn->name = astr(convName);
 
+    if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE &&
+        // ignore things like chpl_taskAddCoStmt
+        !fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
+      CHPL_ASSERT(node->id().postOrderId() == -1);
+      fn->cname = astr(node->id().symbolPath());
+    }
+
     if (convertedReceiver) {
       fn->thisTag = thisTag;
       fn->_this = convertedReceiver;
@@ -3416,7 +3423,9 @@ struct Converter {
 
     // Push the current module name before descending into children.
     // Add a ModStackEntry to the end of the modStack
-    this->modStack.emplace_back(node);
+    UniqueString unused;
+    bool isFromLibraryFile = context->moduleIsInLibrary(node->id(), unused);
+    this->modStack.push_back(ModStackEntry(node, isFromLibraryFile));
 
     // Also add to symStack
     pushToSymStack(node, resolved);
@@ -3771,8 +3780,49 @@ struct Converter {
                            bool useLinkageName) {
     astlocMarker markAstLoc(node->id());
 
+    bool isStatic = false;
+    if (auto ag = node->attributeGroup()) {
+      if (ag->getAttributeNamed(USTR("functionStatic"))) {
+        if (!node->initExpression()) {
+          USR_FATAL(node->id(), "function-static variables must have an initializer.");
+        }
+        isStatic = true;
+      }
+    }
+
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
+
+    if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
+      // is it a module-scope variable?
+      bool moduleScopeVar = false;
+      const uast::Module* mod = nullptr;
+      if (symStack.size() > 0 && modStack.size() > 0) {
+        const uast::AstNode* sym = symStack.back().ast;
+        mod = modStack.back().mod;
+        if (mod == sym) {
+          // it's not in a function/type/etc.
+          // is it within a block or within the module directly?
+          moduleScopeVar = true;
+          // TODO: make this a parsing query
+          for (auto ast = parsing::parentAst(context, node);
+               ast != nullptr && ast != mod;
+               ast = parsing::parentAst(context, ast)) {
+            if (ast->isTupleDecl() || ast->isMultiDecl()) {
+              // these are OK and still declare a top-level variable
+            } else {
+              moduleScopeVar = false;
+            }
+          }
+        }
+      }
+      // adjust the cname for module-scope variables
+      if (moduleScopeVar && mod) {
+        varSym->cname = astr(mod->id().symbolPath().c_str(),
+                             ".",
+                             varSym->name);
+      }
+    }
 
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
     attachSymbolStorage(node->kind(), varSym);
@@ -3818,14 +3868,18 @@ struct Converter {
     if (const uast::AstNode* ie = node->initExpression()) {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
-          auto convArrayType = convertArrayType(bkt);
+        auto convArrayType = convertArrayType(bkt);
 
-          // Use this builder because it is performing checks for skyline
-          // arrays amongst other things (that are too arcane for me).
-          initExpr = buildForallLoopExprFromArrayType(convArrayType);
-        } else {
-          initExpr = convertAST(ie);
-        }
+        // Use this builder because it is performing checks for skyline
+        // arrays amongst other things (that are too arcane for me).
+        initExpr = buildForallLoopExprFromArrayType(convArrayType);
+      } else {
+        initExpr = convertAST(ie);
+      }
+
+      if (isStatic) {
+        initExpr = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
+      }
     } else {
       initExpr = convertExprOrNull(node->initExpression());
     }
@@ -4026,6 +4080,31 @@ struct Converter {
   }
 
 };
+
+void LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+  if (assertOnGpuAttr) {
+    body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
+                                    new SymExpr(gTrue)));
+  }
+}
+
+void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  if (blockSizeAttr) {
+    if (blockSizeAttr->numActuals() != 1) {
+      USR_FATAL(blockSizeAttr->id(),
+                "'@gpu.blockSize' attribute must have exactly one argument: "
+                "the block size");
+    }
+
+    Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
+    body->insertAtHead(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+  }
+}
+
+void LoopAttributeInfo::insertPrimitives(Converter& converter, BlockStmt* body) {
+  insertGpuEligibilityAssertion(body);
+  insertBlockSizeCall(converter, body);
+}
 
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::AstNode* node) {
@@ -4808,6 +4887,8 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     }
 
     se->setSymbol(sym);
+    fixedUp.insert(se);
+
     // Not all symExprs are noted as fixups (due to lowering and AST
     // transformations), so visit the temporary conversion symbol's recorded
     // symExprs to try handle these stragglers.

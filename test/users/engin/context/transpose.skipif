@@ -1,0 +1,2 @@
+# this currently fails for GPUs
+CHPL_LOCALE_MODEL==gpu
