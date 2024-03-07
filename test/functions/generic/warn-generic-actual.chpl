@@ -35,10 +35,20 @@ proc test2() {
 }
 test2();
 
+class C { type t; }
+proc test3() {
+  f(C); // warn
+  f(borrowed C); // warn
+  f(unmanaged C); // warn
+  f(owned C); // warn
+  f(shared C); // warn
+}
+test3();
+
 pragma "suppress generic actual warning"
 proc g(type t) { }
 
-proc test3() {
+proc test4() {
   g(genericRecord); // do not warn (suppressed by pragma)
 }
-test3();
+test4();

@@ -3856,6 +3856,10 @@ static bool suppressWarnGenericActual(CallExpr* call) {
 }
 
 static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
+  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+    type = dt->getCanonicalClass();
+  }
+
   if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) &&
         !se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
