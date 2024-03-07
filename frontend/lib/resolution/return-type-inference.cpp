@@ -855,70 +855,70 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
       return true;
   } else if (untyped->idIsField() && untyped->isMethod()) {
-      // method accessor - compute the type of the field
-      QualifiedType ft = computeTypeOfField(context,
-                                            sig->formalType(0).type(),
-                                            untyped->id());
-      if (ft.isType() || ft.isParam()) {
-        // return the type as-is (preserving param/type-ness)
-        result = ft;
-      } else if (ft.isConst()) {
-        // return a const ref
-        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
-      } else {
-        // return a ref
-        result = QualifiedType(QualifiedType::REF, ft.type());
-      }
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
-      auto dt = sig->formalType(0).type()->toDomainType();
-
-      if (untyped->name() == "idxType") {
-        result = dt->idxType();
-      } else if (untyped->name() == "rank") {
-        // Can't use `RankType::rank` because `D.rank` is defined for associative
-        // domains, even though they don't have a matching substitution.
-        result = QualifiedType(QualifiedType::PARAM,
-                               IntType::get(context, 64),
-                               IntParam::get(context, dt->rankInt()));
-      } else if (untyped->name() == "stridable") {
-        result = dt->stridable();
-      } else if (untyped->name() == "parSafe") {
-        result = dt->parSafe();
-      } else if (untyped->name() == "isRectangular") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
-        auto type = BoolType::get(context);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else if (untyped->name() == "isAssociative") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
-        auto type = BoolType::get(context);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
-        return true;
-      }
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
-      auto at = sig->formalType(0).type()->toArrayType();
-
-      if (untyped->name() == "domain") {
-        result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
-      } else if (untyped->name() == "eltType") {
-        result = at->eltType();
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated array method");
-      }
-
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
-               untyped->name() == "size") {
-      auto tup = sig->formalType(0).type()->toTupleType();
-      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, tup->numElements()));
-      return true;
+    // method accessor - compute the type of the field
+    QualifiedType ft = computeTypeOfField(context,
+                                          sig->formalType(0).type(),
+                                          untyped->id());
+    if (ft.isType() || ft.isParam()) {
+      // return the type as-is (preserving param/type-ness)
+      result = ft;
+    } else if (ft.isConst()) {
+      // return a const ref
+      result = QualifiedType(QualifiedType::CONST_REF, ft.type());
     } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated record method");
+      // return a ref
+      result = QualifiedType(QualifiedType::REF, ft.type());
+    }
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
+    auto dt = sig->formalType(0).type()->toDomainType();
+
+    if (untyped->name() == "idxType") {
+      result = dt->idxType();
+    } else if (untyped->name() == "rank") {
+      // Can't use `RankType::rank` because `D.rank` is defined for associative
+      // domains, even though they don't have a matching substitution.
+      result = QualifiedType(QualifiedType::PARAM,
+                             IntType::get(context, 64),
+                             IntParam::get(context, dt->rankInt()));
+    } else if (untyped->name() == "stridable") {
+      result = dt->stridable();
+    } else if (untyped->name() == "parSafe") {
+      result = dt->parSafe();
+    } else if (untyped->name() == "isRectangular") {
+      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
+      auto type = BoolType::get(context);
+      result = QualifiedType(QualifiedType::PARAM, type, val);
+    } else if (untyped->name() == "isAssociative") {
+      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
+      auto type = BoolType::get(context);
+      result = QualifiedType(QualifiedType::PARAM, type, val);
+    } else {
+      CHPL_ASSERT(false && "unhandled compiler-generated domain method");
       return true;
     }
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
+    auto at = sig->formalType(0).type()->toArrayType();
+
+    if (untyped->name() == "domain") {
+      result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
+    } else if (untyped->name() == "eltType") {
+      result = at->eltType();
+    } else {
+      CHPL_ASSERT(false && "unhandled compiler-generated array method");
+    }
+
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
+             untyped->name() == "size") {
+    auto tup = sig->formalType(0).type()->toTupleType();
+    result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, tup->numElements()));
+    return true;
+  } else {
+    CHPL_ASSERT(false && "unhandled compiler-generated record method");
+    return true;
+  }
 }
 
 // returns 'true' if it was a case handled here & sets 'result' in that case
