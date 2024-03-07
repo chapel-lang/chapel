@@ -3837,6 +3837,66 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
   }
 }
 
+static bool suppressWarnGenericActual(CallExpr* call) {
+  // not finding a call happens for specified return types,
+  // so suppress the warning there
+  if (!call) return true;
+
+  // we generate other warnings for these cases, no need to warn here.
+  if (call->isPrimitive()) return true;
+
+  // and, don't emit a warning for calls to a function marked
+  // with a flag to suppress this warning
+  FnSymbol* fn = call->resolvedOrVirtualFunction();
+  if (fn && fn->hasFlag(FLAG_SUPPRESS_GENERIC_ACTUAL_WARNING))
+    return true;
+
+  // otherwise, don't suppress the warning
+  return false;
+}
+
+static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) &&
+        !se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
+      bool isMethodReceiver = false;
+      if (SymExpr* prevSe = toSymExpr(se->prev)) {
+        if (prevSe->symbol() == gMethodToken) {
+          isMethodReceiver = true;
+        }
+      }
+      bool genericWithDefaults = at->isGenericWithDefaults();
+
+      if (!isMethodReceiver && !genericWithDefaults) {
+        gdbShouldBreakHere();
+        checkSurprisingGenericDecls(se->symbol(), se, nullptr);
+        if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
+          USR_WARN(se, "please add '(?)' to type '%s' because it is generic", se->symbol()->name);
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
+        }
+      }
+    }
+  }
+}
+
+static void maybeWarnGenericActuals(CallExpr* call) {
+  if (!suppressWarnGenericActual(call)) {
+    for_actuals(actual, call) {
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+          maybeWarnGenericActual(se, ts->type, call);
+        } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
+          if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+            maybeWarnGenericActual(se, vs->typeInfo(), call);
+          }
+        }
+      }
+    }
+  }
+}
+
 static
 FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;
@@ -3900,6 +3960,10 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
 
     if (state == CHECK_FAILED)
       retval = NULL;
+  }
+
+  if (checkState == CHECK_NORMAL_CALL && retval != NULL) {
+    maybeWarnGenericActuals(call);
   }
 
   return retval;
@@ -9969,57 +10033,11 @@ void resolveGenericActuals(CallExpr* call) {
   }
 }
 
-static bool suppressWarnGenericActual(CallExpr* call) {
-  // not finding a call happens for specified return types,
-  // so suppress the warning there
-  if (!call) return true;
-
-  // we generate other warnings for these cases, no need to warn here.
-  if (call->isPrimitive()) return true;
-
-  // and, don't emit a warning for calls to a function marked
-  // with a flag to suppress this warning
-  FnSymbol* fn = call->resolvedOrVirtualFunction();
-  if (fn && fn->hasFlag(FLAG_SUPPRESS_GENERIC_ACTUAL_WARNING))
-    return true;
-
-  // otherwise, don't suppress the warning
-  return false;
-}
-
-static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->symbol->hasFlag(FLAG_GENERIC) &&
-        !se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
-      bool isMethodReceiver = false;
-      if (SymExpr* prevSe = toSymExpr(se->prev)) {
-        if (prevSe->symbol() == gMethodToken) {
-          isMethodReceiver = true;
-        }
-      }
-      bool genericWithDefaults = at->isGenericWithDefaults();
-
-      if (!isMethodReceiver && !genericWithDefaults &&
-          !suppressWarnGenericActual(inCall)) {
-        gdbShouldBreakHere();
-        checkSurprisingGenericDecls(se->symbol(), se, nullptr);
-        if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
-          USR_WARN(se, "please add '(?)' to type '%s' because it is generic", se->symbol()->name);
-          if (fWarnUnstable) {
-            USR_PRINT("this warning may be an error in the future");
-          }
-        }
-      }
-    }
-  }
-}
-
 static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
                                   bool resolvePartials) {
   Type* retval = se->typeInfo();
 
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-    maybeWarnGenericActual(se, ts->type, inCall);
     retval = resolveGenericActual(se, ts->type);
 
   } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
@@ -10034,7 +10052,6 @@ static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
       }
 
       Type* origType = vs->typeInfo();
-      maybeWarnGenericActual(se, origType, inCall);
       if (resolvePartials) {
         retval = resolveGenericActual(se, origType);
       }
