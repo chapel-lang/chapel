@@ -53,6 +53,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (hipStream_t)stream)); \
   ROCM_CALL(hipFree(result)); \
+  ROCM_CALL(hipFree(temp)); \
 }
 #else
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
@@ -63,9 +64,9 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
 }
 #endif // 1
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Min, min)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Min, min)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
@@ -90,6 +91,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   *val = result_host.value; \
   *idx = result_host.key; \
   ROCM_CALL(hipFree(result)); \
+  ROCM_CALL(hipFree(temp)); \
 }
 #else
 #define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
@@ -100,10 +102,41 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
 }
 #endif // 1
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
+
+#if ROCM_VERSION_MAJOR >= 5
+#define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream) {\
+  void* temp = NULL; \
+  size_t temp_bytes = 0; \
+  ROCM_CALL(hipcub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (hipStream_t)stream)); \
+  ROCM_CALL(hipMalloc(&temp, temp_bytes)); \
+  ROCM_CALL(hipcub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (hipStream_t)stream)); \
+  ROCM_CALL(hipFree(temp)); \
+}
+#else
+#define DEF_ONE_SORT(impl_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream) {\
+  chpl_internal_error("Sorting via runtime calls is not supported with AMD GPUs using ROCm version <5\n");\
+}
+#endif // ROCM version Check
+
+GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
+
+#undef DEF_ONE_SORT
 
 #endif // HAS_GPU_LOCALE
 

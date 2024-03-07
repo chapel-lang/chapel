@@ -46,11 +46,12 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   CUDA_CALL(cuMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (CUstream)stream)); \
   CUDA_CALL(cuMemFree(result)); \
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Min, min)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Min, min)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
@@ -74,12 +75,35 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   *val = result_host.value; \
   *idx = result_host.key; \
   CUDA_CALL(cuMemFree(result)); \
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
+
+#define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream) {\
+  void* temp = NULL; \
+  size_t temp_bytes = 0; \
+  cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (CUstream)stream); \
+  CUDA_CALL(cuMemAlloc(((CUdeviceptr*)&temp), temp_bytes)); \
+  cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+                                 n, /*beginBit*/0, \
+                                 /*endBit*/ sizeof(data_type)*8,\
+                                 (CUstream)stream); \
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
+}
+
+GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
+
+#undef DEF_ONE_SORT
 
 #endif // HAS_GPU_LOCALE
 
