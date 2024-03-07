@@ -297,8 +297,12 @@ def get_sdk_version():
                 match = re.search(r"rocm?-([\d\.]+)", my_stdout)
                 if match:
                     rocm_version = match.group(1)
+                else:
+                    match = re.search(r"llvm-amdgpu-([\d\.]+)", my_stdout)
+                    if match:
+                        rocm_version = match.group(1)
         return rocm_version
-    
+
     if get() == 'nvidia':
         chpl_cuda_path = get_sdk_path('nvidia')
         version_file_json = '%s/version.json' % chpl_cuda_path
