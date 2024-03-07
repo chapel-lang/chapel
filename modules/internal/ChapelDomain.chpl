@@ -541,6 +541,17 @@ module ChapelDomain {
            (d1.isAssociative() && d2.isAssociative()) ||
            (d1.isSparse()      && d2.isSparse()     );
 
+  // This is perhaps an approximation, for use in error messages.
+  private proc canBeIteratedOver(const ref arg) param {
+    use Reflection;
+    return canResolveMethod(arg, "these");
+  }
+
+  private proc domainDescription(const ref d) param do return
+    if d.isRectangular() then "a rectangular " + d.rank:string + "-dim domain"
+    else if d.isSparse() then "a sparse "      + d.rank:string + "-dim domain"
+    else "an associative domain";
+
   @chpldoc.nodoc
   @unstable("'-' on domains is unstable and may change in the future")
   operator -(a :domain, b :domain) where (a.type == b.type) &&
@@ -735,28 +746,22 @@ module ChapelDomain {
   //
   // Return true if t is a tuple of ranges that is legal to assign to
   // rectangular domain d
+  // The check that d.idxType accepts t(i) is done in op=(domain,domain).
   //
   proc chpl__isLegalRectTupDomAssign(d, t) param {
-    proc isRangeTuple(a) param {
-      proc peelArgs(first, rest...) param {
-        return if rest.size > 1 then
-                 isRange(first) && peelArgs((...rest))
-               else
-                 isRange(first) && isRange(rest(0));
-      }
-      proc peelArgs(first) param do return isRange(first);
+    if ! d.isRectangular() then return false;
+    if ! (d.rank == t.size) then return false;
 
-      return if !isTuple(a) then false else peelArgs((...a));
-    }
+    // does the tuple 't' contain only ranges?
+    for param dim in 0..t.size-1 do
+      if ! isRange(t(dim)) then return false;
 
-    proc strideSafe(d, rt, param dim: int=0) param {
-      return if dim == d.rank-1 then
-               chpl_assignStrideIsSafe(d.dim(dim), rt(dim))
-             else
-               chpl_assignStrideIsSafe(d.dim(dim), rt(dim)) &&
-               strideSafe(d, rt, dim+1);
-    }
-    return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
+    // are those ranges' 'strides' compatible with 'd'?
+    for param dim in 0..t.size-1 do
+      if ! chpl_assignStrideIsSafe(d.dim(dim), t(dim)) then return false;
+
+    // all checks passed
+    return true;
   }
 
   @chpldoc.nodoc
@@ -768,23 +773,14 @@ module ChapelDomain {
                     " to a rectangular domain");
     } else {
       a.clear();
-      if isHomogeneousTuple(b) {
-        // let the backend compiler unroll this loop if desired
-        for ind in 0..#b.size {
-          if ! isCoercible(b(ind).type, a.idxType) then
-            compilerError("cannot assign a tuple of ", b(ind).type:string,
-             " into an associative domain with idxType ", a.idxType:string);
+      if isHomogeneousTuple(b) then
+        // let the backend compiler unroll this loop to optimize
+        for ind in 0..#b.size do
           a.add(b(ind));
-        }
-      } else {
+      else
         // unroll in the source code to allow heterogenous tuple elements
-        for ind in b {
-          if ! isCoercible(ind.type, a.idxType) then
-            compilerError("cannot assign a tuple containing ", ind.type:string,
-             " into an associative domain with idxType ", a.idxType:string);
+        for ind in b do
           a.add(ind);
-        }
-      }
     }
   }
 
@@ -796,7 +792,9 @@ module ChapelDomain {
   @chpldoc.nodoc
   operator =(ref a: domain, b) {  // b is iteratable
     if a.isRectangular() then
-      compilerError("Illegal assignment to a rectangular domain");
+      compilerError("assigning ", b.type:string, " to a rectangular domain");
+    if ! canBeIteratedOver(b) then
+      compilerError("assigning ", b.type:string, " to an irregular domain");
     a.clear();
     for ind in b {
       a.add(ind);
@@ -943,7 +941,7 @@ module ChapelDomain {
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
     if lhs.isRectangular() then
-      compilerError("Illegal assignment to a rectangular domain");
+      compilerError("assigning ", rhs.type:string, " to a rectangular domain");
     lhs.clear();
     for ind in rhs {
       lhs.add(ind);
@@ -957,7 +955,7 @@ module ChapelDomain {
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
     if lhs.isRectangular() then
-      compilerError("Illegal assignment to a rectangular domain");
+      compilerError("assigning ", rhs.type:string, " to a rectangular domain");
     lhs.clear();
     for ind in rhs {
       lhs.add(ind);
@@ -972,7 +970,9 @@ module ChapelDomain {
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
     if lhs.isRectangular() then
-      compilerError("Illegal assignment to a rectangular domain");
+      compilerError("assigning ", rhs.type:string, " to a rectangular domain");
+    if ! canBeIteratedOver(rhs) then
+      compilerError("assigning ", rhs.type:string, " to an irregular domain");
     lhs.clear();
     for ind in rhs {
       lhs.add(ind);
@@ -986,7 +986,9 @@ module ChapelDomain {
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
     if lhs.isRectangular() then
-      compilerError("Illegal assignment to a rectangular domain");
+      compilerError("assigning ", rhs.type:string, " to a rectangular domain");
+    if ! canBeIteratedOver(rhs) then
+      compilerError("assigning ", rhs.type:string, " to an irregular domain");
     lhs.clear();
     for ind in rhs {
       lhs.add(ind);
@@ -2130,13 +2132,41 @@ module ChapelDomain {
       return _value.dsiRemove(idx);
     }
 
+    // todo: when is it better to have a ref or const ref intent for 'idx'?
     /* Adds index ``idx`` to this domain. This method is also available
        as the ``+=`` operator.
+       Returns the number of indices that were added.
 
        The domain must be irregular.
      */
     proc ref add(in idx) {
-      return _value.dsiAdd(idx);
+      // ensure that the rest of add() deals only with irregular domains
+      if isRectangular() then
+        compilerError("Cannot add indices to a rectangular domain");
+
+      // 'idx' is an index
+      if isCoercible(idx.type, fullIdxType) then
+        return _value.dsiAdd(idx);
+
+      // allow promotion
+      type promoType = __primitive("scalar promotion type", idx);
+      if isCoercible(promoType, fullIdxType) {
+        // sparse domains are currently not parSafe
+        if isAssociative() && this.parSafe {
+          return + reduce dsiAdd(idx);
+        }
+        else {
+          // not parSafe, so execute serially
+          var addCount = 0;
+          for oneIdx in idx do
+            addCount += dsiAdd(oneIdx);
+          return addCount;
+        }
+      }
+
+      // for now, disallow calling add() in any other way
+      compilerError("cannot add a ", idx.type:string, " to ",
+                    domainDescription(this), " with idxType ", idxType:string);
     }
 
     @chpldoc.nodoc

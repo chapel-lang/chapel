@@ -318,27 +318,7 @@ module DefaultAssociative {
 
     // returns the number of indices added
     // todo: when is it better to have a ref or const ref intent for 'idx'?
-    override proc dsiAdd(in idx) {
-      if isCoercible(idx.type, idxType) then
-        return _addWrapper(idx);
-
-      type promoType = __primitive("scalar promotion type", idx);
-      if isCoercible(promoType, idxType) {
-        if parSafe {
-          return + reduce _addWrapper(idx);
-        } else {
-          // not parSafe, so execute serially
-          var addCount = 0;
-          for oneIdx in idx do
-            addCount += _addWrapper(oneIdx);
-          return addCount;
-        }
-      }
-      compilerError("cannot add a ", idx.type:string,
-                    " to an associative domain with idxType ", idxType:string);
-    }
-
-    proc _addWrapper(in idx: idxType) {
+    override proc dsiAdd(in idx: idxType) {
       var retVal = 0;
 
       on this {
