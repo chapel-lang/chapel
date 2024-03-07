@@ -270,31 +270,19 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
           chpl_error(message, lineno, filename);
         }
 
-        chpl_bool invalidSuffix = false;
-        if (strlen(suffix) == 1) {
-          switch(*suffix) {
-            case 's': t = "socket"; break;
-            case 'n': t = "numa"; break;
-            case 'c': t = "core"; break;
-            case 'L': t = "cache"; break;
-            default: invalidSuffix = true; break;
-          }
-          if (invalidSuffix == false) {
-            invalid = false;
-          }
+        if (!strcmp(suffix, "s") || !strcmp(suffix, "socket")) {
+          t = "socket";
+        } else if (!strcmp(suffix, "numa")) {
+          t = "numa";
+        } else if (!strcmp(suffix, "llc")) {
+          t = "cache";
+        } else if (!strcmp(suffix, "c") || !strcmp(suffix, "core")) {
+          t = "core";
         } else {
-          invalidSuffix = true;
-        }
-        if (invalidSuffix) {
           char *message = chpl_glom_strings(3, "\"", suffix,
                           "\" is not a valid suffix.");
           chpl_error(message, lineno, filename);
         }
-      }
-      if (invalid) {
-        char *message = chpl_glom_strings(3, "\"", lpn,
-                            "\" is not a valid number of co-locales.");
-        chpl_error(message, lineno, filename);
       }
       if (t) {
         chpl_env_set("CHPL_RT_COLOCALE_OBJ_TYPE", t, 1);
