@@ -25,6 +25,7 @@
 #include "resolveIntents.h"
 #include "stringutil.h"
 #include "stmt.h"
+#include "view.h"
 
 #include "global-ast-vecs.h"
 
@@ -994,7 +995,17 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
                                                Symbol* field)
 {
   bool isConst = ovar->isConstant() || field->isConstant();
-  VarSymbol* fieldRef = createFieldRef(fs->asExpr(), ovar, field, isConst);
+
+  Expr* anchor = nullptr;
+  if (fs->isForallStmt()) {
+    anchor = fs->asExpr();
+  }
+  else {
+    CallExpr* noop = new CallExpr(PRIM_NOOP);
+    fs->loopBody()->insertAtHead(noop);
+    anchor = noop;
+  }
+  VarSymbol* fieldRef = createFieldRef(anchor, ovar, field, isConst);
 
   // Now create the shadow variable.
   Type*           svarType   = field->type;
@@ -1008,6 +1019,12 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   svar->type = svarType;
   fs->shadowVariables().insertAtTail(new DefExpr(svar));
   handleOneShadowVar(fs, svar);
+  //if (field->getModule()->modTag == MOD_USER) {
+    //std::cout << "Here \n";
+    //nprint_view(ovar);
+    //nprint_view(field);
+    //nprint_view(svar);
+  //}
 
   return svar;
 }

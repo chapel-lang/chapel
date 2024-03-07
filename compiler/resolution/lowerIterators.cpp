@@ -2717,6 +2717,8 @@ expandForLoop(ForLoop* forLoop) {
     // scope to another if done in mid-transformation.
     CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop, map);
 
+    update_symbols(cforLoop, &map);
+
     addIteratorBreakBlocksJumptable(forLoop, iterator,
                                     (BlockStmt*)cforLoop, iterators);
 
