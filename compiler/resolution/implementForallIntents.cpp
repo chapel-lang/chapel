@@ -997,7 +997,7 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   bool isConst = ovar->isConstant() || field->isConstant();
 
   Expr* anchor = nullptr;
-  if (fs->isForallStmt()) {
+  if (!fNoInlineIterators || fs->isForallStmt()) {
     anchor = fs->asExpr();
   }
   else {
