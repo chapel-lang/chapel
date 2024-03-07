@@ -53,6 +53,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (hipStream_t)stream)); \
   ROCM_CALL(hipFree(result)); \
+  ROCM_CALL(hipFree(temp)); \
 }
 #else
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
@@ -90,6 +91,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   *val = result_host.value; \
   *idx = result_host.key; \
   ROCM_CALL(hipFree(result)); \
+  ROCM_CALL(hipFree(temp)); \
 }
 #else
 #define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
@@ -121,7 +123,7 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                  n, /*beginBit*/0, \
                                  /*endBit*/ sizeof(data_type)*8,\
                                  (hipStream_t)stream)); \
-  ROCM_CALL(hipFree(temp));\
+  ROCM_CALL(hipFree(temp)); \
 }
 #else
 #define DEF_ONE_SORT(impl_kind, chpl_kind, data_type) \

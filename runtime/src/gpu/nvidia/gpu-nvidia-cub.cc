@@ -46,6 +46,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   CUDA_CALL(cuMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (CUstream)stream)); \
   CUDA_CALL(cuMemFree(result)); \
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
@@ -74,6 +75,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   *val = result_host.value; \
   *idx = result_host.key; \
   CUDA_CALL(cuMemFree(result)); \
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
@@ -96,7 +98,7 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                  n, /*beginBit*/0, \
                                  /*endBit*/ sizeof(data_type)*8,\
                                  (CUstream)stream); \
-  CUDA_CALL(cuMemFree((CUdeviceptr)temp));\
+  CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
 
 GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
