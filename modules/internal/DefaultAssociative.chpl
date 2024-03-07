@@ -317,26 +317,28 @@ module DefaultAssociative {
     }
 
     // returns the number of indices added
+    // todo: when is it better to have a ref or const ref intent for 'idx'?
     override proc dsiAdd(in idx) {
-      // add helpers will return a tuple like (slotNum, numIndicesAdded);
+      if isCoercible(idx.type, idxType) then
+        return _addWrapper(idx);
 
-      // these two seemingly redundant lines were necessary to work around a
-      // compiler bug. I was unable to create a smaller case that has the same
-      // issue.
-      // More: `return _addWrapper(idx)[2]` Call to _addWrapper seems to
-      // have no effect when `idx` is a range and the line is promoted. My
-      // understanding of promotion makes me believe that things might go haywire
-      // since return type of the method becomes an array(?). However, it seemed
-      // that _addWrapper is never called when the return statement is promoted.
-      // I checked the C code and couldn't see any call to _addWrapper.
-      // I tried to replicate the issue with generic classes but it always
-      // worked smoothly.
-      const numInds = _addWrapper(idx)[1];
-      return numInds;
+      type promoType = __primitive("scalar promotion type", idx);
+      if isCoercible(promoType, idxType) {
+        if parSafe {
+          return + reduce _addWrapper(idx);
+        } else {
+          // not parSafe, so execute serially
+          var addCount = 0;
+          for oneIdx in idx do
+            addCount += _addWrapper(oneIdx);
+          return addCount;
+        }
+      }
+      compilerError("cannot add a ", idx.type:string,
+                    " to an associative domain with idxType ", idxType:string);
     }
 
     proc _addWrapper(in idx: idxType) {
-      var slotNum = -1;
       var retVal = 0;
 
       on this {
@@ -345,10 +347,11 @@ module DefaultAssociative {
           unlockTable();
         }
 
-        (slotNum, retVal) = _add(idx);
+        const (slotNum, addCount) = _add(idx);
+        retVal = addCount;
       }
 
-      return (slotNum, retVal);
+      return retVal;
     }
 
     proc _add(in idx: idxType) {

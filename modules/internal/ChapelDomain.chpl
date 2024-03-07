@@ -763,10 +763,27 @@ module ChapelDomain {
   operator =(ref a: domain, b: _tuple) {
     if chpl__isLegalRectTupDomAssign(a, b) {
       a = {(...b)};
+    } else if a.isRectangular() {
+      compilerError("cannot assign a ", b.type:string,
+                    " to a rectangular domain");
     } else {
       a.clear();
-      for ind in 0..#b.size {
-        a.add(b(ind));
+      if isHomogeneousTuple(b) {
+        // let the backend compiler unroll this loop if desired
+        for ind in 0..#b.size {
+          if ! isCoercible(b(ind).type, a.idxType) then
+            compilerError("cannot assign a tuple of ", b(ind).type:string,
+             " into an associative domain with idxType ", a.idxType:string);
+          a.add(b(ind));
+        }
+      } else {
+        // unroll in the source code to allow heterogenous tuple elements
+        for ind in b {
+          if ! isCoercible(ind.type, a.idxType) then
+            compilerError("cannot assign a tuple containing ", ind.type:string,
+             " into an associative domain with idxType ", a.idxType:string);
+          a.add(ind);
+        }
       }
     }
   }
