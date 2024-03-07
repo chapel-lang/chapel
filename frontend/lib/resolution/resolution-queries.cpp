@@ -1903,10 +1903,6 @@ ApplicabilityResult instantiateSignature(Context* context,
           // to later fields without re-visiting and re-constructing the resolver.
           // TODO: is this too hacky?
           r.byAst(entry.formal()).setType(useType);
-        } else {
-          // Right now, only enums get generic compiler-generated candidates.
-          CHPL_ASSERT(ed);
-          formalTypes.push_back(useType);
         }
 
         // note that a substitution was used here
@@ -1917,6 +1913,12 @@ ApplicabilityResult instantiateSignature(Context* context,
       }
 
       formalIdx++;
+    }
+
+    if (!formal && ed) {
+      // we're in an enum-based generated method; note the type in
+      // formalTypes.
+      formalTypes.push_back(useType);
     }
 
     // At this point, we have computed the instantiated type for this
