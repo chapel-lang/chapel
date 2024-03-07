@@ -761,6 +761,9 @@ generateToOrFromCastForEnum(Context* context,
   std::vector<QualifiedType> formalTypes;
 
   auto enumType = isFromCast ? lhs.type()->toEnumType() : rhs.type()->toEnumType();
+
+  if (enumType->isAbstract()) return nullptr;
+
   setupGeneratedEnumCastFormals(context, enumType, ufsFormals, formalTypes,
                                 isFromCast);
 
