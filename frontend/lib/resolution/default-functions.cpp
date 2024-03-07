@@ -726,7 +726,7 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
     CHPL_ASSERT(compType || type->isCPtrType());
-    
+
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
     } else if (name == USTR("init=")) {
