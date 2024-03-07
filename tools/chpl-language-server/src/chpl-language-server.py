@@ -415,21 +415,21 @@ class EndMarkerPattern:
     def all(cls) -> Dict[str, "EndMarkerPattern"]:
         return {
             "loop": EndMarkerPattern(
-                chapel.Loop,
-                lambda node: (
+                pattern=chapel.Loop,
+                header_location=lambda node: (
                     node.header_location()
                     if node.block_style() != "implicit"
                     else None
                 ),
-                lambda _: None,
+                goto_location=lambda _: None,
             ),
             "decl": EndMarkerPattern(
-                chapel.NamedDecl,
-                lambda node: node.header_location(),
-                lambda node: node.name_location(),
+                pattern=chapel.NamedDecl,
+                header_location=lambda node: node.header_location(),
+                goto_location=lambda node: node.name_location(),
             ),
             "block": EndMarkerPattern(
-                set(
+                pattern=set(
                     [
                         chapel.On,
                         chapel.Cobegin,
@@ -441,13 +441,13 @@ class EndMarkerPattern:
                         chapel.Manage,
                     ]
                 ),
-                lambda node: (
+                header_location=lambda node: (
                     node.block_header()
                     if not isinstance(node, chapel.SimpleBlockLike)
                     or node.block_style() != "implicit"
                     else None
                 ),
-                lambda _: None,
+                goto_location=lambda _: None,
             ),
         }
 
