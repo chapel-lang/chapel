@@ -562,6 +562,8 @@ if ($testblog == 1) {
     mysystem("cd $basetmpdir && git clone https://github.com/chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
     mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
     if ($blogonly == 0) {
+        # copy the relevant blog source files into the test directory so they'll be
+        # ran alongside all the other tests
         mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", 1, 1, 1);
         mysystem("cp -r $basetmpdir/chapel-blog/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
         mysystem("cp -r $basetmpdir/chapel-blog/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
@@ -599,11 +601,11 @@ if (!($dist eq "")) {
     $testflags = "$testflags distributions/robust/arithmetic";
 }
 
-if ($testblog == 1) {
-    $testdirs .= " $basetmpdir/chapel-blog/chpl-src $basetmpdir/chapel-blog/content/posts";
-    if ($blogonly == 1) {
-        $testflags = "$testflags $basetmpdir/chapel-blog/chpl-src $basetmpdir/chapel-blog/content/posts";
-    }
+
+if ($blogonly == 1) {
+    # test the sub-directories explicitly to avoid a bunch of skipped directories,
+    # and also avoid the problem of testing the archetypes directory
+    $testflags = "$testflags $basetmpdir/chapel-blog/chpl-src/ $basetmpdir/chapel-blog/content/posts";
 }
 
 if ($hello == 1) {
