@@ -1,0 +1,9 @@
+warn-generic-actual.chpl:4: warning: please add '(?)' to type 'genericRecord' because it is generic
+warn-generic-actual.chpl:8: warning: please add '(?)' to type 'T' because it is generic
+warn-generic-actual.chpl:12: In function 'test0':
+warn-generic-actual.chpl:13: warning: please add '(?)' to type 'genericRecord' because it is generic
+warn-generic-actual.chpl:17: warning: please add '(?)' to type 'T' because it is generic
+warn-generic-actual.chpl:23: In function 'test1':
+warn-generic-actual.chpl:25: warning: please add '(?)' to type 'T' because it is generic
+warn-generic-actual.chpl:31: In function 'test2':
+warn-generic-actual.chpl:33: warning: please add '(?)' to type 'T' because it is generic
