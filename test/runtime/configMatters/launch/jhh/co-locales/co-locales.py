@@ -69,7 +69,8 @@ class ColocaleArgs(unittest.TestCase):
 
         # Determine the number of sockets per node
         cmd = ["sinfo", "--format=%X", "--noheader", "--exact"]
-        partition = os.environ.get('CHPL_LAUNCHER_PARTITION')
+        partition = os.environ.get('CHPL_LAUNCHER_PARTITION', None)
+        partition = os.environ.get('SLURM_PARTITION', partition)
         if partition is not None:
             cmd += ["--partition", partition]
             if verbose:
@@ -146,7 +147,7 @@ class ColocaleArgs(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             output = self.runCmd("./hello -nl 3xZ -v --dry-run")
         self.assertEqual(cm.exception.stdout.strip(),
-            '<command-line arg>:1: error: "Z" is not a valid number of locales per node.')
+            '<command-line arg>:1: error: "Z" is not a valid number of co-locales.')
 
     def test_09_no_default(self):
         """Three nodes, no locales-per-node default"""
@@ -201,7 +202,7 @@ class ColocaleArgs(unittest.TestCase):
 
     def test_16_valid_suffixes(self):
         """Allow valid suffixes"""
-        for s in ['s', 'n', 'L', 'c']:
+        for s in ['s', 'socket', 'numa', 'llc', 'c', 'core']:
             with self.subTest(s=s):
                 output=self.runCmd("./hello -nl 3x2%s -v --dry-run" % s)
                 self.assertTrue('--nodes=3' in output or '-N 3' in output)
