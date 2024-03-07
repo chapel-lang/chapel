@@ -6,7 +6,7 @@
       |
 
 ─── error in blockSize.chpl:4 [InvalidBlockSize] ───
-  Statement does not support the @gpu.blockSize attribute.
+  Fields do not support the @gpu.blockSize attribute.
   The affected statement is here:
       |
     4 |     var A = foreach i in 1..100 do i;

@@ -447,6 +447,9 @@ static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
     wr.heading(kind, type, node, "functions do not currently support the @",
                attr->name(), " attribute.");
     whatIsAffected = "function";
+  } else if (node->isVariable() && node->toVariable()->isField()) {
+    wr.heading(kind, type, node, "fields do not support the @",
+               attr->name(), " attribute.");
   } else {
     wr.heading(kind, type, node, "statement does not support the @",
                attr->name(), " attribute.");

@@ -6,7 +6,7 @@
       |
 
 ─── error in assertOnGpu.chpl:4 [InvalidGpuAssertion] ───
-  Statement does not support the @assertOnGpu attribute.
+  Fields do not support the @assertOnGpu attribute.
   The affected statement is here:
       |
     4 |     var A = foreach i in 1..100 do i;

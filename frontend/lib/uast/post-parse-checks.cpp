@@ -1387,7 +1387,6 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
        if (!var->isField()) return;
     }
 
-    CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
     if (attr->name() == USTR("assertOnGpu")) {
       CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
     } else {
