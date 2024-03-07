@@ -854,6 +854,13 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
   } else if (untyped->name() == USTR("==")) {
       result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
       return true;
+  } else if (untyped->name() == USTR(":")) {
+    // Assume that compiler-generated casts are actually cast.
+    auto input = sig->formalType(0);
+    auto outputType = sig->formalType(1);
+
+    result = QualifiedType(input.kind(), outputType.type());
+    return true;
   } else if (untyped->idIsField() && untyped->isMethod()) {
     // method accessor - compute the type of the field
     QualifiedType ft = computeTypeOfField(context,
