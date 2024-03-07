@@ -373,6 +373,136 @@ static void test11() {
   assert(param1->toEnumParam()->value().postOrderId() == 5);
 }
 
+static void test12() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  // Production allows multiple constants to have the same numeric value.
+  // When casting backwards, the first matching constant is picked.
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 1,
+        blue = 2,
+        gold = 3,
+      }
+      var redI: int = 0;
+      var greenU: uint = 1;
+      var blueI8: int(8) = 2;
+      var goldU8: uint(8) = 3;
+      var a = redI : color;
+      var b = greenU : color;
+      var c = blueI8 : color;
+      var d = goldU8 : color;
+      )""", {"a", "b", "c", "d"});
+
+  assert(vars.at("a").type()->isEnumType() && vars.at("a").type()->toEnumType()->name() == "color");
+  assert(vars.at("b").type()->isEnumType() && vars.at("b").type()->toEnumType()->name() == "color");
+  assert(vars.at("c").type()->isEnumType() && vars.at("c").type()->toEnumType()->name() == "color");
+  assert(vars.at("d").type()->isEnumType() && vars.at("d").type()->toEnumType()->name() == "color");
+}
+
+static void test13() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  // Production allows multiple constants to have the same numeric value.
+  // When casting backwards, the first matching constant is picked.
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 1,
+        blue = 2,
+        gold = 3,
+      }
+      var red = color.red;
+      var a = red : int;
+      var b = red : uint;
+      var c = red : int(8);
+      var d = red : uint(8);
+      )""", {"red", "a", "b", "c", "d"});
+
+  assert(vars.at("red").type()->isEnumType());
+  assert(vars.at("a").type()->isIntType() && vars.at("a").type()->toIntType()->bitwidth() == IntType::defaultBitwidth());
+  assert(vars.at("b").type()->toUintType() && vars.at("b").type()->toUintType()->bitwidth() == UintType::defaultBitwidth());
+  assert(vars.at("c").type()->isIntType() && vars.at("c").type()->toIntType()->bitwidth() == 8);
+  assert(vars.at("d").type()->isUintType() && vars.at("d").type()->toUintType()->bitwidth() == 8);
+}
+
+static void test14() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  // Production allows multiple constants to have the same numeric value.
+  // When casting backwards, the first matching constant is picked.
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red,
+        green,
+        blue,
+        gold,
+      }
+      var redI: int = 0;
+      var greenU: uint = 1;
+      var blueI8: int(8) = 2;
+      var goldU8: uint(8) = 3;
+      var a = redI : color;
+      var b = greenU : color;
+      var c = blueI8 : color;
+      var d = goldU8 : color;
+      )""", {"a", "b", "c", "d"});
+
+  for (auto pair : vars) {
+    assert(pair.second.isErroneousType());
+  }
+
+  assert(guard.numErrors() == 4);
+  for (int i = 0; i < 4; i ++) {
+    assert(guard.error(i)->type() == ErrorType::NoMatchingCandidates);
+  }
+  guard.realizeErrors();
+}
+
+
+static void test15() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  // Production allows multiple constants to have the same numeric value.
+  // When casting backwards, the first matching constant is picked.
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red,
+        green,
+        blue,
+        gold,
+      }
+      var red = color.red;
+      var a = red : int;
+      var b = red : uint;
+      var c = red : int(8);
+      var d = red : uint(8);
+      )""", {"a", "b", "c", "d"});
+
+  for (auto pair : vars) {
+    assert(pair.second.isErroneousType());
+  }
+
+  assert(guard.numErrors() == 4);
+  for (int i = 0; i < 4; i ++) {
+    assert(guard.error(i)->type() == ErrorType::NoMatchingCandidates);
+  }
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -385,5 +515,9 @@ int main() {
   test9();
   test10();
   test11();
+  test12();
+  test13();
+  test14();
+  test15();
   return 0;
 }
