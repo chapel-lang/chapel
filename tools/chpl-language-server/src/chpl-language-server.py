@@ -880,23 +880,18 @@ class CLSConfig:
                 raise argparse.ArgumentError(
                     None, f"Invalid end marker choice: {marker}"
                 )
-        if (
-            "none" in self.args["end_markers"]
-            and len(self.args["end_markers"]) > 1
-        ):
+        n_markers = len(self.args["end_markers"])
+        if n_markers != len(set(self.args["end_markers"])):
+            raise argparse.ArgumentError(
+                None, "Cannot specify the same end marker multiple times"
+            )
+        if "none" in self.args["end_markers"] and n_markers > 1:
             raise argparse.ArgumentError(
                 None, "Cannot specify 'none' with other end marker choices"
             )
-        if (
-            "all" in self.args["end_markers"]
-            and len(self.args["end_markers"]) > 1
-        ):
+        if "all" in self.args["end_markers"] and n_markers > 1:
             raise argparse.ArgumentError(
                 None, "Cannot specify 'all' with other end marker choices"
-            )
-        if len(self.args["end_markers"]) != len(set(self.args["end_markers"])):
-            raise argparse.ArgumentError(
-                None, "Cannot specify the same end marker multiple times"
             )
 
     def parse_args(self):
