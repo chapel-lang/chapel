@@ -1430,10 +1430,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         msgType = dtBorrowed;
 
       Type* t = e->typeInfo();
-      if (!isClassLikeOrManaged(t))
+      bool emit = true;
+
+      if (auto fn = toFnSymbol(call->parentSymbol)) {
+        emit = !fn->isCompilerGenerated();
+      }
+
+      if (emit && !isClassLikeOrManaged(t))
         USR_FATAL_CONT(call, "cannot make %s into a %s class",
                              toString(t), toString(msgType));
-      if (!isTypeExpr(e))
+      if (emit && !isTypeExpr(e))
         USR_FATAL_CONT(call, "cannot use decorator %s on a value",
                              toString(msgType));
 
