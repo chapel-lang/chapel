@@ -204,7 +204,7 @@ void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, ops.front(),
              "comparison operators are not associative.");
   wr.codeForLocation(ops.front());
-  wr.message("Comparisons in the form 'x < y < z' are not supported.");
+  wr.message("Comparisons in the form 'x op y op z' are not supported.");
 
   if (allSimple && (types == 0b1 || types == 0b10)) {
     std::ostringstream oss;
@@ -223,7 +223,9 @@ void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
 
     // TODO: this uses explicit indentation using spaces, which is probably bad.
     wr.message("If you wanted to perform elementwise comparison, consider using the following instead:");
+    wr.message("");
     wr.message("    ", oss.str());
+    wr.message("");
   } else {
     wr.message("If you wanted to perform elementwise comaprison, please use '&&' to combine operations.");
   }
