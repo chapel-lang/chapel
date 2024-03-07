@@ -503,15 +503,18 @@ static const char *objTypeString(hwloc_obj_type_t t) {
     case HWLOC_OBJ_PACKAGE: str = "socket"; break;
     case HWLOC_OBJ_NUMANODE: str = "NUMA domain"; break;
     case HWLOC_OBJ_CORE: str = "core"; break;
+    case HWLOC_OBJ_L1CACHE: str = "L1 cache"; break;
+    case HWLOC_OBJ_L2CACHE: str = "L2 cache"; break;
     case HWLOC_OBJ_L3CACHE: str = "L3 cache"; break;
+    case HWLOC_OBJ_L4CACHE: str = "L4 cache"; break;
+    case HWLOC_OBJ_L5CACHE: str = "L5 cache"; break;
     default: str = "unknown"; break;
   }
   return str;
 }
 
 //
-// Partitions resources when running with co-locales. Currently, only
-// partitioning based on sockets or NUMA domains is supported.
+// Partitions resources when running with co-locales.
 //
 
 static void partitionResources(void) {
@@ -520,12 +523,10 @@ static void partitionResources(void) {
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int numColocales = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
   int unusedCores = 0;
-  hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_PACKAGE, HWLOC_OBJ_NUMANODE,
-                                  HWLOC_OBJ_L3CACHE, HWLOC_OBJ_CORE,
-                                  HWLOC_OBJ_TYPE_MAX};
 
   const char *t = chpl_env_rt_get("COLOCALE_OBJ_TYPE", NULL);
   if (t != NULL) {
+    // The type of root object was specified on the command-line.
     if (!strcmp(t , "socket")) {
       myRootType = HWLOC_OBJ_PACKAGE;
     } else if (!strcmp(t , "numa")) {
@@ -533,7 +534,15 @@ static void partitionResources(void) {
     } else if (!strcmp(t , "core")) {
       myRootType = HWLOC_OBJ_CORE;
     } else if (!strcmp(t , "cache")) {
-      myRootType = HWLOC_OBJ_L3CACHE;
+      hwloc_obj_type_t cacheTypes[] = {HWLOC_OBJ_L5CACHE, HWLOC_OBJ_L4CACHE,
+                                       HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L2CACHE,
+                                       HWLOC_OBJ_L1CACHE, HWLOC_OBJ_TYPE_MAX};
+      for (int i = 0; cacheTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
+        if (hwloc_get_nbobjs_by_type(topology, cacheTypes[i]) > 0) {
+          myRootType = cacheTypes[i];
+          break;
+        }
+      }
     } else {
       char msg[200];
       snprintf(msg, sizeof(msg),
@@ -565,6 +574,13 @@ static void partitionResources(void) {
 
     if (rank != -1) {
       if (myRootType == HWLOC_OBJ_TYPE_MAX) {
+        // Chose a root object if the number of them matches the number of
+        // locales.
+        hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_PACKAGE, HWLOC_OBJ_NUMANODE,
+                                        HWLOC_OBJ_L5CACHE, HWLOC_OBJ_L4CACHE,
+                                        HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L2CACHE,
+                                        HWLOC_OBJ_L1CACHE, HWLOC_OBJ_CORE,
+                                        HWLOC_OBJ_TYPE_MAX};
         for (int i = 0; rootTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
           int numObjs = hwloc_get_nbobjs_by_type(topology, rootTypes[i]);
           if (numObjs == numColocales) {
