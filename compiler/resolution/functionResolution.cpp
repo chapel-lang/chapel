@@ -9939,7 +9939,7 @@ static void resolveCoerce(CallExpr* call) {
 
 static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
                                   bool resolvePartials = false);
-static Type* resolveGenericActual(SymExpr* se, Type* type, CallExpr* inCall);
+static Type* resolveGenericActual(SymExpr* se, Type* type);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
   CallExpr* inCall = nullptr;
@@ -9969,34 +9969,6 @@ void resolveGenericActuals(CallExpr* call) {
   }
 }
 
-static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
-                                  bool resolvePartials) {
-  Type* retval = se->typeInfo();
-
-  if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-    retval = resolveGenericActual(se, ts->type, inCall);
-
-  } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
-    if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-
-      // Fix for complicated extern vars like
-      //   extern var x: c_ptr(c_int);
-      if ((vs->hasFlag(FLAG_EXTERN) == true || isGlobal(vs)) &&
-          vs->defPoint             != NULL &&
-          vs->getValType()         == dtUnknown ) {
-        vs->type = resolveTypeAlias(se);
-      }
-
-      if (resolvePartials) {
-        Type* origType = vs->typeInfo();
-        retval = resolveGenericActual(se, origType, inCall);
-      }
-    }
-  }
-
-  return retval;
-}
-
 static bool suppressWarnGenericActual(CallExpr* call) {
   // not finding a call happens for specified return types
   if (!call) return true;
@@ -10004,18 +9976,7 @@ static bool suppressWarnGenericActual(CallExpr* call) {
   return call->isPrimitive();
 }
 
-static Type* resolveGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
-  Type* retval = se->typeInfo();
-
-  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
-  bool isDecoratedGeneric = false;
-  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
-    type = dt->getCanonicalClass();
-    decorator = dt->getDecorator();
-    if (isDecoratorUnknownManagement(decorator))
-      isDecoratedGeneric = true;
-  }
-
+static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
   if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) &&
         !se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
@@ -10039,7 +10000,52 @@ static Type* resolveGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
         }
       }
     }
+  }
+}
 
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials) {
+  Type* retval = se->typeInfo();
+
+  if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+    maybeWarnGenericActual(se, ts->type, inCall);
+    retval = resolveGenericActual(se, ts->type);
+
+  } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
+    if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+
+      // Fix for complicated extern vars like
+      //   extern var x: c_ptr(c_int);
+      if ((vs->hasFlag(FLAG_EXTERN) == true || isGlobal(vs)) &&
+          vs->defPoint             != NULL &&
+          vs->getValType()         == dtUnknown ) {
+        vs->type = resolveTypeAlias(se);
+      }
+
+      Type* origType = vs->typeInfo();
+      maybeWarnGenericActual(se, origType, inCall);
+      if (resolvePartials) {
+        retval = resolveGenericActual(se, origType);
+      }
+    }
+  }
+
+  return retval;
+}
+
+static Type* resolveGenericActual(SymExpr* se, Type* type) {
+  Type* retval = se->typeInfo();
+
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
+  bool isDecoratedGeneric = false;
+  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+    type = dt->getCanonicalClass();
+    decorator = dt->getDecorator();
+    if (isDecoratorUnknownManagement(decorator))
+      isDecoratedGeneric = true;
+  }
+
+  if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) && at->isGenericWithDefaults()) {
       CallExpr*   cc    = new CallExpr(at->symbol);
 
