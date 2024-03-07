@@ -2,16 +2,14 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include "c_sin.h"
 
 static float table[256];
 
-float c_sin(unsigned int size, int iterations, float* resArray)
+float c_sin(unsigned int size, int iterations, unsigned int seed, float* resArray)
 {
-	  time_t t;
-	  srand((unsigned )time(&t));
+	  srand(seed);
 
     for (int i=0; i < iterations; i++)
 	  {
@@ -28,11 +26,10 @@ void fillTable(unsigned int size)
         table[i] = sin(2.0 * 3.1415927 * (float) i / (float) size);
 }
 
-float c_table(unsigned int size, int iterations, float* resArray)
+float c_table(unsigned int size, int iterations, unsigned int seed, float* resArray)
 {
-	  time_t t;
     fillTable(size);
-    srand((unsigned )time(&t));
+    srand(seed);
 
     for (int i=0; i < iterations; i++)
     {
