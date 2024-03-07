@@ -1527,16 +1527,4 @@ module Math {
   inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
   }
-
-  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
-  inline proc fma(x: imag(64), y: imag(64), z: imag(64)): imag(64) {
-    type t = real(64);
-    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(64);
-  }
-
-  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
-  inline proc fma(x: imag(32), y: imag(32), z: imag(32)): imag(32) {
-    type t = real(32);
-    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(32);
-  }
 }
