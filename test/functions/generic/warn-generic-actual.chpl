@@ -34,3 +34,11 @@ proc test2() {
   f(T(?)); // do not warn
 }
 test2();
+
+pragma "suppress generic actual warning"
+proc g(type t) { }
+
+proc test3() {
+  g(genericRecord); // do not warn (suppressed by pragma)
+}
+test3();

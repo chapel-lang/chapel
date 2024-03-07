@@ -9970,10 +9970,21 @@ void resolveGenericActuals(CallExpr* call) {
 }
 
 static bool suppressWarnGenericActual(CallExpr* call) {
-  // not finding a call happens for specified return types
+  // not finding a call happens for specified return types,
+  // so suppress the warning there
   if (!call) return true;
+
   // we generate other warnings for these cases, no need to warn here.
-  return call->isPrimitive();
+  if (call->isPrimitive()) return true;
+
+  // and, don't emit a warning for calls to a function marked
+  // with a flag to suppress this warning
+  FnSymbol* fn = call->resolvedOrVirtualFunction();
+  if (fn && fn->hasFlag(FLAG_SUPPRESS_GENERIC_ACTUAL_WARNING))
+    return true;
+
+  // otherwise, don't suppress the warning
+  return false;
 }
 
 static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
