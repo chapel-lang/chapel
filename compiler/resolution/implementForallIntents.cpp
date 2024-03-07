@@ -997,10 +997,13 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   bool isConst = ovar->isConstant() || field->isConstant();
 
   Expr* anchor = nullptr;
-  if (!fNoInlineIterators || fs->isForallStmt()) {
+  const bool insertIntoBody = fNoInlineIterators &&
+                              isAggregateType(field->type);
+  if (!insertIntoBody || fs->isForallStmt()) {
     anchor = fs->asExpr();
   }
   else {
+    std::cout << fs->loopBody()->stringLoc() << std::endl;
     CallExpr* noop = new CallExpr(PRIM_NOOP);
     fs->loopBody()->insertAtHead(noop);
     anchor = noop;
