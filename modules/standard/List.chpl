@@ -1814,7 +1814,7 @@ module List {
     }
 
     /*
-      Write the contents of this list to a channel.
+      Write the contents of this list to a ``fileWriter``.
     */
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter();
@@ -1858,7 +1858,7 @@ module List {
     }
 
     /*
-     Read the contents of this list from a channel.
+     Read the contents of this list from a ``fileReader``.
      */
     proc ref deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader, deserializer);

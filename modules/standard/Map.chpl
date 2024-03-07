@@ -620,8 +620,8 @@ module Map {
     }
 
     /*
-      Reads the contents of this map from a channel. The 'defaultDeserializer'
-      format looks like:
+      Reads the contents of this map from a ``fileReader``.
+      The 'defaultDeserializer' format looks like:
 
         .. code-block:: chapel
 
@@ -648,8 +648,8 @@ module Map {
     }
 
     /*
-      Writes the contents of this map to a channel. The 'defaultSerializer'
-      format looks like:
+      Writes the contents of this map to a ``fileWriter``.
+      The 'defaultSerializer' format looks like:
 
         .. code-block:: chapel
 

@@ -375,7 +375,7 @@ module Heap {
     }
 
     /*
-      Write the contents of this heap to a channel in arbitrary order.
+      Write the contents of this heap to a ``fileWriter`` in arbitrary order.
     */
     proc serialize(writer, ref serializer) throws {
       _enter();
