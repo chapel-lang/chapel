@@ -3876,7 +3876,6 @@ static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
       bool genericWithDefaults = at->isGenericWithDefaults();
 
       if (!isMethodReceiver && !genericWithDefaults) {
-        gdbShouldBreakHere();
         checkSurprisingGenericDecls(se->symbol(), se, nullptr);
         if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
           const char* name = se->symbol()->name;
