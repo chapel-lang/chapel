@@ -916,8 +916,8 @@ module GPU
     }
 
     // Only useful when calling gpuExternSort directly
-    extern proc chpl_gpu_can_extern_sort(): bool;
-    if !chpl_gpu_can_extern_sort() {
+    extern proc chpl_gpu_can_sort(): bool;
+    if !chpl_gpu_can_sort() {
       gpuSort(gpuInputArr);
       return;
     }
@@ -970,8 +970,8 @@ module GPU
       return;
     }
 
-    extern proc chpl_gpu_can_extern_sort(): bool;
-    if chpl_gpu_can_extern_sort() {
+    extern proc chpl_gpu_can_sort(): bool;
+    if chpl_gpu_can_sort() {
       gpuExternSort(gpuInputArr);
       return;
     }

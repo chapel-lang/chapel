@@ -171,7 +171,7 @@ bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
 
 bool chpl_gpu_can_reduce(void);
-bool chpl_gpu_can_extern_sort(void);
+bool chpl_gpu_can_sort(void);
 
 #define DECL_ONE_REDUCE(chpl_kind, data_type) \
 void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\

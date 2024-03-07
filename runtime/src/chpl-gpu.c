@@ -1344,8 +1344,8 @@ bool chpl_gpu_can_reduce(void) {
   return chpl_gpu_impl_can_reduce();
 }
 
-bool chpl_gpu_can_extern_sort(void) {
-  return chpl_gpu_impl_can_extern_sort();
+bool chpl_gpu_can_sort(void) {
+  return chpl_gpu_impl_can_sort();
 }
 
 #define DEF_ONE_REDUCE(kind, data_type)\

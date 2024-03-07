@@ -153,7 +153,7 @@ bool chpl_gpu_impl_can_reduce(void) {
   return false;
 }
 
-bool chpl_gpu_impl_can_extern_sort(void){
+bool chpl_gpu_impl_can_sort(void){
   return false;
 }
 
