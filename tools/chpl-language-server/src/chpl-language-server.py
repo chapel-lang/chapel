@@ -270,8 +270,7 @@ def range_to_tokens(
 def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
     """
     Convert a Chapel location to a string. If the location spans multiple
-    lines, it gets truncated into 1 line. The lines and columns are
-    zero-indexed.
+    lines, it gets truncated into 1 line.
     """
     text = []
     for line, column, length in range_to_tokens(rng, lines):
