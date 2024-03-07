@@ -25,7 +25,6 @@
 #include "resolveIntents.h"
 #include "stringutil.h"
 #include "stmt.h"
-#include "view.h"
 
 #include "global-ast-vecs.h"
 
@@ -1021,12 +1020,6 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   svar->type = svarType;
   fs->shadowVariables().insertAtTail(new DefExpr(svar));
   handleOneShadowVar(fs, svar);
-  //if (field->getModule()->modTag == MOD_USER) {
-    //std::cout << "Here \n";
-    //nprint_view(ovar);
-    //nprint_view(field);
-    //nprint_view(svar);
-  //}
 
   return svar;
 }

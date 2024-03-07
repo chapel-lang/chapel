@@ -8,21 +8,10 @@ iter myRec.myIter() {
     yield (myRecField,i);
 }
 
-/*iter foo() {*/
-  /*var r: myRec;*/
-  /*var myRange = 1..10;*/
+var r: myRec;
+var myRange = 1..10;
 
-  /*foreach i in r.myIter(myRange) do yield i;*/
-/*}*/
-
-  var r: myRec;
-  var myRange = 1..10;
-
-  /*foreach i in r.myIter(myRange) do writeln(i);*/
-  foreach i in r.myIter() do writeln(i);
-
-
-/*foreach i in foo() do writeln(i);*/
+foreach i in r.myIter() do writeln(i);
 }
 
 writeln();
@@ -37,20 +26,10 @@ iter myRec.myIter(aRange) {
     yield (myRecField,i);
 }
 
-/*iter foo() {*/
-  /*var r: myRec;*/
-  /*var myRange = 1..10;*/
+var r: myRec;
+var myRange = 1..10;
 
-  /*foreach i in r.myIter(myRange) do yield i;*/
-/*}*/
-
-  var r: myRec;
-  var myRange = 1..10;
-
-  foreach i in r.myIter(myRange) do writeln(i);
-
-
-/*foreach i in foo() do writeln(i);*/
+foreach i in r.myIter(myRange) do writeln(i);
 }
 
 writeln();
