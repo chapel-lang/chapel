@@ -3418,7 +3418,6 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            ci,
                                                            poi);
   CHPL_ASSERT(instantiated.success());
-  CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction());
   CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
 
   candidates.addCandidate(instantiated.candidate());
