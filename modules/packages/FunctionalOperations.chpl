@@ -28,7 +28,7 @@ module FunctionalOperations {
      returned by `fn`.  `fn` must take a single argument and return a value.
    */
   iter _iteratorRecord.map(fn) {
-    foreach x in this with (ref fn) do yield fn(x);
+    foreach x in this do yield fn(x);
   }
 
   /* Apply `fn` to each element yielded by this iterator and yield the values
@@ -36,7 +36,7 @@ module FunctionalOperations {
      boolean value.
    */
   iter _iteratorRecord.filter(fn) {
-    foreach x in this with (ref fn) do if fn(x) then yield x;
+    foreach x in this do if fn(x) then yield x;
   }
 
   /* Apply `fn` to each element yielded by this iterator and ignore the return
