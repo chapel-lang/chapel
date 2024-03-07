@@ -9937,11 +9937,20 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* resolveGenericActual(SymExpr* se, bool resolvePartials = false);
-static Type* resolveGenericActual(SymExpr* se, Type* type);
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials = false);
+static Type* resolveGenericActual(SymExpr* se, Type* type, CallExpr* inCall);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
-  return resolveGenericActual(se, /* resolvePartials */ true);
+  CallExpr* inCall = nullptr;
+  // compute the call it is contained in, if any
+  for (Expr* e = se; e != nullptr; e = e->parentExpr) {
+    if (CallExpr* c = toCallExpr(e)) {
+      inCall = c;
+      break;
+    }
+  }
+  return resolveGenericActual(se, inCall, /* resolvePartials */ true);
 }
 
 void resolveGenericActuals(CallExpr* call) {
@@ -9955,16 +9964,17 @@ void resolveGenericActuals(CallExpr* call) {
     }
 
     if (SymExpr*   se = toSymExpr(safeActual))   {
-      resolveGenericActual(se);
+      resolveGenericActual(se, call);
     }
   }
 }
 
-static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials) {
   Type* retval = se->typeInfo();
 
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-    retval = resolveGenericActual(se, ts->type);
+    retval = resolveGenericActual(se, ts->type, inCall);
 
   } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
     if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
@@ -9979,7 +9989,7 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
 
       if (resolvePartials) {
         Type* origType = vs->typeInfo();
-        retval = resolveGenericActual(se, origType);
+        retval = resolveGenericActual(se, origType, inCall);
       }
     }
   }
@@ -9987,7 +9997,12 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
   return retval;
 }
 
-static Type* resolveGenericActual(SymExpr* se, Type* type) {
+static bool suppressWarnGenericActual(CallExpr* call) {
+  if (!call) return false;
+  return call->isPrimitive(PRIM_DEFAULT_INIT_VAR);
+}
+
+static Type* resolveGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
   Type* retval = se->typeInfo();
 
   ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
@@ -10010,7 +10025,8 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
       }
       bool genericWithDefaults = at->isGenericWithDefaults();
 
-      if (!isMethodReceiver && !genericWithDefaults) {
+      if (!isMethodReceiver && !genericWithDefaults &&
+          !suppressWarnGenericActual(inCall)) {
         gdbShouldBreakHere();
         checkSurprisingGenericDecls(se->symbol(), se, nullptr);
         if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
