@@ -963,17 +963,18 @@ module GPU
     if !here.isGpu() then halt("gpuSort must be run on a gpu locale");
     if gpuInputArr.size == 0 then return;
 
+    if CHPL_GPU=="cpu" {
+      use Sort only sort;
+      sort(gpuInputArr);
+      return;
+    }
+
     extern proc chpl_gpu_can_cub_sort(): bool;
     if chpl_gpu_can_cub_sort() {
       gpuCubSort(gpuInputArr);
       return;
     }
 
-    if CHPL_GPU=="cpu" {
-      use Sort only sort;
-      sort(gpuInputArr);
-      return;
-    }
     fallBackRadixSort(gpuInputArr);
   }
 

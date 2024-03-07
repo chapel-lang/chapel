@@ -151,7 +151,7 @@ module SortTest {
       if atomicSort then
         assertGpuDiags(kernel_launch_aod=52, kernel_launch_um=44, host_to_device=8,
                        device_to_host=4, device_to_device=32);
-      else
+      // else
         // With the addition of the CUB sort, this can be hard to pin down,
         // because we would have to do some effort to figure out if we used the
         // CUB sort or not.
