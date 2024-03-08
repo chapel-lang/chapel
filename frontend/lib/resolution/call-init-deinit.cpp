@@ -616,7 +616,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
   if (isTypeParam(lhsType.kind())) {
     // OK, nothing else to do
   } else if (isValue(lhsType.kind()) && isValueOrParam(rhsType.kind())) {
-    if (lhsType.type() == rhsType.type()) {
+    if (canPass(context, rhsType, lhsType).passes()) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).
@@ -733,6 +733,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
+  gdbShouldBreakHere();
   auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
 
   // Should we associate it with the current statement or the current block?
