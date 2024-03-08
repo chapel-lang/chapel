@@ -2734,6 +2734,12 @@ expandForLoop(ForLoop* forLoop) {
     // scope to another if done in mid-transformation.
     CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop, map);
 
+    // workaround for --baseline with implicit foreach intents. The call above
+    // could add new mappings that we need to update the body for
+    if (fNoInlineIterators) {
+      update_symbols(cforLoop, &map);
+    }
+
     addIteratorBreakBlocksJumptable(forLoop, iterator,
                                     (BlockStmt*)cforLoop, iterators);
 

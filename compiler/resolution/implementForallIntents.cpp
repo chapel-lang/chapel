@@ -995,7 +995,23 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
                                                Symbol* field)
 {
   bool isConst = ovar->isConstant() || field->isConstant();
-  VarSymbol* fieldRef = createFieldRef(fs->asExpr(), ovar, field, isConst);
+
+  // with --baseline, we have to be careful where we insert the initializtion of
+  // the new ref we are creating. With foreach loops that accesses a field of a
+  // symbol that has implicit ref intent, the initialization has to be in the
+  // loop body.
+  Expr* anchor = nullptr;
+  const bool insertIntoBody = fNoInlineIterators &&
+                              isAggregateType(field->type);
+  if (!insertIntoBody || fs->isForallStmt()) {
+    anchor = fs->asExpr();
+  }
+  else {
+    CallExpr* noop = new CallExpr(PRIM_NOOP);
+    fs->loopBody()->insertAtHead(noop);
+    anchor = noop;
+  }
+  VarSymbol* fieldRef = createFieldRef(anchor, ovar, field, isConst);
 
   // Now create the shadow variable.
   Type*           svarType   = field->type;
