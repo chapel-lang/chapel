@@ -2208,8 +2208,6 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     }
   }
 
-  CHPL_ASSERT(ct); // or else, pattern not handled yet
-
   if (ct) {
     auto newDefaultsPolicy = defaultsPolicy;
     if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS &&
@@ -2240,7 +2238,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   // Otherwise it is a case not handled yet
   // TODO: handle outer function variables
-  CHPL_ASSERT(false && "not yet handled");
+  CHPL_UNIMPL("not yet handled");
   auto unknownType = UnknownType::get(context);
   return QualifiedType(QualifiedType::UNKNOWN, unknownType);
 }
