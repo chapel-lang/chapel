@@ -1070,13 +1070,13 @@ CallResolutionResult resolvePrimCall(Context* context,
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim) && allParam) {
     if (ci.numActuals() == 2) {
-      type = Param::fold(context, prim, ci.actual(0).type(), ci.actual(1).type());
+      type = Param::fold(context, call, prim, ci.actual(0).type(), ci.actual(1).type());
     } else if (ci.numActuals() == 1) {
-      type = Param::fold(context, prim, ci.actual(0).type(), QualifiedType());
+      type = Param::fold(context, call, prim, ci.actual(0).type(), QualifiedType());
     } else {
       CHPL_ASSERT(false && "unsupported param folding");
     }
-    return CallResolutionResult(candidates, type, poi);
+    return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
   }
 
   // otherwise, handle each primitive individually
@@ -1529,6 +1529,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_DEINIT_KERNEL_CFG:
     case PRIM_GPU_ARG:
     case PRIM_GPU_PID_OFFLOAD:
+    case PRIM_GPU_ATTRIBUTE_BLOCK:
+    case PRIM_GPU_PRIMITIVE_BLOCK:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
@@ -1719,11 +1721,14 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_INNERMOST_CONTEXT:
     case PRIM_OUTER_CONTEXT:
     case PRIM_HOIST_TO_CONTEXT:
+    case PRIM_STATIC_FUNCTION_VAR:
+    case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
+    case PRIM_STATIC_FUNCTION_VAR_WRAPPER:
     case NUM_KNOWN_PRIMS:
     case PRIM_BREAKPOINT:
     case PRIM_CONST_ARG_HASH:
     case PRIM_CHECK_CONST_ARG_HASH:
-    case PRIM_TASK_INDEPENDENT_SVAR_CAPTURE:
+    case PRIM_TASK_PRIVATE_SVAR_CAPTURE:
       CHPL_UNIMPL("misc primitives");
 
     // no default to get a warning when new primitives are added
@@ -1734,7 +1739,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }
 
-  return CallResolutionResult(candidates, type, poi);
+  return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
 }
 
 

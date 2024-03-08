@@ -1,0 +1,3 @@
+assertOnFailToGpuizeVar.chpl:24: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
+assertOnFailToGpuizeVar.chpl:2: note: function is marked as not eligible for GPU execution
+assertOnFailToGpuizeVar.chpl:2: note:   reached via standard library code

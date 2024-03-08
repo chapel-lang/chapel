@@ -122,12 +122,8 @@ record privateDist: writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -165,10 +161,6 @@ class PrivateImpl: BaseDist, writeSerializable {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
                                     strides=strides,
                                     dist=_to_unmanaged(this));
-  }
-
-  proc writeThis(x) throws {
-    x.writeln("Private Distribution");
   }
 
   override proc serialize(writer, ref serializer) throws {

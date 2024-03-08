@@ -70,7 +70,7 @@ proc returnVar() {
     var a: [d] int;
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -81,7 +81,7 @@ proc returnVar() {
     var a: [d] int;
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -116,7 +116,7 @@ proc returnVar() {
     proc init(d) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -129,7 +129,7 @@ proc returnVar() {
     proc init(in d) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -142,7 +142,7 @@ proc returnVar() {
     proc init(const in d) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -194,7 +194,7 @@ proc returnVar() {
     proc init(d: domain(1, int)) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -207,7 +207,7 @@ proc returnVar() {
     proc init(in d: domain(1, int)) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -220,7 +220,7 @@ proc returnVar() {
     proc init(const in d: domain(1, int)) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -272,7 +272,7 @@ proc returnVar() {
     proc init(d) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -285,7 +285,7 @@ proc returnVar() {
     proc init(in d) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -298,7 +298,7 @@ proc returnVar() {
     proc init(const in d) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -350,7 +350,7 @@ proc returnVar() {
     proc init(d: domain(1, int)) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -363,7 +363,7 @@ proc returnVar() {
     proc init(in d: domain(1, int)) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {
@@ -376,7 +376,7 @@ proc returnVar() {
     proc init(const in d: domain(1, int)) { this.d = d; }
   }
 
-  testAll(R);
+  testAll(R(?));
 }
 
 {

@@ -759,6 +759,91 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
   return QUERY_END(result);
 }
 
+static void
+setupGeneratedEnumCastFormals(Context* context,
+                              const EnumType* enumType,
+                              std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
+                              std::vector<QualifiedType>& formalTypes,
+                              bool isFromCast /* otherwise, it's a "to" cast */) {
+  const Type* fromType;
+  const Type* toType;
+
+  if (isFromCast) {
+    fromType = enumType;
+    toType = AnyIntegralType::get(context);
+  } else {
+    fromType = AnyIntegralType::get(context);
+    toType = enumType;
+  }
+
+  auto fromQt = QualifiedType(QualifiedType::DEFAULT_INTENT, fromType);
+  auto toQt = QualifiedType(QualifiedType::TYPE, toType);
+
+  auto ufsFrom =
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "from"),
+                                       false, nullptr);
+  ufsFormals.push_back(std::move(ufsFrom));
+  auto ufsTo =
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "to"),
+                                       false, nullptr);
+  ufsFormals.push_back(std::move(ufsTo));
+
+  formalTypes.push_back(fromQt);
+  formalTypes.push_back(toQt);
+}
+
+static const TypedFnSignature*
+generateToOrFromCastForEnum(Context* context,
+                            const types::QualifiedType& lhs,
+                            const types::QualifiedType& rhs,
+                            bool isFromCast /* otherwise, it's a "to" cast */) {
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  auto enumType = isFromCast ? lhs.type()->toEnumType() : rhs.type()->toEnumType();
+
+  if (enumType->isAbstract()) return nullptr;
+
+  setupGeneratedEnumCastFormals(context, enumType, ufsFormals, formalTypes,
+                                isFromCast);
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ enumType->id(),
+                        /*name*/ USTR(":"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, enumType->id()),
+                        /*kind*/ uast::Function::Kind::OPERATOR,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ true,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+  return ret;
+}
+
+static const TypedFnSignature*
+generateCastFromEnum(Context* context,
+                     const types::QualifiedType& lhs,
+                     const types::QualifiedType& rhs) {
+  return generateToOrFromCastForEnum(context, lhs, rhs, /*isFromCast*/ true);
+}
+
+static const TypedFnSignature*
+generateCastToEnum(Context* context,
+                   const types::QualifiedType& lhs,
+                   const types::QualifiedType& rhs) {
+  return generateToOrFromCastForEnum(context, lhs, rhs, /*isFromCast*/ false);
+}
+
 /**
   Given a type and a UniqueString representing the name of a method,
   determine if the type needs a method with such a name to be
@@ -771,6 +856,33 @@ const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const Type* type,
                            UniqueString name, bool parenless) {
   return getCompilerGeneratedMethodQuery(context, type, name, parenless);
+}
+
+static const TypedFnSignature* const&
+getCompilerGeneratedBinaryOpQuery(Context* context,
+                                  types::QualifiedType lhs,
+                                  types::QualifiedType rhs,
+                                  UniqueString name) {
+  QUERY_BEGIN(getCompilerGeneratedBinaryOpQuery, context, lhs, rhs, name);
+
+  const TypedFnSignature* result = nullptr;
+  if (name == USTR(":")) {
+    if (lhs.type() && lhs.type()->isEnumType()) {
+      result = generateCastFromEnum(context, lhs, rhs);
+    } else if (rhs.type() && rhs.type()->isEnumType()) {
+      result = generateCastToEnum(context, lhs, rhs);
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const TypedFnSignature*
+getCompilerGeneratedBinaryOp(Context* context,
+                             const types::QualifiedType lhs,
+                             const types::QualifiedType rhs,
+                             UniqueString name) {
+  return getCompilerGeneratedBinaryOpQuery(context, lhs, rhs, name);
 }
 
 

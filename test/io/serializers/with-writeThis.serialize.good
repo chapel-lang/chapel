@@ -1,2 +1,0 @@
-with-writeThis.chpl:7: warning: 'writeThis' is deprecated. Please use 'serialize' methods instead.
-(x = 5)

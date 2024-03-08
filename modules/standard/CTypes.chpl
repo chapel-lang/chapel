@@ -144,13 +144,9 @@ module CTypes {
       }
       return __primitive("array_get", this, 0);
     }
-    @chpldoc.nodoc
-    inline proc writeThis(ch) throws {
-      (this:c_ptr(void)).writeThis(ch);
-    }
     /* Print this pointer */
     inline proc serialize(writer, ref serializer) throws {
-      (this:c_ptr(void)).writeThis(writer);
+      (this:c_ptr(void)).serialize(writer, serializer);
     }
   }
 
@@ -197,13 +193,9 @@ module CTypes {
       }
       return __primitive("array_get", this, 0);
     }
-    @chpldoc.nodoc
-    inline proc writeThis(ch) throws {
-      (this:c_ptr(void)).writeThis(ch);
-    }
     /* Print this pointer */
     inline proc serialize(writer, ref serializer) throws {
-      (this:c_ptr(void)).writeThis(writer);
+      (this:c_ptr(void)).serialize(writer, serializer);
     }
   }
 
@@ -312,23 +304,18 @@ module CTypes {
       return __primitive("array_get", this, i);
     }
 
-    @chpldoc.nodoc
-    proc writeThis(ch) throws {
-      ch.writeLiteral("[");
+    /* Print the elements */
+    proc const serialize(writer, ref serializer) throws {
+      writer.writeLiteral("[");
       var first = true;
       for i in 0..#size {
 
-        ch.write(this(i));
+        writer.write(this(i));
 
         if i != size-1 then
-          ch.writeLiteral(", ");
+          writer.writeLiteral(", ");
       }
-      ch.writeLiteral("]");
-    }
-
-    /* Print the elements */
-    proc const serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.writeLiteral("]");
     }
 
     /*
@@ -370,18 +357,14 @@ module CTypes {
     lhs = c_ptrTo(rhs[0]);
   }
 
-  // This type alias is a hack to enable defining writeThis on c_ptr(void)
-  // specifically, which is necessary to enable writeThis on things that
+  // This type alias is a hack to enable defining serialize on c_ptr(void)
+  // specifically, which is necessary to enable serialize on things that
   // implicitly convert to c_ptr(void).
   @chpldoc.nodoc
   type writable_c_ptr_void = c_ptr(void);
   @chpldoc.nodoc
-  inline proc writable_c_ptr_void.writeThis(ch) throws {
-    ch.writef("0x%xu", this:c_uintptr);
-  }
-  @chpldoc.nodoc
   inline proc writable_c_ptr_void.serialize(writer, ref serializer) throws {
-    this.writeThis(writer);
+    writer.writef("0x%xu", this:c_uintptr);
   }
 
   @chpldoc.nodoc

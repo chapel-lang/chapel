@@ -3,7 +3,7 @@ proc bar(type t) {
 }
 
 bar(int);
-bar(Foo);
+bar(Foo(?));
 
 
 class Foo {

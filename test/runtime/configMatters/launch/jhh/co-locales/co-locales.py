@@ -69,7 +69,8 @@ class ColocaleArgs(unittest.TestCase):
 
         # Determine the number of sockets per node
         cmd = ["sinfo", "--format=%X", "--noheader", "--exact"]
-        partition = os.environ.get('CHPL_LAUNCHER_PARTITION')
+        partition = os.environ.get('CHPL_LAUNCHER_PARTITION', None)
+        partition = os.environ.get('SLURM_PARTITION', partition)
         if partition is not None:
             cmd += ["--partition", partition]
             if verbose:
@@ -146,7 +147,7 @@ class ColocaleArgs(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             output = self.runCmd("./hello -nl 3xZ -v --dry-run")
         self.assertEqual(cm.exception.stdout.strip(),
-            '<command-line arg>:1: error: "Z" is not a valid number of locales per node.')
+            '<command-line arg>:1: error: "Z" is not a valid number of co-locales.')
 
     def test_09_no_default(self):
         """Three nodes, no locales-per-node default"""
@@ -199,6 +200,34 @@ class ColocaleArgs(unittest.TestCase):
         self.assertTrue('--nodes=3' in output or '-N 3' in output)
         self.assertIn('--ntasks=6', output)
 
+    def test_16_valid_suffixes(self):
+        """Allow valid suffixes"""
+        for s in ['s', 'socket', 'numa', 'llc', 'c', 'core']:
+            with self.subTest(s=s):
+                output=self.runCmd("./hello -nl 3x2%s -v --dry-run" % s)
+                self.assertTrue('--nodes=3' in output or '-N 3' in output)
+                self.assertIn('--ntasks=6', output)
+
+    def test_17_invalid_suffix(self):
+        """Reject invalid suffix"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl -3x2z -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "z" is not a valid suffix.')
+
+    def test_18_invalid_suffix2(self):
+        """Reject invalid suffix that starts with a valid character"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl -3x2ss -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "ss" is not a valid suffix.')
+
+    def test_19_invalid_suffix3(self):
+        """Suffix must follow locales-per-node"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl -3xs -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "s" is not a valid number of co-locales.')
 
 # copied from sub_test.py
 # report an error message and exit

@@ -20,7 +20,7 @@ proc populate(dataArray, inputVertices, ref vertexProps, dataTypeMap, colId) {
   writeln("## Inserting ", etype, " data ##");
   forall (v,j) in zip(inputVertices,inputVertices.domain) {
     writeln("Attempting to insert data ", dataArray[j], " for vertex ", inputVertices[j]);
-    ref currentProperty: shared Property = vertexProps[v,etypeInd];
+    ref currentProperty: shared Property(?) = vertexProps[v,etypeInd];
     currentProperty!.dataType = etypeInd;
     //currentProperty!.propertyIdentifier += colId; // error
     //currentProperty!.propertyValue[colId] = dataArray[j]; // error

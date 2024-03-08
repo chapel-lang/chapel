@@ -71,7 +71,7 @@ else
     read -r DEST_DIR < "$CHPL_HOME/configured-chpl-home"
     DEST_DIR="${STAGE}${DEST_DIR}"
     mkdir -p "$DEST_DIR"
-    
+
     if [ ! -d "$DEST_DIR" ]
     then
       echo "Exiting: Installation dest path '$DEST_DIR' does not exist"
@@ -106,6 +106,12 @@ esac
 CHPL_PYTHON=`"$CHPL_HOME"/util/config/find-python.sh`
 CHPL_BIN_SUBDIR=`"$CHPL_PYTHON" "$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 VERS=`$CHPL_HOME/bin/$CHPL_BIN_SUBDIR/chpl --version`
+if [ $? -ne 0 ]
+then
+  echo "Error: failed to run chpl --version; Have you already built the compiler using make?"
+  echo "       If not, please run 'make' before running this script."
+  exit -1
+fi
 # Remove the "chpl version " part
 VERS=${VERS#chpl version }
 # Replace the periods with spaces.
@@ -233,8 +239,10 @@ myinstallfileto () {
   fi
 }
 
-# run 'cmake' to install the compiler library, 'chpl' and 'chpldoc'
+# this makefile target runs 'cmake' to install the compiler library, 'chpl',
+# and optionally 'chpldoc' if it was built
 (cd compiler && "$MAKE" install-chpl-chpldoc)
+
 
 # copy compiler and runtime lib
 myinstalldir  lib                     "$DEST_RUNTIME_LIB"

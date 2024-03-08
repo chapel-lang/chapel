@@ -1,2 +1,0 @@
-skipField.chpl:4: In function 'main':
-skipField.chpl:37: warning: skipField is deprecated, please use jsonDeserializer instead.

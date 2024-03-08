@@ -103,6 +103,7 @@ class Builder final {
                    declaredHereT& duplicates);
 
   void noteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
+  void tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
 
  public:
   /** Construct a Builder for parsing a top-level module */
@@ -141,7 +142,8 @@ class Builder final {
       Pairs an AST node (e.g., 'Dot') with a location.
       For a list of all locations see "./all-location-maps.h". */
   #define LOCATION_MAP(ast__, location__) \
-    void note##location__##Location(ast__* ast, Location loc);
+    void note##location__##Location(ast__* ast, Location loc); \
+    void tryNote##location__##Location(ast__* ast, Location loc);
   #include "all-location-maps.h"
   #undef LOCATION_MAP
 

@@ -144,6 +144,14 @@ struct Writer<const types::Type*> {
 };
 
 template <>
+struct Writer<const types::Param*> {
+  void operator()(Context* context, std::ostream& oss, const types::Param* param) {
+    stringify<const types::Param*> str;
+    str(oss, CHPL_SYNTAX, param);
+  }
+};
+
+template <>
 struct Writer<types::QualifiedType> {
   void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
     if (!qt.hasTypePtr()) {

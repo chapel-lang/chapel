@@ -132,10 +132,6 @@ module NetworkAtomics {
       }
     }
 
-    proc const writeThis(x) throws {
-      x.write(read());
-    }
-
     proc const serialize(writer, ref serializer) throws {
       writer.write(read());
     }
@@ -336,10 +332,6 @@ module NetworkAtomics {
         }
         chpl_atomic_thread_fence(c_memory_order(order));
       }
-    }
-
-    proc const writeThis(x) throws {
-      x.write(read());
     }
 
     proc const serialize(writer, ref serializer) throws {

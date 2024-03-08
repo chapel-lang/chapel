@@ -3837,6 +3837,78 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
   }
 }
 
+static bool suppressWarnGenericActual(CallExpr* call) {
+  // not finding a call happens for specified return types,
+  // so suppress the warning there
+  if (!call) return true;
+
+  // we generate other warnings for these cases, no need to warn here.
+  if (call->isPrimitive()) return true;
+
+  // and, don't emit a warning for calls to a function marked
+  // with a flag to suppress this warning
+  FnSymbol* fn = call->resolvedOrVirtualFunction();
+  if (fn && fn->hasFlag(FLAG_SUPPRESS_GENERIC_ACTUAL_WARNING))
+    return true;
+
+  // otherwise, don't suppress the warning
+  return false;
+}
+
+static void maybeWarnGenericActual(SymExpr* se, Type* type, CallExpr* inCall) {
+  if (isManagedPtrType(type)) {
+    type = getManagedPtrBorrowType(type);
+  }
+  if (DecoratedClassType* dt = toDecoratedClassType(type)) {
+    type = dt->getCanonicalClass();
+  }
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) &&
+        !se->symbol()->hasFlag(FLAG_MARKED_GENERIC) &&
+        !isBuiltinGenericType(type)) {
+      bool isMethodReceiver = false;
+      if (SymExpr* prevSe = toSymExpr(se->prev)) {
+        if (prevSe->symbol() == gMethodToken) {
+          isMethodReceiver = true;
+        }
+      }
+      bool genericWithDefaults = at->isGenericWithDefaults();
+
+      if (!isMethodReceiver && !genericWithDefaults) {
+        checkSurprisingGenericDecls(se->symbol(), se, nullptr);
+        if (!se->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
+          const char* name = se->symbol()->name;
+          if (se->symbol()->hasFlag(FLAG_TEMP)) {
+            name = toString(type, /* decorate classes */ false);
+          }
+          USR_WARN(se, "please add '(?)' to type '%s' because it is generic",
+                   name);
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
+        }
+      }
+    }
+  }
+}
+
+static void maybeWarnGenericActuals(CallExpr* call) {
+  if (!suppressWarnGenericActual(call)) {
+    for_actuals(actual, call) {
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+          maybeWarnGenericActual(se, ts->type, call);
+        } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
+          if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+            maybeWarnGenericActual(se, vs->typeInfo(), call);
+          }
+        }
+      }
+    }
+  }
+}
+
 static
 FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;
@@ -3900,6 +3972,10 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
 
     if (state == CHECK_FAILED)
       retval = NULL;
+  }
+
+  if (checkState == CHECK_NORMAL_CALL && retval != NULL) {
+    maybeWarnGenericActuals(call);
   }
 
   return retval;
@@ -8174,37 +8250,132 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
 }
 
 
-void warnForIntUintConversion(BaseAST* context,
-                              Type* formalType,
-                              Type* actualType,
-                              Symbol* actual) {
-  if (fWarnIntUint || shouldWarnUnstableFor(context)) {
-    Type* formalVt = formalType->getValType();
-    Type* actualVt = actualType->getValType();
-    if (is_uint_type(formalVt) && is_int_type(actualVt)) {
-      if (get_width(formalVt) <= get_width(actualVt)) {
-        bool isParam = false;
-        bool isNegParam = false;
+void warnForSomeNumericConversions(BaseAST* context,
+                                   Type* formalType,
+                                   Type* actualType,
+                                   Symbol* actual) {
 
-        if (VarSymbol* var = toVarSymbol(actual)) {
-          if (Immediate* imm = var->immediate) {
-            isParam = true;
-            isNegParam = is_negative(imm);
-          }
-        }
+  Type* formalVt = formalType->getValType();
+  Type* actualVt = actualType->getValType();
+  bool formalFloatingPoint = is_real_type(formalVt) ||
+                             is_imag_type(formalVt) ||
+                             is_complex_type(formalVt);
+  bool actualFloatingPoint = is_real_type(actualVt) ||
+                             is_imag_type(actualVt) ||
+                             is_complex_type(actualVt);
+  bool formalIntUint = is_int_type(formalVt) || is_uint_type(formalVt);
+  bool actualIntUint = is_int_type(actualVt) || is_uint_type(actualVt);
 
-        // If it's a param, warn only if it is negative.
-        // Otherwise, warn.
-        if (isNegParam || !isParam) {
-          if (fWarnIntUint) {
-            USR_WARN(context, "potentially surprising int->uint implicit conversion");
-          } else {
-            USR_WARN(context, "int->uint implicit conversion is unstable");
-          }
-          USR_PRINT(context, "add a cast :%s to avoid this warning",
-                    toString(formalVt));
+  // nothing to do if the formal is not numeric
+  if (!formalFloatingPoint && !formalIntUint) return;
+  // nothing to do if the actual is not numeric
+  if (!actualFloatingPoint && !actualIntUint) return;
+
+  int formalWidth = get_component_width(formalVt);
+  int actualWidth = get_component_width(actualVt);
+
+  bool actualIsParam = false;
+  if (VarSymbol* var = toVarSymbol(actual)) {
+    if (var->immediate != nullptr) {
+      actualIsParam = true;
+    }
+  }
+
+  bool userModule = false;
+  if (ModuleSymbol* mod = context->getModule()) {
+    userModule = mod->modTag == MOD_USER;
+  }
+
+  // consider warning for int -> uint implicit conversion
+  if (formalIntUint && actualIntUint &&
+      is_int_type(actualVt) && is_uint_type(formalVt)) {
+    // note: used to check formalWidth <= actualWidth
+    // but that doesn't make sense to me; if the concern is
+    // it could a be negative int, the widths don't matter
+
+    if (fWarnIntUint || shouldWarnUnstableFor(context)) {
+      bool isParam = actualIsParam;
+      bool isNegParam = false;
+
+      if (VarSymbol* var = toVarSymbol(actual)) {
+        if (Immediate* imm = var->immediate) {
+          isNegParam = is_negative(imm);
         }
       }
+
+      // If it's a param, warn only if it is negative.
+      // Otherwise, warn.
+      if (isNegParam || !isParam ||
+          (fWarnParamImplicitNumericConversions && userModule)) {
+        if (fWarnIntUint) {
+          USR_WARN(context, "potentially surprising implicit conversion "
+                            "from '%s' to '%s'",
+                            toString(actualVt), toString(formalVt));
+        } else {
+          USR_WARN(context, "int->uint implicit conversion is unstable");
+        }
+        USR_PRINT(context, "add a cast :%s to avoid this warning",
+                  toString(formalVt));
+        return;
+      }
+    }
+  }
+
+  // consider warning for small int -> small real implicit conversion
+  if (actualIntUint && formalFloatingPoint &&
+      actualWidth < 64 && formalWidth != 64) {
+    if (fWarnSmallIntegralFloat || shouldWarnUnstableFor(context)) {
+      if (fWarnSmallIntegralFloat) {
+        USR_WARN(context, "potentially surprising implicit conversion "
+                          "from '%s' to '%s'",
+                          toString(actualVt), toString(formalVt));
+        USR_PRINT(context, "add a cast :%s to avoid this warning",
+                  toString(formalVt));
+        return;
+      } else if (actualWidth < 32) {
+        // unstable warning focuses on 8 and 16 bit int/uint
+        USR_WARN(context, "implicit conversion from 8- and 16- bit integral "
+                          "types to 'real(32)' is unstable");
+        USR_PRINT(context, "add a cast :%s to avoid this warning",
+                  toString(formalVt));
+        return;
+      }
+    }
+  }
+
+  // consider warning for any int -> real implicit conversion
+  if (fWarnIntegralFloat && userModule &&
+      actualIntUint && formalFloatingPoint) {
+    if (!actualIsParam || fWarnParamImplicitNumericConversions) {
+      USR_WARN(context, "implicit conversion from '%s' to '%s'",
+               toString(actualVt), toString(formalVt));
+      USR_PRINT(context, "add a cast :%s to avoid this warning",
+                toString(formalVt));
+      return;
+    }
+  }
+
+  // consider warning for real(t) -> real(u) implicit conversion
+  if (fWarnFloatFloat && actualFloatingPoint && formalFloatingPoint &&
+      actualWidth != formalWidth && userModule) {
+    if (!actualIsParam || fWarnParamImplicitNumericConversions) {
+      USR_WARN(context, "implicit conversion from '%s' to '%s'",
+               toString(actualVt), toString(formalVt));
+      USR_PRINT(context, "add a cast :%s to avoid this warning",
+                toString(formalVt));
+      return;
+    }
+  }
+
+  // consider warning for int/uint -> int/uint implicit conversion
+  if (fWarnIntegralIntegral && actualIntUint && formalIntUint &&
+      actualWidth != formalWidth && userModule) {
+    if (!actualIsParam || fWarnParamImplicitNumericConversions) {
+      USR_WARN(context, "implicit conversion from '%s' to '%s'",
+               toString(actualVt), toString(formalVt));
+      USR_PRINT(context, "add a cast :%s to avoid this warning",
+                toString(formalVt));
+      return;
     }
   }
 }
@@ -9842,11 +10013,20 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* resolveGenericActual(SymExpr* se, bool resolvePartials = false);
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials = false);
 static Type* resolveGenericActual(SymExpr* se, Type* type);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
-  return resolveGenericActual(se, /* resolvePartials */ true);
+  CallExpr* inCall = nullptr;
+  // compute the call it is contained in, if any
+  for (Expr* e = se; e != nullptr; e = e->parentExpr) {
+    if (CallExpr* c = toCallExpr(e)) {
+      inCall = c;
+      break;
+    }
+  }
+  return resolveGenericActual(se, inCall, /* resolvePartials */ true);
 }
 
 void resolveGenericActuals(CallExpr* call) {
@@ -9860,12 +10040,13 @@ void resolveGenericActuals(CallExpr* call) {
     }
 
     if (SymExpr*   se = toSymExpr(safeActual))   {
-      resolveGenericActual(se);
+      resolveGenericActual(se, call);
     }
   }
 }
 
-static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials) {
   Type* retval = se->typeInfo();
 
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
@@ -9882,8 +10063,8 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
         vs->type = resolveTypeAlias(se);
       }
 
+      Type* origType = vs->typeInfo();
       if (resolvePartials) {
-        Type* origType = vs->typeInfo();
         retval = resolveGenericActual(se, origType);
       }
     }
@@ -10605,21 +10786,19 @@ static void        resolveExprMaybeIssueError(CallExpr* call);
 
 static bool        isMentionOfFnTriggeringCapture(SymExpr* se);
 
+// Note: this function really only makes sense in the context of resolveExpr.
+// It gets passed a symexpr, and we check to see if its parent is a foreach
+// loop. We only want to process the loop one time and since there are multiple
+// symexprs that are children of a foreach, we fix this to only return true when
+// we're at the symexpr for the index variable.
 static LoopWithShadowVarsInterface*
   isForeachWhoseShadowVarsShouldBeResolved(SymExpr *se)
 {
   ForLoop* pfl = toForLoop(se->parentExpr);
-
-  // The pfl->shadowVariables().length > 0 part of the above condition is a
-  // bit of a hack to ensure we don't apply implicit intents on a loop where
-  // we haven't added an explicit intent (via a 'with' clause). Getting
-  // intents to work for 'foreach' loops is a bit of a work in progress and
-  // for the time being I would like to keep the behavior of loops that
-  // don't have a 'with' clause unchanged.
   if(pfl && pfl->isOrderIndependent() && se == pfl->indexGet() &&
-     (pfl->shadowVariables().length > 0))
+     !pfl->isExemptFromImplicitIntents())
   {
-    return pfl;
+     return pfl;
   }
   return nullptr;
 }
@@ -10668,7 +10847,14 @@ Expr* resolveExpr(Expr* expr) {
     else if(LoopWithShadowVarsInterface *loop =
       isForeachWhoseShadowVarsShouldBeResolved(se))
     {
-      setupAndResolveShadowVars(loop);
+      // If this is a loop that we'll convert into a forall
+      // then ignore this for the time being (we'll process
+      // implicit shadow variables for the forall later)
+      // If you want a test that will fail in the absence of this see
+      // arrays/bradc/workarounds/arrayOfArray-workaround.chpl
+      if (!shouldReplaceForLoopWithForall(toForLoop(loop->asExpr()))) {
+        setupAndResolveShadowVars(loop);
+      }
       retval = resolveExprPhase2(expr, fn, expr);
     } else if (isMentionOfFnTriggeringCapture(se)) {
       auto fn = toFnSymbol(se->symbol());
@@ -10724,6 +10910,7 @@ static bool isMentionOfFnTriggeringCapture(SymExpr* se) {
   if (auto call = toCallExpr(se->parentExpr)) {
     if (call->isPrimitive(PRIM_RESOLUTION_POINT)) return false;
     if (call->isPrimitive(PRIM_END_OF_STATEMENT)) return false;
+    if (call->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK)) return false;
     if (call->baseExpr == se) return false;
   }
 
@@ -11490,7 +11677,87 @@ static void checkSpeciallyNamedMethods() {
   }
 }
 
+static void applyGpuAttributesToIterableExprs() {
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+    if (!block->isGpuAttributeBlock()) continue;
+    auto primCall = toCallExpr(block->body.first());
+    auto primitivesBlock = block->getPrimitivesBlock();
+    INT_ASSERT(primCall && primCall->isPrimitive(PRIM_GPU_ATTRIBUTE_BLOCK));
+    INT_ASSERT(primitivesBlock);
 
+    int numUsers = primCall->numActuals();
+
+    // Currently, we can't apply attributes from attribute blocks to promoted
+    // expressions directly. So, for the time being, warn about it if we
+    // see any promotions.
+    int numPromotions = 0;
+
+    std::vector<CallExpr*> calls;
+    collectCallExprs(block, calls);
+    for (auto call : calls) {
+      if (call->resolvedFunction() && call->resolvedFunction()->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+        numPromotions++;
+      }
+    }
+
+    // Check if any of the attributes were 'assertOnGpu', in order to give
+    // a helpful note about 'GpuDiagnostics'.
+    bool hasGpuAssertions = false;
+    for_alist(node, primitivesBlock->body) {
+      if (auto call = toCallExpr(node)) {
+        if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+          hasGpuAssertions = true;
+          break;
+        }
+      }
+    }
+
+    if (numPromotions > 0) {
+      USR_WARN(block, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
+      if (hasGpuAssertions) {
+        USR_PRINT(block, "consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime");
+      }
+    } else if (numUsers == 0 && numPromotions == 0) {
+      USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
+      USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
+      USR_STOP();
+    }
+
+    // Clean up the block, since at this point it has been applied to anything
+    // that needs to have it applied to.
+    primitivesBlock->remove();
+    primCall->remove();
+    block->flattenAndRemove();
+  }
+}
+
+static void postResolveLiftStaticVars() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR_WRAPPER)) {
+      if (!call->inTree()) continue;
+
+      auto wrapperSym = toSymExpr(call->get(1))->symbol();
+      auto initDummySym = toSymExpr(call->get(2))->symbol();
+
+      // Remove the "dummy code" used for type resolution.
+      auto dummyBlock = toBlockStmt(initDummySym->defPoint->parentExpr);
+      INT_ASSERT(dummyBlock);
+      dummyBlock->remove();
+
+      // Move the definition point of the wrapper into the module scope.
+      // But first, keep a handle on the block to be able to move it later.
+      auto wrapperBlock = toBlockStmt(wrapperSym->defPoint->parentExpr);
+      INT_ASSERT(wrapperBlock);
+      call->getModule()->block->insertAtHead(wrapperSym->defPoint->remove());
+
+      // Now move the initialization code into the module init function.
+      // The last statement is the 'return void', which we keep.
+      call->getModule()->initFn->body->insertAtHead(wrapperBlock->remove());
+      wrapperBlock->flattenAndRemove();
+      call->remove();
+    }
+  }
+}
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11567,6 +11834,8 @@ void resolve() {
 
   checkSpeciallyNamedMethods();
 
+  applyGpuAttributesToIterableExprs();
+
   saveGenericSubstitutions();
 
   checkNoVoidFields();
@@ -11598,6 +11867,8 @@ void resolve() {
   }
 
   resolved = true;
+
+  postResolveLiftStaticVars();
 }
 
 /************************************* | **************************************
@@ -14328,8 +14599,7 @@ static bool assocParSafeWarningSilencedByUser(){
     // These checks are expensive so we do them only once
     silencedParSafeWarningLegal = true;
     VarSymbol* noParSafeWarning = getConfigParamBool(baseModule,
-                                                    "noParSafeWarning",
-                                                    /*cachedValue*/nullptr);
+                                                    "noParSafeWarning");
     bool assocParSafeDefaultSet = isSetCmdLineConfig(
                                 /*modName*/"ChapelBase",
                                 /*paramName*/"assocParSafeDefault");

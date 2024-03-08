@@ -356,15 +356,10 @@
       }
 
       @chpldoc.nodoc
-      override proc writeThis(f) throws {
-        f.write("NPBRandomStream(eltType=", eltType:string);
-        f.write(", parSafe=", parSafe);
-        f.write(", seed=", seed, ")");
-      }
-
-      @chpldoc.nodoc
       override proc serialize(writer, ref serializer) throws {
-        writeThis(writer);
+        writer.write("NPBRandomStream(eltType=", eltType:string);
+        writer.write(", parSafe=", parSafe);
+        writer.write(", seed=", seed, ")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //

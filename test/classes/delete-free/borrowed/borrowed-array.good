@@ -1,3 +1,1 @@
 borrowed-array.chpl:2: error: cannot make [domain(1,int(64),one)] real(64) into a borrowed class
-borrowed-array.chpl:2: error: assigning to a range with boundKind.both from a range with boundKind.neither without an explicit cast
-note: An additional error is hidden. Use --print-additional-errors to see it.

@@ -1,4 +1,7 @@
-FROM debian:11
+# Common stage: install dependencies, set up the Debian image
+# ===========================================================
+
+FROM debian:11 AS chapel-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
@@ -48,8 +51,15 @@ ENV CHPL_HOME=/opt/chapel \
     CHPL_GMP=system \
     CHPL_LLVM=system
 
-# acquire sources
 WORKDIR $CHPL_HOME
+
+
+# Build stage: build Chapel from sources
+# ======================================
+
+FROM chapel-base as chapel-build
+
+# acquire sources
 COPY . .
 
 # build Chapel for both C and LLVM backends
@@ -61,4 +71,21 @@ RUN make cleanall
 
 # Hack to get access to Chapel binaries
 RUN cd $CHPL_HOME/bin && ln -s */* .
+
+# The .git folder is huge and we really don't need it.
+RUN rm -rf .git
+RUN for subdir in `ls test || true`; do \
+      if [ "$subdir" != "release" ]; then \
+        rm -rf "test/$subdir"; \
+      fi \
+    done
+RUN rm -rf third-party/llvm/llvm-src
+
+
+# Final stage: copy build results, but omit large files.
+# ======================================
+
+FROM chapel-base as chapel
+COPY --from=chapel-build $CHPL_HOME $CHPL_HOME
+
 ENV PATH="${PATH}:${CHPL_HOME}/bin:${CHPL_HOME}/util"

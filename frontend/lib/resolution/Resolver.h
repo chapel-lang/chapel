@@ -169,6 +169,12 @@ struct Resolver {
                                  ResolutionResultByPostorderID& byPostorder,
                                  DefaultsPolicy defaultsPolicy);
 
+  // Set up Resolver to resolve the numeric values of enum elements
+  static Resolver
+  createForEnumElements(Context* context,
+                        const uast::Enum* enumNode,
+                        ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to resolve instantiated field declaration types
   // without knowing the CompositeType
   static Resolver

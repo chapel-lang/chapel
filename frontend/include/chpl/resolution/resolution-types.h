@@ -38,6 +38,29 @@
 namespace chpl {
 namespace resolution {
 
+/**
+
+  In some situations, we may decide not to resolve a call. This could
+  happen if we believe it to already be ill-formed (e.g., why would we resolve
+  f(x) if x is ill-typed?
+
+  This enum contains reasons why we might want that to do that.
+ */
+enum SkipCallResolutionReason {
+  NONE = 0,
+
+  /* an unknown param (e.g. param int, without a value) */
+  UNKNOWN_PARAM,
+  /* a type that is a generic type unless there are substitutions */
+  GENERIC_TYPE,
+  /* a value of generic type */
+  GENERIC_VALUE,
+  /* UnknownType, ErroneousType */
+  UNKNOWN_ACT, ERRONEOUS_ACT,
+  /* other reason to skip */
+  OTHER_REASON,
+};
+
 enum struct DefaultsPolicy {
   /** Do not use default values when determining field type. */
   IGNORE_DEFAULTS,
@@ -147,7 +170,8 @@ class UntypedFnSignature {
            idTag == uast::asttags::Record   ||
            idTag == uast::asttags::Tuple    ||
            idTag == uast::asttags::Union    ||
-           idTag == uast::asttags::Variable);
+           idTag == uast::asttags::Variable ||
+           idTag == uast::asttags::Enum);
   }
 
   static const owned<UntypedFnSignature>&
@@ -1604,21 +1628,28 @@ class CallResolutionResult {
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
   PoiInfo poiInfo_;
+  // whether the resolution result was handled using some compiler-level logic,
+  // which does not correspond to a TypedSignature or AST.
+  bool speciallyHandled_ = false;
 
  public:
   CallResolutionResult() {}
 
-  // for simple cases where mostSpecific and poiInfo are irrelevant
+  // for simple cases where mostSpecific and poiInfo are irrelevant.
+  // Since the result was handled using some compiler-level logic (hence no
+  // 'mostSpecific'), the result is marked as specially handled.
   CallResolutionResult(types::QualifiedType exprType)
-    : exprType_(std::move(exprType)) {
+    : exprType_(std::move(exprType)), speciallyHandled_(true) {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        types::QualifiedType exprType,
-                       PoiInfo poiInfo)
+                       PoiInfo poiInfo,
+                       bool speciallyHandled = false)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
-      poiInfo_(std::move(poiInfo))
+      poiInfo_(std::move(poiInfo)),
+      speciallyHandled_(speciallyHandled)
   {
   }
 
@@ -1631,10 +1662,14 @@ class CallResolutionResult {
   /** point-of-instantiation scopes used when resolving signature or body */
   const PoiInfo& poiInfo() const { return poiInfo_; }
 
+  /** whether the resolution result was handled using some compiler-level logic */
+  bool speciallyHandled() const { return speciallyHandled_; }
+
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific_ == other.mostSpecific_ &&
            exprType_ == other.exprType_ &&
-           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
+           speciallyHandled_ == other.speciallyHandled_;
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
@@ -1643,6 +1678,7 @@ class CallResolutionResult {
     mostSpecific_.swap(other.mostSpecific_);
     exprType_.swap(other.exprType_);
     poiInfo_.swap(other.poiInfo_);
+    std::swap(speciallyHandled_, other.speciallyHandled_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;

@@ -20,284 +20,17 @@
 
 /*
 
-Basic types and utilities in support of I/O operation.
+Automatically included IO symbols
 
-Most of Chapel's I/O support is within the :mod:`IO` module.  This section
-describes automatically included basic types and routines that support the
-:mod:`IO` module.
-
-Writing
-~~~~~~~~~~~~~~~~~~~
-
-The :proc:`writeln` function allows for a simple implementation
-of a Hello World program:
+All Chapel programs include :proc:`~IO.write`, :proc:`~IO.writeln` and
+:proc:`~IO.writef` by default. This allows for a simple implementation of a
+Hello World program:
 
 .. code-block:: chapel
 
  writeln("Hello, World!");
  // outputs
  // Hello, World!
-
-.. _serialize-deserialize:
-
-The 'serialize' and 'deserialize' Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A Chapel program can implement ``serialize`` and ``deserialize`` methods
-on a user-defined data type to define how that type is deserialized from a
-``fileReader`` or serialized to a ``fileWriter``. The method signatures for
-non-class types are:
-
-.. code-block:: chapel
-
-   proc T.serialize(writer: fileWriter(locking=false, ?),
-                    ref serializer: ?st) throws
-
-   proc ref T.deserialize(reader: fileReader(locking=false, ?),
-                          ref deserializer: ?dt) throws
-
-The signatures for classes are slightly different:
-
-.. code-block:: chapel
-
-   override proc T.serialize(writer: fileWriter(locking=false, ?),
-                             ref serializer: ?st) throws
-
-   override proc T.deserialize(reader: fileReader(locking=false, ?),
-                               ref deserializer: ?dt) throws
-
-The ``serializer`` and ``deserializer`` arguments must satisfy the
-:ref:`Serializer API<io-serializer-API>` and the
-:ref:`Deserializer API<io-deserializer-API>`, respectively.
-
-Basic Usage
------------
-
-Implementations of ``serialize`` and ``deserialize`` methods are not
-necessarily required to utilize their ``serializer`` and ``deserializer``
-arguments, and can instead trivially read and write from their ``fileReader``
-and ``fileWriter`` arguments. For example:
-
-.. code-block:: chapel
-
-  // A record 'R' that serializes as an integer
-  record R : writeSerializable {
-    var x : int;
-
-    proc serialize(writer: fileWriter(locking=false, ?),
-                   ref serializer: ?st) {
-      writer.write(x);
-    }
-  }
-
-  var val = new R(5);
-  writeln(val); // prints '5'
-
-Using Serializers and Deserializers
------------------------------------
-
-:ref:`Serializers<io-serializer-user-API>` and
-:ref:`Deserializers<io-deserializer-user-API>` support a variety of methods
-to support serializing various kinds of types. These methods can be used
-to serialize or deserialize a type in a format-agnostic way. For example,
-consider a simple 'point' type:
-
-.. code-block:: chapel
-
-  record point : writeSerializable {
-    var x : int;
-    var y : int;
-  }
-
-The default implementation of ``point``'s ``serialize`` method will naturally
-serialize ``point`` as a record. In the default serialization format, this
-would look something like ``(x = 2, y = 4)``. In the JSON serialization format,
-the output would instead be ``{"x":4, "y":2}``. While this may be perfectly
-acceptable, what if the author of ``point`` wished to always serialize a
-``point`` as a tuple?
-
-Serializers and Deserializers have "start" methods that begin serialization
-or deserialization of a type, and then return a helper object that implements
-methods to continue the process. To begin serializing ``point`` as a tuple,
-a user may invoke the ``startTuple`` method on the ``serializer``, passing in
-the ``fileWriter`` to use when writing serialized output and the number of
-elements in the tuple. The returned value from ``startTuple`` is a helper
-object that implements ``writeElement`` and ``endTuple`` methods:
-
-.. code-block:: chapel
-
-    proc point.serialize(writer: fileWriter(locking=false, ?),
-                         ref serializer: ?st) {
-      // Start serializing and get the helper object
-      // '2' represents the number of tuple elements to be serialized
-      var ser = serializer.startTuple(writer, 2);
-
-      ser.writeElement(x); // serialize 'x' as a tuple element
-      ser.writeElement(y); // serialize 'y' as a tuple element
-
-      // End serialization of the tuple
-      ser.endTuple();
-    }
-
-Now, when using different Serializers like the :type:`~IO.defaultSerializer` or
-the :type:`~JSON.jsonSerializer`, the ``point`` type can be serialized without
-introducing special cases for each format:
-
-.. code-block:: chapel
-
-  use IO, JSON;
-
-  var p = new point(4, 2);
-
-  // Prints '(4, 2)' in the default serialization format
-  stdout.writeln(p);
-
-  // Prints '[4, 2]' in the JSON serialization format
-  var jsonWriter = stdout.withSerializer(jsonSerializer);
-  jsonWriter.writeln(p);
-
-A similar API exists for deserialization that would allow for deserializing a
-``point`` as a tuple. Please refer to the
-:ref:`IO Serializers technote<ioSerializers>` for more detail on the various
-kinds of types that can be serialized and deserialized. As of Chapel 1.32 the
-supported type-kinds are Classes, Records, Tuples, Arrays, Lists, and Maps.
-
-Compiler-Generated Default Methods
-----------------------------------
-
-Default ``serialize`` methods are created for all types for which a
-user-defined ``serialize`` method is not provided.
-
-Classes will be serialized as a 'Class' type-kind using the Serializer API,
-and will invoke their parent ``serialize`` method before serializing their
-own fields.
-
-Records will be serialized as a 'Record' type-kind using the Serializer API,
-and will serialize each field in the record.
-
-Default ``deserialize`` methods are created for all types for which a
-user-defined ``deserialize`` method is not provided.  The default
-``deserialize`` methods will mirror the relevant API calls in the default
-``serialize`` methods.
-
-For more information on the default serialization format, please refer to the
-:type:`~IO.defaultSerializer` and :type:`~IO.defaultDeserializer` types.
-
-If the compiler sees a user-defined implementation of the ``serialize`` method,
-the ``deserialize`` method, or the deserializing initializer, then the compiler
-may choose to not automatically generate any of the other unimplemented
-methods. This is out of concern that the user has intentionally deviated from
-the default implementation of serialization and deserialization.
-
-Types with compiler-generated versions of these methods do not need to
-explicitly indicate that they satisfy any of the relevant serialization
-interfaces (such as ``writeSerializable``).
-
-.. note::
-
-  Note that it is not currently possible to read and write circular
-  data structures with these mechanisms.
-
-.. _readThis-writeThis:
-
-The readThis() and writeThis() Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. warning::
-
-  ``readThis`` and ``writeThis`` methods are deprecated. Please use
-  :ref:`serialize and deserialize<serialize-deserialize>` methods instead.
-  Until ``readThis`` and ``writeThis`` methods are removed, any
-  compiler-generated implementations of the 'serialize' and 'deserialize'
-  methods will attempt to invoke ``readThis`` and ``writeThis`` methods for
-  the sake of compatibility.
-
-A Chapel program can implement ``readThis`` and ``writeThis`` methods on a
-custom data type to define how that type is read from a fileReader or written to
-a fileWriter.  ``readThis`` accepts a fileReader as its only argument and the
-file must be readable.  ``writeThis`` accepts a fileWriter as its only argument
-and the file must be writable. If neither of these methods is defined, a default
-version of ``readThis`` and ``writeThis`` will be generated by the compiler.
-
-Note that arguments to ``readThis`` and ``writeThis`` may be locked; as a
-result, calling methods on the fileReader or fileWriter in parallel from within
-a ``readThis`` or ``writeThis`` may cause undefined behavior.  Additionally,
-performing I/O on a global fileReader or fileWriter that is the same as the one
-``readThis`` or ``writeThis`` is operating on can result in a deadlock. In
-particular, these methods should not refer to :var:`~IO.stdin`,
-:var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or implicitly (such as by
-calling the global :proc:`writeln` function).  Instead, these methods should
-only perform I/O on the fileReader or fileWriter passed as an argument.
-
-Note that the procedures :proc:`~IO.fileReader.readLiteral` and
-:proc:`~IO.fileWriter.writeLiteral` may be useful when implementing ``readThis``
-and ``writeThis`` methods. These methods are not included by default.
-
-This example defines a writeThis method - so that there will be a function
-resolution error if the record NoRead is read.
-
-.. code-block:: chapel
-
-  record NoRead {
-    var x: int;
-    var y: int;
-    proc writeThis(f) throws {
-      f.write("hello");
-    }
-    // Note that no readThis function will be generated.
-  }
-  var nr = new NoRead();
-  write(nr);
-  // prints out
-  // hello
-
-  // Note that read(nr) will generate a compiler error.
-
-.. _default-readThis-writeThis:
-
-Default writeThis and readThis Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Default ``writeThis`` methods are created for all types for which a
-user-defined ``writeThis`` method is not provided.  They have the following
-semantics:
-
-* for a class: outputs the values within the fields of the class prefixed by
-  the name of the field and the character ``=``.  Each field is separated by a
-  comma.  The output is delimited by ``{`` and ``}``.
-* for a record: outputs the values within the fields of the class prefixed by
-  the name of the field and the character ``=``.  Each field is separated by a
-  comma.  The output is delimited by ``(`` and ``)``.
-
-Default ``readThis`` methods are created for all types for which a user-defined
-``readThis`` method is not provided.  The default ``readThis`` methods are
-defined to read in the output of the default ``writeThis`` method.
-
-Additionally, the Chapel implementation includes ``writeThis`` methods for
-built-in types as follows:
-
-* for an array: outputs the elements of the array in row-major order
-  where rows are separated by line-feeds and blank lines are used to separate
-  other dimensions.
-* for a domain: outputs the dimensions of the domain enclosed by
-  ``{`` and ``}``.
-* for a range: output the lower bound of the range, output ``..``,
-  then output the upper bound of the range.  If the stride of the range
-  is not ``1``, output the word ``by`` and then the stride of the range.
-  If the range has special alignment, output the word ``align`` and then the
-  alignment.
-* for tuples, outputs the components of the tuple in order delimited by ``(``
-  and ``)``, and separated by commas.
-
-These types also include ``readThis`` methods to read the corresponding format.
-Note that when reading an array, the domain of the array must be set up
-appropriately before the elements can be read.
-
-.. note::
-
-  Note that it is not currently possible to read and write circular
-  data structures with these mechanisms.
-
 
  */
 pragma "module included by default"
@@ -820,22 +553,11 @@ module ChapelIO {
     }
 
   @chpldoc.nodoc
-  proc locale.writeThis(f) throws {
-    // FIXME this doesn't resolve without `this`
-    f.write(this._instance);
-  }
-
-  @chpldoc.nodoc
   proc locale.serialize(writer, ref serializer) throws {
+    // FIXME this doesn't resolve without `this`
     writer.write(this._instance);
   }
   locale implements writeSerializable;
-
-  @chpldoc.nodoc
-  proc _ddata.writeThis(f) throws {
-    compilerWarning("printing _ddata class");
-    f.write("<_ddata class cannot be printed>");
-  }
 
   @chpldoc.nodoc
   proc _ddata.serialize(writer, ref serializer) throws {
@@ -844,89 +566,22 @@ module ChapelIO {
   }
   implements writeSerializable(_ddata);
 
-  proc chpl_taskID_t.writeThis(f) throws {
-    f.write(this : uint(64));
+  proc chpl_taskID_t.serialize(writer, ref serializer) throws {
+    writer.write(this : uint(64));
   }
-  proc chpl_taskID_t.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  proc chpl_taskID_t.readThis(f) throws {
-    this = f.read(uint(64)) : chpl_taskID_t;
+  proc ref chpl_taskID_t.deserialize(reader, ref deserializer) throws {
+    this = reader.read(uint(64)) : chpl_taskID_t;
   }
 
   proc type chpl_taskID_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : chpl_taskID_t;
-    ret.readThis(reader);
+    ret.deserialize(reader, deserializer);
     return ret;
   }
 
   @chpldoc.nodoc
-  proc nothing.writeThis(f) {}
-  @chpldoc.nodoc
   proc nothing.serialize(writer, ref serializer) {}
-
-  @chpldoc.nodoc
-  proc ref _tuple.readThis(f) throws {
-    _readWriteHelper(f);
-  }
-
-  @chpldoc.nodoc
-  proc ref _tuple.writeThis(f) throws {
-    _readWriteHelper(f);
-  }
-
-  // Moved here to avoid circular dependencies in ChapelTuple.
-  @chpldoc.nodoc
-  proc ref _tuple._readWriteHelper(f) throws {
-    const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
-    const isJson = st == QIO_TUPLE_FORMAT_JSON;
-    const binary = f._binary();
-
-    // Returns a 4-tuple containing strings representing:
-    // - start of a tuple
-    // - the comma/separator between elements
-    // - a comma/separator for 1-tuples
-    // - end of a tuple
-    proc getLiterals() : 4*string {
-      if st == QIO_TUPLE_FORMAT_SPACE {
-        return ("", " ", "", "");
-      } else if isJson {
-        return ("[", ", ", "", "]");
-      } else {
-        return ("(", ", ", ",", ")");
-      }
-    }
-
-    const (start, comma, comma1tup, end) = getLiterals();
-
-    proc helper(const ref arg) throws where f._writing { f.write(arg); }
-    proc helper(ref arg) throws where !f._writing { arg = f.read(arg.type); }
-
-    proc rwLiteral(lit:string) throws {
-      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
-    }
-
-    if !binary {
-      rwLiteral(start);
-    }
-    if size > 1 {
-      helper(this(0));
-      for param i in 1..size-1 {
-        if !binary {
-          rwLiteral(comma);
-        }
-        helper(this(i));
-      }
-    } else if size == 1 {
-      helper(this(0));
-      if !binary then
-        rwLiteral(comma1tup);
-    } else {
-      // size < 1, print nothing
-    }
-    if !binary {
-      rwLiteral(end);
-    }
-  }
 
   @chpldoc.nodoc
   proc type _tuple.deserializeFrom(reader, ref deserializer) throws {
@@ -960,7 +615,7 @@ module ChapelIO {
   implements writeSerializable(_tuple);
 
   @chpldoc.nodoc
-  proc _iteratorRecord.writeThis(f) throws {
+  proc _iteratorRecord._defaultWriteHelper(f) throws {
     var first: bool = true;
     for e in this {
       if !first then
@@ -974,7 +629,7 @@ module ChapelIO {
   @chpldoc.nodoc
   proc _iteratorRecord.serialize(writer, ref serializer) throws {
     if serializer.type == IO.defaultSerializer {
-      writeThis(writer);
+      _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then
         compilerWarning("Serialization of iterators with non-default Serializer is unstable, and may change in the future");
@@ -988,7 +643,7 @@ module ChapelIO {
   // Write implementation for ranges
   // Follows operator :(range, string)
   @chpldoc.nodoc
-  proc range.writeThis(f) throws
+  proc range._defaultWriteHelper(f) throws
   {
     if hasLowBound() then
       f.write(lowBound);
@@ -1020,7 +675,7 @@ module ChapelIO {
   @chpldoc.nodoc
   proc range.serialize(writer, ref serializer) throws {
     if serializer.type == defaultSerializer {
-      writeThis(writer);
+      _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then
         compilerWarning("Serialization of ranges with non-default Serializer is unstable, and may change in the future");
@@ -1034,7 +689,7 @@ module ChapelIO {
   implements writeSerializable(range);
 
   @chpldoc.nodoc
-  proc ref range.readThis(f) throws {
+  proc ref range._defaultReadHelper(f) throws {
     if hasLowBound() then _low = f.read(_low.type);
 
     f.readLiteral("..");
@@ -1075,7 +730,7 @@ module ChapelIO {
   @chpldoc.nodoc
   proc ref range.deserialize(reader, ref deserializer) throws {
     if deserializer.type == IO.defaultDeserializer {
-      readThis(reader);
+      _defaultReadHelper(reader);
     } else {
       if chpl_warnUnstable then
         compilerWarning("Deserialization of ranges with non-default Deserializer is unstable, and may change in the future");
@@ -1086,7 +741,7 @@ module ChapelIO {
         const data = reader.read(string);
         var f = openMemFile();
         f.writer(locking=false).write(data);
-        readThis(f.reader(locking=false));
+        _defaultReadHelper(f.reader(locking=false));
       }
     }
   }
@@ -1104,14 +759,9 @@ module ChapelIO {
   implements initDeserializable(range);
 
   @chpldoc.nodoc
-  override proc LocaleModel.writeThis(f) throws {
-    f.writeLiteral("LOCALE");
-    f.write(chpl_id());
-  }
-
-  @chpldoc.nodoc
   override proc LocaleModel.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.writeLiteral("LOCALE");
+    writer.write(chpl_id());
   }
   LocaleModel implements writeSerializable;
 
@@ -1119,11 +769,6 @@ module ChapelIO {
      show information about the error including the result
      of calling :proc:`Error.message`.
   */
-  @chpldoc.nodoc
-  override proc Error.writeThis(f) throws {
-    f.write(chpl_describe_error(this));
-  }
-
   @chpldoc.nodoc
   override proc Error.serialize(writer, ref serializer) throws {
     writer.write(chpl_describe_error(this));
@@ -1177,24 +822,4 @@ module ChapelIO {
   operator :(x, type t:string) where isFcfType(x.type) do
     return chpl_stringify_wrapper(x);
 
-  //
-  // Catch all
-  //
-  // Convert 'x' to a string just the way it would be written out.
-  //
-  // This is marked as last resort so it doesn't take precedence over
-  // generated casts for types like enums
-  //
-  // This version only applies to non-primitive types
-  // (primitive types should support :string directly)
-  pragma "last resort"
-  @chpldoc.nodoc
-  operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    compilerWarning(
-      "universal 'x:string' is deprecated; please define a cast-to-string operator on the type '" +
-      x.type:string +
-      "', or use 'try! \"%?\".format(x)' from IO.FormattedIO instead"
-    );
-    return chpl_stringify_wrapper(x);
-  }
 }

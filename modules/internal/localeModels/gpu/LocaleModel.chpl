@@ -239,13 +239,9 @@ module LocaleModel {
       sid = _sid;
     }
 
-    override proc writeThis(f) throws {
-      parent.writeThis(f);
-      f.write("-GPU" + sid:string);
-    }
-
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      parent.serialize(writer, serializer);
+      writer.write("-GPU" + sid:string);
     }
 
     override proc _getChildCount(): int { return 0; }
@@ -409,12 +405,8 @@ module LocaleModel {
     override proc chpl_name() do return local_name();
     proc local_name() do return "rootLocale";
 
-    override proc writeThis(f) throws {
-      f.write(name);
-    }
-
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(name);
     }
 
     override proc _getChildCount() do return this.myLocaleSpace.size;

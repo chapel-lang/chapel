@@ -331,6 +331,7 @@ struct ParserContext {
                             UniqueString resourceName);
 
   CommentsAndStmt buildManageStmt(YYLTYPE location,
+                                  YYLTYPE locHeader,
                                   ParserExprList* managerExprs,
                                   YYLTYPE locBlockOrDo,
                                   BlockOrDo blockOrDo);
@@ -516,7 +517,8 @@ struct ParserContext {
                          YYLTYPE locBodyAnchor,
                          BlockOrDo consume);
 
-  CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
+  CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLoop,
+                                       YYLTYPE locHeader,
                                        YYLTYPE locIndex,
                                        YYLTYPE locBodyAnchor,
                                        ParserExprList* indexExprs,
@@ -524,15 +526,17 @@ struct ParserContext {
                                        WithClause* withClause,
                                        CommentsAndStmt cs);
 
-  CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
+  CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLoop,
+                                       YYLTYPE locHeader,
                                        YYLTYPE locIterExprs,
                                        YYLTYPE locBodyAnchor,
                                        ParserExprList* iterExprs,
                                        WithClause* withClause,
                                        CommentsAndStmt cs);
 
-  CommentsAndStmt buildGeneralLoopStmt(YYLTYPE locKw,
+  CommentsAndStmt buildGeneralLoopStmt(YYLTYPE locLoop,
                                       YYLTYPE locIndex,
+                                      YYLTYPE locHeader,
                                       YYLTYPE locBodyAnchor,
                                       PODUniqueString loopType,
                                       AstNode* indexExpr,
@@ -542,6 +546,7 @@ struct ParserContext {
                                       // AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
+                                        YYLTYPE locHeader,
                                         YYLTYPE locIndex,
                                         YYLTYPE locBodyAnchor,
                                         AstNode* indexExpr,
@@ -609,6 +614,7 @@ struct ParserContext {
   void validateExternTypeDeclParts(YYLTYPE locStart, TypeDeclParts& parts);
 
   CommentsAndStmt buildAggregateTypeDecl(YYLTYPE location,
+                                         YYLTYPE headerLoc,
                                          TypeDeclParts parts,
                                          YYLTYPE inheritLoc,
                                          ParserExprList* optInherit,

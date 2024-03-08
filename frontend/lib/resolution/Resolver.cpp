@@ -61,6 +61,8 @@ static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
     return QualifiedType::MODULE;
   } else if (isTypeDecl(tag)) {
     return QualifiedType::TYPE;
+  } else if (asttags::isEnumElement(tag)) {
+    return QualifiedType::CONST_VAR;
   }
 
   return QualifiedType::UNKNOWN;
@@ -319,6 +321,15 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
   ret.fieldTypesOnly = true;
+  return ret;
+}
+
+Resolver
+Resolver::createForEnumElements(Context* context,
+                                const uast::Enum* enumNode,
+                                ResolutionResultByPostorderID& byPostorder) {
+  auto ret = Resolver(context, enumNode, byPostorder, nullptr);
+  ret.byPostorder.setupForSymbol(enumNode);
   return ret;
 }
 
@@ -1522,7 +1533,10 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
   if (!c.exprType().hasTypePtr()) {
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     r.setMostSpecific(c.mostSpecific());
-    return true;
+
+    // If the call was specially handled, assume special-case logic has already
+    // issued its own error.
+    return !c.speciallyHandled();
   } else {
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
@@ -1581,7 +1595,7 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
                                             const CallResolutionResult& c,
                                             AssociatedAction::Action action,
                                             ID id) {
-  if (!c.exprType().hasTypePtr()) {
+  if (!c.exprType().hasTypePtr() && !c.speciallyHandled()) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   } else {
     // save candidates as associated functions
@@ -3311,20 +3325,7 @@ void Resolver::exit(const Call* call) {
                              &actualAsts);
 
   // With some exceptions (see below), don't try to resolve a call that accepts:
-  enum SkipReason {
-    NONE = 0,
-
-    /* an unknown param (e.g. param int, without a value) */
-    UNKNOWN_PARAM,
-    /* a type that is a generic type unless there are substitutions */
-    GENERIC_TYPE,
-    /* a value of generic type */
-    GENERIC_VALUE,
-    /* UnknownType, ErroneousType */
-    UNKNOWN_ACT, ERRONEOUS_ACT,
-    /* other reason to skip */
-    OTHER_REASON,
-  } skip = NONE;
+  SkipCallResolutionReason skip = NONE;
   // EXCEPT, to handle split-init with an 'out' formal,
   // the actual argument can have unknown / generic type if it
   // refers directly to a particular variable.
@@ -3402,6 +3403,11 @@ void Resolver::exit(const Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+  } else {
+    // We're skipping the call, but explicitly store the 'unknown type'
+    // in the map.
+    ResolvedExpression& r = byPostorder.byAst(call);
+    r.setType(QualifiedType());
   }
 
   inLeafCall = nullptr;

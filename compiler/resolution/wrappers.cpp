@@ -1550,8 +1550,9 @@ static void addArgCoercion(FnSymbol*  fn,
   SET_LINENO(actual);
 
   // generate a warning in some cases for int->uint implicit conversion
-  warnForIntUintConversion(call, formal->type, actual->symbol()->type,
-                           actual->symbol());
+  // generate a warning in some cases for small int -> real implicit conversion
+  warnForSomeNumericConversions(call, formal->type, actual->symbol()->type,
+                                actual->symbol());
 
   Symbol*     prevActual = actual->symbol();
   TypeSymbol* ats        = prevActual->type->symbol;

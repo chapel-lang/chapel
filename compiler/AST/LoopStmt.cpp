@@ -26,6 +26,7 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mBreakLabel       = 0;
   mContinueLabel    = 0;
   mOrderIndependent = false;
+  mExemptFromImplicitIntents = false;
   mVectorizationHazard = false;
   mParallelAccessVectorizationHazard = false;
   mLLVMMetadataList = {};
@@ -59,6 +60,14 @@ bool LoopStmt::isOrderIndependent() const
 void LoopStmt::orderIndependentSet(bool orderIndependent)
 {
   mOrderIndependent = orderIndependent;
+}
+
+void LoopStmt::exemptFromImplicitIntents() {
+  mExemptFromImplicitIntents = true;
+}
+
+bool LoopStmt::isExemptFromImplicitIntents() const {
+  return mExemptFromImplicitIntents;
 }
 
 bool LoopStmt::hasVectorizationHazard() const

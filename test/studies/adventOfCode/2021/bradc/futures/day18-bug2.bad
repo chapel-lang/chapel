@@ -5,6 +5,9 @@ day18-bug2.chpl:23: warning: please use '?' when declaring a routine with a gene
 day18-bug2.chpl:23: note: for example with 'Node(?)'
 day18-bug2.chpl:26: warning: please use '?' when declaring a variable with generic type
 day18-bug2.chpl:26: note: for example with 'Node(?)'
+$CHPL_HOME/modules/internal/OwnedObject.chpl:133: In method 'init=':
+$CHPL_HOME/modules/internal/OwnedObject.chpl:137: warning: please add '(?)' to type 'Node' because it is generic
+  day18-bug2.chpl:26: called as (owned Node?).init=(src: nil)
 $CHPL_HOME/modules/internal/OwnedObject.chpl:57: In initializer:
 $CHPL_HOME/modules/internal/OwnedObject.chpl:62: error: Could not coerce 'nil' to 'borrowed Node?' in initialization
   $CHPL_HOME/modules/internal/OwnedObject.chpl:137: called as owned.init(type chpl_t = borrowed Node?)

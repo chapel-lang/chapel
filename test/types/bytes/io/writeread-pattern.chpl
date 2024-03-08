@@ -55,7 +55,7 @@ proc test(byteRange) {
   {
     // write them to a channel
     var bytesWriter = bytesChannel.writer(locking=false);
-    bytesWriter.writef("%|*s", randomBytes.size, randomBytes);
+    bytesWriter.writeBinary(randomBytes, randomBytes.size);
     bytesWriter.close();
   }
 
@@ -64,7 +64,7 @@ proc test(byteRange) {
     var bytesReader = bytesChannel.reader(locking=false);
     var readBytes = b"";
     var readLen = randomBytes.size;
-    bytesReader.readf("%|*s", readLen, readBytes);
+    bytesReader.readBinary(readBytes, readLen);
     bytesReader.close();
     // compare
     if readBytes == randomBytes {

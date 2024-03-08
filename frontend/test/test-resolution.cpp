@@ -245,6 +245,15 @@ void ensureParamInt(const QualifiedType& type, int64_t expectedValue) {
   assert(type.param()->toIntParam()->value() == expectedValue);
 }
 
+void ensureParamUint(const QualifiedType& type, uint64_t expectedValue) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isUintType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isUintParam());
+  assert(type.param()->toUintParam()->value() == expectedValue);
+}
+
 void ensureParamBool(const QualifiedType& type, bool expectedValue) {
   assert(type.kind() == QualifiedType::PARAM);
   assert(type.type() != nullptr);

@@ -134,6 +134,10 @@ PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
 PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
 
+PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper")
+
 PRIMITIVE_G(ADDR_OF, "addr of")
 PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")
@@ -169,6 +173,8 @@ PRIMITIVE_G(GPU_INIT_KERNEL_CFG, "gpu init kernel cfg")
 PRIMITIVE_G(GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg")
 PRIMITIVE_G(GPU_ARG, "gpu arg")
 PRIMITIVE_G(GPU_PID_OFFLOAD, "gpu pid offload")
+PRIMITIVE_R(GPU_ATTRIBUTE_BLOCK, "gpu attribute block")
+PRIMITIVE_R(GPU_PRIMITIVE_BLOCK, "gpu primitive block")
 PRIMITIVE_G(GET_SERIAL, "task_get_serial")
 PRIMITIVE_G(SET_SERIAL, "task_set_serial")
 
@@ -411,4 +417,4 @@ PRIMITIVE_G(BREAKPOINT, "breakpoint")
 
 PRIMITIVE_G(CONST_ARG_HASH, "hash const arguments")
 PRIMITIVE_G(CHECK_CONST_ARG_HASH, "check hashes of const arguments")
-PRIMITIVE_R(TASK_INDEPENDENT_SVAR_CAPTURE, "task independent svar capture")
+PRIMITIVE_R(TASK_PRIVATE_SVAR_CAPTURE, "task private svar capture")

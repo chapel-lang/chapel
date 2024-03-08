@@ -71,13 +71,9 @@ module LocaleModel {
       name_ = _parent.chpl_name() + "-CPU" + sid:string;
     }
 
-    override proc writeThis(f) throws {
-      parent.writeThis(f);
-      f.write('.'+name_);
-    }
-
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      parent.serialize(writer, serializer);
+      writer.write('.'+name_);
     }
 
     override proc _getChildCount(): int { return 0; }
@@ -121,9 +117,9 @@ module LocaleModel {
       name_ = _parent.chpl_name() + "-GPU" + sid:string;
     }
 
-    override proc writeThis(f) throws {
-      parent.writeThis(f);
-      f.write('.'+name_);
+    override proc serialize(writer, ref serializer) throws {
+      parent.serialize(writer, serializer);
+      writer.write('.'+name_);
     }
 
     override proc _getChildCount(): int { return 0; }
@@ -277,8 +273,8 @@ module LocaleModel {
     override proc chpl_name() do return local_name();
     proc local_name() do return "rootLocale";
 
-    override proc writeThis(f) throws {
-      f.write(name);
+    override proc serialize(writer, ref serializer) throws {
+      writer.write(name);
     }
 
     override proc _getChildCount() do return this.myLocaleSpace.size;

@@ -53,14 +53,6 @@ iter streamRandomReal64(hi: int=4096) {
   for triple in streamRandomNumeric(real(64), hi) do yield triple;
 }
 
-iter streamRandomImag32(hi: int=4096) {
-  for triple in streamRandomNumeric(imag(32), hi) do yield triple;
-}
-
-iter streamRandomImag64(hi: int=4096) {
-  for triple in streamRandomNumeric(imag(64), hi) do yield triple;
-}
-
 proc test0() {
   extern proc fmaf(x: real(32), y: real(32), z:real(32)): real(32);
   for (x, y, z) in streamRandomReal32() {
@@ -92,32 +84,8 @@ proc test2() {
   }
 }
 
-proc test3() {
-  extern proc fmaf(x: real(32), y: real(32), z:real(32)): real(32);
-  for (x, y, z) in streamRandomImag32() {
-    const n1 = Math.fma(x, y, z);
-    type t = real(32);
-    const n2 = fmaf(x:t, y:t, z:t):imag(32);
-    const ok = isClose(n1, n2);
-    assert(ok);
-  }
-}
-
-proc test4() {
-  extern proc fma(x: real(64), y: real(64), z:real(64)): real(64);
-  for (x, y, z) in streamRandomImag64() {
-    const n1 = Math.fma(x, y, z);
-    type t = real(64);
-    const n2 = fma(x:t, y:t, z:t):imag(64);
-    const ok = isClose(n1, n2);
-    assert(ok);
-  }
-}
-
 proc main() {
   test0();
   test1();
   test2();
-  test3();
-  test4();
 }

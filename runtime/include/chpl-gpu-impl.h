@@ -74,18 +74,28 @@ bool chpl_gpu_impl_stream_ready(void* stream);
 void chpl_gpu_impl_stream_synchronize(void* stream);
 
 bool chpl_gpu_impl_can_reduce(void);
+bool chpl_gpu_impl_can_sort(void);
 
 #define DECL_ONE_REDUCE_IMPL(chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
                                                     void* stream);
-GPU_REDUCE(DECL_ONE_REDUCE_IMPL, sum)
-GPU_REDUCE(DECL_ONE_REDUCE_IMPL, min)
-GPU_REDUCE(DECL_ONE_REDUCE_IMPL, max)
-GPU_REDUCE(DECL_ONE_REDUCE_IMPL, minloc)
-GPU_REDUCE(DECL_ONE_REDUCE_IMPL, maxloc)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, sum)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, min)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, max)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, minloc)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, maxloc)
 
 #undef DECL_ONE_REDUCE_IMPL
+
+#define DECL_ONE_SORT_IMPL(chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream);
+GPU_CUB_WRAP(DECL_ONE_SORT_IMPL, keys)
+// TODO: GPU_SORT(DECL_ONE_SORT_IMPL, keysDesc/ DoubleBuffer/Pairs etc)
+
+#undef DECL_ONE_SORT_IMPL
 
 #ifdef __cplusplus
 }

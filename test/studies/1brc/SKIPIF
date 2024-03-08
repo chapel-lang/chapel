@@ -12,6 +12,11 @@ if [[ ${CHPL_NIGHTLY_TEST_CONFIG_NAME} == "valgrind" ]]; then
   exit
 fi
 
+if [[ ${CHPL_TEST_VGRND_EXE} == "on" ]]; then
+  echo "True"
+  exit
+fi
+
 # If we've already generated the input dataset no need to regenerate it
 if [[ -e measurements.txt ]]; then
   echo "False"

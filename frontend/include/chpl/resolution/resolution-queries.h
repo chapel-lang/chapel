@@ -71,6 +71,31 @@ types::QualifiedType getInstantiationType(Context* context,
                                           types::QualifiedType actualType,
                                           types::QualifiedType formalType);
 
+/**
+  Returns a map from enum element IDs to their numeric values.
+  The caller is responsible for validating that node is an enum ID.
+  If an invalid ID is given, an empty map is returned.
+
+  Abstract elements are not stored in the returned map, to distinguish
+  from non-abstract elements whose values could not be computed.
+ */
+const std::map<ID, types::QualifiedType>&
+computeNumericValuesOfEnumElements(Context* context, ID node);
+
+const chpl::optional<types::QualifiedType>&
+computeUnderlyingTypeOfEnum(Context* context, ID element);
+
+/**
+  Returns the numeric value of an enum element.
+  The caller is responsible for validating that element is an enum element ID.
+  If an invalid ID is given, an empty optional is returned.
+ */
+const chpl::optional<types::QualifiedType>&
+computeNumericValueOfEnumElement(Context* context, ID element);
+
+ID lookupEnumElementByNumericValue(Context* context,
+                                   const ID& node,
+                                   const types::QualifiedType& value);
 
 /////// function resolution
 

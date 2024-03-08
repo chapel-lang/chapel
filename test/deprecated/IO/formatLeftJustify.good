@@ -1,2 +1,0 @@
-|1    |
-formatLeftJustify.chpl:1: warning: left justification with "%-" is deprecated; please use "%<" instead.

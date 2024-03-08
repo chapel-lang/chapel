@@ -291,7 +291,7 @@ record LinkedList : serializable {
   }
 
   @chpldoc.nodoc
-  proc writeThis(f) throws {
+  proc _defaultWriteHelper(f) throws {
     var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -325,83 +325,13 @@ record LinkedList : serializable {
 
   proc serialize(writer, ref serializer) throws {
     if writer.serializerType == IO.defaultSerializer {
-      writeThis(writer);
+      _defaultWriteHelper(writer);
     } else {
       var ser = serializer.startList(writer, size);
       for e in this do
         ser.writeElement(e);
       ser.endList();
     }
-  }
-
-  @chpldoc.nodoc
-  proc ref readThis(f) throws {
-    use OS;
-
-    //
-    // Special handling for reading in order to handle reading an arbitrary
-    // size.
-    //
-    const isBinary = f._binary();
-    const arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-    const isSpace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !isBinary;
-    const isJson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !isBinary;
-    const isChpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !isBinary;
-
-    // How many elements should we read (for binary mode)?
-    const num : int = if isBinary then f.read(int) else 0;
-
-    if isJson || isChpl then f.readLiteral("[");
-
-    // Clear out existing elements in the list.
-    destroy();
-
-    var isFirst = true;
-    var hasReadEnd = false;
-    var i = 0;
-
-    while !hasReadEnd {
-      if isBinary {
-        if i >= num then break;
-        continue;
-      }
-
-      if isFirst {
-        isFirst = false;
-
-        // Try reading an end bracket. If we don't, then continue on.
-        try {
-          if isJson || isChpl {
-            f.readLiteral("]");
-          } else if isSpace {
-            f._readNewline();
-          }
-
-          hasReadEnd = true;
-          break;
-        } catch err: BadFormatError {
-          // Continue on if we didn't read an end bracket.
-        }
-      } else {
-
-        // Try to read a space or a comma. Break if we don't.
-        try {
-          if isSpace {
-            f.readLiteral(" ");
-          } else if isJson || isChpl {
-            f.readLiteral(",");
-          }
-        } catch err: BadFormatError {
-          break;
-        }
-      }
-
-      append(f.read(eltType));
-      i += 1;
-    }
-
-    if !hasReadEnd then
-      if isJson || isChpl then f.readLiteral("]");
   }
 
   proc ref deserialize(reader: fileReader, ref deserializer) throws

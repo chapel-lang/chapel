@@ -1,0 +1,9 @@
+#!/bin/bash
+git clone https://github.com/Blosc/c-blosc.git
+cd c-blosc
+mkdir build
+cd build
+cmake ..
+make -j4
+cd ../..
+cp c-blosc/build/blosc/*.so* .

@@ -95,16 +95,26 @@ bool isSetCmdLineConfig(const char* moduleName, const char* paramName) {
   return false;
 }
 
-
-VarSymbol* getConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
-                              VarSymbol* cachedValue) {
+// Any call to this function MUST cache the result in a local variable
+// Ex:
+// bool usePointerImplementation(void) {
+//   static bool flag = false;
+//   static bool flagLegal = false;
+//   if(!flagLegal) {
+//     flag = getConfigParamBool(baseModule,"flag") == gTrue;
+//     flagLegal = true;
+//   }
+//   return flag;
+// }
+VarSymbol* getConfigParamBool(ModuleSymbol* modSym, const char* configParamName) {
 
   // TODO: This is O(n) number of params, we need a better way to look
   // things up after resolve. I think that 'dyno' can always do the
   // elegant thing here. Just preserve the ID for 'ChapelBase', and then
   // use it in conjunction with a lookup for the config name. You fetch
   // the 'ResolvedExpression' and you're done.
-  if (!cachedValue) {
+  VarSymbol* retVal = nullptr;
+  if (!retVal) {
     if (!modSym->initFn || !modSym->initFn->isResolved()) {
       INT_FATAL(modSym, "Called before '%s' is resolved",
                         modSym->name);
@@ -119,20 +129,20 @@ VarSymbol* getConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
             INT_FATAL("Unexpected config param type or bad AST");
             return nullptr;
           }
-          cachedValue = vs;
+          retVal = vs;
           break;
         }
       }
     }
 
     // Provide a hint, just in case.
-    if (!cachedValue) {
+    if (!retVal) {
       INT_FATAL("Could not find '%s', is it declared in '%s'?",
                 configParamName,
                 modSym->name);
     }
   }
-  return cachedValue;
+  return retVal;
 }
 
 
