@@ -60,17 +60,20 @@ static const char* getTmpDir(void) {
 // Returns 0 on success, 1 and prints an error message on failure
 static int checkSlurmVersion(void) {
   const int buflen = 256;
-  char version[buflen];
+  char versionBuf[buflen];
   char *argv[3];
   argv[0] = (char *) "sbatch";
   argv[1] = (char *) "--version";
   argv[2] = NULL;
 
-  memset(version, 0, buflen);
-  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
-    chpl_error("Error trying to determine slurm version", 0, 0);
+  char* version = getenv("CHPL_LAUNCHER_SLURM_VERSION");
+  if (version == NULL) {
+    version = versionBuf;
+    memset(version, 0, buflen);
+    if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+      chpl_error("Error trying to determine slurm version", 0, 0);
+    }
   }
-
   if (!strstr(version, "slurm")) {
     printf("Error: This launcher is only compatible with native slurm\n");
     printf("Output of \"sbatch --version\" was: %s\n", version);
@@ -590,7 +593,6 @@ static void chpl_launch_cleanup(void) {
 int chpl_launch(int argc, char* argv[], int32_t numLocales,
                 int32_t numLocalesPerNode) {
   int retcode;
-
   // check the slurm version before continuing
   if (checkSlurmVersion()) {
     return 1;
