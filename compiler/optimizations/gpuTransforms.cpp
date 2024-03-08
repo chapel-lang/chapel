@@ -1537,10 +1537,9 @@ void GpuKernel::findGpuPrimitives() {
         USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
       }
       blockSizeCall_ = callExpr;
+      blockSize_ = toSymExpr(callExpr->get(1))->symbol();
     } else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
       gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
-
-      blockSize_ = toSymExpr(callExpr->get(1))->symbol();
     }
   }
 
