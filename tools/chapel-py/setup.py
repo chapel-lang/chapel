@@ -33,12 +33,16 @@ for line in chpl_variables_lines:
     if len(elms) == 2:
         chpl_variables[elms[0].strip()] = elms[1].strip()
 
+have_llvm = str(chpl_variables.get("CHPL_LLVM"))
 llvm_config = str(chpl_variables.get("CHPL_LLVM_CONFIG"))
 
 host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
 chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
 
 CXXFLAGS = []
+if have_llvm:
+    CXXFLAGS += ["-DHAVE_LLVM"]
+
 CXXFLAGS += ["-Wno-c99-designator"]
 CXXFLAGS += subprocess.check_output([llvm_config, "--cxxflags"]).decode(sys.stdout.encoding).strip().split()
 CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
