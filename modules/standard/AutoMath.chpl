@@ -334,9 +334,9 @@ module AutoMath {
   inline proc max(x: uint(64), y: uint(64)) do return if x > y then x else y;
 
   @chpldoc.nodoc
-  inline proc max(x: real(32), y: real(32)) do return if (x > y) | isNan(x) then x else y;
+  inline proc max(x: real(32), y: real(32)) do return if (x > y) || isNan(x) then x else y;
   @chpldoc.nodoc
-  inline proc max(x: real(64), y: real(64)) do return if (x > y) | isNan(x) then x else y;
+  inline proc max(x: real(64), y: real(64)) do return if (x > y) || isNan(x) then x else y;
 
   @chpldoc.nodoc
   inline proc max(x: int(8), y: uint(8)) do return if x > y then x : uint(8) else y;
@@ -403,9 +403,9 @@ module AutoMath {
   inline proc min(x: uint(64), y: uint(64)) do return if x < y then x else y;
 
   @chpldoc.nodoc
-  inline proc min(x: real(32), y: real(32)) do return if (x < y) | isNan(x) then x else y;
+  inline proc min(x: real(32), y: real(32)) do return if (x < y) || isNan(x) then x else y;
   @chpldoc.nodoc
-  inline proc min(x: real(64), y: real(64)) do return if (x < y) | isNan(x) then x else y;
+  inline proc min(x: real(64), y: real(64)) do return if (x < y) || isNan(x) then x else y;
 
   @chpldoc.nodoc
   inline proc min(x: int(8), y: uint(8)) do return if x < y then x else y : int(8);
