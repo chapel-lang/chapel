@@ -1107,6 +1107,7 @@ static void testCPtrEltType() {
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
   }
   return;
   { 
@@ -1124,6 +1125,7 @@ static void testCPtrEltType() {
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
   }
 }
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
