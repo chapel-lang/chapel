@@ -207,8 +207,12 @@ bound. The ``L`` is optional; if it isn't specified then Chapel will run
 the "ideal" number of locales based on the node architecture. Currently this
 is limited to the value of ``CHPL_RT_LOCALES_PER_NODE``; in future releases
 we plan to include more sophisticated heuristics such as automatically
-running one locale per socket on nodes with multiple sockets. Note: the
-``-nl NxLt`` syntax is considered unstable and may change in the future.
+running one locale per socket on nodes with multiple sockets.
+
+.. note::
+
+   The ``-nl NxLt`` syntax is considered unstable and may change in the
+   future.
 
 By default, Chapel will try to bind co-locales to an architectural feature.
 For example, launching a Chapel program with the argument ``-nl 1x2`` on a
