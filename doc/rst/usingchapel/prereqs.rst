@@ -26,11 +26,11 @@ for using Chapel:
     * Building the Chapel compiler and bundled components requires
       C++17 and one of the following:
 
-      * GCC 7.1 or newer
+      * GCC 7.4 or newer
 
       * Clang 5.0 or newer
 
-      * Apple Clang 9.3 or newer
+      * Apple Clang 10.0 or newer
 
     * C11 support, while not required, will enable faster atomic operations.
 
