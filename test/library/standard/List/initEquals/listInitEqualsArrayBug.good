@@ -1,2 +1,2 @@
-listInitEqualsArrayBug.chpl:5: warning: list([domain(1,int(64),one)] int(64),false)
-listInitEqualsArrayBug.chpl:9: warning: list([domain(1,int(64),one)] int(64),false)
+list([domain(1,int(64),one)] int(64),false) = [1 2 3, 4 5 6]
+list([domain(1,int(64),one)] int(64),false) = [1 2 3, 4 5 6]
