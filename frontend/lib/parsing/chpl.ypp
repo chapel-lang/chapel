@@ -456,8 +456,8 @@
 %left TALIGN TBY THASH
 %left TOR
 %left TAND
-%nonassoc TEQUAL TNOTEQUAL
-%nonassoc TLESSEQUAL TGREATEREQUAL TLESS TGREATER
+%left TEQUAL TNOTEQUAL
+%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
 %left TDOTDOT TDOTDOTOPENHIGH
 // These are not currently supported, though we've discussed adding them
 //%left TDOTDOTOPENLOW TDOTDOTOPENBOTH
@@ -3505,7 +3505,12 @@ dot_expr:
  * ( <tuple_expr_ls> ) -- Two-tuples and up.  A tuple_expr_ls contains at least 2 elements.
  */
 parenthesized_expr:
-  TLP tuple_component TRP           { $$ = $2; }
+  TLP tuple_component TRP
+  {
+    // Use 'tryNote' here in case an expression like ((x)) comes along.
+    BUILDER->tryNoteExprParenthLocation($2, LOC(@$));
+    $$ = $2;
+  }
 | TLP tuple_component TCOMMA TRP
   {
     $$ = Tuple::build(BUILDER, LOC(@$), context->consume($2)).release();

@@ -23,6 +23,7 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/parser-error.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
 #include <string.h>
@@ -119,6 +120,7 @@ struct Visitor {
   void checkSparseKeyword(const FnCall* node);
   void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
+  void checkNonAssociativeComparisons(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
@@ -707,6 +709,61 @@ void Visitor::checkDmappedKeyword(const OpCall* node) {
     if (shouldEmitUnstableWarning(node))
       warn(node, "'dmapped' keyword is unstable,"
            " instead please use factory functions when available");
+}
+
+static int binOpPrecedence(UniqueString ustr) {
+  bool unary = false;
+  bool postfix = false;
+  return opToPrecedence(ustr, unary, postfix);
+}
+
+static void collectEqualPrecedenceOpsWithoutParens(Context* context,
+                                                   const OpCall* node,
+                                                   int prec,
+                                                   std::vector<const OpCall*>& ops,
+                                                   std::vector<const AstNode*>& operands) {
+  auto check = [context, prec, &ops, &operands](const AstNode* child) {
+    if (auto childOp = child->toOpCall()) {
+      if (childOp->numActuals() == 2 && binOpPrecedence(childOp->op()) == prec) {
+        // The child only counts as a 'problem' if it's not parenthesized.
+        if (parsing::locateExprParenthWithAst(context, childOp).line() == -1) {
+          collectEqualPrecedenceOpsWithoutParens(context, childOp, prec, ops, operands);
+          return;
+        }
+      }
+    }
+
+    operands.push_back(child);
+  };
+
+  check(node->actual(0));
+  ops.push_back(node);
+  check(node->actual(1));
+}
+
+void Visitor::checkNonAssociativeComparisons(const OpCall* node) {
+  if (node->numActuals() != 2) return;
+
+  auto lessThanPrec = binOpPrecedence(USTR("<"));
+  auto eqPrec = binOpPrecedence(USTR("=="));
+  auto opPrec = binOpPrecedence(node->op());
+
+  if (opPrec != lessThanPrec && opPrec != eqPrec) return;
+
+  // If the parent is an operator with the same precedence, avoid re-running
+  // the check since the parent would've already tried.
+  if (!parents_.empty()) {
+    auto parentOp = parents_.back()->toOpCall();
+    if (parentOp && binOpPrecedence(parentOp->op()) == opPrec) return;
+  }
+
+  std::vector<const OpCall*> ops;
+  std::vector<const AstNode*> operands;
+  collectEqualPrecedenceOpsWithoutParens(context_, node, opPrec, ops, operands);
+
+  if (ops.size() > 1) {
+    CHPL_REPORT(context_, NonAssociativeComparison, node, ops, operands);
+  }
 }
 
 
@@ -1450,6 +1507,7 @@ void Visitor::visit(const PrimCall* node) {
 
 void Visitor::visit(const OpCall* node) {
   checkDmappedKeyword(node);
+  checkNonAssociativeComparisons(node);
 }
 
 void Visitor::visit(const Variable* node) {

@@ -1,0 +1,103 @@
+─── error in compareAssoc.chpl:6 [NonAssociativeComparison] ───
+  Comparison operators are not associative.
+      |
+    6 | var x = a < b < c;
+      |
+  Comparisons in the form 'x op y op z' are not supported.
+  If you wanted to perform elementwise comparison, consider using the following instead:
+  
+      a < b && b < c
+  
+  If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
+      |
+    6 | var x = a < b < c;
+      |         ⎺⎺⎺⎺⎺
+      |
+
+─── error in compareAssoc.chpl:10 [NonAssociativeComparison] ───
+  Comparison operators are not associative.
+       |
+    10 | var x1 = a < b <= c;
+       |
+  Comparisons in the form 'x op y op z' are not supported.
+  If you wanted to perform elementwise comparison, consider using the following instead:
+  
+      a < b && b <= c
+  
+  If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
+       |
+    10 | var x1 = a < b <= c;
+       |          ⎺⎺⎺⎺⎺
+       |
+
+─── error in compareAssoc.chpl:14 [NonAssociativeComparison] ───
+  Comparison operators are not associative.
+       |
+    14 | var x2 = a > b <= c;
+       |
+  Comparisons in the form 'x op y op z' are not supported.
+  If you wanted to perform elementwise comaprison, please use '&&' to combine operations.
+  If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
+       |
+    14 | var x2 = a > b <= c;
+       |          ⎺⎺⎺⎺⎺
+       |
+
+─── error in compareAssoc.chpl:18 [NonAssociativeComparison] ───
+  Comparison operators are not associative.
+       |
+    18 | var x3 = a == b == c;
+       |
+  Comparisons in the form 'x op y op z' are not supported.
+  If you wanted to perform elementwise comaprison, please use '&&' to combine operations.
+  If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
+       |
+    18 | var x3 = a == b == c;
+       |          ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in compareAssoc.chpl:22 [NonAssociativeComparison] ───
+  Comparison operators are not associative.
+       |
+    22 | var x4 = a != b != c;
+       |
+  Comparisons in the form 'x op y op z' are not supported.
+  If you wanted to perform elementwise comaprison, please use '&&' to combine operations.
+  If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
+       |
+    22 | var x4 = a != b != c;
+       |          ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in compareAssoc.chpl:26 [NonAssociativeComparison] ───
+  Comparison operators are not associative.
+       |
+    26 | var x = a < b < c < d;
+       |
+  Comparisons in the form 'x op y op z' are not supported.
+  If you wanted to perform elementwise comparison, consider using the following instead:
+  
+      a < b && b < c && c < d
+  
+  If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
+       |
+    26 | var x = a < b < c < d;
+       |         ⎺⎺⎺⎺⎺
+       |
+
+─── error in compareAssoc.chpl:27 [NonAssociativeComparison] ───
+  Comparison operators are not associative.
+       |
+    27 | var x1 = a < b <= c <= d;
+       |
+  Comparisons in the form 'x op y op z' are not supported.
+  If you wanted to perform elementwise comparison, consider using the following instead:
+  
+      a < b && b <= c && c <= d
+  
+  If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
+       |
+    27 | var x1 = a < b <= c <= d;
+       |          ⎺⎺⎺⎺⎺
+       |
+
