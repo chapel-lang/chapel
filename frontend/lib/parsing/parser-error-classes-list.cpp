@@ -209,25 +209,25 @@ void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
   if (allSimple && (types == 0b1 || types == 0b10)) {
     std::ostringstream oss;
     // Print out what the user's code would look like elementwise
-    bool needsAnd = false;
     for (size_t idx = 0; idx < ops.size(); idx++) {
-      if (needsAnd) {
+      if (idx > 0) {
         oss << " && ";
       }
 
-      needsAnd = true;
       operands[idx]->stringify(oss, CHPL_SYNTAX);
       oss << " " << ops[idx]->op() << " ";
       operands[idx + 1]->stringify(oss, CHPL_SYNTAX);
     }
 
     // TODO: this uses explicit indentation using spaces, which is probably bad.
-    wr.message("If you wanted to perform elementwise comparison, consider using the following instead:");
+    wr.message("If you wanted to perform elementwise comparison, consider using "
+               "the following instead:");
     wr.message("");
     wr.message("    ", oss.str());
     wr.message("");
   } else {
-    wr.message("If you wanted to perform elementwise comaprison, please use '&&' to combine operations.");
+    wr.message("If you wanted to perform elementwise comaprison, please use "
+               "'&&' to combine operations.");
   }
 
   const uast::OpCall* firstNonRoot = nullptr;
@@ -238,7 +238,9 @@ void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
     }
   }
 
-  wr.message("If you wanted to use the boolean result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:");
+  wr.message("If you wanted to use the result of a comparison as an operand in "
+             "another comparison, consider using parentheses in a subexpression "
+             "to disambiguate:");
   wr.code(root, { firstNonRoot });
 }
 

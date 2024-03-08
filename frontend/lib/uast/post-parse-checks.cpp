@@ -711,8 +711,10 @@ void Visitor::checkDmappedKeyword(const OpCall* node) {
            " instead please use factory functions when available");
 }
 
-static int getOpCallPrecedence(const OpCall* node) {
-  return opToPrecedence(node->op(), /* unary */ false, /* postfix */ false);
+static int binOpPrecedence(UniqueString ustr) {
+  bool unary = false;
+  bool postfix = false;
+  return opToPrecedence(ustr, unary, postfix);
 }
 
 static void collectEqualPrecedenceOpsWithoutParens(Context* context,
@@ -722,9 +724,9 @@ static void collectEqualPrecedenceOpsWithoutParens(Context* context,
                                                    std::vector<const AstNode*>& operands) {
   auto check = [context, prec, &ops, &operands](const AstNode* child) {
     if (auto childOp = child->toOpCall()) {
-      if (childOp->numActuals() == 2 && getOpCallPrecedence(childOp) == prec) {
+      if (childOp->numActuals() == 2 && binOpPrecedence(childOp->op()) == prec) {
         // The child only counts as a 'problem' if it's not parenthesized.
-        if (parsing::locateExprParenthOpenWithAst(context, childOp).line() == -1) {
+        if (parsing::locateExprParenthWithAst(context, childOp).line() == -1) {
           collectEqualPrecedenceOpsWithoutParens(context, childOp, prec, ops, operands);
           return;
         }
@@ -742,9 +744,9 @@ static void collectEqualPrecedenceOpsWithoutParens(Context* context,
 void Visitor::checkNonAssociativeComparisons(const OpCall* node) {
   if (node->numActuals() != 2) return;
 
-  auto lessThanPrec = opToPrecedence(USTR("<"), /* unary */ false, /* postfix */ false);
-  auto eqPrec = opToPrecedence(USTR("=="), /* unary */ false, /* postfix */ false);
-  auto opPrec = getOpCallPrecedence(node);
+  auto lessThanPrec = binOpPrecedence(USTR("<"));
+  auto eqPrec = binOpPrecedence(USTR("=="));
+  auto opPrec = binOpPrecedence(node->op());
 
   if (opPrec != lessThanPrec && opPrec != eqPrec) return;
 
@@ -752,7 +754,7 @@ void Visitor::checkNonAssociativeComparisons(const OpCall* node) {
   // the check since the parent would've already tried.
   if (!parents_.empty()) {
     auto parentOp = parents_.back()->toOpCall();
-    if (parentOp && getOpCallPrecedence(parentOp) == opPrec) return;
+    if (parentOp && binOpPrecedence(parentOp->op()) == opPrec) return;
   }
 
   std::vector<const OpCall*> ops;
