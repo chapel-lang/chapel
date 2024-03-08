@@ -253,7 +253,7 @@ genGlobalString(const char *cname, const char *value) {
     if(gCodegenGPU == false) {
       llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal(
-            cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+            cname, getPointerType(info->module->getContext())));
       globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
             new_CStringSymbol(value)->codegen().val)->getInitializer());
       globalString->setConstant(true);
@@ -274,7 +274,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
     if(gCodegenGPU == false) {
       llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal(
-                      cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+                      cname, getPointerType(info->module->getContext())));
       auto globalStringIr = info->irBuilder->CreateGlobalString(value);
       llvm::Type* ty = nullptr;
 #if HAVE_LLVM_VER >= 140
@@ -1454,7 +1454,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
   } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *global_serializeTableEntryType =
-      llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+      getPointerType(info->module->getContext());
 
     std::vector<llvm::Constant *> global_serializeTable;
 
@@ -1990,7 +1990,7 @@ static void codegen_header(std::set<const char*> & cnames,
             new_CStringSymbol(memDesc)->codegen().val)->getInitializer());
     }
     llvm::ArrayType *memDescTableType = llvm::ArrayType::get(
-        llvm::IntegerType::getInt8PtrTy(info->module->getContext()),
+        getPointerType(info->module->getContext()),
         memDescTable.size());
 
     if(llvm::GlobalVariable *GVar =llvm::cast_or_null<llvm::GlobalVariable>(
@@ -2017,7 +2017,7 @@ static void codegen_header(std::set<const char*> & cnames,
   } else if(!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *private_broadcastTableEntryType =
-      llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+      getPointerType(info->module->getContext());
 
     std::vector<llvm::Constant *> private_broadcastTable;
 

@@ -82,5 +82,8 @@ bool isOpaquePointer(llvm::Type* ty);
 // from it. Otherwise, return nullptr.
 llvm::Type* tryComputingPointerElementType(llvm::Value* ptr);
 
+llvm::Type* getPointerType(llvm::LLVMContext& ctx, unsigned AS=0);
+llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS=0);
+
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H

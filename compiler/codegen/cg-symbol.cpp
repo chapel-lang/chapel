@@ -676,7 +676,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     //   _ret:dtNil = nil
     if( typeInfo() == dtNil && 0 == strcmp(cname, "nil") ) {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(getPointerType(info->irBuilder));
       voidPtr.chplType = dtNil;
       return voidPtr;
     }
@@ -773,7 +773,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (cname, info->irBuilder->getInt8PtrTy()));
+                  (cname, getPointerType(info->irBuilder)));
         globalValue->setConstant(true);
         if (fDynoLibGenOrUse)
           globalValue->setLinkage(llvm::GlobalVariable::LinkOnceODRLinkage);
@@ -795,7 +795,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       return ret;
     } else if (std::string(cname) == "NULL") {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(getPointerType(info->irBuilder));
       voidPtr.chplType = typeInfo();
       return voidPtr;
     }
@@ -2855,7 +2855,7 @@ void FnSymbol::codegenDef() {
             GenRet tmp = createTempVar(arg->typeInfo());
             llvm::Value* ptr = tmp.val;
             llvm::Type* ptrEltTy = chapelArgTy;
-            llvm::Type* i8PtrTy = irBuilder->getInt8PtrTy();
+            llvm::Type* i8PtrTy = getPointerType(irBuilder);
             llvm::Type* coercePtrTy = llvm::PointerType::get(sTy, stackSpace);
 
             // handle offset
