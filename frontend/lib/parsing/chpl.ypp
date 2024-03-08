@@ -3507,8 +3507,9 @@ dot_expr:
 parenthesized_expr:
   TLP tuple_component TRP
   {
-    BUILDER->noteExprParenthOpenLocation($2, LOC(@1));
-    BUILDER->noteExprParenthCloseLocation($2, LOC(@3));
+    // Use 'tryNote' here in case an expression like ((x)) comes along.
+    BUILDER->tryNoteExprParenthOpenLocation($2, LOC(@1));
+    BUILDER->tryNoteExprParenthCloseLocation($2, LOC(@3));
     $$ = $2;
   }
 | TLP tuple_component TCOMMA TRP
