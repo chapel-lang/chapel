@@ -56,21 +56,23 @@ A :record:`file` in Chapel identifies a file in the underlying operating system.
 Reads to a file are done via one or more fileReaders associated with the file
 and writes to a file are done via one or more fileWriters.  Each
 :record:`fileReader` or :record:`fileWriter` uses a buffer to provide sequential
-read or write access to its file, optionally starting at an offset.
+read or write access to its file.
 
 For example, the following program opens a file and writes an integer to it:
 
 .. code-block:: chapel
+
+  use IO;
 
   try {
     // open the file "test-file.txt" for writing, creating it if
     // it does not exist yet.
     var myFile = open("test-file.txt", ioMode.cw);
 
-    // create a fileWriter starting at file offset 0
-    // (start and end offsets can be specified when creating the
-    // fileWriter)
-    var myFileWriter = myFile.writer();
+    // create a fileWriter starting at the beginning of the file
+    // (this fileWriter will not be used in parallel, so does not need to use
+    // locking)
+    var myFileWriter = myFile.writer(locking=false);
 
     var x: int = 17;
 
@@ -92,14 +94,16 @@ Then, the following program can be used to read the integer:
 
 .. code-block:: chapel
 
+  use IO;
+
   try {
     // open the file "test-file.txt" for reading only
     var myFile = open("test-file.txt", ioMode.r);
 
-    // create a fileReader starting at file offset 0
-    // (start and end offsets can be specified when creating the
-    // fileReader)
-    var myFileReader = myFile.reader();
+    // create a fileReader starting at the beginning of the file
+    // (this fileReader will not be used in parallel, so does not need to use
+    // locking)
+    var myFileReader = myFile.reader(locking=false);
 
     var x: int;
 
@@ -125,6 +129,8 @@ the following example demonstrates. It shows three ways to read values into
 a pair of variables ``x`` and ``y``.
 
 .. code-block:: chapel
+
+  use IO;
 
   var x: int;
   var y: real;
@@ -353,7 +359,7 @@ Functions for fileReader and fileWriter Creation
 :proc:`file.reader` creates a :record:`fileReader` for reading from a file.
 
 The helper functions :proc:`openReader` and :proc:`openWriter` can also be used
-to open a file and create a ``fileReader`` or ``fileWriter`` to it in a
+to open a file and create a ``fileReader``/``fileWriter`` to it in a
 single step.
 
 .. _about-io-filereader-filewriter-synchronization:
@@ -364,15 +370,14 @@ Synchronization of fileReader and fileWriter Data and Avoiding Data Races
 FileReaders and fileWriters (and files) contain locks in order to keep their
 operation safe for multiple tasks. When creating a fileReader or fileWriter, it
 is possible to disable the lock (for performance reasons) by passing
-``locking=false`` to e.g.  file.writer().  Some ``fileReader`` and ``fileWriter``
-methods - in particular those beginning with the underscore - should only be
-called on locked fileReaders or fileWriters.  With these methods, it is possible
-to get or set the fileReader or fileWriter style, or perform I/O "transactions"
+``locking=false`` to e.g.  file.writer().  Some ``fileReader`` and
+``fileWriter`` methods should only be called on locked fileReaders or
+fileWriters.  With these methods, it is possible to perform I/O "transactions"
 (see :proc:`fileWriter.mark`, e.g.). To use these methods, e.g., first lock the
 fileWriter with :proc:`fileWriter.lock`, call the methods you need, then unlock
 the fileWriter with :proc:`fileWriter.unlock`. Note that in the future, we may
-move to alternative ways of calling these functions that guarantee that they
-are not called on a fileReader or fileWriter without the appropriate locking.
+move to alternative ways of calling these functions that guarantee that they are
+not called on a fileReader or fileWriter without the appropriate locking.
 
 Besides data races that can occur if locking is not used in fileWriters when it
 should be, it is also possible for there to be data races on file data that is
@@ -403,7 +408,7 @@ kind of data race can occur.
   Note that it is possible in some cases to create a :record:`file` that does
   not allow multiple fileWriters and/or fileReaders at different
   offsets. FileWriters created on such files will not change the file's offset
-  based on a ``start=`` offset arguments. Instead, each read or write operation
+  based on a ``region=`` offset argument. Instead, each read or write operation
   will use the file descriptor's current offset. Therefore, only one
   fileWriter or fileReader should be created for files created in the following
   situations:
@@ -419,8 +424,8 @@ Performing I/O with FileReaders and FileWriters
 FileReaders have a variety of read methods and fileWriters have a variety of
 write methods. The most common variety of these are generic methods that can
 read or write values of any type. For non-primitive types, the relevant
-``readThis`` or ``writeThis`` method is used to control the I/O formatting; see
-:ref:`serialize-deserialize`. These functions generally take any number of
+``deserialize`` or ``serialize`` method is used to control the I/O formatting;
+see :ref:`serialize-deserialize`. These functions generally take any number of
 arguments and `throw` if there was an error:
 
  * :proc:`fileWriter.write`
@@ -508,7 +513,6 @@ operating system streams standard input, standard output, and standard error.
 :var:`stdout` and :var:`stderr` support writing.
 
 All three are safe to use concurrently.
-Their types' ``kind`` argument is ``dynamic``.
 
 .. _about-io-error-handling:
 
