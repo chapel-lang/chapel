@@ -1,0 +1,5 @@
+-sperfTesting=1 -sN=100_000_000 -selmType=int(16) # gccLoops-int16.perfkeys
+-sperfTesting=1 -sN=100_000_000 -selmType=int(32) # gccLoops-int32.perfkeys
+-sperfTesting=1 -sN=100_000_000 -selmType=int(64) # gccLoops-int64.perfkeys
+-sperfTesting=1 -sN=100_000_000 -selmType=real(32) # gccLoops-real32.perfkeys
+-sperfTesting=1 -sN=100_000_000 -selmType=real(64) # gccLoops-real64.perfkeys
