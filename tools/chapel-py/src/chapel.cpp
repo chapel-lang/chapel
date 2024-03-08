@@ -19,6 +19,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include "Python.h"
+#include "chpl/framework/check-build.h"
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "iterator-support.h"
