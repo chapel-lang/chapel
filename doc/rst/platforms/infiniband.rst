@@ -47,7 +47,7 @@ UCX alternative
 
 In rare cases, we have had users who are unable to use the ``ibv``
 conduit on their InfiniBand systems.  In such cases, the ``ucx``
-conduit is an alternative, which requires setting:
+conduit is an alternative to consider, which requires setting:
 
 .. code-block:: bash
 
@@ -57,9 +57,13 @@ conduit is an alternative, which requires setting:
 (and, most likely, ``export CHPL_LAUNCHER=gasnetrun_ucx`` when you
 reach the following section).
 
-Note that the GASNet team currently considers the ``ucx`` conduit
-"experimental" in the sense that it is feature complete but has not
-received as much performance-oriented work as ``ibv`` has.
+Note that we have not had as much experience with the ``ucx`` conduit
+in Chapel's development and testing as we have with ``ibv``, so it is
+currently considered something of an experimental feature.  In
+addition, the GASNet team also currently classifies the ``ucx``
+conduit as "experimental" in the sense that it is feature complete but
+has not received as much performance-oriented focus as ``ibv`` has.
+
 
 ----------------------
 Configuring a Launcher
@@ -100,26 +104,25 @@ Selecting a Spawner
 
 Under the covers, ``gasnetrun_ibv``-based launchers must figure out
 how to spawn jobs and get them up and running on the compute nodes.
-GASNet's three ways of doing this on InfiniBand systems are ``pmi``,
-``ssh``, and ``mpi``.  When MPI is detected at configure time, ``mpi``
-will be selected as the default, but we recommend using one of the
-other options if possible.
+GASNet's three ways of doing this on InfiniBand systems are ``ssh``,
+``pmi``, and ``mpi``.  When MPI is detected at configure time, it will
+be selected as the default, but we recommend using one of the other
+options if possible.
 
-* ``pmi``: When GASNet's configure step detects a PMI-capable job
-  scheduler like Slurm, ``pmi`` is often the best choice because it
-  typically "just works" and can reduce overhead and configuration
-  steps compared to other options.
-
-* ``ssh``: When ``pmi`` is not available, we recommend launching with
-  the ``ssh`` option, if possible.  This requires the ability to
-  ``ssh`` to the system's compute nodes, which is not supported by all
+* ``ssh``: Based on our experience, we recommend launching with the
+  ``ssh`` option, if possible.  This requires the ability to ``ssh``
+  to the system's compute nodes, which is not supported by all
   systems, depending on how they are configured.  See the following
   sub-section for details on this option.
   
-* ``mpi``: When the previous cases are not options, ``mpi`` can serve
-  as a last resort.  Note that it can incur a performance penalty
-  because MPI will be running concurrently with GASNet.  See the
-  second subsection below for tips on this option.
+* ``pmi``: When GASNet's configure step detects a PMI-capable job
+  scheduler like Slurm, ``pmi`` can be the next best choice because it
+  often "just works" and can reduce overhead compared to ``mpi``.
+
+* ``mpi``: When the previous cases are not options, ``mpi`` serves as
+  a reasonable last resort.  Note that it can incur a performance
+  penalty because MPI will be running concurrently with GASNet.  See
+  the second subsection below for tips on this option.
 
 
 Using SSH for Job Launch
