@@ -134,7 +134,7 @@ struct Writer<errordetail::AsFileName<T>> {
 template <>
 struct Writer<const types::Type*> {
   void operator()(Context* context, std::ostream& oss, const types::Type* type) {
-    if (type->isUnknownType()) {
+    if (!type || type->isUnknownType()) {
       oss << "unknown type";
     } else {
       stringify<const types::Type*> str;
