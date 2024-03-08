@@ -1957,8 +1957,6 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   // now, add kernel actuals
   for (auto actual: kernel.kernelActuals()) {
     gpuBlock->insertAtTail(actual.generatePrimGpuArg(cfg));
-    //gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actual.sym,
-                                        //new_IntSymbol(actual.kind)));
   }
 
   // populate the gpu block
@@ -1969,7 +1967,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   // some additional temps etc. that are used for computing block size.
   // We need to lift them, too. Since we're "consuming" the GPU loop,
   // just modify the parent block in place.
-  if (auto primitivesBlock = info.gpuPrimitivesBlock()) {
+  if (auto primitivesBlock = kernel.gpuPrimitivesBlock()) {
     INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
     for_alist(expr, primitivesBlock->body) {
       if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
