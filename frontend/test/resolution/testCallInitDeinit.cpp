@@ -1605,7 +1605,6 @@ static void test20c() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.foo@6",    ""},
-      /* {AssociatedAction::INIT_OTHER, "x",          ""}, */
       {AssociatedAction::DEINIT,     "M.foo@10",   "x"},
     });
 }

@@ -1972,7 +1972,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     if (auto cls = type->toClassType()) {
       auto newCls = qtNewExpr.type()->toClassType();
       CHPL_ASSERT(newCls);
-      /* CHPL_ASSERT(!cls->manager() && cls->decorator().isNilable()); */
+      CHPL_ASSERT(!cls->manager());
       CHPL_ASSERT(cls->decorator().isBorrowed());
       CHPL_ASSERT(cls->basicClassType());
       type = ClassType::get(context, cls->basicClassType(),

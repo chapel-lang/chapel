@@ -733,7 +733,6 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  gdbShouldBreakHere();
   auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
 
   // Should we associate it with the current statement or the current block?

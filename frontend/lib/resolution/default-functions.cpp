@@ -195,12 +195,13 @@ generateInitParts(Context* context,
   if (compType->isRecordType() || compType->isUnionType()) {
     qtReceiver = QualifiedType(QualifiedType::REF, compType);
 
-  // If the receiver is a basic class C, use 'const in x: borrowed C'.
+  // If the receiver is a basic class C, use 'const in x: borrowed C?'.
   } else if (auto basic = compType->toBasicClassType()) {
     const Type* manager = nullptr;
-    auto nilableBorrowed  = ClassTypeDecorator::BORROWED_NILABLE;
-    auto decor = ClassTypeDecorator(nilableBorrowed);
-    auto receiverType = ClassType::get(context, basic, manager, decor);
+    auto borrowedNilableDecor =
+        ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
+    auto receiverType =
+        ClassType::get(context, basic, manager, borrowedNilableDecor);
     CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
 

@@ -241,12 +241,12 @@ static void testTertMethodCallCrossModule() {
   assert(ufsInit->isCompilerGenerated());
   assert(tfsInit->numFormals() == 1);
   assert(tfsInit->formalName(0) == "this");
-  auto recvDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+  auto recvDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
   auto recvType = ClassType::get(ctx, clsX->basicClassType(),
                                  nullptr,
                                  recvDecor);
   auto qtReceiver = QualifiedType(QualifiedType::CONST_IN, recvType);
-  /* assert(tfsInit->formalType(0) == qtReceiver); */
+  assert(tfsInit->formalType(0) == qtReceiver);
   assert(!tfsInit->needsInstantiation());
   assert(!tfsInit->formalIsInstantiated(0)); // Is concrete!
 
