@@ -183,7 +183,8 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
   if (noLibrary) {
     auto path = id.symbolPath();
     return path == "ChapelReduce.ReduceScanOp" ||
-           path == "Errors.Error";
+           path == "Errors.Error" || 
+           path == "CTypes.c_ptr";
   }
 
   return false;
