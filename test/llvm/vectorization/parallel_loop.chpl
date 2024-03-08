@@ -10,7 +10,7 @@
 // has no loop carried dependency, and adding
 // parallel_loop_access metadata is necessary
 
-proc loop (A, B, C, D) {
+proc loop (ref A, B, C, D) {
   // CHECK: <4 x i32>
   var sum : int(32) = 0;
   foreach i in 0..511 with (ref sum) {
