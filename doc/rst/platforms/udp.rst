@@ -125,6 +125,16 @@ found the following setting useful to disable such printing:
 
    export GASNET_SSH_OPTIONS="-o LogLevel=Error"
 
+My console output seems to be jumbled or missing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We've had best results with console I/O and the UDP conduit when
+setting:
+
+  .. code-block:: bash
+
+    export GASNET_ROUTE_OUTPUT=0
+
 
 I'm seeing warnings from GASNet about using a higher-performance network
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

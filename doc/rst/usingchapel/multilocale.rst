@@ -214,9 +214,8 @@ Troubleshooting
 +++++++++++++++
 
 If you are trying to debug job launch, try adding ``-v`` or
-``--dry-run`` to your program's command line in order to
-see the command(s) that Chapel is executing on your behalf
-to get things running.
+``--dry-run`` to your program's command-line to see the command(s)
+that the Chapel launcher is executing to get things running.
 
 For ``CHPL_COMM=gasnet`` runs, you may also want to consider setting
 one or both of:
@@ -230,19 +229,18 @@ where the first prints more information about GASNet's job launch
 actions, and the second is used to audit environment variable
 settings.
 
-When running ``CHPL_COMM=gasnet`` programs, we've had best results
-with console I/O using:
+When running ``CHPL_COMM=gasnet`` programs using the ``udp`` conduit,
+we've had best results with console I/O using:
 
   .. code-block:: bash
 
     export GASNET_ROUTE_OUTPUT=0
 
-but your mileage may vary.
-
 .. _set-comm-debugging:
 
-Advanced users may want to set ``CHPL_COMM_DEBUG`` in order to enable
-GASNet's internal sanity checking. (It is off by default.)
-Note that you'll need to re-make GASNet and runtime when changing
-this setting.
+Advanced users may also want to set ``CHPL_COMM_DEBUG`` in order to
+enable GASNet's internal sanity checking (it is off by default).  Note
+that you'll need to re-build GASNet and runtime when changing this
+setting (i.e., re-run the ``make`` command you used for your initial
+Chapel install).
 
