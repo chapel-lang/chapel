@@ -18,6 +18,7 @@
 target_sources(ChplFrontend-obj
                PRIVATE
 
+               check-build.cpp
                Context.cpp
                ErrorBase.cpp
                ErrorMessage.cpp

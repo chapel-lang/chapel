@@ -44,6 +44,7 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
+#include "chpl/framework/check-build.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/parsing/parsing-queries.h"
