@@ -744,6 +744,17 @@ module ChapelDomain {
     }
   }
 
+  proc chpl__checkTupIrregDomAssign(const ref d, const ref idx, param msg)  {
+    if isCoercible(idx.type, d.fullIdxType) ||
+          // sparse 1-d domains also allow adding 1-tuples
+          d.isSparse() && d.rank == 1 && isCoercible(idx.type, 1*d.idxType)
+      then return;
+
+    compilerError("cannot assign a tuple ", msg, idx.type:string,
+                  " into ", domainDescription(d),
+                  " with idxType ", d.idxType:string);
+  }
+
   //
   // Return true if t is a tuple of ranges that is legal to assign to
   // rectangular domain d
@@ -776,12 +787,16 @@ module ChapelDomain {
       a.clear();
       if isHomogeneousTuple(b) then
         // let the backend compiler unroll this loop to optimize
-        for ind in 0..#b.size do
+        for ind in 0..#b.size {
+          chpl__checkTupIrregDomAssign(a, b(ind), "of ");
           a.add(b(ind));
+        }
       else
         // unroll in the source code to allow heterogenous tuple elements
-        for ind in b do
+        for ind in b {
+          chpl__checkTupIrregDomAssign(a, ind, "containing ");
           a.add(ind);
+        }
     }
   }
 
