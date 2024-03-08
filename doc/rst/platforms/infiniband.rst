@@ -52,7 +52,7 @@ conduit is an alternative to consider, which requires setting:
 .. code-block:: bash
 
       export CHPL_COMM=gasnet
-      export CHPL_COMM_SUBSTRATE=ibv
+      export CHPL_COMM_SUBSTRATE=ucx
 
 (and, most likely, ``export CHPL_LAUNCHER=gasnetrun_ucx`` when you
 reach the following section).
