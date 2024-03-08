@@ -334,6 +334,9 @@ class Context {
 
 #ifdef HAVE_LLVM
   owned<llvm::LLVMContext> llvmContext_ = nullptr;
+#else
+  // use a dummy pointer to make sure to have the same memory layout
+  owned<unsigned char> llvmContext_ = nullptr;
 #endif
 
   // --------- end all Context fields ---------
@@ -1021,9 +1024,9 @@ class Context {
           }
         });
   }
-
   /// \endcond
 };
+
 
 } // end namespace chpl
 
