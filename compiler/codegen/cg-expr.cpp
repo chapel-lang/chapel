@@ -5353,12 +5353,6 @@ static bool isCStringImmediate(Symbol* sym) {
   return false;
 }
 
-static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
-  const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
-
-  return codegenCallExpr(fn, call->get(1)->codegen());
-}
-
 static GenRet codegenGPUInitKernelCfg(CallExpr* call, const char* fnName) {
   int curArg = 1;
   std::vector<GenRet> args;
@@ -5383,12 +5377,8 @@ static GenRet codegenGPUInitKernelCfg(CallExpr* call, const char* fnName) {
   return codegenCallExprWithArgs(fnName, args);
 }
 
-DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
-  ret = codegenGPUKernelLaunch(call, /* is3d= */ false);
-}
-
 DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
-  ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+  ret = codegenCallExpr("chpl_gpu_launch_kernel", call->get(1)->codegen());
 }
 
 DEFINE_PRIM(GPU_INIT_KERNEL_CFG_3D) {

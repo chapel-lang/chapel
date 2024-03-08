@@ -106,7 +106,6 @@ void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size);
 void chpl_gpu_arg_pass(void* cfg, void* arg);
 void chpl_gpu_arg_reduce(void* cfg, void* arg, size_t elem_size,
                          reduce_wrapper_fn_t wrapper);
-void chpl_gpu_launch_kernel_flat(void* cfg);
 void chpl_gpu_launch_kernel(void* cfg);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,

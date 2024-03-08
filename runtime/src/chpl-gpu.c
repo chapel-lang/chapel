@@ -804,41 +804,6 @@ inline void chpl_gpu_launch_kernel(void* _cfg) {
                  "\tKernel: %s\n", cfg->dev, cfg->fn_name);
 }
 
-inline void chpl_gpu_launch_kernel_flat(void* _cfg) {
-  kernel_cfg* cfg = (kernel_cfg*)_cfg;
-
-  chpl_gpu_impl_use_device(cfg->dev);
-
-  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
-                 "\tLocation: %s:%d\n"
-                 "\tKernel: %s\n"
-                 "\tStream: %p\n"
-                 "\tNumArgs: %d\n"
-                 "\tNumThreads: %"PRId64"\n",
-                 cfg->dev,
-                 chpl_lookupFilename(cfg->fn),
-                 cfg->ln,
-                 cfg->fn_name,
-                 cfg->stream,
-                 cfg->n_params,
-                 cfg->num_threads);
-
-  if (cfg->num_threads > 0){
-    launch_kernel(cfg->fn_name,
-                  cfg->grd_dim_x, cfg->grd_dim_y, cfg->grd_dim_z,
-                  cfg->blk_dim_x, cfg->blk_dim_y, cfg->blk_dim_z,
-                  cfg);
-
-  } else {
-    CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
-  }
-
-  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d, %p)\n"
-                 "\tKernel: %s\n",
-                 chpl_task_getRequestedSubloc(), cfg->stream,
-                 cfg->name);
-}
-
 extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,
                                  c_nodeid_t src_node, c_sublocid_t src_subloc,
                                  void* raddr, size_t size);

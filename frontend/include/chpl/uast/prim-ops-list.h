@@ -151,7 +151,6 @@ PRIMITIVE_G(GET_DYNAMIC_END_COUNT, "get dynamic end count")
 PRIMITIVE_G(SET_DYNAMIC_END_COUNT, "set dynamic end count")
 
 PRIMITIVE_G(GPU_KERNEL_LAUNCH, "gpu kernel launch")
-PRIMITIVE_G(GPU_KERNEL_LAUNCH_FLAT, "gpu kernel launch flat")
 PRIMITIVE_G(GPU_THREADIDX_X, "gpu threadIdx x")
 PRIMITIVE_G(GPU_THREADIDX_Y, "gpu threadIdx y")
 PRIMITIVE_G(GPU_THREADIDX_Z, "gpu threadIdx z")

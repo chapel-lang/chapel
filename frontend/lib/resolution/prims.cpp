@@ -1523,7 +1523,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_CREATE_FN_TYPE:
     case PRIM_GPU_KERNEL_LAUNCH:
-    case PRIM_GPU_KERNEL_LAUNCH_FLAT:
     case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_DEINIT_KERNEL_CFG:

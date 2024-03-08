@@ -67,7 +67,7 @@ on here.gpus[0] {
   //   we need to do that for C pointers
   __primitive("gpu arg", cfg, deviceBuffer, 1);
 
-  __primitive("gpu kernel launch flat", cfg);
+  __primitive("gpu kernel launch", cfg);
   output = getDataFromDevice(deviceBuffer);
 
   chpl_gpu_deinit_kernel_cfg(cfg);

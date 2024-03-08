@@ -1962,8 +1962,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   }
 
   // populate the gpu block
-  VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
-  CallExpr* gpuCall = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT, cfg);
+  CallExpr* gpuCall = new CallExpr(PRIM_GPU_KERNEL_LAUNCH, cfg);
 
   // If the parent of the call is 'gpu primitives' block, it was constructed
   // specifically to 'fence off' GPU primitives. There may be
