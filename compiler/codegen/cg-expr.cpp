@@ -5359,15 +5359,7 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   return codegenCallExpr(fn, call->get(1)->codegen());
 }
 
-DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
-  ret = codegenGPUKernelLaunch(call, /* is3d= */ false);
-}
-
-DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
-  ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
-}
-
-DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
+static GenRet codegenGPUInitKernelCfg(CallExpr* call, const char* fnName) {
   int curArg = 1;
   std::vector<GenRet> args;
   Symbol* kernelFn = toSymExpr(call->get(curArg++))->symbol();
@@ -5377,26 +5369,38 @@ DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
   else if (isCStringImmediate(kernelFn)) {
     args.push_back(kernelFn->codegen());
   }
+  else {
+    INT_FATAL("Unexpected value in kernel initialization primitive");
+  }
 
-  auto numThreads = call->get(curArg++);
-  args.push_back(numThreads->codegen());
-
-  auto blockSize = call->get(curArg++);
-  args.push_back(blockSize->codegen());
-
-  auto numKernelArgs = call->get(curArg++);
-  args.push_back(numKernelArgs->codegen());
-
-  auto numKernelPids = call->get(curArg++);
-  args.push_back(numKernelPids->codegen());
-
-  auto numReductionBufs = call->get(curArg++);
-  args.push_back(numReductionBufs->codegen());
+  for ( ; curArg<=call->numActuals() ; curArg++) {
+    args.push_back(call->get(curArg)->codegen());
+  }
 
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
-  ret = codegenCallExprWithArgs("chpl_gpu_init_kernel_cfg", args);
+  return codegenCallExprWithArgs(fnName, args);
+}
+
+DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ false);
+}
+
+DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+}
+
+DEFINE_PRIM(GPU_INIT_KERNEL_CFG_3D) {
+  const char* fnName = "chpl_gpu_init_kernel_cfg_3d";
+
+  ret = codegenGPUInitKernelCfg(call, fnName);
+}
+
+DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
+  const char* fnName = "chpl_gpu_init_kernel_cfg";
+
+  ret = codegenGPUInitKernelCfg(call, fnName);
 }
 
 DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {

@@ -3,6 +3,7 @@ use Time;
 use ChplConfig;
 
 config type dataType = int;
+config const useGpu = true;
 config const useExpr = true;
 
 config const n = 100;
@@ -17,6 +18,7 @@ inline proc doSumReduce(const ref Arr) {
     return gpuSumReduce(Arr);
 }
 
+writeln("Using ", if useGpu then "gpu" else "cpu");
 writeln("Using ", if useExpr then "expression" else "function");
 
 on if useGpu then here.gpus[0] else here {

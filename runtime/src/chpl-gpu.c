@@ -239,7 +239,6 @@ typedef struct reduce_var_s {
 typedef struct kernel_cfg_s {
   const char* fn_name;
   int64_t num_threads;
-  int blk_dim;
 
   int grd_dim_x;
   int grd_dim_y;
@@ -282,30 +281,11 @@ typedef struct kernel_cfg_s {
   void* stream;
 } kernel_cfg;
 
-static void cfg_init(kernel_cfg* cfg, const char* fn_name, int64_t num_threads,
-                     int blk_dim, int n_params, int n_pids, int n_reduce_vars,
+static void cfg_init(kernel_cfg* cfg, const char* fn_name,
+                     int n_params, int n_pids, int n_reduce_vars,
                      int ln, int32_t fn) {
 
   cfg->fn_name = fn_name;
-  cfg->num_threads = num_threads;
-  cfg->blk_dim = blk_dim;
-
-  if (cfg->num_threads > 0){
-    cfg->grd_dim_x = (cfg->num_threads+cfg->blk_dim-1)/cfg->blk_dim;
-    cfg->grd_dim_y = 1;
-    cfg->grd_dim_z = 1;
-    cfg->blk_dim_x = cfg->blk_dim;
-    cfg->blk_dim_y = 1;
-    cfg->blk_dim_z = 1;
-  }
-  else {
-    cfg->grd_dim_x = 0;
-    cfg->grd_dim_y = 0;
-    cfg->grd_dim_z = 0;
-    cfg->blk_dim_x = 0;
-    cfg->blk_dim_y = 0;
-    cfg->blk_dim_z = 0;
-  }
 
   cfg->dev = chpl_task_getRequestedSubloc();
   cfg->stream = get_stream(cfg->dev);
@@ -355,6 +335,40 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name, int64_t num_threads,
 
   cfg->reduce_vars = chpl_mem_alloc(cfg->n_reduce_vars * sizeof(reduce_var),
                                     CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+}
+
+static void cfg_init_dims_1d(kernel_cfg* cfg, int64_t num_threads,
+                             int blk_dim) {
+  cfg->num_threads = num_threads;
+  if (cfg->num_threads > 0){
+    cfg->grd_dim_x = (cfg->num_threads+blk_dim-1)/blk_dim;
+    cfg->grd_dim_y = 1;
+    cfg->grd_dim_z = 1;
+    cfg->blk_dim_x = blk_dim;
+    cfg->blk_dim_y = 1;
+    cfg->blk_dim_z = 1;
+  }
+  else {
+    cfg->grd_dim_x = 0;
+    cfg->grd_dim_y = 0;
+    cfg->grd_dim_z = 0;
+    cfg->blk_dim_x = 0;
+    cfg->blk_dim_y = 0;
+    cfg->blk_dim_z = 0;
+  }
+}
+
+static void cfg_init_dims_3d(kernel_cfg* cfg,
+                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                             int blk_dim_x, int blk_dim_y, int blk_dim_z) {
+  cfg->num_threads = grd_dim_x*grd_dim_y*grd_dim_z*
+                     blk_dim_x*blk_dim_y*blk_dim_z;
+  cfg->grd_dim_x = grd_dim_x;
+  cfg->grd_dim_y = grd_dim_y;
+  cfg->grd_dim_z = grd_dim_z;
+  cfg->blk_dim_x = blk_dim_x;
+  cfg->blk_dim_y = blk_dim_y;
+  cfg->blk_dim_z = blk_dim_z;
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -564,8 +578,8 @@ void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
 
-  cfg_init((kernel_cfg*)ret, fn_name, num_threads, blk_dim, n_params, n_pids,
-           n_reduce_vars, ln, fn);
+  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars, ln, fn);
+  cfg_init_dims_1d((kernel_cfg*)ret, num_threads, blk_dim);
 
   CHPL_GPU_DEBUG("Initialized kernel config for %s. num_threads=%ld blk_dim=%d"
                  " %d params, %d pids and %d reduction buffers\n", fn_name,
@@ -573,6 +587,26 @@ void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
   CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
 
   return ret;
+}
+
+void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
+                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                  int n_params, int n_pids, int n_reduce_vars,
+                                  int ln, int32_t fn) {
+
+  void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
+                             CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
+
+  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars, ln, fn);
+  cfg_init_dims_3d((kernel_cfg*)ret,
+                   grd_dim_x, grd_dim_y, grd_dim_z,
+                   blk_dim_x, blk_dim_y, blk_dim_z);
+
+  CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
+
+  return ret;
+
 }
 
 void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
@@ -737,11 +771,7 @@ static void launch_kernel(const char* name,
 }
 
 
-inline void chpl_gpu_launch_kernel(const char* name,
-                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                   void* _cfg) {
-
+inline void chpl_gpu_launch_kernel(void* _cfg) {
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
 
   chpl_gpu_impl_use_device(cfg->dev);
@@ -749,30 +779,29 @@ inline void chpl_gpu_launch_kernel(const char* name,
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
-                 "\tNumArgs: %d\n",
+                 "\tStream: %p\n"
+                 "\tNumArgs: %d\n"
+                 "\tNumThreads: %"PRId64"\n",
                  cfg->dev,
                  chpl_lookupFilename(cfg->fn),
                  cfg->ln,
-                 name,
-                 cfg->n_params);
+                 cfg->fn_name,
+                 cfg->stream,
+                 cfg->n_params,
+                 cfg->num_threads);
 
-  // now, this could just take `cfg`
-  launch_kernel(name,
-                grd_dim_x, grd_dim_y, grd_dim_z,
-                blk_dim_x, blk_dim_y, blk_dim_z,
-                cfg);
+  if (cfg->num_threads > 0){
+    launch_kernel(cfg->fn_name,
+                  cfg->grd_dim_x, cfg->grd_dim_y, cfg->grd_dim_z,
+                  cfg->blk_dim_x, cfg->blk_dim_y, cfg->blk_dim_z,
+                  cfg);
 
-#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg->stream);
-    wait_stream(cfg->stream);
+  } else {
+    CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
   }
-#else
-  chpl_gpu_impl_synchronize();
-#endif
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n", cfg->dev, name);
+                 "\tKernel: %s\n", cfg->dev, cfg->fn_name);
 }
 
 inline void chpl_gpu_launch_kernel_flat(void* _cfg) {

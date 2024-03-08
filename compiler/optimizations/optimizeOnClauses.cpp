@@ -306,6 +306,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ASSERT_ON_GPU:
   case PRIM_GET_REQUESTED_SUBLOC:
   case PRIM_GPU_INIT_KERNEL_CFG:
+  case PRIM_GPU_INIT_KERNEL_CFG_3D:
   case PRIM_GPU_DEINIT_KERNEL_CFG:
   case PRIM_GPU_ARG:
   case PRIM_GPU_PID_OFFLOAD:
