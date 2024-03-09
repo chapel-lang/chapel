@@ -7,11 +7,12 @@ Multilocale Chapel Execution
 This document outlines the steps to get started with multilocale Chapel using
 GASNet-based communication.  This configuration is fully functional on every
 platform that supports multilocale Chapel.  However, there are also other
-communication configurations that work in specific situations.  On Cray
-XC systems, using native communication as described in :ref:`Using
-Chapel on Cray Systems <readme-cray>` will probably give the best performance.
-For instructions on using the OpenFabrics Interfaces
-libfabric-based ``ofi`` communication layer, see :ref:`readme-libfabric`.
+communication configurations that work in specific situations.  For
+instructions on using the OpenFabrics Interface's libfabric-based
+``ofi`` communication layer---the preferred option on HPE Cray EX
+systems---see :ref:`readme-libfabric`.  On Cray XC systems, using
+native ``ugni`` communication as described in :ref:`Using Chapel on
+Cray Systems <readme-cray>` typically gives the best performance.
 
 Steps 2-3 describe how to build a multilocale Chapel, and steps 4-6 cover
 compiling and running multilocale Chapel programs.
@@ -245,25 +246,33 @@ Troubleshooting
 +++++++++++++++
 
 If you are trying to debug job launch, try adding ``-v`` or
-``--dry-run`` to your program's command line and set:
+``--dry-run`` to your program's command-line to see the command(s)
+that the Chapel launcher is executing to get things running.
+
+For ``CHPL_COMM=gasnet`` runs, you may also want to consider setting
+one or both of:
 
   .. code-block:: bash
 
+    export GASNET_SPAWN_VERBOSE=1
     export GASNET_VERBOSEENV=1
 
-We've had best results with console I/O using:
+where the first prints more information about GASNet's job launch
+actions, and the second is used to audit environment variable
+settings.
+
+When running ``CHPL_COMM=gasnet`` programs using the ``udp`` conduit,
+we've had best results with console I/O using:
 
   .. code-block:: bash
 
     export GASNET_ROUTE_OUTPUT=0
 
-but your mileage may vary.
-
 .. _set-comm-debugging:
 
-Advanced users may want to set ``CHPL_COMM_DEBUG`` in order to enable
-GASNet's internal sanity checking. (It is off by default.)
-Note that you'll need to re-make GASNet and runtime when changing
-this setting.
-
+Advanced users may also want to set ``CHPL_COMM_DEBUG`` in order to
+enable GASNet's internal sanity checking (it is off by default).  Note
+that you'll need to re-build GASNet and runtime when changing this
+setting (i.e., re-run the ``make`` command you used for your initial
+Chapel install).
 
