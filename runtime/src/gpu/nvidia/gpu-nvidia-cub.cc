@@ -20,8 +20,18 @@
 #ifdef HAS_GPU_LOCALE
 
 #include <cuda.h>
+// Based on https://github.com/NVIDIA/cub/issues/246
+// The aggressive loop unrolling doesn't offer many advantages
+// So we disable warnings about being unable to unroll
+// Without this we see clang errors about [-Wpass-failed=transform-warning]
+#if defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wpass-failed"
+#endif
 #include <cub/cub.cuh>
-
+#if defined(__clang__)
+#  pragma clang diagnostic pop
+#endif
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "../common/cuda-utils.h"
