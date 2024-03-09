@@ -2188,7 +2188,9 @@ static GenRet codegenSqrt(GenRet a) {
   GenRet ret;
   if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
   GenRet av = codegenValue(a);
-  if (info->cfile) {
+  if (info->cfile ||
+      (usingGpuLocaleModel() &&
+       getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA)) {
     ret = emitSqrtCMath(av);
   } else {
     ret = emitSqrtLLVMIntrinsic(av);
