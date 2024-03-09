@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# normalize 'unknown argument:' to 'unsupported option'
+cat $2 | sed 's/unknown argument:/unsupported option/' >$2.prediff.tmp
+mv $2.prediff.tmp $2
