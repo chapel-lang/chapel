@@ -430,7 +430,7 @@ subdomain has the same type as its parent domain, and by default it
 inherits the distribution of its parent domain. All domain types support
 subdomains.
 
-Simple subdomains are subdomains which are not sparse. Sparse subdomains
+Simple subdomains are subdomains that are not sparse. Sparse subdomains
 are discussed in the following section
 (:ref:`Sparse_Subdomain_Types_and_Values`). A simple subdomain
 inherits its representation (regular or irregular) from its base domain
@@ -483,10 +483,8 @@ The default value of a simple subdomain type is the same as the default
 value of its parent’s type (:ref:`Rectangular_Domain_Values`,
 :ref:`Associative_Domain_Values`).
 
-A simple subdomain variable can be initialized or assigned to with a
-tuple of values of the parent’s ``idxType``. Indices can also be added
-to or removed from a simple subdomain as described in
-:ref:`Adding_and_Removing_Domain_Indices`. It is an error to
+A simple subdomain can be initialized or otherwise operated on
+in the same way as its parent domain. It is an error to
 attempt to add an index to a subdomain that is not also a member of the
 parent domain.
 
@@ -533,8 +531,12 @@ the domain describes. If the parent domain defines an iteration order
 over its indices, the sparse subdomain inherits that order.
 
 There is no literal syntax for a sparse subdomain. However, a variable
-of a sparse subdomain type can be initialized using a tuple of values of
-the parent domain’s index type.
+of a sparse subdomain type can be initialized or assigned to
+with a tuple containing the desired index values.
+Each index value must be of the parent’s ``rank*idxType``, or,
+for a one-dimensional domain, of the parent's ``idxType``.
+Indices can also be added to or removed from a sparse subdomain
+as described in :ref:`Adding_and_Removing_Domain_Indices`.
 
 The default value for a sparse subdomain value is the empty set.
 
