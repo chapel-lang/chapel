@@ -17,7 +17,7 @@ config:
   wgsize:       [64]
 device: { index: 0, name: "Chapel CPU" }
 
-Running Chapel on 1 GPU
+Running Chapel on NN GPUs
 
 Largest difference was less than 0.020%.
 
