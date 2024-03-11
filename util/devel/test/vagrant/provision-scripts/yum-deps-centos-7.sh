@@ -11,7 +11,7 @@ scl enable devtoolset-11 bash
 # make sure gcc 11 is the default for future log ins
 echo source scl_source enable devtoolset-11 >> /home/vagrant/.bashrc
 
-yum -y install git gcc gcc-c++ m4 perl tcsh bash gcc gcc-c++ perl python3 bash make gawk wget openssl-devel
+yum -y install git gcc gcc-c++ m4 perl tcsh bash python3 make gawk wget openssl-devel
 
 # cmake3 package is available but it is cmake 3.17 for CentOS 7
 # a newer cmake is required.
