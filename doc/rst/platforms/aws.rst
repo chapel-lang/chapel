@@ -37,6 +37,11 @@ when configuring a cluster for Chapel.
    Make sure to have an EC2 key pair created in the same region you are creating
    the cluster. This key pair will be used to access the instances in the
    cluster.
+
+   .. note::
+
+      If you plan to use ``ubuntu``, make sure the key pair type is ``ED25519``.
+
 * Scheduler
    The default scheduler is ``slurm``. AWS Batch is also available, but not
    currently supported by Chapel.
@@ -68,12 +73,13 @@ when configuring a cluster for Chapel.
    queue. The default is 1 and most users should not need to change this.
 * Compute instance type for compute resource in queue
    This is the type of instance that will be created for this queue. It is
-   recommended to use the same architecture as the head node instance type (ie
+   recommended to use the same architecture as the head node instance type (i.e.
    don't use an x86 head node and an ARM compute node).
 * Maximum instance count
    This is the maximum number of nodes that will be created for this queue. It
    also determines the maximum number of locales that can be used in a Chapel
-   program. Four nodes is the minimum needed to successfully run ``make check``.
+   program. Four compute nodes is the minimum needed to successfully run
+   ``make check``.
 * Automate VPC creation? and Automate Subnet creation?
    ParallelCluster runs in a Virtual Private Network (VPC). If you do not have a
    VPC created, you can have ParallelCluster create one for you. If you already
@@ -109,6 +115,9 @@ something like this:
        Networking:
          SubnetIds:
          - SUBNETID
+
+Performance Notes
+^^^^^^^^^^^^^^^^^
 
 For best performance, we recommend the following:
 
@@ -164,6 +173,9 @@ It also possible to use instances with GPUs. We recommend using ``G4dn``,
 with these instances, as it does not have the necessary drivers for the GPUs.
 Instead, use ``ubuntu2204``.
 
+Launching and Connecting
+------------------------
+
 To launch the cluster, run the following command:
 
 .. code-block:: bash
@@ -179,8 +191,8 @@ the process of the cluster creation, run the following command:
 
 This will report various details about the cluster, including the status of the
 cluster. Once the cluster is in the ``CREATE_COMPLETE`` state, you can access
-the head node. To query just the status of the cluster, use the ``--query
-clusterStatus`` flag with the ``pcluster describe-cluster`` command.
+the head node. To query just the status of the cluster, use ``pcluster
+describe-cluster -n mycluster --query clusterStatus``.
 
 Connecting to the head node depends on how the VPC was set up. If the head node
 exists in a public subnet, you can connect to it using the public IP address.
@@ -275,10 +287,14 @@ Once connected to the instance via ssh, do the following:
       export CHPL_LLVM=bundled
       export CHPL_GPU=nvidia
 
-Running Chapel programs
+Running Chapel Programs
 -----------------------
 
-If all of the above steps have been completed successfully, you should be able to use your cluster to run Chapel programs. If you have a cluster with more than 4 nodes, you can run the ``make check`` command to test the Chapel installation. If you have a cluster with 4 or fewer nodes, you can compile and run the ``hello`` program as shown below:
+If all of the above steps have been completed successfully, you should be able
+to use your cluster to run Chapel programs. If you have a cluster with 4 or
+more compute nodes, you can run the ``make check`` command to test the Chapel
+installation. If you have a cluster with less than 4 nodes, you can test your
+configuration compile and run the ``hello`` program as shown below:
 
 .. code-block:: bash
 
