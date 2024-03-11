@@ -76,6 +76,7 @@ Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * removed the remaining deprecated routines/constants from the 'Math' module  
   (e.g., `carg()`, `conjg()`, `divceil()`, `log2_e`, `half_pi`, etc.)
+* removed deprecated 'IO' support for the `readThis()`/`writeThis()` methods
 * removed the deprecated 'IO' config to control `region` argument behavior  
   (e.g. `useNewSeekRegionBounds`, `useNewOpenReaderRegionBounds`, etc.)
 * removed the deprecated 'BigInteger' config `bigintInitThrows`
@@ -89,6 +90,7 @@ GPU Computing
 Performance Optimizations / Improvements
 ----------------------------------------
 * significantly improved `Sort.sort()` performance for large problem sizes
+* eliminated extraneous array copies in initializers caused by domain queries
 * adjusted the LLVM optimizer to assume math functions don't set C's `errno`
 
 Improvements to Compilation Times / Generated Code
@@ -237,6 +239,11 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - eliminated incorrect error messages involving type queries
+  - improved default initialization of generics
+  - improved support for `borrowed` and `unmanaged` classes
+  - improved support for interaction between variable arguments and tuples
 * added support for param-folding `select`s w.r.t. copy elision & split-init
 * added support for resolving calls to the `this` method of a field
 * improved the prototype support for library files:
