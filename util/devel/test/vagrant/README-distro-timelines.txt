@@ -33,13 +33,13 @@ Arch
 CentOS -- see https://wiki.centos.org/About/Product
 x 5 full updates until Jan 2014, maintenance until Mar 2017
 x 6 full updates until May 2017, maintenance until Nov 2020
-x   6.9  released Apr 2017
-x   6.10 released Jul 2018
+x   6.9      released Apr 2017
+x   6.10     released Jul 2018
 - 7 full updates until Dec 2020, maintenance until Jun 2024
-x   7.3       released Dec 2016
-x   7.4       released Sep 2017
-x   7.5       released May 2018
-x   7.6       released Dec 2018
+x   7.3      released Dec 2016
+x   7.4      released Sep 2017
+x   7.5      released May 2018
+x   7.6      released Dec 2018
 x   7.7      released Sep 2019
 x   7.8-2003 released Apr 2020
 -   7.9-2009 released Nov 2020 EOL Jun 2024
