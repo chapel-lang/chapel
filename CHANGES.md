@@ -20,6 +20,8 @@ Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
 * changed arrays' default task intent to be based on the array's `const`-ness
   (see https://chapel-lang.org/docs/2.0/language/spec/data-parallelism.html#forall-intents)
+* `otherwise` blocks must now be the last case in their `select` statements  
+  (see https://chapel-lang.org/docs/2.0/language/spec/statements.html#the-select-statement)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -82,6 +84,8 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.0/platforms/infiniband.html)
 * refreshed documentation concerning troubleshooting GASNet runs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#troubleshooting)
+* clarified required conditions for split initialization and copy elision  
+  (see TODO)
 * improved documentation of enum constants to leverage new 'chpldoc' features
 * fixed some cases where documentation and argument lists did not match
 * fixed a bug in the spec where certain statement forms lacked semicolons
@@ -183,11 +187,13 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* added support for param-folding `select`s w.r.t. copy elision & split-init
 * added support for resolving calls to the `this` method of a field
 * made calling `.type` on a type emit an error
 * implemented type resolution of module-level split-initialized variables
 * implemented `is [const] copyable` and `is [const] assignable` primitives
 * implemented `pragma "last resort"` function resolution logic
+* fixed resolution of `eltType` queries on the `c_ptr` type
 * fixed a bug in resolving user-defined initializers of owned classes
 
 Developer-oriented changes: GPU support
@@ -606,7 +612,7 @@ Syntactic / Naming Changes
 * renamed `range.aligned` to `range.isAligned()`  
   (see https://chapel-lang.org/docs/1.32/language/spec/ranges.html#ChapelRange.range.isAligned)
 * renamed `domain.dist` to `domain.distribution`  
-  (see https://chapel-lang.org/docs/main/language/spec/domains.html#ChapelDomain.distribution)
+  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.distribution)
 * added a warning when inheriting from a generic class if `(?)` is not used  
   (e.g., `class C: D` must now be written `class C: D(?)` for generic `D`)
 * added warnings for non-fully-defaulted generic type constraints w/out `(?)`  
