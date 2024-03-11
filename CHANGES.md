@@ -59,8 +59,8 @@ Deprecated / Unstable / Removed Library Features
 GPU Computing
 -------------
 * enabled using ROCm's LLVM using `CHPL_LLVM=system` and `CHPL_GPU=amd`
-* added an initial capability to use distributed arrays within GPU kernels
-* fixed a bug in which reductions on AMD GPUs resulted in extra synchronization
+  (see TODO)
+* eliminated unnecessary synchronization for reductions on AMD GPUs
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -122,7 +122,8 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
-* added a dynamic check that default-intent args aren't indirectly modified
+* added a dynamic check that default-intent args aren't indirectly modified  
+  (enable using `--const-arg-checks` or `--warn-unstable` without `--fast`)
 * made clang detection of bad `--ccflags` arguments terminate compilation
 
 Bug Fixes
@@ -191,6 +192,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 
 Developer-oriented changes: GPU support
 ---------------------------------------
+* added an initial capability to use distributed arrays within GPU kernels
 * improved kernel launch w.r.t. debuggability and to enable upcoming features
 
 
