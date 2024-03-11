@@ -153,9 +153,18 @@ Generated Executable Flags
 
 Runtime Library Changes
 -----------------------
+* added support for generalized co-locales that are not bound to a socket  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
+* added co-locale support for NICs that are not in a socket
+* improved support for SS11 authentication
+* enabled conditional fencing of fetching AMOs in message-order-fence MCM
 
 Launchers
 ---------
+* added co-locale support to the 'smp' launcher
+* added `-nl` suffixes to bind co-locales to specific architectural feature  
+  (e.g., `-nl 8x2s` says to run 2 locales on each of 8 nodes, one per socket)  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -181,6 +190,13 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed a path parsing issue in `printchplbuilds.py`
+
+Bug Fixes for the Runtime
+-------------------------
+* added forced visibility of writes before AMO in message-order-fence MCM
+* fixed useable core determination when some PUs are inaccessible
+
 
 Third-Party Software Changes
 ----------------------------
