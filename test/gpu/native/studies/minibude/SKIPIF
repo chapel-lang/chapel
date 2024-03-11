@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# skip if using CHPL_GPU=cpu
+if [ "$CHPL_GPU" = "cpu" ]; then
+  echo "True"
+  exit
+fi
+
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # We're currently using Josh's fork, at some point this may get integrated into
