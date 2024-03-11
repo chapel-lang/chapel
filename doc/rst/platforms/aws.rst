@@ -292,9 +292,9 @@ Running Chapel Programs
 
 If all of the above steps have been completed successfully, you should be able
 to use your cluster to run Chapel programs. If you have a cluster with 4 or
-more compute nodes, you can run the ``make check`` command to test the Chapel
-installation. If you have a cluster with less than 4 nodes, you can test your
-configuration compile and run the ``hello`` program as shown below:
+more compute nodes, you can run ``make check`` from ``CHPL_HOME`` to test the
+Chapel installation. If you have a cluster with less than 4 nodes, you can test
+your configuration compile and run the ``hello`` program as shown below:
 
 .. code-block:: bash
 
