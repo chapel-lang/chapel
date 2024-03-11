@@ -4987,7 +4987,7 @@ proc fileWriter.advance(amount:int(64)) throws {
 }
 
 /*
-   Read until a separator is found, leaving the ``fileReader`` offset just
+   Read until a separator is found, leaving the :record:`fileReader` offset just
    after it.
 
    If the separator cannot be found, the ``fileReader`` offset is left at EOF
@@ -5038,10 +5038,11 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
 }
 
 /*
-   Read until a separator is found, leaving the ``fileReader`` offset just before it.
+   Read until a separator is found, leaving the :record:`fileReader` offset just
+   before it.
 
-   If the separator cannot be found, the ``fileReader`` offset is left at EOF and an
-   ``UnexpectedEofError`` is thrown.
+   If the separator cannot be found, the ``fileReader`` offset is left at EOF
+   and an ``UnexpectedEofError`` is thrown.
 
    .. note::
 
@@ -5572,7 +5573,7 @@ private proc openReaderHelper(path:string,
 }
 
 /*
-  Create a :record:`fileReader` around a :type:`string`
+  Create a :record:`fileReader` around a :type:`~String.string`
 
   Note that the string is copied into a local memory file, so it can be modified
   after the ``fileReader`` is created without affecting the contents of the
@@ -5605,7 +5606,7 @@ proc openStringReader(const s: string, in deserializer: ?dt = defaultSerializeVa
 }
 
 /*
-  Create a :record:`fileReader` around a :type:`bytes`
+  Create a :record:`fileReader` around a :type:`~Bytes.bytes`
 
   Note that the bytes is copied into a local memory file, so it can be modified
   after the ``fileReader`` is created without affecting the contents of the
@@ -6656,8 +6657,8 @@ inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
 }
 
 /*
-  Advances the offset of a ``fileReader`` within the file by reading the exact
-  text of the given string ``literal`` from the fileReader.
+  Advances the offset of a :record:`fileReader` within the file by reading the
+  exact text of the given string ``literal`` from the fileReader.
 
   If the string is not matched exactly, then the fileReader's offset is
   unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
@@ -6683,7 +6684,7 @@ proc fileReader.readLiteral(literal:string,
 
 /*
   Advances the offset of a fileReader by reading the exact bytes of the given
-  ``literal`` from the ``fileReader``.
+  ``literal`` from the :record:`fileReader`.
 
   If the bytes are not matched exactly, then the fileReader's offset is
   unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
@@ -6734,7 +6735,7 @@ inline proc fileReader._readNewline() : void throws {
 
 // TODO: How does this differ from readln() ?
 /*
-  Advances the offset of the fileReader by reading a newline.
+  Advances the offset of the :record:`fileReader` by reading a newline.
 
   If a newline is not matched exactly, then the fileReader's offset is
   unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
@@ -6765,8 +6766,8 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
 }
 
 /*
-  Advances the offset of a fileReader by reading the exact text of the given
-  string ``literal`` from the fileReader.
+  Advances the offset of a :record:`fileReader` by reading the exact text of the
+  given string ``literal`` from the fileReader.
 
   If the string is not matched exactly, then the fileReader's offset is
   unchanged and this method will return ``false``. In other words, this
@@ -6791,8 +6792,8 @@ proc fileReader.matchLiteral(literal:string,
 }
 
 /*
-  Advances the offset of a ``fileReader`` by reading the exact bytes of the
-  given ``literal`` from the ``fileReader``.
+  Advances the offset of a :record:`fileReader` by reading the exact bytes of
+  the given ``literal`` from the ``fileReader``.
 
   If the bytes are not matched exactly, then the fileReader's offset is
   unchanged and this method will return ``false``. In other words, this
@@ -6817,7 +6818,7 @@ proc fileReader.matchLiteral(literal:bytes,
 }
 
 /*
-  Advances the offset of the ``fileReader`` by reading a newline.
+  Advances the offset of the :record:`fileReader` by reading a newline.
 
   If a newline is not matched exactly, then the fileReader's offset is
   unchanged and this method will return ``false``. In other words, this
@@ -6860,8 +6861,8 @@ proc fileWriter._writeLiteralCommon(x:?t) : void throws {
 }
 
 /*
-  Writes a string to the ``fileWriter``, ignoring any formatting configured for
-  this ``fileWriter``.
+  Writes a string to the :record:`fileWriter`, ignoring any formatting
+  configured for this ``fileWriter``.
 */
 inline
 proc fileWriter.writeLiteral(literal:string) : void throws {
@@ -6869,8 +6870,8 @@ proc fileWriter.writeLiteral(literal:string) : void throws {
 }
 
 /*
-  Writes bytes to the ``fileWriter``, ignoring any formatting configured for this
-  ``fileWriter``.
+  Writes bytes to the :record:`fileWriter`, ignoring any formatting configured
+  for this ``fileWriter``.
 */
 inline
 proc fileWriter.writeLiteral(literal:bytes) : void throws {
@@ -6879,8 +6880,8 @@ proc fileWriter.writeLiteral(literal:bytes) : void throws {
 
 // TODO: How does this differ from writeln() ?
 /*
-  Writes a newline to the ``fileWriter``, ignoring any formatting configured for
-  this ``fileWriter``.
+  Writes a newline to the :record:`fileWriter`, ignoring any formatting
+  configured for this ``fileWriter``.
 */
 inline
 proc fileWriter.writeNewline() : void throws {
@@ -6930,7 +6931,7 @@ proc fileWriter.styleElement(element:int):int {
 }
 
 /*
-  Iterate over all of the lines ending in ``\n`` in a fileReader - the
+  Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` - the
   fileReader lock will be held while iterating over the lines.
 
   Only serial iteration is supported. This iterator will halt on internal
@@ -7054,9 +7055,9 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
 }
 
 /*
-   Read one or more values from a ``fileReader``. The ``fileReader``'s lock
-   will be held while reading the values — this protects against interleaved
-   reads.
+   Read one or more values from a :record:`fileReader`. The ``fileReader``'s
+   lock will be held while reading the values — this protects against
+   interleaved reads.
 
    :arg args: a series of variables to read into. Basic types are handled
               internally, but for other types this function will call
