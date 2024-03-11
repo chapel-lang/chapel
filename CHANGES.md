@@ -26,6 +26,7 @@ Namespace Changes
 
 Standard Library Modules
 ------------------------
+* added support for comparing `c_fn_ptr` values against `nil`
 
 Package Modules
 ---------------
@@ -62,6 +63,10 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
+* improved InfiniBand documentation for clarity and to mention `pmi` launches
+  (see https://chapel-lang.org/docs/2.0/platforms/infiniband.html)
+* refreshed documentation concerning troubleshooting GASNet runs  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#troubleshooting)
 
 Example Codes
 -------------
@@ -95,18 +100,23 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* made clang detection of bad `--ccflags` arguments terminate compilation
 
 Bug Fixes
 ---------
+* fixed a bug converting tuples to complexes, e.g. when containing 'inf'
+* fixed a bug in which compiler-generated code would warn about lack of '?'
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed a bug in which the c2chapel virtual environment was incorrectly built
 
 Bug Fixes for GPU Computing
 ---------------------------
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a crash when calling `.seek()` on a remote `fileReader`/`fileWriter`
 
 Bug Fixes for Tools
 -------------------
