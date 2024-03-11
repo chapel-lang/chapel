@@ -50,6 +50,11 @@ Package Modules
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed the remaining deprecated routines/constants from the 'Math' module  
+  (e.g., `carg()`, `conjg()`, `divceil()`, `log2_e`, `half_pi`, etc.)
+* removed the deprecated 'IO' config to control `region` argument behavior  
+  (e.g. `useNewSeekRegionBounds`, `useNewOpenReaderRegionBounds`, etc.)
+* removed the deprecated 'BigInteger' config `bigintInitThrows`
 
 GPU Computing
 -------------
@@ -74,6 +79,10 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.0/platforms/infiniband.html)
 * refreshed documentation concerning troubleshooting GASNet runs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#troubleshooting)
+* improved documentation of enum constants to leverage new 'chpldoc' features
+* fixed some cases where documentation and argument lists did not match
+* fixed a bug in the spec where certain statement forms lacked semicolons
+* fixed various typos and formatting issues
 
 Example Codes
 -------------
@@ -83,6 +92,7 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* removed support for Python 3.7 from 'chpldoc'
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -109,6 +119,7 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added a dynamic check that default-intent args aren't indirectly modified
 * made clang detection of bad `--ccflags` arguments terminate compilation
 
 Bug Fixes
@@ -132,6 +143,8 @@ Bug Fixes for Tools
 
 Third-Party Software Changes
 ----------------------------
+* updated the Python package versions used by 'chpldoc'  
+  (see $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt for details)
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -181,6 +194,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* updated the Python package versions used by `start_test`
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
