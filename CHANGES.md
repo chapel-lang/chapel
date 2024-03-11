@@ -58,6 +58,9 @@ Deprecated / Unstable / Removed Library Features
 
 GPU Computing
 -------------
+* enabled using ROCm's LLVM using `CHPL_LLVM=system` and `CHPL_GPU=amd`
+* added an initial capability to use distributed arrays within GPU kernels
+* fixed a bug in which reductions on AMD GPUs resulted in extra synchronization
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -185,6 +188,11 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * implemented `is [const] copyable` and `is [const] assignable` primitives
 * implemented `pragma "last resort"` function resolution logic
 * fixed a bug in resolving user-defined initializers of owned classes
+
+Developer-oriented changes: GPU support
+---------------------------------------
+* improved kernel launch w.r.t. debuggability and to enable upcoming features
+
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
