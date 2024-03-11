@@ -521,7 +521,7 @@ Error Handling
 
 Most I/O routines throw a :class:`~OS.SystemError`, which can be handled
 appropriately with ``try`` and ``catch`` (see the
-:ref:`documentation<Complete_handling>` for more detail).
+:ref:`documentation<Handling_Errors>` for more detail).
 
 Additionally, some subclasses of :class:`~Errors.Error` are commonly used within
 the I/O implementation. These are:
@@ -543,6 +543,8 @@ As such, it is typically recommended that more specific errors are caught and
 recovered from separately from a ``SystemError``. See the following example:
 
 .. code-block:: chapel
+
+  use IO;
 
   const r = openReader("test.txt");
 
@@ -586,12 +588,17 @@ The steps of a typical *I/O transaction* are as follows:
 
 * ``mark`` the current file offset with :proc:`fileReader.mark` or
   :proc:`fileWriter.mark`. This pushes the current offset onto the *mark stack*
+
 * do a speculative I/O operation:
+
     * reading example: read 200 bytes followed by a `b`.
-    * writing example: write 200 bytes without exceeding the ``fileWriter``'s region.
+    * writing example: write 200 bytes without exceeding the ``fileWriter``'s
+      region.
+
 * if the operation fails, ``revert`` the operation by calling :proc:`fileReader.revert`
   or :proc:`fileWriter.revert`. Subsequent operations will continue from the
   originally marked offset as if nothing happened.
+
 * if the operation is successful, call :proc:`fileReader.commit` or
   :proc:`fileWriter.commit` to pop the value from the *mark stack* and continue
   performing I/O operations from the current offset.
@@ -626,7 +633,7 @@ See the following example of a simple I/O transaction:
 
 .. _filereader-filewriter-regions:
 
-Specifying the region of a FileReader or FileWriter
+Specifying the region of a fileReader or fileWriter
 ---------------------------------------------------
 
 The :record:`fileReader` and :record:`fileWriter` types can be configured to
@@ -703,9 +710,8 @@ useful in a procedure that relies on a ``reader`` argument being locking:
     // use 'reader' concurrently with another fileReader/fileWriter   ...
   }
 
-By default, a ``fileReader`` or ``fileWriter`` will lock. A non-locking reader
-or writer can be created by setting ``locking=false`` in one of the following
-routines:
+The ``locking`` field can be set by passing the desired value to one of the
+following routines:
 
 * :proc:`file.reader`
 * :proc:`file.writer`
@@ -713,8 +719,8 @@ routines:
 * :proc:`openWriter`
 
 With a locking ``fileReader`` or ``fileWriter``, one can obtain a lock manually
-by calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release a
-lock by calling :proc:`fileReader.unlock` or :proc:`fileWriter.unlock`.
+by calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release
+a lock by calling :proc:`fileReader.unlock` or :proc:`fileWriter.unlock`.
 
 .. note::
   The following methods will not automatically acquire/release a lock for
@@ -887,7 +893,7 @@ enum endianness {
   little = 2
 }
 
-@deprecated(":enum: ioendian is deprecated; please use :enum: endianness instead")
+@deprecated(":enum:`ioendian` is deprecated; please use :enum:`endianness` instead")
 type ioendian = endianness;
 
 
@@ -1759,7 +1765,7 @@ a C ``FILE`` object can be obtained via Chapel's
   This is an alternative way to create a :record:`file`.  The main way to do so
   is via the :proc:`open` function.
 
-Once the Chapel file is created, you will need to use a :proc:`file.reader` to
+Once the Chapel file is created, you will need to use :proc:`file.reader` to
 create a fileReader or :proc:`file.writer` to create a fileWriter to perform I/O
 operations on the C file.
 
@@ -2499,7 +2505,7 @@ record defaultSerializer {
 
     Classes and records will have their ``serialize`` method invoked, passing
     in ``writer`` and this Serializer as arguments. Please see the
-    :ref:`serializers technote<ioSerializers>` for more.
+    :ref:`serializers technote<ioSerializers>` for more information.
 
     Classes and records are expected to implement the ``writeSerializable``
     or ``serializable`` interface.
@@ -2546,7 +2552,7 @@ record defaultSerializer {
     :arg name: The name of the record type.
     :arg size: The number of fields in the record.
 
-    :returns: A new AggregateSerializer
+    :returns: A new :type:`AggregateSerializer`
   */
   proc startRecord(writer: fileWriter, name: string, size: int) throws {
     writer.writeLiteral("(");
@@ -2663,7 +2669,7 @@ record defaultSerializer {
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of elements in the tuple.
 
-    :returns: A new TupleSerializer
+    :returns: A new :record:`TupleSerializer`
   */
   proc startTuple(writer: fileWriter, size: int) throws {
     writer.writeLiteral("(");
@@ -2726,7 +2732,7 @@ record defaultSerializer {
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of elements in the list.
 
-    :returns: A new ListSerializer
+    :returns: A new :record:`ListSerializer`
   */
   proc startList(writer: fileWriter, size: int) throws {
     writer.writeLiteral("[");
@@ -2779,7 +2785,7 @@ record defaultSerializer {
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of elements in the array.
 
-    :returns: A new ArraySerializer
+    :returns: A new :record:`ArraySerializer`
   */
   proc startArray(writer: fileWriter, size: int) throws {
     return new ArraySerializer(writer);
@@ -2880,7 +2886,7 @@ record defaultSerializer {
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of entries in the map.
 
-    :returns: A new MapSerializer
+    :returns: A new :record:`MapSerializer`
   */
   proc startMap(writer: fileWriter, size: int) throws {
     writer.writeLiteral("{");
@@ -2968,7 +2974,8 @@ record defaultDeserializer {
     Classes and records will be deserialized using an appropriate initializer,
     passing in ``reader`` and this Deserializer as arguments. If an
     initializer is unavailable, this method may invoke the class or record's
-    ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
+    ``deserialize`` method. Please see the
+    :ref:`serializers technote<ioSerializers>` for more information.
 
     Classes and records are expected to implement either the
     ``initDeserializable`` or ``readDeserializable`` interfaces (or both).
@@ -3106,7 +3113,7 @@ record defaultDeserializer {
     /*
       Start deserializing a nested class inside the current class.
 
-      See ``defaultSerializer.AggregateSerializer.startClass`` for details
+      See :proc:`defaultSerializer.AggregateSerializer.startClass` for details
       on inheritance on the default format.
 
       :returns: A new AggregateDeserializer
@@ -4019,7 +4026,7 @@ record binaryDeserializer {
     Returned by ``startClass`` or ``startRecord`` to provide the API for
     deserializing classes or records.
 
-    See ``binarySerializer.AggregateSerializer`` for details of the
+    See :record:`binarySerializer.AggregateSerializer` for details of the
     binary format for classes and records.
   */
   record AggregateDeserializer {
@@ -4043,7 +4050,7 @@ record binaryDeserializer {
     /*
       Start deserializing a nested class inside the current class.
 
-      See ``binarySerializer.AggregateSerializer.startClass`` for details
+      See :proc:`binarySerializer.AggregateSerializer.startClass` for details
       on inheritance on the binary format.
 
       :returns: A new AggregateDeserializer
