@@ -54,6 +54,8 @@ Performance Optimizations / Improvements
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* reduced `chpl` memory footprint for large programs via the compiler driver  
+  (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 
 Memory Improvements
 -------------------
@@ -82,6 +84,8 @@ Portability / Platform-specific Improvements
 
 Compiler Improvements
 ---------------------
+* switched `chpl` to use its compiler driver mode by default  
+  (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 
 Compiler Flags
 --------------
@@ -129,6 +133,10 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* made clarifications to the driver mode technical note  
+  (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
+* removed the Docker packaging README in favor of Chapel's Dockerhub page  
+  (see https://hub.docker.com/r/chapel/chapel/)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
@@ -144,12 +152,21 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* made `--compiler-driver` the default and added `--no-compiler-driver`  
+  (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* fixed a number of bugs with the compiler driver mode
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* added support for resolving calls to the `this` method of a field
+* made calling `.type` on a type emit an error
+* implemented type resolution of module-level split-initialized variables
+* implemented `is [const] copyable` and `is [const] assignable` primitives
+* implemented `pragma "last resort"` function resolution logic
+* fixed a bug in resolving user-defined initializers of owned classes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -165,6 +182,7 @@ Developer-oriented changes: Tool Improvements
 
 Developer-oriented changes: Utilities
 -------------------------------------
+* added a script to mass-update the copyright year of Chapel's source files
 
 
 version 1.33.0
