@@ -130,7 +130,7 @@ We have used the following commands to install the above prerequisites:
       sudo yum install epel-release
       sudo scl enable devtoolset-11 bash
       sudo echo source scl_source enable devtoolset-11 >> ~/.bashrc
-      sudo yum install git gcc gcc-c++ m4 perl tcsh bash gcc gcc-c++ perl python3 bash make gawk wget openssl-devel
+      sudo yum install git gcc gcc-c++ m4 perl tcsh bash python3 make gawk wget openssl-devel
       wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz
       tar xvzf cmake-3.25.1.tar.gz
       cd cmake-3.25.1
