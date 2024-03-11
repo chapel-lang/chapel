@@ -691,7 +691,7 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
                " their behavior is likely to change in the future.");
 }
 
-// TODO: remove this check and warning after 1.34?
+// TODO: remove this check and warning after 2.0?
 void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
   // suppress this warning from chpldoc
   if (isUserCode())
@@ -1648,7 +1648,7 @@ void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
     if (seenOtherwise && !when->isOtherwise()) {
       CHPL_REPORT(context_, WhenAfterOtherwise, sel, seenOtherwise, when);
       break;
-    } 
+    }
     if (when->isOtherwise())  seenOtherwise = when;
   }
 }

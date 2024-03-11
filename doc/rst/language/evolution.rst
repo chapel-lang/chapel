@@ -14,7 +14,7 @@ The purpose of this flag is to identify portions of a program that use a
 language or library feature has recently changed meaning or which is
 expected to change meaning in the future.
 
-version 1.34, March 2024
+version 2.0, March 2024
 ------------------------
 
 .. _readme-evolution.default-task-intent-arrays:
@@ -22,7 +22,7 @@ version 1.34, March 2024
 Default task intents for arrays
 *******************************
 
-In 1.34, the default task intent for an array is now determined by the outer
+In 2.0, the default task intent for an array is now determined by the outer
 variable. If the outer array is ``const`` then the default intent is ``const``,
 otherwise the default intent is ``ref``. Therefore, if an array is modifiable
 outside a parallel block, it is modifiable inside the parallel block. It is no
@@ -44,8 +44,8 @@ The default task intent for ``A`` is ``ref``, since the argument formal ``A``
 is mutable. This simplifies parallel code, making it simpler and cleaner to
 write.
 
-Prior to 1.34, the above ``begin`` would have resulted in a deprecation
-warning. In 1.34, this is valid code again.
+Prior to 2.0, the above ``begin`` would have resulted in a deprecation
+warning. In 2.0, this is valid code again.
 
 version 1.32, September 2023
 ----------------------------
