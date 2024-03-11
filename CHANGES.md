@@ -14,9 +14,12 @@ Syntactic / Naming Changes
 
 Language Feature Improvements
 -----------------------------
+* added support for `borrowed` class expressions to be cast to `unmanaged`
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* changed arrays' default task intent to be based on the array's `const`-ness
+  (see https://chapel-lang.org/docs/2.0/language/spec/data-parallelism.html#forall-intents)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -36,6 +39,8 @@ Standard Domain Maps (Layouts and Distributions)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* added the missing deserializer for the `bigint` type  
+  (see https://chapel-lang.org/docs/2.0/modules/standard/BigInteger.html#BigInteger.bigint.deserialize)
 
 Name Changes in Libraries
 -------------------------
