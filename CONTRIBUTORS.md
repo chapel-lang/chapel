@@ -14,6 +14,7 @@ Contributors to the Chapel 2.0 release
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
+* Luca Ferranti, individual contributor
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
@@ -76,7 +77,6 @@ Contributors to previous releases
 * Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
 * Saliya Ekanayake, [Indiana University]
 * Omar Elawady, individual contributor
-* Luca Ferranti, individual contributor
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
 * Roald Frederickx, individual contributor
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
