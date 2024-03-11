@@ -86,8 +86,10 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.0/platforms/infiniband.html)
 * refreshed documentation concerning troubleshooting GASNet runs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#troubleshooting)
-* clarified required conditions for split initialization and copy elision  
-  (see TODO)
+* clarified required conditions for split initialization  
+  (see https://chapel-lang.org/docs/2.0/language/spec/variables.html#split-initialization))
+* clarified required conditions for copy elision  
+  (see https://chapel-lang.org/docs/2.0/language/spec/variables.html#copy-elision)
 * improved documentation of enum constants to leverage new 'chpldoc' features
 * fixed some cases where documentation and argument lists did not match
 * fixed a bug in the spec where certain statement forms lacked semicolons
