@@ -3686,6 +3686,7 @@ module BigInteger {
         :proc:`GMP.mpz_sgn` and
         `mpz_sgn <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fsgn>`_.
   */
+  @unstable("bigint.sgn is unstable and may change its name and return type in the future")
   proc bigint.sgn() : int {
     const this_ = this.localize();
     var ret : c_int;

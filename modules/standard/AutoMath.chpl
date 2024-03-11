@@ -580,24 +580,28 @@ module AutoMath {
   /* Returns the signum function of the integer argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   inline proc sgn(x : int(?w)): int(8) do
     return ((x > 0) : int(8) - (x < 0) : int(8)) : int(8);
 
   /* Returns the signum function of the unsigned integer argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   inline proc sgn(x : uint(?w)): uint(8) do
     return (x > 0) : uint(8);
 
   /* Returns the signum function of the integer param argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   proc sgn(param x : integral) param do
     return if x > 0 then 1 else if x == 0 then 0 else -1;
 
   /* Returns the signum function of the real argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   inline proc sgn(x : real(?w)): int(8) do
     return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
 
