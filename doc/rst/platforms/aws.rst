@@ -302,6 +302,42 @@ your configuration compile and run the ``hello`` program as shown below:
    ./hello -nl 2
 
 
+Cleanup
+-------
+
+When you are done with the cluster, you can delete it with the following command:
+
+.. code-block:: bash
+
+   pcluster delete-cluster -n mycluster
+
+This will delete all of the resources associated with the cluster, including
+the storage. If you have data on the cluster that you want to keep, you should
+back it up before deleting the cluster.
+
+.. note::
+
+   If desired, users can create their own storage volumes and attach them to
+   the cluster at configure time. For example, users can add the following to
+   their configuration file prior to running ``pcluster create-cluster``:
+
+    .. code-block:: yaml
+
+       SharedStorage:
+         - MountDir: /scratch
+           Name: scratch
+           StorageType: Ebs
+           EbsSettings:
+             VolumeId: VOLUMEID
+
+    Replace ``VOLUMEID`` with the ID of the volume you want to attach. After
+    the cluster is created, the volume will be mounted at ``/scratch`` on both
+    the head node and the compute nodes. Users can then use the volume as they
+    see fit. When the cluster is deleted, the volume will be detached but not
+    deleted.
+
+    For more information on attaching volumes to a cluster, see the `ParallelCluster documentation <https://docs.aws.amazon.com/parallelcluster/latest/ug/shared-storage-quotas-integration-v3.html>`_.
+
 Frequently Asked Questions
 --------------------------
 
