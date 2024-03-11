@@ -1053,6 +1053,8 @@ marked with ``(?)``:
 
  * ``class-inherit`` expressions (see :ref:`Inheritance`)
 
+ * generic types passed to a `type` formal argument (see
+   :ref:`Formal_Type_Arguments`)
 
 .. _Generic_Methods:
 
