@@ -1,6 +1,9 @@
 Release Changes List
 ====================
 
+TODO:
+o '(http:' -> '(see http:'
+
 version 2.0
 ===========
 
@@ -19,11 +22,14 @@ Language Feature Improvements
 -----------------------------
 * added support for `borrowed` class expressions to be cast to `unmanaged`
 * added initial support for `with` clauses on `foreach` loops
+* associative domains are now stable when using the default of `parSafe=false`
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
 * changed arrays' default task intent to be based on the array's `const`-ness
   (see https://chapel-lang.org/docs/2.0/language/spec/data-parallelism.html#forall-intents)
+* changed associative domains to be `parSafe=false` by default  
+  (see https://chapel-lang.org/docs/language/spec/domains.html#parallel-safety-with-respect-to-domains-and-arrays)
 * aligned default task intents on `foreach` loops to match `forall` loops
 * enabled implicit `param` conversions when passing to `const ref` formals  
   (e.g., `proc f(const ref arg: int(8))` can now be called with `f(1)`)  
@@ -35,6 +41,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * `serial` statements are now considered unstable  
   (see https://chapel-lang.org/docs/2.0/language/spec/task-parallelism-and-synchronization.html#serial)
+* marked `local` blocks as unstable
 * implicitly converting an 8-/16-bit `int`/`uint` to `real(32)` is now unstable
 
 Namespace Changes
@@ -83,6 +90,8 @@ Deprecated / Unstable / Removed Library Features
 
 GPU Computing
 -------------
+* improved GPU sorting routines w.r.t. performance and supported types  
+  (see https://chapel-lang.org/docs/2.0/modules/standard/GPU.html#GPU.gpuSort)
 * enabled using ROCm's LLVM using `CHPL_LLVM=system` and `CHPL_GPU=amd`
   (see TODO)
 * eliminated unnecessary synchronization for reductions on AMD GPUs
@@ -114,6 +123,8 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.0/language/spec/variables.html#split-initialization))
 * clarified required conditions for copy elision  
   (see https://chapel-lang.org/docs/2.0/language/spec/variables.html#copy-elision)
+* improved test system documentation to cover more features
+  (see TODO)
 * improved documentation of enum constants to leverage new 'chpldoc' features
 * fixed some cases where documentation and argument lists did not match
 * fixed a bug in the spec where certain statement forms lacked semicolons
