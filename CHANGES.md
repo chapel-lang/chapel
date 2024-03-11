@@ -15,11 +15,13 @@ Syntactic / Naming Changes
 Language Feature Improvements
 -----------------------------
 * added support for `borrowed` class expressions to be cast to `unmanaged`
+* added initial support for `with` clauses on `foreach` loops
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
 * changed arrays' default task intent to be based on the array's `const`-ness
   (see https://chapel-lang.org/docs/2.0/language/spec/data-parallelism.html#forall-intents)
+* aligned default task intents on `foreach` loops to match `forall` loops
 * `otherwise` blocks must now be the last case in their `select` statements  
   (see https://chapel-lang.org/docs/2.0/language/spec/statements.html#the-select-statement)
 
