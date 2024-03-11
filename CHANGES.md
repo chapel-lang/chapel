@@ -11,6 +11,9 @@ Highlights (see subsequent sections for further details)
 
 Syntactic / Naming Changes
 --------------------------
+* added a warning when passing generics type to routines without using `(?)`  
+  (e.g., `f(G)` should be written as `f(G(?))` if `G` is a generic type)  
+  (see https://chapel-lang.org/docs/2.0/language/spec/generics.html#marking-generic-types)
 
 Language Feature Improvements
 -----------------------------
@@ -22,21 +25,38 @@ Semantic Changes / Changes to the Chapel Language
 * changed arrays' default task intent to be based on the array's `const`-ness
   (see https://chapel-lang.org/docs/2.0/language/spec/data-parallelism.html#forall-intents)
 * aligned default task intents on `foreach` loops to match `forall` loops
+* enabled implicit `param` conversions when passing to `const ref` formals  
+  (e.g., `proc f(const ref arg: int(8))` can now be called with `f(1)`)  
+  (see https://chapel-lang.org/docs/2.0/language/spec/conversions.html#implicit-conversions-for-function-calls)
 * `otherwise` blocks must now be the last case in their `select` statements  
   (see https://chapel-lang.org/docs/2.0/language/spec/statements.html#the-select-statement)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* `serial` statements are now considered unstable  
+  (see https://chapel-lang.org/docs/2.0/language/spec/task-parallelism-and-synchronization.html#serial)
+* implicitly converting an 8-/16-bit `int`/`uint` to `real(32)` is now unstable
 
 Namespace Changes
 -----------------
 
 Standard Library Modules
 ------------------------
+* `abs` and `sqrt` applied to a `param` now return a `param` in more cases  
+  (see https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.sqrt and https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.abs)
 * added support for comparing `c_fn_ptr` values against `nil`
+* added unstable methods to append numeric values to a `bytes`/`string`  
+  (see https://chapel-lang.org/docs/main/language/spec/bytes.html#Bytes.bytes.appendByteValues  
+   and https://chapel-lang.org/docs/main/language/spec/strings.html#String.string.appendCodepointValues)
+* added an unstable method to compute the hexadecimal encoding of a `bytes`  
+  (see https://chapel-lang.org/docs/main/language/spec/bytes.html#Bytes.bytes.toHexadecimal)
 
 Package Modules
 ---------------
+* improved the `DistributedBag` package module for depth-first-search  
+  (see https://chapel-lang.org/docs/main/modules/packages/DistributedBag.html)
+* significantly improved `Sort.sort()` performance for large problem sizes
+* improved the performance of `toHex()` routines in the 'Crypto' module
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -68,9 +88,11 @@ GPU Computing
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* significantly improved `Sort.sort()` performance for large problem sizes
+* adjusted the LLVM optimizer to assume math functions don't set C's `errno`
 
-Compilation-Time / Generated Code Improvements
-----------------------------------------------
+Improvements to Compilation Times / Generated Code
+--------------------------------------------------
 * reduced `chpl` memory footprint for large programs via the compiler driver  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 
@@ -103,10 +125,15 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* updated C++ compiler version requirements to match those of LLVM 17  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html)
+* refreshed the sample installation commands in the prerequisites docs  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html#installation)
 * removed support for Python 3.7 from 'chpldoc'
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* addressed a problem building Chapel on Alpine linux
 
 Compiler Improvements
 ---------------------
@@ -115,6 +142,8 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* added new flags to request warnings for implicit numeric conversions  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/man.html starting from `--[no-]warn-int-to-uint`)
 
 Launchers
 ---------
@@ -163,6 +192,7 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* updated some out-of-date details in frontend/lib/parser/README
 * made clarifications to the driver mode technical note  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 * removed the Docker packaging README in favor of Chapel's Dockerhub page  
@@ -193,6 +223,10 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * added support for param-folding `select`s w.r.t. copy elision & split-init
 * added support for resolving calls to the `this` method of a field
+* improved the prototype support for library files:
+  - added the ability to reuse LLVM IR stored in a library file
+  - changed to using an ID-based munging strategy for library files
+  - resolve all concrete functions when generating a library file
 * made calling `.type` on a type emit an error
 * implemented type resolution of module-level split-initialized variables
 * implemented `is [const] copyable` and `is [const] assignable` primitives
