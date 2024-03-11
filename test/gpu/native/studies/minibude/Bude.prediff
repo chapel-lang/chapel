@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
 # filter number of gpus run on from output
-cat $2 | sed 's/Running Chapel on [0-9]\+ GPUs\{0,1\}/Running Chapel on NN GPUs/' > $2.prediff.tmp
+cat $2 | sed 's/Running Chapel on [0-9]\{1,\} GPUs\{0,1\}/Running Chapel on NN GPUs/' > $2.prediff.tmp
 mv $2.prediff.tmp $2
