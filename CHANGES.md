@@ -63,12 +63,14 @@ Deprecated / Unstable / Removed Language Features
   (see https://chapel-lang.org/docs/2.0/language/spec/task-parallelism-and-synchronization.html#serial)
 * marked `local` blocks as unstable
 * implicitly converting an 8-/16-bit `int`/`uint` to `real(32)` is now unstable
+* removed the previously deprecated `owned.borrow()` type method
 
 Namespace Changes
 -----------------
 
-Standard Library Modules
-------------------------
+New Standard Library Features
+-----------------------------
+* added support for initializing a `list` of `list`s from an array of arrays
 * `abs` and `sqrt` applied to a `param` now return a `param` in more cases  
   (see https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.sqrt and https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.abs)
 * added support for comparing `c_fn_ptr` values against `nil`
@@ -78,8 +80,8 @@ Standard Library Modules
 * added an unstable method to compute the hexadecimal encoding of a `bytes`  
   (see https://chapel-lang.org/docs/main/language/spec/bytes.html#Bytes.bytes.toHexadecimal)
 
-Package Modules
----------------
+New Package Module Features
+---------------------------
 * improved the `DistributedBag` package module for depth-first-search  
   (see https://chapel-lang.org/docs/main/modules/packages/DistributedBag.html)
 * significantly improved `Sort.sort()` performance for large problem sizes
@@ -98,12 +100,20 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* unstabilized `imag` overloads of trigonometric/hyperbolic 'Math' functions
 * removed the remaining deprecated routines/constants from the 'Math' module  
   (e.g., `carg()`, `conjg()`, `divceil()`, `log2_e`, `half_pi`, etc.)
 * removed deprecated 'IO' support for the `readThis()`/`writeThis()` methods
 * removed the deprecated 'IO' config to control `region` argument behavior  
   (e.g. `useNewSeekRegionBounds`, `useNewOpenReaderRegionBounds`, etc.)
+* removed all previously deprecated `BigInteger` functions
 * removed the deprecated 'BigInteger' config `bigintInitThrows`
+* removed some of the previously deprecated `Time.date[time]` methods
+* removed the previously deprecated `Time.getCurrentTime()` function
+* removed some of the previously deprecated `Time` types
+  (e.g., `datetime`, `timedelta`, `Timer`, `TZInfo`, `TimeUnits`, etc.)
+* removed all previously deprecated `FileSystem` functions
+* removed the previously deprecated `BitOps.popcount()` function
 
 GPU Computing
 -------------
@@ -117,6 +127,7 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * significantly improved `Sort.sort()` performance for large problem sizes
 * eliminated extraneous array copies in initializers caused by domain queries
+* improved codegen for `sqrt()` and `abs()` to directly map to LLVM intrinsics
 * adjusted the LLVM optimizer to assume math functions don't set C's `errno`
 
 Improvements to Compilation Times / Generated Code
@@ -129,9 +140,21 @@ Memory Improvements
 
 Tool Improvements
 -----------------
+* added `chpl-language-server`, a language server implementation for Chapel  
+  (see https://chapel-lang.org/docs/2.0/tools/chpl-language-server/chpl-language-server.html)
+* added support for user-defined lint rules in `chplcheck`  
+  (see https://chapel-lang.org/docs/2.0/tools/chplcheck/chplcheck.html)
+* improved how locations are reported by tools making use of the `chpl` parser
+* improved rendering of `chplcheck` lint rules in editors
+* improved rendering of return intents by `chpldoc` for some browsers
 
 Documentation Improvements
 --------------------------
+* merged 'ChapelIO' documentation into the 'IO' module's documentation  
+  (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html)
+* fixed a browser-specific rendering issue with spacing of return intents
+* updated platform documentation for AWS to reflect current best practices  
+  (see https://chapel-lang.org/docs/2.0/platforms/aws.html)
 * improved InfiniBand documentation for clarity and to mention `pmi` launches
   (see https://chapel-lang.org/docs/2.0/platforms/infiniband.html)
 * refreshed documentation concerning troubleshooting GASNet runs  
@@ -143,6 +166,7 @@ Documentation Improvements
 * improved test system documentation to cover more features
   (see TODO)
 * improved documentation of enum constants to leverage new 'chpldoc' features
+* fixed typos in the `Math.sqrt()` documentation
 * fixed some cases where documentation and argument lists did not match
 * fixed a bug in the spec where certain statement forms lacked semicolons
 * fixed various typos and formatting issues
@@ -155,18 +179,22 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
-* updated C++ compiler version requirements to match those of LLVM 17  
+* updated Chapel prereqs to require CMake 3.20, C++ 17, and those of LLVM 17  
   (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html)
 * refreshed the sample installation commands in the prerequisites docs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html#installation)
 * removed support for Python 3.7 from 'chpldoc'
+* disallowed building the compiler with AMD support when using the bundled LLVM
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* improved error-checking logic when `libfabric` is missing
+* worked around runtime hangs during teardown when using `libfabric` with `EFA`
 * addressed a problem building Chapel on Alpine linux
 
 Compiler Improvements
 ---------------------
+* upgraded `chpl` to now support LLVM 17
 * switched `chpl` to use its compiler driver mode by default  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 
@@ -174,6 +202,9 @@ Compiler Flags
 --------------
 * added new flags to request warnings for implicit numeric conversions  
   (see https://chapel-lang.org/docs/2.0/usingchapel/man.html starting from `--[no-]warn-int-to-uint`)
+* added a new off-by-default warning for potential race conditions  
+  (see `--warn-potential-races` in https://chapel-lang.org/docs/2.0/usingchapel/man.html)
+
 
 Launchers
 ---------
@@ -200,6 +231,8 @@ Error Messages / Semantic Checks
 --------------------------------
 * added a dynamic check that default-intent args aren't indirectly modified  
   (enable using `--const-arg-checks` or `--warn-unstable` without `--fast`)
+* improved error messages when a `record` is `const` due to shadow variables
+* improved locations reported by the compiler's detailed error messages
 * made clang detection of bad `--ccflags` arguments terminate compilation
 
 Bug Fixes
@@ -226,10 +259,12 @@ Bug Fixes for the Runtime
 -------------------------
 * added forced visibility of writes before AMO in message-order-fence MCM
 * fixed useable core determination when some PUs are inaccessible
+* fixed environment variable parsing for some runtime variables
 
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled copy of LLVM to version 17.0.6
 * updated the Python package versions used by 'chpldoc'  
   (see $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt for details)
 
@@ -241,6 +276,9 @@ Developer-oriented changes: Documentation
 * updated some out-of-date details in frontend/lib/parser/README
 * made clarifications to the driver mode technical note  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
+* added a note about using an older valgrind with newer LLVM versions
+  (see https://chapel-lang.org/docs/2.0/developer/bestPractices/Valgrind.html#llvm-compatibility)
+* added a note about debugging LLVM passes
 * removed the Docker packaging README in favor of Chapel's Dockerhub page  
   (see https://hub.docker.com/r/chapel/chapel/)
 
@@ -255,11 +293,15 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* fixed an issue preventing developer builds with `clang` versions prior to 16
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * made `--compiler-driver` the default and added `--no-compiler-driver`  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
+* added a new flag, `--llvm-print-passes`
+  (see https://chapel-lang.org/docs/2.0/technotes/llvm.html#inspecting-individual-llvm-passes)
+* added more options for the `--llvm-print-ir-stage` flag
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -296,13 +338,19 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
+* removed a developer assertion when an invalid `pragma` was used
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added a CI check for undocumented stable standard library symbols
 * updated the Python package versions used by `start_test`
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* added the remaining AST accessors to Dyno's Python bindings
+* improved the Dyno Python bindings to be portable to older Python versions
+* removed the need for the Dyno Python bindings module `chapel.core`
+* added a `clean` target for Dyno's Python bindings
 
 Developer-oriented changes: Utilities
 -------------------------------------
