@@ -182,14 +182,14 @@ condition.
 Advanced Rules
 ~~~~~~~~~~~~~~
 
-Sometimes, specifying a pattern is not precise enough to implement a rule.
-Alternatively, a linting check might require considering two sibling nodes,
-or other less-straightforward relationships than "does it match the pattern?".
-This is the purpose of advanced rules. These functions are called with the
-_root_ AST node (usually one of the top-level ``Module``s). Then, it's the
-responsibility of the function to find and ``yield`` AST nodes that should be
-warned about. For instance, at the time of writing, the following rule
-implements checking for unused formals.
+Sometimes, specifying a pattern is not precise enough to implement a rule. For
+example, a linting check might require considering two sibling nodes or other
+less-straightforward relationships than "does it match the pattern?". This is
+the purpose of advanced rules. These functions are called with the _root_ AST
+node (usually one of the top-level ``Module``s). Then, it is the responsibility
+of the function to find and ``yield`` AST nodes that should be warned about.
+For instance, at the time of writing, the following code implements the rule
+checking for unused formals.
 
 .. code-block:: python
 
@@ -210,7 +210,7 @@ implements checking for unused formals.
                continue
 
            formals[formal.unique_id()] = formal
-   
+
        for (use, _) in chapel.each_matching(root, Identifier):
            refersto = use.to_node()
            if refersto:
@@ -224,12 +224,16 @@ This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
 
-Adding your own rules
----------------------
+Adding Custom Rules
+-------------------
 
-Developers may have their own preferences for their code they would like to be enforced by a linter. Rather than adding their own rule to ``rules.py``, developers can load a custom rule file that contains all of their custom rules.
+Developers may have their own preferences for their code they would like to be
+enforced by a linter. Rather than adding their own rule to ``rules.py``,
+developers can load a custom rule file that contains all of their custom rules.
 
-For example, the following code is a complete definition of two new rules for chplcheck. Note that the top-level function must be named ``rules`` and take one argument.
+For example, the following code is a complete definition of two new rules for
+chplcheck. Note that the top-level function must be named ``rules`` and take
+one argument.
 
 .. code-block:: python
 
