@@ -2630,7 +2630,7 @@ record defaultSerializer {
       :arg name: The name of the class type.
       :arg size: The number of fields in the class.
 
-      :returns: A new AggregateSerializer
+      :returns: A new :record:`~IO.defaultSerializer.AggregateSerializer`
     */
     proc ref startClass(writer: fileWriter, name: string, size: int) throws {
       // Note: 'size' of parent might be zero, but 'size' of grandparent might
@@ -2792,7 +2792,8 @@ record defaultSerializer {
   }
 
   /*
-    Returned by ``startArray`` to provide the API for serializing arrays.
+    Returned by :proc:`~IO.defaultSerializer.startArray` to provide the API for
+    serializing arrays.
 
     In the default format, an array will be serialized as a
     whitespace-separated series of serialized elements.
@@ -2829,7 +2830,7 @@ record defaultSerializer {
       22 23 24
       25 26 27
 
-    Empty arrays result in no output to the ``fileWriter``.
+    Empty arrays result in no output to the :record:`fileWriter`.
   */
   record ArraySerializer {
     @chpldoc.nodoc
@@ -2842,8 +2843,8 @@ record defaultSerializer {
     var _first : bool = true;
 
     /*
-      Inform the ``ArraySerializer`` to start serializing a new dimension of
-      size ``size``.
+      Inform the :record:`~IO.defaultSerializer.ArraySerializer` to start
+      serializing a new dimension of size ``size``.
     */
     proc ref startDim(size: int) throws {
       _arrayDim += 1;
@@ -2894,7 +2895,8 @@ record defaultSerializer {
   }
 
   /*
-    Returned by ``startMap`` to provide the API for serializing maps.
+    Returned by :proc:`~IO.defaultSerializer.startMap` to provide the API for
+    serializing maps.
 
     Maps are serialized as a comma-separated series of pairs between curly
     braces. Pairs are serialized with a ``:`` separating the key and value. For
@@ -2943,7 +2945,7 @@ record defaultSerializer {
 }
 
 /*
-  The default Deserializer used by ``fileReader``.
+  The default Deserializer used by :record:`fileReader`.
 
   See :ref:`the serializers technote<ioSerializers>` for a general overview
   of Deserializers and their usage.
@@ -2982,7 +2984,7 @@ record defaultDeserializer {
     Alternatively, types implementing the entire ``serializable`` interface
     are also accepted.
 
-    :arg reader: The ``fileReader`` from which types are deserialized.
+    :arg reader: The :record:`fileReader` from which types are deserialized.
     :arg readType: The type to be deserialized.
 
     :returns: A value of type ``readType``.
@@ -3017,7 +3019,7 @@ record defaultDeserializer {
     than creating a new value. For classes and records, this method will first
     attempt to invoke a ``deserialize`` method. If the ``deserialize`` method
     is unavailable, this method may fall back on invoking a suitable
-    initializer and assigning the resulting value into ``val``.. Please see the
+    initializer and assigning the resulting value into ``val``. Please see the
     :ref:`serializers technote<ioSerializers>` for more.
 
     Classes and records are expected to implement either the
@@ -3025,7 +3027,7 @@ record defaultDeserializer {
     Alternatively, types implementing the entire ``serializable`` interface
     are also accepted.
 
-    :arg reader: The ``fileReader`` from which values are deserialized.
+    :arg reader: The :record:`fileReader` from which values are deserialized.
     :arg val: The value into which this Deserializer will deserialize.
   */
   proc ref deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
@@ -3049,7 +3051,7 @@ record defaultDeserializer {
   /*
     Start deserializing a class by reading the character ``{``.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
     :arg name: The name of the class type
 
     :returns: A new :type:`AggregateDeserializer`
@@ -3062,7 +3064,7 @@ record defaultDeserializer {
   /*
     Start deserializing a record by reading the character ``(``.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
     :arg name: The name of the record type
 
     :returns: A new :type:`AggregateDeserializer`
@@ -3073,7 +3075,8 @@ record defaultDeserializer {
   }
 
   /*
-    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    Returned by :proc:`~IO.defaultDeserializer.startClass` or
+    :proc:`~IO.defaultDeserializer.startRecord` to provide the API for
     deserializing classes or records.
 
     See :type:`~IO.defaultSerializer.AggregateSerializer` for details of the
@@ -3153,8 +3156,8 @@ record defaultDeserializer {
   /*
     Returned by ``startTuple`` to provide the API for deserializing tuples.
 
-    See ``defaultSerializer.TupleSerializer`` for details of the default format
-    for tuples.
+    See :record:`~IO.defaultSerializer.TupleSerializer` for details of the
+    default format for tuples.
   */
   record TupleDeserializer {
     @chpldoc.nodoc
@@ -3202,8 +3205,8 @@ record defaultDeserializer {
   /*
     Returned by ``startList`` to provide the API for deserializing lists.
 
-    See ``defaultSerializer.ListSerializer`` for details of the default format
-    for lists.
+    See :record:`~IO.defaultSerializer.ListSerializer` for details of the
+    default format for lists.
   */
   record ListDeserializer {
     @chpldoc.nodoc
@@ -3264,8 +3267,8 @@ record defaultDeserializer {
   /*
     Returned by ``startArray`` to provide the API for deserializing arrays.
 
-    See ``defaultSerializer.ArraySerializer`` for details of the default format
-    for arrays.
+    See :record:`~IO.defaultSerializer.ArraySerializer` for details of the
+    default format for arrays.
   */
   record ArrayDeserializer {
     @chpldoc.nodoc
@@ -3278,7 +3281,8 @@ record defaultDeserializer {
     var _arrayMax : int;
 
     /*
-      Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
+      Inform the :record:`~IO.defaultDeserializer.ArrayDeserializer` to start
+      deserializing a new dimension.
     */
     proc ref startDim() throws {
       _arrayDim += 1;
@@ -3345,7 +3349,7 @@ record defaultDeserializer {
   /*
     Returned by ``startMap`` to provide the API for deserializing maps.
 
-    See ``defaultSerializer.MapSerializer`` for details of the default
+    See :record:`~IO.defaultSerializer.MapSerializer` for details of the default
     format for map.
   */
   record MapDeserializer {
@@ -3419,8 +3423,8 @@ record defaultDeserializer {
 @unstable("This config param is unstable and may be removed without advance notice")
 /*
   This config param allows users to disable a warning for reading and writing
-  classes and strings with ``binarySerializer`` and ``binaryDeserializer``
-  following a format change in the 1.33 release.
+  classes and strings with :record:`~IO.binarySerializer` and
+  :record:`binaryDeserializer` following a format change in the 1.33 release.
 */
 config param warnBinaryStructured : bool = true;
 
@@ -3503,8 +3507,8 @@ record binarySerializer {
     Serialize ``val`` with ``writer``.
 
     Numeric values like integers, real numbers, and complex numbers are
-    serialized directly to the associated ``fileWriter`` as binary data in the
-    specified endianness.
+    serialized directly to the associated :record:`fileWriter` as binary data in
+    the specified endianness.
 
     Booleans are serialized as single byte unsigned values of either ``0`` or
     ``1``.
@@ -3589,8 +3593,9 @@ record binarySerializer {
   }
 
   /*
-    Returned by ``startClass`` or ``startRecord`` to provide the API for
-    serializing classes or records.
+    Returned by :proc:`~IO.binarySerializer.startClass` or
+    :proc:`~IO.binarySerializer.startRecord` to provide the API for serializing
+    classes or records.
 
     In this simple binary format, classes and records do not begin or end with
     any bytes indicating size, and instead serialize their field values in
@@ -3604,7 +3609,7 @@ record binarySerializer {
     var writer : fileWriter(false, binarySerializer);
 
     /*
-      Serialize ``field`` in ``binarySerializer``'s format.
+      Serialize ``field`` in :record:`binarySerializer`'s format.
     */
     proc writeField(name: string, const field: ?T) throws {
       writer.write(field);
@@ -3632,9 +3637,9 @@ record binarySerializer {
   }
 
   /*
-    Start serializing a tuple and return a new ``TupleSerializer``.
+    Start serializing a tuple and return a new :record:`TupleSerializer`.
 
-    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg writer: The :record:`fileWriter` to be used when serializing.
     :arg size: The number of elements in the tuple.
 
     :returns: A new TupleSerializer
@@ -3644,18 +3649,19 @@ record binarySerializer {
   }
 
   /*
-    Returned by ``startTuple`` to provide the API for serializing tuples.
+    Returned by :proc:`~IO.binarySerializer.startTuple` to provide the API for
+    serializing tuples.
 
     In this simple binary format, tuples do not begin or end with any bytes
     indicating size, and instead serialize their elements sequentially in
-    ``binarySerializer``'s format.
+    :record:`binarySerializer`'s format.
   */
   record TupleSerializer {
     @chpldoc.nodoc
     var writer : fileWriter(false, binarySerializer);
 
     /*
-      Serialize ``element`` in ``binarySerializer``'s format.
+      Serialize ``element`` in :record:`binarySerializer`'s format.
     */
     proc writeElement(const element: ?T) throws {
       writer.write(element);
@@ -3671,10 +3677,10 @@ record binarySerializer {
   /*
     Start serializing a list by serializing ``size``.
 
-    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg writer: The :record:`fileWriter` to be used when serializing.
     :arg size: The number of elements in the list.
 
-    :returns: A new ListSerializer
+    :returns: A new :record:`ListSerializer`
   */
   proc startList(writer: fileWriter(?), size: int) throws {
     writer.write(size);
@@ -3682,7 +3688,8 @@ record binarySerializer {
   }
 
   /*
-    Returned by ``startList`` to provide the API for serializing lists.
+    Returned by :proc:`~IO.binarySerializer.startList` to provide the API for
+    serializing lists.
 
     In this simple binary format, lists begin with the serialization of an
     ``int`` representing the size of the list. This data is then followed by
@@ -3693,7 +3700,7 @@ record binarySerializer {
     var writer : fileWriter(false, binarySerializer);
 
     /*
-      Serialize ``element`` in ``binarySerializer``'s format.
+      Serialize ``element`` in :record:`binarySerializer`'s format.
     */
     proc writeElement(const element: ?) throws {
       writer.write(element);
@@ -3707,9 +3714,9 @@ record binarySerializer {
   }
 
   /*
-    Start serializing an array and return a new ``ArraySerializer``.
+    Start serializing an array and return a new :record:`ArraySerializer`.
 
-    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg writer: The :record:`fileWriter` to be used when serializing.
     :arg size: The number of elements in the array.
 
     :returns: A new ArraySerializer
@@ -3719,10 +3726,11 @@ record binarySerializer {
   }
 
   /*
-    Returned by ``startArray`` to provide the API for serializing arrays.
+    Returned by :proc:`~IO.binarySerializer.startArray` to provide the API for
+    serializing arrays.
 
     In this simple binary format, arrays are serialized element by element
-    in the order indicated by the caller of ``writeElement``. Dimensions and
+    in the order indicated by the caller of :proc:`writeElement`. Dimensions and
     the start or end of the array are not represented.
   */
   record ArraySerializer {
@@ -3744,7 +3752,7 @@ record binarySerializer {
     }
 
     /*
-      Serialize ``element`` in ``binarySerializer``'s format.
+      Serialize ``element`` in :record:`binarySerializer`'s format.
     */
     proc writeElement(const element: ?) throws {
       writer.write(element);
@@ -3761,7 +3769,8 @@ record binarySerializer {
       .. note::
 
         This method is only optimized for the case where the
-        ``binarySerializer`` has been configured for ``native`` endianness.
+        :record:`binarySerializer` has been configured for ``native``
+        endianness.
     */
     proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
@@ -3783,10 +3792,10 @@ record binarySerializer {
   /*
     Start serializing a map by serializing ``size``.
 
-    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg writer: The :record:`fileWriter` to be used when serializing.
     :arg size: The number of entries in the map.
 
-    :returns: A new MapSerializer
+    :returns: A new :record:`MapSerializer`
   */
   proc startMap(writer: fileWriter(?), size: int) throws {
     writer.write(size);
@@ -3794,7 +3803,8 @@ record binarySerializer {
   }
 
   /*
-    Returned by ``startMap`` to provide the API for serializing maps.
+    Returned by :proc:`~IO.binarySerializer.startMap` to provide the API for
+    serializing maps.
 
     In this simple binary format, maps begin with the serialization of an
     ``int`` representing the size of the map. This data is then followed by the
@@ -3807,14 +3817,14 @@ record binarySerializer {
     var writer : fileWriter(false, binarySerializer);
 
     /*
-      Serialize ``key`` in ``binarySerializer``'s format.
+      Serialize ``key`` in :record:`binarySerializer`'s format.
     */
     proc writeKey(const key: ?) throws {
       writer.write(key);
     }
 
     /*
-      Serialize ``val`` in ``binarySerializer``'s format.
+      Serialize ``val`` in :record:`binarySerializer`'s format.
     */
     proc writeValue(const val: ?) throws {
       writer.write(val);
@@ -3844,9 +3854,9 @@ record binarySerializer {
 
   .. note::
 
-    Deserializing ``string`` or ``bytes`` types will result in an
-    IllegalArgumentError because these types cannot currently be deserialized
-    with the raw nature of the format.
+    Deserializing :type:`~String.string` or :type:`~Bytes.bytes` types will
+    result in an :type:`~Errors.IllegalArgumentError` because these types cannot
+    currently be deserialized with the raw nature of the format.
 
   .. warning::
 
@@ -3926,7 +3936,7 @@ record binaryDeserializer {
     ``initDeserializable`` or ``readDeserializable`` interfaces (or both). The
     ``serializable`` interface is also acceptable.
 
-    :arg reader: The ``fileReader`` from which types are deserialized.
+    :arg reader: The :record:`fileReader` from which types are deserialized.
     :arg readType: The type to be deserialized.
 
     :returns: A value of type ``readType``.
@@ -3974,14 +3984,14 @@ record binaryDeserializer {
     than creating a new value. For classes and records, this method will first
     attempt to invoke a ``deserialize`` method. If the ``deserialize`` method
     is unavailable, this method may fall back on invoking a suitable
-    initializer and assigning the resulting value into ``val``.. Please see the
+    initializer and assigning the resulting value into ``val``. Please see the
     :ref:`serializers technote<ioSerializers>` for more.
 
     Classes and records are expected to implement either the
     ``readDeserializable`` or ``initDeserializable`` interfaces (or both). The
     ``serializable`` interface is also acceptable.
 
-    :arg reader: The ``fileReader`` from which values are deserialized.
+    :arg reader: The :record:`fileReader` from which values are deserialized.
     :arg val: The value into which this Deserializer will deserialize.
   */
   proc ref deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
@@ -3999,9 +4009,9 @@ record binaryDeserializer {
   }
 
   /*
-    Start deserializing a class by returning an ``AggregateDeserializer``.
+    Start deserializing a class by returning an :record:`AggregateDeserializer`.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
     :arg name: The name of the class type.
 
     :returns: A new :type:`AggregateDeserializer`
@@ -4011,9 +4021,10 @@ record binaryDeserializer {
   }
 
   /*
-    Start deserializing a record by returning an ``AggregateDeserializer``.
+    Start deserializing a record by returning an
+    :record:`AggregateDeserializer`.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
     :arg name: The name of the record type.
 
     :returns: A new :type:`AggregateDeserializer`
@@ -4023,7 +4034,8 @@ record binaryDeserializer {
   }
 
   /*
-    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    Returned by :proc:`~IO.binaryDeserializer.startClass` or
+    :proc:`~IO.binaryDeserializer.startRecord` to provide the API for
     deserializing classes or records.
 
     See :record:`binarySerializer.AggregateSerializer` for details of the
@@ -4053,7 +4065,7 @@ record binaryDeserializer {
       See :proc:`binarySerializer.AggregateSerializer.startClass` for details
       on inheritance on the binary format.
 
-      :returns: A new AggregateDeserializer
+      :returns: A new :record:`~IO.binaryDeserializer.AggregateDeserializer`
     */
     proc startClass(reader, name: string) throws {
       return this;
@@ -4073,9 +4085,9 @@ record binaryDeserializer {
   }
 
   /*
-    Start deserializing a tuple by returning a ``TupleDeserializer``.
+    Start deserializing a tuple by returning a :record:`TupleDeserializer`.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
 
     :returns: A new :type:`TupleDeserializer`
   */
@@ -4084,10 +4096,11 @@ record binaryDeserializer {
   }
 
   /*
-    Returned by ``startTuple`` to provide the API for deserializing tuples.
+    Returned by :proc:`~IO.binaryDeserializer.startTuple` to provide the API for
+    deserializing tuples.
 
-    See ``binarySerializer.TupleSerializer`` for details of the binary format
-    for tuples.
+    See :record:`binarySerializer.TupleSerializer` for details of the binary
+    format for tuples.
   */
   record TupleDeserializer {
     @chpldoc.nodoc
@@ -4117,21 +4130,22 @@ record binaryDeserializer {
   }
 
   /*
-    Start deserializing a list by returning a ``ListDeserializer``.
+    Start deserializing a list by returning a :record:`ListDeserializer`.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
 
-    :returns: A new :type:`ListDeserializer`
+    :returns: A new :record:`ListDeserializer`
   */
   proc startList(reader: fileReader(?)) throws {
     return new ListDeserializer(reader, reader.read(uint));
   }
 
   /*
-    Returned by ``startList`` to provide the API for deserializing lists.
+    Returned by :proc:`~IO.binaryDeserializer.startList` to provide the API for
+    deserializing lists.
 
-    See ``binarySerializer.ListSerializer`` for details of the binary format
-    for lists.
+    See :record:`binarySerializer.ListSerializer` for details of the binary
+    format for lists.
   */
   record ListDeserializer {
     @chpldoc.nodoc
@@ -4168,7 +4182,7 @@ record binaryDeserializer {
     /*
       End deserialization of the current list.
 
-      :throws: A ``BadFormatError`` if there are remaining elements.
+      :throws: A :type:`~OS.BadFormatError` if there are remaining elements.
     */
     proc endList() throws {
       if _numElements != 0 then
@@ -4184,21 +4198,22 @@ record binaryDeserializer {
   }
 
   /*
-    Start deserializing an array by returning an ``ArrayDeserializer``.
+    Start deserializing an array by returning an :record:`ArrayDeserializer`.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
 
-    :returns: A new :type:`ArrayDeserializer`
+    :returns: A new :record:`ArrayDeserializer`
   */
   proc startArray(reader: fileReader(?)) throws {
     return new ArrayDeserializer(reader, endian);
   }
 
   /*
-    Returned by ``startArray`` to provide the API for deserializing arrays.
+    Returned by :proc:`~IO.binaryDeserializer.startArray` to provide the API for
+    deserializing arrays.
 
-    See ``binarySerializer.ArraySerializer`` for details of the binary format
-    for arrays.
+    See :record:`binarySerializer.ArraySerializer` for details of the binary
+    format for arrays.
   */
   record ArrayDeserializer {
     @chpldoc.nodoc
@@ -4207,7 +4222,8 @@ record binaryDeserializer {
     const endian : endianness;
 
     /*
-      Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
+      Inform the :record:`~IO.binaryDeserializer.ArrayDeserializer` to start
+      deserializing a new dimension.
     */
     proc startDim() throws {
     }
@@ -4245,7 +4261,8 @@ record binaryDeserializer {
       .. note::
 
         This method is only optimized for the case where the
-        ``binaryDeserializer`` has been configured for ``native`` endianness.
+        :record:`binaryDeserializer` has been configured for ``native``
+        endianness.
     */
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
@@ -4278,7 +4295,7 @@ record binaryDeserializer {
   /*
     Start deserializing a map by returning a ``MapDeserializer``.
 
-    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg reader: The :record:`fileReader` to use when deserializing.
 
     :returns: A new :type:`MapDeserializer`
   */
@@ -4287,9 +4304,10 @@ record binaryDeserializer {
   }
 
   /*
-    Returned by ``startMap`` to provide the API for deserializing maps.
+    Returned by :proc:`~IO.binaryDeserializer.startMap` to provide the API for
+    deserializing maps.
 
-    See ``binarySerializer.MapSerializer`` for details of the binary
+    See :record:`binarySerializer.MapSerializer` for details of the binary
     format for map.
   */
   record MapDeserializer {
@@ -4339,7 +4357,7 @@ record binaryDeserializer {
     /*
       End deserialization of the current map.
 
-      :throws: A ``BadFormatError`` if there are entries remaining.
+      :throws: A :type:`~OS.BadFormatError` if there are entries remaining.
     */
     proc endMap() throws {
       if _numElements != 0 then
@@ -4351,8 +4369,8 @@ record binaryDeserializer {
 
       .. warning::
 
-        Behavior of 'hasMore' is undefined when called between ``readKey`` and
-        ``readValue``.
+        Behavior of 'hasMore' is undefined when called between :proc:`readKey`
+        and :proc:`readValue`.
     */
     proc hasMore() : bool throws {
       return _numElements > 0;
@@ -4533,13 +4551,14 @@ proc ref fileWriter.deinit() {
 }
 
 /*
-  Create and return an alias of this ``fileReader`` configured to use
+  Create and return an alias of this :record:`fileReader` configured to use
   ``deserializerType`` for deserialization. The provided ``deserializerType``
   must be able to be default-initialized.
 
   .. warning::
 
-    It is an error for the returned alias to outlive the original ``fileReader``.
+    It is an error for the returned alias to outlive the original
+    :record:`fileReader`.
 */
 proc fileReader.withDeserializer(type deserializerType) :
   fileReader(this.locking, deserializerType) {
@@ -4548,12 +4567,13 @@ proc fileReader.withDeserializer(type deserializerType) :
 }
 
 /*
-  Create and return an alias of this ``fileReader`` configured to use
+  Create and return an alias of this :record:`fileReader` configured to use
   ``deserializer`` for deserialization.
 
   .. warning::
 
-    It is an error for the returned alias to outlive the original ``fileReader``.
+    It is an error for the returned alias to outlive the original
+    :record:`fileReader`.
 */
 proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this.locking, dt) {
   var ret = new fileReader(this.locking, dt);
@@ -4568,13 +4588,14 @@ proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this.locking
 }
 
 /*
-  Create and return an alias of this ``fileWriter`` configured to use
+  Create and return an alias of this :record:`fileWriter` configured to use
   ``serializerType`` for serialization. The provided ``serializerType`` must be
   able to be default-initialized.
 
   .. warning::
 
-    It is an error for the returned alias to outlive the original ``fileWriter``.
+    It is an error for the returned alias to outlive the original
+    :record:`fileWriter`.
 */
 proc fileWriter.withSerializer(type serializerType) :
   fileWriter(this.locking, serializerType) {
@@ -4583,12 +4604,13 @@ proc fileWriter.withSerializer(type serializerType) :
 }
 
 /*
-  Create and return an alias of this ``fileWriter`` configured to use
+  Create and return an alias of this :record:`fileWriter` configured to use
   ``serializer`` for serialization.
 
   .. warning::
 
-    It is an error for the returned alias to outlive the original ``fileWriter``.
+    It is an error for the returned alias to outlive the original
+    :record:`fileWriter`.
 */
 proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this.locking, st) {
   var ret = new fileWriter(this.locking, st);
@@ -4887,7 +4909,7 @@ inline proc fileWriter.unlock() {
 config param fileOffsetWithoutLocking = false;
 
 /*
-   Return the current offset of a fileReader.
+   Return the current offset of a :record:`fileReader`.
 
    If the fileReader can be used by multiple tasks, take care when doing
    operations that rely on the fileReader's current offset. To prevent race
@@ -4904,7 +4926,7 @@ proc fileReader.offset(): int(64) {
 }
 
 /*
-   Return the current offset of a fileWriter.
+   Return the current offset of a :record:`fileWriter`.
 
    If the fileWriter can be used by multiple tasks, take care when doing
    operations that rely on the fileWriter's current offset. To prevent race
@@ -7082,8 +7104,8 @@ inline proc fileReader.read(ref args ...?k):bool throws {
 /*
   Read a line into an array of bytes.
 
-  Reads bytes from the ``fileReader`` until a ``\n`` is reached. Values are
-  read in binary format (i.e., this method is not aware of UTF-8 encoding).
+  Reads bytes from the :record:`fileReader` until a ``\n`` is reached. Values
+  are read in binary format (i.e., this method is not aware of UTF-8 encoding).
 
   The array's size is not changed to accommodate bytes. If a newline is not
   found before the array is filled, or ``maxSize`` bytes are read, a
@@ -7226,7 +7248,7 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
 }
 
 /*
-  Read a line into a ``string``. Reads until a ``\n`` is reached.
+  Read a line into a :type:`~String.string`. Reads until a ``\n`` is reached.
 
   :arg s: the :type:`~String.string` to read into. Contents are overwritten.
   :arg maxSize: The maximum number of codepoints to store into ``s``. The
@@ -7235,7 +7257,7 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
   :returns: ``true`` if a line was read without error, ``false`` upon EOF
 
   :throws BadFormatError: If the line is longer than `maxSize`. The
-                          ``fileReader`` offset is not moved.
+                          :record:`fileReader` offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
@@ -7313,7 +7335,7 @@ proc fileReader.readLine(ref s: string,
 }
 
 /*
-  Read a line into a ``bytes``. Reads until a ``\n`` is reached.
+  Read a line into a :type:`~Bytes.bytes`. Reads until a ``\n`` is reached.
 
   :arg b: the :type:`~Bytes.bytes` to receive the line. Contents are overwritten.
   :arg maxSize: The maximum number of bytes to store into ``b``. The default of
@@ -7323,7 +7345,7 @@ proc fileReader.readLine(ref s: string,
 
   :throws BadFormatError: If the line is longer than `maxSize`. The file
                           offset is not moved.
-  :throws SystemError: If data could not be read from the ``fileReader``
+  :throws SystemError: If data could not be read from the :record:`fileReader`
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readLine(ref b: bytes,
@@ -7409,8 +7431,8 @@ proc fileReader.readLine(ref b: bytes,
   :arg maxSize: The maximum number of codepoints to read. The default of -1
                 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
-  :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-            up to (and possibly including) the newline.
+  :returns: A ``string`` or ``bytes`` with the contents of the
+            :record:`fileReader` up to (and possibly including) the newline.
 
   :throws EofError: If nothing could be read because the ``fileReader``
                     was already at EOF.
@@ -7430,11 +7452,11 @@ proc fileReader.readLine(type t=string, maxSize=-1,
 
 /*
   Read until the given separator is found, returning the contents of the
-  ``fileReader`` through that point.
+  :record:`fileReader` through that point.
 
   If the separator is found, the ``fileReader`` offset is left immediately
   after it. If the separator could not be found in the next ``maxSize`` bytes,
-  a ``BadFormatError`` is thrown and the ``fileReader``'s offset is not
+  a :type:`~OS.BadFormatError` is thrown and the ``fileReader``'s offset is not
   changed. Otherwise, if EOF is reached before finding the separator, the
   remainder of the ``fileReader``'s contents are returned and the offset is
   left at EOF.
@@ -7471,7 +7493,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
 
 /*
   Read until the given separator is found, returning the contents of the
-  ``fileReader`` through that point.
+  :record:`fileReader` through that point.
 
   See the above :proc:`overload <fileReader.readThrough>` of this method for
   more details.
@@ -7530,7 +7552,7 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 
 /*
   Read until the given separator is found, returning the contents of the
-  ``fileReader`` through that point.
+  :record:`fileReader` through that point.
 
   See the above :proc:`overload <fileReader.readThrough>` of this method for
   more details.
@@ -7573,11 +7595,11 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
 
 /*
   Read until the given separator is found, returning the contents of the
-  ``fileReader`` up to that point.
+  :record:`fileReader` up to that point.
 
   If the separator is found, the ``fileReader`` offset is left immediately
   before it. If the separator could not be found in the next ``maxSize`` bytes,
-  a ``BadFormatError`` is thrown and the ``fileReader``'s offset is not
+  a :type:`~OS.BadFormatError` is thrown and the ``fileReader``'s offset is not
   changed. Otherwise, if EOF is reached before finding the separator, the
   remainder of the ``fileReader``'s contents are returned and the offset is
   left at EOF.
