@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+
+import sys
+import subprocess as sp
+import os
+import re
+
+testname = sys.argv[1]
+testout = sys.argv[2]
+
+chpl_home = os.environ.get("CHPL_HOME", "")
+
+sphinx_build = f"{chpl_home}/third-party/chpl-venv/install/chpldeps/bin/sphinx-build"
+
+os.chdir("docs")
+p = sp.run(
+    f"{sphinx_build} -b html -d build/doctrees source build/html".split(" "),
+    stdout=sp.PIPE, stderr=sp.STDOUT)
+make_output = p.stdout.decode()
+if p.returncode != 0:
+    with open("../" + testout, "w") as f:
+        print("Failed to build chpldoc html", file=f)
+        print(make_output, file=f)
+    exit()
+os.chdir("..")
+
+html_file = f"docs/build/html/modules/nested.html"
+if not os.path.exists(html_file):
+    with open(testout, "w") as f:
+        print(f"Could not find '{html_file}'", file=f)
+    exit()
+
+html_output = ""
+with open(html_file, "r") as f:
+    html_output = f.read()
+
+output = []
+
+# find all the references from the docstring with the following regex
+reference_pat = re.compile('<a class="reference internal" href="#(.+?)" title="\\1">')
+for m in re.finditer(reference_pat, html_output):
+    # for each reference, check if the link exists
+    link = m.group(1)
+    if not re.search(f'<a class="headerlink" href="#{link}" title="Permalink to this definition">', html_output):
+        output.append(f"Could not find link for reference '#{link}'")
+    else:
+        output.append(f"Found link for reference '#{link}'")
+
+with open(testout, "w") as f:
+    print("\n".join(output), file=f)
