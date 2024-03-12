@@ -2169,17 +2169,15 @@ module ChapelDomain {
       // allow promotion
       type promoType = __primitive("scalar promotion type", idx);
       if isCoercible(promoType, fullIdxType) {
-        // sparse domains are currently not parSafe
-        if isAssociative() && this.parSafe {
-          return + reduce [oneIdx in idx] _value.dsiAdd(oneIdx);
-        }
-        else {
-          // not parSafe, so execute serially
-          var addCount = 0;
-          for oneIdx in idx do
-            addCount += _value.dsiAdd(oneIdx);
-          return addCount;
-        }
+        if isSparse() || (isAssociative() && ! this.parSafe) then
+          compilerWarning("this promoted addition of indices to ",
+            if isSparse() then "a sparse" else "an associative",
+            " domain may be unsafe due to race conditions;",
+            " consider replacing promotion with an explicit for loop",
+            if isSparse() then "" else
+              " or declaring the domain type with 'parSafe=true'");
+        // we could force serial execution in non-parSafe cases, see #24565
+        return + reduce [oneIdx in idx] _value.dsiAdd(oneIdx);
       }
 
       // for now, disallow calling add() in any other way

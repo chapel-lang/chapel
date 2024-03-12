@@ -80,17 +80,22 @@ Constants
 Trigonometric Functions
 ^^^^^^^^^^^^^^^^^^^^^^^
 :proc:`~Math.acos`
-:proc:`~Math.acosh`
 :proc:`~Math.asin`
-:proc:`~Math.asinh`
 :proc:`~Math.atan`
 :proc:`~Math.atan2`
-:proc:`~Math.atanh`
 :proc:`~Math.cos`
-:proc:`~Math.cosh`
 :proc:`~Math.sin`
-:proc:`~Math.sinh`
 :proc:`~Math.tan`
+
+.. _math-hyperbolic:
+
+Hyperbolic Functions
+^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.acosh`
+:proc:`~Math.asinh`
+:proc:`~Math.atanh`
+:proc:`~Math.cosh`
+:proc:`~Math.sinh`
 :proc:`~Math.tanh`
 
 .. _math-log:

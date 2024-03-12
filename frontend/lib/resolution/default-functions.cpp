@@ -227,7 +227,8 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
   // TODO: generic types
   if (rf.isGeneric()) {
-    CHPL_ASSERT(false && "Not handled yet!");
+    CHPL_UNIMPL("generating 'init' signatures for generic types is not yet supported");
+    return nullptr;
   }
 
   // TODO: super fields and invoking super
@@ -745,16 +746,16 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       } else if (name == USTR("=")) {
         result = generateRecordAssignment(context, recordType);
       } else {
-        CHPL_ASSERT(false && "record method not implemented yet!");
+        CHPL_UNIMPL("record method not implemented yet!");
       }
     } else if (auto cPtrType = type->toCPtrType()) {
       result = generateCPtrMethod(context, cPtrType, name);
     } else {
-      CHPL_ASSERT(false && "should not be reachable");
+      CHPL_UNIMPL("should not be reachable");
     }
   }
 
-  CHPL_ASSERT(result->untyped()->name() == name);
+  CHPL_ASSERT(result == nullptr || result->untyped()->name() == name);
 
   return QUERY_END(result);
 }

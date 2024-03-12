@@ -3353,7 +3353,6 @@ considerCompilerGeneratedMethods(Context* context,
   // get the compiler-generated function, may be generic
   auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
                                         ci.isParenless());
-  CHPL_ASSERT(tfs);
   return tfs;
 }
 

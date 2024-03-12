@@ -1,0 +1,7 @@
+Found link for reference '#nested.A'
+Found link for reference '#nested.A.foo'
+Found link for reference '#nested.A.B'
+Found link for reference '#nested.A.B.bar'
+Found link for reference '#nested.A.baz'
+Found link for reference '#nested.C'
+Found link for reference '#nested.C.foo'

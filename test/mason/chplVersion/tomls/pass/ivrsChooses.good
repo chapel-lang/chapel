@@ -10,18 +10,18 @@ version = "0.1.0"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 name = "badThenGood"
 source = "foo"
-version = "0.2.0"
+version = "0.3.0"
 
 [usesBad]
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
-dependencies = ["badThenGood 0.2.0 foo"]
+dependencies = ["badThenGood 0.3.0 foo"]
 name = "usesBad"
 source = "foo"
 version = "0.1.0"
 
 [usesGood]
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
-dependencies = ["badThenGood 0.2.0 foo"]
+dependencies = ["badThenGood 0.3.0 foo"]
 name = "usesGood"
 source = "foo"
 version = "0.1.0"
