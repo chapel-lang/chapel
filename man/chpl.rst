@@ -390,8 +390,12 @@ OPTIONS
 
 **\--[no-]const-arg-checks**
 
-    Enable [disable] const argument checks (only when --warn-unstable is also
-    used)
+    Enable [disable] const argument checks (only when **--warn-unstable** is
+    also used).  These checks will warn when an argument is inferred to be
+    `const ref` and is indirectly modified over the course of the function.  To
+    silence the warning for a particular argument, give it a concrete argument
+    intent (such as `const ref` or `const in`, depending on if the indirect
+    modification behavior should be preserved or avoided).
 
 **\--[no-]div-by-zero-checks**
 
