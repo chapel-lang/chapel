@@ -53,6 +53,9 @@ Semantic Changes / Changes to the Chapel Language
 * enabled implicit `param` conversions when passing to `const ref` formals  
   (e.g., `proc f(const ref arg: int(8))` can now be called with `f(1)`)  
   (see https://chapel-lang.org/docs/2.0/language/spec/conversions.html#implicit-conversions-for-function-calls)
+* disallowed assignment between unbounded ranges of incompatible index types
+* slicing with a negative-stride range now reverses the first operand's dir  
+  (see https://chapel-lang.org/docs/2.0/language/spec/ranges.html#range-slicing)
 * `otherwise` blocks must now be the last case in their `select` statements  
   (see https://chapel-lang.org/docs/2.0/language/spec/statements.html#the-select-statement)
 
@@ -63,6 +66,12 @@ Deprecated / Unstable / Removed Language Features
 * marked `local` blocks as unstable
 * implicitly converting an 8-/16-bit `int`/`uint` to `real(32)` is now unstable
 * removed the previously deprecated `owned.borrow()` type method
+* removed the previously deprecated `BoundedRangeType` enum
+* removed the deprecated `.intIdxType` query on arrays, domains, and ranges
+* removed the deprecated `isBoundedRange()` and `ident()` range queries
+* removed other deprecated methods and properties on ranges and domains  
+  (e.g., `.stridable`, `.boundedType`, `.safeCast()`, `.boundsCheck()`, etc.)
+* removed the `useNewArrayFind` config param used to update `.find()` calls
 
 Namespace Changes
 -----------------
@@ -91,6 +100,7 @@ Standard Domain Maps (Layouts and Distributions)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* `LinearAlgebra.solve()` no longer modifies its actual arguments
 * added the missing deserializer for the `bigint` type  
   (see https://chapel-lang.org/docs/2.0/modules/standard/BigInteger.html#BigInteger.bigint.deserialize)
 
@@ -121,6 +131,7 @@ GPU Computing
 * enabled using ROCm's LLVM using `CHPL_LLVM=system` and `CHPL_GPU=amd`
   (see TODO)
 * eliminated unnecessary synchronization for reductions on AMD GPUs
+* the 'GPU' module is no longer compiled in non-GPU configurations
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -128,6 +139,7 @@ Performance Optimizations / Improvements
 * eliminated extraneous array copies in initializers caused by domain queries
 * improved codegen for `sqrt()` and `abs()` to directly map to LLVM intrinsics
 * adjusted the LLVM optimizer to assume math functions don't set C's `errno`
+* optimized the computation of `min()` and `max()` on `real(*)` values
 
 Improvements to Compilation Times / Generated Code
 --------------------------------------------------
@@ -144,6 +156,7 @@ Tool Improvements
 * added support for user-defined lint rules in `chplcheck`  
   (see https://chapel-lang.org/docs/2.0/tools/chplcheck/chplcheck.html)
 * improved how locations are reported by tools making use of the `chpl` parser
+* added `printchplenv --bash/--csh` flags to to print shell-compatible output
 * improved rendering of `chplcheck` lint rules in editors
 * improved rendering of return intents by `chpldoc` for some browsers
 
@@ -231,12 +244,14 @@ Error Messages / Semantic Checks
 * added a dynamic check that default-intent args aren't indirectly modified  
   (enable using `--const-arg-checks` or `--warn-unstable` without `--fast`)
 * improved error messages when a `record` is `const` due to shadow variables
+* added an error message for invalid assignments from tuples to domains
 * improved locations reported by the compiler's detailed error messages
 * made clang detection of bad `--ccflags` arguments terminate compilation
 
 Bug Fixes
 ---------
 * fixed a bug converting tuples to complexes, e.g. when containing 'inf'
+* fixed a bug where `continue`s within `forall` loops read uninitialized memory
 * fixed a bug in which compiler-generated code would warn about lack of '?'
 
 Bug Fixes for Build Issues
@@ -300,6 +315,11 @@ Developer-oriented changes: Compiler Flags
 * added a new flag, `--llvm-print-passes`
   (see https://chapel-lang.org/docs/2.0/technotes/llvm.html#inspecting-individual-llvm-passes)
 * added more options for the `--llvm-print-ir-stage` flag
+* added `--no-return-by-ref` to avoid returning by reference in generated C
+* `--print-additional-errors` now also shows some speculative errors
+* `--iterator-contexts` enables an early prototype of iterator contexts  
+  (see https://github.com/chapel-lang/chapel/pull/24488)
+* `--report-context-adjustments` prints debugging output for iterator contexts
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
