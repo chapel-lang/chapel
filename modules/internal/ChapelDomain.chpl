@@ -2758,6 +2758,7 @@ module ChapelDomain {
        Returns a local view of the sub-domain (slice) defined by the provided
        range(s), halting if the slice contains elements that are not local.
     */
+    pragma "no where doc"
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) &&
           !_value.isDefaultRectangular()
