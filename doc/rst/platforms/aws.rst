@@ -116,6 +116,15 @@ something like this:
          SubnetIds:
          - SUBNETID
 
+.. note::
+
+  ParallelCluster will use whatever the default region is for the AWS CLI. If
+  that is not set or not the desired region, you can set the region at the
+  command line as ``pcluster configure -r REGION``. Note that all cluster
+  resources will be created in the region specified in the configuration file,
+  and that other resources (such as the key pair or additional volumes) must be
+  in the same region.
+
 Performance Notes
 ^^^^^^^^^^^^^^^^^
 
@@ -334,7 +343,8 @@ back it up before deleting the cluster.
     the cluster is created, the volume will be mounted at ``/scratch`` on both
     the head node and the compute nodes. Users can then use the volume as they
     see fit. When the cluster is deleted, the volume will be detached but not
-    deleted.
+    deleted. Make sure when creating the volume that it is in the same region
+    as the cluster.
 
     For more information on attaching volumes to a cluster, see the `ParallelCluster documentation <https://docs.aws.amazon.com/parallelcluster/latest/ug/shared-storage-quotas-integration-v3.html>`_.
 
