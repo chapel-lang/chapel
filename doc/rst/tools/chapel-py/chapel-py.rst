@@ -88,8 +88,6 @@ The library is split into three major components:
 * The ``chapel.core`` module which provides the parts of this library that are
   bridged from C++. Most users should not need to use this library, as all symbols are forwarded to ``chapel``.
 
-The following sections document the three modules.
-
 ``chapel``
 ~~~~~~~~~~
 
@@ -203,6 +201,8 @@ This function is used in the Chapel linter
                return True
 
        return False
+
+.. _chapel-py-pattern-matching:
 
 ``chapel.match_pattern``
 ^^^^^^^^^^^^^^^^^^^^^^^^
