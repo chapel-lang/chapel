@@ -10,10 +10,14 @@ It is also intended to be customizable and extensible, using a system of named
 'rules' that lead to warnings.
 
 ``chplcheck`` supports the Language Server Protocol, allowing it to be used as
-part of your favorite editor. The following image demonstrates its use in Neovim:
+part of your favorite editor. The following images demonstrates its use in
+various editors:
 
-.. image:: ineditor.png
-  :alt: Screenshot of code using ``chplcheck``
+.. image:: neovim.png
+  :alt: Screenshot of code using ``chplcheck`` in Neovim
+
+.. image:: vscode.png
+  :alt: Screenshot of code using ``chplcheck`` in VSCode
 
 Getting Started
 ---------------
