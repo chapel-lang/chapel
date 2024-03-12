@@ -2,7 +2,27 @@ Release Changes List
 ====================
 
 TODO:
+o Ahmad's entries
+o Daniel's entries
+o DavidL's entries
+o Jeremiah's entries
 o '(http:' -> '(see http:'
+o sort items within categories
+o check placement of items into categories
+o check sorting of categories
+o check for ' vs `
+o fulfill TODOs
+o check man page
+o check test/release/examples
+o check for docs/1.33/ links
+o check forced linebreaks
+o check initial '*'
+o check initial 'A-Z'
+o check 'see:'
+o check for changes put too far down in file
+o check links
+o add highlights
+o spellcheck
 
 version 2.0
 ===========
@@ -75,9 +95,6 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
-
-Package Modules
----------------
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -423,7 +440,7 @@ GPU Computing
 * added a standalone procedure for computing exclusive sum scans  
   (see https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuScan)
 * added a procedure for sorting `uint`s on GPUs  
-  (https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuSort)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuSort)
 * squashed kernel launches when the number of threads is 0
 * resolved deprecation warnings occurring with ROCm 5.2, 5.3, and 5.4
 
@@ -2494,7 +2511,7 @@ Documentation
 * added description of `EofError` cases to `fileWriter.write/ln` docs  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.channel.write)
 * added explicit return types to some 'BigInteger' operators  
-  (https://chapel-lang.org/docs/1.29/modules/standard/BigInteger.html)
+  (see https://chapel-lang.org/docs/1.29/modules/standard/BigInteger.html)
 * moved Mason documentation to 'Tools' section  
   (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
 * updated Docker README to reflect Dockerfile changes and clarify usage  
@@ -4214,7 +4231,7 @@ Documentation
 * improved the language specification's formatting of reserved keywords  
   (see https://chapel-lang.org/docs/1.25/language/spec/lexical-structure.html#keywords)
 * updated the language spec to refer to a user-defined reduction example  
-  (https://chapel-lang.org/docs/1.25/language/spec/user-defined-reductions-and-scans.html)
+  (see https://chapel-lang.org/docs/1.25/language/spec/user-defined-reductions-and-scans.html)
 * modestly improved the documentation for the 'IO' module
 * fixed the formatting of a list in the 'classes' primer
 * improved the docs for various library routines to reflect return types
@@ -4380,7 +4397,7 @@ Developer-oriented changes: Naming Changes
 Developer-oriented changes: Documentation
 -----------------------------------------
 * added a draft style guide for standard modules  
-  (https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/StandardModuleStyle.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/StandardModuleStyle.rst)
 * added notes about how Chapel web documentation is built  
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/buildingdocs.rst)
 * added information about how to test PRs in the contributor guidelines  
@@ -5578,7 +5595,7 @@ Feature Improvements
 * improvements to the `bytes` type:
   - `bytes` now supports `param` values
   - `bytes` now supports `toByte()`  
-    (https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.toByte)
+    (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.toByte)
   - `bytes` now supports comparison operations
   - added `bytes.format()`, similar to `string.format()`
   - `bytes` can now be cast to `enum`
@@ -5656,9 +5673,9 @@ Standard Library Modules
 * moved the `parSafe` field in `map` to be after `keyType` and `valType`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
 * added an initializer to the `Error` base class that accepts a string message  
-  (https://chapel-lang.org/docs/1.21/builtins/ChapelError.html#ChapelError.Error)
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelError.html#ChapelError.Error)
 * added `math.isclose()` for approximate equality checking  
-  (https://chapel-lang.org/docs/1.21/modules/standard/Math.html#Math.isclose)
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Math.html#Math.isclose)
 * updated `canResolve()` to return `false` when encountering a `compilerError`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Reflection.html#Reflection.canResolve)
 * added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'  
@@ -6646,7 +6663,7 @@ Standard Domain Maps (Layouts and Distributions)
 New Tools / Tool Changes
 ------------------------
 * added support for external Spack installations in `mason external`  
-  (https://chapel-lang.org/docs/1.19/tools/mason/mason.html#using-spack-dependencies)
+  (see https://chapel-lang.org/docs/1.19/tools/mason/mason.html#using-spack-dependencies)
 * added `:throw:/:throws:` tags to `chpldoc` for documenting thrown errors  
   (see https://chapel-lang.org/docs/1.19/tools/chpldoc/chpldoc.html#documenting-functions-that-throw)
 * improved `c2chapel` handling of functions with pointer arguments
@@ -8089,7 +8106,7 @@ Interoperability Improvements
 * added support for 'c_sizeof()' to query sizes of C types  
   (see https://chapel-lang.org/docs/1.16/builtins/internal/CPtr.html#CPtr.c_sizeof)
 * added support for an 'isAnyCPtr()' query  
-  (https://chapel-lang.org/docs/1.16/builtins/internal/CPtr.html#CPtr.isAnyCPtr)
+  (see https://chapel-lang.org/docs/1.16/builtins/internal/CPtr.html#CPtr.isAnyCPtr)
 * permitted c_mem*() routines to work with c_void_ptr arguments
 * added support for c_memset()  
   (see https://chapel-lang.org/docs/1.16/builtins/internal/CPtr.html#CPtr.c_memset)
@@ -8551,7 +8568,7 @@ Documentation
 * added new users guide sections on promotion, constants, type aliases, configs  
   (see https://chapel-lang.org/docs/1.15/users-guide/index.html)
 * revised QUICKSTART instructions for clarity  
-  (https://chapel-lang.org/docs/1.15/usingchapel/QUICKSTART.html)
+  (see https://chapel-lang.org/docs/1.15/usingchapel/QUICKSTART.html)
 * reorganized the doc/ directory in the release tarball  
   (see $CHPL_HOME/doc/README.md  
    or https://github.com/chapel-lang/chapel/blob/main/doc/README.rst)
@@ -8912,7 +8929,7 @@ New Features
   (see 'Domain Alignment' in the language specification)
 * added casts and safeCasts to turn stridable ranges/domains into non-stridable
 * added support for 'retType' and 'argTypes' queries to first-class functions  
-  (https://chapel-lang.org/docs/1.14/technotes/firstClassFns.html#reflection)
+  (see https://chapel-lang.org/docs/1.14/technotes/firstClassFns.html#reflection)
 * added the ability to create serial iterators for types  
   (see 'The Method Receiver and the 'this' Argument' in the language spec)
 * added early prototype support for class/record initializers (constructors)  
@@ -9449,7 +9466,7 @@ Standard Library/Modules
 * added a new 'Reflection' module supporting reflection about a program  
   (see https://chapel-lang.org/docs/1.13/modules/standard/Reflection.html)
 * extended the 'HDFS' module to support libhdfs3  
-  (https://chapel-lang.org/docs/1.13/technotes/auxIO.html)
+  (see https://chapel-lang.org/docs/1.13/technotes/auxIO.html)
 * added support for skipping unknown fields when reading JSON records/classes  
   (see https://chapel-lang.org/docs/1.13/modules/standard/IO.html)
 * made the default I/O routines for records/classes support arbitrary orders
@@ -9760,7 +9777,7 @@ Highlights
 * added a new chapter describing Chapel's memory consistency model in detail  
   (see 'Memory Consistency Model' in the language spec)
 * added a 'vectorizeOnly()' iterator that vectorizes without task creation  
-  (https://chapel-lang.org/docs/1.12/modules/internal/ChapelIteratorSupport.html)
+  (see https://chapel-lang.org/docs/1.12/modules/internal/ChapelIteratorSupport.html)
 * new performance optimizations, particularly intra- and inter-node locality  
   (see "Performance Improvements" section below)
 * removed the 'local' block from stream-ep based on the above optimizations  
@@ -9809,7 +9826,7 @@ Syntactic/Naming Changes
 * changed 'use' to 'require' for header files and external libraries  
   (see https://chapel-lang.org/docs/1.12/technotes/extern.html)
 * replaced the standalone format() routine, with string.format()  
-  (https://chapel-lang.org/docs/1.12/modules/standard/IO.html#IO.string.format)
+  (see https://chapel-lang.org/docs/1.12/modules/standard/IO.html#IO.string.format)
 * renamed memory diagnostics capabilities for clarity  
   (see https://chapel-lang.org/docs/1.12/modules/standard/Memory.html)
 * changed the '##.##' writef() pattern so that it requires '%{...}' around it  
@@ -9830,7 +9847,7 @@ Semantic Changes / Changes to Chapel Language
 New Features
 ------------
 * added a 'vectorizeOnly()' iterator that vectorizes without using multitasking  
-  (https://chapel-lang.org/docs/1.12/modules/internal/ChapelIteratorSupport.html)
+  (see https://chapel-lang.org/docs/1.12/modules/internal/ChapelIteratorSupport.html)
 * added support for type methods and iterators  
   (see 'Classes::Class Method Calls::The Method Receiver and the this Argument')
 * added support for public/private module-level variables, functions, modules)  
@@ -9857,9 +9874,9 @@ Standard Library/Modules
 * added support for common mathematical constants to 'Math.chpl'  
   (see https://chapel-lang.org/docs/1.12/modules/standard/Math.html#Math.e)
 * replaced standalone format() routine with string.format() in 'IO'  
-  (https://chapel-lang.org/docs/1.12/modules/standard/IO.html#IO.string.format)
+  (see https://chapel-lang.org/docs/1.12/modules/standard/IO.html#IO.string.format)
 * unified string.format() format strings with writef()  
-  (https://chapel-lang.org/docs/1.12/modules/standard/IO.html#formatted-i-o)
+  (see https://chapel-lang.org/docs/1.12/modules/standard/IO.html#formatted-i-o)
 * added a getFileSize() routine to the 'FileSystem' module  
   (see https://chapel-lang.org/docs/1.12/modules/standard/FileSystem.html)
 * merged the contents of the 'UtilMath' module into 'Math'  
@@ -9897,7 +9914,7 @@ Documentation
 * added online documentation for built-in types, functions, methods  
   (see https://chapel-lang.org/docs/1.12/modules/builtins.html)
 * added online documentation for standard domain maps (layouts and distributions)  
-  (https://chapel-lang.org/docs/1.12/modules/distributions.html and layouts.html)
+  (see https://chapel-lang.org/docs/1.12/modules/distributions.html and layouts.html)
 * added a copy of the online html documentation to the release itself  
   (see $CHPL_HOME/doc/html)
 * converted most READMEs to ReStructured Text (.rst) or markdown (.md)  
@@ -9916,7 +9933,7 @@ Documentation
 * refreshed the contents of the C interoperability technical note  
   (see https://chapel-lang.org/docs/1.12/technotes/extern.html)
 * retired README.format due to its documentation as part of a standard module  
-  (https://chapel-lang.org/docs/1.12/modules/standard/IO.html#IO.string.format)
+  (see https://chapel-lang.org/docs/1.12/modules/standard/IO.html#IO.string.format)
 * removed Tilera-specific documentation due to lack of use and testing
 
 Example Codes
