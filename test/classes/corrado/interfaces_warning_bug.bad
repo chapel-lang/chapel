@@ -1,2 +1,0 @@
-interfaces_warning_bug.chpl:16: warning: owned thing(int(64)) is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, owned thing(int(64)) does not implement contextManager. In the future, this will result in an error.
-5
