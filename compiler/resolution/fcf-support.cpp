@@ -979,6 +979,7 @@ Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {
   // Store the 'ret' into a temporary variable to make sure downstream resolution
   // code is still in normalized form.
   auto retTemp = newTemp("fcf");
+  retTemp->addFlag(FLAG_EXPR_TEMP);
   auto retTempInit = new CallExpr(PRIM_MOVE, retTemp, ret);
 
   auto stmt = use->getStmtExpr();
