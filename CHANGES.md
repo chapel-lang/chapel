@@ -196,6 +196,7 @@ Configuration / Build / Packaging Changes
 * refreshed the sample installation commands in the prerequisites docs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html#installation)
 * removed support for Python 3.7 from 'chpldoc'
+* fixed a bug causing `chpldoc` to always be built by `make install`
 * disallowed building the compiler with AMD support when using the bundled LLVM
 
 Compiler Improvements
@@ -237,6 +238,9 @@ Portability / Platform-specific Improvements
 * improved performance/correctness of remote mem ops for `ofi` on HPE Cray EX
 * improved error-checking logic when `libfabric` is missing
 * worked around runtime hangs during teardown when using `libfabric` with `EFA`
+* updated detection of `lld` for AMD GPUs with the spack `llvm-amdgpu` package
+* updated `chplenv` scripts to detect Windows Subsystem for Linux (WSL)
+* updated `chplenv` scripts to locate CUDA libraries in WSL
 * addressed a problem building Chapel on Alpine linux
 
 Error Messages / Semantic Checks
@@ -257,6 +261,7 @@ Bug Fixes
 Bug Fixes for Build Issues
 --------------------------
 * fixed a bug in which the c2chapel virtual environment was incorrectly built
+* fixed unrecognized key bug for `CHPL_GPU_MEM_STRATEGY` in `chplconfig` files
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -300,6 +305,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* applied missing `(?)` expressions on generic formals in the 'Version' module
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -333,6 +339,9 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved default initialization of generics
   - improved support for `borrowed` and `unmanaged` classes
   - improved support for interaction between variable arguments and tuples
+  - added support for resolving the return types of numerous primitives
+* added support for explicitly casting params
+* added support for the built-in `_ptrConst` type
 * added support for param-folding `select`s w.r.t. copy elision & split-init
 * added support for resolving calls to the `this` method of a field
 * improved the prototype support for library files:
@@ -344,6 +353,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * implemented `is [const] copyable` and `is [const] assignable` primitives
 * implemented `pragma "last resort"` function resolution logic
 * fixed resolution of `eltType` queries on the `c_ptr` type
+* fixed a bug preventing formals with default values to implicitly convert
 * fixed a bug in resolving user-defined initializers of owned classes
 
 Developer-oriented changes: GPU support
