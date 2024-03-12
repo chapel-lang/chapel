@@ -49,6 +49,12 @@ Language Feature Improvements
 -----------------------------
 * added support for `borrowed` class expressions to be cast to `unmanaged`
 * associative domains are now stable when using the default of `parSafe=false`
+* added support for bitwidth queries in tuple formals
+  (e.g., `proc foo(x: (int, int(?w))) { ... }` is now supported)
+* added support for using detupled formal components in where clauses
+  (e.g., `proc foo((x, y), z) where x.type == int { ... }` is now supported)
+* added support for instantiating a generic formal array's element type
+  (e.g., TODO)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -63,6 +69,7 @@ Semantic Changes / Changes to the Chapel Language
 * disallowed assignment between unbounded ranges of incompatible index types
 * slicing with a negative-stride range now reverses the first operand's dir  
   (see https://chapel-lang.org/docs/2.0/language/spec/ranges.html#range-slicing)
+* iterators with no reachable `yield`s must now declare the type they yield
 * `otherwise` blocks must now be the last case in their `select` statements  
   (see https://chapel-lang.org/docs/2.0/language/spec/statements.html#the-select-statement)
 
@@ -85,6 +92,8 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
+* added a new `getFile()` method to 'IO's `fileReeader`/`fileWriter` types
+  (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#IO.fileReader.getFile)
 * added support for initializing a `list` of `list`s from an array of arrays
 * `abs` and `sqrt` applied to a `param` now return a `param` in more cases  
   (see https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.sqrt and https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.abs)
@@ -117,6 +126,7 @@ Name Changes in Libraries
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * unstabilized `imag` overloads of trigonometric/hyperbolic 'Math' functions
+* removed the unstable `imag` overloads of the `fma()` procedure
 * removed the remaining deprecated routines/constants from the 'Math' module  
   (e.g., `carg()`, `conjg()`, `divceil()`, `log2_e`, `half_pi`, etc.)
 * removed deprecated 'IO' support for the `readThis()`/`writeThis()` methods
@@ -246,6 +256,7 @@ Runtime Library Changes
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* added support for generating debug symbols on Mac OS X with the LLVM back-end
 * improved performance/correctness of remote mem ops for `ofi` on HPE Cray EX
 * improved error-checking logic when `libfabric` is missing
 * worked around runtime hangs during teardown when using `libfabric` with `EFA`
@@ -268,6 +279,12 @@ Bug Fixes
 ---------
 * fixed a bug converting tuples to complexes, e.g. when containing 'inf'
 * fixed a bug where `continue`s within `forall` loops read uninitialized memory
+* fixed a bug where a loop in an `if` expression did not promote to an array
+* fixed a bug that caused array type sub-expressions to be compiled into loops
+* fixed a bug where using class variables in `coforall` crashed compilation
+* fixed a bug where a type with no default initializer would halt compilation
+* fixed a bug where mentions of `chpl_external_array` crashed compilation
+* fixed a bug where nested functions passed as call actuals crashed compilation
 * fixed a bug in which compiler-generated code would warn about lack of '?'
 
 Bug Fixes for Build Issues
@@ -281,10 +298,12 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug that incorrectly copied a `c_array` when casting to `c_ptr`
 * fixed a crash when calling `.seek()` on a remote `fileReader`/`fileWriter`
 
 Bug Fixes for Tools
 -------------------
+* fixed a bug that caused `c2chapel` to mishandle forward declared structs
 * fixed a path parsing issue in `printchplbuilds.py`
 
 Bug Fixes for the Runtime
