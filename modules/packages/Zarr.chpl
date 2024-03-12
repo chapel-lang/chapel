@@ -231,9 +231,9 @@ module Zarr {
   /*
     Reads a v2.0 zarr store from storage, returning a block distributed array.
     Each locale reads and decompresses the chunks with elements in its
-    subdomain. This method assumes a shared filesystem where all nodes can 
+    subdomain. This method assumes a shared filesystem where all nodes can
     access the store directory.
-    
+
     :arg directoryPath: Relative or absolute path to the root of the zarr
       store. The store is expected to contain a '.zarray' metadata file
 
