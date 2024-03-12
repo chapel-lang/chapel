@@ -509,6 +509,11 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
                                    const QualifiedType& rhsType,
                                    RV& rv) {
+  if (lhsType.isUnknown() || lhsType.isErroneousType() ||
+      rhsType.isUnknown() || rhsType.isErroneousType()) {
+    return;
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
