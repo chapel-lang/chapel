@@ -227,9 +227,6 @@ Compiler Flags
   (see `--warn-potential-races` in https://chapel-lang.org/docs/2.0/usingchapel/man.html)
 
 
-Launchers
----------
-
 Generated Executable Flags
 --------------------------
 
