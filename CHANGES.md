@@ -41,7 +41,6 @@ Syntactic / Naming Changes
 Language Feature Improvements
 -----------------------------
 * added support for `borrowed` class expressions to be cast to `unmanaged`
-* added initial support for `with` clauses on `foreach` loops
 * associative domains are now stable when using the default of `parSafe=false`
 
 Semantic Changes / Changes to the Chapel Language
@@ -305,6 +304,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* improved support for `with` clauses on `foreach` loops
 * fixed a number of bugs with the compiler driver mode
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
