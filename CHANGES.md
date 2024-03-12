@@ -81,7 +81,7 @@ New Standard Library Features
 
 New Package Module Features
 ---------------------------
-* improved the `DistributedBag` package module for depth-first-search  
+* improved the `DistributedBag` package w.r.t. depth-first-search and quality  
   (see https://chapel-lang.org/docs/main/modules/packages/DistributedBag.html)
 * significantly improved `Sort.sort()` performance for large problem sizes
 * improved the performance of `toHex()` routines in the 'Crypto' module
@@ -103,7 +103,7 @@ Deprecated / Unstable / Removed Library Features
 * removed the remaining deprecated routines/constants from the 'Math' module  
   (e.g., `carg()`, `conjg()`, `divceil()`, `log2_e`, `half_pi`, etc.)
 * removed deprecated 'IO' support for the `readThis()`/`writeThis()` methods
-* removed the deprecated 'IO' config to control `region` argument behavior  
+* removed the deprecated 'IO' configs that control `region` argument behavior  
   (e.g. `useNewSeekRegionBounds`, `useNewOpenReaderRegionBounds`, etc.)
 * removed all previously deprecated `BigInteger` functions
 * removed the deprecated 'BigInteger' config `bigintInitThrows`
@@ -185,12 +185,6 @@ Configuration / Build / Packaging Changes
 * removed support for Python 3.7 from 'chpldoc'
 * disallowed building the compiler with AMD support when using the bundled LLVM
 
-Portability / Platform-specific Improvements
---------------------------------------------
-* improved error-checking logic when `libfabric` is missing
-* worked around runtime hangs during teardown when using `libfabric` with `EFA`
-* addressed a problem building Chapel on Alpine linux
-
 Compiler Improvements
 ---------------------
 * upgraded `chpl` to now support LLVM 17
@@ -211,20 +205,26 @@ Launchers
 Generated Executable Flags
 --------------------------
 
-Runtime Library Changes
------------------------
-* added support for generalized co-locales that are not bound to a socket  
-  (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
-* added co-locale support for NICs that are not in a socket
-* improved support for SS11 authentication
-* enabled conditional fencing of fetching AMOs in message-order-fence MCM
-
 Launchers
 ---------
 * added co-locale support to the 'smp' launcher
 * added `-nl` suffixes to bind co-locales to specific architectural feature  
   (e.g., `-nl 8x2s` says to run 2 locales on each of 8 nodes, one per socket)  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
+
+Runtime Library Changes
+-----------------------
+* added support for generalized co-locales that are not bound to a socket  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
+* added co-locale support for NICs that are not in a socket
+* improved support for SS11 authentication
+
+Portability / Platform-specific Improvements
+--------------------------------------------
+* improved performance/correctness of remote mem ops for `ofi` on HPE Cray EX
+* improved error-checking logic when `libfabric` is missing
+* worked around runtime hangs during teardown when using `libfabric` with `EFA`
+* addressed a problem building Chapel on Alpine linux
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -256,7 +256,6 @@ Bug Fixes for Tools
 
 Bug Fixes for the Runtime
 -------------------------
-* added forced visibility of writes before AMO in message-order-fence MCM
 * fixed useable core determination when some PUs are inaccessible
 * fixed environment variable parsing for some runtime variables
 
