@@ -1,9 +1,9 @@
 /*
-  Support for distributed reading and writing of Zarr stores. Support is 
-  limited to v2 Zarr arrays stored on local filesystems. The module uses 
-  c-blosc to compress and decompress chunks. Zarr specification: 
+  Support for distributed reading and writing of Zarr stores. Support is
+  limited to v2 Zarr arrays stored on local filesystems. The module uses
+  c-blosc to compress and decompress chunks. Zarr specification:
   https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
-*/ 
+*/
 module Zarr {
   use IO;
   use FileSystem;
@@ -22,7 +22,7 @@ module Zarr {
     use CTypes;
     extern proc blosc_init();
     extern proc blosc_compress(clevel: c_int, doshuffle: c_int, typesize: c_size_t,
-                              nbytes: c_size_t, src: c_ptrConst(void), 
+                              nbytes: c_size_t, src: c_ptrConst(void),
                               dest: c_ptr(void), destsize: c_size_t): int;
     extern proc blosc_decompress(src: c_ptrConst(void), dest: c_ptr(void), destsize: c_size_t): int;
     extern proc blosc_destroy();
@@ -106,7 +106,7 @@ module Zarr {
   }
 
   proc getLocalChunks(D: domain(?), localD: domain(?), chunkShape: ?dimCount*int): domain(dimCount) {
-    
+
     const totalShape = D.shape;
     var chunkCounts: dimCount*int;
     for i in 0..<dimCount {
@@ -119,7 +119,7 @@ module Zarr {
       var h = if dimCount != 1 then localD.high[i] else localD.high;
       var low = floor(l:real / chunkShape[i]:real):int;
       var high = ceil(h / chunkShape[i]:real):int;
-      localChunks[i] = max(low,0)..<min(high,chunkCounts[i]); 
+      localChunks[i] = max(low,0)..<min(high,chunkCounts[i]);
     }
     const localChunkDomain: domain(dimCount) = localChunks;
     return localChunkDomain;
@@ -141,10 +141,10 @@ module Zarr {
   }
 
 
-  /* 
+  /*
     Reads a chunk from storage and fills `arraySlice` with its corresponding
     values.
-    
+
     :arg dimCount: Dimensionality of the array being read.
 
     :arg chunkPath: Relative or absolute path to the chunk being read.
@@ -178,7 +178,7 @@ module Zarr {
     arraySlice[arraySlice.domain] = copyIn[arraySlice.domain];
   }
 
-  /* 
+  /*
     Updates a chunk in storage with a locale's contribution to that chunk.
     The calling function is expected to manage synchronization among locales.
     If the locale contributes the entire chunk, it will immediately compress
@@ -192,7 +192,7 @@ module Zarr {
 
     :arg chunkDomain: Array subdomain that the chunk contains.
 
-    :arg arraySlice: The portion of the array that the calling locale 
+    :arg arraySlice: The portion of the array that the calling locale
       contributes to this chunk.
 
     :arg bloscLevel: Compression level to use. 0 indicates no compression,
@@ -205,7 +205,7 @@ module Zarr {
     //bloscLevel must be between 0 and 9
     var _bloscLevel = min(9,max(0,bloscLevel));
 
-    // If this chunk is entirely contained in the array slice, we can write 
+    // If this chunk is entirely contained in the array slice, we can write
     // it out immediately. Otherwise, we need to read in the chunk and update
     // it with the partial data before writing
     var copyOut: [chunkDomain] t;
@@ -214,7 +214,7 @@ module Zarr {
     }
     copyOut[arraySlice.domain] = arraySlice[arraySlice.domain];
 
-    // Create buffer for compressed bytes 
+    // Create buffer for compressed bytes
     var compressedBuffer = allocate(t, copyOut.size + 16);
 
     // Compress the chunk's data
@@ -228,20 +228,20 @@ module Zarr {
     w.writeBinary(compressedBuffer: c_ptr(void),bytesCompressed);
   }
 
-  /* 
+  /*
     Reads a v2.0 zarr store from storage, returning a block distributed array.
     Each locale reads and decompresses the chunks with elements in its
     subdomain. This method assumes a shared filesystem where all nodes can 
     access the store directory.
     
-    :arg directoryPath: Relative or absolute path to the root of the zarr 
+    :arg directoryPath: Relative or absolute path to the root of the zarr
       store. The store is expected to contain a '.zarray' metadata file
 
     :arg dtype: Chapel type of the store's data
 
     :arg dimCount: Dimensionality of the zarr array
 
-    :arg bloscThreads: The number of threads to use during decompression 
+    :arg bloscThreads: The number of threads to use during decompression
       (default=1)
   */
   proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1) throws {
@@ -275,12 +275,12 @@ module Zarr {
 
       const localChunks = getLocalChunks(D, hereD, chunkShape);
       forall chunkIndices in localChunks do {
-        
+
         const chunkPath = buildChunkPath(directoryPath, ".", chunkIndices);
-        
+
         const thisChunkDomain = getChunkDomain(chunkShape, chunkIndices);
         const thisChunkHere = hereD[thisChunkDomain];
-        
+
         ref thisChunkSlice = hereA.localSlice(thisChunkHere);
         readChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
       }
@@ -294,11 +294,11 @@ module Zarr {
     chunks will be stored within the `directoryPath` directory, which is created
     if it does not yet exist. The chunks will have the dimensions given in the
     `chunkShape` argument. This function writes chunks in parallel, and supports
-    distributed execution. It assumes a shared filesystem where all nodes can 
+    distributed execution. It assumes a shared filesystem where all nodes can
     access the store directory.
 
-    :arg directoryPath: Relative or absolute path to the root of the zarr store. 
-      The directory and all necessary parent directories will be created if it 
+    :arg directoryPath: Relative or absolute path to the root of the zarr store.
+      The directory and all necessary parent directories will be created if it
       does not exist.
 
     :arg A: The array to write to storage.
@@ -308,7 +308,7 @@ module Zarr {
     :arg bloscThreads: The number of threads to use during compression (default=1)
 
     :arg bloscLevel: Compression level to use. 0 indicates no compression,
-      9 (default) indicates maximum compression. 
+      9 (default) indicates maximum compression.
   */
   proc writeZarrArray(directoryPath: string, ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscThreads: int(32) = 1, bloscLevel: int(32) = 9) throws {
 
