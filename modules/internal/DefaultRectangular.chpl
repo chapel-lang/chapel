@@ -1839,7 +1839,10 @@ module DefaultRectangular {
                             _isSimpleIoType(arr.eltType);
 
     const len = dom.dsiNumIndices:int;
-    if useBulkElements && arr.isDataContiguous(dom) && len > 0 {
+    var dataLoc = if len > 0 then arr.dsiAccess(dom.dsiFirst).locale
+                  else here;
+    if useBulkElements && arr.isDataContiguous(dom) && len > 0 &&
+      f._home == dataLoc {
       var ptr = c_addrOf(arr.dsiAccess(dom.dsiFirst));
       if f._writing then
         helper.writeBulkElements(ptr, len);
