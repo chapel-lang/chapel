@@ -975,8 +975,19 @@ bool usePointerImplementation(void) {
 Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {
   if (usePointerImplementation()) INT_FATAL(use, "Should not be called!");
   auto ret = createLegacyClassInstance(fn, use);
-  use->replace(ret);
-  normalize(ret);
+
+  // Store the 'ret' into a temporary variable to make sure downstream resolution
+  // code is still in normalized form.
+  auto retTemp = newTemp("fcf");
+  auto retTempInit = new CallExpr(PRIM_MOVE, retTemp, ret);
+
+  auto stmt = use->getStmtExpr();
+  stmt->insertBefore(new DefExpr(retTemp));
+  stmt->insertBefore(retTempInit);
+  resolveExpr(ret);
+  resolveExpr(retTempInit);
+
+  use->replace(new SymExpr(retTemp));
   return ret;
 }
 
