@@ -15,24 +15,20 @@ config const chunkSize = 6250;
 config const bitsAtATime = 8;
 
 config const inputDataScheme = 1;
-
-config const parallel = true;
-
-config param reverse = false;
 config type eltType = uint(32);
 
 config const seed = NPBRandom.oddTimeSeed();
 
 var methods = ["default", "gpuCub", "gpuRadix"];
 
-proc testsort(ref input, method) {
+proc testsort(ref gpuArr, method) {
 
   if method == "gpuCub" {
-      GPU.gpuExternSort(input);
+      GPU.gpuExternSort(gpuArr);
   } else if method == "gpuRadix" {
-    GPU.parallelRadixSort(input, bitsAtATime, chunkSize, false);
+    GPU.parallelRadixSort(gpuArr, bitsAtATime, chunkSize);
   } else if method == "default" {
-    GPU.gpuSort(input);
+    GPU.gpuSort(gpuArr);
   } else {
     halt("Unknown sorting method " + method);
   }
@@ -145,11 +141,11 @@ proc testsize(size:int) {
     for i in 1..ntrials {
       input = makeInput(array);
       on here.gpus[0]{
-        var arr = input; // Copy to gpu
+        var gpuArr = input; // Copy to gpu
         t.start();
-        testsort(arr, m);
+        testsort(gpuArr, m);
         t.stop();
-        input = arr; // Copy back to cpu
+        input = gpuArr; // Copy back to cpu
       }
     }
     var mibs = mibibytes * ntrials / t.elapsed();
