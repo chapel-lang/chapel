@@ -1,1 +1,2 @@
-CHPL_COMM==none
+CHPL_COMM == none
+CHPL_TEST_VGRND_EXE == on
