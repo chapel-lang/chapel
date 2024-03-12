@@ -1,30 +1,13 @@
 #!/usr/bin/env python3
 
 import sys
-import subprocess as sp
 import os
 import re
 
 testname = sys.argv[1]
 testout = sys.argv[2]
 
-chpl_home = os.environ.get("CHPL_HOME", "")
-
-sphinx_build = f"{chpl_home}/third-party/chpl-venv/install/chpldeps/bin/sphinx-build"
-
-os.chdir("docs")
-p = sp.run(
-    f"{sphinx_build} -b html -d build/doctrees source build/html".split(" "),
-    stdout=sp.PIPE, stderr=sp.STDOUT)
-make_output = p.stdout.decode()
-if p.returncode != 0:
-    with open("../" + testout, "w") as f:
-        print("Failed to build chpldoc html", file=f)
-        print(make_output, file=f)
-    exit()
-os.chdir("..")
-
-html_file = f"docs/build/html/modules/nested.html"
+html_file = f"docs/modules/nested.html"
 if not os.path.exists(html_file):
     with open(testout, "w") as f:
         print(f"Could not find '{html_file}'", file=f)
