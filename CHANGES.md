@@ -34,9 +34,16 @@ Highlights (see subsequent sections for further details)
 
 Syntactic / Naming Changes
 --------------------------
+* disabled chained comparison operations without parentheses, like `a < b < c`
 * added a warning when passing generics type to routines without using `(?)`  
   (e.g., `f(G)` should be written as `f(G(?))` if `G` is a generic type)  
   (see https://chapel-lang.org/docs/2.0/language/spec/generics.html#marking-generic-types)
+
+New Language Features
+---------------------
+* added support for `foreach` expressions
+* added prototype support for local variables that persist across invocations
+  (see TODO)
 
 Language Feature Improvements
 -----------------------------
@@ -126,11 +133,15 @@ Deprecated / Unstable / Removed Library Features
 
 GPU Computing
 -------------
+* replaced `setBlockSize` with a new `@gpu.blockSize` loop attribute
+* added support for `@assertOnGpu` and `@gpu.blockSize` on variable decls
 * improved GPU sorting routines w.r.t. performance and supported types  
   (see https://chapel-lang.org/docs/2.0/modules/standard/GPU.html#GPU.gpuSort)
+* adjusted the compiler to print traces of call chains that thwart GPUization
 * enabled using ROCm's LLVM using `CHPL_LLVM=system` and `CHPL_GPU=amd`
   (see TODO)
 * eliminated unnecessary synchronization for reductions on AMD GPUs
+* improved the error generated when using `setBlockSize` improperly
 * the 'GPU' module is no longer compiled in non-GPU configurations
 
 Performance Optimizations / Improvements
@@ -195,6 +206,9 @@ Configuration / Build / Packaging Changes
   (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html)
 * refreshed the sample installation commands in the prerequisites docs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html#installation)
+* made `make install` install `chapel-py`, `chplcheck`, `chpl-language-server`
+* added `chapel-py`, `chplcheck`, `chpl-language-server` to the Docker image
+* reduced the Docker image size by eliminating unnecessary files/directories
 * removed support for Python 3.7 from 'chpldoc'
 * fixed a bug causing `chpldoc` to always be built by `make install`
 * disallowed building the compiler with AMD support when using the bundled LLVM
@@ -247,6 +261,7 @@ Error Messages / Semantic Checks
 --------------------------------
 * added a dynamic check that default-intent args aren't indirectly modified  
   (enable using `--const-arg-checks` or `--warn-unstable` without `--fast`)
+* disabled warnings about implicit modules for main modules
 * improved error messages when a `record` is `const` due to shadow variables
 * added an error message for invalid assignments from tuples to domains
 * improved locations reported by the compiler's detailed error messages
@@ -260,6 +275,7 @@ Bug Fixes
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed issue with detecting 'CHPL_HOME' in prefix-based installs
 * fixed a bug in which the c2chapel virtual environment was incorrectly built
 * fixed unrecognized key bug for `CHPL_GPU_MEM_STRATEGY` in `chplconfig` files
 
@@ -340,6 +356,10 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved support for `borrowed` and `unmanaged` classes
   - improved support for interaction between variable arguments and tuples
   - added support for resolving the return types of numerous primitives
+  - implemented numerous compiler primitives
+  - added support for converting from a C pointer to a const C pointer
+  - added detection of infinite recursions during resolution, printing an error
+  - added support for casting between enums and other types
 * added support for explicitly casting params
 * added support for the built-in `_ptrConst` type
 * added support for param-folding `select`s w.r.t. copy elision & split-init
@@ -376,6 +396,10 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* made improvements to 'chapel-py', the Python bindings to 'dyno'
+  - added a 'visitor' API to implement more complicated AST traversals
+  - exposed 'dyno' type resolution functionality
+  - improved generated Python interface files for better editor integration
 * added the remaining AST accessors to Dyno's Python bindings
 * improved the Dyno Python bindings to be portable to older Python versions
 * removed the need for the Dyno Python bindings module `chapel.core`
