@@ -2150,6 +2150,13 @@ static GenRet codegenFma(GenRet a, GenRet b, GenRet c) {
   return ret;
 }
 
+static bool preferCMathOverLLVMIntr() {
+  // prefer using the cmath implementation if using CHPL_GPU=nvidia for better
+  // performance
+  return usingGpuLocaleModel() &&
+         getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA;
+}
+
 static GenRet emitSqrtCMath(GenRet av) {
   GenRet ret;
   if (av.chplType == dtReal[FLOAT_SIZE_64]) {
@@ -2188,7 +2195,7 @@ static GenRet codegenSqrt(GenRet a) {
   GenRet ret;
   if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
   GenRet av = codegenValue(a);
-  if (info->cfile) {
+  if (info->cfile || preferCMathOverLLVMIntr()) {
     ret = emitSqrtCMath(av);
   } else {
     ret = emitSqrtLLVMIntrinsic(av);
@@ -2234,7 +2241,7 @@ static GenRet codegenAbs(GenRet a) {
   GenRet ret;
   if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
   GenRet av = codegenValue(a);
-  if (info->cfile) {
+  if (info->cfile || preferCMathOverLLVMIntr()) {
     ret = emitAbsCMath(av);
   } else {
     ret = emitAbsLLVMIntrinsic(av);
