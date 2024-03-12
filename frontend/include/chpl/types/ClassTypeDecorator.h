@@ -54,11 +54,15 @@ class ClassTypeDecorator final {
     GENERIC_NONNIL    = 13,
     GENERIC_NILABLE   = 14,
   };
+
+  /// \cond DO_NOT_DOCUMENT
   enum {
     NUM_DECORATORS = 12,
     MANAGEMENT_MASK = 0xfc,
     NILABILITY_MASK = 0x03,
   };
+  /// \endcond
+
 
   /** Given an integer i with 0 <= i < NUM_DECORATORS
       returns a decorator with that number. This can be used to
