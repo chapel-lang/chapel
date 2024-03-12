@@ -3,6 +3,7 @@ COMMON PITFALLS WITH DOXYGEN (THAT BREAK THE DOCS BUILD)
 Whenever you run into a Doxygen problem that breaks the docs build,
 make sure to explain what you did to fix it here.
 
+
 ---
 ERROR: "WARNING: cpp: identifier reference target not found
 ---
@@ -50,3 +51,25 @@ function inside a DO_NOT_DOCUMENT block like so:
 These probably aren't worth figuring out how to fix, and they don't
 really need documentation anyway.
 
+
+---
+"WARNING: Invalid C++ declaration: Expected identifier in nested name."
+---
+
+This seems to come up in a setting like
+
+  class Something {
+    enum {
+      A = 1,
+      B = 2
+    };
+  }
+
+it seems to be sensitive to the version of doxygen.
+
+If doc/rst/conf.py includes `breathe_debug_trace_directives = True`
+then the log will include something like:
+
+  Running directive: .. cpp:enum:: 
+
+for this case.
