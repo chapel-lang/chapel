@@ -959,12 +959,9 @@ bool canInstantiate(Type* actualType, Type* formalType) {
         // By the above condition, x1 != x2, but instantiation is still possible
         // if one of the xs instantiates another. Strip the 'owned' etc.
         // In that case, compare the underlying types.
-        bool isActualAnyManaged = isDecoratedClassType(actualType) &&
-          (actualDec & ClassTypeDecorator::MANAGEMENT_MASK) == ClassTypeDecorator::GENERIC;
         bool isFormalAnyManaged = isDecoratedClassType(formalType) &&
-          (formalDec & ClassTypeDecorator::MANAGEMENT_MASK) == ClassTypeDecorator::GENERIC;
-        if ((isActualAnyManaged || isFormalAnyManaged) &&
-            instantiatedFieldsMatch(actualC, formalC)) {
+          isDecoratorUnknownManagement(formalDec);
+        if (isFormalAnyManaged && instantiatedFieldsMatch(actualC, formalC)) {
           return true;
         }
       }
