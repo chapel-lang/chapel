@@ -31,6 +31,22 @@ released March 21, 2024
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* changed arrays' default task intents to be based on the array's `const`ness
+* made `foreach` default intents match `forall` and added `foreach` expressions
+* improved orthogonality of tuples and generics in formal argument lists
+* added a new 'ParallelIO' package for reading files in parallel
+* improved the 'DistributedBag' package, particularly for depth-first-searches
+* added a new 'Zarr' I/O module
+* significantly improved default 'sort()' performance for large arrays
+* significantly improved the behavior and interfaces in the 'Random' module
+* removed a large number of deprecated library/language features
+* improved GPU support via new attributes, optimizations, and portability
+* dramatically improved co-locale support (running multiple locales per node)
+* enabled `chpl`'s compiler driver mode by default
+* added `chpl-language-server`—a new LSP-based tool for VSCode/vim/... users
+* extended `chplcheck` to support user-defined lint rules
+* upgraded `chpl` to support LLVM 17 (in addition to previous versions)
+* improved portability, particularly w.r.t. AMD GPUs, WSL, and HPE Cray EX
 
 Syntactic / Naming Changes
 --------------------------
@@ -112,6 +128,7 @@ New Package Module Features
   (see https://chapel-lang.org/docs/2.0/modules/packages/ParallelIO.html)
 * improved the `DistributedBag` package w.r.t. depth-first-search and quality  
   (see https://chapel-lang.org/docs/main/modules/packages/DistributedBag.html)
+* added a new prototype distributed 'Zarr' I/O module
 * significantly improved `Sort.sort()` performance for large problem sizes
 * improved the performance of `toHex()` routines in the 'Crypto' module
 
@@ -128,19 +145,19 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* replaced `randomStream.permutataion()` with an improved `permute()` method  
+  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.permute)
+* replaced `randomStream.choice()` with improved `choose()`/`sample()` calls  
+  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.choose)
+* renamed `randomStream.getNext()` to `next()`  
+  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
+* renamed `randomStream.iterate()` to a new overload of `next()`  
+  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
+* replaced `randomStream.skipToNth()` with an improved `skipTo()`  
+  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.skipTo)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
-* deprecated `randomStream.permutation()` in favor of `.permute()`  
-  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.permute)
-* deprecated `randomStream.choice()` in favor of `choose()` and `sample()`  
-  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.choose)
-* deprecated `randomStream.getNext()` in favor of `randomStream.next()`  
-  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
-* deprecated `randomStream.iterate()` in favor of a new overlaod of `next()`  
-  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
-* deprecated `randomStream.skipToNth()` in favor of `randomStream.skipTo()`  
-  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.skipTo)
 * deprecated `randomStream.getNth()` in favor of `skipTo()` then `next()`  
   (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.getNth)
 * deprecated default `true` value for `locking` arg in `openReader|Writer()`  
@@ -293,12 +310,12 @@ Runtime Library Changes
 * added support for generalized co-locales that are not bound to a socket  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
 * added co-locale support for NICs that are not in a socket
-* improved support for SS11 authentication
 
 Portability / Platform-specific Improvements
 --------------------------------------------
 * added support for generating debug symbols on Mac OS X with the LLVM back-end
 * improved performance/correctness of remote mem ops for `ofi` on HPE Cray EX
+* improved support for SS11 authentication on HPE Cray EX
 * improved error-checking logic when `libfabric` is missing
 * worked around runtime hangs during teardown when using `libfabric` with `EFA`
 * updated detection of `lld` for AMD GPUs with the spack `llvm-amdgpu` package
@@ -326,6 +343,7 @@ Bug Fixes
 * fixed a bug where a type with no default initializer would halt compilation
 * fixed a bug where mentions of `chpl_external_array` crashed compilation
 * fixed a bug where nested functions passed as call actuals crashed compilation
+* fixed a bug preventing implementing interfaces for generic class types
 * fixed a bug in which compiler-generated code would warn about lack of '?'
 
 Bug Fixes for Build Issues
