@@ -399,7 +399,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
 
-    // set the account name if one was provided
+    // set gpus-per-node if one was provided
     if (gpusPerNode && strlen(gpusPerNode) > 0) {
       fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
     }
@@ -548,7 +548,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
     }
 
-    // set the account name if one was provided
+    // set gpus-per-node if one was provided
     if (gpusPerNode && strlen(gpusPerNode) > 0) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
     }
