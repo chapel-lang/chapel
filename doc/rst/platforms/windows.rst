@@ -15,18 +15,22 @@ and should not be expected to result in good performance.
 Using Chapel on WSL
 -------------------
 
-The Windows Subsystem for Linux (WSL) is a compatibility layer for running
-Linux binary executables natively on Windows. It provides a Linux-compatible
-kernel interface developed by Microsoft, and it can run a variety of
-Linux distributions. For more information on WSL, see the
+WSL is a compatibility layer for running Linux binary executables natively on
+Windows. It provides a Linux-compatible kernel interface, and it can run a
+variety of Linux distributions. For more information on WSL, see the
 `WSL documentation <https://docs.microsoft.com/en-us/windows/wsl/about>`_.
 
 To use Chapel on WSL, you will need to install a Linux distribution from the
 Microsoft Store. We recommend using Ubuntu, but others will likely work.
 Once you have installed your distribution, get the list of prerequisites
 from :ref:`readme-prereqs` and install Chapel as you would on a native Linux
-system. There are no platform specific settings for Chapel on WSL at this time.
+system. There are no platform-specific settings for Chapel on WSL at this time.
 
+  .. note::
+
+    This configuration is not currently tested nightly. Please report any issues
+    you encounter when using Chapel on WSL by `filing a bug report
+    <https://github.com/chapel-lang/chapel/issues/new>`_
 
 ----------------------
 Using Chapel on Cygwin

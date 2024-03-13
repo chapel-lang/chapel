@@ -561,19 +561,22 @@ marked with * are covered in our nightly testing configuration.
   * Software:ROCm 4.2*, 4.4, 5.4
 
 
-GPU Support on WSL
+GPU Support on Windows Subsystem for Linux
 ------------------------------------------------
 
-Starting with Chapel 2.0, we have demonstrated the ability to use NVIDIA GPUs
-through WSL. To enable GPU support on WSL we require the CUDA Toolkit to be
-installed in the WSL environment and the NVIDIA driver to be installed on the
-Windows host.
-See the `NVIDIA documentation
+NVIDIA GPUs can be used on Windows through through WSL. To enable GPU support on
+WSL we require the CUDA Toolkit to be installed in the WSL environment and the
+NVIDIA driver to be installed on the Windows host. See the `NVIDIA documentation
 <https://docs.nvidia.com/cuda/wsl-user-guide/index.html#getting-started-with-cuda-on-wsl-2>`_
 for more information on setting up CUDA on WSL.
 See `Using Chapel on WSL <../platforms/windows.html#using-chapel-on-wsl>`_
 for more information on using Chapel with WSL.
 
+  .. note::
+
+    This configuration is not currently tested nightly. Please report any issues
+    you encounter when using Chapel on WSL by `filing a bug report
+    <https://github.com/chapel-lang/chapel/issues/new>`_
 
 Further Information
 -------------------
