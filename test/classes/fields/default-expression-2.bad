@@ -1,0 +1,5 @@
+default-expression-2.chpl:16: warning: SymEntry(nothing)
+default-expression-2.chpl:17: warning: int(64)
+default-expression-2.chpl:7: In initializer:
+default-expression-2.chpl:9: error: cannot assign expression of type bool to field 'a' of type int(64)
+  default-expression-2.chpl:19: called as SymEntry.init(a: bool)
