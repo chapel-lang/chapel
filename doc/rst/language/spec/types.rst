@@ -208,10 +208,11 @@ not initialized to something else (see also :ref:`Chapter-Variables`).
       var z: bool;
 
    All three variables have type ``bool``.  Note that the types of ``x``
-   an ``y`` are optional; the program indicates the type of ``x`` but
-   infers the type of ``y``.  See :ref:`Chapter-Variables` for more
-   details. The last variable is initialized to the default value of
-   ``bool``, which is ``false`` (see :ref:`Default_Values_For_Types`).
+   and ``y`` are optional; the program indicates the type of ``x`` but
+   the compiler infers the type of ``y``.  See :ref:`Chapter-Variables`
+   for more details. The last variable is initialized to the default
+   value of ``bool``, which is ``false`` (see
+   :ref:`Default_Values_For_Types`).
 
    .. BLOCK-test-chapelpost
 
@@ -236,7 +237,7 @@ represent them. Valid bit-sizes are 8, 16, 32, and 64. The default
 signed integral type, ``int``, is a synonym for ``int(64)``; and the
 default unsigned integral type, ``uint``, is a synonym for ``uint(64)``.
 
-Variables of integral have a default value of ``0`` if they are
+Variables of integral type have a default value of ``0`` if they are
 not initialized to something else (see also :ref:`Chapter-Variables`).
 
 The integral types and their ranges are given in the following table:
@@ -339,8 +340,8 @@ without an exponent (see :ref:`Literals` for details):
 
    *Example (harmonic.chpl)*.
 
-   For example, this program computes the first ``n`` terms of harmonic
-   series.
+   For example, this program computes the first ``n`` terms of the
+   harmonic series.
 
    First, it defines a ``config const`` to allow setting the value of
    ``n`` on the command line (see :ref:`Variable_Declarations`):
