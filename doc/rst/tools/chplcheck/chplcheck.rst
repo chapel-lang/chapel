@@ -10,14 +10,10 @@ It is also intended to be customizable and extensible, using a system of named
 'rules' that lead to warnings.
 
 ``chplcheck`` supports the Language Server Protocol, allowing it to be used as
-part of your favorite editor. The following images demonstrates its use in
-various editors:
+part of your favorite editor. The following images demonstrates its use Neovim:
 
 .. image:: neovim.png
-  :alt: Screenshot of code using ``chplcheck`` in Neovim
-
-.. image:: vscode.png
-  :alt: Screenshot of code using ``chplcheck`` in VSCode
+  :alt: Screenshot of code using ``chplcheck``
 
 Getting Started
 ---------------
@@ -103,8 +99,7 @@ contributing it to this documentation.
 Neovim
 ~~~~~~
 
-In Neovim, the built-in LSP API can be used to configure ``chplcheck`` as
-follows:
+The built-in LSP API can be used to configure ``chplcheck`` as follows:
 
 .. code-block:: lua
 
@@ -118,11 +113,7 @@ follows:
        filetypes = {'chpl'},
        autostart = true,
        single_file_support = true,
-       root_dir = function(fname)
-         local res = util.find_git_ancestor(fname)
-         print(res)
-         return res
-       end,
+       root_dir = util.find_git_ancestor,
        settings = {},
      },
    }
@@ -133,8 +124,14 @@ follows:
 VSCode
 ~~~~~~
 
-To use ``chplcheck`` in VSCode, you can use the soon-to-be-released ``chapel``
-extension.
+Install the soon-to-be-released ``chapel`` extension from the `Visual Studio
+Code marketplace
+<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel>`_.
+
+.. note::
+
+   The extension is not yet available at the time of writing and the above link
+   may not work until then. This section will be updated when it is available.
 
 Writing New Rules
 -----------------
@@ -241,7 +238,7 @@ one argument.
 
 .. code-block:: python
 
-   # saved in file ``myrules.py``
+   # saved in file `myrules.py`
    import chapel
 
    def rules(driver):
@@ -249,14 +246,28 @@ one argument.
      @driver.basic_rule(chapel.Function)
      def NoFunctionFoo(context, node):
        return node.name() != "foo"
-   
+
      @driver.basic_rule(chapel.Variable, default=False)
      def NoVariableBar(context, node):
        return node.name() != "bar"
 
-To load these custom rules into chplcheck, the additional command line argument is used.
+To use these rules with ``chplcheck``, use the ``--add-rules`` command line
+argument.
+
+Saving the following file into ``myfile.chpl``:
+
+.. code-block:: chapel
+   :linenos:
+
+   proc foo() {
+     var bar = 10;
+   }
+
+The linter is run as follows:
 
 .. code-block:: bash
 
-   chplcheck --add-rules path/to/my/myrules.py
+   > chplcheck myfile.chpl --add-rules path/to/my/myrules.py --enable-rule NoVariableBar
+   path/to/myfile/myfile.chpl:1: node violates rule NoFunctionFoo
+   path/to/myfile/myfile.chpl:2: node violates rule NoVariableBar
 

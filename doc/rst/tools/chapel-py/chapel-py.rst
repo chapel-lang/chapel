@@ -6,7 +6,7 @@ chapel-py
 Python bindings for Chapel's frontend library, Dyno.
 
 The purpose of this library is to allow programmers to clearly create tools
-for the Chapel programming languages that would be more difficult to write
+for the Chapel programming language that would be more difficult to write
 using C++ (the native language in which the Chapel frontend library is written).
 
 For example, here's a toy program that prints the names of all things declared
@@ -72,7 +72,7 @@ This will allow you to use the python bindings from a python script run with ``$
 Usage
 -----
 
-The library is split into three major components:
+The library is split into several major components:
 
 * The ``chapel`` module provides the AST node class hierarchy and the ``Context``
   object. It also provides some higher-level, pure Python implementations of
@@ -145,7 +145,7 @@ is the definition for ``postorder`` from the ``chapel`` module:
        Recursively visit the given AST node, going in post-order (children-then-parent)
        """
        for child in node:
-           yield from preorder(child)
+           yield from postorder(child)
        yield node
 
 To find the list of available methods for each AST node class, the current best
