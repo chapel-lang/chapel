@@ -233,6 +233,9 @@ ApplicabilityResult instantiateSignature(Context* context,
   Compute a ResolvedFunction given a TypedFnSignature.
   Checks the generic cache for potential for reuse. When reuse occurs,
   the ResolvedFunction might point to a different TypedFnSignature.
+
+  This function will resolve a nested function if it does not refer to
+  any outer variables.
  */
 const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
@@ -259,6 +262,12 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
   do full resolution of types or paren-ful calls in the body.
  */
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
+
+/**
+  Compute the set of outer variables referenced by this function. Will return
+  'nullptr' if there are no outer variables.
+  */
+const OuterVariables* computeOuterVariables(Context* context, ID id);
 
 /*
  * Scope-resolve an AggregateDecl's fields, along with their type expressions
