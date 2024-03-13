@@ -18,7 +18,7 @@ class Chapel < Formula
 
   depends_on "cmake"
   depends_on "gmp"
-  depends_on "llvm@15"
+  depends_on "llvm@17"
   depends_on "python@3.11"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
