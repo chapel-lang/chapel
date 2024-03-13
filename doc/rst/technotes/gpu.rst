@@ -268,20 +268,12 @@ example demonstrates these attributes:
 
 In the above code, ``@assertOnGpu`` ensures that the ``foreach`` loop is
 GPU-eligible, and ``@gpu.blockSize`` sets the block size for the kernel to
-``myBlockSize`` (128 by default). The block size attribute supports using
-arbitrary expressions:
+``myBlockSize`` (128 by default).
 
-.. code-block:: chapel
-
-   var myData = /* ... */;
-   @gpu.blockSize(computeBlockSize(myData))
-   foreach i in myData { /* ... your code here ... */ }
-
-In addition to applying GPU attributes to loops, the 2.0 release of Chapel
-introduces the (experimental) ability to apply them to variable declarations.
-This is intended for use with variables whose initializers contain GPU-bound
-code. The following example demonstrates initializing an array ``A`` from a
-``foreach`` expression:
+In addition to applying GPU attributes to loops, Chapel provides (experimental)
+support for applying them to variable declarations. This is intended for use
+with variables whose initializers contain GPU-bound code. The following example
+demonstrates initializing an array ``A`` from a ``foreach`` expression:
 
 .. code-block:: chapel
 
