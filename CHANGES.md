@@ -129,7 +129,6 @@ New Package Module Features
 * improved the `DistributedBag` package w.r.t. depth-first-search and quality  
   (see https://chapel-lang.org/docs/main/modules/packages/DistributedBag.html)
 * added a new prototype distributed 'Zarr' I/O module
-* significantly improved `Sort.sort()` performance for large problem sizes
 * improved the performance of `toHex()` routines in the 'Crypto' module
 
 Standard Domain Maps (Layouts and Distributions)
@@ -279,7 +278,7 @@ Configuration / Build / Packaging Changes
 * reduced the Docker image size by eliminating unnecessary files/directories
 * removed support for Python 3.7 from 'chpldoc'
 * fixed a bug causing `chpldoc` to always be built by `make install`
-* disallowed building the compiler with AMD support when using the bundled LLVM
+* disallowed building `chpl` with AMD GPU support when using the bundled LLVM
 
 Compiler Improvements
 ---------------------
@@ -426,31 +425,35 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* significantly improved the compiler front-end library's Python bindings
+  - added the remaining AST accessors
+  - improved portability to older Python versions
+  - removed the need for the `chapel.core` module
+  - added a `clean` build target
 * made numerous improvements to the 'dyno' resolver for types and calls:
-  - eliminated incorrect error messages involving type queries
+  - implemented type resolution of module-level split-initialized variables
+  - implemented `is [const] copyable` and `is [const] assignable` primitives
+  - implemented `pragma "last resort"` function resolution logic
+  - added support for explicitly casting params
+  - added support for param-folding `select`s w.r.t. copy elision & split-init
+  - added support for resolving calls to the `this` method of a field
+  - added support for casting between enums and other types
+  - added support for converting from a C pointer to a const C pointer
+  - added support for the built-in `_ptrConst` type
   - improved default initialization of generics
   - improved support for `borrowed` and `unmanaged` classes
   - improved support for interaction between variable arguments and tuples
-  - added support for resolving the return types of numerous primitives
   - implemented numerous compiler primitives
-  - added support for converting from a C pointer to a const C pointer
+  - made calling `.type` on a type emit an error
   - added detection of infinite recursions during resolution, printing an error
-  - added support for casting between enums and other types
-* added support for explicitly casting params
-* added support for the built-in `_ptrConst` type
-* added support for param-folding `select`s w.r.t. copy elision & split-init
-* added support for resolving calls to the `this` method of a field
+  - eliminated incorrect error messages involving type queries
+  - fixed resolution of `eltType` queries on the `c_ptr` type
+  - fixed a bug in resolving user-defined initializers of `owned` classes
+  - fixed a bug preventing formals with default values to implicitly convert
 * improved the prototype support for library files:
-  - added the ability to reuse LLVM IR stored in a library file
+  - added the ability to re-use LLVM IR stored in a library file
   - changed to using an ID-based munging strategy for library files
   - resolve all concrete functions when generating a library file
-* made calling `.type` on a type emit an error
-* implemented type resolution of module-level split-initialized variables
-* implemented `is [const] copyable` and `is [const] assignable` primitives
-* implemented `pragma "last resort"` function resolution logic
-* fixed resolution of `eltType` queries on the `c_ptr` type
-* fixed a bug preventing formals with default values to implicitly convert
-* fixed a bug in resolving user-defined initializers of owned classes
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -476,10 +479,6 @@ Developer-oriented changes: Tool Improvements
   - added a 'visitor' API to implement more complicated AST traversals
   - exposed 'dyno' type resolution functionality
   - improved generated Python interface files for better editor integration
-* added the remaining AST accessors to Dyno's Python bindings
-* improved the Dyno Python bindings to be portable to older Python versions
-* removed the need for the Dyno Python bindings module `chapel.core`
-* added a `clean` target for Dyno's Python bindings
 
 Developer-oriented changes: Utilities
 -------------------------------------
