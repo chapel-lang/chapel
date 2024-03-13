@@ -2304,7 +2304,7 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,
     .cacheRemote = fCacheRemote,
-    // We need privitization if we are doing a non-local compilation, or using
+    // We need privatization if we are doing a non-local compilation, or using
     // GPUs
     // TODO can we remove `--no-privatization` flag?
     .privatization = (!fNoPrivatization && !fLocal) ||
