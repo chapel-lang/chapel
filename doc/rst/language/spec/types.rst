@@ -176,8 +176,6 @@ representation at run-time.
 
        1
 
-
-
 .. _The_Bool_Type:
 
 The Bool Type
@@ -211,8 +209,7 @@ not initialized to something else (see also :ref:`Chapter-Variables`).
    and ``y`` are optional; the program indicates the type of ``x`` but
    the compiler infers the type of ``y``.  See :ref:`Chapter-Variables`
    for more details. The last variable is initialized to the default
-   value of ``bool``, which is ``false`` (see
-   :ref:`Default_Values_For_Types`).
+   value of ``bool``, which is ``false`` (see :ref:`Default_Values_For_Types`).
 
    .. BLOCK-test-chapelpost
 
@@ -261,11 +258,12 @@ the value. See :ref:`Implicit_Compile_Time_Constant_Conversions`.
 Integer literals can be written in hexadecimal, octal, or binary. See
 :ref:`Literals`.
 
-Signed or unsigned integral types of smaller width can implicitly convert
-to signed integral types of larger width.  Additionally, unsigned
-integral types of a smaller width can implicitly convert to an unsigned
-integral type of larger width. See :`Implicit_NumBool_Conversions` for
-details.
+Signed integral types of can implicitly convert to signed integral types
+of larger width. Additionally, signed integral types can implicitly
+convert to unsigned integral types of the same or larger width. Unsigned
+integral types can implicitly convert to both signed and unsigned
+integral type of larger width. See :ref:`Implicit_NumBool_Conversions`
+for details.
 
 It is possible for overflow to occur with binary operators on integers.
 For signed integers, overflow leads to undefined behavior. For unsigned
@@ -368,7 +366,7 @@ without an exponent (see :ref:`Literals` for details):
 
    Note that it uses `1.0/i` in order to do a floating point division. If
    it used `1/i`, it would do integer division (rounding towards zero),
-   which evaluates to 0 in this case.
+   which evaluates to ``0`` for ``i > 1``.
 
    Finally, it prints out the sum:
 
@@ -416,7 +414,7 @@ floating-point value while changing whether or not it is imaginary.
 
    *Example (imaginary.chpl)*.
 
-   For example, this program creates a imaginary numbers in two different
+   For example, this program creates imaginary numbers in two different
    ways. First, ``a`` is an ``imag`` variable initialized to a literal:
 
    .. code-block:: chapel
