@@ -541,7 +541,7 @@ Performance Tips
   you may wish to install `NVIDIA's `driver persistence daemon
   <https://docs.nvidia.com/deploy/driver-persistence/index.html#persistence-daemon>`_
   to alleviate this issue.
-  
+
 Tested Configurations
 ---------------------
 
@@ -559,6 +559,20 @@ marked with * are covered in our nightly testing configuration.
   * Hardware: MI60*, MI100 and MI250X
 
   * Software:ROCm 4.2*, 4.4, 5.4
+
+
+GPU Support on WSL
+------------------------------------------------
+
+Starting with Chapel 2.0, we have demonstrated the ability to use NVIDIA GPUs
+through WSL. To enable GPU support on WSL we require the CUDA Toolkit to be
+installed in the WSL environment and the NVIDIA driver to be installed on the
+Windows host.
+See the `NVIDIA documentation
+<https://docs.nvidia.com/cuda/wsl-user-guide/index.html#getting-started-with-cuda-on-wsl-2>`_
+for more information on setting up CUDA on WSL.
+See `Using Chapel on WSL <../platforms/windows.html#using-chapel-on-wsl>`_
+for more information on using Chapel with WSL.
 
 
 Further Information
