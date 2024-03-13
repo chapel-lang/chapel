@@ -14679,13 +14679,13 @@ void handleDefaultAssociativeWarnings(Symbol* sym,
 
             USR_WARN(sym, "The default parSafe mode for associative domains "
                      "and arrays (like '%s') is changing from 'true' to "
-                     "'false'. To suppress this warning you can make your "
-                     "domain const, use an explicit "
-                     "parSafe argument (ex: domain(int, parSafe=false)), or "
-                     "compile with '-snoParSafeWarning'. "
-                     "To use the old default of parSafe=true, compile with "
-                     "'-sassocParSafeDefault=true'.",
-                     sym->name);
+                     "'false'.", sym->name);
+            USR_PRINT(sym, "To suppress this warning you can make your "
+                     "domain const, use an explicit parSafe argument "
+                     "(ex: domain(int, parSafe=false)), "
+                     "or compile with '-snoParSafeWarning'.");
+            USR_PRINT(sym,"To use the old default of parSafe=true, "
+                     "compile with '-sassocParSafeDefault=true'.");
           }
         }
       }
