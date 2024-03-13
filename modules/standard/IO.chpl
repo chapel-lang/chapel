@@ -366,10 +366,11 @@ Synchronization of fileReader and fileWriter Data and Avoiding Data Races
 FileReaders and fileWriters (and files) contain locks in order to keep their
 operation safe for multiple tasks. When creating a fileReader or fileWriter, it
 is possible to disable the lock (for performance reasons) by passing
-``locking=false`` to e.g.  file.writer().  Some ``fileReader`` and
-``fileWriter`` methods should only be called on locked fileReaders or
-fileWriters.  With these methods, it is possible to perform I/O "transactions"
-(see :proc:`fileWriter.mark`, e.g.). To use these methods, e.g., first lock the
+``locking=false`` to e.g.  file.writer(), or by using
+:proc:`openReader`/:proc:`openWriter`.  Some ``fileReader`` and ``fileWriter``
+methods should only be called on locked fileReaders or fileWriters.  With these
+methods, it is possible to perform I/O "transactions" (see
+:proc:`fileWriter.mark`, e.g.). To use these methods, e.g., first lock the
 fileWriter with :proc:`fileWriter.lock`, call the methods you need, then unlock
 the fileWriter with :proc:`fileWriter.unlock`. Note that in the future, we may
 move to alternative ways of calling these functions that guarantee that they are
@@ -515,7 +516,7 @@ All three are safe to use concurrently.
 Error Handling
 --------------
 
-Most I/O routines throw a :class:`~OS.SystemError`, which can be handled
+Most I/O routines throw an :class:`~Errors.Error`, which can be handled
 appropriately with ``try`` and ``catch`` (see the
 :ref:`documentation<Handling_Errors>` for more detail).
 
@@ -707,7 +708,7 @@ useful in a procedure that relies on a ``reader`` argument being locking:
   }
 
 The ``locking`` field can be set by passing the desired value to one of the
-following routines:
+following routines that create a :record:`fileReader` or :record:`fileWriter`:
 
 * :proc:`file.reader`
 * :proc:`file.writer`
@@ -7091,7 +7092,7 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
 
    :arg args: a series of variables to read into. Basic types are handled
               internally, but for other types this function will call
-              value.readThis() with a ``Reader`` argument as described
+              value.deserialize() with a `fileReader` argument as described
               in :ref:`serialize-deserialize`.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
@@ -9208,7 +9209,7 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
 
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with the ``fileWriter`` as an argument.
+              value.serialize() with the ``fileWriter`` as an argument.
 
    :throws EofError: If EOF is reached before all the arguments could be
                      written.
