@@ -1,1 +1,1 @@
-badIndexVar.chpl:1 error: invalid index expression
+badIndexVar.chpl:1: syntax error: only identifiers or tuples of identifiers are allowed as index expressions
