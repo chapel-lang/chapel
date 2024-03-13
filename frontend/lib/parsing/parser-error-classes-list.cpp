@@ -226,7 +226,7 @@ void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
     wr.message("    ", oss.str());
     wr.message("");
   } else {
-    wr.message("If you wanted to perform elementwise comaprison, please use "
+    wr.message("If you wanted to perform elementwise comparison, please use "
                "'&&' to combine operations.");
   }
 
