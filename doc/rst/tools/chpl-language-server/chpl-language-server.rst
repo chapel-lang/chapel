@@ -28,8 +28,7 @@ add it.
 Neovim
 ^^^^^^
 
-In Neovim, the built-in LSP API can be used to configure ``CLS`` as
-follows:
+The built-in LSP API can be used to configure ``CLS`` as follows:
 
 .. code-block:: lua
 
@@ -69,11 +68,50 @@ Supported Features
 
 ``CLS`` supports a number of core features, with further features controlled by configuration options.
 
+.. note::
+
+   Not all editor integrations may support all features. This list details
+   features that are supported by ``CLS`` itself, not by any particular editor.
+
 Core Features
 ^^^^^^^^^^^^^
 
+* Diagnostics
+
+  Errors and warnings are reported as you type. ``CLS`` also has limited support to fix some errors and warnings automatically with quick fixes.
+
+* Symbol Information
+
+  ``CLS`` provides basic information about symbols in code, enabling various actions.For example, you can jump to the definition of a symbol, find all references to a symbol, and rename a symbol. Hovering over a symbol will show its definition and documentation. Selecting a symbol will highlight all references to it in the file.
+
+* Code Completion
+
+  ``CLS`` provides limited code completion for symbols in your code.
+
 Optional Features
 ^^^^^^^^^^^^^^^^^
+
+* End of Block Markers
+
+  ``CLS`` can display markers after a closing brace to indicate what block it
+  closes. This feature is off-by-default, but can be enabled with
+  ``--end-markers <marker_list>``.
+
+  ``<marker_list>`` is a comma-separated list of markers to display. The
+  following markers are supported:
+
+    * ``none``: Do not display any end markers. This is the default.
+    * ``all``: Display all end markers.
+    * ``decl``: Display markers for the end of a declaration (e.g. modules,
+      records, functions, etc.)
+    * ``loop``: Display markers for the end of a loop (e.g. ``for``,
+      ``forall``, ``while``, etc.)
+    * ``block``: Display markers for the end of other important blocks (e.g.
+      ``on``, ``begin``, etc.)
+
+  End of block markers have a threshold of 10 lines of code. If a block is
+  smaller than this, no end marker will be displayed. This threshold can be
+  adjusted with ``--end-marker-threshold <threshold>``.
 
 Experimental Resolver Features
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -85,6 +123,46 @@ All of the following features are disabled without the ``--resolver`` flag. To u
    These features rely on the Dyno resolver, which is not finished and actively
    under development. It is not unexpected for ``--resolver`` to cause ``CLS``
    to crash or hang.
+
+* Type Information
+
+  ``CLS`` can resolve the type of a symbol and allow jumping to type definitions.
+
+* Type Inlays
+
+  Type information can be displayed inline as an inlay hint. This is
+  on-by-default, but can be disabled with ``--no-type-inlays``.
+
+* Param Inlays
+
+  ``param`` values can be computed and displayed inline as inlay hints. This is
+  on-by-default, but can be disabled with ``--no-param-inlays``.
+
+* Evaluated Tooltips
+
+  ``param`` values can also be computed and displayed as tooltips. This is
+  on-by-default, but can be disabled with ``--no-evaluate-expressions``.
+
+* Call Inlays
+
+  Named arguments can be displayed inline as inlay hints. This is
+  on-by-default, but can be disabled with ``--no-literal-arg-inlays``.
+
+* Dead Code
+
+  Dead code can be highlighted. This is on-by-default, but can be disabled with
+  ``--no-dead-code``.
+
+* Generic Instantiation
+
+  ``CLS`` can show the various instantiations of a generic function. This is
+  on-by-default.
+
+* Call Hierarchy
+
+  Some editors support showing a call hierarchy for a symbol, both inbound
+  calls and outbound calls. ``CLS`` supports this basic feature, as well as
+  enabled some additional features for this with generic functions.
 
 Configuring Chapel Projects
 ---------------------------
@@ -115,5 +193,5 @@ This is similarly done for ``mason`` projects:
 
 .. note::
 
-   First class ``mason`` support is currently planned (but not yet
+   First-class ``mason`` support is currently planned (but not yet
    implemented), avoiding the need for ``chpl-shim`` in ``mason`` projects.
