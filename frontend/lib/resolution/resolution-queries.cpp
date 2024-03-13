@@ -2418,16 +2418,14 @@ computeOuterVariablesQuery(Context* context, ID id) {
 }
 
 static owned<ResolvedFunction>
-scopeResolveFunctionQueryBody(Context* context, ID id, bool computeOuterVars) {
+scopeResolveFunctionQueryBody(Context* context, ID id) {
   const AstNode* ast = parsing::idToAst(context, id);
   const Function* fn = ast->toFunction();
 
   ResolutionResultByPostorderID resolutionById;
   const TypedFnSignature* sig = nullptr;
   owned<ResolvedFunction> result;
-  owned<OuterVariables> outerVars = computeOuterVars
-      ? toOwned(new OuterVariables(context, id))
-      : nullptr;
+  owned<OuterVariables> outerVars = toOwned(new OuterVariables(context, id));
 
   if (fn) {
     auto visitor =
@@ -2472,9 +2470,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id, bool computeOuterVars) {
 static const owned<ResolvedFunction>&
 scopeResolveFunctionQuery(Context* context, ID id) {
   QUERY_BEGIN(scopeResolveFunctionQuery, context, id);
-  const bool computeOuterVars = true;
-  owned<ResolvedFunction> ret;
-  ret = scopeResolveFunctionQueryBody(context, id, computeOuterVars);
+  auto ret = scopeResolveFunctionQueryBody(context, id);
   return QUERY_END(ret);
 }
 
@@ -2489,11 +2485,11 @@ const OuterVariables* computeOuterVariables(Context* context, ID id) {
       // The 'computeOuterVariablesQuery' is set as a side effect of
       // performing scope resolution, since both require a traversal.
       std::ignore = scopeResolveFunction(context, id);
-
-    // Just return 'nullptr', we have no results to use, yet. The caller
-    // can only be the Resolver set up for scope-resolve if this branch
-    // is happening.
     } else {
+
+      // Just return 'nullptr', we have no results to use, yet. The caller
+      // can only be the Resolver set up for scope-resolve if this branch
+      // is happening.
       return nullptr;
     }
   }

@@ -52,17 +52,17 @@ void OuterVariables::add(Context* context, ID mention, ID var) {
     CHPL_ASSERT(mention && symbol_.contains(mention));
   }
 
-  auto it = variableToMentionIdx_.find(var);
-  auto& p = variableToMentionIdx_[var];
-  if (it == variableToMentionIdx_.end()) {
-    p.first = variables_.size();
+  auto it = idToVarAndMentionIndices_.find(var);
+  if (it == idToVarAndMentionIndices_.end()) {
+    auto p = std::make_pair(variables_.size(), std::vector<size_t>());
+    it = idToVarAndMentionIndices_.emplace_hint(it, var, std::move(p));
     variables_.push_back(var);
     if (isReachingUse) numReachingVariables_++;
   }
 
   // Don't bother storing the mention for a child use.
   if (!isChildUse) {
-    p.second.push_back(mentions_.size());
+    it->second.second.push_back(mentions_.size());
     mentions_.push_back(mention);
   }
 }

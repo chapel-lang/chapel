@@ -360,11 +360,13 @@ class OuterVariables {
   // it into our parent's state.
   std::vector<ID> mentions_;
 
+  using VarAndMentionIndices = std::pair<size_t, std::vector<size_t>>;
+  using IdToVarAndMentionIndices = std::unordered_map<ID, VarAndMentionIndices>;
+
   // Enables lookup of variables and their mentions given just an ID. The
   // first part of the pair is the index of the variable, and the second
   // component is the list of mention indices.
-  std::unordered_map<ID, std::pair<size_t, std::vector<size_t>>>
-  variableToMentionIdx_;
+  IdToVarAndMentionIndices idToVarAndMentionIndices_;
 
   // The number of outer variables that are defined in distant (not our
   // immediate) parents. Only variables defined by a function's most
@@ -391,32 +393,32 @@ public:
 
  ~OuterVariables() = default;
 
-  inline bool operator==(const OuterVariables& other) const {
+  bool operator==(const OuterVariables& other) const {
     return variables_ == other.variables_ &&
            mentions_ == other.mentions_ &&
-           variableToMentionIdx_ == other.variableToMentionIdx_ &&
+           idToVarAndMentionIndices_ == other.idToVarAndMentionIndices_ &&
            numReachingVariables_ == other.numReachingVariables_ &&
            symbol_ == other.symbol_ &&
            parent_ == other.parent_;
   }
 
-  inline bool operator!=(const OuterVariables& other) const {
+  bool operator!=(const OuterVariables& other) const {
     return !(*this == other);
   }
 
-  inline void swap(OuterVariables& other) {
+  void swap(OuterVariables& other) {
     std::swap(variables_, other.variables_);
     std::swap(mentions_, other.mentions_);
-    std::swap(variableToMentionIdx_, other.variableToMentionIdx_);
+    std::swap(idToVarAndMentionIndices_, other.idToVarAndMentionIndices_);
     std::swap(numReachingVariables_, other.numReachingVariables_);
     std::swap(symbol_, other.symbol_);
     std::swap(parent_, other.parent_);
   }
 
-  inline void mark(Context* context) const {
+  void mark(Context* context) const {
     for (auto& v : variables_) v.mark(context);
     for (auto& id : mentions_) id.mark(context);
-    for (auto& p : variableToMentionIdx_) p.first.mark(context);
+    for (auto& p : idToVarAndMentionIndices_) p.first.mark(context);
     symbol_.mark(context);
     parent_.mark(context);
   }
@@ -430,45 +432,48 @@ public:
   void add(Context* context, ID mention, ID var);
 
   /** Returns 'true' if there are no outer variables. */
-  inline bool isEmpty() const { return numVariables() == 0; }
+  bool isEmpty() const { return numVariables() == 0; }
 
   /** The total number of outer variables. */
-  inline int numVariables() const { return variables_.size(); }
+  int numVariables() const { return variables_.size(); }
 
   /** The number of outer variables declared in our immediate parent. */
-  inline int numImmediateVariables() const {
+  int numImmediateVariables() const {
     return numVariables() - numReachingVariables_;
   }
 
   /** The number of outer variables declared in our non-immediate parents. */
-  inline int numReachingVariables() const { return numReachingVariables_; }
+  int numReachingVariables() const { return numReachingVariables_; }
 
   /** The number of outer variable mentions in this symbol's body. */
-  inline int numMentions() const { return mentions_.size(); }
+  int numMentions() const { return mentions_.size(); }
 
   /** Get the number of mentions for 'var' in this symbol. */
-  inline int numMentions(ID var) const {
-    auto it = variableToMentionIdx_.find(var);
-    return it != variableToMentionIdx_.end() ? it->second.second.size() : 0;
+  int numMentions(const ID& var) const {
+    auto it = idToVarAndMentionIndices_.find(var);
+    return it != idToVarAndMentionIndices_.end()
+      ? it->second.second.size()
+      : 0;
   }
 
   /** Returns 'true' if there is at least one mention of 'var'. */
-  inline bool mentions(ID var) const { return numMentions(var) > 0; }
+  bool mentions(const ID& var) const { return numMentions(var) > 0; }
 
   /** Returns 'true' if this contains an entry for 'var'. */
-  inline bool contains(ID var) const {
-    return variableToMentionIdx_.find(var) != variableToMentionIdx_.end();
+  bool contains(const ID& var) const {
+    return idToVarAndMentionIndices_.find(var) !=
+           idToVarAndMentionIndices_.end();
   }
 
   /** Get the i'th outer variable or the empty ID if 'idx' was out of bounds. */
-  inline ID variable(size_t idx) const {
+  ID variable(size_t idx) const {
     return inBounds(variables_, idx) ? variables_[idx] : ID();
   }
 
   /** A reaching variable is declared in a non-immediate parent(s). */
-  inline bool isReachingVariable(ID var) const {
-    auto it = variableToMentionIdx_.find(var);
-    if (it != variableToMentionIdx_.end()) {
+  bool isReachingVariable(const ID& var) const {
+    auto it = idToVarAndMentionIndices_.find(var);
+    if (it != idToVarAndMentionIndices_.end()) {
       auto& var = variables_[it->second.first];
       return !parent_.contains(var);
     }
@@ -476,30 +481,33 @@ public:
   }
 
   /** A reaching variable is declared in a non-immediate parent(s). */
-  inline bool isReachingVariable(size_t idx) const {
+  bool isReachingVariable(size_t idx) const {
     if (auto id = variable(idx)) return isReachingVariable(id);
     return false;
   }
 
   /** Get the i'th mention in this function. */
-  inline ID mention(size_t idx) const {
+  ID mention(size_t idx) const {
     return inBounds(mentions_, idx) ? mentions_[idx] : ID();
   }
 
   /** Get the i'th mention for 'var' within this function, or the empty ID. */
-  inline ID mention(ID var, size_t idx) const {
-    auto it = variableToMentionIdx_.find(var);
-    if (it == variableToMentionIdx_.end()) return {};
+  ID mention(const ID& var, size_t idx) const {
+    auto it = idToVarAndMentionIndices_.find(var);
+    if (it == idToVarAndMentionIndices_.end()) return {};
     return inBounds(it->second.second, idx)
       ? mentions_[it->second.second[idx]]
       : ID();
   }
 
   /** Get the first mention of 'var', or the empty ID. */
-  inline ID firstMention(ID var) const { return mention(var, 0); }
+  ID firstMention(const ID& var) const { return mention(var, 0); }
 
   /** Get the ID of the symbol this instance was created for. */
-  inline const ID& symbol() const { return symbol_; }
+  const ID& symbol() const { return symbol_; }
+
+  /** Get the ID of the owning symbol's parent. */
+  const ID& parent() const { return parent_; }
 };
 
 /** CallInfoActual */

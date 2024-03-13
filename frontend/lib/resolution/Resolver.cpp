@@ -439,10 +439,36 @@ static bool isOuterVariable(Resolver* rv, ID target) {
   // sense in this context. As well, these things have an "infinite lifetime",
   // and are always reachable.
   if (target.isSymbolDefiningScope()) return false;
-  auto up = target.parentSymbolId(rv->context);
-  auto ast = parsing::idToAst(rv->context, up);
-  bool ret = ast && ast != rv->symbol && ast->isFunction();
-  return ret;
+
+
+  auto parentSymbolId = target.parentSymbolId(rv->context);
+
+  // No match if there is no parent or if the parent is the resolver symbol.
+  if (parentSymbolId.isEmpty()) return false;
+  if (rv->symbol && parentSymbolId == rv->symbol->id()) return false;
+
+  switch (parsing::idToTag(rv->context, parentSymbolId)) {
+    case asttags::Function: return true;
+
+    // Module-scope variables are not considered outer-variables. However,
+    // variables declared in a module initializer statement can be, e.g.,
+    /**
+      module M {
+        if someCondition {
+          var someVar = 42;
+          proc f() { writeln(someVar); }
+          f();
+        }
+      }
+    */
+    case asttags::Module: {
+      auto targetParentId = parsing::idToParentId(rv->context, target);
+      return parentSymbolId != targetParentId;
+    } break;
+    default: break;
+  }
+
+  return false;
 }
 
 /**
@@ -2799,7 +2825,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     maybeEmitWarningsForId(this, type, ident, id);
 
     // Record uses of outer variables.
-    if (isOuterVariable(this, id) && outerVars.get()) {
+    if (isOuterVariable(this, id) && outerVars) {
       const ID& mention = ident->id();
       const ID& var = id;
       outerVars->add(context, mention, var);
@@ -3015,6 +3041,9 @@ void Resolver::exit(const NamedDecl* decl) {
           // was defined in one of _our_ parent(s). So we need to track it.
           if (ovs->isReachingVariable(i)) {
             ID var = ovs->variable(i);
+
+            // Mentions from child functions are not recorded in the parent
+            // function's info, so just use the first (as a convenience).
             ID mention = ovs->firstMention(var);
             outerVars->add(context, mention, var);
           }
