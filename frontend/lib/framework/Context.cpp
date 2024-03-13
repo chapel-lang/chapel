@@ -560,7 +560,7 @@ void Context::gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
                                    const querydetail::QueryMapResultBase* result,
                                    std::vector<TraceElement>& trace) const {
   // Note: do not collect the result, but only its dependency. The reason
-  // is that this is initally called with result=root, and including
+  // is that this is initially called with result=root, and including
   // the root in the trace seems unhelpful since it will issue a proper error
   // message.
 
