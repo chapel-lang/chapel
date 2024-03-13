@@ -1563,7 +1563,7 @@ const chpl::optional<QualifiedType>& computeUnderlyingTypeOfEnum(Context* contex
   chpl::optional<QualifiedType> result;
   auto numericValues = computeNumericValuesOfEnumElements(context, element);
 
-  // Find the first non-unknown value, and return its type. As a fallack,
+  // Find the first non-unknown value, and return its type. As a fallback,
   // return either the default unknown value or, if we've encountered an error,
   // the erroneous type.
   for (auto& pair : numericValues) {
