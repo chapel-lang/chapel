@@ -268,7 +268,7 @@ example demonstrates these attributes:
 
 In the above code, ``@assertOnGpu`` ensures that the ``foreach`` loop is
 GPU-eligible, and ``@gpu.blockSize`` sets the block size for the kernel to
-``myBlockSize`` (128 by default).
+``myBlockSize``.
 
 In addition to applying GPU attributes to loops, Chapel provides (experimental)
 support for applying them to variable declarations. This is intended for use
@@ -561,6 +561,8 @@ improvements in the future.
 * ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
+
+* GPU attributes on variables are not yet applied to promoted function calls.
 
 Using C Interoperability
 ~~~~~~~~~~~~~~~~~~~~~~~~
