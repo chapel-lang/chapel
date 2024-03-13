@@ -53,8 +53,8 @@ Language Feature Improvements
   (e.g., `proc foo(x: (int, int(?w))) { ... }` is now supported)
 * added support for using detupled formal components in where clauses
   (e.g., `proc foo((x, y), z) where x.type == int { ... }` is now supported)
-* added support for instantiating a generic formal array's element type
-  (e.g., TODO)
+* added support for formal array arguments with generic element types  
+  (e.g., `proc foo(x: [] integral) { ... }  foo([1, 2, 3, 4];` now works))
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -219,6 +219,7 @@ Tool Improvements
 * added `printchplenv --bash/--csh` flags to to print shell-compatible output
 * improved rendering of `chplcheck` lint rules in editors
 * improved rendering of return intents by `chpldoc` for some browsers
+* fixed cross-references for nested types within `chpldoc`
 
 Documentation Improvements
 --------------------------
@@ -240,6 +241,7 @@ Documentation Improvements
 * improved documentation of enum constants to leverage new 'chpldoc' features
 * fixed typos in the `Math.sqrt()` documentation
 * fixed some cases where documentation and argument lists did not match
+* fixed some broken links to nested types
 * fixed a bug in the spec where certain statement forms lacked semicolons
 * fixed various typos and formatting issues
 
