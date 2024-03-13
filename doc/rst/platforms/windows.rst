@@ -1,8 +1,40 @@
-.. _readme-cygwin:
+.. _readme-windows:
 
-======================
+=======================
+Using Chapel on Windows
+=======================
+
+Chapel can be used on Windows systems in two ways: via the Windows Subsystem
+for Linux (WSL) or via Cygwin. The WSL approach is the preferred method for
+running Chapel on Windows, as it provides a more native Linux environment and
+better performance. The Cygwin approach is supported as a portability option
+and should not be expected to result in good performance.
+
+
+-------------------
+Using Chapel on WSL
+-------------------
+
+WSL is a compatibility layer for running Linux binary executables natively on
+Windows. It provides a Linux-compatible kernel interface, and it can run a
+variety of Linux distributions. For more information on WSL, see the
+`WSL documentation <https://docs.microsoft.com/en-us/windows/wsl/about>`_.
+
+To use Chapel on WSL, you will need to install a Linux distribution from the
+Microsoft Store. We recommend using Ubuntu, but others will likely work.
+Once you have installed your distribution, get the list of prerequisites
+from :ref:`readme-prereqs` and install Chapel as you would on a native Linux
+system. There are no platform-specific settings for Chapel on WSL at this time.
+
+  .. note::
+
+    This configuration is not currently tested nightly. Please report any issues
+    you encounter when using Chapel on WSL by `filing a bug report
+    <https://github.com/chapel-lang/chapel/issues/new>`_
+
+----------------------
 Using Chapel on Cygwin
-======================
+----------------------
 
 Chapel can be used on both 32-bit and 64-bit installations of Cygwin.
 Chapel can be sensitive to directories with spaces, but otherwise it
@@ -13,7 +45,7 @@ will work on Cygwin just like any other platform.
      Please note that running Chapel on Cygwin is supported only as a
      portability option and should not be expected to result in good
      performance.  For users wanting to run Chapel on Windows systems,
-     the preferred approach is to use the Windows Subsystem for Linux
+     the preferred approach is to use the Windows Subsystem for Linux (WSL)
      / Linux Bash Shell.
 
 
