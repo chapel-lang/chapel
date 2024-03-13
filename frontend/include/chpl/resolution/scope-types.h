@@ -41,6 +41,7 @@ class BorrowedIdsWithName;
 class IdAndFlags {
  public:
   // helper types
+  /// \cond DO_NOT_DOCUMENT
   enum {
     /** Public */
     PUBLIC = 1,
@@ -62,6 +63,8 @@ class IdAndFlags {
     NOT_METHOD = 128,
     // note: if adding something here, also update flagsToString
   };
+  /// \endcond
+
   /**
     A bit-set of the flags defined in the above enum.
     Represents a conjunction / AND of all the set bit.
@@ -578,6 +581,7 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 class Scope {
  public:
   // supporting types/enums
+  /// \cond DO_NOT_DOCUMENT
   enum {
     CONTAINS_FUNCTION_DECLS = 1,
     CONTAINS_USE_IMPORT = 2,
@@ -585,6 +589,8 @@ class Scope {
     METHOD_SCOPE = 8,
     CONTAINS_EXTERN_BLOCK = 16,
   };
+  /// \endcond
+
   /** A bit-set of the flags defined in the above enum */
   using ScopeFlags = unsigned int;
 
@@ -979,6 +985,7 @@ enum VisibilityStmtKind {
   VIS_IMPORT,
 };
 
+/// \cond DO_NOT_DOCUMENT
 enum {
   /**
     When looking at a scope, find symbols declared in that scope.
@@ -1046,6 +1053,7 @@ enum {
    */
   LOOKUP_METHODS = 2048,
 };
+/// \endcond
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
 using LookupConfig = unsigned int;

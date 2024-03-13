@@ -226,11 +226,13 @@ Resolver::createForInitializer(Context* context,
 Resolver
 Resolver::createForScopeResolvingFunction(Context* context,
                                           const Function* fn,
-                                          ResolutionResultByPostorderID& byId) {
+                                          ResolutionResultByPostorderID& byId,
+                                          owned<OuterVariables> outerVars) {
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.typedSignature = nullptr; // re-set below
   ret.signatureOnly = true; // re-set below
   ret.scopeResolveOnly = true;
+  ret.outerVars = std::move(outerVars);
   ret.fnBody = fn->body();
 
   ret.byPostorder.setupForFunction(fn);
@@ -427,6 +429,46 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   context->error(ast, "%s", msg);
   auto t = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   return t;
+}
+
+static bool isOuterVariable(Resolver* rv, ID target) {
+  if (target.isEmpty()) return false;
+
+  // E.g., a function, or a class/record/union/enum. We don't need to track
+  // this, and shouldn't, because its current instantiation may not make any
+  // sense in this context. As well, these things have an "infinite lifetime",
+  // and are always reachable.
+  if (target.isSymbolDefiningScope()) return false;
+
+
+  auto parentSymbolId = target.parentSymbolId(rv->context);
+
+  // No match if there is no parent or if the parent is the resolver symbol.
+  if (parentSymbolId.isEmpty()) return false;
+  if (rv->symbol && parentSymbolId == rv->symbol->id()) return false;
+
+  switch (parsing::idToTag(rv->context, parentSymbolId)) {
+    case asttags::Function: return true;
+
+    // Module-scope variables are not considered outer-variables. However,
+    // variables declared in a module initializer statement can be, e.g.,
+    /**
+      module M {
+        if someCondition {
+          var someVar = 42;
+          proc f() { writeln(someVar); }
+          f();
+        }
+      }
+    */
+    case asttags::Module: {
+      auto targetParentId = parsing::idToParentId(rv->context, target);
+      return parentSymbolId != targetParentId;
+    } break;
+    default: break;
+  }
+
+  return false;
 }
 
 /**
@@ -2782,6 +2824,13 @@ void Resolver::resolveIdentifier(const Identifier* ident,
 
     maybeEmitWarningsForId(this, type, ident, id);
 
+    // Record uses of outer variables.
+    if (isOuterVariable(this, id) && outerVars) {
+      const ID& mention = ident->id();
+      const ID& var = id;
+      outerVars->add(context, mention, var);
+    }
+
     if (type.kind() == QualifiedType::TYPE) {
       // now, for a type that is generic with defaults,
       // compute the default version when needed. e.g.
@@ -2974,10 +3023,33 @@ bool Resolver::enter(const NamedDecl* decl) {
 }
 
 void Resolver::exit(const NamedDecl* decl) {
-  if (decl->id().postOrderId() < 0) {
-    // It's a symbol with a different path, e.g. a Function.
-    // Don't try to resolve it now in this
-    // traversal. Instead, resolve it e.g. when the function is called.
+  // We are resolving a symbol with a different path (e.g., a Function or
+  // a CompositeType declaration). In most cases we do not try to resolve
+  // in this traversal. However, if we are a nested function and the child
+  // is also a nested function, we need to check and potentially propagate
+  // their outer variable set into our own.
+  auto idChild = decl->id();
+  if (idChild.isSymbolDefiningScope()) {
+    if (this->symbol != nullptr &&
+        parsing::idIsNestedFunction(context, this->symbol->id()) &&
+        parsing::idIsNestedFunction(context, idChild) &&
+        outerVars.get()) {
+      if (auto ovs = computeOuterVariables(context, idChild)) {
+        for (int i = 0; i < ovs->numVariables(); i++) {
+
+          // If the variable is reaching in the child function, it means it
+          // was defined in one of _our_ parent(s). So we need to track it.
+          if (ovs->isReachingVariable(i)) {
+            ID var = ovs->variable(i);
+
+            // Mentions from child functions are not recorded in the parent
+            // function's info, so just use the first (as a convenience).
+            ID mention = ovs->firstMention(var);
+            outerVars->add(context, mention, var);
+          }
+        }
+      }
+    }
     return;
   }
 

@@ -98,6 +98,13 @@ class ID final {
   int postOrderId() const { return postOrderId_; }
 
   /**
+    Returns 'true' if this symbol has a 'postOrderId()' value of == -1,
+    which means this is an ID for something that defines a new symbol
+    scope.
+   */
+   inline bool isSymbolDefiningScope() const { return postOrderId_ == -1; }
+
+  /**
     Some IDs are introduced during compilation and don't represent
     something that is directly contained within the source code.
     This function will return 'true' for such IDs.

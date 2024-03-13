@@ -3767,6 +3767,12 @@ record binarySerializer {
         This method is only optimized for the case where the
         :record:`binarySerializer` has been configured for ``native``
         endianness.
+
+      .. warning::
+
+        This method should only be called when the ``data`` argument is located
+        on the same locale as the underlying ``file`` of this serializer.
+        Otherwise the ``c_ptr`` will be invalid.
     */
     proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
@@ -4259,6 +4265,12 @@ record binaryDeserializer {
         This method is only optimized for the case where the
         :record:`binaryDeserializer` has been configured for ``native``
         endianness.
+
+      .. warning::
+
+        This method should only be called when the ``data`` argument is located
+        on the same locale as the underlying ``file`` of this deserializer.
+        Otherwise the ``c_ptr`` will be invalid.
     */
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {

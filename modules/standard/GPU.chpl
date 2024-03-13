@@ -795,7 +795,7 @@ module GPU
 
   // This function requires that startIdx and endIdx are within the bounds of the array
   // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
-  private proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
+  private inline proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan
