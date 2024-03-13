@@ -7635,7 +7635,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
 
 /*
   Read until the given separator is found, returning the contents of the
-  ``fileReader`` up to that point.
+  :record:`fileReader` up to that point.
 
   See the above :proc:`overload <fileReader.readTo>` of this method for
   more details.
@@ -7686,7 +7686,7 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
 
 /*
   Read until the given separator is found, returning the contents of the
-  ``fileReader`` up to that point.
+  :record:`fileReader` up to that point.
 
   See the above :proc:`overload <fileReader.readTo>` of this method for
   more details.
@@ -7818,8 +7818,8 @@ private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode
 
 
 /*
-  Read the remaining contents of the fileReader into an instance of the
-  specified type
+  Read the remaining contents of the :record:`fileReader` into an instance of
+  the specified type
 
   :arg t: the type to read into; must be :type:`~String.string` or
           :type:`~Bytes.bytes`. Defaults to ``bytes`` if not specified.
@@ -7849,7 +7849,7 @@ proc fileReader.readAll(type t=bytes): t throws
 }
 
 /*
-  Read the remaining contents of the ``fileReader`` into a ``string``.
+  Read the remaining contents of the :record:`fileReader` into a ``string``.
 
   Note that any existing contents of the ``string`` are overwritten.
 
@@ -7872,7 +7872,7 @@ proc fileReader.readAll(ref s: string): int throws {
 }
 
 /*
-  Read the remaining contents of the ``fileReader`` into a ``bytes``.
+  Read the remaining contents of the :record:`fileReader` into a ``bytes``.
 
   Note that any existing contents of the ``bytes`` are overwritten.
 
@@ -7895,7 +7895,8 @@ proc fileReader.readAll(ref b: bytes): int throws {
 }
 
 /*
-  Read the remaining contents of the ``fileReader`` into an array of bytes.
+  Read the remaining contents of the :record:`fileReader` into an array of
+  bytes.
 
   Note that this routine currently requires a 1D rectangular non-strided array.
 
@@ -7965,7 +7966,7 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
 }
 
 /*
-  Read a given number of codepoints from a ``fileReader``, returning a new
+  Read a given number of codepoints from a :record:`fileReader`, returning a new
   :type:`~String.string`.
 
   The ``string``'s length may be less than ``maxSize`` if EOF is reached while
@@ -7991,7 +7992,7 @@ proc fileReader.readString(maxSize: int): string throws {
 }
 
 /*
-  Read a given number of codepoints from a ``fileReader`` into a
+  Read a given number of codepoints from a :record:`fileReader` into a
   :type:`~String.string`.
 
   The updated ``string``'s length may be less than ``maxSize`` if EOF is
@@ -8015,7 +8016,7 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
 }
 
 /*
-  Read a given number of bytes from a ``fileReader``, returning a new
+  Read a given number of bytes from a :record:`fileReader`, returning a new
   :type:`~Bytes.bytes`.
 
   The ``bytes``'s length may be less than ``maxSize`` if EOF is reached while
@@ -8041,7 +8042,7 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
 }
 
 /*
-  Read a given number of bytes from a ``fileReader`` into a
+  Read a given number of bytes from a :record:`fileReader` into a
   :type:`~Bytes.bytes`.
 
   The updated ``bytes``'s length may be less than ``maxSize`` if EOF is
@@ -8127,7 +8128,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
            least-significant bits set.
    :arg numBits: how many bits to read
    :returns: ``true`` if the bits were read, and ``false`` otherwise (i.e., the
-             ``fileReader`` was already at EOF).
+             :record:`fileReader` was already at EOF).
 
    :throws UnexpectedEofError: If EOF was encountered before ``numBits``
                                could be read.
@@ -8160,7 +8161,7 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
     :returns: bits read. This value will have its *numBits* least-significant
               bits set
 
-    :throws EofError: If the ``fileReader`` offset was already at EOF.
+    :throws EofError: If the :record:`fileReader` offset was already at EOF.
     :throws UnexpectedEofError: If EOF was encountered before ``numBits``
                                 could be read.
     :throws SystemError: If data could not be read from the ``fileReader``
@@ -8179,7 +8180,7 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   :arg x: a value containing *numBits* bits to write the least-significant bits
   :arg numBits: how many bits to write
 
-  :throws EofError: If the ``fileWriter`` offset was already at EOF.
+  :throws EofError: If the :record:`fileWriter` offset was already at EOF.
   :throws UnexpectedEofError: If the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws IllegalArgumentError: If writing more bits than fit into `x`.
@@ -8202,7 +8203,7 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
 }
 
 /*
-  Write a single Unicode codepoint to a ``fileWriter``
+  Write a single Unicode codepoint to a :record:`fileWriter`
 
   :arg codepoint: Unicode codepoint to write
 
@@ -8217,7 +8218,7 @@ proc fileWriter.writeCodepoint(codepoint: int) throws {
 }
 
 /*
-  Read a single Unicode codepoint from a ``fileReader``
+  Read a single Unicode codepoint from a :record:`fileReader`
 
   :returns: Unicode codepoint read
 
@@ -8235,7 +8236,7 @@ proc fileReader.readCodepoint(): int throws {
 }
 
 /*
-  Read a single Unicode codepoint from a ``fileReader``
+  Read a single Unicode codepoint from a :record:`fileReader`
 
   :arg codepoint: where to store the read codepoint
   :returns: ``true`` if the codepoint was read, and ``false`` otherwise (i.e.,
@@ -8254,7 +8255,7 @@ proc fileReader.readCodepoint(ref codepoint: int):bool throws {
 }
 
 /*
-  Write a single byte to a ``fileWriter``
+  Write a single byte to a :record:`fileWriter`
 
   :arg byte: the byte to write
 
@@ -8280,7 +8281,7 @@ proc fileWriter.writeByte(byte: uint(8)) throws {
 }
 
 /*
-  Read a single byte from a ``fileReader``
+  Read a single byte from a :record:`fileReader`
 
   :returns: the byte read
 
@@ -8296,7 +8297,7 @@ proc fileReader.readByte(): uint(8) throws {
 }
 
 /*
-  Read a single byte from a ``fileReader``
+  Read a single byte from a :record:`fileReader`
 
   :arg byte: where to store the read byte
   :returns: ``true`` if the byte was read, and ``false`` otherwise (i.e.,
@@ -8349,7 +8350,8 @@ if !IOSkipBufferingForLargeOps {
 }
 
 /*
-  Write ``size`` codepoints from a :type:`~String.string` to a ``fileWriter``
+  Write ``size`` codepoints from a :type:`~String.string` to a
+  :record:`fileWriter`
 
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
@@ -8368,7 +8370,7 @@ proc fileWriter.writeString(s: string, size = s.size) throws {
 }
 
 /*
-  Write ``size`` bytes from a :type:`~Bytes.bytes` to a ``fileWriter``
+  Write ``size`` bytes from a :type:`~Bytes.bytes` to a :record:`fileWriter`
 
   :arg b: the ``bytes`` to write
   :arg size: the number of bytes to write from the ``bytes``
@@ -8409,7 +8411,8 @@ private proc endianToIoKind(param e: endianness) param {
 }
 
 /*
-  Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
+  Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a
+  :record:`fileWriter`
 
   Note that native endianness is always used.
 
@@ -8444,7 +8447,8 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 }
 
 /*
-  Write ``numBytes`` of data from a ``CTypes.c_ptr(void)`` to a ``fileWriter``
+  Write ``numBytes`` of data from a ``CTypes.c_ptr(void)`` to a
+  :record:`fileWriter`
 
   The data are written to the file one byte at a time.
 
@@ -8471,7 +8475,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
 }
 
 /*
-  Write a binary number to the ``fileWriter``
+  Write a binary number to the :record:`fileWriter`
 
   :arg arg: number to be written
   :arg endian: :type:`endianness` compile-time argument that specifies the byte
@@ -8495,7 +8499,7 @@ proc fileWriter.writeBinary(arg:numeric,
 }
 
 /*
-  Write a binary number to the ``fileWriter``
+  Write a binary number to the :record:`fileWriter`
 
   :arg arg: number to be written
   :arg endian: :type:`endianness` specifies the byte order in which
@@ -8522,7 +8526,7 @@ proc fileWriter.writeBinary(arg:numeric, endian:endianness) throws {
 }
 
 /*
-  Write a :type:`~String.string` to a ``fileWriter`` in binary format
+  Write a :type:`~String.string` to a :record:`fileWriter` in binary format
 
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
@@ -8570,7 +8574,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
 }
 
 /*
-  Write a :type:`~Bytes.bytes` to a ``fileWriter`` in binary format
+  Write a :type:`~Bytes.bytes` to a :record:`fileWriter` in binary format
 
   :arg b: the ``bytes`` to write
   :arg size: the number of bytes to write from the ``bytes``
@@ -8610,9 +8614,10 @@ private proc isSuitableForBinaryReadWrite(arr: _array) param {
 }
 
 /*
-  Write an array of binary numbers to a ``fileWriter``
+  Write an array of binary numbers to a :record:`fileWriter`
 
-  Note that this routine currently requires a local rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided
+  array.
 
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`endianness` compile-time argument that specifies the byte
@@ -8670,7 +8675,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:endianness = e
 
 
 /*
-  Write an array of binary numbers to a ``fileWriter``
+  Write an array of binary numbers to a :record:`fileWriter`
 
   Note that this routine currently requires a local rectangular non-strided array.
 
@@ -8708,7 +8713,7 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:endianness) throws
 }
 
 /*
-  Read a binary number from the ``fileReader``
+  Read a binary number from the :record:`fileReader`
 
   :arg arg: number to be read
   :arg endian: :type:`endianness` compile-time argument that specifies the byte
@@ -8736,7 +8741,7 @@ proc fileReader.readBinary(ref arg:numeric, param endian:endianness = endianness
 }
 
 /*
-  Read a binary number from the ``fileReader``
+  Read a binary number from the :record:`fileReader`
 
   :arg arg: number to be read
   :arg endian: :type:`endianness` specifies the byte order in which
@@ -8770,9 +8775,9 @@ proc fileReader.readBinary(ref arg:numeric, endian: endianness):bool throws {
   Read a specified number of codepoints into a :type:`~String.string`
 
   The resulting string ``s`` may be smaller than ``maxSize`` if EOF is reached
-  before reading the specified number of codepoints. Additionally, if nothing
-  is read from the fileReader, ``s`` will be set to ``""`` (the empty string)
-  and the method will return ``false``.
+  before reading the specified number of codepoints. Additionally, if nothing is
+  read from the :record:`fileReader`, ``s`` will be set to ``""`` (the empty
+  string) and the method will return ``false``.
 
   .. note::
 
@@ -8814,8 +8819,8 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   Read a specified number of bytes into a :type:`~Bytes.bytes`
 
   The bytes ``b`` may be smaller than ``maxSize`` if EOF is reached before
-  reading the specified number of bytes. Additionally, if nothing is read
-  from the fileReader, ``b`` will be set to ``b""`` (the empty bytes) and
+  reading the specified number of bytes. Additionally, if nothing is read from
+  the :record:`fileReader`, ``b`` will be set to ``b""`` (the empty bytes) and
   the method will return ``false``.
 
   :arg b: the bytes to read into — this value is overwritten
@@ -8855,7 +8860,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
 config param ReadBinaryArrayReturnInt = true;
 
 /*
-  Read an array of binary numbers from a ``fileReader``
+  Read an array of binary numbers from a :record:`fileReader`
 
   Binary values of the type ``data.eltType`` are consumed from the fileReader
   until ``data`` is full or EOF is reached.
@@ -8923,12 +8928,13 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
 }
 
 /*
-   Read an array of binary numbers from a ``fileReader``
+   Read an array of binary numbers from a :record:`fileReader`
 
    Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached.
 
-   Note that this routine currently requires a local rectangular non-strided array.
+   Note that this routine currently requires a local rectangular non-strided
+   array.
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`endianness` specifies the byte order in which
@@ -8976,7 +8982,7 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = endianness.native): b
 }
 
 /*
-   Read up to ``maxBytes`` bytes from a ``fileReader`` into a
+   Read up to ``maxBytes`` bytes from a :record:`fileReader` into a
    :class:`~CTypes.c_ptr`
 
    Note that native endianness is always used.
@@ -9008,7 +9014,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 }
 
 /*
-   Read up to ``maxBytes`` bytes from a ``fileReader`` into a
+   Read up to ``maxBytes`` bytes from a :record:`fileReader` into a
    ``CTypes.c_ptr(void)``
 
    Note that data are read from the file one byte at a time.
@@ -9044,14 +9050,14 @@ proc fileReader.readln():bool throws {
 }
 
 /*
-   Read values from a ``fileReader`` and then consume any bytes until
+   Read values from a :record:`fileReader` and then consume any bytes until
    newline is reached. The input will be consumed atomically - the
    fileReader lock will be held while reading all of the passed values.
 
    :arg args: a list of arguments to read. This routine can be called
               with zero or more such arguments. Basic types are handled
               internally, but for other types this function will call
-              value.readThis() with a ``Reader`` argument as described
+              value.deserialize() with a ``fileReader`` argument as described
               in :ref:`serialize-deserialize`.
    :returns: `true` if the read succeeded, and `false` upon end of file.
 
@@ -9079,7 +9085,7 @@ proc fileReader.readln(ref args ...?k):bool throws {
    :arg t: the type to read
    :returns: the value read
 
-   :throws EofError: If the ``fileReader`` is already at EOF.
+   :throws EofError: If the :record:`fileReader` is already at EOF.
    :throws UnexpectedEofError: If EOF was encountered before data could
                                be fully read.
    :throws SystemError: If data could not be read from the ``fileReader``
@@ -9131,7 +9137,7 @@ proc fileReader.read(type t) throws {
    :arg t: the type to read
    :returns: the value read
 
-   :throws EofError: If the ``fileReader`` is at already EOF.
+   :throws EofError: If the :record:`fileReader` is at already EOF.
    :throws UnexpectedEofError: If EOF was encountered before data could
                                be fully read.
    :throws SystemError: If data could not be read from the ``fileReader``
@@ -9152,7 +9158,7 @@ proc fileReader.readln(type t) throws {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
-   :throws EofError: If the ``fileReader`` is already at EOF.
+   :throws EofError: If the :record:`fileReader` is already at EOF.
    :throws UnexpectedEofError: If EOF was encountered before data could
                                be fully read.
    :throws SystemError: If data could not be read from the ``fileReader``
@@ -9168,8 +9174,8 @@ proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
 
 /*
    Read values of passed types and return a tuple containing the read values.
-   The ``fileReader``'s lock will be held while reading — this protects against
-   interleaved reads.
+   The :record:`fileReader`'s lock will be held while reading — this protects
+   against interleaved reads.
 
    :arg t: more than one type to read
    :returns: a tuple of the read values
@@ -9188,9 +9194,9 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
 }
 
 /*
-   Write values to a ``fileWriter``. The output will be produced atomically -
-   the ``fileWriter`` lock will be held while writing all of the passed
-   values.
+   Write values to a :record:`fileWriter`. The output will be produced
+   atomically - the ``fileWriter`` lock will be held while writing all of the
+   passed values.
 
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
@@ -9229,14 +9235,14 @@ proc fileWriter.writeln() throws {
 
 /*
 
-   Write values to a ``fileWriter`` followed by a newline.  The output will be
-   produced atomically - the ``fileWriter`` lock will be held while writing all of
-   the passed values.
+   Write values to a :record:`fileWriter` followed by a newline.  The output
+   will be produced atomically - the ``fileWriter`` lock will be held while
+   writing all of the passed values.
 
    :arg args: a variable number of arguments to write. This method can be
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with the fileWriter as an argument.
+              value.serialize() with the fileWriter as an argument.
 
    :throws EofError: If EOF is reached before all the arguments
                      could be written.
@@ -9251,7 +9257,7 @@ proc fileWriter.writeln(const args ...?k) throws {
 
 /*
 
-  Makes all writes to the ``fileWriter``, if any, available to concurrent
+  Makes all writes to the :record:`fileWriter`, if any, available to concurrent
   viewers of its associated file, such as other fileWriters/fileReader or other
   applications accessing this file concurrently.
 
@@ -9281,8 +9287,8 @@ proc fileWriter.flush(out error:errorCode) {
   }
 }
 
-/* Assert that a ``fileReader`` has reached end-of-file and that there was no
-   error doing the read.
+/* Assert that a :record:`fileReader` has reached end-of-file and that there was
+   no error doing the read.
 */
 @unstable("'assertEOF' is unstable and may be removed or modified in a future release")
 proc fileReader.assertEOF(errStr: string = "- Not at EOF") {
@@ -9303,7 +9309,7 @@ proc fileReader.atEOF(): bool throws {
 }
 
 /*
-  Close a ``fileReader``
+  Close a :record:`fileReader`
 
   :throws SystemError: If the ``fileReader`` is not successfully closed.
 */
@@ -9320,7 +9326,7 @@ proc fileReader.close() throws {
 }
 
 /*
-  Close a ``fileWriter``. Implicitly performs the :proc:`fileWriter.flush`
+  Close a :record:`fileWriter`. Implicitly performs the :proc:`fileWriter.flush`
   operation (see :ref:`about-io-filereader-filewriter-synchronization`).
 
   :throws SystemError: If the ``fileWriter`` is not successfully closed.
@@ -9338,7 +9344,7 @@ proc fileWriter.close() throws {
 }
 
 /*
-   Return ``true`` if a fileReader is currently closed.
+   Return ``true`` if a :record:`fileReader` is currently closed.
  */
 proc fileReader.isClosed() : bool {
   var ret:bool;
@@ -9349,7 +9355,7 @@ proc fileReader.isClosed() : bool {
 }
 
 /*
-   Return ``true`` if a fileWriter is currently closed.
+   Return ``true`` if a :record:`fileWriter` is currently closed.
  */
 proc fileWriter.isClosed() : bool {
   var ret:bool;
@@ -9521,18 +9527,11 @@ example, one might do:
   // My favorite number is 7
 
 The following sections offer a tour through the conversions to illustrate the
-common cases. A more precise definition follows in the "Format String
-Syntax in Detail" section below.
+common cases. A more precise definition follows in the
+:ref:`about-io-formatted-io-in-detail` section below.
 
 In this file, we use "integral" to refer to the Chapel types int or uint and
 "floating-point" to refer to real, imaginary, or complex, of any bit width.
-
-.. warning::
-
-   Binary conversions are now deprecated. Binary numeric conversions have been
-   replaced by :proc:`IO.fileReader.readBinary` and
-   :proc:`IO.fileWriter.writeBinary`.  Replacements for binary string
-   conversions are under development.
 
 Formatted I/O for C Programmers
 +++++++++++++++++++++++++++++++
@@ -9557,12 +9556,12 @@ C         Chapel       Meaning
 ========  ===========  ==========================================
 
 Unlike in C, a value of the wrong type will be cast appropriately - so for
-example printing 2 (an ``int``)  with ``%.2dr`` will result in ``2.00``.  Note
-that ``%n`` and ``%?`` are equivalent to ``%r`` for real conversions and ``%i``
-for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
-``%g`` in C. Also note that Chapel format strings include many capabilities
-not available with C formatted I/O routines - including quoted strings,
-binary numbers, and complex numbers.
+example printing 2 (an ``int``) with ``%.2dr`` will result in ``2.00``.  Note
+that Chapel's ``%n`` and ``%?`` are equivalent to ``%r`` for real conversions
+and ``%i`` for numeric conversions; so these are also equivalent to ``%i``
+``%d`` or ``%g`` in C. Also note that Chapel format strings include many
+capabilities not available with C formatted I/O routines - including quoted
+strings, binary numbers, and complex numbers.
 
 
 Generic Numeric Conversions
@@ -9577,8 +9576,8 @@ Generic Numeric Conversions
   of the conversion specifier (6 in this example).  The output
   can be longer, when needed to accommodate the number.
 
-``%{##}``
-  integral value padded out to 2 digits. Also works with real, imaginary
+``%{#####}``
+  integral value padded out to 5 digits. Also works with real, imaginary
   or complex numbers by rounding them to integers. Numbers with more
   digits will take up more space instead of being truncated.
 
@@ -9588,7 +9587,7 @@ For example:
 
 .. code-block:: chapel
 
-  writef("|${#####}|\n", 2.0i);
+  writef("|%{#####}|\n", 2.0i);
        // outputs:
        //   |   2i|
 
@@ -9684,7 +9683,7 @@ Real Conversions
  as with ``%r`` but padded on the left to 6 columns (i.e., right-justified)
 ``%<6r``
  as with ``%r`` but padded on the right to 6 columns (i.e., left-justified)
-``%^r``
+``%^6r``
  as with ``%r`` but padded equally on the left and right to 6 columns (i.e., center-justified)
 ``%>6r``
  equivalent to ``%6r``
@@ -9736,9 +9735,9 @@ Complex and Imaginary Conversions
  print a and b 4 significant digits and pad the entire complex
  number out to 6 columns
 ``%dz``
- print a and b with ``%dr``
+ print a and b with ``%dr`` (using decimal notation)
 ``%ez``
- print a and b with ``%er``
+ print a and b with ``%er`` (using exponential notation)
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
@@ -9809,8 +9808,8 @@ General Conversion
 ++++++++++++++++++
 
 ``%?``
-  Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
-  or read a value.
+  Use the :record:`~IO.fileWriter`/:record:`~IO.fileReader`'s associated
+  serializer/deserializer to write or read a value.
 
   For example, read and write a record in JSON format:
 
@@ -10024,17 +10023,22 @@ Going through each section for text conversions:
 
 [conversion type]
    ``n``
-    means type-based number, allowing width and precision
+    means type-based number, allowing width and precision (size is not
+    mandatory)
    ``i``
-    means integral conversion
+    means integral conversion. Note that the size is mandatory for binary
+    integral conversions
    ``u``
-    means unsigned integral conversion
+    means unsigned integral conversion. Note that the size is mandatory for
+    binary integral conversions
    ``r``
-    means real conversion (e.g. ``12.23``)
+    means real conversion (e.g. ``12.23``). Note that the size is mandatory for
+    binary real conversions
    ``m``
     means imaginary conversion with an ``i`` after it (e.g. ``12.23i``)
    ``z``
-    means complex conversion
+    means complex conversion. Note that the size is mandatory for binary complex
+    conversions
    ``s``
     means string conversion
    ``S``
@@ -10049,28 +10053,6 @@ Going through each section for text conversions:
     means a regular expression (for reading only)
    ``{/.../xyz}``
     means regular expression with flags *xyz*
-   ``c``
-    means a Unicode character - either the first character in a string
-    or an integral character code
-
-[conversion type]
-   ``n``
-    means type-based number (size is not mandatory)
-   ``i``
-    means integral. Note that the size is mandatory for binary integral
-    conversions
-   ``u``
-    means unsigned integral. Note that the size is mandatory for binary
-    integral conversions
-   ``r``
-    means real. Note that the size is mandatory for binary real conversions
-   ``m``
-    works the same as ``r`` for binary conversions
-   ``z``
-    means complex. Note that the size is mandatory for binary complex
-    conversions
-   ``s``
-    means string
    ``c``
     means a Unicode character - either the first character in a string
     or an integral character code
@@ -11660,7 +11642,7 @@ proc fileReader.readf(fmtStr:?t) throws
 proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));
 }
-// documented in string version
+// documented in varargs version
 @chpldoc.nodoc
 proc readf(fmt:string):bool throws {
   return try stdin.readf(fmt);
@@ -11902,7 +11884,7 @@ proc fileReader._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
 
 /*  Sets arg to the string of a match.
 
-    Assumes that the fileReader has been marked before where
+    Assumes that the :record:`~IO.fileReader` has been marked before where
     the captures are being returned. Will change the fileReader
     offset to just after the match. Will not do anything
     if error is set.
@@ -12005,11 +11987,11 @@ proc ref fileReader.search(re:regex(?)):regexMatch throws
   return ret;
 }
 
-/*  Search for an offset in the fileReader from the current offset matching the
-    passed regular expression, possibly pulling out capture groups. If there is
-    a match, leaves the fileReader offset at the beginning of the match. If
-    there is no match, the fileReader offset will be advanced to the end of the
-    fileReader (or end of the file).
+/* Search for an offset in the :record:`~IO.fileReader` from the current offset
+    matching the passed regular expression, possibly pulling out capture
+    groups. If there is a match, leaves the fileReader offset at the beginning
+    of the match. If there is no match, the fileReader offset will be advanced
+    to the end of the fileReader (or end of the file).
 
     Throws a SystemError if an error occurs.
 
@@ -12033,8 +12015,8 @@ proc ref fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
    Yields tuples of :record:`Regex.regexMatch` objects, the 1st is always
    the match for the whole pattern.
 
-   At the time each match is returned, the fileReader offset is at the start
-   of that match. Note though that you would have to use
+   At the time each match is returned, the :record:`~IO.fileReader` offset is at
+   the start of that match. Note though that you would have to use
    :proc:`IO.fileReader.advance` to get to the offset of a capture group.
 
    After yielding each match, advances to just after that
