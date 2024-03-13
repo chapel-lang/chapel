@@ -1397,7 +1397,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   // then a USTR() on the attribute name will work or not work
 
   if (node->name() == USTR("functionStatic")) {
-    // Recognized but instable.
+    // Recognized but unstable.
     if (shouldEmitUnstableWarning(node)) {
       warn(node, "function-static variables using @functionStatic are unstable.");
     }
