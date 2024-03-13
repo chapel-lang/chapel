@@ -950,6 +950,20 @@ bool canInstantiate(Type* actualType, Type* formalType) {
         if (instantiatedFieldsMatch(actualType, formalType)) {
           return true;
         }
+
+        // We may have a 'DecoratedClassType' as one of the arguments
+        // (e.g. anymanaged x1) and a regular class (e.g. shared(x2)) as another.
+        // This would've failed the check above, since anymanaged x1 is not
+        // an aggregate typem and x1 is not an instantiation of shared(x2), either.
+        //
+        // By the above condition, x1 != x2, but instantiation is still possible
+        // if one of the xs instantiates another. Strip the 'owned' etc.
+        // In that case, compare the underlying types.
+        bool isFormalAnyManaged = isDecoratedClassType(formalType) &&
+          isDecoratorUnknownManagement(formalDec);
+        if (isFormalAnyManaged && instantiatedFieldsMatch(actualC, formalC)) {
+          return true;
+        }
       }
     }
   } else {

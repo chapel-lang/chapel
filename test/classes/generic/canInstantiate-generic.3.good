@@ -1,0 +1,9 @@
+canInstantiate-generic.chpl:27: warning: ----------------------------------------------------------------
+canInstantiate-generic.chpl:28: warning: Delete this test when implicit sync reads are no longer allowed.
+canInstantiate-generic.chpl:29: warning: ----------------------------------------------------------------
+canInstantiate-generic.chpl:35: In function 'test':
+canInstantiate-generic.chpl:35: warning: partial instantiation without '?' argument
+canInstantiate-generic.chpl:35: note: opt in to partial instantiation explicitly with a trailing '?' argument
+canInstantiate-generic.chpl:35: note: or, add arguments to instantiate the following fields in generic type 'sync NotGen':
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: note:   generic type field 'valType'
+canInstantiate-generic.chpl:38: warning: Fell through
