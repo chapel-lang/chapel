@@ -679,6 +679,9 @@ for converting from real, except that the imaginary part of the result
 is set using the input value, and the real part of the result is set to
 zero.
 
+Explicitly converting between ``real(k)`` and ``imag(k)`` will copy the
+represented number while changing whether or not it is imaginary.
+
 .. _Explicit_Tuple_to_Complex_Conversion:
 
 Explicit Tuple to Complex Conversion
