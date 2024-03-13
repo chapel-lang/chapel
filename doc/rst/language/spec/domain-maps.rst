@@ -229,3 +229,27 @@ determined by its type and so does not change upon a domain assignment.
    and so its type is defined to be the type of its initialization
    expression, ``Dom1``. So in this situation the effect is that the
    distribution does transfer upon initialization.
+
+.. _Predefined_Distribution_Operations:
+
+Predefined Operations on Distributions
+--------------------------------------
+
+Equality and Inequality
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Equality and inequality operators are defined to test if two distributions
+are equivalent or not:
+
+   .. code-block:: chapel
+
+     dist1 == dist2
+     dist1 != dist2
+
+targetLocales
+~~~~~~~~~~~~~
+
+Distributions that describe partitioning across multiple locales
+typically define the method ``targetLocales()`` that returns
+these locales as an array.
+

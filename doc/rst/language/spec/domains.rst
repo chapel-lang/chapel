@@ -700,15 +700,20 @@ Domain Assignment
 All domain types support domain assignment.
 
 Domain assignment is by value and causes the target domain variable to
-take on the index set of the right-hand side expression. In practice,
+take on the index set of the right-hand side expression.
+*Note:* the distribution of the left-hand side domain is unaffected
+by domain assignment, as discussed :ref:`here <Domain_Maps_Not_Assigned>`.
+In practice,
 the right-hand side expression is often another domain value; a tuple of
 ranges (for regular domains); or a tuple of indices or a loop that
 enumerates indices (for irregular domains). If the domain variable being
 assigned was used to declare arrays, these arrays are reallocated as
 discussed in :ref:`Association_of_Arrays_to_Domains`.
 
-When assigning between two rectangular domains, they must have the same
-rank and assignment between the ranges in each dimension must be legal.
+
+Assignment between two rectangular domains performs dimension-wise
+range assignment. The two domains must have the same rank and
+assignment between the ranges in each dimension must be legal.
 
    *Example*.
 
@@ -730,15 +735,8 @@ rank and assignment between the ranges in each dimension must be legal.
 Domain Comparison
 ~~~~~~~~~~~~~~~~~
 
-   Equality operators are defined to test if two distributions
-   are equivalent or not:
-
-   .. code-block:: chapel
-
-     dist1 == dist2
-     dist1 != dist2
-
-   Or to test if two domains are equivalent or not:
+Equality operators are defined to test if two domains
+are equivalent or not:
 
    .. code-block:: chapel
 
