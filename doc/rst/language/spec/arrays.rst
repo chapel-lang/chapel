@@ -243,14 +243,6 @@ list of index-to-value bindings within square brackets. It is expected
 that the indices in the listing match in type and, likewise, the types
 of values in the listing also match. A trailing comma is allowed.
 
-.. warning::
-
-   Associative domains and arrays are currently unstable.
-   Their functionality is likely to change in the future.
-   Chapel provides stable `map` and `set` data types
-   [see modules :mod:`Set` and :mod:`Map`]
-   that can be used instead in many cases.
-
 
 .. code-block:: syntax
 

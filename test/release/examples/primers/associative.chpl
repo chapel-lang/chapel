@@ -8,13 +8,6 @@
   :ref:`domains.chpl <primers-domains>` primers before proceeding if you're not
   already familiar with Chapel's domains and arrays.
 
-  .. warning::
-
-    Associative domains and arrays are currently unstable.
-    Their functionality is likely to change in the future.
-    Chapel provides stable `map` and `set` data types
-    [see modules :mod:`Set` and :mod:`Map`]
-    that can be used instead in many cases.
 
 */
 
@@ -65,6 +58,7 @@
 
       Associative domain types written without parSafe=false cause a
       transitory warning, which will be removed in a future release.
+      See :ref:`the Parallel Safety section for domains <Domain_and_Array_Parallel_Safety>`.
 
 */
 var Names: domain(string, parSafe=false);
