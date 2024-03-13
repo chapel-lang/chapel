@@ -77,6 +77,7 @@ Motivated by this we have changed their default from
 ``parSafe=true`` to ``parSafe=false``.
 With this change associative domains have been stabilized, except for domains
 requesting ``parSafe=true``.
+
 Here's a breakdown of the changes and how they might impact
 your programs:
 
@@ -93,18 +94,6 @@ your programs:
     * This means that the checks to guarantee parallel safety are no longer
       inserted by default, thus improving performance; furthermore, it now
       requires additional diligence to ensure parallel safety.
-    * In order to ease the transition, users can temporarily revert to the old
-      behavior by compiling with the ``-s parSafeOnByDefault`` flag.
-
-      .. code-block:: console
-
-          $ chpl defaultAssociativeDomain.chpl -s parSafeOnByDefault
-
-      If a program used associative domains and relied on ``parSafe=true``,
-      it might be useful to try compiling with ``-s parSafeOnByDefault`` and
-      then add an explicit ``parSafe`` argument for each associative domain
-      individually, to ensure no races are introduced into the
-      program by forgoing the parallel safety guarantees.
     * A warning will be generated for domains without an explicit ``parSafe``
       setting unless you compile with ``-s noParSafeWarning``.
 
@@ -117,8 +106,10 @@ your programs:
 
       .. code-block:: console
 
-          $ chpl assocDomWarn.chpl
-          assocDomWarn.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'. To suppress this warning, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeOnByDefault'.
+          $ chpl foo.chpl
+          foo.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'.
+          foo.chpl:1: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
+          foo.chpl:1: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
 
     * Since ``const`` domains are never modified, they are exempt from these
       warnings as changing their default to ``parSafe=false`` does not have the
@@ -127,6 +118,19 @@ your programs:
       .. code-block:: chapel
 
           const dom: domain(int);  // does not warn
+
+    * In order to ease the transition, users can temporarily revert to the old
+      behavior by compiling with ``-s assocParSafeDefault=true``.
+
+      .. code-block:: console
+
+          $ chpl defaultAssociativeDomain.chpl -s assocParSafeDefault=true
+
+      If a program used associative domains and relied on ``parSafe=true``,
+      it might be useful to try compiling with ``-s assocParSafeDefault=true`` and
+      then add an explicit ``parSafe`` argument for each associative domain
+      individually, to ensure no races are introduced into the
+      program by forgoing the parallel safety guarantees.
 
 2. ``parSafe=true`` domains are unstable:
     * Domains using ``parSafe=true`` are still considered unstable, and continue
@@ -140,8 +144,8 @@ your programs:
 
       .. code-block:: console
 
-          $ chpl assocDomainUnstable.chpl --warn-unstable
-          assocDomainUnstable.chpl:1: warning: parSafe=true is unstable for associative domains
+          $ chpl bar.chpl --warn-unstable
+          bar.chpl:1: warning: parSafe=true is unstable for associative domains
 
 3. Associative domain literals:
     * Associative domain literals also generate warnings by default. Use
@@ -157,9 +161,10 @@ your programs:
 
       .. code-block::  console
 
-          $ chpl assocLiteralWarn.chpl
-          assocLiteralWarn.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'. To suppress this warning, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeOnByDefault'.
-
+          $ chpl baz.chpl
+          baz.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'.
+          baz.chpl:1: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
+          baz.chpl:1: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
 
 version 1.32, September 2023
 ----------------------------
