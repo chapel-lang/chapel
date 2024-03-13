@@ -29,10 +29,6 @@ Input/output (I/O) facilities in Chapel include the types :record:`file`,
 :proc:`file.close`, :proc:`file.reader`, :proc:`file.writer`,
 :proc:`fileReader.read`, :proc:`fileWriter.write`, and many others.
 
-.. warning::
-  Please be aware, the IO Module documentation is under development and
-  currently contains some minor inconsistencies.
-
 
 Automatically Available Symbols
 -------------------------------
