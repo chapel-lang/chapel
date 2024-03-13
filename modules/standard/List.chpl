@@ -521,10 +521,10 @@ module List {
     @chpldoc.nodoc
     proc ref _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
-      if isSubtype(this.eltType, list) {
+      if isSubtype(this.eltType, list) || isArrayType(this.eltType) {
         for x in iterable {
-          var subList: this.eltType = x;
-          pushBack(subList);
+          var tmp: this.eltType = x;
+          pushBack(tmp);
         }
       } else {
         for x in iterable {
