@@ -6,19 +6,28 @@ writeln(mostCommon);
 class mostFrequent: ReduceScanOp {
   type eltType;
 
-  var dom : domain(int);
+  var mySet : domain(int);
+
+  proc identity {
+    var x : eltType;
+    return x;
+  }
 
   proc accumulate(inputval: eltType) {
-    dom += inputval;
+    mySet += inputval;
   }
 
   proc combine(partner: mostFrequent) {
-    forall i in mostFrequent.dom {
-      dom += i;
+    // This is a user-submitted bug where 'mostFrequent' was mistakenly used
+    // and caused an internal compiler error.
+    forall i in mostFrequent.mySet {
+      mySet += i;
     }
   }
 
   proc generate() {
     return 5;
   }
+
+  proc clone() do return new mostFrequent(eltType=eltType);
 }
