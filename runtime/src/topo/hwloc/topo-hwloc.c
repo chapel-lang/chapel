@@ -1260,8 +1260,10 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
   _DBG_P("numLocales %d rank %d", numLocales, localRank);
 
   // find the PCI object corresponding to the specified NIC
-  nic = hwloc_get_pcidev_by_busid(topology, inAddr->domain, inAddr->bus,
-                                  inAddr->device, inAddr->function);
+  nic = hwloc_get_pcidev_by_busid(topology, (unsigned) inAddr->domain,
+                                  (unsigned) inAddr->bus,
+                                  (unsigned) inAddr->device,
+                                  (unsigned) inAddr->function);
   if (nic != NULL) {
     if ((numLocales > 1) && (localRank >= 0)) {
       // Find all the NICS with the same vendor and device as the specified NIC.
