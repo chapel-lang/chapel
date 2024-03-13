@@ -191,8 +191,8 @@ code for and interacts with GPUs. These variables include:
 * ``CHPL_GPU_BLOCK_SIZE`` --- specifies default block size when launching
   kernels. If unset, defaults to 512. This variable may also be set by passing
   the ``chpl`` compiler ``--gpu-block-size=<block_size>``. It can also be
-  overwritten on a per-kernel basis by using the :proc:`~GPU.setBlockSize`
-  function.
+  overwritten on a per-kernel basis by using the ``@gpu.blockSize(n)`` loop
+  attribute (described in more detail in `GPU Attributes`_).
 
 * ``CHPL_GPU_SPECIALIZATION`` --- if set, outlines bodies of 'on' statements
   and clones all functions reachable from that block. The 'on' statement is
@@ -245,6 +245,53 @@ given compute capabilities, and to bundle the different versions in a single
 executable. When the program is executed, the compute capability best suited
 for the available GPU will be loaded by the CUDA runtime. Support for this
 feature for AMD GPUs is planned, but not currently available.
+
+GPU Attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Chapel's GPU support makes use of attributes (see `Attributes in Chapel <./attributes.html>`_)
+to control various aspects of how code is compiled or executed on the GPU.
+Specifically, the two GPU-specific Chapel attributes are ``@assertOnGpu``
+(described in `Diagnostics and Utilities`_) and ``@gpu.blockSize``. Because
+Chapel's GPU support primarily works by converting eligible loops into GPU
+kernels, GPU-specific attributes primarily apply to loops. The following
+example demonstrates these attributes:
+
+.. code-block:: chapel
+
+   config const myBlockSize = 128;
+
+   on here.gpus[0] {
+     @assertOnGpu
+     @gpu.blockSize(myBlockSize)
+     foreach i in 1..1024 { /* ... your code here ... */ }
+   }
+
+In the above code, ``@assertOnGpu`` ensures that the ``foreach`` loop is
+GPU-eligible, and ``@gpu.blockSize`` sets the block size for the kernel to
+``myBlockSize`` (128 by default). The block size attribute supports using
+arbitrary expressions:
+
+.. code-block:: chapel
+
+   var myData = /* ... */;
+   @gpu.blockSize(computeBlockSize(myData))
+   foreach i in myData { /* ... your code here ... */ }
+
+In addition to applying GPU attributes to loops, the 2.0 release of Chapel
+introduces the (experimental) ability to apply them to variable declarations.
+This is intended for use with variables whose initializers contain GPU-bound
+code. The following example demonstrates initializing an array ``A`` from a
+``foreach`` expression:
+
+.. code-block:: chapel
+
+   @assertOnGpu
+   @gpu.blockSize(128)
+   var A = foreach i in 1..1024 do i * i;
+
+Currently, only explicit loop expressions are supported (i.e., GPU
+attributes are not applied to promoted function calls). This is an area of
+active development.
 
 CPU-as-Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
