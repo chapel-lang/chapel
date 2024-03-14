@@ -59,8 +59,7 @@ The built-in LSP API can be used to configure ``CLS`` as follows:
 VSCode
 ^^^^^^
 
-Install the soon-to-be-released ``chapel`` extension from the `Visual Studio
-Code marketplace
+Install the ``chapel`` extension from the `Visual Studio Code marketplace
 <https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel>`_.
 
 .. note::
