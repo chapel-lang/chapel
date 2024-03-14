@@ -97,7 +97,7 @@ your programs:
       as needed.
     * A warning will be generated for domains without an explicit ``parSafe``
       setting, to draw user attention to code that may need to be updated,
-       unless compiled with ``-s noParSafeWarning``.
+      unless compiled with ``-s noParSafeWarning``.
 
       .. code-block:: chapel
 
