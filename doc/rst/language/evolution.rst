@@ -52,20 +52,20 @@ warning. In 2.0, this is valid code again.
 Associative Domains default to ``parSafe=false``
 ************************************************
 Associative domains have been stabilized and prioritize performance by
-default; however, some diligence is cruicial for optimal use.
+default; however, some diligence is is required for correct use..
 
 Associative domains in Chapel have a ``parSafe`` setting that
 determines their behavior when operated on by concurrent tasks.
 
 ``parSafe`` stands for "parallel safety". Setting
-``parSafe=true`` allows for multiple tasks to modify
+``parSafe=true`` allows multiple tasks to modify
 an associative domain's index set concurrently without race conditions.
 It is important to note that ``parSafe=true`` does not protect the
 user against all race conditions. For example, iterating over an associative
 domain while another task modifies it represents a race condition and the
 behavior is undefined.
 See the `documentation <https://chapel-lang.org/docs/1.33/language/spec/domains.html?highlight=parsafe#parallel-safety-with-respect-to-domains-and-arrays>`_
-on parallel safety for domains for examples and more information.
+for  more information.
 
 The default of ``parSafe=true`` added overhead to operations and made
 programs slower by default, even when such safety guarantees were not needed.
@@ -76,13 +76,13 @@ is operated upon by a single task.
 Motivated by this we have changed their default from
 ``parSafe=true`` to ``parSafe=false``.
 With this change associative domains have been stabilized, except for domains
-requesting ``parSafe=true``.
+requesting ``parSafe=true``, which remain unstable.
 
 Here's a breakdown of the changes and how they might impact
 your programs:
 
 1. New default for associative domains:
-    * Previously, associative domains were ``parSafe`` by default. This has
+    * Previously, associative domains were "parSafe" by default. This has
       changed to ``parSafe=false``. For example:
 
       .. code-block:: chapel
@@ -92,10 +92,12 @@ your programs:
       used to imply that ``dom`` was set to ``parSafe=true`` but now it defaults
       to ``parSafe=false``.
     * This means that the checks to guarantee parallel safety are no longer
-      inserted by default, thus improving performance; furthermore, it now
-      requires additional diligence to ensure parallel safety.
+      inserted by default, thus improving performance.
+      Therefore, it is now the user's responsibility to ensure parallel safety
+      as needed.
     * A warning will be generated for domains without an explicit ``parSafe``
-      setting unless you compile with ``-s noParSafeWarning``.
+      setting, to draw user attention to code that may need to be updated,
+       unless compiled with ``-s noParSafeWarning``.
 
       .. code-block:: chapel
 

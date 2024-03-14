@@ -98,24 +98,24 @@ may make concurrent queries and iterations on a domain as long as
 another task is not simultaneously modifying the domain's index
 set.
 
-By default, associative domains do not permit multiple tasks
-to modify their index sets concurrently without race conditions.
-This setting is controlled by the ``parSafe`` parameter of the domain type,
-which defaults to ``false``. This is because ``parSafe`` uses locking on
-the underlying data structure each time the domain is modified. This
-overhead is unnecessary, for example, when the domain is operated upon by a
-single task.
-
-Setting ``parSafe`` to ``true`` allows multiple tasks to modify the index set
-of an associative domain concurrently. This might be useful when the domain is
-operated upon by multiple tasks. However, it is the user's responsibility to
-ensure that the domain is not accessed while its index set is being modified.
-The following example demonstrates how to create a parallel-safe associative
-domain of strings:
+An associative domain may permit multiple tasks to modify its index
+set concurrently in a parallel-safe manner if its type is declared with
+``parSafe=true``. The following example demonstrates how to create a
+parallel-safe associative domain of strings:
 
   .. code-block:: chapel
 
     var D: domain(string, parSafe=true);
+
+Note that declaring a domain with ``parSafe=true`` adds some amount of overhead
+to many domain operations. This is because such a domain uses locking on the
+underlying data structure each time the domain is modified. This overhead is
+unnecessary, for example, when the domain is operated upon only by a single
+task, in which case it can be avoided by declaring the domain's type with
+``parSafe=false`` or without an explicit ``parSafe`` setting.
+
+Note that the ``parSafe=true`` mode is currently unstable for associative
+domains. Its availability and behavior may change in the future.
 
 As with any other domain type, it is not safe to access an
 associative array while its domain is changing, regardless of
