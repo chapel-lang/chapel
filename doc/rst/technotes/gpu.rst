@@ -113,6 +113,13 @@ Setup
 Requirements
 ~~~~~~~~~~~~
 
+First, please make sure you are using Chapel's `preferred configuration
+<../usingchapel/QUICKSTART.html#using-chapel-in-its-preferred-configuration>`_
+as the starting point. Specifically, the "quickstart" configuration can not be
+used with GPU support.
+
+The following are further requirements for GPU support:
+
 * For targeting NVIDIA or AMD GPUs, ``LLVM`` must be used as Chapel's backend
   compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``).
 
