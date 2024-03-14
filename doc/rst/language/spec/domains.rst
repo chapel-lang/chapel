@@ -98,19 +98,24 @@ may make concurrent queries and iterations on a domain as long as
 another task is not simultaneously modifying the domain's index
 set.
 
-By default, associative domains permit multiple tasks
-to modify their index sets concurrently.  This adds some amount of
-overhead to these operations.  If the user knows that all such
-modifications will be done serially or in a parallel-safe context,
-the overheads can be avoided by setting ``parSafe`` to ``false`` in
-the domain's type declaration.  For example, the following
-declaration creates an associative domain of strings where the
-implementation will do nothing to ensure that simultaneous
-modifications to the domain are parallel-safe:
+An associative domain may permit multiple tasks to modify its index
+set concurrently in a parallel-safe manner if its type is declared with
+``parSafe=true``. The following example demonstrates how to create a
+parallel-safe associative domain of strings:
 
   .. code-block:: chapel
 
-    var D: domain(string, parSafe=false);
+    var D: domain(string, parSafe=true);
+
+Note that declaring a domain with ``parSafe=true`` adds some amount of overhead
+to many domain operations. This is because such a domain uses locking on the
+underlying data structure each time the domain is modified. This overhead is
+unnecessary, for example, when the domain is operated upon only by a single
+task, in which case it can be avoided by declaring the domain's type with
+``parSafe=false`` or without an explicit ``parSafe`` setting.
+
+Note that the ``parSafe=true`` mode is currently unstable for associative
+domains. Its availability and behavior may change in the future.
 
 As with any other domain type, it is not safe to access an
 associative array while its domain is changing, regardless of
@@ -317,15 +322,6 @@ type and can be used to describe sets or to create dictionary-style
 arrays (hash tables). The type of indices of an associative domain, or
 its ``idxType``, can be any primitive type except ``void`` or any class
 type.
-
-
-   .. warning::
-
-      Associative domains and arrays are currently unstable.
-      Their functionality is likely to change in the future.
-      Chapel provides stable `map` and `set` data types
-      [see modules :mod:`Set` and :mod:`Map`]
-      that can be used instead in many cases.
 
 
 .. _Associative_Domain_Types:
