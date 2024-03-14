@@ -131,6 +131,8 @@ The following are further requirements for GPU support:
 
   * We test with system LLVM 17. Older versions may work.
 
+    * Note that LLVM versions older than 16 do not support CUDA 12.
+
   * If using ``CHPL_LLVM=system``, it must have been built with support for
     NVPTX target. You can check supported targets of your LLVM installation by
     running ``llvm-config --targets-built``.
