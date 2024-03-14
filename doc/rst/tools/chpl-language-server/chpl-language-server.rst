@@ -151,8 +151,8 @@ The following features are extra visual aids:
 | Evaluated      | ``param`` values can also be computed and  | ``--evaluate-expressions`` (default), |
 | Tooltips       | displayed as tooltips.                     | ``--no-evaluate-expressions``         |
 +----------------+--------------------------------------------+---------------------------------------+
-| Call Inlays    | Named arguments can be displayed inline as | ``--literal-arg-inlays`` (default),   |
-|                | inlay hints.                               | ``--no-literal-arg-inlays``           |
+| Call Inlays    | Names of literal arguments can be          | ``--literal-arg-inlays`` (default),   |
+|                | displayed inline as inlay hints.           | ``--no-literal-arg-inlays``           |
 +----------------+--------------------------------------------+---------------------------------------+
 | Dead Code      | Dyno can determine compile-time dead code, | ``--dead-code`` (default),            |
 |                | which ``CLS`` highlights in the editor.    | ``--no-dead-code``                    |
