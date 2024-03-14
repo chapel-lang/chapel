@@ -949,7 +949,7 @@ module GPU
     Sort an array on the GPU.
     The array must be in GPU-accessible memory and the function must
     be called from outside a GPU-eligible loop.
-    Only arrays with uint eltType are supported.
+    Only arrays of numeric types are supported.
     A simple example is the following:
 
      .. code-block:: chapel
