@@ -405,8 +405,8 @@ Errors also cannot be thrown by ``deinit()`` for similar reasons.
 
 .. _Errors_Methods:
 
-Methods
--------
+Errors and Methods
+------------------
 
 Errors can be thrown by methods, just as with any other function. An
 overriding method must throw if the overridden method throws, or not
@@ -433,8 +433,8 @@ throw if the overridden method does not throw.
 
 .. _Errors_Multilocale:
 
-Multilocale
------------
+Errors and Multilocale
+----------------------
 
 Errors can be thrown within ``on`` statements. In that event, the error
 will be propagated out of the ``on`` statement.
@@ -457,8 +457,8 @@ will be propagated out of the ``on`` statement.
 
 .. _Errors_Parallelism:
 
-Parallelism
------------
+Errors and Parallelism
+----------------------
 
 .. _TaskErrors:
 
@@ -476,8 +476,8 @@ thrown by the outer loop.
 
 .. _Errors_begin:
 
-begin
-~~~~~
+Errors and begin
+~~~~~~~~~~~~~~~~
 
 Errors can be thrown within a ``begin`` statement. In that event, the
 error will be propagated to the ``sync`` statement that waits for that
@@ -502,8 +502,8 @@ task.
 
 .. _Errors_coforall_and_cobegin:
 
-coforall and cobegin
-~~~~~~~~~~~~~~~~~~~~
+Errors and coforall and cobegin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``coforall`` and ``cobegin`` statements and
 handled as ``TaskErrors``. The nested ``coforall`` loops will emit a
@@ -562,8 +562,8 @@ flattened ``TaskErrors`` error.
 
 .. _Errors_forall:
 
-forall
-~~~~~~
+Errors and forall
+~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``forall`` loops, too. Although the ``forall``
 may execute serially within a single task, it will always throw a
