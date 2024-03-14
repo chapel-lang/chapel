@@ -1,5 +1,18 @@
 .. default-domain:: chpl
 
+.. index::
+   single: functions
+   single: functions;call site
+   single: call site
+   single: functions;formal arguments
+   single: formal arguments
+   single: functions;actual arguments
+   single: actual arguments
+   single: functions;procedure
+   single: procedure
+   single: functions;operator
+   single: functions;method
+   single: operators;procedure
 .. _Chapter-Procedures:
 
 ==========
@@ -52,6 +65,11 @@ Functions are presented as follows:
    and operator overloading :ref:`Function_Overloading`,
    function resolution :ref:`Function_Resolution`
 
+.. index::
+   single: function calls
+   single: calls;function
+   single: actual arguments
+   single: functions;actual arguments
 .. _Function_Calls:
 
 Function Calls
@@ -101,6 +119,10 @@ in :ref:`Named_Arguments`.
 Calls to methods are defined in
 Section :ref:`Class_Method_Calls`.
 
+.. index::
+   single: functions;procedure definition
+   single: procedures;definition
+   single: proc
 .. _Function_Definitions:
 
 Procedure Definitions
@@ -242,6 +264,8 @@ See the chapter on interoperability
 (:ref:`Chapter-Interoperability`) for details on exported
 and imported functions.
 
+.. index::
+   single: functions;without parentheses
 .. _Functions_without_Parentheses:
 
 Functions without Parentheses
@@ -279,6 +303,10 @@ be called without parentheses.
    to use parentheses when calling ``foo`` or omit them when calling
    ``bar``.
 
+.. index::
+   single: formal arguments
+   single: functions;formal arguments
+   single: functions;arguments;formal
 .. _Formal_Arguments:
 
 Formal Arguments
@@ -292,6 +320,11 @@ applied, resulting in type-dependent behavior.
 A formal argument can include a type (e.g. ``arg: int``) and possibly a
 default value (e.g. ``arg = ""``).
 
+.. index::
+   single: named arguments
+   single: functions;named arguments
+   single: functions;arguments;named
+   single: formal arguments;naming
 .. _Named_Arguments:
 
 Named Arguments
@@ -328,6 +361,11 @@ arguments with default values. For a function that has many arguments,
 it is sometimes good practice to name the arguments at the call site for
 compiler-checked documentation.
 
+.. index::
+   single: default values
+   single: functions;default argument values
+   single: functions;arguments;defaults
+   single: formal arguments;defaults
 .. _Default_Values:
 
 Default Values
@@ -416,6 +454,10 @@ from the default value expression.
       {0..2}
 
 
+.. index::
+   single: intents
+   single: argument;intents
+   single: functions;arguments;intents
 .. _Argument_Intents:
 
 Argument Intents
@@ -476,6 +518,9 @@ local changes affect the actual? no     on return on return at once  N/A        
 
 See the sections on each intent for further details.
 
+.. index::
+   single: in (intent)
+   single: intents;in
 .. _The_In_Intent:
 
 The In Intent
@@ -557,6 +602,9 @@ but the code does not copy initialize:
       block ending
 
 
+.. index::
+   single: out (intent)
+   single: intents;out
 .. _The_Out_Intent:
 
 The Out Intent
@@ -595,6 +643,9 @@ function body rather than from the call site.
    call site. However this is not yet implemented, at the time of this
    writing.
 
+.. index::
+   single: inout (intent)
+   single: intents;inout
 .. _The_Inout_Intent:
 
 The Inout Intent
@@ -613,6 +664,9 @@ candidate (see :ref:`Function_Resolution`).
 The actual argument must be a valid lvalue. The formal argument can be
 modified within the function.
 
+.. index::
+   single: ref (intent)
+   single: intents;ref
 .. _The_Ref_Intent:
 
 The Ref Intent
@@ -632,6 +686,9 @@ concurrent modifications to the ``ref`` actual argument by other tasks
 may be visible within the function, subject to the memory consistency
 model.
 
+.. index::
+   single: const in (intent)
+   single: intents;const in
 .. _The_Const_In_Intent:
 
 The Const In Intent
@@ -640,6 +697,9 @@ The Const In Intent
 The ``const in`` intent is identical to the ``in`` intent, except that
 modifications to the formal argument are prohibited within the function.
 
+.. index::
+   single: const ref (intent)
+   single: intents;const ref
 .. _The_Const_Ref_Intent:
 
 The Const Ref Intent
@@ -675,6 +735,8 @@ The following example shows such modification by means other than the
       1
       2
 
+.. index::
+   single: intents;const
 .. _The_Const_Intent:
 
 The Const Intent
@@ -732,6 +794,12 @@ In the cases where these assumptions are not appropriate, code should use
      * for values of enumerated type
 
 
+.. index::
+   single: intents;default
+   single: intents;array default
+   single: intents;record chpl{this} default
+   single: intents;default for owned
+   single: intents;default for shared
 .. _The_Default_Intent:
 
 The Default Intent
@@ -794,6 +862,9 @@ If the default intent or ``const`` intent is used for an
 actual argument is assumed to remain unchanged during the call and
 ownership transfer or ownership sharing will not occur.
 
+.. index::
+   single: functions;variable number of arguments
+   single: functions;varargs
 .. _Variable_Length_Argument_Lists:
 
 Variable Number of Arguments
@@ -913,6 +984,9 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
    Therefore the expressions ``tuple(1, 2)`` and ``(1,2)`` are
    equivalent, as are the expressions ``tuple(1)`` and ``(1,)``.
 
+.. index::
+   single: functions;return intent
+   single: statements;return;return intent
 .. _Return_Intent:
 
 Return Intents
@@ -922,6 +996,8 @@ The ``return-intent`` determines how the value is returned from a
 function and in what contexts that function is allowed to be used.
 The rules for returning tuples are specified in :ref:`Tuple_Return_Behavior`.
 
+.. index::
+   single: intents;default (return intent)
 .. _Default_Return_Intent:
 
 The Default Return Intent
@@ -931,6 +1007,8 @@ When no ``return-intent`` is specified explicitly, the function returns
 a value in the same way as the ``out`` return intent,
 see :ref:`Out_Return_Intent`.
 
+.. index::
+   single: intents;out (return intent)
 .. _Out_Return_Intent:
 
 The Out Return Intent
@@ -943,6 +1021,11 @@ see :ref:`Copy_and_Move_Initialization`.
 
 It is an error to return a ``sync`` or ``atomic`` by ``out`` intent.
 
+.. index::
+   single: functions;ref keyword
+   single: ref (return intent)
+   single: intents;ref (return intent)
+   single: functions;lvalues
 .. _Ref_Return_Intent:
 
 The Ref Return Intent
@@ -998,6 +1081,10 @@ exists outside of the function's scope.
 
       3
 
+.. index::
+   single: functions;const ref keyword
+   single: const ref (return intent)
+   single: intents;const ref (return intent)
 .. _Const_Ref_Return_Intent:
 
 The Const Ref Return Intent
@@ -1007,6 +1094,9 @@ The ``const ref`` return intent is also available. It is a restricted
 form of the ``ref`` return intent. Calls to functions marked with the
 ``const ref`` return intent are not lvalue expressions.
 
+.. index::
+   single: const (return intent)
+   single: intents;const (return intent)
 .. _Const_Return_Intent:
 
 The Const Return Intent
@@ -1017,6 +1107,9 @@ The ``const`` return intent makes it up to the implementation to return a
 the ``const`` return intent are not lvalue expressions.
 
 
+.. index::
+   single: functions;return intent overloads
+   single: functions;return intent overloads
 .. _Return_Intent_Overloads:
 
 Return Intent Overloads
@@ -1074,6 +1167,10 @@ context.
 
       ref-return-intent-pair.chpl:8: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 
+.. index::
+   single: functions;as parameters
+   single: functions;parameter function
+   single: parameter function
 .. _Param_Return_Intent:
 
 The Param Return Intent
@@ -1122,6 +1219,9 @@ compile-time. This includes loops other than the parameter for
 loop :ref:`Parameter_For_Loops` and conditionals with a
 conditional expressions that is not a parameter.
 
+.. index::
+   single: functions;as types
+   single: functions;type functions
 .. _Type_Return_Intent:
 
 The Type Return Intent
@@ -1188,6 +1288,9 @@ used as a shorthand for defining the body instead, similar to other
 forms of control flow.
 
 
+.. index::
+   single: return
+   single: statements;return
 .. _The_Return_Statement:
 
 The Return Statement
@@ -1242,6 +1345,9 @@ The syntax of the return statement is given by
 
       6
 
+.. index::
+   single: statements;return;return type
+   single: functions;return types
 .. _Return_Types:
 
 Return Types
@@ -1251,6 +1357,9 @@ Every procedure has a return type. The return type is either specified
 explicitly via ``return-type`` in the procedure declaration, or is
 inferred implicitly.
 
+.. index::
+   single: explicit return type
+   single: functions;return types;explicit
 .. _Explicit_Return_Types:
 
 Explicit Return Types
@@ -1264,6 +1373,10 @@ intent (:ref:`Ref_Return_Intent`), the return type must match
 the type returned in all of the return statements exactly, when checked
 after generic instantiation and parameter folding (if applicable).
 
+.. index::
+   single: type inference;of return types
+   single: implicit return type
+   single: functions;return types;implicit
 .. _Implicit_Return_Types:
 
 Implicit Return Types
@@ -1284,6 +1397,9 @@ between every other type and that type, and that type becomes the
 inferred return type. If the above requirements are not satisfied, it is
 an error.
 
+.. index::
+   single: where
+   single: functions;where
 .. _Where_Clauses:
 
 Where Clauses
@@ -1323,6 +1439,9 @@ resolution.
    the call foo(3) resolves to the first definition because the where
    clause on the second function evaluates to false.
 
+.. index::
+   single: functions;nested
+   single: nested function
 .. _Nested_Functions:
 
 Nested Functions
@@ -1338,6 +1457,12 @@ scope in which they are defined.
 Nested functions may refer to variables defined in the function(s) in
 which they are nested.
 
+.. index::
+   single: overloading
+   single: overloading functions
+   single: overloading operators
+   single: functions;overloading
+   single: operators;overloading
 .. _Function_Overloading:
 
 Function and Operator Overloading
@@ -1369,6 +1494,8 @@ resolution.
 
 Assignment overloads are not supported for class types.
 
+.. index::
+   single: functions;resolution
 .. _Function_Resolution:
 
 Function Resolution
@@ -1430,6 +1557,8 @@ This section uses the following notation:
   consideration, where :math:`A_i` is passed to the formal :math:`Y_i` of
   type :math:`T(Y_i)`.
 
+.. index::
+   single: functions;visible
 .. _Determining_Visible_Functions:
 
 Determining Visible Functions
@@ -1454,6 +1583,10 @@ function call and one of the following conditions is met:
 - :math:`X` is a method and it is visible in the module that defines the
   receiver type.
 
+.. index::
+   single: functions;candidates
+   single: functions;resolution;valid mapping
+   single: functions;resolution;legal argument mapping
 .. _Determining_Candidate_Functions:
 
 Determining Candidate Functions
@@ -1537,8 +1670,10 @@ type, index type, or yielded type.  For example, if :math:`T(A_i)` is an
 array of ``int`` and :math:`T(X_i)` is ``int``, then promotion occurs and
 the above rules will be checked with :math:`T(A_i)` == ``int``.
 
+.. index::
+   single: functions;most specific
+   single: functions;resolution;most specific
 .. _Determining_More_Specific_Functions:
-
 .. _Determining_Most_Specific_Functions:
 
 Determining Most Specific Functions
@@ -1707,6 +1842,8 @@ the following function(s) are selected as best functions:
 
 -  only those functions that have a ``where`` clause, otherwise.
 
+.. index::
+   single: functions;return intent overloads
 .. _Choosing_Return_Intent_Overload:
 
 Choosing Return Intent Overloads Based on Calling Context

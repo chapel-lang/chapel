@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: arrays
 .. _Chapter-Arrays:
 
 ======
@@ -20,6 +22,9 @@ Users must take care when applying operations to arrays and domains
 concurrently from distinct tasks. For more information see
 :ref:`the Parallel Safety section for domains <Domain_and_Array_Parallel_Safety>`.
 
+.. index::
+   single: arrays;types
+   single: arrays;element type
 .. _Array_Types:
 
 Array Types
@@ -116,6 +121,11 @@ An array’s element type can be referred to using the member symbol
       real(64)
       real(64)
 
+.. index::
+   single: arrays;values
+   single: arrays;initialization
+   single: initialization;arrays
+   single: arrays;literals
 .. _Array_Values:
 
 Array Values
@@ -141,6 +151,10 @@ corresponding to the underlying domain which defines its indices.
      rectangular-array-literal
      associative-array-literal
 
+.. index::
+   single: rectangular array literals
+   single: arrays;rectangular;literals
+   single: arrays;rectangular;default values
 .. _Rectangular_Array_Literals:
 
 Rectangular Array Literals
@@ -233,6 +247,9 @@ procedure with an implicit return type (see
 A rectangular array’s default value is an array in which each element
 is initialized to the default value of the element type.
 
+.. index::
+   single: associative array literals
+   single: arrays;associative;literals
 .. _Associative_Array_Literals:
 
 Associative Array Literals
@@ -299,6 +316,9 @@ of values in the listing also match. A trailing comma is allowed.
       (16, sixteen)
       (3, three)
 
+.. index::
+   single: arrays;runtime representation
+   single: arrays;domain maps
 .. _Array_Runtime_Representation:
 
 Runtime Representation of Array Values
@@ -309,6 +329,9 @@ domain’s distribution. Through this mechanism, users can reason about and
 control the runtime representation of an array’s elements. See
  :ref:`Chapter-Domain_Maps` for more details.
 
+.. index::
+   single: arrays;indexing
+   single: indexing;arrays
 .. _Array_Indexing:
 
 Array Indexing
@@ -353,6 +376,9 @@ Except for associative arrays, if an array is indexed using an index
 that is not part of its domain’s index set, the reference is considered
 out-of-bounds and a runtime error will occur, halting the program.
 
+.. index::
+   single: indexing;rectangular arrays
+   single: rectangular arrays;indexing
 .. _Rectangular_Array_Indexing:
 
 Rectangular Array Indexing
@@ -442,6 +468,9 @@ the array.
    even for one-dimensional arrays because one-dimensional arrays can be
    indexed into by 1-tuples.
 
+.. index::
+   single: indexing;associative arrays
+   single: associative arrays;indexing
 .. _Associative_Array_Indexing:
 
 Associative Array Indexing
@@ -476,6 +505,9 @@ Indices can be added to associative arrays through the array’s domain.
       A["b"] = 2;
       var x = A["a"];
 
+.. index::
+   single: arrays;iteration
+   single: iteration;array
 .. _Iteration_over_Arrays:
 
 Iteration over Arrays
@@ -504,6 +536,9 @@ is semantically equivalent to:
 The iterator variable for an array iteration is a reference to the array
 element type.
 
+.. index::
+   single: arrays;assignment
+   single: assignment;array
 .. _Array_Assignment:
 
 Array Assignment
@@ -653,6 +688,9 @@ array of booleans.  To get a single result use the ``equals`` method instead.
   arr1.equals(arr2) // compare entire arrays resulting in a single boolean
 
 
+.. index::
+   single: arrays;slicing
+   single: slicing;array
 .. _Array_Slicing:
 
 Array Slicing
@@ -718,6 +756,9 @@ corresponding to the slicing domain’s index set.
    assigns the elements in the interior of ``B`` to the elements in the
    interior of ``A``.
 
+.. index::
+   single: arrays;slicing;rectangular
+   single: slicing;arrays;rectangular
 .. _Rectangular_Array_Slicing:
 
 Rectangular Array Slicing
@@ -738,6 +779,8 @@ domain by the specified ranges to create a subdomain as described
 in :ref:`Array_Slicing` and then using that subdomain to slice
 the array.
 
+.. index::
+   single: arrays;slicing;rectangular;rank change
 .. _Rectangular_Array_Slicing_With_Rank_Change:
 
 Rectangular Array Slicing with a Rank Change
@@ -781,6 +824,9 @@ passed in to take the slice.
    the slice ``A[1..n, 1]`` is a one-dimensional array whose elements
    are the first column of ``A``.
 
+.. index::
+   single: arrays;count operator
+   single: operators;# (on arrays)
 .. _Count_Operator_Arrays:
 
 Count Operator
@@ -799,6 +845,9 @@ Swap operator ``<=>``
 The ``<=>`` operator can be used to swap the contents of two arrays
 with the same shape.
 
+.. index::
+   single: arrays;actual arguments
+   single: arguments;array
 .. _Array_Arguments_To_Functions:
 
 Array Arguments to Functions
@@ -818,6 +867,9 @@ signature, the domain of the actual argument must represent the same
 index set. If the formal array’s domain was declared using an explicit
 distribution, the actual array’s domain must use an equivalent distribution.
 
+.. index::
+   single: arrays;promotion
+   single: promotion;arrays
 .. _Array_Promotion_of_Scalar_Functions:
 
 Array Promotion of Scalar Functions
@@ -860,6 +912,9 @@ function as defined in :ref:`Promotion`.
    if ``A``, ``B``, and ``C`` are arrays, this code assigns each element
    in ``A`` the element-wise sum of the elements in ``B`` and ``C``.
 
+.. index::
+   single: arrays;returning
+   single: returning;array
 .. _Returning_Arrays_from_Functions:
 
 Returning Arrays from Functions
@@ -871,6 +926,8 @@ intents can be used to return a reference to an array.
 Similarly to array arguments, the element type and/or domain of an array
 return type can be omitted.
 
+.. index::
+   single: arrays;sparse
 .. _Sparse_Arrays:
 
 Sparse Arrays
@@ -937,6 +994,9 @@ element type by assigning to a pseudo-field named ``IRV`` in the array.
 
       sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array at index (1, 5)
 
+.. index::
+   single: domains;association with arrays
+   single: arrays;association with domains
 .. _Association_of_Arrays_to_Domains:
 
 Association of Arrays to Domains
@@ -1026,6 +1086,10 @@ will halt with an error message.
 For the ``+=`` and ``|=`` operators, the value from ``B`` will overwrite
 the existing value in ``A`` when indices overlap.
 
+.. index::
+   single: arrays;predefined functions
+   single: predefined functions;arrays
+   single: functions;arrays;predefined
 .. _Predefined_Functions_and_Methods_on_Arrays:
 
 Predefined Routines on Arrays

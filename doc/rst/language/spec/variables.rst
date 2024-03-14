@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: variables
 .. _Chapter-Variables:
 
 =========
@@ -11,6 +13,9 @@ statically-typed, type-safe language so every variable has a type that
 is known at compile-time and the compiler enforces that values assigned
 to the variable can be stored in that variable as specified by its type.
 
+.. index::
+   single: variables;declarations
+   single: declarations;variables
 .. _Variable_Declarations:
 
 Variable Declarations
@@ -368,6 +373,10 @@ unconditionally return.
 
       2
 
+.. index::
+   single: default initialization;variables
+   single: variables;default initialization
+   single: variables;default values
 .. _Default_Values_For_Types:
 
 Default Initialization
@@ -398,6 +407,9 @@ sync        base default value and *empty* status
 atomic      base default value
 =========== =======================================
 
+.. index::
+   single: type inference
+   single: type inference;local
 .. _Local_Type_Inference:
 
 Local Type Inference
@@ -419,6 +431,9 @@ is equivalent to
 
 for an arbitrary expression ``e``.
 
+.. index::
+   single: declarations;variables;multiple
+   single: variables;declarations;multiple
 .. _Multiple_Variable_Declarations:
 
 Multiple Variable Declarations
@@ -532,6 +547,8 @@ follows:
    careful handling to avoid unintentional changes to their
    *full*/*empty* state.
 
+.. index::
+   single: variables;module level
 .. _Module_Level_Variables:
 
 Module Level Variables
@@ -543,6 +560,8 @@ level variables can be accessed anywhere within that module after the
 initialization of that variable. If they are public, they can also be
 accessed in other modules that use that module.
 
+.. index::
+   single: variables;local
 .. _Local_Variables:
 
 Local Variables
@@ -561,6 +580,8 @@ Note that unlike most types, variables of ``unmanaged`` class type do not
 automatically reclaim the storage that they refer to. Such storage can be
 reclaimed as described in :ref:`Class_Delete`.
 
+.. index::
+   single: constants
 .. _Constants:
 
 Constants
@@ -570,6 +591,10 @@ Constants are divided into two categories: parameters, specified with
 the keyword ``param``, are compile-time constants and constants,
 specified with the keyword ``const``, are runtime constants.
 
+.. index::
+   single: constants;compile-time
+   single: parameters
+   single: param
 .. _Compile-Time_Constants:
 
 Compile-Time Constants
@@ -613,6 +638,10 @@ Parameter expressions are restricted to the following constructs:
 -  Call expressions of parameter functions.
    See :ref:`Param_Return_Intent`.
 
+.. index::
+   single: constants;runtime
+   single: constants
+   single: const
 .. _Runtime_Constants:
 
 Runtime Constants
@@ -628,6 +657,11 @@ That is, the variable always points to the object that it was
 initialized to reference. However, the fields of that object are allowed
 to be modified.
 
+.. index::
+   single: variables;configuration
+   single: constants;configuration
+   single: config
+   single: parameters;configuration
 .. _Configuration_Variables:
 
 Configuration Variables
@@ -676,6 +710,9 @@ overrides the default value appearing in the Chapel code.
    parameter. The ``rank`` configuration variable can be used to write
    rank-independent code.
 
+.. index::
+   single: variables;ref
+   single: ref
 .. _Ref_Variables:
 
 Ref Variables

@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: domains
 .. _Chapter-Domains:
 
 Domains
@@ -26,6 +28,9 @@ discuss the types and values of sparse subdomains. The remaining
 sections describe the important manipulations that can be performed with
 domains, as well as the predefined operators and functions defined for
 domains.
+
+.. index::
+   single: domains;kinds
 
 Domain Overview
 ---------------
@@ -121,6 +126,8 @@ As with any other domain type, it is not safe to access an
 associative array while its domain is changing, regardless of
 whether ``parSafe`` is set to ``true`` or ``false``.
 
+.. index::
+   single: domains;types and values
 .. _Base_Domain_Types_and_Values:
 
 Base Domain Types and Values
@@ -142,6 +149,16 @@ subsections.
 The keyword ``domain``, when not followed by parentheses, refers to
 a generic type that can be instantiated with any domain type.
 This type may also be written as ``domain(?)``.
+
+.. index::
+   single: rectangular domains
+   single: domains;rectangular
+   single: domains;rectangular;types
+   single: types;rectangular domains
+   single: domains;values;rectangular
+   single: domains;rectangular;values
+   single: domains;rectangular;literals
+   single: domains;rectangular;default value
 
 Rectangular Domains
 ~~~~~~~~~~~~~~~~~~~
@@ -314,6 +331,19 @@ for type:
       8 9 10 11 12 13 14
       29 30 31 32 33 34 35
 
+.. index::
+   single: associative domains
+   single: types;associative domains
+   single: domains;associative
+   single: types;opaque domains
+   single: opaque domains;types
+   single: domains;opaque
+   single: domains;values;associative
+   single: domains;associative;values
+   single: domains;associative;literals
+   single: domains;associative;initialization
+   single: domains;associative;default values
+
 Associative Domains
 ~~~~~~~~~~~~~~~~~~~
 
@@ -415,6 +445,9 @@ empty index set.
 Indices can be added to or removed from an associative domain as
 described in :ref:`Adding_and_Removing_Domain_Indices`.
 
+.. index::
+   single: subdomains
+   single: subdomains;simple
 .. _Simple_Subdomain_Types_and_Values:
 
 Simple Subdomain Types and Values
@@ -447,6 +480,10 @@ subdomains, unless it is specifically distinguished as one or the other.
    of multiple domains; and to improve the compiler’s ability to prove
    away bounds checks for array accesses.
 
+.. index::
+   single: subdomains;simple;types
+   single: subdomains;types;simple
+   single: types;subdomains;simple
 .. _Simple_Subdomain_Types:
 
 Simple Subdomain Types
@@ -469,6 +506,11 @@ underlying representation as its base domain.
    property should be re-verified once its parent domain is reassigned
    and whether this should be done aggressively or lazily.
 
+.. index::
+   single: subdomains;simple;values
+   single: values;subdomains;simple
+   single: subdomains;simple;default values
+
 Simple Subdomain Values
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -484,6 +526,9 @@ in the same way as its parent domain. It is an error to
 attempt to add an index to a subdomain that is not also a member of the
 parent domain.
 
+.. index::
+   single: domains;sparse
+   single: subdomains;sparse
 .. _Sparse_Subdomain_Types_and_Values:
 
 Sparse Subdomain Types and Values
@@ -510,6 +555,12 @@ index set and that of parent domain is the set of indices for which the
 sparse array will store this replicated value.
 See :ref:`Sparse_Arrays` for details about sparse arrays.
 
+.. index::
+   single: domains;sparse;types
+   single: subdomains;sparse;types
+   single: types;domains;sparse
+   single: types;subdomains;sparse
+
 Sparse Subdomain Types
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -517,6 +568,17 @@ Each root domain type has a unique corresponding sparse subdomain type.
 Sparse subdomains whose parent domains are also sparse subdomains share
 the same type.
 
+.. index::
+   single: domains;sparse;values
+   single: subdomains;sparse;values
+   single: values;domains;sparse
+   single: values;subdomains;sparse
+   single: sparse domains;literals;lack thereof
+   single: sparse domains;initialization
+   single: domains;sparse;initialization
+   single: initialization;sparse domains
+   single: sparse domains;default value
+   single: domains;sparse;default value
 .. _Sparse_Domain_Values:
 
 Sparse Subdomain Values
@@ -548,6 +610,8 @@ The default value for a sparse subdomain value is the empty set.
       const D: domain(2) = {1..n, 1..n};
       var SpsD: sparse subdomain(D);
 
+.. index::
+   single: domains;index types
 .. _Index_Types:
 
 Domain Index Types
@@ -596,6 +660,9 @@ precise to use a variable of the domain’s index type.
    belong to constant or monotonically growing domains. But these
    semantics need to be defined nevertheless.
 
+.. index::
+   single: domains;iteration
+   single: iteration;domain
 .. _Iteration_over_Domains:
 
 Iteration Over Domains
@@ -609,6 +676,9 @@ indices, then the indices are visited in that order.
 The type of the iterator variable for an iteration over a domain named
 ``D`` is that domain’s index type, ``index(D)``.
 
+.. index::
+   single: domains;as arguments
+   single: argument passing;domains
 .. _Domain_Arguments:
 
 Domains as Arguments
@@ -624,6 +694,9 @@ When a domain value is passed to a formal argument of compatible domain
 type by default intent, it is passed by reference in order to preserve
 the domain’s identity.
 
+.. index::
+   single: domains;promotion
+   single: promotion;domain
 .. _Domain_Promotion_of_Scalar_Functions:
 
 Domain Promotion of Scalar Functions
@@ -688,6 +761,9 @@ subdomain.
    domain-name:
      identifier
 
+.. index::
+   single: domains;assignment
+   single: assignment;domain
 .. _Domain_Assignment:
 
 Domain Assignment
@@ -739,6 +815,10 @@ are equivalent or not:
      dom1 == dom2
      dom1 != dom2
 
+.. index::
+   single: domains;striding
+   single: by;on rectangular domains
+   single: operators;by (domain)
 .. _Domain_Striding:
 
 Domain Striding
@@ -764,6 +844,10 @@ by applying the ``by`` operator to the corresponding dimension
 of the operand domain and the stride value if it is an integer,
 or the corresponding component of the stride value if it is a tuple.
 
+.. index::
+   single: domains;alignment
+   single: align;on rectangular domains
+   single: operators;align (domain)
 .. _Domain_Alignment:
 
 Domain Alignment
@@ -786,6 +870,15 @@ by applying the ``align`` operator to the corresponding dimension
 of the operand domain and the alignment value if it is an integer,
 or the corresponding component of the alignment value if it is a tuple.
 
+.. index::
+   single: slicing;domains
+   single: domains;slicing
+   single: domain-based slicing
+   single: slicing;domain-based
+   single: slicing;range-based
+   single: range-based slicing
+   single: slicing;rank-change
+   single: rank-change slicing
 .. _Domain_Slicing:
 
 Domain Slicing
@@ -868,6 +961,11 @@ being sliced. The resulting subdomain’s type will be the same as the
 original domain, but with a ``rank`` equal to the number of dimensions
 that were sliced by ranges rather than integers.
 
+.. index::
+   single: domains;count operator
+   single: domains;#
+   single: # (domain)
+   single: operators;# (domain)
 .. _Count_Operator_Domains:
 
 Count Operator
@@ -879,6 +977,9 @@ an integer in the case of a 1D domain). The operator produces a new domain
 obtained by applying the ``#`` operator to each of the component ranges
 of the argument domain, with the same distribution as the argument.
 
+.. index::
+   single: domains;adding indices
+   single: domains;removing indices
 .. _Adding_and_Removing_Domain_Indices:
 
 Adding and Removing Domain Indices
@@ -914,6 +1015,9 @@ set manipulations.  The supported set operators are:
   \-       Difference
   ^        Symmetric Difference
   =======  ====================
+
+.. index::
+   single: domains;predefined functions
 
 Predefined Routines on Domains
 ------------------------------

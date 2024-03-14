@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: interoperability
 .. _Chapter-Interoperability:
 
 ================
@@ -37,6 +39,8 @@ and procedures are supplied in :ref:`Shared_Language_Elements`.
 The remainder of this chapter documents Chapel support of
 interoperability through the existing C-language backend.
 
+.. index::
+   single: interoperability;overview
 .. _Interop_Overview:
 
 Interoperability Overview
@@ -46,6 +50,8 @@ The following two subsections provide an overview of calling
 externally-defined (C) routines in Chapel, and setting up Chapel
 routines so they can be called from external (C) code.
 
+.. index::
+   single: interoperability;external functions;calling
 .. _Calling_External_Functions:
 
 Calling External Functions
@@ -124,6 +130,8 @@ static libraries (archives), dynamic libraries or both are supported.
 See the ``chpl`` man page for more information on how these file types
 are handled.
 
+.. index::
+   single: interoperability;Chapel functions;calling
 .. _Calling_Chapel_Functions:
 
 Calling Chapel Functions
@@ -183,6 +191,8 @@ example, the code below declares a function callable in C as
       function was to be instantiated with the given ``param`` values and
       argument types.
 
+.. index::
+   single: interoperability;sharing
 .. _Shared_Language_Elements:
 
 Shared Language Elements
@@ -191,6 +201,14 @@ Shared Language Elements
 This section provides details on how to share Chapel types, variables
 and procedures with external code. It is written assuming that the
 intermediate language is C.
+
+.. index::
+   single: interoperability;standard C types
+   single: interoperability;C types;standard
+   single: interoperability;external C types
+   single: interoperability;C types;external
+   single: interoperability;C structs;external
+   single: interoperability;opaque types
 
 Shared Types
 ~~~~~~~~~~~~
@@ -409,6 +427,8 @@ Like a ``void*`` in C, Chapel’s ``opaque`` carries no information
 regarding the underlying type. It therefore subverts type safety, and
 should be used with caution.
 
+.. index::
+   single: interoperability;shared data
 .. _Shared_Data:
 
 Shared Data
@@ -442,6 +462,9 @@ constants.
    the Chapel compiler does not necessarily parse C code, external
    params are not supported.
 
+.. index::
+   single: interoperability;shared procedures
+   single: interoperability;external functions;calling
 .. _Shared_Procedures:
 
 Shared Procedures
@@ -451,6 +474,8 @@ This subsection provides additional detail and examples for calling
 external procedures from Chapel and for exporting Chapel functions for
 external use.
 
+.. index::
+   single: interoperability;C procedures;calling
 .. _Calling_External_C_Functions:
 
 Calling External C Functions
@@ -526,6 +551,8 @@ prototyped in Chapel by declaring the argument as a type. For example:
 Calling such a routine with a Chapel type will cause the type identifier
 (e.g., ’int’) to be passed to the routine. [3]_
 
+.. index::
+   single: interoperability;Chapel procedures;calling
 .. _Calling_Chapel_Procedures_Externally:
 
 Calling Chapel Procedures Externally
@@ -555,6 +582,8 @@ name is also used externally.
 When a procedure is exported, all of the types and functions on which it
 depends are also exported. Iterators cannot be explicitly exported.
 
+.. index::
+   single: interoperability;argument passing
 .. _Interop_Argument_Passing:
 
 Argument Passing
