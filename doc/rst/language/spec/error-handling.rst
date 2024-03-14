@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: error handling
+   single: errors
 .. _Chapter-Error_Handling:
 
 ==============
@@ -18,6 +21,10 @@ a less-permissive mode intended for production code.
    defined here, is available in the
    :ref:`errorHandling technical note <readme-errorHandling>`
 
+.. index::
+   single: errors;throwing
+   single: throw
+   single: throws
 .. _Throwing_Errors:
 
 Throwing Errors
@@ -53,6 +60,8 @@ thrown.
         return 1;
       }
 
+.. index::
+   single: errors;handling
 .. _Handling_Errors:
 
 Handling Errors
@@ -66,6 +75,9 @@ There are three ways to handle an error:
 
 -  Propagate the error out of the current function with ``throws``.
 
+.. index::
+   single: try;
+   single: errors;try;
 .. _Halting_on_error_with_try_bang:
 
 Halting on error with try!
@@ -93,6 +105,10 @@ block or a ``try!`` expression prefix, the program halts.
         }
       }
 
+.. index::
+   single: catch
+   single: errors;catch
+   single: errors;try
 .. _Handling_an_error_with_catch:
 
 Handling an error with catch
