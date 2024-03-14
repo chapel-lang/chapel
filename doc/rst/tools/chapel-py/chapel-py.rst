@@ -67,14 +67,14 @@ Installation
 Make sure that you have a from-source build of Chapel available in your
 ``CHPL_HOME``. Currently, the build script also requires having LLVM available
 in your path. The build script also requires that the development package of
-python be installed (for many package managers this is called
+Python be installed (for many package managers this is called
 ``python3-devel``). With those constraints met, you can just run ``make
 chapel-py-venv``:
 
-This will allow you to use the python bindings from a python script run with
+This will allow you to use the Python bindings from a Python script run with
 ``$CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash python3``,
-instead of just ``python3``. To install the python bindings in your system
-python, run ``python3 -m pip install $CHPL_HOME/tools/chapel-py``.
+instead of just ``python3``. If you wish to install the Python bindings in your
+system Python, run ``python3 -m pip install $CHPL_HOME/tools/chapel-py``.
 
 Usage
 -----
