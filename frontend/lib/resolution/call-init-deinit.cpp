@@ -207,8 +207,7 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
   }
 
   if (fnReturnsRegularValue) {
-    ID toId = re.toId(); // what variable was returned/yielded?
-    if (!toId.isEmpty()) {
+    if (ID toId = re.toId()) { // what variable was returned/yielded?
       if (resolver.symbol->id().contains(toId)) { // is it a local variable?
         if (isValue(re.type().kind())) {
           if (returnOrYield->isYield()) {

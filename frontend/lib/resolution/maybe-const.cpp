@@ -171,24 +171,37 @@ AdjustMaybeRefs::Access AdjustMaybeRefs::currentAccess() {
   return access;
 }
 
+/*
+TODO:
+How do I know if it's assigning from or assigning to?
+ bar(foo())
+bar could have in intent -> assign to formal from foo()
+bar could have out intent -> assign from formal to foo()
+
+what about an 'in' intent call to 'init='/'=' that has a 'ref' rhs?
+like 'owned' ?
+*/
+// consider each associated action
 void AdjustMaybeRefs::constCheckAssociatedActions(const AstNode* ast, RV& rv) {
-  //ResolvedExpression& re = rv.byAst(ast);
-
-  /*
-  TODO:
-  How do I know if it's assigning from or assigning to?
-   bar(foo())
-  bar could have in intent -> assign to formal from foo()
-  bar could have out intent -> assign from formal to foo()
-
-  what about an 'in' intent call to 'init='/'=' that has a 'ref' rhs?
-  like 'owned' ?
-  */
-
-  // consider each associated action
+  auto& re = rv.byAst(ast);
+  for (auto& a : re.associatedActions()) {
+    switch (a.action()) {
+      case AssociatedAction::ASSIGN: {
+        gdbShouldBreakHere();
+      } break;
+      case AssociatedAction::COPY_INIT: {
+        gdbShouldBreakHere();
+      } break;
+      case AssociatedAction::INIT_OTHER: {
+        gdbShouldBreakHere();
+      } break;
+      default: break;
+    }
+  }
 }
 
 bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
+
   // visit the type expression, if any
   if (auto typeExpr = ast->typeExpression()) {
     Access access = VALUE;
@@ -223,6 +236,7 @@ bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
 }
 
 void AdjustMaybeRefs::exit(const VarLikeDecl* ast, RV& rv) {
+  constCheckAssociatedActions(ast, rv);
 }
 
 bool AdjustMaybeRefs::enter(const Identifier* ast, RV& rv) {
@@ -245,6 +259,7 @@ bool AdjustMaybeRefs::enter(const Identifier* ast, RV& rv) {
   return false;
 }
 void AdjustMaybeRefs::exit(const Identifier* ast, RV& rv) {
+  constCheckAssociatedActions(ast, rv);
 }
 
 bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
@@ -326,6 +341,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
           }
         }
 
+        constCheckAssociatedActions(actualAst, rv);
         exprStack.pop_back();
       }
     }
@@ -335,12 +351,14 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   return false;
 }
 void AdjustMaybeRefs::exit(const Call* ast, RV& rv) {
+  constCheckAssociatedActions(ast, rv);
 }
 
 bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {
   return true;
 }
 void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
+  constCheckAssociatedActions(node, rv);
 }
 
 void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {

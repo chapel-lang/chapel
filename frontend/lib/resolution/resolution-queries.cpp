@@ -4378,28 +4378,44 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   return c.mostSpecific().only().fn();
 }
 
-const TypedFnSignature* tryResolveDeinit(Context* context,
-                                         const AstNode* astForScopeOrErr,
-                                         const types::Type* t,
-                                         const PoiScope* poiScope) {
+static const TypedFnSignature*
+tryResolveZeroArgMethod(Context* context, UniqueString name,
+                        const AstNode* astForScopeOrErr,
+                        const types::Type* t,
+                        const PoiScope* poiScope) {
   if (!t->getCompositeType()) return nullptr;
 
   QualifiedType qt(QualifiedType::VAR, t);
 
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(qt, USTR("this")));
-  auto ci = CallInfo(/* name */ USTR("deinit"),
+  auto ci = CallInfo(/* name */ name,
                      /* calledType */ qt,
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
-                     actuals);
-
+                     std::move(actuals));
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
   auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope, poiScope);
   return c.mostSpecific().only().fn();
+}
+
+const TypedFnSignature* tryResolveDeinit(Context* context,
+                                         const AstNode* astForScopeOrErr,
+                                         const types::Type* t,
+                                         const PoiScope* poiScope) {
+  return tryResolveZeroArgMethod(context, USTR("deinit"), astForScopeOrErr, t,
+                                 poiScope);
+}
+
+const TypedFnSignature* tryResolveDefaultInit(Context* context,
+                                              const AstNode* astForScopeOrErr,
+                                              const types::Type* t,
+                                              const PoiScope* poiScope) {
+  return tryResolveZeroArgMethod(context, USTR("init"), astForScopeOrErr, t,
+                                 poiScope);
 }
 
 static const TypedFnSignature*
@@ -4538,71 +4554,96 @@ const CompositeType* isNameOfField(Context* context,
   return isNameOfFieldQuery(context, name, ct);
 }
 
-// TODO: This is very early draft and is missing a lot, e.g.,
-//    - No valid default-initializer present
-//    - Instantiated generics must supply type/param arguments when
-//      searching for a default-initializer
-//    - Consideration of 'where' clauses
-//    - Composites with compilerError'd default-initializers
-//    - Mutually recursive class types
-//    - Non-nil 'owned' classes
+static const bool&
+canDefaultInitCompositeQuery(Context* context, const CompositeType* ct);
+
+// Determine if a composite type can invoke its default-initializer. TODO...
+//  - Do we need to expand this analysis to consider class types?
+//  - Instantiated generics must supply type/param arguments when
+//    searching for a default-initializer (?).
+//  - Composites with compilerError'd default-initializers.
+//  - Mutually recursive class types.
 static bool
-isTypeDefaultInitializableImpl(Context* context, const Type* t) {
-  const auto g = t->genericity();
+canDefaultInitCompositeImpl(Context* context, const CompositeType* ct) {
+  // It is a type that doesn't have an ID, so we cannot know the answer.
+  if (!ct || ct->id().isEmpty()) return false;
 
-  switch (g) {
-    case Type::CONCRETE: return true;
-    case Type::GENERIC: return false;
+  const auto p = DefaultsPolicy::USE_DEFAULTS;
+  auto& rf = fieldsForTypeDecl(context, ct, p);
 
-    // For these, consider the fields.
-    case Type::GENERIC_WITH_DEFAULTS:
-    case Type::MAYBE_GENERIC:
-      break;
-  }
+  if (rf.isGeneric()) return false;
 
-  CHPL_ASSERT(!t->isPrimitiveType());
+  bool allFieldsInitializable = true;
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto ft = rf.fieldType(i).type();
 
-  if (t->isBuiltinType()) {
-    CHPL_ASSERT(false && "Not handled!");
-  }
+    if (auto ct2 = ft->toCompositeType()) {
+      // Recursion of record types is never legal.
+      if (ct2 == ct && ct->isRecordType()) return false;
 
-  if (auto ct = t->toCompositeType()) {
-    const auto p = DefaultsPolicy::USE_DEFAULTS;
-    auto& rf = fieldsForTypeDecl(context, ct, p);
-
-    if (!rf.isGeneric()) return true;
-
-    // TODO: Do I still need to consider field genericity, here? I.E., if
-    // a field is marked 'GENERIC_WITH_DEFAULTS' is there more to do?
-    // If I can tell the thing is concrete from the ResolvedFields, then
-    // there's probably no need to recurse.
-    if (rf.isGenericWithDefaults()) {
-      for (int i = 0; i < rf.numFields(); i++) {
-        auto ft = rf.fieldType(i).type();
-
-        // TODO: Skipping avoids a recursive query but doesn't handle
-        // mutually recursive classes.
-        if (ft == t) continue;
-
-        if (!isTypeDefaultInitializable(context, ft)) return false;
+      // Bail to avoid an infinite loop.
+      if (context->isQueryRunning(canDefaultInitCompositeQuery, {ct2})) {
+        return false;
       }
+    }
 
-      return true;
+    // Otherwise, consider the field.
+    if (!rf.fieldHasDefaultValue(i) &&
+        !isTypeWithDefaultValue(context, ft)) {
+      allFieldsInitializable = false;
+      break;
     }
   }
 
-  return false;
+  const uast::AstNode* ast = nullptr;
+  if (auto& id = ct->id()) ast = parsing::idToAst(context, id);
+
+  auto tfs = tryResolveDefaultInit(context, ast, ct);
+
+  // If the user wrote a default initializer, check to see if it is valid.
+  // TODO: Check for 'compilerError' in the default initializer body.
+  // TODO: Handle 'WHERE_TBD'?
+  if (tfs && !tfs->isCompilerGenerated()) {
+    auto w = tfs->whereClauseResult();
+    switch (w) {
+      case TypedFnSignature::WHERE_FALSE: return false;
+      case TypedFnSignature::WHERE_NONE: return true;
+      case TypedFnSignature::WHERE_TRUE: return true;
+      case TypedFnSignature::WHERE_TBD: break;
+    }
+  }
+
+  return allFieldsInitializable;
 }
 
 static const bool&
-isTypeDefaultInitializableQuery(Context* context, const Type* t) {
-  QUERY_BEGIN(isTypeDefaultInitializableQuery, context, t);
-  bool ret = isTypeDefaultInitializableImpl(context, t);
+canDefaultInitCompositeQuery(Context* context, const CompositeType* ct) {
+  QUERY_BEGIN(canDefaultInitCompositeQuery, context, ct);
+  bool ret = canDefaultInitCompositeImpl(context, ct);
   return QUERY_END(ret);
 }
 
-bool isTypeDefaultInitializable(Context* context, const Type* t) {
-  return isTypeDefaultInitializableQuery(context, t);
+bool isTypeWithDefaultValue(Context* context, const Type* t) {
+  if (t == nullptr) return false;
+  if (t->isUnknownType() || t->isErroneousType()) return false;
+  if (t == CompositeType::getStringType(context)) return true;
+  if (t == CompositeType::getBytesType(context)) return true;
+  if (t == CompositeType::getRangeType(context)) return true;
+  if (t == CompositeType::getLocaleType(context)) return true;
+  if (t->isPrimitiveType()) return true;
+  if (getTypeGenericity(context, t) == Type::GENERIC) return false;
+  // TODO: When should a domain type return false?
+  if (t->isDomainType()) return true;
+  if (auto arr = t->toArrayType()) {
+    bool b1 = isTypeWithDefaultValue(context, arr->domainType().type());
+    bool b2 = isTypeWithDefaultValue(context, arr->eltType().type());
+    return b1 && b2;
+  }
+  if (auto cls = t->toClassType()) return cls->decorator().isNilable();
+  if (auto rt = t->toRecordType()) {
+    return canDefaultInitCompositeQuery(context, rt);
+  }
+  return false;
 }
 
 void getCopyOrAssignableInfo(Context* context, const Type* t,

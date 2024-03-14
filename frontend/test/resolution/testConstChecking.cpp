@@ -338,8 +338,25 @@ static void test6c() {
     {8});
 }
 
-// TODO: test const checking for associated functions
-
+/*
+static void test7a() {
+  testConstChecking("test7a",
+    R""""(
+      module M {
+        class C {}
+        record r { var x: owned C?; }
+        proc test() {
+          const r1 = new r();
+          // COPY_INIT error since 'r1' is const?
+          // TODO: I'm not seeing a 'init' action here, does one not get
+          // added because it's simply not possible?
+          const r2 = r1;
+        }
+      }
+    )"""",
+    {8});
+}
+*/
 
 int main() {
   test1a();
@@ -364,6 +381,8 @@ int main() {
   test6a();
   test6b();
   test6c();
+
+  // test7a();
 
   return 0;
 }

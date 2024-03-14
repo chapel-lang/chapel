@@ -244,16 +244,15 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   for (int i = 0; i < rf.numFields(); i++) {
     auto fieldQt = rf.fieldType(i);
     auto formalName = rf.fieldName(i);
-    bool formalHasDefault = rf.fieldHasDefaultValue(i);
     const uast::Decl* formalAst = nullptr;
+    bool typeHasDefault = isTypeWithDefaultValue(context, fieldQt.type());
+    bool formalHasDefault = rf.fieldHasDefaultValue(i) || typeHasDefault;
 
     // A field may not have a default value. If it is default-initializable
     // then the formal should still take a default value (in this case the
     // default value is for the type, e.g., '0' for 'int'.
     // TODO: If this isn't granular enough, we can introduce a 'DefaultValue'
     // type that can be used as a sentinel.
-    formalHasDefault |= isTypeDefaultInitializable(context, fieldQt.type());
-
     auto fd = UntypedFnSignature::FormalDetail(formalName, formalHasDefault,
                                                formalAst);
     ufsFormals.push_back(std::move(fd));
@@ -279,19 +278,14 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  bool needsInstantiation = rf.isGeneric();
-
   auto ret = TypedFnSignature::get(context,
                                    ufs,
                                    std::move(formalTypes),
                                    TypedFnSignature::WHERE_NONE,
-                                   needsInstantiation,
+                                   /* needsInstantiation */ rf.isGeneric(),
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap());
-
   return ret;
 }
 
