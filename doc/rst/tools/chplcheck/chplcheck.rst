@@ -87,6 +87,20 @@ default, and need to be turned on using the ``--enable-rule`` flag; rules
 without the above setting are enabled by default, and can be turned off using
 ``--disable-rule``.
 
+Rules can also be ignored on a case-by-case basis by adding a ``@chplcheck.ignore`` attribute with a string argument stating the rule to ignore. For example:
+
+.. code-block:: chapel
+
+   @chplcheck.ignore("CamelCaseRecords")
+   record MyRecord {}
+
+This will suppress the warning about ``MyRecord`` not being in camelCase.
+
+.. note::
+
+   ``chplcheck.ignore`` is not fully implemented yet. It is currently only
+   available for basic rules and usage of it may cause compile-time warnings.
+
 Setting Up In Your Editor
 -------------------------
 
@@ -187,26 +201,26 @@ Advanced Rules
 Sometimes, specifying a pattern is not precise enough to implement a rule. For
 example, a linting check might require considering two sibling nodes or other
 less-straightforward relationships than "does it match the pattern?". This is
-the purpose of advanced rules. These functions are called with the **root** AST
-node (usually one of the top-level ``Module`` s). Then, it is the responsibility
+the purpose of advanced rules. These functions are called with the *root* AST
+node (usually a top-level ``Module``). Then, it is the responsibility
 of the function to find and ``yield`` AST nodes that should be warned about.
 For instance, at the time of writing, the following code implements the rule
 checking for unused formals.
 
 .. code-block:: python
 
-   @driver.advanced_rule
+   @driver.advanced_rule(default=False)
    def UnusedFormal(context, root):
        formals = dict()
        uses = set()
-   
+
        for (formal, _) in chapel.each_matching(root, Formal):
            # For now, it's harder to tell if we're ignoring 'this' formals
            # (what about method calls with implicit receiver?). So skip
            # 'this' formals.
            if formal.name() == "this":
                continue
-   
+
            # extern functions have no bodies that can use their formals.
            if formal.parent().linkage() == "extern":
                continue
@@ -234,7 +248,7 @@ enforced by a linter. Rather than adding their own rule to ``rules.py``,
 developers can load a custom rule file that contains all of their custom rules.
 
 For example, the following code is a complete definition of two new rules for
-chplcheck. Note that the top-level function must be named ``rules`` and take
+``chplcheck``. Note that the top-level function must be named ``rules`` and take
 one argument.
 
 .. code-block:: python
