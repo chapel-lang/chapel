@@ -631,7 +631,7 @@ module Errors {
   /*
     Assert that a boolean condition is true.  If it is false, prints
     'assert failed - ' followed by all subsequent arguments, as though
-    printed using :proc:`~ChapelIO.write()`.
+    printed using :proc:`~IO.write()`.
 
     .. note :: In the current implementation, this assert never becomes a no-op.
                That is, using it will always incur execution-time checks.
