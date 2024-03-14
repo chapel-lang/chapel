@@ -22,9 +22,7 @@ Getting Started
 The easiest way to make ``chplcheck`` available on your command line is by using the
 ``chplcheck`` Makefile target. This will build the Dyno compiler frontend and the
 Python bindings for Dyno if needed, and place ``chplcheck`` into ``$CHPL_HOME/bin``.
-In from-source builds, this directory should already be in your ``PATH``;
-this means you should be invoke ``chplcheck`` from the command-line without any
-additional work.
+Make sure that you satisfy :ref:`the requirements for building the Python bindings <chapel-py-installation>`.
 
 .. code-block:: bash
 
@@ -108,8 +106,9 @@ Setting Up In Your Editor
 clients. Thus, if your editor supports LSP, you can configure it to display
 linting warnings via ``chplcheck``. The following sections describe how to set
 up ``chplcheck`` in various editors, and will be updated as the Chapel team
-tests more editors. If you have a setup that works, please consider
-contributing it to this documentation.
+tests more editors. If your preferred editor is not listed, consider opening an
+`issue <https://github.com/chapel-lang/chapel/issues/new>`_ or `pull request
+<https://github.com/chapel-lang/chapel/pull/new>`_ to add it.
 
 Neovim
 ~~~~~~
@@ -155,10 +154,9 @@ Rules are written using the :ref:`Python bindings for Chapel's compiler frontend
 essence, a rule is a Python function that is used to detect issues with the
 AST. When registered with ``chplcheck``, the name of the function becomes the name
 of the rule (which can be used to enable and disable the rule, as per the
-above sections). To mark a Python function as representing a rule, ``chplcheck``'s
-Python API provides two decorators. These decorators correspond to the two
-'flavors' of rules in the linter. The two 'flavors' of rules in ``chplcheck`` are
-'basic' and 'advanced'.
+above sections). To mark a Python function as representing a rule,
+``chplcheck``'s Python API provides two decorators. These decorators correspond
+to the two 'flavors' of rules in the linter: 'basic' and 'advanced'.
 
 Basic Rules
 ~~~~~~~~~~~
