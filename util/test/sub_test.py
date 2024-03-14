@@ -42,6 +42,7 @@
 # CHPL_TEST_PERF_LABEL: The performance label, e.g. "perf"
 # CHPL_TEST_PERF_DIR: Scratch directory for performance data
 # CHPL_TEST_PERF_TRIALS: Default number of trials for perf tests
+# CHPL_TEST_NUM_TRIALS: Default number of trials for correctness tests
 # CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
 # CHPL_SYSTEM_PREEXEC: If set, run comma-separated scripts on test output prior to execution
@@ -80,6 +81,7 @@
 # EXECOPTS: Test program flags to be applied to the entire directory
 # LASTEXECOPTS: Test program flags to be put at the end of the command line
 # NUMLOCALES: Number of locales to use
+# NUMTRIALS: Number of trials to run for correctness testing
 # CATFILES: List of files whose contents are added to end of test output
 # PREDIFF: Script to execute before diff'ing output (arguments: <test
 #    executable>, <log>, <compiler executable>)
@@ -111,6 +113,7 @@
 # .perfnumtrials: Number of trials to run for performance testing
 # .notest: Do not run this test
 # .numlocales: Number of locales to use (overrides NUMLOCALES)
+# .numtrials: Number of trials to run for correctness testing
 # .future: Future test
 # .ifuture: Future test
 # .noexec: Do not execute this test
