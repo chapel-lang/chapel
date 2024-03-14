@@ -792,7 +792,7 @@ module ChapelDomain {
           a.add(b(ind));
         }
       else
-        // unroll in the source code to allow heterogenous tuple elements
+        // unroll in the source code to allow heterogeneous tuple elements
         for ind in b {
           chpl__checkTupIrregDomAssign(a, ind, "containing ");
           a.add(ind);

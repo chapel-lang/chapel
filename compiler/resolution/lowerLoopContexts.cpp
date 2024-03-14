@@ -252,7 +252,7 @@ class IteratorContext: public Context {
  public:
   void setInnerLoop(CForLoop* loop) { innerLoop_ = loop; }
   void setCallToInner(CallExpr* expr) { callToInner_ = expr; }
-  void setInnermostLooop(CForLoop* loop) { innermostLoop_ = loop; }
+  void setInnermostLoop(CForLoop* loop) { innermostLoop_ = loop; }
 
   CoforallOnContext* toCoforallOnContext() {
     if (kind_ == Kind::CoforallOn) return (CoforallOnContext*) this;
@@ -453,7 +453,7 @@ class ContextHandler {
             CONTEXT_DEBUG(debugDepth, "found a candidate vectorized loop", cfl);
 
             auto outerCtx = std::make_unique<VectorizedLoopContext>(cfl);
-            outerCtx->setInnermostLooop(plainLoop);
+            outerCtx->setInnermostLoop(plainLoop);
             outerCtx->setCallToInner(callToCurCtx);
             outerCtx->setInnerLoop(findInnermostLoop(callToCurCtx));
             outerCtx->findLoopContextHandle();
@@ -480,7 +480,7 @@ class ContextHandler {
         CONTEXT_DEBUG(debugDepth, "found a candidate parent fn", parentFn);
 
         auto outerCtx = std::make_unique<CoforallOnContext>(parentFn);
-        outerCtx->setInnermostLooop(plainLoop);
+        outerCtx->setInnermostLoop(plainLoop);
         outerCtx->setCallToInner(callToCurCtx);
         outerCtx->setInnerLoop(findInnermostLoop(callToCurCtx));
         outerCtx->findLoopContextHandle();

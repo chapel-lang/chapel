@@ -36,7 +36,7 @@
     14 | var x2 = a > b <= c;
        |
   Comparisons in the form 'x op y op z' are not supported.
-  If you wanted to perform elementwise comaprison, please use '&&' to combine operations.
+  If you wanted to perform elementwise comparison, please use '&&' to combine operations.
   If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
        |
     14 | var x2 = a > b <= c;
@@ -49,7 +49,7 @@
     18 | var x3 = a == b == c;
        |
   Comparisons in the form 'x op y op z' are not supported.
-  If you wanted to perform elementwise comaprison, please use '&&' to combine operations.
+  If you wanted to perform elementwise comparison, please use '&&' to combine operations.
   If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
        |
     18 | var x3 = a == b == c;
@@ -62,7 +62,7 @@
     22 | var x4 = a != b != c;
        |
   Comparisons in the form 'x op y op z' are not supported.
-  If you wanted to perform elementwise comaprison, please use '&&' to combine operations.
+  If you wanted to perform elementwise comparison, please use '&&' to combine operations.
   If you wanted to use the result of a comparison as an operand in another comparison, consider using parentheses in a subexpression to disambiguate:
        |
     22 | var x4 = a != b != c;

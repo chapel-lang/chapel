@@ -996,7 +996,7 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
 {
   bool isConst = ovar->isConstant() || field->isConstant();
 
-  // with --baseline, we have to be careful where we insert the initializtion of
+  // with --baseline, we have to be careful where we insert the initialization of
   // the new ref we are creating. With foreach loops that accesses a field of a
   // symbol that has implicit ref intent, the initialization has to be in the
   // loop body.

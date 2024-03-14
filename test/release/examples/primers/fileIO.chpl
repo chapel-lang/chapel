@@ -169,8 +169,8 @@ if example == 0 || example == 2 {
 
 /* .. code-block:: sh
 
-      time ./fielIOv2 --example=2
-      time ./fielIOv2 --example=3
+      $ time ./fileIO --example=2
+      $ time ./fileIO --example=3
 */
 
 if example == 0 || example == 3 {

@@ -1078,7 +1078,7 @@ class TypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-// Container for resolution candidates and (if applicable) their correponding
+// Container for resolution candidates and (if applicable) their corresponding
 // forwarding-to types.
 struct CandidatesAndForwardingInfo {
  private:

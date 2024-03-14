@@ -200,7 +200,7 @@ struct LoopAttributeInfo {
     }
   }
 
-  void readNativeGpuAtrributes(const uast::AttributeGroup* attrs) {
+  void readNativeGpuAttributes(const uast::AttributeGroup* attrs) {
     this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
     this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
   }
@@ -213,7 +213,7 @@ struct LoopAttributeInfo {
 
     LoopAttributeInfo into;
     into.readLlvmAttributes(context, attrs);
-    into.readNativeGpuAtrributes(attrs);
+    into.readNativeGpuAttributes(attrs);
 
     return into;
   }
@@ -225,7 +225,7 @@ struct LoopAttributeInfo {
 
     // Do not bother parsing LLVM attributes, since they don't apply to loops.
     LoopAttributeInfo into;
-    into.readNativeGpuAtrributes(attrs);
+    into.readNativeGpuAttributes(attrs);
 
     return into;
   }
@@ -453,7 +453,7 @@ struct Converter {
     return nullptr;
   }
 
-  void readNativeGpuAtrributes(LoopAttributeInfo& into,
+  void readNativeGpuAttributes(LoopAttributeInfo& into,
                                const uast::AttributeGroup* attrs) {
     into.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
     into.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
@@ -3814,7 +3814,7 @@ struct Converter {
 
     /**
       Helper for code that calls 'convertVariable' but doesn't expect to handle
-      blocks with additional primitives, which can be introuced by that call
+      blocks with additional primitives, which can be introduced by that call
       for GPU attributes that need to be propagated to init expressions.
      */
     Expr* requireDefOnly() const {
@@ -3923,7 +3923,7 @@ struct Converter {
 
     auto def = new DefExpr(varSym, initExpr, typeExpr);
     VariableDefInfo ret = { def, /* entireExpr */ nullptr };
-    // Note: entierExpr is set below depending on if there are any attributes.
+    // Note: entireExpr is set below depending on if there are any attributes.
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
     if (!loopFlags.empty()) {
