@@ -185,16 +185,17 @@ information.
 Multi-locale Programs
 ---------------------
 
-For multi-locale Chapel programs, the number of locales to create is specified
-on the executable's command-line.  This can be set either using the ``-nl``
-flag, or by assigning to the built-in ``numLocales`` configuration constant.
+For multi-locale Chapel programs, the number of locales is specified on the
+executable's command-line.  This can be set either using the ``-nl`` flag
+(e.g., ``-nl 4``), or by assigning to the built-in ``numLocales``
+configuration constant (e.g., ``-snumLocales=4`` or ``--numLocales=4``).
 See :ref:`readme-multilocale` for more information about multiple locales,
 and the methods for specifying the number of locales and nodes.
 
-Multi-locale programs require a communication layer that allows the locales to
-communicate (i.e., you cannot run multi-locale programs if
-``CHPL_COMM=none``). See :ref:`readme-multilocale` for information about
-choosing the proper communication layer for your platform.
+Multi-locale programs require a communication layer (i.e., you cannot run
+multi-locale programs if ``CHPL_COMM=none``). See :ref:`readme-multilocale`
+for information about choosing the proper communication layer for your
+platform.
 
 Multi-locale programs typically use a launcher executable (e.g., ``hello``)
 that does some initial command-line checking before using a system launcher
