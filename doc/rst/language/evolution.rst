@@ -135,7 +135,7 @@ your programs:
       program by forgoing the parallel safety guarantees.
 
 2. ``parSafe=true`` domains are unstable:
-    * Domains using ``parSafe=true`` are still considered unstable, and continue
+    * Domains using ``parSafe=true`` are still considered unstable and continue
       to trigger unstable warnings when declared. For example:
 
       .. code-block:: chapel
