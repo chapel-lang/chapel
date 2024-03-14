@@ -87,6 +87,8 @@ html-release: check-sphinxbuild source
 	@chmod -R ugo+rX $(BUILDDIR)
 	@$(COPY_IF_DIFFERENT) util/versionButton.php $(BUILDDIR)/html/versionButton.php
 	@echo "ErrorDocument 404 https://chapel-lang.org/docs/$(WEB_DOC_VERSION)/index.html" > $(BUILDDIR)/html/.htaccess
+	@echo patching searchtools.js
+	@cd $(BUILDDIR)/html/_static && cp $(CHPL_MAKE_HOME)/third-party/chpl-venv/install/chpldeps/sphinx/themes/basic/static/searchtools.js searchtools.js && patch -p0 < $(CHPL_MAKE_HOME)/doc/rst/meta/static/patch-searchtools.js
 	@rm -Rf html
 	@cp -R $(BUILDDIR)/html html
 	@echo
