@@ -185,7 +185,7 @@ code for and interacts with GPUs. These variables include:
   kernels. If unset, defaults to 512. This variable may also be set by passing
   the ``chpl`` compiler ``--gpu-block-size=<block_size>``. It can also be
   overwritten on a per-kernel basis by using the ``@gpu.blockSize(n)`` loop
-  attribute (described in more detail in `GPU Attributes`_).
+  attribute (described in more detail in `GPU-Related Attributes`_).
 
 * ``CHPL_GPU_SPECIALIZATION`` --- if set, outlines bodies of 'on' statements
   and clones all functions reachable from that block. The 'on' statement is
@@ -239,7 +239,7 @@ executable. When the program is executed, the compute capability best suited
 for the available GPU will be loaded by the CUDA runtime. Support for this
 feature for AMD GPUs is planned, but not currently available.
 
-GPU Attributes
+GPU-Related Attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Chapel's GPU support makes use of attributes (see `Attributes in Chapel <./attributes.html>`_)
 to control various aspects of how code is compiled or executed on the GPU.
@@ -556,7 +556,8 @@ improvements in the future.
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
 
-* `GPU Attributes`_ on variables are not yet applied to promoted function calls.
+* `GPU-Related Attributes`_ on variables are not yet applied to promoted
+  function calls.
 
 Using C Interoperability
 ~~~~~~~~~~~~~~~~~~~~~~~~
