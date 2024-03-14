@@ -132,28 +132,34 @@ use them, enable ``--resolver``.
 * Type Information
    ``CLS`` can resolve the type of a symbol and allow jumping to type
    definitions.
-* Type Inlays
-   Type information can be displayed inline as an inlay hint. This is
-   on-by-default, but can be disabled with ``--no-type-inlays``.
-* Param Inlays
-   ``param`` values can be computed and displayed inline as inlay hints. This
-   is on-by-default, but can be disabled with ``--no-param-inlays``.
-* Evaluated Tooltips
-   ``param`` values can also be computed and displayed as tooltips. This is
-   on-by-default, but can be disabled with ``--no-evaluate-expressions``.
-* Call Inlays
-   Named arguments can be displayed inline as inlay hints. This is
-   on-by-default, but can be disabled with ``--no-literal-arg-inlays``.
-* Dead Code
-   Dyno can determine compile-time dead code, which ``CLS`` highlights in the
-   editor. This is on-by-default, but can be disabled with ``--no-dead-code``.
-* Generic Instantiations
-   ``CLS`` can show the various instantiations of a generic function. This is
-   on-by-default.
 * Call Hierarchy
    Some editors support showing a call hierarchy for a symbol, both inbound
    calls and outbound calls. ``CLS`` supports this basic feature, as well as
    enabling some additional features for this with generic functions.
+
+The following features are extra visual aids:
+
++----------------+--------------------------------------------+---------------------------------------+
+| Feature        | Description                                | Flag                                  |
++----------------+--------------------------------------------+---------------------------------------+
+| Type Inlays    | Type information can be displayed inline   | ``--type-inlays`` (default),          |
+|                | as an inlay hint.                          | ``--no-type-inlays``                  |
++----------------+--------------------------------------------+---------------------------------------+
+| Param Inlays   | ``param`` values can be computed and       | ``--param-inlays`` (default),         |
+|                | displayed inline as inlay hints.           | ``--no-param-inlays``                 |
++----------------+--------------------------------------------+---------------------------------------+
+| Evaluated      | ``param`` values can also be computed and  | ``--evaluate-expressions`` (default), |
+| Tooltips       | displayed as tooltips.                     | ``--no-evaluate-expressions``         |
++----------------+--------------------------------------------+---------------------------------------+
+| Call Inlays    | Named arguments can be displayed inline as | ``--literal-arg-inlays`` (default),   |
+|                | inlay hints.                               | ``--no-literal-arg-inlays``           |
++----------------+--------------------------------------------+---------------------------------------+
+| Dead Code      | Dyno can determine compile-time dead code, | ``--dead-code`` (default),            |
+|                | which ``CLS`` highlights in the editor.    | ``--no-dead-code``                    |
++----------------+--------------------------------------------+---------------------------------------+
+| Generic        | ``CLS`` can show the various               | No flag, on by default                |
+| Instantiations | instantiations of a generic function.      |                                       |
++----------------+--------------------------------------------+---------------------------------------+
 
 Configuring Chapel Projects
 ---------------------------
