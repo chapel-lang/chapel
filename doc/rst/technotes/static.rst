@@ -122,10 +122,10 @@ Synchronization
 ---------------
 
 The initialization of function-static variables is implicitly synchronized
-using of Chapel's ``atomic`` types. As a consequence, it's safe to call a
+using Chapel's ``atomic`` types. As a consequence, it's safe to call a
 function with static variables from multiple concurrent threads, as well as
-from several locales. In the latter case, the variable is stored on the first
-locale to initialize it ; support for alternative ways of sharing the data
+from multiple locales. In the latter case, the variable is stored on the first
+locale to initialize it; support for alternative ways of sharing the data
 (e.g., replicating the precomputed data to all locales) is considered future
 work.
 
@@ -133,7 +133,7 @@ Implementation Details
 ----------------------
 
 A variable with the ``@functionStatic`` annotation is effectively hoisted
-to module that contains its parent function. During the function's
+to the module that contains its parent function. During the function's
 invocation, the code initializing the variable is replaced with a conditional
 that checks if the variable has been initialized. This check includes
 synchronization with other threads and/or locales. If the variable has not
@@ -160,7 +160,7 @@ of calling ``precomputed.getValue()``. This result is returned by reference,
 but if ``table`` were a value, it would be copied.
 
 Presently, the value is stored in a heap-allocated container class. Thus, by
-default, ``_staticWrapper`` stores ``null``; when the value is set using
+default, ``_staticWrapper`` stores ``nil``; when the value is set using
 ``setValue``, a new instance of the container class is allocated and stored
 within ``_staticWrapper``.
 
@@ -190,3 +190,4 @@ a work in progress. The following items are considered future work:
 * Better ergonomics for the user. Using ``ref`` does not seem like the ideal
   long-term solution.
 * Investigation of how to support types with runtime components.
+* Support for alternative ways of sharing static variables between locales.
