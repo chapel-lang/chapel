@@ -10,7 +10,8 @@ It is also intended to be customizable and extensible, using a system of named
 'rules' that lead to warnings.
 
 ``chplcheck`` supports the Language Server Protocol, allowing it to be used as
-part of your favorite editor. The following images demonstrates its use Neovim:
+part of your favorite editor. The following image demonstrates its' use in
+Neovim:
 
 .. image:: neovim.png
   :alt: Screenshot of code using ``chplcheck``
@@ -27,20 +28,20 @@ additional work.
 
 .. code-block:: bash
 
-    cd $CHPL_HOME
-    make chplcheck
-    chplcheck --help
+   cd $CHPL_HOME
+   make chplcheck
+   chplcheck --help
 
 Saving the following file into ``myfile.chpl``:
 
 .. code-block:: chapel
    :linenos:
 
-    record MyRecord {}
+   record MyRecord {}
 
-    for i in 1..10 do {
-      writeln("Hello, world!");
-    }
+   for i in 1..10 do {
+     writeln("Hello, world!");
+   }
 
 The linter is run as follows:
 
@@ -89,7 +90,7 @@ without the above setting are enabled by default, and can be turned off using
 Setting Up In Your Editor
 -------------------------
 
-``chplcheck`` uses the Language Server Protocol to integrate with compatible
+``chplcheck`` uses the Language Server Protocol (LSP) to integrate with compatible
 clients. Thus, if your editor supports LSP, you can configure it to display
 linting warnings via ``chplcheck``. The following sections describe how to set
 up ``chplcheck`` in various editors, and will be updated as the Chapel team
@@ -186,8 +187,8 @@ Advanced Rules
 Sometimes, specifying a pattern is not precise enough to implement a rule. For
 example, a linting check might require considering two sibling nodes or other
 less-straightforward relationships than "does it match the pattern?". This is
-the purpose of advanced rules. These functions are called with the _root_ AST
-node (usually one of the top-level ``Module``s). Then, it is the responsibility
+the purpose of advanced rules. These functions are called with the **root** AST
+node (usually one of the top-level ``Module`` s). Then, it is the responsibility
 of the function to find and ``yield`` AST nodes that should be warned about.
 For instance, at the time of writing, the following code implements the rule
 checking for unused formals.

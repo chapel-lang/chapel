@@ -288,6 +288,9 @@ Some other useful features of the pattern library:
   care about the remaining AST children, however many there are.
 * A variable without an AST node, (``"?x"``) can be used by itself to match any
   AST node and store it in ``x``.
+* A ``set`` can be used to represent a conjunctive or pattern. For example,
+  ``set([Begin, Cobegin])`` will match either a ``Begin`` or a ``Cobegin``
+  node.
 
 ``chapel.each_matching``
 ^^^^^^^^^^^^^^^^^^^^^^^^

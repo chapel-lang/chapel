@@ -13,12 +13,18 @@ editor-agnostic.
 Getting Started
 ---------------
 
-The easiest way to make ``CLS`` available ``chpl-language-server`` Makefile
-target. This will build the Dyno compiler frontend and the Python bindings for
-Dyno if needed, and place ``chpl-language-server`` into ``$CHPL_HOME/bin``. In
-from-source builds, this directory should already be in your ``PATH``; this
-means you should be invoke ``chpl-language-server`` from the command-line
-without any additional work.
+The easiest way to make ``CLS`` available is by using the
+``chpl-language-server`` Makefile target. This will build the Dyno compiler
+frontend and the Python bindings for Dyno if needed, and place
+``chpl-language-server`` into ``$CHPL_HOME/bin``. In from-source builds, this
+directory should already be in your ``PATH``; this means you should be invoke
+``chpl-language-server`` from the command-line without any additional work.
+
+.. code-block:: bash
+
+   cd $CHPL_HOME
+   make chplcheck
+   chpl-language-server --help
 
 ``CLS`` can be used with any editor that supports the Language Server Protocol
 (LSP). Listed below are setup instructions for some popular editors. If your
