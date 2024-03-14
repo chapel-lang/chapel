@@ -18,3 +18,6 @@ Contents:
    mason/mason
    protoc-gen-chpl/protoc-gen-chpl
    unstableWarningAnonymizer/unstableWarningAnonymizer
+   chapel-py/chapel-py
+   chplcheck/chplcheck
+   chpl-language-server/chpl-language-server
