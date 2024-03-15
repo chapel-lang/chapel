@@ -60,11 +60,12 @@ File Formats and I/O
    HDF5 <packages/HDF5>
    HDFS <packages/HDFS>
    NetCDF <packages/NetCDF>
+   ObjectSerialization <packages/ObjectSerialization>
    ParallelIO <packages/ParallelIO>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>
-   ObjectSerialization <packages/ObjectSerialization>
+   Zarr <packages/Zarr>
 
 Math / Numerical Computing
 --------------------------

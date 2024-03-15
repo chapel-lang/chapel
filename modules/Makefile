@@ -157,6 +157,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
 	packages/YAML.chpl \
+	packages/Zarr.chpl \
 	packages/ZMQ.chpl \
 
 
