@@ -46,11 +46,12 @@ details task parallelism as follows:
 
 .. index::
    single: task parallelism
-   single: parallelism;task
-   single: task parallelism;task creation
+   single: parallelism; task
+   single: task parallelism; task creation
    single: task creation
    single: task function
-   single: task parallelism;task function
+   single: task parallelism; task function
+   single: tasks
 .. _Task_parallelism:
 
 Tasks and Task Parallelism
@@ -93,7 +94,7 @@ task intents, among others.
 
 .. index::
    single: begin
-   single: statements;begin
+   single: statements; begin
 .. _Begin:
 
 The Begin Statement
@@ -152,12 +153,11 @@ Yield and return statements are not allowed in begin blocks. Break and
 continue statements may not be used to exit a begin block.
 
 .. index::
-   single: synchronization variables;sync
-   single: synchronization variables;sync
    single: sync
    single: single
-   single: synchronization types;formal arguments
-   single: synchronization types;actual arguments
+   single: synchronization variables; sync
+   single: synchronization types; formal arguments
+   single: synchronization types; actual arguments
 .. _Synchronization_Variables:
 
 Synchronization Variables
@@ -306,6 +306,8 @@ state is not changed or waited on. The qualifier ``sync`` without the
 value type can be used to specify a generic formal argument that
 requires a ``sync`` actual.
 
+.. index::
+   pair: sync; predefined functions
 .. _Functions_on_Synchronization_Variables:
 
 Predefined Sync Methods
@@ -316,8 +318,9 @@ The following methods are defined for variables of ``sync`` type:
 .. include:: /builtins/ChapelSyncvar.rst
 
 .. index::
-   single: atomic variables;atomic
+   single: atomic variables; atomic
    single: atomic
+   pair: atomic; predefined functions
 .. _Atomic_Variables:
 .. _Functions_on_Atomic_Variables:
 
@@ -338,7 +341,7 @@ by the following syntax:
 
 .. index::
    single: cobegin
-   single: statements;cobegin
+   single: statements; cobegin
 .. _Cobegin:
 
 The Cobegin Statement
@@ -402,7 +405,7 @@ statements may not be used to exit a cobegin block.
 
 .. index::
    single: coforall
-   single: statements;coforall
+   single: statements; coforall
 .. _Coforall:
 
 The Coforall Loop
@@ -483,8 +486,8 @@ statements may not be used to exit a coforall block.
 
 .. index::
    single: task intents
-   single: task parallelism;task functions
-   single: task parallelism;task intents
+   single: task parallelism; task functions
+   single: task parallelism; task intents
 .. _Task_Intents:
 
 Task Intents
@@ -656,7 +659,7 @@ subject to such treatment within nested task constructs, if any.
 
 .. index::
    single: sync
-   single: statements;sync
+   single: statements; sync
 .. _Sync_Statement:
 
 The Sync Statement
@@ -747,7 +750,7 @@ continue statements may not be used to exit a sync statement block.
 
 .. index::
    single: serial
-   single: statements;serial
+   single: statements; serial
 .. _Serial:
 
 The Serial Statement

@@ -14,8 +14,8 @@ is known at compile-time and the compiler enforces that values assigned
 to the variable can be stored in that variable as specified by its type.
 
 .. index::
-   single: variables;declarations
-   single: declarations;variables
+   single: variables; declarations
+   single: declarations; variables
 .. _Variable_Declarations:
 
 Variable Declarations
@@ -126,7 +126,7 @@ Multiple variables can be grouped together using a tuple notation as
 described in :ref:`Variable_Declarations_in_a_Tuple`.
 
 .. index::
- single: split initialization
+   single: split initialization
 .. _Split_Initialization:
 
 Split Initialization
@@ -376,9 +376,9 @@ unconditionally return.
       2
 
 .. index::
-   single: default initialization;variables
-   single: variables;default initialization
-   single: variables;default values
+   single: default initialization; variables
+   single: variables; default initialization
+   single: variables; default values
 .. _Default_Values_For_Types:
 
 Default Initialization
@@ -411,7 +411,7 @@ atomic      base default value
 
 .. index::
    single: type inference
-   single: type inference;local
+   single: type inference; local
 .. _Local_Type_Inference:
 
 Local Type Inference
@@ -434,8 +434,8 @@ is equivalent to
 for an arbitrary expression ``e``.
 
 .. index::
-   single: declarations;variables;multiple
-   single: variables;declarations;multiple
+   single: declarations; multiple variables
+   single: variables; multple variable declarations
 .. _Multiple_Variable_Declarations:
 
 Multiple Variable Declarations
@@ -550,7 +550,7 @@ follows:
    *full*/*empty* state.
 
 .. index::
-   single: variables;module level
+   single: variables; module level
 .. _Module_Level_Variables:
 
 Module Level Variables
@@ -563,7 +563,7 @@ initialization of that variable. If they are public, they can also be
 accessed in other modules that use that module.
 
 .. index::
-   single: variables;local
+   single: variables; local
 .. _Local_Variables:
 
 Local Variables
@@ -594,7 +594,7 @@ the keyword ``param``, are compile-time constants and constants,
 specified with the keyword ``const``, are runtime constants.
 
 .. index::
-   single: constants;compile-time
+   single: constants; compile-time
    single: parameters
    single: param
 .. _Compile-Time_Constants:
@@ -641,7 +641,7 @@ Parameter expressions are restricted to the following constructs:
    See :ref:`Param_Return_Intent`.
 
 .. index::
-   single: constants;runtime
+   single: constants; runtime
    single: constants
    single: const
 .. _Runtime_Constants:
@@ -660,10 +660,10 @@ initialized to reference. However, the fields of that object are allowed
 to be modified.
 
 .. index::
-   single: variables;configuration
-   single: constants;configuration
+   single: variables; configuration
+   single: constants; configuration
+   single: parameters; configuration
    single: config
-   single: parameters;configuration
 .. _Configuration_Variables:
 
 Configuration Variables
@@ -713,8 +713,7 @@ overrides the default value appearing in the Chapel code.
    rank-independent code.
 
 .. index::
-   single: variables;ref
-   single: ref
+   pair: variables; ref
 .. _Ref_Variables:
 
 Ref Variables
@@ -801,6 +800,8 @@ Parameter constants and expressions cannot be aliased.
       myArr[3] = 73
       myConstRef = 52
 
+.. index::
+   single: variables; conflicts
 .. _Variable_Conflicts:
 
 Variable Conflicts
@@ -834,6 +835,9 @@ share a name with it.  While functions may share the same name (see
 :ref:`Function_Overloading`), a function sharing a name with a variable in the
 same scope will lead to conflicts.
 
+
+.. index::
+   pair: variables; lifetimes
 .. _Variable_Lifetimes:
 
 Variable Lifetimes
@@ -850,6 +854,9 @@ A variable's lifetime ends:
    :ref:`Copy_Elision`.
  * otherwise, at the variable's deinit point (see :ref:`Deinit_Points`)
 
+.. index::
+   single: variables; deinitialization points
+   single: deinitialization points
 .. _Deinit_Points:
 
 Deinit Points
@@ -958,6 +965,11 @@ are deinitialized at the end of the containing statement.
 
 
 
+.. index::
+   single: copy initialization
+   single: move initialization
+   single: initialization; copy
+   single: initialization; move
 .. _Copy_and_Move_Initialization:
 
 Copy and Move Initialization

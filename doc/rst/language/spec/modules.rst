@@ -23,8 +23,8 @@ in :ref:`Program_Execution`.
 
 .. index::
    single: module
-   single: modules;definitions
-   single: modules;top-level
+   single: modules; definitions
+   single: modules; top-level
 .. _Module_Definitions:
 
 Module Definitions
@@ -62,7 +62,7 @@ creates a *top-level module*. Module declarations within other modules
 create nested modules (:ref:`Nested_Modules`).
 
 .. index::
-   single: modules;prototype
+   single: modules; prototype
 .. _Prototype_Modules:
 
 Prototype Modules
@@ -79,9 +79,9 @@ Implicit modules (:ref:`Implicit_Modules`) are implicitly considered
 ``prototype`` modules as well.
 
 .. index::
-   single: modules;and files
+   single: modules; and files
    single: implicit modules
-   single: modules;implicit
+   single: modules; implicit
 .. _Implicit_Modules:
 
 Files and Implicit Modules
@@ -179,8 +179,8 @@ identifier, it cannot be referenced in a use statement.
    printY.
 
 .. index::
-   single: modules;nested
-   single: modules;sub-modules
+   single: modules; nested
+   single: modules; sub-modules
 .. _Nested_Modules:
 
 Nested Modules
@@ -273,7 +273,7 @@ nested modules.
       0
 
 .. index::
-   single: modules;access
+   single: modules; access
 .. _Access_Of_Module_Contents:
 
 Access of Module Contents
@@ -287,7 +287,7 @@ statement (:ref:`Importing_Modules`) or qualified
 naming (:ref:`Explicit_Naming`).
 
 .. index::
-   single: modules;access
+   single: modules; access
 .. _Visibility_Of_A_Module:
 
 Visibility Of A Module
@@ -321,7 +321,7 @@ unless it has already been brought into scope by another ``use`` or ``import``
 statement.
 
 .. index::
-   single: modules;access
+   single: modules; symbol visibility
 .. _Visibility_Of_Symbols:
 
 Visibility Of A Module’s Symbols
@@ -338,8 +338,8 @@ statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
 .. index::
-   single: modules;using
-   single: modules;importing
+   single: modules; using
+   single: modules; importing
 .. _Using_And_Importing:
 
 Using and Importing
@@ -838,7 +838,7 @@ access to certain symbols, that list will also limit which of the symbols from
 C1, C2, and C3 will be available to A.
 
 .. index::
-   single: modules;qualified naming
+   single: modules; qualified naming
 .. _Explicit_Naming:
 
 Qualified Naming of Module Symbols
@@ -1128,8 +1128,7 @@ modules.
 
 
 .. index::
-   single: modules;initialization
-   single: initialization;modules
+   pair: modules; initialization
 .. _Module_Initialization:
 
 Module Initialization
@@ -1176,8 +1175,7 @@ Module initialization order is discussed
 in :ref:`Module_Initialization_Order`.
 
 .. index::
-   single: modules;deinitialization
-   single: deinitialization;modules
+   pair: modules; deinitialization
 .. _Module_Deinitialization:
 
 Module Deinitialization
@@ -1288,7 +1286,7 @@ the following situations in order:
 
 .. index::
    single: main
-   single: functions;main
+   single: functions; main
    single: exploratory programming
 .. _The_main_Procedure:
 
@@ -1334,7 +1332,7 @@ procedure. The default main function is equivalent to:
    module is initialized.
 
 .. index::
-   single: modules;initialization order
+   single: modules; initialization order
 .. _Module_Initialization_Order:
 
 Module Initialization Order
@@ -1394,7 +1392,7 @@ uses are initialized before the nested module and its uses or imports.
    M2.M3. Finally M1 is initialized, and the main procedure is run.
 
 .. index::
-   single: modules;deinitialization order
+   single: modules; deinitialization order
 .. _Module_Deinitialization_Order:
 
 Module Deinitialization Order

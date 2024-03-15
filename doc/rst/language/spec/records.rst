@@ -32,8 +32,8 @@ A record type is generic if it contains generic fields. Generic record
 types are discussed in detail in :ref:`Generic_Types`.
 
 .. index::
-   single: records;declarations
-   single: declarations;records
+   single: records; declarations
+   single: declarations; records
    single: record
 .. _Record_Declarations:
 
@@ -88,9 +88,8 @@ external records.
     instance.
 
 .. index::
-   single: records;record types
-   single: records;types
-   single: types;records
+   single: records; record types
+   pair: records; types
 .. _Record_Types:
 
 Record Types
@@ -114,8 +113,7 @@ fully-specified type, for example to declare a variable. This is done
 with type constructors, which are defined in Section :ref:`Type_Constructors`.
 
 .. index::
-   single: records;fields
-   single: fields;records
+   pair: records; fields
 .. _Record_Fields:
 
 Record Fields
@@ -144,8 +142,7 @@ storage associated with a record.
    preceding chapter :ref:`Class_Fields`.
 
 .. index::
-   single: records;methods
-   single: methods;records
+   pair: records; methods
 .. _Record_Methods:
 
 Record Methods
@@ -161,7 +158,7 @@ A method that modifies ``this`` must declare an explicit ``this-intent`` of
 
 .. index::
    single: nested records
-   single: records;nested
+   single: records; nested
 .. _Nested_Record_Types:
 
 Nested Record Types
@@ -172,8 +169,8 @@ nested record can be referenced only within its immediately enclosing
 class or record.
 
 .. index::
-   single: records;variable declarations
-   single: variables;records
+   single: records; variable declarations
+   single: variables; records
 .. _Record_Variable_Declarations:
 
 Record Variable Declarations
@@ -195,7 +192,7 @@ initializer (:ref:`Class_Initializers`) that accepts zero actual
 arguments.
 
 .. index::
-   single: records;allocation
+   single: records; allocation
 .. _Record_Storage:
 
 Storage Allocation
@@ -217,8 +214,8 @@ Record storage is reclaimed automatically. See :ref:`Variable_Lifetimes`
 for details on when a record becomes dead.
 
 .. index::
-   single: records;initialization
-   single: initialization;record
+   single: records; initialization
+   single: initialization; record
 .. _Record_Initialization:
 
 Record Initialization
@@ -298,8 +295,8 @@ initializers are supplied, the default initializer cannot be called
 directly.
 
 .. index::
-   single: records;deinitializer
-   single: deinitializer;records
+   single: records; deinitializer
+   single: deinitializer; records
 .. _Record_Deinitializer:
 
 Record Deinitializer
@@ -352,8 +349,8 @@ out of scope and before its memory is reclaimed.
       --memLeaksByType
 
 .. index::
-   single: records;arguments
-   single: arguments;records
+   single: records; arguments
+   single: arguments; records
 .. _Record_Arguments:
 
 Record Arguments
@@ -406,7 +403,7 @@ by the record assignment function (:ref:`Record_Assignment`).
    is used.
 
 .. index::
-   single: records;field access
+   single: records; field access
    single: field access
 .. _Record_Field_Access:
 
@@ -423,7 +420,7 @@ respectively. Also, parameter and type fields can be accessed from an
 instantiated record type in addition to from a record value.
 
 .. index::
-   single: records;getters
+   single: records; getters
 .. _Field_Getter_Methods:
 
 Field Getter Methods
@@ -435,7 +432,7 @@ a reference to the specified field (so they can be written as well as
 read). The user may redefine these as needed.
 
 .. index::
-   single: records;method calls
+   single: records; method calls
    single: method calls
 .. _Record_Method_Access:
 
@@ -452,7 +449,7 @@ Common Operations
 -----------------
 
 .. index::
-   single: records;copy initialization
+   pair: records; copy initialization
 .. _Copy_Initialization_of_Records:
 
 Copy Initialization of Records
@@ -600,7 +597,7 @@ declaration:
   var B : Wrapper(string) = "hello";
 
 .. index::
-   single: records;assignment
+   pair: records; assignment
 .. _Record_Assignment:
 
 Record Assignment
@@ -665,10 +662,10 @@ The following example demonstrates record assignment.
    ``3.14`` to ``C.x`` does not affect the ``x`` field in ``A``.
 
 .. index::
-   single: records;equality
-   single: records;inequality
-   single: records;==
-   single: records;!=
+   single: records; equality
+   single: records; inequality
+   single: records; ==
+   single: records; !=
    single: == (record)
    single: != (record)
 .. _Record_Comparison_Operators:

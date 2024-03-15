@@ -57,7 +57,7 @@ These statements are defined in Sections :ref:`Enumerated_Types`,
 respectively.
 
 .. index::
-   single: types;primitive
+   single: types; primitive
 .. _Primitive_Types:
 
 Primitive Types
@@ -111,7 +111,7 @@ See :ref:`Compile-Time_Constants`
 
 .. index::
    single: void
-   single: types;void
+   single: types; void
 .. _The_Void_Type:
 
 The Void Type
@@ -145,7 +145,7 @@ to a variable.
 
 .. index::
    single: nothing
-   single: types;nothing
+   single: types; nothing
 .. _The_Nothing_type:
 
 The Nothing Type
@@ -188,7 +188,7 @@ representation at run-time.
 
 .. index::
    single: bool
-   single: types;bool
+   single: types; bool
 .. _The_Bool_Type:
 
 The Bool Type
@@ -240,8 +240,8 @@ not initialized to something else (see also :ref:`Chapter-Variables`).
 .. index::
    single: uint
    single: int
-   single: types;uint
-   single: types;int
+   single: types; uint
+   single: types; int
 .. _Signed_and_Unsigned_Integral_Types:
 
 Signed and Unsigned Integral Types
@@ -326,7 +326,8 @@ will be discarded.
 
 .. index::
    single: real
-   single: types;real
+   single: types; real
+   single: types; floating point
 .. _Real_Types:
 
 Real Types
@@ -402,7 +403,8 @@ without an exponent (see :ref:`Literals` for details):
 
 .. index::
    single: imaginary
-   single: types;imaginary
+   single: types; imaginary
+   single: types; imag
 .. _Imaginary_Types:
 
 Imaginary Types
@@ -472,7 +474,7 @@ floating-point value while changing whether or not it is imaginary.
 
 .. index::
    single: complex
-   single: types;complex
+   single: types; complex
 .. _Complex_Types:
 
 Complex Types
@@ -527,7 +529,7 @@ See the :mod:`Math` module documentation.
 
 .. index::
    single: string
-   single: types;string
+   single: types; string
 .. _The_String_Type:
 
 The String Type
@@ -539,7 +541,7 @@ unbounded. Strings are defined in :ref:`Chapter-Strings`.
 
 .. index::
    single: bytes
-   single: types;bytes
+   single: types; bytes
 .. _The_Bytes_Type:
 
 The Bytes Type
@@ -551,13 +553,13 @@ unbounded. Bytes are defined in :ref:`Chapter-Bytes`.
 
 .. index::
    single: enumerated types
-   single: types;enumerated
-   single: enumerated types;abstract
-   single: enumerated types;concrete
-   single: enumerated types;semi-concrete
-   single: enumerated types;iterating
-   single: enumerated types;size
-   single: predefined functions;size (enum)
+   single: types; enumerated
+   single: enumerated types; abstract
+   single: enumerated types; concrete
+   single: enumerated types; semi-concrete
+   single: enumerated types; iterating
+   single: enumerated types; size
+   single: predefined functions; size (enum)
 .. _Enumerated_Types:
 
 Enumerated Types
@@ -678,7 +680,7 @@ available:
    Returns the last constant in the enumerated type.
 
 .. index::
-   single: types;structured
+   single: types; structured
 .. _Structured_Types:
 
 Structured Types
@@ -803,7 +805,7 @@ of any type. Domains, arrays, and their index types are defined in
 :ref:`Chapter-Domains` and :ref:`Chapter-Arrays`.
 
 .. index::
-   single: types;synchronization
+   single: types; synchronization
 .. _Synchronization_Types:
 
 Synchronization Types
@@ -824,7 +826,7 @@ The sync type is discussed in
 in :ref:`Atomic_Variables`.
 
 .. index::
-   single: types;aliases
+   single: types; aliases
 .. _Type_Aliases:
 
 Type Aliases

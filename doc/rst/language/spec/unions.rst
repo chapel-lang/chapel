@@ -15,7 +15,7 @@ contain data is a runtime error. When a union is initialized, it is in
 an unset state so that no field contains data.
 
 .. index::
-   single: types;unions
+   single: types; unions
    single: union types
 .. _Union_Types:
 
@@ -35,7 +35,7 @@ unions are not supported.
 
 .. index::
    single: union
-   single: declarations;union
+   single: declarations; union
 .. _Union_Declarations:
 
 Union Declarations
@@ -66,7 +66,7 @@ is generated. It is presumed that the definition of an external union
 type is supplied by a library or the execution environment.
 
 .. index::
-   single: unions;fields
+   single: unions; fields
 .. _Union_Fields:
 
 Union Fields
@@ -79,7 +79,7 @@ set.
 Union fields should not be specified with initialization expressions.
 
 .. index::
-   single: unions;assignment
+   single: unions; assignment
 .. _Union_Assignment:
 
 Union Assignment

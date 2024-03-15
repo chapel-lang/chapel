@@ -121,9 +121,9 @@ The statements within a block are executed serially unless the block is
 in a cobegin statement (:ref:`Cobegin`).
 
 .. index::
-   single: expressions;statement
+   single: expressions; statement
    single: expression statement
-   single: statements;expression
+   single: statements; expression
 .. _Expression_Statements:
 
 Expression Statements
@@ -143,7 +143,7 @@ effects. The syntax for an expression statement is given by
 
 .. index::
    single: assignment
-   single: statements;assignment
+   single: statements; assignment
    single: =
    single: +=
    single: -=
@@ -242,10 +242,10 @@ within the body of the function. The return type of the function should
 be ``void``.
 
 .. index::
-   single: swap;statement
-   single: statements;swap
-   single: swap;operator
-   single: operators;swap
+   single: swap; statement
+   single: statements; swap
+   single: swap; operator
+   single: operators; swap
    single: <=>
 .. _The_Swap_Statement:
 
@@ -291,12 +291,12 @@ as necessary.
       a = t;
 
 .. index::
-   single: statements;conditional
+   single: statements; conditional
    single: if
    single: then
    single: else
    single: conditional statements
-   single: conditional statement;dangling else
+   single: conditional statement; dangling else
 .. _The_Conditional_Statement:
 
 The Conditional Statement
@@ -398,9 +398,9 @@ statement, too.
    single: select
    single: when
    single: otherwise
-   single: statements;select
-   single: statements;when
-   single: statements;otherwise
+   single: statements; select
+   single: statements; when
+   single: statements; otherwise
 .. _The_Select_Statement:
 
 The Select Statement
@@ -448,7 +448,7 @@ surrounds it.
 .. index::
    single: while loops
    single: while
-   single: statements;while
+   single: statements; while
 .. _The_While_and_Do_While_Loops:
 
 The While Do and Do While Loops
@@ -584,7 +584,7 @@ with the ``var`` keyword.
 .. index::
    single: for loops
    single: for
-   single: statements;for
+   single: statements; for
 .. _The_For_Loop:
 
 The For Loop
@@ -625,8 +625,8 @@ a parenthesized expression-list, the listed expressions must support
 zippered iteration.
 
 .. index::
-   single: zipper iteration
-   single: iteration;zipper
+   single: zippered iteration
+   single: iteration; zippered
 .. _Zippered_Iteration:
 
 Zippered Iteration
@@ -666,10 +666,9 @@ support iteration over a 2D `m` x `n` space as well.
       1 4 2 5 3 6 
 
 .. index::
-   single: statements;param for
-   single: for loops;parameters
-   single: for
-   single: param
+   single: statements; param for
+   single: for loops; param
+   pair: for; param
 .. _Parameter_For_Loops:
 
 Parameter For Loops
@@ -694,13 +693,13 @@ an optional by expression where the bounds and stride must be
 parameters. The loop is then unrolled for each iteration.
 
 .. index::
-   single: statements;jumps
+   single: statements; jumps
    single: label
    single: break
    single: continue
-   single: statements;label
-   single: statements;break
-   single: statements;continue
+   single: statements; label
+   single: statements; break
+   single: statements; continue
 .. _Label_Break_Continue:
 
 The Break, Continue and Label Statements
@@ -776,7 +775,7 @@ A ``break`` statement cannot be used to exit a parallel loop
 
 .. index::
    single: require
-   single: statements;require
+   single: statements; require
 .. _The_Require_statement:
 
 The Require Statement
@@ -849,9 +848,9 @@ depending on the value of *requireFoo*:
 
 .. index::
    single: use
-   single: statements;use
-   single: modules;using
-   single: types;enumerated;using
+   single: statements; use
+   single: modules; using
+   single: enumerated types; using
 .. _The_Use_Statement:
 
 The Use Statement
@@ -869,6 +868,10 @@ see :ref:`Using_Modules`.  For more information on enumerated types, please
 see :ref:`Enumerated_Types`.  For more information on modules in general, please
 see :ref:`Chapter-Modules`.
 
+.. index::
+   single: import
+   single: statements; import
+   single: modules; importing
 .. _The_Import_Statement:
 
 The Import Statement
@@ -889,7 +892,7 @@ For more information on modules in general, please see :ref:`Chapter-Modules`.
 
 .. index::
    single: defer
-   single: statements;defer
+   single: statements; defer
 .. _The_Defer_Statement:
 
 The Defer Statement
@@ -1098,7 +1101,7 @@ cleanup action run.
       Inside if
 
 .. index::
-   single: statements;empty
+   single: statements; empty
 .. _The_Empty_Statement:
 
 The Empty Statement

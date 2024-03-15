@@ -2,8 +2,8 @@
 
 .. index::
    single: methods
-   single: methods;primary
-   single: methods;secondary
+   single: methods; primary
+   single: methods; secondary
    single: primary methods
    single: secondary methods
 .. _Chapter-Methods:
@@ -67,7 +67,8 @@ The use of ``this-intent`` is described in
 
 .. index::
    single: method calls
-   single: methods;calling
+   single: methods; calling
+   single: calls; methods
 .. _Method_Calls:
 
 Method Calls
@@ -147,14 +148,15 @@ a way that allows these methods to be called (see :ref:`Using_Modules` and
    discussion.
 
 .. index::
-   single: methods;receiver
+   single: methods; receiver
    single: this
-   single: classes;this
+   single: classes; this
+   single: records; this
    single: receiver
    single: type methods
    single: instance methods
-   single: methods;type
-   single: methods;instance
+   single: methods; type
+   single: methods; instance
 .. _Method_receiver_and_this:
 
 The Method Receiver and the *this* Argument
@@ -329,9 +331,9 @@ entirely, the receiver will be passed with a default intent. The default
    to ``4``.
 
 .. index::
-   single: methods;indexing
+   single: methods; indexing
    single: this
-   single: methods;this
+   single: methods; this
 .. _The_this_Method:
 
 The *this* Method
@@ -385,9 +387,9 @@ be declared with parentheses even if the argument list is empty.
       thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 
 .. index::
-   single: methods;iterating
+   single: methods; iterating
    single: these
-   single: methods;these
+   single: methods; these
 .. _The_these_Method:
 
 The *these* Method

@@ -120,8 +120,8 @@ Calls to methods are defined in
 Section :ref:`Class_Method_Calls`.
 
 .. index::
-   single: functions;procedure definition
-   single: procedures;definition
+   single: functions; procedure definition
+   single: procedures; definition
    single: proc
 .. _Function_Definitions:
 
@@ -265,7 +265,7 @@ See the chapter on interoperability
 and imported functions.
 
 .. index::
-   single: functions;without parentheses
+   single: functions; without parentheses
 .. _Functions_without_Parentheses:
 
 Functions without Parentheses
@@ -305,8 +305,7 @@ be called without parentheses.
 
 .. index::
    single: formal arguments
-   single: functions;formal arguments
-   single: functions;arguments;formal
+   single: functions; formal arguments
 .. _Formal_Arguments:
 
 Formal Arguments
@@ -322,9 +321,8 @@ default value (e.g. ``arg = ""``).
 
 .. index::
    single: named arguments
-   single: functions;named arguments
-   single: functions;arguments;named
-   single: formal arguments;naming
+   single: functions; named arguments
+   single: formal arguments; naming
 .. _Named_Arguments:
 
 Named Arguments
@@ -363,8 +361,7 @@ compiler-checked documentation.
 
 .. index::
    single: default values
-   single: functions;default argument values
-   single: functions;arguments;defaults
+   single: functions; default argument values
    single: formal arguments;defaults
 .. _Default_Values:
 
@@ -456,8 +453,8 @@ from the default value expression.
 
 .. index::
    single: intents
-   single: argument;intents
-   single: functions;arguments;intents
+   pair: arguments; intents
+   single: functions; arguments intents
 .. _Argument_Intents:
 
 Argument Intents
@@ -520,7 +517,7 @@ See the sections on each intent for further details.
 
 .. index::
    single: in (intent)
-   single: intents;in
+   single: intents; in
 .. _The_In_Intent:
 
 The In Intent
@@ -604,7 +601,7 @@ but the code does not copy initialize:
 
 .. index::
    single: out (intent)
-   single: intents;out
+   single: intents; out
 .. _The_Out_Intent:
 
 The Out Intent
@@ -645,7 +642,7 @@ function body rather than from the call site.
 
 .. index::
    single: inout (intent)
-   single: intents;inout
+   single: intents; inout
 .. _The_Inout_Intent:
 
 The Inout Intent
@@ -666,7 +663,7 @@ modified within the function.
 
 .. index::
    single: ref (intent)
-   single: intents;ref
+   single: intents; ref
 .. _The_Ref_Intent:
 
 The Ref Intent
@@ -688,7 +685,7 @@ model.
 
 .. index::
    single: const in (intent)
-   single: intents;const in
+   single: intents; const in
 .. _The_Const_In_Intent:
 
 The Const In Intent
@@ -699,7 +696,7 @@ modifications to the formal argument are prohibited within the function.
 
 .. index::
    single: const ref (intent)
-   single: intents;const ref
+   single: intents; const ref
 .. _The_Const_Ref_Intent:
 
 The Const Ref Intent
@@ -736,7 +733,7 @@ The following example shows such modification by means other than the
       2
 
 .. index::
-   single: intents;const
+   single: intents; const
 .. _The_Const_Intent:
 
 The Const Intent
@@ -795,11 +792,7 @@ In the cases where these assumptions are not appropriate, code should use
 
 
 .. index::
-   single: intents;default
-   single: intents;array default
-   single: intents;record chpl{this} default
-   single: intents;default for owned
-   single: intents;default for shared
+   single: intents; default
 .. _The_Default_Intent:
 
 The Default Intent
@@ -863,8 +856,8 @@ actual argument is assumed to remain unchanged during the call and
 ownership transfer or ownership sharing will not occur.
 
 .. index::
-   single: functions;variable number of arguments
-   single: functions;varargs
+   single: functions; variable number of arguments
+   single: functions; varargs
 .. _Variable_Length_Argument_Lists:
 
 Variable Number of Arguments
@@ -985,8 +978,8 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
    equivalent, as are the expressions ``tuple(1)`` and ``(1,)``.
 
 .. index::
-   single: functions;return intent
-   single: statements;return;return intent
+   single: functions; return intent
+   single: return; intent
 .. _Return_Intent:
 
 Return Intents
@@ -997,7 +990,7 @@ function and in what contexts that function is allowed to be used.
 The rules for returning tuples are specified in :ref:`Tuple_Return_Behavior`.
 
 .. index::
-   single: intents;default (return intent)
+   single: intents; default (return intent)
 .. _Default_Return_Intent:
 
 The Default Return Intent
@@ -1008,7 +1001,7 @@ a value in the same way as the ``out`` return intent,
 see :ref:`Out_Return_Intent`.
 
 .. index::
-   single: intents;out (return intent)
+   single: intents; out (return intent)
 .. _Out_Return_Intent:
 
 The Out Return Intent
@@ -1022,10 +1015,10 @@ see :ref:`Copy_and_Move_Initialization`.
 It is an error to return a ``sync`` or ``atomic`` by ``out`` intent.
 
 .. index::
-   single: functions;ref keyword
+   single: functions; ref keyword
    single: ref (return intent)
-   single: intents;ref (return intent)
-   single: functions;lvalues
+   single: intents; ref (return intent)
+   single: functions; lvalues
 .. _Ref_Return_Intent:
 
 The Ref Return Intent
@@ -1082,9 +1075,9 @@ exists outside of the function's scope.
       3
 
 .. index::
-   single: functions;const ref keyword
+   single: functions; const ref keyword
    single: const ref (return intent)
-   single: intents;const ref (return intent)
+   single: intents; const ref (return intent)
 .. _Const_Ref_Return_Intent:
 
 The Const Ref Return Intent
@@ -1096,7 +1089,7 @@ form of the ``ref`` return intent. Calls to functions marked with the
 
 .. index::
    single: const (return intent)
-   single: intents;const (return intent)
+   single: intents; const (return intent)
 .. _Const_Return_Intent:
 
 The Const Return Intent
@@ -1108,8 +1101,7 @@ the ``const`` return intent are not lvalue expressions.
 
 
 .. index::
-   single: functions;return intent overloads
-   single: functions;return intent overloads
+   single: functions; return intent overloads
 .. _Return_Intent_Overloads:
 
 Return Intent Overloads
@@ -1168,8 +1160,7 @@ context.
       ref-return-intent-pair.chpl:8: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 
 .. index::
-   single: functions;as parameters
-   single: functions;parameter function
+   single: functions; param return intent
    single: parameter function
 .. _Param_Return_Intent:
 
@@ -1220,8 +1211,8 @@ loop :ref:`Parameter_For_Loops` and conditionals with a
 conditional expressions that is not a parameter.
 
 .. index::
-   single: functions;as types
-   single: functions;type functions
+   single: functions; type return intent
+   single: functions; type functions
 .. _Type_Return_Intent:
 
 The Type Return Intent
@@ -1290,7 +1281,7 @@ forms of control flow.
 
 .. index::
    single: return
-   single: statements;return
+   single: statements; return
 .. _The_Return_Statement:
 
 The Return Statement
@@ -1346,8 +1337,8 @@ The syntax of the return statement is given by
       6
 
 .. index::
-   single: statements;return;return type
-   single: functions;return types
+   single: return types
+   single: functions; return types
 .. _Return_Types:
 
 Return Types
@@ -1359,7 +1350,7 @@ inferred implicitly.
 
 .. index::
    single: explicit return type
-   single: functions;return types;explicit
+   single: return types; explicit
 .. _Explicit_Return_Types:
 
 Explicit Return Types
@@ -1374,9 +1365,9 @@ the type returned in all of the return statements exactly, when checked
 after generic instantiation and parameter folding (if applicable).
 
 .. index::
-   single: type inference;of return types
+   single: type inference; of return types
    single: implicit return type
-   single: functions;return types;implicit
+   single: return types; implicit
 .. _Implicit_Return_Types:
 
 Implicit Return Types
@@ -1399,7 +1390,7 @@ an error.
 
 .. index::
    single: where
-   single: functions;where
+   single: functions; where
 .. _Where_Clauses:
 
 Where Clauses
@@ -1440,7 +1431,7 @@ resolution.
    clause on the second function evaluates to false.
 
 .. index::
-   single: functions;nested
+   single: functions; nested
    single: nested function
 .. _Nested_Functions:
 
@@ -1461,8 +1452,8 @@ which they are nested.
    single: overloading
    single: overloading functions
    single: overloading operators
-   single: functions;overloading
-   single: operators;overloading
+   single: functions; overloading
+   single: operators; overloading
 .. _Function_Overloading:
 
 Function and Operator Overloading
@@ -1495,7 +1486,10 @@ resolution.
 Assignment overloads are not supported for class types.
 
 .. index::
-   single: functions;resolution
+   single: functions; resolution
+   single: functions; disambiguation
+   see: overload resolution; function resolution
+   single: function resolution
 .. _Function_Resolution:
 
 Function Resolution
@@ -1558,7 +1552,7 @@ This section uses the following notation:
   type :math:`T(Y_i)`.
 
 .. index::
-   single: functions;visible
+   single: functions; visible
 .. _Determining_Visible_Functions:
 
 Determining Visible Functions
@@ -1584,9 +1578,9 @@ function call and one of the following conditions is met:
   receiver type.
 
 .. index::
-   single: functions;candidates
-   single: functions;resolution;valid mapping
-   single: functions;resolution;legal argument mapping
+   single: functions; candidates
+   single: function resolution; valid mapping
+   single: function resolution; legal argument mapping
 .. _Determining_Candidate_Functions:
 
 Determining Candidate Functions
@@ -1671,8 +1665,7 @@ array of ``int`` and :math:`T(X_i)` is ``int``, then promotion occurs and
 the above rules will be checked with :math:`T(A_i)` == ``int``.
 
 .. index::
-   single: functions;most specific
-   single: functions;resolution;most specific
+   single: function resolution; most specific
 .. _Determining_More_Specific_Functions:
 .. _Determining_Most_Specific_Functions:
 
@@ -1843,7 +1836,7 @@ the following function(s) are selected as best functions:
 -  only those functions that have a ``where`` clause, otherwise.
 
 .. index::
-   single: functions;return intent overloads
+   single: functions; return intent overloads
 .. _Choosing_Return_Intent_Overload:
 
 Choosing Return Intent Overloads Based on Calling Context
