@@ -10,7 +10,7 @@ Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * Chapel's core language and library features are now considered stable!
 * added `chpl-language-server`, a new LSP-based tool for VSCode/vim/... users
-* added new 'ParallelIO', 'DistributedBag' and 'Zarr' package modules
+* added new 'ParallelIO' & 'Zarr' package modules and reworked 'DistributedBag'
 * significantly improved the behavior and interfaces of the 'Random' module
 * dramatically improved co-locale support (running multiple locales per node)
 * improved GPU support via new attributes, optimizations, and portability
@@ -99,7 +99,7 @@ New Package Module Features
 ---------------------------
 * added a new 'ParallelIO' module with routines for reading files in parallel  
   (see https://chapel-lang.org/docs/2.0/modules/packages/ParallelIO.html)
-* improved the `DistributedBag` package w.r.t. depth-first-search and quality  
+* reworked the `DistributedBag` package w.r.t. depth-first-search and quality  
   (see https://chapel-lang.org/docs/2.0/modules/packages/DistributedBag.html)
 * added a new prototype distributed 'Zarr' I/O module  
   (see https://chapel-lang.org/docs/2.0/modules/packages/Zarr.html)
@@ -320,7 +320,7 @@ Third-Party Software Changes
 ----------------------------
 * updated the bundled copy of LLVM to version 17.0.6
 * updated the Python package versions used by `chpldoc`  
-  (see $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt for details)
+  (see `$CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt` for details)
 
 Developer-oriented changes: Documentation
 -----------------------------------------
