@@ -344,9 +344,9 @@ for type:
 .. index::
    single: associative domains
    single: domains; associative
-   single: domains;associative;literals
-   single: domains;associative;initialization
-   single: domains;associative;default values
+   single: associative domains; literals
+   single: associative domains; initialization
+   single: associative domains; default values
 
 Associative Domains
 ~~~~~~~~~~~~~~~~~~~

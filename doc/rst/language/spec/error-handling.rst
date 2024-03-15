@@ -79,7 +79,7 @@ There are three ways to handle an error:
 -  Propagate the error out of the current function with ``throws``.
 
 .. index::
-   single: try!;
+   single: try!
    single: errors; try!
 .. _Halting_on_error_with_try_bang:
 

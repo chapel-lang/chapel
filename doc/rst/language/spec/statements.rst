@@ -158,11 +158,9 @@ effects. The syntax for an expression statement is given by
    single: &&=
    single: <<=
    single: >>=
-   single: operators;assignment
-   single: operators;compound assignment
-   single: operators;assignment;compound
-   single: operators;simple assignment
-   single: operators;assignment;simple
+   single: operators; assignment
+   single: operators; compound assignment
+   single: operators; simple assignment
 .. _Assignment_Statements:
 
 Assignment Statements

@@ -2,11 +2,11 @@
 
 .. index::
    single: domain maps
-   single: mapped;domain maps
+   single: mapped; domain maps
    single: layouts
    single: distributions
-   single: domain maps;layouts
-   single: domain maps;distributions
+   single: domain maps; layouts
+   single: domain maps; distributions
 .. _Chapter-Domain_Maps:
 
 =============
@@ -47,11 +47,11 @@ Distributions are presented as follows:
 
 .. index::
    single: domain maps for domain types
-   single: types;domains;domain maps for
+   single: domains; domain maps for
    single: dmap value
    single: dmapped clause
-   single: domain maps;dmap value
-   single: domain maps;dmapped clause
+   single: domain maps; dmap value
+   single: domain maps; dmapped clause
 .. _Domain_Maps_For_Types:
 
 Distributions for Domain Types
@@ -137,8 +137,7 @@ is considered to be an initialization expression as if preceded by
       type BlockDom = domain(2) dmapped new blockDist({1..5,1..6});
 
 .. index::
-   single: domain maps;for domain values
-   single: values;domains;domain maps for
+   single: domain maps; for domain values
 .. _Domain_Maps_For_Values:
 
 Distributions for Domain Values
@@ -186,8 +185,8 @@ clause, in the same way as a domain type's distribution.
    mapped using a Block distribution.
 
 .. index::
-   single: domain maps;for arrays
-   single: arrays;domain maps
+   single: domain maps; for arrays
+   single: arrays; domain maps
 .. _Domain_Maps_For_Arrays:
 
 Distributions for Arrays
@@ -210,9 +209,9 @@ array was declared.
    the type of ``Dom``.
 
 .. index::
-   single: domain maps;domain assignment
-   single: domains;assignment
-   single: assignment;domain
+   single: domain maps; domain assignment
+   single: domains; assignment
+   single: assignment; domain
 .. _Domain_Maps_Not_Assigned:
 
 Distributions Are Not Retained upon Domain Assignment

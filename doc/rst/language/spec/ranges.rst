@@ -39,9 +39,9 @@ Ranges are presented as follows:
    single: ranges; high bound
    single: ranges; stride
    single: ranges; alignment
-   single: ranges; alignment;ambiguous
+   single: ranges; ambiguous alignment
    single: ranges; represented sequence increasing
-   single: ranges; represented sequence ;decreasing
+   single: ranges; represented sequence decreasing
    single: ranges; empty
    single: ranges; aligned integer
    single: ranges; ambiguous alignment

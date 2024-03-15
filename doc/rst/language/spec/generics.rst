@@ -13,8 +13,8 @@ over both types and parameters. The generic functions and types look
 similar to non-generic functions and types already discussed.
 
 .. index::
-   single: functions;generic
-   single: generics;functions
+   single: functions; generic
+   single: generics; functions
 .. _Generic_Functions:
 
 Generic Functions
@@ -39,7 +39,7 @@ A function is generic if any of the following conditions hold:
 These conditions are discussed in the next sections.
 
 .. index::
-   single: intents;type
+   single: intents; type
 .. _Formal_Type_Arguments:
 
 Formal Type Arguments
@@ -123,7 +123,7 @@ accepting type arguments that only apply to a specific group of types.
       real(64) 1.0
 
 .. index::
-   single: intents;param
+   single: intents; param
 .. _Formal_Parameter_Arguments:
 
 Formal Parameter Arguments
@@ -167,7 +167,7 @@ this function at a call site. The formal argument is a parameter.
    component contains the value ``3``.
 
 .. index::
-   single: formal arguments;without types
+   single: formal arguments; without types
 .. _Formal_Arguments_without_Types:
 
 Formal Arguments without Types
@@ -219,7 +219,7 @@ each unique actual type.
    ``(real, real, real)``.
 
 .. index::
-   single: formal arguments;with queried types
+   single: formal arguments; with queried types
 .. _Formal_Arguments_with_Queried_Types:
 
 Formal Arguments with Queried Types
@@ -291,7 +291,7 @@ semantics of a type alias.
       12.0
 
 .. index::
-   single: formal arguments;generic
+   single: formal arguments; with generic type
 .. _Formal_Arguments_of_Generic_Type:
 
 Formal Arguments of Generic Type
@@ -349,9 +349,9 @@ require a query to mark the argument as generic. See also
       }
 
 .. index::
-   single: formal arguments;partially concrete
-   single: formal arguments;partially generic
-   single: where;implicit
+   single: formal arguments; partially concrete
+   single: formal arguments; partially generic
+   single: where; implicit
 .. _Formal_Arguments_of_Partially_Generic_Type:
 
 Formal Arguments of Partially Generic Type
@@ -479,7 +479,7 @@ constrained.
       partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
 
 .. index::
-   single: formal arguments;array
+   single: formal arguments; array
 .. _Formal_Arguments_of_Generic_Array_Types:
 
 Formal Arguments of Generic Array Types
@@ -496,7 +496,7 @@ A queried domain may not be modified via the name to which it is bound
 (see :ref:`Association_of_Arrays_to_Domains` for rationale).
 
 .. index::
-   single: generics;function visibility
+   single: generics; function visibility
 .. _Function_Visibility_in_Generic_Functions:
 
 Function Visibility in Generic Functions
@@ -602,8 +602,8 @@ or instantiated (if the derived type is generic).
    discussion. Comments or questions are appreciated.
 
 .. index::
-   single: generics;types
-   single: types;generic
+   single: generics; types
+   single: types; generic
 .. _Generic_Types:
 
 Generic Types
@@ -618,6 +618,10 @@ generic records.
    single: enumerated (generic type)
    single: enum (generic type)
    single: class (generic type)
+   single: unmanaged (generic type)
+   single: owned (generic type)
+   single: shared (generic type)
+   single: borrowed (generic type)
    single: record (generic type)
 .. _Built_in_Generic_Types:
 
@@ -669,12 +673,12 @@ instantiated as follows:
    similarly to the above but with ``unmanaged`` management strategy.
 
  .. index::
-   single: generics;classes
-   single: classes;generic
-   single: generics;records
-   single: records;generic
-   single: generics;fields
-   single: fields;generic
+   single: generics; classes
+   single: classes; generic
+   single: generics; records
+   single: records; generic
+   single: generics; fields
+   single: fields; generic
 
 Generic Classes and Records
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -709,8 +713,8 @@ Correspondingly, the class or record is instantiated with a set of types
 and parameter values, one type or value per generic field.
 
 .. index::
-   single: type aliases;in classes or records
-   single: fields;type alias
+   single: type aliases; in classes or records
+   single: fields; type alias
 .. _Type_Aliases_in_Generic_Types:
 
 Type Aliases in Generic Types
@@ -780,8 +784,9 @@ instead.
    field of.
 
 .. index::
-   single: parameters;in classes or records
-   single: fields;parameter
+   single: parameters; in classes or records
+   single: fields; parameter
+   pair: fields; param
 .. _Parameters_in_Generic_Types:
 
 Parameters in Generic Types
@@ -881,9 +886,9 @@ instead.
    ``-sbig=false`` or no argument it will print out ``R(32)``.
 
 .. index::
-   single: fields;variable and constant, without types
-   single: variables;in classes or records
-   single: constants;in classes or records
+   single: fields; variable and constant, without types
+   single: variables; in classes or records
+   single: constants; in classes or records
 .. _Fields_without_Types:
 
 Fields without Types
@@ -993,9 +998,9 @@ The types for such fields must either be a built-in generic type (see
 
 
 .. index::
-   single: generics;type constructor
-   single: initializers;type constructors
-   single: generics;instantiated type
+   single: generics; type constructor
+   single: initializers; type constructors
+   single: generics; instantiated type
 .. _Type_Constructors:
 
 The Type Constructor
@@ -1112,8 +1117,8 @@ marked with ``(?)``:
    :ref:`Formal_Type_Arguments`)
 
 .. index::
-   single: generics;methods
-   single: methods;generic
+   single: generics; methods
+   single: methods; generic
 .. _Generic_Methods:
 
 Generic Methods
@@ -1124,8 +1129,8 @@ are generic over the implicit ``this`` argument. This is in addition to
 being generic over any other argument that is generic.
 
 .. index::
-   single: generics;initializers;compiler-generated
-   single: initializers;compiler-generated;for generic classes or records
+   single: generics; compiler-generated initializers
+   single: compiler-generated initializers;for generic classes or records
 .. _Generic_Compiler_Generated_Initializers:
 
 The Compiler-Generated Generic Initializer
@@ -1156,8 +1161,8 @@ have defaults, so the corresponding actual values must always be
 provided.
 
 .. index::
-   single: generics;initializers;user-defined
-   single: initializers;user-defined;for generic classes or records
+   single: generics; user-defined initializers
+   single: user-defined initializers; for generic classes or records
 .. _Generic_User_Initializers:
 
 User-Defined Initializers
@@ -1425,7 +1430,7 @@ implementation can still be a generic function. See also
 :ref:`Where_Clauses`.
 
 .. index::
-   single: generics;examples;stack
+   single: generics; stack example
 .. _Example_Generic_Stack:
 
 Example: A Generic Stack
