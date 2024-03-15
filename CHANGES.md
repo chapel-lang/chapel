@@ -2,23 +2,23 @@ Release Changes List
 ====================
 
 TODO:
-o '(http:' -> '(see http:'
-o sort items within categories
+* '(http:' -> '(see http:'
+* sort items within categories
 o check placement of items into categories
-o check sorting of categories
-o check for ' vs `
-o fulfill TODOs
-o check man page
-o check test/release/examples
-o check for docs/1.33/ links
-o check forced linebreaks
-o check initial '*'
-o check initial 'A-Z'
-o check 'see:'
-o check for changes put too far down in file
+* check sorting of categories
+* check for ' vs `
+* fulfill TODOs
+* check man page for new compiler flags
+* check test/release/examples
+* check for docs/1.33/ links
+* check forced linebreaks
+* check initial '*'
+* check initial 'A-Z'
+* check 'see:'
+* check for changes put too far down in file
 o check links
-o add highlights
-o spellcheck
+* add highlights
+* spellcheck
 
 version 2.0
 ===========
@@ -29,11 +29,11 @@ Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * Chapel's core language and library features are now considered stable!
 * added `chpl-language-server`, a new LSP-based tool for VSCode/vim/... users
-* added new 'ParallelIO', 'DistributedBag' and 'Zarr package modules
+* added new 'ParallelIO', 'DistributedBag' and 'Zarr' package modules
 * significantly improved the behavior and interfaces of the 'Random' module
 * dramatically improved co-locale support (running multiple locales per node)
 * improved GPU support via new attributes, optimizations, and portability
-* significantly improved default 'sort()' performance for large local arrays
+* significantly improved default `sort()` performance for large local arrays
 * added support for `foreach` expressions and better default `foreach` intents
 * extended `chplcheck` to support user-defined lint rules
 * updated `chpl` to support LLVM 17 & use a new compiler-driver mode by default
@@ -65,12 +65,12 @@ Language Feature Improvements
 * added support for formal array arguments with generic element types  
   (e.g., `proc foo(x: [] integral) { ... }  foo([1, 2, 3, 4];` now works))
 
-Semantic Changes / Changes to the Chapel Language
--------------------------------------------------
+Semantic Changes / Changes to the Language Definition
+-----------------------------------------------------
 * changed arrays' default task intent to be based on the array's `const`-ness  
   (see https://chapel-lang.org/docs/2.0/language/spec/data-parallelism.html#forall-intents)
 * changed associative domains to be `parSafe=false` by default  
-  (see https://chapel-lang.org/docs/language/spec/domains.html#parallel-safety-with-respect-to-domains-and-arrays)
+  (see https://chapel-lang.org/docs/2.0/language/spec/domains.html#parallel-safety-with-respect-to-domains-and-arrays)
 * aligned default task intents on `foreach` loops to match `forall` loops
 * enabled implicit `param` conversions when passing to `const ref` formals  
   (e.g., `proc f(const ref arg: int(8))` can now be called with `f(1)`)  
@@ -108,23 +108,23 @@ New Standard Library Features
   (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#IO.fileReader.getFile)
 * added support for initializing a `list` of `list`s from an array of arrays
 * `abs()` and `sqrt()` taking `param`s now return a `param` in more cases  
-  (see https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.sqrt  
-   and https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.abs)
+  (see https://chapel-lang.org/docs/2.0/modules/standard/Math.html#Math.sqrt  
+   and https://chapel-lang.org/docs/2.0/modules/standard/Math.html#Math.abs)
 * added support for comparing `c_fn_ptr` values against `nil`
 * added unstable methods to append numeric values to a `bytes`/`string`  
-  (see https://chapel-lang.org/docs/main/language/spec/bytes.html#Bytes.bytes.appendByteValues  
-   and https://chapel-lang.org/docs/main/language/spec/strings.html#String.string.appendCodepointValues)
+  (see https://chapel-lang.org/docs/2.0/language/spec/bytes.html#Bytes.bytes.appendByteValues  
+   and https://chapel-lang.org/docs/2.0/language/spec/strings.html#String.string.appendCodepointValues)
 * added an unstable method to compute the hexadecimal encoding of a `bytes`  
-  (see https://chapel-lang.org/docs/main/language/spec/bytes.html#Bytes.bytes.toHexadecimal)
+  (see https://chapel-lang.org/docs/2.0/language/spec/bytes.html#Bytes.bytes.toHexadecimal)
 
 New Package Module Features
 ---------------------------
 * added a new 'ParallelIO' module with routines for reading files in parallel  
   (see https://chapel-lang.org/docs/2.0/modules/packages/ParallelIO.html)
 * improved the `DistributedBag` package w.r.t. depth-first-search and quality  
-  (see https://chapel-lang.org/docs/main/modules/packages/DistributedBag.html)
+  (see https://chapel-lang.org/docs/2.0/modules/packages/DistributedBag.html)
 * added a new prototype distributed 'Zarr' I/O module  
-  (see https://chapel-lang.org/docs/main/modules/packages/Zarr.html)
+  (see https://chapel-lang.org/docs/2.0/modules/packages/Zarr.html)
 * improved the performance of `toHex()` routines in the 'Crypto' package
 
 Standard Domain Maps (Layouts and Distributions)
@@ -140,16 +140,16 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
-* replaced `randomStream.permutataion()` with an improved `permute()` method  
-  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.permute)
+* replaced `randomStream.permutation()` with an improved `permute()` method  
+  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.permute)
 * replaced `randomStream.choice()` with improved `choose()`/`sample()` calls  
-  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.choose)
+  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.choose)
 * renamed `randomStream.getNext()` to `next()`  
-  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
+  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
 * renamed `randomStream.iterate()` to a new overload of `next()`  
-  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
+  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.next)
 * replaced `randomStream.skipToNth()` with an improved `skipTo()`  
-  (see: https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.skipTo)
+  (see https://chapel-lang.org/docs/2.0/modules/standard/Random.html#Random.randomStream.skipTo)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -169,7 +169,7 @@ Deprecated / Unstable / Removed Library Features
   (e.g., `carg()`, `conjg()`, `divceil()`, `log2_e`, `half_pi`, etc.)
 * removed the previously deprecated `BitOps.popcount()` function
 * removed all previously deprecated `BigInteger` functions and configs
-* removed some of the previously deprecated `Time` types
+* removed some of the previously deprecated `Time` types  
   (e.g., `datetime`, `timedelta`, `Timer`, `TZInfo`, `TimeUnits`, etc.)
 * removed some of the previously deprecated `Time.date[time]` methods
 * removed the previously deprecated `Time.getCurrentTime()` function
@@ -222,7 +222,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.0/platforms/aws.html)
 * added a new platform page for Windows, covering WSL (preferred) and Cygwin  
   (see https://chapel-lang.org/docs/2.0/platforms/windows.html)
-* improved InfiniBand documentation for clarity and to mention `pmi` launches
+* improved InfiniBand documentation for clarity and to mention `pmi` launches  
   (see https://chapel-lang.org/docs/2.0/platforms/infiniband.html)
 * refreshed documentation concerning troubleshooting GASNet runs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#troubleshooting)
@@ -236,11 +236,15 @@ Documentation Improvements
    and https://chapel-lang.org/docs/2.0/language/spec/variables.html#copy-elision)
 * improved test system documentation with respect to running multiple trials  
   (see https://chapel-lang.org/docs/2.0/developer/bestPractices/TestSystem.html#running-multiple-times)
-* improved documentation of enum constants to leverage new 'chpldoc' features
+* improved documentation of enum constants to leverage new `chpldoc` features
 * fixed up various typos and formatting or rendering issues
 
 Example Codes
 -------------
+* updated examples to reflect:
+  - no-longer-necessary `with`-clauses for parallel loops modifying arrays
+  - changes to `parSafe` for associative domains and locking behavior for IO
+  - changes to the 'Random' module's interface
 
 Syntax Highlighting
 -------------------
@@ -273,13 +277,12 @@ Compiler Flags
 * added a new off-by-default warning for potential race conditions  
   (see `--warn-potential-races` in https://chapel-lang.org/docs/2.0/usingchapel/man.html)
 
-
 Generated Executable Flags
 --------------------------
 
 Launchers
 ---------
-* added co-locale support to the 'smp' launcher
+* added co-locale support to the `smp` launcher
 * added `-nl` suffixes to bind co-locales to specific architectural feature  
   (e.g., `-nl 8x2s` says to run 2 locales on each of 8 nodes, one per socket)  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
@@ -314,7 +317,7 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
-* fixed a bug converting tuples to complexes, e.g. when containing 'inf'
+* fixed a bug converting tuples to complexes, e.g. when containing `inf`
 * fixed a bug where `continue`s within `forall` loops read uninitialized memory
 * fixed a bug where a loop in an `if` expression did not promote to an array
 * fixed a bug that caused array type sub-expressions to be compiled into loops
@@ -323,12 +326,12 @@ Bug Fixes
 * fixed a bug where mentions of `chpl_external_array` crashed compilation
 * fixed a bug where nested functions passed as call actuals crashed compilation
 * fixed a bug preventing implementing interfaces for generic class types
-* fixed a bug in which compiler-generated code would warn about lack of '?'
+* fixed a bug in which compiler-generated code would warn about lack of `(?)`
 
 Bug Fixes for Build Issues
 --------------------------
-* fixed issue with detecting 'CHPL_HOME' in prefix-based installs
-* fixed a bug in which the 'c2chapel' virtual environment was incorrectly built
+* fixed issue with detecting `CHPL_HOME` in prefix-based installs
+* fixed a bug in which the `c2chapel` virtual environment was incorrectly built
 * fixed unrecognized key bug for `CHPL_GPU_MEM_STRATEGY` in `chplconfig` files
 
 Bug Fixes for GPU Computing
@@ -353,7 +356,7 @@ Bug Fixes for the Runtime
 Third-Party Software Changes
 ----------------------------
 * updated the bundled copy of LLVM to version 17.0.6
-* updated the Python package versions used by 'chpldoc'  
+* updated the Python package versions used by `chpldoc`  
   (see $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt for details)
 
 Developer-oriented changes: Process
@@ -364,7 +367,7 @@ Developer-oriented changes: Documentation
 * updated some out-of-date details in `frontend/lib/parser/README`
 * made clarifications to the driver mode technical note  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
-* added a note about using an older valgrind with newer LLVM versions
+* added a note about using an older valgrind with newer LLVM versions  
   (see https://chapel-lang.org/docs/2.0/developer/bestPractices/Valgrind.html#llvm-compatibility)
 * added a note about debugging LLVM passes
 * removed the Docker packaging README in favor of Chapel's Dockerhub page  
