@@ -760,7 +760,7 @@ fields. If all the fields are of the same type, the tuple is
 homogeneous. Tuples are defined in :ref:`Chapter-Tuples`.
 
 .. index::
-   single: types;dataparallel
+   single: types; data parallel
 .. _Data_Parallel_Types:
 
 Data Parallel Types

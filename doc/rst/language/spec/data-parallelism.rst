@@ -2,7 +2,7 @@
 
 .. index::
    single: data parallelism
-   single: parallelism;data
+   single: parallelism; data
 .. _Chapter-Data_Parallelism:
 
 ================
@@ -39,9 +39,9 @@ the Memory Consistency Model
 
 .. index::
    single: forall
-   single: loops;forall
-   single: data parallelism;forall
-   single: statements;forall
+   pair: forall; statements
+   single: loops; forall
+   single: data parallelism; forall
 .. _Forall:
 
 The Forall Statement
@@ -51,7 +51,7 @@ The forall statement is a concurrent variant of the for statement
 described in :ref:`The_For_Loop`.
 
 .. index::
-   single: statements;forall;syntax
+   single: forall; syntax
 .. _forall_syntax:
 
 Syntax
@@ -83,9 +83,10 @@ role of ``task-intent-clause`` are defined in
 :ref:`Forall_Intents`.
 
 .. index::
-   single: statements;forall;semantics
-   single: leading the execution of a loop
-   single: data parallelism;leader iterator
+   single: forall; semantics
+   single: forall; leader iterator
+   single: forall; follower iterator
+   single: data parallelism; leader iterator
 .. _forall_semantics:
 
 Execution and Serializability
@@ -168,7 +169,7 @@ the current iteration of the forall loop.
       1 2 3 4 5
 
 .. index::
-   single: statements;forall;zipper iteration
+   single: forall; zippered iteration
 .. _forall_zipper:
 
 Zippered Iteration
@@ -179,9 +180,8 @@ in :ref:`Zippered_Iteration`
 and :ref:`Parallel_Iterators` for parallel iteration.
 
 .. index::
-   single: data parallelism;forall expressions
-   single: forall expressions
-   single: expressions;forall
+   single: data parallelism; forall expressions
+   pair: forall; expressions
 .. _Forall_Expressions:
 
 The Forall Expression
@@ -191,7 +191,7 @@ The forall expression is a concurrent variant of the for expression
 described in :ref:`For_Expressions`.
 
 .. index::
-   single: expressions;forall;syntax
+   single: forall; syntax
 .. _forall_expr_syntax:
 
 Syntax
@@ -222,7 +222,7 @@ role of ``task-intent-clause`` are defined in
 :ref:`Forall_Intents`.
 
 .. index::
-   single: expressions;forall;semantics
+   single: forall; semantics
 .. _Forall_Expression_Execution:
 
 Execution
@@ -265,7 +265,7 @@ The forall expression follows the semantics of the forall statement as
 described in :ref:`forall_semantics`.
 
 .. index::
-   single: expressions;forall;zipper iteration
+   single: forall; zippered iteration
 
 Zippered Iteration
 ~~~~~~~~~~~~~~~~~~
@@ -275,8 +275,8 @@ in :ref:`Zippered_Iteration`
 and :ref:`Parallel_Iterators` for parallel iteration.
 
 .. index::
-   single: expressions;forall;and conditional expressions
-   single: expressions;forall;filtering
+   single: forall; forall expressions and conditional expressions
+   single: forall; filtering
 .. _Filtering_Predicates_Forall:
 
 Filtering Predicates in Forall Expressions
@@ -325,10 +325,8 @@ variable, the resulting array has a 0-based one-dimensional domain.
 .. index::
    single: forall intents
    single: shadow variables
-   single: data parallelism;forall intents
-   single: data parallelism;shadow variables
-   single: statements;forall;forall intents
-   single: statements;forall;shadow variables
+   single: data parallelism; forall intents
+   single: data parallelism; shadow variables
 .. _Forall_Intents:
 
 Forall Intents
@@ -401,10 +399,10 @@ shadow variable for that task.
 .. index::
    single: task-private variables
    single: shadow variables
-   single: data parallelism;task-private variables
-   single: data parallelism;shadow variables
-   single: statements;forall;task-private variables
-   single: statements;forall;shadow variables
+   single: data parallelism; task-private variables
+   single: data parallelism; shadow variables
+   single: forall; task-private variables
+   single: forall; shadow variables
 .. _Task_Private_Variables:
 
 Task-Private Variables
@@ -509,7 +507,7 @@ destroyed.
 
 .. index::
    single: promotion
-   single: data parallelism;promotion
+   single: data parallelism; promotion
 .. _Promotion:
 
 Promotion
@@ -638,7 +636,7 @@ iterator         0-based one-dimensional domain
       (x = 1.0, y = 1.0) (x = 2.0, y = 1.0) (x = 3.0, y = 1.0) (x = 4.0, y = 1.0) (x = 5.0, y = 1.0)
 
 .. index::
-   single: promotion;default arguments
+   single: promotion; default arguments
 .. _Promotion_Default_Arguments:
 
 Default Arguments
@@ -695,7 +693,7 @@ expression can be evaluated many times. For example:
       0 1 2 3 4
 
 .. index::
-   single: promotion;zipper iteration
+   single: promotion; zippered iteration
 .. _Zippered_Promotion:
 
 Zippered Promotion
@@ -770,9 +768,9 @@ causes promotion. The rules are the same as in the non-zippered case.
 .. index::
    single: whole array assignment
    single: whole array operations
-   single: arrays;assignment
-   single: assignment;whole array
-   single: data parallelism;evaluation order
+   single: arrays; assignment
+   single: assignment; whole array
+   single: data parallelism; evaluation order
 .. _Whole_Array_Operations:
 
 Whole Array Operations and Evaluation Order
@@ -820,6 +818,8 @@ side array expressions alias the left-hand side expression.
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
 
+.. index::
+   single: promotion; array indexing
 .. _Promoted_Array_Indexing:
 
 Promoted Array Indexing
@@ -858,8 +858,8 @@ statement and the proper intents, for example:
 .. index::
    single: reductions
    single: scans
-   single: data parallelism;reductions
-   single: data parallelism;scans
+   single: data parallelism; reductions
+   single: data parallelism; scans
 .. _Reductions_and_Scans:
 
 Reductions and Scans
@@ -876,8 +876,8 @@ additional reductions and scans
 (:ref:`Chapter-User_Defined_Reductions_and_Scans`).
 
 .. index::
-   single: reduction expressions
-   single: expressions;reduction
+   single: reduce
+   single: expressions; reduce
 .. _reduce:
 
 Reduction Expressions
@@ -977,8 +977,8 @@ described
 in :ref:`Chapter-User_Defined_Reductions_and_Scans`.
 
 .. index::
-   single: scan expressions
-   single: expressions;scan
+   single: scan
+   single: expressions; scan
 .. _scan:
 
 Scan Expressions
@@ -1031,8 +1031,8 @@ the class type that implements the scan interface as described
 in :ref:`Chapter-User_Defined_Reductions_and_Scans`.
 
 .. index::
-   single: data parallelism;knobs for default data parallelism
-   single: data parallelism;configuration constants
+   single: data parallelism; knobs for default data parallelism
+   single: data parallelism; configuration constants
    single: dataParTasksPerLocale
    single: dataParIgnoreRunningTasks
    single: dataParMinGranularity

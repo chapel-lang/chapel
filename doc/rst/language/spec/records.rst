@@ -747,7 +747,8 @@ like ``int``.
 
 
 .. index::
-   single: records;differences with classes
+   single: records; differences from classes
+   single: classes; differences from records
 .. _Class_and_Record_Differences:
 
 Differences between Classes and Records
@@ -755,8 +756,6 @@ Differences between Classes and Records
 
 The key differences between records and classes are listed below.
 
-.. index::
-   single: records;declarations;differences with classes
 .. _Declaration_Differences:
 
 Declarations
@@ -767,9 +766,6 @@ that they begin with the ``class`` and ``record`` keywords,
 respectively. In contrast to classes, records do not support
 inheritance.
 
-.. index::
-   single: classes;allocation
-   single: records;allocation
 .. _Storage_Allocation_Differences:
 
 Storage Allocation
@@ -787,9 +783,6 @@ associated with the fields in the class, is allocated and reclaimed
 separately from variables referencing that instance. The same class
 instance can be referenced by multiple class variables.
 
-.. index::
-   single: classes;assignment
-   single: records;assignment
 .. _Assignment_Differences:
 
 Assignment
@@ -809,9 +802,6 @@ target record have no effect upon the class instance.
 
 Assignment of a record to a class variable is not permitted.
 
-.. index::
-   single: classes;arguments
-   single: records;arguments
 .. _Argument_Differences:
 
 Arguments
@@ -828,9 +818,6 @@ Records do not provide a counterpart of the ``nil`` value. A variable of
 record type is associated with storage throughout its lifetime, so
 ``nil`` has no meaning with respect to records.
 
-.. index::
-   single: records;delete illegal
-   single: delete;illegal for records
 .. _Record_Delete_Illegal:
 
 The *delete* operator
@@ -838,9 +825,6 @@ The *delete* operator
 
 Calling ``delete`` on a record is illegal.
 
-.. index::
-   single: classes;comparison
-   single: records;comparison
 .. _Comparison_Operator_Differences:
 
 Default Comparison Operators

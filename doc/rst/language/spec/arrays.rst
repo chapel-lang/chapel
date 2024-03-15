@@ -23,8 +23,9 @@ concurrently from distinct tasks. For more information see
 :ref:`the Parallel Safety section for domains <Domain_and_Array_Parallel_Safety>`.
 
 .. index::
-   single: arrays;types
-   single: arrays;element type
+   single: arrays; types
+   single: arrays; domain type
+   single: arrays; element type
 .. _Array_Types:
 
 Array Types
@@ -122,10 +123,10 @@ An array’s element type can be referred to using the member symbol
       real(64)
 
 .. index::
-   single: arrays;values
-   single: arrays;initialization
-   single: initialization;arrays
-   single: arrays;literals
+   single: arrays; values
+   single: arrays; initialization
+   single: initialization; arrays
+   single: arrays; literals
 .. _Array_Values:
 
 Array Values
@@ -152,9 +153,8 @@ corresponding to the underlying domain which defines its indices.
      associative-array-literal
 
 .. index::
-   single: rectangular array literals
-   single: arrays;rectangular;literals
-   single: arrays;rectangular;default values
+   pair: rectangular arrays; literals
+   seealso: arrays; rectangular arrays
 .. _Rectangular_Array_Literals:
 
 Rectangular Array Literals
@@ -244,12 +244,16 @@ procedure with an implicit return type (see
    arrays whose elements are themselves 1D arrays.
 
 
+.. index::
+   single: rectangular arrays; default values
+
 A rectangular array’s default value is an array in which each element
 is initialized to the default value of the element type.
 
 .. index::
-   single: associative array literals
-   single: arrays;associative;literals
+   pair: associative arrays; literals
+   seealso: arrays; associative arrays
+
 .. _Associative_Array_Literals:
 
 Associative Array Literals
@@ -317,8 +321,7 @@ of values in the listing also match. A trailing comma is allowed.
       (3, three)
 
 .. index::
-   single: arrays;runtime representation
-   single: arrays;domain maps
+   single: arrays; runtime representation
 .. _Array_Runtime_Representation:
 
 Runtime Representation of Array Values
@@ -330,8 +333,7 @@ control the runtime representation of an array’s elements. See
  :ref:`Chapter-Domain_Maps` for more details.
 
 .. index::
-   single: arrays;indexing
-   single: indexing;arrays
+   pair: arrays; indexing
 .. _Array_Indexing:
 
 Array Indexing
@@ -377,8 +379,7 @@ that is not part of its domain’s index set, the reference is considered
 out-of-bounds and a runtime error will occur, halting the program.
 
 .. index::
-   single: indexing;rectangular arrays
-   single: rectangular arrays;indexing
+   pair: rectangular arrays; indexing
 .. _Rectangular_Array_Indexing:
 
 Rectangular Array Indexing
@@ -469,8 +470,7 @@ the array.
    indexed into by 1-tuples.
 
 .. index::
-   single: indexing;associative arrays
-   single: associative arrays;indexing
+   pair: associative arrays; indexing
 .. _Associative_Array_Indexing:
 
 Associative Array Indexing
@@ -506,8 +506,7 @@ Indices can be added to associative arrays through the array’s domain.
       var x = A["a"];
 
 .. index::
-   single: arrays;iteration
-   single: iteration;array
+   pair: arrays; iteration
 .. _Iteration_over_Arrays:
 
 Iteration over Arrays
@@ -537,8 +536,7 @@ The iterator variable for an array iteration is a reference to the array
 element type.
 
 .. index::
-   single: arrays;assignment
-   single: assignment;array
+   pair: arrays; assignment
 .. _Array_Assignment:
 
 Array Assignment
@@ -689,8 +687,7 @@ array of booleans.  To get a single result use the ``equals`` method instead.
 
 
 .. index::
-   single: arrays;slicing
-   single: slicing;array
+   pair: arrays; slicing
 .. _Array_Slicing:
 
 Array Slicing
@@ -757,8 +754,8 @@ corresponding to the slicing domain’s index set.
    interior of ``A``.
 
 .. index::
-   single: arrays;slicing;rectangular
-   single: slicing;arrays;rectangular
+   single: arrays; slicing
+   pair: slicing; rectangular arrays
 .. _Rectangular_Array_Slicing:
 
 Rectangular Array Slicing
@@ -780,7 +777,7 @@ in :ref:`Array_Slicing` and then using that subdomain to slice
 the array.
 
 .. index::
-   single: arrays;slicing;rectangular;rank change
+   pair: arrays; rank change slicing
 .. _Rectangular_Array_Slicing_With_Rank_Change:
 
 Rectangular Array Slicing with a Rank Change
@@ -825,7 +822,7 @@ passed in to take the slice.
    are the first column of ``A``.
 
 .. index::
-   single: arrays;count operator
+   pair: arrays; count operator
    single: operators;# (on arrays)
 .. _Count_Operator_Arrays:
 
@@ -838,6 +835,9 @@ an integer in the case of a 1D array). The operator is equivalent to
 applying the ``#`` operator to the array’s domain and using the result
 to slice the array as described in Section :ref:`Rectangular_Array_Slicing`.
 
+.. index::
+   pair: arrays; swap operator
+   single: operators;<=> (on arrays)
 .. _Array_Swap_Operator:
 
 Swap operator ``<=>``
@@ -846,8 +846,7 @@ The ``<=>`` operator can be used to swap the contents of two arrays
 with the same shape.
 
 .. index::
-   single: arrays;actual arguments
-   single: arguments;array
+   pair: arrays; arguments
 .. _Array_Arguments_To_Functions:
 
 Array Arguments to Functions
@@ -868,8 +867,7 @@ index set. If the formal array’s domain was declared using an explicit
 distribution, the actual array’s domain must use an equivalent distribution.
 
 .. index::
-   single: arrays;promotion
-   single: promotion;arrays
+   pair: arrays; promotion
 .. _Array_Promotion_of_Scalar_Functions:
 
 Array Promotion of Scalar Functions
@@ -913,8 +911,7 @@ function as defined in :ref:`Promotion`.
    in ``A`` the element-wise sum of the elements in ``B`` and ``C``.
 
 .. index::
-   single: arrays;returning
-   single: returning;array
+   pair: arrays; returning
 .. _Returning_Arrays_from_Functions:
 
 Returning Arrays from Functions
@@ -927,7 +924,7 @@ Similarly to array arguments, the element type and/or domain of an array
 return type can be omitted.
 
 .. index::
-   single: arrays;sparse
+   single: arrays; sparse
 .. _Sparse_Arrays:
 
 Sparse Arrays
@@ -995,8 +992,8 @@ element type by assigning to a pseudo-field named ``IRV`` in the array.
       sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array at index (1, 5)
 
 .. index::
-   single: domains;association with arrays
-   single: arrays;association with domains
+   single: domains; association with arrays
+   single: arrays; association with domains
 .. _Association_of_Arrays_to_Domains:
 
 Association of Arrays to Domains
@@ -1087,9 +1084,8 @@ For the ``+=`` and ``|=`` operators, the value from ``B`` will overwrite
 the existing value in ``A`` when indices overlap.
 
 .. index::
-   single: arrays;predefined functions
-   single: predefined functions;arrays
-   single: functions;arrays;predefined
+   pair: arrays; predefined functions
+   seealso: functions; predefined functions
 .. _Predefined_Functions_and_Methods_on_Arrays:
 
 Predefined Routines on Arrays

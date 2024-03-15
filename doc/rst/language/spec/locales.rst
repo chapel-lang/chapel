@@ -3,8 +3,8 @@
 .. index::
    single: local
    single: remote
-   single: locales;local
-   single: locales;remote
+   single: locales; local
+   single: locales; remote
 .. _Chapter-Locales_Chapter:
 
 =======
@@ -40,7 +40,7 @@ network-connected multicore nodes would have a locale for each node.
 
 .. index::
    single: locale
-   single: types;locale
+   single: types; locale
 .. _The_Locale_Type:
 
 Locale Types
@@ -52,8 +52,8 @@ Both data and tasks can be associated with a value of locale type.
 The default value for a variable with ``locale`` type is ``Locales[0]``.
 
 .. index::
-   single: locales;methods
-   single: predefined functions;locale
+   single: locales; methods
+   single: predefined functions; locale
 .. _Locale_Methods:
 
 Locale Methods
@@ -64,7 +64,7 @@ The locale type supports the following methods:
 .. include:: /builtins/ChapelLocale.rst
 
 .. index::
-   single: Locales
+   single: Locales array
    single: numLocales
    single: execution environment
 .. _Predefined_Locales_Array:
@@ -122,7 +122,7 @@ locale values and referring to it in place of the Locales array.
 
 .. index::
    single: here
-   single: locales;here
+   single: locales; here
 .. _here:
 
 The *here* Locale
@@ -231,7 +231,7 @@ replicated across all locales.
 
 .. index::
    single: on
-   single: statements;on
+   single: statements; on
 .. _On:
 
 The On Statement
@@ -265,7 +265,7 @@ tasks across the network-connected locales upon which the program is running:
 
 
 .. index::
-   single: variable declarations;remote
+   single: variable declarations; remote
 .. _remote_variable_declarations:
 
 Remote Variable Declarations

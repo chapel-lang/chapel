@@ -1,7 +1,7 @@
 .. default-domain:: chpl
 
 .. index::
-   single: functions;iterators
+   single: functions; iterators
    single: iterators
 .. _Chapter-Iterators:
 

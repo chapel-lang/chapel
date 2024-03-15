@@ -2,17 +2,18 @@
 
 .. index::
    single: functions
-   single: functions;call site
+   see: routines; functions
+   see: subroutines; functions
+   single: functions; call site
+   single: functions; actual arguments
+   single: functions; procedure
+   single: functions; operators
+   single: functions; methods
+   single: procedures
+   single: operators; procedures
    single: call site
-   single: functions;formal arguments
    single: formal arguments
-   single: functions;actual arguments
    single: actual arguments
-   single: functions;procedure
-   single: procedure
-   single: functions;operator
-   single: functions;method
-   single: operators;procedure
 .. _Chapter-Procedures:
 
 ==========
@@ -66,10 +67,9 @@ Functions are presented as follows:
    function resolution :ref:`Function_Resolution`
 
 .. index::
-   single: function calls
-   single: calls;function
+   single: calls
+   see: function calls; calls
    single: actual arguments
-   single: functions;actual arguments
 .. _Function_Calls:
 
 Function Calls

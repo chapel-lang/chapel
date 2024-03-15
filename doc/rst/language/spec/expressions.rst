@@ -61,8 +61,8 @@ additionally as follows:
 -  initializer calls :ref:`Class_New`
 
 .. index::
-   single: literal expressions
-   single: expressions;literal
+   single: expressions; literals
+   single: literals
 .. _Literal_Expressions:
 
 Literal Expressions
@@ -96,7 +96,7 @@ are described in :ref:`Rectangular_Array_Literals` and
 :ref:`Associative_Array_Literals`.
 
 .. index::
-   single: expressions;variable
+   single: expressions; variable use
 .. _Variable_Expressions:
 
 Variable Expressions
@@ -112,7 +112,7 @@ an expression. The syntax of a variable expression is given by:
      identifier 
 
 .. index::
-   single: expressions;enumeration constant
+   single: expressions; enumeration constant use
 .. _Enumeration_Constant_Expression:
 
 Enumeration Constant Expression
@@ -131,7 +131,7 @@ For an example of using enumeration constants,
 see :ref:`Enumerated_Types`.
 
 .. index::
-   single: expressions;parenthesized
+   single: expressions; parenthesized
 .. _Parenthesized_Expressions:
 
 Parenthesized Expressions
@@ -149,8 +149,7 @@ Such an expression evaluates to the expression. The parentheses are
 ignored and have only a syntactical effect.
 
 .. index::
-   single: function calls
-   single: expressions;call
+   single: expressions; calls
 .. _Call_Expressions:
 
 Call Expressions
@@ -161,7 +160,7 @@ in :ref:`Chapter-Procedures`.
 
 .. index::
    single: indexing
-   single: expressions;indexing
+   single: expressions; indexing
 .. _Indexing_Expressions:
 
 Indexing Expressions
@@ -175,7 +174,7 @@ on the value being indexed, passing the indices as the actual arguments.
 
 .. index::
    single: member access
-   single: expressions;member access
+   single: expressions; member access
 .. _Member_Access_Expressions:
 
 Member Access Expressions
@@ -293,8 +292,8 @@ There is an expectation that query expressions will be allowed in more
 places in the future.
 
 .. index::
-   single: casts
-   single: expressions;cast
+   single: casts; syntax
+   single: expressions; cast
    single: : (cast)
    single: operators;: (cast)
 .. _Casts:
@@ -316,7 +315,7 @@ occurs if no such conversion exists.
 
 .. index::
    single: lvalues
-   single: expressions;lvalue
+   single: expressions; lvalue
 .. _LValue_Expressions:
 
 LValue Expressions
@@ -351,10 +350,11 @@ The syntax is less restrictive than the definition above. For example,
 not all ``call-expression``\ s are lvalues.
 
 .. index::
-   single: operators;precedence
-   single: operators;associativity
-   single: expressions;precedence
-   single: expressions;associativity
+   single: operators; precedence
+   single: operators; associativity
+   single: expressions; precedence
+   single: expressions; associativity
+   single: precedence table
 .. _Operator_Precedence_and_Associativity:
 
 Precedence and Associativity
@@ -550,11 +550,11 @@ precedence than those listed later.
    expression is not a scalar as expected.
 
 .. index::
-   single: expressions;operator
-   single: operators;unary
-   single: expressions;unary operator
-   single: operators;binary
-   single: expressions;binary operator
+   single: expressions; operator
+   single: operators; unary
+   single: expressions; unary operator
+   single: operators; binary
+   single: expressions; binary operator
 .. _Unary_Expressions:
 .. _Binary_Expressions:
 
@@ -636,9 +636,9 @@ The unary plus operators are predefined as follows:
 For each of these definitions, the result is the value of the operand.
 
 .. index::
-   single: operators;negation
+   single: operators; negation
    single: - (unary)
-   single: operators;- (unary)
+   single: operators; - (unary)
 .. _Unary_Minus_Operators:
 
 Unary Minus Operators
@@ -672,9 +672,9 @@ Negating a value of type ``uint`` or ``uint(w)`` for any width will
 result in a compilation error.
 
 .. index::
-   single: operators;addition
+   single: operators; addition
    single: +
-   single: operators;+
+   single: operators; +
 .. _Addition_Operators:
 
 Addition Operators
@@ -730,9 +730,9 @@ produces a value of complex type. Addition of values of complex type and
 either real or imaginary types also produces a value of complex type.
 
 .. index::
-   single: operators;subtraction
+   single: operators; subtraction
    single: -
-   single: operators;-
+   single: operators; -
 .. _Subtraction_Operators:
 
 Subtraction Operators
@@ -785,8 +785,8 @@ complex type from either real or imaginary types, and vice versa, also
 produces a value of complex type.
 
 .. index::
-   single: operators;multiplication
-   single: operators;*
+   single: operators; multiplication
+   single: operators; *
    single: *
 .. _Multiplication_Operators:
 
@@ -841,9 +841,9 @@ complex type and either real or imaginary types produces a value of
 complex type.
 
 .. index::
-   single: operators;division
+   single: operators; division
    single: /
-   single: operators;/
+   single: operators; /
 .. _Division_Operators:
 
 Division Operators
@@ -903,9 +903,9 @@ integer result :math:`q` is the candidate quotient which lies closest to
 zero.
 
 .. index::
-   single: operators;modulus
+   single: operators; modulus
    single: %
-   single: operators;%
+   single: operators; %
 .. _Modulus_Operators:
 
 Modulus Operators
@@ -947,9 +947,9 @@ There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.
 
 .. index::
-   single: operators;exponentiation
+   single: operators; exponentiation
    single: **
-   single: operators;**
+   single: operators; **
 .. _Exponentiation_Operators:
 
 Exponentiation Operators
@@ -979,7 +979,7 @@ There is an expectation that the predefined exponentiation operators
 will be extended to handle imaginary and complex types in the future.
 
 .. index::
-   single: operators;bitwise
+   single: operators; bitwise
 .. _Bitwise_Operators:
 
 Bitwise Operators
@@ -990,9 +990,9 @@ can be redefined over different types using operator
 overloading (:ref:`Function_Overloading`).
 
 .. index::
-   single: operators;bitwise;complement
+   single: operators; bitwise complement
    single: ~
-   single: operators;~
+   single: operators; ~
 .. _Bitwise_Complement_Operators:
 
 Bitwise Complement Operators
@@ -1016,9 +1016,9 @@ For each of these definitions, the result is the bitwise complement of
 the operand.
 
 .. index::
-   single: operators;bitwise;and
+   single: operators; bitwise and
    single: &
-   single: operators;&
+   single: operators; &
 .. _Bitwise_And_Operators:
 
 Bitwise And Operators
@@ -1055,9 +1055,9 @@ are performed.
    the semantics of standard C.
 
 .. index::
-   single: operators;bitwise;or
+   single: operators; bitwise or
    single: |
-   single: operators;|
+   single: operators; |
 .. _Bitwise_Or_Operators:
 
 Bitwise Or Operators
@@ -1086,9 +1086,9 @@ apparent sign changes as the required conversions are performed.
    The same as for bitwise and (:ref:`Bitwise_And_Operators`).
 
 .. index::
-   single: operators;bitwise;exclusive or
+   single: operators; bitwise exclusive or
    single: ^
-   single: operators;^
+   single: operators; ^
 .. _Bitwise_Xor_Operators:
 
 Bitwise Xor Operators
@@ -1117,9 +1117,9 @@ changes as the required conversions are performed.
    The same as for bitwise and (:ref:`Bitwise_And_Operators`).
 
 .. index::
-   single: operators;shift
+   single: operators; shift
    single: <<
-   single: operators;<<
+   single: operators; <<
    single: >>
    single: operators;>>
 .. _Shift_Operators:
@@ -1169,7 +1169,7 @@ The value of ``b`` must be non-negative.
 The value of ``b`` must be less than the number of bits in ``a``.
 
 .. index::
-   single: operators;logical
+   single: operators; logical
 .. _Logical_Operators:
 
 Logical Operators
@@ -1180,9 +1180,9 @@ can be redefined over different types using operator
 overloading (:ref:`Function_Overloading`).
 
 .. index::
-   single: operators;logical;not
+   single: operators; logical not
    single: !
-   single: operators;!
+   single: operators; !
 .. _Logical_Negation_Operators:
 
 The Logical Negation Operator
@@ -1204,9 +1204,9 @@ For the integer forms, the result is true if the operand is zero and
 false otherwise.
 
 .. index::
-   single: operators;logical;and
+   single: operators; logical and
    single: &&
-   single: operators;&&
+   single: operators ;&&
 .. _Logical_And_Operators:
 
 The Logical And Operator
@@ -1241,9 +1241,9 @@ Overloading the logical and operator over other types is accomplished by
 overloading the ``isTrue`` function over other types.
 
 .. index::
-   single: operators;logical;or
+   single: operators; logical or
    single: ||
-   single: operators;||
+   single: operators; ||
 .. _Logical_Or_Operators:
 
 The Logical Or Operator
@@ -1273,7 +1273,8 @@ operator over other types is accomplished by overloading the ``isTrue``
 function over other types.
 
 .. index::
-   single: operators;relational
+   single: operators; relational
+   single: operators; comparison
 .. _Relational_Operators:
 
 Relational Operators
@@ -1284,18 +1285,18 @@ operators can be redefined over different types using operator
 overloading (:ref:`Function_Overloading`).
 
 .. index::
-   single: operators;less than
+   single: operators; less than
    single: <
-   single: operators;<
-   single: operators;greater than
+   single: operators; <
+   single: operators; greater than
    single: >
-   single: operators;>
-   single: operators;less than or equal
+   single: operators; >
+   single: operators; less than or equal
    single: <=
-   single: operators;<=
-   single: operators;greater than or equal
+   single: operators; <=
+   single: operators; greater than or equal
    single: >=
-   single: operators;>=
+   single: operators; >=
 .. _Ordered_Comparison_Operators:
 
 Ordered Comparison Operators
@@ -1412,15 +1413,16 @@ character set used to represent the string, which is applied elementwise
 to the string’s characters in order.
 
 .. index::
-   single: operators;equality
+   single: operators; equality
+   single: operators; inequality
    single: ==
-   single: operators;==
+   single: operators; ==
    single: !=
-   single: operators;!=
+   single: operators; !=
    single: == (string)
-   single: operators;== (string)
+   single: operators; == (string)
    single: != (string)
-   single: operators;!= (string)
+   single: operators; != (string)
 .. _Equality_Comparison_Operators:
 
 Equality Comparison Operators
@@ -1533,9 +1535,8 @@ can be redefined over different types using operator
 overloading (:ref:`Function_Overloading`).
 
 .. index::
-   single: operators;string concatenation
-   single: operators;concatenation;string
-   single: operators;+ (string)
+   single: operators; string concatenation
+   single: operators; + (string)
 .. _The_String_Concatenation_Operator:
 
 The String Concatenation Operator
@@ -1580,7 +1581,7 @@ arguments:
 
 .. index::
    single: by
-   single: operators;by
+   single: operators; by
 .. _The_By_Operator:
 
 The By Operator
@@ -1592,7 +1593,7 @@ and :ref:`Domain_Striding` for domains.
 
 .. index::
    single: align
-   single: operators;align
+   single: operators; align
 .. _The_Align_Operator:
 
 The Align Operator
@@ -1603,9 +1604,9 @@ It is described in :ref:`Align_Operator_For_Ranges` for ranges
 and :ref:`Domain_Alignment` for domains.
 
 .. index::
-   single: operators;range;count
+   single: operators; range count
    single: #
-   single: operators;#
+   single: operators; #
 .. _The_Range_Count_Operator:
 
 The Range Count Operator
@@ -1616,7 +1617,7 @@ The operator ``#`` is predefined on ranges. It is described in
 
 .. index::
    single: let
-   single: operators;let
+   single: expressions; let
 .. _Let_Expressions:
 
 Let Expressions
@@ -1668,8 +1669,8 @@ The scope of the variables is the let-expression.
 
 .. index::
    single: conditional expressions
-   single: expressions;conditional
-   single: expressions;if-then-else
+   single: expressions; conditional
+   single: expressions; if-then-else
    single: if
    single: then
    single: else
@@ -1726,7 +1727,7 @@ and :ref:`Filtering_Predicates_Forall`, respectively.
 
 .. index::
    single: for
-   single: expressions;for
+   single: expressions; for
 .. _For_Expressions:
 
 For Expressions
@@ -1757,8 +1758,8 @@ for promotion, both in the regular case :ref:`Promotion` and in
 the zippered case :ref:`Zippered_Promotion`.
 
 .. index::
-   single: for;filtering predicates
-   single: expressions;for;filtering predicates
+   single: for; filtering predicates
+   single: expressions; for with filtering predicate
 .. _Filtering_Predicates_For:
 
 Filtering Predicates in For Expressions

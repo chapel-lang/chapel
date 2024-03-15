@@ -52,7 +52,7 @@ narrow the gulf between high-performance parallel programming languages
 and mainstream programming and scripting languages.
 
 .. index::
-   single: language principles;general parallel programming
+   single: language principles; general parallel programming
 .. _General_Parallel_Programming:
 
 General Parallel Programming
@@ -116,7 +116,7 @@ all of them. Naturally, Chapel programmers can tune their code to more
 closely match a particular machine’s characteristics.
 
 .. index::
-   single: language principles;locality-aware programming
+   single: language principles; locality-aware programming
 .. _Locality_Aware_Programming:
 
 Locality-Aware Programming
@@ -133,7 +133,7 @@ specified by the programmer on a process-by-process basis via the
 multiple cooperating program instances.
 
 .. index::
-   single: language principles;object-oriented programming
+   single: language principles; object-oriented programming
 .. _Object_Oriented_Programming:
 
 Object-Oriented Programming
@@ -152,7 +152,7 @@ reference-based classes as well as value classes that are assigned and
 passed by value.
 
 .. index::
-   single: language principles;generic programming
+   single: language principles; generic programming
 .. _Generic_Programming:
 
 Generic Programming
@@ -171,7 +171,6 @@ rather than by relying on dynamic typing which would result in
 unacceptable runtime overheads for the HPC community.
 
 .. index::
-   single: modules
    single: main
 .. _Getting_Started:
 

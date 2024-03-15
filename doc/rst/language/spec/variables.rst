@@ -125,6 +125,8 @@ defined in :ref:`Multiple_Variable_Declarations`.
 Multiple variables can be grouped together using a tuple notation as
 described in :ref:`Variable_Declarations_in_a_Tuple`.
 
+.. index::
+ single: split initialization
 .. _Split_Initialization:
 
 Split Initialization
@@ -1063,6 +1065,8 @@ outer/ref
   function, or reference variable or argument
 
 
+.. index::
+   single: copy elision
 .. _Copy_Elision:
 
 Copy Elision
