@@ -97,9 +97,6 @@ Deprecated / Unstable / Removed Language Features
   (e.g., `.stridable`, `.boundedType`, `.safeCast()`, `.boundsCheck()`, etc.)
 * removed the `useNewArrayFind` config param used to update `.find()` calls
 
-Namespace Changes
------------------
-
 New Standard Library Features
 -----------------------------
 * added new routines for reading from a `string`/`bytes` like it was a file  
@@ -126,9 +123,6 @@ New Package Module Features
 * added a new prototype distributed 'Zarr' I/O module  
   (see https://chapel-lang.org/docs/2.0/modules/packages/Zarr.html)
 * improved the performance of `toHex()` routines in the 'Crypto' package
-
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -201,9 +195,6 @@ Improvements to Compilation Times / Generated Code
 * reduced `chpl`'s memory usage for large programs via the compiler driver  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 
-Memory Improvements
--------------------
-
 Tool Improvements
 -----------------
 * added `chpl-language-server`, a language server implementation for Chapel  
@@ -246,9 +237,6 @@ Example Codes
   - changes to `parSafe` for associative domains and locking behavior for IO
   - changes to the 'Random' module's interface
 
-Syntax Highlighting
--------------------
-
 Configuration / Build / Packaging Changes
 -----------------------------------------
 * updated Chapel prereqs to match LLVM 17, requiring CMake 3.20 and C++ 17  
@@ -279,16 +267,13 @@ Compiler Flags
 
 Generated Executable Flags
 --------------------------
-
-Launchers
----------
-* added co-locale support to the `smp` launcher
 * added `-nl` suffixes to bind co-locales to specific architectural feature  
   (e.g., `-nl 8x2s` says to run 2 locales on each of 8 nodes, one per socket)  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
 
 Runtime Library Changes
 -----------------------
+* added co-locale support to the `gasnet/smp` configuration
 * added support for generalized co-locales that are not bound to a socket  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
 * added co-locale support for NICs that are not in a socket
@@ -334,9 +319,6 @@ Bug Fixes for Build Issues
 * fixed a bug in which the `c2chapel` virtual environment was incorrectly built
 * fixed unrecognized key bug for `CHPL_GPU_MEM_STRATEGY` in `chplconfig` files
 
-Bug Fixes for GPU Computing
----------------------------
-
 Bug Fixes for Libraries
 -----------------------
 * fixed a bug that incorrectly copied a `c_array` when casting to `c_ptr`
@@ -359,9 +341,6 @@ Third-Party Software Changes
 * updated the Python package versions used by `chpldoc`  
   (see $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt for details)
 
-Developer-oriented changes: Process
------------------------------------
-
 Developer-oriented changes: Documentation
 -----------------------------------------
 * updated some out-of-date details in `frontend/lib/parser/README`
@@ -373,15 +352,9 @@ Developer-oriented changes: Documentation
 * removed the Docker packaging README in favor of Chapel's Dockerhub page  
   (see https://hub.docker.com/r/chapel/chapel/)
 
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * applied missing `(?)` expressions on generic formals in the 'Version' module
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -441,9 +414,6 @@ Developer-oriented changes: GPU support
 ---------------------------------------
 * added an initial capability to use distributed arrays within GPU kernels
 * improved kernel launch w.r.t. debuggability and to enable upcoming features
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
