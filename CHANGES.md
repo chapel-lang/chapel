@@ -1,25 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* '(http:' -> '(see http:'
-* sort items within categories
-o check placement of items into categories
-* check sorting of categories
-* check for ' vs `
-* fulfill TODOs
-* check man page for new compiler flags
-* check test/release/examples
-* check for docs/1.33/ links
-* check forced linebreaks
-* check initial '*'
-* check initial 'A-Z'
-* check 'see:'
-* check for changes put too far down in file
-o check links
-* add highlights
-* spellcheck
-
 version 2.0
 ===========
 
