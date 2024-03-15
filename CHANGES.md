@@ -221,7 +221,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html  
    and https://chapel-lang.org/docs/2.0/modules/standard/IO/FormattedIO.html)
 * merged 'ChapelIO' documentation into the 'IO' module's documentation  
-  (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html)
+  (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#automatically-available-symbols)
 * clarified required conditions for split initialization and copy elision  
   (see https://chapel-lang.org/docs/2.0/language/spec/variables.html#split-initialization  
    and https://chapel-lang.org/docs/2.0/language/spec/variables.html#copy-elision)
