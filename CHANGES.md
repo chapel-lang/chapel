@@ -244,6 +244,8 @@ Documentation Improvements
 * fixed a browser-specific rendering issue with spacing of return intents
 * updated platform documentation for AWS to reflect current best practices  
   (see https://chapel-lang.org/docs/2.0/platforms/aws.html)
+* added a new platform page for Windows, covering WSL (preferred) and Cygwin  
+  (see https://chapel-lang.org/docs/2.0/platforms/windows.html)
 * improved InfiniBand documentation for clarity and to mention `pmi` launches
   (see https://chapel-lang.org/docs/2.0/platforms/infiniband.html)
 * refreshed documentation concerning troubleshooting GASNet runs  
@@ -269,7 +271,9 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
-* updated Chapel prereqs to require CMake 3.20, C++ 17, and those of LLVM 17  
+* updated Chapel prereqs to match LLVM 17, requiring CMake 3.20 and C++ 17  
+  (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html)
+* when building the compiler with gcc, version 7.4 or later is now required
   (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html)
 * refreshed the sample installation commands in the prerequisites docs  
   (see https://chapel-lang.org/docs/2.0/usingchapel/prereqs.html#installation)
@@ -475,9 +479,9 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-* made improvements to 'chapel-py', the Python bindings to 'dyno'
+* improved 'chapel-py', the Python bindings to the compiler front-end library
   - added a 'visitor' API to implement more complicated AST traversals
-  - exposed 'dyno' type resolution functionality
+  - exposed 'dyno's type resolution functionality
   - improved generated Python interface files for better editor integration
 
 Developer-oriented changes: Utilities
