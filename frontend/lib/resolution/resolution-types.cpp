@@ -344,6 +344,8 @@ CallInfo CallInfo::create(Context* context,
       name = calledIdent->name();
     } else if (auto calledDot = called->toDot()) {
       name = calledDot->field();
+    } else if (auto op = called->toOpCall()) {
+      name = op->op();
     } else {
       CHPL_UNIMPL("CallInfo without a name");
     }

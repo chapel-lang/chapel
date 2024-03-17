@@ -781,12 +781,12 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
     return true;
 
   if (formalT->isAnyIteratorClassType()) {
-    CHPL_UNIMPL("iterator classes"); // TODO: represent iterators
+    // TODO: represent iterators
     return false;
   }
 
   if (formalT->isAnyIteratorRecordType()) {
-    CHPL_UNIMPL("iterator records"); // TODO: represent iterators
+    // TODO: represent iterators
     return false;
   }
 
