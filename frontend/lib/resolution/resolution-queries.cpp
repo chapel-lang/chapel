@@ -1972,7 +1972,13 @@ ApplicabilityResult instantiateSignature(Context* context,
       }
 
       if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
-        visitor.setCompositeType(qFormalType.type()->toCompositeType());
+        // Set the visitor's 'inCompositeType' property to the final
+        // instantiation of 'this' so that we can correctly resolve methods.
+        //
+        // Also recompute receiver scopes based on the instantiated type so
+        // that we correctly resolve the types of field identifiers.
+        visitor.setCompositeType(formalType.type()->toCompositeType());
+        visitor.receiverScopesComputed = false;
       }
     }
   }
