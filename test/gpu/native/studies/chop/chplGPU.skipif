@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# Skip if not doing performance testing
-if [ -z "$CHPL_TEST_PERF" ]; then
+if [ "$CHPL_GPU" = "cpu" ]; then
   echo "True"
   exit
 fi
