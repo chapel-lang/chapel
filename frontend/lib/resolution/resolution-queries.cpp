@@ -3413,7 +3413,7 @@ considerCompilerGeneratedMethods(Context* context,
   }
 
   // get the compiler-generated function, may be generic
-  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
+  auto tfs = getCompilerGeneratedMethod(context, receiver.type(), ci.name(),
                                         ci.isParenless());
   return tfs;
 }
