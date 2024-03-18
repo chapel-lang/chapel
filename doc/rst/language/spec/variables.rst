@@ -435,7 +435,7 @@ for an arbitrary expression ``e``.
 
 .. index::
    single: declarations; multiple variables
-   single: variables; multple variable declarations
+   single: variables; multiple variable declarations
 .. _Multiple_Variable_Declarations:
 
 Multiple Variable Declarations
