@@ -302,5 +302,25 @@ bool Type::isPod(Context* context, const Type* t) {
   return true;
 }
 
+bool Type::isMutatedOnCopy(Context* context, const Type* t) {
+  if (t->hasPragma(context, uast::PRAGMA_COPY_MUTATES)) return true;
+
+  if (auto ct = t->toClassType()) {
+    return ct->manager() && ct->manager()->isAnyOwnedType();
+  }
+
+  if (auto rt = t->toRecordType()) {
+    auto p = resolution::DefaultsPolicy::USE_DEFAULTS;
+    auto& rf = resolution::fieldsForTypeDecl(context, rt, p);
+    for (int i = 0; i < rf.numFields(); i++) {
+      auto ft = rf.fieldType(i).type();
+      if (ft == t) continue;
+      if (Type::isMutatedOnCopy(context, ft)) return true;
+    }
+  }
+
+  return false;
+}
+
 } // end namespace types
 } // end namespace chpl

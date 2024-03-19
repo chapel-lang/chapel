@@ -307,8 +307,10 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
   ufsFormals.push_back(std::move(fd));
 
   CHPL_ASSERT(formalTypes.size() == 1);
-  auto otherType = QualifiedType(QualifiedType::CONST_REF,
-                                 formalTypes[0].type());
+  auto otherKind = !Type::isMutatedOnCopy(context, formalTypes[0].type())
+      ? QualifiedType::CONST_REF
+      : QualifiedType::REF;
+  auto otherType = QualifiedType(otherKind, formalTypes[0].type());
   formalTypes.push_back(std::move(otherType));
 
   // build the untyped signature

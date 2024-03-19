@@ -146,7 +146,7 @@ struct Resolver {
   static Resolver
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
                                   ResolutionResultByPostorderID& byPostorder,
-                                  owned <OuterVariables> outerVars);
+                                  owned<OuterVariables> outerVars);
 
   static Resolver createForScopeResolvingField(Context* context,
                                          const uast::AggregateDecl* ad,

@@ -54,6 +54,8 @@ struct AdjustMaybeRefs {
     // For a call, which formal in which fn is the nested expression passed to?
     const TypedFnSignature* calledFn = nullptr;
     int formalIdx = -1;
+
+    ExprStackEntry() = default;
     ExprStackEntry(const AstNode* ast, Access access)
       : ast(ast), access(access)
     {
@@ -82,9 +84,16 @@ struct AdjustMaybeRefs {
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
 
+  static const Decl* declFromIdOrNull(Context* context, const ID& id);
   static Access accessForQualifier(Qualifier q);
+  static Access accessForQualifier(const QualifiedType& qt);
+  static Access accessForTargetAst(const AstNode* ast, RV& rv);
   Access currentAccess();
 
+  bool findInitOrAssignmentParts(const AstNode* ast, RV& rv,
+                                 const AssociatedAction& action,
+                                 ExprStackEntry& lhs,
+                                 ExprStackEntry& rhs);
   void constCheckAssociatedActions(const AstNode* ast, RV& rv);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
@@ -145,6 +154,12 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
   }
 }
 
+const Decl*
+AdjustMaybeRefs::declFromIdOrNull(Context* context, const ID& id) {
+  if (auto ast = parsing::idToAst(context, id)) return ast->toDecl();
+  return nullptr;
+}
+
 AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
   if (q == Qualifier::REF ||
       q == Qualifier::OUT ||
@@ -163,12 +178,72 @@ AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
   return VALUE; // including IN at least
 }
 
+AdjustMaybeRefs::Access
+AdjustMaybeRefs::accessForQualifier(const QualifiedType& qt) {
+  return accessForQualifier(qt.kind());
+}
+
+// TODO: Unused, decide if we even need this sort of thing.
+AdjustMaybeRefs::Access
+AdjustMaybeRefs::accessForTargetAst(const AstNode* ast, RV& rv) {
+  if (!ast || !ast->id()) return VALUE;
+
+  Context* context = rv.context();
+  auto& re = rv.byAst(ast);
+  auto parentSymbolId = ast->id().parentSymbolId(context);
+
+  // TODO: Need universal way to get outer variable or non-local AST access.
+  if (auto& id = re.toId()) {
+    if (auto decl = declFromIdOrNull(rv.context(), id)) {
+      if (id.isSymbolDefiningScope() || !parentSymbolId.contains(id)) {
+        CHPL_UNIMPL("Access for non-local or primary symbols!");
+        return VALUE;
+      }
+      auto& reDecl = rv.byAst(decl);
+      return accessForQualifier(reDecl.type());
+    }
+  }
+
+  return VALUE;
+}
+
 AdjustMaybeRefs::Access AdjustMaybeRefs::currentAccess() {
   Access access = VALUE;
   if (exprStack.size() > 0) {
     access = exprStack.back().access;
   }
   return access;
+}
+
+bool
+AdjustMaybeRefs::findInitOrAssignmentParts(const AstNode* ast, RV& rv,
+                                           const AssociatedAction& action,
+                                           ExprStackEntry& lhs,
+                                           ExprStackEntry& rhs) {
+  if (auto op = ast->toOpCall()) {
+    if (op->op() == USTR("=")) {
+      CHPL_ASSERT(op->numActuals() == 2);
+      auto qtLhs = rv.byAst(op->actual(0)).type();
+      auto qtRhs = rv.byAst(op->actual(1)).type();
+      lhs = { op->actual(0), accessForQualifier(qtLhs) };
+      rhs = { op->actual(1), accessForQualifier(qtRhs) };
+      return true;
+    }
+  } else if (auto var = ast->toVarLikeDecl()) {
+    auto& reVar = rv.byAst(ast);
+    if (auto initExpr = var->initExpression()) {
+      auto& reInitExpr = rv.byAst(initExpr);
+      lhs = { var, accessForQualifier(reVar.type()) };
+      rhs = { initExpr, accessForQualifier(reInitExpr.type()) };
+      return true;
+    }
+
+  // TODO: Detect 'out' vs 'in' patterns, maybe inspect parent call?
+  } else if (auto call = ast->toCall()) {
+    return false;
+  }
+
+  return false;
 }
 
 /*
@@ -184,16 +259,33 @@ like 'owned' ?
 // consider each associated action
 void AdjustMaybeRefs::constCheckAssociatedActions(const AstNode* ast, RV& rv) {
   auto& re = rv.byAst(ast);
+
   for (auto& a : re.associatedActions()) {
+    gdbShouldBreakHere();
+
+    ExprStackEntry lhs;
+    ExprStackEntry rhs;
+    bool found = findInitOrAssignmentParts(ast, rv, a, lhs, rhs);
+    if (!found) continue;
+
+    // auto& reLhs = rv.byAst(lhs.ast);
+    auto& reRhs = rv.byAst(rhs.ast);
+    // bool isLhsConst = reLhs.type().isConst();
+    bool isRhsConst = reRhs.type().isConst();
+
     switch (a.action()) {
       case AssociatedAction::ASSIGN: {
-        gdbShouldBreakHere();
+        CHPL_ASSERT(false && "Not implemented yet!");
       } break;
-      case AssociatedAction::COPY_INIT: {
-        gdbShouldBreakHere();
-      } break;
+      case AssociatedAction::COPY_INIT:
       case AssociatedAction::INIT_OTHER: {
-        gdbShouldBreakHere();
+        // bool isSameType = a.action() == AssociatedAction::COPY_INIT;
+        auto fn = a.fn();
+        CHPL_ASSERT(fn && fn->numFormals() == 2);
+        auto requiredAccessRhs = accessForQualifier(fn->formalType(1));
+        if (isRhsConst && requiredAccessRhs == REF) {
+          context->error(ast, "cannot copy-initialize from const");
+        }
       } break;
       default: break;
     }
@@ -351,7 +443,6 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   return false;
 }
 void AdjustMaybeRefs::exit(const Call* ast, RV& rv) {
-  constCheckAssociatedActions(ast, rv);
 }
 
 bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {

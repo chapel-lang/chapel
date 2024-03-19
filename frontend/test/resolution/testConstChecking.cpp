@@ -338,7 +338,6 @@ static void test6c() {
     {8});
 }
 
-/*
 static void test7a() {
   testConstChecking("test7a",
     R""""(
@@ -347,16 +346,46 @@ static void test7a() {
         record r { var x: owned C?; }
         proc test() {
           const r1 = new r();
-          // COPY_INIT error since 'r1' is const?
-          // TODO: I'm not seeing a 'init' action here, does one not get
-          // added because it's simply not possible?
           const r2 = r1;
+          r1;
         }
       }
     )"""",
-    {8});
+    {7});
 }
-*/
+
+static void test7b() {
+  testConstChecking("test7b",
+    R""""(
+      module M {
+        record r { var x: int; var y: int; }
+        proc r.init=(ref other: r) {}
+        proc test() {
+          const r1 = new r();
+          const r2 = r1;
+          r1;
+        }
+      }
+    )"""",
+    {7});
+}
+
+static void test7c() {
+  testConstChecking("test7c",
+    R""""(
+      module M {
+        class C {}
+        record r { var x: owned C?; }
+        const r1 = new r();
+        proc foo() const ref: r { return r1; }
+        proc bar(in r2: r) {}
+        proc test() {
+          bar(foo());
+        }
+      }
+    )"""",
+    {9});
+}
 
 int main() {
   test1a();
@@ -382,7 +411,9 @@ int main() {
   test6b();
   test6c();
 
-  // test7a();
+  test7a();
+  test7b();
+  test7c();
 
   return 0;
 }
