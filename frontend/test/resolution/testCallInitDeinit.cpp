@@ -1611,6 +1611,30 @@ static void test20c() {
     });
 }
 
+static void test21() {
+  // Make sure primitive/builtin types don't trigger dead-variable tracking
+  testActions("test21",
+      R"""(
+      module M {
+        proc take(arg: int) {
+          return 5;
+        }
+        proc take2(arg: int) {
+          return 5;
+        }
+
+        proc test() {
+          var cond = true;
+          var arg : int;
+
+          var ret : int;
+          if cond then ret = take(arg);
+          else ret = take2(arg);
+        }
+      }
+      )""", {} );
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1696,6 +1720,8 @@ int main() {
   test20a();
   /* test20b(); */
   test20c();
+
+  test21();
 
   return 0;
 }
