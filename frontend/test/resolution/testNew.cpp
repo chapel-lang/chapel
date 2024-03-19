@@ -241,7 +241,7 @@ static void testTertMethodCallCrossModule() {
   assert(ufsInit->isCompilerGenerated());
   assert(tfsInit->numFormals() == 1);
   assert(tfsInit->formalName(0) == "this");
-  auto recvDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
+  auto recvDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
   auto recvType = ClassType::get(ctx, clsX->basicClassType(),
                                  nullptr,
                                  recvDecor);

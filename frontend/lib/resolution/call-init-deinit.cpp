@@ -730,10 +730,22 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
     return;
   }
 
+  QualifiedType deinitType = type;
+
+  // Deinit nilable class types as the corresponding non-nilable type, since we
+  // will have a runtime check to not call deinit on nil.
+  if (auto ct = type.type()->toClassType()) {
+    auto decorator = ct->decorator();
+    if (decorator.isNilable()) {
+      deinitType = QualifiedType(
+          type.kind(), ct->withDecorator(context, decorator.addNonNil()));
+    }
+  }
+
   std::vector<CallInfoActual> actuals;
-  actuals.push_back(CallInfoActual(type, USTR("this")));
+  actuals.push_back(CallInfoActual(deinitType, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("deinit"),
-                      /* calledType */ type,
+                      /* calledType */ deinitType,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
