@@ -1816,11 +1816,12 @@ static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
 // intent variables to gpu lowering.
 //
 //   (given an 'in' intent for a variable 'x'):
-//     const capturedX = copy-of(x);
-//     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(capturedX));
+//     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(x));
 //
-// Once we're done with gpu lowering we no longer need this primitive and so we
-// remove it.
+// For gpuized loops GPU lowering rewrites this as needed to ensure each thread
+// has an indpendent copy-of x, loops that are not gpuized will have remaining
+// uses of the primitive, which we process by removing the primitive but keeping
+// the copy.
 static void cleanupTaskIndependentCapturePrimitives() {
   for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
     if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE))
