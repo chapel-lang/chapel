@@ -51,6 +51,7 @@ from lsprotocol.types import (
     Location,
     MessageType,
     Diagnostic,
+    DiagnosticRelatedInformation,
     Range,
     Position,
 )
@@ -881,7 +882,6 @@ class CLSConfig:
                 )
         n_markers = len(self.args["end_markers"])
         if n_markers != len(set(self.args["end_markers"])):
-
             raise argparse.ArgumentError(
                 None, "Cannot specify the same end marker multiple times"
             )
@@ -1032,7 +1032,17 @@ class ChapelLanguageServer(LanguageServer):
 
         _, errors = self.get_file_info(uri, do_update=True)
 
-        diagnostics = [error_to_diagnostic(e) for e in errors]
+        diagnostics = []
+        for e in errors:
+            diag = error_to_diagnostic(e)
+            diag.related_information = [
+                DiagnosticRelatedInformation(
+                    location_to_location(note_loc), note_msg
+                )
+                for (note_loc, note_msg) in e.notes()
+            ]
+            diagnostics.append(diag)
+
         return diagnostics
 
     def get_text(self, text_doc: TextDocument, rng: Range) -> str:
@@ -1331,7 +1341,6 @@ class ChapelLanguageServer(LanguageServer):
 
         for pattern in self.end_marker_patterns.values():
             for node, _ in chapel.each_matching(ast, pattern.pattern):
-
                 end_loc = location_to_range(node.location()).end
                 header_loc = pattern.header_location(node)
                 goto_loc = pattern.goto_location(node)
