@@ -1563,6 +1563,8 @@ static void test20a() {
 }
 
 // Generic instantiation version
+// TODO: Uncomment once we support init of generic types. May need to update
+// expected associated actions as well.
 /* static void test20b() { */
 /*   testActions("test20b", */
 /*     R""""( */
