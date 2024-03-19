@@ -353,6 +353,42 @@ static void testIfVarErrorNonClassType() {
   guard.realizeErrors();
 }
 
+static void testIfVarNonNilInThen() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME_FROM_FN_NAME(ctx);
+  std::string contents =
+    R""""(
+    class Bar {
+      var _msg : string;
+      proc message():string {
+        return _msg;
+      }
+    }
+
+    proc foo() {
+      var e : owned Bar? = new Bar("foo");
+      return e;
+    }
+
+    if var err = foo() {
+      var x = err.message();
+    }
+    )"""";
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  auto mod = br.singleModule();
+  assert(mod);
+
+  auto& rr = resolveModule(ctx, mod->id());
+  (void)rr;
+  assert(guard.numErrors() == 0);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -365,5 +401,7 @@ int main() {
   testIfVarErrorUseInElseBranch3();
   testIfVarErrorUseInElseBranch4();
   testIfVarErrorNonClassType();
+  testIfVarNonNilInThen();
+
   return 0;
 }

@@ -198,9 +198,10 @@ generateInitParts(Context* context,
   // If the receiver is a basic class C, use 'const in x: borrowed C'.
   } else if (auto basic = compType->toBasicClassType()) {
     const Type* manager = nullptr;
-    auto nonNilBorrowed  = ClassTypeDecorator::BORROWED_NONNIL;
-    auto decor = ClassTypeDecorator(nonNilBorrowed);
-    auto receiverType = ClassType::get(context, basic, manager, decor);
+    auto borrowedNonnilDecor =
+        ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+    auto receiverType =
+        ClassType::get(context, basic, manager, borrowedNonnilDecor);
     CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
 
