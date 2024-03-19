@@ -616,7 +616,13 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
   if (isTypeParam(lhsType.kind())) {
     // OK, nothing else to do
   } else if (isValue(lhsType.kind()) && isValueOrParam(rhsType.kind())) {
-    if (canPass(context, rhsType, lhsType).passes()) {
+    // Accept if we can pass with only a subtype conversion
+    // (for passing non-nilable to nilable).
+    auto canPassResult = canPass(context, rhsType, lhsType);
+    if (canPassResult.passes() &&
+        (!canPassResult.converts() ||
+         canPassResult.conversionKind() ==
+             CanPassResult::ConversionKind::SUBTYPE)) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).
