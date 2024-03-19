@@ -938,7 +938,9 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   QualifiedType actualType = rv.byAst(actual).type();
 
   // is the copy for 'in' elided?
-  if (elidedCopyFromIds.count(actual->id()) > 0 && isValue(actualType.kind())) {
+  if (elidedCopyFromIds.count(actual->id()) > 0 &&
+      isValue(actualType.kind()) &&
+      typeNeedsInitDeinitCall(actualType.type())) {
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
 
