@@ -500,6 +500,42 @@ static void test8() {
   }
 }
 
+static void test9() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+
+    // Case 1: correctly call 'helper' in a where-clause when declared as a
+    // secondary method on a generic record.
+    proc R.helper() param do return field.type == int;
+    proc R.foo() where helper() do return 5;
+    proc R.foo() where !helper() do return "hello";
+
+    // Case 2: correctly resolve the identifier 'T' implicitly referenced
+    // within a where-clause of an instantiated method
+    proc R.wrapper() param where T == int do return helper();
+    proc R.baz() where wrapper() do return 5;
+    proc R.baz() where !wrapper() do return "hello";
+
+    var r : R(int);
+
+    var x = r.foo();
+
+    var y = r.baz();
+    )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(results["x"].type()->isIntType());
+  assert(results["y"].type()->isIntType());
+  assert(guard.numErrors() == 0);
+}
+
 
 int main() {
   test1();
@@ -510,6 +546,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   return 0;
 }
