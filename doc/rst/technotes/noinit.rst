@@ -1,5 +1,8 @@
 
 .. _readme-noinit:
+.. index::
+   single: noinit
+   single: noinit;variables
 
 .. default-domain:: chpl
 

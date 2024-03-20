@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: modules
 .. _Chapter-Modules:
 
 =======
@@ -19,6 +21,10 @@ in :ref:`Visibility_Of_Symbols`. The execution of a program
 and module initialization/deinitialization are described
 in :ref:`Program_Execution`.
 
+.. index::
+   single: module
+   single: modules;definitions
+   single: modules;top-level
 .. _Module_Definitions:
 
 Module Definitions
@@ -55,6 +61,8 @@ Any module declaration that is not contained within another module
 creates a *top-level module*. Module declarations within other modules
 create nested modules (:ref:`Nested_Modules`).
 
+.. index::
+   single: modules;prototype
 .. _Prototype_Modules:
 
 Prototype Modules
@@ -70,6 +78,10 @@ errors that are not handled will terminate the program
 Implicit modules (:ref:`Implicit_Modules`) are implicitly considered
 ``prototype`` modules as well.
 
+.. index::
+   single: modules;and files
+   single: implicit modules
+   single: modules;implicit
 .. _Implicit_Modules:
 
 Files and Implicit Modules
@@ -166,6 +178,9 @@ identifier, it cannot be referenced in a use statement.
    Module implicit defines the module-scope symbols x, y, printX, and
    printY.
 
+.. index::
+   single: modules;nested
+   single: modules;sub-modules
 .. _Nested_Modules:
 
 Nested Modules
@@ -257,6 +272,8 @@ nested modules.
       0
       0
 
+.. index::
+   single: modules;access
 .. _Access_Of_Module_Contents:
 
 Access of Module Contents
@@ -269,6 +286,8 @@ done via the use statement (:ref:`Using_Modules`), the import
 statement (:ref:`Importing_Modules`) or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. index::
+   single: modules;access
 .. _Visibility_Of_A_Module:
 
 Visibility Of A Module
@@ -301,6 +320,8 @@ imported with just its name, even from the scope in which the module is defined,
 unless it has already been brought into scope by another ``use`` or ``import``
 statement.
 
+.. index::
+   single: modules;access
 .. _Visibility_Of_Symbols:
 
 Visibility Of A Module’s Symbols
@@ -316,6 +337,9 @@ it contains are accessible via the use statement (:ref:`Using_Modules`), import
 statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. index::
+   single: modules;using
+   single: modules;importing
 .. _Using_And_Importing:
 
 Using and Importing
@@ -813,6 +837,8 @@ in the second example of re-exporting, if module A's import of B only allowed
 access to certain symbols, that list will also limit which of the symbols from
 C1, C2, and C3 will be available to A.
 
+.. index::
+   single: modules;qualified naming
 .. _Explicit_Naming:
 
 Qualified Naming of Module Symbols
@@ -1101,6 +1127,9 @@ modules.
       3
 
 
+.. index::
+   single: modules;initialization
+   single: initialization;modules
 .. _Module_Initialization:
 
 Module Initialization
@@ -1146,6 +1175,9 @@ module, other than function and type declarations, are executed.
 Module initialization order is discussed
 in :ref:`Module_Initialization_Order`.
 
+.. index::
+   single: modules;deinitialization
+   single: deinitialization;modules
 .. _Module_Deinitialization:
 
 Module Deinitialization
@@ -1163,6 +1195,9 @@ deinitialization:
 Module deinitialization order is discussed
 in :ref:`Module_Deinitialization_Order`.
 
+.. index::
+   single: program execution
+   single: program initialization
 .. _Program_Execution:
 
 Program Execution
@@ -1251,6 +1286,10 @@ the following situations in order:
    Notice that ``main`` is treated like just another procedure if it is not
    in the main module and can be called as such.
 
+.. index::
+   single: main
+   single: functions;main
+   single: exploratory programming
 .. _The_main_Procedure:
 
 The *main* Procedure
@@ -1294,6 +1333,8 @@ procedure. The default main function is equivalent to:
    The compiler adds an empty default ``main`` which runs after that
    module is initialized.
 
+.. index::
+   single: modules;initialization order
 .. _Module_Initialization_Order:
 
 Module Initialization Order
@@ -1352,6 +1393,8 @@ uses are initialized before the nested module and its uses or imports.
    M2) must be initialized first. M2 itself is initialized, followed by
    M2.M3. Finally M1 is initialized, and the main procedure is run.
 
+.. index::
+   single: modules;deinitialization order
 .. _Module_Deinitialization_Order:
 
 Module Deinitialization Order

@@ -33,6 +33,7 @@ needs_sphinx = '1.3'
 # ones.
 extensions = [
     'sphinx.ext.todo',
+    'sphinxcontrib.jquery',
     'sphinxcontrib.chapeldomain',
     'sphinx.ext.mathjax',
     'util.disguise',
@@ -40,6 +41,9 @@ extensions = [
 ]
 
 breathe_default_project = "dyno"
+# don't generate #include suggestions in docs because
+# it tries to link to the source code which we're not setup for
+breathe_show_include = False
 
 nitpick_ignore_regex = [('cpp:identifier', r'llvm(:.*)?')]
 nitpick_ignore = []

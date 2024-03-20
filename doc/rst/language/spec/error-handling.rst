@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: error handling
+   single: errors
 .. _Chapter-Error_Handling:
 
 ==============
@@ -18,6 +21,10 @@ a less-permissive mode intended for production code.
    defined here, is available in the
    :ref:`errorHandling technical note <readme-errorHandling>`
 
+.. index::
+   single: errors;throwing
+   single: throw
+   single: throws
 .. _Throwing_Errors:
 
 Throwing Errors
@@ -53,6 +60,8 @@ thrown.
         return 1;
       }
 
+.. index::
+   single: errors;handling
 .. _Handling_Errors:
 
 Handling Errors
@@ -66,6 +75,9 @@ There are three ways to handle an error:
 
 -  Propagate the error out of the current function with ``throws``.
 
+.. index::
+   single: try;
+   single: errors;try;
 .. _Halting_on_error_with_try_bang:
 
 Halting on error with try!
@@ -93,6 +105,10 @@ block or a ``try!`` expression prefix, the program halts.
         }
       }
 
+.. index::
+   single: catch
+   single: errors;catch
+   single: errors;try
 .. _Handling_an_error_with_catch:
 
 Handling an error with catch
@@ -389,8 +405,8 @@ Errors also cannot be thrown by ``deinit()`` for similar reasons.
 
 .. _Errors_Methods:
 
-Methods
--------
+Errors and Methods
+------------------
 
 Errors can be thrown by methods, just as with any other function. An
 overriding method must throw if the overridden method throws, or not
@@ -417,8 +433,8 @@ throw if the overridden method does not throw.
 
 .. _Errors_Multilocale:
 
-Multilocale
------------
+Errors and Multilocale
+----------------------
 
 Errors can be thrown within ``on`` statements. In that event, the error
 will be propagated out of the ``on`` statement.
@@ -441,8 +457,8 @@ will be propagated out of the ``on`` statement.
 
 .. _Errors_Parallelism:
 
-Parallelism
------------
+Errors and Parallelism
+----------------------
 
 .. _TaskErrors:
 
@@ -460,8 +476,8 @@ thrown by the outer loop.
 
 .. _Errors_begin:
 
-begin
-~~~~~
+Errors and begin
+~~~~~~~~~~~~~~~~
 
 Errors can be thrown within a ``begin`` statement. In that event, the
 error will be propagated to the ``sync`` statement that waits for that
@@ -486,8 +502,8 @@ task.
 
 .. _Errors_coforall_and_cobegin:
 
-coforall and cobegin
-~~~~~~~~~~~~~~~~~~~~
+Errors and coforall and cobegin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``coforall`` and ``cobegin`` statements and
 handled as ``TaskErrors``. The nested ``coforall`` loops will emit a
@@ -546,8 +562,8 @@ flattened ``TaskErrors`` error.
 
 .. _Errors_forall:
 
-forall
-~~~~~~
+Errors and forall
+~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``forall`` loops, too. Although the ``forall``
 may execute serially within a single task, it will always throw a

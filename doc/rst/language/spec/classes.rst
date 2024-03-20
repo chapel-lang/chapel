@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: classes
+   single: classes;instances
 .. _Chapter-Classes:
 
 =======
@@ -26,6 +29,9 @@ A class is generic if it has generic fields. A class can also be generic
 if it inherits from a generic class. Generic classes and fields are
 discussed in :ref:`Generic_Types`.
 
+.. index::
+   single: classes;declarations
+   single: class
 .. _Class_Declarations:
 
 Class Declarations
@@ -73,6 +79,11 @@ Generic classes are described in :ref:`Generic_Types`.
       as discussion is needed regarding its impact on inheritance, for
       instance.
 
+.. index::
+   single: classes;lifetime
+   single: classes;borrows
+   single: class lifetime
+   single: borrow
 .. _Class_Lifetime_and_Borrows:
 
 Class Lifetime and Borrows
@@ -156,6 +167,9 @@ it refers to.
       Additional syntax to specify the lifetimes of function returns will
       probably be needed.
 
+.. index::
+   single: classes;types
+   single: class type
 .. _Class_Types:
 
 Class Types
@@ -331,6 +345,9 @@ expression of a class type ``C``. It will return ``borrowed C`` for any
 non-nilable ``C`` type (e.g. ``owned C``). It will return
 ``borrowed C?`` for any nilable ``C`` type (e.g. ``C?``).
 
+.. index::
+   single: classes;values
+   single: class value
 .. _Class_Values:
 
 Class Values
@@ -378,6 +395,9 @@ non-nilable classes are not currently supported.
    implicitly from the initialization expression. Finally, an object
    of type ``owned D`` is created and assigned to ``c``.
 
+.. index::
+   single: classes;nil
+   single: nil
 .. _Class_nil_value:
 
 The *nil* Value
@@ -395,6 +415,9 @@ formal/variable/field is non-nilable or generic, including generic
 memory management.
 
 
+.. index::
+   single: classes;fields
+   single: fields;class
 .. _Class_Fields:
 
 Class Fields
@@ -434,6 +457,13 @@ Field access is described in :ref:`Class_Field_Accesses`.
       declarations with ``ref`` or ``const ref`` keywords, are an area of
       future work.
 
+.. index::
+   single: classes;methods
+   single: methods;classes
+   single: methods;primary
+   single: methods;secondary
+   single: primary methods
+   single: secondary methods
 .. _Class_Methods:
 
 Class Methods
@@ -549,6 +579,9 @@ management. See also :ref:`Methods_without_Parentheses`.
       owned C?
 
 
+.. index::
+   single: classes;nested classes
+   single: nested classes
 .. _Nested_Classes:
 
 Nested Classes
@@ -558,6 +591,11 @@ A class defined within another class or record is a nested class. A
 nested class can be referenced only within its immediately enclosing
 class or record.
 
+.. index::
+   single: inheritance
+   single: classes;inheritance
+   single: derived class
+   single: classes;derived
 .. _Inheritance:
 
 Inheritance
@@ -578,6 +616,9 @@ will have type constructor arguments based upon generic fields in the
 fully specified ``C`` will be a subclass of a corresponding fully
 specified ``ParentC``.
 
+.. index::
+   single: RootClass
+   single: classes;RootClass
 .. _The_Root_Class:
 
 The Root Class
@@ -590,6 +631,9 @@ directly or indirectly. If a class declaration does not contain a
 indirectly through the class it inherits from. A variable of type
 ``RootClass`` can hold a reference to an object of any class type.
 
+.. index::
+   single: classes;base;field access
+   single: classes;field access;base class
 .. _Accessing_Base_Class_Fields:
 
 Accessing Base Class Fields
@@ -601,6 +645,8 @@ accessed in their base class unless a getter method is overridden in the
 derived class, as discussed
 in :ref:`Overriding_Base_Class_Methods`.
 
+.. index::
+   single: shadowing;base class fields
 .. _Shadowing_Base_Class_Fields:
 
 Shadowing Base Class Fields
@@ -609,6 +655,9 @@ Shadowing Base Class Fields
 A field in a derived class declared with the same name as a field in a
 base class will cause a compilation error.
 
+.. index::
+   single: dynamic dispatch
+   single: methods;base class;overriding
 .. _Overriding_Base_Class_Methods:
 
 Overriding Base Class Methods
@@ -660,6 +709,10 @@ Methods without parentheses are not candidates for dynamic dispatch.
    access a base field within a base method should that field be
    shadowed by a subclass.
 
+.. index::
+   single: new;classes
+   single: new
+   single: classes;new
 .. _Class_New:
 
 Class New
@@ -713,6 +766,9 @@ a ``type-expression`` that results in a class type. Then:
 See also :ref:`Class_Lifetime_and_Borrows` and
 :ref:`Class_Types`.
 
+.. index::
+   single: classes;initializers
+   single: initializers
 .. _Class_Initializers:
 
 Class Initializers
@@ -729,6 +785,15 @@ If the program declares no initializers for a class, the compiler must
 generate an initializer for that class based on the types and
 initialization expressions of fields defined by that class.
 
+.. index::
+   single: classes;initializers;user-defined
+   single: user-defined initializers
+   single: initializers;user-defined
+   single: classes;initializers;user-defined;init-vs-assign
+   single: classes;initializers;user-defined;omitting
+   single: classes;initializers;user-defined;complete
+   single: classes;initializers;user-defined;other-initializers
+   single: classes;initializers;user-defined;conditionals
 .. _User_Defined_Initializers:
 
 User-Defined Initializers
@@ -1265,6 +1330,10 @@ Miscellaneous Field Initialization Rules
 Fields may not be initialized within loop statements or parallel
 statements.
 
+.. index::
+   single: classes;initializers;compiler-generated
+   single: initializers;compiler-generated
+   single: compiler-generated initializers
 .. _The_Compiler_Generated_Initializer:
 
 The Compiler-Generated Initializer
@@ -1333,6 +1402,8 @@ value of the corresponding actual argument.
    -  The call ``new C(0,0.0,"")`` specifies the initial values for all
       fields explicitly.
 
+.. index::
+   single: classes;initializers;postinit
 .. _The_postinit_Method:
 
 The postinit Method
@@ -1393,6 +1464,13 @@ For classes that inherit, the user may invoke the parent’s ``postinit``
 method or let the compiler insert a call automatically
 (:ref:`The_postinit_Method_for_Inheriting_Classes`).
 
+.. index::
+   single: classes;initializers;initializer-inheritance
+   single: initializers;initializer-inheritance
+   single: initializer-inheritance
+   single: classes;initializers;initializer-inheritance;dynamic-this
+   single: classes;initializers;initializer-inheritance;compiler-generated
+   single: classes;initializers;initializer-inheritance;postinit
 .. _Initializing_Inherited:
 
 Initializing Inherited Classes
@@ -1684,6 +1762,11 @@ parent’s ``postinit`` method.
       Parent.postinit: 1.0, 2.0
       Child.postinit: 3.0, 4.0
 
+.. index::
+   single: classes;field access
+   single: field access;class
+   single: classes;receiver
+   single: receiver;class
 .. _Class_Field_Accesses:
 
 Field Accesses
@@ -1764,6 +1847,10 @@ instantiated class type itself.
    and assigns the field ``age`` in the object ``anActor`` the value
    ``27``.
 
+.. index::
+   single: classes;getter method
+   single: getter method;class
+   single: methods;class;getter
 .. _Getter_Methods:
 
 Field Getter Methods
@@ -1773,6 +1860,9 @@ The compiler implements field access as calls to a compiler-generated
 methods without parentheses that have the same name as the field. See
 also :ref:`Methods_without_Parentheses`.
 
+.. index::
+   single: classes;method calls
+   single: methods;calling
 .. _Class_Method_Calls:
 
 Class Method Calls
@@ -1792,6 +1882,9 @@ method receivers.
 Common Operations
 -----------------
 
+.. index::
+   single: classes;assignment
+   single: assignment;class
 .. _Class_Assignment:
 
 Class Assignment
@@ -1843,6 +1936,10 @@ different memory management strategies are disallowed:
    the source and the destination would appear responsible for deleting
    the instance
 
+.. index::
+   single: classes;delete
+   single: delete;class unmanaged instances
+   single: deallocation;unmanaged class instances
 .. _Class_Delete:
 
 Deleting Unmanaged Class Instances
@@ -1909,6 +2006,9 @@ behavior is undefined.
 
       DONE
 
+.. index::
+   single: classes;deinitializer
+   single: deinitializer;classes
 .. _Class_Deinitializer:
 
 Class Deinitializer
