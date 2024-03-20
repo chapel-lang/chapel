@@ -1,4 +1,4 @@
-; RUN: opt-15 --load-pass-plugin=%bindir/llvm-pgas.so -S --passes=aggregate-global-ops < %s | FileCheck-15 %s
+; RUN: opt --load-pass-plugin=%bindir/llvm-pgas.%soext -S --passes=aggregate-global-ops < %s | FileCheck %s
 target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128-p100:128:64:64-p101:128:64:64"
 
 ; Note after LLVM 7 memcpy will no longer take an alignment argument
@@ -17,7 +17,7 @@ entry:
 ; CHECK: store i64 1
 ; CHECK: store i64 2
 ; CHECK: store i64 3
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: ret
   store i64 1, ptr addrspace(100) %p0, align 8
   store i64 2, ptr addrspace(100) %p1, align 8
@@ -32,7 +32,7 @@ entry:
 ; CHECK: store i64 1
 ; CHECK: store i64 2
 ; CHECK: store i64 3
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: ret
   %p0 = getelementptr inbounds i64, ptr addrspace(100) %base, i32 0
   store i64 1, ptr addrspace(100) %p0, align 8
@@ -53,7 +53,7 @@ entry:
 ; CHECK: store i64 3
 ; CHECK: store i64 2
 ; CHECK: store i64 1
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: ret
   store i64 3, ptr addrspace(100) %p2, align 8
   store i64 2, ptr addrspace(100) %p1, align 8
@@ -71,7 +71,7 @@ entry:
 ; CHECK: store i64 3
 ; CHECK: store i64 2
 ; CHECK: store i64 1
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: ret
   store i64 3, i64 addrspace(100)* %p2, align 8
   store i64 2, i64 addrspace(100)* %p01, align 8
@@ -83,7 +83,7 @@ entry:
 define i64 @testload1(ptr addrspace(100) %base) {
 ; CHECK: @testload1(
 ; )
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: load
 ; CHECK: load
 ; CHECK: load
@@ -103,7 +103,7 @@ entry:
 define i64 @testload2(ptr addrspace(100) %base) {
 ; CHECK: @testload2(
 ; )
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: load
 ; CHECK: load
 ; CHECK: load
@@ -123,7 +123,7 @@ entry:
 define i64 @testload3(ptr addrspace(100) %base) {
 ; CHECK: @testload3(
 ; )
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: load
 ; CHECK: load
 ; CHECK: load
@@ -143,7 +143,7 @@ entry:
 define i64 @testload4(ptr addrspace(100) %base) {
 ; CHECK: @testload4(
 ; )
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: load
 ; CHECK: load
 ; CHECK: load
@@ -163,7 +163,7 @@ entry:
 define i64 @testload5(ptr addrspace(100) %base) {
 ; CHECK: @testload5(
 ; )
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: load
 ; CHECK: load
 ; CHECK: load
@@ -210,7 +210,7 @@ define i64 @testload7(ptr addrspace(100) %base, ptr addrspace(100) %other) {
 ; CHECK: getelementptr
 ; CHECK: getelementptr
 ; CHECK: getelementptr
-; CHECK: memcpy
+; CHECK: call void @llvm.memcpy
 ; CHECK: load
 ; CHECK: load
 ; CHECK: add

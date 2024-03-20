@@ -1,2 +1,0 @@
-binary-io.chpl:2: warning: BinaryIO module is deprecated; please use the IO module instead
-hello, world

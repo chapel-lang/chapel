@@ -31,7 +31,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-gmp_randinit_default (gmp_randstate_t rstate)
+gmp_randinit_default (gmp_randstate_ptr rstate)
 {
   gmp_randinit_mt (rstate);
 }

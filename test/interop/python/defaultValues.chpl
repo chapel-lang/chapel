@@ -3,6 +3,10 @@ export proc cstringDefault(in x: chpl_c_string = "blah") {
   writeln(string.createCopyingBuffer(x:c_ptrConst(c_char)));
 }
 
+export proc cPtrConstDefault(in x: c_ptrConst(c_char) = "blah") {
+  writeln(string.createCopyingBuffer(x));
+}
+
 export proc intDefault(x: int = 3) {
   writeln(x);
 }

@@ -72,7 +72,7 @@ AC_CACHE_CHECK([for hand-implemented makecontext],
 	 *tile*)
 	  qthread_cv_makecontext="yes"
 	 ;;
-	 *-linux-gnu*|*-linux)
+	 *-linux-gnu*|*-linux|*-linux-musl)
 	 qthread_cv_makecontext="yes"
 	 ;;
 	 *-cygwin)

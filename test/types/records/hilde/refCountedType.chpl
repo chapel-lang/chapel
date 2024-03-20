@@ -40,8 +40,8 @@ record Handle
 
 
 // Destructor
-  proc deinit() { this.release_helper(); }
-  inline proc release_helper()
+  proc ref deinit() { this.release_helper(); }
+  inline proc ref release_helper()
   {
     if _impl != nil && _impl!.release() == 0
     {

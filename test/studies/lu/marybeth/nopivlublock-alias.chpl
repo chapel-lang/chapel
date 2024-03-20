@@ -40,16 +40,16 @@ for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
 //  slice = CurrentBlockInds(k+1..)
     slice = k+1..CurrentBlockInds.high;
     if (A11(k,k) != 0.0) {
-      forall i in slice {
+      forall i in slice with (ref A11) {
         A11(i,k) = A11(i,k)/A11(k,k);
       }
-      forall (i,j) in {slice,slice} {
+      forall (i,j) in {slice,slice} with (ref A11) {
         A11(i,j) -= A11(i,k)*A11(k,j);
       }
-      forall i in TrailingBlockInds {
+      forall i in TrailingBlockInds with (ref A21) {
         A21(i,k) = A21(i,k)/A11(k,k);
       }
-      forall (i,j) in {TrailingBlockInds, slice} {
+      forall (i,j) in {TrailingBlockInds, slice} with (ref A21) {
         A21(i,j) -= A21(i,k)*A11(k,j);
       }
     }
@@ -69,7 +69,7 @@ for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
     }
   }
 // Update of A22 -= A12*A21.
-  forall (i,j) in {TrailingBlockInds, TrailingBlockInds} {
+  forall (i,j) in {TrailingBlockInds, TrailingBlockInds} with (ref A22) {
     for k in CurrentBlockInds {
       A22(i,j) -= A21(i,k)*A12(k,j);
     }
@@ -90,13 +90,13 @@ iter IterateByBlocks(D:range,blksize) {
   }   
 }
   
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
 // Create full permutation matrix to permute A.
 // Very expensive, but easy way to permute the matrix
 // so that pivoting isn't needed.
 
-var Adat = open(filename,ioMode.r).reader();
+var Adat = open(filename,ioMode.r).reader(locking=false);
 var P, temp: [A.domain] real;
 
 for ij in A.domain {

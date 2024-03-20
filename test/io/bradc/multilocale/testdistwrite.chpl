@@ -2,13 +2,13 @@ class D {
   var me: int;
 }
 
-class C {
+class C : writeSerializable {
   var Ds: [LocaleSpace] unmanaged D?;
 
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     for loc in Locales do
       on loc do
-	Ds[loc.id]!.writeThis(x);
+	Ds[loc.id]!.serialize(writer, serializer);
   }
 }
 

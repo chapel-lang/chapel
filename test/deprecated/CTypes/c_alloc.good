@@ -1,6 +1,0 @@
-c_alloc.chpl:5: warning: 'c_malloc' is deprecated; use 'allocate'
-c_alloc.chpl:6: warning: 'c_calloc' is deprecated; use 'allocate' with 'clear' argument
-c_alloc.chpl:7: warning: 'c_aligned_alloc' is deprecated; use 'allocate' with 'alignment' argument
-c_alloc.chpl:9: warning: 'c_free' is deprecated; use 'deallocate'
-c_alloc.chpl:10: warning: 'c_free' is deprecated; use 'deallocate'
-c_alloc.chpl:11: warning: 'c_free' is deprecated; use 'deallocate'

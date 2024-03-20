@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -183,6 +183,7 @@
   often necessary to run a small test program twice, once with that
   module present and once without it.
  */
+@unstable("The CommDiagnostics module is unstable and may change in the future")
 module CommDiagnostics
 {
   /*
@@ -314,23 +315,24 @@ module CommDiagnostics
     */
     var cache_readahead_waited : uint(64);
 
-    proc writeThis(c) throws {
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
       use Reflection;
 
       var first = true;
-      c.write("(");
+      writer.write("(");
       for param i in 0..<getNumFields(chpl_commDiagnostics) {
         param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {
           if commDiagsPrintUnstable || name != 'amo' {
-            if first then first = false; else c.write(", ");
-            c.write(name, " = ", val);
+            if first then first = false; else writer.write(", ");
+            writer.write(name, " = ", val);
           }
         }
       }
-      if first then c.write("<no communication>");
-      c.write(")");
+      if first then writer.write("<no communication>");
+      writer.write(")");
     }
   };
 
@@ -339,22 +341,32 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
+  commDiagnostics implements writeSerializable;
+
+  pragma "insert line file info"
   private extern proc chpl_comm_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopVerbose();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startVerboseHere(stacktrace: bool,
                                                  print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopVerboseHere();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startDiagnostics(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopDiagnostics();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startDiagnosticsHere(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopDiagnosticsHere();
 
   private extern proc chpl_comm_resetDiagnosticsHere();

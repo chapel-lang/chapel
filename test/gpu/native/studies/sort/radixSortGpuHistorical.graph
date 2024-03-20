@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:, Time:, Time:, Time:
+files: serialScan.dat, hillisSteeleScan.dat, blellochScan.dat
+graphkeys: Serial, Hillis-Steele, Blelloch
+ylabel: Time (s)
+graphtitle: Historical Radix Sort - 1M elements

@@ -244,7 +244,7 @@ proc test_permuteMatrix(rprt = true) : bool {
     // little too meta here?)
 
     param n = 10;
-    var rand = new RandomStream(seed);
+    var rand = new randomStream(real, seed);
 
     // this n by n array is filled so each element is assigned to its
     // row number. This test will permute these elements, keeping a pivot
@@ -255,8 +255,8 @@ proc test_permuteMatrix(rprt = true) : bool {
 
     // do 100 random swaps of A
     for i in 1..100 {
-        var randRow1 = (rand.getNext() * 10000):int % n + 1;
-        var randRow2 = (rand.getNext() * 10000):int % n + 1;
+        var randRow1 = (rand.next() * 10000):int % n + 1;
+        var randRow2 = (rand.next() * 10000):int % n + 1;
 
         A[randRow1, ..] <=> A[randRow2, ..];
         piv[randRow1] <=> piv[randRow2];
@@ -278,11 +278,11 @@ proc test_permuteMatrix(rprt = true) : bool {
 }
 
 proc test_panelSolve(rprt = true) : bool {
-    var rand = new RandomStream();
+    var rand = new randomStream(real);
 
     var piv : [1..8] int = [i in 1..8] i;
     var A : [1..8, 1..9] real =
-        [(i,j) in {1..8, 1..9}] (rand.getNext() * 10000):int % 100 + 1;
+        [(i,j) in {1..8, 1..9}] (rand.next() * 10000):int % 100 + 1;
     var AOrig = A;
 
     var AOrig2 = A;
@@ -318,13 +318,13 @@ proc test_panelSolve(rprt = true) : bool {
 }
 
 proc test_updateBlockRow(rprt = true) : bool {
-    var rand = new RandomStream();
+    var rand = new randomStream(real);
 
     // construct a matrix A = [X | Y], where X is an already LU-factorized
     // submatrix and Y is the block row we wish to update and test
-    var randomOffset : int = (rand.getNext() * 100):int;
-    var randomHeight : int = (rand.getNext() * 100):int + 1;
-    var randomWidth  : int = (rand.getNext() * 100):int + randomHeight;
+    var randomOffset : int = (rand.next() * 100):int;
+    var randomHeight : int = (rand.next() * 100):int + 1;
+    var randomWidth  : int = (rand.next() * 100):int + randomHeight;
     var A : [randomOffset..#randomHeight,
              randomOffset..#randomWidth] real;
     rand.fillRandom(A);
@@ -364,9 +364,9 @@ proc test_updateBlockRow(rprt = true) : bool {
 }
 
 proc test_LUFactorize(rprt = true) : bool {
-    var rand = new RandomStream();
+    var rand = new randomStream(real);
 
-    var randomN : int = (rand.getNext() * 10):int + 1;
+    var randomN : int = (rand.next() * 10):int + 1;
     var A : [1..randomN, 1..randomN+1] real;
     fillRandom(A);
     var origA = A;
@@ -421,4 +421,3 @@ proc main() {
 // test_panelSolve: 1000 PASSED, 0 FAILED
 // test_updateBlockRow: 100 PASSED, 0 FAILED
 // test_LUFactorize: 1000 PASSED, 0 FAILED
-

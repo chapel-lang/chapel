@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,8 @@ namespace uast {
 
  */
 class Coforall final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   Coforall(AstList children, int8_t indexChildNum,
            int8_t iterandChildNum,
@@ -61,7 +63,12 @@ class Coforall final : public IndexableLoop {
                     attributeGroupChildNum) {
   }
 
-  Coforall(Deserializer& des) : IndexableLoop(asttags::Coforall, des) { }
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
+  }
+
+  explicit Coforall(Deserializer& des)
+    : IndexableLoop(asttags::Coforall, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
@@ -84,13 +91,6 @@ class Coforall final : public IndexableLoop {
                                BlockStyle blockStyle,
                                owned<Block> body,
                                owned<AttributeGroup> attributeGroup = nullptr);
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Coforall);
-
 };
 
 

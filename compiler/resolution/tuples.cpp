@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -75,7 +75,7 @@ void makeTupleName(std::vector<TypeSymbol*>& args,
       nameTS = nameTS->type->getValType()->symbol;
     name += size_str;
     name += "*";
-    name += nameTS->name;
+    name += toString(nameTS->type);
     cname += size_str;
     cname += "_star_";
     cname += args[0]->cname;
@@ -89,7 +89,7 @@ void makeTupleName(std::vector<TypeSymbol*>& args,
       cname += "_";
       cname += args[i]->cname;
       if (i != 0 ) name += ",";
-      name += nameTS->name;
+      name += toString(nameTS->type);
     }
     name += ")";
   }

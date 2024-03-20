@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 15.0.7 is being released with Chapel for
+This copy of LLVM 17.0.6 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/
@@ -60,17 +60,17 @@ un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
 1.  download the new release and signature and verify them with e.g.
-    gpg --verify llvm-15.0.7.src.tar.xz.sig
+    gpg --verify llvm-17.0.6.src.tar.xz.sig
 2.  git rm -r llvm-src cmake
 3.  un-tarball the new LLVM version into the directory it specifies,
-    for example llvm-15.0.7.src
+    for example llvm-17.0.6.src
 4.  un-tarball the new Clang version into the directory it specifies,
-    for example clang-15.0.7.src
+    for example clang-17.0.6.src
 5.  un-tarball the cmake support tarball into the directory it specifies,
-    for example cmake-15.0.7.src
-6.  mv clang-15.0.7.src llvm-15.0.7.src/tools/clang
-7.  mv llvm-15.0.7.src llvm-src
-8.  mv cmake-15.0.7.src cmake
+    for example cmake-17.0.6.src
+6.  mv clang-17.0.6.src llvm-17.0.6.src/tools/clang
+7.  mv llvm-17.0.6.src llvm-src
+8.  mv cmake-17.0.6.src cmake
 9.  rm -r llvm-src/test llvm-src/tools/clang/test
 10. git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
@@ -85,3 +85,7 @@ follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 16. update this README file
 17. commit the docs and chplenv changes
 18. PR, test, merge, etc.
+
+Updating LLVM versions may also have impacts on GPU support.  See the test
+$CHPL_HOME/test/gpu/native/llvmMoved.chpl for a description of these
+impacts.

@@ -22,16 +22,16 @@ proc setupDistributions() {
     return defaultDist;
 
   else if distType == DistType.block then
-    return new Block(rank=2, boundingBox={1..d, 1..d});
+    return new blockDist(rank=2, boundingBox={1..d, 1..d});
 
   else if distType == DistType.cyclic then
-    return new dmap(new Cyclic(startIdx=(0,0)));
+    return new cyclicDist(startIdx=(0,0));
 
   else if distType == DistType.blockcyclic then
-    return new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3)));
+    return new blockCycDist(startIdx=(0,0), blocksize=(3,3));
 
   else if distType == DistType.replicated then
-    return new dmap(new Replicated());
+    return new replicatedDist();
 
   else compilerError("unexpected 'distType': ", distType:c_ptrConst(c_char));
 }

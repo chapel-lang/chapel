@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,13 +26,12 @@ namespace uast {
 
 owned<Attribute> Attribute::build(Builder* builder, Location loc,
                                   UniqueString name,
-                                  bool usedParens,
                                   AstList actuals,
                                   std::vector<UniqueString> actualNames) {
   int numActuals = actuals.size();
 
-  Attribute* ret = new Attribute(name, usedParens, numActuals,
-                                 std::move(actuals), std::move(actualNames));
+  Attribute* ret = new Attribute(name, numActuals, std::move(actuals),
+                                 std::move(actualNames));
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

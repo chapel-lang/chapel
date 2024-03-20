@@ -92,7 +92,7 @@ def check_configs(ann_data):
     """Check that all the configs used in the annotation file are 'known'"""
     known_configs = {'shootout', 'chap03', 'chap04', 'bradc-lnx', 'chapcs',
                      '16-node-xc', '1-node-xc', '16-node-cs', '16-node-cs-hdr',
-                     'chapcs.comm-counts', 'gpu'}
+                     'chapcs.comm-counts', '1-node-p100', '1-node-mi60'}
     for graph in ann_data:
         for _, annotations in ann_data[graph].items():
             for ann in annotations:

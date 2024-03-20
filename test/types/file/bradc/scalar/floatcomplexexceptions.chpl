@@ -2,11 +2,12 @@
 var f: real;
 var c: complex;
 const zero: real = 0.0; // To avoid C compiler folding of 1.0 / 0.0
+const one: real = 1.0;
 
 f = 1.0 / zero;
 writeln("f is: ", f);
 
-f = sqrt(-1.0);
+f = sqrt(-one);
 writeln("f is: ", f);
 
 f = -1.0 / zero;
@@ -20,7 +21,7 @@ writeln();
 c.re = 1.0 / zero;
 writeln("c is: ", c);
 
-c.re = sqrt(-1.0);
+c.re = sqrt(-one);
 writeln("c is: ", c);
 
 c.re = -1.0 / zero;
@@ -36,7 +37,7 @@ c = 0.0 + 0.0i;
 c.im = 1.0 / zero;
 writeln("c is: ", c);
 
-c.im = sqrt(-1.0);
+c.im = sqrt(-one);
 writeln("c is: ", c);
 
 c.im = -1.0 / zero;

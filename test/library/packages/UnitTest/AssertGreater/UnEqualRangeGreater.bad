@@ -1,2 +1,2 @@
-AssertionError: assert failed - First element is of type range(int(64),high,one) and Second is of type range(int(64),high,one)
+AssertionError: in UnEqualRangeGreater.chpl:8 - assert failed - First element is of type range(int(64),high,one) and Second is of type range(int(64),high,one)
 ================================================================================

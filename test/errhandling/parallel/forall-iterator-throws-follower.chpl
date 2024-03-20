@@ -20,8 +20,10 @@ iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.
 }
 
 // for loop in follower with yield should get vector pragma
-iter myiter(nn:int, nt: int, followThis, param tag: iterKind) throws where tag == iterKind.follower {
+iter myiter(nn:int, nt: int, followThis, param tag: iterKind): nothing throws where tag == iterKind.follower {
   throw new owned StringError("Test error");
+  // This code is not reachable, so 'yield' does not color return type. Thus
+  // we say that the iterator returns 'nothing'.
   for i in followThis {
     yield i;
   }

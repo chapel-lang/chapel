@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,7 @@ namespace uast {
   This is an abstract base class for declarations that carry a name.
  */
 class NamedDecl : public Decl {
+ friend class AstNode;
 
  private:
   UniqueString name_;
@@ -53,11 +54,15 @@ class NamedDecl : public Decl {
       name_(name) {
   }
 
+  void namedDeclSerializeInner(Serializer& ser) const {
+    declSerializeInner(ser);
+    ser.write(name_);
+  }
+
   NamedDecl(AstTag tag, Deserializer& des)
     : Decl(tag, des) {
     name_ = des.read<UniqueString>();
   }
-
 
   bool namedDeclContentsMatchInner(const NamedDecl* other) const {
     return this->name_ == other->name_ &&
@@ -72,11 +77,6 @@ class NamedDecl : public Decl {
 
  public:
   virtual ~NamedDecl() = 0; // this is an abstract base class
-
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
-    ser.write(name_);
-  }
 
   UniqueString name() const { return name_; }
 };

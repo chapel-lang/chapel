@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,16 +29,23 @@ class EnumType final : public Type {
  private:
   ID id_;
   UniqueString name_;
+  bool isAbstract_ = false;
+  bool isConcrete_ = false;
 
-  EnumType(ID id, UniqueString name)
-    : Type(typetags::EnumType), id_(id), name_(name) {}
+  EnumType(ID id, UniqueString name, bool isAbstract, bool isConcrete)
+    : Type(typetags::EnumType), id_(id), name_(name),
+      isAbstract_(isAbstract),
+      isConcrete_(isConcrete) {}
 
-  static const owned<EnumType>& getEnumType(Context* context, ID id, UniqueString name);
+  static const owned<EnumType>&
+  getEnumType(Context* context, ID id, UniqueString name);
 
  protected:
   bool contentsMatchInner(const Type* other) const override {
     auto otherEnum = (const EnumType*) other;
-    return id_ == otherEnum->id_ && name_ == otherEnum->name_;
+    return id_ == otherEnum->id_ && name_ == otherEnum->name_ &&
+           isAbstract_ == otherEnum->isAbstract_ &&
+           isConcrete_ == otherEnum->isConcrete_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -66,7 +73,21 @@ class EnumType final : public Type {
   const ID& id() const { return id_; }
 
   /** Return the name of the uAST associated with this EnumType */
-  const UniqueString& name() const { return name_; }
+  UniqueString name() const { return name_; }
+
+  /** An enum type is abstract if none of its constants have an initializer
+      part defined. */
+  inline bool isAbstract() const { return isAbstract_; }
+
+  /** An enum type is concrete if its first constant has an initializer
+      part defined. */
+  inline bool isConcrete() const { return isConcrete_; }
+
+  /** An enum type is semi-concrete if some of its constants, but not the
+      first constant, have an initializer part defined. */
+  inline bool isSemiConcrete() const {
+    return !isAbstract() && !isConcrete();
+  }
 };
 
 } // end namespace types

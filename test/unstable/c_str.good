@@ -1,4 +1,6 @@
-c_str.chpl:4: warning: 'string.c_str()' is unstable and may change in a future release
-c_str.chpl:5: warning: 'bytes.c_str()' is unstable and may change in a future release
+c_str.chpl:5: warning: 'string.c_str()' is unstable and may change in a future release
+c_str.chpl:6: warning: 'bytes.c_str()' is unstable and may change in a future release
+c_str.chpl:8: warning: 'createBorrowingBuffer' is unstable and may change in the future
+c_str.chpl:9: warning: 'createBorrowingBuffer' is unstable and may change in the future
 my string
 my bytes

@@ -1,0 +1,4 @@
+-spromote=true -suseForall=true   # assertOnFailToGpuizeVar.promote.forall.good
+-spromote=true -suseForall=false  # assertOnFailToGpuizeVar.promote.foreach.good
+-spromote=false -suseForall=true  # assertOnFailToGpuizeVar.forall.good
+-spromote=false -suseForall=false # assertOnFailToGpuizeVar.foreach.good

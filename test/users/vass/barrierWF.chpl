@@ -34,7 +34,7 @@ class BarrierWF {
     if numTasks <= 0 then halt("BarrierWF constructor expects numTasks>0",
                                " but received ", numTasks);
     tasks = numTasks;
-    this.complete();
+    init this;
     setup(0);
   }
 

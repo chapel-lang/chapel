@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -229,7 +229,7 @@ module Curl {
   // param. Here's a compile-time check that t is at least a type that
   // we accept for some option.
   private proc check_setopt_argtype(type t) {
-    if !isIntegralType(t) && !isBoolType(t) && !chpl_isAnyCPtr(t) && t != slist &&
+    if !isIntegralType(t) && !isBoolType(t) && !isAnyCPtr(t) && t != slist &&
        t != string && t != bytes then
       compilerError("setopt() doesn't accept arguments of type ", t:string);
   }
@@ -258,7 +258,7 @@ module Curl {
       // arg to libcurl should be a pointer to an object, or to a
       // slist, or a char*, or a void* (CBPOINT).
       // CURLOPTTYPE_FUNCTIONPOINT is also in this range.
-      if chpl_isAnyCPtr(arg.type) {
+      if isAnyCPtr(arg.type) {
         var tmp:c_ptr(void) = arg:c_ptr(void);
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == slist {
@@ -329,7 +329,7 @@ module Curl {
 
      :arg str: a string argument to append
     */
-  proc slist.append(str:string) throws {
+  proc ref slist.append(str:string) throws {
     var err: errorCode = 0;
     on this.home {
       this.list = curl_slist_append(this.list, str.localize().c_str());
@@ -533,7 +533,7 @@ module Curl {
                           end:int(64),
                           qioChannelPtr:qio_channel_ptr_t):errorCode {
         var curlch = new unmanaged CurlChannel();
-        curlch.curlf = _to_unmanaged(this);
+        curlch.curlf = this:unmanaged;
         curlch.qio_ch = qioChannelPtr;
         pluginChannel = curlch;
         return start_channel(curlch, start, end);
@@ -711,7 +711,7 @@ module Curl {
 
     private proc startsWith(haystack:c_ptrConst(c_char), needle:c_ptrConst(c_char)) {
       extern proc strncmp(s1: c_ptrConst(c_char), s2: c_ptrConst(c_char), n:c_size_t):c_int;
-      const len = strLen(needle):uint(64);
+      const len = strLen(needle):c_size_t;
       return strncmp(haystack, needle, len) == 0;
     }
 
@@ -828,9 +828,10 @@ module Curl {
         // Set the function to get the data to send
         err = curl_easy_setopt_long(curl, CURLOPT_UPLOAD, 1);
         if err then return EINVAL;
-        err =curl_easy_setopt_ptr(curl, CURLOPT_READFUNCTION, c_ptrTo(curl_read_buffered):c_ptr(void));
+        err =curl_easy_setopt_ptr(curl, CURLOPT_READFUNCTION,
+            c_ptrTo(curl_read_buffered):c_ptr(void));
         if err then return EINVAL;
-        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, cc:c_ptr(void));
+        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, c_ptrToConst(cc));
         if err then return EINVAL;
 
         // TODO -- is this necessary?
@@ -841,7 +842,8 @@ module Curl {
         // Set the function to process the received data
         err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEFUNCTION, c_ptrTo(curl_write_received):c_ptr(void));
         if err then return EINVAL;
-        err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEDATA, cc:c_ptr(void));
+        err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEDATA,
+            c_ptrToConst(cc));
         if err then return EINVAL;
       }
       // If it's seekable, start at the right offset
@@ -1135,8 +1137,7 @@ module Curl {
     }
 
     proc openCurlFile(url:string,
-                     mode:ioMode = ioMode.r,
-                     style:iostyleInternal = defaultIOStyleInternal()) throws {
+                     mode:ioMode = ioMode.r) throws {
 
       var err_out: errorCode = 0;
       var rc = 0;
@@ -1172,7 +1173,7 @@ module Curl {
       var ret: file;
 
       try {
-        ret = openplugin(fl, mode, fl.seekable, style);
+        ret = openplugin(fl, mode, fl.seekable, defaultIOStyleInternal());
       } catch e {
         fl.close();
         delete fl;

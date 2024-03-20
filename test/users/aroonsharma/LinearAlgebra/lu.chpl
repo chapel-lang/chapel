@@ -23,7 +23,7 @@ config var N: int = 64;
 /* Initializes a matrix based on a distribution */
 proc initialize_matrix(distribution, n_dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = (i * j) / (n_dim + 0.0);
     }
     return matrix;
@@ -63,7 +63,7 @@ proc kernel_lu(dist_square, n_dim: int) {
     var s: real;
     
     for i in 1..n_dim {
-        forall j in (i+1)..n_dim {
+        forall j in (i+1)..n_dim with (ref A) {
                 A[i,j] = A[i,j] / A[i,i];
         }
         for j in (i+1)..n_dim {
@@ -97,7 +97,7 @@ proc kernel_lu(dist_square, n_dim: int) {
   //will say correctness is false but it is actually true
   if correct {
       for i in 1..n_dim {
-          forall j in (i+1)..n_dim {
+          forall j in (i+1)..n_dim with (ref ATest) {
                   ATest[i,j] = ATest[i,j] / ATest[i,i];
           }
           for j in (i+1)..n_dim {
@@ -143,10 +143,10 @@ proc main() {
         var user_dist_square = dom_square dmapped CyclicZipOpt(startIdx=dom_square.low);
         kernel_lu(user_dist_square, N);   */
     } else if dist == "C" {
-        var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
+        var user_dist_square = dom_square dmapped cyclicDist(startIdx=dom_square.low);
         kernel_lu(user_dist_square, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped Block(boundingBox=dom_square);
+        var user_dist_square = dom_square dmapped blockDist(boundingBox=dom_square);
         kernel_lu(user_dist_square, N);  
     } 
 }

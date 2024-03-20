@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1051,7 +1051,7 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
   } else {
     ssize_t amt_read = 0;
     err = _qio_slow_read(ch, ptr, len, &amt_read);
-    if( err == 0 && amt_read != len ) err = QIO_ESHORT;
+    if( (err == 0 || err == QIO_EEOF) && amt_read != 0 && amt_read != len ) err = QIO_ESHORT;
     _qio_channel_set_error_unlocked(ch, err);
   }
 

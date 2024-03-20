@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -163,8 +163,7 @@ proc absPath(path: string): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc absPath(f: file): string throws {
-  // switch this to "return try f.path" after relative path deprecation is removed
-  return try f._abspath;
+  return try f.path;
 }
 
 /* Returns the file name portion of the path provided.  For instance:

@@ -7,7 +7,7 @@ class C {
   var n;
 }
 
-iter foo(): unmanaged C {
+iter foo(): unmanaged C(?) {
   yield new unmanaged C(3);
 }
 
@@ -21,7 +21,7 @@ class D: C(?) {
   var m;
 }
 
-iter bar(): unmanaged C {
+iter bar(): unmanaged C(?) {
   yield new unmanaged D(4,5.5);
 }
 
@@ -31,7 +31,7 @@ delete baar;
 
 config const flag = false;
 
-iter baz(): unmanaged C {
+iter baz(): unmanaged C(?) {
  if flag then
   yield new unmanaged C(3);
  else

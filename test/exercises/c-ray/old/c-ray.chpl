@@ -136,8 +136,8 @@ use BlockDist, CyclicDist;
 proc main() {
   const pixinds = {0..#yres, 0..#xres},
         pixdom = if !multilocale then pixinds
-              else (if blockdist then pixinds dmapped Block(pixinds)
-                                 else pixinds dmapped Cyclic((0,0)));
+              else (if blockdist then pixinds dmapped blockDist(pixinds)
+                                 else pixinds dmapped cyclicDist((0,0)));
   var pixels: [pixdom] pixelType;
 
   loadScene();
@@ -149,10 +149,10 @@ proc main() {
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
   if loopStyle == 0 {
-    forall (y, x) in pixels.domain do
+    forall (y, x) in pixels.domain with (ref pixels) do
       pixels[y, x] = computePixel(y, x);
   } else if loopStyle == 1 {
-    forall (y, x) in pixdom do
+    forall (y, x) in pixdom with (ref pixels) do
       pixels[y, x] = computePixel(y, x);
   } else if loopStyle == 2 {
     pixels = computePixel(pixdom);
@@ -432,7 +432,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, ioMode.r).reader();
+                                     else open(scene, ioMode.r).reader(locking=true);
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect
@@ -520,15 +520,16 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new owned RandomStream(seed=(if seed then seed
-                                                   else SeedGenerator.currentTime),
-                                     eltType=real);
+    var rng = if seed
+      then new randomStream(real, seed)
+      else new randomStream(real);
+
     for u in urand do
-      u(X) = rng.getNext() - 0.5;
+      u(X) = rng.next() - 0.5;
     for u in urand do
-      u(Y) = rng.getNext() - 0.5;
+      u(Y) = rng.next() - 0.5;
     for r in irand do
-      r = (nran * rng.getNext()): int;
+      r = (nran * rng.next()): int;
   }
 }
 

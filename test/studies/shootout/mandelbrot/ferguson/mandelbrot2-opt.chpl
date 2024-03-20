@@ -12,7 +12,7 @@ const upper = 0.5 + 1.0i;
 
 // imag, real
 const D = {0..#size, 0..#size by 8};
-//const D: domain(2) dmapped Block(boundingBox=space) = space;
+//const D: domain(2) dmapped blockDist(boundingBox=space) = space;
 
 proc in_set8(ipart: int, rpart8: int):uint(8) {
 
@@ -48,19 +48,19 @@ proc main() {
 
   //var values: [D] complex = for (re,im) in space do compute(get_point(i));
 
-  forall (im,re8) in D {
+  forall (im,re8) in D with (ref set) {
     set(im,re8) = in_set8(im, re8);
   }
 
   var datastart:int(64);
   var f = open(outfile, ioMode.cwr);
-  var hwriter = f.writer();
+  var hwriter = f.writer(locking=false);
   hwriter.writeln("P4");
   hwriter.writeln(size, " ", size);
   datastart = hwriter.offset();
   hwriter.close();
 
-  var writer = f.writer(kind=iokind.native, locking=false, region=datastart..);
+  var writer = f.writer(serializer=new binarySerializer(), locking=false, region=datastart..);
   for (im,re8) in D {
     writer.write(set(im,re8));
   }

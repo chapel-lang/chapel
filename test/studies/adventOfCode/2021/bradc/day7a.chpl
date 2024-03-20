@@ -30,7 +30,7 @@ proc fuelrequired(distance: int) {
   //  return + reduce [i in 1..distance] i;
 }
 
-forall target in 0..maxpos do
+forall target in 0..maxpos with (ref fuel) do
   fuel[target] = + reduce fuelrequired(abs(positions-target));
 
 writeln(fuel);

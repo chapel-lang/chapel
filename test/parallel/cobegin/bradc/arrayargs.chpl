@@ -4,7 +4,7 @@ const D = {1..n};
 
 var A: [D] real;
 
-proc foo(X, val) {
+proc foo(ref X, val) {
   X = val;
 }
 

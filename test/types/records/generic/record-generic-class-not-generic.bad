@@ -1,8 +1,1 @@
-record-generic-class-not-generic.chpl:6: In method 'myfield':
-record-generic-class-not-generic.chpl:6: internal error: AST-PRI-IVE-0238 chpl version 1.32.0 pre-release (xxxxxxxxxx)
-
-Internal errors indicate a bug in the Chapel compiler,
-and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+record-generic-class-not-generic.chpl:6: error: could not determine the concrete type for the generic return type 'owned GC'

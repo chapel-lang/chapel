@@ -43,17 +43,17 @@ if case == "CSC" {
 }
 
 if case == "associative domain with string keys" {
-  var assocDom: domain(string);
-  assocDom += ["foo", "bar"];
+  var assocDom: domain(string) = {"foo", "bar"};
+
   test(assocDom, "associative domain with string keys");
 }
 
-proc test(dom:domain, name) {
+proc test(dom:domain(?), name) {
   writeln("Testing ", name);
 
   var arr: [dom] int;
 
-  forall i in dom {
+  forall i in dom with (ref arr) {
     arr[i] = idxToInt(i);
   }
 

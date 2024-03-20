@@ -16,7 +16,7 @@ for i in 1..n do
 
 writeln("S2 is:\n", S2);
 
-forall (i,j) in S1 do
+forall (i,j) in S1 with (ref A1) do
   A1(i,j) = i + j/10.0;
 
 writeln("A1 = \n", A1);

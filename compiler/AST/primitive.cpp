@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -154,8 +154,30 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
 }
 
 static QualifiedType
+returnInfoAbs(CallExpr* call) {
+  Type *t = call->get(1)->getValType();
+  if (t == dtComplex[COMPLEX_SIZE_64]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
+  } else if (t == dtComplex[COMPLEX_SIZE_128]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
+  } else if (t == dtImag[FLOAT_SIZE_32]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
+  } else if (t == dtImag[FLOAT_SIZE_64]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
+  }
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+
+static QualifiedType
 returnInfoFirst(CallExpr* call) {
   return call->get(1)->qualType();
+}
+
+static QualifiedType
+returnInfoFirstAsValue(CallExpr* call) {
+  return QualifiedType(Qualifier::QUAL_CONST_VAL, call->get(1)->qualType().type());
 }
 
 static QualifiedType
@@ -170,6 +192,16 @@ returnInfoFirstDeref(CallExpr* call) {
     type = computeNonRefTuple(tupleType);
   }
   return QualifiedType(type, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoFirstDerefNoRtti(CallExpr* call) {
+  auto qt = returnInfoFirstDeref(call);
+  if (qt.type()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+    USR_FATAL(call, "static variables do not support types with"
+                    "runtime type information (such as arrays)");
+  }
+  return qt;
 }
 
 static QualifiedType
@@ -234,6 +266,9 @@ returnInfoVal(CallExpr* call) {
 static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->getValType();
+  if(t->symbol->hasFlag(FLAG_GENERIC))
+    // this will result in an error later on
+    return QualifiedType(t, QUAL_REF);
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return QualifiedType(t->refType, QUAL_REF);
@@ -404,9 +439,9 @@ returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
     // Look for the type var `_remoteEndCountType` in ChapelBase.
+    const char* searchAstr = astr("_remoteEndCountType");
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      const char* searchStr = "_remoteEndCountType";
-      if (strcmp(var->cname, searchStr) == 0) {
+      if (var->name == searchAstr) {
         endCountType = var->type;
         break;
       }
@@ -691,6 +726,10 @@ initPrimitive() {
   // use for any primitives not in this list
   primitives[PRIM_UNKNOWN] = NULL;
 
+  prim_def(PRIM_INNERMOST_CONTEXT, "innermost context", returnInfoFirstAsValue);
+  prim_def(PRIM_OUTER_CONTEXT, "outer context", returnInfoFirst);
+  prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
+
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   // dst, src. PRIM_MOVE can set a reference.
@@ -719,6 +758,8 @@ initPrimitive() {
   // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
+  prim_def(PRIM_INIT_REF_DECL, "init ref decl", returnInfoVoid);
+
   // indicates the body of the initializer is now in Phase 2
   prim_def(PRIM_INIT_DONE, "init done", returnInfoVoid);
 
@@ -738,11 +779,14 @@ initPrimitive() {
   prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_LNOT, "u!", returnInfoBool);
+  prim_def(PRIM_SQRT, "sqrt", returnInfoFirst);
+  prim_def(PRIM_ABS, "abs", returnInfoAbs);
   prim_def(PRIM_ADD, "+", returnInfoNumericUp);
   prim_def(PRIM_SUBTRACT, "-", returnInfoNumericUp);
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);
   prim_def(PRIM_DIV, "/", returnInfoNumericUp, true); // div by zero is visible
   prim_def(PRIM_MOD, "%", returnInfoFirstDeref); // mod by zero?
+  prim_def(PRIM_FMA, "fma", returnInfoFirstDeref);
   prim_def(PRIM_LSH, "<<", returnInfoFirstDeref);
   prim_def(PRIM_RSH, ">>", returnInfoFirstDeref);
   prim_def(PRIM_EQUAL, "==", returnInfoBool);
@@ -875,6 +919,25 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true);
+  prim_def(PRIM_GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg", returnInfoVoid, true);
+  prim_def(PRIM_GPU_ARG, "gpu arg", returnInfoVoid, true);
+  prim_def(PRIM_GPU_PID_OFFLOAD, "gpu pid offload", returnInfoVoid, true);
+
+  // Marker for a scopeless block that denotes the "scope" of code to which
+  // GPU attributes are being applied. The block contains the primitives as the
+  // last child, and every promoted expression and foreach loop within this
+  // "scope" should have these primitives inserted.
+  //
+  // The marker prevents the block from being flattened by other passes.
+  prim_def(PRIM_GPU_ATTRIBUTE_BLOCK, "gpu attribute block", returnInfoVoid, true);
+
+  // Marker for a scopeless block that contains the primitives generated by
+  // GPU attributes.
+  //
+  // The marker prevents the block from being flattened by other passes.
+  prim_def(PRIM_GPU_PRIMITIVE_BLOCK, "gpu primitive block", returnInfoVoid, true);
+
   // allocate data into shared memory (takes one parameter: number of bytes to allocate)
   // and returns a raw_c_void_ptr
   prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
@@ -888,6 +951,7 @@ initPrimitive() {
 
   // Generates call that produces runtime error when not run by a GPU
   prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
+  prim_def(PRIM_GPU_ELIGIBLE, "gpu eligible", returnInfoVoid, true, true);
 
   // task primitives
   // get serial state
@@ -935,6 +999,11 @@ initPrimitive() {
   // For an array, returns the compile-time type only.
   // There might be uninitialized memory if the run-time type is used.
   prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
+
+  prim_def(PRIM_STATIC_FUNCTION_VAR, "static function var", returnInfoFirst);
+  prim_def(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type", returnInfoFirstDerefNoRtti);
+  prim_def(PRIM_STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper", returnInfoVoid);
+
 
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
   // a type only. Returns the scalar promotion type (i.e. the type of the
@@ -1162,6 +1231,8 @@ initPrimitive() {
   prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
   prim_def(PRIM_RESOLVES, "resolves", returnInfoBool);
 
+  prim_def(PRIM_IMPLEMENTS_INTERFACE, "implements interface", returnInfoInt64);
+
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
 
@@ -1262,6 +1333,28 @@ initPrimitive() {
   prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
+
+  prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
+
+  // Expects a single argument, which will be passed by pointer to an underlying
+  // runtime function, so that the memory can be hashed.
+  prim_def(PRIM_CONST_ARG_HASH, "hash const arguments", returnInfoUInt64, true);
+  // Expects five arguments:
+  // 1. hash of the const argument at the start of the function
+  // 2. hash of the const argument at the end of the function
+  // 3. the name of the const argument
+  // 4. and 5. the line number and file name where the argument was defined.
+  //
+  // The latter two will be inserted by the compiler before code generation
+  //
+  // 1 and 2 are used to determine if the argument has been indirectly modified,
+  // 3-5 are used to generate a warning message if it was.
+  prim_def(PRIM_CHECK_CONST_ARG_HASH, "check hashes of const arguments", returnInfoVoid, true, true);
+
+  // we need to carry information about 'in' intents lowered from foreach loops
+  // until gpu transforms. To do that we add an assignment
+  //   `taskIndVar = TASK_PRIVATE_SVAR_CAPTURE(capturedVar)` into the AST.
+  prim_def(PRIM_TASK_PRIVATE_SVAR_CAPTURE, "task private svar capture", returnInfoUnknown);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

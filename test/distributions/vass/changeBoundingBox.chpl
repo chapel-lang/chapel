@@ -25,7 +25,7 @@ for idx in 0..9 do writeln("A:  ", idx, " maps to ",
                            dist.dsiIndexToLocale(idx));
 
 // This domain will be distributed according to dist's current bounding box.
-var D: domain(1) dmapped new Block(dist);
+var D: domain(1) dmapped new blockDist(dist);
 
 // Show the distribution in action.
 D = {0..9};
@@ -37,7 +37,7 @@ for idx in D do writeln("B:  ", idx, "  maps to ", A[idx].locale);
 WARNING: currently, the following will not work when compiled with --local:
 
   var dist = new unmanaged BlockImpl(...);
-  var dm   = new Block(dist);
+  var dm   = new blockDist(dist);
   dist.changeBoundingBox(...);
 
 This is because "new dmap(ARG)" retains a copy of ARG
@@ -47,7 +47,7 @@ For now, do this instead:
 */
 
 const distTemp = new unmanaged BlockImpl(dummyBB);
-const DM = new Block(distTemp);
+const DM = new blockDist(distTemp);
 
 DM.changeBoundingBox(1..4);
 for idx in 0..6 do writeln("C:  ", idx, " maps to ",

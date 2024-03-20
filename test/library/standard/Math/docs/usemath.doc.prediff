@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+import sys
+import subprocess as sp
+import os
+import re
+
+testname = sys.argv[1]
+testout = sys.argv[2]
+
+chpl_home = os.environ.get("CHPL_HOME", "")
+
+sphinx_build = f"{chpl_home}/third-party/chpl-venv/install/chpldeps/bin/sphinx-build"
+
+# manually building the text version, it is WAY easier to parse than HTML
+os.chdir("output_dir")
+p = sp.run(
+    f"{sphinx_build} -b text -d build/doctrees source build/text".split(" "),
+    stdout=sp.PIPE, stderr=sp.STDOUT)
+make_output = p.stdout.decode()
+if p.returncode != 0:
+    with open("../" + testout, "w") as f:
+        print("Failed to build chpldoc text", file=f)
+        print(make_output, file=f)
+    exit(-1)
+os.chdir("..")
+
+text_output = f"output_dir/build/text/modules{chpl_home}/modules/standard/Math.txt"
+
+# Check that procs/params listed in in the index match what is listed in the definitions, and that nothing is missing
+lines = []
+with open(text_output, "r") as f:
+    lines = [l.strip() for l in f.readlines()]
+
+state = "unknown"
+# possible states, which corresponds to 'sets'
+# - automath-symbol-index
+# - math-symbol-index
+# - automath-symbol-defs
+# - math-symbol-defs
+sets = {
+    "automath-symbol-index": set(),
+    "math-symbol-index": set(),
+    "automath-symbol-defs": set(),
+    "math-symbol-defs": set(),
+}
+state_is_index = lambda s: "-index" in s
+state_is_defs = lambda s: "-defs" in s
+
+for l in lines:
+    if l == "Automatically Available Symbols":
+        state = "automath-symbol-index"
+    elif l == "Non-Automatically Available Symbols":
+        state = "math-symbol-index"
+    elif l == "Automatically Included Constant and Function Definitions":
+        state = "automath-symbol-defs"
+    elif l == "Constant and Function Definitions for Math":
+        state = "math-symbol-defs"
+
+    if state == "unknown":
+        continue
+
+    if state_is_index(state):
+        for m in re.finditer(r'"(\S*?)"', l):
+            name = m.group(1)
+            if name != "Math.":
+                sets[state].add(name)
+
+    if state_is_defs(state):
+        # add procs
+        for m in re.finditer(r'proc (\S*?)\(', l):
+            name = m.group(1)
+            sets[state].add(name)
+        # add params
+        for m in re.finditer(r'param (\S*?) +=', l):
+            name = m.group(1)
+            sets[state].add(name)
+        # parenless proc params
+        for m in re.finditer(r'proc (\S*?) +param', l):
+            name = m.group(1)
+            sets[state].add(name)
+        # check for deprecated and remove
+        for m in re.finditer(r"'?(\S*?)'? .*? deprecated", l):
+            name = m.group(1)
+            if name in sets[state]: sets[state].remove(name)
+
+
+output = ""
+err = False
+
+# the index and def sets should be the same for Math and AutoMath
+if sets["automath-symbol-index"] != sets["automath-symbol-defs"]:
+    err = True
+    output += "The AutoMath index does not match the definitions\n"
+    output += "Index: " + ", ".join(sorted(sets["automath-symbol-index"])) + "\n"
+    output += "Defs: " + ", ".join(sorted(sets["automath-symbol-defs"])) + "\n"
+
+if sets["math-symbol-index"] != sets["math-symbol-defs"]:
+    err = True
+    output += "The Math index does not match the definitions\n"
+    output += "Index: " + ", ".join(sorted(sets["math-symbol-index"])) + "\n"
+    output += "Defs: " + ", ".join(sorted(sets["math-symbol-defs"])) + "\n"
+
+if not err:
+    output = "The Math docs passed the checks\n"
+
+with open(testout, "w") as f:
+    f.write(output)

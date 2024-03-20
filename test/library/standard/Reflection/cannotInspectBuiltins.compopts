@@ -1,0 +1,70 @@
+-stestNum=1 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=2 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=3 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=4 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=5 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=6 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=7 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=8 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=9 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=10 -stestType=string # cannotInspectBuiltins-string.good
+-stestNum=1 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=2 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=3 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=4 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=5 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=6 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=7 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=8 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=9 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=10 -stestType=range # cannotInspectBuiltins-range.good
+-stestNum=1 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=2 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=3 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=4 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=5 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=6 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=7 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=8 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=9 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=10 -stestType=domain(1) # cannotInspectBuiltins-domain.good
+-stestNum=1 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=2 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=3 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=4 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=5 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=6 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=7 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=8 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=9 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=10 -stestType='[1..10] int' # cannotInspectBuiltins-array.good
+-stestNum=1 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=2 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=3 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=4 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=5 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=6 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=7 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=8 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=9 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=10 -stestType='sync int' # cannotInspectBuiltins-sync.good
+-stestNum=1 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=2 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=3 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=4 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=5 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=6 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=7 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=8 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=9 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=10 -stestType='atomic int' # cannotInspectBuiltins-atomic.good
+-stestNum=1 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=2 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=3 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=4 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=5 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=6 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=7 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=8 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=9 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good
+-stestNum=10 -stestType='(int,int)' # cannotInspectBuiltins-tuple.good

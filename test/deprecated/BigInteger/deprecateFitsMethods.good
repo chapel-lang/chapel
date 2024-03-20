@@ -1,7 +1,0 @@
-deprecateFitsMethods.chpl:4: warning: `fits_ulong_p` is deprecated -  please use `bigint.fitsInto(c_ulong)` instead
-deprecateFitsMethods.chpl:4: warning: `fits_slong_p` is deprecated -  please use `bigint.fitsInto(c_long)` instead
-deprecateFitsMethods.chpl:4: warning: `fits_uint_p` is deprecated -  please use `bigint.fitsInto(c_uint)` instead
-deprecateFitsMethods.chpl:4: warning: `fits_sint_p` is deprecated -  please use `bigint.fitsInto(c_int)` instead
-deprecateFitsMethods.chpl:4: warning: `fits_ushort_p` is deprecated -  please use `bigint.fitsInto(c_ushort)` instead
-deprecateFitsMethods.chpl:4: warning: `fits_sshort_p` is deprecated -  please use `bigint.fitsInto(c_short)` instead
-1

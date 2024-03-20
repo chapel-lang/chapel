@@ -19,7 +19,7 @@ var retp = new versionValue(max(int), max(int), max(int));
 var v0_0_0p = new versionValue(0,0,0);
 var v0_0_1p = new versionValue(0,0,1);
 
-proc getVersion(otherVer: versionValue) {
+proc getVersion(otherVer: versionValue(?)) {
   var ret = new version(-1,-1,-1);
   if (true) {
     ret = otherVer;

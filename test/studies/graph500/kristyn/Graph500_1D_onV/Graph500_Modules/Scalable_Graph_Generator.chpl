@@ -63,7 +63,7 @@ module Scalable_Graph_Generator
 // this to allocate additional arrays using the same distribution
 
   proc Scalable_Data_Generator ( SCALE :int, N_VERTICES : int,
-                                n_raw_edges : int, Edges:[?ArrD] )
+                                n_raw_edges : int, ref Edges:[?ArrD] )
   {
       use BlockDist;
       // use Graph500_defs;
@@ -73,9 +73,9 @@ module Scalable_Graph_Generator
       // Random Numbers return in the range [0.0, 1.0)
 
       var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
-                       new unmanaged NPBRandomStream (seed = 0556707007)
+                       new randomStream (eltType = real, seed = 0556707007)
                      else
-                       new unmanaged NPBRandomStream ();
+                       new randomStream (eltType = real);
 
 
       const vertex_range = 1..N_VERTICES;
@@ -100,7 +100,7 @@ module Scalable_Graph_Generator
       var   Unif_Random  : [ArrD] real;
       var   Unif_Random2 : [ArrD] real;
 
-      var   Edge_lock$   : [ArrD] sync bool = true;
+      var   Edge_lock   : [ArrD] sync bool = true;
 
       var   graph_gen_time: stopwatch;
 
@@ -115,13 +115,13 @@ module Scalable_Graph_Generator
       graph_gen_time.clear();
       graph_gen_time.start();
 
-      var permutation$ : [vertex_range] sync int = vertex_range;
+      var permutation : [vertex_range] sync int = vertex_range;
 
       for i in 1..SCALE do {
          var   skip : real;
-         Rand_Gen.fillRandom ( Unif_Random );
-         skip = Rand_Gen.getNext ();
-         Rand_Gen.fillRandom ( Unif_Random2 );
+         Rand_Gen.fill ( Unif_Random );
+         skip = Rand_Gen.next ();
+         Rand_Gen.fill ( Unif_Random2 );
 
          serial (SHUFFLE_DETERMINISTICALLY) {
          forall j in ArrD do
@@ -139,13 +139,13 @@ module Scalable_Graph_Generator
 
 //            Lock locations in permutation array
 
-              var label1 = permutation$ (ndx1).readFE () : int;
-              var label2 = permutation$ (ndx2).readFE () : int;
+              var label1 = permutation (ndx1).readFE () : int;
+              var label2 = permutation (ndx2).readFE () : int;
 
 //            Swap labels
 
-              permutation$ (ndx1).writeEF (label2);
-              permutation$ (ndx2).writeEF (label1);
+              permutation (ndx1).writeEF (label2);
+              permutation (ndx2).writeEF (label1);
             };
 
           };
@@ -173,20 +173,20 @@ module Scalable_Graph_Generator
 
           // randomize the coefficients, tweaking them by numbers in [-.05, .05)
 
-          skip = Rand_Gen.getNext ();
-          Rand_Gen.fillRandom (Unif_Random);
+          skip = Rand_Gen.next ();
+          Rand_Gen.fill (Unif_Random);
           Noisy_a = a * (0.95 + 0.1 * Unif_Random);
 
-          skip = Rand_Gen.getNext ();
-          Rand_Gen.fillRandom (Unif_Random);
+          skip = Rand_Gen.next ();
+          Rand_Gen.fill (Unif_Random);
           Noisy_b = b * (0.95 + 0.1 * Unif_Random);
 
-          skip = Rand_Gen.getNext ();
-          Rand_Gen.fillRandom (Unif_Random);
+          skip = Rand_Gen.next ();
+          Rand_Gen.fill (Unif_Random);
           Noisy_c = c * (0.95 + 0.1 * Unif_Random);
 
-          skip = Rand_Gen.getNext ();
-          Rand_Gen.fillRandom (Unif_Random);
+          skip = Rand_Gen.next ();
+          Rand_Gen.fill (Unif_Random);
           Noisy_d = d * (0.95 + 0.1 * Unif_Random);
 
           norm     = 1.0 / (Noisy_a + Noisy_b + Noisy_c + Noisy_d);
@@ -196,8 +196,8 @@ module Scalable_Graph_Generator
           Noisy_c *= norm;
           Noisy_d *= norm;
 
-          skip = Rand_Gen.getNext ();
-          Rand_Gen.fillRandom (Unif_Random);
+          skip = Rand_Gen.next ();
+          Rand_Gen.fill (Unif_Random);
 
 
           Edges += assign_quadrant ( Unif_Random, Noisy_a, Noisy_b,
@@ -216,8 +216,8 @@ module Scalable_Graph_Generator
           bit >>= 1;
           var   skip : real;
 
-          skip = Rand_Gen.getNext ();
-          Rand_Gen.fillRandom (Unif_Random);
+          skip = Rand_Gen.next ();
+          Rand_Gen.fill (Unif_Random);
 
           forall e in ArrD do {
 
@@ -249,9 +249,9 @@ module Scalable_Graph_Generator
    graph_gen_time.clear();
    graph_gen_time.start();
 
-   forall e in ArrD do {
-      Edges(e).start = permutation$ (Edges(e).start).readFF();
-      Edges(e).end   = permutation$ (Edges(e).end  ).readFF();
+   forall e in ArrD with (ref Edges) do {
+      Edges(e).start = permutation (Edges(e).start).readFF();
+      Edges(e).end   = permutation (Edges(e).end  ).readFF();
    };
    graph_gen_time.stop();
    if (PRINT_TIMING_STATISTICS) {
@@ -265,12 +265,12 @@ module Scalable_Graph_Generator
 
 //   Sample specification only applies edgefactor*N swaps
      var   skip : real;
-     Rand_Gen.fillRandom ( Unif_Random );
-     skip = Rand_Gen.getNext ();
-     Rand_Gen.fillRandom ( Unif_Random2 );
+     Rand_Gen.fill ( Unif_Random );
+     skip = Rand_Gen.next ();
+     Rand_Gen.fill ( Unif_Random2 );
 
      serial (SHUFFLE_DETERMINISTICALLY) {
-     forall j in ArrD do
+     forall j in ArrD with (ref Edges) do
      {
 
 //     Choose two locations at random
@@ -286,8 +286,8 @@ module Scalable_Graph_Generator
 
 //       Lock Edge Pairs
 
-         Edge_lock$ (ndx1).readFE();
-         Edge_lock$ (ndx2).readFE();
+         Edge_lock (ndx1).readFE();
+         Edge_lock (ndx2).readFE();
          var label1 = Edges (ndx1).start : int;
          var label2 = Edges (ndx1).end : int;
          var label3 = Edges (ndx2).start : int;
@@ -299,8 +299,8 @@ module Scalable_Graph_Generator
          Edges (ndx1).end = label4;
          Edges (ndx2).start = label1;
          Edges (ndx2).end = label2;
-         Edge_lock$ (ndx1).writeEF(true);
-         Edge_lock$ (ndx2).writeEF(true);
+         Edge_lock (ndx1).writeEF(true);
+         Edge_lock (ndx2).writeEF(true);
        };
      };
      }
@@ -314,7 +314,6 @@ module Scalable_Graph_Generator
    }
 
 //   writeln("Upon exit, Edges is:\n", Edges, "\n");
-    delete Rand_Gen;
   }
 
 }

@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+# want to eliminate the message
+# `<command-line arg>:n: warning: The variable 'memLeaks' is unstable and its interface is subject to change in the future`
+# and the message
+# `<command-line arg>:2: warning: The variable 'memLeaksLog' is unstable and its interface is subject to change in the future`
+# from tests that don't normally provide it when in the general memleaks config
+
+import sys
+
+testname = sys.argv[1]
+outfile = sys.argv[2]
+
+memleaksWarn = "warning: The variable 'memLeaks' is unstable and its interface is subject to change in the future"
+memleaksLogWarn = "warning: The variable 'memLeaksLog' is unstable and its interface is subject to change in the future"
+
+with open(outfile, 'r', newline='') as outR:
+     myLines = outR.readlines()
+
+with open(outfile, 'w', newline='') as overwrite:
+     for line in myLines:
+          if line.find(memleaksWarn) == -1 and line.find(memleaksLogWarn) == -1:
+               overwrite.write(line)

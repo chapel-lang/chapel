@@ -1,3 +1,4 @@
 warning: configParam is unstable.
 note: 'configParam' was set via a compiler flag
+paramConfigInCmd.chpl:XX: warning: configParam is unstable.
 10

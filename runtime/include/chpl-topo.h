@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,10 +33,14 @@ extern "C" {
 
 
 //
-// chpl_topo_init() must be called before anything else here, to
-// initialize the topology support
+// See chpl-init.c for details on the initialization functions
 //
-void chpl_topo_init(void);
+
+// accessiblePUsMask masks the accessible PUs and is used by runtime
+// unit testing. It should be NULL in production code.
+
+void chpl_topo_pre_comm_init(char *accessiblePUsMask);
+void chpl_topo_post_comm_init(void);
 void chpl_topo_post_args_init(void);
 void chpl_topo_exit(void);
 
@@ -159,7 +163,6 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 // Returns True if the node is oversubscribed (locales are sharing
 // cores).
 chpl_bool chpl_topo_isOversubscribed(void);
-
 
 #ifdef __cplusplus
 } // end extern "C"

@@ -4,37 +4,37 @@ public use BlockCycDist;
 public use HashedDist;
 public use StencilDist;
 
-config type distType = Block;
+config type distType = blockDist;
 
 proc createDom(space) {
   if space.rank > 2 {
     compilerError("Only 1 and 2 dimensional domains");
   }
 
-  if distType == Block {
-    return Block.createDomain(space);
+  if distType == blockDist {
+    return blockDist.createDomain(space);
   }
-  else if distType == Cyclic {
-    return Cyclic.createDomain(space);
+  else if distType == cyclicDist {
+    return cyclicDist.createDomain(space);
   }
-  else if distType == BlockCyclic {
+  else if distType == blockCycDist {
     if space.rank == 1 {
-      return space dmapped BlockCyclic(startIdx=(space.low,), blocksize=(2,));
+      return space dmapped blockCycDist(startIdx=(space.low,), blocksize=(2,));
     }
     else {
-      return space dmapped BlockCyclic(startIdx=space.low, blocksize=(2,2));
+      return space dmapped blockCycDist(startIdx=space.low, blocksize=(2,2));
     }
   }
-  else if distType == Stencil {
+  else if distType == stencilDist {
     if space.rank == 1 {
-      return space dmapped Stencil(space, fluff=(1,));
+      return space dmapped stencilDist(space, fluff=(1,));
     }
     else {
-      return space dmapped Stencil(space, fluff=(1,1));
+      return space dmapped stencilDist(space, fluff=(1,1));
     }
   }
-  else if distType == Hashed {
-    var D: domain(int) dmapped Hashed(idxType=int);
+  else if distType == hashedDist {
+    var D: domain(int) dmapped hashedDist(idxType=int);
     for i in space {
       D += i;
     }

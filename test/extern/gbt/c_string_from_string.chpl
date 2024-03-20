@@ -9,4 +9,4 @@ print_c_string(str.c_str());
 extern proc print_c_ptrConst(arg: c_ptrConst(c_uchar));
 var str2 = "Goodbye";
 writeln("Should be Goodbye:");
-print_c_ptrConst(c_ptrToConst_helper(str2));
+print_c_ptrConst(c_ptrToConst(str2));

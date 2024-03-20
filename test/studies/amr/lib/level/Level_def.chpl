@@ -22,7 +22,7 @@ private use IO;
 // cells that will be used by each Grid.
 //-------------------------------------------------------------------
 
-class Level {
+class Level : writeSerializable {
 
   var is_complete: bool = false;
   
@@ -155,7 +155,7 @@ class Level {
   // sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
   
-  proc writeThis(w) throws {
+  proc serialize(writer, ref serializer) throws {
     writeln("Level bounds: ", x_low, "  ", x_high);
     writeln("Number of cells: ", n_cells);
     writeln("Number of ghost cells: ", n_ghost_cells);
@@ -327,7 +327,7 @@ class SiblingGhostRegion {
     level: unmanaged Level,
     grid:  unmanaged Grid)
   {
-    this.complete();
+    init this;
     for sibling in level.grids 
     {
       if sibling != grid 

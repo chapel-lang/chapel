@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -97,6 +97,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::Identifier:
     case asttags::Import:
     case asttags::Include:
+    case asttags::Init:
     case asttags::Let:
     case asttags::New:
     case asttags::Range:
@@ -222,6 +223,7 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::Identifier:
     case asttags::Import:
     case asttags::Include:
+    case asttags::Init:
     case asttags::Let:
     case asttags::New:
     case asttags::Range:
@@ -543,37 +545,84 @@ void AstNode::stringify(std::ostream& ss,
 }
 
 void AstNode::serialize(Serializer& ser) const {
+  ser.beginAst(this);
   ser.write(tag_);
-  ser.write(attributeGroupChildNum_);
-  ser.write(id_);
-  ser.write(children_);
+  ser.writeVInt(attributeGroupChildNum_);
+  // id_ not serialized; it is recomputed after reading
+  serializeInner(ser);
+  serializeChildren(ser);
+  ser.endAst(this);
 }
 
 AstNode::AstNode(AstTag tag, Deserializer& des)
   : tag_(tag) {
-  // Note: Assumes that the tag was already serialized in order to invoke
+  // Note: Assumes that the tag was already deserialized in order to invoke
   // the correct class' deserializer.
-  attributeGroupChildNum_ = (int)des.read<int32_t>();
-  id_ = des.read<ID>();
-  children_ = des.read<AstList>();
+  attributeGroupChildNum_ = des.readVInt();
+  // id_ not deserialized; it is recomputed after reading
 }
 
-owned<AstNode> AstNode::deserialize(Deserializer& des) {
+void AstNode::serializeChildren(Serializer& ser) const {
+  // count the number of children ignoring comments
+  uint64_t count = 0;
+  for (const AstNode* child : children()) {
+    if (!child->isComment()) {
+      count++;
+    }
+  }
+
+  // write the count
+  ser.writeVU64(count);
+
+  // store the children ignoring comments
+  for (const AstNode* child : children()) {
+    if (!child->isComment()) {
+      child->serialize(ser);
+    }
+  }
+}
+
+void AstNode::deserializeChildren(Deserializer& des) {
+  uint64_t len = des.readVU64();
+  // note: this check assumes 1 byte per child node, and it's
+  // true that each child node will be at least one byte.
+  if (des.checkStringLengthAvailable(len)) {
+    children_.resize(len);
+    for (uint64_t i = 0; i < len; i++) {
+      children_[i] = deserializeWithoutIds(des);
+    }
+  }
+}
+
+owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
+  uint64_t pos = des.position();
+
   AstTag tag = des.read<AstTag>();
+
+  // Deserialize using the specific type constructor
+  // which will call AstNode::AstNode(AstTag tag, Deserializer& des) above
+  // to deserialize AstNode's fields (but not the children)
+  // and then deserialize the subclass fields through its constructor.
+  // Then, register the deserialized Ast with the Deserializer
+  // Finally, deserialize the children with deserializeChildren.
 
   switch (tag) {
     #define CASE_LEAF(NAME) \
       case asttags::NAME: \
       { \
-        return NAME::deserialize(des); \
-        break; \
+        auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
+        ret->deserializeChildren(des); \
+        return ret; \
       }
 
     #define CASE_NODE(NAME) \
       case asttags::NAME: \
       { \
-        return NAME::deserialize(des); \
-        break; \
+        auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
+        ret->deserializeChildren(des); \
+        return ret; \
       }
 
     #define CASE_OTHER(NAME) \

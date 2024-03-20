@@ -35,7 +35,7 @@ class Child : Parent {
     inheritedMethod();
     foobar(this);
     multi(this, this);
-    this.complete();
+    init this;
     writeln("----- phase two -----");
     foobar(this);
   }

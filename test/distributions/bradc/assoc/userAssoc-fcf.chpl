@@ -8,7 +8,7 @@ record MyMapper {
   }
 }
 
-var newDist = new dmap(new unmanaged Hashed(idxType=real, mapper=new MyMapper()));
+var newDist = new hashedDist(idxType=real, mapper=new MyMapper());
 
 var myMapper = proc(ind:real, targetLocs: Locales.type) {
                         const numlocs = targetLocs.domain.size;
@@ -16,7 +16,7 @@ var myMapper = proc(ind:real, targetLocs: Locales.type) {
                         return indAsInt % numlocs;
                      };
 
-var D: domain(real) dmapped Hashed(idxType=real, mapper=myMapper);
+var D: domain(real) dmapped hashedDist(idxType=real, mapper=myMapper);
 
 D += 1.3;
 D += 22.0;

@@ -1,4 +1,4 @@
 config var n = 10;
 
-var Dist = new Block(boundingBox={1..n});
+var Dist = new blockDist(boundingBox={1..n});
 

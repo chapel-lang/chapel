@@ -8,7 +8,6 @@ delivering the performance we expect Chapel to ultimately deliver.
 
      hpcc/       : implementations of the HPC Challenge benchmarks
      isx/        : an implementation of ISx benchmark
-     lcals/      : an implementation of the LLNL LCALS benchmark
      lulesh/     : an implementation of the DARPA/LLNL LULESH benchmark
      miniMD/     : an implementation of the Sandia MiniMD mini-application
      shootout/   : implementations of the Computer Language Benchmarks Game

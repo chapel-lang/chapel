@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -351,7 +351,7 @@ prototype module AtomicObjects {
      should be created by LocalAtomicObject. The object protected by this ABA wrapper can
      be extracted via 'getObject'.
   */
-  record ABA {
+  record ABA : serializable {
     type __ABA_objType;
     @chpldoc.nodoc
     var __ABA_ptr : uint(64);
@@ -391,7 +391,7 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an ABA is not supported");
     }
 
@@ -402,8 +402,8 @@ prototype module AtomicObjects {
     }
 
     /* Writes an ABA */
-    proc writeThis(f) throws {
-      f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
+    proc serialize(writer, ref serializer) throws {
+      writer.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
     }
 
     forwarding this.getObject()!;
@@ -423,14 +423,14 @@ prototype module AtomicObjects {
 
     proc init(type objType, ptr : uint(64), cnt : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
       this._ABA_cnt.write(cnt);
     }
 
     proc init(type objType, ptr : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
     }
 
@@ -456,7 +456,7 @@ prototype module AtomicObjects {
     return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
   }
 
-  record AtomicObject {
+  record AtomicObject : serializable {
     type objType;
     // If this atomic instance provides ABA support
     param hasABASupport : bool;
@@ -471,7 +471,7 @@ prototype module AtomicObjects {
       this.objType = objType;
       this.hasABASupport = hasABASupport;
       this.hasGlobalSupport = hasGlobalSupport;
-      this.complete();
+      init this;
       if hasABASupport {
         var ptr : c_ptr(void);
         var retval = posix_memalign(c_addrOf(ptr), 16, c_sizeof(ABA(objType?)));
@@ -507,7 +507,7 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    inline proc atomicVariable ref {
+    inline proc ref atomicVariable ref {
       if hasABASupport {
         return atomicVar[0]._ABA_ptr;
       } else {
@@ -567,11 +567,11 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc read() : objType? {
+    proc ref read() : objType? {
       return fromPointer(atomicVariable.read());
     }
 
-    proc compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
+    proc ref compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
       return atomicVariable.compareAndSwap(toPointer(expectedObj), toPointer(newObj));
     }
 
@@ -592,7 +592,7 @@ prototype module AtomicObjects {
       compareAndSwapABA(expectedObj, newObj.getObject());
     }
 
-    proc write(newObj:objType?) {
+    proc ref write(newObj:objType?) {
       atomicVariable.write(toPointer(newObj));
     }
 
@@ -617,7 +617,7 @@ prototype module AtomicObjects {
       write128bit_special(new ABA(objType?, toPointer(newObj), 0));
     }
 
-    inline proc exchange(newObj:objType?) : objType? {
+    inline proc ref exchange(newObj:objType?) : objType? {
       return fromPointer(atomicVariable.exchange(toPointer(newObj)));
     }
 
@@ -650,7 +650,7 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an AtomicObject is not supported");
     }
 
@@ -664,8 +664,9 @@ prototype module AtomicObjects {
       compilerWarning("Deserializing an AtomicObject is not yet supported");
     }
 
-    proc writeThis(f) throws {
-      f.write(atomicVariable.read());
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writer.write(atomicVariable.read());
     }
   }
 }

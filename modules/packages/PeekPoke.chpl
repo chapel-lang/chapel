@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@
      use BlockDist, PeekPoke;
 
      const space = {1..1000};
-     const D = space dmapped Block(space);
+     const D = space dmapped blockDist(space);
      var A: [D] atomic int;
 
      forall i in D do
@@ -58,11 +58,11 @@ module PeekPoke {
   /*
      Non-atomically writes `val`.
   */
-  inline proc AtomicBool.poke(val:bool): void {
+  inline proc ref AtomicBool.poke(val:bool): void {
     this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
-  inline proc RAtomicBool.poke(val:bool): void {
+  inline proc ref RAtomicBool.poke(val:bool): void {
     _v = val:int(64);
   }
 
@@ -82,11 +82,11 @@ module PeekPoke {
   /*
      Non-atomically writes `val`.
   */
-  inline proc AtomicT.poke(val:valType): void {
+  inline proc ref AtomicT.poke(val:valType): void {
     this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
-  inline proc RAtomicT.poke(val:valType): void {
+  inline proc ref RAtomicT.poke(val:valType): void {
     _v = val;
   }
 }

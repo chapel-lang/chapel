@@ -28,7 +28,7 @@ config const printStats = false;
 config const printMissRate = false;
 
 proc main() {
-  var rng = new RandomStream(uint, seed);
+  var rng = new randomStream(uint, seed);
   var streamOneUpdates = 0;
   var streamOneMisses = 0;
   var streamTwoUpdates = 0;
@@ -55,14 +55,14 @@ proc main() {
     // (cache ignores updates to current locale)
     const nl = numLocales:uint;
     {
-      const node = nl+rng.getNext(min=0, max=streamOneLocales-1);
-      const addr = basePtr+rng.getNext(min=0, max=streamOneSpacePerLocale-1);
+      const node = nl+rng.next(min=0, max=streamOneLocales-1);
+      const addr = basePtr+rng.next(min=0, max=streamOneSpacePerLocale-1);
       streamOneNodes[update] = node;
       streamOneAddrs[update] = addr;
     }
     {
-      const node = nl+rng.getNext(min=0, max=streamTwoLocales-1);
-      const addr = basePtr+rng.getNext(min=0, max=streamTwoSpacePerLocale-1);
+      const node = nl+rng.next(min=0, max=streamTwoLocales-1);
+      const addr = basePtr+rng.next(min=0, max=streamTwoSpacePerLocale-1);
       streamTwoNodes[update] = node;
       streamTwoAddrs[update] = addr;
     }

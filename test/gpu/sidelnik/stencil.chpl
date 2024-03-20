@@ -1,8 +1,7 @@
 use GPUDist, Random;
 
 config const threadsPerBlock = 16;
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
+config const useRandomSeed = true;
 
 var m = 64: int(64);
 
@@ -17,8 +16,10 @@ var gpuA, gpuB : [space] real;
 
 var hostA, hostB : [1..m] real;
 
-var randlist = new RandomStream(seed);
-randlist.fillRandom(hostB);
+var randlist = if useRandomSeed
+  then new randomStream(real)
+  else new randomStream(real, 314159265);
+randlist.fill(hostB);
 writeln(hostB);
 
 gpuB = hostB;

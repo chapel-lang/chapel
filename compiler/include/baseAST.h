@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -599,6 +599,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
       AST_CALL_CHILD(_a, WhileStmt,    condExprGet(),  call, __VA_ARGS__); \
                                                                            \
     } else if (isForLoop(_a)      == true) {                               \
+      AST_CALL_LIST (_a, ForLoop,      shadowVariables(), call, __VA_ARGS__); \
       AST_CALL_LIST (_a, ForLoop,      body,           call, __VA_ARGS__); \
       AST_CALL_CHILD(_a, ForLoop,      indexGet(),     call, __VA_ARGS__); \
       AST_CALL_CHILD(_a, ForLoop,      iteratorGet(),  call, __VA_ARGS__); \

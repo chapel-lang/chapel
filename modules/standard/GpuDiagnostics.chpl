@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,7 +46,9 @@ module GpuDiagnostics
   param gpuDiagsPrintUnstable = false;
 
   /*
-     Aggregated GPU operation counts.
+     Aggregated GPU operation counts. ``host_to_device``, ``device_to_host`` and
+     ``device_to_device`` will be non-zero only when
+     ``CHPL_GPU_MEM_STRATEGY==array_on_device`` and ``CHPL_GPU!=cpu``.
    */
   pragma "chpldoc ignore chpl prefix"
   extern record chpl_gpuDiagnostics {
@@ -57,6 +59,19 @@ module GpuDiagnostics
   };
 
   /*
+    The Chapel record type inherits the runtime definition of it.
+   */
+  type gpuDiagnostics = chpl_gpuDiagnostics;
+
+  @chpldoc.nodoc
+  private operator +=(ref lhs: gpuDiagnostics, rhs: gpuDiagnostics) {
+    lhs.kernel_launch += rhs.kernel_launch;
+    lhs.host_to_device += rhs.host_to_device;
+    lhs.device_to_host += rhs.device_to_host;
+    lhs.device_to_device += rhs.device_to_device;
+  }
+
+  /*
    * Utility function to assert GPU diagnostic values. First 4 formals have the
    * same names as the fields in chpl_gpuDiagnostics type. `_um` and `_aod`
    * versions of `kernel_launch` are for convenience where we expect different
@@ -65,7 +80,6 @@ module GpuDiagnostics
    *    should be ignored.
    *  - kernel_launch overrides _um and _aod variants if it is set to something
    *    non-negative.
-   *  - For the time being, this is only considering locale 0s GPUs.
    */
   @chpldoc.nodoc
   proc assertGpuDiags(kernel_launch=-1,
@@ -92,6 +106,7 @@ module GpuDiagnostics
     use ChplConfig;
 
     param isUm = CHPL_GPU_MEM_STRATEGY == "unified_memory";
+    param isCpu = CHPL_GPU == "cpu";
 
     const expectedLaunch;
     if kernel_launch >= 0 {
@@ -104,10 +119,14 @@ module GpuDiagnostics
       expectedLaunch = if isUm then kernel_launch_um else kernel_launch_aod;
     }
 
-    const diags = getGpuDiagnostics()[0];
+    var diags: gpuDiagnostics;
+    for diag in getGpuDiagnostics() {
+      diags += diag;
+    }
+
     var success = compare(expectedLaunch, diags.kernel_launch, "launches");
 
-    if !isUm {
+    if !isUm && !isCpu {
       success &= compare(host_to_device, diags.host_to_device,
                          "host to device communication calls");
       success &= compare(device_to_host, diags.device_to_host,
@@ -119,27 +138,30 @@ module GpuDiagnostics
     assert(success, "GPU Diagnostics assertion failed");
   }
 
-  /*
-    The Chapel record type inherits the runtime definition of it.
-   */
-  type gpuDiagnostics = chpl_gpuDiagnostics;
-
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerbose();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerboseHere(stacktrace: bool,
                                                 print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerboseHere();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnostics(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnostics();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnosticsHere(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnosticsHere();
 
   private extern proc chpl_gpu_resetDiagnosticsHere();

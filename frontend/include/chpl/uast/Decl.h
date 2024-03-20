@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,6 +33,8 @@ namespace uast {
   however these declarations might be contained in MultiDecl or TupleDecl.
  */
 class Decl : public AstNode {
+ friend class AstNode;
+
  public:
   enum Visibility {
     DEFAULT_VISIBILITY,
@@ -47,7 +49,6 @@ class Decl : public AstNode {
   };
 
  private:
-
   Visibility visibility_;
   Linkage linkage_;
   int linkageNameChildNum_;
@@ -79,11 +80,17 @@ class Decl : public AstNode {
                  linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
+  void declSerializeInner(Serializer& ser) const {
+    ser.write(visibility_);
+    ser.write(linkage_);
+    ser.writeVInt(linkageNameChildNum_);
+  }
+
   Decl(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
       visibility_ = des.read<Decl::Visibility>();
       linkage_ = des.read<Decl::Linkage>();
-      linkageNameChildNum_ = (int)des.read<int32_t>();
+      linkageNameChildNum_ = des.readVInt();
   }
 
   bool declContentsMatchInner(const Decl* other) const {
@@ -92,8 +99,7 @@ class Decl : public AstNode {
            this->linkageNameChildNum_ == other->linkageNameChildNum_;
   }
 
-  void declMarkUniqueStringsInner(Context* context) const {
-  }
+  void declMarkUniqueStringsInner(Context* context) const { }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -140,15 +146,6 @@ class Decl : public AstNode {
     Convert Decl::Linkage to a string
     */
   static const char* linkageToString(Linkage x);
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-
-    ser.write(visibility_);
-    ser.write(linkage_);
-    ser.write((int32_t)linkageNameChildNum_);
-  }
-
 };
 
 

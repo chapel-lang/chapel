@@ -3,8 +3,8 @@ use IO;
 config type t = string;
 writef("%s\n":t, "boo");
 writef("%2.1s|\n":t, "boo");
-writef("%-2.1s|\n":t, "boo");
-writef("%2.2s|%-4.4s|\n":t, "boo", "boo");
+writef("%<2.1s|\n":t, "boo");
+writef("%2.2s|%<4.4s|\n":t, "boo", "boo");
 writef("%2.2s|%4.4s|\n":t, "Ａ", "ＡＡ");
 
 writef(" 123456789ABCD\n":t);

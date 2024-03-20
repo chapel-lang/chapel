@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,6 +48,8 @@ namespace uast {
   each of these is a Function.
  */
 class Function final : public NamedDecl {
+ friend class AstNode;
+
  public:
   enum Kind {
     PROC,
@@ -166,7 +168,27 @@ class Function final : public NamedDecl {
     #endif
   }
 
-  Function(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
+    ser.write(inline_);
+    ser.write(override_);
+    ser.write(kind_);
+    ser.write(returnIntent_);
+    ser.write(throws_);
+    ser.write(primaryMethod_);
+    ser.write(parenless_);
+
+    ser.writeVInt(formalsChildNum_);
+    ser.writeVInt(thisFormalChildNum_);
+    ser.writeVInt(numFormals_);
+    ser.writeVInt(returnTypeChildNum_);
+    ser.writeVInt(whereChildNum_);
+    ser.writeVInt(lifetimeChildNum_);
+    ser.writeVInt(numLifetimeParts_);
+    ser.writeVInt(bodyChildNum_);
+  }
+
+  explicit Function(Deserializer& des)
     : NamedDecl(asttags::Function, des) {
     inline_        = des.read<bool>();
     override_      = des.read<bool>();
@@ -176,16 +198,15 @@ class Function final : public NamedDecl {
     primaryMethod_ = des.read<bool>();
     parenless_     = des.read<bool>();
 
-    formalsChildNum_    = (int)des.read<int32_t>();
-    thisFormalChildNum_ = (int)des.read<int32_t>();
-    numFormals_         = (int)des.read<int32_t>();
-    returnTypeChildNum_ = (int)des.read<int32_t>();
-    whereChildNum_      = (int)des.read<int32_t>();
-    lifetimeChildNum_   = (int)des.read<int32_t>();
-    numLifetimeParts_   = (int)des.read<int32_t>();
-    bodyChildNum_       = (int)des.read<int32_t>();
+    formalsChildNum_    = des.readVInt();
+    thisFormalChildNum_ = des.readVInt();
+    numFormals_         = des.readVInt();
+    returnTypeChildNum_ = des.readVInt();
+    whereChildNum_      = des.readVInt();
+    lifetimeChildNum_   = des.readVInt();
+    numLifetimeParts_   = des.readVInt();
+    bodyChildNum_       = des.readVInt();
   }
-
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Function* lhs = this;
@@ -407,28 +428,6 @@ class Function final : public NamedDecl {
   static const char* returnIntentToString(ReturnIntent intent);
 
   static const char* kindToString(Kind kind);
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-    ser.write(inline_);
-    ser.write(override_);
-    ser.write(kind_);
-    ser.write(returnIntent_);
-    ser.write(throws_);
-    ser.write(primaryMethod_);
-    ser.write(parenless_);
-
-    ser.write<int32_t>(formalsChildNum_);
-    ser.write<int32_t>(thisFormalChildNum_);
-    ser.write<int32_t>(numFormals_);
-    ser.write<int32_t>(returnTypeChildNum_);
-    ser.write<int32_t>(whereChildNum_);
-    ser.write<int32_t>(lifetimeChildNum_);
-    ser.write<int32_t>(numLifetimeParts_);
-    ser.write<int32_t>(bodyChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Function);
 };
 
 } // end namespace uast

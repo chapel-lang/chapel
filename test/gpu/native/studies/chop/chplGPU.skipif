@@ -1,30 +1,5 @@
 #!/usr/bin/env bash
 
-# On the system we run this test on, for some esoteric reasons, we have an
-# issue where we can not have the SSL from Spack loaded and be able to perform
-# 'git clone'.  See
-# https://github.com/Cray/chapel-private/issues/3781#issuecomment-1238501988
-# and here
-# https://github.com/Cray/chapel-private/issues/3781#issuecomment-1234530155
-#
-# So we have the test temporarily unload it, do the git clone operation, and
-# then reload it.
-SPACK_ROOT="/cray/css/users/chapelu/spack"
-SSL_HASH="leoarhg"
-function unload_ssl() {
-  tempMODPATH=$MODULEPATH
-  export MODULEPATH=''
-  eval `$SPACK_ROOT/bin/spack unload --sh /$SSL_HASH`
-  export MODULEPATH=$tempMODPATH
-}
-
-function load_ssl() {
-  tempMODPATH=$MODULEPATH
-  export MODULEPATH=''
-  eval `$SPACK_ROOT/bin/spack load --sh /$SSL_HASH`
-  export MODULEPATH=$tempMODPATH
-}
-
 # Skip if not doing performance testing
 if [ -z "$CHPL_TEST_PERF" ]; then
   echo "True"
@@ -38,15 +13,12 @@ CHOP_BRANCH=${CHOP_BRANCH:-main}
 
 # Clone ChOp, skipif clone failed, add extra output to fail nightly job
 rm -rf ChOp
-unload_ssl
 if ! git clone ${CHOP_URL} --branch=${CHOP_BRANCH} --depth=1 2>gitClone.out; then
-  load_ssl
   echo "git clone failed; output:" >&2
   cat gitClone.out >&2
   echo "True"
   exit
 fi
-load_ssl
 
 # Apply patches, if any
 if ! (for p in $(find patches -name "*patch"); do git -C ChOp apply ../$p; done) 2>gitPatch.out; then

@@ -117,13 +117,13 @@ const localDom = {1..nElems};
 inline proc getDom(param dType: distType) {
   select dType {
     when distType.block do
-      return localDom dmapped Block(boundingBox=localDom);
+      return localDom dmapped blockDist(boundingBox=localDom);
     when distType.cyclic do
-      return localDom dmapped Cyclic(startIdx=localDom.first);
+      return localDom dmapped cyclicDist(startIdx=localDom.first);
     when distType.blockCyc do
-      return localDom dmapped BlockCyclic(startIdx=localDom.first, blocksize=5);
+      return localDom dmapped blockCycDist(startIdx=localDom.first, blocksize=5);
     when distType.stencil do
-      return localDom dmapped Stencil(boundingBox=localDom, fluff=(1,));
+      return localDom dmapped stencilDist(boundingBox=localDom, fluff=(1,));
   }
 }
 

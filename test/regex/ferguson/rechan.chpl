@@ -6,14 +6,14 @@ use IO;
 writeln("Words words words");
 var f = openMemFile();
 {
-  var w = f.writer();
+  var w = f.writer(locking=false);
   w.write("Words words words");
   w.close();
 }
 
 writeln("+match: One word no captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("^\\w+");
   var m = r.search(re);
   writeln("match ", m);
@@ -24,7 +24,7 @@ writeln("+match: One word no captures");
 }
 writeln("+match: nothing no captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("^\\d+");
   var m = r.search(re);
   writeln("match ", m);
@@ -35,7 +35,7 @@ writeln("+match: nothing no captures");
 }
 writeln("+match: one word with captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var s:string;
   var re = new regex("(^\\w+)");
   var m = r.search(re, s);
@@ -48,7 +48,7 @@ writeln("+match: one word with captures");
 }
 writeln("+match: nothing with captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var s:string;
   var re = new regex("(^\\d+)");
   var m = r.search(re, s);
@@ -61,7 +61,7 @@ writeln("+match: nothing with captures");
 }
 writeln("+match: nothing");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var s:string;
   var re = new regex("^words");
   var m = r.search(re, s);
@@ -74,7 +74,7 @@ writeln("+match: nothing");
 }
 writeln("+match: nothing with captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var s:string;
   var re = new regex("(^words)");
   var m = r.search(re, s);
@@ -90,7 +90,7 @@ writeln("+match: nothing with captures");
 
 writeln("+search: One word no captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("\\w+");
   var m = r.search(re);
   writeln("match ", m);
@@ -101,7 +101,7 @@ writeln("+search: One word no captures");
 }
 writeln("+search: nothing no captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("\\d+");
   var m = r.search(re);
   writeln("match ", m);
@@ -112,7 +112,7 @@ writeln("+search: nothing no captures");
 }
 writeln("+search: one word with captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var s:string;
   var re = new regex("(\\w+)");
   var m = r.search(re, s);
@@ -125,7 +125,7 @@ writeln("+search: one word with captures");
 }
 writeln("+search: nothing with captures");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var s:string;
   var re = new regex("(\\d+)");
   var m = r.search(re, s);
@@ -138,7 +138,7 @@ writeln("+search: nothing with captures");
 }
 writeln("+search: later word");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("words");
   var m = r.search(re);
   writeln("match ", m);
@@ -149,7 +149,7 @@ writeln("+search: later word");
 }
 writeln("+search: later word captured");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var s:string;
   var re = new regex("(words)");
   var m = r.search(re, s);
@@ -166,7 +166,7 @@ writeln("+search: later word captured");
 
 writeln("+matches: One word");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("\\w+");
   for (m,) in r.matches(re, 0, 1) {
     writeln("offset ", r.offset());
@@ -180,7 +180,7 @@ writeln("+matches: One word");
 }
 writeln("+matches: All words");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("\\w+");
   for (m,) in r.matches(re, 0) {
     writeln("offset ", r.offset());
@@ -194,7 +194,7 @@ writeln("+matches: All words");
 }
 writeln("+matches: All words capturing first letter");
 {
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var re = new regex("(\\w)\\w*");
   for (m,aFor) in r.matches(re, 1) {
     var a = aFor; // so we can pass 'a' to extractMatch()

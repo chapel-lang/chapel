@@ -4,7 +4,7 @@ var A: [1..2] string;
 var B: [1..2, 1..2] string;
 
 var infile = open("readDifferentRankArrays.dat", ioMode.r);
-var f = infile.reader(deserializer = new ChplDeserializer());
+var f = infile.reader(deserializer = new chplDeserializer(), locking=false);
 
 f.readf("%?", A);
 writeln(A);
@@ -14,4 +14,4 @@ try {
   writeln("Caught: ", e);
 }
 
-stdin.withDeserializer(ChplDeserializer).readf("%?", B);
+stdin.withDeserializer(chplDeserializer).readf("%?", B);

@@ -40,8 +40,8 @@ record RT1 {
   type GT;
   proc AT type do return int;
 }
-proc reqFun(cgArg: RT1)            : void { show("RT1", cgArg); }
-proc reqFun(cgArg: RT1, atArg: int): void { show("RT1", cgArg,
+proc reqFun(cgArg: RT1(?))            : void { show("RT1", cgArg); }
+proc reqFun(cgArg: RT1(?), atArg: int): void { show("RT1", cgArg,
                                                  "int", atArg); }
 //inferred: RT1 implements IFC1
 var rt1 = new RT1(101, real);
@@ -54,8 +54,8 @@ record RT2 {
   var  xx: int;
   type AT;
 }
-proc reqFun(cgArg: RT2)                 : void { show("RT2", cgArg); }
-proc reqFun(cgArg: RT2, atArg: cgArg.AT): void { show("RT2", cgArg,
+proc reqFun(cgArg: RT2(?))                 : void { show("RT2", cgArg); }
+proc reqFun(cgArg: RT2(?), atArg: cgArg.AT): void { show("RT2", cgArg,
                                                       "AT",  atArg); }
 //inferred: RT2 implements IFC1;
 var rt2 = new RT2(102, bool);
@@ -69,8 +69,8 @@ record RT3 {
   type GT;
   proc AT type do return GT;
 }
-proc reqFun(cgArg: RT3)                 : void { show("RT3", cgArg); }
-proc reqFun(cgArg: RT3, atArg: cgArg.GT): void { show("RT3", cgArg,
+proc reqFun(cgArg: RT3(?))                 : void { show("RT3", cgArg); }
+proc reqFun(cgArg: RT3(?), atArg: cgArg.GT): void { show("RT3", cgArg,
                                                       "GT",  atArg); }
 //inferred: RT3 implements IFC1;
 var rt3 = new RT3(103, string);
@@ -84,8 +84,8 @@ record RT4 {
   type GT;
   proc AT type do return this.type;
 }
-proc reqFun(cgArg: RT4)                   : void { show("RT4", cgArg); }
-proc reqFun(cgArg: RT4, atArg: cgArg.type): void { show("RT4", cgArg,
+proc reqFun(cgArg: RT4(?))                   : void { show("RT4", cgArg); }
+proc reqFun(cgArg: RT4(?), atArg: cgArg.type): void { show("RT4", cgArg,
                                                         "self",atArg); }
 //inferred: RT4 implements IFC1;
 var rt4 = new RT4(104, locale);
@@ -100,8 +100,8 @@ record RV1 {
   var  xx;
   proc AT type do return int;
 }
-proc reqFun(cgArg: RV1)            : void { show("RV1", cgArg); }
-proc reqFun(cgArg: RV1, atArg: int): void { show("RV1", cgArg,
+proc reqFun(cgArg: RV1(?))            : void { show("RV1", cgArg); }
+proc reqFun(cgArg: RV1(?), atArg: int): void { show("RV1", cgArg,
                                                  "int", atArg); }
 //inferred: RV1 implements IFC1
 var rv1 = new RV1(2.01);
@@ -114,8 +114,8 @@ record RV3 {
   var  xx;
   proc AT type do return xx.type;
 }
-proc reqFun(cgArg: RV3)                 : void { show("RV3", cgArg); }
-proc reqFun(cgArg: RV3, atArg: cgArg.AT): void { show("RV3", cgArg,
+proc reqFun(cgArg: RV3(?))                 : void { show("RV3", cgArg); }
+proc reqFun(cgArg: RV3(?), atArg: cgArg.AT): void { show("RV3", cgArg,
                                                       "AT",  atArg); }
 //inferred: RV3 implements IFC1;
 var rv3 = new RV3("rv03");
@@ -128,8 +128,8 @@ record RV4 {
   var  xx;
   proc AT type do return this.type;
 }
-proc reqFun(cgArg: RV4)                   : void { show("RV4", cgArg); }
-proc reqFun(cgArg: RV4, atArg: cgArg.type): void { show("RV4", cgArg,
+proc reqFun(cgArg: RV4(?))                   : void { show("RV4", cgArg); }
+proc reqFun(cgArg: RV4(?), atArg: cgArg.type): void { show("RV4", cgArg,
                                                         "self",atArg); }
 //inferred: RV4 implements IFC1;
 var rv4 = new RV4(here);
@@ -147,8 +147,8 @@ record RTX1 {
   proc AT type do return int;
   param PP;
 }
-proc reqFun(cgArg: RTX1)            : void { show("RTX1", cgArg); }
-proc reqFun(cgArg: RTX1, atArg: int): void { show("RTX1", cgArg,
+proc reqFun(cgArg: RTX1(?))            : void { show("RTX1", cgArg); }
+proc reqFun(cgArg: RTX1(?), atArg: int): void { show("RTX1", cgArg,
                                                  "int", atArg); }
 //inferred: RTX1 implements IFC1
 var rtx1 = new RTX1(301, real, "PP31");
@@ -162,8 +162,8 @@ record RTX2 {
   type AT;
   param PP;
 }
-proc reqFun(cgArg: RTX2)                 : void { show("RTX2", cgArg); }
-proc reqFun(cgArg: RTX2, atArg: cgArg.AT): void { show("RTX2", cgArg,
+proc reqFun(cgArg: RTX2(?))                 : void { show("RTX2", cgArg); }
+proc reqFun(cgArg: RTX2(?), atArg: cgArg.AT): void { show("RTX2", cgArg,
                                                       "AT",  atArg); }
 //inferred: RTX2 implements IFC1;
 var rtx2 = new RTX2(302, bool, 3.02);
@@ -178,8 +178,8 @@ record RTX3 {
   proc AT type do return GT;
   param PP;
 }
-proc reqFun(cgArg: RTX3)                 : void { show("RTX3", cgArg); }
-proc reqFun(cgArg: RTX3, atArg: cgArg.GT): void { show("RTX3", cgArg,
+proc reqFun(cgArg: RTX3(?))                 : void { show("RTX3", cgArg); }
+proc reqFun(cgArg: RTX3(?), atArg: cgArg.GT): void { show("RTX3", cgArg,
                                                       "GT",  atArg); }
 //inferred: RTX3 implements IFC1;
 var rtx3 = new RTX3(303, string, false);
@@ -194,8 +194,8 @@ record RTX4 {
   proc AT type do return this.type;
   param PP;
 }
-proc reqFun(cgArg: RTX4)                   : void { show("RTX4", cgArg); }
-proc reqFun(cgArg: RTX4, atArg: cgArg.type): void { show("RTX4", cgArg,
+proc reqFun(cgArg: RTX4(?))                   : void { show("RTX4", cgArg); }
+proc reqFun(cgArg: RTX4(?), atArg: cgArg.type): void { show("RTX4", cgArg,
                                                         "self",atArg); }
 //inferred: RTX4 implements IFC1;
 var rtx4 = new RTX4(304, locale, 3.04);
@@ -209,8 +209,8 @@ record RVX1 {
   proc AT type do return int;
   param PP;
 }
-proc reqFun(cgArg: RVX1)            : void { show("RVX1", cgArg); }
-proc reqFun(cgArg: RVX1, atArg: int): void { show("RVX1", cgArg,
+proc reqFun(cgArg: RVX1(?))            : void { show("RVX1", cgArg); }
+proc reqFun(cgArg: RVX1(?), atArg: int): void { show("RVX1", cgArg,
                                                  "int", atArg); }
 //inferred: RVX1 implements IFC1
 var rvx1 = new RVX1(4.01, true);
@@ -224,8 +224,8 @@ record RVX3 {
   proc AT type do return xx.type;
   param PP;
 }
-proc reqFun(cgArg: RVX3)                 : void { show("RVX3", cgArg); }
-proc reqFun(cgArg: RVX3, atArg: cgArg.AT): void { show("RVX3", cgArg,
+proc reqFun(cgArg: RVX3(?))                 : void { show("RVX3", cgArg); }
+proc reqFun(cgArg: RVX3(?), atArg: cgArg.AT): void { show("RVX3", cgArg,
                                                       "AT",  atArg); }
 //inferred: RVX3 implements IFC1;
 var rvx3 = new RVX3("rvx03", 4.03);
@@ -238,8 +238,8 @@ record RVX4 {
   proc AT type do return this.type;
   param PP;
 }
-proc reqFun(cgArg: RVX4)                   : void { show("RVX4", cgArg); }
-proc reqFun(cgArg: RVX4, atArg: cgArg.type): void { show("RVX4", cgArg,
+proc reqFun(cgArg: RVX4(?))                   : void { show("RVX4", cgArg); }
+proc reqFun(cgArg: RVX4(?), atArg: cgArg.type): void { show("RVX4", cgArg,
                                                         "self",atArg); }
 //inferred: RVX4 implements IFC1;
 var rvx4 = new RVX4(here, "there");

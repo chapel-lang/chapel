@@ -54,14 +54,14 @@ proc hwRec(const signal: [], ref output: [], fmax: int, fstop: int) {
 // haar 2-element high-pass filter
 proc haarHP(x: [?d] ?t): [d] t {
     var y: [d] t = x;
-    forall i in d#d.size-1 do y[i] -= x[i+1];
+    forall i in d#d.size-1 with (ref y) do y[i] -= x[i+1];
     return y;
 }
 
 // haar 2-element low-pass filter
 proc haarLP(x: [?d] ?t): [d] t {
     var y: [d] t = x;
-    forall i in d#d.size-1 do y[i] += x[i+1];
+    forall i in d#d.size-1 with (ref y) do y[i] += x[i+1];
     return y;
 }
 

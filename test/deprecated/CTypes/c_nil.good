@@ -1,3 +1,0 @@
-c_nil.chpl:3: warning: c_nil is deprecated, use just 'nil' instead.
-c_nil.chpl:4: warning: is_c_nil is deprecated without replacement, as 'c_nil' is deprecated in favor of 'nil'; compare argument to 'nil' directly with ==, casting to c_ptr(void) first if needed.
-true

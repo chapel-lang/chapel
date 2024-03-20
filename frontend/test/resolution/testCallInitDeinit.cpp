@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1514,6 +1514,127 @@ static void test18b() {
     });
 }
 
+static void test19() {
+  testActions("test19",
+      R"""(
+      record G {
+        type T;
+        var y : T;
+      }
+
+      record R {
+        type T;
+        var x : G(T);
+      }
+
+      proc R.init(type T) {
+        this.T=T;
+      }
+
+      proc test() {
+        var r : R(int);
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "r",          ""},
+        {AssociatedAction::DEINIT,       "test19.test@4",   "r"}
+      } );
+}
+
+// Returning a non-nilable 'new' local variable
+static void test20a() {
+  testActions("test20a",
+    R""""(
+      module M {
+        class C {}
+        proc C.init() {}
+        operator C.=(ref lhs: C, rhs: C) { }
+        proc C.deinit() { }
+
+        proc foo() {
+          var x : owned C = new C();
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT, "M.foo@5",          ""},
+      {AssociatedAction::DEINIT,   "M.foo@9",          "x"},
+    });
+}
+
+// Generic instantiation version
+// TODO: Uncomment once we support init of generic types. May need to update
+// expected associated actions as well.
+/* static void test20b() { */
+/*   testActions("test20b", */
+/*     R""""( */
+/*       module M { */
+/*         class C { */
+/*           var x; */
+/*         } */
+/*         proc C.init(x) {this.x = x;} */
+/*         operator C.=(ref lhs: C(?), rhs: C(?)) { } */
+/*         proc C.deinit() { } */
+
+/*         proc foo() { */
+/*           var x : owned C = new C(3); */
+/*           return x; */
+/*         } */
+/*       } */
+/*     )"""", */
+/*     { */
+/*       {AssociatedAction::NEW_INIT,   "M.foo@6",    ""}, */
+/*       {AssociatedAction::INIT_OTHER, "x",          ""}, */
+/*       {AssociatedAction::DEINIT,     "M.foo@10",   "x"}, */
+/*     }); */
+/* } */
+
+// Nilable version
+static void test20c() {
+  testActions("test20c",
+    R""""(
+      module M {
+        class C {}
+        proc C.init() {}
+        operator C.=(ref lhs: C, rhs: C) { }
+        proc C.deinit() { }
+
+        proc foo() {
+          var x : owned C? = new C();
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.foo@6",    ""},
+      {AssociatedAction::DEINIT,     "M.foo@10",   "x"},
+    });
+}
+
+static void test21() {
+  // Make sure primitive/builtin types don't trigger dead-variable tracking
+  testActions("test21",
+      R"""(
+      module M {
+        proc take(arg: int) {
+          return 5;
+        }
+        proc take2(arg: int) {
+          return 5;
+        }
+
+        proc test() {
+          var cond = true;
+          var arg : int;
+
+          var ret : int;
+          if cond then ret = take(arg);
+          else ret = take2(arg);
+        }
+      }
+      )""", {} );
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1593,6 +1714,14 @@ int main() {
 
   test18a();
   test18b();
+
+  test19();
+
+  test20a();
+  /* test20b(); */
+  test20c();
+
+  test21();
 
   return 0;
 }

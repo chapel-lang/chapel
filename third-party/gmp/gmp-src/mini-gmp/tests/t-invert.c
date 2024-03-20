@@ -32,19 +32,20 @@ static void
 test_2by1(const mpz_t u)
 {
   mpz_t m, p, t;
+  mp_limb_t tl;
 
-  mpz_init (m);
   mpz_init (p);
-  mpz_init (t);
 
   assert (mpz_size (u) == 1);
 
-  mpz_set_ui (m, mpn_invert_limb (u->_mp_d[0]));
+  tl = mpn_invert_limb (u->_mp_d[0]);
+  mpz_roinit_n (t, &tl, 1);
+  mpz_init_set (m, t);
   mpz_setbit (m, GMP_LIMB_BITS);
 
   mpz_mul (p, m, u);
 
-  mpz_set_ui (t, 0);
+  mpz_init (t);
   mpz_setbit (t, 2* GMP_LIMB_BITS);
   mpz_sub (t, t, p);
 
@@ -67,20 +68,21 @@ static void
 test_3by2(const mpz_t u)
 {
   mpz_t m, p, t;
+  mp_limb_t tl;
 
-  mpz_init (m);
   mpz_init (p);
-  mpz_init (t);
 
   assert (mpz_size (u) == 2);
 
-  mpz_set_ui (m, mpn_invert_3by2 (u->_mp_d[1], u[0]._mp_d[0]));
+  tl = mpn_invert_3by2 (u->_mp_d[1], u->_mp_d[0]);
+  mpz_roinit_n (t, &tl, 1);
+  mpz_init_set (m, t);
 
   mpz_setbit (m, GMP_LIMB_BITS);
 
   mpz_mul (p, m, u);
 
-  mpz_set_ui (t, 0);
+  mpz_init (t);
   mpz_setbit (t, 3 * GMP_LIMB_BITS);
   mpz_sub (t, t, p);
 

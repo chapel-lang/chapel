@@ -140,7 +140,7 @@ proc test_scatter() {
   const worldRank = commRank(),
         worldSize = commSize();
   var arr : [{0..3,0..3}]real(32);
-  forall (i,j) in arr.domain {
+  forall (i,j) in arr.domain with (ref arr) {
     arr[i,j] = (i*4 + j):real(32);
   }
   var recbuf : [0..3]real(32);

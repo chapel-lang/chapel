@@ -1,9 +1,9 @@
 forwardOp.chpl:15: In function 'main':
 forwardOp.chpl:18: error: unresolved call '+(Foo, Foo)'
-$CHPL_HOME/modules/internal/String.chpl:nnnn: note: this candidate did not match: +(x: bufferType, y: byteIndex)
+$CHPL_HOME/modules/internal/String.chpl:209: note: this candidate did not match: +(x: bufferType, y: byteIndex)
 forwardOp.chpl:18: note: because actual argument #1 with type 'Foo'
-$CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 'x: c_ptr(uint(8))'
+$CHPL_HOME/modules/internal/String.chpl:209: note: is passed to formal 'x: c_ptr(uint(8))'
 forwardOp.chpl:18: note: other candidates are:
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(8), b: int(8))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(16), b: int(16))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:453: note:   +(a: int(8), b: int(8))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:454: note:   +(a: int(16), b: int(16))
 note: and 98 other candidates, use --print-all-candidates to see them

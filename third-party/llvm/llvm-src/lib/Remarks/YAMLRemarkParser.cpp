@@ -12,9 +12,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "YAMLRemarkParser.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/Path.h"
+#include <optional>
 
 using namespace llvm;
 using namespace llvm::remarks;
@@ -107,10 +109,9 @@ static Expected<ParsedStringTable> parseStrTab(StringRef &Buf,
   return Expected<ParsedStringTable>(std::move(Result));
 }
 
-Expected<std::unique_ptr<YAMLRemarkParser>>
-remarks::createYAMLParserFromMeta(StringRef Buf,
-                                  Optional<ParsedStringTable> StrTab,
-                                  Optional<StringRef> ExternalFilePrependPath) {
+Expected<std::unique_ptr<YAMLRemarkParser>> remarks::createYAMLParserFromMeta(
+    StringRef Buf, std::optional<ParsedStringTable> StrTab,
+    std::optional<StringRef> ExternalFilePrependPath) {
   // We now have a magic number. The metadata has to be correct.
   Expected<bool> isMeta = parseMagic(Buf);
   if (!isMeta)
@@ -167,10 +168,10 @@ remarks::createYAMLParserFromMeta(StringRef Buf,
 }
 
 YAMLRemarkParser::YAMLRemarkParser(StringRef Buf)
-    : YAMLRemarkParser(Buf, None) {}
+    : YAMLRemarkParser(Buf, std::nullopt) {}
 
 YAMLRemarkParser::YAMLRemarkParser(StringRef Buf,
-                                   Optional<ParsedStringTable> StrTab)
+                                   std::optional<ParsedStringTable> StrTab)
     : RemarkParser{Format::YAML}, StrTab(std::move(StrTab)),
       SM(setupSM(LastErrorMessage)), Stream(Buf, SM), YAMLIt(Stream.begin()) {}
 
@@ -292,9 +293,16 @@ Expected<StringRef> YAMLRemarkParser::parseKey(yaml::KeyValueNode &Node) {
 
 Expected<StringRef> YAMLRemarkParser::parseStr(yaml::KeyValueNode &Node) {
   auto *Value = dyn_cast<yaml::ScalarNode>(Node.getValue());
-  if (!Value)
-    return error("expected a value of scalar type.", Node);
-  StringRef Result = Value->getRawValue();
+  yaml::BlockScalarNode *ValueBlock;
+  StringRef Result;
+  if (!Value) {
+    // Try to parse the value as a block node.
+    ValueBlock = dyn_cast<yaml::BlockScalarNode>(Node.getValue());
+    if (!ValueBlock)
+      return error("expected a value of scalar type.", Node);
+    Result = ValueBlock->getValue();
+  } else
+    Result = Value->getRawValue();
 
   if (Result.front() == '\'')
     Result = Result.drop_front();
@@ -322,9 +330,9 @@ YAMLRemarkParser::parseDebugLoc(yaml::KeyValueNode &Node) {
   if (!DebugLoc)
     return error("expected a value of mapping type.", Node);
 
-  Optional<StringRef> File;
-  Optional<unsigned> Line;
-  Optional<unsigned> Column;
+  std::optional<StringRef> File;
+  std::optional<unsigned> Line;
+  std::optional<unsigned> Column;
 
   for (yaml::KeyValueNode &DLNode : *DebugLoc) {
     Expected<StringRef> MaybeKey = parseKey(DLNode);
@@ -364,9 +372,9 @@ Expected<Argument> YAMLRemarkParser::parseArg(yaml::Node &Node) {
   if (!ArgMap)
     return error("expected a value of mapping type.", Node);
 
-  Optional<StringRef> KeyStr;
-  Optional<StringRef> ValueStr;
-  Optional<RemarkLocation> Loc;
+  std::optional<StringRef> KeyStr;
+  std::optional<StringRef> ValueStr;
+  std::optional<RemarkLocation> Loc;
 
   for (yaml::KeyValueNode &ArgEntry : *ArgMap) {
     Expected<StringRef> MaybeKey = parseKey(ArgEntry);
@@ -428,9 +436,16 @@ Expected<std::unique_ptr<Remark>> YAMLRemarkParser::next() {
 
 Expected<StringRef> YAMLStrTabRemarkParser::parseStr(yaml::KeyValueNode &Node) {
   auto *Value = dyn_cast<yaml::ScalarNode>(Node.getValue());
-  if (!Value)
-    return error("expected a value of scalar type.", Node);
+  yaml::BlockScalarNode *ValueBlock;
   StringRef Result;
+  if (!Value) {
+    // Try to parse the value as a block node.
+    ValueBlock = dyn_cast<yaml::BlockScalarNode>(Node.getValue());
+    if (!ValueBlock)
+      return error("expected a value of scalar type.", Node);
+    Result = ValueBlock->getValue();
+  } else
+    Result = Value->getRawValue();
   // If we have a string table, parse it as an unsigned.
   unsigned StrID = 0;
   if (Expected<unsigned> MaybeStrID = parseUnsigned(Node))

@@ -6,10 +6,10 @@ proc fn(f : c_ptr(void)) {
 
 
 var obj = new unmanaged Obj(1,2,3);
-fn(obj : c_ptr(void));
+fn(c_ptrTo(obj));
 
 var obj2 : unmanaged Obj = new unmanaged Obj(4,5,6);
-fn(obj2 : c_ptr(void));
+fn(c_ptrTo(obj2));
 
 delete obj;
 delete obj2;

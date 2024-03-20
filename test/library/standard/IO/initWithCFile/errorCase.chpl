@@ -10,7 +10,7 @@ module m {
 
   try! {
     var f = new file(openTestFile(), own=true);
-    var r = f.reader();
+    var r = f.reader(locking=false);
     write(r.readLine());
   } catch e: SystemError {
     // Note: the error message itself is not particularly clear

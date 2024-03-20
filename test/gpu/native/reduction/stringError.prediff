@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sed -e "s/\.chpl:[0-9][0-9]*:/.chpl:prediffed:/" $2 > $2.tmp
+mv $2.tmp $2

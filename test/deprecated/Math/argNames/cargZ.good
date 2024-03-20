@@ -1,4 +1,0 @@
-cargZ.chpl:2: In function 'testTypes':
-cargZ.chpl:3: warning: The argument name 'z' is deprecated for 'carg', please use 'x' instead
-cargZ.chpl:2: In function 'testTypes':
-cargZ.chpl:3: warning: The argument name 'z' is deprecated for 'carg', please use 'x' instead

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,10 +37,10 @@ IO module's serialization/deserialization API. For example:
     var b: string;
   }
 
-  var myFile = open("r.yaml", iomode.cwr),
+  var writer = openWriter("r.yaml", serializer = new yamlSerializer()),
       r1 = new R(1, "hello");
 
-  myFile.writer().withSerializer(new YamlSerializer()).write(r1);
+  writer.write(r1);
 
   /* r.yaml:
     --- R!
@@ -49,7 +49,7 @@ IO module's serialization/deserialization API. For example:
     ...
   */
 
-  var r2 = myFile.reader().withDeserializer(new YamlDeserializer()).read(R);
+  var r2 = myFile.reader(locking=false).withDeserializer(new yamlDeserializer()).read(R);
   assert(r1 == r2);
 
 Yaml files can also be written and parsed directly using the :type:`YamlValue`
@@ -82,16 +82,16 @@ module YAML {
   // Serializer/Deserializer Definitions
   // ----------------------------------------------------
 
-  /* Type Alias for a :record:`~IO.fileWriter` that uses a YamlSerializer */
-  type yamlWriter = fileWriter(serializerType=YamlSerializer, ?);
-  /* Type Alias for a :record:`~IO.fileReader` that uses a YamlDeserializer */
-  type yamlReader = fileReader(deserializerType=YamlDeserializer, ?);
+  /* Type Alias for a :record:`~IO.fileWriter` that uses a yamlSerializer */
+  type yamlWriter = fileWriter(serializerType=yamlSerializer, ?);
+  /* Type Alias for a :record:`~IO.fileReader` that uses a yamlDeserializer */
+  type yamlReader = fileReader(deserializerType=yamlDeserializer, ?);
 
   /*
-  A YAML-format serializer for emitting chapel values in Yaml format
+  A YAML-format serializer for emitting Chapel values in Yaml format
   via the IO module's :record:`~IO.fileWriter` interface
 */
-  record YamlSerializer {
+  record yamlSerializer {
     @chpldoc.nodoc
     var emitter: shared LibYamlEmitter;
 
@@ -99,7 +99,7 @@ module YAML {
     var context: shared ContextCounter;
 
     /*
-      Create a new ``YamlSerializer``
+      Create a new ``yamlSerializer``
 
       :arg seqStyle: The style to use for sequences. See :record:`YamlSequenceStyle`.
       :arg mapStyle: The style to use for mappings. See :record:`YamlMappingStyle`.
@@ -126,7 +126,7 @@ module YAML {
     // ------- fileWriter API -------
 
     /* called by a ``fileWriter`` to emit a value */
-    proc serializeValue(writer: yamlWriter, const val: ?t) throws {
+    proc ref serializeValue(writer: yamlWriter, const val: ?t) throws {
       if context.isBase && (_isPrimitiveYamlType(t) || (isClassType(t) && val == nil)){
         // simply translate the value to it's YAML representation
         // e.g., true => Yes, nil => ~, 5.5 => 5.5, etc.
@@ -142,9 +142,9 @@ module YAML {
         } else if isClassType(t) {
           if val == nil
             then this.emitter.emitScalar(b"~", styleHint=YamlScalarStyle.Any);
-            else val!.serialize(writer, new YamlSerializer(this.emitter, this.context));
+            else val!.serialize(writer=writer, serializer=this);
         } else {
-          val.serialize(writer, new YamlSerializer(this.emitter, this.context));
+          val.serialize(writer=writer, serializer=this);
         }
       }
     }
@@ -154,85 +154,42 @@ module YAML {
     @chpldoc.nodoc
     proc startClass(writer: yamlWriter, name: string, size: int) throws {
       this.context.enterClass();
-      this._startMapping(writer, name);
-    }
-    @chpldoc.nodoc
-    proc endClass(writer: yamlWriter) throws {
-      this._endMapping(writer);
-      this.context.leaveClass();
+      var ret = new YamlMapSerializer(writer, emitter, context);
+      ret._startMapping(name);
+      return ret;
     }
 
     @chpldoc.nodoc
     proc startRecord(writer: yamlWriter, name: string, size: int) throws {
-      this._startMapping(writer, name);
-    }
-    @chpldoc.nodoc
-    proc endRecord(writer: yamlWriter) throws {
-      this._endMapping(writer);
+      var ret = new YamlMapSerializer(writer, emitter, context);
+      ret._startMapping(name);
+      return ret;
     }
 
     @chpldoc.nodoc
     proc startTuple(writer: yamlWriter, size: int) throws {
-      this._startSequence(writer);
-    }
-    @chpldoc.nodoc
-    proc endTuple(writer: yamlWriter) throws {
-      this._endSequence(writer);
+      var ret = new YamlSeqSerializer(writer, emitter, context);
+      ret._startSequence();
+      return ret;
     }
 
     @chpldoc.nodoc
-    proc serializeField(writer: yamlWriter, name: string, const val: ?t) throws {
-      if name.size > 0 then
-        this.emitter.emitScalar(name: bytes);
-      this.serializeValue(writer, val);
-    }
-
-
-    @chpldoc.nodoc
-    proc startList(writer: yamlWriter, size: uint) throws {
-      this._startSequence(writer);
-    }
-    @chpldoc.nodoc
-    proc endList(writer: yamlWriter) throws {
-      this._endSequence(writer);
-    }
-    @chpldoc.nodoc
-    proc writeListElement(writer: yamlWriter, const val) throws {
-      this.serializeValue(writer, val);
+    proc startList(writer: yamlWriter, size: int) throws {
+      var ret = new YamlSeqSerializer(writer, emitter, context);
+      ret._startSequence();
+      return ret;
     }
 
     @chpldoc.nodoc
-    proc startArray(writer: yamlWriter, size: uint = 0) throws {}
-    @chpldoc.nodoc
-    proc endArray(writer: yamlWriter) throws {}
-    @chpldoc.nodoc
-    proc startArrayDim(writer: yamlWriter, len: uint) throws {
-      this._startSequence(writer);
-    }
-    @chpldoc.nodoc
-    proc endArrayDim(writer: yamlWriter) throws {
-      this._endSequence(writer);
-    }
-    @chpldoc.nodoc
-    proc writeArrayElement(writer: yamlWriter, const elt) throws {
-      this.serializeValue(writer, elt);
+    proc startArray(writer: yamlWriter, size: int) throws {
+      return new YamlSeqSerializer(writer, emitter, context);
     }
 
     @chpldoc.nodoc
-    proc startMap(writer: yamlWriter, size: uint) throws {
-      this._startMapping(writer);
-    }
-    @chpldoc.nodoc
-    proc endMap(writer: yamlWriter) throws {
-      this._endMapping(writer);
-    }
-    @chpldoc.nodoc
-    proc writeKey(writer: yamlWriter, const key) throws {
-      this.serializeValue(writer, key);
-    }
-    @chpldoc.nodoc
-    proc writeValue(writer: yamlWriter, const val) throws {
-      this.serializeValue(writer, val);
+    proc startMap(writer: yamlWriter, size: int) throws {
+      var ret = new YamlMapSerializer(writer, emitter, context);
+      ret._startMapping();
+      return ret;
     }
   }
 
@@ -240,7 +197,7 @@ module YAML {
     A YAML-format deserializer for parsing Yaml files into Chapel values
     via the IO module's :record:`~IO.fileReader` interface
   */
-  record YamlDeserializer {
+  record yamlDeserializer {
     @chpldoc.nodoc
     var parser: shared LibYamlParser;
 
@@ -250,7 +207,7 @@ module YAML {
     @chpldoc.nodoc
     var strictTypeChecking: bool;
 
-    /* Create a new ``YamlDeserializer``
+    /* Create a new ``yamlDeserializer``
 
       With ``strictTypeChecking`` set to ``true``, the deserializer will
       throw an error if a Yaml value has a type annotation which does
@@ -275,26 +232,26 @@ module YAML {
     // ------- fileReader API -------
 
     /* called by a ``fileReader`` to parse into an existing Chapel value */
-    proc deserializeValue(reader: yamlReader, ref val: ?t) throws {
-      if YamlVerbose then writeln("deserializing into: ", val);
-
-      // TODO: full implementation
-      var x = this.deserializeType(reader, t);
-      val = x;
+    proc ref deserializeValue(reader: yamlReader, ref val: ?t) throws {
+      if canResolveMethod(val, "deserialize", reader, this) {
+        val.deserialize(reader=reader, deserializer=this);
+      } else {
+        val = deserializeType(reader, t);
+      }
     }
 
     /* called by a ``fileReader`` to parse into a new Chapel value */
-    proc deserializeType(reader: yamlReader, type t): t throws {
+    proc ref deserializeType(reader: yamlReader, type t): t throws {
       if YamlVerbose then writeln("deserializing type: ", t:string);
 
-      if context.isBase && _isIoPrimitiveType(t) {
+      if _isIoPrimitiveType(t) && context.isBase {
         // parse primitive without context
         if isBoolType(t) {
           // TODO: make this more robust
           const value = reader.readTo(" ");
           return parseYamlBool(value);
         } else{
-          var default = reader.withDeserializer(new DefaultDeserializer());
+          var default = reader.withDeserializer(new defaultDeserializer());
           return default.read(t);
         }
       } else if _isIoPrimitiveType(t) {
@@ -305,12 +262,10 @@ module YAML {
         return this.speculativeParseNilableClass(reader, t);
       } else if canResolveTypeMethod(t, "deserializeFrom", reader, this) || isArrayType(t) {
         // attempt to call the 'deserializeFrom' type-method
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
-        return t.deserializeFrom(reader=r, deserializer=r.deserializer);
+        return t.deserializeFrom(reader=reader, deserializer=this);
       } else {
         // attempt to call the deserializing constructor
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
-        return new t(reader=r, deserializer=r.deserializer);
+        return new t(reader=reader, deserializer=this);
       }
     }
 
@@ -321,120 +276,96 @@ module YAML {
       if YamlVerbose then writeln("starting class: ", name);
 
       this.context.enterClass();
-      this._startMapping(reader, name);
-    }
-    @chpldoc.nodoc
-    proc endClass(reader: yamlReader) throws {
-      if YamlVerbose then writeln("ending class");
-
-      this._endMapping(reader);
-      this.context.leaveClass();
+      var ret = new YamlMapDeserializer(reader, parser, context);
+      ret._startMapping(name);
+      return ret;
     }
 
     @chpldoc.nodoc
     proc startRecord(reader: yamlReader, name: string) throws {
       if YamlVerbose then writeln("starting record: ", name);
 
-      this._startMapping(reader, name);
-    }
-    @chpldoc.nodoc
-    proc endRecord(reader: yamlReader) throws {
-      if YamlVerbose then writeln("ending record");
-
-      this._endMapping(reader);
+      var ret = new YamlMapDeserializer(reader, parser, context);
+      ret._startMapping(name);
+      return ret;
     }
 
     @chpldoc.nodoc
     proc startTuple(reader: yamlReader) throws {
       if YamlVerbose then writeln("starting tuple");
 
-      this._startSequence(reader);
-    }
-    @chpldoc.nodoc
-    proc endTuple(reader: yamlReader) throws {
-      if YamlVerbose then writeln("ending tuple");
-
-      this._endSequence(reader);
+      var ret = new YamlSeqDeserializer(reader, parser, context);
+      ret._startSequence();
+      return ret;
     }
 
     @chpldoc.nodoc
-    proc deserializeField(reader: yamlReader, name: string, type t): t throws {
-      if YamlVerbose then writeln("deserializing field: ", name, " of type: ", t:string);
-
-      if name.size > 0 {
-        var foundName: string;
-        try {
-          foundName = this._getScalar(reader);
-        } catch e: YamlUnexpectedEventError {
-          throw new BadFormatError("unexpected event: " + e.message());
-        }
-        if foundName != name then
-          throw new BadFormatError("unexpected field name: " + foundName + " (expected: " + name + ")");
-      }
-
-      const value = this.deserializeType(reader, t);
-      if YamlVerbose then writeln("  got value: ", value);
-      return value;
-    }
-
-    @chpldoc.nodoc
-    proc startArray(reader: yamlReader) throws { }
-    @chpldoc.nodoc
-    proc endArray(reader: yamlReader) throws { }
-    @chpldoc.nodoc
-    proc startArrayDim(reader: yamlReader) throws {
-      this._startSequence(reader);
-    }
-    @chpldoc.nodoc
-    proc endArrayDim(reader: yamlReader) throws {
-      this._endSequence(reader);
-    }
-    @chpldoc.nodoc
-    proc readArrayElement(reader: yamlReader, type t): t throws {
-      if this.parser.peekFor(reader, EventType.SequenceEnd)
-        then throw new BadFormatError("sequence end event");
-        else return reader.read(t);
+    proc startArray(reader: yamlReader) throws {
+      return new YamlSeqDeserializer(reader, parser, context);
     }
 
     @chpldoc.nodoc
     proc startList(reader: yamlReader) throws {
-      this._startSequence(reader);
-    }
-    @chpldoc.nodoc
-    proc endList(reader: yamlReader) throws {
-      this._endSequence(reader);
-    }
-    @chpldoc.nodoc
-    proc readListElement(reader: yamlReader, type t): t throws {
-      if this.parser.peekFor(reader, EventType.SequenceEnd)
-        then throw new BadFormatError("sequence end event");
-        else return reader.read(t);
+      var ret = new YamlSeqDeserializer(reader, parser, context);
+      ret._startSequence();
+      return ret;
     }
 
     @chpldoc.nodoc
     proc startMap(reader: yamlReader) throws {
-      this._startMapping(reader, "");
-    }
-    @chpldoc.nodoc
-    proc endMap(reader: yamlReader) throws {
-      this._endMapping(reader);
-    }
-    @chpldoc.nodoc
-    proc readKey(reader: yamlReader, type t): t throws {
-      if this.parser.peekFor(reader, EventType.MappingEnd)
-        then throw new BadFormatError("mapping end event");
-        else return reader.read(t);
-    }
-    @chpldoc.nodoc
-    proc readValue(reader: yamlReader, type t): t throws {
-      return reader.read(t);
+      var ret = new YamlMapDeserializer(reader, parser, context);
+      ret._startMapping("");
+      return ret;
     }
   }
 
   // ------- serializer helpers -------
 
+  record YamlMapSerializer {
+    var writer;
+    var emitter : shared LibYamlEmitter;
+    var context : shared ContextCounter;
+
+    @chpldoc.nodoc
+    proc startClass(writer: yamlWriter, name: string, size: int) throws {
+      this.context.enterClass();
+      var ret = new YamlMapSerializer(writer, emitter, context);
+      ret._startMapping(name);
+      return ret;
+    }
+
+    @chpldoc.nodoc
+    proc writeField(name: string, const field: ?t) throws {
+      this.emitter.emitScalar(name: bytes);
+      writer.serializer.serializeValue(writer, field);
+    }
+
+    @chpldoc.nodoc
+    proc writeKey(const key) throws {
+      writer.serializer.serializeValue(writer, key);
+    }
+    @chpldoc.nodoc
+    proc writeValue(const val) throws {
+      writer.serializer.serializeValue(writer, val);
+    }
+
+    @chpldoc.nodoc
+    proc endClass() throws {
+      this._endMapping();
+      this.context.leaveClass();
+    }
+    @chpldoc.nodoc
+    proc endRecord() throws {
+      this._endMapping();
+    }
+    @chpldoc.nodoc
+    proc endMap() throws {
+      this._endMapping();
+    }
+  }
+
   @chpldoc.nodoc
-  proc YamlSerializer._startMapping(writer: yamlWriter, name: string = "") throws {
+  proc YamlMapSerializer._startMapping(name: string = "") throws {
     if this.context.isBase then this.emitter.openContext(
       if name.size > 0
         then YamlDocumentStyle.Explicit
@@ -455,14 +386,47 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlSerializer._endMapping(writer: yamlWriter) throws {
+  proc YamlMapSerializer._endMapping() throws {
     this.context.leave();
     if !this.context.inSuperClass then this.emitter.endMapping();
     if this.context.isBase then writer.writeBytes(this.emitter.closeContext());
   }
 
+  record YamlSeqSerializer {
+    var writer;
+    var emitter : shared LibYamlEmitter;
+    var context : shared ContextCounter;
+
+    @chpldoc.nodoc
+    proc writeElement(const element) throws {
+      writer.serializer.serializeValue(writer, element);
+    }
+
+    @chpldoc.nodoc
+    proc startDim(size: int) throws {
+      this._startSequence();
+    }
+    @chpldoc.nodoc
+    proc endDim() throws {
+      this._endSequence();
+    }
+
+    @chpldoc.nodoc
+    proc endTuple() throws {
+      this._endSequence();
+    }
+
+    @chpldoc.nodoc
+    proc endArray() throws {}
+
+    @chpldoc.nodoc
+    proc endList() throws {
+      this._endSequence();
+    }
+  }
+
   @chpldoc.nodoc
-  proc YamlSerializer._startSequence(writer: yamlWriter, name: string = "") throws {
+  proc YamlSeqSerializer._startSequence(name: string = "") throws {
     if this.context.isBase then this.emitter.openContext();
     this.context.enter();
 
@@ -471,7 +435,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlSerializer._endSequence(writer: yamlWriter) throws {
+  proc YamlSeqSerializer._endSequence() throws {
     this.context.leave();
     this.emitter.endSequence();
     if this.context.isBase then writer.writeBytes(this.emitter.closeContext());
@@ -487,7 +451,7 @@ module YAML {
   // ---- deserializer helpers -------
 
   @chpldoc.nodoc
-  proc YamlDeserializer.YamlParsePrimitive(rawValue: string, type t): t throws {
+  proc yamlDeserializer.YamlParsePrimitive(rawValue: string, type t): t throws {
     if YamlVerbose then writeln("parsing primitive: ", t:string, " from: ", rawValue);
 
     if rawValue.startsWith("!!") {
@@ -524,7 +488,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer.speculativeParseNilableClass(reader: yamlReader, type t): t throws {
+  proc yamlDeserializer.speculativeParseNilableClass(reader: yamlReader, type t): t throws {
     if context.isBase {
       // parse nilable class without context
 
@@ -537,7 +501,7 @@ module YAML {
         return nil;
       } else {
         reader.revert();
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
+        var r = reader.withDeserializer(new yamlDeserializer(this.parser, this.context, this.strictTypeChecking));
         return new t(reader=r, deserializer=r.deserializer);
       }
     } else {
@@ -548,7 +512,7 @@ module YAML {
         then return nil;
         else throw new YamlParserError("expected Class or nil value, got scalar: " + maybeNil);
       } catch e: YamlUnexpectedEventError {
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
+        var r = reader.withDeserializer(new yamlDeserializer(this.parser, this.context, this.strictTypeChecking));
         return new t(reader=r, deserializer=r.deserializer);
       }
     }
@@ -566,8 +530,112 @@ module YAML {
     }
   }
 
+  record YamlMapDeserializer {
+    @chpldoc.nodoc
+    var reader;
+    @chpldoc.nodoc
+    var parser: shared LibYamlParser;
+    @chpldoc.nodoc
+    var context: shared ContextCounter;
+
+    @chpldoc.nodoc
+    proc startClass(reader: yamlReader, name: string) throws {
+      if YamlVerbose then writeln("starting class: ", name);
+
+      this.context.enterClass();
+      var ret = new YamlMapDeserializer(reader, parser, context);
+      ret._startMapping(name);
+      return ret;
+    }
+
+    @chpldoc.nodoc
+    proc endClass() throws {
+      if YamlVerbose then writeln("ending class");
+
+      this._endMapping();
+      this.context.leaveClass();
+    }
+    @chpldoc.nodoc
+    proc endRecord() throws {
+      if YamlVerbose then writeln("ending record");
+
+      this._endMapping();
+    }
+
+    @chpldoc.nodoc
+    proc endMap() throws {
+      this._endMapping();
+    }
+    @chpldoc.nodoc
+    proc readKey(type keyType): keyType throws {
+      if this.parser.peekFor(reader, EventType.MappingEnd)
+        then throw new BadFormatError("mapping end event");
+        else return reader.read(keyType);
+    }
+    @chpldoc.nodoc
+    proc readKey(ref key) throws {
+      if this.parser.peekFor(reader, EventType.MappingEnd)
+        then throw new BadFormatError("mapping end event");
+        else reader.read(key);
+    }
+
+    @chpldoc.nodoc
+    proc readValue(type valType): valType throws {
+      return reader.read(valType);
+    }
+
+    @chpldoc.nodoc
+    proc readValue(ref value) throws {
+      reader.read(value);
+    }
+
+    proc hasMore() : bool throws {
+      return !this.parser.peekFor(reader, EventType.MappingEnd);
+    }
+  }
+
   @chpldoc.nodoc
-  proc YamlDeserializer._startMapping(reader: yamlReader, name: string) throws {
+  proc YamlMapDeserializer.readField(name: string, type fieldType): fieldType throws {
+    if YamlVerbose then writeln("deserializing field: ", name, " of type: ", fieldType:string);
+
+    if name.size > 0 {
+      var foundName: string;
+      try {
+        foundName = reader.deserializer._getScalar(reader);
+      } catch e: YamlUnexpectedEventError {
+        throw new BadFormatError("unexpected event: " + e.message());
+      }
+      if foundName != name then
+        throw new BadFormatError("unexpected field name: " + foundName + " (expected: " + name + ")");
+    }
+
+    const value = reader.deserializer.deserializeType(reader, fieldType);
+    if YamlVerbose then writeln("  got value: ", value);
+    return value;
+  }
+
+  @chpldoc.nodoc
+  proc YamlMapDeserializer.readField(name: string, ref field) throws {
+    if YamlVerbose then writeln("deserializing field: ", name, " of type: ", field.type:string);
+
+    if name.size > 0 {
+      var foundName: string;
+      try {
+        foundName = reader.deserializer._getScalar(reader);
+      } catch e: YamlUnexpectedEventError {
+        throw new BadFormatError("unexpected event: " + e.message());
+      }
+      if foundName != name then
+        throw new BadFormatError("unexpected field name: " + foundName + " (expected: " + name + ")");
+    }
+
+    reader.read(field);
+    if YamlVerbose then writeln("  got value: ", field);
+  }
+
+
+  @chpldoc.nodoc
+  proc YamlMapDeserializer._startMapping(name: string) throws {
     // TODO: extract the type name from the document/mapping start and do type checking
     //   (ensure that underscores in the type name are replaced with spaces before type-check)
 
@@ -583,7 +651,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer._endMapping(reader: yamlReader) throws {
+  proc YamlMapDeserializer._endMapping() throws {
     this.context.leave();
 
     // end the mapping if we're not leaving a superclass's deserializer
@@ -595,8 +663,57 @@ module YAML {
       then this.parser.expectEvent(reader, EventType.DocumentEnd);
   }
 
+  record YamlSeqDeserializer {
+    @chpldoc.nodoc
+    var reader;
+    @chpldoc.nodoc
+    var parser: shared LibYamlParser;
+    @chpldoc.nodoc
+    var context: shared ContextCounter;
+
+    @chpldoc.nodoc
+    proc readElement(type eltType): eltType throws {
+      if this.parser.peekFor(reader, EventType.SequenceEnd)
+        then throw new BadFormatError("sequence end event");
+        else return reader.read(eltType);
+    }
+
+    @chpldoc.nodoc
+    proc readElement(ref element) throws {
+      if this.parser.peekFor(reader, EventType.SequenceEnd)
+        then throw new BadFormatError("sequence end event");
+        else return reader.read(element);
+    }
+
+    @chpldoc.nodoc
+    proc endTuple() throws {
+      if YamlVerbose then writeln("ending tuple");
+
+      this._endSequence();
+    }
+
+    @chpldoc.nodoc
+    proc endArray() throws { }
+    @chpldoc.nodoc
+    proc startDim() throws {
+      this._startSequence();
+    }
+    @chpldoc.nodoc
+    proc endDim() throws {
+      this._endSequence();
+    }
+    @chpldoc.nodoc
+    proc endList() throws {
+      this._endSequence();
+    }
+
+    proc hasMore() : bool throws {
+      return !this.parser.peekFor(reader, EventType.SequenceEnd);
+    }
+  }
+
   @chpldoc.nodoc
-  proc YamlDeserializer._startSequence(reader: yamlReader) throws {
+  proc YamlSeqDeserializer._startSequence() throws {
     if YamlVerbose then writeln("\tstarting sequence");
 
     // start a document if we're in the base context
@@ -610,7 +727,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer._endSequence(reader: yamlReader) throws {
+  proc YamlSeqDeserializer._endSequence() throws {
     if YamlVerbose then writeln("\nending sequence");
     this.context.leave();
 
@@ -623,7 +740,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer._speculativeRead(reader: yamlReader, type t) throws {
+  proc yamlDeserializer._speculativeRead(reader: yamlReader, type t) throws {
     try {
       return reader.read(t);
     } catch e: YamlUnexpectedEventError {
@@ -632,7 +749,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc  YamlDeserializer._getScalar(reader: yamlReader): string throws {
+  proc  yamlDeserializer._getScalar(reader: yamlReader): string throws {
     const (start, end) = this.parser.expectEvent(reader, EventType.Scalar);
     reader.seek((start:int)..);
     return reader.readString((end - start):int);
@@ -644,66 +761,98 @@ module YAML {
   // ----------------------------------------------------
 
   /*
-    The style of a YAML sequence
-
-    - Default: let the emitter choose the style.
-    - Any: let the ``libyaml`` implementation choose the style.
-    - Block: use the block sequence style. I.e., line breaks and indentation.
-    - Flow: use the flow sequence style. I.e., comma separated values and square brackets.
+    The style of a YAML sequence.
   */
   enum YamlSequenceStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      Let the ``libyaml`` implementation choose the style.
+    */
     Any,
+    /*
+      Use the block sequence style. I.e., line breaks and indentation.
+    */
     Block,
+    /*
+      Use the flow sequence style. I.e., comma separated values and square brackets.
+    */
     Flow
   }
 
   /*
-    The style of a YAML mapping
-
-    - Default: let the emitter choose the style.
-    - Any: let the ``libyaml`` implementation choose the style.
-    - Block: use the block mapping style. I.e., line breaks and indentation.
-    - Flow: use the flow mapping style. I.e., comma separated ``key: value`` pairs and curly braces.
+    The style of a YAML mapping.
   */
   enum YamlMappingStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      Let the ``libyaml`` implementation choose the style.
+    */
     Any,
+    /*
+      Use the block mapping style. I.e., line breaks and indentation.
+    */
     Block,
+    /*
+      Use the flow mapping style. I.e., comma separated ``key: value`` pairs and curly braces.
+    */
     Flow
   }
 
   /*
-    The style of a YAML scalar
-
-    - Default: let the emitter choose the style.
-    - Any: let the ``libyaml`` implementation choose the style.
-    - Plain: no quotes around scalars
-    - SingleQuoted: single quotes around scalars
-    - DoubleQuoted: double quotes around scalars
-    - Literal: literal style - maintain newlines
-    - Folded: folded style - newlines are removed and replaced with spaces when parsed
+    The style of a YAML scalar.
   */
   enum YamlScalarStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      Let the ``libyaml`` implementation choose the style.
+    */
     Any,
+    /*
+      No quotes around scalars
+    */
     Plain,
+    /*
+      Single quotes around scalars
+    */
     SingleQuoted,
+    /*
+      Double quotes around scalars
+    */
     DoubleQuoted,
+    /*
+      Literal style - maintain newlines
+    */
     Literal,
+    /*
+      Folded style - newlines are removed and replaced with spaces when parsed
+    */
     Folded
   }
 
   /*
-    The style of a YAML document
-
-    - Default: let the emitter choose the style.
-    - Implicit: the document is implicitly started. I.e., header and footer are omitted.
-    - Explicit: the document is explicitly started. I.e., header and footer are included.
+    The style of a YAML document.
   */
   enum YamlDocumentStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      The document is implicitly started. I.e., header and footer are omitted.
+    */
     Implicit,
+    /*
+      The document is explicitly started. I.e., header and footer are included.
+    */
     Explicit
   }
 
@@ -732,7 +881,7 @@ module YAML {
   @chpldoc.nodoc
   var _dummy_yaml_value = new owned YamlValue();
 
-  class YamlValue {
+  class YamlValue : writeSerializable {
     @chpldoc.nodoc
 
     /* index into a YAML mapping by string */
@@ -794,8 +943,8 @@ module YAML {
     }
 
     @chpldoc.nodoc
-    proc writeThis(fw) throws {
-      fw.write("Empty YamlValue");
+    override proc serialize(writer, ref serializer) throws {
+      writer.write("Empty YamlValue");
     }
 
     @chpldoc.nodoc
@@ -804,7 +953,7 @@ module YAML {
     }
   }
 
-  class YamlMapping: YamlValue {
+  class YamlMapping: YamlValue, writeSerializable {
     // TODO: get map(YamlValue, YamlValue) working...
     @chpldoc.nodoc
     var _map: map(string, (shared YamlValue, shared YamlValue));
@@ -869,17 +1018,18 @@ module YAML {
       }
     }
 
-    override proc writeThis(fw) throws {
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
       var first = true;
-      fw.writeLiteral("{");
+      writer.writeLiteral("{");
       for k in this._map.keys() {
         if first then first = false;
-                 else fw.writeLiteral(", ");
-        fw.write(k);
-        fw.writeLiteral(": ");
-        fw.write(this._map[k]);
+                 else writer.writeLiteral(", ");
+        writer.write(k);
+        writer.writeLiteral(": ");
+        writer.write(this._map[k]);
       }
-      fw.writeLiteral("}");
+      writer.writeLiteral("}");
     }
 
     @chpldoc.nodoc
@@ -892,7 +1042,7 @@ module YAML {
     }
   }
 
-  class YamlSequence: YamlValue {
+  class YamlSequence: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var _seq: list(shared YamlValue);
 
@@ -938,15 +1088,16 @@ module YAML {
       return l;
     }
 
-    override proc writeThis(fw) throws {
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
       var first = true;
-      fw.writeLiteral("[");
+      writer.writeLiteral("[");
       for v in this._seq {
         if first then first = false;
-                 else fw.writeLiteral(", ");
-        fw.write(v);
+                 else writer.writeLiteral(", ");
+        writer.write(v);
       }
-      fw.writeLiteral("]");
+      writer.writeLiteral("]");
     }
 
     @chpldoc.nodoc
@@ -959,7 +1110,7 @@ module YAML {
     }
   }
 
-  class YamlScalar: YamlValue {
+  class YamlScalar: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var yamlType: YamlScalarType;
     @chpldoc.nodoc
@@ -1062,10 +1213,11 @@ module YAML {
         return "";
     }
 
-    override proc writeThis(fw) throws {
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
       if this.yamlType == YamlScalarType.UserDefined
-        then fw.write(this.tag, " ", this.value);
-        else fw.write(this.value);
+        then writer.write(this.tag, " ", this.value);
+        else writer.write(this.value);
     }
 
     @chpldoc.nodoc
@@ -1074,7 +1226,7 @@ module YAML {
     }
   }
 
-  class YamlAlias: YamlValue {
+  class YamlAlias: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var _alias: string;
 
@@ -1094,8 +1246,9 @@ module YAML {
       return this._alias : bytes;
     }
 
-    override proc writeThis(fw) throws {
-      fw.write("*", this._alias);
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writer.write("*", this._alias);
     }
 
     @chpldoc.nodoc
@@ -1487,7 +1640,7 @@ module YAML {
     // Emitter wrapper
     // ----------------------------------------------------
 
-    class LibYamlEmitter {
+    class LibYamlEmitter : writeSerializable {
       var seqStyle: YamlSequenceStyle;
       var mapStyle: YamlMappingStyle;
       var scalarStyle: YamlScalarStyle;
@@ -1759,20 +1912,15 @@ module YAML {
 
     // -------- meta --------
     @chpldoc.nodoc
-    proc LibYamlEmitter.serialize(fw, serializer) throws {
-      fw.write("---LimYamlEmitter---");
-    }
-
-    @chpldoc.nodoc
-    proc LibYamlEmitter.writeThis(fw) throws {
-      fw.write("---LimYamlEmitter---");
+    proc LibYamlEmitter.serialize(writer, serializer) throws {
+      writer.write("---LimYamlEmitter---");
     }
 
     // ----------------------------------------------------
     // Parser Wrapper
     // ----------------------------------------------------
 
-    class LibYamlParser {
+    class LibYamlParser : writeSerializable {
       var parser: yaml_parser_t;
       var event: yaml_event_t;
 
@@ -1878,13 +2026,8 @@ module YAML {
 
     // -------- meta --------
     @chpldoc.nodoc
-    proc LibYamlParser.serialize(fw, serializer) throws {
-      fw.write("---LimYamlParser---");
-    }
-
-    @chpldoc.nodoc
-    proc LibYamlParser.writeThis(fw) throws {
-      fw.write("---LimYamlParser---");
+    proc LibYamlParser.serialize(writer, serializer) throws {
+      writer.write("---LimYamlParser---");
     }
 
     // ----------------------------------------------------
@@ -1915,7 +2058,7 @@ module YAML {
       var count = 0;
       // use to keep track of the current position in a class hierarchy
       //  when child classes are being (de)serialized, the parent classes
-      //  deserializing intializer is also called; however, only one new
+      //  deserializing initializer is also called; however, only one new
       //  mapping should be opened for each class. This counter is used
       //  to prevent multiple mappings from being opened.
       var classDepth = 0;

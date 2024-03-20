@@ -6,6 +6,7 @@
 # The tarball is left in root of repo in tar/ directory.
 
 CWD=$(cd $(dirname $0) ; pwd)
+source $CWD/common.bash
 source $CWD/functions.bash
 
 # Tell gen_release to use existing repo instead of creating a new one with

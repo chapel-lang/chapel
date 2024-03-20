@@ -33,11 +33,11 @@ writeln("Number of tasks     = ", tasks);
 // overhead.
 //
 var counts: [1..tasks] int;
-coforall task in 1..tasks {
-  var rs = new owned NPBRandomStream(real, seed + task*2, parSafe=false);
+coforall task in 1..tasks with (ref counts) {
+  var rs = new randomStream(real, seed + task*2);
   var count = 0;
   for i in (task-1)*n/tasks+1..task*n/tasks do
-    count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
+    count += rs.next()**2 + rs.next()**2 <= 1.0;
   counts[task] = count;
 }
 

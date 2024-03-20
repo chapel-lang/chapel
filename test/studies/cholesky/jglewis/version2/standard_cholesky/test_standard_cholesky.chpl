@@ -91,7 +91,7 @@ module standard_cholesky_test {
 
   proc main {
 
-    var Rand = new owned RandomStream ( real, seed = 314159) ;
+    var Rand = new randomStream ( real, seed = 314159 ) ;
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
@@ -111,7 +111,7 @@ module standard_cholesky_test {
     // create a test problem, starting with a random general matrix B.
     // ---------------------------------------------------------------
 
-    Rand.fillRandom (B);
+    Rand.fill (B);
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the
@@ -121,7 +121,7 @@ module standard_cholesky_test {
 
     A = 0.0;
 
-    forall (i,j) in mat_dom do
+    forall (i,j) in mat_dom with (ref A) do
       A (i,j) = + reduce (  [k in mat_dom.dim (0) ]
     			    B (i, k) * B (j, k) );
 
@@ -454,4 +454,3 @@ module standard_cholesky_test {
 	writeln (i_row, ":  ", L(i_row, ..i_col) );
   }
 }
-

@@ -1,3 +1,4 @@
+warning in deprecatedSymbols.doc.chpl:2: an implicit module named 'deprecatedSymbols.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: deprecatedSymbols.doc
@@ -17,6 +18,14 @@ or
 
    import deprecatedSymbols.doc;
 
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   deprecatedSymbols.doc/*
+
 .. data:: var x: int
 
    .. warning::
@@ -33,19 +42,19 @@ or
 
 .. data:: var a: string
 
-   There was documentation of this symbol 
-
    .. warning::
 
       a is deprecated
 
-.. data:: var b: string
+   There was documentation of this symbol 
 
-   This symbol also was documented 
+.. data:: var b: string
 
    .. warning::
 
       b is deprecated, use c instead
+
+   This symbol also was documented 
 
 .. data:: var c: string
 
@@ -58,4 +67,80 @@ or
    This symbol is also deprecated, please use f instead 
 
 .. data:: var f: real
+
+.. default-domain:: chpl
+
+.. module:: DeprecatedMod1
+
+DeprecatedMod1
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecatedSymbols.doc.DeprecatedMod1;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecatedSymbols.doc.DeprecatedMod1;
+
+.. warning::
+
+   DeprecatedMod1 is deprecated
+
+.. default-domain:: chpl
+
+.. module:: DeprecatedMod2
+
+DeprecatedMod2
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecatedSymbols.doc.DeprecatedMod2;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecatedSymbols.doc.DeprecatedMod2;
+
+.. warning::
+
+   This module is deprecated
+
+.. default-domain:: chpl
+
+.. module:: DeprecatedMod3
+   :synopsis: Including modules with documentation 
+
+DeprecatedMod3
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecatedSymbols.doc.DeprecatedMod3;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecatedSymbols.doc.DeprecatedMod3;
+
+.. warning::
+
+   This module is deprecated
+
+Including modules with documentation 
+
+.. data:: var x: int
+
+   Just a regular symbol to show how it interacts 
 

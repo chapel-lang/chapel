@@ -1,1 +1,1 @@
--sconfigParam=10
+-sconfigParam=10 --warn-unstable

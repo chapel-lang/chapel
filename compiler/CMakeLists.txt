@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,13 +16,8 @@
 # limitations under the License.
 
 
-# request C++14 -- or C++17 if using LLVM 16
-if (CHPL_LLVM_VERSION VERSION_LESS 16.0)
-  set(CMAKE_CXX_STANDARD 14)
-else()
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-
+# request C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # request C11
@@ -123,4 +118,4 @@ add_subdirectory(passes)
 add_subdirectory(resolution)
 add_subdirectory(util)
 target_compile_options(chpl PRIVATE SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
-target_link_libraries(chpl PRIVATE ${CHPL_LLVM_LINK_ARGS} ChplFrontend)
+target_link_libraries(chpl PRIVATE ChplFrontend ${CHPL_LLVM_LINK_ARGS})

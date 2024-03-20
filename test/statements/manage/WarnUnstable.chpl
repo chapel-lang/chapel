@@ -1,6 +1,6 @@
-record man {
-  proc enterThis(): int { return 0; }
-  proc leaveThis(in err: owned Error?) {
+record man : contextManager {
+  proc enterContext(): int { return 0; }
+  proc exitContext(in err: owned Error?) {
     if err then try! { throw err; }
   }
 }

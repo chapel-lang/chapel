@@ -12,12 +12,12 @@ proc main() {
   const xdim = 0..((n+7)/8)-1;
   var pixels : [ydim][xdim] uint(8);
 
-  forall i in ydim {
+  forall i in ydim with (ref Cib, ref Crb) {
     Cib[i] = i * invN - 1.0;
     Crb[i] = i * invN - 1.5;
   }
 
-  forall y in dynamic(ydim, chunkSize) {
+  forall y in dynamic(ydim, chunkSize) with (ref pixels) {
     for x in xdim {
       var xm = x*8;
       var res : uint(8);
@@ -57,7 +57,7 @@ proc main() {
   }
 
   var f = new file(1);                          // open a stdout file descriptor
-  var w = f.writer(iokind.native, locking=false);  // get a lock-free writer
+  var w = f.writer(serializer=new binarySerializer(), locking=false);  // get a lock-free writer
 
   w.writef("P4\n");                            // write the file header
   w.writef("%i %i\n", n, n);

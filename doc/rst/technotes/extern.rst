@@ -130,7 +130,7 @@ These types are the same as C types:
 
   c_ptr(T) is T*
   c_ptrConst(T) is const T*
-  c_string is const char*
+  c_string is const char* (c_string is deprecated in favor of c_ptrConst(c_char))
   c_fn_ptr represents a C function pointer (with unspecified arg and return types)
   c_array(T,n) is T[n]
 
@@ -212,21 +212,30 @@ Analogously, const ref may be used instead of c_ptrConst(T).
 c_string
 ~~~~~~~~
 
+.. warning::
+
+  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``. See
+  :ref:`c_string deprecation <readme-evolution.c_string-deprecation>` for more
+  information.
+
 The c_string type maps to a constant C string (that is, const char*)
 that is intended for use locally. A c_string can be obtained from a
-Chapel string using the method :proc:`~String.string.c_str`. A Chapel string can be
-constructed from a C string using the cast operator. Note however that
-because c_string is a local-only type, the .c_str() method can only be
-called on Chapel strings that are stored on the same locale; calling
-.c_str() on a non-local string will result in a runtime error.
+Chapel string using the method :proc:`~CTypes.string.c_str` and casting the
+result to c_string. A Chapel string can be constructed from a C string using
+:proc:`~String.string.createCopyingBuffer` or one of the other similarly named
+string creation methods. Note however, that because c_string is a local-only
+type, the .c_str() method can only be called on Chapel strings that are stored
+on the same locale; calling .c_str() on a non-local string will result in a
+runtime error.
 
-.. note::
-
-  ``c_string`` is expected to be deprecated in a future release in favor
-  of instead using ``c_ptr`` types such as ``c_ptrConst(c_char)``.
 
 c_fn_ptr
 ~~~~~~~~
+
+.. warning::
+
+  ``c_fn_ptr`` is unstable and expected to be replaced with more feature-rich
+  functionality in the future.
 
 The c_fn_ptr type is useful for representing arguments to external
 functions that accept function pointers.  At present, there is no way
@@ -408,8 +417,9 @@ An argument such as ``int* ptrArg`` can be represented either with
 you would use one or the other). Correspondingly, ``const int* ptrArg`` can be
 represented with ``c_ptrConst(int)`` or the ``const ref`` intent.
 
-Note that, for numeric and pointer types, the default intent in Chapel is
-already ``const in`` (see the spec section :ref:`Abstract_Intents`).
+For the formal arguments of extern functions of numeric and pointer
+types, the default and ``const`` intents mean ``const in``
+(:ref:`The_Const_In_Intent`).
 
 As of 1.23, there are several limitations on what types can be passed to
 or returned from ``extern`` or ``export`` functions and what intents can
@@ -480,7 +490,7 @@ function:
 
 .. code-block:: chapel
 
-       extern proc printf(fmt: c_string, vals...?numvals): int;
+       extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 Note that it can also be prototyped more trivially/less accurately
 as follows:
@@ -530,7 +540,11 @@ The Chapel compiler will then rewrite any calls to `foo` like this:
 
 .. code-block:: chapel
 
-      foo(x, 10); // -> foo(c_ptrTo(x), 10);
+      foo(x, 10); // -> foo(c_ptrToConst(x), 10);
+
+The Chapel compiler will also respect intents for the formal.
+The default intent will result in a call to ``c_ptrToConst``
+while an intent like ``ref`` will result in a call to ``c_ptrTo``.
 
 Note that this same technique won't work for distributed rectangular arrays,
 nor for associative, sparse, or opaque arrays because their data isn't
@@ -685,8 +699,8 @@ for the type is ``struct stat``:
     var st_size: off_t;
   }
 
-  proc getFileSize(path:c_string) : int {
-    extern proc stat(x: c_string, ref buf:chpl_stat_type): c_int;
+  proc getFileSize(path:c_ptrConst(c_char)) : int {
+    extern proc stat(x: c_ptrConst(c_char), ref buf:chpl_stat_type): c_int;
     var buf: chpl_stat_type;
 
     if (chpl_stat_function(path, buf) == 0) {
@@ -789,7 +803,7 @@ block will be usable.
 This feature strives to support C global variables, functions, structures,
 typedefs, enums, and some #defines. Structures always generate a Chapel record,
 and pointers to a structure are represented with c_ptr(struct type). Also,
-pointer arguments to functions are always represented with c_ptr or c_string
+pointer arguments to functions are always represented with c_ptr or c_ptrConst
 instead of the ref intent.
 
 Note that functions or variables declared within an extern block should either
@@ -852,8 +866,7 @@ Pointer Types
 See the section `Pointer and String Types`_ above for background on
 how the Chapel programs can work with C pointer types. Any pointer type used in
 an extern block will be made visible to the Chapel program as c_ptr(T),
-c_ptrConst(T) (for const pointer types besides char) or c_string
-(for const char* types).
+c_ptrConst(T).
 
 For example:
 
@@ -864,7 +877,7 @@ For example:
    // will translate automatically into
    //  extern proc setItToOne(x:c_ptr(c_int));
 
-   static void getItPlusOne(const int* x) { return *x + 1; }
+   static int getItPlusOne(const int* x) { return *x + 1; }
    // will translate automatically into
    //  extern proc getItPlusOne(x:c_ptrConst(c_int));
 
@@ -883,15 +896,15 @@ For example:
  var x:c_int;
  setItToOne(c_ptrTo(x));
 
- var y:c_int = 5
+ var y:c_int = 5;
  writeln(getItPlusOne(c_ptrToConst(y))); // could also just use c_ptrTo(y)
 
  var space:c_ptr(c_int);
  setSpace(c_ptrTo(space));
 
- var str:c_string;
+ var str:c_ptrConst(c_char);
  setString(c_ptrTo(str));
- writeln(toString(str));
+ writeln(string.createBorrowingBuffer(str));
 
 As you can see in this example, using the extern block might result in
 more calls to c_ptrTo() when using the generated extern declarations,
@@ -998,7 +1011,7 @@ c_ptr. See the following example:
 
 .. code-block:: chapel
 
-  var cArray = c_calloc(c_int, 10);
+  var cArray = allocate(c_int, 10, clear=true);
   for i in 0..#10 {
    cArray[i] = i:c_int;
   }
@@ -1007,7 +1020,7 @@ c_ptr. See the following example:
   for i in 0..#10 {
    writeln(cArray[i]);
   }
-  c_free(cArray);
+  deallocate(cArray);
 
 Variables of type ``c_ptr``/``c_ptrConst`` can be compared against or set to
 ``nil``.
@@ -1060,10 +1073,10 @@ instance, it is possible to safely go back the other direction:
 Working with strings
 --------------------
 
-If you need to call a C function and provide a Chapel string, you may need to
-convert the Chapel string to a C string first.  Chapel string literals will
-automatically convert to C strings.  A Chapel string variable can be converted
-using the :proc:`~String.string.c_str` method.
+If you need to call a C function and provide a Chapel string, you will need to
+convert the Chapel string to a c_ptrConst(c_char) first.  Chapel string literals
+will automatically convert to c_ptrConst(c_char). A Chapel string variable can
+be converted using the :proc:`~CTypes.string.c_str` method.
 
 myprint.h:
 
@@ -1083,9 +1096,9 @@ myprint.chpl:
 
 .. code-block:: chapel
 
-  extern proc myprint(str:c_string);
+  extern proc myprint(str:c_ptrConst(c_char));
 
-  // string literal is automatically converted to a c_string
+  // string literal is automatically converted to a c_ptrConst(c_char)
   myprint("hello");
 
   // a string variable must be converted with .c_str()

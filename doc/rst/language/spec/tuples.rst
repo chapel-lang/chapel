@@ -961,7 +961,7 @@ tuple depending on its argument intent.
 Tuple Return Behavior
 ---------------------
 
-Procedures with the default return intent always return
+Procedures with the default and ``out`` return intent always return
 a value tuple. If an expression returned by such a procedure is
 a referential tuple, it will be implicitly converted to a value tuple.
 
@@ -1017,12 +1017,12 @@ the procedure's scope. Otherwise there is a compilation error.
 Tuple Yield Behavior
 --------------------
 
-Iterators with the default return intent always yield
+Iterators with the ``out`` yield intent always yield
 a value tuple. If an expression yielded by such an iterator is
 a referential tuple, it will be implicitly converted to a value tuple.
 
 A tuple yielded from an iterator with ``ref`` or ``const ref``
-return intent must be a value tuple.
+yield intent must be a value tuple.
 
    *Rationale*
 
@@ -1035,6 +1035,10 @@ return intent must be a value tuple.
    *Open issue*.
 
    We also need to provide a mechanism to yield referential tuples.
+
+An iterator with the default or ``const`` yield intent may yield
+using the semantics of either the ``out`` or ``const ref`` yield intent,
+in an implementation-defined manner.
 
 .. _Tuple_Operators:
 

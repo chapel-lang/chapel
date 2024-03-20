@@ -24,20 +24,20 @@ config const verbose = false;
 // if verbose is true, prints out non-det output, otherwise prints det output
 
 class MeetingPlace {
-  var spotsLeft$ : sync int;
+  var spotsLeft : sync int;
   var partner : unmanaged Chameneos?;
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {
-    this.complete();
-    spotsLeft$.writeXF(numMeetings*2);
+    init this;
+    spotsLeft.writeXF(numMeetings*2);
   }
 
   /* reset must be called after meet,
      to reset numMeetings for a subsequent call of meet */
   proc reset() {
-    spotsLeft$.writeXF(numMeetings*2);
+    spotsLeft.writeXF(numMeetings*2);
   }
 }
 
@@ -56,7 +56,7 @@ class Chameneos {
   var color : Color;
   var meetings : int;
   var meetingsWithSelf : int;
-  var meetingCompleted$ : sync bool;
+  var meetingCompleted : sync bool;
 
   proc init(id: int = 0,
             color: Color = Color.blue,
@@ -84,20 +84,20 @@ class Chameneos {
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st */
   proc meet(place : unmanaged MeetingPlace) {
-    var spotsLeft = place.spotsLeft$.readFE();
+    var spotsLeft = place.spotsLeft.readFE();
 
     if (spotsLeft == 0) {
-      place.spotsLeft$.writeEF(0);
+      place.spotsLeft.writeEF(0);
       return true;
     }
 
     if (spotsLeft % 2 == 0) {
       place.partner = _to_unmanaged(this);
-      place.spotsLeft$.writeEF(spotsLeft - 1);
-      meetingCompleted$.readFE();
+      place.spotsLeft.writeEF(spotsLeft - 1);
+      meetingCompleted.readFE();
     } else if (spotsLeft % 2 == 1) {
       const partner = place.partner!;
-      place.spotsLeft$.writeEF(spotsLeft - 1);
+      place.spotsLeft.writeEF(spotsLeft - 1);
 
       if (id == partner.id) {
         meetingsWithSelf += 1;
@@ -108,7 +108,7 @@ class Chameneos {
       partner.color = newColor;
       meetings += 1;
       partner.meetings += 1;
-      partner.meetingCompleted$.writeEF(true);
+      partner.meetingCompleted.writeEF(true);
     }
     return false;
   }
@@ -250,4 +250,3 @@ proc main() {
     delete forest;
   }
 }
-

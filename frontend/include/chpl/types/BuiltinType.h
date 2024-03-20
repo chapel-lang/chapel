@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -53,7 +53,7 @@ class BuiltinType : public Type {
   }
 
   Genericity genericity() const override {
-    if ((int) tag() >= (int) typetags::AnyBoolType)
+    if ((int) tag() >= (int) typetags::AnyComplexType)
       return GENERIC;
     else
       return CONCRETE;
@@ -69,6 +69,8 @@ class BuiltinType : public Type {
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
+
+  virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const override;
 };
 
 // define the subclasses using macros and BuiltinTypeList.h

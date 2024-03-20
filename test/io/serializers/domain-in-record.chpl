@@ -11,7 +11,7 @@ proc main() {
   r.A = 1..10;
 
   var f = openMemFile();
-  f.writer().write(r);
-  var x = f.reader().read(R);
+  f.writer(locking=false).write(r);
+  var x = f.reader(locking=false).read(R);
   writeln(r == x);
 }

@@ -29,11 +29,11 @@ if initFromFile {
 // Helper variables for reading from a file
 
 var infile: file;
-var reader: fileReader(iokind.dynamic, true);
+var reader: fileReader(locking=true);
 
 if initFromFile {
   infile = open(filename, ioMode.r);
-  reader = infile.reader();
+  reader = infile.reader(locking=true);
 }
 
 
@@ -58,13 +58,13 @@ proc initProblemSize() {
   if (debugInit) then
     writeln(numElems, " ", numNodes);
 
-  return (numElems, numNodes); 
+  return (numElems, numNodes);
 }
 
 
 // read/compute the coordinates
 
-proc initCoordinates(X, Y, Z) {
+proc initCoordinates(ref X, ref Y, ref Z) {
   if (initFromFile) {
     for (x,y,z) in zip(X,Y,Z) do
       reader.read(x, y, z);
@@ -85,13 +85,13 @@ proc initCoordinates(X, Y, Z) {
 
 // read/compute the element-to-node mapping
 
-proc initElemToNodeMapping(elemToNode: [?D]) {
+proc initElemToNodeMapping(ref elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
-    for nodelist in elemToNode do 
+    for nodelist in elemToNode do
       for i in 0..<nodesPerElem do
         reader.read(nodelist[i]);
-    
+
     if debugInit {
       writeln("elemToNode mappings are:");
       for nodelist in elemToNode do
@@ -122,7 +122,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 
 // read/compute the greek variables
 
-proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
+proc initGreekVars(ref lxim, ref lxip, ref letam, ref letap, ref lzetam, ref lzetap) {
   param elemRank = lxim.domain.rank;
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
@@ -130,24 +130,24 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
   } else {
     forall num in lxim.domain {
       const (i,j,k) = elemIdxTo3D(num);
-      
-      lxim[num] = if (k == 0) 
+
+      lxim[num] = if (k == 0)
                     then num
                     else elem3DToIdx(elemRank,i,j,k-1);
 
       lxip[num] = if (k == elemsPerEdge-1)
                     then num
                       else elem3DToIdx(elemRank,i,j,k+1);
-    
-      letam[num] = if (j == 0) 
+
+      letam[num] = if (j == 0)
                     then num
                       else elem3DToIdx(elemRank,i,j-1,k);
 
       letap[num] = if (j == elemsPerEdge-1)
                     then num
                     else elem3DToIdx(elemRank,i,j+1,k);
-    
-      lzetam[num] = if (i == 0) 
+
+      lzetam[num] = if (i == 0)
                     then num
                     else elem3DToIdx(elemRank,i-1,j,k);
 
@@ -203,11 +203,13 @@ inline proc initZSyms(ref ZSym) {
 inline proc initFreeSurface(ref freeSurface) {
   if (initFromFile) {
     readNodeset(freeSurface);
-    reader.assertEOF("Input file format error (extra data at EOF)");
+    var tmp: uint(8);
+    if reader.read(tmp) then
+      halt("Input file format error (extra data at EOF)");
   } else {
     for ij in DimNodeFace do
       freeSurface += node2DToIdx(freeSurface.rank, ij, X, nodesPerEdge-1);
-                  
+
     for ij in DimNodeFace do
       freeSurface += node2DToIdx(freeSurface.rank, ij, Y, nodesPerEdge-1);
 
@@ -220,7 +222,7 @@ inline proc initFreeSurface(ref freeSurface) {
 
     const size = freeSurface.size;
     var sortedSurface: [0..<size] if (freeSurface.rank == 1)
-                                    then freeSurface.idxType 
+                                    then freeSurface.idxType
                                     else freeSurface.rank*freeSurface.idxType;
 
     for (a,b) in zip(sortedSurface, freeSurface) do a = b;

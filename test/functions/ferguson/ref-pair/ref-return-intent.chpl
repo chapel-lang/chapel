@@ -1,7 +1,7 @@
 record R {
   var x;
 
-  proc return_ref() ref
+  proc ref return_ref() ref
   {
     writeln("setter");
     return x;
@@ -12,11 +12,11 @@ record R {
     return x;
   }
   
-  proc call_return_ref() ref
+  proc ref call_return_ref() ref
   {
     return return_ref();
   }
-  proc call_return_ref()
+  proc ref call_return_ref()
   {
     return return_ref();
   }

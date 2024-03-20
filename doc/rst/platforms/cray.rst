@@ -107,6 +107,7 @@ Building Chapel for a Cray System from Source
       ...run jobs interactively on your system  gasnetrun_ibv
       ...queue jobs using SLURM (sbatch)        slurm-gasnetrun_ibv
       ...queue jobs using LSF (bsub)            lsf-gasnetrun_ibv
+      ...queue jobs using PBS (qsub)            pbs-gasnetrun_ibv
       ========================================  =========================
 
       ========================================  =========================
@@ -120,7 +121,8 @@ Building Chapel for a Cray System from Source
       ========================================  =========================
       On an HPE Cray EX system, ...             set CHPL_LAUNCHER to...
       ========================================  =========================
-      ...in all cases                           slurm-srun
+      ...queue jobs using SLURM (sbatch)        slurm-srun
+      ...run jobs interactively using PALS      pals
       ========================================  =========================
 
    You can also set CHPL_LAUNCHER to ``none`` if you prefer to manually
@@ -348,19 +350,6 @@ will make it impossible to launch onto the compute nodes.  In other
 cases, the launch will succeed, but any files read or written by the
 Chapel program will be opened relative to the compute node's file
 system rather than the login node's.
-
-
--------------------------------------
-Special Notes for HPE Cray EX Systems
--------------------------------------
-
-The gasnet communication layer has not yet been built or tested on EX
-systems, although we expect to add support in the future.
-
-The new PALS launcher for EX systems is supported by Chapel 1.24.0, but
-it has to be selected manually, by setting ``CHPL_LAUNCHER=pals``.  The
-default launcher selection does not pick it by default.  We expect to
-add that support in the future.
 
 
 ----------------------------------------------------

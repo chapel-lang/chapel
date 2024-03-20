@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,6 +46,8 @@ namespace uast {
   The interface body contains one required function named '=='.
 */
 class Interface final : public NamedDecl {
+ friend class AstNode;
+
  private:
   int interfaceFormalsChildNum_;
   int numInterfaceFormals_;
@@ -76,12 +78,21 @@ class Interface final : public NamedDecl {
     // TODO: Some assertions here...
   }
 
-  Interface(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
+    ser.writeVInt(interfaceFormalsChildNum_);
+    ser.writeVInt(numInterfaceFormals_);
+    ser.writeVInt(bodyChildNum_);
+    ser.writeVInt(numBodyStmts_);
+    ser.write(isFormalListExplicit_);
+  }
+
+  explicit Interface(Deserializer& des)
     : NamedDecl(asttags::Interface, des) {
-      interfaceFormalsChildNum_ = des.read<int>();
-      numInterfaceFormals_ = des.read<int>();
-      bodyChildNum_ = des.read<int>();
-      numBodyStmts_ = des.read<int>();
+      interfaceFormalsChildNum_ = des.readVInt();
+      numInterfaceFormals_ = des.readVInt();
+      bodyChildNum_ = des.readVInt();
+      numBodyStmts_ = des.readVInt();
       isFormalListExplicit_ = des.read<bool>();
     }
 
@@ -196,18 +207,6 @@ class Interface final : public NamedDecl {
                                 bool isFormalListExplicit,
                                 AstList formals,
                                 AstList body);
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-    ser.write(interfaceFormalsChildNum_);
-    ser.write(numInterfaceFormals_);
-    ser.write(bodyChildNum_);
-    ser.write(numBodyStmts_);
-    ser.write(isFormalListExplicit_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Interface);
-
 };
 
 

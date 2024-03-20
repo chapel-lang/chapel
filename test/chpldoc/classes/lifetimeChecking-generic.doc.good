@@ -21,13 +21,11 @@ or
 
    Generic type for use with all the lifetime checking styles 
 
-
    .. attribute:: type t
 
 .. class:: Foo
 
    Used to demonstrate the behavior of lifetime checking and documentation 
-
 
    .. attribute:: var a: unmanaged MyGeneric(int)
 

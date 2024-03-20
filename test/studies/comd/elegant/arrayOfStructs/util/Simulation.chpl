@@ -28,7 +28,7 @@ record Box {
   var count : int;
   var atoms : [1..MAXATOMS] Atom;
 
-  iter liveAtoms() ref {
+  iter ref liveAtoms() ref {
     for i in 1..count do yield atoms[i];
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,7 +45,13 @@ namespace uast {
 
  */
 class Catch final : public AstNode {
+ friend class AstNode;
+
  private:
+  int8_t errorChildNum_;
+  int8_t bodyChildNum_;
+  bool hasParensAroundError_;
+
   Catch(AstList children, int8_t errorChildNum, int8_t bodyChildNum,
         bool hasParensAroundError)
     : AstNode(asttags::Catch, std::move(children)),
@@ -54,12 +60,18 @@ class Catch final : public AstNode {
       hasParensAroundError_(hasParensAroundError) {
   }
 
-  Catch(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(errorChildNum_);
+    ser.write(bodyChildNum_);
+    ser.write(hasParensAroundError_);
+  }
+
+  explicit Catch(Deserializer& des)
     : AstNode(asttags::Catch, des) {
-        errorChildNum_ = des.read<int8_t>();
-        bodyChildNum_ = des.read<int8_t>();
-        hasParensAroundError_ = des.read<bool>();
-      }
+    errorChildNum_ = des.read<int8_t>();
+    bodyChildNum_ = des.read<int8_t>();
+    hasParensAroundError_ = des.read<bool>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Catch* rhs = other->toCatch();
@@ -72,10 +84,6 @@ class Catch final : public AstNode {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t errorChildNum_;
-  int8_t bodyChildNum_;
-  bool hasParensAroundError_;
 
  public:
   ~Catch() override = default;
@@ -135,16 +143,6 @@ class Catch final : public AstNode {
   bool hasParensAroundError() const {
     return hasParensAroundError_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(errorChildNum_);
-    ser.write(bodyChildNum_);
-    ser.write(hasParensAroundError_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Catch);
-
 };
 
 

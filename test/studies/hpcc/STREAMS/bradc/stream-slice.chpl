@@ -12,10 +12,9 @@ config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
 
 config const numTrials = 10,
-             epsilon = 0.0;
+             epsilon = 1e-15;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -51,11 +50,13 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C) {
-  var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
+proc initVectors(ref B, ref C) {
+  var randlist = if useRandomSeed
+    then new randomStream(eltType=real)
+    else new randomStream(eltType=real, seed=314159265);
 
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  randlist.fill(B);
+  randlist.fill(C);
 
   if (printArrays) {
     writeln("B is: ", B, "\n");

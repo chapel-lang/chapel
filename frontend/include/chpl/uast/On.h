@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,11 @@ namespace uast {
 
  */
 class On final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
+  static const int8_t destChildNum_ = 0;
+
   On(AstList children, BlockStyle blockStyle, int bodyChildNum,
      int numBodyStmts)
     : SimpleBlockLike(asttags::On, std::move(children), blockStyle,
@@ -51,7 +55,11 @@ class On final : public SimpleBlockLike {
                       numBodyStmts) {
   }
 
-  On(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
+  }
+
+  explicit On(Deserializer& des)
     : SimpleBlockLike(asttags::On, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -63,8 +71,6 @@ class On final : public SimpleBlockLike {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  static const int8_t destChildNum_ = 0;
 
  public:
 
@@ -83,13 +89,6 @@ class On final : public SimpleBlockLike {
     auto ret = child(destChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(On);
-
 };
 
 

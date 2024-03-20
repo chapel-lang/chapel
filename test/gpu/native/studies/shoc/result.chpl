@@ -33,7 +33,7 @@ module ResultDB {
             this.homeLocale = here;
         }
 
-        proc addToDatabase(blockSize: string, value: real){
+        proc ref addToDatabase(blockSize: string, value: real){
             on homeLocale {
                 // Since the [] Access adds the mapping if it does not
                 // exist we do not have to initialize a new list when one
@@ -78,8 +78,8 @@ module ResultDB {
                         var stdDev = (sumOfSqDiff/this.results[blockSize].size)**0.5;
 
                         // Calc min and max
-                        var min = resultSorted.first();
-                        var max = resultSorted.last();
+                        var min = resultSorted.first;
+                        var max = resultSorted.last;
 
                         // Write the result row
                         write(testName,"\t", atts, blockSize, attsSuffix, "\t", units,'\t');
@@ -152,7 +152,7 @@ module ResultDatabaseTest {
     proc testOutput(){
         var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
         var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
-        // var randStreamSeeded = new RandomStream(real, 1032435);
+        // var randStreamSeeded = new randomStream(real, 1032435);
 
         flopsDB.printDatabaseStats();
 

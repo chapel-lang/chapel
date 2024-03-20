@@ -4,14 +4,15 @@
 
 use TrackingRecord;
 
-proc r.enterThis() {
+proc r.enterContext() {
   writeln('entering');
 }
 
-proc r.leaveThis(in err: owned Error?) {
+proc r.exitContext(in err: owned Error?) {
   writeln('leaving');
   if err then try! { throw err; }
 }
+r implements contextManager;
 
 record res {
   proc doSomething() {
@@ -21,27 +22,27 @@ record res {
 
 var globalRes = new res();
 
-// Multiple overloads of 'enterThis()' can exist, that just means that the
+// Multiple overloads of 'enterContext()' can exist, that just means that the
 // resource storage cannot be inferred.
-record man {
+record man : contextManager {
   var x = new r();
 
-  proc enterThis() ref {
-    writeln('proc man.enterThis() ref: res');
+  proc enterContext() ref {
+    writeln('proc man.enterContext() ref: res');
     return globalRes;
   }
 
-  proc enterThis() const ref {
-    writeln('proc man.enterThis() const ref: res');
+  proc enterContext() const ref {
+    writeln('proc man.enterContext() const ref: res');
     return globalRes;
   }
 
-  proc enterThis() {
-    writeln('proc man.enterThis(): res');
+  proc enterContext() {
+    writeln('proc man.enterContext(): res');
     return globalRes;
   }
 
-  proc leaveThis(in err: owned Error?) {
+  proc exitContext(in err: owned Error?) {
     writeln('leaving');
     if err then try! { throw err; }
   }
@@ -53,14 +54,14 @@ proc doSomething() {
 
 proc test1() {
   writeln('T1');
-  // Calls the value overload of 'enterThis'.
+  // Calls the value overload of 'enterContext'.
   manage new man() do doSomething();
 }
 test1(); writeln();
 
 proc test2() {
   writeln('T2');
-  // Calls the value overload of 'enterThis'.
+  // Calls the value overload of 'enterContext'.
   manage new man() {
     doSomething();
   }

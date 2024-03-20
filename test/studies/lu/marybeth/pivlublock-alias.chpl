@@ -27,7 +27,7 @@ var ind, temp:int;
 var rtemp: real;
 
 initA(A,'Adata.dat');
-[i in A1D] piv(i) = i;
+[i in A1D with (ref piv)] piv(i) = i;
 
 writeln("Unfactored Matrix:");
 writeln(A);
@@ -63,12 +63,12 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
       } 
     } 
     if (A1(k,k) != 0.0) {
-      forall i in slice1 {
+      forall i in slice1 with (ref A1) {
         A1(i,k) = A1(i,k)/A1(k,k);
       }
 //  This conditional test is needed.  Otherwise the array
 //  access goes out of bounds.
-      forall (i,j) in {slice1,slice2} {
+      forall (i,j) in {slice1,slice2} with (ref A1) {
         A1(i,j) -= A1(i,k)*A1(k,j);
       }
     } 
@@ -96,7 +96,7 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
 
 
 // Update of A22 -= A12*A21.
-  forall (i,j) in {TrailingBlockInds, TrailingBlockInds} {
+  forall (i,j) in {TrailingBlockInds, TrailingBlockInds} with (ref A22) {
     for k in CurrentBlockInds {
       A22(i,j) -= A1(i,k)*A12(k,j);
     }
@@ -120,9 +120,9 @@ iter IterateByBlocks(D:range,blksize) {
   }   
 }
   
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
-  var Adat = open(filename, ioMode.r).reader();
+  var Adat = open(filename, ioMode.r).reader(locking=false);
 
   for ij in A.domain {
     Adat.read(A(ij));

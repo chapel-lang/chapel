@@ -237,7 +237,7 @@ GCNNSAReassign::CheckNSA(const MachineInstr &MI, bool Fast) const {
 
 bool GCNNSAReassign::runOnMachineFunction(MachineFunction &MF) {
   ST = &MF.getSubtarget<GCNSubtarget>();
-  if (ST->getGeneration() < GCNSubtarget::GFX10)
+  if (!ST->hasNSAEncoding())
     return false;
 
   MRI = &MF.getRegInfo();
@@ -259,10 +259,10 @@ bool GCNNSAReassign::runOnMachineFunction(MachineFunction &MF) {
       default:
         continue;
       case NSA_Status::CONTIGUOUS:
-        Candidates.push_back(std::make_pair(&MI, true));
+        Candidates.push_back(std::pair(&MI, true));
         break;
       case NSA_Status::NON_CONTIGUOUS:
-        Candidates.push_back(std::make_pair(&MI, false));
+        Candidates.push_back(std::pair(&MI, false));
         ++NumNSAInstructions;
         break;
       }

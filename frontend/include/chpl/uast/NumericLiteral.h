@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,6 +33,8 @@ namespace uast {
  */
 template <typename ValueT, typename ParamT>
 class NumericLiteral : public Literal {
+ friend class AstNode;
+
  protected:
   UniqueString text_;
 
@@ -40,6 +42,11 @@ class NumericLiteral : public Literal {
     : Literal(tag, value),
       text_(text)
   { }
+
+  void numericLiteralSerializeInner(Serializer& ser) const {
+    literalSerializeInner(ser);
+    ser.write(text_);
+  }
 
   NumericLiteral(AstTag tag, Deserializer& des)
     : Literal(tag, des) {
@@ -70,12 +77,6 @@ class NumericLiteral : public Literal {
     const ParamT* p = (const ParamT*) value_;
     return p->value();
   }
-
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
-    ser.write(text_);
-  }
-
   /**
    Returns the number as it was written in the source code (as a string)
    */
@@ -83,8 +84,8 @@ class NumericLiteral : public Literal {
 };
 
 template <typename ValueT, typename ParamT>
-NumericLiteral<ValueT, ParamT>::~NumericLiteral() {
-}
+NumericLiteral<ValueT, ParamT>::~NumericLiteral() { }
+
 
 } // end namespace uast
 } // end namespace chpl

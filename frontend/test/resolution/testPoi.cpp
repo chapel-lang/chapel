@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -141,8 +141,8 @@ static void test1n() {
   assert(rfunc->signature()->instantiatedFrom() != nullptr);
 
   const ResolvedExpression& rhelp = rfunc->resolutionById().byAst(helperCall);
-  for (auto candidate : rhelp.mostSpecific()) {
-    assert(candidate == nullptr);
+  for (auto& candidate : rhelp.mostSpecific()) {
+    assert(candidate.fn() == nullptr);
   }
 }
 

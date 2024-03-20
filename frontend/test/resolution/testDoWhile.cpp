@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -93,7 +93,7 @@ static void test3() {
     R""""(
     do class C {
 
-    } while C.type != int;
+    } while C != int;
     )"""";
   setFileText(ctx, path, contents);
 
@@ -104,7 +104,7 @@ static void test3() {
   assert(mod->numStmts() == 1 && mod->stmt(0)->isDoWhile());
   auto doWhile = mod->stmt(0)->toDoWhile();
   auto decl = doWhile->stmt(0)->toClass();
-  auto ident = doWhile->condition()->toOpCall()->child(0)->toDot()->receiver()->toIdentifier();
+  auto ident = doWhile->condition()->toOpCall()->child(0)->toIdentifier();
 
   auto& rr = resolveModule(ctx, mod->id());
   assert(rr.byAst(ident).toId() == decl->id());

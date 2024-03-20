@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,15 +45,15 @@ class UintType final : public PrimitiveType {
 
   static const owned<UintType>& getUintType(Context* context, int bitwidth);
 
-  /** what is stored in bitwidth_ for the default 'uint'? */
-  static int defaultBitwidth() {
-    return 64;
-  }
-
  public:
   ~UintType() = default;
 
   static const UintType* get(Context* context, int bitwidth);
+
+  /** what is stored in bitwidth_ for the default 'uint'? */
+  static int defaultBitwidth() {
+    return 64;
+  }
 
   int bitwidth() const override {
     return bitwidth_;

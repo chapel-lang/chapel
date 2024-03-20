@@ -58,7 +58,7 @@ def get(flag='host'):
                     platform_val = "linux64_32"
                 else:
                     platform_val = "linux64"
-            elif machine == 'aarch64':
+            elif machine == 'aarch64' or machine == 'arm64':
                 platform_val = "linux64"
             else:
                 platform_val = "linux32"
@@ -75,6 +75,12 @@ def get(flag='host'):
 
     return platform_val
 
+
+@memoize
+def is_wsl():
+    name = (platform.uname().release).lower()
+    if name.endswith('-microsoft') or name.endswith('-microsoft-standard-wsl2'):
+        return True
 
 @memoize
 def get_mac_os_version():

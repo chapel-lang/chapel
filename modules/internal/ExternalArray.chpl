@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -184,12 +184,12 @@ module ExternalArray {
   // can make the same function call and get the appropriate type depending on
   // the argument.  Unsupported array types are turned into opaque
   // representations
-  proc convertToExternalArray(arr: []): chpl_opaque_array
+  proc convertToExternalArray(ref arr: []): chpl_opaque_array
     where (getExternalArrayType(arr) == chpl_opaque_array) {
 
     var ret: chpl_opaque_array;
     ret._pid = arr._pid;
-    ret._instance = arr._value: c_ptr(void);
+    ret._instance = c_ptrToConst(arr._value);
     ret._unowned = arr._unowned;
     if (!arr._unowned) {
       arr._unowned = true;

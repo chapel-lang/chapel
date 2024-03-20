@@ -19,7 +19,7 @@ enum modes {
 
 config param mode : modes = modes.dstNotRect;
 
-proc indsWrapper(dst, dstRegion, src, srcRegion) {
+proc indsWrapper(ref dst, dstRegion, src, srcRegion) {
   try {
     moveArrayElements(dst, dstRegion, src, srcRegion);
   } catch e: IllegalArgumentError {
@@ -72,7 +72,7 @@ proc main() {
       indsWrapper(dstRect, 0..#50, srcRect, half);
       indsWrapper(dstRect, {..101 # -50}, srcRect, half);
     }
-    when srcBadInds { 
+    when srcBadInds {
       indsWrapper(dstRect, half, srcRect, 0..#50);
       indsWrapper(dstRect, half, srcRect, {..101 # -50});
     } when unboundRange {

@@ -1,2 +1,2 @@
---auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true -scPtrToLogicalValue=true
---auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true --no-auto-local-access -scPtrToLogicalValue=true
+--auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true
+--auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true --no-auto-local-access

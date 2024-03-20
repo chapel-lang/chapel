@@ -46,7 +46,7 @@ proc main() {
   }
 }
 
-proc check(ref D : domain, const ref A : []) {
+proc check(ref D : domain(?), const ref A : []) {
   D = {1..D.size*2};
   if A.domain != D {
     numErrors += 1;

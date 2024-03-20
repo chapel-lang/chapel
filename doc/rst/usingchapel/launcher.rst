@@ -43,7 +43,7 @@ Executing using the help (``-h``/``--help``) flag will typically print out
 any launcher-specific options in addition to the normal help message for
 the program itself.
 
-You can also execute the Chapel launcher with the ``--dry-run``) flag.
+You can also execute the Chapel launcher with the ``--dry-run`` flag.
 This will not actually run or launch the user program, but instead simply
 print the same thing as ``-v``: the command(s) that would have been used
 to launch the program, along with any environment variables the launcher
@@ -59,24 +59,25 @@ Currently Supported Launchers
 
 Currently supported launchers include:
 
-===================  ====================================================
-Launcher Name        Description
-===================  ====================================================
-amudprun             GASNet launcher for programs running over UDP        
-aprun                Cray application launcher using aprun                
-gasnetrun_ibv        GASNet launcher for programs running over Infiniband 
-gasnetrun_mpi        GASNet launcher for programs using the MPI conduit   
-mpirun4ofi           provisional launcher for ``CHPL_COMM=ofi`` on non-Cray systems
-lsf-gasnetrun_ibv    GASNet launcher using LSF (bsub) over Infiniband
-pals                 Cray application launcher using PALS on HPE Cray EX systems
-pbs-aprun            Cray application launcher using PBS (qsub) + aprun   
-pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
-slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
-slurm-gasnetrun_mpi  GASNet launcher using SLURM over MPI
-slurm-srun           native SLURM launcher                                
-smp                  GASNet launcher for programs running over shared-memory
-none                 do not use a launcher                                
-===================  ====================================================
+=======================  ==============================================================
+Launcher Name            Description
+=======================  ==============================================================
+amudprun                 GASNet launcher for the UDP substrate
+aprun                    Cray application launcher using aprun
+gasnetrun_ibv            GASNet launcher for the Infiniband substrate
+gasnetrun_mpi            GASNet launcher for the MPI substrate
+mpirun4ofi               provisional launcher for ``CHPL_COMM=ofi`` on non-Cray systems
+lsf-gasnetrun_ibv        GASNet launcher for LSF (bsub) and the Infiniband substrate
+pals                     Cray application launcher for PALS on HPE Cray EX systems
+pbs-aprun                Cray application launcher for PBS (qsub) + aprun
+pbs-gasnetrun_ibv        GASNet launcher for PBS (qsub) and the Infiniband substrate
+slurm |-| gasnetrun_ibv  GASNet launcher for SLURM and the Infiniband substrate
+slurm |-| gasnetrun_mpi  GASNet launcher for SLURM and the MPI substrate
+slurm |-| gasnetrun_ofi  GASNet launcher for SLURM and the OFI substrate
+slurm-srun               native SLURM launcher
+smp                      GASNet launcher for the shared-memory substrate
+none                     do not use a launcher
+=======================  ==============================================================
 
 A specific launcher can be explicitly requested by setting the
 ``CHPL_LAUNCHER`` environment variable. For the specific case of the
@@ -268,7 +269,7 @@ SSH can be configured analogously.
 
      # Specify that ssh should be used
      export GASNET_SPAWNFN=S
-     # Specify the list of nodes to use
+     # Specify the list of nodes to use; SSH_SERVERS can also be used
      export GASNET_SSH_SERVERS=`scontrol show hostnames | xargs echo`
      # Run the program on the 2 reserved nodes.
      ./hello6-taskpar-dist -nl 2
@@ -341,3 +342,6 @@ Launcher Name  Description
 =============  ==========================================================
 mpirun         launch using mpirun (no mpi comm currently) 
 =============  ==========================================================
+
+.. |-| unicode:: U+2011 .. non-breaking hyphen
+  :trim:

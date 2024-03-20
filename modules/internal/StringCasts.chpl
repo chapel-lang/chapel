@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,7 +42,7 @@ module StringCasts {
     }
   }
 
-  operator :(x: string, type t:chpl_anybool) throws {
+  operator :(x: string, type t:bool) throws {
     var str = x.strip();
     if str.isEmpty() {
       throw new owned IllegalArgumentError("bad cast from empty string to bool");
@@ -56,7 +56,7 @@ module StringCasts {
     return false;
   }
 
-  // homogenous tuples of primitive type
+  // homogeneous tuples of primitive type
   operator :(x: ?k*?t, type s:string) where isPrimitiveType(t) && isHomogeneousTupleType(x.type) {
     var ret = "(";
     for param i in 0..#k {
@@ -256,7 +256,7 @@ module StringCasts {
   // complex
   //
   operator :(x: chpl_anycomplex, type t:string) {
-    if isnan(x.re) || isnan(x.im) then
+    if isNan(x.re) || isNan(x.im) then
       return "nan";
     var re = (x.re):string;
     var im: string;

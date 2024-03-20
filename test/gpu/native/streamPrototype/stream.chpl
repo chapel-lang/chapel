@@ -2,7 +2,7 @@
 // Use standard modules for Block distributions, Timing routines, Type
 // utility functions.
 //
-use Time, Types /*, Random */;
+use Time, Types /*, NPBRandom */;
 
 use GpuDiagnostics;
 
@@ -131,7 +131,7 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   /*
 
   TODO: fillRandom has a `forall`. We either need dynamic check and this
@@ -155,7 +155,7 @@ proc initVectors(B, C) {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(A, B, C) {
+proc verifyResults(A, ref B, C) {
   if (printArrays) then writeln("A is:     ", A, "\n");  // optionally print A
 
   //

@@ -9,7 +9,7 @@ proc foo(x : R(?T, "hello")) {
   writeln();
 }
 
-proc foo(x : R) {
+proc foo(x : R(?)) {
   writeln("generic");
   writeln(x.type:string);
   writeln();

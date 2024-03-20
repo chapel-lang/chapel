@@ -1,7 +1,7 @@
 use IO, YAML;
 
-var FormatWriter = new YamlSerializer();
-var FormatReader = new YamlDeserializer();
+var FormatWriter = new yamlSerializer();
+var FormatReader = new yamlDeserializer();
 
 proc printDebugFmt(val) throws {
     writeln("===== writing: =====");

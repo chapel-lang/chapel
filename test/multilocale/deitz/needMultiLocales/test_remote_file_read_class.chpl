@@ -5,18 +5,18 @@ class C {
   var y: real;
 }
 
-var w = open("test_remote_file_read_class.txt", ioMode.cw).writer();
+var w = open("test_remote_file_read_class.txt", ioMode.cw).writer(locking=true);
 
-var c = new unmanaged C(x=1,y=2.3);
+var c = new C(x=1,y=2.3);
 
 writeln(c);
 
 w.writeln(c);
 w.close();
 
-var r = open("test_remote_file_read_class.txt", ioMode.r).reader();
+var r = open("test_remote_file_read_class.txt", ioMode.r).reader(locking=true);
 
-var d = new unmanaged C();
+var d = new C();
 
 on Locales(1) {
   r.read(d);
@@ -24,6 +24,3 @@ on Locales(1) {
 }
 
 writeln(d);
-
-delete d;
-delete c;

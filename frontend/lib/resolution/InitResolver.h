@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -98,6 +98,8 @@ class InitResolver {
   ID fieldIdFromPossibleMentionOfField(const uast::AstNode* node);
   bool isFieldInitialized(ID fieldId);
 
+  // handle a call to this.complete() or init this.
+  void handleInitMarker(const uast::AstNode* node);
   bool handleCallToThisComplete(const uast::FnCall* node);
   bool handleCallToSuperInit(const uast::FnCall* node);
   bool handleCallToInit(const uast::FnCall* node);
@@ -121,6 +123,9 @@ public:
 
   // Called on exit for calls.
   bool handleResolvingCall(const uast::Call* node);
+
+  // Call on exit for 'init this'
+  bool handleInitStatement(const uast::Init* node);
 
   // Called in exit for dot expressions and identifiers.
   bool handleUseOfField(const uast::AstNode* node);

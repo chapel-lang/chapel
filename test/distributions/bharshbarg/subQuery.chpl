@@ -8,16 +8,16 @@ config const n = 10;
 
 const Space = {1..n, 1..n};
 
-const B = Space dmapped Block(Space);
+const B = Space dmapped blockDist(Space);
 test(B);
 
-const C = Space dmapped Cyclic(startIdx = Space.low);
+const C = Space dmapped cyclicDist(startIdx = Space.low);
 test(C);
 
-const BC = Space dmapped BlockCyclic(startIdx = Space.low, blocksize = (2,2));
+const BC = Space dmapped blockCycDist(startIdx = Space.low, blocksize = (2,2));
 test(BC);
 
-const SC = Space dmapped Stencil(Space, fluff=(1,1));
+const SC = Space dmapped stencilDist(Space, fluff=(1,1));
 test(SC);
 
 proc test(Dist) {

@@ -11,9 +11,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Collectives), and timers (Time).
+// synchronization (Collectives), log2 (Math), and timers (Time).
 //
-use BlockDist, Collectives, Time;
+use BlockDist, Collectives, Time, Math;
 
 //
 // The type of key to use when sorting.
@@ -132,7 +132,7 @@ if printConfig then
 
 
 const LocBucketSpace = {0..#numBuckets};
-const BucketDist = new Block(LocBucketSpace);
+const BucketDist = new blockDist(LocBucketSpace);
 const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] keyType;

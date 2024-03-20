@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,9 @@
 namespace chpl {
 namespace uast {
 
+std::string Record::dumpChildLabelInner(int i) const {
+  return aggregateDeclDumpChildLabelInner(i);
+}
 
 owned<Record> Record::build(Builder* builder, Location loc,
                             owned<AttributeGroup> attributeGroup,
@@ -31,9 +34,12 @@ owned<Record> Record::build(Builder* builder, Location loc,
                             Decl::Linkage linkage,
                             owned<AstNode> linkageName,
                             UniqueString name,
+                            AstList interfaceExprs,
                             AstList contents) {
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
+  int interfaceExprChildNum = NO_CHILD;
+  int numInterfaceExprs = 0;
   int elementsChildNum = NO_CHILD;
   int numElements = contents.size();
   int linkageNameChildNum = NO_CHILD;
@@ -48,6 +54,14 @@ owned<Record> Record::build(Builder* builder, Location loc,
     lst.push_back(std::move(linkageName));
   }
 
+  numInterfaceExprs = interfaceExprs.size();
+  if (numInterfaceExprs > 0) {
+    interfaceExprChildNum = lst.size();
+    for (auto& interfaceExpr : interfaceExprs) {
+      lst.push_back(std::move(interfaceExpr));
+    }
+  }
+
   elementsChildNum = lst.size();
   for (auto& ast : contents) {
     lst.push_back(std::move(ast));
@@ -57,6 +71,8 @@ owned<Record> Record::build(Builder* builder, Location loc,
                            linkage,
                            linkageNameChildNum,
                            name,
+                           interfaceExprChildNum,
+                           numInterfaceExprs,
                            elementsChildNum,
                            numElements);
   builder->noteLocation(ret, loc);

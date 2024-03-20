@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,19 +46,27 @@ namespace uast {
 
  */
 class Dot final : public AstNode {
+ friend class AstNode;
+
  private:
   // which field
- UniqueString fieldName_;
+  UniqueString fieldName_;
 
   Dot(AstList children, UniqueString fieldName)
     : AstNode(asttags::Dot, std::move(children)),
       fieldName_(fieldName) {
     CHPL_ASSERT(children_.size() == 1);
   }
-  Dot(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override {
+    ser.write(fieldName_);
+  }
+
+  explicit Dot(Deserializer& des)
     : AstNode(asttags::Dot, des) {
     fieldName_ = des.read<UniqueString>();
   }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Dot* lhs = this;
     const Dot* rhs = (const Dot*) other;
@@ -90,13 +98,6 @@ class Dot final : public AstNode {
   UniqueString field() const {
     return fieldName_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(fieldName_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Dot);
 };
 
 

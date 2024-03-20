@@ -55,7 +55,7 @@ class CombiningReduceOp: ReduceScanOp {
     var ret:eltType;
     return ret;
   }
-  proc accumulate(elm:Map) {
+  proc accumulate(elm:Map(?)) {
     state.keys += elm.keys;
     for hash in elm.keys {
       state.values[hash].keys += elm.values[hash].keys;
@@ -67,7 +67,7 @@ class CombiningReduceOp: ReduceScanOp {
     state.keys += hash;
     state.values[hash].keys += path;
   }
-  proc combine(other:CombiningReduceOp) {
+  proc combine(other:CombiningReduceOp(?)) {
     state.keys += other.state.keys;
     for hash in other.state.keys {
       state.values[hash] += other.state.values[hash];

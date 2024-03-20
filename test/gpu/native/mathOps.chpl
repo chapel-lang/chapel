@@ -108,18 +108,18 @@ foreach i in r do  R[0] = cbrt(r64);   R[1] = cbrt(r64);  check(R,"cbrt(r64)");
 foreach i in r do  R[0] = ceil(r32);   R[1] = ceil(r32);  check(R,"ceil(r32)");
 foreach i in r do  R[0] = ceil(r64);   R[1] = ceil(r64);  check(R,"ceil(r64)");
 
-foreach i in r do  R[0] = conjg(i8  ); R[1] = conjg(i8);  check(R,"conjg(i8)");
-foreach i in r do  R[0] = conjg(i16 ); R[1] = conjg(i16);  check(R,"conjg(i16)");
-foreach i in r do  R[0] = conjg(i32 ); R[1] = conjg(i32);  check(R,"conjg(i32)");
-foreach i in r do  R[0] = conjg(i64 ); R[1] = conjg(i64);  check(R,"conjg(i64)");
-foreach i in r do  R[0] = conjg(u8  ); R[1] = conjg(u8);  check(R,"conjg(u8)");
-foreach i in r do  R[0] = conjg(u16 ); R[1] = conjg(u16);  check(R,"conjg(u16)");
-foreach i in r do  R[0] = conjg(u32 ); R[1] = conjg(u32);  check(R,"conjg(u32)");
-foreach i in r do  R[0] = conjg(u64 ); R[1] = conjg(u64);  check(R,"conjg(u64)");
-foreach i in r do  I[0] = conjg(im32); I[1] = conjg(im32);  check(I,"conjg(im32)");
-foreach i in r do  I[0] = conjg(im64); I[1] = conjg(im64);  check(I,"conjg(im64)");
-foreach i in r do  R[0] = conjg(r32 ); R[1] = conjg(r32);  check(R,"conjg(r32)");
-foreach i in r do  R[0] = conjg(r64 ); R[1] = conjg(r64);  check(R,"conjg(r64)");
+foreach i in r do  R[0] = conj(i8  ); R[1] = conj(i8);  check(R,"conj(i8)");
+foreach i in r do  R[0] = conj(i16 ); R[1] = conj(i16);  check(R,"conj(i16)");
+foreach i in r do  R[0] = conj(i32 ); R[1] = conj(i32);  check(R,"conj(i32)");
+foreach i in r do  R[0] = conj(i64 ); R[1] = conj(i64);  check(R,"conj(i64)");
+foreach i in r do  R[0] = conj(u8  ); R[1] = conj(u8);  check(R,"conj(u8)");
+foreach i in r do  R[0] = conj(u16 ); R[1] = conj(u16);  check(R,"conj(u16)");
+foreach i in r do  R[0] = conj(u32 ); R[1] = conj(u32);  check(R,"conj(u32)");
+foreach i in r do  R[0] = conj(u64 ); R[1] = conj(u64);  check(R,"conj(u64)");
+foreach i in r do  I[0] = conj(im32); I[1] = conj(im32);  check(I,"conj(im32)");
+foreach i in r do  I[0] = conj(im64); I[1] = conj(im64);  check(I,"conj(im64)");
+foreach i in r do  R[0] = conj(r32 ); R[1] = conj(r32);  check(R,"conj(r32)");
+foreach i in r do  R[0] = conj(r64 ); R[1] = conj(r64);  check(R,"conj(r64)");
 
 foreach i in r do  R[0] =  cos(r32) ; R[1] =  cos(r32);  check(R,"cos(r32)");
 foreach i in r do  R[0] =  cos(r64) ; R[1] =  cos(r64);  check(R,"cos(r64)");
@@ -127,30 +127,30 @@ foreach i in r do  R[0] =  cosh(r32); R[1] =  cosh(r32);  check(R,"cosh(r32)");
 foreach i in r do  R[0] =  cosh(r64); R[1] =  cosh(r64);  check(R,"cosh(r64)");
 
 // the following are implemented in Chapel, but let's test them here for completeness
-foreach i in r do R[0] = divceil(i8 ,i8 );     R[1] = divceil(i8 ,i8 );     check(R,"divceil(i8,i8)");
-foreach i in r do R[0] = divceil(i16,i16);     R[1] = divceil(i16,i16);     check(R,"divceil(i16,i16)");
-foreach i in r do R[0] = divceil(i32,i32);     R[1] = divceil(i32,i32);     check(R,"divceil(i32,i32)");
-foreach i in r do R[0] = divceil(i64,i64);     R[1] = divceil(i64,i64);     check(R,"divceil(i64,i64)");
-foreach i in r do R[0] = divceil(u8 ,u8 );     R[1] = divceil(u8 ,u8 );     check(R,"divceil(u8,u8)");
-foreach i in r do R[0] = divceil(u16,u16);     R[1] = divceil(u16,u16);     check(R,"divceil(u16,u16)");
-foreach i in r do R[0] = divceil(u32,u32);     R[1] = divceil(u32,u32);     check(R,"divceil(u32,u32)");
-foreach i in r do R[0] = divceil(u64,u64);     R[1] = divceil(u64,u64);     check(R,"divceil(u64,u64)");
-foreach i in r do R[0] = divceilpos(i8 ,i8 );  R[1] = divceilpos(i8 ,i8 );  check(R,"divceilpos(i8,i8)");
-foreach i in r do R[0] = divceilpos(i16,i16);  R[1] = divceilpos(i16,i16);  check(R,"divceilpos(i16,i16)");
-foreach i in r do R[0] = divceilpos(i32,i32);  R[1] = divceilpos(i32,i32);  check(R,"divceilpos(i32,i32)");
-foreach i in r do R[0] = divceilpos(i64,i64);  R[1] = divceilpos(i64,i64);  check(R,"divceilpos(i64,i64)");
-foreach i in r do R[0] = divfloor(i8 ,i8 );    R[1] = divfloor(i8 ,i8 );    check(R,"divfloor(i8,i8)");
-foreach i in r do R[0] = divfloor(i16,i16);    R[1] = divfloor(i16,i16);    check(R,"divfloor(i16,i16)");
-foreach i in r do R[0] = divfloor(i32,i32);    R[1] = divfloor(i32,i32);    check(R,"divfloor(i32,i32)");
-foreach i in r do R[0] = divfloor(i64,i64);    R[1] = divfloor(i64,i64);    check(R,"divfloor(i64,i64)");
-foreach i in r do R[0] = divfloor(u8 ,u8 );    R[1] = divfloor(u8 ,u8 );    check(R,"divfloor(u8,u8)");
-foreach i in r do R[0] = divfloor(u16,u16);    R[1] = divfloor(u16,u16);    check(R,"divfloor(u16,u16)");
-foreach i in r do R[0] = divfloor(u32,u32);    R[1] = divfloor(u32,u32);    check(R,"divfloor(u32,u32)");
-foreach i in r do R[0] = divfloor(u64,u64);    R[1] = divfloor(u64,u64);    check(R,"divfloor(u64,u64)");
-foreach i in r do R[0] = divfloorpos(i8 ,i8 ); R[1] = divfloorpos(i8 ,i8 ); check(R,"divfloorpos(i8,i8)");
-foreach i in r do R[0] = divfloorpos(i16,i16); R[1] = divfloorpos(i16,i16); check(R,"divfloorpos(i16,i16)");
-foreach i in r do R[0] = divfloorpos(i32,i32); R[1] = divfloorpos(i32,i32); check(R,"divfloorpos(i32,i32)");
-foreach i in r do R[0] = divfloorpos(i64,i64); R[1] = divfloorpos(i64,i64); check(R,"divfloorpos(i64,i64)");
+foreach i in r do R[0] = divCeil(i8 ,i8 );     R[1] = divCeil(i8 ,i8 );     check(R,"divCeil(i8,i8)");
+foreach i in r do R[0] = divCeil(i16,i16);     R[1] = divCeil(i16,i16);     check(R,"divCeil(i16,i16)");
+foreach i in r do R[0] = divCeil(i32,i32);     R[1] = divCeil(i32,i32);     check(R,"divCeil(i32,i32)");
+foreach i in r do R[0] = divCeil(i64,i64);     R[1] = divCeil(i64,i64);     check(R,"divCeil(i64,i64)");
+foreach i in r do R[0] = divCeil(u8 ,u8 );     R[1] = divCeil(u8 ,u8 );     check(R,"divCeil(u8,u8)");
+foreach i in r do R[0] = divCeil(u16,u16);     R[1] = divCeil(u16,u16);     check(R,"divCeil(u16,u16)");
+foreach i in r do R[0] = divCeil(u32,u32);     R[1] = divCeil(u32,u32);     check(R,"divCeil(u32,u32)");
+foreach i in r do R[0] = divCeil(u64,u64);     R[1] = divCeil(u64,u64);     check(R,"divCeil(u64,u64)");
+foreach i in r do R[0] = divCeilPos(i8 ,i8 );  R[1] = divCeilPos(i8 ,i8 );  check(R,"divCeilPos(i8,i8)");
+foreach i in r do R[0] = divCeilPos(i16,i16);  R[1] = divCeilPos(i16,i16);  check(R,"divCeilPos(i16,i16)");
+foreach i in r do R[0] = divCeilPos(i32,i32);  R[1] = divCeilPos(i32,i32);  check(R,"divCeilPos(i32,i32)");
+foreach i in r do R[0] = divCeilPos(i64,i64);  R[1] = divCeilPos(i64,i64);  check(R,"divCeilPos(i64,i64)");
+foreach i in r do R[0] = divFloor(i8 ,i8 );    R[1] = divFloor(i8 ,i8 );    check(R,"divFloor(i8,i8)");
+foreach i in r do R[0] = divFloor(i16,i16);    R[1] = divFloor(i16,i16);    check(R,"divFloor(i16,i16)");
+foreach i in r do R[0] = divFloor(i32,i32);    R[1] = divFloor(i32,i32);    check(R,"divFloor(i32,i32)");
+foreach i in r do R[0] = divFloor(i64,i64);    R[1] = divFloor(i64,i64);    check(R,"divFloor(i64,i64)");
+foreach i in r do R[0] = divFloor(u8 ,u8 );    R[1] = divFloor(u8 ,u8 );    check(R,"divFloor(u8,u8)");
+foreach i in r do R[0] = divFloor(u16,u16);    R[1] = divFloor(u16,u16);    check(R,"divFloor(u16,u16)");
+foreach i in r do R[0] = divFloor(u32,u32);    R[1] = divFloor(u32,u32);    check(R,"divFloor(u32,u32)");
+foreach i in r do R[0] = divFloor(u64,u64);    R[1] = divFloor(u64,u64);    check(R,"divFloor(u64,u64)");
+foreach i in r do R[0] = divFloorPos(i8 ,i8 ); R[1] = divFloorPos(i8 ,i8 ); check(R,"divFloorPos(i8,i8)");
+foreach i in r do R[0] = divFloorPos(i16,i16); R[1] = divFloorPos(i16,i16); check(R,"divFloorPos(i16,i16)");
+foreach i in r do R[0] = divFloorPos(i32,i32); R[1] = divFloorPos(i32,i32); check(R,"divFloorPos(i32,i32)");
+foreach i in r do R[0] = divFloorPos(i64,i64); R[1] = divFloorPos(i64,i64); check(R,"divFloorPos(i64,i64)");
 
 foreach i in r do  R[0] =  erf(r32) ;   R[1] =  erf(r32);  check(R,"erf(r32)");
 foreach i in r do  R[0] =  erf(r64) ;   R[1] =  erf(r64);  check(R,"erf(r64)");
@@ -169,20 +169,20 @@ foreach i in r do R[0] = gcd(i16,i16); R[1] = gcd(i16,i16); check(R,"gcd(i16,i16
 foreach i in r do R[0] = gcd(i32,i32); R[1] = gcd(i32,i32); check(R,"gcd(i32,i32)");
 foreach i in r do R[0] = gcd(i64,i64); R[1] = gcd(i64,i64); check(R,"gcd(i64,i64)");
 
-foreach i in r do  B[0] =  isfinite(r32);   B[1] =  isfinite(r32);  check(B,"isfinite(r32)");
-foreach i in r do  B[0] =  isfinite(r64);   B[1] =  isfinite(r64);  check(B,"isfinite(r64)");
+foreach i in r do  B[0] =  isFinite(r32);   B[1] =  isFinite(r32);  check(B,"isFinite(r32)");
+foreach i in r do  B[0] =  isFinite(r64);   B[1] =  isFinite(r64);  check(B,"isFinite(r64)");
 
-foreach i in r do  B[0] =  isinf(r32);   B[1] =  isinf(r32);  check(B,"isinf(r32)");
-foreach i in r do  B[0] =  isinf(r64);   B[1] =  isinf(r64);  check(B,"isinf(r64)");
+foreach i in r do  B[0] =  isInf(r32);   B[1] =  isInf(r32);  check(B,"isInf(r32)");
+foreach i in r do  B[0] =  isInf(r64);   B[1] =  isInf(r64);  check(B,"isInf(r64)");
 
-foreach i in r do  B[0] =  isnan(r32);   B[1] =  isnan(r32);  check(B,"isnan(r32)");
-foreach i in r do  B[0] =  isnan(r64);   B[1] =  isnan(r64);  check(B,"isnan(r64)");
+foreach i in r do  B[0] =  isNan(r32);   B[1] =  isNan(r32);  check(B,"isNan(r32)");
+foreach i in r do  B[0] =  isNan(r64);   B[1] =  isNan(r64);  check(B,"isNan(r64)");
 
-foreach i in r do  R[0] = ldexp(r32,i32);   R[1] =  ldexp(r32,i32);  check(R,"ldexp(r32,i32)");
-foreach i in r do  R[0] = ldexp(r64,i32);   R[1] =  ldexp(r64,i32);  check(R,"ldexp(r64,i32)");
+foreach i in r do  R[0] = ldExp(r32,i32);   R[1] =  ldExp(r32,i32);  check(R,"ldExp(r32,i32)");
+foreach i in r do  R[0] = ldExp(r64,i32);   R[1] =  ldExp(r64,i32);  check(R,"ldExp(r64,i32)");
 
-foreach i in r do  R[0] = lgamma(r32);   R[1] =  lgamma(r32);  check(R,"lgamma(r32)");
-foreach i in r do  R[0] = lgamma(r64);   R[1] =  lgamma(r64);  check(R,"lgamma(r64)");
+foreach i in r do  R[0] = lnGamma(r32);   R[1] =  lnGamma(r32);  check(R,"lnGamma(r32)");
+foreach i in r do  R[0] = lnGamma(r64);   R[1] =  lnGamma(r64);  check(R,"lnGamma(r64)");
 
 foreach i in r do  R[0] = log(r32);   R[1] =  log(r32);  check(R,"log(r32)");
 foreach i in r do  R[0] = log(r64);   R[1] =  log(r64);  check(R,"log(r64)");
@@ -281,8 +281,8 @@ foreach i in r do  R[0] =  tan(r64);   R[1] =  tan(r64);  check(R,"tan(r64)");
 foreach i in r do  R[0] =  tanh(r32);   R[1] =  tanh(r32);  check(R,"tanh(r32)");
 foreach i in r do  R[0] =  tanh(r64);   R[1] =  tanh(r64);  check(R,"tanh(r64)");
 
-foreach i in r do  R[0] =  tgamma(r32);   R[1] =  tgamma(r32);  check(R,"tgamma(r32)");
-foreach i in r do  R[0] =  tgamma(r64);   R[1] =  tgamma(r64);  check(R,"tgamma(r64)");
+foreach i in r do  R[0] =  gamma(r32);   R[1] =  gamma(r32);  check(R,"gamma(r32)");
+foreach i in r do  R[0] =  gamma(r64);   R[1] =  gamma(r64);  check(R,"gamma(r64)");
 
 foreach i in r do  R[0] =  trunc(r32);   R[1] =  trunc(r32);  check(R,"trunc(r32)");
 foreach i in r do  R[0] =  trunc(r64);   R[1] =  trunc(r64);  check(R,"trunc(r64)");

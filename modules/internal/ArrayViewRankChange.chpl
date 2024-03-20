@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -126,8 +126,7 @@ module ArrayViewRankChange {
                            param strides: strideKind,
                            dist) type {
       var ranges: rank*range(idxType, boundKind.both, strides);
-      var a = chpl_dsiNewRectangularDom(dist.downDist, rank,
-                                        idxType, strides, ranges);
+      var a = dist.downDist.dsiNewRectangularDom(rank,idxType,strides,ranges);
       return a.type;
   }
 
@@ -207,8 +206,8 @@ module ArrayViewRankChange {
       // Would rather use '_getDistribution' and passing args to "new _domain",
       // see similar comment in ArrayViewReindex for more information.
       var ranges : downrank*range(idxType, boundKind.both, strides);
-      var downDomClass = chpl_dsiNewRectangularDom(dist.downDist, downrank,
-                                                   idxType, strides, ranges);
+      var downDomClass = dist.downDist.dsiNewRectangularDom(downrank, idxType,
+                                                            strides, ranges);
       pragma "no auto destroy"
       var downDomLoc = new _domain(downDomClass);
       downDomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
@@ -511,7 +510,7 @@ module ArrayViewRankChange {
       this.idx             = idx;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom, collapsedDim, idx);
       this.ownsArrInstance = ownsArrInstance;
-      this.complete();
+      init this;
       __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 

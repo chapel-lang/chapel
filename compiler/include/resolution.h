@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@
 #include "baseAST.h"
 #include "symbol.h"
 #include "expr.h"
+#include "ForallStmt.h"
 
 #include <map>
 #include <vector>
@@ -66,8 +67,10 @@ bool       isTupleContainingAnyReferences(Type* t);
 
 void       ensureEnumTypeResolved(EnumType* etype);
 
+bool       tryingToResolve();
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 FnSymbol*  tryResolveFunction(FnSymbol* fn);
+void       printCallstackForLastError();
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
@@ -164,10 +167,11 @@ void convertFieldsOfRecordThis(FnSymbol* fn);
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
 void  resolveForallStmts2();
+bool shouldReplaceForLoopWithForall(ForLoop *forLoop);
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
-void setupAndResolveShadowVars(ForallStmt* fs);
+void setupAndResolveShadowVars(LoopWithShadowVarsInterface *fs);
 bool preserveShadowVar(Symbol* var);
 void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);
@@ -184,6 +188,11 @@ Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
 struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
   ConstraintSat(ImplementsStmt* s): istm(s), icon(0), indx(0) { }
   ConstraintSat(IfcConstraint* c, int i): istm(0), icon(c), indx(i) { } };
+ConstraintSat trySatisfyConstraintAtCallsite(CallExpr*      callsite,
+                                             Expr*          addlSite,
+                                             IfcConstraint* constraint,
+                                             SymbolMap&     substitutions);
+bool tryingToImplementInterface();
 ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call, Expr* addlSite,
                                               IfcConstraint* constraint,
                                               SymbolMap& substitutions);
@@ -294,8 +303,9 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
-void warnForIntUintConversion(BaseAST* context, Type* formalType,
-                              Type* actualType, Symbol* actual);
+// warn for some int -> uint and small int -> real
+void warnForSomeNumericConversions(BaseAST* context, Type* formalType,
+                                   Type* actualType, Symbol* actual);
 
 void lvalueCheck(CallExpr* call);
 
@@ -393,6 +403,10 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 // as a field or variable (it should be, var x: domain(?)).
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere);
+
+void handleDefaultAssociativeWarnings(Symbol* sym,
+                                      Expr* typeExpr, Expr* initExpr,
+                                      AggregateType* forFieldInHere);
 
 // These enable resolution for functions that don't really match
 // according to the language definition in order to get more errors

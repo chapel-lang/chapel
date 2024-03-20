@@ -5,7 +5,7 @@ private use Map;
 proc mapXor(a: map(?keyType, ?valueType, ?),
             b: map(keyType, valueType, ?)) {
   var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-  
+
   try! {
     for k in a.keys() do
       if !b.contains(k) then newMap.add(k, a[k]);
@@ -20,14 +20,14 @@ proc mapXor(a: map(?keyType, ?valueType, ?),
 proc mapSubtract(a: map(?keyType, ?valueType, ?),
                  b: map(keyType, valueType, ?)) {
   var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-  
+
   try! {
     for ak in a.keys() {
       if !b.contains(ak) then
         newMap.add(ak, a[ak]);
     }
   }
-  
+
   return newMap;
 }
 
@@ -45,7 +45,7 @@ proc mapAnd(a: map(?keyType, ?valueType, ?),
 }
 
 var ops: list((int, unmanaged RootClass?, int, int, int));
-var opsLock$: sync bool = true;
+var opsLock: sync bool = true;
 
 var counter: atomic int;
 
@@ -53,19 +53,19 @@ require "gdb.h";
 config const breakOnAllocateId = -1;
 
 proc trackAllocation(c: RootClass, id:int, x:int) {
-  opsLock$.readFE();
+  opsLock.readFE();
   ops.pushBack( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
     extern proc gdbShouldBreakHere();
     gdbShouldBreakHere();
   }
-  opsLock$.writeEF(true);
+  opsLock.writeEF(true);
 }
 
 proc trackFree(c: RootClass, id:int, x:int) {
-  opsLock$.readFE();
+  opsLock.readFE();
   ops.pushBack( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
-  opsLock$.writeEF(true);
+  opsLock.writeEF(true);
 }
 
 proc checkAllocations() {

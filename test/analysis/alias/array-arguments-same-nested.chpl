@@ -7,11 +7,11 @@ proc main() {
   writeln(A);
 }
 
-proc callTest(a, b) {
+proc callTest(ref a, b) {
   test(a, b);
 }
 
-proc test(a, b) {
+proc test(ref a, b) {
   for i in 1..n {
     a[1] += b[1];
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,8 +146,6 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn);
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
-static bool isSubType(Type* sub, Type* super);
-
 static bool isOverrideableMethod(FnSymbol* fn);
 static bool isVirtualizableMethod(FnSymbol* fn);
 
@@ -234,7 +232,9 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
     // A smaller test case:
     //   types/type_variables/deitz/test_point_of_instantiation3.chpl
     //
-    fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    if (fn->instantiationPoint() == NULL) {
+      fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    }
 
     return fn;
   }
@@ -452,6 +452,7 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
       evaluateWhereClause(cfn) &&
       evaluateWhereClause(pfn)) {
 
+    resolveSpecifiedReturnType(cfn);
     resolveFunction(cfn);
 
     // check to see if we are using defaulted actual fns
@@ -611,7 +612,7 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
   }
 }
 
-static bool isSubType(Type* sub, Type* super) {
+bool isSubType(Type* sub, Type* super) {
   bool retval = false;
 
   if (sub == super) {
@@ -827,6 +828,7 @@ static void buildVirtualMethodTable() {
 static void addVirtualMethodTableEntry(Type*     type,
                                        FnSymbol* fn,
                                        bool      exclusive) {
+  type = type->getValType();
   Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
   bool            found = false;
 
@@ -1012,13 +1014,6 @@ static AggregateType* getReceiverClassType(FnSymbol* fn) {
   }
 
   return nullptr;
-}
-
-static bool isDsiNewRectangularDom(FnSymbol* fn) {
-  if (!strcmp(fn->name, "dsiNewRectangularDom"))
-    if (AggregateType* recv = getReceiverClassType(fn))
-      return isDistImplType(recv);
-  return false;
 }
 
 static void findFunctionsProbablyMatching(TypeToNameToFns & map,
@@ -1274,17 +1269,6 @@ static void checkMethodsOverride() {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
               if (fn->hasFlag(FLAG_OVERRIDE)) {
-               if (isDsiNewRectangularDom(fn)) {
-                // Allow, for deprecation by Vass in 1.31 to implement #17131.
-                // To support this deprecation, #22441 comments out
-                // BaseDist.dsiNewRectangularDom(), see an explanation in
-                // ChapelDistribution.chpl. However existing code overrides
-                // these methods and we expect to reinstate them once
-                // the deprecated features have been removed completely.
-                // To avoid forcing existing code to remove 'override'
-                // annotations then add them back, accept them for now
-                // despite that being technically incorrect.
-               } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword present but "
                                     "no superclass method matches signature "
                                     "to override",
@@ -1296,7 +1280,6 @@ static void checkMethodsOverride() {
                   FnSymbol* pfn = matches[0];
                   printMismatchNote(pfn, fn);
                 }
-               }
               } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
                                    "matching signature of superclass method",

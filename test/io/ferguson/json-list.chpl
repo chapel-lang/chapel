@@ -7,12 +7,12 @@ use List, IO, JSON;
   mylist.pushBack(2);
   mylist.pushBack(3);
 
-  stdout.withSerializer(JsonSerializer).writef("testing json write: %?\n", mylist);
+  stdout.withSerializer(jsonSerializer).writef("testing json write: %?\n", mylist);
 }
 
 var f = openTempFile();
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '[]';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -20,7 +20,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:list(int);
 
@@ -32,7 +32,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[ ]';
 
   writeln("Writing JSON: ", str);
@@ -41,7 +41,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:list(int);
 
@@ -54,7 +54,7 @@ var f = openTempFile();
 
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[1]';
 
   writeln("Writing JSON: ", str);
@@ -63,7 +63,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:list(int);
 
@@ -75,7 +75,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[1,2]';
 
   writeln("Writing JSON: ", str);
@@ -84,7 +84,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:list(int);
 
@@ -96,7 +96,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str    = '[ 1, 2, 3 ]';
 
   writeln("Writing JSON: ", str);
@@ -105,7 +105,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var mylist:list(int);
 

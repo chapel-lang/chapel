@@ -112,9 +112,9 @@ proc Gen_RMAT_graph ( a : real,
     // Random Numbers return in the range [0.0, 1.0)
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
-                     new owned NPBRandomStream (real, seed = 0556707007)
+                     new randomStream (real, seed = 0556707007)
                    else
-                     new owned NPBRandomStream (real);
+                     new randomStream (real);
 
     var   Noisy_a     : [edge_range] real,
           Noisy_b     : [edge_range] real,
@@ -153,20 +153,20 @@ proc Gen_RMAT_graph ( a : real,
 
         // randomize the coefficients, tweaking them by numbers in [-.05, .05)
 
-        skip = Rand_Gen.getNext ();
-        Rand_Gen.fillRandom (Unif_Random);
+        skip = Rand_Gen.next ();
+        Rand_Gen.fill (Unif_Random);
         Noisy_a = a * (0.95 + 0.1 * Unif_Random);
 
-        skip = Rand_Gen.getNext ();
-        Rand_Gen.fillRandom (Unif_Random);
+        skip = Rand_Gen.next ();
+        Rand_Gen.fill (Unif_Random);
         Noisy_b = b * (0.95 + 0.1 * Unif_Random);
 
-        skip = Rand_Gen.getNext ();
-        Rand_Gen.fillRandom (Unif_Random);
+        skip = Rand_Gen.next ();
+        Rand_Gen.fill (Unif_Random);
         Noisy_c = c * (0.95 + 0.1 * Unif_Random);
 
-        skip = Rand_Gen.getNext ();
-        Rand_Gen.fillRandom (Unif_Random);
+        skip = Rand_Gen.next ();
+        Rand_Gen.fill (Unif_Random);
         Noisy_d = d * (0.95 + 0.1 * Unif_Random);
 
         norm     = 1.0 / (Noisy_a + Noisy_b + Noisy_c + Noisy_d);
@@ -175,8 +175,8 @@ proc Gen_RMAT_graph ( a : real,
         Noisy_c *= norm;
         Noisy_d *= norm;
 
-        skip = Rand_Gen.getNext ();
-        Rand_Gen.fillRandom (Unif_Random);
+        skip = Rand_Gen.next ();
+        Rand_Gen.fill (Unif_Random);
 
         Edges += assign_quadrant ( Unif_Random, Noisy_a, Noisy_b,
                                    Noisy_c, Noisy_d, bit );
@@ -192,10 +192,10 @@ proc Gen_RMAT_graph ( a : real,
     var permutation : [vertex_range] int = vertex_range;
     var Edge_Weight : [edge_range] int;
 
-    Rand_Gen.fillRandom ( Unif_Random  );
+    Rand_Gen.fill ( Unif_Random  );
     Edge_Weight = floor (1 + Unif_Random * MAX_EDGE_WEIGHT) : int;
 
-    Rand_Gen.fillRandom ( Unif_Random (vertex_range) );
+    Rand_Gen.fill ( Unif_Random (vertex_range) );
 
     for v in vertex_range do
       { var new_id : int;
@@ -344,8 +344,8 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
                  if forWriting then ioMode.cw else ioMode.r,
                  ioHintSet.sequential);
   const chan = if forWriting
-    then f.writer(iokind.big, false)
-    else f.reader(iokind.big, false);
+    then f.writer(serializer=new binarySerializer(endianness.big), false)
+    else f.reader(deserializer=new binaryDeserializer(endianness.big), false);
   return chan;
 }
 

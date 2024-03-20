@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -87,16 +87,16 @@ __device__ static inline uint32_t chpl_gpu_getGridDimZ()   {
 // =================
 
 #define GPU_2OP_ATOMIC(T, runtime_name, rocm_name)           \
-  __device__ static inline void runtime_name(T *x, T val) {  \
-    rocm_name(x, val);                                       \
+  __device__ static inline T runtime_name(T *x, T val) {     \
+    return rocm_name(x, val);                                \
   }                                                          \
-  __host__ static inline void runtime_name(T *x, T val) {}
+  __host__ static inline T runtime_name(T *x, T val) {return 0;}
 
 #define GPU_3OP_ATOMIC(T, runtime_name, rocm_name)                   \
-  __device__ static inline void runtime_name(T *x, T val1, T val2) { \
-    rocm_name(x, val1, val2);                                        \
+  __device__ static inline T runtime_name(T *x, T val1, T val2) {    \
+    return rocm_name(x, val1, val2);                                 \
   }                                                                  \
-  __host__ static inline void runtime_name(T *x, T val1, T val2) {}
+  __host__ static inline T runtime_name(T *x, T val1, T val2) {return 0;}
 
 // Some atomic operations are only supported in CUDA while others are only
 // supported in ROCM. We mark the operations that are unsupported for this

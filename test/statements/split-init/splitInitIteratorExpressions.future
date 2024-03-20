@@ -1,0 +1,2 @@
+bug: Split init fails when variable initialized from iterator expression in both branches of a conditional
+#24108

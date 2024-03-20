@@ -1,7 +1,7 @@
 myLocales = LOCALE0 LOCALE1 LOCALE2
 ProblemDist =
-Block
--------
+blockDist
+---------
 distributes: {1..10}
 across locales: LOCALE0 LOCALE1 LOCALE2
 indexed via: {0..2}
@@ -13,8 +13,8 @@ resulting in:
 
 myLocales = LOCALE0 LOCALE1
 ProblemDist =
-Block
--------
+blockDist
+---------
 distributes: {1..10}
 across locales: LOCALE0 LOCALE1 LOCALE2
 indexed via: {0..2}

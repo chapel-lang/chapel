@@ -1,0 +1,20 @@
+explicitThis.chpl:8: warning: calling the 'this' method explicitly is unstable and may change in the future
+explicitThis.chpl:19: warning: calling the 'this' method explicitly is unstable and may change in the future
+explicitThis.chpl:28: In method 'foo':
+explicitThis.chpl:30: warning: calling the 'this' method explicitly is unstable and may change in the future
+explicitThis.chpl:44: warning: calling the 'this' method explicitly is unstable and may change in the future
+explicitThis.chpl:55: warning: calling the 'this' method explicitly is unstable and may change in the future
+explicitThis.chpl:64: In method 'foo':
+explicitThis.chpl:66: warning: calling the 'this' method explicitly is unstable and may change in the future
+no argument this
+no argument this
+argument is 7
+argument is 7
+called from method
+called from method
+no argument this
+no argument this
+argument is 7
+argument is 7
+called from method
+called from method

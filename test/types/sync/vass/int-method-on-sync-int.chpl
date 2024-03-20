@@ -7,6 +7,6 @@ proc int.methodOnInt() {
   writeln("in methodOnInt: ", this);
 }
 
-var i$: sync int = 55;
+var i: sync int = 55;
 
-i$.readFE().methodOnInt();
+i.readFE().methodOnInt();

@@ -22,7 +22,7 @@ proc main(args: [] string) {
   totalTime.start();
   inputTime.start();
   var f = open(inputFilename, ioMode.r);
-  var r = f.reader(kind=ionative);
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
 
   r.read(imgWidth);
   r.read(imgHeight);
@@ -102,7 +102,7 @@ proc dumpHisto(histo: [] uint(8), height: uint(32), width: uint(32), outFilename
       if value == 0 then
         (pixMap[pos].R, pixMap[pos].G, pixMap[pos].B) = (0:uint(8),0:uint(8),0:uint(8));
       else
-        pixMap[pos] = HSVtoRGB(0.0, 1.0, cbrt(1+63.0*value/max(uint(8)))/4);
+        pixMap[pos] = HSVtoRGB(0.0, 1.0, cbrt(1+63.0*value:real/max(uint(8)))/4);
     }
   }
   createBMP(pixMap, height, width, outFilename);
@@ -163,7 +163,7 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   image.dibHeader.nimpcolors = 0;
 
   var f = open(filename, ioMode.cw);
-  var w = f.writer(kind=ionative);
+  var w = f.writer(serializer=new binarySerializer(), locking=false);
 
   w.write(image.magic(0));
   w.write(image.magic(1));

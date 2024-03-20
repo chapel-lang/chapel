@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -136,7 +136,7 @@ module LockFreeQueue {
 
     proc init(type objType) {
       this.objType = objType;
-      this.complete();
+      init this;
       var _node = new unmanaged Node(objType);
       _head.write(_node);
       _tail.write(_node);

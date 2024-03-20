@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,20 @@
 
 namespace chpl {
 
+UniqueString ID::symbolPathWithoutRepeats(Context* context) const {
+  std::string ret = "";
+  bool needsDot = false;
+
+  auto expanded = expandSymbolPath(context, symbolPath_);
+  for (auto pathPair : expanded) {
+    if (needsDot) ret += ".";
+    needsDot = true;
+
+    ret += pathPair.first.c_str();
+  }
+
+  return UniqueString::get(context, ret.c_str());
+}
 
 // find the last '.' but don't count \.
 // returns -1 if none was found

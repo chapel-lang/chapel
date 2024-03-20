@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -173,7 +173,7 @@ module LocaleModel {
 
   pragma "locale model free"
   pragma "always propagate line file info"
-  proc chpl_here_free(ptr:raw_c_void_ptr): void {
+  proc chpl_here_free(ptr:c_ptr(void)): void {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_free(ptr:c_ptr(void)) : void;
@@ -211,7 +211,7 @@ module LocaleModel {
     return execution_subloc;  // no info needed from full sublocale
   }
 
-  class GPULocale : AbstractLocaleModel {
+  class GPULocale : AbstractLocaleModel, writeSerializable {
     const sid: chpl_sublocID_t;
 
     override proc chpl_id() do return try! (parent._value:LocaleModel)._node_id; // top-level node id
@@ -239,9 +239,9 @@ module LocaleModel {
       sid = _sid;
     }
 
-    override proc writeThis(f) throws {
-      parent.writeThis(f);
-      f.write("-GPU" + sid:string);
+    override proc serialize(writer, ref serializer) throws {
+      parent.serialize(writer, serializer);
+      writer.write("-GPU" + sid:string);
     }
 
     override proc _getChildCount(): int { return 0; }
@@ -255,7 +255,6 @@ module LocaleModel {
     }
     override proc _getChild(idx:int) : locale {
       halt("requesting a child from a GPULocale locale");
-      return new locale(this);
     }
 
     override proc isGpu() : bool { return true; }
@@ -296,7 +295,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -314,7 +313,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -373,7 +372,7 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class RootLocale : AbstractRootLocale {
+  class RootLocale : AbstractRootLocale, writeSerializable {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     pragma "unsafe"
@@ -406,8 +405,8 @@ module LocaleModel {
     override proc chpl_name() do return local_name();
     proc local_name() do return "rootLocale";
 
-    override proc writeThis(f) throws {
-      f.write(name);
+    override proc serialize(writer, ref serializer) throws {
+      writer.write(name);
     }
 
     override proc _getChildCount() do return this.myLocaleSpace.size;

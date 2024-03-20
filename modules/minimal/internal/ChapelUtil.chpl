@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,7 @@ module ChapelUtil {
   export proc chpl_libraryModuleLevelCleanup() {}
 
   // Deinitialization of modules and global variables will not happen.
-  proc chpl_addModule(moduleName, deinitFun: c_fn_ptr) { }
+  proc chpl_addModule(moduleName, deinitFun: chpl_c_fn_ptr) { }
 
   export proc chpl_deinitModules() { }
 }

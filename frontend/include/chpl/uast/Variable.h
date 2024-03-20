@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,7 +49,9 @@ namespace uast {
   each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
+ friend class AstNode;
  friend class Builder;
+
  public:
   enum Kind {
     // Use Qualifier here for consistent enum values.
@@ -63,6 +65,9 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
+  bool isConfig_;
+  bool isField_;
+
   Variable(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
@@ -85,7 +90,13 @@ class Variable final : public VarLikeDecl {
         isField_(isField) {
   }
 
-  Variable(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
+    ser.write(isConfig_);
+    ser.write(isField_);
+  }
+
+  explicit Variable(Deserializer& des)
     : VarLikeDecl(asttags::Variable, des) {
     isConfig_ = des.read<bool>();
     isField_ = des.read<bool>();
@@ -103,9 +114,6 @@ class Variable final : public VarLikeDecl {
   }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  bool isConfig_;
-  bool isField_;
 
   /**
    * Allows for setting a new initExpr when this Variable is a config
@@ -143,15 +151,6 @@ class Variable final : public VarLikeDecl {
     Returns true if this Variable represents a field.
   */
   bool isField() const { return this->isField_; }
-
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
-    ser.write(isConfig_);
-    ser.write(isField_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Variable);
-
 };
 
 

@@ -1,4 +1,4 @@
-//===--- BareMetal.h - Bare Metal Tool and ToolChain -------------*- C++ -*-===//
+//===--- BareMetal.h - Bare Metal Tool and ToolChain ------------*- C++-*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -32,15 +32,13 @@ public:
 
 protected:
   Tool *buildLinker() const override;
-
-  std::string buildCompilerRTBasename(const llvm::opt::ArgList &Args,
-                                      StringRef Component,
-                                      FileType Type = ToolChain::FT_Static,
-                                      bool AddArch = true) const override;
+  Tool *buildStaticLibTool() const override;
 
 public:
   bool useIntegratedAs() const override { return true; }
+  bool isBareMetal() const override { return true; }
   bool isCrossCompiling() const override { return true; }
+  bool HasNativeLLVMSupport() const override { return true; }
   bool isPICDefault() const override { return false; }
   bool isPIEDefault(const llvm::opt::ArgList &Args) const override {
     return false;
@@ -49,8 +47,6 @@ public:
   bool SupportsProfiling() const override { return false; }
 
   StringRef getOSLibName() const override { return "baremetal"; }
-
-  std::string getCompilerRTPath() const override;
 
   RuntimeLibType GetDefaultRuntimeLibType() const override {
     return ToolChain::RLT_CompilerRT;
@@ -61,12 +57,13 @@ public:
 
   const char *getDefaultLinker() const override { return "ld.lld"; }
 
-  std::string getRuntimesDir() const;
-  void AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                                 llvm::opt::ArgStringList &CC1Args) const override;
-  void addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
-                             llvm::opt::ArgStringList &CC1Args,
-                             Action::OffloadKind DeviceOffloadKind) const override;
+  void
+  AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
+                            llvm::opt::ArgStringList &CC1Args) const override;
+  void
+  addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
+                        llvm::opt::ArgStringList &CC1Args,
+                        Action::OffloadKind DeviceOffloadKind) const override;
   void AddClangCXXStdlibIncludeArgs(
       const llvm::opt::ArgList &DriverArgs,
       llvm::opt::ArgStringList &CC1Args) const override;
@@ -75,12 +72,31 @@ public:
   void AddLinkRuntimeLib(const llvm::opt::ArgList &Args,
                          llvm::opt::ArgStringList &CmdArgs) const;
   std::string computeSysRoot() const override;
+
+private:
+  using OrderedMultilibs =
+      llvm::iterator_range<llvm::SmallVector<Multilib>::const_reverse_iterator>;
+  OrderedMultilibs getOrderedMultilibs() const;
 };
 
 } // namespace toolchains
 
 namespace tools {
 namespace baremetal {
+
+class LLVM_LIBRARY_VISIBILITY StaticLibTool : public Tool {
+public:
+  StaticLibTool(const ToolChain &TC)
+      : Tool("baremetal::StaticLibTool", "llvm-ar", TC) {}
+
+  bool hasIntegratedCPP() const override { return false; }
+  bool isLinkJob() const override { return true; }
+
+  void ConstructJob(Compilation &C, const JobAction &JA,
+                    const InputInfo &Output, const InputInfoList &Inputs,
+                    const llvm::opt::ArgList &TCArgs,
+                    const char *LinkingOutput) const override;
+};
 
 class LLVM_LIBRARY_VISIBILITY Linker : public Tool {
 public:

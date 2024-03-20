@@ -1,0 +1,225 @@
+.. default-domain:: chpl
+
+.. module:: unstableClasses.doc
+
+unstableClasses.doc
+===================
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableClasses.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableClasses.doc;
+
+.. class:: X
+
+   .. warning::
+
+      X is unstable
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         a is unstable
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         foo is unstable
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         bar is unstable
+
+.. class:: Y
+
+   .. warning::
+
+      Y is unstable, use Z instead
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         field a is unstable
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         method foo is unstable
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         type method bar is unstable
+
+.. class:: Z
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         a is unstable
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         method foo is unstable
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         bar is unstable
+
+.. class:: A
+
+   .. warning::
+
+      A is unstable
+
+   There was documentation of this symbol 
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         a is unstable
+
+      There was documentation of this field 
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         foo is unstable
+
+      There was documentation of this method 
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         bar is unstable
+
+      There was documentation of this type method 
+
+.. class:: B
+
+   .. warning::
+
+      B is unstable, use C instead
+
+   This symbol also was documented 
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         field a is unstable
+
+      There was documentation of this field 
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         method foo is unstable
+
+      There was documentation of this method 
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         type method bar is unstable
+
+      There was documentation of this type method 
+
+.. class:: C
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         a is unstable
+
+      There was documentation of this field 
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         method foo is unstable
+
+      There was documentation of this method 
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         bar is unstable
+
+      There was documentation of this type method 
+
+.. class:: D
+
+   This symbol is unstable 
+
+   .. attribute:: var a: int
+
+      This symbol is unstable 
+
+   .. method:: proc foo()
+
+      This symbol is unstable 
+
+   .. method:: proc type bar()
+
+      This symbol is unstable 
+
+.. class:: E
+
+   This symbol is also unstable, please use F instead 
+
+   .. attribute:: var a: int
+
+      This symbol is also unstable, unfortunately 
+
+   .. method:: proc foo()
+
+      This symbol is also unstable, unfortunately 
+
+   .. method:: proc type bar()
+
+      This symbol is also unstable, unfortunately 
+
+.. class:: F
+
+   .. attribute:: var a: int
+
+      This symbol is also unstable, unfortunately 
+
+   .. method:: proc foo()
+
+      This symbol is unstable 
+
+   .. method:: proc type bar()
+
+      This symbol is unstable 
+
+.. class:: I
+

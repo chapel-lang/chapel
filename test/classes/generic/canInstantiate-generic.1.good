@@ -1,0 +1,13 @@
+canInstantiate-generic.chpl:27: warning: ----------------------------------------------------------------
+canInstantiate-generic.chpl:28: warning: Delete this test when implicit sync reads are no longer allowed.
+canInstantiate-generic.chpl:29: warning: ----------------------------------------------------------------
+canInstantiate-generic.chpl:35: In function 'test':
+canInstantiate-generic.chpl:35: warning: partial instantiation without '?' argument
+canInstantiate-generic.chpl:35: note: opt in to partial instantiation explicitly with a trailing '?' argument
+canInstantiate-generic.chpl:35: note: or, add arguments to instantiate the following fields in generic type 'sync NotGen':
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: note:   generic type field 'valType'
+canInstantiate-generic.chpl:38: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+canInstantiate-generic.chpl:38: error: in call to 'test', cannot pass result of coercion by reference
+canInstantiate-generic.chpl:38: note: implicit coercion from 'sync owned NotGen' to 'owned NotGen'
+canInstantiate-generic.chpl:34: note: when passing to 'const ref' intent formal 'myvalue'
+canInstantiate-generic.chpl:38: warning: Accepted

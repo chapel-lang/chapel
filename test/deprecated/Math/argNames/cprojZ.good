@@ -1,4 +1,0 @@
-cprojZ.chpl:2: In function 'testTypes':
-cprojZ.chpl:3: warning: The argument name 'z' is deprecated for 'cproj', please use 'x' instead
-cprojZ.chpl:2: In function 'testTypes':
-cprojZ.chpl:3: warning: The argument name 'z' is deprecated for 'cproj', please use 'x' instead

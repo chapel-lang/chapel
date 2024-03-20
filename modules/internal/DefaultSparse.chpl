@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,10 +48,6 @@ module DefaultSparse {
 
       this.dist = dist;
     }
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc stridable param do return parentDom.strides.toStridable();
 
     override proc getNNZ(): int{
       return _nnz;
@@ -266,7 +262,7 @@ module DefaultSparse {
     }
 
     // this returns the position for the last sparse index added
-    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+    override proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
       import Sort;
 

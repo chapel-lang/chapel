@@ -11,15 +11,14 @@ of homogeneous type. Since Chapel domains support a rich variety of
 index sets, Chapel arrays are also richer than the traditional linear or
 rectilinear array types in conventional languages. Like domains, arrays
 may be distributed across multiple locales without explicitly
-partitioning them using Chapel’s Domain
-Maps (:ref:`Chapter-Domain_Maps`).
+partitioning them using Chapel’s :ref:`distributions <Chapter-Domain_Maps>`.
 
-Parallel Safety with respect to Arrays (and Domains)
-----------------------------------------------------
+Parallel Safety with respect to Arrays
+--------------------------------------
 
 Users must take care when applying operations to arrays and domains
-concurrently from distinct tasks. For more information see the parallel safety
-section for domains (:ref:`Domain_and_Array_Parallel_Safety`).
+concurrently from distinct tasks. For more information see
+:ref:`the Parallel Safety section for domains <Domain_and_Array_Parallel_Safety>`.
 
 .. _Array_Types:
 
@@ -124,9 +123,12 @@ Array Values
 
 An array’s value is the collection of its elements’ values. Assignments
 between array variables are performed by value as described
-in :ref:`Array_Assignment`. Chapel semantics are defined so that
-the compiler will never need to insert temporary arrays of the same size
-as a user array variable.
+in :ref:`Array_Assignment`.
+
+When an array is stored in a ``const`` variable, the array elements are
+immutable. Undefined behavior will result if the domain is modified (see
+:ref:`Association_of_Arrays_to_Domains`) since that would necessarily
+add or remove elements.
 
 Array literal values can be either rectangular or associative,
 corresponding to the underlying domain which defines its indices.
@@ -242,7 +244,6 @@ that the indices in the listing match in type and, likewise, the types
 of values in the listing also match. A trailing comma is allowed.
 
 
-
 .. code-block:: syntax
 
    associative-array-literal:
@@ -304,7 +305,7 @@ Runtime Representation of Array Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The runtime representation of an array in memory is controlled by its
-domain’s domain map. Through this mechanism, users can reason about and
+domain’s distribution. Through this mechanism, users can reason about and
 control the runtime representation of an array’s elements. See
  :ref:`Chapter-Domain_Maps` for more details.
 
@@ -422,9 +423,9 @@ the array.
    .. BLOCK-test-chapelpost
 
       var B: [1..5] int;
-      [i in 1..5] B(i) = i;
+      [i in 1..5 with (ref B)] B(i) = i;
       var C: [1..5,1..5] int;
-      [(i,j) in {1..5,1..5}] C(i,j) = i+i*j;
+      [(i,j) in {1..5,1..5} with (ref C)] C(i,j) = i+i*j;
       writeln(f(B, 3));
       writeln(f(C, 3, 3));
 
@@ -454,7 +455,7 @@ Indices can be added to associative arrays through the array’s domain.
 
    .. code-block:: chapel
 
-      var D : domain(string);
+      var D : domain(string, parSafe=false);
       var A : [D] int;
 
    the array A initially contains no elements. We can change that by
@@ -803,9 +804,9 @@ with the same shape.
 Array Arguments to Functions
 ----------------------------
 
-By default, arrays are passed to function by ``ref`` or ``const ref``
-depending on whether or not the formal argument is modified. The ``in``,
-``inout``, and ``out`` intent can create copies of arrays.
+By default, arrays are passed to functions by ``const``, see :ref:`The_Default_Intent`.
+Using the ``ref`` intent allows modification of the array without creating a copy.
+The ``in``, ``inout``, and ``out`` intent can create copies of arrays.
 
 When a formal argument has array type, the element type of the array can
 be omitted and/or the domain of the array can be queried or omitted. In
@@ -815,7 +816,7 @@ in :ref:`Formal_Arguments_of_Generic_Array_Types`.
 If a formal array argument specifies a domain as part of its type
 signature, the domain of the actual argument must represent the same
 index set. If the formal array’s domain was declared using an explicit
-domain map, the actual array’s domain must use an equivalent domain map.
+distribution, the actual array’s domain must use an equivalent distribution.
 
 .. _Array_Promotion_of_Scalar_Functions:
 
@@ -882,6 +883,13 @@ the *zero value*, but we refer to it as the *implicitly replicated
 value* or *IRV* since it can take on any value of the array’s element
 type in practice including non-zero numeric values, a class reference, a
 record or tuple value, etc.
+
+   .. warning::
+
+      Sparse domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+
+
 
 An array declared over a sparse domain can be indexed using any of the
 indices in the sparse domain’s parent domain. If it is read using an

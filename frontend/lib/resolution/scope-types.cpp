@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -357,7 +357,7 @@ void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << std::to_string(numDeclared());
 }
 
-bool VisibilitySymbols::lookupName(const UniqueString &name,
+bool VisibilitySymbols::lookupName(UniqueString name,
                                    UniqueString &declared) const {
   for (const auto &p : names_) {
     if (p.second == name) {

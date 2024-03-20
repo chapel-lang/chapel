@@ -75,7 +75,7 @@ proc HPCC_starts(n:int(64)):uint(64) {
   return ran;
 }
 
-proc RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
+proc RandomAccessUpdate(TableSize:uint(64), ref Table: [] uint(64)) {
   var i:int;
   var D: domain(1) =  {0..127};
   var ran: [D] uint(64);              

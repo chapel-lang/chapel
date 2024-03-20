@@ -29,7 +29,7 @@ namespace {
 class StackAddrEscapeChecker
     : public Checker<check::PreCall, check::PreStmt<ReturnStmt>,
                      check::EndFunction> {
-  mutable IdentifierInfo *dispatch_semaphore_tII;
+  mutable IdentifierInfo *dispatch_semaphore_tII = nullptr;
   mutable std::unique_ptr<BuiltinBug> BT_stackleak;
   mutable std::unique_ptr<BuiltinBug> BT_returnstack;
   mutable std::unique_ptr<BuiltinBug> BT_capturedstackasync;
@@ -61,7 +61,6 @@ private:
                              ASTContext &Ctx);
   static SmallVector<const MemRegion *, 4>
   getCapturedStackRegions(const BlockDataRegion &B, CheckerContext &C);
-  static bool isArcManagedBlock(const MemRegion *R, CheckerContext &C);
   static bool isNotInCurrentFrame(const MemRegion *R, CheckerContext &C);
 };
 } // namespace
@@ -97,6 +96,14 @@ SourceRange StackAddrEscapeChecker::genName(raw_ostream &os, const MemRegion *R,
     os << "stack memory associated with local variable '" << VR->getString()
        << '\'';
     range = VR->getDecl()->getSourceRange();
+  } else if (const auto *LER = dyn_cast<CXXLifetimeExtendedObjectRegion>(R)) {
+    QualType Ty = LER->getValueType().getLocalUnqualifiedType();
+    os << "stack memory associated with temporary object of type '";
+    Ty.print(os, Ctx.getPrintingPolicy());
+    os << "' lifetime extended by local variable";
+    if (const IdentifierInfo *ID = LER->getExtendingDecl()->getIdentifier())
+      os << " '" << ID->getName() << '\'';
+    range = LER->getExpr()->getSourceRange();
   } else if (const auto *TOR = dyn_cast<CXXTempObjectRegion>(R)) {
     QualType Ty = TOR->getValueType().getLocalUnqualifiedType();
     os << "stack memory associated with temporary object of type '";
@@ -108,13 +115,6 @@ SourceRange StackAddrEscapeChecker::genName(raw_ostream &os, const MemRegion *R,
   }
 
   return range;
-}
-
-bool StackAddrEscapeChecker::isArcManagedBlock(const MemRegion *R,
-                                               CheckerContext &C) {
-  assert(R && "MemRegion should not be null");
-  return C.getASTContext().getLangOpts().ObjCAutoRefCount &&
-         isa<BlockDataRegion>(R);
 }
 
 bool StackAddrEscapeChecker::isNotInCurrentFrame(const MemRegion *R,
@@ -138,10 +138,8 @@ SmallVector<const MemRegion *, 4>
 StackAddrEscapeChecker::getCapturedStackRegions(const BlockDataRegion &B,
                                                 CheckerContext &C) {
   SmallVector<const MemRegion *, 4> Regions;
-  BlockDataRegion::referenced_vars_iterator I = B.referenced_vars_begin();
-  BlockDataRegion::referenced_vars_iterator E = B.referenced_vars_end();
-  for (; I != E; ++I) {
-    SVal Val = C.getState()->getSVal(I.getCapturedRegion());
+  for (auto Var : B.referenced_vars()) {
+    SVal Val = C.getState()->getSVal(Var.getCapturedRegion());
     const MemRegion *Region = Val.getAsRegion();
     if (Region && isa<StackSpaceRegion>(Region->getMemorySpace()))
       Regions.push_back(Region);
@@ -214,7 +212,7 @@ void StackAddrEscapeChecker::checkAsyncExecutedBlockCaptures(
 void StackAddrEscapeChecker::checkReturnedBlockCaptures(
     const BlockDataRegion &B, CheckerContext &C) const {
   for (const MemRegion *Region : getCapturedStackRegions(B, C)) {
-    if (isArcManagedBlock(Region, C) || isNotInCurrentFrame(Region, C))
+    if (isNotInCurrentFrame(Region, C))
       continue;
     ExplodedNode *N = C.generateNonFatalErrorNode();
     if (!N)
@@ -267,8 +265,7 @@ void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
   if (const BlockDataRegion *B = dyn_cast<BlockDataRegion>(R))
     checkReturnedBlockCaptures(*B, C);
 
-  if (!isa<StackSpaceRegion>(R->getMemorySpace()) ||
-      isNotInCurrentFrame(R, C) || isArcManagedBlock(R, C))
+  if (!isa<StackSpaceRegion>(R->getMemorySpace()) || isNotInCurrentFrame(R, C))
     return;
 
   // Returning a record by value is fine. (In this case, the returned
@@ -348,8 +345,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
       // Check the globals for the same.
       if (!isa<GlobalsSpaceRegion>(Region->getMemorySpace()))
         return true;
-      if (VR && VR->hasStackStorage() && !isArcManagedBlock(VR, Ctx) &&
-          !isNotInCurrentFrame(VR, Ctx))
+      if (VR && VR->hasStackStorage() && !isNotInCurrentFrame(VR, Ctx))
         V.emplace_back(Region, VR);
       return true;
     }
@@ -386,7 +382,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     llvm::raw_svector_ostream Out(Buf);
     const SourceRange Range = genName(Out, Referred, Ctx.getASTContext());
 
-    if (isa<CXXTempObjectRegion>(Referrer)) {
+    if (isa<CXXTempObjectRegion, CXXLifetimeExtendedObjectRegion>(Referrer)) {
       Out << " is still referred to by a temporary object on the stack "
           << CommonSuffix;
       auto Report =

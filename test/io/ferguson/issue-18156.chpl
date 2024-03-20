@@ -50,7 +50,7 @@ module JsonStuff {
   }
 
   proc main() {
-    var jsonOut = stdout.withSerializer(JsonSerializer);
+    var jsonOut = stdout.withSerializer(jsonSerializer);
 
     var foo = new Foo('fooOne', 1, true, FooType.BAD);
     var fooTwo = new Foo('fooTwo', 2, false, FooType.GOOD);
@@ -60,8 +60,8 @@ module JsonStuff {
     var fbTwo = new FooBar('fbTwo', 2, false, foo, bar);
     write("Writing FooBar to JSON: "); try! jsonOut.writeln(fb);
     var mem = try! openMemFile();
-    try! mem.writer(serializer = new JsonSerializer()).write(fb);
-    var reader = try! mem.reader(deserializer = new JsonDeserializer());
+    try! mem.writer(serializer = new jsonSerializer(), locking=false).write(fb);
+    var reader = try! mem.reader(deserializer = new jsonDeserializer(), locking=false);
 
     var f = new FooBar();
     try! reader.readf("%?", f);

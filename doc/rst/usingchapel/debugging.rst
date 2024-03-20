@@ -48,6 +48,20 @@ Note that it is the user's responsibility to make sure things are set up
 so the terminal emulator run in the target environment can open its
 display window in the launch environment.
 
+The `Debugger.breakpoint` statement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :any:`Debugger` module provides a parenless function called `breakpoint`.
+When the code is compiled and run with debug symbols, i.e. ``-g``, the attached
+debugger will automatically stop at calls to this function as a breakpoint.
+Code that contains `breakpoint` that is compiled without ``-g`` will work as
+normal with no side effects. Saving the generated code to as temporary
+directory with ``--savec DIRECTORY`` will also allow the debugger to read and
+display Chapel source code. This works well with either the LLVM or C backends.
+
+.. note::
+   Executables will not run as expected if `breakpoint` is used in code compiled with ``-g`` and not run attached to a debugger.
+
 ------------------------
 Best Known Configuration
 ------------------------
@@ -66,7 +80,7 @@ executable. This can be done in two steps.
 
    .. code-block:: bash
 
-        chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents <source_file>
+        chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
 
 For more details on these settings, read the rest of this section.
 
@@ -87,7 +101,7 @@ Building the Application
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following flags can be useful for making the generated C more amenable to
-debugging.
+debugging. Any of them can be omitted as desired.
 
   ===================================  =========================================
   Flag                                 Description
@@ -99,13 +113,16 @@ debugging.
   ``--preserve-inlined-line-numbers``  When code gets inlined (e.g. replacing a
                                        function call with the function body)
                                        maintain the filename and line number
-                                       information of the original function
-                                       call.
+                                       information of the original function.
   ``--no-munge-user-idents``           Don't munge user identifiers (e.g.
                                        variable or function names). Munging
                                        typically prevents conflicts with
                                        identifiers in external code but makes
                                        debugging harder.
+  ``--no-return-by-ref``               Don't use an extra reference argument
+                                       when compiling a Chapel function that
+                                       returns a record.
+  ``--no-inline``                      Avoid inlining in many cases.
   ===================================  =========================================
 
 Notes on munging
@@ -169,7 +186,7 @@ contains memory leaks, so you should not be surprised if your program
 requires more memory than it seems it should.
 
 For full information on these configuration constants consult
-:chpl:mod:`Memory`.
+:chpl:mod:`MemDiagnostics`.
 
 A brief synopsis of these configuration constants is as follows:
 

@@ -1,2 +1,0 @@
-popcount.chpl:7: warning: popcount is deprecated - please use bigint.popCount instead
-6

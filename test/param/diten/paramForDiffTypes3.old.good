@@ -1,0 +1,12 @@
+paramForDiffTypes3.chpl:6: warning: the idxType of this range literal 1..2 with the low bound of the type int(32) and the high bound of the type int(64) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+paramForDiffTypes3.chpl:11: warning: the idxType of this range literal 1..2 with the low bound of the type int(32) and the high bound of the type int(64) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+paramForDiffTypes3.chpl:11: warning: the idxType of this range literal 1..2 with the low bound of the type int(32) and the high bound of the type int(64) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+paramForDiffTypes3.chpl:15: warning: the idxType of this range literal 1..2 with the low bound of the type int(32) and the high bound of the type int(64) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+r 1..2 : range(int(32),both,one)
+t 1..2 : range(int(64),both,one)
+p (1, int(32))
+p (2, int(32))
+v (1, int(32))
+v (2, int(32))
+u (1, int(64))
+u (2, int(64))

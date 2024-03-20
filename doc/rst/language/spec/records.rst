@@ -141,9 +141,9 @@ A record method is a function or iterator that is bound to a record. See
 the methods section :ref:`Chapter-Methods` for more information
 about methods.
 
-Note that the receiver of a record method is passed by ``ref`` or
-``const ref`` intent by default, depending on whether or not ``this`` is
-modified in the body of the method.
+The receiver of a record method is passed by ``const`` intent by default.
+A method that modifies ``this`` must declare an explicit ``this-intent`` of
+``ref``, see :ref:`Method_receiver_and_this`.
 
 .. _Nested_Record_Types:
 
@@ -207,6 +207,10 @@ record, the ``type`` and ``param`` arguments are passed by name.
 The compiler-generated default initializer for a record is defined in the
 same way as the default initializer for a class
 (:ref:`The_Compiler_Generated_Initializer`).
+
+Records containing fields without types or fields with generic types (see
+:ref:`Fields_without_Types` and :ref:`Fields_with_Generic_Types`) cannot
+be default-initialized.
 
 To create a record as an expression, i.e. without binding it to a
 variable, the ``new`` operator is required. In this case, storage is
@@ -656,14 +660,15 @@ indices of an associative domain, the elements of a set, or the keys
 of a map.  The user can override this default hash method (or provide
 one in cases that the compiler does not) by defining their own method
 named ``hash`` on the record which takes no arguments and returns a
-``uint`` or ``int``.
+``uint``. To make the compiler aware of the ``hash`` method, the record
+must be made to implement the ``hashable`` interface.
 
    *Example (userhash.chpl)*.
 
    .. code-block:: chapel
 
 
-      record R {
+      record R : hashable {
         var i: uint;
 
         proc hash(): uint {
@@ -675,9 +680,8 @@ named ``hash`` on the record which takes no arguments and returns a
       // Creating an associative domain with an 'idxType' of 'R'
       // invokes R.hash() as part of its implementation
 
-      var D: domain(R);
       var r = new R(42);
-      D += r;
+      const D = {r};
       writeln(D);
 
    .. BLOCK-test-chapeloutput
@@ -750,12 +754,9 @@ Assignment of a record to a class variable is not permitted.
 Arguments
 ~~~~~~~~~
 
-Record arguments use the ``const ref`` intent by default - in contrast
-to class arguments which pass by ``const in`` intent by default.
-
-Similarly, the ``this`` receiver argument is passed by ``const in`` by
-default for class methods. In contrast, it is passed by ``ref`` or
-``const ref`` by default for record methods.
+Record arguments use the ``const`` abstract intent by default.
+Similarly, the ``this`` receiver argument is passed by ``const`` by default.
+See :ref:`The_Default_Intent` and :ref:`Method_receiver_and_this`.
 
 No *nil* Value
 ~~~~~~~~~~~~~~

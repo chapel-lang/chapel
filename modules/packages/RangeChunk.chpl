@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,19 +39,24 @@ module RangeChunk {
   private use Math;
 
   /*
-     ``RemElems`` specifies the distribution of remainder elements:
-
-       - **Thru**: default policy; remainder elements will be distributed throughout
-         ``numChunks`` chunks
-       - **Pack**: chunks at the front will receive ``ceil(range.size / numChunks)``
-         elements, then one chunk will receive what is left over; the actual number of chunks
-         may be less than ``numChunks``
-       - **Mod**: in ``numChunks`` chunks, every chunk that has an index less than
-         ``range.size % numChunks`` will receive a remainder element
+     ``RemElems`` specifies the distribution of remainder elements.
   */
   enum RemElems {
+    /*
+      Default policy; remainder elements will be distributed throughout
+      ``numChunks`` chunks
+    */
     Thru,
+    /*
+      Chunks at the front will receive ``ceil(range.size / numChunks)``
+      elements, then one chunk will receive what is left over; the actual number of chunks
+      may be less than ``numChunks``
+    */
     Pack,
+    /*
+      In ``numChunks`` chunks, every chunk that has an index less than
+      ``range.size % numChunks`` will receive a remainder element
+    */
     Mod
   }
   private use RemElems;
@@ -66,9 +71,7 @@ module RangeChunk {
     foreach (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
-      var result: r.type;
-      result.chpl_setFields(start, end, r.stride); // start..end by r.stride
-      yield result;
+      yield ( start..end by r.stride ): r.type;
     }
   }
 
@@ -83,9 +86,7 @@ module RangeChunk {
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
     const start = r.orderToIndex(startOrder);
     const end = r.orderToIndex(endOrder);
-    var result: r.type;
-    result.chpl_setFields(start, end, r.stride); // start..end by r.stride
-    return result;
+    return ( start..end by r.stride ): r.type;
   }
 
   /*
@@ -156,7 +157,7 @@ module RangeChunk {
         chunkSize = nElems / nChunks;
         if chunkSize * nChunks != nElems {
           chunkSize += 1;
-          nChunks = divceil(nElems, chunkSize);
+          nChunks = divCeil(nElems, chunkSize);
         }
       }
       when Mod {
@@ -222,10 +223,10 @@ module RangeChunk {
     const m = nElems * i;
     const start = if i == 0
       then 0: I
-      else divceil(m, nChunks);
+      else divCeil(m, nChunks);
     const end = if i == nChunks - 1
       then nElems - 1
-      else divceil(m + nElems, nChunks) - 1;
+      else divCeil(m + nElems, nChunks) - 1;
     return (start, end);
   }
 

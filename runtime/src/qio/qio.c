@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2829,26 +2829,33 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   ) {
     // copy out what remains in the buffer before making a system call
     gotlen = qio_ptr_diff(ch->cached_end, ch->cached_cur);
-    if ( gotlen > 0 ) {
-      start = qbuffer_iter_at(&ch->buf, qio_channel_offset_unlocked(ch));
-      // start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
-      end = start;
-      qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
 
+    if ( ch->cached_start == NULL ) {
+      // only use the right-mark-start offset if the buffered offset does not exist
+      start = qbuffer_iter_at(&ch->buf, qio_channel_offset_unlocked(ch));
+    } else {
+      start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
+    }
+    end = start;
+    qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
+
+    if ( gotlen > 0 ) {
       // copy 'gotlen' bytes into the ptr
       err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
       if( err ) return err;
-
-      // advance the ptr, start of available data, etc.
-      ptr = qio_ptr_add(ptr, gotlen);
-      _set_right_mark_start(ch, end.offset);
-      ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
-      remaining -= gotlen;
-      *amt_read = gotlen;
-
-      // clean up the now unused portion of the buffer
-      qbuffer_trim_front(&ch->buf, gotlen);
     }
+
+    // advance the ptr, start of available data, etc.
+    ptr = qio_ptr_add(ptr, gotlen);
+    _set_right_mark_start(ch, end.offset);
+    remaining -= gotlen;
+    *amt_read = gotlen;
+
+    // clean up the now unused portion of the buffer
+    qbuffer_trim_front(&ch->buf, gotlen);
+    ch->cached_cur = NULL;
+    ch->cached_end = NULL;
+    ch->cached_start = NULL;
 
     // make a direct system call to read the rest
     while( remaining > 0 ) {
@@ -2883,7 +2890,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       }
       // Return early on an error or on EOF.
       if( err ) {
-        *amt_read = len - remaining;
+        // do not update 'amt_read' because zero bytes were read on EOF
         return err;
       }
       ptr = qio_ptr_add(ptr, num_read);

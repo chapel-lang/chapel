@@ -3,11 +3,12 @@
 
 proc test(param s1, param s2) {
 
-const r1 = 1:int(32)..(4*abs(s1)) by s1;
-const r2 = 1:int(64)..(4*abs(s2)) by s2;
+const r1 = ( 1..(4*abs(s1)) ): range(int(32)) by s1;
+const r2 = ( 1..(4*abs(s2)) ): range(int(64)) by s2;
 
-// ensure we are testing the int32/int64 case, as the range rules may change
+// ensure we are testing the int32/int64 case
 compilerAssert(r1.idxType == int(32));
+compilerAssert(r2.idxType == int(64));
 
 writeln("=== ", r1, " === ", r2, " ===");
 

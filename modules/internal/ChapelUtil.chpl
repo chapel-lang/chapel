@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -208,7 +208,7 @@ module ChapelUtil {
   // Support for module deinit functions.
   config param printModuleDeinitOrder = false;
 
-  proc chpl_addModule(moduleName: chpl_c_string, deinitFun: c_fn_ptr) {
+  proc chpl_addModule(moduleName: chpl_c_string, deinitFun: chpl_c_fn_ptr) {
     chpl_moduleDeinitFuns =
       new unmanaged chpl_ModuleDeinit(moduleName, deinitFun, chpl_moduleDeinitFuns);
   }
@@ -216,7 +216,7 @@ module ChapelUtil {
   export proc chpl_deinitModules() {
     extern proc printf(fmt:c_ptrConst(c_char));
     extern proc printf(fmt:c_ptrConst(c_char), arg:c_ptrConst(c_char));
-    extern proc chpl_execute_module_deinit(deinitFun:c_fn_ptr);
+    extern proc chpl_execute_module_deinit(deinitFun:chpl_c_fn_ptr);
 
     if printModuleDeinitOrder then
       printf("Deinitializing Modules:\n");

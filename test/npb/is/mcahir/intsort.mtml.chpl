@@ -40,7 +40,7 @@ config const printTime    = false;	 // turn off for test verification
 config const printNumLocales = true;     // print the number of locales
 
 // Standard modules
-use Time, Random, BlockDist, BlockCycDist;
+use Time, NPBRandom, BlockDist, BlockCycDist;
 enum ISDistType { block, blockcyclic };
 config param distType = ISDistType.block;
 
@@ -62,7 +62,7 @@ var passedVerifications = 0;		// verification counter
 // Set problem sizes and storage requirements
 const log2range = ClassRanges(probClass);
 const log2nkeys = ClassNkeys (probClass);
-var range:    int = 1 << log2range;	// left shift for power of 2 values
+var rang :    int = 1 << log2range;	// left shift for power of 2 values
 var nkeys:    int = 1 << log2nkeys;
 var tasksPerLocale = if dataParTasksPerLocale == 0 
                      then here.maxTaskPar
@@ -91,32 +91,32 @@ var keybuffsz:  int  = keybuff_pe:int;
 const keySpace:    domain(1)= {0..#nkeys};
 
 // mcahir: Alas, it seems a block cyclic dist array has to be 2D so ended up making countSpace a 2D domain
-const countSpace = if distType==ISDistType.block then {0..#range}
-                                                 else {0..#range, 0..0};
+const countSpace = if distType==ISDistType.block then {0..#rang}
+                                                 else {0..#rang, 0..0};
 const bucketSpace: domain(2)= {0..#npes,0..#nbuckets};
 const buffSpace:   domain(2)= {0..#nbuckets,0..#keybuffsz};
 
 // ... block a 2D space into horizontal slabs
 const MyLocaleView = {0..#numLocales, 1..1};
 const MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
-const bucketDom = bucketSpace dmapped Block(boundingBox=bucketSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale);
+const bucketDom = bucketSpace dmapped blockDist(boundingBox=bucketSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale);
 const buffDom = if distType==ISDistType.block
-  then buffSpace dmapped Block(boundingBox=buffSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale)
-  else buffSpace dmapped BlockCyclic (startIdx=buffSpace.low,
+  then buffSpace dmapped blockDist(boundingBox=buffSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale)
+  else buffSpace dmapped blockCycDist (startIdx=buffSpace.low,
                                       blocksize=(tasksPerLocale,
                                                  keybuffsz),
                                       targetLocales=MyLocales);
 
 // Map domains to locales
-const keyDom   = keySpace dmapped Block(boundingBox=keySpace, dataParTasksPerLocale=tasksPerLocale);
+const keyDom   = keySpace dmapped blockDist(boundingBox=keySpace, dataParTasksPerLocale=tasksPerLocale);
 const countDom = if distType==ISDistType.block
-  then countSpace dmapped Block(boundingBox=countSpace, dataParTasksPerLocale=tasksPerLocale)
-  else countSpace dmapped BlockCyclic(startIdx=countSpace.low,
+  then countSpace dmapped blockDist(boundingBox=countSpace, dataParTasksPerLocale=tasksPerLocale)
+  else countSpace dmapped blockCycDist(startIdx=countSpace.low,
                                       blocksize=(tasksPerLocale,1),
                                       targetLocales=MyLocales);
 
 // Now declare the main distributed arrays
-var key:      [keyDom] int;	// random numbers between 0 and range -1
+var key:      [keyDom] int;	// random numbers between 0 and rang -1
 var rank:     [keyDom] int;	// store ranks here
 var sortkey:  [keyDom] int;	// used for verification
 var keybuff:  [buffDom]int;	// used for remote storage
@@ -167,7 +167,7 @@ proc main () {
     if (probClass != classVals.S) then writeln (iteration," Iteration ");
   
     key[iteration] = iteration;
-    key[iteration+maxIterations] = range - iteration;
+    key[iteration+maxIterations] = rang - iteration;
   
     rank_keys ( iteration );
   
@@ -221,9 +221,9 @@ proc rank_keys ( iteration ) {
   // count the number of occurrences of each key value (each pe can do their share independently)
 
   tloops(1).start();
-  forall (k,i) in zip(key, keyDom) do {
+  forall (k,i) in zip(key, keyDom) with (ref bucket_cnts) do {
     on k do {
-      var ibucket: int = k >> (log2range-log2nbuckets);  // this is equivalent to (key(i)/range)*nbuckets
+      var ibucket: int = k >> (log2range-log2nbuckets);  // this is equivalent to (key(i)/rang)*nbuckets
       var mype: int = i / nkeys_per_pe;
       if false {
         writeln("mype=",mype," i=",i," key=",k," ibucket=",ibucket);
@@ -253,7 +253,7 @@ proc rank_keys ( iteration ) {
   var hi1 = if distType==ISDistType.block then 1..nbuckets-1
     else 1..npes-1;
   tloops(2).start();
-  forall b in hi0 do {
+  forall b in hi0 with (ref bucket_ptrs) do {
     for i in hi1 {
       bucket_ptrs[i, b] = bucket_ptrs[i-1, b] + bucket_cnts[i-1, b];
       if false then writeln("bucket_ptrs", (i,b), "=", bucket_ptrs[i, b]);
@@ -267,7 +267,7 @@ proc rank_keys ( iteration ) {
   // now send off the keys -- there are remote references here, but there are no race conditions,
   //                          that is, each pe can work independently
   tloops(3).start();
-  forall (k,i) in zip(key, keyDom) do {
+  forall (k,i) in zip(key, keyDom) with (ref bucket_ptrs, ref keybuff) do {
     on k do {
       var mype: int = i / nkeys_per_pe;   // change this to a shift?
       var ibucket: int;
@@ -288,7 +288,7 @@ proc rank_keys ( iteration ) {
   // now think of operating in an alternate domain
   // each pe does this bit
   tloops(4).start();
-  forall b in 0..nbuckets-1 do {
+  forall b in 0..nbuckets-1 with (ref keycount) do {
     on keybuff[b,0] do     {			// is this necessary?
       var mykeys: int = bucket_ptrs[npes-1, b]; 
       for i in 0..mykeys-1 {
@@ -307,7 +307,7 @@ proc rank_keys ( iteration ) {
   keycountbuf = + scan (keycount);
   /*
   if distType==ISDistType.block {
-    for i in 1..range-1 {
+    for i in 1..rang-1 {
       keycount[i] += keycount[i-1];
     }
     keycountbuf = keycount;
@@ -443,7 +443,7 @@ proc fullVerify () {
   // store the ranks in the rank array -- think of being back on the orginal domain
   // first, adjust the bucketptr array
   
-  forall mype in 0..npes-1 do {
+  forall mype in 0..npes-1 with (ref bucket_ptrs, ref rank) do {
     var first: int = mype*nkeys_per_pe;
     var last:  int = first+nkeys_per_pe-1;
     var ibucket: int;
@@ -475,9 +475,9 @@ proc fullVerify () {
 proc gen_keys () {
   // initialize key values - do this on each rank or locale such that the key values 
   // are the same no matter how many locales or ranks are used
-  // -- come back later and see if this can be simplified w/ a local range
+  // -- come back later and see if this can be simplified w/ a local rang
  
-  coforall loc in Locales do {
+  coforall loc in Locales with (ref key) do {
     on loc do {
       var tmpreals: [1..4] real;
       var seed: int(64) = 314159265;
@@ -490,7 +490,7 @@ proc gen_keys () {
       rs.skipToNth(first*4);
       for i in first..last {
         rs.fillRandom(tmpreals);
-        key(i) = ( (range>>2)*(+ reduce tmpreals ) ): int;
+        key(i) = ( (rang>>2)*(+ reduce tmpreals ) ): int;
       }
     }
   }

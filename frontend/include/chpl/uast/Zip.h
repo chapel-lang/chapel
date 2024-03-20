@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,14 +31,19 @@ namespace uast {
   This class represents a zip expression.
 */
 class Zip final : public Call {
+ friend class AstNode;
+
  private:
   Zip(AstList children)
     : Call(asttags::Zip, std::move(children),
            /*hasCalledExpression*/ false) {
   }
 
-  Zip(Deserializer& des)
-    : Call(asttags::Zip, des) { }
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
+  }
+
+  explicit Zip(Deserializer& des) : Call(asttags::Zip, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return callContentsMatchInner(other->toCall());
@@ -55,13 +60,6 @@ class Zip final : public Call {
     Create and return a zip expression.
   */
   static owned<Zip> build(Builder* builder, Location loc, AstList actuals);
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Zip);
-
 };
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -53,9 +53,9 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
 }
 
 const BasicClassType*
-BasicClassType::getObjectType(Context* context) {
+BasicClassType::getRootClassType(Context* context) {
   ID emptyId;
-  auto name = UniqueString::get(context, "object");
+  auto name = UniqueString::get(context, "RootClass");
 
   return getBasicClassType(context, emptyId, name,
                            /* parentType */ nullptr,
@@ -68,7 +68,7 @@ BasicClassType::getReduceScanOpType(Context* context) {
   auto symbolPath = UniqueString::get(context, "ChapelReduce.ReduceScanOp");
   auto name = UniqueString::get(context, "ReduceScanOp");
   auto id = ID(symbolPath, -1, 0);
-  auto objectType = getObjectType(context);
+  auto objectType = getRootClassType(context);
 
   return getBasicClassType(context, id, name,
                            /* parentType */ objectType,

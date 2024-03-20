@@ -14,11 +14,11 @@ const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
 const Mspace = {0..tableSize-1};
-const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
+const D = Mspace dmapped cyclicDist(startIdx=Mspace.low);
 var A: [D] int = 0..tableSize-1;
 
 const Nspace = {0..numUpdates-1};
-const D2 = Nspace dmapped Block(Nspace);
+const D2 = Nspace dmapped blockDist(Nspace);
 var rindex: [D2] int;
 
 fillRandom(rindex, 1);
@@ -31,14 +31,14 @@ proc test1l() {
   var rindex: [0..#N] int;
   var tmp: [0..#N] int;
 
-  forall i in 0..#N {
+  forall i in 0..#N with (ref tmp) {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
   }
 }
 test1l();
 
 proc test1() {
-  forall i in D2 do
+  forall i in D2 with (ref tmp) do
     tmp.localAccess[i] = A[rindex.localAccess[i]];
 }
 test1();
@@ -48,14 +48,14 @@ proc test2l() {
   var rindex: [0..#N] int;
   var tmp: [0..#N] int;
 
-  forall i in 0..#N {
+  forall i in 0..#N with (ref tmp) {
     tmp.localAccess[i] = A[rindex[i]];
   }
 }
 test2l();
 
 proc test2() {
-  forall i in D2 do
+  forall i in D2 with (ref tmp) do
     tmp.localAccess[i] = A[rindex[i]];
 }
 test2();

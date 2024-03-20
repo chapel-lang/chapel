@@ -10,9 +10,9 @@ proc main(){
   var delta : real(64);
 
   // set bottom border to 1.0
-  [i in 1..N] A(N+1, i) = 1.0;
+  [i in 1..N with (ref A)] A(N+1, i) = 1.0;
   do {
-    [ij in D] tmp(ij) = (A(ij + (0, 1))  + 
+    [ij in D with (ref tmp)] tmp(ij) = (A(ij + (0, 1))  + 
                          A(ij + (1, 0))  + 
                          A(ij + (0, -1)) + 
                          A(ij + (-1, 0))) / 4.0;

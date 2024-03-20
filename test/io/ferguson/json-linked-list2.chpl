@@ -3,7 +3,7 @@ use IO, LinkedLists, JSON;
 record MyRecord {
   var numbers:LinkedList(int); // could it be [1..0] int ?
 
-  proc deinit() {
+  proc ref deinit() {
     numbers.destroy();
   }
 }
@@ -13,11 +13,11 @@ myEntry.numbers.push_back(1);
 myEntry.numbers.push_back(2);
 myEntry.numbers.push_back(3);
 
-stdout.withSerializer(JsonSerializer).writef("testing json write: %?\n", myEntry);
+stdout.withSerializer(jsonSerializer).writef("testing json write: %?\n", myEntry);
 
 var f = openTempFile();
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": []}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -25,7 +25,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -37,7 +37,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -45,7 +45,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -57,7 +57,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -65,7 +65,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -77,7 +77,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -85,7 +85,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -97,7 +97,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -105,7 +105,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -117,7 +117,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -125,7 +125,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -137,7 +137,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -145,7 +145,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -157,7 +157,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6,7]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -165,7 +165,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -177,7 +177,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6,7,8]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -185,7 +185,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
@@ -197,7 +197,7 @@ var f = openTempFile();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6,7,8,9]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -205,7 +205,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 

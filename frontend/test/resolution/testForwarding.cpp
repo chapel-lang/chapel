@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -435,16 +435,14 @@ static void forwardForwardHelper(std::string stmt, bool isVar = false) {
   unsigned int numExpected = isVar ? 3 : 2;
   assert(guard.numErrors() == numExpected);
 
-  auto first = "Cannot resolve call to 'bar': no matching candidates";
-  assert(guard.error(0)->message() == first);
+  assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
 
   if (isVar) {
     // TODO: Why the extra message in the var case?
-    assert(guard.error(1)->message() == first);
+    assert(guard.error(1)->type() == chpl::NoMatchingCandidates);
   }
 
-  auto second = "Cannot resolve call to 'foo': no matching candidates";
-  assert(guard.error(guard.numErrors()-1)->message() == second);
+  assert(guard.error(guard.numErrors()-1)->type() == chpl::NoMatchingCandidates);
 
   guard.realizeErrors();
 }
@@ -458,7 +456,44 @@ static void testForwardForwardExpr() {
   forwardForwardHelper("forwarding var x = bar();", /*isVar=*/true);
 }
 
-// TODO: forwarding with only, except
+// Two different levels of forwarding->forwarding
+static void test7() {
+  printf("test7\n");
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      operator +=(ref lhs: int, rhs: int) { }
+      record Inner {
+        var i: int;
+        pragma "last resort"
+        proc ref addOne() {
+          i += 1;
+          return 1.0;
+        }
+      }
+      record Middle {
+        forwarding var impl: Inner;
+      }
+      record Outer {
+        forwarding var impl: Middle;
+        forwarding var anotherImpl: Inner;
+      }
+
+      var rec: Outer;
+      var x = rec.addOne();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isRealType());
+
+  guard.realizeErrors();
+}
 
 
 int main() {
@@ -473,6 +508,10 @@ int main() {
 
   testExpr();
   testForwardForwardExpr();
+
+  test7();
+
+  // TODO: forwarding with only, except
 
   return 0;
 }

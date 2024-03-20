@@ -34,6 +34,7 @@ chplvars = [
 
              'CHPL_LOCALE_MODEL',
              'CHPL_GPU',
+             'CHPL_GPU_MEM_STRATEGY',
              'CHPL_CUDA_PATH',
              'CHPL_ROCM_PATH',
              'CHPL_GPU_ARCH',
@@ -41,6 +42,7 @@ chplvars = [
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
              'CHPL_GASNET_SEGMENT',
+             'CHPL_GASNET_VERSION',
              'CHPL_LIBFABRIC',
 
              'CHPL_TASKS',

@@ -7,6 +7,7 @@ import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
+import chpl_gpu
 from utils import which, memoize, error, run_command, try_run_command, warning
 from collections import defaultdict
 
@@ -15,7 +16,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('15','14','13','12','11',)
+    return ('17','16','15','14','13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -87,6 +88,15 @@ def get_llvm_config_version(llvm_config):
         if exists and returncode == 0:
             got_version = got_out
 
+        if got_version != None and chpl_gpu.get() == 'amd':
+            # strip the "git" suffix. This is a TODO. We want to be able to
+            # detect LLVM "nightly" versions because ROCm seems to ship with
+            # those. A sign for that is the `git` suffix at the end of the
+            # version string. As of today 15.0.0git works for us as, I believe,
+            # it is pretty close to 15.0.0 proper.
+            got_version = got_version.strip()
+            if got_version[-3:] == 'git':
+                got_version = got_version[:-3]
     return got_version
 
 # Returns the full output of clang --version for the passed clang command.
@@ -238,6 +248,11 @@ def find_system_llvm_config():
     llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
     if llvm_config != 'none':
         return llvm_config
+
+    llvm_config = chpl_gpu.get_llvm_override()
+    if llvm_config != 'none':
+        return llvm_config
+
 
     homebrew_prefix = chpl_platform.get_homebrew_prefix()
 
@@ -859,7 +874,8 @@ def filter_llvm_config_flags(flags):
             flag == '-pedantic' or
             flag == '-Wno-class-memaccess' or
             (darwin and gnu and flag.startswith('-stdlib=')) or
-            (cygwin and flag == '-std=c++14')):
+            (cygwin and flag == '-std=c++17') or
+            flag == '-std=c++14'):
             continue # filter out these flags
 
         if flag.startswith('-W'):
@@ -996,6 +1012,9 @@ def compute_host_link_settings():
         if llvm_version not in ('11', '12', '13', '14'):
             clang_static_libs.append('-lclangSupport')
             llvm_components.append('windowsdriver')
+        # Starting with clang 16, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14', '15'):
+            llvm_components.append('frontendhlsl')
 
     # quit early if the llvm value is unset
     if llvm_val == 'unset':

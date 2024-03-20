@@ -112,7 +112,7 @@ type coeff = [0..3] real;
 //     used in this computation
 
 const Levels: domain(1) = {1..numLevels};
-const Base: domain(3) dmapped(Block(3)) = {1..nx, 1..ny, 1..nz};
+const Base: domain(3) dmapped(blockDist(3)) = {1..nx, 1..ny, 1..nz};
 const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
 const Stencil: domain(3) = {-1..1, -1..1, -1..1};
 

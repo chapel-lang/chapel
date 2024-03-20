@@ -22,19 +22,23 @@ proc main(args: [] string) {
       lineSize = 0,
       numRead = 0;
 
-  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
+  do {
+    lineSize = stdinNoLock.readLine(buff);
     numRead += lineSize;
+  } while lineSize > 0 && !startsWithThree(buff);
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  while stdinNoLock.readline(data, lineSize, idx) do
+  do {
+    lineSize = stdinNoLock.readLine(data[idx..]);
     idx += lineSize - 1;
+  } while lineSize > 0;
 
   // Resize our array to the amount actually read
-  dataDom = {1..idx};
+  dataDom = {1..idx+1};
 
   // Make everything uppercase
   forall d in data do
@@ -57,7 +61,7 @@ proc writeFreqs(data, param nclSize) {
   var arr = for (s,f) in freqs.items() do (f,s);
 
   // print the array, sorted by decreasing frequency
-  for (f, s) in arr.sorted(reverseComparator) do
+  for (f, s) in sorted(arr, reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -131,3 +135,4 @@ inline proc startsWithThree(data) {
          data[3] == "H".toByte();
 }
 
+use Compat, CompatIOKind;

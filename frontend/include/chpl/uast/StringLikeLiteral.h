@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,8 @@ namespace uast {
   This is an abstract parent class for string/bytes/c-string literals.
  */
 class StringLikeLiteral : public Literal {
+ friend class AstNode;
+
  public:
   enum QuoteStyle {
     SINGLE,
@@ -46,6 +48,11 @@ class StringLikeLiteral : public Literal {
     : Literal(tag, value),
       quotes_(quotes)
   { }
+
+  void stringLikeLiteralSerializeInner(Serializer& ser) const {
+    literalSerializeInner(ser);
+    ser.write(quotes_);
+  }
 
   StringLikeLiteral(AstTag tag, Deserializer& des)
     : Literal(tag, des) {
@@ -87,11 +94,6 @@ class StringLikeLiteral : public Literal {
     passed quote style
    */
   static const char* quoteStyleToString(QuoteStyle q);
-
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
-    ser.write(quotes_);
-  }
 };
 
 

@@ -12,7 +12,7 @@ var d = ownD.borrow();
 
 writeln(d);
 
-proc foo(d : borrowed D) {
+proc foo(d : borrowed D(?)) {
   for param i in 1..d.p do
     writeln(i);
 }

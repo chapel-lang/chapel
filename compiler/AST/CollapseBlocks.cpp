@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -106,8 +106,15 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 
     expr->remove();
 
-    // If the expr is a BlockStmt, collapse during the copy
-    if (stmt != 0 && stmt->isLoopStmt() == false && stmt->blockInfoGet() == 0)
+    // If the expr is a BlockStmt, collapse during the copy.
+    //
+    // Do not collapse special 'GPU primitives' blocks, because they
+    // are meant to hold together the necessary expressions for certain
+    // GPU properties (e.g. block size).
+    if (stmt != 0 &&
+        stmt->isLoopStmt() == false &&
+        stmt->blockInfoGet() == 0 &&
+        !stmt->isGpuPrimitivesBlock())
     {
       for_alist(subItem, stmt->body)
       {

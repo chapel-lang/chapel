@@ -4,7 +4,7 @@ class C {
   var n;
 }
 
-proc foo(): unmanaged C {
+proc foo(): unmanaged C(?) {
   return new unmanaged C(3);
 }
 
@@ -18,7 +18,7 @@ class D: C(?) {
   var m;
 }
 
-proc bar(): unmanaged C {
+proc bar(): unmanaged C(?) {
   return new unmanaged D(4,5.5);
 }
 

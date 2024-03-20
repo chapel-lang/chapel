@@ -10,13 +10,13 @@ config const printComm=false;
 config  const n: int=10;
 
 const Space2 = {1..n,1..n};
-const Dom2: domain(2) dmapped Cyclic(startIdx=Space2.low)=Space2;
+const Dom2: domain(2) dmapped cyclicDist(startIdx=Space2.low)=Space2;
 const Space3 = {1..n,1..n,1..n};
-const Dom3: domain(3) dmapped Cyclic(startIdx=Space3.low)=Space3;
+const Dom3: domain(3) dmapped cyclicDist(startIdx=Space3.low)=Space3;
 
-var Dist2 = new Block({1..n,1..n});
+var Dist2 = new blockDist({1..n,1..n});
 var Dom2B: domain(2,int) dmapped Dist2 = {1..n,1..n};
-var Dist3 = new Block({1..n,1..n,1..n});
+var Dist3 = new blockDist({1..n,1..n,1..n});
 var Dom3B: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
 
 

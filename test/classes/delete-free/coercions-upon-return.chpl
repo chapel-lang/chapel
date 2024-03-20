@@ -5,7 +5,7 @@ class Gen {
 
 var Glob = new Gen(real);
 
-proc rets(): unmanaged Gen {
+proc rets(): unmanaged Gen(?) {
   return Glob.borrow();
 }
 

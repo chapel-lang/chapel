@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -249,7 +249,9 @@ static void setRecordCopyableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -308,7 +310,9 @@ static void setRecordAssignableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 
@@ -426,6 +430,27 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
             }
           }
         }
+
+        // default initialization is not currently allowed
+        // for records like 'record R { var x; }'
+        if (!at->symbol->hasFlag(FLAG_TUPLE)) {
+          AggregateType* root = at->getRootInstantiation();
+          for (auto elem: sortedSymbolMapElts(at->substitutions)) {
+            const char* keyName = elem.key->name;
+
+            Symbol* field = root->getField(keyName);
+            bool hasDefault = false;
+            bool isGenericField = root->fieldIsGeneric(field, hasDefault);
+
+            if (field->isParameter() || field->hasFlag(FLAG_TYPE_VARIABLE)) {
+              // OK, it's a param or type field
+            } else if (isGenericField) {
+              failsDefaultInit = true;
+              break;
+            }
+          }
+        }
+
         if (failsDefaultInit) {
           ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
           return;
@@ -526,7 +551,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       //
       //    manage man as res do ...;
       //
-      // It means that multiple candidates were found for 'man.enterThis()'.
+      // It means that multiple candidates were found for 'man.enterContext()'.
       // We currently don't specify a disambiguation order in this case,
       // which means we have no way to determine the storage of 'res'.
       //
@@ -592,12 +617,12 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       // case multiple overloads either do not exist, or if they do there
       // is no ambiguity at the callsite.
       } else {
-        auto enterThisCall = toCallExpr(moveIntoTemp->get(2));
+        auto enterContextCall = toCallExpr(moveIntoTemp->get(2));
 
-        INT_ASSERT(enterThisCall);
+        INT_ASSERT(enterContextCall);
 
         // If this doesn't fire, then there was already a resolution error.
-        if (FnSymbol* fn = enterThisCall->resolvedFunction()) {
+        if (FnSymbol* fn = enterContextCall->resolvedFunction()) {
           bool isTagConstRef = fn->retTag == RET_CONST_REF;
           bool isTagRef = fn->retTag == RET_REF;
 
@@ -780,8 +805,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->throwsError()) {
+      // important to skip anything that has been pruned from the tree here
+      // or mod will be empty
+      if (fn->throwsError() && fn->inTree()) {
         ModuleSymbol *mod = fn->getModule();
+        INT_ASSERT(mod);
         if (mod->modTag == MOD_USER) {
           if (fn->numFormals() == 1) {
             if (fn->instantiatedFrom == NULL && ! fn->isKnownToBeGeneric()) {
@@ -970,6 +998,55 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     break;
   } // PRIM_CALL_RESOLVES, PRIM_METHOD_CALL_RESOLVES
+
+  case PRIM_IMPLEMENTS_INTERFACE: {
+    Expr* typeExpr = call->get(1);
+    Expr* interfaceExpr = call->get(2);
+
+    TypeSymbol* type = nullptr;
+    InterfaceSymbol* interface = nullptr;
+    if (auto se = toSymExpr(typeExpr)) {
+      type = se->typeInfo()->symbol;
+      INT_ASSERT(type);
+    }
+
+    if (auto se = toSymExpr(interfaceExpr)) {
+      interface = toInterfaceSymbol(se->symbol());
+      INT_ASSERT(interface);
+    }
+
+    auto newConstraint =
+      IfcConstraint::build(interface, new CallExpr(PRIM_ACTUALS_LIST, type));
+    SymbolMap substitutions;
+    auto cs = trySatisfyConstraintAtCallsite(call, nullptr, newConstraint,
+                                             substitutions);
+
+    // return one of three values:
+    // 0 - found a user-specified interface
+    // 1 - found a compiler-generated interface
+    // 2 - did not find an interface at all (or shouldn't)
+
+    int val;
+    if (cs.istm) {
+      if (!cs.istm->iConstraint->entirelyGenerated) {
+        // implicit interface using user-provided witnesses: bad.
+        val = 2;
+      } else if (cs.istm->iConstraint->shouldBeGeneratedOnly) {
+        // implicit interface using compiler-provided witnesses; fine.
+        val = 1;
+      } else {
+        // explicit interface.
+        val = 0;
+      }
+    } else {
+      val = 2;
+    }
+
+    retval = new SymExpr(new_IntSymbol(val));
+    call->replace(retval);
+
+    break;
+  }
 
   case PRIM_DEREF: {
     // remove deref if arg is already a value
@@ -1171,6 +1248,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_COERCE: {
+    if (SymExpr* se = toSymExpr(call->get(2))) {
+      if (dtDomain && se->symbol() == dtDomain->symbol) {
+        // coercing a domain to 'domain(?)' is a no-op
+        Type* from = call->get(1)->getValType();
+        if (! from->symbol->hasFlag(FLAG_DOMAIN))
+          USR_FATAL(call, "cannot coerce '%s' to 'domain(?)'",
+                    toString(from));
+        retval = call->get(1);
+        call->replace(retval->remove());
+      }
+    }
+    break;
+  }
+
   case PRIM_IS_ATOMIC_TYPE: {
     if (isAtomicType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
@@ -1338,10 +1430,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         msgType = dtBorrowed;
 
       Type* t = e->typeInfo();
-      if (!isClassLikeOrManaged(t))
+      bool emit = true;
+
+      if (auto fn = toFnSymbol(call->parentSymbol)) {
+        emit = !fn->isCompilerGenerated();
+      }
+
+      if (emit && !isClassLikeOrManaged(t))
         USR_FATAL_CONT(call, "cannot make %s into a %s class",
                              toString(t), toString(msgType));
-      if (!isTypeExpr(e))
+      if (emit && !isTypeExpr(e))
         USR_FATAL_CONT(call, "cannot use decorator %s on a value",
                              toString(msgType));
 
@@ -1662,6 +1760,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           //  type if the symbol represents a field, and taking the address of
           //  a type does not make sense.
 
+        } else if (argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // No need to take address of a type arg. The flag is used here
+          // because the intent is unreliable, and may be INTENT_BLANK.
+
         } else {
           Expr* stmt = call->getStmtExpr();
           Type* t    = sym2->type;
@@ -1845,9 +1947,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // Keep in sync with setIteratorRecordShape(CallExpr* call).
       INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
       Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
-      Symbol* fromForLoop = toSymExpr(call->get(3))->symbol();
-      retval = setIteratorRecordShape(call, ir, shapeSpec,
-                 getSymbolImmediate(fromForLoop)->bool_value());
+      Symbol* fromLoop = toSymExpr(call->get(3))->symbol();
+      auto loopType = (LoopExprType) getSymbolImmediate(fromLoop)->int_value();
+      retval = setIteratorRecordShape(call, ir, shapeSpec, loopType);
       call->replace(retval);
     }
 
@@ -1869,12 +1971,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
+    // the typeof was nested inside this, so just replace with the call result.
+    retval = call->get(1)->remove();
+    call->replace(retval);
+    break;
+
   case PRIM_TYPEOF: {
     SymExpr* se = toSymExpr(call->get(1));
     Type* type = se->getValType();
 
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "can't apply '.type' to a type (%s)",
+      USR_FATAL_CONT(call, "can't apply '.type' to a type ('%s')",
                      toString(se->typeInfo()));
     } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
       retval = new CallExpr("chpl__convertValueToRuntimeType",
@@ -2142,6 +2250,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_BREAKPOINT: {
+    if (!debugCCode) {
+      // if not in debug mode, remove the primitive
+      retval = new CallExpr(PRIM_NOOP);
+      call->replace(retval);
+    }
+  }
+
   default:
     break;
 
@@ -2367,6 +2483,27 @@ static bool isMethodCall(CallExpr* call) {
   return false;
 }
 
+static const char* getParenfulDeprecationMessage(Symbol* thisActual) {
+  if (!thisActual->hasFlag(FLAG_TEMP)) return nullptr;
+  SymExpr* def = thisActual->getSingleDef();
+  if (def == nullptr) return nullptr;
+
+  CallExpr* move = toCallExpr(def->parentExpr);
+  if (!move->isPrimitive(PRIM_MOVE)) return nullptr;
+
+  auto assignedFromCall = toCallExpr(move->get(2));
+  if (!assignedFromCall) return nullptr;
+
+  if (auto calledSym = toSymExpr(assignedFromCall->baseExpr)) {
+    if (auto fnSym = toFnSymbol(calledSym->symbol())) {
+      if (fnSym->hasFlag(FLAG_DEPRECATED_PARENFUL)) {
+        return fnSym->getSanitizedMsg(fnSym->getParenfulDeprecationMsg());
+      }
+    }
+  }
+
+  return nullptr;
+}
 
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
@@ -2426,6 +2563,10 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (Expr* expr = resolveTupleIndexing(call, base->symbol())) {
           retval = expr;  // call was replaced by expr
         }
+      } else if (auto deprecationMessage = getParenfulDeprecationMessage(sym)) {
+        USR_WARN(call, "%s", deprecationMessage);
+        retval = new SymExpr(sym);
+        call->replace(retval);
       }
     }
 
@@ -2844,29 +2985,6 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
-// Deprecated by Vass in 1.31: redirect, with a deprecation warning,
-// from `range(boundedType=?b)` or `range(stridable=?s`)`
-// to   `range(bounds=?b)`      or `s = <arg>.stridable`
-static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
-                                   VarSymbol* var, Symbol*& retval) {
-  if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
-    const char* requested = var->immediate->v_string.c_str();
-    if (!strcmp(requested, "boundedType")) {
-      USR_WARN(call,
-        "range.boundedType is deprecated; please use '.bounds' instead");
-      retval = at->getField("bounds");
-    } else if (!strcmp(requested, "stridable")) {
-      USR_WARN(call,
-        "range.stridable is deprecated; please use '.strides' instead");
-
-      // White lie: return a bogus value just so that the PRIM_QUERY case
-      // in preFoldPrimOp() generates the call 'var.stridable'.
-      retval = new VarSymbol(requested);
-      retval->addFlag(FLAG_PARAM);
-    }
-  }
-}
-
 //
 // determine field associated with query expression
 //
@@ -2879,11 +2997,22 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
-    checkRangeDeprecations(at, call, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;
-    int             position      = var->immediate->int_value();
+    int position = var->immediate->int_value();
+
+    // A couple of variables to help us deal with the deprecated 'kind' field
+    // in fileReader and fileWriter.
+    bool isReaderWriter = false;
+    bool specifiesKind = false;
+
+    {
+      AggregateType* root = at->getRootInstantiation();
+      isReaderWriter = root->getModule() == ioModule &&
+          (strcmp(root->symbol->name, "fileReader") == 0 ||
+           strcmp(root->symbol->name, "fileWriter") == 0);
+    }
 
     if (at->symbol->hasFlag(FLAG_TUPLE)) {
       return at->getField(position);
@@ -2920,12 +3049,23 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
+      if (isReaderWriter &&
+          strcmp("kind", var->immediate->v_string.c_str()) == 0) {
+        specifiesKind = true;
+      }
+
       for (int j = 0; j < args.n; j++) {
         if (args.v[j] != NULL &&
             strcmp(args.v[j]->name, var->immediate->v_string.c_str()) == 0) {
           args.v[j] = NULL;
         }
       }
+    }
+
+    // Need to increment by one so that expressions like 'fileWriter(false)'
+    // match up correctly.
+    if (isReaderWriter && !specifiesKind) {
+      position += 1;
     }
 
     forv_Vec(Symbol, arg, args) {

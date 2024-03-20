@@ -23,3 +23,20 @@ var f: real;
 @deprecated var g: int;
 @chpldoc.nodoc
 @deprecated(notes="h is deprecated, use z instead") var h: int;
+
+
+// Ensures that modules respond appropriately to deprecated
+@deprecated
+module DeprecatedMod1 {
+}
+
+@deprecated("This module is deprecated")
+module DeprecatedMod2 {
+}
+
+/* Including modules with documentation */
+@deprecated("This module is deprecated")
+module DeprecatedMod3 {
+  /* Just a regular symbol to show how it interacts */
+  var x: int;
+}

@@ -19,6 +19,7 @@ TARGETS = \
 	learnChapelInYMinutes \
 	listOps \
 	locales \
+	loops \
 	modules \
 	nothingVariables \
 	parIters \
@@ -31,7 +32,7 @@ TARGETS = \
 	slices \
 	sparse \
 	specialMethods \
-	syncsingle \
+	syncs \
 	taskParallel \
 	timers \
 	tuples \

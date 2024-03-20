@@ -38,7 +38,7 @@ proc runTaskSpawn(param argBundleSize=0) {
 // Test core `coforall loc in Locales do on loc` (coforall+on) idiom
 proc serialOneToAllSpawn(param argBundleSize=0, numDupes=1) {
   const numDupes = numLocales;
-  const trials = divceil(numSpawns, numDupes);
+  const trials = divCeil(numSpawns, numDupes);
   coforallOnSpawn(argBundleSize, numDupes, trials);
   return trials * numDupes;
 }
@@ -46,7 +46,7 @@ proc serialOneToAllSpawn(param argBundleSize=0, numDupes=1) {
 // Test coforall+on, but have all tasks on Locales 0 spawning
 proc parallelOneToAllSpawn(param argBundleSize=0, numDupes=1) {
   const taskPar = here.maxTaskPar;
-  const trials = divceil(divceil(numSpawns, taskPar), numDupes);
+  const trials = divCeil(divCeil(numSpawns, taskPar), numDupes);
   coforall 1..taskPar {
     coforallOnSpawn(argBundleSize, numDupes, trials);
   }
@@ -55,7 +55,7 @@ proc parallelOneToAllSpawn(param argBundleSize=0, numDupes=1) {
 
 // Test coforall+on, but have each locale spawning
 proc serialAllToAllSpawn(param argBundleSize=0, numDupes=1) {
-  const trials = divceil(divceil(numSpawns, numLocales), numDupes);
+  const trials = divCeil(divCeil(numSpawns, numLocales), numDupes);
   coforall loc in Locales do on loc {
     coforallOnSpawn(argBundleSize, numDupes, trials);
   }
@@ -65,7 +65,7 @@ proc serialAllToAllSpawn(param argBundleSize=0, numDupes=1) {
 // Test coforall+on, but have all tasks on all locales spawning
 proc parallelAllToAllSpawn(param argBundleSize=0, numDupes=1) {
   const taskPar = here.maxTaskPar;
-  const trials = divceil(divceil(divceil(numSpawns, taskPar), numLocales), numDupes);
+  const trials = divCeil(divCeil(divCeil(numSpawns, taskPar), numLocales), numDupes);
   coforall loc in Locales do on loc {
     coforall 1..taskPar {
       coforallOnSpawn(argBundleSize, numDupes, trials);
@@ -76,7 +76,7 @@ proc parallelAllToAllSpawn(param argBundleSize=0, numDupes=1) {
 
 // Core coforall+on spawn
 inline proc coforallOnSpawn(param argBundleSize, numDupes, trials) {
-  param tupSize = divceil(argBundleSize, numBytes(int));
+  param tupSize = divCeil(argBundleSize, numBytes(int));
   var argBundle: if argBundleSize > 0 then tupSize*int else nothing;
   for 1..trials {
     coforall loc in duplicateLocales(numDupes) with (in argBundle) do on loc {

@@ -14,7 +14,7 @@ class position{
   var y: int;
 }
 
-class Node {
+class Node : writeSerializable {
   var id: int;
   var name: string;
   var pos: unmanaged position = new unmanaged position(-1,-1);
@@ -22,16 +22,16 @@ class Node {
   var pred : unmanaged Node? = nil;
   var disc,fini : int = -1;
 
-  proc writeThis(w){
-    w.write("{",name,"}");
+  override proc serialize(writer, ref serializer){
+    writer.write("{",name,"}");
   }
 
-  proc writeFancy(w){
-    w.write("{",name," : ",color);
-    if(pred != nil) then w.write("^",pred.name);
-    if(disc >= 0) then w.write(" ",disc);
-    if(fini >= 0) then w.write(",",fini);
-    w.write("}");
+  proc writeFancy(writer){
+    writer.write("{",name," : ",color);
+    if(pred != nil) then writer.write("^",pred.name);
+    if(disc >= 0) then writer.write(" ",disc);
+    if(fini >= 0) then writer.write(",",fini);
+    writer.write("}");
   }
 }
 
@@ -43,13 +43,13 @@ operator Node.<(x: borrowed Node?, y: borrowed Node?) {
   return x!.name < y!.name;
 }
 
-class Edge {
+class Edge : writeSerializable {
   var id: int;
   var src: unmanaged Node;
   var dst: unmanaged Node;
   var reversed: bool = false;
   var kind: edgeKind = edgeKind.GRAPH;
-  proc writeThis(w){
+  override proc serialize(writer, ref serializer){
     var ec:string;
     select(kind) {
     when edgeKind.GRAPH do ec = "--->";
@@ -65,7 +65,7 @@ class Edge {
       }
       otherwise halt("invalid edge kind",kind);
     }
-    w.write(src,ec,dst);
+    writer.write(src,ec,dst);
   }
   iter these() {
     if( src != nil) then yield src;
@@ -145,9 +145,9 @@ proc Edge.read(infile: file){
 }
 */
 
-class UndirectedEdge : Edge {
-  proc writeThis(w){
-     w.write(src," -- ",dst);
+class UndirectedEdge : Edge, writeSerializable {
+  override proc serialize(writer, ref serializer){
+     writer.write(src," -- ",dst);
   }
 }
 
@@ -158,7 +158,7 @@ class Graph {
     EdgeDom = ed;
     nodes = ns;
     edges = es;
-    this.complete();
+    init this;
     writeln("Graph constructor");
     preprocess();
   }
@@ -530,7 +530,7 @@ proc readGraph(filename) {
 
   // Create and open  an input file with the specified filename in read (ioMode.r) mode
   var infile = open(filename, ioMode.r);
-  var reader = infile.reader();
+  var reader = infile.reader(locking=false);
 
   // Read the number of nodes and edges
   //  var n,m:int;

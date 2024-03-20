@@ -1,4 +1,0 @@
-rootSqrtRem.chpl:7: warning: rootrem is deprecated - please use rootRem instead
-rootSqrtRem.chpl:10: warning: sqrtrem is deprecated - please use sqrtRem instead
-(3, 0)
-(5, 2)

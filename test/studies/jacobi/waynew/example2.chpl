@@ -22,21 +22,21 @@ var World:[D] real;
 var Temp:[outerD] real;
 
 // starting conditions
-[e in D] Temp(e) = 0.0;
-[e in northOfD] Temp(e) = 0.25;
-[e in southOfD] Temp(e) = 1.09;
-[e in westOfD]  Temp(e) = 0.59;
-[e in eastOfD]  Temp(e) = 0.63;
+[e in D with (ref Temp)] Temp(e) = 0.0;
+[e in northOfD with (ref Temp)] Temp(e) = 0.25;
+[e in southOfD with (ref Temp)] Temp(e) = 1.09;
+[e in westOfD with (ref Temp)]  Temp(e) = 0.59;
+[e in eastOfD with (ref Temp)]  Temp(e) = 0.63;
 
 
 var moving: atomic int;
 do {
   moving.write(0);
-  forall (i,j) in D do {                       // calc new World
+  forall (i,j) in D with (ref World) do {                       // calc new World
     World(i,j) = (Temp(i-1,j) + Temp(i+1,j) + Temp(i,j-1) + Temp(i,j+1)) / 4.0;
     moving.add(abs( World(i,j) - Temp(i,j)) > THRESHOLD);
   }
-  [e in D] Temp(e) = World(e);               // copy back World->Temp
+  [e in D with (ref Temp)] Temp(e) = World(e);               // copy back World->Temp
  } while (moving.read());
 
 writeln( World);

@@ -1,2 +1,7 @@
+issue-19167-0.chpl:10: In function 'main':
+issue-19167-0.chpl:12: warning: potentially surprising shadowing for 'X'
+issue-19167-0.chpl:11: note: it refers to a symbol found through the 'use' of 'M' here
+issue-19167-0.chpl:2: note: leading to 'X' defined here
+issue-19167-0.chpl:7: note: but, there is a shadowed symbol 'X' defined here
 0
 M.f

@@ -23,6 +23,12 @@ use IO;
     try! stdout.writeln();
   }
 
+  proc writef(fmt:?t, const args ...?k)
+    where isStringType(t) || isBytesType(t)
+  {
+    try! { stdout.writef(fmt, (...args)); }
+  }
+
   //
   // Used by the compiler to support the compiler-generated initializers that
   // accept a 'fileReader'. The type 'fileReader' may not be readily

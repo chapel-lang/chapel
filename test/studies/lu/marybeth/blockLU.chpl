@@ -5,7 +5,7 @@ use IO;
 config const inputfile = "Amagic10.dat";
 
 proc main() {
-  var Adat = open(inputfile, ioMode.r).reader();
+  var Adat = open(inputfile, ioMode.r).reader(locking=false);
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);
@@ -23,7 +23,7 @@ proc main() {
 
   var piv: [A1D] int;
 
-  [i in A1D] piv(i) = i;
+  [i in A1D with (ref piv)] piv(i) = i;
 
   writeln("Unfactored Matrix:");
   writeln(A);
@@ -53,7 +53,7 @@ proc readBlk(Adat) {
   return blk;
 } 
 
-proc initA(A,Adat){
+proc initA(ref A,Adat){
 
   for ij in A.domain {
     Adat.read(A(ij));

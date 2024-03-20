@@ -1,4 +1,4 @@
-proc f(A: [], B: []) {
+proc f(A: [], ref B: []) {
   for i in A.domain {
     B[i] = 1;
     B[i] = A[i] + A[i] * A[i];

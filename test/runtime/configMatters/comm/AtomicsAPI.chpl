@@ -35,7 +35,7 @@ proc testAtomicBool(a, ref i, ref b) {
                 b = a.compareExchange(x, t);                    writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchange(x, t);                    writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchangeWeak(x, f);                writeabx("cmpxchgW", a, b, x);
-             do b = a.compareExchangeWeak(x, f); while n(b);    writeabx("cmpxchgW", a, b, x);
+             do b = a.compareExchangeWeak(x, f); while n(b);    writeab ("cmpxchgW", a, b);
                 b = a.compareAndSwap(t, t);                     writeab ("cas     ", a, b);
                 b = a.compareAndSwap(f, t);                     writeab ("cas     ", a, b);
                 i = a.testAndSet();                             writeai ("test&Set", a, i);
@@ -64,9 +64,10 @@ proc testOrderAtomicBool(a, ref i, ref b, param o: memoryOrder) {
                 b = a.compareExchange(x, f, o, o);                   writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchange(x, f, o, o);                   writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchangeWeak(x, t, o);                  writeabx("cmpxchgW", a, b, x);
-             do b = a.compareExchangeWeak(x, t, o); while n(b);      writeabx("cmpxchgW", a, b, x);
+             do b = a.compareExchangeWeak(x, t, o); while n(b);      writeab ("cmpxchgW", a, b);
+                x = false;
                 b = a.compareExchangeWeak(x, f, o, o);               writeabx("cmpxchgW", a, b, x);
-             do b = a.compareExchangeWeak(x, f, o, o); while n(b);   writeabx("cmpxchgW", a, b, x);
+             do b = a.compareExchangeWeak(x, f, o, o); while n(b);   writeab ("cmpxchgW", a, b);
                 b = a.compareAndSwap(t, t, o);                       writeab ("cas     ", a, b);
                 b = a.compareAndSwap(f, t, o);                       writeab ("cas     ", a, b);
                 i = a.testAndSet(o);                                 writeai ("test&Set", a, i);
@@ -75,8 +76,8 @@ proc testOrderAtomicBool(a, ref i, ref b, param o: memoryOrder) {
   writeln();
 }
 
-proc asyncAdd(a) { begin { a.add(1); } }
-proc testAtomicT(a, ref i, ref b) {
+proc asyncAdd(ref a) { begin { a.add(1); } }
+proc testAtomicT(ref a, ref i, ref b) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
   param isInt = isIntegral(valType);
@@ -99,7 +100,7 @@ proc testAtomicT(a, ref i, ref b) {
                 b = a.compareExchange(x, 4);                    writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchange(x, 4);                    writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchangeWeak(x, 2);                writeabx("cmpxchgW", a, b, x);
-             do b = a.compareExchangeWeak(x, 2); while n(b);    writeabx("cmpxchgW", a, b, x);
+             do b = a.compareExchangeWeak(x, 2); while n(b);    writeab ("cmpxchgW", a, b);
                 b = a.compareAndSwap(1, 5);                     writeab ("cas     ", a, b);
                 b = a.compareAndSwap(2, 5);                     writeab ("cas     ", a, b);
                 i = a.fetchAdd(1);                              writeai ("fetchAdd", a, i);
@@ -116,7 +117,7 @@ proc testAtomicT(a, ref i, ref b) {
   writeln();
 }
 
-proc testOrderAtomicT(a, ref i, ref b, param o: memoryOrder) {
+proc testOrderAtomicT(ref a, ref i, ref b, param o: memoryOrder) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
   param isInt = isIntegral(valType);
@@ -141,9 +142,10 @@ proc testOrderAtomicT(a, ref i, ref b, param o: memoryOrder) {
                 b = a.compareExchange(x, 2, o, o);                   writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchange(x, 2, o, o);                   writeabx("cmpxchg ", a, b, x);
                 b = a.compareExchangeWeak(x, 4, o, o);               writeabx("cmpxchgW", a, b, x);
-             do b = a.compareExchangeWeak(x, 4, o, o); while n(b);   writeabx("cmpxchgW", a, b, x);
+             do b = a.compareExchangeWeak(x, 4, o, o); while n(b);   writeab ("cmpxchgW", a, b);
+                x = 2:valType;
                 b = a.compareExchangeWeak(x, 2, o);                  writeabx("cmpxchgW", a, b, x);
-             do b = a.compareExchangeWeak(x, 2, o); while n(b);      writeabx("cmpxchgW", a, b, x);
+             do b = a.compareExchangeWeak(x, 2, o); while n(b);      writeab ("cmpxchgW", a, b);
                 b = a.compareAndSwap(1, 5, o);                       writeab ("cas     ", a, b);
                 b = a.compareAndSwap(2, 5, o);                       writeab ("cas     ", a, b);
                 i = a.fetchAdd(1, o);                                writeai ("fetchAdd", a, i);
@@ -160,7 +162,7 @@ proc testOrderAtomicT(a, ref i, ref b, param o: memoryOrder) {
   writeln();
 }
 
-proc testUnorderedAtomicT(a, ref i, ref b) {
+proc testUnorderedAtomicT(ref a, ref i, ref b) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
   use UnorderedAtomics;

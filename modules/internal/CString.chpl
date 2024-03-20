@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,7 +148,7 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline operator :(x:chpl_c_string, type t:chpl_anybool) throws {
+  inline operator :(x:chpl_c_string, type t:bool) throws {
     var chplString: string;
     try! {
       chplString = string.createCopyingBuffer(x:c_ptrConst(c_char));
@@ -238,14 +238,11 @@ module CString {
     // cs = nil;
   }
 
-  proc chpl_c_string.writeThis(x) throws {
+  proc chpl_c_string.serialize(writer, ref serializer) throws {
     compilerError("Cannot write a c_string, use one of the 'string.create*ingBuffer' methods to create a string first.");
   }
-  proc chpl_c_string.serialize(writer, ref serializer) throws {
-    writeThis(writer);
-  }
 
-  proc chpl_c_string.readThis(x) throws {
+  proc chpl_c_string.deserialize(reader, ref deserializer) throws {
     compilerError("Cannot read a c_string, use string.");
   }
 

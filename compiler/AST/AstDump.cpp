@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,6 +44,9 @@
 #include "CatchStmt.h"
 #include "DeferStmt.h"
 
+#include <unistd.h>
+#include "view.h"
+
 AstDump::AstDump() {
   mName      =     0;
   mPath      =     0;
@@ -68,12 +71,38 @@ AstDump::~AstDump() {
 
 void AstDump::view(const char* passName, int passNum) {
   forv_Vec(ModuleSymbol, module, allModules) {
-    if (log_module[0] == '\0' || strcmp(log_module, module->name) == 0) {
+
+    // log if no explicit module names OR if module matches one of the names
+    // written this way to avoid extra string init in the common `--log` case
+    bool shouldLog = log_modules.empty();
+    if (!shouldLog) {
+      std::string moduleName = module->name;
+      shouldLog = log_modules.count(moduleName) > 0;
+    }
+
+    if (shouldLog) {
       AstDump logger;
 
       if (logger.open(module, passName, passNum) == true) {
-        module->accept(&logger);
-        logger.close();
+        if(fLogFormat == LogFormat::NPRINT) {
+          // This is an absolute hack. nprint_view prints directly to stdout, we should
+          // update it to take a file pointer use it and pass it along as needed. But rather
+          // than update all the code I instead redirect stdout to the file (and then restore it
+          // after the dump is done).  This makes debugging pain and folks can really get caught
+          // off-guard when stdout is no longer really stdout.
+          int oldStdout = dup(1);
+          dup2(fileno(logger.mFP), 1);
+
+          nprint_view(module);
+
+          dup2(oldStdout, 1);
+          ::close(oldStdout);
+
+        } else {
+          INT_ASSERT(fLogFormat == LogFormat::DEFAULT);
+          module->accept(&logger);
+          logger.close();
+        }
       }
     }
   }
@@ -334,7 +363,7 @@ bool AstDump::enterLoopExpr(LoopExpr* node) {
     write(true, "(", false);
   }
 
-  if (node->forall) {
+  if (node->type == FORALL_EXPR) {
     if (node->maybeArrayType) write("[ ");
     else write("forall ");
   } else {
@@ -477,6 +506,8 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
 bool AstDump::enterForallStmt(ForallStmt* node) {
   newline();
   write("Forall");
+  if (fLogIds)
+    fprintf(mFP, "[%d]", node->id);
   write("{");
   ++mIndent;
   newline();

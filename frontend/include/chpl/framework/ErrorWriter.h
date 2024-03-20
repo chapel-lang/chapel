@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -134,12 +134,20 @@ struct Writer<errordetail::AsFileName<T>> {
 template <>
 struct Writer<const types::Type*> {
   void operator()(Context* context, std::ostream& oss, const types::Type* type) {
-    if (type->isUnknownType()) {
+    if (!type || type->isUnknownType()) {
       oss << "unknown type";
     } else {
       stringify<const types::Type*> str;
       str(oss, CHPL_SYNTAX, type);
     }
+  }
+};
+
+template <>
+struct Writer<const types::Param*> {
+  void operator()(Context* context, std::ostream& oss, const types::Param* param) {
+    stringify<const types::Param*> str;
+    str(oss, CHPL_SYNTAX, param);
   }
 };
 
@@ -215,11 +223,11 @@ class ErrorWriterBase {
     BRIEF,
   };
  protected:
-  Context* context;
+  Context* context_; // note: this can sometimes be null
   OutputFormat outputFormat_;
 
   ErrorWriterBase(Context* context, OutputFormat outputFormat)
-    : context(context), outputFormat_(outputFormat) {}
+    : context_(context), outputFormat_(outputFormat) {}
 
   /**
     Makes tweaks to an error string depending on output format.
@@ -235,7 +243,7 @@ class ErrorWriterBase {
   void writeHeading(ErrorBase::Kind kind, ErrorType type, const uast::AstNode* ast, const std::string& message);
   template <typename T>
   void writeHeading(ErrorBase::Kind kind, ErrorType type, errordetail::LocationOnly<T> t, const std::string& message) {
-    writeHeading(kind, type, errordetail::locate(context, t.t), message);
+    writeHeading(kind, type, errordetail::locate(context_, t.t), message);
   }
 
   /**
@@ -255,7 +263,7 @@ class ErrorWriterBase {
   void writeNote(const uast::AstNode* ast, const std::string& message);
   template <typename T>
   void writeNote(errordetail::LocationOnly<T> t, const std::string& message) {
-    writeNote(errordetail::locate(context, t.t), message);
+    writeNote(errordetail::locate(context_, t.t), message);
   }
 
   /**
@@ -271,7 +279,7 @@ class ErrorWriterBase {
     std::ostringstream oss;
     auto write = [&](auto t) {
       errordetail::Writer<decltype(t)> writer;
-      writer(context, oss, t);
+      writer(context_, oss, t);
     };
 
     auto dummy = { (write(ts), 0)..., };
@@ -355,9 +363,9 @@ class ErrorWriterBase {
             const std::vector<LocHighlight>& toHighlight = {}) {
     std::vector<Location> ids(toHighlight.size());
     std::transform(toHighlight.cbegin(), toHighlight.cend(), ids.begin(), [&](auto node) {
-      return errordetail::locate(context, node);
+      return errordetail::locate(context_, node);
     });
-    writeCode(errordetail::locate(context, place), ids);
+    writeCode(errordetail::locate(context_, place), ids);
   }
 
   /**
@@ -393,6 +401,15 @@ class ErrorWriter : public ErrorWriterBase {
   std::ostream& oss_;
   ErrorWriterBase::OutputFormat outputFormat_;
   bool useColor_;
+  std::string lastFilePath_;
+
+  /* Called when the error tries to print a particular file path to indicate
+     the location of an error. Returns true if this is needed, which happens
+     when the previously-printed file path was different. Otherwise,
+     the error message can skip printing file path information, since
+     it has not changed.
+   */
+  bool noteFilePath(std::string newPath);
 
   void setColor(TermColorName color);
 

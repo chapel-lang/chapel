@@ -21,7 +21,6 @@ or
 
    This class should get the forwarded methods from B 
 
-
    .. attribute:: var f: B
 
 .. class:: B

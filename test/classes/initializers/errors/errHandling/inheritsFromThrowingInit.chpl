@@ -7,7 +7,7 @@ class Parent {
 
   proc init(xVal: int) throws {
     x = xVal;
-    this.complete();
+    init this;
     throwingFunc();
   }
 
@@ -26,13 +26,13 @@ class Child: Parent {
     // yet
     super.init(xVal);
     y = yVal;
-    this.complete();
+    init this;
   }
 
   proc init(yVal: int) {
     super.init(); // Should be fine
     y = yVal;
-    this.complete();
+    init this;
   }
 }
 

@@ -11,8 +11,8 @@ const table = createTable();    // create the table of code complements
 
 proc main(args: [] string) {
   use IO;
-  const stdinBin = (new file(0)).reader(iokind.native, locking=false),
-        stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdinBin = (new file(0)).reader(deserializer=new binaryDeserializer(), locking=false),
+        stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
   var bufLen = 8 * 1024,
       bufDom = {0..<bufLen},

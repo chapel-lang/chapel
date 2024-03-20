@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: Initializers called by IO for deserialization are not compiler-generated when a user-defined 'serialize' or 'deserialize' method exists

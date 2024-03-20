@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -113,7 +113,7 @@ bool closefile(FILE* fp, const char* path, std::string& errorOut) {
 
 // TODO: Should this produce an llvm::MemoryBuffer?
 // TODO: Should this return std::error_code?
-bool readfile(const char* path, std::string& strOut, std::string& errorOut) {
+bool readFile(const char* path, std::string& strOut, std::string& errorOut) {
   FILE* fp = openfile(path, "r", errorOut);
   if (!fp) {
     return false;
@@ -219,6 +219,10 @@ std::error_code ensureDirExists(const llvm::Twine& dirname) {
   return llvm::sys::fs::create_directories(dirname);
 }
 
+bool isPathWriteable(const llvm::Twine& path) {
+  return llvm::sys::fs::can_write(path);
+}
+
 // Functionality also exists in runtime/src/qio/sys.c
 // returns empty std::error_code on success.
 std::error_code currentWorkingDir(std::string& path_out) {
@@ -296,7 +300,28 @@ llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
   memcpy(&result, s.data(), sizeof(HashFileResult));
   return result;
 #endif
+}
 
+HashFileResult hashString(llvm::StringRef data) {
+#if LLVM_VERSION_MAJOR >= 13
+  llvm::SHA256 hasher;
+#else
+  llvm::SHA1 hasher;
+#endif
+
+  hasher.update(data);
+
+  // In LLVM 15, SHA256::final returns a std::array.
+  // In LLVM 14 an earlier, it returns a StringRef.
+#if LLVM_VERSION_MAJOR >= 15
+  return hasher.final();
+#else
+  HashFileResult result;
+  llvm::StringRef s = hasher.final();
+  CHPL_ASSERT(s.size() == sizeof(HashFileResult));
+  memcpy(&result, s.data(), sizeof(HashFileResult));
+  return result;
+#endif
 }
 
 std::error_code copyModificationTime(const llvm::Twine& srcPath,

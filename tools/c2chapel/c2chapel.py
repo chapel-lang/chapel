@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -367,6 +367,9 @@ def getStructOrUnionDef(decl):
         return None
 
 
+def isStructOrUnionForwardDeclared(node):
+    return isStructOrUnionType(node) and not node.decls
+
 def genStructOrUnion(structOrUnion, name="", isAnon=False):
     if name == "":
         if structOrUnion.name is not None:
@@ -392,7 +395,7 @@ def genStructOrUnion(structOrUnion, name="", isAnon=False):
     foundTypes.add(name)
 
     # Forward Declaration
-    if not structOrUnion.decls:
+    if isStructOrUnionForwardDeclared(structOrUnion):
         print()
         return
 
@@ -458,8 +461,14 @@ def genTypeEnum(decl):
 # Simple visitor to all function declarations
 class ChapelVisitor(c_ast.NodeVisitor):
     def visit_StructOrUnion(self, node):
-        typeDefs[node.name] = None
         genStructOrUnion(node, isAnon=False)
+        # If this is not a forward declaration, then preemptively prune this
+        # struct or union from the typedef map (since this is the type's
+        # definition). However, if this _was_ a forward declaration, then we
+        # want to handle the possibility of an embedded definition later.
+        # E.g., 'typedef struct foo { int x; } foo;'
+        if not isStructOrUnionForwardDeclared(node):
+            typeDefs[node.name] = None
 
     def visit_Typedef(self, node):
         if node.name not in typeDefs:

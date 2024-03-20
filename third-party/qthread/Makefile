@@ -151,12 +151,7 @@ endif
 # immediately fail)
 ifneq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
   CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
-endif
-
-# No fastcontext on m1, fallback to ucontext (with _XOPEN_SOURCE to allow it)
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
   ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
-    CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
     CFLAGS += -D_XOPEN_SOURCE
   endif
 endif

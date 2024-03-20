@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,18 +23,16 @@
 namespace chpl {
 namespace types {
 
-const owned<BoolType>& BoolType::getBoolType(Context* context, int bitwidth) {
-  QUERY_BEGIN(getBoolType, context, bitwidth);
+const owned<BoolType>& BoolType::getBoolType(Context* context) {
+  QUERY_BEGIN(getBoolType, context);
 
-  auto result = toOwned(new BoolType(bitwidth));
+  auto result = toOwned(new BoolType());
 
   return QUERY_END(result);
 }
 
-const BoolType* BoolType::get(Context* context, int bitwidth) {
-  CHPL_ASSERT(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
-         bitwidth == 32 || bitwidth == 64);
-  return getBoolType(context, bitwidth).get();
+const BoolType* BoolType::get(Context* context) {
+  return getBoolType(context).get();
 }
 
 

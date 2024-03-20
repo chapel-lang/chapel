@@ -1,0 +1,33 @@
+─── warning in (unknown location) [ImplicitFileModule] ───
+  An implicit module named 'missingDocs' is being introduced to contain file-scope code.
+  The following is the first file-scope statement:
+  The implicit module 'missingDocs' is being created because the above code is outside of any module declarations (e.g., 'module M').
+  Note that all of the file's contents -- including module 'M' -- will be placed into the new 'missingDocs' module.
+
+warning: 'foo' at missingDocs.chpl:1 is undocumented
+warning: 'a' at missingDocs.chpl:3 is undocumented
+warning: 'R' at missingDocs.chpl:5 is undocumented
+warning: 'R.myMethod' at missingDocs.chpl:6 is undocumented
+warning: 'R.myMethod2' at missingDocs.chpl:8 is undocumented
+warning: 'C' at missingDocs.chpl:10 is undocumented
+warning: 'C.a' at missingDocs.chpl:11 is undocumented
+warning: 'C.b' at missingDocs.chpl:11 is undocumented
+warning: 'C.c' at missingDocs.chpl:13 is undocumented
+warning: 'C.these' at missingDocs.chpl:15 is undocumented
+warning: 'C.+' at missingDocs.chpl:19 is undocumented
+warning: 'U' at missingDocs.chpl:21 is undocumented
+warning: 'U.a' at missingDocs.chpl:22 is undocumented
+warning: 'U.b' at missingDocs.chpl:23 is undocumented
+warning: 'E' at missingDocs.chpl:26 is undocumented
+warning: 'A' at missingDocs.chpl:27 is undocumented
+warning: 'B' at missingDocs.chpl:27 is undocumented
+warning: 'C' at missingDocs.chpl:27 is undocumented
+warning: 'myHashable' at missingDocs.chpl:30 is undocumented
+warning: 'Self.myHash' at missingDocs.chpl:31 is undocumented
+warning: 'M' at missingDocs.chpl:36 is undocumented
+warning: 'M.foo' at missingDocs.chpl:38 is undocumented
+warning: 'M.R' at missingDocs.chpl:39 is undocumented
+warning: 'M.a' at missingDocs.chpl:40 is undocumented
+warning: 'M.E' at missingDocs.chpl:41 is undocumented
+warning: 'M.A' at missingDocs.chpl:41 is undocumented
+warning: 'chpl_bar' at missingDocs.chpl:46 is undocumented

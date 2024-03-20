@@ -1,0 +1,6 @@
+invalidimplements.chpl:1: error: type 'domain' cannot implement an interface
+invalidimplements.chpl:2: error: invalid identifier 'none' on the left of an 'implements' keyword
+invalidimplements.chpl:3: error: invalid identifier 'this' on the left of an 'implements' keyword
+invalidimplements.chpl:4: error: invalid identifier 'false' on the left of an 'implements' keyword
+invalidimplements.chpl:5: error: invalid identifier 'true' on the left of an 'implements' keyword
+invalidimplements.chpl:6: error: invalid identifier 'index' on the left of an 'implements' keyword

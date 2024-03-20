@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,7 +80,7 @@ static void test0(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->inheritExpr(0) == nullptr);
   assert(cls->numDeclOrComments() == 0);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -93,8 +93,8 @@ static void test1(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass());
-  auto parentId = cls->parentClass()->toIdentifier();
+  assert(cls->inheritExpr(0));
+  auto parentId = cls->inheritExpr(0)->toIdentifier();
   assert(parentId);
   assert(parentId->name() == "P");
   assert(cls->numDeclOrComments() == 0);
@@ -109,7 +109,7 @@ static void test2(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->inheritExpr(0) == nullptr);
   assert(cls->numDeclOrComments() == 1);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -126,7 +126,7 @@ static void test3(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->inheritExpr(0) == nullptr);
   assert(cls->numDeclOrComments() == 1);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -228,7 +228,7 @@ static void test8(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  auto parentId = cls->parentClass()->toIdentifier();
+  auto parentId = cls->inheritExpr(0)->toIdentifier();
   assert(parentId);
   assert(parentId->name() == "P");
   assert(cls->numDeclOrComments() == 5);
@@ -569,6 +569,21 @@ static void test12(Parser* parser) {
   assert(mod);
 }
 
+static void test13(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  std::string base = " foo /*comment*/ {}\n";
+  for (auto keyword : {"class", "record", "union"}) {
+    auto parseResult = parseStringAndReportErrors(parser, "test13.chpl",
+          (std::string(keyword) + base).c_str());
+    assert(guard.realizeErrors() == 0);
+    auto mod = parseResult.singleModule();
+    assert(mod);
+    assert(mod->numStmts() == 1);
+    assert(mod->stmt(0)->isAggregateDecl());
+    assert(mod->stmt(0)->toAggregateDecl()->numDeclOrComments() == 1);
+  }
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -589,6 +604,7 @@ int main() {
   test10(p);
   test11(p);
   test12(p);
+  test13(p);
 
   return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,10 +105,11 @@ module Crypto {
 
   /* The `CryptoBuffer` class is a wrapper around the internal representation
      of how the values in this library are stored. Every sequence of bytes going
-     into a Crypto utility or coming out of it, is a `CryptoBuffer`.
+     into a Crypto utility or coming out of it is a `CryptoBuffer`.
 
-     A `CryptoBuffer` can enclose a `string` or a `[] uint(8)` passed to its
-     initializer and provides helper functions to access those values.
+     A `CryptoBuffer` can enclose a `string`, `bytes`, or `[] uint(8)`
+     passed to its initializer and provides helper functions to access
+     those values.
 
   */
   class CryptoBuffer {
@@ -130,7 +131,7 @@ module Crypto {
 
     */
     proc init(s: string) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -140,6 +141,7 @@ module Crypto {
         elt = b;
       }
     }
+
     /* The `CryptoBuffer` class initializer that initializes the buffer
        when a `bytes` is supplied to it.
 
@@ -151,7 +153,7 @@ module Crypto {
 
     */
     proc init(s: bytes) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -173,7 +175,7 @@ module Crypto {
 
     */
     proc init(s: [] uint(8)) {
-      this.complete();
+      init this;
       this._len = s.size;
       if (this._len == 0) {
         halt("Enter an array with size greater than 0 in order to create a buffer");
@@ -224,7 +226,11 @@ module Crypto {
     proc toHex() throws {
       var buffHex: [this.buffDomain] string;
       for i in this.buffDomain do {
-        buffHex[i] = try "%02xu".format(this.buff[i]);
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHex[i].appendCodepointValues(nib1, nib2);
       }
       return buffHex;
     }
@@ -238,7 +244,11 @@ module Crypto {
     proc toHexString() throws {
       var buffHexString: string;
       for i in this.buffDomain do {
-        buffHexString += try "%02xu".format(this.buff[i]);
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHexString.appendCodepointValues(nib1, nib2);
       }
       return buffHexString;
     }
@@ -246,7 +256,7 @@ module Crypto {
 
   /* `RSAKey` class encloses the `EVP_PKEY` object provided by the
      OpenSSL primitives. The `EVP_PKEY` object can contain the public key,
-     private key or both of them. Hence, the contents of an object of the
+     private key, or both of them. Hence, the contents of an object of the
      class `RSAKey` may be decided by the user.
 
      Calling the `RSAKey` initializer without using any key import or export
@@ -264,7 +274,7 @@ module Crypto {
     var keyObj: EVP_PKEY_PTR;
 
     /* The `RSAKey` class initializer that initializes the `EVP_PKEY` object
-       of OpenSSL and basically, initializes a set of public and private keys.
+       of OpenSSL and initializes a set of public and private keys.
 
        It checks for valid RSA key lengths and generates a public key and private
        key pair accordingly.
@@ -277,7 +287,7 @@ module Crypto {
 
     */
     proc init(keyLen: int) {
-      this.complete();
+      init this;
       if (keyLen != 1024 && keyLen != 2048 && keyLen != 4096) {
         halt("RSAKey: Invalid key length.");
       }
@@ -312,7 +322,7 @@ module Crypto {
     var value: owned CryptoBuffer;
 
     /* The `Envelope` class initializer that encapsulates the IV, AES encrypted
-       ciphertext buffer and an array of encrypted key buffers.
+       ciphertext buffer, and an array of encrypted key buffers.
 
        :arg iv: Initialization Vector.
        :type iv: `owned CryptoBuffer`
@@ -328,7 +338,7 @@ module Crypto {
 
     */
     proc init(iv: owned CryptoBuffer, encSymmKey: [] owned CryptoBuffer, encSymmValue: owned CryptoBuffer) {
-      this.complete();
+      init this;
       this.keyDomain = encSymmKey.domain;
       for i in this.keyDomain do {
         this.keys[i] = encSymmKey[i];
@@ -437,7 +447,7 @@ module Crypto {
        to be used. This initializer sets the byte length of the
        respective hash and allocates a domain for memory allocation
        for hashing. It currently supports the following hashing functions -
-       ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512`` and
+       ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512``, and
        ``RIPEMD160`` consumed via an enum, `Digest`.
 
        :arg digestName: Hashing function to be used.
@@ -454,7 +464,7 @@ module Crypto {
 
     */
     proc init(digestName: Digest) {
-      this.complete();
+      init this;
       select digestName {
         when Digest.MD5        do this.hashLen = 16;
         when Digest.SHA1       do this.hashLen = 20;
@@ -481,7 +491,7 @@ module Crypto {
       return this.digestName;
     }
 
-    /* Given a CryptoBuffer (buffer) as input, this function returns it's
+    /* Given a CryptoBuffer (buffer) as input, this function returns its
        hash digest. The returned hash digest is also a buffer that can be
        accessed by using buffer utility functions.
 
@@ -588,7 +598,7 @@ module Crypto {
      Currently, the `AES` class allows symmetric encryption using only the CBC or
      Cipher Block Chaining mode in 128, 192, and 256 key size variants.
 
-     After thorough testing, ECB, OCB and other chaining mode variants will also
+     After thorough testing, ECB, OCB, and other chaining mode variants will also
      be added to this library(TODO).
 
   */
@@ -651,7 +661,7 @@ module Crypto {
     /* This is the 'AES' encrypt routine that encrypts the user supplied message buffer
        using the key and IV.
 
-       The `encrypt` takes in the plaintext buffer, key buffer and IV buffer as the
+       The `encrypt` takes in the plaintext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the ciphertext.
 
        :arg plaintext: A `CryptoBuffer` representing the plaintext to be encrypted.
@@ -677,7 +687,7 @@ module Crypto {
     /* This is the 'AES' decrypt routine that decrypts the user supplied ciphertext
        buffer using the same key and IV used for encryption.
 
-       The `decrypt` takes in the ciphertext buffer, key buffer and IV buffer as the
+       The `decrypt` takes in the ciphertext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the decrypted plaintext.
 
        :arg ciphertext: A `CryptoBuffer` representing the ciphertext to be decrypted.
@@ -775,7 +785,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
   /* The `Blowfish` class represents a symmetric-key block cipher called Blowfish, designed
      in 1993 by Bruce Schneier. Considering current scenario, the Advanced Encryption
-     Standard(AES) cipher is used more in practice. Since, Blowfish is unpatented and placed
+     Standard(AES) cipher is used more in practice. Since Blowfish is unpatented and placed
      in the public domain, it receives a decent amount of attention from the community.
 
      .. note::
@@ -839,7 +849,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     /* This is the 'Blowfish' encrypt routine that encrypts the user supplied message buffer
        using the key and IV.
 
-       The `encrypt` takes in the plaintext buffer, key buffer and IV buffer as the
+       The `encrypt` takes in the plaintext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the ciphertext.
 
        :arg plaintext: A `CryptoBuffer` representing the plaintext to be encrypted.
@@ -874,7 +884,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     /* This is the 'Blowfish' decrypt routine that decrypts the user supplied ciphertext
        buffer using the same key and IV used for encryption.
 
-       The `decrypt` takes in the ciphertext buffer, key buffer and IV buffer as the
+       The `decrypt` takes in the ciphertext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the decrypted plaintext.
 
        :arg ciphertext: A `CryptoBuffer` representing the ciphertext to be decrypted.
@@ -1143,7 +1153,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        'RSAKey' objects supplied in the arguments.
 
        The function returns an `Envelope` object that encloses the auto-generated
-       IV, AES encrypted ciphertext and an array of `RSA` encrypted key buffers.
+       IV, AES encrypted ciphertext, and an array of `RSA` encrypted key buffers.
        The number of encrypted keys is equal to the number of `RSAKey` objects
        in the array. This kind of use case is useful specifically in developing
        one-to-many systems such as GPG.
@@ -1163,7 +1173,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :type keys: `[] RSAKey`
 
        :return: An `owned Envelope` object which comprises of the IV buffer,
-                array of RSA encrypted keys and AES encrypted ciphertext.
+                array of RSA encrypted keys, and AES encrypted ciphertext.
        :rtype: `owned Envelope`
 
     */
@@ -1347,5 +1357,25 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_bf_ofb(): CONST_EVP_CIPHER_PTR;
 
     extern proc RAND_seed(const buf: c_ptr(void), num: c_int);
+  }
+
+  /*
+   * Convert a nibble into a character in its hexadecimal representation.
+   * Copied from Bytes.chpl.
+   * TODO: Put this in a shared location both can use.
+   */
+  @chpldoc.nodoc
+  private proc convertNibble(in nib:uint(8), uppercase: bool): uint(8) {
+    nib = nib & 0xf;
+    if 0 <= nib && nib <= 9 {
+      param zero:uint(8) = b"0"(0); // aka 0x30
+      return zero + nib;
+    } else if 10 <= nib && nib <= 15 {
+      param a:uint(8) = b"a"(0); // aka 0x61
+      param A:uint(8) = b"A"(0); // aka 0x41
+      return (if uppercase then A else a) + nib - 10;
+    }
+
+    return 0;
   }
 }

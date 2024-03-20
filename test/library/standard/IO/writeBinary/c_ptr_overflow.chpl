@@ -2,7 +2,7 @@ use IO, CTypes;
 
 proc testCPtrOverflow(toWrite) {
     var f = open("./cptrOverflow.bin", ioMode.cw);
-    var w = f.writer(region=0..5);
+    var w = f.writer(region=0..5, locking=false);
 
     // try writing an array that doesn't fit in the file's specified region
     try {

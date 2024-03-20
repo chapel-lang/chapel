@@ -1,42 +1,42 @@
---- test0() ---
+--- proc test0() { ... } ---
 8
-bar()
+proc bar(n: int): int { ... }
 3.1415
-bar()
+proc bar(n: int): int { ... }
 Hello!
-bar()
---- test1() ---
+proc bar(n: int): int { ... }
+--- proc test1() { ... } ---
 c_fn_ptr
---- test2a() ---
+--- proc test2a() { ... } ---
 2
 4
 8
---- test2b() ---
+--- proc test2b() { ... } ---
 2
 4
 8
---- test3() ---
+--- proc test3() { ... } ---
 proc(): int
 int(64)
 int(64)
 proc(): int
---- test4() ---
+--- proc test4() { ... } ---
 Error: P1
 Error: P2
---- test5() ---
-foo()
-foo()
-chpl_anon_proc_4()
---- test6() ---
---- test7() ---
---- test8() ---
---- test9() ---
+--- proc test5() { ... } ---
+proc foo() { ... }
+proc foo() { ... }
+proc(): int { ... }
+--- proc test6() { ... } ---
+--- proc test7() { ... } ---
+--- proc test8() { ... } ---
+--- proc test9() { ... } ---
 8
---- test10() ---
+--- proc test10() { ... } ---
 6
---- test11() ---
+--- proc test11() { ... } ---
 int
---- test12() ---
+--- proc test12() { ... } ---
 8
---- test13() ---
+--- proc test13() { ... } ---
 8

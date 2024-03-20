@@ -7,7 +7,7 @@
    SAFE TO REACH THEM THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT THEY WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2009, 2010, 2012 Free Software Foundation, Inc.
+Copyright 2009, 2010, 2012, 2020, 2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -59,22 +59,38 @@ mpn_bc_sqrmod_bnm1 (mp_ptr rp, mp_srcptr ap, mp_size_t rn, mp_ptr tp)
 
 
 /* Input is {ap,rn+1}; output is {rp,rn+1}, in
-   semi-normalised representation, computation is mod B^rn + 1. Needs
-   a scratch area of 2rn + 2 limbs at tp; tp == rp is allowed.
+   normalised representation, computation is mod B^rn + 1. Needs
+   a scratch area of 2rn limbs at tp; tp == rp is allowed.
    Output is normalised. */
 static void
 mpn_bc_sqrmod_bnp1 (mp_ptr rp, mp_srcptr ap, mp_size_t rn, mp_ptr tp)
 {
   mp_limb_t cy;
+  unsigned k;
 
   ASSERT (0 < rn);
 
-  mpn_sqr (tp, ap, rn + 1);
-  ASSERT (tp[2*rn+1] == 0);
-  ASSERT (tp[2*rn] < GMP_NUMB_MAX);
-  cy = tp[2*rn] + mpn_sub_n (rp, tp, tp+rn, rn);
+  if (UNLIKELY (ap[rn]))
+    {
+      *rp = 1;
+      MPN_FILL (rp + 1, rn, 0);
+      return;
+    }
+  else if (MPN_SQRMOD_BKNP1_USABLE (rn, k, MUL_FFT_MODF_THRESHOLD))
+    {
+      mp_size_t n_k = rn / k;
+      TMP_DECL;
+
+      TMP_MARK;
+      mpn_sqrmod_bknp1 (rp, ap, n_k, k,
+			TMP_ALLOC_LIMBS (mpn_sqrmod_bknp1_itch (rn)));
+      TMP_FREE;
+      return;
+    }
+  mpn_sqr (tp, ap, rn);
+  cy = mpn_sub_n (rp, tp, tp + rn, rn);
   rp[rn] = 0;
-  MPN_INCR_U (rp, rn+1, cy);
+  MPN_INCR_U (rp, rn + 1, cy);
 }
 
 

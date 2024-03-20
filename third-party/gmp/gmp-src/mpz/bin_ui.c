@@ -1,6 +1,7 @@
 /* mpz_bin_ui(RESULT, N, K) -- Set RESULT to N over K.
 
-Copyright 1998-2002, 2012, 2013, 2015, 2017-2018 Free Software Foundation, Inc.
+Copyright 1998-2002, 2012, 2013, 2015, 2017-2018, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -69,7 +70,7 @@ posmpz_inc_ui (mpz_ptr r, unsigned long in)
 #else
   ASSERT (SIZ (r) > 0);
   MPN_INCR_U (PTR (r), SIZ (r) + 1, in);
-  SIZ (r) += (PTR (r)[SIZ (r)] != 0);
+  SIZ (r) += PTR (r)[SIZ (r)];
 #endif
 }
 
@@ -146,22 +147,17 @@ rek_raising_fac4 (mpz_ptr r, mpz_ptr p, mpz_ptr P, unsigned long int k, unsigned
       mpz_t lt;
       unsigned long int m;
 
+      ALLOC (lt) = 0;
+      SIZ (lt) = 0;
+      if (t == NULL)
+	t = lt;
       m = ((k + lk) >> 1) + 1;
       rek_raising_fac4 (r, p, P, k, m, t);
 
       posmpz_inc_ui (p, 4*m+2);
       mpz_addmul_ui (P, p, 4*m);
       posmpz_dec_ui (P, m);
-      if (t == NULL)
-	{
-	  mpz_init_set (lt, P);
-	  t = lt;
-	}
-      else
-	{
-	  ALLOC (lt) = 0;
-	  mpz_set (t, P);
-	}
+      mpz_set (t, P);
       rek_raising_fac4 (t, p, P, m - 1, lk, NULL);
 
       mpz_mul (r, r, t);
@@ -384,36 +380,40 @@ mpz_bin_ui (mpz_ptr r, mpz_srcptr n, unsigned long int k)
 	  MPZ_NEWALLOC (r, 1)[0] = 1;
 	}
 #if APARTAJ_KALKULOJ > 2
-      else if (k == 2)
+      else if (k > 1)
 	{
-	  mpz_add_ui (ni, ni, 1);
-	  mpz_mul (r, ni, ni);
-	  mpz_add (r, r, ni);
-	  posmpz_rsh1 (r);
-	}
-#endif
+	  mpz_add_ui (ni, ni, 1 + (APARTAJ_KALKULOJ > 2 && k > 2));
+	  mpz_mul (r, ni, ni); /* r = (n + (k>2))^2 */
+	  if (APARTAJ_KALKULOJ == 2 || k == 2)
+	    {
+	      mpz_add (r, r, ni); /* n^2+n= n(n+1) */
+	      posmpz_rsh1 (r);
+	    }
 #if APARTAJ_KALKULOJ > 3
-      else if (k > 2)
-	{ /* k = 3, 4 */
-	  mpz_add_ui (ni, ni, 2); /* n+1 */
-	  mpz_mul (r, ni, ni); /* (n+1)^2 */
-	  mpz_sub_ui (r, r, 1); /* (n+1)^2-1 */
-	  if (k == 3)
-	    {
-	      mpz_mul (r, r, ni); /* ((n+1)^2-1)(n+1) = n(n+1)(n+2) */
-	      /* mpz_divexact_ui (r, r, 6); /\* 6=3<<1; div_by3 ? *\/ */
-	      mpn_pi1_bdiv_q_1 (PTR(r), PTR(r), SIZ(r), 3, GMP_NUMB_MASK/3*2+1, 1);
-	      MPN_NORMALIZE_NOT_ZERO (PTR(r), SIZ(r));
+#if APARTAJ_KALKULOJ != 5
+#error Not implemented! 3 < APARTAJ_KALKULOJ != 5
+#endif
+	  else /* k > 2 */
+	    { /* k = 3, 4 */
+	      mpz_sub_ui (r, r, 1); /* (n+1)^2-1 */
+	      if (k == 3)
+		{
+		  mpz_mul (r, r, ni); /* ((n+1)^2-1)(n+1) = n(n+1)(n+2) */
+		  /* mpz_divexact_ui (r, r, 6); /\* 6=3<<1; div_by3 ? *\/ */
+		}
+	      else /* k = 4 */
+		{
+		  mpz_add (ni, ni, r); /* (n+1)^2+n */
+		  mpz_mul (r, ni, ni); /* ((n+1)^2+n)^2 */
+		  /* We should subtract one: ((n+1)^2+n)^2-1 = n(n+1)(n+2)(n+3). */
+		  /* PTR (r) [0] ^= 1; would suffice, but it is not even needed, */
+		  /* because the next division will shift away this bit anyway.  */
+		  /* mpz_divexact_ui (r, r, 24); /\* 24=3<<3; div_by3 ? *\/ */
+		}
+	      mpn_pi1_bdiv_q_1 (PTR(r), PTR(r), SIZ(r), 3, GMP_NUMB_MASK/3*2+1, 1 | (k>>1));
+	      SIZ(r) -= PTR(r) [SIZ(r) - 1] == 0;
 	    }
-	  else /* k = 4 */
-	    {
-	      mpz_add (ni, ni, r); /* (n+1)^2+n */
-	      mpz_mul (r, ni, ni); /* ((n+1)^2+n)^2 */
-	      mpz_sub_ui (r, r, 1); /* ((n+1)^2+n)^2-1 = n(n+1)(n+2)(n+3) */
-	      /* mpz_divexact_ui (r, r, 24); /\* 24=3<<3; div_by3 ? *\/ */
-	      mpn_pi1_bdiv_q_1 (PTR(r), PTR(r), SIZ(r), 3, GMP_NUMB_MASK/3*2+1, 3);
-	      MPN_NORMALIZE_NOT_ZERO (PTR(r), SIZ(r));
-	    }
+#endif
 	}
 #endif
       else

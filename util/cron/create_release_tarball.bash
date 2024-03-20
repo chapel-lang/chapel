@@ -9,6 +9,7 @@
 # will be copied to that directory after it is built.
 
 CWD=$(cd $(dirname $0) ; pwd)
+source $CWD/common.bash
 source $CWD/functions.bash
 
 if [ "${CHPL_VERSION+x}" != "x" ] ; then

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,6 +50,8 @@ namespace uast {
 
 */
 class ReduceIntent final : public NamedDecl {
+ friend class AstNode;
+
  private:
   static const int opChildNum_ = 0;
 
@@ -63,8 +65,13 @@ class ReduceIntent final : public NamedDecl {
     CHPL_ASSERT(numChildren() == 1);
   }
 
-  ReduceIntent(Deserializer& des)
-    : NamedDecl(asttags::ReduceIntent, des) { }
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
+  }
+
+  explicit ReduceIntent(Deserializer& des)
+    : NamedDecl(asttags::ReduceIntent, des) {
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const ReduceIntent* rhs = other->toReduceIntent();
@@ -95,13 +102,6 @@ class ReduceIntent final : public NamedDecl {
   const AstNode* op() const {
     return this->child(opChildNum_);
   }
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(ReduceIntent);
-
 };
 
 

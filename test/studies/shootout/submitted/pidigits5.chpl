@@ -129,3 +129,4 @@ proc extractor() {
     extractCalculating.write(false);
   }
 }
+use CompatGMP;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -236,7 +236,7 @@ module MPI {
   /* Module level deinit */
   proc deinit() {
     if _freeChplComm {
-      coforall loc in Locales do on loc {
+      coforall loc in Locales with (ref CHPL_COMM_WORLD_REPLICATED) do on loc {
           C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
         }
     }
@@ -319,7 +319,7 @@ module MPI {
   @chpldoc.nodoc
   proc setChplComm() {
     if numLocales > 1 {
-      coforall loc in Locales do on loc {
+      coforall loc in Locales with (ref CHPL_COMM_WORLD_REPLICATED) do on loc {
         C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int,
           CHPL_COMM_WORLD_REPLICATED(1));
       }
@@ -421,7 +421,7 @@ module MPI {
   }
 
   /* Get the count from a status object */
-  proc MPI_Status.getCount(tt : MPI_Datatype) {
+  proc ref MPI_Status.getCount(tt : MPI_Datatype) {
     var count : c_int;
     C_MPI.MPI_Get_count(this, tt, count);
     return count : int;

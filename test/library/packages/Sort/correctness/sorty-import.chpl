@@ -50,29 +50,29 @@ proc doSort(param st: SortType, trials: int) {
 }
 
 // complete support for first-class function would be nice here
-proc _doSort(param st, I) where st==SortType.BUBBLE {
+proc _doSort(param st, ref I) where st==SortType.BUBBLE {
   BubbleSort.bubbleSort(I);
 }
-proc _doSort(param st, I) where st==SortType.INSERTION {
+proc _doSort(param st, ref I) where st==SortType.INSERTION {
   InsertionSort.insertionSort(I);
 }
-proc _doSort(param st, I) where st==SortType.MERGE {
+proc _doSort(param st, ref I) where st==SortType.MERGE {
   MergeSort.mergeSort(I);
 }
 
-proc _doSort(param st, I) where st==SortType.SELECTION {
+proc _doSort(param st, ref I) where st==SortType.SELECTION {
   SelectionSort.selectionSort(I);
 }
 
-proc _doSort(param st, I) where st==SortType.QUICK {
+proc _doSort(param st, ref I) where st==SortType.QUICK {
   QuickSort.quickSort(I);
 }
 
-proc _doSort(param st, I) where st==SortType.HEAP {
+proc _doSort(param st, ref I) where st==SortType.HEAP {
   HeapSort.heapSort(I);
 }
 
-proc resetArr(A: [?D]) {
+proc resetArr(ref A: [?D]) {
   fillRandom(A, seed);
 }
 

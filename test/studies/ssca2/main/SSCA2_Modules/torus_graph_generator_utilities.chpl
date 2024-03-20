@@ -8,7 +8,7 @@ module torus_graph_generator_utilities {
   // ----------------------------------------------------------------
 
   proc torus_random_edge_weights ( MAX_EDGE_WEIGHT : int, G ) {
-    use SSCA2_compilation_config_params, Random;
+    use SSCA2_compilation_config_params, NPBRandom;
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
                      new unmanaged NPBRandomStream (seed = 8737935341)
@@ -51,4 +51,3 @@ module torus_graph_generator_utilities {
     delete Rand_Gen;
   }
 }
-

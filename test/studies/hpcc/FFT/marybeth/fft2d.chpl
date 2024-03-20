@@ -41,7 +41,7 @@ proc main() {
     fillRandom(z);
 
   // conjugate input, storing result to work array
-  Z = conjg(z);
+  Z = conj(z);
 
 
   // TIMED SECTION
@@ -56,14 +56,14 @@ proc main() {
 }
 
 
-proc computeTwiddles(W) {
+proc computeTwiddles(ref W) {
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;
   W(n/2) = let cosDeltaN = cos(delta * n/2)
             in (cosDeltaN, cosDeltaN):complex;
-  forall i in 1..n/2-1 {
+  forall i in 1..n/2-1 with (ref W) {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -83,7 +83,7 @@ proc bitReverseShuffle(W: [?WD]) {
   bitReverse(P);
   V(P) = W;
   */
-  forall i in WD {  // BLC: could this be a uint domain?
+  forall i in WD with (ref V) {  // BLC: could this be a uint domain?
     // BLC: what does this bitReverse function do with high-order bits?
     // BLC: could this be rewritten as one line?
     var ndx = bitReverse(i:uint(64), numBits=reverse);
@@ -102,7 +102,7 @@ proc bitReverse(val: ?valType, numBits = 64) {
   return valReverse: valType;
 }
 
-proc dfft(A, W) {
+proc dfft(ref A, W) {
 
   const numElements = A.size;
   const halfLogN = (log2(numElements))/2;
@@ -194,11 +194,11 @@ proc transpose(inout A:[?AD] complex) {
   }
 }
 
-proc verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(ref z, ref Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
-  Z = conjg(Z) / N;
+  Z = conj(Z) / N;
 
   Z = bitReverseShuffle(Z);
   dfft(Z, Twiddles);

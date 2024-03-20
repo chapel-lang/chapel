@@ -213,7 +213,7 @@ in :ref:`Formal_Arguments_of_Generic_Type`.
 
    .. code-block:: chapel
 
-      proc foo(x: ?t, y: [?D] t) {
+      proc foo(x: ?t, ref y: [?D] t) {
         for i in D do
           y[i] = x;
       }
@@ -242,7 +242,7 @@ in :ref:`Formal_Arguments_of_Generic_Type`.
 
    .. code-block:: chapel
 
-      proc foo(x, y: [] x.type) {
+      proc foo(x, ref y: [] x.type) {
         for i in y.domain do
           y[i] = x;
       }
@@ -348,8 +348,8 @@ Precedence and Associativity
 | ``**``             | right          | exponentiation                       |
 +--------------------+----------------+--------------------------------------+
 | | ``reduce``       | left           | | reduction                          |
-| | ``scan``         | scan           | | scan                               |
-| | ``dmapped``      |                | | domain map application             |
+| | ``scan``         |                | | scan                               |
+| | ``dmapped``      |                | | application of a distribution      |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
 | | prefix ``!``     | right          | | logical negation                   |
@@ -406,7 +406,6 @@ Precedence and Associativity
 | | ``[ ]``          |                | | forall expression                  |
 | | ``for do``       |                | | for expression                     |
 | | ``sync``         |                | | sync type modifier                 |
-| | ``single``       |                | | single type modifier               |
 | | ``atomic``       |                | | atomic type modifier               |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
@@ -867,6 +866,10 @@ related by the following identity:
    var q = a / b;
    var r = a % b;
    writeln(q * b + r == a);    // true
+
+.. note::
+   This does not have the same behavior as :proc:`~Math.mod` when `b` is
+   negative.
 
 There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.

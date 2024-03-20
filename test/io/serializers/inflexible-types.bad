@@ -1,13 +1,13 @@
 ===== writing: =====
 1..5
 --------------------
-1..5
+"1..5"
 ====================
 SUCCESS: range(int(64),both,one)
 ===== writing: =====
 {1..10, 1..10}
 --------------------
-{1..10, 1..10}
+["1..10", "1..10"]
 ====================
 SUCCESS: domain(2,int(64),one)
 ===== writing: =====
@@ -21,4 +21,4 @@ SUCCESS: date
 --------------------
 "2002-03-01T00:00:00"
 ====================
-ERROR: BadFormatError: bad format: missing expected literal (while reading ioLiteral "." with path "unknown" offset 20)
+ERROR: BadFormatError: bad format: missing expected literal (while reading string literal "." with path "unknown" offset 20)

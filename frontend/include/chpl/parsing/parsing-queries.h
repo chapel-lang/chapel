@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,15 +20,15 @@
 #ifndef CHPL_PARSING_PARSING_QUERIES_H
 #define CHPL_PARSING_PARSING_QUERIES_H
 
-#include "chpl/parsing/FileContents.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/Location.h"
+#include "chpl/parsing/FileContents.h"
+#include "chpl/parsing/parser-stats.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
-#include "chpl/parsing/parser-stats.h"
 
 #include <vector>
 
@@ -76,57 +76,6 @@ void setFileText(Context* context, UniqueString path, std::string text);
 bool hasFileText(Context* context, const std::string& path);
 
 /**
- This unstable, experimental type provides basic support for '.dyno' files.
- */
-class LibraryFile {
-  private:
-    UniqueString path_;
-    std::map<UniqueString, std::streamoff> offsets_;
-    Deserializer::stringCacheType cache_;
-    bool isUser_;
-
-  public:
-  LibraryFile() {}
-
-  LibraryFile(Context*, UniqueString);
-
-  UniqueString path() const { return path_; }
-
-  const std::map<UniqueString, std::streamoff>& offsets() const {
-    return offsets_;
-  }
-
-  const Deserializer::stringCacheType& stringCache() const { return cache_; }
-
-  bool isUser() const { return isUser_; }
-
-  static void generate(Context* context,
-                       std::vector<UniqueString> paths,
-                       std::string outFileName,
-                       bool isUser);
-
-  void mark(Context* context) const { }
-
-  static bool update(LibraryFile& keep, LibraryFile& addin) {
-    bool changed = false;
-    changed |= defaultUpdate(keep.path_, addin.path_);
-    changed |= defaultUpdate(keep.offsets_, addin.offsets_);
-    changed |= defaultUpdate(keep.cache_, addin.cache_);
-    changed |= defaultUpdateBasic(keep.isUser_, addin.isUser_);
-    return changed;
-  }
-
-};
-
-/**
-  This query reads the file from the given path and produces a LibraryFile,
-  which contains useful information about the library's contents.
- */
-const LibraryFile& loadLibraryFile(Context* context, UniqueString libPath);
-
-void registerFilePathsInLibrary(Context* context, UniqueString& libPath);
-
-/**
   This query reads a file (with the fileText query) and then parses it.
 
   The 'parentSymbolPath' is relevant for submodules that are in separate files
@@ -147,6 +96,12 @@ parseFileToBuilderResult(Context* context, UniqueString path,
 const uast::BuilderResult&
 parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
                                  UniqueString parentSymbolPath);
+
+std::vector<const uast::AstNode*>
+introspectParsedTopLevelExpressions(Context* context);
+
+std::vector<UniqueString>
+introspectParsedFiles(Context* context);
 
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
@@ -178,6 +133,21 @@ const Location& locateId(Context* context, ID id);
  it cannot be used to get a Location for a Comment.
  */
 const Location& locateAst(Context* context, const uast::AstNode* ast);
+
+/** Also define getters for additional locations such as e.g., dot fields.
+    A complete list can be seen in "chpl/uast/all-location-maps.h".
+    The form is e.g., `locateDotFieldWithId(Context* context, ID id)` or
+    `locateDotFieldWithAst(Context* context, const Dot* dot)`.
+
+    Additional location maps for things like dot fields are required because
+    they are not themselves AST nodes.
+*/
+#define LOCATION_MAP(ast__, location__) \
+  Location locate##location__##WithId(Context* context, ID id); \
+  Location locate##location__##WithAst(Context* context, \
+                                       const uast::ast__* ast);
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 using ModuleVec = std::vector<const uast::Module*>;
 /**
@@ -383,6 +353,11 @@ uast::AstTag idToTag(Context* context, ID id);
 bool idIsParenlessFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is a nested function.
+ */
+bool idIsNestedFunction(Context* context, ID id);
+
+/**
  Returns true if the ID refers to a private declaration.
  */
 bool idIsPrivateDecl(Context* context, ID id);
@@ -391,6 +366,16 @@ bool idIsPrivateDecl(Context* context, ID id);
  Returns true if the ID is a function.
  */
 bool idIsFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is marked 'extern'.
+ */
+bool idIsExtern(Context* context, ID id);
+
+/**
+ Returns true if the ID is marked 'export'.
+ */
+bool idIsExport(Context* context, ID id);
 
 /**
  Returns true if the ID is a method.
@@ -516,6 +501,12 @@ void reportDeprecationWarningForId(Context* context, ID idMention,
   depending on which of these applies to 'filepath'.
 */
 bool shouldWarnUnstableForPath(Context* context, UniqueString filepath);
+
+/**
+  Returns the state of --warn-unstable or -internal or -standard
+  depending on which of these applies to 'id'.
+*/
+bool shouldWarnUnstableForId(Context* context, const ID& id);
 
 /**
   Given an ID 'idMention' representing a mention of a symbol, and an

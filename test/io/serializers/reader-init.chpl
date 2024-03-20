@@ -2,7 +2,7 @@
 use IO;
 use JSON;
 
-record R {
+record R : writeSerializable, initDeserializable {
   var x : int;
   var y : real;
 
@@ -11,22 +11,24 @@ record R {
     this.y = y;
   }
 
-  proc init(reader: fileReader, ref deserializer) {
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startRecord(r, "R");
-    this.x = fmt.deserializeField(r, "x", int);
-    this.y = fmt.deserializeField(r, "y", real);
-    fmt.endRecord(r);
+  proc init(reader: fileReader(?), ref deserializer) {
+    var des = deserializer.startRecord(reader, "R");
+    this.x = des.readField("x", int);
+    this.y = des.readField("y", real);
+    des.endRecord();
   }
 
   proc equals(other: R) {
     return this.x == other.x &&
            this.y == other.y;
   }
+
+  proc serialize(writer, ref serializer) throws {
+    ChapelIO.serializeDefaultImpl(writer, serializer, this);
+  }
 }
 
-record G {
+record G : writeSerializable, initDeserializable {
   type A;
   type B;
   var x : A;
@@ -39,41 +41,41 @@ record G {
     this.y = y;
   }
 
-  proc init(type A, type B, reader: fileReader, ref deserializer) {
+  proc init(type A, type B, reader: fileReader(?), ref deserializer) {
     this.A = A;
     this.B = B;
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startRecord(r, "G");
-    this.x = fmt.deserializeField(r, "x", A);
-    this.y = fmt.deserializeField(r, "y", B);
-    fmt.endRecord(r);
+    var des = deserializer.startRecord(reader, "G");
+    this.x = des.readField("x", A);
+    this.y = des.readField("y", B);
+    des.endRecord();
   }
 
-  proc equals(other: G) {
+  proc equals(other: G(?)) {
     return this.x == other.x &&
            this.y == other.y;
   }
+
+  proc serialize(writer, ref serializer) throws {
+    ChapelIO.serializeDefaultImpl(writer, serializer, this);
+  }
 }
 
-class Parent {
+class Parent : writeSerializable, initDeserializable {
   var x : int;
 
   proc init(x: int = 0) {
     this.x = x;
   }
-  proc init(reader: fileReader, ref deserializer) {
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startClass(r, "Parent");
-    this.x = fmt.deserializeField(r, "x", int);
-    fmt.endClass(r);
+  proc init(reader: fileReader(?), ref deserializer) {
+    var des = deserializer.startClass(reader, "Parent");
+    this.x = des.readField("x", int);
+    des.endClass();
   }
 
-  override proc serialize(writer: fileWriter, ref serializer) {
-    serializer.startClass(writer, "Parent", 1);
-    serializer.serializeField(writer, "x", x);
-    serializer.endClass(writer);
+  override proc serialize(writer: fileWriter(?), ref serializer) {
+    var ser = serializer.startClass(writer, "Parent", 1);
+    ser.writeField("x", x);
+    ser.endClass();
   }
 
   proc equals(other: borrowed Parent) {
@@ -81,27 +83,25 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent, writeSerializable, initDeserializable {
   var y : real;
 
   proc init(x: int = 0, y: real = 0.0) {
     super.init(x);
     this.y = y;
   }
-  proc init(reader: fileReader, ref deserializer) {
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startClass(r, "Child");
-    super.init(r, deserializer);
-    this.y = fmt.deserializeField(r, "y", real);
-    fmt.endClass(r);
+  proc init(reader: fileReader(?), ref deserializer) {
+    var des = deserializer.startClass(reader, "Child");
+    super.init(reader, des);
+    this.y = des.readField("y", real);
+    des.endClass();
   }
 
-  override proc serialize(writer: fileWriter, ref serializer) {
-    serializer.startClass(writer, "Child", 1);
-    super.serialize(writer, serializer);
-    serializer.serializeField(writer, "y", y);
-    serializer.endClass(writer);
+  override proc serialize(writer: fileWriter(?), ref serializer) {
+    var ser = serializer.startClass(writer, "Child", 1);
+    super.serialize(writer, ser);
+    ser.writeField("y", y);
+    ser.endClass();
   }
 
   proc equals(other: borrowed Child) {
@@ -124,11 +124,11 @@ proc test(type FormatWriter, type FormatReader) {
 
   proc helper(val, type T) {
     {
-      f.writer().withSerializer(FormatWriter).write(val);
+      f.writer(locking=false).withSerializer(FormatWriter).write(val);
       print("wrote", val);
     }
     {
-      var read = f.reader().withDeserializer(FormatReader).read(T);
+      var read = f.reader(locking=false).withDeserializer(FormatReader).read(T);
       assert(val.equals(read));
       print("got", read);
     }
@@ -141,6 +141,6 @@ proc test(type FormatWriter, type FormatReader) {
 }
 
 proc main() {
-  test(DefaultSerializer, DefaultDeserializer);
-  test(JsonSerializer, JsonDeserializer);
+  test(defaultSerializer, defaultDeserializer);
+  test(jsonSerializer, jsonDeserializer);
 }

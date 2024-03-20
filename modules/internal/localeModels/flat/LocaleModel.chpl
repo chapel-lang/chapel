@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -73,7 +73,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -87,7 +87,7 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -109,11 +109,8 @@ module LocaleModel {
         yield idx;
     }
 
-    pragma "unsafe"
     override proc _getChild(idx: int) : locale {
       halt("requesting a child from a flat LocaleModel locale");
-      var tmp:locale; // nil
-      return tmp;
     }
 
     iter getChildren() : locale  {
@@ -141,7 +138,7 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class RootLocale : AbstractRootLocale {
+  class RootLocale : AbstractRootLocale, writeSerializable {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     pragma "unsafe"
@@ -174,8 +171,8 @@ module LocaleModel {
     override proc chpl_name() do return local_name();
     proc local_name() do return "rootLocale";
 
-    override proc writeThis(f) throws {
-      f.write(name);
+    override proc serialize(writer, ref serializer) throws {
+      writer.write(name);
     }
 
     override proc _getChildCount() do return this.myLocaleSpace.size;

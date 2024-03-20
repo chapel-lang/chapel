@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,11 +21,8 @@
 #ifndef CHPL_TOOLS_CHPLDEF_LOGGER_H
 #define CHPL_TOOLS_CHPLDEF_LOGGER_H
 
-#include "./misc.h"
-
-#include "llvm/ADT/Optional.h"
+#include "misc.h"
 #include "llvm/Support/JSON.h"
-
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -47,6 +44,7 @@ private:
   std::ofstream stream_;
   bool flushImmediately_ = false;
   Level level_ = MESSAGES;
+  std::string header_;
 
   Logger(Output output, std::string filePath);
 
@@ -70,6 +68,15 @@ public:
   inline void setLevel(Level level) { this->level_ = level; }
   void setFlushImmediately(bool flushImmediately);
   inline bool flushImmediately() const { return flushImmediately_; }
+  void setHeader(std::string header) { header_ = std::move(header); }
+  inline const std::string& header() const { return header_; }
+
+  /** Get a mutable handle to the underlying output stream. */
+  inline auto& stream() {
+    return output_ == STDERR ? std::cerr : output_ == STDOUT ? std::cout
+                             : stream_;
+  }
+
   /** Returns 'true' if the log was started. */
   bool start();
   void stop();

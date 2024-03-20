@@ -5,13 +5,13 @@ class ThisPhase2 {
   proc init(val: complex, param genVal: bool) {
     someField = val;
     genField = genVal;
-    this.complete();
+    init this;
     outsideFunc(this);
     // Verifies that we can utilize "this" in Phase 2
   }
 }
 
-proc outsideFunc(x: borrowed ThisPhase2) {
+proc outsideFunc(x: borrowed ThisPhase2(?)) {
   writeln(x.someField);
 }
 

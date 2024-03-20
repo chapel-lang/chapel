@@ -32,8 +32,8 @@ an expression. Both kinds are shown in the following sections.
 "Must-parallel" forall statement
 --------------------------------
 
-In the following example, the forall loop iterates over the array indices
-in parallel:
+In the following example, the forall loop iterates over the array indices in
+parallel.
 */
 
 config const n = 5;
@@ -81,7 +81,7 @@ provide a "leader" iterator and all iterables provide "follower" iterators.
 These are described in the :ref:`parallel iterators primer
 <primers-parIters-leader-follower>`.
 
-Here we illustrate zippering arrays and domains:
+Here we illustrate zippering arrays and domains.
 */
 
 var C: [1..n] real;
@@ -150,14 +150,15 @@ Its parallel iterator will determine how this loop is parallelized.
 if A were a distributed array, its parallel iterator would also
 determine iteration locality.
 
-Domains declared without a ``dmapped`` clause, including
-default rectangular and default associative domains, as well as
-arrays over such domains, provide both serial and parallel
-iterators. So do domains distributed over standard distributions,
-such as Block and Cyclic (:ref:`primers-distributions`), and
-arrays over such domains. The parallel iterators provided
-by standard distributions place each loop iteration on the
-locale where the corresponding index or array element is placed.
+Domains declared without a distribution (see :ref:`primers-distributions`),
+including default rectangular and default associative domains,
+as well as arrays over such domains, provide both serial and parallel
+iterators. So do domains distributed over standard multi-locale distributions,
+such as blockDist and cyclicDist, and arrays over such domains. The
+parallel iterators provided by standard multi-locale distributions place each loop
+iteration on the locale where the corresponding index or array element
+is placed.
+
 
 Task Intents and Shadow Variables
 ---------------------------------
@@ -183,11 +184,16 @@ of shadow variables, one per outer variable.
 
  - Each shadow variable is deallocated at the end of its task.
 
-The default argument intent (:ref:`The_Default_Intent`) is used by default.
-For numeric types, this implies capturing the value of the outer
-variable by the time the task starts executing. Arrays are passed by
-reference, as are sync, single, and atomic variables
-(:ref:`primers-syncsingle`, :ref:`primers-atomics`).
+For most types, forall intents use the default argument intent
+(:ref:`The_Default_Intent`). For numeric types, this implies capturing the
+value of the outer variable by the time the task starts executing. Sync and
+atomic variables are passed by reference (:ref:`primers-syncs`,
+:ref:`primers-atomics`). Arrays infer their default intent based upon the
+declaration of the array. Mutable arrays (e.g. declared with ``var`` or passed
+by ``ref`` intent) have a default intent of ``ref``, while immutable arrays
+(e.g. declared with ``const`` or passed by ``const`` intent) have a default
+intent of ``const``. These defaults are described in :ref:`the language spec
+<Forall_Intents>`.
 */
 
 var outerIntVariable = 0;
@@ -324,11 +330,14 @@ Task Intents Inside Record Methods
 When the forall loop occurs inside a method on a record,
 the fields of the receiver record are represented in the loop body
 with shadow variables as if they were outer variables.
-This, for example, allows the forall loop body to update
-record fields of array types.
 
-At present, the record fields, as well as the method receiver ``this``,
-are always passed by default intent and cannot be listed in a with-clause.
+At present, record fields are always passed by the default intent
+(:ref:`The_Default_Intent`), so the fields of ``MyRecord`` cannot be modified
+inside of the first forall loop loop below.
+
+To modify the fields within the body of a forall loop,
+use the ``ref`` intent for ``this`` in the with-clause of the forall loop,
+as in the second forall loop below.
 */
 
 record MyRecord {
@@ -336,10 +345,14 @@ record MyRecord {
   var intField: int;
 }
 
-proc MyRecord.myMethod() {
+proc ref MyRecord.myMethod() {
   forall i in 1..n {
-    arrField[i] = i * 2;  // beware of potential for data races
     // intField += 1;     // would cause "illegal assignment" error
+  }
+  forall i in 1..n with (ref this) {
+    arrField[i] = i * 2;
+    if i == 1 then
+      intField += 1;      // beware of potential for data races
   }
 }
 

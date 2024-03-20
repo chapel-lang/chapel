@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "chpl/uast/Builder.h"
 
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
@@ -104,7 +105,8 @@ owned<Builder> Builder::createForTopLevelModule(Context* context,
                                                 const char* filepath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   UniqueString startingSymbolPath;
-  auto b = new Builder(context, uniqueFilename, startingSymbolPath);
+  auto b = new Builder(context, uniqueFilename, startingSymbolPath,
+                       /* LibraryFile */ nullptr);
   return toOwned(b);
 }
 
@@ -112,21 +114,81 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename, parentSymbolPath);
+  auto b = new Builder(context, uniqueFilename, parentSymbolPath,
+                       /* LibraryFile */ nullptr);
+  return toOwned(b);
+}
+
+owned<Builder> Builder::createForLibraryFileModule(
+                                        Context* context,
+                                        UniqueString filePath,
+                                        UniqueString parentSymbolPath,
+                                        const libraries::LibraryFile* lib) {
+  auto b = new Builder(context, filePath, parentSymbolPath, lib);
+  // locations won't be noted when working with a library file
+  // (since they will be stored and retrieved separately, instead)
+  // so don't fail if a location was not noted.
+  b->useNotedLocations_ = false;
+  // this flag helps an assertion in Builder::result if
+  // noteSymbolTableSymbols was not called
+  b->expectSymbolTableVec_ = true;
   return toOwned(b);
 }
 
 void Builder::addToplevelExpression(owned<AstNode> e) {
-  this->topLevelExpressions_.push_back(std::move(e));
+  this->br.topLevelExpressions_.push_back(std::move(e));
 }
 
 void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
 
+void Builder::noteAdditionalLocation(AstLocMap& m, AstNode* ast,
+                                     Location loc) {
+  if (!ast || loc.isEmpty()) return;
+  CHPL_ASSERT(m.find(ast) == m.end());
+  m.emplace(ast, std::move(loc));
+}
+
+void Builder::tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast,
+                                     Location loc) {
+  if (!ast || loc.isEmpty()) return;
+  auto found = m.find(ast);
+  if (found == m.end()) {
+    m.emplace_hint(found, ast, std::move(loc));
+  }
+}
+
+#define LOCATION_MAP(ast__, location__) \
+  void Builder::note##location__##Location(ast__* ast, Location loc) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    noteAdditionalLocation(m, ast, std::move(loc)); \
+  } \
+  void Builder::tryNote##location__##Location(ast__* ast, Location loc) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    tryNoteAdditionalLocation(m, ast, std::move(loc)); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
+
+void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
+  symbolTableVec_ = std::move(vec);
+  expectSymbolTableVec_ = false;
+}
+
 BuilderResult Builder::result() {
   this->createImplicitModuleIfNeeded();
   this->assignIDs();
+
+  // if we have a symbolTableVec, use it to compute
+  // br.libraryFileSymbols_, now that IDs have been assigned.
+  CHPL_ASSERT(!expectSymbolTableVec_); // was noteSymbolTableSymbols called?
+  if (!symbolTableVec_.empty()) {
+    for (const auto& info : symbolTableVec_) {
+      br.libraryFileSymbols_[info.ast->id()] =
+        std::make_pair(info.moduleIndex, info.symbolIndex);
+    }
+  }
 
   // Performance: We could consider copying all of these AST
   // nodes to a newly allocated buffer big enough to hold them
@@ -134,12 +196,17 @@ BuilderResult Builder::result() {
   // that a postorder traversal of the AST has good data locality
   // (i.e. good cache behavior).
 
-  BuilderResult ret(filepath_);
-  ret.topLevelExpressions_.swap(topLevelExpressions_);
-  ret.idToAst_.swap(idToAst_);
-  ret.idToLocation_.swap(idToLocation_);
-  ret.commentIdToLocation_.swap(commentToLocation_);
+  // TODO: Any other state that can be reset?
+  notedLocations_.clear();
 
+  #define LOCATION_MAP(ast__, location__) \
+    CHPL_AST_LOC_MAP(ast__, location__).clear();
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+
+  // swap the stored BuilderResult with an empty one and return it
+  BuilderResult ret;
+  ret.swap(br);
   return ret;
 }
 
@@ -166,7 +233,7 @@ void Builder::createImplicitModuleIfNeeded() {
   const AstNode* firstNonModule = nullptr;
   const AstNode* firstUseImportOrRequire = nullptr;
 
-  for (auto const& ownedExpression: topLevelExpressions_) {
+  for (auto const& ownedExpression: br.topLevelExpressions_) {
     const AstNode* ast = ownedExpression.get();
     if (ast->isComment()) {
       // ignore comments for this analysis
@@ -192,12 +259,12 @@ void Builder::createImplicitModuleIfNeeded() {
     return;
   } else {
     // compute the basename of filename to get the inferred module name
-    std::string modname = Builder::filenameToModulename(filepath_.c_str());
+    std::string modname = Builder::filenameToModulename(br.filePath_.c_str());
     auto inferredModuleName = UniqueString::get(context_, modname);
     // create a new module containing all of the statements
     AstList stmts;
-    stmts.swap(topLevelExpressions_);
-    auto loc = Location(filepath_, 1, 1, 1, 1);
+    stmts.swap(br.topLevelExpressions_);
+    auto loc = Location(br.filePath_, 1, 1, 1, 1);
     auto ownedModule = Module::build(this, std::move(loc),
                                      /*attributeGroup*/ nullptr,
                                      Decl::DEFAULT_VISIBILITY,
@@ -205,7 +272,7 @@ void Builder::createImplicitModuleIfNeeded() {
                                      Module::IMPLICIT,
                                      std::move(stmts));
     const Module* implicitModule = ownedModule.get();
-    topLevelExpressions_.push_back(std::move(ownedModule));
+    br.topLevelExpressions_.push_back(std::move(ownedModule));
 
     // emit warnings as needed
     if (firstUseImportOrRequire && !containsOther && nModules == 1) {
@@ -229,7 +296,7 @@ void Builder::assignIDs() {
     pathVec = ID::expandSymbolPath(context_, startingSymbolPath_);
   }
 
-  for (auto const& ownedExpression: topLevelExpressions_) {
+  for (auto const& ownedExpression: br.topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
     if (ast->isModule() || ast->isComment()) {
       UniqueString emptyString;
@@ -284,12 +351,14 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     comment->setCommentId(commentIndex);
     commentIndex += 1;
 
-    auto search = notedLocations_.find(ast);
-    if (search != notedLocations_.end()) {
-      CHPL_ASSERT(!search->second.isEmpty());
-      commentToLocation_.push_back(search->second);
-    } else {
-      CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
+    if (useNotedLocations_) {
+      auto search = notedLocations_.find(ast);
+      if (search != notedLocations_.end()) {
+        CHPL_ASSERT(!search->second.isEmpty());
+        br.commentIdToLocation_.push_back(search->second);
+      } else {
+        CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
+      }
     }
     return;
   }
@@ -405,20 +474,36 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   }
 
   // update idToAst_ for the visited AST node
-  idToAst_[ast->id()] = ast;
+  br.idToAst_[ast->id()] = ast;
 
   // update locations_ for the visited ast
-  auto search = notedLocations_.find(ast);
-  if (search != notedLocations_.end()) {
-    CHPL_ASSERT(!search->second.isEmpty());
-    idToLocation_[ast->id()] = search->second;
-    // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
-    if (ieNode) {
-      CHPL_ASSERT(ast->isVariable());
-      checkConfigPreviouslyUsed(ast->toVariable(), configName);
+  if (useNotedLocations_) {
+    auto search = notedLocations_.find(ast);
+    if (search != notedLocations_.end()) {
+      CHPL_ASSERT(!search->second.isEmpty());
+      br.idToLocation_[ast->id()] = search->second;
+
+      // Also map additional locations to ID.
+      #define LOCATION_MAP(ast__, location__) \
+        if (auto x = ast->to##ast__()) { \
+          auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
+          auto it = m1.find(x); \
+          if (it != m1.end()) { \
+            auto& m2 = br.CHPL_ID_LOC_MAP(ast__, location__); \
+            m2[x->id()] = it->second; \
+          } \
+        }
+      #include "chpl/uast/all-location-maps.h"
+      #undef LOCATION_MAP
+
+      // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
+      if (ieNode) {
+        CHPL_ASSERT(ast->isVariable());
+        checkConfigPreviouslyUsed(ast->toVariable(), configName);
+      }
+    } else {
+      CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
     }
-  } else {
-    CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
   }
 }
 
@@ -473,7 +558,8 @@ Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec,
       if (auto attribs = var->attributeGroup()) {
         if (attribs->isDeprecated())
           generateConfigWarning(varName, "deprecated", attribs->deprecationMessage());
-        if (attribs->isUnstable())
+        if (attribs->isUnstable() &&
+            isCompilerFlagSet(this->context(), CompilerFlags::WARN_UNSTABLE))
           generateConfigWarning(varName, "unstable", attribs->unstableMessage());
       }
       if (!configMatched.first.empty() &&

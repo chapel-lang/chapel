@@ -26,7 +26,7 @@ for i in 1..numSteps {
   if debug then
     writeImage(A);
 
-  forall rc in D {
+  forall rc in D with (ref B) {
     var num = 0;
     for off in {-1..1, -1..1} {
       num <<= 1;

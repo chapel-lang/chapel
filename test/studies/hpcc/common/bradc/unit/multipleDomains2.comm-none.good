@@ -1,4 +1,4 @@
-Creating new Block distribution:
+Creating new blockDist distribution:
 boundingBox = {1..10}
 targetLocDom = {0..0}
 targetLocales = 0
@@ -25,8 +25,8 @@ Setting indices of Block domain:
 whole = {-1..10}
 locDoms[0].myBlock = {-1..10}
 ProblemDist =
-Block
--------
+blockDist
+---------
 distributes: {1..10}
 across locales: LOCALE0
 indexed via: {0..0}

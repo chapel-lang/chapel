@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/AutoMath.chpl $CHPL_HOME/modules/standard/Math.chpl -o output_dir --no-html --save-sphinx output_dir

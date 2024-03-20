@@ -1,4 +1,4 @@
-// Allow access to stderr, stdout, ioMode, divceil
+// Allow access to stderr, stdout, ioMode, divCeil
 private use IO, Math;
 
 //
@@ -72,7 +72,7 @@ inline proc colorOffset(param color) param {
 proc writeImage(image, format, pixels: [] pixelType) {
   // the output file channel
   const outfile = if image == "stdout" then stdout
-                                       else open(image, ioMode.cw).writer();
+                                       else open(image, ioMode.cw).writer(locking=true);
   if image != "stdout" then
     writeln("Writing image to ", image);
   select format {
@@ -111,7 +111,7 @@ proc writeImageBMP(outfile, pixels) {
         bitsPerPixel = numColors*bitsPerColor,
 
         // row size in bytes. Pad each row out to 4 bytes.
-        rowQuads = divceil(bitsPerPixel * cols, 32),
+        rowQuads = divCeil(bitsPerPixel * cols, 32),
         rowSize = 4 * rowQuads,
         rowSizeBits = 8 * rowSize,
 
@@ -122,23 +122,23 @@ proc writeImageBMP(outfile, pixels) {
 
   // Write the BMP image header
   outfile.writef("BM");
-  outfile.writeBinary(size:uint(32), ioendian.little);
-  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved1 */
-  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved2 */
-  outfile.writeBinary(offsetToPixelData:uint(32), ioendian.little);
+  outfile.writeBinary(size:uint(32), endianness.little);
+  outfile.writeBinary(0:uint(16), endianness.little); /* reserved1 */
+  outfile.writeBinary(0:uint(16), endianness.little); /* reserved2 */
+  outfile.writeBinary(offsetToPixelData:uint(32), endianness.little);
 
   // Write the DIB header BITMAPINFOHEADER
-  outfile.writeBinary(dibHeaderSize:uint(32), ioendian.little);
-  outfile.writeBinary(cols:int(32), ioendian.little);
-  outfile.writeBinary(-rows:int(32), ioendian.little); /*neg for swap*/
-  outfile.writeBinary(1:uint(16), ioendian.little); /* 1 color plane */
-  outfile.writeBinary(bitsPerPixel:uint(16), ioendian.little);
-  outfile.writeBinary(0:uint(32), ioendian.little); /* no compression */
-  outfile.writeBinary(pixelsSize:uint(32), ioendian.little);
-  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
-  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
-  outfile.writeBinary(0:uint(32), ioendian.little); /* colors in palette */
-  outfile.writeBinary(0:uint(32), ioendian.little); /* "important" colors */
+  outfile.writeBinary(dibHeaderSize:uint(32), endianness.little);
+  outfile.writeBinary(cols:int(32), endianness.little);
+  outfile.writeBinary(-rows:int(32), endianness.little); /*neg for swap*/
+  outfile.writeBinary(1:uint(16), endianness.little); /* 1 color plane */
+  outfile.writeBinary(bitsPerPixel:uint(16), endianness.little);
+  outfile.writeBinary(0:uint(32), endianness.little); /* no compression */
+  outfile.writeBinary(pixelsSize:uint(32), endianness.little);
+  outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(0:uint(32), endianness.little); /* colors in palette */
+  outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
 
   for i in pixels.domain.dim(0) {
     var nbits = 0;

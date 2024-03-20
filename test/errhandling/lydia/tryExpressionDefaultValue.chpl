@@ -6,7 +6,7 @@ record Bar {
 
 proc throwingFunc(x = Bar.defaultVal): Bar throws {
   throw new Error("whatev");
-  return x;
+  return x; // note that this line is ignored
 }
 
 proc callThrowingFunc() {

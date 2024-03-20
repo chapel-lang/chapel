@@ -6,7 +6,7 @@ record MyRec {
   var Ai: [D] int;
   proc init(n: int, low: int) {
     D = {1..n};
-    this.complete();
+    init this;
     for i in 1..n {
       Ar[i] = low + i/10.0;
       Ai[i] = low + i/2;
@@ -26,7 +26,7 @@ var hdf5Dir = "hdf5_dir";
 
 proc main {
   var Space = {1..nFiles};
-  var BlockSpace = Space dmapped Block(Space, Locales, dataParTasksPerLocale=1);
+  var BlockSpace = Space dmapped blockDist(Space, Locales, dataParTasksPerLocale=1);
   var data: [BlockSpace] MyRec;
   const pathPrefix = readPrefixEnv();
 

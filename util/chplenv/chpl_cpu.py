@@ -29,7 +29,7 @@ cpu_llvm_synonyms = {
   'x86-trento':      'znver3',
 }
 
-# This gets the generic machine type, e.g. x86_64, i686, aarch64.
+# This gets the generic machine type, e.g. x86_64, i686, aarch64, arm64.
 # Since uname returns the host machine type, we currently assume that
 # cross-compilation is limited to different subarchitectures of the
 # generic machine type.  For example, we can cross compile from
@@ -40,7 +40,7 @@ def get_native_machine():
 
 @memoize
 def is_known_arm(cpu):
-    if cpu.startswith("arm-") or ('aarch64' in cpu) or ('thunderx' in cpu):
+    if cpu.startswith("arm") or ('aarch64' in cpu) or ('thunderx' in cpu):
         return True
     else:
         return False

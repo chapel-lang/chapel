@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,6 +86,9 @@ module Errors {
     }
   }
 
+  /*
+    A `NilClassError` is thrown if a cast from a `nil` class is made.
+  */
   class NilClassError : Error {
     @chpldoc.nodoc
     override proc message() {
@@ -93,6 +96,10 @@ module Errors {
     }
   }
 
+  /*
+    A `ClassCastError` is thrown if a cast between class types fails and the
+    destination is not nilable.
+  */
   class ClassCastError : Error {
     @chpldoc.nodoc
     override proc message() {
@@ -102,8 +109,8 @@ module Errors {
 
   /*
    A `DecodeError` is thrown if an attempt to create a string with non-UTF8 byte
-   sequences are made at runtime. This includes calling the
-   `bytes.decode(decodePolicy.strict)` method on a bytes with non-UTF8 byte
+   sequences is made at runtime. This includes calling the
+   `bytes.decode(decodePolicy.strict)` method on a ``bytes`` with non-UTF8 byte
    sequences.
    */
   class DecodeError: Error {
@@ -114,9 +121,15 @@ module Errors {
     }
   }
 
+  /*
+    An `IllegalArgumentError` is thrown if bad arguments are passed as arguments
+    to procedures.
+  */
   class IllegalArgumentError : Error {
+    @chpldoc.nodoc
     proc init() {}
 
+    @chpldoc.nodoc
     proc init(msg: string) {
       super.init(msg);
     }
@@ -149,10 +162,12 @@ module Errors {
     with codepoint boundaries.
   */
   class CodepointSplitError: Error {
+    @chpldoc.nodoc
     proc init(info: string) {
       super.init(info);
     }
 
+    @chpldoc.nodoc
     override proc message() {
       return "Attempting to split a multi-byte codepoint. " + _msg;
     }
@@ -179,11 +194,10 @@ module Errors {
     var _head: unmanaged Error? = nil;
     var _errorsLock: chpl_LocalSpinlock;
 
-    proc append(err: unmanaged Error) {
+    proc ref append(err: unmanaged Error) {
       on this {
         _errorsLock.lock();
-        var tmp = _head;
-        err._next = tmp;
+        err._next = _head;
         _head = err;
         _errorsLock.unlock();
       }
@@ -225,23 +239,19 @@ module Errors {
     proc init(ref group:chpl_TaskErrors) {
       var head: unmanaged Error? = group._head;
       group._head = nil;
-      this.complete();
-
-      var cur: unmanaged Error?;
+      init this;
 
       // Count the number of errors, including from nested errors
       var n = 0;
-      cur = head;
-      while cur != nil {
-        var curnext = cur!._next;
-        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
-        if asTaskErr == nil {
-          n += 1;
-        } else {
-          for e in asTaskErr! {
-            if e != nil then
+      var cur = head;
+      while const curr = cur {
+        var curnext = curr._next;
+        if const asTaskErr = curr: unmanaged TaskErrors? {
+          on asTaskErr do
+            for e in asTaskErr do
               n += 1;
-          }
+        } else {
+          n += 1;
         }
         cur = curnext;
       }
@@ -255,22 +265,25 @@ module Errors {
       // Gather the errors into errorsArray starting at index idx
       var idx = 0;
       cur = head;
-      while cur != nil {
-        var curnext = cur!._next;
-        cur!._next = nil; // remove from any lists
-        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
-        if asTaskErr == nil {
-          errorsArray[idx] = owned.adopt(cur!);
-          idx += 1;
-        } else {
-          for e in asTaskErr!.these() {
-            // e is an owned error
-            if e != nil {
-              errorsArray[idx] = e;
-              idx += 1;
-            }
-          }
+      while const curr = cur {
+        var curnext = curr._next;
+        curr._next = nil; // remove from any lists
+        if const asTaskErr = curr: unmanaged TaskErrors? {
+          const origLoc = here, EA = errorsArray, idxPtr = c_ptrTo(idx); //RVF
+          // For performance we want to bring over asTaskError.errorsArrays
+          // in one comm. [Ensure asTaskError.deinit happens properly.]
+          // Ideally, use the same copy in the first while-loop as well.
+          on asTaskErr do
+            for e in asTaskErr do
+              // e is an owned error
+              on origLoc {
+                EA[idxPtr.deref()] = e;
+                idxPtr.deref() += 1;
+              }
           delete asTaskErr;
+        } else {
+          errorsArray[idx] = owned.adopt(curr);
+          idx += 1;
         }
         cur = curnext;
       }
@@ -280,7 +293,7 @@ module Errors {
     proc init(err: unmanaged Error) {
       nErrors = 1;
       errorsArray = allocate(owned Error?, 1, clear=true);
-      this.complete();
+      init this;
       err._next = nil;
       errorsArray[0] = owned.adopt(err);
     }
@@ -291,8 +304,9 @@ module Errors {
       errorsArray = nil;
     }
 
+    @chpldoc.nodoc
     proc deinit() {
-      if errorsArray {
+      if errorsArray then on this {
         for i in 0..#nErrors {
           errorsArray[i] = nil;
         }
@@ -315,6 +329,9 @@ module Errors {
        that are not storing ``nil`` at the time of the call.
      */
     iter these() ref : owned Error? {
+      if boundsChecking then assert(this.locale.id == here.id,
+        "iterating over a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       foreach i in 0..#nErrors {
         if errorsArray[i] != nil {
           yield errorsArray[i];
@@ -325,6 +342,9 @@ module Errors {
     /* Returns the first non-nil error contained in this TaskErrors group */
     @unstable("`TaskErrors.first` is unstable; expect this method to change in the future.")
     proc first() ref : owned Error? {
+      if boundsChecking then assert(this.locale.id == here.id,
+        "querying first() of a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       var first = 0;
       for i in 0..#nErrors {
         if errorsArray[i] != nil {
@@ -571,10 +591,9 @@ module Errors {
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_enum_cast_error_no_int(enumName: string, constName: string) throws {
+  proc chpl_enum_cast_error_no_int(enumName: string, constName: string): int throws {
     throw new owned IllegalArgumentError("bad cast: enum '" + enumName + "." +
                                           constName + "' has no integer value");
-    return 0;
   }
 
 
@@ -612,7 +631,7 @@ module Errors {
   /*
     Assert that a boolean condition is true.  If it is false, prints
     'assert failed - ' followed by all subsequent arguments, as though
-    printed using :proc:`~ChapelIO.write()`.
+    printed using :proc:`~IO.write()`.
 
     .. note :: In the current implementation, this assert never becomes a no-op.
                That is, using it will always incur execution-time checks.

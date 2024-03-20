@@ -2,10 +2,9 @@ record sps33 {
   var data:[-1..1, 0..1] real;
   var irv: real = 0.0;
 
-  proc this(i, j) ref {
+  proc ref this(i, j) ref {
     if (i == j) {
       halt("Assigning an IRV value");
-      return irv;
     } else if (i==-1) {
       return data(i, j==1);
     } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -268,7 +268,7 @@ module M {
   assert(rr.byAst(c_ret).type().isErroneousType());
   assert(guard.errors().size() == 1);
   auto& e = guard.errors()[0];
-  assert(e->message() == "Cannot resolve call to 'foo': no matching candidates");
+  assert(e->type() == chpl::NoMatchingCandidates);
 
   printf("Success: cannot pass %s to %s\n", actualType.c_str(), argType.c_str());
 

@@ -1,0 +1,10 @@
+#! /usr/bin/env bash
+
+# get printed lines and sort them
+grep -E '^[[:digit:]]' $2 | sort -n | uniq >$2.prediff.output.tmp
+# get the other lines (compiler output)
+grep -v -E '^[[:digit:]]' $2 >$2.prediff.compiler.tmp
+
+# rebuild the out file
+cat $2.prediff.compiler.tmp $2.prediff.output.tmp >$2
+rm $2.prediff.compiler.tmp $2.prediff.output.tmp

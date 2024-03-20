@@ -22,14 +22,14 @@ proc nextLocalTaskCounter(hereId:int) {
 }
 
 const MessageDom = {1..numMessages};
-const MessageSpace = MessageDom dmapped Block(MessageDom,
+const MessageSpace = MessageDom dmapped blockDist(MessageDom,
                                               dataParTasksPerLocale = dptpl);
 
 var MessageVisited: [MessageSpace] bool;
 
 // Ensure correct amount of TPVs on each locale.
 
-forall msg in MessageSpace with (const taskId = nextLocalTaskCounter(here.id)) {
+forall msg in MessageSpace with (const taskId = nextLocalTaskCounter(here.id), ref MessageVisited) {
   writef("t1  loc %i  task %i\n", here.id, taskId);
   MessageVisited[msg] ^= true;
 }
@@ -39,7 +39,7 @@ taskCounters.write(1);
 
 // Ensure each TPV stays with its task.
 
-forall msg in MessageSpace with (var taskId = nextLocalTaskCounter(here.id)*100)
+forall msg in MessageSpace with (var taskId = nextLocalTaskCounter(here.id)*100, ref MessageVisited)
 {
   taskId += 1;
   writef("t2  loc %i  task %i\n", here.id, taskId);

@@ -4,19 +4,19 @@ use BlockDist;
 
 config var n = 10000: int(64);
 
-const ProblemDist = new Block(rank=1, idxType=int(64), boundingBox={1..n}, targetLocales=Locales);
+const ProblemDist = new blockDist(rank=1, idxType=int(64), boundingBox={1..n}, targetLocales=Locales);
 const ProblemSpace: domain(1, int(64)) dmapped(ProblemDist) = {1..n};
 
 var A: [ProblemSpace] real;
 var B: [ProblemSpace] real;
 
-var randStr1 = new owned NPBRandomStream(real, 314159265);
-var randStr2 = new owned NPBRandomStream(real, 314159265);
+var randStr1 = new randomStream(real, 314159265);
+var randStr2 = new randomStream(real, 314159265);
 
-randStr1.fillRandom(A);
+randStr1.fill(A);
 
 for b in B do
-  b = randStr2.getNext();
+  b = randStr2.next();
 
 for (i,a,b) in zip(ProblemSpace,A,B) {
   if (a != b) then

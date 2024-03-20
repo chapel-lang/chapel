@@ -1,3 +1,0 @@
-recordiobug.chpl:13: warning: binary conversion "%<t" is deprecated.
-recordiobug.chpl:13: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead
-recordiobug.chpl:20: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'deserialize' method instead

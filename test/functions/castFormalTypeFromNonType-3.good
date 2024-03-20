@@ -1,0 +1,1 @@
+castFormalTypeFromNonType-3.chpl:4: error: Cannot perform a type cast on a non-type

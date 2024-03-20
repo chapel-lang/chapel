@@ -31,17 +31,6 @@ and before any ``where`` clauses.
 The statements following a throw statement in the same block
 are ignored by the compiler because they cannot be executed.
 
-..
-
-   *Open issue*.
-
-   The current implementation makes an exception to this rule: it does
-   consider the statements following a throw statement or a call to
-   `halt()` in the case these statements include a return
-   statement. This is done to support legacy codes that use return
-   statement(s) to establish the return type implicitly.
-   Should we remove this exception?
-
 Only ``owned`` instances of a type inheriting from ``Error`` can be
 thrown.
 

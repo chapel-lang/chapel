@@ -4,10 +4,10 @@ use Random, IO;
 config const nBytes = 1024;
 
 // create bytes with random bytes
-var randomStream = createRandomStream(eltType=uint(8));
+var rs = new randomStream(eltType=uint(8));
 var buf = allocate(uint(8), (nBytes+1).safeCast(c_size_t));
 for i in 0..#nBytes {
-  buf[i] = randomStream.getNext();
+  buf[i] = rs.next();
 }
 buf[nBytes] = 0;
 
@@ -22,14 +22,14 @@ var bytesChannel = openTempFile();
 
 {
   // write them to a channel
-  var bytesWriter = bytesChannel.writer();
+  var bytesWriter = bytesChannel.writer(locking=false);
   bytesWriter.write(randomBytes);
   bytesWriter.close();
 }
 
 {
   // read them into a different object
-  var bytesReader = bytesChannel.reader();
+  var bytesReader = bytesChannel.reader(locking=false);
   var readBytes = bytesReader.readAll(bytes);
   bytesReader.close();
   // compare
@@ -43,17 +43,17 @@ var bytesChannel = openTempFile();
 
 {
   // write them to a channel
-  var bytesWriter = bytesChannel.writer();
-  bytesWriter.writef("%|*s", randomBytes.size, randomBytes);
+  var bytesWriter = bytesChannel.writer(locking=false);
+  bytesWriter.writeBinary(randomBytes, randomBytes.size);
   bytesWriter.close();
 }
 
 {
   // read them into a different object
-  var bytesReader = bytesChannel.reader();
+  var bytesReader = bytesChannel.reader(locking=false);
   var readBytes = b"";
   var readLen = randomBytes.size;
-  bytesReader.readf("%|*s", readLen, readBytes);
+  bytesReader.readBinary(readBytes, readLen);
   bytesReader.close();
   // compare
   if readBytes == randomBytes {

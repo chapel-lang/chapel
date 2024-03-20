@@ -31,7 +31,9 @@ The syntax to declare an iterator is given by:
      identifier
 
    yield-intent:
+     'const'
      'const ref'
+     'out'
      'ref'
      'param'
      'type'
@@ -84,11 +86,20 @@ statement. A yield statement in an iterator that yields references must
 yield an lvalue expression.
 
 The iterator's ``yield-intent`` determines how each value is yielded.
-The rules for yielding are the same as the rules for returning values
-from procedures, see :ref:`Return_Intent`, except an iterator with
-the ``ref`` or ``const ref`` yield intent is allowed to yield an lvalue
-that is local to the iterator's scope.
-The rules for yielding a tuple are specified in :ref:`Tuple_Yield_Behavior`.
+The rules for yielding are similar to the rules for returning values from
+procedures (described in :ref:`Return_Intent`), with these exceptions:
+
+  1. The default yield intent is ``const``.
+
+  2. The default and the ``const`` yield intents make it up to the
+     implementation to choose between yielding with ``const ref`` or
+     ``out``.
+
+  3. An iterator with the ``ref`` or ``const ref`` yield intent is
+     allowed to yield an lvalue that is local to the iterator's scope.
+
+  4. The rules for yielding a tuple are specified in
+     :ref:`Tuple_Yield_Behavior`.
 
 When a ``return`` is encountered, the iterator finishes without yielding
 another index value. The ``return`` statements appearing in an iterator
@@ -232,13 +243,14 @@ typically made by iterating over it in a loop.
 
    .. BLOCK-test-chapelnoprint
 
-      proc Tree.writeThis(x)
+      Tree implements writeSerializable;
+      override proc Tree.serialize(writer, ref serializer)
       {
         var first = true;
         for node in postorder(this) {
           if first then first = false;
-            else x.write(" ");
-          write(node);
+            else writer.write(" ");
+          writer.write(node);
         }
       }
       writeln("Tree Data");
@@ -323,7 +335,7 @@ the locales on which these tasks execute. For ranges, default domains,
 and default arrays, these values can be controlled via configuration
 constants (:ref:`data_parallel_knobs`).
 
-Domains and arrays defined using distributed domain maps will typically
+Domains and arrays defined using multi-locale distributions will typically
 implement forall loops with multiple tasks on multiple locales. For
 ranges, default domains, and default arrays, all tasks are executed on
 the current locale.

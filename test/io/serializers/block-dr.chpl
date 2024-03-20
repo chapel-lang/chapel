@@ -5,7 +5,7 @@ use BlockDist;
 
 proc main() {
   var D = {1..4, 1..4, 1..4};
-  var Space = D dmapped Block(D);
+  var Space = D dmapped blockDist(D);
   var B : [Space] int;
 
   var cur = 0;
@@ -16,10 +16,10 @@ proc main() {
 
   var f = openMemFile();
   {
-    f.writer(serializer=FormatWriter).writeln(B);
+    f.writer(serializer=FormatWriter, locking=false).writeln(B);
   }
   {
-    var DR = f.reader(deserializer=FormatReader).read([D] int);
+    var DR = f.reader(deserializer=FormatReader, locking=false).read([D] int);
     printDebugFmt(DR);
 
     assert(&& reduce (B == DR));

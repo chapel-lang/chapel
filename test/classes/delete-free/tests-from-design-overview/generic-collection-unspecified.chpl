@@ -1,10 +1,11 @@
 class MyClass { var x:int; }
 
 record Collection {
-  var element;
+  type eltType;
+  var element: eltType;
 }
 
-proc Collection.addElement(in arg: element.type) lifetime this < arg {
+proc ref Collection.addElement(in arg: element.type) lifetime this < arg {
   element = arg;
 }
 

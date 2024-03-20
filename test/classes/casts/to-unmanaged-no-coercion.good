@@ -1,0 +1,16 @@
+to-unmanaged-no-coercion.chpl:11: error: unresolved call 'foo(owned A?)'
+to-unmanaged-no-coercion.chpl:4: note: this candidate did not match: foo(a: unmanaged A?)
+to-unmanaged-no-coercion.chpl:11: note: because actual argument #1 with type 'owned A?'
+to-unmanaged-no-coercion.chpl:4: note: is passed to formal 'a: unmanaged A?'
+to-unmanaged-no-coercion.chpl:13: error: unresolved call 'foo(borrowed A)'
+to-unmanaged-no-coercion.chpl:4: note: this candidate did not match: foo(a: unmanaged A?)
+to-unmanaged-no-coercion.chpl:13: note: because actual argument #1 with type 'borrowed A'
+to-unmanaged-no-coercion.chpl:4: note: is passed to formal 'a: unmanaged A?'
+to-unmanaged-no-coercion.chpl:20: error: unresolved call 'foo(shared A?)'
+to-unmanaged-no-coercion.chpl:4: note: this candidate did not match: foo(a: unmanaged A?)
+to-unmanaged-no-coercion.chpl:20: note: because actual argument #1 with type 'shared A?'
+to-unmanaged-no-coercion.chpl:4: note: is passed to formal 'a: unmanaged A?'
+to-unmanaged-no-coercion.chpl:22: error: unresolved call 'foo(borrowed A)'
+to-unmanaged-no-coercion.chpl:4: note: this candidate did not match: foo(a: unmanaged A?)
+to-unmanaged-no-coercion.chpl:22: note: because actual argument #1 with type 'borrowed A'
+to-unmanaged-no-coercion.chpl:4: note: is passed to formal 'a: unmanaged A?'

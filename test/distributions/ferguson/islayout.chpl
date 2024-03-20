@@ -6,7 +6,7 @@ use ExternalArray;
 proc main() {
   // Default is "distributed" so it's not as hard
   // to keep up to date. But, check one to be sure.
-  var blk = new Block(boundingBox={1..10});
+  var blk = new blockDist(boundingBox={1..10});
   assert(!blk.dsiIsLayout());
   
   var cs = new unmanaged CS();

@@ -4,7 +4,7 @@ module HDF5Preprocessors {
   class AddNPreprocessor: HDF5Preprocessor {
     const n: int;
 
-    override proc preprocess(A: []) {
+    override proc preprocess(ref A: []) {
       forall a in A {
         a += n;
       }
@@ -14,7 +14,7 @@ module HDF5Preprocessors {
   class ScriptPreprocessor: HDF5Preprocessor {
     const script: string;
 
-    override proc preprocess(A: []) {
+    override proc preprocess(ref A: []) {
       use FileSystem, OS.POSIX, Path, Subprocess;
 
       try! {
@@ -27,7 +27,7 @@ module HDF5Preprocessors {
 
         // write the script to a file
         {
-          var writer = f.writer();
+          var writer = f.writer(locking=false);
           writer.writeln(script);
           writer.flush();
           f.fsync();

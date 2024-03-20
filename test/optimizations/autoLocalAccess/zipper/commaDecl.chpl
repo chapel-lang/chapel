@@ -6,7 +6,7 @@ var A, B: [D] int;
 
 B = 10;
 
-forall (i, loopIdx) in zip(D, 1..) {
+forall (i, loopIdx) in zip(D, 1..) with (ref A) {
   A[i] = B[i]*loopIdx;
 }
 

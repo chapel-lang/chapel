@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -569,7 +569,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
   if results.size > 0 {
     const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openReader(brickPath);
+    const openFile = openReader(brickPath, locking=false);
     const toml = parseToml(openFile);
 
     return toml;
@@ -599,7 +599,7 @@ proc findLatest(packageDir: string): VersionInfo {
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openReader(packageDir + '/' + manifest);
+    const manifestReader = openReader(packageDir + '/' + manifest, locking=false);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -723,7 +723,7 @@ proc splitNameVersion(ref package: string, original: bool) {
 
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
-  const openFile = openReader(tomlFile);
+  const openFile = openReader(tomlFile, locking=false);
   const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();

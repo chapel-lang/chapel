@@ -2,7 +2,7 @@ use BlockDist;
 
 class Arr {
   type t;
-  var d = Block.createDomain(1..10);
+  var d = blockDist.createDomain(1..10);
   var a: [d] t;
 
 }

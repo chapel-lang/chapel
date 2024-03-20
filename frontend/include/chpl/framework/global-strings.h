@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,7 @@
 
 /* Max length of a global string that can appear in a USTR("<something>") macro  */
 /* If updating here, you should also ensure there is a EXPAND{MAXLEN} macro */
-#define MAXLEN 16
+#define MAXLEN 32
 
 /*
 EXPAND4("foo", 0) expands to
@@ -63,11 +63,15 @@ template<> USTRTemplate<'f, 'o', 'o', '\0'>
   EXPAND4(s, i),      \
   EXPAND4(s, i + 4)
 
-#define EXPAND16(s) \
-  EXPAND8(s, 0),    \
-  EXPAND8(s, 8)
+#define EXPAND16(s, i) \
+  EXPAND8(s, i),    \
+  EXPAND8(s, i + 8)
 
-#define USTR(s) ({static_assert(sizeof((s)) < MAXLEN, "String to USTR too long"); chpl::detail::USTRTemplate<EXPAND16((s))>::value;})
+#define EXPAND32(s) \
+  EXPAND16(s, 0),    \
+  EXPAND16(s, 16)
+
+#define USTR(s) ({static_assert(sizeof((s)) < MAXLEN, "String to USTR too long"); chpl::detail::USTRTemplate<EXPAND32((s))>::value;})
 
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
@@ -93,7 +97,7 @@ namespace chpl {
 
     /* Stamp out a template specialization for each global string */
 #define X(field, str)                                                          \
-  template <> struct USTRTemplate<EXPAND16(str)> {                             \
+  template <> struct USTRTemplate<EXPAND32(str)> {                             \
     static constexpr UniqueString& value = globalStrings.field;                \
   };
 #include "all-global-strings.h"

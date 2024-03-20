@@ -11,6 +11,7 @@ add_llvm_component_library(LLVMipo
   CrossDSOCFI.cpp
   DeadArgumentElimination.cpp
   ElimAvailExtern.cpp
+  EmbedBitcodePass.cpp
   ExtractGV.cpp
   ForceFunctionAttrs.cpp
   FunctionAttrs.cpp
@@ -23,17 +24,15 @@ add_llvm_component_library(LLVMipo
   IPO.cpp
   IROutliner.cpp
   InferFunctionAttrs.cpp
-  InlineSimple.cpp
   Inliner.cpp
   Internalize.cpp
   LoopExtractor.cpp
   LowerTypeTests.cpp
+  MemProfContextDisambiguation.cpp
   MergeFunctions.cpp
   ModuleInliner.cpp
   OpenMPOpt.cpp
   PartialInlining.cpp
-  PassManagerBuilder.cpp
-  PruneEH.cpp
   SampleContextTracker.cpp
   SampleProfile.cpp
   SampleProfileProbe.cpp
@@ -69,8 +68,8 @@ add_llvm_component_library(LLVMipo
   ProfileData
   Scalar
   Support
+  TargetParser
   TransformUtils
   Vectorize
   Instrumentation
-  Scalar
   )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -341,7 +341,6 @@ static void test8(Parser* parser) {
   auto noDoc = attr->getAttributeNamed(UniqueString::get(parser->context(),
                                                          "chpldoc.nodoc"));
   assert(noDoc);
-  // assert(attr->hasPragma(PRAGMA_NO_DOC));
   const Variable* var = fwd->expr()->toVariable();
   assert(var);
   assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
@@ -374,7 +373,6 @@ static void test9(Parser* parser) {
   auto attr = fwd->attributeGroup();
   assert(attr);
   assert(attr->isDeprecated());
-  assert(!attr->hasPragma(PRAGMA_NO_DOC));
   const Variable* var = fwd->expr()->toVariable();
   assert(var);
   assert(var->visibility() == Decl::DEFAULT_VISIBILITY);

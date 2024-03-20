@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -90,7 +90,7 @@ void printStatistics(const char* pass) {
   static int last_nasts = -1;
   static int maxK = -1, maxN = -1;
 
-  if (!strcmp(pass, "makeBinary")) {
+  if (strcmp(pass, "codegen") == 0) {
     if (strstr(fPrintStatistics, "m")) {
       fprintf(stderr, "Maximum # of ASTS: %d\n", maxN);
       fprintf(stderr, "Maximum Size (KB): %d\n", maxK);

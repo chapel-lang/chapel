@@ -47,7 +47,7 @@ proc main() {
 
   if correctness {
     var reference : [dom] real = 0;
-    forall (i,j) in dom {
+    forall (i,j) in dom with (ref reference) {
       reference[i,j] = + reduce (BA[i,..]*BA[..,j]); 
     }
     const diff = abs(+ reduce (result - reference));

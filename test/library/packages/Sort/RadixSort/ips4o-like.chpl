@@ -481,7 +481,7 @@ proc copyifchecks(A:[], start_n:int, end_n:int) {
 
 proc putSampleAtArrayStart(in start_n:int, end_n:int, A:[], in numSamples:int) {
   use Random;
-  var randNums = createRandomStream(0, eltType=int, parSafe=false);
+  var randNums = new randomStream(seed=0, eltType=int);
   while numSamples > 0 {
     numSamples -= 1;
 
@@ -694,7 +694,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   const blocksPerTask = divceil(blocksPerLocale, nTasksPerLocale);
   const nTasks = nLocales*nTasksPerLocale; // aka 't' in the paper
   const DistributedTasks = {0..#nTasks};
-//                             dmapped Block(boundingBox={0..#nTasks},
+//                             dmapped blockDist(boundingBox={0..#nTasks},
 //                                           targetLocales=A.targetLocales());
 
   if debug {
@@ -1902,7 +1902,7 @@ proc randomtest(n:int) {
   var A: [blockDom] uint;
 
   if skew {
-    var rng = createRandomStream(seed, eltType=uint);
+    var rng = new randomStream(seed=seed, eltType=uint);
     A = rng.choice([1:uint, 17:uint,
                     100:uint, 0xffff:uint, 0xffffffffffffffff:uint], n);
   } else {

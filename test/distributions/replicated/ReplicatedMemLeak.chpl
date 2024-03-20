@@ -10,7 +10,7 @@ record r {
   var ptr = new shared C(1);
 
   proc init() {
-    this.complete();
+    init this;
     writeln('default init ', this);
   }
 
@@ -39,7 +39,7 @@ operator r.=(ref lhs: r, const ref rhs: r) {
   rhs.ptr.x += 1;
 }
 
-var d1 = {0..0} dmapped Replicated();
+var d1 = {0..0} dmapped replicatedDist();
 var a1: [d1] r;
 
 proc test() {

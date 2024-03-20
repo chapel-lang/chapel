@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
     under any circumstance.
 
 */
+@unstable("The Communication module is unstable and may change in the future")
 module Communication {
   private use CTypes;
 

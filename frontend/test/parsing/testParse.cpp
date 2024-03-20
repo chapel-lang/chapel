@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -808,7 +808,7 @@ static void testMultiAttributesAndPragma(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
-                                          pragma "no doc"
+                                          pragma "do not RVF"
                                           @attribute(true)
                                           @attribute1()
                                           @attribute2('words')
@@ -832,7 +832,7 @@ static void testMultiAttributesAndPragma(Parser* parser) {
   auto attr2 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute2"));
   auto attr3 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute3"));
   auto attr4 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute4"));
-  assert(attrGrp->hasPragma(PragmaTag::PRAGMA_NO_DOC));
+  assert(attrGrp->hasPragma(PragmaTag::PRAGMA_NO_RVF));
   assert(attr0);
   assert(attr1);
   assert(attr2);
@@ -1278,7 +1278,7 @@ static void testAttributeAndNoAttributeOnLoop(Parser* parser) {
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);
-  
+
   auto foo = mod->stmt(0)->toFunction();
   assert(foo);
   auto bar = mod->stmt(1)->toFunction();

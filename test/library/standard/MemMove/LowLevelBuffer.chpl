@@ -2,7 +2,7 @@
 // Example of a low level buffer that wraps _ddata. See #16797.
 //
 
-record buffer {
+record buffer : writeSerializable {
   type eltType;
 
   // TODO: How to make "on this" equivalent to "on this._data"?
@@ -42,8 +42,8 @@ record buffer {
   }
 
   // A standard implementation probably shouldn't offer this.
-  proc writeThis(ch) {
-    for slot in this do ch.write(slot, " ");
+  proc serialize(writer, ref serializer) {
+    for slot in this do writer.write(slot, " ");
   }
 }
 

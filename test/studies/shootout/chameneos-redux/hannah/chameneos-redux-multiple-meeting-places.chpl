@@ -23,12 +23,12 @@ enum digit {zero, one, two, three, four,
 config const verbose = false;
 // if verbose is true, prints out non-det output, otherwise prints det output
 config const peek = false;
-// if peek is true, allows chameneos to peek at spotsLeft$ in
+// if peek is true, allows chameneos to peek at spotsLeft in
 // MeetingPlace.meet() then immediately return
 
 class MeetingPlace {
-  var spotsLeft$ : sync int = 2;
-  var color2$ : sync color;
+  var spotsLeft : sync int = 2;
+  var color2 : sync color;
   var color1 : color;
   var id1 : int;
   var id2 : int;
@@ -36,7 +36,7 @@ class MeetingPlace {
   /* reset must be called after meet,
      to reset numMeetings for a subsequent call of meet */
   proc reset() {
-    spotsLeft$.writeXF(2);
+    spotsLeft.writeXF(2);
   }
 
   /* meet, if called on by the chameneos who arrives 1st,
@@ -44,34 +44,34 @@ class MeetingPlace {
      otherwise returns the color of the chameneos who arrives 1st
      (denies meetings of 3+ chameneos) */
   proc meet(chameneos : Chameneos) {
-    /* peek at spotsLeft$ */
+    /* peek at spotsLeft */
     if (peek) {
-      if (spotsLeft$.readXX() == 0) {
+      if (spotsLeft.readXX() == 0) {
         return chameneos.myColor;
       }
     }
 
-    var spotsLeft = spotsLeft$;
+    var spotsLeft = spotsLeft;
     var otherColor : color;
 
     if (spotsLeft == 0) {
-      spotsLeft$ = 0;
+      spotsLeft = 0;
       return chameneos.myColor;
     }
     if (spotsLeft % 2 == 0) {
       color1 = chameneos.myColor;
       id1 = chameneos.id;
-      spotsLeft$ = spotsLeft - 1;
-      otherColor = color2$;
+      spotsLeft = spotsLeft - 1;
+      otherColor = color2;
       if (id1 == id2) {
         halt("halt");
         chameneos.meetingsWithSelf += 1;
       }
-      spotsLeft$ = spotsLeft - 2;
+      spotsLeft = spotsLeft - 2;
     } else if (spotsLeft % 2 == 1) {
       otherColor = color1;
       id2 = chameneos.id;
-      color2$ = chameneos.myColor;
+      color2 = chameneos.myColor;
     }
     chameneos.meetings += 1;
     return otherColor;
@@ -94,17 +94,17 @@ class Chameneos {
   var myColor : color;
   var meetings: int;
   var meetingsWithSelf : int;
-  var lock$ = true;
+  var lock = true;
 
   /* start tells a Chameneos to go to a given MeetingPlace, where it may meet
      with another Chameneos.  If it does, it will get the complement of the
      color of the Chameneos it met with, and change to that color. */
   proc start(place : MeetingPlace) {
-    lock$;
+    lock;
     var otherColor : color;
     otherColor = place.meet(this);
     myColor = getComplement(myColor, otherColor);
-    lock$ = true;
+    lock = true;
   }
 }
 

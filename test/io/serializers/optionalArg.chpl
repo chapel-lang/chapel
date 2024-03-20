@@ -12,14 +12,14 @@ proc main() {
 
   writeln("Default: ", r);
   write("JSON: ");
-  writeln(r, serializer=new JsonSerializer());
+  writeln(r, serializer=new jsonSerializer());
 
   var f = openMemFile();
   {
-    f.writer().write(r, serializer=new JsonSerializer());
+    f.writer().write(r, serializer=new jsonSerializer());
   }
   {
-    var x = f.reader().read(R, deserializer=new JsonDeserializer());
+    var x = f.reader().read(R, deserializer=new jsonDeserializer());
     writeln("got: ", x);
   }
 }

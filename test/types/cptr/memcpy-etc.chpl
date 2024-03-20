@@ -11,9 +11,10 @@ proc test(type t, v1:t, v2:t) {
 
   // although `isAnyCPtr` is no longer a public facing feature, I want to
   // maintain this test to ensure the feature continues to work
-  // test chpl_isAnyCPtr on the type
-  assert( chpl_isAnyCPtr(c_ptrTo(x).type) );
-  assert( chpl_isAnyCPtr(c_ptr(void)) );
+  // test isAnyCPtr on the type
+  assert( isAnyCPtr(c_ptrTo(x).type) );
+  assert( isAnyCPtr(c_ptrToConst(x).type) );
+  assert( isAnyCPtr(c_ptr(void)) );
 
   // test memset on the pointer to the type
   memset( c_ptrTo(x), 0, c_sizeof(x.type) );

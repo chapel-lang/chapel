@@ -50,11 +50,11 @@ proc test_assoc(type t) {
   var B = Matrix(M, N, t);
   var C = Matrix(N, P, t);
 
-  var rng=new owned RandomStream(t, seed=seed);
+  var rng=new randomStream(t, seed=seed);
   for ii in 0.. #nIters {
-    rng.fillRandom(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    rng.fill(A);
+    rng.fill(B);
+    rng.fill(C);
     var r1 = dot(A,dot(B,C));
     var r2 = dot(dot(A,B),C);
     var t1 = max reduce abs(r1/r2); 
@@ -76,10 +76,10 @@ proc test_transpose_product(type t) {
   var A = Matrix(L, M, t);
   var B = Matrix(M, N, t);
 
-  var rng=new owned RandomStream(t, seed=seed);
+  var rng=new randomStream(t, seed=seed);
   for ii in 0.. #nIters {
-    rng.fillRandom(A);
-    rng.fillRandom(B);
+    rng.fill(A);
+    rng.fill(B);
     var r1 = transpose(dot(A,B));
     var r2 = dot(transpose(B),transpose(A));
     var t1 = max reduce abs(r1/r2); 
@@ -100,10 +100,10 @@ proc test_trace_rotate(type t) {
   var A = Matrix(M, N, t);
   var B = Matrix(N, M, t);
 
-  var rng=new owned RandomStream(t, seed=seed);
+  var rng=new randomStream(t, seed=seed);
   for ii in 0.. #nIters {
-    rng.fillRandom(A);
-    rng.fillRandom(B);
+    rng.fill(A);
+    rng.fill(B);
     var t1 = trace(dot(A,B));
     var t2 = trace(dot(B,A));
     if verbose && (ii==0) {
@@ -124,11 +124,11 @@ proc test_trace_vector_rotate(type t) {
   var v = Vector(M, t);
   var w = Vector(M, t);
 
-  var rng=new owned RandomStream(t, seed=seed);
+  var rng=new randomStream(t, seed=seed);
   for ii in 0.. #nIters {
-    rng.fillRandom(A);
-    rng.fillRandom(v);
-    rng.fillRandom(w);
+    rng.fill(A);
+    rng.fill(v);
+    rng.fill(w);
     var t1 = dot(dot(A,w),v);
     var t2 = trace(dot(A, outer(w,v)));
     if verbose && (ii==0) {

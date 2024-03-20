@@ -8,21 +8,21 @@ use VisualDebug;
 use BlockDist;
 
 const space =  { 0 .. #numLocales };
-const Dspace = space dmapped Block (boundingBox=space);
+const Dspace = blockDist.createDomain(space);
 
 startVdebug("E4");
 
-var go$: [Dspace] single bool;
-var done$: [Dspace] single bool;
+var go: [Dspace] sync bool;
+var done: [Dspace] sync bool;
 
 // Start a begin task on all locales.  The task will start and then block.
 coforall loc in Locales do
   on loc do begin { // start a async task
 
-              go$[here.id].readFF(); // Block until ready!
+              go[here.id].readFF(); // Block until ready!
               writeln ("Finishing running the 'begin' statement on locale "
                        , here.id, ".");
-              done$[here.id].writeEF(true);
+              done[here.id].writeEF(true);
            }
 
 tagVdebug("loc");
@@ -33,11 +33,9 @@ coforall loc in Locales do
 tagVdebug("finish");
 
 // Let all tasks go
-go$.writeEF(true);
+go.writeEF(true);
 
 // Wait until all tasks are finished
-done$.readFF();
+done.readFF();
 
 stopVdebug();
-
-

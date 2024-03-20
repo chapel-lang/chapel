@@ -9,7 +9,7 @@ config param debug: bool = false;
 //   2. Insert a call to incEndCount before every begin statement
 //   3. Insert a call to decEndCount at the end of every begin statement
 //   4. Insert a call to turnBlack before every on statement
-//   5. Add a "single" variable to wait upon at the end of main
+//   5. Add a "sync" variable to wait upon at the end of main
 //
 
 enum TerminationColor {black, white};
@@ -64,7 +64,7 @@ proc passToken(wakeupType) {
   endCount!.localColor.writeEF(TerminationColor.white);
 }
 
-var finishedProg: single bool;
+var finishedProg: sync bool;
 
 proc tokenWaiter() {
   var wakeupType = wakeup!.wakeup.readFE();

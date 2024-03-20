@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -134,8 +134,7 @@ module ArrayViewReindex {
     //
     proc downdomtype(param rank: int, type idxType, param strides: bool) type {
       var ranges : rank*range(idxType, boundKind.both, strides);
-      var a = chpl_dsiNewRectangularDom(dist.downDist, rank,
-                                        idxType, strides, ranges);
+      var a = dist.downDist.dsiNewRectangularDom(rank,idxType,strides,ranges);
       return a.type;
     }
 
@@ -181,8 +180,8 @@ module ArrayViewReindex {
       // _domain._do_destroy().
       var ranges : rank*range(idxType, boundKind.both,
                               dist.downdomInst.strides);
-      var downdomclass = chpl_dsiNewRectangularDom(dist.downDist, rank,
-                                idxType, dist.downdomInst.strides, ranges);
+      var downdomclass = dist.downDist.dsiNewRectangularDom(rank, idxType,
+                                         dist.downdomInst.strides, ranges);
       pragma "no auto destroy"
       var downdomLoc = new _domain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
@@ -404,7 +403,7 @@ module ArrayViewReindex {
       this._ArrInstance    = _ArrInstance;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom);
       this.ownsArrInstance = ownsArrInstance;
-      this.complete();
+      init this;
       __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 
@@ -783,7 +782,7 @@ module ArrayViewReindex {
     }
     for param d in 0..updom.rank-1 {
       if ! newStrides.isOne() {  // todo: optimize when newStrides.isNegOne()
-        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
+        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride): uint; // relStride is always positive
         // Slicing the ranges preserves the stride
         ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d) by relStride];
       } else {

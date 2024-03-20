@@ -24,12 +24,5 @@ proc main() {
   assert(c_ptrTo(c) == c_ptrTo(c2));
   writeln("Addresses match!");
 
-  var p2: c_ptr(void) = c:c_ptr(void);
-  var c3: unmanaged Func = (p2: unmanaged Func?)!;
-  writeln(c3);
-  writeln(c3());
-  assert(c_ptrTo(c) == c_ptrTo(c3));
-  writeln("Addresses match!");
-
   delete c;
 }

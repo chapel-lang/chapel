@@ -63,7 +63,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 begin with (
 ref b0,
 ref u8,
@@ -90,7 +90,7 @@ ref dom1,
 ref dom2,
 ref arr1,
 ref arr2,
-          ref s$)
+          ref s)
 {
   writeln("in begin");
 // write out all the variables
@@ -147,9 +147,9 @@ arr1 = init1arr;
 arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
-  s$.writeEF(1);
+  s.writeEF(1);
 }
-s$.readFE();
+s.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -209,7 +209,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 begin with (
 ref b0,
 ref u8,
@@ -236,7 +236,7 @@ ref dom1,
 ref dom2,
 ref arr1,
 ref arr2,
-          ref s$)
+          ref s)
 {
   writeln("in begin");
 // write out all the variables
@@ -293,9 +293,9 @@ arr1 = init1arr;
 arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
-  s$.writeEF(1);
+  s.writeEF(1);
 }
-s$.readFE();
+s.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -327,7 +327,7 @@ writeln("arr2", " ", arr2);
 test();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a begin ===");
-var sbegin$: sync int;
+var sbegin: sync int;
 begin {
 // Verify that values are not captured upon a 'begin' with a ref clause.
 // This needs #include "support-decls.cpp".
@@ -358,7 +358,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 begin with (
 ref b0,
 ref u8,
@@ -385,7 +385,7 @@ ref dom1,
 ref dom2,
 ref arr1,
 ref arr2,
-          ref s$)
+          ref s)
 {
   writeln("in begin");
 // write out all the variables
@@ -442,9 +442,9 @@ arr1 = init1arr;
 arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
-  s$.writeEF(1);
+  s.writeEF(1);
 }
-s$.readFE();
+s.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -472,9 +472,9 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-  sbegin$.writeEF(1);
+  sbegin.writeEF(1);
 }
-sbegin$.readFE();
+sbegin.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -509,7 +509,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 begin with (
 ref b0,
 ref u8,
@@ -536,7 +536,7 @@ ref dom1,
 ref dom2,
 ref arr1,
 ref arr2,
-          ref s$)
+          ref s)
 {
   writeln("in begin");
 // write out all the variables
@@ -593,9 +593,9 @@ arr1 = init1arr;
 arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
-  s$.writeEF(1);
+  s.writeEF(1);
 }
-s$.readFE();
+s.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -658,7 +658,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 begin with (
 ref b0,
 ref u8,
@@ -685,7 +685,7 @@ ref dom1,
 ref dom2,
 ref arr1,
 ref arr2,
-          ref s$)
+          ref s)
 {
   writeln("in begin");
 // write out all the variables
@@ -742,9 +742,9 @@ arr1 = init1arr;
 arr2 = init2arr;
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
-  s$.writeEF(1);
+  s.writeEF(1);
 }
-s$.readFE();
+s.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);

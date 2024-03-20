@@ -47,7 +47,7 @@ record HashedPathComparator {
    file stored at that path and save the result in that
    array element.
  */
-proc computeHashes(hashAndPath:[] HashedPath) {
+proc computeHashes(ref hashAndPath:[] HashedPath) {
 
   var clock: stopwatch;
   clock.start();

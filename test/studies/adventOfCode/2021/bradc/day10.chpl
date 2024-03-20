@@ -22,7 +22,7 @@ forall (command, lineno) in zip(navSubSys, 1..) {
     if Pairs.domain.contains(ch) then
       stack.pushBack(ch);
     else {
-      const tail = stack.last();
+      const tail = stack.last;
       const expected = Pairs[tail];
       if ch == expected then
         stack.popBack();

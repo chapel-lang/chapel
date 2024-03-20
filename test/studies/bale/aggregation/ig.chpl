@@ -31,11 +31,11 @@ proc stopTimer(name) {
 }
 
 proc main() {
-  const D = if useBlockArr then Block.createDomain(0..#tableSize)
-                           else Cyclic.createDomain(0..#tableSize);
+  const D = if useBlockArr then blockDist.createDomain(0..#tableSize)
+                           else cyclicDist.createDomain(0..#tableSize);
   var A: [D] int = D;
 
-  const UpdatesDom = Block.createDomain(0..#numUpdates);
+  const UpdatesDom = blockDist.createDomain(0..#numUpdates);
   var Rindex: [UpdatesDom] int;
 
   fillRandom(Rindex, 208);

@@ -55,7 +55,7 @@ proc main() {
   x(9) = 3;
   x(10) = 7;
 
-  [i in D] y(i) = x(i):real;
+  [i in D with (ref y)] y(i) = x(i):real;
 
   var order = insertionSort(x);
 

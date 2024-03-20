@@ -17,7 +17,7 @@ proc printDebug(msg: string...) {
   if debug then writeln((...msg));
 }
 
-proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
+proc buildDenseStride(MakeDense : domain(?), MakeStride : domain(?), stride : int) {
   const retStride = MakeStride by stride;
   var rngs = MakeDense.dims();
   for i in 0..#MakeDense.rank {
@@ -27,7 +27,7 @@ proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
   return (retDense, retStride);
 }
 
-proc buildRankChange(Dom : domain, param first : bool) {
+proc buildRankChange(Dom : domain(?), param first : bool) {
   var r : (Dom.rank-1) * Dom.dim(0).type;
   if first {
     for param i in 1..Dom.rank-1 do r(i-1) = Dom.dim(i);
@@ -44,18 +44,18 @@ proc makeFluff(param rank : int, val : int) {
   return ret;
 }
 
-proc selectDomain(param useDist : bool, Dom : domain) {
+proc selectDomain(param useDist : bool, Dom : domain(?)) {
   if useDist {
     if distType == DistType.block then
-      return Dom dmapped Block(Dom);
+      return Dom dmapped blockDist(Dom);
     else if distType == DistType.stencil then
-      return Dom dmapped Stencil(Dom, fluff=makeFluff(Dom.rank, 1));
+      return Dom dmapped stencilDist(Dom, fluff=makeFluff(Dom.rank, 1));
   } else {
     return Dom;
   }
 }
 
-proc testCore(DestDom : domain, SrcDom  : domain, param useDist : bool) {
+proc testCore(DestDom : domain(?), SrcDom  : domain(?), param useDist : bool) {
   const AD = selectDomain(useDist, DestDom);
   const BD = selectDomain(!useDist, SrcDom);
 

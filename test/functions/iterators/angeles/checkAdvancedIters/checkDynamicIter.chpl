@@ -18,7 +18,7 @@ var F:[{rngs,rng}] int=0;
 
 writeln("Checking a non-strided range");
 // The iterator
-forall i in dynamic(rng,chunkSize,nTasks) do {
+forall i in dynamic(rng,chunkSize,nTasks) with (ref A) do {
   A[i]=A[i]+1;
 }
 
@@ -27,7 +27,7 @@ checkCorrectness(A,rng);
 
 writeln("Checking a non-strided domain");
 // The iterator
-forall i in dynamic(dmn,chunkSize,nTasks) do {
+forall i in dynamic(dmn,chunkSize,nTasks) with (ref D) do {
   D[i]=D[i]+1;
 }
 
@@ -36,7 +36,7 @@ checkCorrectness(D,dmn);
 
 writeln("Checking a strided range");
 // The iterator
-forall i in dynamic(rngs,chunkSize,nTasks) do {
+forall i in dynamic(rngs,chunkSize,nTasks) with (ref B) do {
   B[i]=B[i]+1;
 }
 
@@ -45,7 +45,7 @@ checkCorrectness(D,dmn);
 
 writeln("Checking a strided domain");
 // The iterator
-forall i in dynamic(dmns,chunkSize,nTasks) do {
+forall i in dynamic(dmns,chunkSize,nTasks) with (ref E) do {
   E[i]=E[i]+1;
 }
 
@@ -54,7 +54,7 @@ checkCorrectness(E,dmns);
 
 writeln("Checking a zippered iteration (range)");
 // The iterator
-forall (i,j) in zip(dynamic(rngs,chunkSize,nTasks),rng#rngs.size) do {
+forall (i,j) in zip(dynamic(rngs,chunkSize,nTasks),rng#rngs.size) with (ref C) do {
   C[i,j]=C[i,j]+1;
 }
 
@@ -63,7 +63,7 @@ checkCorrectness2(C,rngs,rng);
 
 writeln("Checking a zippered iteration (domain)");
 // The iterator
-forall (i,j) in zip(dynamic(dmns,chunkSize,nTasks),dmn#dmns.size) do {
+forall (i,j) in zip(dynamic(dmns,chunkSize,nTasks),dmn#dmns.size) with (ref F) do {
   F[i,j]=F[i,j]+1;
 }
 
@@ -85,7 +85,7 @@ proc checkCorrectness(Arr:[]int,r:range(?))
     writeln("Dynamic Iterator: Correct");
 }
 
-proc checkCorrectness(Arr:[]int,c:domain)
+proc checkCorrectness(Arr:[]int,c:domain(?))
 {
   var check=true;
   for i in c do {
@@ -117,7 +117,7 @@ proc checkCorrectness2(Arr:[]int,r:range(?), r2:range(?))
 
 }
 
-proc checkCorrectness2(Arr:[]int,c:domain, c2:domain)
+proc checkCorrectness2(Arr:[]int,c:domain(?), c2:domain(?))
 {
   var check=true;
   for (i,j) in zip(c,c2#c.size) do {

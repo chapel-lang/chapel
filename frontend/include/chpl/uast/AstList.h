@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -195,6 +195,8 @@ struct AstListIteratorPair {
     return end_;
   }
 };
+
+// Note: AstList serializer and deserializer are declared in AstNode.h
 
 
 } // end namespace uast

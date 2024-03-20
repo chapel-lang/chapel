@@ -10,7 +10,7 @@ demonstrate Chapel feature areas in detail.
      atomics.chpl                : Atomic variables
      chpldoc.doc.chpl            : The chpldoc feature
      classes.chpl                : Defining and using classes
-     distributions.chpl          : Chapel standard distributions
+     distributions.chpl          : Distributions and distributed domains/arrays
      domains.chpl                : Domains and methods on domains
      errorHandling.chpl          : Error handling system
      FFTWlib.chpl                : the FFTW standard library
@@ -24,6 +24,7 @@ demonstrate Chapel feature areas in detail.
      learnChapelInYMinutes.chpl  : Chapel's entry for learnxinyminutes.com
      listOps.chpl                : Using the `list` type
      locales.chpl                : Chapel Locale types
+     loops.chpl                  : Comprehensive introduction to Chapel's loops
      modules.chpl                : Chapel modules and use statements
      nothingVariables.chpl       : Using nothing for variable and field types
      parIters.chpl               : Introduction to parallel iterators
@@ -36,7 +37,7 @@ demonstrate Chapel feature areas in detail.
      slices.chpl                 : Array slicing and reindexing examples
      sparse.chpl                 : Sparse domains and arrays
      specialMethods.chpl         : Class/Record methods treated specially
-     syncsingle.chpl             : Sync and single variables
+     syncs.chpl                  : Sync variables
      taskParallel.chpl           : Task parallel language concepts
      timers.chpl                 : Time standard module
      tuples.chpl                 : Demonstrates the use of tuples in Chapel

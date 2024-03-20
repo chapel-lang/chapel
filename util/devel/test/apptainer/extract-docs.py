@@ -55,6 +55,8 @@ def title(name):
         name = '22.10 "Kinetic Kudu"'
     if name == "Lunar":
         name = '23.04 "Lunar Lobster"'
+    if name == "Mantic":
+        name = '23.10 "Mantic Minotaur"'
     return name
 
 def fixname(subdir):
@@ -143,9 +145,6 @@ for d in directories:
         if "nix" in subpath:
             continue # skip these configurations
                      # (not sure how useful this is)
-        if ("fedora-38" in subpath or
-            "fedora-39" in subpath):
-            continue # skip due to not having working LLVM dependency right now
         if "generic-x32-debian11" in subpath:
             continue # skip this one, redudant with other debian ones
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,7 @@
  */
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/can-pass.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -38,6 +39,33 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
+
+void OuterVariables::add(Context* context, ID mention, ID var) {
+  ID mentionParent = mention.parentSymbolId(context);
+  ID symbolParent = symbol_.parentSymbolId(context);
+  ID varParent = var.parentSymbolId(context);
+  const bool isReachingUse = symbolParent != varParent;
+  const bool isChildUse = mentionParent != symbol_;
+
+  CHPL_ASSERT(varParent != symbol_);
+  if (!isReachingUse) {
+    CHPL_ASSERT(mention && symbol_.contains(mention));
+  }
+
+  auto it = idToVarAndMentionIndices_.find(var);
+  if (it == idToVarAndMentionIndices_.end()) {
+    auto p = std::make_pair(variables_.size(), std::vector<size_t>());
+    it = idToVarAndMentionIndices_.emplace_hint(it, var, std::move(p));
+    variables_.push_back(var);
+    if (isReachingUse) numReachingVariables_++;
+  }
+
+  // Don't bother storing the mention for a child use.
+  if (!isChildUse) {
+    it->second.second.push_back(mentions_.size());
+    mentions_.push_back(mention);
+  }
+}
 
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
@@ -316,39 +344,20 @@ CallInfo CallInfo::create(Context* context,
       name = calledIdent->name();
     } else if (auto calledDot = called->toDot()) {
       name = calledDot->field();
+    } else if (auto op = called->toOpCall()) {
+      name = op->op();
     } else {
-      CHPL_ASSERT(false && "Unexpected called expression");
+      CHPL_UNIMPL("CallInfo without a name");
     }
   }
 
-  // Check for method call, maybe construct a receiver.
-  if (!call->isOpCall()) {
-    if (auto called = call->calledExpression()) {
-      if (auto calledDot = called->toDot()) {
-
-        const AstNode* receiver = calledDot->receiver();
-        const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
-        const QualifiedType& qtReceiver = reReceiver.type();
-
-        // Check to make sure the receiver is a value or type.
-        if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
-            qtReceiver.kind() != QualifiedType::FUNCTION &&
-            qtReceiver.kind() != QualifiedType::MODULE) {
-
-          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-          if (actualAsts != nullptr) {
-            actualAsts->push_back(receiver);
-          }
-          calledType = qtReceiver;
-          isMethodCall = true;
-        }
-      }
-    }
-  }
-
-  // Get the type of the called expression.
-  if (isMethodCall == false) {
-    if (auto calledExpr = call->calledExpression()) {
+  // Set up a method call if relevant.
+  if (auto calledExpr = call->calledExpression()) {
+    // It shouldn't be possible to have definitions that could match either a
+    // normal method call or a call to 'this' on a field, so no need to
+    // disambiguate here; assume it'll be one or the other.
+    if (byPostorder.hasAst(calledExpr)) {
+      // If we have a resolved type for the expression, call its 'this'.
       const ResolvedExpression& r = byPostorder.byAst(calledExpr);
       calledType = r.type();
 
@@ -366,6 +375,27 @@ CallInfo CallInfo::create(Context* context,
         }
         // and reset calledType
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      }
+    } else if (!call->isOpCall()) {
+      // Check for normal method call, maybe construct a receiver.
+      if (auto called = call->calledExpression()) {
+        if (auto calledDot = called->toDot()) {
+          const AstNode* receiver = calledDot->receiver();
+          const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
+          const QualifiedType& qtReceiver = reReceiver.type();
+
+          // Check to make sure the receiver is a value or type.
+          if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
+              qtReceiver.kind() != QualifiedType::FUNCTION &&
+              qtReceiver.kind() != QualifiedType::MODULE) {
+            actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+            if (actualAsts != nullptr) {
+              actualAsts->push_back(receiver);
+            }
+            calledType = qtReceiver;
+            isMethodCall = true;
+          }
+        }
       }
     }
   }
@@ -406,6 +436,11 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
                   std::move(newActuals));
+}
+
+CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
+  return CallInfo(rename, ci.calledType(), ci.isMethodCall(),
+                  ci.hasQuestionArg_, ci.isParenless_, ci.actuals_);
 }
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
@@ -757,6 +792,19 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+void CandidatesAndForwardingInfo::stringify(
+    std::ostream& ss, chpl::StringifyKind stringKind) const {
+  ss << "CandidatesAndForwardingInfo: ";
+  ss << "(candidates) ";
+  for (const auto& candidate : candidates) {
+    candidate->stringify(ss, stringKind);
+  }
+  ss << "(forwarding info) ";
+  for (const auto& info : forwardingInfo) {
+    info.stringify(ss, stringKind);
+  }
+}
+
 void CallInfoActual::stringify(std::ostream& ss,
                                chpl::StringifyKind stringKind) const {
   if (!byName_.isEmpty()) {
@@ -819,13 +867,47 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
+MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
+                                          const TypedFnSignature* fn,
+                                          const FormalActualMap& faMap) {
+  int coercionFormal = -1;
+  int coercionActual = -1;
+  for (auto fa : faMap.byFormals()) {
+    auto& formalType = fa.formalType();
+    auto& actualType = fa.actualType();
+
+    if (!formalType.type() || !actualType.type()) continue;
+
+    auto got = canPass(context, actualType, formalType);
+    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
+      coercionFormal = fa.formalIdx();
+      coercionActual = fa.actualIdx();
+      break;
+    }
+  }
+
+  return MostSpecificCandidate(fn, faMap, coercionFormal, coercionActual);
+}
+
+MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
+                                          const TypedFnSignature* fn,
+                                          const CallInfo& ci) {
+  auto faMap = FormalActualMap(fn, ci);
+  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap);
+}
+
+void MostSpecificCandidate::stringify(std::ostream& ss,
+                          chpl::StringifyKind stringKind) const {
+  if (fn_) fn_->stringify(ss, stringKind);
+}
+
 void
 MostSpecificCandidates::inferOutFormals(Context* context,
                                         const PoiScope* instantiationPoiScope) {
   for (int i = 0; i < NUM_INTENTS; i++) {
-    const TypedFnSignature*& c = candidates[i];
-    if (c != nullptr) {
-      c = chpl::resolution::inferOutFormals(context, c, instantiationPoiScope);
+    MostSpecificCandidate& c = candidates[i];
+    if (c) {
+      c.fn_ = chpl::resolution::inferOutFormals(context, c.fn(), instantiationPoiScope);
     }
   }
 }
@@ -835,19 +917,19 @@ void MostSpecificCandidates::stringify(std::ostream& ss,
   auto onlyFn = only();
   if (onlyFn) {
     ss << " calls ";
-    onlyFn->stringify(ss, stringKind);
+    onlyFn.stringify(ss, stringKind);
   } else {
-    if (auto sig = bestRef()) {
+    if (auto& c = bestRef()) {
       ss << " calls ref ";
-      sig->stringify(ss, stringKind);
+      c.stringify(ss, stringKind);
     }
-    if (auto sig = bestConstRef()) {
+    if (auto& c = bestConstRef()) {
       ss << " calls const ref ";
-      sig->stringify(ss, stringKind);
+      c.stringify(ss, stringKind);
     }
-    if (auto sig = bestValue()) {
+    if (auto& c = bestValue()) {
       ss << " calls value ";
-      sig->stringify(ss, stringKind);
+      c.stringify(ss, stringKind);
     }
   }
 }

@@ -479,8 +479,6 @@ static int gasnetc_init(
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet already initialized");
   gasneti_init_done = 1; /* enable early to allow tracing */
 
-    gasneti_freezeForDebugger();
-
     gasneti_spawn_verbose = gasneti_getenv_yesno_withdefault("GASNET_SPAWN_VERBOSE",0);
 
     if (gasneti_spawn_verbose) 
@@ -521,6 +519,8 @@ static int gasnetc_init(
   gasneti_mynode = 0;
   gasneti_nodes = 1;
 #endif
+
+  gasneti_freezeForDebugger(); // bug 4596: must come AFTER worker process creation
 
   /* enable tracing */
   gasneti_trace_init(argc, argv);

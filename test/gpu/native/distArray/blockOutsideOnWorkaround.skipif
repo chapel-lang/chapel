@@ -1,6 +1,0 @@
-# with aod, the access to arr's elements are handled with a get. However, it
-# looks like we're probably taking the local access path, or more specifically,
-# the wide pointer pointing to the array element has `-2` sublocale, that
-# results in attempting to `chpl_memmove` whereas this should have resulted in a
-# device to host copy.
-CHPL_GPU_MEM_STRATEGY==array_on_device

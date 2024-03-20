@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,17 +18,10 @@
  * limitations under the License.
  */
 
-/* Chapel's standard 'map' type for key-value storage.
+/* Provides Chapel's standard ``map`` type for key-value storage.
 
-  This module contains the implementation of the map type which is a container
-  that stores key-value associations.
-
-  Maps are not parallel safe by default, but can be made parallel safe by
-  setting the param formal `parSafe` to true in any map constructor. When
-  constructed from another map, the new map will inherit the parallel safety
-  mode of its originating map. Note that the ``parSafe`` mode is currently
-  unstable and will eventually be replaced by a standalone parallel-safe map
-  type.
+  This module contains the implementation of the ``map`` type which is a
+  container that stores key-value associations.
 */
 module Map {
   import ChapelLocks;
@@ -43,14 +36,14 @@ module Map {
 
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -73,7 +66,17 @@ module Map {
     }
   }
 
-  record map {
+  /*
+    Chapel's standard ``map`` type for key-value storage.
+
+    Maps are not parallel safe by default, but can be made parallel safe by
+    setting the param formal ``parSafe`` to true in any ``map`` constructor. When
+    constructed from another ``map``, the new ``map`` will inherit the parallel safety
+    mode of its originating map. Note that the ``parSafe`` mode is currently
+    unstable and will eventually be replaced by a standalone parallel-safe map
+    type.
+  */
+  record map : serializable {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */
@@ -102,18 +105,18 @@ module Map {
     var table: chpl__hashtable(keyType, valType);
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
 
@@ -184,12 +187,8 @@ module Map {
 
       :arg other: The map to initialize from.
       :type other: map
-
-      :arg parSafe: If `true`, this map will use parallel safe operations.
-      :type parSafe: bool
     */
-    proc init=(pragma "intent ref maybe const formal"
-               other: map(?kt, ?vt, ?ps)) lifetime this < other {
+    proc init=(ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
 
       // TODO: There has got to be some way that we can abstract this!
       // Arguably this is something that the compiler should be
@@ -203,7 +202,7 @@ module Map {
       this.resizeThreshold = other.resizeThreshold;
       this.table = new chpl__hashtable(keyType, valType,
                                        resizeThreshold);
-      this.complete();
+      init this;
 
       if keyType != kt {
         compilerError('cannot initialize ', this.type:string, ' from ',
@@ -236,7 +235,7 @@ module Map {
         Clearing the contents of this map will invalidate all existing
         references to the elements contained in this map.
     */
-    proc clear() {
+    proc ref clear() {
       _enter(); defer _leave();
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
@@ -295,8 +294,7 @@ module Map {
       :arg m: The other map
       :type m: map(keyType, valType)
     */
-    proc extend(pragma "intent ref maybe const formal"
-                m: map(keyType, valType, parSafe)) {
+    proc ref extend(ref m: map(keyType, valType, parSafe)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
@@ -361,6 +359,10 @@ module Map {
                       '`parSafe=true`', 2);
     }
 
+
+    // TODO (Jade 11/6/23): This doc comment should go on the `this` overload
+    // without `where` that is marked `throws`. However, there is a current
+    // limitation in chpldoc with return intents and `throws` (#23776)
     /*
       If the key exists in the map, get a reference to the value mapped
       to the given key. If the key does not exist in the map, the value
@@ -394,6 +396,7 @@ module Map {
       return table.table[slot].val;
     }
 
+    @chpldoc.nodoc
     proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
@@ -521,7 +524,7 @@ module Map {
 
     /* Remove the element at position `k` from the map and return its value
      */
-    proc getAndRemove(k: keyType) {
+    proc ref getAndRemove(k: keyType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -595,65 +598,37 @@ module Map {
       }
     }
 
+    @chpldoc.nodoc
+    proc ref _readHelper(r: fileReader, ref deserializer) throws {
+      if deserializer.type == defaultDeserializer &&
+         (keyType == string || valType == string ||
+          keyType == bytes || valType == bytes) then
+        compilerError("Default IO format for 'map' does not support reading when the key or value type is  'string' or 'bytes'.");
+
+      this.clear();
+
+      _enter(); defer _leave();
+
+      var des = deserializer.startMap(r);
+
+      var done = false;
+      while des.hasMore() {
+        add(des.readKey(keyType), des.readValue(valType));
+      }
+
+      des.endMap();
+    }
+
     /*
-      Reads the contents of this map from a channel. The format looks like:
+      Reads the contents of this map from a ``fileReader``.
+      The 'defaultDeserializer' format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to read from.
     */
-    proc readThis(ch: fileReader) throws {
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-      if isJson then
-        _readJson(ch);
-      else
-        _readWriteHelper(ch);
-    }
-
-    @chpldoc.nodoc
-    proc _readJson(ch: fileReader) throws {
-      _enter(); defer _leave();
-      var first = true;
-
-      ch._readLiteral("{");
-
-      while !ch.matchLiteral("}") {
-        if first {
-          first = false;
-        } else {
-          ch._readLiteral(",");
-        }
-        var k : keyType;
-        ch.readf("%jt", k);
-        ch._readLiteral(":");
-        var v : valType;
-        ch.readf("%jt", v);
-        add(k, v);
-      }
-    }
-
-    @chpldoc.nodoc
-    proc _readHelper(r: fileReader, ref des) throws {
-      _enter(); defer _leave();
-
-      des.startMap(r);
-
-      var done = false;
-      while !done {
-        try {
-          add(des.readKey(r, keyType), des.readValue(r, valType));
-        } catch e: BadFormatError {
-          done = true;
-        }
-      }
-
-      des.endMap(r);
-    }
-
-    @chpldoc.nodoc
-    proc deserialize(reader: fileReader, ref deserializer) throws {
+    proc ref deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader, deserializer);
     }
 
@@ -673,90 +648,28 @@ module Map {
     }
 
     /*
-      Writes the contents of this map to a channel. The format looks like:
+      Writes the contents of this map to a ``fileWriter``.
+      The 'defaultSerializer' format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-      if isJson then
-        _writeJson(ch);
-      else
-        _readWriteHelper(ch);
-    }
-
-    @chpldoc.nodoc
-    proc _writeJson(ch: fileWriter) throws {
-      _enter(); defer _leave();
-      var first = true;
-
-      ch._writeLiteral("{");
-
-      for slot in table.allSlots() {
-        if table.isSlotFull(slot) {
-          if first {
-            first = false;
-          } else {
-            ch._writeLiteral(", ");
-          }
-          ref tabEntry = table.table[slot];
-          ref key = tabEntry.key;
-          ref val = tabEntry.val;
-          ch.writef("%jt", key);
-          ch._writeLiteral(": ");
-          ch.writef("%jt", val);
-        }
-      }
-
-      ch._writeLiteral("}");
-    }
-
-    @chpldoc.nodoc
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter(); defer _leave();
 
-      ref ser = serializer;
-      ser.startMap(writer, _size);
+      var ser = serializer.startMap(writer, _size);
 
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           ref tabEntry = table.table[slot];
-          ser.writeKey(writer, tabEntry.key);
-          ser.writeValue(writer, tabEntry.val);
+          ser.writeKey(tabEntry.key);
+          ser.writeValue(tabEntry.val);
         }
       }
 
-      ser.endMap(writer);
-    }
-
-    @chpldoc.nodoc
-    proc _readWriteHelper(ch) throws {
-      _enter(); defer _leave();
-      var first = true;
-      proc rwLiteral(lit:string) throws {
-        if ch._writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
-      }
-      rwLiteral("{");
-      for slot in table.allSlots() {
-        if table.isSlotFull(slot) {
-          if first {
-            first = false;
-          } else {
-            rwLiteral(", ");
-          }
-          ref tabEntry = table.table[slot];
-          ref key = tabEntry.key;
-          ref val = tabEntry.val;
-          if ch._writing then ch.write(key); else key = ch.read(key.type);
-          rwLiteral(": ");
-          if ch._writing then ch.write(val); else val = ch.read(val.type);
-        }
-      }
-      rwLiteral("}");
+      ser.endMap();
     }
 
     /*
@@ -773,7 +686,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(in k: keyType, in v: valType): bool lifetime this < v {
+    proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       if found {
@@ -786,7 +699,7 @@ module Map {
     }
 
     @deprecated(notes="'map.set' is deprecated. Please use 'map.replace' instead.")
-    proc set(k: keyType, in v: valType): bool {
+    proc ref set(k: keyType, in v: valType): bool {
       return this.replace(k, v);
     }
 
@@ -804,7 +717,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc replace(k: keyType, in v: valType): bool {
+    proc ref replace(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       if !found {
@@ -820,14 +733,14 @@ module Map {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
     */
-    proc addOrReplace(in k: keyType, in v: valType) {
+    proc ref addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
     }
 
     @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
-    proc addOrSet(in k: keyType, in v: valType) {
+    proc ref addOrSet(in k: keyType, in v: valType) {
       addOrReplace(k, v);
     }
 
@@ -840,7 +753,7 @@ module Map {
      :returns: `false` if `k` was not in the map.  `true` if it was and removed.
      :rtype: bool
     */
-    proc remove(k: keyType): bool {
+    proc ref remove(k: keyType): bool {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found {
@@ -1016,8 +929,10 @@ module Map {
    state of the `map`. An example of this is calling `map.getValue()`.
    */
   class KeyNotFoundError : Error {
+    @chpldoc.nodoc
     proc init() {}
 
+    @chpldoc.nodoc
     proc init(k) {
       super.init(try! "key '%?' not found".format(k));
     }

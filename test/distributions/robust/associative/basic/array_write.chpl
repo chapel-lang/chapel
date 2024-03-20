@@ -11,18 +11,18 @@ for i in D {
   DomStringType += myIdx:string;
 }
 
-forall ai in DomIntType do
+forall ai in DomIntType with (ref AInt) do
   AInt(ai) = ai;
 writeln(sorted(AInt));
 
-forall au in DomUintType do
+forall au in DomUintType with (ref AUint) do
   AUint(au) = au;
 writeln(sorted(AUint));
 
-forall ar in DomRealType do
+forall ar in DomRealType with (ref AReal) do
   AReal(ar) = ar;
 writeln(sorted(AReal));
 
-forall aStr in DomStringType do
+forall aStr in DomStringType with (ref AString) do
   AString(aStr) = aStr;
 writeln(sorted(AString));

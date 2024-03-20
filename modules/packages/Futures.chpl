@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -117,7 +117,7 @@ module Futures {
 
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
       refcnt.write(0);
       state.clear();
     }
@@ -145,7 +145,7 @@ module Futures {
     @chpldoc.nodoc
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
       // sets this=classRef = the new one and bumps the ref count
       // from 0 to 1
       acquire(new unmanaged FutureClass(retType));
@@ -153,13 +153,13 @@ module Futures {
 
     proc init=(x: Future) {
       this.retType = x.retType;
-      this.complete();
+      init this;
       // set this.classRef = x.classRef and bumps the reference count
       this.acquire(x.classRef);
     }
 
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       release();
     }
 
@@ -236,7 +236,7 @@ module Futures {
     }
 
     @chpldoc.nodoc
-    proc acquire(newRef: unmanaged FutureClass?) {
+    proc ref acquire(newRef: unmanaged FutureClass?) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
       if classRef then classRef!.incRefCount();
@@ -249,7 +249,7 @@ module Futures {
     }
 
     @chpldoc.nodoc
-    proc release() {
+    proc ref release() {
       if classRef == nil then halt("release() called on nil future");
       var rc = classRef!.decRefCount();
       if rc == 1 {
@@ -297,8 +297,8 @@ module Futures {
     Asynchronously execute a function (taking arguments) and return a
     :record:`Future` that will eventually hold the result of the function call.
 
-    :arg taskFn: A function taking arguments with types matching `args...`
-    :arg args...: Arguments to `taskFn`
+    :arg taskFn: A function taking arguments with types matching `args`
+    :arg args: Arguments to `taskFn`
     :returns: A future of the return type of `taskFn`
    */
   proc async(in taskFn, args...) {
@@ -330,7 +330,7 @@ module Futures {
     Bundle a set of futures and return a :record:`Future` that will hold a
     tuple of the results of its arguments (themselves futures).
 
-    :arg futures...: A variable-length argument list of futures
+    :arg futures: A variable-length argument list of futures
     :returns: A future with a return type that is a tuple of the return type of
        the arguments
    */

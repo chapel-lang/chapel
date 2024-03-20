@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,8 +29,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "llvm/ADT/None.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
 
@@ -43,6 +41,7 @@ class BorrowedIdsWithName;
 class IdAndFlags {
  public:
   // helper types
+  /// \cond DO_NOT_DOCUMENT
   enum {
     /** Public */
     PUBLIC = 1,
@@ -64,6 +63,8 @@ class IdAndFlags {
     NOT_METHOD = 128,
     // note: if adding something here, also update flagsToString
   };
+  /// \endcond
+
   /**
     A bit-set of the flags defined in the above enum.
     Represents a conjunction / AND of all the set bit.
@@ -580,6 +581,7 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 class Scope {
  public:
   // supporting types/enums
+  /// \cond DO_NOT_DOCUMENT
   enum {
     CONTAINS_FUNCTION_DECLS = 1,
     CONTAINS_USE_IMPORT = 2,
@@ -587,6 +589,8 @@ class Scope {
     METHOD_SCOPE = 8,
     CONTAINS_EXTERN_BLOCK = 16,
   };
+  /// \endcond
+
   /** A bit-set of the flags defined in the above enum */
   using ScopeFlags = unsigned int;
 
@@ -863,7 +867,7 @@ class VisibilitySymbols {
       stores the declared name in `declared`
       Returns false if `name` is not found
   */
-  bool lookupName(const UniqueString &name, UniqueString &declared) const;
+  bool lookupName(UniqueString name, UniqueString &declared) const;
 
   /** Return a vector of pairs of (original name, new name here)
       for the names declared here. */
@@ -981,6 +985,7 @@ enum VisibilityStmtKind {
   VIS_IMPORT,
 };
 
+/// \cond DO_NOT_DOCUMENT
 enum {
   /**
     When looking at a scope, find symbols declared in that scope.
@@ -1048,6 +1053,7 @@ enum {
    */
   LOOKUP_METHODS = 2048,
 };
+/// \endcond
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
 using LookupConfig = unsigned int;
@@ -1183,6 +1189,8 @@ struct ResultVisibilityTrace {
     ID visibilityClauseId;
     VisibilityStmtKind visibilityStmtKind = VIS_USE;
     UniqueString renameFrom;
+    UniqueString usedImportedThingName;
+    const Scope* usedImportedScope = nullptr;
     bool fromUseImport = false;
 
     // this indicates a method receiver scope
@@ -1203,6 +1211,8 @@ struct ResultVisibilityTrace {
              visibilityClauseId == other.visibilityClauseId &&
              visibilityStmtKind == other.visibilityStmtKind &&
              renameFrom == other.renameFrom &&
+             usedImportedThingName == other.usedImportedThingName &&
+             usedImportedScope == other.usedImportedScope &&
              fromUseImport == other.fromUseImport &&
              methodReceiverScope == other.methodReceiverScope &&
              parentScope == other.parentScope &&
@@ -1217,6 +1227,8 @@ struct ResultVisibilityTrace {
     void mark(Context* context) const {
       context->markPointer(resolvedVisibilityScope);
       renameFrom.mark(context);
+      usedImportedThingName.mark(context);
+      context->markPointer(usedImportedScope);
       visibilityClauseId.mark(context);
       context->markPointer(methodReceiverScope);
       context->markPointer(parentScope);

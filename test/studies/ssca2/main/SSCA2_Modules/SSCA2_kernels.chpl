@@ -26,7 +26,7 @@ module SSCA2_kernels
   // edges, all of which have the largest weight.
   // ========================================================
 
-  proc largest_edges ( G, ref heavy_edge_list :domain )
+  proc largest_edges ( G, ref heavy_edge_list :domain(?) )
 
     // edge_weights can be either an array over an associative
     // domain or over a sparse domain.  the output  heavy_edge_list
@@ -95,7 +95,7 @@ module SSCA2_kernels
   // ===================================================================
 
   proc rooted_heavy_subgraphs ( G,
-                                Heavy_Edge_List     : domain,
+                                Heavy_Edge_List     : domain(?),
                                 Heavy_Edge_Subgraph : [],
                                 in max_path_length  : int )
 
@@ -114,7 +114,7 @@ module SSCA2_kernels
       const vertex_domain = G.vertices;
 
       forall ( x, y ) in Heavy_Edge_List do {
-	var Active_Level, Next_Level : domain ( index (vertex_domain) );
+	var Active_Level, Next_Level : domain ( index (vertex_domain), parSafe=true);
 	var min_distance             : [vertex_domain] atomic int;
         forall m in min_distance do m.write(-1);
 
@@ -132,9 +132,9 @@ module SSCA2_kernels
 
 	for path_length in 1 .. max_path_length do {
 
-	  forall v in Active_Level with(ref Next_Level) do {
+	  forall v in Active_Level with (ref Next_Level, ref min_distance) do {
 
-	    forall w in G.Neighbors (v) with(ref Next_Level) do {
+	    forall w in G.Neighbors (v) with (ref Next_Level, ref min_distance) do {
 
 
               if min_distance(w).compareAndSwap(-1, path_length) then {
@@ -169,7 +169,7 @@ module SSCA2_kernels
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PrivateDist, but aliasing is not supported (yet)
-  const PrivateSpace = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
+  const PrivateSpace = LocaleSpace dmapped blockDist(boundingBox=LocaleSpace);
 
   // ==================================================================
   //                              KERNEL 4
@@ -180,7 +180,7 @@ module SSCA2_kernels
   // ==================================================================
 
   proc approximate_betweenness_centrality ( G, starting_vertices,
-                                            Between_Cent : [] real,
+                                            ref Between_Cent : [] real,
                                             out Sum_Min_Dist : real )
 
     // -----------------------------------------------------------------------
@@ -204,10 +204,10 @@ module SSCA2_kernels
       // Considering using a dense 1-d array instead.  This would
       // complicate the Level_Set implementation a little, but would
       // probably be more efficient.
-      type Sparse_Vertex_List = domain(index(vertex_domain));
+      type Sparse_Vertex_List = domain(index(vertex_domain), parSafe=true);
 
-      var Between_Cent$ : [vertex_domain] atomic real;
-      var Sum_Min_Dist$ : atomic real;
+      var atomic_Between_Cent : [vertex_domain] atomic real;
+      var atomic_Sum_Min_Dist : atomic real;
 
       //
       // Throughout kernel 4, we use distributed arrays that are
@@ -239,17 +239,17 @@ module SSCA2_kernels
           else
             Locales[((t-1)/numTPVs)/numLocales];
 
-      const TPVLocaleSpace = TPVSpace dmapped Block(boundingBox=TPVSpace,
+      const TPVLocaleSpace = TPVSpace dmapped blockDist(boundingBox=TPVSpace,
                                                     targetLocales=TPVLocales);
 
       // There will be numTPVs copies of the temps, thus throttling the
       // number of starting vertices being considered simultaneously.
-      var TPV: [TPVLocaleSpace] unmanaged taskPrivateData(domain(index(vertex_domain)),
+      var TPV: [TPVLocaleSpace] unmanaged taskPrivateData(domain(index(vertex_domain), parSafe=true),
                                                 vertex_domain.type)?;
 
       // Initialize
       coforall tpvElem in TPV do on tpvElem {
-          const tpv = new unmanaged taskPrivateData(domain(index(vertex_domain)), vertex_domain);
+          const tpv = new unmanaged taskPrivateData(domain(index(vertex_domain), parSafe=true), vertex_domain);
           tpvElem = tpv;
           forall v in vertex_domain do
             tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
@@ -273,7 +273,7 @@ module SSCA2_kernels
 
       if PRINT_TIMING_STATISTICS then sw.start ();
 
-      forall s in starting_vertices do on vertex_domain.distribution.idxToLocale(s) {
+      forall s in starting_vertices with (ref Locales, ref atomic_Between_Cent) do on vertex_domain.distribution.idxToLocale(s) {
 
         const shere = here.id;
 
@@ -284,10 +284,10 @@ module SSCA2_kernels
         const tpv = TPVM.getTPV(tid);
         ref BCaux = tpv.BCaux;
         pragma "dont disable remote value forwarding"
-        inline proc f1(BCaux, v) {
-          BCaux[v].path_count$.write(0.0);
+        inline proc f1(ref BCaux, v) {
+          BCaux[v].path_count.write(0.0);
         }
-        forall v in vertex_domain do {
+        forall v in vertex_domain with (ref BCaux) do {
           BCaux[v].depend = 0.0;
           BCaux[v].min_distance.write(-1);
           f1(BCaux, v);
@@ -298,7 +298,7 @@ module SSCA2_kernels
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
 	// the shortest path (min_distance) from s to it. The array
-	// path_count$ will hold a count of the number of shortest
+	// path_count will hold a count of the number of shortest
 	// paths from s to this node.  The number of paths in moderate
 	// sized tori exceeds 2**64.
 
@@ -319,13 +319,13 @@ module SSCA2_kernels
         //
         ref Active_Level = tpv.Active_Level;
         pragma "dont disable remote value forwarding"
-        inline proc f2(BCaux, s) {
-          BCaux[s].path_count$.write(1.0);
+        inline proc f2(ref BCaux, s) {
+          BCaux[s].path_count.write(1.0);
         }
 
         var bar = new barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining, ref bar) do on loc {
+        coforall loc in Locales with (ref remaining, ref bar, ref atomic_Between_Cent) do on loc {
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();
@@ -355,7 +355,7 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
+            inline proc f3(ref BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
 
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
@@ -377,7 +377,7 @@ module SSCA2_kernels
                   // ------------------------------------------------
 
                   if BCaux[v].min_distance.read() == current_distance_c {
-                    BCaux[v].path_count$.add(BCaux[u].path_count$.read());
+                    BCaux[v].path_count.add(BCaux[u].path_count.read());
                     //f3(BCaux, v, u);
                     BCaux[u].children_list.add_child (v);
                   }
@@ -386,8 +386,8 @@ module SSCA2_kernels
 
             const AL = Active_Level[here.id]!;
 
-            forall u in AL.Members do {
-              forall v in G.FilteredNeighbors(u) do on vertex_domain.distribution.idxToLocale(v) {
+            forall u in AL.Members with (ref BCaux) do {
+              forall v in G.FilteredNeighbors(u) with (ref BCaux) do on vertex_domain.distribution.idxToLocale(v) {
                       var dist_temp: real;
                       f3(BCaux, v, u, current_distance_c, Active_Level, dist_temp);
                       if VALIDATE_BC && dist_temp != 0 then
@@ -426,7 +426,7 @@ module SSCA2_kernels
 
           if VALIDATE_BC then
             if here.id==0 then
-              Sum_Min_Dist$.add(Lcl_Sum_Min_Dist.read());
+              atomic_Sum_Min_Dist.add(Lcl_Sum_Min_Dist.read());
 
           // -------------------------------------------------------------
           // compute the dependencies recursively, traversing the vertices
@@ -442,12 +442,12 @@ module SSCA2_kernels
                         "  is ", graph_diameter );
 
           pragma "dont disable remote value forwarding"
-          inline proc f4(BCaux, Between_Cent$, u) {
+          inline proc f4(ref BCaux, ref atomic_Between_Cent, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-              ( BCaux[u].path_count$.read() /
-                BCaux[v].path_count$.read() )      *
+              ( BCaux[u].path_count.read() /
+                BCaux[v].path_count.read() )      *
               ( 1.0 + BCaux[v].depend );
-            Between_Cent$(u).add(BCaux[u].depend);
+            atomic_Between_Cent(u).add(BCaux[u].depend);
           }
 
           // back up to last level
@@ -457,7 +457,7 @@ module SSCA2_kernels
             curr_Level = curr_Level.previous!;
 
             for u in curr_Level.Members do on vertex_domain.distribution.idxToLocale(u) {
-                f4(BCaux, Between_Cent$, u);
+                f4(BCaux, atomic_Between_Cent, u);
             }
 
             bar.barrier();
@@ -490,9 +490,9 @@ module SSCA2_kernels
       }
 
       if VALIDATE_BC then
-        Sum_Min_Dist = Sum_Min_Dist$.read();
+        Sum_Min_Dist = atomic_Sum_Min_Dist.read();
 
-      Between_Cent = Between_Cent$.read();
+      Between_Cent = atomic_Between_Cent.read();
 
       if DELETE_KERNEL4_DS {
         coforall tpvElem in TPV do on tpvElem {
@@ -553,7 +553,7 @@ module SSCA2_kernels
     proc init(type vertex) {
       this.vertex = vertex;
     }
-    proc init=(other: child_struct) {
+    proc init=(other: child_struct(?)) {
       this.vertex = other.vertex;
       this.nd = other.nd;
       this.Row_Children = other.Row_Children;
@@ -561,7 +561,7 @@ module SSCA2_kernels
     }
 
     // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
+    proc ref add_child ( new_child: vertex ) {
       var c = child_count.fetchAdd(1)+1;
       Row_Children[c] = new_child;
     }
@@ -573,17 +573,17 @@ module SSCA2_kernels
   record taskPrivateArrayData {
     type vertex;
     var min_distance  : chpl__processorAtomicType(int); // used only on home locale
-    var path_count$   : atomic real;
+    var path_count    : atomic real;
     var depend        : real;
     var children_list : child_struct(vertex);
 
     proc init(type vertex) {
       this.vertex = vertex;
     }
-    proc init=(other: taskPrivateArrayData) {
+    proc init=(other: taskPrivateArrayData(?)) {
       this.vertex = other.vertex;
       this.min_distance = other.min_distance;
-      this.path_count$ = other.path_count$.read();
+      this.path_count = other.path_count.read();
       this.depend = other.depend;
       this.children_list = other.children_list;
     }

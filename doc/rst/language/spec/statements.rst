@@ -28,6 +28,7 @@ Chapel provides the following statements:
      break-statement
      continue-statement
      param-for-statement
+     require-statement
      use-statement
      import-statement
      defer-statement
@@ -98,7 +99,7 @@ Blocks
 ------
 
 A block is a statement or a possibly empty list of statements that form
-their own scope. A block is given by 
+their own scope. A block is given by
 
 .. code-block:: syntax
 
@@ -121,7 +122,7 @@ Expression Statements
 ---------------------
 
 The expression statement evaluates an expression solely for side
-effects. The syntax for an expression statement is given by 
+effects. The syntax for an expression statement is given by
 
 .. code-block:: syntax
 
@@ -145,7 +146,7 @@ expression, for example, a variable. Assignment statements are given by
 .. code-block:: syntax
 
    assignment-statement:
-     lvalue-expression assignment-operator expression
+     lvalue-expression assignment-operator expression ;
 
    assignment-operator: one of
       = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
@@ -221,12 +222,12 @@ to, each must be a valid lvalue
 expression (:ref:`LValue_Expressions`).
 
 The swap operator can be overloaded for different types using operator
-overloading (:ref:`Function_Overloading`). 
+overloading (:ref:`Function_Overloading`).
 
 .. code-block:: syntax
 
    swap-statement:
-     lvalue-expression swap-operator lvalue-expression
+     lvalue-expression swap-operator lvalue-expression ;
 
    swap-operator:
      <=>
@@ -237,7 +238,7 @@ as necessary.
    *Example*.
 
    When resolved to the default swap operator, the following swap
-   statement 
+   statement
 
    .. code-block:: chapel
 
@@ -245,7 +246,7 @@ as necessary.
 
       a <=> b;
 
-   is semantically equivalent to: 
+   is semantically equivalent to:
 
    .. code-block:: chapel
 
@@ -260,7 +261,7 @@ The Conditional Statement
 
 The conditional statement allows execution to choose between two
 statements based on the evaluation of an expression of ``bool`` type.
-The syntax for a conditional statement is given by 
+The syntax for a conditional statement is given by
 
 .. code-block:: syntax
 
@@ -295,8 +296,8 @@ whether or not an explicit block surrounds it.
 
 The control-flow declaration *ctrl-decl*, when used, declares a variable
 whose scope is the then-clause of the conditional statement.
-The expression must be of a class type. 
-If it evaluates to ``nil``, the else-clause is executed if present. Otherwise 
+The expression must be of a class type.
+If it evaluates to ``nil``, the else-clause is executed if present. Otherwise
 its value is stored in the declared variable and the then-clause is executed.
 If the expression's type is ``borrowed`` or  ``unmanaged``,
 the variable's type is its non-nilable variant (:ref:`Nilable_Classes`).
@@ -315,7 +316,7 @@ statement, too.
    *Example (conditionals.chpl)*.
 
    The following function prints ``two`` when ``x`` is ``2`` and
-   ``B,four`` when ``x`` is ``4``. 
+   ``B,four`` when ``x`` is ``4``.
 
    .. code-block:: chapel
 
@@ -334,13 +335,13 @@ statement, too.
           writeln("other");
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       for i in 2..6 do condtest(i);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -356,7 +357,7 @@ The Select Statement
 --------------------
 
 The select statement is a multi-way variant of the conditional
-statement. The syntax is given by: 
+statement. The syntax is given by:
 
 .. code-block:: syntax
 
@@ -387,8 +388,8 @@ that comparison is ``true`` will be selected and control transferred to
 the associated statement. If the comparison is always ``false``, the
 statement associated with the keyword ``otherwise``, if it exists, will
 be selected and control transferred to it. There may be at most one
-``otherwise`` statement and its location within the select statement
-does not matter.
+``otherwise`` statement and it must be the last clause of the `select`
+statement.
 
 Each statement embedded in the *when-statement* or the
 *otherwise-statement* has its own scope whether or not an explicit block
@@ -400,7 +401,7 @@ The While Do and Do While Loops
 -------------------------------
 
 There are two variants of the while loop in Chapel. The syntax of the
-while-do loop is given by: 
+while-do loop is given by:
 
 .. code-block:: syntax
 
@@ -410,7 +411,7 @@ while-do loop is given by:
      'while' ctrl-decl 'do' statement
      'while' ctrl-decl block-statement
 
-The syntax of the do-while loop is given by: 
+The syntax of the do-while loop is given by:
 
 .. code-block:: syntax
 
@@ -452,7 +453,7 @@ unconditionally the first time.
    ``do-while-statement`` and the ``while-do-statement``. The body of
    the do-while loop is always executed at least once, even if the loop
    conditional is already false when it is entered. The code
-   
+
 
    .. code-block:: chapel
 
@@ -471,7 +472,7 @@ unconditionally the first time.
         writeln(t);
       }
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -488,7 +489,7 @@ termination expression.
    *Example (do-while.chpl)*.
 
    The following example demonstrates that the scope of the variable t
-   includes the loop termination expression. 
+   includes the loop termination expression.
 
    .. code-block:: chapel
 
@@ -499,7 +500,7 @@ termination expression.
         writeln(t);
       } while (t != 5);
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -533,7 +534,7 @@ The For Loop
 
 The for loop iterates over ranges, domains, arrays, iterators, or any
 class that implements an iterator named ``these``. The syntax of the for
-loop is given by: 
+loop is given by:
 
 .. code-block:: syntax
 
@@ -584,20 +585,20 @@ support iteration over a 2D `m` x `n` space as well.
 
    *Example (zipper.chpl)*.
 
-   The output of 
+   The output of
 
    .. code-block:: chapel
 
       for (i, j) in zip(1..3, 4..6) do
         write(i, " ", j, " ");
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln();
 
-   is 
+   is
 
    .. code-block:: printoutput
 
@@ -610,7 +611,7 @@ Parameter For Loops
 
 Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable. The syntax for a
-parameter for loop statement is given by: 
+parameter for loop statement is given by:
 
 .. code-block:: syntax
 
@@ -675,7 +676,7 @@ A ``break`` statement cannot be used to exit a parallel loop
 .. note::
 
   *Future:*
-    
+
     We expect to support a *eureka* concept which would enable one or
     more tasks to stop the execution of all current and future iterations
     of the loop.
@@ -686,7 +687,7 @@ A ``break`` statement cannot be used to exit a parallel loop
    In the following code, the index of the first element in each row of
    ``A`` that is equal to ``findVal`` is printed. Once a match is found,
    the continue statement is executed causing the outer loop to move to
-   the next row. 
+   the next row.
 
    .. code-block:: chapel
 
@@ -698,6 +699,76 @@ A ``break`` statement cannot be used to exit a parallel loop
           }
         }
       }
+
+.. _The_Require_statement:
+
+The Require Statement
+---------------------
+
+The require statement provides a means to specify required files from
+within the program. It has an effect similar to adding the specified
+files to the Chapel compiler's command line. The filenames are relative
+to the directory from which the Chapel compiler was invoked. Any
+directories specified using the Chapel compiler's -I or -L flags will
+also be searched for matching files.
+
+.. code-block:: syntax
+
+   require-statement:
+     'require' string-or-identifier-list ;
+
+   string-or-identifier-list:
+     string-or-identifier
+     string-or-identifier ',' string-or-identifier-list
+
+   string-or-identifier:
+     string-literal
+     identifier
+
+The require keyword must be followed by list of filenames. Each
+filename must be a Chapel source file (*.chpl), a C source file (*.c),
+a C header file (*.h), a precompiled C object file (*.o), or a
+precompiled library archive (lib*.a). When using precompiled library
+archives, remove the lib and .a parts of the filename and add -l to
+the beginning as if it were being specified on the command line.
+
+.. code-block:: chapel
+
+   require "foo.h", "-lfoo";
+
+All require statements involving ``.chpl`` files must appear at the
+module-level and each ``.chpl`` file must be given by a string literal.
+For other types, each filename in the require statement must be given
+by a string literal or an identifier that is a ``param`` string expression,
+such as a ``param`` variable or a function returning a ``param``
+string.  Only ``require`` statements in code that the compiler considers
+executable will be processed.  Thus, a ``require`` statement
+guarded by a ``param`` conditional that the compiler folds out, or
+in a module that does not appear in the program's ``use``
+statements will not be added to the program's requirements.
+
+   *Rationale*.
+
+   Currently, the Chapel compiler parses all ``.chpl`` files early
+   in compilation, prior to resolving param strings, calls, or control flow.
+   This imposes more restrictions on ``.chpl``-requiring statements
+   than on other requirements that matter only during the backend compilation.
+   We may consider relaxing these restrictions in the future.
+
+For example, the following code either requires ``foo.h`` or whatever
+requirement is specified by *defaultHeader* (``bar.h`` by default)
+depending on the value of *requireFoo*:
+
+    .. code-block:: chapel
+
+       config param requireFoo=true,
+                    defaultHeader="bar.h";
+
+       if requireFoo then
+         require "foo.h";
+       else
+         require defaultHeader;
+
 
 .. _The_Use_Statement:
 
@@ -775,7 +846,7 @@ an action to be executed when returning from a function:
 
    *Example (defer1.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -794,7 +865,7 @@ an action to be executed when returning from a function:
       }
       deferInFunction();
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -811,7 +882,7 @@ is handled when exiting the block in which it is contained:
 
    *Example (defer2.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -835,7 +906,7 @@ is handled when exiting the block in which it is contained:
       }
       deferInNestedBlock();
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -859,7 +930,7 @@ body is exited early.
 
    *Example (defer3.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -881,7 +952,7 @@ body is exited early.
       }
       deferInLoop();
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -907,7 +978,7 @@ cleanup action run.
 
    *Example (defer4.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -927,7 +998,7 @@ cleanup action run.
       writeln("Condition: true");
       deferControl(true);
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -947,7 +1018,7 @@ The Empty Statement
 -------------------
 
 An empty statement has no effect. The syntax of an empty statement is
-given by 
+given by
 
 .. code-block:: syntax
 
@@ -977,10 +1048,12 @@ context managers. The syntax of the manage statement is given by
     expression 'as' identifier
     expression
 
-Classes or records that wish to be used as context managers must
-define two special methods. The code sample below turns a record
-type named ``IntWrapper`` into a context manager and then uses it
-in a manage statement.
+Classes or records that wish to be used as context managers must implement
+the ``contextManager`` interface. This is done by defining the methods
+``enterContext`` and ``exitContext``, and by adjusting the declaration of the
+class or record to say that it implements ``contextManager``. The code sample
+below declares a context manager record ``IntWrapper`` and then uses it in a
+manage statement.
 
    *Example (manage1.chpl)*.
 
@@ -988,17 +1061,17 @@ in a manage statement.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 
-      proc IntWrapper.enterThis() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
       }
 
-      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+      proc IntWrapper.exitContext(in error: owned Error?) throws {
         if error then throw error;
         writeln('leaving');
         writeln(this);
@@ -1019,21 +1092,21 @@ in a manage statement.
       leaving
       (x = 8)
 
-The ``enterThis()`` special method is called on the manager expression
+The ``enterContext()`` special method is called on the manager expression
 before executing the managed block (in the above example the manager
 expression is ``wrapper``). The method may return a type or value, or
 it may return ``void``.
 
-The resource returned by ``enterThis()`` can be captured by name so
+The resource returned by ``enterContext()`` can be captured by name so
 that it can be referred to within the scope of the managed block
 (in the above example the captured resource is ``val``).
 
 Capturing a returned resource is optional, and the syntax may be
 omitted. It is an error to try to capture a resource if
-``enterThis()`` returns ``void``.
+``enterContext()`` returns ``void``.
 
 The storage of a captured resource may also be omitted, in which
-case it will be inferred from the return intent of the ``enterThis()``
+case it will be inferred from the return intent of the ``enterContext()``
 method (in the above example the storage of ``val`` is inferred
 to be ``ref``).
 
@@ -1045,17 +1118,17 @@ Resource storage may also be specified explicitly.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 
-      proc IntWrapper.enterThis() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
       }
 
-      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+      proc IntWrapper.exitContext(in error: owned Error?) throws {
         if error then throw error;
         writeln('leaving');
         writeln(this);
@@ -1081,26 +1154,26 @@ Resource storage may also be specified explicitly.
       (x = 0)
 
 Because the storage of ``val`` was specified as ``var``, the integer
-field of ``wrapper`` was not modified even though ``enterThis()``
+field of ``wrapper`` was not modified even though ``enterContext()``
 returns by ``ref``.
 
 .. note::
 
   *Open issue:*
 
-    The ``enterThis()`` special method does not currently support the
+    The ``enterContext()`` special method does not currently support the
     use of return intent overloading (see :ref:`Return_Intent_Overloads`)
     when the storage of a resource is omitted. Adding such support would
     require additional disambiguation rules, and the value of doing so
     is unclear at this time.
 
-Participating types must also define the ``leaveThis()`` method,
+Participating types must also define the ``exitContext()`` method,
 which is called implicitly when the scope of the managed block
 is exited.
 
-The ``leaveThis()`` method takes an ``Error?`` by ``in`` intent. If
+The ``exitContext()`` method takes an ``Error?`` by ``in`` intent. If
 the error is not ``nil``,  it may be handled within the method. It
-can also be propagated by annotating ``leaveThis()`` with the
+can also be propagated by annotating ``exitContext()`` with the
 ``throws`` tag and throwing the error.
 
 Multiple manager expressions may be present in a single manage
@@ -1112,17 +1185,17 @@ statement.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 
-      proc IntWrapper.enterThis() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
       }
 
-      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+      proc IntWrapper.exitContext(in error: owned Error?) throws {
         if error then throw error;
         writeln('leaving');
         writeln(this);
@@ -1154,7 +1227,6 @@ statement.
       (x = -1)
 
 Before executing the code in the body of the manage statement, the
-``enterThis()`` method is called on each manager from left to right.
-Upon exiting the managed scope, the ``leaveThis()`` method is called
+``enterContext()`` method is called on each manager from left to right.
+Upon exiting the managed scope, the ``exitContext()`` method is called
 on each manager from right to left.
-

@@ -1,5 +1,8 @@
 [![Build Status](https://travis-ci.org/Qthreads/qthreads.svg?branch=master)](https://travis-ci.org/Qthreads/qthreads)
 
+# WELCOME TO THE NEW HOME OF QTHREADS:
+# https://github.com/sandialabs/qthreads
+
 QTHREADS!
 =========
 
@@ -22,6 +25,10 @@ and do not generally migrate.
 
 The API includes utility functions for making threaded loops, sorting, and
 similar operations convenient.
+
+## Collaboration
+
+Need help or interested in finding out more? Join us on our Slack channel: https://join.slack.com/t/qthreads/signup
 
 ## Performance
 

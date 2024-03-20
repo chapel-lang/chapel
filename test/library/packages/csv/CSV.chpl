@@ -40,7 +40,7 @@ module CSV {
        :arg hasHeader: (optional) If true, treat the first line of data
                        as a header and skip it
      */
-    proc init(ch: fileWriter, sep: string=",", hasHeader: bool=false) {
+    proc init(ch: fileWriter(?), sep: string=",", hasHeader: bool=false) {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
@@ -52,7 +52,7 @@ module CSV {
        :arg hasHeader: (optional) If true, treat the first line of data
                        as a header and skip it
      */
-    proc init(ch: fileReader, sep: string=",", hasHeader: bool=false) {
+    proc init(ch: fileReader(?), sep: string=",", hasHeader: bool=false) {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;

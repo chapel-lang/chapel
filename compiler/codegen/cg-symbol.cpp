@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,10 +62,14 @@
 
 #include "global-ast-vecs.h"
 
+#include "chpl/libraries/LibraryFile.h"
+#include "chpl/parsing/parsing-queries.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 #include <inttypes.h>
 #include <stdint.h>
@@ -85,8 +89,12 @@
 ********************************* | ********************************/
 
 // these are sets of astrs
-static std::set<const char*> llvmPrintIrNames;
+// Chapel function names requested to be disassembled, and whether they've been
+// matched to C symbol names.
+static std::unordered_map<const char*, bool> llvmPrintIrRequestedNames;
+// Corresponding C function names to disassemble
 static std::set<const char*> llvmPrintIrCNames;
+static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
 llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
 
@@ -99,9 +107,13 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "every", //llvmStageNum::EVERY
   "early-as-possible",
   "module-optimizer-early",
+  "late-loop-optimizer",
   "loop-optimizer-end",
   "scalar-optimizer-late",
+  "early-simplification",
+  "optimizer-early",
   "optimizer-last",
+  "cgscc-optimizer-late",
   "vectorizer-start",
   "enabled-on-opt-level0",
   "peephole",
@@ -121,31 +133,45 @@ llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
   return llvmStageNum::NOPRINT;
 }
 
-void addNameToPrintLlvmIr(const char* name) {
-  llvmPrintIrNames.insert(astr(name));
+void addNameToPrintLlvmIrRequestedNames(const char* name) {
+  llvmPrintIrRequestedNames.emplace(astr(name), false);
 }
-void addCNameToPrintLlvmIr(const char* name) {
+
+static void addCNameToPrintLlvmIr(const char* name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
-bool shouldLlvmPrintIrName(const char* name) {
-  if (llvmPrintIrNames.empty())
-    return false;
-
-  return llvmPrintIrNames.count(astr(name));
+bool shouldLlvmPrintIrCName(const char* cname) {
+  return llvmPrintIrCNames.count(astr(cname)) > 0;
 }
 
-bool shouldLlvmPrintIrCName(const char* name) {
-  if (llvmPrintIrNames.empty())
-    return false;
+// finds if fn's name, cname, or ID is present in the requested names
+// to print for --llvm-print-ir
+static bool shouldLlvmPrintIrFnFindName(FnSymbol* fn, const char*& foundName) {
+  if (llvmPrintIrRequestedNames.count(fn->name)) {
+    foundName = fn->name;
+    return true;
+  }
 
-  return llvmPrintIrCNames.count(astr(name));
+  if (llvmPrintIrRequestedNames.count(fn->cname)) {
+    foundName = fn->cname;
+    return true;
+  }
+
+  if (!fn->astloc.id().isEmpty()) {
+    const char* idstr = astr(fn->astloc.id().symbolPath());
+    if (llvmPrintIrRequestedNames.count(idstr)) {
+      foundName = idstr;
+      return true;
+    }
+  }
+
+  return false;
 }
 
-bool shouldLlvmPrintIrFn(FnSymbol* fn) {
-  return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
-}
-
+// Collect the cnames to print into a vector with (lex) ordering.
+// Order of the list is non-deterministic otherwise, because it stores astrs
+// for performance.
 std::vector<std::string> gatherPrintLlvmIrCNames() {
   std::vector<std::string> ret;
   for (auto elt : llvmPrintIrCNames) {
@@ -191,18 +217,50 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage) {
 #endif
 }
 
+void restorePrintIrCNames() {
+  assert(llvmPrintIrCNames.empty() &&
+         "tried to restore list of cnames to print from disk, but we already "
+         "have them in memory");
+
+  restoreDriverTmp(cnamesToPrintFilename, &addCNameToPrintLlvmIr);
+}
 
 void preparePrintLlvmIrForCodegen() {
-  if (llvmPrintIrNames.empty() && llvmPrintIrCNames.empty())
+  if (llvmPrintIrRequestedNames.empty() && llvmPrintIrCNames.empty())
     return;
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     return;
 
   // Gather the cnames for the functions in names
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (shouldLlvmPrintIrFn(fn)) {
+    const char* foundName = nullptr;
+    if (shouldLlvmPrintIrFnFindName(fn, foundName) && foundName) {
       addCNameToPrintLlvmIr(fn->cname);
+      // mark Chapel symbol as found
+      llvmPrintIrRequestedNames[astr(foundName)] = true;
     }
+  }
+
+  // Ensure cnames were found for all Chapel function names
+  std::vector<std::string> namesNotFound;
+  for (const auto& nameInfo : llvmPrintIrRequestedNames) {
+    if (nameInfo.second == false) {
+      namesNotFound.emplace_back(nameInfo.first);
+    }
+  }
+  // Emit warning for any symbols not found
+  if (!namesNotFound.empty()) {
+    // Deterministically order
+    std::sort(namesNotFound.begin(), namesNotFound.end());
+    std::string nameList;
+    for (auto it = namesNotFound.begin(); it != namesNotFound.end(); ++it) {
+      if (it != namesNotFound.begin()) {
+        nameList += ", ";
+      }
+      nameList += *it;
+    }
+    USR_WARN("Could not find requested symbol%s for disassembly: %s",
+             (namesNotFound.size() == 1 ? "" : "s"), nameList.c_str());
   }
 
   // Extend cnames with the cnames of task functions
@@ -218,8 +276,9 @@ void preparePrintLlvmIrForCodegen() {
           if (FnSymbol* calledFn = call->resolvedFunction()) {
             if (isTaskFun(calledFn) ||
                 calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-              if (!shouldLlvmPrintIrFn(calledFn)) {
-                addCNameToPrintLlvmIr(calledFn->cname);
+              auto pair = llvmPrintIrCNames.insert(calledFn->cname);
+              if (pair.second) {
+                // it was inserted
                 changed = true;
               }
             }
@@ -228,6 +287,15 @@ void preparePrintLlvmIrForCodegen() {
       }
     }
   } while (changed);
+
+  // If running in compiler-driver mode, save cnames to print IR for to disk.
+  // This is so that handlePrintAsm can access them later from the makeBinary
+  // phase, when we don't have a way to determine name->cname correspondence.
+  if (fDriverCompilationPhase) {
+    saveDriverTmpMultiple(cnamesToPrintFilename,
+                          std::vector<const char*>(llvmPrintIrCNames.begin(),
+                                                   llvmPrintIrCNames.end()));
+  }
 }
 
 /******************************** | *********************************
@@ -266,24 +334,8 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
     case NUM_KIND_BOOL:
       switch(i->num_index) {
         case BOOL_SIZE_SYS:
-        case BOOL_SIZE_8:
           ret = llvm::ConstantInt::get(
               llvm::Type::getInt8Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_16:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt16Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_32:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt32Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_64:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt64Ty(info->module->getContext()),
               i->bool_value());
           break;
       }
@@ -432,17 +484,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         const char* castString = "(";
         switch (immediate->num_index) {
         case BOOL_SIZE_SYS:
-        case BOOL_SIZE_8:
           castString = "UINT8(";
-          break;
-        case BOOL_SIZE_16:
-          castString = "UINT16(";
-          break;
-        case BOOL_SIZE_32:
-          castString = "UINT32(";
-          break;
-        case BOOL_SIZE_64:
-          castString = "UINT64(";
           break;
         default:
           INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
@@ -731,8 +773,10 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (name, info->irBuilder->getInt8PtrTy()));
+                  (cname, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
+        if (fDynoLibGenOrUse)
+          globalValue->setLinkage(llvm::GlobalVariable::LinkOnceODRLinkage);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
                 gepTy, globalConstString, 0, 0)));
@@ -880,13 +924,18 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       llvm::Type* llTy = type->codegen().type;
       INT_ASSERT(llTy);
 
+      auto linkage = llvm::GlobalVariable::InternalLinkage;
+      if (fDynoLibGenOrUse)
+        linkage = llvm::GlobalVariable::LinkOnceODRLinkage;
+      if (hasFlag(FLAG_EXPORT))
+        linkage = llvm::GlobalVariable::ExternalLinkage;
+
       llvm::GlobalVariable *gVar =
         new llvm::GlobalVariable(
             *info->module,
             llTy,
             false, /* is constant */
-            hasFlag(FLAG_EXPORT) ? llvm::GlobalVariable::ExternalLinkage
-                                 : llvm::GlobalVariable::InternalLinkage,
+            linkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type), type);
@@ -1026,7 +1075,11 @@ bool ArgSymbol::requiresCPtr(void) {
 static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   QualifiedType q = arg->qualType();
   Type* useType = q.type();
-
+  // TODO: this is a hack to make python module generation work by substituting
+  // `const char *` instead of `int8_t *` or `uint8_t *` in the exported header
+  if (isCPtrConstChar(useType)) {
+    return dtStringC;
+  }
   if (q.isRef() && !q.isRefType())
     useType = getOrMakeRefTypeDuringCodegen(useType);
 
@@ -1936,7 +1989,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   // This function is inspired by clang's CodeGenTypes::GetFunctionType
   // and CodeGenModule::ConstructAttributeList
 
-  llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+  llvm::LLVMContext& ctx = gContext->llvmContext();
   const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
   const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
@@ -2246,6 +2299,97 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
   return fngen;
 }
 
+#ifdef HAVE_LLVM
+static bool shouldUsePrecompiled(FnSymbol* fn) {
+  // this is a temporary measure while development continues
+  // on separate compilation
+  return false;
+  /*
+  return fn->hasFlag(FLAG_PRECOMPILED) &&
+         !fn->astloc.id().isEmpty() &&
+         // don't do this for generic instantiations for now
+         // TODO: figure out how to get LibraryFile to
+         // differentiate between instantiations
+         !fn->hasFlag(FLAG_INSTANTIATED_GENERIC);*/
+}
+
+static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
+  GenInfo *info = gGenInfo;
+  UniqueString modSymPath = modId.symbolPath();
+
+  // look for a cached result; if nothing was in the map, create
+  // an entry with nullptr
+  GenInfo::PrecompiledModule& pm = info->precompiledMods[modSymPath];
+
+  if (pm.lf == nullptr) {
+    fprintf(stderr, "Reading Library File\n");
+    // get the LibraryFile
+    chpl::UniqueString libPath;
+    bool inLib = gContext->moduleIsInLibrary(modId, libPath);
+    CHPL_ASSERT(inLib && "or sym should not be marked with FLAG_PRECOMPILED");
+    CHPL_ASSERT(!libPath.isEmpty());
+
+    pm.lf = chpl::libraries::LibraryFile::load(gContext, libPath);
+    if (pm.lf == nullptr) {
+      USR_FATAL("could not load library file %s", libPath.c_str());
+    }
+  }
+
+  if (pm.mod.get() == nullptr) {
+    // need to load the LLVM module!
+    pm.mod = pm.lf->loadGenCodeModule(gContext, modSymPath);
+
+    if (pm.mod.get() == nullptr) {
+      USR_FATAL("could not load module %s", modSymPath.c_str());
+    }
+  }
+
+  return pm;
+}
+
+static llvm::Function*
+importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
+  llvm::Function* ret = nullptr;
+  GenInfo *info = gGenInfo;
+
+  INT_ASSERT(fIdBasedMunging && "expected ID based munging");
+
+  chpl::ID modId = chpl::parsing::idToParentModule(gContext, fnId);
+  CHPL_ASSERT(!modId.isEmpty());
+
+  GenInfo::PrecompiledModule& pm = getPrecompiledModule(modId);
+
+  // check to see if the library's LLVM IR contains the symbol
+  // find the function
+  llvm::Function* SF = pm.mod->getFunction(cname);
+
+  if (SF == nullptr) {
+    USR_FATAL("could not find %s in library file", cname);
+    return nullptr;
+  }
+
+  llvm::Module* DstM = info->module;
+
+  // copy over just the function signature
+  // c.f. IRLinker::copyFunctionProto in LLVM's IRMover.cpp
+  auto *F = llvm::Function::Create(SF->getFunctionType(),
+                                   llvm::GlobalValue::ExternalLinkage,
+                                   SF->getAddressSpace(),
+                                   SF->getName(),
+                                   DstM);
+  F->copyAttributesFrom(SF);
+
+  // also copy the metadata
+  F->copyMetadata(SF, 0);
+
+  // record the fact that the function was probably needed
+  UniqueString ucname = UniqueString::get(gContext, cname);
+  pm.neededGlobalNames.push_back(ucname);
+
+  return ret;
+}
+#endif
+
 void FnSymbol::codegenPrototype() {
   if (id == breakOnCodegenID) gdbShouldBreakHere();
   if (breakOnCodegenCname[0] && !strcmp(cname, breakOnCodegenCname)) {
@@ -2270,6 +2414,11 @@ void FnSymbol::codegenPrototype() {
     fprintf(info->cfile, ";\n");
   } else {
 #ifdef HAVE_LLVM
+    if (shouldUsePrecompiled(this)) {
+      importPrecompiledFunctionProto(astloc.id(), cname);
+      return;
+    }
+
     std::vector<const char*> argNames;
     llvm::AttributeList argAttrs;
     llvm::FunctionType *fTy = codegenFunctionTypeLLVM(this,
@@ -2303,6 +2452,11 @@ void FnSymbol::codegenPrototype() {
     bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN));
 
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
+    if (fDynoLibGenOrUse) {
+      linkage = llvm::Function::LinkOnceODRLinkage;
+      if (this == chpl_gen_main)
+        linkage = llvm::Function::ExternalLinkage;
+    }
     if (hasFlag(FLAG_EXPORT) || generatingGPUKernel) {
       linkage = llvm::Function::ExternalLinkage;
     }
@@ -2378,21 +2532,39 @@ namespace {
   struct MarkNonStackVisitor : public AstVisitorTraverse {
     LoopStmt* outermostOrderIndependentLoop;
     MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
-    void handleLoopStmt(LoopStmt* loop);
+    bool enterLoopStmt(LoopStmt* loop);
+    void exitLoopStmt(LoopStmt* loop);
+
     bool exprPointsToNonStack(Expr* e);
     bool enterCallExpr(CallExpr* call) override;
-    bool enterWhileDoStmt(WhileDoStmt* loop) override;
-    bool enterDoWhileStmt(DoWhileStmt* loop) override;
-    bool enterCForLoop(CForLoop* loop) override;
-    bool enterForLoop(ForLoop* loop) override;
+
+    bool enterWhileDoStmt(WhileDoStmt* loop) override { return enterLoopStmt(loop); }
+    void exitWhileDoStmt(WhileDoStmt* loop) override { exitLoopStmt(loop); }
+
+    bool enterDoWhileStmt(DoWhileStmt* loop) override { return enterLoopStmt(loop); }
+    void exitDoWhileStmt(DoWhileStmt* loop) override { exitLoopStmt(loop); }
+
+    bool enterCForLoop(CForLoop* loop) override { return enterLoopStmt(loop); }
+    void exitCForLoop(CForLoop* loop) override { exitLoopStmt(loop); }
+
+    bool enterForLoop(ForLoop* loop) override { return enterLoopStmt(loop); }
+    void exitForLoop(ForLoop* loop) override { exitLoopStmt(loop); }
   };
 }
 
-void MarkNonStackVisitor::handleLoopStmt(LoopStmt* loop) {
+bool MarkNonStackVisitor::enterLoopStmt(LoopStmt* loop) {
   if (loop->isOrderIndependent() && outermostOrderIndependentLoop == NULL) {
     outermostOrderIndependentLoop = loop;
   }
+  return true;
 }
+
+void MarkNonStackVisitor::exitLoopStmt(LoopStmt* loop) {
+  if (outermostOrderIndependentLoop == loop) {
+    outermostOrderIndependentLoop = NULL;
+  }
+}
+
 
 bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
   if (SymExpr* se = toSymExpr(e)) {
@@ -2449,23 +2621,6 @@ bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
   return false;
 }
 
-bool MarkNonStackVisitor::enterWhileDoStmt(WhileDoStmt* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-bool MarkNonStackVisitor::enterDoWhileStmt(DoWhileStmt* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-bool MarkNonStackVisitor::enterCForLoop(CForLoop* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-bool MarkNonStackVisitor::enterForLoop(ForLoop* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-
 void FnSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -2502,6 +2657,12 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
+    if (shouldUsePrecompiled(this)) {
+      // the definition should have been imported along side the
+      // declaration in codegenPrototype.
+      return;
+    }
+
     // Mark local reference/ptr variables that must refer to
     // memory outside of all order-independent loops.
     // (This is necessary for llvm.loop.parallel_accesses metadata).
@@ -2519,7 +2680,7 @@ void FnSymbol::codegenDef() {
     // Mark functions to dump as no-inline so they actually exist
     // after optimization
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT &&
-       shouldLlvmPrintIrFn(this)) {
+       shouldLlvmPrintIrCName(this->cname)) {
         func->addFnAttr(llvm::Attribute::NoInline);
     }
     // Also mark no-inline if the flag was set
@@ -2776,7 +2937,7 @@ void FnSymbol::codegenDef() {
     // if --gen-ids is enabled, add metadata mapping the
     // function back to Chapel AST id
     if (fGenIDS) {
-      llvm::LLVMContext& ctx = info->llvmContext;
+      llvm::LLVMContext& ctx = gContext->llvmContext();
 
       llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
       llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);
@@ -2828,7 +2989,7 @@ void FnSymbol::codegenDef() {
 
     if((llvmPrintIrStageNum == llvmStageNum::NONE ||
         llvmPrintIrStageNum == llvmStageNum::EVERY) &&
-       shouldLlvmPrintIrFn(this))
+       shouldLlvmPrintIrCName(this->cname))
         printLlvmIr(name, func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.

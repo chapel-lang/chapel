@@ -100,7 +100,7 @@ iter dy_r2() ref :RR {
 }
 for i in dy_r2() do writeln(i);
 
-iter dy_cr3() const ref :QQ {
+iter dy_cr3() const ref :QQ(?) {
   yield v3;
   yield c3;
   yield ref3();
@@ -108,7 +108,7 @@ iter dy_cr3() const ref :QQ {
 }
 for i in dy_cr3() do writeln(i);
 
-iter dy_r3() ref :QQ {
+iter dy_r3() ref :QQ(?) {
   yield v3;
   yield ref3();
 }
@@ -144,7 +144,7 @@ iter df_r2() ref :typ2() {
 }
 for i in df_r2() do writeln(i);
 
-iter df_cr3() const ref :typ3() {
+iter df_cr3() const ref :typ3()(?) {
   yield v3;
   yield c3;
   yield ref3();
@@ -152,7 +152,7 @@ iter df_cr3() const ref :typ3() {
 }
 for i in df_cr3() do writeln(i);
 
-iter df_r3() ref :typ3() {
+iter df_r3() ref :typ3()(?) {
   yield v3;
   yield ref3();
 }

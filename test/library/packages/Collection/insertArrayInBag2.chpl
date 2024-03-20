@@ -1,4 +1,4 @@
-use DistributedBag;
+use DistributedBagDeprecated;
 
 record Node {
   var x: int;

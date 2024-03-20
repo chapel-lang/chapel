@@ -3,7 +3,7 @@
   modules/internal/ChapelHashtable.chpl
 
 Contents WIP:
- interface Hashable
+ interface hashable
  early checking for record 'chpl__hashtable' using interface 'chpl_Hashtable'
 */
 
@@ -137,7 +137,7 @@ module MyHashtable {
   private proc _typeNeedsDeinit(type t) param {
     return __primitive("needs auto destroy", t);
   }
-  private proc _deinitSlot(ref aSlot: chpl_TableEntry) {
+  private proc _deinitSlot(ref aSlot: chpl_TableEntry(?)) {
     if _typeNeedsDeinit(aSlot.key.type) {
       chpl__autoDestroy(aSlot.key);
     }
@@ -146,7 +146,7 @@ module MyHashtable {
     }
   }
 
-  private inline proc _isSlotFull(const ref aSlot: chpl_TableEntry): bool {
+  private inline proc _isSlotFull(const ref aSlot: chpl_TableEntry(?)): bool {
     return aSlot.status == chpl__hash_status.full;
   }
 
@@ -271,7 +271,7 @@ module MyHashtable {
       this.tableSize = chpl__primes(tableSizeNum);
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
-      this.complete();
+      init this;
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
       // All elements are memset to 0 (no initializer is run for the idxType)
@@ -311,30 +311,17 @@ module MyHashtable {
 // interface definitions and implements statements
 
 //
-// Hashable: user-facing requirements on the hashtable key type.
-//
-interface Hashable(Key) {
-  //  proc hash(arg: Key): uint;
-  proc chpl__defaultHashWrapper(arg: Key): int;
-  operator ==(lhs: Key, rhs: Key): bool;
-}
-
-//
 // StdOps: various common operations we expect.
-//
-// Todo: include == and resolve the ambiguity with Hashable.==
-// possibly by requiring Hashable to implement StdOps.
 //
 interface StdOps(Val) {
   proc chpl__initCopy(arg: Val, definedConst: bool): Val;
   operator =(ref lhs: Val, rhs: Val);
+  operator ==(lhs: Val, rhs: Val): bool;
   proc toString(arg: Val): string; // so we can write it out
 }
 
 // These use built-in implementations and proc toString below.
-string implements Hashable;
 string implements StdOps;
-int implements Hashable;
 int implements StdOps;
 
 // The default implementation for toString().
@@ -351,11 +338,9 @@ proc toString(arg): string {
 interface chpl_Hashtable(HT) {
   type keyType;
   type valType;
-  keyType implements Hashable;
+  keyType implements hashable;
   keyType implements StdOps;
   valType implements StdOps;
-  // can't have == in StdOps because then == on keys would be ambiguous
-  operator ==(lhs: valType, rhs: valType): bool;
   // todo: change these to the ones from a standard Memory module
   // and move them to StdOps
   proc _moveInit(ref lhs: keyType, in rhs: keyType);
@@ -415,7 +400,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
 
     // #### iteration helpers ####
 
-    inline proc chpl_Hashtable.isSlotFull(slot: int): bool {
+    inline proc ref chpl_Hashtable.isSlotFull(slot: int): bool {
       return table[slot].status == chpl__hash_status.full;
     }
 
@@ -471,10 +456,10 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // empty slot that may be re-used for faster addition to the domain
     //
     // This function never returns deleted slots.
-    proc chpl_Hashtable._findSlot(key: this.keyType) : (bool, int) {
+    proc ref chpl_Hashtable._findSlot(key: this.keyType) : (bool, int) {
       var firstOpen = -1;
       // inlining the iterator for: for slotNum in _lookForSlots(key)
-      const baseSlot = chpl__defaultHashWrapper(key):uint;
+      const baseSlot = key.hash();
       const numSlots = tableSize;
       if numSlots > 0 then {
         for probe in 0..numSlots/2 {
@@ -527,7 +512,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // or a slot that was already present with that key.
     // It can rehash the table.
     // returns (foundFullSlot, slotNum)
-    proc chpl_Hashtable.findAvailableSlot(key: this.keyType): (bool, int) {
+    proc ref chpl_Hashtable.findAvailableSlot(key: this.keyType): (bool, int) {
       var slotNum = -1;
       var foundSlot = false;
 
@@ -557,13 +542,12 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
           // the deleted entries & the table should only ever be half
           // full of non-deleted entries.
           halt("couldn't add key -- ", tableNumFullSlots, " / ", tableSize, " taken");
-          return (false, -1);
         }
         return (foundSlot, slotNum);
       }
     }
 
-    proc chpl_Hashtable.fillSlot(ref tableEntry: this.tableEntryType,
+    proc ref chpl_Hashtable.fillSlot(ref tableEntry: this.tableEntryType,
                   in key: this.keyType,
                   in val: this.valType) {
       if tableEntry.status == chpl__hash_status.full {
@@ -580,7 +564,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
       _moveInit(tableEntry.key, key);
       _moveInit(tableEntry.val, val);
     }
-    proc chpl_Hashtable.fillSlot(slotNum: int,
+    proc ref chpl_Hashtable.fillSlot(slotNum: int,
                   in key: this.keyType,
                   in val: this.valType) {
       ref tableEntry = table[slotNum];
@@ -595,7 +579,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
 
     // Finds a slot containing a key
     // returns (foundFullSlot, slotNum)
-    proc chpl_Hashtable.findFullSlot(key: this.keyType): (bool, int) {
+    proc ref chpl_Hashtable.findFullSlot(key: this.keyType): (bool, int) {
       var slotNum = -1;
       var foundSlot = false;
 
@@ -607,7 +591,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // Clears a slot that is full
     // (Should not be called on empty/deleted slots)
     // Returns the key and value that were removed in the out arguments
-    proc chpl_Hashtable.clearSlot(ref tableEntry: this.tableEntryType,
+    proc ref chpl_Hashtable.clearSlot(ref tableEntry: this.tableEntryType,
                    out key: this.keyType, out val: this.valType) {
       // move the table entry into the key/val variables to be returned
       key = _moveToReturn(tableEntry.key);
@@ -620,13 +604,13 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
       tableNumFullSlots -= 1;
       tableNumDeletedSlots += 1;
     }
-    proc chpl_Hashtable.clearSlot(slotNum: int, out key: this.keyType, out val: this.valType) {
+    proc ref chpl_Hashtable.clearSlot(slotNum: int, out key: this.keyType, out val: this.valType) {
       // move the table entry into the key/val variables to be returned
       ref tableEntry = table[slotNum];
       clearSlot(tableEntry, key, val);
     }
 
-    proc chpl_Hashtable.maybeShrinkAfterRemove() {
+    proc ref chpl_Hashtable.maybeShrinkAfterRemove() {
       if (tableNumFullSlots*8 < tableSize && tableSizeNum > 0) {
         resize(grow=false);
       }
@@ -672,7 +656,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
-    proc chpl_Hashtable.rehash(newSizeNum:int, newSize:int) {
+    proc ref chpl_Hashtable.rehash(newSizeNum:int, newSize:int) {
       // save the old table
       var oldSize = tableSize;
       var oldTable = table;
@@ -761,7 +745,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
       }
     }
 
-    proc chpl_Hashtable.resize(grow:bool) {
+    proc ref chpl_Hashtable.resize(grow:bool) {
       if postponeResize then return;
 
       var newSizeNum = tableSizeNum;

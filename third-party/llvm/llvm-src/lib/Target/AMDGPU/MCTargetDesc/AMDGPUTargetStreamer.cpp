@@ -26,7 +26,7 @@
 #include "llvm/Support/AMDHSAKernelDescriptor.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/TargetParser.h"
+#include "llvm/TargetParser/TargetParser.h"
 
 using namespace llvm;
 using namespace llvm::AMDGPU;
@@ -107,6 +107,8 @@ StringRef AMDGPUTargetStreamer::getArchNameFromElfMach(unsigned ElfMach) {
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX90A:  AK = GK_GFX90A;  break;
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX90C:  AK = GK_GFX90C;  break;
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX940:  AK = GK_GFX940;  break;
+  case ELF::EF_AMDGPU_MACH_AMDGCN_GFX941:  AK = GK_GFX941;  break;
+  case ELF::EF_AMDGPU_MACH_AMDGCN_GFX942:  AK = GK_GFX942;  break;
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1010: AK = GK_GFX1010; break;
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1011: AK = GK_GFX1011; break;
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1012: AK = GK_GFX1012; break;
@@ -122,6 +124,8 @@ StringRef AMDGPUTargetStreamer::getArchNameFromElfMach(unsigned ElfMach) {
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1101: AK = GK_GFX1101; break;
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1102: AK = GK_GFX1102; break;
   case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1103: AK = GK_GFX1103; break;
+  case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1150: AK = GK_GFX1150; break;
+  case ELF::EF_AMDGPU_MACH_AMDGCN_GFX1151: AK = GK_GFX1151; break;
   case ELF::EF_AMDGPU_MACH_NONE:           AK = GK_NONE;    break;
   }
 
@@ -176,6 +180,8 @@ unsigned AMDGPUTargetStreamer::getElfMach(StringRef GPU) {
   case GK_GFX90A:  return ELF::EF_AMDGPU_MACH_AMDGCN_GFX90A;
   case GK_GFX90C:  return ELF::EF_AMDGPU_MACH_AMDGCN_GFX90C;
   case GK_GFX940:  return ELF::EF_AMDGPU_MACH_AMDGCN_GFX940;
+  case GK_GFX941:  return ELF::EF_AMDGPU_MACH_AMDGCN_GFX941;
+  case GK_GFX942:  return ELF::EF_AMDGPU_MACH_AMDGCN_GFX942;
   case GK_GFX1010: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1010;
   case GK_GFX1011: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1011;
   case GK_GFX1012: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1012;
@@ -191,6 +197,8 @@ unsigned AMDGPUTargetStreamer::getElfMach(StringRef GPU) {
   case GK_GFX1101: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1101;
   case GK_GFX1102: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1102;
   case GK_GFX1103: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1103;
+  case GK_GFX1150: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1150;
+  case GK_GFX1151: return ELF::EF_AMDGPU_MACH_AMDGCN_GFX1151;
   case GK_NONE:    return ELF::EF_AMDGPU_MACH_NONE;
   }
 
@@ -320,7 +328,7 @@ bool AMDGPUTargetAsmStreamer::EmitCodeEnd(const MCSubtargetInfo &STI) {
 void AMDGPUTargetAsmStreamer::EmitAmdhsaKernelDescriptor(
     const MCSubtargetInfo &STI, StringRef KernelName,
     const amdhsa::kernel_descriptor_t &KD, uint64_t NextVGPR, uint64_t NextSGPR,
-    bool ReserveVCC, bool ReserveFlatScr) {
+    bool ReserveVCC, bool ReserveFlatScr, unsigned CodeObjectVersion) {
   IsaVersion IVersion = getIsaVersion(STI.getCPU());
 
   OS << "\t.amdhsa_kernel " << KernelName << '\n';
@@ -367,8 +375,9 @@ void AMDGPUTargetAsmStreamer::EmitAmdhsaKernelDescriptor(
     PRINT_FIELD(OS, ".amdhsa_wavefront_size32", KD,
                 kernel_code_properties,
                 amdhsa::KERNEL_CODE_PROPERTY_ENABLE_WAVEFRONT_SIZE32);
-  PRINT_FIELD(OS, ".amdhsa_uses_dynamic_stack", KD, kernel_code_properties,
-              amdhsa::KERNEL_CODE_PROPERTY_USES_DYNAMIC_STACK);
+  if (CodeObjectVersion >= AMDGPU::AMDHSA_COV5)
+    PRINT_FIELD(OS, ".amdhsa_uses_dynamic_stack", KD, kernel_code_properties,
+                amdhsa::KERNEL_CODE_PROPERTY_USES_DYNAMIC_STACK);
   PRINT_FIELD(OS,
               (hasArchitectedFlatScratch(STI)
                    ? ".amdhsa_enable_private_segment"
@@ -406,19 +415,17 @@ void AMDGPUTargetAsmStreamer::EmitAmdhsaKernelDescriptor(
   if (IVersion.Major >= 7 && !ReserveFlatScr && !hasArchitectedFlatScratch(STI))
     OS << "\t\t.amdhsa_reserve_flat_scratch " << ReserveFlatScr << '\n';
 
-  if (Optional<uint8_t> HsaAbiVer = getHsaAbiVersion(&STI)) {
-    switch (*HsaAbiVer) {
-    default:
-      break;
-    case ELF::ELFABIVERSION_AMDGPU_HSA_V2:
-      break;
-    case ELF::ELFABIVERSION_AMDGPU_HSA_V3:
-    case ELF::ELFABIVERSION_AMDGPU_HSA_V4:
-    case ELF::ELFABIVERSION_AMDGPU_HSA_V5:
-      if (getTargetID()->isXnackSupported())
-        OS << "\t\t.amdhsa_reserve_xnack_mask " << getTargetID()->isXnackOnOrAny() << '\n';
-      break;
-    }
+  switch (CodeObjectVersion) {
+  default:
+    break;
+  case AMDGPU::AMDHSA_COV2:
+    break;
+  case AMDGPU::AMDHSA_COV3:
+  case AMDGPU::AMDHSA_COV4:
+  case AMDGPU::AMDHSA_COV5:
+    if (getTargetID()->isXnackSupported())
+      OS << "\t\t.amdhsa_reserve_xnack_mask " << getTargetID()->isXnackOnOrAny() << '\n';
+    break;
   }
 
   PRINT_FIELD(OS, ".amdhsa_float_round_mode_32", KD,
@@ -542,9 +549,9 @@ void AMDGPUTargetELFStreamer::EmitNote(
   S.emitValue(DescSZ, 4);                                     // descz
   S.emitInt32(NoteType);                                      // type
   S.emitBytes(Name);                                          // name
-  S.emitValueToAlignment(4, 0, 1, 0);                         // padding 0
+  S.emitValueToAlignment(Align(4), 0, 1, 0);                  // padding 0
   EmitDesc(S);                                                // desc
-  S.emitValueToAlignment(4, 0, 1, 0);                         // padding 0
+  S.emitValueToAlignment(Align(4), 0, 1, 0);                  // padding 0
   S.popSection();
 }
 
@@ -593,7 +600,7 @@ unsigned AMDGPUTargetELFStreamer::getEFlagsUnknownOS() {
 unsigned AMDGPUTargetELFStreamer::getEFlagsAMDHSA() {
   assert(STI.getTargetTriple().getOS() == Triple::AMDHSA);
 
-  if (Optional<uint8_t> HsaAbiVer = getHsaAbiVersion(&STI)) {
+  if (std::optional<uint8_t> HsaAbiVer = getHsaAbiVersion(&STI)) {
     switch (*HsaAbiVer) {
     case ELF::ELFABIVERSION_AMDGPU_HSA_V2:
     case ELF::ELFABIVERSION_AMDGPU_HSA_V3:
@@ -741,7 +748,7 @@ void AMDGPUTargetELFStreamer::emitAMDGPULDS(MCSymbol *Symbol, unsigned Size,
     SymbolELF->setExternal(true);
   }
 
-  if (SymbolELF->declareCommon(Size, Alignment.value(), true)) {
+  if (SymbolELF->declareCommon(Size, Alignment, true)) {
     report_fatal_error("Symbol: " + Symbol->getName() +
                        " redeclared as different type");
   }
@@ -839,7 +846,7 @@ bool AMDGPUTargetELFStreamer::EmitCodeEnd(const MCSubtargetInfo &STI) {
 
   MCStreamer &OS = getStreamer();
   OS.pushSection();
-  OS.emitValueToAlignment(CacheLineSize, Encoded_pad, 4);
+  OS.emitValueToAlignment(Align(CacheLineSize), Encoded_pad, 4);
   for (unsigned I = 0; I < FillSize; I += 4)
     OS.emitInt32(Encoded_pad);
   OS.popSection();
@@ -849,7 +856,8 @@ bool AMDGPUTargetELFStreamer::EmitCodeEnd(const MCSubtargetInfo &STI) {
 void AMDGPUTargetELFStreamer::EmitAmdhsaKernelDescriptor(
     const MCSubtargetInfo &STI, StringRef KernelName,
     const amdhsa::kernel_descriptor_t &KernelDescriptor, uint64_t NextVGPR,
-    uint64_t NextSGPR, bool ReserveVCC, bool ReserveFlatScr) {
+    uint64_t NextSGPR, bool ReserveVCC, bool ReserveFlatScr,
+    unsigned CodeObjectVersion) {
   auto &Streamer = getStreamer();
   auto &Context = Streamer.getContext();
 

@@ -1580,7 +1580,7 @@ private:
   void assign_ui(unsigned long l)
   {
     if (__GMPXX_CONSTANT_TRUE(l == 0))
-      mp->_mp_size = 0;
+      __get_mp()->_mp_size = 0;
     else
       mpz_set_ui(mp, l);
   }
@@ -1634,7 +1634,7 @@ public:
   __gmp_expr(const __gmp_expr &z) { mpz_init_set(mp, z.mp); }
 #if __GMPXX_USE_CXX11
   __gmp_expr(__gmp_expr &&z) noexcept
-  { *mp = *z.mp; mpz_init(z.mp); }
+  { *__get_mp() = *z.__get_mp(); mpz_init(z.mp); }
 #endif
   template <class T>
   __gmp_expr(const __gmp_expr<mpz_t, T> &expr)
@@ -1666,7 +1666,8 @@ public:
 
   ~__gmp_expr() { mpz_clear(mp); }
 
-  void swap(__gmp_expr& z) __GMPXX_NOEXCEPT { std::swap(*mp, *z.mp); }
+  void swap(__gmp_expr& z) __GMPXX_NOEXCEPT
+  { std::swap(*__get_mp(), *z.__get_mp()); }
 
   // assignment operators
   __gmp_expr & operator=(const __gmp_expr &z)
@@ -1728,7 +1729,7 @@ public:
   // bool fits_ldouble_p() const { return mpz_fits_ldouble_p(mp); }
 
 #if __GMPXX_USE_CXX11
-  explicit operator bool() const { return mp->_mp_size != 0; }
+  explicit operator bool() const { return __get_mp()->_mp_size != 0; }
 #endif
 
   // member operators
@@ -1795,6 +1796,12 @@ public:
 #if __GMPXX_USE_CXX11
   __gmp_expr(__gmp_expr &&q)
   { *mp = *q.mp; mpq_init(q.mp); }
+  __gmp_expr(mpz_class &&z)
+  {
+    *mpq_numref(mp) = *z.get_mpz_t();
+    mpz_init_set_ui(mpq_denref(mp), 1);
+    mpz_init(z.get_mpz_t());
+  }
 #endif
   template <class T>
   __gmp_expr(const __gmp_expr<mpz_t, T> &expr)
@@ -1890,9 +1897,11 @@ public:
 
   // conversion functions
 
-  // casting a reference to an mpz_t to mpz_class & is a dirty hack,
-  // but works because the internal representation of mpz_class is
-  // exactly an mpz_t
+  // casting a reference to an mpz_t to mpz_class & is a dirty hack.
+  // It kind of works because the internal representation of mpz_class is
+  // exactly an mpz_t, but compilers are allowed to assume that mpq_class
+  // and mpz_class do not alias... In mpz_class, we avoid using mp directly,
+  // to reduce the risks of such problematic optimizations.
   const mpz_class & get_num() const
   { return reinterpret_cast<const mpz_class &>(*mpq_numref(mp)); }
   mpz_class & get_num()

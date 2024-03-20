@@ -27,7 +27,7 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     halt(blk," is an invalid block size passed to blockLU");
 
   var piv: [D.dim(0)] int;
-  [i in D.dim(0)] piv(i) = i;    // initialize the pivot vector
+  [i in D.dim(0) with (ref piv)] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute four sets of
   // index ranges -- those that are unfactored, divided into those
@@ -107,7 +107,7 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
       //   ..and subtract scaled kth row from remaining 
       //   unfactored rows of A1
 
-      forall (i,j) in {UnfactoredInds(k+1..), CurrentPanelInds(k+1..)} do
+      forall (i,j) in {UnfactoredInds(k+1..), CurrentPanelInds(k+1..)} with (ref A1) do
         A1(i,j) -= A1(i,k) * A1(k,j);
     }
 
@@ -128,9 +128,9 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     for columnblk in blkIter(TrailingCols,blk) {   // TODO: would like forall
       ref Ublk = A12[CurrentPanelInds,columnblk];
       //On processor that owns Ublk, do the following update:
-      forall j in columnblk do
+      forall j in columnblk with (ref Ublk) do
         for k in CurrentPanelInds do
-          forall i in CurrentPanelInds(k+1..) do
+          forall i in CurrentPanelInds(k+1..) with (ref Ublk) do
             Ublk(i,j) -= U(i,k) * Ublk(k,j);
     }
 
@@ -219,7 +219,7 @@ proc computePivotRow(A:[?D]) {
 }
 
 //  The LU solve routine takes A = [L U y] and solves for x.
-proc LUSolve (A: [?ADom], x: [?xDom]) {
+proc LUSolve (A: [?ADom], ref x: [?xDom]) {
 
    var n = ADom.dim(0).size;
    var AD1 = ADom.dim(0);

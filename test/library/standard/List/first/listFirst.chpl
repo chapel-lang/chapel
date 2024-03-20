@@ -9,6 +9,6 @@ for i in 1..testIters do
 
 assert(!lst.isEmpty());
 
-ref elem = lst.first();
+ref elem = lst.first;
 
 assert(elem == 1);

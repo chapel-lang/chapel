@@ -1,41 +1,43 @@
 use IO;
 
-class mything {
+class mything : serializable {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader) { this.x = r.read(int); }
-
-  proc readThis(r) throws {
-    r.read(x);
+  proc init(reader: fileReader(?), ref deserializer) {
+    this.x = reader.read(int);
   }
 
-  proc writeThis(w) throws {
-    w.write(x);
+  override proc deserialize(reader, ref deserializer) throws {
+    reader.read(x);
+  }
+
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(x);
   }
 }
 
-class subthing : mything {
+class subthing : mything, serializable {
   var y:int;
   proc init(x: int = 0, y: int = 0) {
     super.init(x);
     this.y = y;
   }
-  proc init(r: fileReader) {
-    this.x = r.read(int);
-    r.readLiteral(",");
-    this.y = r.read(int);
+  proc init(reader: fileReader(?), ref deserializer) {
+    this.x = reader.read(int);
+    reader.readLiteral(",");
+    this.y = reader.read(int);
   }
 
-  override proc readThis(r) throws {
-    x = r.read(int);
-    r.readLiteral(",");
-    y = r.read(int);
+  override proc deserialize(reader, ref deserializer) throws {
+    x = reader.read(int);
+    reader.readLiteral(",");
+    y = reader.read(int);
   }
 
-  override proc writeThis(w) throws {
-    w.write(x);
-    w.writeLiteral(",");
-    w.write(y);
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(x);
+    writer.writeLiteral(",");
+    writer.write(y);
   }
 }
 
@@ -47,12 +49,12 @@ class subthing : mything {
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var bOwn = new owned mything(2);
   var b = bOwn.borrow();
@@ -72,12 +74,12 @@ class subthing : mything {
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var bOwn = new owned subthing(5,6);
   var b = bOwn.borrow();
@@ -98,12 +100,12 @@ class subthing : mything {
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var bOwn = new owned subthing(5,6);
   var b = bOwn.borrow();

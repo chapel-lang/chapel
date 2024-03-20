@@ -24,11 +24,11 @@ var A: [r] atomic int;
 for i in dynamic(r, chunkSize=38) { A[i].add(1); }
 writeln(A);
 
-forall i in dynamic(r, chunkSize=38) { A[i].add(1); }
+forall i in dynamic(r, chunkSize=38) with (ref A) { A[i].add(1); }
 writeln(A);
 
-forall (i,j) in zip(dynamic(r, chunkSize=38), r) { A[i].add(1); }
+forall (i,j) in zip(dynamic(r, chunkSize=38), r) with (ref A) { A[i].add(1); }
 writeln(A);
 
-forall (i,j) in zip(r, dynamic(r, chunkSize=38)) { A[j].add(1); }
+forall (i,j) in zip(r, dynamic(r, chunkSize=38)) with (ref A) { A[j].add(1); }
 writeln(A);

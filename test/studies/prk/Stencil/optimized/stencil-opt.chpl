@@ -69,8 +69,8 @@ proc main() {
   /* Domain over entire 'active' region, where Output will be updated */
    innerLocalDom = localDom.expand(-R);
 
-  const outDist   = new dmap(new Stencil(innerLocalDom));
-  const fluffDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R)));
+  const outDist   = new stencilDist(innerLocalDom);
+  const fluffDist = new stencilDist(innerLocalDom, fluff=(R,R));
 
   const Dom = localDom dmapped fluffDist,
    innerDom = innerLocalDom dmapped fluffDist;
@@ -109,7 +109,7 @@ proc main() {
   }
 
   /* Initialize Input matrix */
-  [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
+  [(i, j) in Dom with (ref input)] input[i,j] = coefx*i+coefy*j;
 
   /* Update ghost cells with initial values */
   input.updateFluff();
@@ -146,7 +146,7 @@ proc main() {
     if iteration >= 1 then subTimer.start();
 
     if debug then diagnostics('stencil');
-    forall (i,j) in innerDom with (const in weight) {
+    forall (i,j) in innerDom with (const in weight, ref output) {
       var tmpout: dtype = 0.0;
       if (!compact) {
         for param jj in -R..-1 do tmpout += weight[R][R+jj] * input.localAccess[i, j+jj];

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -130,7 +130,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
       this.matchRegex = new regex(createRegex());
     }
@@ -148,7 +148,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
         this.matchRegex = new regex(mRegex);
     }
@@ -183,7 +183,7 @@ class RecordReader {
         var (rec, once) = _get_internal(offst, len);
         if (once == true) {
           try! myReader.lock();
-          var o = myReader.chpl_offset();
+          var o = myReader.offset();
           myReader.unlock();
           if (o >= offst+len) { // rec.end >= start + len
             // So yield and break

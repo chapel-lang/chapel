@@ -53,6 +53,8 @@ the referenced subsections:
    compile-time
    constant (:ref:`Implicit_Compile_Time_Constant_Conversions`),
 
+-  ranges (:ref:`Implicit_Range_Conversions`),
+
 -  class types (:ref:`Implicit_Class_Conversions`), and
 
 -  when the source type is a subtype of the target type (including when
@@ -174,6 +176,30 @@ implicitly convert:
  * to ``uint`` of matching or greater size or to ``real``
  * or, to ``complex`` of any size.
 
+.. _Implicit_Range_Conversions:
+
+Implicit Range Conversions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Implicit conversions among range types are allowed when all values
+representable in the source type can also be represented in the target
+type, retaining their full precision. In particular, an implicit
+conversion is allowed when:
+
+* the ``idxType`` of the source can be implicitly converted
+  to the ``idxType`` of the target,
+
+* the ``bounds`` of the source and the target are the same, and
+
+* one of the following holds:
+
+ - the ``strides`` of the source and the target are the same,
+ - the ``strides`` of the target is ``any``,
+ - the ``strides`` of the target is ``positive``
+   and the ``strides`` of the source is ``one``, or
+ - the ``strides`` of the target is ``negative``
+   and the ``strides`` of the source is ``negOne``.
+
 .. _Implicit_Class_Conversions:
 
 Implicit Class Conversions
@@ -261,7 +287,7 @@ when one type is a subtype of another.
    *Example (subtype-int8-integral.chpl)*
 
    However, ``int(8)`` is a subtype of the generic type ``integral``
-   according to the first rule above (:ref:`Built_in_Generic_types`).
+   according to the first rule above (:ref:`Built_in_Generic_Types`).
 
    .. BLOCK-test-chapelpre
 
@@ -389,7 +415,8 @@ the following program locations:
 Implicit conversions for initialization or assignment are allowed between
 numeric and boolean types (:ref:`Implicit_NumBool_Conversions`), numeric
 types in the special case when the expression’s value is a compile-time
-constant (:ref:`Implicit_Compile_Time_Constant_Conversions`), class types
+constant (:ref:`Implicit_Compile_Time_Constant_Conversions`), ranges
+(:ref:`Implicit_Range_Conversions`), class types
 (:ref:`Implicit_Class_Conversions`), and for generic target types
 (:ref:`Subtype_Arg_Conversions`).
 
@@ -473,20 +500,24 @@ Implicit Conversions for Function Calls
 An implicit conversion for a function call - also called a *coercion* -
 occurs when the actual argument of a function call is converted to the
 type of the corresponding formal argument, if the formal’s intent is
-``param``, ``in``, ``const in``, or an abstract intent
-(:ref:`Abstract_Intents`) with the semantics of ``in`` or ``const in``.
+``param``, ``in``, ``const in``, ``const``, or the default intent.
 
 Implicit conversions for function calls are allowed between numeric
 and boolean types (:ref:`Implicit_NumBool_Conversions`), numeric types
 in the special case when the expression’s value is a compile-time
-constant (:ref:`Implicit_Compile_Time_Constant_Conversions`), class
+constant (:ref:`Implicit_Compile_Time_Constant_Conversions`),
+ranges (:ref:`Implicit_Range_Conversions`), class
 types (:ref:`Implicit_Class_Conversions`), and for generic target
 types (:ref:`Subtype_Arg_Conversions`).
 
 Additionally, an implicit conversion for a function call occurs when the
 actual type is a subtype of the formal type. This rule applies to ``in``,
-``const in``, ``const ref``, and ``type`` intent formals and includes
-generic formal types. See :ref:`Subtype_Arg_Conversions`.
+``const in``, ``const ref``, ``const``, ``type``, and default intent formals
+and includes generic formal types. See :ref:`Subtype_Arg_Conversions`.
+
+Lastly, implicit conversion from a compile-time constant is always
+allowed when passing to a ``const ref`` formal. See
+:ref:`Implicit_Compile_Time_Constant_Conversions`.
 
 Implicit conversions are not applied for actual arguments passed to
 ``ref`` formal arguments.
@@ -648,6 +679,9 @@ for converting from real, except that the imaginary part of the result
 is set using the input value, and the real part of the result is set to
 zero.
 
+Explicitly converting between ``real(k)`` and ``imag(k)`` will copy the
+represented number while changing whether or not it is imaginary.
+
 .. _Explicit_Tuple_to_Complex_Conversion:
 
 Explicit Tuple to Complex Conversion
@@ -769,18 +803,28 @@ expression or a type expression.
 Explicit Range Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An expression of a range type with ``strides=strideKind.any``
-can be explicitly converted to a range type with ``strides=strideKind.one``,
-changing the stride to 1 in the process.
+An expression of a range type can be explicitly converted to another
+range type with the same ``bounds`` parameter. Upon such conversion,
+each non-infinite bound of the source is explicitly converted
+to the target's ``idxType``. The explicit conversion for ranges
+is not allowed when the explicit conversion between their ``idxTypes``
+is not allowed.
+
+The explicit conversion results in an error when the ``stride`` value
+of the source is not legal for the target type. This may be the case
+either because the source stride is not representable within the
+target's stride type or it is of the opposite sign than expected
+by the target's ``strides`` parameter.
 
 .. _Explicit_Domain_Conversions:
 
 Explicit Domain Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An expression of a domain type with ``strides=strideKind.any``
-can be explicitly converted to a domain type with ``strides=strideKind.one``,
-changing all strides to 1 in the process.
+An expression of a rectangular domain type can be explicitly converted
+to another rectangular domain type of the same ``rank``.
+Such conversion is performed dimension-wise following the rules
+for explicit range conversions (see :ref:`Explicit_Range_Conversions`).
 
 .. _Explicit_String_to_Bytes_Conversions:
 

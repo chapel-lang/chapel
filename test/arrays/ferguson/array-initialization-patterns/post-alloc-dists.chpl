@@ -18,19 +18,19 @@ proc makeA() {
     var ret: [1..1] int;
     return ret;
   } else if distType == DistType.block {
-    return Block.createArray(1..1, int);
+    return blockDist.createArray(1..1, int);
   } else if distType == DistType.cyclic {
-    return Cyclic.createArray(1..1, int);
+    return cyclicDist.createArray(1..1, int);
   } else if distType == DistType.blockcyclic {
-    var D = {1..1} dmapped BlockCyclic(startIdx=(1,), (3,));
+    var D = {1..1} dmapped blockCycDist(startIdx=(1,), (3,));
     var ret: [D] int;
     return ret;
   } else if distType == DistType.replicated {
-    var D = {1..1} dmapped Replicated();
+    var D = {1..1} dmapped replicatedDist();
     var ret: [D] int;
     return ret;
   } else if distType == DistType.stencil {
-    var D = {1..1} dmapped Stencil(rank=1, boundingBox={1..1});
+    var D = {1..1} dmapped stencilDist(rank=1, boundingBox={1..1});
     var ret: [D] int;
     return ret;
   } else {

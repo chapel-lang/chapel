@@ -3,11 +3,11 @@ use CyclicDist;
 config const printOutput=false;
 config  const n: int=10;
 const S = {1..n,1..n,1..n};
-const Dom1: domain(3) dmapped Cyclic(startIdx=S.low)=S;
+const Dom1: domain(3) dmapped cyclicDist(startIdx=S.low)=S;
 const S2 = {1..2*n,1..2*n,1..2*n};
-const Dom2: domain(3) dmapped Cyclic(startIdx=S2.low)=S2;
-/*var Dist1 = new Block({1..n,1..n,1..n});
-var Dist2 = new Block({1..(2*n),1..(2*n),1..(2*n)};
+const Dom2: domain(3) dmapped cyclicDist(startIdx=S2.low)=S2;
+/*var Dist1 = new blockDist({1..n,1..n,1..n});
+var Dist2 = new blockDist({1..(2*n),1..(2*n),1..(2*n)};
 var Dom1: domain(3,int) dmapped Dist1 ={1..n,1..n,1..n};
 var Dom2: domain(3,int) dmapped Dist2 ={1..n,1..n,1..n};
 */

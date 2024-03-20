@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -509,9 +509,8 @@ static void argHelper(std::string formal, std::string actual,
     t->stringify(str, chpl::StringifyKind::CHPL_SYNTAX);
     printf("  success: passing %s to %s\n", str.str().c_str(), formal.c_str());
   } else {
-    std::string msg = "Cannot resolve call to 'foo': no matching candidates";
     assert(guard.numErrors() == 1);
-    assert(guard.error(0)->message() == msg);
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
     guard.clearErrors();
     printf("  success: cannot pass %s to %s\n", actual.c_str(), formal.c_str());
   }
@@ -551,6 +550,31 @@ static void testTupleGeneric() {
   argHelper("(numeric, numeric)", "(5, 'hi')", false);
 }
 
+static void test18() {
+  printf("test18\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto program = R""""(
+                  var t = (1, "hello", 3.0);
+                  var x = t(0);
+                  var y = t(1);
+                  var z = t(2);
+                )"""";
+
+  auto m = parseModule(context, std::move(program));
+
+  auto x = findVariable(m, "x");
+  auto y = findVariable(m ,"y");
+  auto z = findVariable(m ,"z");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  assert(rr.byAst(x).type().type()->isIntType());
+  assert(rr.byAst(y).type().type()->isStringType());
+  assert(rr.byAst(z).type().type()->isRealType());
+}
+
 int main() {
   test1();
   test2();
@@ -569,6 +593,7 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
 
   testTupleGeneric();
 

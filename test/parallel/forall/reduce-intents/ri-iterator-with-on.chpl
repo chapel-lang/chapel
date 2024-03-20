@@ -9,9 +9,8 @@ proc main {
   writeln(result);
 }
 
-iter AAA() {
+iter AAA(): int {
   halt("do not invoke me");
-  yield 1;
 }
 
 iter AAA(param tag) where tag == iterKind.standalone {

@@ -39,7 +39,7 @@ type coeff = 4*real;
 // Initialize levels
 class MGLevel {
   var n1 : int;
-  var dom = {0.. #n1, 0.. #n1, 0.. #n1} dmapped Stencil({0.. #n1, 0.. #n1, 0.. #n1},
+  var dom = {0.. #n1, 0.. #n1, 0.. #n1} dmapped stencilDist({0.. #n1, 0.. #n1, 0.. #n1},
                             fluff=HaloSize,
                             periodic=true);
   var Z, R : [dom] real;
@@ -99,7 +99,7 @@ proc main() {
 
 /* Multigrid step
 */
-proc mgstep(U, V, Levels) {
+proc mgstep(ref U, V, Levels) {
   var t1 : stopwatch;
   t1.clear();
 
@@ -138,11 +138,11 @@ proc norm(R) : real {
 
    fine is input, coarse is output
  */
-proc restrict(coarse:[?coarseDom] real, fine : [?FineDom]real) {
+proc restrict(ref coarse:[?coarseDom] real, fine : [?FineDom]real) {
   const w : coeff = (1.0/2.0, 1.0/4.0, 1.0/8.0, 1.0/16.0);
   fine.updateFluff();
 
-  forall (i,j,k) in coarseDom {
+  forall (i,j,k) in coarseDom with (ref coarse) {
     const i2 = 2*i,
           j2 = 2*j,
           k2 = 2*k;
@@ -179,7 +179,7 @@ proc restrict(coarse:[?coarseDom] real, fine : [?FineDom]real) {
 
  z = z + S r
 */
-proc smooth(Z :[] real, const ref R : []real) {
+proc smooth(ref Z :[] real, const ref R : []real) {
   // The smoothing operator is defined differently for different classes. This is
   // the S(a) definition
   const w : coeff = smoothingCoeff(NPBClass);
@@ -193,15 +193,15 @@ proc smooth(Z :[] real, const ref R : []real) {
 
  r = r - A z
 */
-proc resid(R:[?Dom]real, V:[]real, Z:[]real) {
+proc resid(ref R:[?Dom]real, V:[]real, Z:[]real) {
   // TODO : Why does this not optimize properly???
   // R = V;
-  [ijk in Dom] R.localAccess[ijk] = V.localAccess[ijk];
+  [ijk in Dom with (ref R)] R.localAccess[ijk] = V.localAccess[ijk];
   resid(R, Z);
 }
 
 // Overload when V = R
-proc resid(R:[?Dom]real, const ref Z:[]real) {
+proc resid(ref R:[?Dom]real, const ref Z:[]real) {
   // Negative of the coefficients, since always subtract
   const w : coeff = (8.0/3.0, 0.0, -1.0/6.0, -1.0/12.0);
   stencilConvolve(R,Z,w);
@@ -213,10 +213,10 @@ proc resid(R:[?Dom]real, const ref Z:[]real) {
  We do this in a simple manner, which requires creating a temporary array. It can also
  be easily optimized at the cost of more code.
 */
-proc prolong(fine:[?fineDom]real, coarse:[?coarseDom]real) {
+proc prolong(ref fine:[?fineDom]real, coarse:[?coarseDom]real) {
   coarse.updateFluff();
   // TODO : This is a horrific piece of code.
-  forall (i,j,k) in coarseDom {
+  forall (i,j,k) in coarseDom with (ref fine) {
     const i2 = 2*i,
           j2 = 2*j,
           k2 = 2*k;
@@ -249,7 +249,7 @@ proc prolong(fine:[?fineDom]real, coarse:[?coarseDom]real) {
 }
 
 
-proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff) {
+proc stencilConvolve(ref dest : [?Dom] real, const ref src : []real, const w : coeff) {
   // Reading from 'src', need to update the local cache
   fluffTime.start();
   src.updateFluff();
@@ -282,7 +282,7 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
           return locSrc[i+1,j+1,k] + locSrc[i-1,j+1,k] +
                  locSrc[i+1,j-1,k] + locSrc[i-1,j-1,k];
         }
-        forall (i,j) in outer  {
+        forall (i,j) in outer  with (ref dest) {
           dest.localAccess[i,j,klo] += w2 * valA(i,j,klo-1) +
                                        w3 * valB(i,j,klo-1);
 
@@ -337,7 +337,7 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
 
 
 // This is hardcoded, for simplicity.
-proc fillInit(U, V : [?Dom]) {
+proc fillInit(ref U, ref V : [?Dom]) {
   // Different cases for different classes
   // This could be generated on the fly, but it's simpler to just copy over the
   // correct values, since there are just 20 points.
@@ -376,12 +376,12 @@ proc fillInit(U, V : [?Dom]) {
 
   V = 0.0;
   U = 0.0;
-  [ijk in negative] V[ijk-1] = -1.0;
-  [ijk in positive] V[ijk-1] = 1.0;
+  [ijk in negative with (ref V)] V[ijk-1] = -1.0;
+  [ijk in positive with (ref V)] V[ijk-1] = 1.0;
 }
 
-inline proc increment(src : [?Dom]real, dest : []real) {
-  forall ijk in Dom do dest.localAccess[ijk] += src.localAccess[ijk];
+inline proc increment(src : [?Dom]real, ref dest : []real) {
+  forall ijk in Dom with (ref dest) do dest.localAccess[ijk] += src.localAccess[ijk];
 }
 
 

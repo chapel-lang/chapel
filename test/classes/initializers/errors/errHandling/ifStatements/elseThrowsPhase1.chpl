@@ -12,12 +12,12 @@ class Foo {
   proc init(xVal: int) throws {
     if (xVal > 5) {
       x = xVal;
-      this.complete();
+      init this;
       funcThatThrows1();
     } else {
       x = xVal + 5;
       funcThatThrows2();
-      this.complete();
+      init this;
     }
   }
 }

@@ -1,0 +1,4 @@
+localize.chpl:4: warning: string.localize() is unstable and may change in a future release
+localize.chpl:6: warning: bytes.localize() is unstable and may change in a future release
+my string
+my bytes

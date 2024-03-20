@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,18 +58,15 @@ TYPE_NODE(CPtrType)
 
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
   // concrete builtin types
-  BUILTIN_TYPE_NODE(CFnPtrType, "c_fn_ptr")
+  BUILTIN_TYPE_NODE(CFnPtrType, "chpl_c_fn_ptr")
   BUILTIN_TYPE_NODE(CVoidPtrType, "chpl__c_void_ptr")
   BUILTIN_TYPE_NODE(OpaqueType, "opaque")
   BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
-  BUILTIN_TYPE_NODE(TaskIdType, "chpl_nullTaskID")
+  BUILTIN_TYPE_NODE(SingleAuxType, "_single_aux_t")
+  BUILTIN_TYPE_NODE(TaskIdType, "chpl_taskID_t")
 
-  // generic builtin types. AnyBoolType must be the first of these
-  // (or else adjust BuiltinType::isGeneric and this comment)
-  BUILTIN_TYPE_NODE(AnyBoolType, "chpl_anybool")
-  BUILTIN_TYPE_NODE(AnyBorrowedNilableType, "_borrowedNilable")
-  BUILTIN_TYPE_NODE(AnyBorrowedNonNilableType, "_borrowedNonNilable")
-  BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")
+  // generic builtin types. AnyComplexType must be the first of these
+  // (or else adjust BuiltinType::genericity and this comment)
   BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
   BUILTIN_TYPE_NODE(AnyEnumType, "enum")
   BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")
@@ -77,8 +74,6 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(AnyIntegralType, "integral")
   BUILTIN_TYPE_NODE(AnyIteratorClassType, "_iteratorClass")
   BUILTIN_TYPE_NODE(AnyIteratorRecordType, "_iteratorRecord")
-  BUILTIN_TYPE_NODE(AnyManagementAnyNilableType, "_anyManagementAnyNilable")
-  BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
   BUILTIN_TYPE_NODE(AnyNumericType, "numeric")
   BUILTIN_TYPE_NODE(AnyOwnedType, "owned")
   BUILTIN_TYPE_NODE(AnyPodType, "chpl_anyPOD")
@@ -88,9 +83,7 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(AnyUintType, "chpl_anyuint")
   BUILTIN_TYPE_NODE(AnyUninstantiatedType, "?")
   BUILTIN_TYPE_NODE(AnyUnionType, "union")
-  BUILTIN_TYPE_NODE(AnyUnmanagedNilableType, "_unmanagedNilable")
-  BUILTIN_TYPE_NODE(AnyUnmanagedNonNilableType, "_unmanagedNonNilable")
-  BUILTIN_TYPE_NODE(AnyUnmanagedType, "unmanaged")
+  // end generic builtin types.
 TYPE_END_SUBCLASSES(BuiltinType)
 
 TYPE_BEGIN_SUBCLASSES(DeclaredType)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,7 +36,12 @@
 static const char *_ccArg = NULL;
 static const char* debug = NULL;
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
+  if (numLocalesPerNode > 1) {
+    chpl_launcher_no_colocales_error(NULL);
+  }
+
   debug = getenv("CHPL_LAUNCHER_DEBUG");
   return chpl_launch_using_exec("aprun",
                                 chpl_create_aprun_cmd(argc, argv,

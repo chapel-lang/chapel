@@ -13,7 +13,7 @@ proc test2() {
   var instance:borrowed MyClass(int) = myOwned;
 }
 
-proc acceptMyClass(c:borrowed MyClass) {
+proc acceptMyClass(c:borrowed MyClass(?)) {
   writeln(c);
 }
 

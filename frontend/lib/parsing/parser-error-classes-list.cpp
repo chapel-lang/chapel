@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,13 +47,13 @@ namespace chpl {
 // Bison* errors are reported by the Bison parser to yyerror
 
 void ErrorBisonMemoryExhausted::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
+  auto loc = std::get<const Location>(info_);
   wr.heading(kind_, type_, loc, "memory exhausted while parsing.");
 }
 
 void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto nearestToken = std::get<std::string>(info);
+  auto loc = std::get<const Location>(info_);
+  auto nearestToken = std::get<std::string>(info_);
   wr.heading(kind_, type_, loc,
              (nearestToken.empty() ? "(no token given)"
                                    : "near '" + nearestToken + "'"),
@@ -62,9 +62,9 @@ void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errorMessage = std::get<1>(info);
-  auto nearestToken = std::get<2>(info);
+  auto loc = std::get<const Location>(info_);
+  auto errorMessage = std::get<1>(info_);
+  auto nearestToken = std::get<2>(info_);
   wr.heading(kind_, type_, loc,
              "unknown error from Bison parser: ", errorMessage, ".");
   if (!nearestToken.empty()) {
@@ -76,8 +76,8 @@ void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
 // other parser errors
 
 void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto stmt = std::get<const uast::AstNode*>(info);
+  auto loc = std::get<const Location>(info_);
+  auto stmt = std::get<const uast::AstNode*>(info_);
   wr.heading(kind_, type_, loc, "cannot attach 'pragma's to this statement.");
   if (stmt) {
     wr.code(stmt);
@@ -88,9 +88,9 @@ void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<0>(info);
-  auto startLoc = std::get<1>(info);
-  auto nestedLoc = std::get<2>(info);
+  auto loc = std::get<0>(info_);
+  auto startLoc = std::get<1>(info_);
+  auto nestedLoc = std::get<2>(info_);
   wr.heading(kind_, type_, loc, "end-of-file in comment.");
   wr.note(startLoc, "unterminated comment here:");
   wr.code(startLoc);
@@ -101,17 +101,18 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
+  auto loc = std::get<0>(info_);
+  auto limitLoc = std::get<1>(info_);
+  auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info_);
   wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
              "' list, identifier expected.");
   wr.message("In the '", limitationKind, "' list here:");
-  wr.code(loc);
+  wr.code<Location>(loc, { limitLoc });
 }
 
 void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto pairSymbol = std::get<std::string>(info);
+  auto loc = std::get<const Location>(info_);
+  auto pairSymbol = std::get<std::string>(info_);
   wr.heading(kind_, type_, loc, "missing closing ", pairSymbol,
              " symbol in extern block.");
   wr.message("In this extern block:");
@@ -119,7 +120,7 @@ void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
+  auto loc = std::get<const Location>(info_);
   wr.heading(kind_, type_, loc,
              "only identifiers or tuples of identifiers are allowed as index "
              "expressions.");
@@ -128,16 +129,16 @@ void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorInvalidNewForm::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto newExpr = std::get<const uast::AstNode*>(info);
+  auto loc = std::get<const Location>(info_);
+  auto newExpr = std::get<const uast::AstNode*>(info_);
   wr.heading(kind_, type_, loc, "Invalid form for 'new' expression.");
   wr.message("'new' expression used here:");
   wr.code(loc, {newExpr});
 }
 
 void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errMessage = std::get<std::string>(info);
+  auto loc = std::get<const Location>(info_);
+  auto errMessage = std::get<std::string>(info_);
   CHPL_ASSERT(!errMessage.empty());
   CHPL_ASSERT(errMessage.back() == '.' &&
          "expected a period at the end of InvalidNumericLiteral message");
@@ -148,8 +149,8 @@ void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto maybeStmt = std::get<const uast::AstNode*>(info);
+  auto loc = std::get<const Location>(info_);
+  auto maybeStmt = std::get<const uast::AstNode*>(info_);
   if (maybeStmt && maybeStmt->tag() == uast::AstTag::EmptyStmt) {
     // this is the case where there is a semicolon following the label name
     wr.heading(kind_, type_, loc,
@@ -163,7 +164,7 @@ void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
+  auto loc = std::get<const Location>(info_);
   wr.heading(
       kind_, type_, loc,
       "external symbol renaming can only be applied to one symbol at a time.");
@@ -171,9 +172,81 @@ void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
+void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
+  auto root = std::get<const uast::OpCall*>(info_);
+  auto& ops = std::get<std::vector<const uast::OpCall*>>(info_);
+  auto& operands = std::get<std::vector<const uast::AstNode*>>(info_);
+
+  bool allSimple = std::all_of(operands.begin(), operands.end(), [](auto operand) {
+    return operand->isLiteral() || operand->isIdentifier();
+  });
+
+  // Bitfield: 001 for < or <=, 010 for > or >=, 100 for == or !=
+  // We only want to suggest the "normalized" form if all operators are
+  // in the same direction, and if no equality constraints are present.
+  //
+  // The reason for the latter is, how would you desugar x != y != z?
+  //     x != y && y != z
+  // or
+  //     x != y && y != z && x != z
+  // It's best not to guess there.
+  int types = 0; 
+  for (auto op : ops) {
+    if (op->op() == "<" || op->op() == "<=") {
+      types |= 0b1;
+    } else if (op->op() == ">" || op->op() == ">=") {
+      types |= 0b10;
+    } else if (op->op() == "==" || op->op() == "!=") {
+      types |= 0b100;
+    }
+  }
+
+  wr.heading(kind_, type_, ops.front(),
+             "comparison operators are not associative.");
+  wr.codeForLocation(ops.front());
+  wr.message("Comparisons in the form 'x op y op z' are not supported.");
+
+  if (allSimple && (types == 0b1 || types == 0b10)) {
+    std::ostringstream oss;
+    // Print out what the user's code would look like elementwise
+    for (size_t idx = 0; idx < ops.size(); idx++) {
+      if (idx > 0) {
+        oss << " && ";
+      }
+
+      operands[idx]->stringify(oss, CHPL_SYNTAX);
+      oss << " " << ops[idx]->op() << " ";
+      operands[idx + 1]->stringify(oss, CHPL_SYNTAX);
+    }
+
+    // TODO: this uses explicit indentation using spaces, which is probably bad.
+    wr.message("If you wanted to perform elementwise comparison, consider using "
+               "the following instead:");
+    wr.message("");
+    wr.message("    ", oss.str());
+    wr.message("");
+  } else {
+    wr.message("If you wanted to perform elementwise comparison, please use "
+               "'&&' to combine operations.");
+  }
+
+  const uast::OpCall* firstNonRoot = nullptr;
+  for (auto op : ops) {
+    if (op != root) {
+      firstNonRoot = op;
+      break;
+    }
+  }
+
+  wr.message("If you wanted to use the result of a comparison as an operand in "
+             "another comparison, consider using parentheses in a subexpression "
+             "to disambiguate:");
+  wr.code(root, { firstNonRoot });
+}
+
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto expr = std::get<const uast::AstNode*>(info);
+  auto loc = std::get<const Location>(info_);
+  auto expr = std::get<const uast::AstNode*>(info_);
   wr.heading(kind_, type_, loc,
              "'new' expression is missing its argument list.");
   wr.message("'new' expression used here:");
@@ -182,8 +255,8 @@ void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto isDoublePlus = std::get<bool>(info);
+  auto loc = std::get<const Location>(info_);
+  auto isDoublePlus = std::get<bool>(info_);
   if (isDoublePlus) {
     wr.heading(kind_, type_, loc, "'++' is not a pre-increment.");
   } else {
@@ -193,32 +266,10 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
-void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto ret = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, type_, loc, "Single-statement 'return' routines are "
-             "deprecated; please insert 'do' before the 'return' or wrap the "
-             "statement in curly brackets.");
-  wr.message("For this return statement:");
-  wr.code(loc, { ret });
-}
-
-void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto recordName = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc,
-             "inheritance is not currently supported for records.");
-  wr.note(loc, recordName, " declared as a record here:");
-  wr.code(loc);
-  wr.message(
-      "Thoughts on what record inheritance should entail can be added to "
-      "https://github.com/chapel-lang/chapel/issues/6851.");
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto startChar = std::get<char>(info);
-  auto startCharCount = std::get<int>(info);
+  auto loc = std::get<const Location>(info_);
+  auto startChar = std::get<char>(info_);
+  auto startCharCount = std::get<int>(info_);
   auto startDelimiter = std::string((size_t)startCharCount, startChar);
   wr.heading(kind_, type_, loc, "end-of-file in string literal.");
   wr.message("Unterminated string literal here:");
@@ -228,21 +279,21 @@ void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto isImport = std::get<bool>(info);
+  auto loc = std::get<const Location>(info_);
+  auto isImport = std::get<bool>(info_);
   std::string useOrImport = isImport ? "import" : "use";
   wr.heading(kind_, type_, loc, "'", useOrImport,
              "' statements must refer to module",
              (isImport ? "" : " or 'enum'"), " symbols.");
   wr.message("In the following '", useOrImport, "' statement:");
-  wr.code(loc);
+  wr.codeForLocation(loc);
 }
 
 // catch-alls for simple parsing errors
 
 void ErrorParseErr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errorMessage = std::get<std::string>(info);
+  auto loc = std::get<const Location>(info_);
+  auto errorMessage = std::get<std::string>(info_);
   CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorParseErr message");
   wr.heading(kind_, type_, loc, errorMessage);
@@ -250,8 +301,8 @@ void ErrorParseErr::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorParseSyntax::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errorMessage = std::get<std::string>(info);
+  auto loc = std::get<const Location>(info_);
+  auto errorMessage = std::get<std::string>(info_);
   CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorParseSyntax message");
   wr.heading(kind_, type_, loc, errorMessage);
@@ -261,43 +312,64 @@ void ErrorParseSyntax::write(ErrorWriterBase& wr) const {
 /* begin post-parse-checks errors */
 
 void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto appliedToWhat = std::get<std::string>(info);
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto appliedToWhat = std::get<std::string>(info_);
   wr.heading(kind_, type_, node, "can't apply private to ", appliedToWhat,
              " yet.");
   wr.message("The following declaration has unsupported 'private' modifier:");
   wr.code(node);
 }
 
-void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
-  auto invalidAst = std::get<0>(info);
-  auto blockingAst = std::get<1>(info);
-  auto allowingAst = std::get<2>(info);
+void ErrorWhenAfterOtherwise::write(ErrorWriterBase& wr) const {
+  auto node = std::get<0>(info_);
+  auto otherwise = std::get<1>(info_);
+  auto when = std::get<2>(info_);
+  wr.heading(kind_, type_, node, "'otherwise' clause must follow all 'when' clauses.");
+  wr.message("In the following 'select' statement:");
+  wr.code(node);
+  wr.note(otherwise, "the 'otherwise' clause occurs here:");
+  wr.code(otherwise);
+  wr.note(when, "however, the following 'when' clause is found below it:");
+  wr.code(when);
+  wr.message("Chapel requires 'otherwise' clauses to occur last within 'select' statements.");
+}
 
-  // The error for value-having return in an iterator is so specific that it's
-  // easiest to special case it.
-  if (auto ret = invalidAst->toReturn()) {
-    if (blockingAst && blockingAst->isFunction()) {
-      auto fn = blockingAst->toFunction();
-      wr.heading(kind_, type_, ret,
-                 "'return' statements with values are not allowed in iterators.");
-      wr.message("The following 'return' statement has a value:");
-      wr.code(ret, { ret->value() });
-      wr.note(locationOnly(fn), "'", fn->name(),
-                                "' is declared as an iterator here:");
-      wr.codeForLocation(fn);
-      if (allowingAst != nullptr) {
-        auto allowingFn = allowingAst->toFunction();
-        CHPL_ASSERT(allowingFn);
-        // There _was_ a function that allowed a return, but it must be further
-        // out.
-        wr.note(locationOnly(allowingFn), "'", fn->name(), "' is declared inside '",
-                allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
-      } else {
-        wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
-      }
-      return;
+void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
+  auto invalidAst = std::get<0>(info_);
+  auto blockingAst = std::get<1>(info_);
+  auto allowingAst = std::get<2>(info_);
+
+  // Match some special cases:
+  auto ret = invalidAst->toReturn();
+  const uast::Function *blockingAstFn = blockingAst ? blockingAst->toFunction() : nullptr;
+  bool isFuncWithReturn = ret && blockingAstFn;
+  bool isIterWithReturn = isFuncWithReturn && blockingAstFn->kind() == uast::Function::ITER;
+  if (isIterWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in iterators.");
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.note(locationOnly(blockingAstFn), "'", blockingAstFn->name(),
+                              "' is declared as an iterator here:");
+    wr.codeForLocation(blockingAstFn);
+    if (allowingAst != nullptr) {
+      auto allowingFn = allowingAst->toFunction();
+      CHPL_ASSERT(allowingFn);
+      // There _was_ a function that allowed a return, but it must be further
+      // out.
+      wr.note(locationOnly(allowingFn), "'", blockingAstFn->name(), "' is declared inside '",
+              allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
+    } else {
+      wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
     }
+    return;
+  } else if (isFuncWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in ", blockingAstFn->name());
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.codeForLocation(blockingAstFn);
+    return;
   }
 
   std::string astType = "";
@@ -409,8 +481,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
-  auto clause = std::get<0>(info);
-  auto parent = std::get<1>(info);
+  auto clause = std::get<0>(info_);
+  auto parent = std::get<1>(info_);
   const char* useOrImport = parent->isImport() ? "import" : "use";
   wr.heading(kind_, type_, clause,
              "Illegal expression in '", useOrImport, "' statement");
@@ -418,10 +490,96 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   wr.note(clause, "only identifiers and 'dot' expressions are supported");
 }
 
+static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
+                                            const uast::AstNode* node,
+                                            const uast::Attribute* attr,
+                                            ErrorBase::Kind kind,
+                                            ErrorType type) {
+  const char* loopTypes = nullptr;
+  if (node->isFor()) {
+    loopTypes = "for";
+  } else if (node->isWhile()) {
+    loopTypes = "while";
+  } else if (node->isDoWhile()) {
+    loopTypes = "do-while";
+  } else if (node->isCoforall()) {
+    loopTypes = "coforall";
+  }
+
+  // For now, attribute locations aren't correctly computed, so this is unhelpful.
+  // wr.note(attr, "marked for GPU execution here:");
+  // wr.codeForLocation(attr);
+
+  const char* whatIsAffected = "statement";
+  if (loopTypes) {
+    wr.heading(kind, type, node, "loop marked with @", attr->name(),
+               ", but '", loopTypes, "' loops don't support GPU execution.");
+    whatIsAffected = "loop";
+  } else if (node->isFunction()) {
+    wr.heading(kind, type, node, "functions do not currently support the @",
+               attr->name(), " attribute.");
+    whatIsAffected = "function";
+  } else if (node->isVariable() && node->toVariable()->isField()) {
+    wr.heading(kind, type, node, "fields do not support the @",
+               attr->name(), " attribute.");
+  } else {
+    wr.heading(kind, type, node, "statement does not support the @",
+               attr->name(), " attribute.");
+  }
+
+  wr.message("The affected ", whatIsAffected, " is here:");
+  wr.codeForLocation(node);
+}
+
+void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto attr = std::get<const uast::Attribute*>(info_);
+
+  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
+}
+
+void ErrorInvalidBlockSize::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto attr = std::get<const uast::Attribute*>(info_);
+
+  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
+}
+
+void ErrorInvalidImplementsIdent::write(ErrorWriterBase& wr) const {
+  auto implements = std::get<const uast::Implements*>(info_);
+  auto ident = std::get<const uast::Identifier*>(info_);
+
+  auto typeName = ident->name();
+  if (typeName == USTR("domain")) {
+    wr.heading(kind_, type_, ident, "type '", typeName, "' cannot implement an interface.");
+  } else {
+    wr.heading(kind_, type_, ident, "invalid identifier '", typeName,
+                                     "' on the left of an 'implements' keyword.");
+  }
+  wr.message("In the following 'implements' statement:");
+  wr.code(implements, { ident });
+}
+
+void ErrorInvalidParenfulDeprecation::write(ErrorWriterBase& wr) const {
+  auto attributeGroup = std::get<const uast::AttributeGroup*>(info_);
+  auto appliedTo = std::get<const uast::AstNode*>(info_);
+
+  wr.heading(kind_, type_, attributeGroup, "the '@deprecated' attribute with 'parenful=true' can only be applied to parenless functions.");
+  wr.message("It is used to indicate that a parenless function used to be callable with parentheses.");
+
+  if (auto fn = appliedTo->toFunction()) {
+    wr.message("The attribute is applied to a non-parenless function here:");
+    wr.codeForDef(fn);
+  } else {
+    wr.message("the attribute is applied to a non-function here:");
+    wr.codeForLocation(appliedTo);
+  }
+}
+
 void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto outerMgt = std::get<1>(info);
-  auto innerMgt = std::get<2>(info);
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto outerMgt = std::get<1>(info_);
+  auto innerMgt = std::get<2>(info_);
   wr.heading(kind_, type_, node,
              "type expression uses multiple memory management strategies ('",
              outerMgt, "' and '", innerMgt, "').");
@@ -435,17 +593,9 @@ void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   }
 }
 
-void ErrorParenlessAttributeArgDeprecated::write(ErrorWriterBase& wr) const {
-  auto attr = std::get<const uast::Attribute*>(info);
-  wr.heading(kind_, type_, attr, "Attribute arguments without parentheses are "
-             "deprecated; please wrap the argument in parentheses '()'.");
-  wr.message("For this attribute:");
-  wr.code(attr, { attr->actual(0)});
-}
-
 void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto errorMessage = std::get<std::string>(info);
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto errorMessage = std::get<std::string>(info_);
   CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorPostParseErr message");
   wr.heading(kind_, type_, node, errorMessage);
@@ -453,8 +603,8 @@ void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto errorMessage = std::get<std::string>(info);
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto errorMessage = std::get<std::string>(info_);
   CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorPostParseWarn message");
   wr.heading(kind_, type_, node, errorMessage);
@@ -462,8 +612,8 @@ void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
-  auto as = std::get<const uast::As*>(info);
-  auto expectedIdentifier = std::get<const uast::AstNode*>(info);
+  auto as = std::get<const uast::As*>(info_);
+  auto expectedIdentifier = std::get<const uast::AstNode*>(info_);
   wr.heading(kind_, type_, locationOnly(as),
              "this form of 'as' is not yet supported.");
   // determine and report which of the original or new name is invalid

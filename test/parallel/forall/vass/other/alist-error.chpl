@@ -5,10 +5,10 @@ class A {
   var X: domain(int);
 
   proc init(N: int) {
-    var ownR = new owned RandomStream(real, 13);
-    var R = ownR.borrow();
+    var R = new randomStream(real, 13);
     this.X = [x in 1..N] x;
-    var Y = [x in this.X] R.getNext();
+    var y: [this.X] real;
+    for i in this.X do y[i] = R.next();
   }
 }
 var ownA = new owned A(100);

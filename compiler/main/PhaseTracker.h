@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,7 +47,7 @@
 * Every phase has a descriptive name that will be used by the reports.        *
 *                                                                             *
 * The main loop for the compiler, in runpasses.cpp, has a notion of a "pass"  *
-* consists of three phases;                                                   *
+* which consists of three phases;                                             *
 *                                                                             *
 *    1) The primary computation                                               *
 *    2) An optional verify / check phase                                      *
@@ -79,9 +79,23 @@ public:
   void                 StartPhase(const char* passName, SubPhase subPhase);
 
   void                 Stop();
+  void                 Resume();
 
   void                 ReportPass  ()                                const;
-  void                 ReportTotal ()                                const;
+  // Report out total times by pass group, with differing behavior based on the
+  // provided argument:
+  // - nullptr: Ignore it and report as normal.
+  // - empty list: Instead insert times into it and skip outputting.
+  // - non-empty list: Take the values as already-recorded times and report
+  // them out. They are assumed to represent pass group times in order, with
+  // missing values meaning that pass group did not occur (early exit).
+  void                 ReportPassGroupTotals (std::vector<unsigned long>*
+                                              groupTimes = nullptr)  const;
+  // Report out total overall time for the compiler. If overheadTime is
+  // negative, it is unused, otherwise add it to the total time.
+  // If positive it must fit in an unsigned long.
+  void                 ReportOverallTotal (long long
+                                           overheadTime = -1)        const;
 
   void                 ReportRollup()                                const;
 
@@ -95,6 +109,66 @@ private:
   Timer                mTimer;
   int                  mPhaseId;
   std::vector<Phase*>  mPhases;
+};
+
+// Used to collect the times as the program runs
+class Phase
+{
+public:
+                           Phase(const char*            name,
+                                 int                    passId,
+                                 PhaseTracker::SubPhase subPhase,
+                                 unsigned long          startTime);
+                          ~Phase();
+
+  bool                     IsStartOfPass()                            const;
+
+  void                     ReportPass (unsigned long now)   const;
+  static void              ReportTotal(unsigned long totalTime);
+  static void              ReportPassGroup(const char* text,
+                                           unsigned long totalTime);
+
+  static void              ReportTime(const char* name, double secs);
+  static void              ReportText(const char* text);
+
+  char*                    mName;       // Only set for kPrimary
+  int                      mPassId;
+  PhaseTracker::SubPhase   mSubPhase;
+  unsigned long            mStartTime;  // Elapsed time from main() usecs
+
+private:
+  Phase();
+};
+
+// Group the phases in to passes and report on passes
+class Pass
+{
+public:
+                 Pass();
+                ~Pass();
+
+  static void    Header(FILE* fp);
+  static void    Footer(FILE*         fp,
+                        unsigned long mainTime,
+                        unsigned long checkTime,
+                        unsigned long cleanTime,
+                        unsigned long totalTime);
+
+  bool           CompareByTime(Pass const& ref)      const;
+
+  void           Reset();
+  unsigned long  TotalTime()                         const;
+
+  void           Print(FILE*         fp,
+                       unsigned long accumTime,
+                       unsigned long totalTime)      const;
+
+  char*          mName;
+  int            mPassId;
+  int            mIndex;
+  unsigned long  mPrimary;          // usecs()
+  unsigned long  mVerify;           // usecs()
+  unsigned long  mCleanAst;         // usecs()
 };
 
 #endif

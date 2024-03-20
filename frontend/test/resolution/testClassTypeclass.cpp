@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,7 +64,7 @@ static ArgumentType nonNil(std::string management) {
 bool shouldPass = true;
 bool shouldNotPass = false;
 
-static void testProgram(std::string management, std::vector<std::pair<ArgumentType, bool>> args) {
+static void testProgram(std::string intent, std::string management, std::vector<std::pair<ArgumentType, bool>> args) {
   Context ctx;
   auto context = &ctx;
   ErrorGuard guard(context);
@@ -81,7 +81,7 @@ static void testProgram(std::string management, std::vector<std::pair<ArgumentTy
   }
 
   // Declare the function
-  ps << "proc f(arg: " << management << ") { return true; }" << std::endl;
+  ps << "proc f(" << intent << " arg: " << management << ") { return true; }" << std::endl;
 
   // Declare all the variables
   for (auto& className : classNames) {
@@ -126,7 +126,7 @@ static void testProgram(std::string management, std::vector<std::pair<ArgumentTy
 // For just a basic 'class', every management type should pass, as long
 // as it's not nil.
 static void test1() {
-  testProgram("class", {
+  testProgram("ref", "class", {
     { nonNil("owned"), shouldPass },
     { nonNil("shared"), shouldPass },
     { nonNil("unmanaged"), shouldPass },
@@ -137,12 +137,12 @@ static void test1() {
   });
 }
 
-// If the class is nilable, everything should pass.
+// If the class is nilable, only nilable things should pass without conversion.
 static void test2() {
-  testProgram("class?", {
-    { nonNil("owned"), shouldPass },
-    { nonNil("shared"), shouldPass },
-    { nonNil("unmanaged"), shouldPass },
+  testProgram("ref", "class?", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
 
     { nilable("owned"), shouldPass },
     { nilable("shared"), shouldPass },
@@ -151,7 +151,7 @@ static void test2() {
 }
 
 static void test3() {
-  testProgram("owned class", {
+  testProgram("ref", "owned class", {
     { nonNil("owned"), shouldPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -163,8 +163,8 @@ static void test3() {
 }
 
 static void test4() {
-  testProgram("owned class?", {
-    { nonNil("owned"), shouldPass },
+  testProgram("ref", "owned class?", {
+    { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
 
@@ -175,7 +175,7 @@ static void test4() {
 }
 
 static void test5() {
-  testProgram("shared class", {
+  testProgram("ref", "shared class", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -187,9 +187,9 @@ static void test5() {
 }
 
 static void test6() {
-  testProgram("shared class?", {
+  testProgram("ref", "shared class?", {
     { nonNil("owned"), shouldNotPass },
-    { nonNil("shared"), shouldPass },
+    { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
 
     { nilable("owned"), shouldNotPass },
@@ -199,7 +199,7 @@ static void test6() {
 }
 
 static void test7() {
-  testProgram("unmanaged class", {
+  testProgram("ref", "unmanaged class", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldPass },
@@ -211,14 +211,168 @@ static void test7() {
 }
 
 static void test8() {
-  testProgram("unmanaged class?", {
+  testProgram("ref", "unmanaged class?", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldPass },
+  });
+}
+
+static void test9() {
+  testProgram("ref", "owned", {
+    { nonNil("owned"), shouldPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test10() {
+  testProgram("ref", "shared", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+// In the following tests, relax the intent to the default one, allowing
+// conversions. This means the type classes should behave as before, EXCEPT
+// non-nilable classes will be passable to nilable formals.
+
+static const char* defaultIntent = "";
+
+static void test11() {
+  testProgram(defaultIntent, "class", {
+    { nonNil("owned"), shouldPass },
+    { nonNil("shared"), shouldPass },
+    { nonNil("unmanaged"), shouldPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+// If the class is nilable, only nilable things should pass without conversion.
+// For the default intent (const ref), conversions are disallowed.
+static void test12() {
+  testProgram(defaultIntent, "class?", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldPass },
+    /* default intent is CONST_IN for unmanaged, not const ref, so coercion allowed. */
+
+    { nilable("owned"), shouldPass },
+    { nilable("shared"), shouldPass },
+    { nilable("unmanaged"), shouldPass },
+  });
+}
+
+static void test13() {
+  testProgram(defaultIntent, "owned class", {
+    { nonNil("owned"), shouldPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test14() {
+  testProgram(defaultIntent, "owned class?", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test15() {
+  testProgram(defaultIntent, "shared class", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test16() {
+  testProgram(defaultIntent, "shared class?", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test17() {
+  testProgram(defaultIntent, "unmanaged class", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldPass },
 
     { nilable("owned"), shouldNotPass },
     { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test18() {
+  testProgram(defaultIntent, "unmanaged class?", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldPass },
+    /* default intent is CONST_IN for unmanaged, not const ref, so coercion allowed. */
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldNotPass },
     { nilable("unmanaged"), shouldPass },
+  });
+}
+
+static void test19() {
+  testProgram(defaultIntent, "owned", {
+    { nonNil("owned"), shouldPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test20() {
+  testProgram(defaultIntent, "shared", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldPass },
+    { nilable("unmanaged"), shouldNotPass },
   });
 }
 
@@ -231,4 +385,16 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
+  test11();
+  test12();
+  test13();
+  test14();
+  test15();
+  test16();
+  test17();
+  test18();
+  test19();
+  test20();
 }

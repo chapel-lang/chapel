@@ -31,6 +31,7 @@ end of module search dirs
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/AutoMath.chpl
   $CHPL_HOME/modules/standard/CommDiagnostics.chpl
+  $CHPL_HOME/modules/standard/WeakPointer.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
   $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/packages/RangeChunk.chpl
@@ -39,18 +40,17 @@ end of module search dirs
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Regex.chpl
   $CHPL_HOME/modules/packages/CopyAggregation.chpl
-  $CHPL_HOME/modules/standard/GPU.chpl
   $CHPL_HOME/modules/standard/Communication.chpl
   $CHPL_HOME/modules/standard/MemMove.chpl
   $CHPL_HOME/modules/standard/OS.chpl
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/Random.chpl
   $CHPL_HOME/modules/dists/BlockDist.chpl
-  $CHPL_HOME/modules/standard/Set.chpl
+  $CHPL_HOME/modules/packages/NPBRandom.chpl
   $CHPL_HOME/modules/standard/Time.chpl
   $CHPL_HOME/modules/layouts/LayoutCS.chpl
   $CHPL_HOME/modules/dists/SparseBlockDist.chpl
-  $CHPL_HOME/modules/packages/JSON.chpl
+  $CHPL_HOME/modules/standard/JSON.chpl
   $CHPL_HOME/modules/standard/Map.chpl
 In bar
 In baz

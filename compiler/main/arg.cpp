@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -326,9 +326,11 @@ void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
  * Initialize arg_desc member.
  */
 
-void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc)
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc,
+                   DeprecatedArgument* deprecated_args)
 {
   state->desc = arg_desc;
+  state->deprecated_args = deprecated_args;
 }
 
 /************************************* | **************************************
@@ -380,10 +382,26 @@ static void ApplyValue(const ArgumentState*       state,
                        const ArgumentDescription* desc,
                        const char*                value);
 
+
 static bool ProcessEnvironment(const ArgumentState* state)
 {
   ArgumentDescription* desc = state->desc;
+  DeprecatedArgument* deprecated_args = state->deprecated_args;
   bool hadError = false;
+
+  if(deprecated_args) {
+    for (int i = 0; deprecated_args[i].env; i++) {
+        const char* env = getenv(deprecated_args[i].env);
+        if (env != 0) {
+          arg_warn(deprecated_args[i].msg, "");
+
+          if(deprecated_args[i].replacementEnv) {
+            setenv(deprecated_args[i].replacementEnv, env, 0);
+          }
+        }
+    }
+  }
+
   // The name field is defined by every row except the final guard
   for (int i = 0; desc[i].name != 0; i++)
   {

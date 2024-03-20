@@ -1,8 +1,0 @@
-depDivFloorPos.chpl:1: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
-depDivFloorPos.chpl:2: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
-depDivFloorPos.chpl:3: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
-depDivFloorPos.chpl:4: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
-2
-4
-1
-0

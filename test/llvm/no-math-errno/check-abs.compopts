@@ -1,0 +1,3 @@
+--llvm-print-ir multiAbs --llvm-print-ir-stage asm --fast
+--llvm-print-ir multiAbs --llvm-print-ir-stage asm --fast --ieee-float
+--llvm-print-ir multiAbs --llvm-print-ir-stage asm --fast --no-ieee-float

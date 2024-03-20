@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -334,12 +334,12 @@ static void testCForLoop() {
   auto idx = rr.byAst(loop->index());
   assert(idx.type().type() == IntType::get(context, 0));
 
-  const TypedFnSignature* sig = rr.byAst(loop->iterand()).mostSpecific().only();
+  const TypedFnSignature* sig = rr.byAst(loop->iterand()).mostSpecific().only().fn();
   auto fn = resolveFunction(context, sig, nullptr);
   auto rf = fn->resolutionById();
   auto whileLoop = m->stmt(0)->toFunction()->stmt(1)->toWhile();
   auto cond = rf.byAst(whileLoop->condition());
-  assert(cond.type().type() == BoolType::get(context, 0));
+  assert(cond.type().type() == BoolType::get(context));
 }
 
 static void testParamFor() {

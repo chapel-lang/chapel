@@ -1,0 +1,4 @@
+stringLiteralLocations.chpl:4: syntax error: incorrect expression in 'except' list, identifier expected
+stringLiteralLocations.chpl:5: syntax error: incorrect expression in 'except' list, identifier expected
+stringLiteralLocations.chpl:6: syntax error: incorrect expression in 'except' list, identifier expected
+stringLiteralLocations.chpl:7: syntax error: incorrect expression in 'except' list, identifier expected

@@ -195,7 +195,7 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   if verb then writeln("schurComplement");
   //
   // Copy data into replicated array so every processor has a local copy
@@ -260,7 +260,7 @@ proc dgemmNativeInds(A: [] elemType,
 // pivot vector accordingly
 //
 proc panelSolve(Ab: [] elemType,
-               panel: domain,
+               panel: domain(?),
                piv: [] indexType) {
 
   if verb then writeln("panelSolve");
@@ -313,8 +313,8 @@ proc panelSolve(Ab: [] elemType,
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(Ab: [] elemType,
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   if verb then writeln("updateBlockRow");
 

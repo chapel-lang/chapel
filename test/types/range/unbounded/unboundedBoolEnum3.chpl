@@ -15,7 +15,7 @@ for (c,i) in zip(red.., 1..) {
 
 writeln("---");
 
-forall (i,c) in zip(1..7, red..) {
+forall (i,c) in zip(1..7, red..) with (ref A) {
   A[i] = c;
 }
 
@@ -25,7 +25,7 @@ A = color.violet;
 
 writeln("---");
 
-forall (c,i) in zip(red.., 1..7) {
+forall (c,i) in zip(red.., 1..7) with (ref A) {
   A[i] = c;
 }
 

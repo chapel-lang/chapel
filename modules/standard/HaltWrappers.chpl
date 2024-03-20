@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -94,6 +94,7 @@ module HaltWrappers {
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc outOfMemoryHalt(s:string) {
+    use CTypes only c_str;
     const err = "Out of memory allocating \"" + s + "\"";
     __primitive("chpl_error", err.localize().c_str());
   }

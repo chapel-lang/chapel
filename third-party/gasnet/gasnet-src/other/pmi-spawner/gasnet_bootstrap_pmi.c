@@ -13,6 +13,10 @@
 #  undef calloc
 #  undef free
 #  undef strdup
+#  undef strndup
+#  undef strcasecmp
+#  undef strncasecmp
+#  undef realloc
 #endif
 
 #if HAVE_PMI_CRAY_H

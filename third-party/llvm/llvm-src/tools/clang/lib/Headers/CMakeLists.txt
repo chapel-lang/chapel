@@ -33,6 +33,7 @@ set(arm_only_files
 
 set(aarch64_only_files
   arm64intr.h
+  arm_neon_sve_bridge.h
   )
 
 set(cuda_files
@@ -59,13 +60,24 @@ set(hip_files
   __clang_hip_libdevice_declares.h
   __clang_hip_cmath.h
   __clang_hip_math.h
+  __clang_hip_stdlib.h
   __clang_hip_runtime_wrapper.h
   )
 
-set(hlsl_files
+set(hlsl_h
   hlsl.h
+  )
+set(hlsl_subdir_files
   hlsl/hlsl_basic_types.h
   hlsl/hlsl_intrinsics.h
+  )
+set(hlsl_files
+  ${hlsl_h}
+  ${hlsl_subdir_files}
+  )
+
+set(loongarch_files
+  larchintrin.h
   )
 
 set(mips_msa_files
@@ -84,6 +96,14 @@ set(ppc_files
 set(ppc_htm_files
   htmintrin.h
   htmxlintrin.h
+  )
+
+set(riscv_files
+  riscv_ntlh.h
+  )
+
+set(sifive_files
+  sifive_vector.h
   )
 
 set(systemz_files
@@ -105,6 +125,8 @@ set(x86_files
 # Intrinsics
   adxintrin.h
   ammintrin.h
+  amxcomplexintrin.h
+  amxfp16intrin.h
   amxintrin.h
   avx2intrin.h
   avx512bf16intrin.h
@@ -135,7 +157,11 @@ set(x86_files
   avx512vp2intersectintrin.h
   avx512vpopcntdqintrin.h
   avx512vpopcntdqvlintrin.h
+  avxifmaintrin.h
   avxintrin.h
+  avxneconvertintrin.h
+  avxvnniint16intrin.h
+  avxvnniint8intrin.h
   avxvnniintrin.h
   bmi2intrin.h
   bmiintrin.h
@@ -144,6 +170,7 @@ set(x86_files
   clflushoptintrin.h
   clwbintrin.h
   clzerointrin.h
+  cmpccxaddintrin.h
   crc32intrin.h
   emmintrin.h
   enqcmdintrin.h
@@ -168,14 +195,19 @@ set(x86_files
   pkuintrin.h
   pmmintrin.h
   popcntintrin.h
+  prfchiintrin.h
   prfchwintrin.h
   ptwriteintrin.h
+  raointintrin.h
   rdpruintrin.h
   rdseedintrin.h
   rtmintrin.h
   serializeintrin.h
   sgxintrin.h
+  sha512intrin.h
   shaintrin.h
+  sm3intrin.h
+  sm4intrin.h
   smmintrin.h
   tbmintrin.h
   tmmintrin.h
@@ -219,11 +251,13 @@ set(files
   ${cuda_files}
   ${hexagon_files}
   ${hip_files}
-  ${hlsl_files}
+  ${loongarch_files}
   ${mips_msa_files}
   ${opencl_files}
   ${ppc_files}
   ${ppc_htm_files}
+  ${riscv_files}
+  ${sifive_files}
   ${systemz_files}
   ${ve_files}
   ${x86_files}
@@ -234,8 +268,15 @@ set(files
 
 set(cuda_wrapper_files
   cuda_wrappers/algorithm
+  cuda_wrappers/cmath
   cuda_wrappers/complex
   cuda_wrappers/new
+)
+
+set(cuda_wrapper_bits_files
+  cuda_wrappers/bits/shared_ptr_base.h
+  cuda_wrappers/bits/basic_string.h
+  cuda_wrappers/bits/basic_string.tcc
 )
 
 set(ppc_wrapper_files
@@ -263,7 +304,16 @@ set(openmp_wrapper_files
   openmp_wrappers/new
 )
 
-set(output_dir ${LLVM_LIBRARY_OUTPUT_INTDIR}/clang/${CLANG_VERSION}/include)
+set(llvm_libc_wrapper_files
+  llvm_libc_wrappers/stdio.h
+  llvm_libc_wrappers/stdlib.h
+  llvm_libc_wrappers/string.h
+  llvm_libc_wrappers/ctype.h
+  llvm_libc_wrappers/inttypes.h
+)
+
+include(GetClangResourceDir)
+get_clang_resource_dir(output_dir PREFIX ${LLVM_LIBRARY_OUTPUT_INTDIR}/.. SUBDIR include)
 set(out_files)
 set(generated_files)
 
@@ -296,7 +346,9 @@ endfunction(clang_generate_header)
 
 
 # Copy header files from the source directory to the build directory
-foreach( f ${files} ${cuda_wrapper_files} ${ppc_wrapper_files} ${openmp_wrapper_files})
+foreach( f ${files} ${cuda_wrapper_files} ${cuda_wrapper_bits_files}
+           ${ppc_wrapper_files} ${openmp_wrapper_files} ${hlsl_files}
+           ${llvm_libc_wrapper_files})
   copy_header_to_output_dir(${CMAKE_CURRENT_SOURCE_DIR} ${f})
 endforeach( f )
 
@@ -308,16 +360,14 @@ if(ARM IN_LIST LLVM_TARGETS_TO_BUILD OR AArch64 IN_LIST LLVM_TARGETS_TO_BUILD)
   clang_generate_header(-gen-arm-fp16 arm_fp16.td arm_fp16.h)
   # Generate arm_sve.h
   clang_generate_header(-gen-arm-sve-header arm_sve.td arm_sve.h)
+  # Generate arm_sme_draft_spec_subject_to_change.h
+  clang_generate_header(-gen-arm-sme-header arm_sme.td arm_sme_draft_spec_subject_to_change.h)
   # Generate arm_bf16.h
   clang_generate_header(-gen-arm-bf16 arm_bf16.td arm_bf16.h)
   # Generate arm_mve.h
   clang_generate_header(-gen-arm-mve-header arm_mve.td arm_mve.h)
   # Generate arm_cde.h
   clang_generate_header(-gen-arm-cde-header arm_cde.td arm_cde.h)
-  # Copy arm_neon_sve_bridge.h
-  copy_header_to_output_dir(${CMAKE_CURRENT_SOURCE_DIR}
-    arm_neon_sve_bridge.h
-  )
 
   # Add headers to target specific lists
   list(APPEND arm_common_generated_files
@@ -332,8 +382,8 @@ if(ARM IN_LIST LLVM_TARGETS_TO_BUILD OR AArch64 IN_LIST LLVM_TARGETS_TO_BUILD)
 
   list(APPEND aarch64_only_generated_files
     "${CMAKE_CURRENT_BINARY_DIR}/arm_sve.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/arm_sme_draft_spec_subject_to_change.h"
     "${CMAKE_CURRENT_BINARY_DIR}/arm_bf16.h"
-    "${output_dir}/arm_neon_sve_bridge.h"
     )
 endif()
 if(RISCV IN_LIST LLVM_TARGETS_TO_BUILD)
@@ -381,6 +431,7 @@ add_dependencies("clang-resource-headers"
                  "hexagon-resource-headers"
                  "hip-resource-headers"
                  "hlsl-resource-headers"
+                 "loongarch-resource-headers"
                  "mips-resource-headers"
                  "ppc-resource-headers"
                  "ppc-htm-resource-headers"
@@ -391,6 +442,7 @@ add_dependencies("clang-resource-headers"
                  "x86-resource-headers"
                  "opencl-resource-headers"
                  "openmp-resource-headers"
+                 "llvm-libc-resource-headers"
                  "windows-resource-headers"
                  "utility-resource-headers")
 
@@ -401,13 +453,14 @@ add_header_target("arm-common-resource-headers" "${arm_common_files};${arm_commo
 # Architecture/platform specific targets
 add_header_target("arm-resource-headers" "${arm_only_files};${arm_only_generated_files}")
 add_header_target("aarch64-resource-headers" "${aarch64_only_files};${aarch64_only_generated_files}")
-add_header_target("cuda-resource-headers" "${cuda_files};${cuda_wrapper_files}")
+add_header_target("cuda-resource-headers" "${cuda_files};${cuda_wrapper_files};${cuda_wrapper_bits_files}")
 add_header_target("hexagon-resource-headers" "${hexagon_files}")
 add_header_target("hip-resource-headers" "${hip_files}")
+add_header_target("loongarch-resource-headers" "${loongarch_files}")
 add_header_target("mips-resource-headers" "${mips_msa_files}")
 add_header_target("ppc-resource-headers" "${ppc_files};${ppc_wrapper_files}")
 add_header_target("ppc-htm-resource-headers" "${ppc_htm_files}")
-add_header_target("riscv-resource-headers" "${riscv_generated_files}")
+add_header_target("riscv-resource-headers" "${riscv_files};${riscv_generated_files}")
 add_header_target("systemz-resource-headers" "${systemz_files}")
 add_header_target("ve-resource-headers" "${ve_files}")
 add_header_target("webassembly-resource-headers" "${webassembly_files}")
@@ -416,11 +469,12 @@ add_header_target("x86-resource-headers" "${x86_files}")
 # Other header groupings
 add_header_target("hlsl-resource-headers" ${hlsl_files})
 add_header_target("opencl-resource-headers" ${opencl_files})
+add_header_target("llvm-libc-resource-headers" ${llvm_libc_wrapper_files})
 add_header_target("openmp-resource-headers" ${openmp_wrapper_files})
 add_header_target("windows-resource-headers" ${windows_only_files})
 add_header_target("utility-resource-headers" ${utility_files})
 
-set(header_install_dir lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION}/include)
+get_clang_resource_dir(header_install_dir SUBDIR include)
 
 #############################################################
 # Install rules for the catch-all clang-resource-headers target
@@ -435,8 +489,18 @@ install(
   COMPONENT clang-resource-headers)
 
 install(
+  FILES ${cuda_wrapper_bits_files}
+  DESTINATION ${header_install_dir}/cuda_wrappers/bits
+  COMPONENT clang-resource-headers)
+
+install(
   FILES ${ppc_wrapper_files}
   DESTINATION ${header_install_dir}/ppc_wrappers
+  COMPONENT clang-resource-headers)
+
+install(
+  FILES ${llvm_libc_wrapper_files}
+  DESTINATION ${header_install_dir}/llvm_libc_wrappers
   COMPONENT clang-resource-headers)
 
 install(
@@ -477,6 +541,12 @@ install(
   COMPONENT cuda-resource-headers)
 
 install(
+  FILES ${cuda_wrapper_bits_files}
+  DESTINATION ${header_install_dir}/cuda_wrappers/bits
+  EXCLUDE_FROM_ALL
+  COMPONENT cuda-resource-headers)
+
+install(
   FILES ${cuda_files}
   DESTINATION ${header_install_dir}
   EXCLUDE_FROM_ALL
@@ -493,6 +563,12 @@ install(
   DESTINATION ${header_install_dir}
   EXCLUDE_FROM_ALL
   COMPONENT hip-resource-headers)
+
+install(
+  FILES ${loongarch_files}
+  DESTINATION ${header_install_dir}
+  EXCLUDE_FROM_ALL
+  COMPONENT loongarch-resource-headers)
 
 install(
   FILES ${mips_msa_files}
@@ -525,6 +601,12 @@ install(
   COMPONENT riscv-resource-headers)
 
 install(
+  FILES ${riscv_files}
+  DESTINATION ${header_install_dir}
+  EXCLUDE_FROM_ALL
+  COMPONENT riscv-resource-headers)
+
+install(
   FILES ${systemz_files}
   DESTINATION ${header_install_dir}
   EXCLUDE_FROM_ALL
@@ -548,10 +630,20 @@ install(
   EXCLUDE_FROM_ALL
   COMPONENT x86-resource-headers)
 
+if(NOT CLANG_ENABLE_HLSL)
+  set(EXCLUDE_HLSL EXCLUDE_FROM_ALL)
+endif()
+
 install(
-  FILES ${hlsl_files}
+  FILES ${hlsl_h}
   DESTINATION ${header_install_dir}
-  EXCLUDE_FROM_ALL
+  ${EXCLUDE_HLSL}
+  COMPONENT hlsl-resource-headers)
+
+install(
+  FILES ${hlsl_subdir_files}
+  DESTINATION ${header_install_dir}/hlsl
+  ${EXCLUDE_HLSL}
   COMPONENT hlsl-resource-headers)
 
 install(
@@ -559,6 +651,12 @@ install(
   DESTINATION ${header_install_dir}
   EXCLUDE_FROM_ALL
   COMPONENT opencl-resource-headers)
+
+install(
+  FILES ${openmp_wrapper_files}
+  DESTINATION ${header_install_dir}/openmp_wrappers
+  EXCLUDE_FROM_ALL
+  COMPONENT openmp-resource-headers)
 
 install(
   FILES ${openmp_wrapper_files}
@@ -646,3 +744,5 @@ if (NOT LLVM_ENABLE_IDE)
                            DEPENDS utility-resource-headers
                            COMPONENT utility-resource-headers)
 endif()
+
+source_group("Clang Runtime Headers" FILES ${files})

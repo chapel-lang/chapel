@@ -2,7 +2,7 @@ set $forcecmd = 0
 define hook-run
   if ($forcecmd != 1)
     set $forcecmd = 1
-    if (tmpdirname != 0)
+    if ((const char*)tmpdirname != 0)
       call cleanup_for_exit()
     end
   end
@@ -11,7 +11,7 @@ end
 define hook-quit
   if ($forcecmd != 1)
     set $forcecmd = 1
-    if (tmpdirname != 0)
+    if ((const char*)tmpdirname != 0)
       call cleanup_for_exit()
     end
   end

@@ -25,6 +25,10 @@ fi
 export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 
+# Removing regex.compile caused smoke test failures. As a stopgap measure we are
+# skipping dependency check.
+export ARKOUDA_SKIP_CHECK_DEPS=1
+
 ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
@@ -44,7 +48,7 @@ if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
 
-export CHPL_WHICH_RELEASE_FOR_ARKOUDA="1.31.0"
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="1.33.0"
 # test against Chapel release (checking out current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release

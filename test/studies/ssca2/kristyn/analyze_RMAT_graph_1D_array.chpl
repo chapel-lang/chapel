@@ -62,7 +62,7 @@ module analyze_RMAT_graph_1D_array {
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        [1..N_VERTICES] dmapped Block ( [1..N_VERTICES] )
+        [1..N_VERTICES] dmapped blockDist ( [1..N_VERTICES] )
       else
 	[1..N_VERTICES] ;
 
@@ -79,7 +79,7 @@ module analyze_RMAT_graph_1D_array {
       var neighbor_count: int=0;
       var self_edges: int=0;
       var duplicates: int=0;
-      var vlock$: sync bool = true;
+      var vlock: sync bool = true;
 
       proc init(type vertex, nd: domain(1) = {1..0}) {
         this.vertex = vertex;
@@ -91,7 +91,7 @@ module analyze_RMAT_graph_1D_array {
         this.neighbor_count = other.neighbor_count;
         this.self_edges = other.self_edges;
         this.duplicates = other.duplicates;
-        this.vlock$ = other.vlock$.readXX();
+        this.vlock = other.vlock.readXX();
       }
 
       proc is_a_neighbor (new_vertex_ID: vertex) {
@@ -103,19 +103,19 @@ module analyze_RMAT_graph_1D_array {
       }
 
       proc add_self_edge () {
-         vlock$.readFE();
+         vlock.readFE();
          self_edges += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc add_duplicate () {
-         vlock$.readFE();
+         vlock.readFE();
          duplicates += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc add_Neighbor (new_vertex_ID: vertex, weight: int) {
-         vlock$.readFE();
+         vlock.readFE();
          var ID: vertex = new_vertex_ID;
 //       Check again to make sure another thread did not recently
 //       add v to u's neighbor list
@@ -131,7 +131,7 @@ module analyze_RMAT_graph_1D_array {
            Row_Neighbors[neighbor_count]= new_vertex_ID;
            Weight[neighbor_count]= weight;
          }
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc grow_helper() {

@@ -3,7 +3,7 @@ record R {
 }
 
 {
-  var rr: R(int);
+  var rr: R(int) = new R(0);
   writeln(rr);
 }
 
@@ -22,7 +22,7 @@ record B {
 }
 
 {
-  var bb: B(owned MyClass?);
+  var bb: B(owned MyClass?) = new B(nil: owned MyClass?);
   writeln(bb, " : ", bb.type:string);
 }
 

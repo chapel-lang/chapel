@@ -29,8 +29,8 @@ config const printTiming = true;
 var numVars : int(32); // number of variables
 var numClss : sync int(32); // number of clauses
 
-var domVars : domain(1) dmapped (Block); // domain for variables
-var domClss : domain(1) dmapped (Block); // domain for clauses
+var domVars : domain(1) dmapped (blockDist); // domain for variables
+var domClss : domain(1) dmapped (blockDist); // domain for clauses
 
 var clauses : [domClss] Clause; // clauses in the formula
 

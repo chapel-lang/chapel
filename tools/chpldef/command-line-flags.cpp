@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,7 @@
 
 #include "./command-line-flags.h"
 #include "llvm/Support/CommandLine.h"
+#include <set>
 
 namespace chpldef {
 namespace cmd {
@@ -36,19 +37,35 @@ Flag<Logger::Level> logLevel("log-level",
     clEnumValN(Logger::VERBOSE, "verbose", "Messages and details"),
     clEnumValN(Logger::TRACE, "trace", "Full trace of execution")));
 
-template <typename T>
-static bool isSameMemoryLocation(const llvm::cl::opt<T>& f1,
-                                 const llvm::cl::Option* f2) {
-  static_assert(std::is_base_of<llvm::cl::Option, llvm::cl::opt<T>>::value);
-  auto ptr = static_cast<const llvm::cl::Option*>(&f1);
-  return ptr == f2;
-}
+Flag<std::string> chplHome("chpl-home",
+  llvm::cl::desc("Specify the location of Chapel home"),
+  llvm::cl::value_desc("A string specifying a path"));
 
-// TODO: Get these things in an array so we don't have O(n) code?
+Flag<bool> warnUnstable("warn-unstable",
+  llvm::cl::desc("Set to have the Chapel compiler emit unstable warnings"));
+
+Flag<int> garbageCollectionFrequency("gc-frequency",
+  llvm::cl::init(Server::DEFAULT_GC_FREQUENCY),
+  llvm::cl::desc("Set the garbage collection frequency"),
+  llvm::cl::value_desc("An integer specifying a revision interval"));
+
+Flag<bool> enableStandardLibrary("enable-std",
+  llvm::cl::init(false),
+  llvm::cl::desc("Set to enable use of the standard library"));
+
+Flag<bool> compilerDebugTrace("debug-trace",
+  llvm::cl::init(false),
+  llvm::cl::desc("Set to enable high verbosity query debug tracing"));
+
+namespace {
+static std::set<const llvm::cl::Option*> flagAddresses = {
+  &logFile, &logLevel, &chplHome, &warnUnstable, &garbageCollectionFrequency,
+  &enableStandardLibrary,
+  &compilerDebugTrace
+};
+
 static bool isChpldefRegisteredFlag(const llvm::cl::Option* f) {
-  if (isSameMemoryLocation(logFile, f)) return true;
-  if (isSameMemoryLocation(logLevel, f)) return true;
-  return false;
+  return flagAddresses.find(f) != flagAddresses.end();
 }
 
 static void disableNonChpldefOptions() {
@@ -62,7 +79,9 @@ static void disableNonChpldefOptions() {
   }
 }
 
-void doParseOptions(Server* ctx, int argc, char** argv) {
+} // end anonymous namespace
+
+void doParseOptions(int argc, char** argv) {
   disableNonChpldefOptions();
   llvm::cl::ParseCommandLineOptions(argc, argv);
 }

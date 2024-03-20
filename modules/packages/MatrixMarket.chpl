@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,7 +88,7 @@ module MatrixMarket {
       var HEADER_LINE : string = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
-      var fout:fileWriter(kind=iokind.dynamic, locking=true);
+      var fout:fileWriter(locking=true);
 
       var headers_written:bool;
       var last_rowno:int;
@@ -96,7 +96,7 @@ module MatrixMarket {
       proc init(type eltype, const fname:string) {
          this.eltype = eltype;
          fd = open(fname, ioMode.cw);
-         fout = fd.writer(region=0..);
+         fout = fd.writer(region=0.., locking=true);
          headers_written=false;
       }
 
@@ -129,7 +129,7 @@ module MatrixMarket {
         // before we try to update it with a separate channel.
         fout.flush();
 
-         var tfout = fd.writer(region=HEADER_LINE.numBytes..);
+         var tfout = fd.writer(region=HEADER_LINE.numBytes.., locking=true);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
 
          tfout.close();
@@ -199,12 +199,12 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
 
 class MMReader {
    var fd:file;
-   var fin:fileReader(kind=iokind.dynamic, locking=true);
+   var fin:fileReader(locking=true);
    var finfo:MMInfo;
 
    proc init(const fname:string) {
       fd = open(fname, ioMode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
-      fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch);
+      fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch, locking=true);
    }
 
    proc read_header() {
@@ -218,13 +218,13 @@ class MMReader {
      var pctflag = false;
      while !pctflag {
        var percentfound:string;
-       var offset = fin.chpl_offset();
+       var offset = fin.offset();
        fin.readLine(percentfound);
 
        // didn't find a percentage, rewind channel by length of read string...
        if percentfound.find("%") == -1 {
          fin.close();
-         fin = fd.reader(region=offset.., hints=ioHintSet.sequential|ioHintSet.prefetch);
+         fin = fd.reader(region=offset.., hints=ioHintSet.sequential|ioHintSet.prefetch, locking=true);
          pctflag = true;
        }
      }
@@ -244,7 +244,7 @@ class MMReader {
       return (nrows, ncols);
    }
 
-   proc read_sparse_data(toret:[] ?T, ref spDom:domain) {
+   proc read_sparse_data(ref toret:[] ?T, ref spDom:domain) {
       param isSparse = toret.domain.isSparse();
       var done:bool = true;
       var tfmt :string;
@@ -287,7 +287,7 @@ class MMReader {
       }
    }
 
-   proc read_dense_data(toret:[] ?T, ref spDom:domain) {
+   proc read_dense_data(ref toret:[] ?T, ref spDom:domain) {
       param isSparse = toret.domain.isSparse();
       var tfmt :string;
 

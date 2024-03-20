@@ -8,7 +8,7 @@ config const numTasks = here.maxTaskPar;
 config const printTime = true;
 config const printDiags = false;
 
-enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,FASTAM,AM};
+enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,FASTAM,AM,CFAMO};
 
 var t: stopwatch;
 proc startDiags() {
@@ -42,7 +42,7 @@ record padded {
   proc init(type T) {
     this.T = T;
   }
-  proc init=(other: padded) {
+  proc init=(other: padded(?)) {
     this.T = other.T;
     // I think `pad` does not need to be copied here
     // it is an optimization to make the struct consume a whole cache line
@@ -56,10 +56,10 @@ record padded {
 }
 
 // Create arrays and warmup / init RAD cache
-var A = Block.createArray(1..numTasks*2, padded(atomic int));
-var B = Block.createArray(1..numTasks*2, padded(int));
+var A = blockDist.createArray(1..numTasks*2, padded(atomic int));
+var B = blockDist.createArray(1..numTasks*2, padded(int));
 for loc in Locales do on loc {
-  coforall tid in 1..numTasks*2 {
+  coforall tid in 1..numTasks*2 with (ref A, ref B) {
     A[tid].val.write(0);
     B[tid].val = 0;
   }
@@ -69,12 +69,13 @@ for loc in Locales do on loc {
 proc test(op: OP) {
   const iters = if op == OP.AM || op == OP.FASTAM then numIters/10 else numIters;
   startDiags();
-  coforall tid in 1..numTasks {
+  coforall tid in 1..numTasks with (ref A, ref B) {
     ref bLoc = B.localAccess[tid].val;
     ref bRem = B[tid+numTasks].val;
     ref aLoc = A.localAccess[tid].val;
     ref aRem = A[tid+numTasks].val;
     ref lRem = Locales[numLocales-1];
+    ref aRemShared = A[1].val;
     select op {
 
       // RMA
@@ -86,6 +87,7 @@ proc test(op: OP) {
       when OP.CASAMO do for i in 0..<iters do aRem.compareAndSwap(i, i+1);
       when OP.GETAMO do for i in 0..<iters do bLoc = aRem.read();
       when OP.PUTAMO do for i in 0..<iters do aRem.write(bLoc);
+      when OP.CFAMO  do for i in 0..<iters do aRemShared.fetchAdd(1);
       // AM
       when OP.FASTAM do for i in 0..<iters do on lRem do B.localAccess[tid].val = 0;
       when OP.AM     do for i in 0..<iters do on lRem do B.localAccess[tid].val = thwartFastOn();

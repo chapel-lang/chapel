@@ -11,7 +11,7 @@ specifically:
   }
   proc main() {
     var myMapper = new MyMapper();
-    var D: domain(string) dmapped Hashed(idxType=string, mapper=myMapper);
+    var D: domain(string) dmapped hashedDist(idxType=string, mapper=myMapper);
     D += "zero";
   }
 */

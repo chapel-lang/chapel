@@ -11,7 +11,7 @@ var binary: [0..<bitsPerHex*line.size] uint(8);
 
 // TODO: should be able to iterate in parallel over bytes directly
 // see futures/day16-bytesParIter.chpl
-forall i in 0..<line.size {
+forall i in 0..<line.size with (ref binary) {
   const ch = line[i];
   const val = charToInt(ch);;
   for param j in 0..<bitsPerHex do

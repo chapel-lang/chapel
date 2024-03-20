@@ -7,8 +7,8 @@
 
 use IO;
 
-const stdinBin  = (new file(0)).reader(iokind.native, locking=false),
-      stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+const stdinBin  = (new file(0)).reader(deserializer=new binaryDeserializer(), locking=false),
+      stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
 config var readSize = 16384, // how much to read at a time
            n = 0;            // a dummy variable to support the CLBG framework

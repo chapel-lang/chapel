@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,14 +22,12 @@ module ChapelPrivatization {
 
   private use CTypes;
 
-  // see the note in LocaleModelHelpMem for the use of raw_c_void_ptr
-  extern type raw_c_void_ptr = chpl__c_void_ptr;
-
   // the type of elements in chpl_privateObjects.
   extern record chpl_privateObject_t {
-    var obj:raw_c_void_ptr;
+    var obj:c_ptr(void);
   }
 
+  pragma "codegen for CPU and GPU"
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
   pragma "fn returns infinite lifetime"

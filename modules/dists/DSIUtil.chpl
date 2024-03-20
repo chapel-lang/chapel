@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   param rank=ranges.size;
   type EC = uint; // type for element counts
   var numElems = 1:EC;
-  for param i in 0..rank-1 do {
+  for param i in 0..rank-1 {
     numElems *= ranges(i).sizeAs(EC);
   }
 
@@ -65,7 +65,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   var maxDim = -1;
   var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
-  for /* param */ i in 0..rank-1 do {
+  for /* param */ i in 0..rank-1 {
     const curElems = ranges(i).sizeAs(EC);
     if curElems >= numChunks:EC {
       parDim = i;
@@ -681,4 +681,96 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));
   }
   return result;
+}
+
+record chpl_PrivatizedDistHelper : writeSerializable {
+//  type instanceType;
+  var _pid:int;  // only used when privatized
+  pragma "owned"
+  var _instance;
+  var _unowned:bool; // 'true' for the result of 'getDistribution',
+                     // in which case, the record destructor should
+                     // not attempt to delete the _instance.
+
+  inline proc _value {
+    if _isPrivatized(_instance) {
+      return chpl_getPrivatizedCopy(_instance.type, _pid);
+    } else {
+      return _instance;
+    }
+  }
+
+  forwarding _value except targetLocales;
+
+  inline proc _do_destroy() {
+    if ! _unowned && ! _instance.singleton() {
+      on _instance {
+        // Count the number of domains that refer to this distribution.
+        // and mark the distribution to be freed when that number reaches 0.
+        // If the number is 0, .remove() returns the distribution
+        // that should be freed.
+        var distToFree = _instance.remove();
+        if distToFree != nil {
+          _delete_dist(distToFree!, _isPrivatized(_instance));
+        }
+      }
+    }
+  }
+
+  proc deinit() {
+    _do_destroy();
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         ranges: rank*range(idxType, boundKind.both, strides),
+                         definedConst: bool = false) {
+    var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+
+    x.definedConst = definedConst;
+
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         definedConst: bool = false) {
+    var ranges: rank*range(idxType, boundKind.both, strides);
+    return newRectangularDom(rank, idxType, strides, ranges, definedConst);
+  }
+
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+    var x = _value.dsiNewSparseDom(rank, idxType, dom);
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
+
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writer.write(_value);
+  }
+
+  proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+  /*
+    Return an array of locales over which this distribution was declared.
+  */
+  proc targetLocales() const ref {
+    return _value.dsiTargetLocales();
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +19,7 @@
  */
 
 //
-// The Block distribution is defined with six classes:
+// The blockDist distribution is defined with six classes:
 //
 //   BlockImpl   : distribution class
 //   BlockDom    : domain class
@@ -49,7 +49,7 @@ private use LayoutCS;
 public use SparseBlockDist;
 //
 // These flags are used to output debug information and run extra
-// checks when using Block.  Should these be promoted so that they can
+// checks when using blockDist.  Should these be promoted so that they can
 // be used across all distributions?  This can be done by turning them
 // into compiler flags or adding config parameters to the internal
 // modules, perhaps called debugDists and checkDists.
@@ -132,58 +132,68 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 //   disableBlockLazyRAD
 //
 /*
-This Block distribution partitions indices into blocks
-according to a ``boundingBox`` domain
-and maps each entire block onto a locale from a ``targetLocales`` array.
 
-The indices inside the bounding box are partitioned "evenly" across
-the target locales. An index outside the bounding box is mapped to the
-same locale as the nearest index inside the bounding box.
+The ``blockDist`` distribution partitions the indices specified by a
+``boundingBox`` domain into contiguous blocks, mapping each block to a
+distinct locale in a ``targetLocales`` array.  The indices within the
+bounding box are partitioned as evenly as possible across the target
+locales.  An index outside the bounding box is mapped to the same
+locale as the nearest index within the bounding box.
 
-Formally, an index ``idx`` is mapped to ``targetLocales[locIdx]``,
-where ``locIdx`` is computed as follows.
+.. Warning::
 
-In the 1-dimensional case, for a Block distribution with:
+  The ``blockDist`` distribution was, until recently, a class named
+  ``Block``.  Today, ``Block`` is still supported in a deprecated
+  form, yet is an alias to the ``blockDist`` record here.  In our
+  experience, most uses of ``Block`` in distribution contexts should
+  continue to work, but updating to ``blockDist`` is requested going
+  forward due to the deprecation.
+
+More precisely, an index ``idx`` is mapped to
+``targetLocales[locIdx]``, where ``locIdx`` is computed as follows.
+
+In the 1-dimensional case, for a ``blockDist`` distribution with:
 
 
   =================   ====================
   ``boundingBox``     ``{low..high}``
-  ``targetLocales``   ``[0..N-1] locale``
+  ``targetLocales``   ``[0..n-1] locale``
   =================   ====================
 
-we have:
+``locIdx`` is computed from ``idx`` as follows:
 
-  ===================    ==========================================
-  if ``idx`` is ...      ``locIdx`` is ...
-  ===================    ==========================================
-  ``low<=idx<=high``     ``floor(  (idx-low)*N / (high-low+1)  )``
-  ``idx < low``          ``0``
-  ``idx > high``         ``N-1``
-  ===================    ==========================================
+  =======================    =====================================
+  if ``idx`` is ...          ``locIdx`` is ...
+  =======================    =====================================
+  ``low <= idx <= high``     ``floor((idx-low)*N / (high-low+1))``
+  ``idx < low``              ``0``
+  ``idx > high``             ``n-1``
+  =======================    =====================================
 
 In the multidimensional case, ``idx`` and ``locIdx`` are tuples
 of indices; ``boundingBox`` and ``targetLocales`` are multi-dimensional;
-the above computation is applied in each dimension.
+and the above computation is applied in each dimension.
 
 
 **Example**
 
-The following code declares a domain ``D`` distributed over
-a Block distribution with a bounding box equal to the domain ``Space``,
-and declares an array ``A`` over that domain.
-The `forall` loop sets each array element
-to the ID of the locale to which it is mapped.
+The following code declares a domain ``D`` distributed over a
+``blockDist`` distribution with a bounding box and index set equal to
+the non-distributed domain ``Space``.  It then declares an array ``A``
+over that domain.  The `forall` loop sets each array element to the ID
+of the locale to which it is mapped.
 
   .. code-block:: chapel
 
     use BlockDist;
 
     const Space = {1..8, 1..8};
-    const D: domain(2) dmapped Block(boundingBox=Space) = Space;
+    const Dist = new blockDist(boundingBox=Space);
+    const D = Dist.createDomain(Space);
     var A: [D] int;
 
     forall a in A do
-      a = a.locale.id;
+      a = here.id;
 
     writeln(A);
 
@@ -201,21 +211,28 @@ When run on 6 locales, the output is:
     4 4 4 4 5 5 5 5
 
 
+**Data-Parallel Iteration**
+
+As demonstrated by the above example, a `forall` loop over a
+``blockDist``-distributed domain or array executes each iteration on
+the locale owning the index in question.
+
+By default, parallelism within each locale is applied to that locale's
+block of indices by creating a task for each available processor core
+(or the number of local indices if it is less than the number of
+cores). The local domain indices are then statically divided as evenly
+as possible between those tasks.
+
+
 **Initializer Arguments**
 
-The ``Block`` class initializer is defined as follows:
+The ``blockDist`` initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc Block.init(
-      boundingBox: domain,
-      targetLocales: [] locale  = Locales,
-      dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
-      dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
-      dataParMinGranularity     = // value of  dataParMinGranularity      config const,
-      param rank                = boundingBox.rank,
-      type  idxType             = boundingBox.idxType,
-      type  sparseLayoutType    = DefaultDist)
+    proc blockDist.init(
+      boundingBox: domain(?),
+      targetLocales: [] locale  = Locales)
 
 The arguments ``boundingBox`` (a domain) and ``targetLocales`` (an array)
 define the mapping of any index of ``idxType`` type to a locale
@@ -227,60 +244,108 @@ heuristic is used to reshape the array of target locales so that it
 matches the rank of the distribution and each dimension contains an
 approximately equal number of indices.
 
-The arguments ``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``,
-and ``dataParMinGranularity`` set the knobs that are used to
-control intra-locale data parallelism for Block-distributed domains
-and arrays in the same way that the like-named config constants
-control data parallelism for ranges and default-distributed domains
-and arrays.
+**Convenience Factory Methods**
 
-The ``rank`` and ``idxType`` arguments are inferred from the ``boundingBox``
-argument unless explicitly set.  They must match the rank and index type of the
-domains "dmapped" using that Block instance. If the ``boundingBox`` argument is
-a stridable domain, the stride information will be ignored and the
-``boundingBox`` will only use the lo..hi bounds.
+It is common for a ``blockDist``-distributed domain or array to be
+declared using the same indices for both its ``boundingBox`` and its
+index set (as in the example using ``Space`` above).  It is also
+common to not override any of the other defaulted initializer
+arguments.  In such cases, factory methods can be used for
+convenience and to avoid repetition.
 
-When a ``sparse subdomain`` is created for a ``Block`` distributed domain, the
-``sparseLayoutType`` will be the layout of these sparse domains. The default is
-currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
-
-**Convenience Initializer Functions**
-
-It is common for a ``Block`` distribution to distribute its ``boundingBox``
-across all locales. In this case, a convenience function can be used to
-declare variables of block-distributed domain or array type.  These functions
-take a domain or list of ranges as arguments and return a block-distributed
-domain or array.
+These methods take a domain or series of ranges as arguments and
+return a new block-distributed domain or array.  For example, the
+following declarations create new ``5 x 5`` block-distributed domains
+and arrays using ``{1..5, 1..5}`` as both the bounding box and index
+set:
 
   .. code-block:: chapel
 
     use BlockDist;
 
-    var BlockDom1 = Block.createDomain({1..5, 1..5});
-    var BlockArr1 = Block.createArray({1..5, 1..5}, real);
-    var BlockDom2 = Block.createDomain(1..5, 1..5);
-    var BlockArr2 = Block.createArray(1..5, 1..5, real);
+    var BlockDom1 = blockDist.createDomain({1..5, 1..5});
+    var BlockDom2 = blockDist.createDomain(1..5, 1..5);
+    var BlockArr1 = blockDist.createArray({1..5, 1..5}, real);
+    var BlockArr2 = blockDist.createArray(1..5, 1..5, real);
 
-**Data-Parallel Iteration**
+The helper methods on ``blockDist`` have the following signatures:
 
-A `forall` loop over a Block-distributed domain or array
-executes each iteration on the locale where that iteration's index
-is mapped to.
+  .. function:: proc type blockDist.createDomain(dom: domain, targetLocales = Locales)
 
-Parallelism within each locale is guided by the values of
-``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``, and
-``dataParMinGranularity`` of the respective Block instance.
-Updates to these values, if any, take effect only on the locale
-where the updates are made.
+    Create a block-distributed domain. The provided domain is used as the
+    ``boundingBox``.
+
+  .. function:: proc type blockDist.createDomain(rng: range(?)..., targetLocales = Locales)
+
+    Create a block-distributed domain from a series of ranges. The ranges
+    are also used to construct the ``boundingBox``.
+
+  .. function:: proc type blockDist.createArray(dom: domain, type eltType, targetLocales = Locales)
+
+    Create a default-initialized block-distributed array whose indices
+    match those of the given domain.
+
+  .. function:: proc type blockDist.createArray(rng: range(?)..., type eltType, targetLocales = Locales)
+
+    Create a default-initialized block-distributed array using a
+    domain constructed from the series of ranges.
+
+  .. function:: proc type blockDist.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales)
+
+    Create a block-distributed array whose indices match those of the
+    given domain.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
+
+    .. Warning::
+      ``blockDist.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
+
+  .. function:: proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales)
+
+    Create a block-distributed array using a domain constructed from
+    the series of ranges.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
+
+    .. Warning::
+      ``blockDist.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
+
+  .. function:: proc blockDist.createDomain(dom: domain(?))
+
+    Create a block-distributed domain over an existing ``blockDist`` by copying
+    the index space from the passed domain.
+
+  .. function:: proc blockDist.createDomain(rng: range(?)...)
+
+    Create a block-distributed domain from a series of ranges over an existing
+    ``blockDist``.
 
 **Sparse Subdomains**
 
-When a ``sparse subdomain`` is declared as a subdomain to a Block-distributed
-domain, the resulting sparse domain will also be Block-distributed. The
-sparse layout used in this sparse subdomain can be controlled with the
-``sparseLayoutType`` initializer argument to Block.
+When a ``sparse subdomain`` is created from a block-distributed
+domain, the resulting sparse domain will share the same block
+distribution across locales.  The sparse layout used in this sparse
+subdomain can be controlled with the ``sparseLayoutType`` initializer
+argument to ``blockDist``.
 
-This example demonstrates a Block-distributed sparse domain and array:
+The following example demonstrates a block-distributed sparse domain
+and array:
 
   .. code-block:: chapel
 
@@ -288,11 +353,11 @@ This example demonstrates a Block-distributed sparse domain and array:
 
     const Space = {1..8, 1..8};
 
-    // Declare a dense, Block-distributed domain.
-    const DenseDom: domain(2) dmapped Block(boundingBox=Space) = Space;
+    // Declare a dense, blockDist-distributed domain.
+    const DenseDom = blockDist.createDomain(Space);
 
     // Declare a sparse subdomain.
-    // Since DenseDom is Block-distributed, SparseDom will be as well.
+    // Since DenseDom is blockDist-distributed, SparseDom will be as well.
     var SparseDom: sparse subdomain(DenseDom);
 
     // Add some elements to the sparse subdomain.
@@ -300,7 +365,7 @@ This example demonstrates a Block-distributed sparse domain and array:
     SparseDom += [ (1,2), (3,6), (5,4), (7,8) ];
 
     // Declare a sparse array.
-    // This array is also Block-distributed.
+    // This array is also blockDist-distributed.
     var A: [SparseDom] int;
 
     A = 1;
@@ -321,17 +386,15 @@ This example demonstrates a Block-distributed sparse domain and array:
 */
 
 pragma "ignore noinit"
-record Block {
+record blockDist : writeSerializable {
   param rank: int;
   type idxType = int;
   type sparseLayoutType = unmanaged DefaultDist;
-  var _pid:int;  // only used when privatized
-  pragma "owned"
-  var _instance: unmanaged BlockImpl(rank, idxType, _to_unmanaged(sparseLayoutType));
-  var _unowned:bool; // 'true' for the result of 'getDistribution',
-                     // in which case, the record destructor should
-                     // not attempt to delete the _instance.
 
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged BlockImpl(rank, idxType, _to_unmanaged(sparseLayoutType)));
+
+  pragma "last resort"
+  @unstable("passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable")
   proc init(boundingBox: domain,
             targetLocales: [] locale = Locales,
             dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -348,177 +411,75 @@ record Block {
     this.rank = rank;
     this.idxType = idxType;
     this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
-    this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-    this._instance = value;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+
+  proc init(boundingBox: domain,
+            targetLocales: [] locale = Locales)
+  {
+    this.init(boundingBox, targetLocales,
+              /* by specifying even one unstable argument, this should select
+                 the whole unstable constructor, which has defaults for everything
+                 else. */
+              dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
       this.rank = _instance.rank;
       this.idxType = _instance.idxType;
       this.sparseLayoutType = _instance.sparseLayoutType;
-      this._pid      = _pid;
-      this._instance = _instance;
-      this._unowned  = _unowned;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
     }
 
     proc init(value) {
       this.rank = value.rank;
       this.idxType = value.idxType;
       this.sparseLayoutType = value.sparseLayoutType;
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-      this._instance = _to_unmanaged(value);
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
     }
 
     // Note: This does not handle the case where the desired type of 'this'
     // does not match the type of 'other'. That case is handled by the compiler
     // via coercions.
-    proc init=(const ref other : Block(?)) {
-      /*
-      this.init(other.rank, other.idxType, other.sparseLayoutType, other_value.dsiClone()
-      this.rank = other.rank;
-      this.idxtype = other.idxType;
-      this.sparseLayoutType = other.sparseLayoutType;
-      */
-      var value = other._value.dsiClone();
-      this.init(value);
-    }
-
-    inline proc _value {
-      if _isPrivatized(_instance) {
-        return chpl_getPrivatizedCopy(_instance.type, _pid);
-      } else {
-        return _instance;
-      }
-    }
-
-    forwarding _value except targetLocales;
-
-    inline proc _do_destroy() {
-      if ! _unowned && ! _instance.singleton() {
-        on _instance {
-          // Count the number of domains that refer to this distribution.
-          // and mark the distribution to be freed when that number reaches 0.
-          // If the number is 0, .remove() returns the distribution
-          // that should be freed.
-          var distToFree = _instance.remove();
-          if distToFree != nil {
-            _delete_dist(distToFree!, _isPrivatized(_instance));
-          }
-        }
-      }
-    }
-
-    proc deinit() {
-      _do_destroy();
+    proc init=(const ref other : blockDist(?)) {
+      this.init(other._value.dsiClone());
     }
 
     proc clone() {
-      return new Block(_value.dsiClone());
-    }
-
-    /* This is a workaround for an internal failure I experienced when
-       this code was part of newRectangularDom() and relied on split init:
-       var x;
-       if __prim(...) then x = ...;
-       else if __prim(...) then x = ...;
-       else compilerError(...); */
-    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
-
-      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
-      // we use "method call resolves" instead of just "resolves".
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, strides, ranges) {
-        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-      }
-
-      // The following supports deprecation by Vass in 1.31 to implement #17131
-      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
-      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
-      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
-
-      param stridable = strides.toStridable();
-      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, stridable, ranges2) {
-
-        compilerWarning("the domain map '", _value.type:string,
-          "' needs to be updated from 'stridable: bool' to",
-          " 'strides: strideKind' because 'stridable' is deprecated");
-
-        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
-      }
-
-      compilerError("rectangular domains are not supported by",
-                    " the distribution ", this.type:string);
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
-
-      x.definedConst = definedConst;
-
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           definedConst: bool = false) {
-      var ranges: rank*range(idxType, boundKind.both, strides);
-      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
-    }
-
-    proc newSparseDom(param rank: int, type idxType, dom: domain) {
-      var x = _value.dsiNewSparseDom(rank, idxType, dom);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-
-    proc writeThis(f) throws {
-      f.write(_value);
-    }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writer.write(_value);
-    }
-
-    proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
-
-    /*
-       Return an array of locales over which this distribution was declared.
-    */
-    proc targetLocales() const ref {
-      return _value.dsiTargetLocales();
+      return new blockDist(this._value.dsiClone());
     }
 
   @chpldoc.nodoc
-  inline operator ==(d1: Block(?), d2: Block(?)) {
+  inline operator ==(d1: blockDist(?), d2: blockDist(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: Block(?), d2: Block(?)) {
+  inline operator !=(d1: blockDist(?), d2: blockDist(?)) {
     return !(d1 == d2);
+  }
+
+  proc serialize(writer, ref serializer) throws {
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
 
-
 @chpldoc.nodoc
 @unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
-operator =(ref a: Block(?), b: Block(?)) {
+operator =(ref a: blockDist(?), b: blockDist(?)) {
   if a._value == nil {
     __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
   } else {
@@ -534,8 +495,12 @@ operator =(ref a: Block(?), b: Block(?)) {
 }
 
 
+@deprecated("'Block' is deprecated, please use 'blockDist' instead")
+type Block = blockDist;
+
+
 @chpldoc.nodoc
-class BlockImpl : BaseDist {
+class BlockImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
   var boundingBox: domain(rank, idxType);
@@ -625,7 +590,7 @@ class BlockArr: BaseRectangularArr(?) {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-class LocBlockArr {
+class LocBlockArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;
@@ -669,8 +634,8 @@ class LocBlockArr {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocBlockArr.writeThis() is not implemented / should not be needed");
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocBlockArr.serialize() is not implemented / should not be needed");
   }
 
   proc deinit() {
@@ -698,14 +663,14 @@ proc BlockImpl.init(boundingBox: domain,
   this.rank = rank;
   this.idxType = idxType;
   if rank != boundingBox.rank then
-    compilerError("specified Block rank != rank of specified bounding box");
+    compilerError("specified rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
-    compilerError("specified Block index type != index type of specified bounding box");
+    compilerError("specified index type != index type of specified bounding box");
   if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.sizeAs(uint) == 0 then
-    halt("Block() requires a non-empty boundingBox");
+    halt("blockDist() requires a non-empty boundingBox");
 
   this.boundingBox = boundsBox(boundingBox);
 
@@ -753,10 +718,10 @@ proc BlockImpl.init(boundingBox: domain,
 
   this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
 
-  this.complete();
+  init this;
 
   if debugBlockDist {
-    writeln("Creating new Block distribution:");
+    writeln("Creating new blockDist distribution:");
     dsiDisplayRepresentation();
   }
 }
@@ -772,7 +737,7 @@ proc boundsBox(srcDom: domain) {
   return {(...dst)};
 }
 
-@unstable(category="experimental", reason="'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
+@unstable(category="experimental", reason="'blockDist.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
 proc BlockImpl.redistribute(const in newBbox) {
   const newBboxDims = newBbox.dims();
   const pid = this.pid;
@@ -791,7 +756,7 @@ proc BlockImpl.redistribute(const in newBbox) {
 proc BlockImpl.dsiAssign(other: this.type) {
   if (this.targetLocDom != other.targetLocDom ||
       || reduce (this.targetLocales != other.targetLocales)) {
-    halt("Block distribution assignments currently require the target locale arrays to match");
+    halt("'blockDist' assignments currently require the target locale arrays to match");
   }
 
   this.redistribute(other.boundingBox);
@@ -824,7 +789,7 @@ proc BlockImpl.dsiClone() {
 }
 
 override proc BlockImpl.dsiDestroyDist() {
-  coforall ld in locDist do {
+  coforall ld in locDist {
     on ld do
       delete ld;
   }
@@ -844,9 +809,9 @@ override proc BlockImpl.dsiDisplayRepresentation() {
 override proc BlockImpl.dsiNewRectangularDom(param rank: int, type idxType,
                                          param strides: strideKind, inds) {
   if idxType != this.idxType then
-    compilerError("Block domain index type does not match distribution's");
+    compilerError("domain index type does not match distribution's");
   if rank != this.rank then
-    compilerError("Block domain rank does not match distribution's");
+    compilerError("domain rank does not match distribution's");
 
   const whole = createWholeDomainForInds(rank, idxType, strides, inds);
 
@@ -864,7 +829,7 @@ override proc BlockImpl.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, strides, sparseLayoutType,
-                                   _to_unmanaged(this), locDomsTemp, whole);
+                                   this:unmanaged, locDomsTemp, whole);
 
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -887,15 +852,15 @@ override proc BlockImpl.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockImpl.writeThis(x) throws {
-  x.writeln("Block");
-  x.writeln("-------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
+override proc BlockImpl.serialize(writer, ref serializer) throws {
+  writer.writeln("blockDist");
+  writer.writeln("---------");
+  writer.writeln("distributes: ", boundingBox);
+  writer.writeln("across locales: ", targetLocales);
+  writer.writeln("indexed via: ", targetLocDom);
+  writer.writeln("resulting in: ");
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+    writer.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
       " owns chunk: ", locDist(locid).myChunk);
 }
 
@@ -985,23 +950,129 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
-proc type Block.createDomain(dom: domain) {
-  return dom dmapped Block(dom);
+// create a domain over an existing blockDist Distribution
+proc blockDist.createDomain(dom: domain(?)) {
+  return dom dmapped this;
 }
 
-proc type Block.createDomain(rng: range...) {
+// create a domain over an existing blockDist Distribution constructed from a series of ranges
+proc blockDist.createDomain(rng: range(?)...) {
+  return this.createDomain({(...rng)});
+}
+
+// create a domain over a blockDist Distribution
+proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
+  return dom dmapped blockDist(dom, targetLocales);
+}
+
+// create a domain over a blockDist Distribution constructed from a series of ranges
+proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
+  return createDomain({(...rng)}, targetLocales);
+}
+
+proc type blockDist.createDomain(rng: range(?)...) {
   return createDomain({(...rng)});
 }
 
-proc type Block.createArray(dom: domain, type eltType) {
-  var D = createDomain(dom);
+// create an array over a blockDist Distribution, default initialized
+proc type blockDist.createArray(
+  dom: domain(?),
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
+  var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
-proc type Block.createArray(rng: range..., type eltType) {
+// create an array over a blockDist Distribution, initialized with the given value or iterator
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  dom: domain(?),
+  type eltType,
+  initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a blockDist Distribution, initialized from the given array
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  dom: domain(?),
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  if boundsChecking then
+  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+    if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
+
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a blockDist Distribution constructed from a series of ranges, default initialized
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
+  return createArray({(...rng)}, eltType, targetLocales);
+}
+
+proc type blockDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
+
+// create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType, initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
+}
+
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
+  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr);
+}
+
+
+// create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
+}
+
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr);
+}
+
 
 proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
                         boundingBoxDims /* boundingBox.dims() */) {
@@ -1043,9 +1114,9 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
 
 proc BlockDom.dsiGetDist() {
   if _isPrivatized(dist) then
-    return new Block(dist.pid, dist, _unowned=true);
+    return new blockDist(dist.pid, dist, _unowned=true);
   else
-    return new Block(nullPid, dist, _unowned=true);
+    return new blockDist(nullPid, dist, _unowned=true);
 }
 
 override proc BlockDom.dsiDisplayRepresentation() {
@@ -1155,7 +1226,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
+    t(i) = (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1396,7 +1467,7 @@ override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
 
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return if allowDuplicateTargetLocales then this.dsiAccess(i)
-                                        else _to_nonnil(myLocArr).this(i);
+                                        else _to_nonnil(myLocArr)(i);
 }
 
 //
@@ -1411,7 +1482,7 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
     if const myLocArrNN = myLocArr then
       if myLocArrNN.locDom.contains(idx) then
-        return myLocArrNN.this(idx);
+        return myLocArrNN(idx);
   }
   return nonLocalAccess(idx);
 }
@@ -1516,7 +1587,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low
+                       by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -1704,14 +1776,14 @@ proc type BlockDom.chpl__deserialize(data) {
 
 override proc BlockDom.dsiSupportsPrivatization() param do return true;
 
-record BlockDomPrvData {
+record blockDomPrvData {
   var distpid;
   var dims;
   var locdoms;  //todo rvf its elements along with the rest of the record
 }
 
 proc BlockDom.dsiGetPrivatizeData() {
-  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms);
+  return new blockDomPrvData(dist.pid, whole.dims(), locDoms);
 }
 
 proc BlockDom.dsiPrivatize(privatizeData) {
@@ -1752,13 +1824,13 @@ proc type BlockArr.chpl__deserialize(data) {
 
 override proc BlockArr.dsiSupportsPrivatization() param do return true;
 
-record BlockArrPrvData {
+record blockArrPrvData {
   var dompid;
   var locarr;  //todo rvf its elements along with the rest of the record
 }
 
 proc BlockArr.dsiGetPrivatizeData() {
-  return new BlockArrPrvData(dom.pid, locArr);
+  return new blockArrPrvData(dom.pid, locArr);
 }
 
 proc BlockArr.dsiPrivatize(privatizeData) {
@@ -1888,11 +1960,9 @@ proc BlockArr.canDoOptimizedSwap(other) {
   var domsMatch = true;
 
   if this.dom != other.dom { // no need to check if this is true
-    if domsMatch {
-      for param i in 0..this.dom.rank-1 {
-        if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
-          domsMatch = false;
-        }
+    for param i in 0..this.dom.rank-1 {
+      if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
+        domsMatch = false;
       }
     }
   }
@@ -2077,7 +2147,7 @@ config param debugBlockScan = false;
  * suitable for general use since there are races with when the value gets
  * written to, but safe for single writer, single reader case here.
  */
-class BoxedSync {
+class BoxedSync : writeSerializable {
   type T;
   var s: sync int; // int over bool to enable native qthread sync
   var res: T;
@@ -2097,7 +2167,7 @@ class BoxedSync {
   }
 
   // guard against dynamic dispatch trying to resolve write()ing the sync
-  override proc writeThis(f) throws { }
+  override proc serialize(writer, ref serializer) throws { }
 }
 
 proc BlockArr.doiScan(op, dom) where (rank == 1) &&
@@ -2122,7 +2192,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   const sameDynamicDist = sameStaticDist && dsiDynamicFastFollowCheck(res);
 
   // Fire up tasks per participating locale
-  coforall locid in targetLocs.domain {
+  coforall locid in targetLocs.domain with (ref res, ref elemPerLoc, ref outputReady) {
     on targetLocs[locid] {
       const myop = op.clone(); // this will be deleted by doiScan()
 
@@ -2218,28 +2288,4 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   delete op;
   return res;
-}
-
-////// Factory functions ////////////////////////////////////////////////////
-
-@deprecated(notes="'newBlockDom' is deprecated - please use 'Block.createDomain' instead")
-proc newBlockDom(dom: domain) {
-  return dom dmapped Block(dom);
-}
-
-@deprecated(notes="'newBlockArr' is deprecated - please use 'Block.createArray' instead")
-proc newBlockArr(dom: domain, type eltType) {
-  var D = newBlockDom(dom);
-  var A: [D] eltType;
-  return A;
-}
-
-@deprecated(notes="'newBlockDom' is deprecated - please use 'Block.createDomain' instead")
-proc newBlockDom(rng: range...) {
-  return newBlockDom({(...rng)});
-}
-
-@deprecated(notes="'newBlockArr' is deprecated - please use 'Block.createArray' instead")
-proc newBlockArr(rng: range..., type eltType) {
-  return newBlockArr({(...rng)}, eltType);
 }

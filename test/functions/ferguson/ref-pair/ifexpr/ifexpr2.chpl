@@ -10,7 +10,7 @@ proc getter() const ref {
 }
 
 
-proc ifexpr(a, b, c) ref {
+proc ifexpr(a, ref b, ref c) ref {
    return if a[1] == 1 then b else c;
 }
 
@@ -18,7 +18,7 @@ proc ifexpr(a, b, c) const ref {
    return if a[1] == 1 then b else c;
 }
 
-proc setit(x) {
+proc setit(ref x) {
   x[1] = 1;
 }
 

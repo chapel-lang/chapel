@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -345,7 +345,10 @@ static BlockStmt* buildUseList(BaseAST* module, const char* newName,
 // (i.e., function resolution time) then we add the string to our list
 // of library information or to our list of source files.
 //
-bool processStringInRequireStmt(const char* str, bool parseTime,
+bool processStringInRequireStmt(Expr* expr,
+                                bool atModuleScope,
+                                const char* str,
+                                bool parseTime,
                                 const char* modFilename) {
   if (strncmp(str, "-l", 2) == 0) {
     if (!parseTime) {
@@ -355,6 +358,9 @@ bool processStringInRequireStmt(const char* str, bool parseTime,
   } else {
     if (isChplSource(str)) {
       if (parseTime) {
+        if (!atModuleScope) {
+          USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
+        }
         addSourceFile(str, NULL);
         return true;
       } else {
@@ -573,7 +579,7 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
 //
 // Build a 'require' statement
 //
-BlockStmt* buildRequireStmt(CallExpr* args) {
+BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope) {
   BlockStmt* list = NULL;
 
   //
@@ -586,7 +592,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      if (processStringInRequireStmt(str, true, yyfilename)) {
+      if (processStringInRequireStmt(useArg, atModuleScope, str, true, yyfilename)) {
         continue;
       }
     }
@@ -907,13 +913,19 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
 Expr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ false, zippered, maybeArrayType);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FOR_EXPR, zippered, maybeArrayType);
 }
 
+
+Expr*
+buildForeachLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+  if (zippered) zipToTuple(iteratorExpr);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FOREACH_EXPR, zippered, maybeArrayType);
+}
 Expr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ true, zippered, maybeArrayType);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FORALL_EXPR, zippered, maybeArrayType);
 }
 
 //
@@ -1565,12 +1577,12 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
   return dt;
 }
 
-DefExpr* buildClassDefExpr(const char*  name,
-                           const char*  cname,
-                           AggregateTag tag,
-                           Expr*        inherit,
-                           BlockStmt*   decls,
-                           Flag         externFlag) {
+DefExpr* buildClassDefExpr(const char*               name,
+                           const char*               cname,
+                           AggregateTag              tag,
+                           const std::vector<Expr*>& inherits,
+                           BlockStmt*                decls,
+                           Flag                      externFlag) {
   bool isExtern = externFlag == FLAG_EXTERN;
   AggregateType* ct = NULL;
   TypeSymbol* ts = NULL;
@@ -1588,6 +1600,9 @@ DefExpr* buildClassDefExpr(const char*  name,
     ts = ct->symbol;
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
+    ts = ct->symbol;
+  } else if (strcmp("_range", name) == 0) {
+    ct = installInternalType(ct, dtRange);
     ts = ct->symbol;
   } else if (strcmp("_object", name) == 0) {
     ct = installInternalType(ct, dtObject);
@@ -1618,9 +1633,10 @@ DefExpr* buildClassDefExpr(const char*  name,
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
 
-    if (inherit != NULL)
-      USR_FATAL_CONT(inherit,
+    if (!inherits.empty()) {
+      USR_FATAL_CONT(inherits.front(),
                      "External types do not currently support inheritance");
+    }
   }
 
   for_alist(stmt, decls->body){
@@ -1631,10 +1647,9 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   ct->addDeclarations(decls);
 
-  if (inherit != NULL) {
+  for (auto inherit : inherits) {
     ct->inherits.insertAtTail(inherit);
   }
-
   return def;
 }
 
@@ -1927,7 +1942,7 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
     // Insertion point for next manager or user block.
   } catch chpl_tmp_err {
     errorCaught = true;
-    manager.leaveThis(chpl_tmp_err);
+    manager.exitContext(chpl_tmp_err);
   }
 
 */
@@ -1944,8 +1959,8 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
   auto errorCaughtToTrue = new CallExpr(PRIM_MOVE, seErrorCaught, seTrue);
   catchBlock->insertAtTail(errorCaughtToTrue);
 
-  // BUILD: manager.leaveThis(chpl_tmp_err);
-  auto leave = new CallExpr("leaveThis",
+  // BUILD: manager.exitContext(chpl_tmp_err);
+  auto leave = new CallExpr("exitContext",
                             gMethodToken,
                             new SymExpr(managerHandle),
                             new UnresolvedSymExpr(errName));
@@ -1968,17 +1983,18 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
 
   {
     TEMP ref manager = PRIM_ADDR_OF(myManager());
-    USER [var/ref/const] myResource = manager.enterThis();
+    chpl__verifyTypeContext(manager);
+    USER [var/ref/const] myResource = manager.enterContext();
     TEMP errorCaught = false;
 
     try {
       // Insertion point for next manager or user block.
     } catch chpl_temp_err {
       errorCaught = true;
-      manager.leaveThis(chpl_tmp_err);
+      manager.exitContext(chpl_tmp_err);
     }
 
-    if !errorCaught then manager.leaveThis(nil);
+    if !errorCaught then manager.exitContext(nil);
   }
 
 */
@@ -1997,11 +2013,14 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
   ret->insertAtTail(moveIntoHandle);
 
-  // Build call to 'enterThis()', but don't insert into the tree yet.
-  auto seManager = new SymExpr(managerHandle);
-  auto enterThis = new CallExpr("enterThis", gMethodToken, seManager);
+  auto verifyCall = new CallExpr("chpl__verifyTypeContext", new SymExpr(managerHandle));
+  ret->insertAtTail(verifyCall);
 
-  // BUILD: [var/ref/const ref] myResource = manager.enterThis();
+  // Build call to 'enterContext', but don't insert into the tree yet.
+  auto seManager = new SymExpr(managerHandle);
+  auto enterContext = new CallExpr("enterContext", gMethodToken, seManager);
+
+  // BUILD: [var/ref/const ref] myResource = manager.enterContext();
   if (resourceName != nullptr) {
     const bool isResourceStorageKindInferred = (flags == nullptr);
     auto resource = new VarSymbol(resourceName);
@@ -2014,12 +2033,12 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
       flags = nullptr;
     }
 
-    ret->insertAtTail(new DefExpr(resource, enterThis));
+    ret->insertAtTail(new DefExpr(resource, enterContext));
 
   } else {
 
-    // Otherwise, just make the call to 'enterThis()'.
-    ret->insertAtTail(enterThis);
+    // Otherwise, just make the call to 'enterContext()'.
+    ret->insertAtTail(enterContext);
   }
 
   // BUILD: TEMP var errorCaught = false;
@@ -2030,9 +2049,9 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorCaught);
   ret->insertAtTail(tryCatch);
 
-  // BUILD: if !errorCaught then manager.leaveThis(nil);
+  // BUILD: if !errorCaught then manager.exitContext(nil);
   auto ifCond = new CallExpr(PRIM_UNARY_LNOT, new SymExpr(errorCaught));
-  auto ifBranch = new CallExpr("leaveThis",
+  auto ifBranch = new CallExpr("exitContext",
                                gMethodToken,
                                new SymExpr(managerHandle),
                                gNil);
@@ -2044,11 +2063,11 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 
 /*
   Each manager block declares some temporary variables, and then calls the
-  'enterThis()' method on the manager before executing the next block.
+  'enterContext()' method on the manager before executing the next block.
   Managers are nested from left to right, and the final innermost scope is
   the block containing user code.
 
-  Managers call 'leaveThis()' and are deinitialized in the reverse order of
+  Managers call 'exitContext()' and are deinitialized in the reverse order of
   their initialization.
 
   TODO (dlongnecke-cray): In cleanup, recursively lift up the manager out of
@@ -2405,7 +2424,6 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
           // TODO: Loop/copy all flags here instead of two?
           if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
           if (theVs->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) ts->addFlag(FLAG_C_MEMORY_ORDER_TYPE);
-          if (theVs->hasFlag(FLAG_NO_DOC)) ts->addFlag(FLAG_NO_DOC);
           if (theVs->hasFlag(FLAG_DEPRECATED)) {
             ts->addFlag(FLAG_DEPRECATED);
             ts->deprecationMsg = theVs->deprecationMsg;

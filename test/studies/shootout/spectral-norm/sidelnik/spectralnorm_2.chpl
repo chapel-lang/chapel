@@ -21,27 +21,27 @@ proc eval_A(i,j) : real
   return 1.0 / d;
 }
 
-proc eval_A_times_u(U : [] real, inRange, Au : [] real)
+proc eval_A_times_u(U : [] real, inRange, ref Au : [] real)
 {
   forall (au,i) in zip(Au, {0..#inRange}) do 
     au = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
 
 }
 
-proc eval_At_times_u(U : [] real, inRange, Au : [] real)
+proc eval_At_times_u(U : [] real, inRange, ref Au : [] real)
 {
   forall (au,i) in zip(Au, {0..#inRange}) do
     au = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
 }
 
-proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
+proc eval_AtA_times_u(u,ref AtAu,ref v : [] real, inRange)
 {
      eval_A_times_u(u, inRange, v);
      eval_At_times_u(v, inRange, AtAu);
 }
 
 proc main() {
-  var Dist = new Block(rank=1, idxType=int(64), boundingBox={0..#n},
+  var Dist = new blockDist(rank=1, idxType=int(64), boundingBox={0..#n},
                                       dataParTasksPerLocale=here.maxTaskPar);
   var Dom : domain(1, int(64)) dmapped Dist = {0..#n};
 

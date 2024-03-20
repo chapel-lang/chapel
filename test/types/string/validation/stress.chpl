@@ -12,7 +12,7 @@
 use IO;
 
 var f = open("UTF8-test.txt", mode=ioMode.rw);
-var chan = f.reader();
+var chan = f.reader(locking=false);
 
 var b: bytes;
 while chan.readAll(b) {

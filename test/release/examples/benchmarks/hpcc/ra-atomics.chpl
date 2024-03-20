@@ -73,8 +73,8 @@ config const tasksPerCore = 1,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new Block(boundingBox={0..m-1}),
-      UpdateDist = new Block(boundingBox={0..N_U-1},
+const TableDist = new blockDist(boundingBox={0..m-1}),
+      UpdateDist = new blockDist(boundingBox={0..N_U-1},
                             dataParTasksPerLocale=tasksPerLocale);
 
 //
@@ -104,7 +104,7 @@ proc main() {
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
-  // i in TableSpace"
+  // i in TableSpace".
   //
   [i in TableSpace] T(i).poke(i);
 
@@ -140,7 +140,7 @@ proc printConfiguration() {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(T) {
+proc verifyResults(ref T) {
   if (!verify) then return true;
 
   //

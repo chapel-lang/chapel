@@ -7,8 +7,8 @@ class C {
 proc main() {
   use CTypes;
   var c = new unmanaged C(1);
-  // cast it to a c_ptr(void)
-  var ptr1 = c:c_ptr(void);
+  // get a c_ptr(void) to it
+  var ptr1 : c_ptr(void) = c_ptrTo(c);
   // cast that back to an object
   var c2 = ptr1:unmanaged C?;
   // cast nil into a c_ptr(void)

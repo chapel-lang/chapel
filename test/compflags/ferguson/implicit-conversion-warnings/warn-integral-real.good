@@ -1,0 +1,6 @@
+warn-integral-real.chpl:3: In function 'test1':
+warn-integral-real.chpl:5: warning: implicit conversion from 'int(64)' to 'real(32)'
+warn-integral-real.chpl:5: note: add a cast :real(32) to avoid this warning
+warn-integral-real.chpl:11: In function 'test2':
+warn-integral-real.chpl:13: warning: implicit conversion from 'uint(16)' to 'real(64)'
+warn-integral-real.chpl:13: note: add a cast :real(64) to avoid this warning

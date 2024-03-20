@@ -9,11 +9,11 @@ var South : domain(2) = {n+1..n+1, 1..n};
 var A : [BigR] real;
 var Temp : [R] real;
 
-forall (i,j) in BigR {
+forall (i,j) in BigR with (ref A) {
   A(i,j) = 0.0;
 }
 
-forall (i,j) in South {
+forall (i,j) in South with (ref A) {
   A(i,j) = 1.0;
 }
 
@@ -26,11 +26,11 @@ var iteration : int = 0;
 var delta : sync real = 1.0;
 
 while (delta.readFE() > epsilon) {
-  forall (i,j) in R {
+  forall (i,j) in R with (ref Temp) {
     Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   }
   delta.writeEF(0.0);
-  forall (i,j) in R {
+  forall (i,j) in R with (ref A) {
     delta.writeEF(max(delta.readFE(), Temp(i,j)-A(i,j)));
     A(i,j) = Temp(i,j);
   }

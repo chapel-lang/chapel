@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,6 @@
    File/Directory Manipulations
    ----------------------------
    :proc:`copy`
-   :proc:`copyFile`
    :proc:`copyTree`
    :proc:`mkdir`
    :proc:`moveDir`
@@ -95,6 +94,7 @@ module FileSystem {
   use CTypes;
   use IO;
   use OS.POSIX;
+  use ChplConfig;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -191,33 +191,15 @@ proc locale.chdir(name: string) throws {
 
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
 
-/* Set the permissions of the file or directory specified by the argument
-   `name` to that indicated by the argument `mode`.
-
-   :arg name: The name of the file or directory whose permissions should be
-              altered.
-   :type name: `string`
-   :arg mode: The permissions desired for the file or directory in question.
-              See description of :const:`S_IRUSR`, for instance, for potential
-              values.
-   :type mode: `int`
-
-   :throws FileNotFoundError: Thrown when the name specified does not correspond
-                              to a file or directory that exists.
-   :throws PermissionError: Thrown when the current user does not have
-                            permission to change the permissions
-*/
-@deprecated(notes="'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead")
-proc chmod(name: string, mode: int) throws {
-  extern proc chpl_fs_chmod(name: c_ptrConst(c_char), mode: int): errorCode;
-
-  var err = chpl_fs_chmod(unescape(name).c_str(), mode);
-  if err then try ioerror(err, "in chmod", name);
-}
-
 /* Change one or both of the owner and group id of the named file or directory
    to the specified values.  If `uid` or `gid` are -1, the value in question
    will remain unchanged.
+
+   .. note::
+
+      Changing the owner typically requires root or elevated privileges.
+      Changing the group typically requires being the owner and a member of the
+      group, or having elevated privileges.
 
    :arg name: The name of the file to be changed.
    :type name: `string`
@@ -404,14 +386,14 @@ private proc copyFileImpl(src: string, dest: string) throws {
     } catch { /* ignore errors */ }
   }
 
-  var srcChnl = try srcFile.reader(kind=ionative, locking=false);
+  var srcChnl = try srcFile.reader(locking=false);
   defer {
     try {
       srcChnl.close();
     } catch { /* ignore errors */ }
   }
 
-  var destChnl = try destFile.writer(kind=ionative, locking=false);
+  var destChnl = try destFile.writer(locking=false);
   defer {
     try {
       destChnl.close();
@@ -424,7 +406,7 @@ private proc copyFileImpl(src: string, dest: string) throws {
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
   while (try srcChnl.readBytes(buf, maxSize=4096)) {
-    try destChnl.write(buf);
+    try destChnl.writeBytes(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd
@@ -444,50 +426,6 @@ private proc copyFileImpl(src: string, dest: string) throws {
   try srcChnl.close();
   try destFile.close();
   try srcFile.close();
-}
-
-@deprecated(notes="'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead")
-proc copyFile(src: string, dest: string) throws {
-  copyFileImpl(src, dest);
-}
-
-/* Copies the permissions of the file indicated by `src` to the file indicated
-   by `dest`, leaving contents, owner and group unaffected.
-
-   :arg src: The source file whose permissions are to be copied.
-   :type src: `string`
-   :arg dest: The intended destination of the permissions.
-   :type dest: `string`
-
-   :throws FileNotFoundError: Thrown when the name specified does not correspond
-                              to a file or directory that exists.
-   :throws PermissionError: Thrown when the current user does not have
-                            permission to change the permissions
-*/
-@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
-proc copyMode(src: string, dest: string) throws {
-  try {
-    // Gets the mode from the source file.
-    var srcMode = getMode(src);
-    // Sets the mode of the destination to the source's mode.
-    chmod(dest, srcMode);
-  } catch e: SystemError {
-    // Hide implementation details.
-    try ioerror(e.err, "in copyMode " + src, dest);
-  }
-}
-
-@chpldoc.nodoc
-@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
-proc copyMode(out error: errorCode, src: string, dest: string) {
-  var err: errorCode = 0;
-  try {
-    copyMode(src, dest);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
 }
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
@@ -668,20 +606,6 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-// When this deprecated iterator is removed remember to remove the standalone
-// parallel version below as well.
-@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
-iter findfiles(startdir: string = ".", recursive: bool = false,
-               hidden: bool = false): string {
-  if (recursive) then
-    foreach subdir in walkDirs(startdir, hidden=hidden) do
-      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
-        yield subdir+"/"+file;
-  else
-    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
-      yield startdir+"/"+file;
-}
-
 @chpldoc.nodoc
 iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
@@ -696,32 +620,6 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
   else
     foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
-}
-
-// Adding the deprecation warning here causes 3 deprecation warnings in
-// addition to the one that comes from the serial iterator for a forall loop
-// that calls this. (serial, leader, follower, standalone). Rely on just
-// the serial deprecation warning to reduce it to a single message.
-@chpldoc.nodoc
-//@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
-iter findfiles(startdir: string = ".", recursive: bool = false,
-               hidden: bool = false, param tag: iterKind): string
-       where tag == iterKind.standalone {
-  if (recursive) then
-    // Why "with (ref hidden)"?  A: the compiler currently allows only
-    // [const] ref intents in forall loops over recursive parallel iterators
-    // such as walkDirs().
-    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
-      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
-        yield subdir+"/"+file;
-  else
-    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
-      yield startdir+"/"+file;
-}
-
-@deprecated(notes="getGID is deprecated, please use getGid instead")
-proc getGID(name: string): int throws {
-  return getGid(name);
 }
 
 /* Obtains and returns the group id associated with the file or directory
@@ -744,29 +642,6 @@ proc getGid(name: string): int throws {
   return result;
 }
 
-/* Obtains and returns the current permissions of the file or directory
-   specified by `name`.
-
-   :arg name: The file or directory whose permissions are desired.
-   :type name: `string`
-
-   :return: The permissions of the specified file or directory
-            See description of :const:`S_IRUSR`, for instance, for potential
-            values.
-   :rtype: `int`
-
-   :throws SystemError: Thrown to describe an error if one occurs.
-*/
-@deprecated(notes="'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead")
-proc getMode(name: string): int throws {
-  extern proc chpl_fs_viewmode(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
-
-  var ret:c_int;
-  var err = chpl_fs_viewmode(ret, unescape(name).c_str());
-  if err then try ioerror(err, "in getMode", name);
-  return ret;
-}
-
 /* Obtains and returns the size (in bytes) of the file specified by `name`.
 
    :arg name: The file whose size is desired
@@ -784,11 +659,6 @@ proc getFileSize(name: string): int throws {
   var err = chpl_fs_get_size(result, unescape(name).c_str());
   if err then try ioerror(err, "in getFileSize", name);
   return result;
-}
-
-@deprecated(notes="getUID is deprecated, please use getUid instead")
-proc getUID(name: string): int throws {
-  return getUid(name);
 }
 
 /* Obtains and returns the user id associated with the file or directory
@@ -1029,11 +899,6 @@ proc isSymlink(name: string): bool throws {
   return ret != 0;
 }
 
-@deprecated(notes="'isLink' is deprecated. Please use 'isSymlink' instead")
-proc isLink(name: string): bool throws {
-  return isSymlink(name);
-}
-
 /* Determine if the provided path `name` corresponds to a mount point and
    return the result.
 
@@ -1062,14 +927,6 @@ proc isMount(name: string): bool throws {
   var err = chpl_fs_is_mount(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isMount", name);
   return ret != 0;
-}
-
-@deprecated(notes="listdir is deprecated, please use listDir instead")
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
-             files: bool = true, listlinks: bool = true): string {
-  for filename in listDir(path, hidden, dirs, files, listlinks) {
-    yield filename;
-  }
 }
 
 /* Lists the contents of a directory.  May be invoked in serial
@@ -1359,42 +1216,6 @@ proc sameFile(file1: string, file2: string): bool throws {
   return ret != 0;
 }
 
-/* Determines if both :type:`~IO.file` records refer to the same file
-   (utilizing operating system operations rather than string ones, due to the
-   possibility of symbolic links, :data:`~Path.curDir`, or
-   :data:`~Path.parentDir` appearing in the path) and returns the result of that
-   check
-
-   :arg file1: The first file to be compared.
-   :type file1: `file`
-   :arg file2: The second file to be compared.
-   :type file2: `file`
-
-   :return: `true` if the two records refer to the same file, `false`
-            otherwise.
-   :rtype: `bool`
-
-   :throws SystemError: Thrown to describe an error if one occurs.
-*/
-@deprecated(notes="'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead")
-proc sameFile(file1: file, file2: file): bool throws {
-  extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
-                               file2: qio_file_ptr_t): errorCode;
-
-  // If one of the files references a null or closed file, throw to avoid a
-  // segfault.
-  if (!file1.isOpen() || !file2.isOpen()) {
-    throw createSystemError(EBADF,
-                            "Operation attempted on a file that is not open");
-  }
-
-  var ret:c_int;
-  var err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
-  if err then try ioerror(err, "in sameFile " + file1._tryGetPath(),
-                          file2._tryGetPath());
-  return ret != 0;
-}
-
 /* Create a symbolic link pointing to `oldName` with the path `newName`.
 
    :arg oldName: The source file to be linked
@@ -1421,14 +1242,28 @@ proc symlink(oldName: string, newName: string) throws {
       This is not safe within a parallel context.  A umask call in one task
       will affect the umask of all tasks for that locale.
 
+   .. warning::
 
-   :arg mask: The file creation mask to use now.
+      'umask' is unstable on locale models other than the flat locale model.
+
+   :arg mask: The file creation mask to use now. Octal literals may be specified, e.g., ``0o777``. See :ref:`Integral literal values <Integral literal values>`.
    :type mask: `int`
 
    :return: The previous file creation mask
    :rtype: `int`
 */
-proc locale.umask(mask: int): int {
+proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL == "flat") {
+  return umaskHelper(mask);
+}
+
+@chpldoc.nodoc
+@unstable("'umask' is unstable on locale models other than 'flat'")
+proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL != "flat") {
+  return umaskHelper(mask);
+}
+
+@chpldoc.nodoc
+proc locale.umaskHelper(mask: int): int {
   import OS.POSIX.mode_t;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
   extern proc chpl_int_to_mode(mode: c_int): mode_t;
@@ -1440,16 +1275,6 @@ proc locale.umask(mask: int): int {
     result = chpl_mode_to_int(callRes);
   }
   return result.safeCast(int);
-}
-
-
-@deprecated(notes="walkdirs is deprecated; please use walkDirs instead")
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
-              hidden: bool = false, followlinks: bool = false,
-              sort: bool = false): string {
-  for dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
-    yield dir;
-  }
 }
 
 /* Recursively walk a directory structure, yielding directory names.
@@ -1507,16 +1332,6 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 }
 
-@chpldoc.nodoc
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
-              hidden: bool = false, followlinks: bool = false,
-              sort: bool = false, param tag: iterKind): string
-       where tag == iterKind.standalone {
-  forall dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
-    yield dir;
-  }
-}
-
 //
 // Here's a parallel version
 //
@@ -1548,7 +1363,5 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
   if (!topdown) then
     yield path;
 }
-
-
 
 }

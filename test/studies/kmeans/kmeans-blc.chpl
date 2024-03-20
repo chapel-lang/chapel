@@ -140,7 +140,7 @@ class kmeans: ReduceScanOp {
   // the combine function takes two kmeans classes and combines
   // them
   //
-  proc combine(other: borrowed kmeans) {
+  proc combine(other: borrowed kmeans(?)) {
     accumulate(other.state);
   }
 

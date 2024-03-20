@@ -23,7 +23,7 @@ $HADOOP_HOME/bin/hdfs dfsadmin -safemode leave
 $HADOOP_HOME/bin/hdfs dfs -chown -R $USER /
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="networking-packages"
-export CHPL_NIGHTLY_TEST_DIRS="library/packages/Curl library/packages/HDFS"
+export CHPL_NIGHTLY_TEST_DIRS="library/packages/Curl library/packages/HDFS library/packages/URL"
 
 $CWD/nightly -cron ${nightly_args}
 

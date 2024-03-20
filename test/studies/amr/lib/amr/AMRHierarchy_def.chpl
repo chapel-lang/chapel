@@ -83,7 +83,7 @@ class AMRHierarchy {
     this.max_n_levels      = max_n_levels;
     this.flagger           = flagger;
     this.target_efficiency = target_efficiency;
-    this.complete();
+    init this;
 
 
     //---- Create the base level ----
@@ -642,8 +642,8 @@ class PhysicalBoundary
 //----------------------------------------------------------
 
 class Flagger {
-  proc setFlags( level_solution: unmanaged LevelSolution, 
-                 flags: [level_solution.level.possible_cells] bool ) {}
+  proc setFlags( level_solution: unmanaged LevelSolution,
+                 ref flags: [level_solution.level.possible_cells] bool ) {}
 }
 // /|""""""""""""""""""""""/|
 //< |    Flagger class    < |
@@ -983,7 +983,7 @@ private proc main {
     
     proc setFlags(
       level_solution: unmanaged LevelSolution, 
-      flags:          [level_solution.level.possible_cells] bool)
+      ref flags:          [level_solution.level.possible_cells] bool)
     {
       const current_data = level_solution.current_data;
       current_data.extrapolateGhostData();

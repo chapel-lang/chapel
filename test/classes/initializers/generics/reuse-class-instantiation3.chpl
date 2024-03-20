@@ -1,4 +1,4 @@
-class Foo {
+class Foo : writeSerializable {
   type T;
   var x: T;
 
@@ -22,8 +22,8 @@ class Foo {
     this.x = val;
   }
 
-  override proc writeThis(f) throws {
-    f.write(T:string, " x=", x);
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(T:string, " x=", x);
   }
 }
 

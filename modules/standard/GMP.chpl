@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1016,22 +1016,13 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
-  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_FILE
-  extern proc mpf_out_str(stream: c_ptr(chpl_cFile),
-                          base: c_int,
-                          n_digits: c_size_t,
-                          const ref op: mpf_t);
-  extern proc mpf_out_str(stream: chpl_cFilePtr,
+  extern proc mpf_out_str(stream: c_ptr(c_FILE),
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
-  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_ptr(c_FILE)
   extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: c_ptr(chpl_cFile),
-                          base: c_int);
-  extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: chpl_cFilePtr,
+                          stream: c_ptr(c_FILE),
                           base: c_int);
 
   //
@@ -1120,11 +1111,7 @@ module GMP {
   //
   extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
 
-  extern proc gmp_fprintf(fp: c_FILE, fmt: c_ptrConst(c_char), arg...);
-
-  pragma "last resort"
-  @deprecated(notes="the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'")
-  extern proc gmp_fprintf(fp: _file, fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_fprintf(fp: c_ptr(c_FILE), fmt: c_ptrConst(c_char), arg...);
 
   extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), arg...);
 
@@ -1216,18 +1203,18 @@ module GMP {
     var state: gmp_randstate_t;
 
     proc init() {
-      this.complete();
+      init this;
       gmp_randinit_default(this.state);
     }
 
     // Creates a Mersenne Twister (probably same as init_default)
     proc init(twister: bool) {
-      this.complete();
+      init this;
       gmp_randinit_mt(this.state);
     }
 
     proc init(a: bigint, c: uint, m2exp: uint) {
-      this.complete();
+      init this;
       // Rely on bigint assignment operator to obtain a local copy
       var a_ = a;
 
@@ -1238,7 +1225,7 @@ module GMP {
     }
 
     proc init(size: uint) {
-      this.complete();
+      init this;
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 

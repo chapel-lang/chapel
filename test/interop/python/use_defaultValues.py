@@ -14,4 +14,6 @@ defaultValues.intDefault()
 d = b"not the default"
 defaultValues.cstringDefault(d)
 defaultValues.cstringDefault()
+defaultValues.cPtrConstDefault(d)
+defaultValues.cPtrConstDefault()
 defaultValues.chpl_cleanup()

@@ -34,47 +34,47 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.block {
     return (
-            new Block(rank=1, boundingBox=Space1),
-            new Block(rank=2, boundingBox=Space2),
-            new Block(rank=3, boundingBox=Space3),
-            new Block(rank=4, boundingBox=Space4),
-            new Block(rank=2, idxType=int(32), boundingBox=Space2D32)
+            new blockDist(rank=1, boundingBox=Space1),
+            new blockDist(rank=2, boundingBox=Space2),
+            new blockDist(rank=3, boundingBox=Space3),
+            new blockDist(rank=4, boundingBox=Space4),
+            new blockDist(rank=2, idxType=int(32), boundingBox=Space2D32)
            );
   }
   if DT == DistType.cyclic {
     return (
-            new dmap(new Cyclic(startIdx=0)),
-            new dmap(new Cyclic(startIdx=(0,0))),
-            new dmap(new Cyclic(startIdx=(0,0,0))),
-            new dmap(new Cyclic(startIdx=(0,0,0,0))),
-            new dmap(new Cyclic(startIdx=(0:int(32), 0:int(32))))
+            new cyclicDist(startIdx=0),
+            new cyclicDist(startIdx=(0,0)),
+            new cyclicDist(startIdx=(0,0,0)),
+            new cyclicDist(startIdx=(0,0,0,0)),
+            new cyclicDist(startIdx=(0:int(32), 0:int(32)))
            );
   }
   if DT == DistType.blockcyclic {
     return (
-            new dmap(new BlockCyclic(startIdx=(0,), blocksize=(3,))),
-            new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3))),
-            new dmap(new BlockCyclic(startIdx=(0,0,0), blocksize=(3,3,3))),
-            new dmap(new BlockCyclic(startIdx=(0,0,0,0), blocksize=(3,3,3,3))),
-            new dmap(new BlockCyclic(startIdx=(0:int(32),0:int(32)), blocksize=(2:int(32),3:int(32))))
+            new blockCycDist(startIdx=(0,), blocksize=(3,)),
+            new blockCycDist(startIdx=(0,0), blocksize=(3,3)),
+            new blockCycDist(startIdx=(0,0,0), blocksize=(3,3,3)),
+            new blockCycDist(startIdx=(0,0,0,0), blocksize=(3,3,3,3)),
+            new blockCycDist(startIdx=(0:int(32),0:int(32)), blocksize=(2:int(32),3:int(32)))
            );
   }
   if DT == DistType.replicated {
     return (
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated())
+            new replicatedDist(),
+            new replicatedDist(),
+            new replicatedDist(),
+            new replicatedDist(),
+            new replicatedDist()
            );
   }
   if DT == DistType.stencil {
     return (
-            new dmap(new Stencil(rank=1, boundingBox=Space1)),
-            new dmap(new Stencil(rank=2, boundingBox=Space2)),
-            new dmap(new Stencil(rank=3, boundingBox=Space3)),
-            new dmap(new Stencil(rank=4, boundingBox=Space4)),
-            new dmap(new Stencil(rank=2, idxType=int(32), boundingBox=Space2D32))
+            new stencilDist(rank=1, boundingBox=Space1),
+            new stencilDist(rank=2, boundingBox=Space2),
+            new stencilDist(rank=3, boundingBox=Space3),
+            new stencilDist(rank=4, boundingBox=Space4),
+            new stencilDist(rank=2, idxType=int(32), boundingBox=Space2D32)
            );
   }
   halt("unexpected 'distType': ", DT);
@@ -87,11 +87,7 @@ const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D32) = setupDistributions(distType);
 //
 proc fill(param rank, x) {
   if rank == 1 {
-    var y: 1*x.type;
-    y(0) = x;
-    return y;
-  } else if rank == 2 {
-    return (x, x);
+    return (x,);
   } else {
     return (x, (...fill(rank-1, x)));
   }

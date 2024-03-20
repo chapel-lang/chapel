@@ -14,16 +14,16 @@ setupLocales(s1, s2);
 var vdf = new ReplicatedDim(s1);
 var sdf = new BlockDim(s2, 1, 3);
 
-hd("new DimensionalDist2D()");
-var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
+hd("new dimensionalDist2D()");
+var ddf = new dimensionalDist2D(mylocs, vdf, sdf, "ddf");
 tl();
 
 hd("wrapping ddf in dmap");
-var ddfm = new dmap(ddf);
+ref ddfm = ddf;
 tl();
 
 hd("wrapping ddf in another dmap, without assignment");
-//new dmap(ddf);
+//ddf;
 tl();
 
 i2lTest(ddfm, (1,2));

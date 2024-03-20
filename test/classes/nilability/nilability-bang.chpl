@@ -7,8 +7,8 @@ module test {
     var ownCb = new owned Child(1, 2);
     var cb:borrowed Child = ownCb.borrow();
     var cbq = cb:borrowed Child?;
-    var cu = new unmanaged Child(1, 2);
-    var cuq = cu:unmanaged Child?;
+    var cu = cb:unmanaged Child;
+    var cuq = cb:unmanaged Child?;
 
     var nbq:borrowed Child? = nil;
     var nuq:unmanaged Child? = nil;
@@ -33,6 +33,5 @@ module test {
       var x = cuq!;
       writeln(x.type:string, " ", x);
     }
-    delete cu;
   }
 }

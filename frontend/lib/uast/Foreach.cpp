@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,7 @@ owned<Foreach> Foreach::build(Builder* builder,
                               owned<WithClause> withClause,
                               BlockStyle blockStyle,
                               owned<Block> body,
+                              bool isExpressionLevel,
                               owned<AttributeGroup> attributeGroup) {
 
   CHPL_ASSERT(iterand.get() != nullptr);
@@ -71,6 +72,7 @@ owned<Foreach> Foreach::build(Builder* builder,
                              withClauseChildNum,
                              blockStyle,
                              loopBodyChildNum,
+                             isExpressionLevel,
                              attributeGroupChildNum);
 
   builder->noteLocation(ret, loc);

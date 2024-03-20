@@ -1,4 +1,4 @@
-proc assign(A, n: int(32)) {
+proc assign(ref A, n: int(32)) {
   for i in 1..n {
     A(i) = i;
   }

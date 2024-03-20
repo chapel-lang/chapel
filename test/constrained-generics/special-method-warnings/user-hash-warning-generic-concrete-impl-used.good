@@ -1,0 +1,4 @@
+user-hash-warning-generic-concrete-impl-used.chpl:3: warning: the type 'R' defines methods that previously had special meaning. These will soon require 'R' to implement the 'hashable' interface to continue to be treated specially.
+user-hash-warning-generic-concrete-impl-used.chpl:7: note: formerly-special function 'hash' defined here
+in hash
+1

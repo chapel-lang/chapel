@@ -2,7 +2,7 @@ use IO, ChplFormat;
 
 var str = b"bAb\xffbAb".decode(policy=decodePolicy.escape);
 
-var chplOut = stdout.withSerializer(ChplSerializer);
+var chplOut = stdout.withSerializer(chplSerializer);
 
 // iterate over the string using indexing
 var idx = 0;

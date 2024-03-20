@@ -1,1 +1,0 @@
-userDefinedWritelnMethod.chpl:12: error: illegal use of function that does not return a value: 'writeln'

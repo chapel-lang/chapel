@@ -1,4 +1,4 @@
-proc saxpy(alpha, x:[] real, y:[] real) {
+proc saxpy(alpha, x:[] real, ref y:[] real) {
     y +=  alpha*x;
 }
 

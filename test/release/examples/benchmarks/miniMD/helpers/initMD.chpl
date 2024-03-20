@@ -14,7 +14,7 @@ config param printOriginal = false;
 config param printPerf = true;
 config param printCorrect = false;
 
-// if the user wants multilocale, use the Block distribution
+// if the user wants multilocale, use the blockDist distribution
 config param useStencilDist = false;
 config param useBlockDist = (CHPL_COMM != "none" && !useStencilDist);
 
@@ -125,7 +125,7 @@ const cutneighsq = cutneigh * cutneigh;
 
 // io for reading the data file
 var dataFile : file;
-var dataReader : fileReader(kind=iokind.dynamic, locking=false);
+var dataReader : fileReader(locking=false);
 
 // no data file, use input file to generate uniform lattice
 if generating {
@@ -144,7 +144,7 @@ if generating {
     numBins(i) = (5.0/6.0 * problemSize(i)) : int;
 } else {
   dataFile = open(data_file, ioMode.r);
-  dataReader = dataFile.reader();
+  dataReader = dataFile.reader(locking=false);
 
   dataReader.readln(); // skip first line
 
@@ -203,13 +203,13 @@ const binSpace = {1..numBins(0), 1..numBins(1), 1..numBins(2)};
 const ghostSpace = binSpace.expand(numNeed);
 
 // Will define the bounds of our arrays and distribute across locales
-const DistSpace = if useBlockDist then ghostSpace dmapped Block(ghostSpace)
+const DistSpace = if useBlockDist then ghostSpace dmapped blockDist(ghostSpace)
                   else if useStencilDist then
-                   binSpace dmapped Stencil(binSpace, fluff=numNeed, periodic=true)
+                   binSpace dmapped stencilDist(binSpace, fluff=numNeed, periodic=true)
                   else ghostSpace;
 
-const Space = if useBlockDist then binSpace dmapped Block(binSpace)
-              else if useStencilDist then binSpace dmapped Stencil(binSpace)
+const Space = if useBlockDist then binSpace dmapped blockDist(binSpace)
+              else if useStencilDist then binSpace dmapped stencilDist(binSpace)
               else binSpace;
 
 // bin storage. we can likely assume that each bin will store
@@ -308,7 +308,7 @@ proc inputFile() {
     return;
   }
 
-  var r = fchan.reader();
+  var r = fchan.reader(locking=false);
 
   // skip first line
   r.readln();

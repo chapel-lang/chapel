@@ -464,7 +464,7 @@ proc MyBlockCyclicDom.dsiStride return whole.stride;
 // INTERFACE NOTES: Could we make setIndices() for a rectangular
 // domain take a domain rather than something else?
 //
-proc MyBlockCyclicDom.dsiSetIndices(x: domain) {
+proc MyBlockCyclicDom.dsiSetIndices(x: domain(?)) {
   if x.rank != rank then
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
@@ -802,7 +802,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == it
     __primitive("chpl_comm_get_strd",
       __primitive("array_get", dest, buf._value.getDataIndex(1)),
       __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
-      rid,
+      rid, c_sublocid_any,
       __primitive("array_get", src, myLocArr.myElems._value.getDataIndex(myLocArr.mdInd2FlatInd(myFollowThisDom.low))),
       __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
       __primitive("array_get",cnt, count._value.getDataIndex(1)),
@@ -821,7 +821,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == it
       __primitive("chpl_comm_put_strd",
         __primitive("array_get", src, myLocArr.myElems._value.getDataIndex(myLocArr.mdInd2FlatInd(myFollowThisDom.low))),
         __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)), 
-        rid,
+        rid, c_sublocid_any
         __primitive("array_get", dest, buf._value.getDataIndex(1)),
         __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
         __primitive("array_get",cnt, count._value.getDataIndex(1)),

@@ -43,7 +43,7 @@ export proc foo(sendBuf : c_ptr(real), recvBuf : c_ptr(real), count : c_ptr(c_in
   assert(arr.size >= n);
 
   // Have all locales atomically add their results to the atomicBuff
-  forall i in indices do
+  forall i in indices with (ref arr) do
     arr[i].add(sendBuf[i], memoryOrder.relaxed);
 
   // Make sure all locales have accumulated their contributions

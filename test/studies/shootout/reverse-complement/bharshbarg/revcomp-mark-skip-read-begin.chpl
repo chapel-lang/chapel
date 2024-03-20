@@ -12,7 +12,7 @@ config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
   const stdin = new file(0);
-  var input = stdin.reader(iokind.native, locking=false,
+  var input = stdin.reader(deserializer=new binaryDeserializer(), locking=false,
                            hints=ioHintSet.mmap(true));
   var len = stdin.size;
   var data : [0..#len] uint(8);
@@ -50,20 +50,20 @@ proc main(args: [] string) {
 
       if !eof {
         // '-3' to skip over '\n>'
-        begin process(data, seqOffset, nextDescOffset-3);
+        begin with (ref data) process(data, seqOffset, nextDescOffset-3);
       } else {
         // '-2' to skip over '\n'
-        begin process(data, seqOffset, len-2);
+        begin with (ref data) process(data, seqOffset, len-2);
         break;
       }
     }
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
   stdoutBin.writeBinary(data);
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
 
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();

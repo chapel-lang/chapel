@@ -3,7 +3,7 @@ use maps;
 
 var messageObj = new mapTest();
 var file = open("out", ioMode.r);
-var readingChannel = file.reader();
+var readingChannel = file.reader(locking=false);
 
 messageObj.deserialize(readingChannel);
 

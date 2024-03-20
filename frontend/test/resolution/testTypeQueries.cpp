@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -259,8 +259,10 @@ static void test10() {
 
     assert(re.type().type()->isVoidType());
 
-    const TypedFnSignature* fn = re.mostSpecific().only();
-    assert(fn != nullptr);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    auto fn = c.fn();
     assert(fn->untyped()->name() == "f");
 
     assert(fn->numFormals() == 1);
@@ -275,8 +277,10 @@ static void test10() {
 
     assert(re.type().type()->isVoidType());
 
-    const TypedFnSignature* fn = re.mostSpecific().only();
-    assert(fn != nullptr);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    auto fn = c.fn();
     assert(fn->untyped()->name() == "f");
 
     assert(fn->numFormals() == 1);
@@ -554,6 +558,34 @@ static void test17() {
   assert(qt.isErroneousType());
 }
 
+static void test18() {
+  printf("test17\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveQualifiedTypeOfX(context, R"""(
+    proc foo(param val: bool) type {
+      if val then return string;
+      else return int;
+    }
+
+    record R {
+      param val : bool;
+      var data : foo(val);
+    }
+
+    proc helper(arg: R(?val)) {
+      return arg.data;
+    }
+
+    var r : R(true);
+    var x = helper(r);
+    )""");
+
+  assert(qt.type()->isStringType());
+}
+
 int main() {
   test1();
   test2();
@@ -574,6 +606,7 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
 
   return 0;
 }

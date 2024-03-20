@@ -1,1 +1,0 @@
-#22773: reads element of an empty list with a space, "[ ]", as [0]

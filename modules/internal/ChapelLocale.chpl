@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -290,7 +290,7 @@ module ChapelLocale {
     by the corresponding concrete classes.
    */
   @chpldoc.nodoc
-  class BaseLocale {
+  class BaseLocale : writeSerializable {
     //- Constructor
     @chpldoc.nodoc
     proc init() { }
@@ -307,7 +307,7 @@ module ChapelLocale {
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
     @chpldoc.nodoc
-    const parent = nilLocale;
+    const parent : locale = nilLocale;
 
     @chpldoc.nodoc var nPUsLogAcc: int;     // HW threads, accessible
     @chpldoc.nodoc var nPUsLogAll: int;     // HW threads, all
@@ -336,10 +336,6 @@ module ChapelLocale {
         }
       }
       return hname;
-    }
-
-    override proc writeThis(f) throws {
-      HaltWrappers.pureVirtualMethodHalt();
     }
 
     override proc serialize(writer, ref serializer) throws {
@@ -398,23 +394,19 @@ module ChapelLocale {
     // concrete classes.
     proc chpl_id() : int {
       HaltWrappers.pureVirtualMethodHalt();
-      return -1;
     }
 
     proc chpl_localeid() : chpl_localeID_t {
       HaltWrappers.pureVirtualMethodHalt();
-      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
     proc chpl_name() : string {
       HaltWrappers.pureVirtualMethodHalt();
-      return "";
     }
 
     @chpldoc.nodoc
     proc _getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();
-      return 0;
     }
 
 // Part of the required locale interface.
@@ -562,12 +554,12 @@ module ChapelLocale {
     // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
-    proc getDefaultLocaleSpace() const ref {
+    proc getDefaultLocaleSpace() const ref : chpl_emptyLocaleSpace.type {
       HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocaleSpace;
     }
 
-    proc getDefaultLocaleArray() const ref {
+    proc getDefaultLocaleArray() const ref : chpl_emptyLocales.type {
       HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocales;
     }

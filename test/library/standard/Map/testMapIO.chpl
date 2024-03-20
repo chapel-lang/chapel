@@ -8,12 +8,12 @@ proc main() {
   var m = new map(int, real);
   for i in 1..10 do m[i] = (i**2):real;
 
-  var w = f.writer();
+  var w = f.writer(locking=false);
   w.write(m);
   w.close();
 
   {
-    var r = f.reader();
+    var r = f.reader(locking=false);
     var contents : string;
     r.readAll(contents);
     writeln("Wrote:");
@@ -22,7 +22,7 @@ proc main() {
     writeln("==========");
   }
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var x : map(int,real);
   try {
     r.read(x);

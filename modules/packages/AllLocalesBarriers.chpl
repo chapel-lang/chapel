@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
    :proc:`~Collectives.barrier.reset()` methods of the
    :attr:`~Collectives.barrier` interface. By default it can be
    used as a barrier between 1 task on each locale. The
-   :proc:`~Collectives.barrier.reset()` method can be used change how
+   :proc:`~Collectives.barrier.reset()` method can be used to change how
    many tasks per locale will participate in each barrier.
 
    Use of this barrier is similar to ``shmem_barrier_all()`` or
@@ -68,7 +68,7 @@
 module AllLocalesBarriers {
   use BlockDist, Collectives;
 
-  private const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
+  private const BarrierSpace = LocaleSpace dmapped blockDist(LocaleSpace);
   private var globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
   private proc deinit() { [b in globalBarrier] delete b; }
 

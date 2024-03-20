@@ -8,7 +8,7 @@ proc R.init(x)
   this.x = x;
 }
 
-proc R.init=(from: R)
+proc R.init=(from: R(?))
 {
   writeln("In R.init");
   this.x = from.x;

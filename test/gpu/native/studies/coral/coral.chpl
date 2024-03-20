@@ -27,7 +27,7 @@ config const verbose_gpu = false;
 //var bs = 1;
 //var be = 5;
 
-proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL : ?, locC : ?, locR : ?, Output: [] real(64), t: stopwatch) : [] {
+proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL : ?, locC : ?, locR : ?, ref Output: [] real(64), t: stopwatch) : [] {
 
   param bs = 1;
   param be = 5;
@@ -39,9 +39,8 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
   if verbose_gpu then startVerboseGpu();
 
   
+  @assertOnGpu
   foreach i in centerPoints.dim(0) {
-    assertOnGpu();
-
     // Only these need to be real(64) in order to guarantee non-negative outputs
     var tmpLL : real(64) = 0;
     var tmpLC : real(64) = 0;
@@ -135,7 +134,7 @@ proc main(args: [] string) {
     // Read in array
     if inputSize == -1 {
       var f = open(in_array, ioMode.r);
-      var r = f.reader(kind=ionative);
+      var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
       for i in 1..5 {
         for j in 1..x {
           for k in 1..y {
@@ -163,7 +162,7 @@ proc main(args: [] string) {
     now.
      
     const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-    const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
+    const D = Inner dmapped blockDist(Inner, targetLocales=myTargetLocales);
 
     */
     const Inner = ImageSpace.expand(-offset);
@@ -204,4 +203,3 @@ proc main(args: [] string) {
     writeln("Elapsed time to finish coforall loop: ", t.elapsed(), " seconds.");
 
 }
-

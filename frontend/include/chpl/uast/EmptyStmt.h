@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,21 +42,25 @@ namespace uast {
  */
 
 class EmptyStmt final : public AstNode {
-private:
+ friend class AstNode;
+
+ private:
   EmptyStmt()
     : AstNode(asttags::EmptyStmt) {
     CHPL_ASSERT(numChildren() == 0);
   }
-  EmptyStmt(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override { }
+
+  explicit EmptyStmt(Deserializer& des)
     : AstNode(asttags::EmptyStmt, des) { }
 
-    bool contentsMatchInner(const AstNode* other) const override {
+  bool contentsMatchInner(const AstNode* other) const override {
     const EmptyStmt* rhs = other->toEmptyStmt();
     return rhs != nullptr;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override { }
 
 public:
   ~EmptyStmt() override = default;
@@ -65,13 +69,6 @@ public:
    Create an EmptyStmt at this location.
   */
   static owned<EmptyStmt> build(Builder* builder, Location loc);
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(EmptyStmt);
-
 }; // end EmptyStmt
 
 

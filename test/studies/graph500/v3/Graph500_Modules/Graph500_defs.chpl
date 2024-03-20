@@ -22,7 +22,7 @@ module Graph500_defs
 // The data structure used to store the edges is an array of records
 
   const edgelist_domain =
-    {1..N_RAWEDGES} dmapped Block ( {1..N_RAWEDGES} );
+    {1..N_RAWEDGES} dmapped blockDist ( {1..N_RAWEDGES} );
 
   record directed_vertex_pair {
     var start = 1: int;
@@ -42,7 +42,7 @@ module Graph500_defs
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
       else
         {1..N_VERTICES} ;
 
@@ -76,7 +76,7 @@ module Graph500_defs
          return false;
       }
 */
-      proc add_self_edge () {
+      proc ref add_self_edge () {
          self_edges.add(1);
       }
 
@@ -84,7 +84,7 @@ module Graph500_defs
          duplicates.add(1);
       }
 
-      proc add_Neighbor (new_vertex_ID: vertex_id) {
+      proc ref add_Neighbor (new_vertex_ID: vertex_id) {
          var ID: vertex_id = new_vertex_ID;
 /* different approach
 //       Check again to make sure another thread did not recently

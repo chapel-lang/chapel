@@ -40,7 +40,7 @@ proc fillRandom(stream: PCGRandomStream(?), arr)
     x = r;
 }
 
-proc fillRandom(stream: ?Stream, arr: ?ARR)
+proc fillRandom(stream: ?Stream, ref arr: ?ARR)
   where Stream implements PCGRandomStreamImpl &&
         ARR implements Array1d(Stream.eltType)
         // && Stream.eltType == ARR.eltType
@@ -86,7 +86,7 @@ if && reduce (A1 == A2) then writeln("fillRandom() check passed");
 
 /////////////////////////////////
 
-proc PCGRandomStream.startCursor(D: domain) {
+proc PCGRandomStream.startCursor(D: domain(?)) {
   type resultType = eltType;
   _lock();
   const start = PCGRandomStreamPrivate_count;

@@ -171,7 +171,7 @@ int parseCmdLineArgs(Params *cmdLineArgs, int argc, char* argv[]){
   cmdLineArgs->tile_len_y = 128; 
 
   // process incoming
-  char c;
+  int c;
   while ((c = getopt (argc, argv, "nc:s:p:T:x:y:a:w:t:hv")) != -1){
     switch( c ) {
       case 'n': // print time

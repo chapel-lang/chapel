@@ -15,8 +15,7 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
              numThreads: int = 4;             // number of threads to use
 
 // seed the random stream with something reproducible?
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 // global variables
 var X: [1..numNumbers] real, // array of random numbers
@@ -30,7 +29,9 @@ writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill array with random numbers (using standard Random module)
-fillRandom(X, seed, algorithm=RNG.NPB);
+if useRandomSeed
+  then fillRandom(X);
+  else fillRandom(X, 314159265);
 
 // output array of random numbers
 if printRandomNumbers then
@@ -51,25 +52,25 @@ writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 if printHistogram then
   outputHistogram(Y);
 
-proc computeHistogram(X: [] real, Y: [] int) {
-  var lock$: sync bool;
+proc computeHistogram(X: [] real, ref Y: [] int) {
+  var lock: sync bool;
   coforall t in 1..numThreads {
     var low = 1+(t-1)*numNumbers/numThreads;
     var high = if t == numThreads then numNumbers else t*numNumbers/numThreads;
     var myY: [1..numBuckets] int;
     for x in X(low..high) do
       myY(1 + (x / (1.0 / numBuckets)): int) += 1;
-    lock$.writeEF(true);
+    lock.writeEF(true);
     Y += myY;
-    lock$.readFE();
+    lock.readFE();
   }
 }
 
 // outputHistogram: output histogram array
 proc outputHistogram(Y: [] int) {
   var bucketMax = max reduce Y;
-  var rowSize = divceil(bucketMax,10);
-  var numRows = divceil(bucketMax, rowSize);
+  var rowSize = divCeil(bucketMax,10);
+  var numRows = divCeil(bucketMax, rowSize);
   for i in 1..numRows by -1 {
     write(" ");
     for j in 1..numBuckets do

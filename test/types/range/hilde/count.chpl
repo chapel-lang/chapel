@@ -23,6 +23,8 @@ writeln("p64I1 = ", p64I1, " : ", p64I1.type:string);
 writeln("n64I1 = ", n64I1, " : ", n64I1.type:string);
 writeln("u64I1 = ", u64I1, " : ", u64I1.type:string);
 
+const zeroDDmaxU2 = 0:maxU2.type..maxU2;
+
 writeln("A");
 writeln(1..10 # 0);
 writeln(1..10 # 1);
@@ -45,40 +47,40 @@ writeln(-50..50 by 10 # 11);
 writeln(-50..50 by 10 # -11);
 
 writeln("D");
-writeln(0..maxU2 # 0);
-writeln(0..maxU2 # minS2);
-writeln(0..maxU2 # maxS2);
-writeln(0..maxU2 # minS1);
-writeln(0..maxU2 # maxS1);
-writeln(0..maxU2 # maxU2);
-// writeln(0..maxU2 # maxU1);  // Run-time error :-)
+writeln(zeroDDmaxU2 # 0);
+writeln(zeroDDmaxU2 # minS2);
+writeln(zeroDDmaxU2 # maxS2);
+writeln(zeroDDmaxU2 # minS1);
+writeln(zeroDDmaxU2 # maxS1);
+writeln(zeroDDmaxU2 # maxU2);
+// writeln(zeroDDmaxU2 # maxU1);  // Run-time error :-)
 
 writeln("E");
-writeln(0..maxU2 by 2 # 0);
-writeln(0..maxU2 by 2 # minS2);
-writeln(0..maxU2 by 2 # maxS2);
-// writeln(0..maxU2 by 2 # minS1);
-// writeln(0..maxU2 by 2 # maxS1);
-// writeln(0..maxU2 by 2 # maxU2);
-// writeln(0..maxU2 by 2 # maxU1);
+writeln(zeroDDmaxU2 by 2 # 0);
+writeln(zeroDDmaxU2 by 2 # minS2);
+writeln(zeroDDmaxU2 by 2 # maxS2);
+// writeln(zeroDDmaxU2 by 2 # minS1);
+// writeln(zeroDDmaxU2 by 2 # maxS1);
+// writeln(zeroDDmaxU2 by 2 # maxU2);
+// writeln(zeroDDmaxU2 by 2 # maxU1);
 
 writeln("F");
-writeln(0..maxU2 by minS2 # 0);
-writeln(0..maxU2 by minS2 # -1);
-writeln(0..maxU2 by minS2 # 1);
-writeln(0..maxU2 by minS2 # -2);
-writeln(0..maxU2 by minS2 # 2);
-writeln(0..maxU2 by minS2 # -3);
-writeln(0..maxU2 by minS2 # 3);
+writeln(zeroDDmaxU2 by minS2 # 0);
+writeln(zeroDDmaxU2 by minS2 # -1);
+writeln(zeroDDmaxU2 by minS2 # 1);
+writeln(zeroDDmaxU2 by minS2 # -2);
+writeln(zeroDDmaxU2 by minS2 # 2);
+writeln(zeroDDmaxU2 by minS2 # -3);
+writeln(zeroDDmaxU2 by minS2 # 3);
 
 writeln("G");
-writeln(0..maxU2 by maxS2 # 0);
-writeln(0..maxU2 by maxS2 # -1);
-writeln(0..maxU2 by maxS2 # 1);
-writeln(0..maxU2 by maxS2 # -2);
-writeln(0..maxU2 by maxS2 # 2);
-// writeln(0..maxU2 by maxS2 # -3);
-// writeln(0..maxU2 by maxS2 # 3);
+writeln(zeroDDmaxU2 by maxS2 # 0);
+writeln(zeroDDmaxU2 by maxS2 # -1);
+writeln(zeroDDmaxU2 by maxS2 # 1);
+writeln(zeroDDmaxU2 by maxS2 # -2);
+writeln(zeroDDmaxU2 by maxS2 # 2);
+// writeln(zeroDDmaxU2 by maxS2 # -3);
+// writeln(zeroDDmaxU2 by maxS2 # 3);
 
 writeln("H");
 // NOTE: The following may not be safe because they rely on signed integer

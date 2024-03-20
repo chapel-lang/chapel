@@ -1,15 +1,15 @@
 use Time;
 
-var readyToGoOn$: sync bool;
+var readyToGoOn: sync bool;
 
 begin sync {
   sleep(1);
   writeln("A print me second");
-  readyToGoOn$.writeEF(true);
+  readyToGoOn.writeEF(true);
 }
 writeln("A print me first");
 
-readyToGoOn$.readFE();
+readyToGoOn.readFE();
 
 sync begin {
   sleep(1);

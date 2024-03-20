@@ -1,0 +1,3 @@
+Issue18717.chpl:10: In initializer:
+Issue18717.chpl:4: error: cannot make [domain(1,int(64),one)] int(64) into a borrowed class
+  Issue18717.chpl:18: called as Chunk.init(array: [domain(1,int(64),one)] int(64))

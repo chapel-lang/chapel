@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2022-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,11 +37,6 @@
 // The following is implemented in Chapel but we duplicate the code
 // in chpldoc; though ideally the common implementation would be shared
 // rather than duplicated.
-
-typedef __uint8_t uint8_t;
-typedef __uint16_t uint16_t;
-typedef __uint32_t uint32_t;
-typedef __uint64_t uint64_t;
 
 bool startsWith(const char* str, const char* prefix);
 void clean_exit(int status);

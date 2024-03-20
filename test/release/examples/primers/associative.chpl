@@ -8,6 +8,7 @@
   :ref:`domains.chpl <primers-domains>` primers before proceeding if you're not
   already familiar with Chapel's domains and arrays.
 
+
 */
 
 //
@@ -24,20 +25,20 @@
 // various index types.
 //
 {
-  var A : domain(int);     // a domain (set) whose indices are integers
-  var B : domain(string);  // a domain (set) whose indices are strings
-  var C : domain(real);    // a domain (set) whose indices are reals
+  const A : domain(int);     // a domain (set) whose indices are integers
+  const B : domain(string);  // a domain (set) whose indices are strings
+  const C : domain(real);    // a domain (set) whose indices are reals
 
   class X {
     var x : int;
   }
-  
+
   //
   // A domain whose indices are classes of type 'X'. The indices are hashed by
   // identity.
   //
-  var D : domain(borrowed X);
-  
+  const D : domain(borrowed X);
+
   record Y {
     var y : real;
   }
@@ -46,14 +47,21 @@
   // A domain whose indices are records of type 'Y'. The indices are hashed by
   // value.
   //
-  var E : domain(Y);
+  const E : domain(Y);
 }
 
 //
 // Below, ``Names`` is an associative domain of strings.  Associative domains
 // start out empty (no indices).
-//
-var Names: domain(string);
+/*
+  .. note::
+
+      Associative domain types written without parSafe=false cause a
+      transitory warning, which will be removed in a future release.
+      See :ref:`the Parallel Safety section for domains <Domain_and_Array_Parallel_Safety>`.
+
+*/
+var Names: domain(string, parSafe=false);
 writeln("An empty associative domain: ", Names);
 writeln();
 
@@ -68,7 +76,7 @@ We can also use the domain-literal syntax to create an associative domain.
 
 Below, ``Days`` is an associative domain of strings.
 */
-var Days = {"Sunday", "Wednesday", "Saturday"};
+const Days = {"Sunday", "Wednesday", "Saturday"};
 
 /*
   This declaration of ``Days`` relies on Chapel's type inference, and is
@@ -76,7 +84,7 @@ var Days = {"Sunday", "Wednesday", "Saturday"};
 
   .. code-block:: chapel
 
-       var Days : domain(string) = {"Sunday", "Wednesday", "Saturday"};
+       const Days : domain(string, parSafe=false) = {"Sunday", "Wednesday", "Saturday"};
 
 */
 
@@ -113,9 +121,11 @@ if Names.size != PreviousNamesSize then
 // ``ColorSet`` domain, those functions take string arguments. Because
 // ``PrimaryColors`` is a collection of strings Chapel promotes the routine,
 // calling it for each string represented in the array.
+// Since this promotion happens in a parallel manner, we need to set
+// ``parSafe=true`` to ensure that the domain is safe to use in this scenario.
 //
-var PrimaryColors : [1..3] string = ["Red", "Green", "Blue"];
-var ColorSet : domain(string);
+const PrimaryColors : [1..3] string = ["Red", "Green", "Blue"];
+var ColorSet : domain(string, parSafe=true);
 ColorSet += PrimaryColors;
 
 //
@@ -173,7 +183,7 @@ var DaysInMonth = ["June" => 30, "January" => 31, "September" => 30];
 writeln("Our 'Scores' associative array: ", Scores);
 
 //
-// Printing an array only prints its values. Let's write a function that 
+// Printing an array only prints its values. Let's write a function that
 // prints our associative array in a more human-readable format.
 //
 
@@ -229,7 +239,7 @@ writeln();
 
 //
 // Because Chapel arrays are updated when their domain is changed, we can
-// add indices after the array is declared. When we add an index to the 
+// add indices after the array is declared. When we add an index to the
 // defining domain, the array is extended to support an element for that index.
 // The new element is initialized to the default value of its type.
 //
@@ -333,16 +343,16 @@ Scores["Mark"] = 81;
 */
 
 
-var primeDom = {2, 3, 5, 7, 11, 13, 17};  // some prime numbers
-var fibDom   = {0, 1, 1, 2, 3, 5, 8, 13}; // part of the Fibonacci sequence
+const primeDom = {2, 3, 5, 7, 11, 13, 17};  // some prime numbers
+const fibDom   = {0, 1, 1, 2, 3, 5, 8, 13}; // part of the Fibonacci sequence
 
-var primeAndFib = primeDom & fibDom;
+const primeAndFib = primeDom & fibDom;
 writeln("Some primes in the Fibonacci sequence: ", primeAndFib);
 writeln("Some primes not in the Fibonacci sequence: ", primeDom - primeAndFib);
 writeln();
 
-var Women = {"Alice", "Dana", "Ellen"};
-var Men = Names - Women;
+const Women = {"Alice", "Dana", "Ellen"};
+const Men = Names - Women;
 
 writeln("Women = ", Women);
 writeln("Men = ", Men);

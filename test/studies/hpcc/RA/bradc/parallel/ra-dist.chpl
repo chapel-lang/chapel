@@ -27,8 +27,8 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const TableDist = new Block(rank=1, idxType=indexType, boundingBox={0..m-1}, targetLocales=Locales),
-       UpdateDist = new Block(rank=1, idxType=indexType, boundingBox={0..N_U-1}, targetLocales=Locales);
+  const TableDist = new blockDist(rank=1, idxType=indexType, boundingBox={0..m-1}, targetLocales=Locales),
+       UpdateDist = new blockDist(rank=1, idxType=indexType, boundingBox={0..N_U-1}, targetLocales=Locales);
 
   const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1};
   var T: [TableSpace] elemType;
@@ -37,9 +37,9 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();
 
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace with (ref T)] T(i) = i;
 
-  forall (i,r) in zip(UpdateSpace, RAStream()) do
+  forall (i,r) in zip(UpdateSpace, RAStream()) with (ref T) do
     T(r & indexMask) ^= r;
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;
@@ -57,11 +57,11 @@ proc printConfiguration() {
 }
 
 
-proc verifyResults(T: [?TDom], UpdateSpace) {
+proc verifyResults(ref T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   var lock: sync bool = true;
-  forall (i,r) in zip(UpdateSpace, RAStream()) {
+  forall (i,r) in zip(UpdateSpace, RAStream()) with (ref T) {
     lock.readFE();
     T(r & indexMask) ^= r;
     lock.writeEF(true);

@@ -17,7 +17,16 @@ config const window_size : real(32);
 config const dx : real(32) = 5.0;
 config const printReduce = true;
 
-proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain : ?, CenterMaskDomain : ?, RightMaskDomain : ?, dissimilarity : [] real(64), Output: [] real(64), d_size : int, Mask_Size : int,  t: stopwatch) : [] {
+proc convolve_and_calculate(Image: [] int(8),
+                            centerPoints : ?,
+                            LeftMaskDomain : ?,
+                            CenterMaskDomain : ?,
+                            RightMaskDomain : ?,
+                            dissimilarity : [] real(64),
+                            ref Output: [] real(64),
+                            d_size : int,
+                            Mask_Size : int,
+                            t: stopwatch) : [] {
 
   // This 'eps' makes sure that we differentiate between land points (zero) and ocean points (nonzero), even
   // if the beta diversity at the ocean point is zero.
@@ -26,7 +35,7 @@ proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain :
   var first_point = centerPoints.first[1];
   var last_point = centerPoints.last[1];
 
-  forall center in centerPoints[..,first_point] {
+  forall center in centerPoints[..,first_point] with (ref Output) {
 
       // Calculate masks and beta diversity for leftmost point in subdomain
       var B_left: [0..(d_size-1)] real(64) = 0;
@@ -121,7 +130,7 @@ proc main(args: [] string) {
 
   // Open the text file that contains the number of rows and columns for the image.
   var infile = open(in_name + "_" + map_type + ".txt", ioMode.r);
-  var reader = infile.reader();
+  var reader = infile.reader(locking=false);
   // Read the number of rows and columns in the array in from the file.
   var rows = reader.read(int);
   var cols = reader.read(int);
@@ -132,7 +141,7 @@ proc main(args: [] string) {
   // Read in array
   //var f = open(in_array, ioMode.r);
   var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
-  var r = f.reader(kind=ionative);
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
 
   // Read in dissimilarity coefficients
   var dissimilarity_file = map_type + ".txt";
@@ -148,7 +157,7 @@ proc main(args: [] string) {
   const offset = nx; // maybe needs to be +1 to account for truncation?
   const Inner = ImageSpace.expand(-offset);
   const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-  const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
+  const D = blockDist.createDomain(Inner, targetLocales=myTargetLocales);
   var OutputArray : [D] real(64);
 
   // Create NetCDF
@@ -165,7 +174,7 @@ proc main(args: [] string) {
 
 //////////////////////////////////////////////////////////////////////////
 
-  coforall loc in Locales do on loc {
+  coforall loc in Locales with (ref OutputArray) do on loc {
 
     const loc_d_size = d_size;
     const loc_Mask_Size = Mask_Size;
@@ -177,7 +186,7 @@ proc main(args: [] string) {
     // Read in array
     var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
     var first_point = locD_plus.first[0]*locD_plus.shape[1] + locD_plus.first[1];
-    var r = f.reader(kind=ionative, region=first_point..);
+    var r = f.reader(deserializer=new binaryDeserializer(), region=first_point.., locking=false);
 
     for i in locD_plus.first[0]..locD_plus.last[0] {
       for j in locD_plus.first[1]..locD_plus.last[1] {
@@ -204,4 +213,3 @@ proc main(args: [] string) {
   if printReduce then
     writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 }
-

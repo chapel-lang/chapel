@@ -4,7 +4,7 @@ const D = {1..n, 1..n, 1..n};
 
 var A, B: [D] real;
 
-[(i,j,k) in D] A(i,j,k) = i*10.0 + j + k/10.0;
+[(i,j,k) in D with (ref A)] A(i,j,k) = i*10.0 + j + k/10.0;
 
 writeln("A is:\n", A, "\n");
 

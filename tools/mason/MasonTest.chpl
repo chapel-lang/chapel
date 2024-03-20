@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -591,11 +591,11 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   // (albeit wasteful) thing we can do here is just cast the lists to
   // array here.
   //
-  if testNames.size != 0 then testNamesStr = testNames.toArray(): string;
-  if failedTestNames.size != 0 then failedTestNamesStr = failedTestNames.toArray(): string;
-  if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames.toArray(): string;
-  if testsPassed.size != 0 then passedTestStr = testsPassed.toArray(): string;
-  if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames.toArray(): string;
+  if testNames.size != 0 then testNamesStr =                try! "%?".format(testNames.toArray());
+  if failedTestNames.size != 0 then failedTestNamesStr =    try! "%?".format(failedTestNames.toArray());
+  if erroredTestNames.size != 0 then erroredTestNamesStr =  try! "%?".format(erroredTestNames.toArray());
+  if testsPassed.size != 0 then passedTestStr =             try! "%?".format(testsPassed.toArray());
+  if skippedTestNames.size != 0 then skippedTestNamesStr =  try! "%?".format(skippedTestNames.toArray());
   var exec = spawn([executable, "-nl", reqNumLocales: string, "--testNames",
             testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames",
             erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames",
@@ -649,9 +649,10 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   }
   exec.wait();//wait till the subprocess is complete
   exitCode = exec.exitCode;
-  if haltOccured then
+  if haltOccured {
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+  }
   if testNames.size != 0 {
     var maxCount = -1;
     for key in localesCountMap.keys() {

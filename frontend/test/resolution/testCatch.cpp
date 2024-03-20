@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -842,6 +842,21 @@ static void test24(Parser* parser) {
   assert(guard.realizeErrors() == 2);
 }
 
+static void test25() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto t = resolveTypeOfX(ctx,
+                R""""(
+                  proc inner() throws { throw new Error(); }
+                  proc outer() throws { try inner(); return 0; }
+                  var x = try! outer();
+                )"""");
+  assert(t && t->isIntType());
+  assert(!guard.realizeErrors());
+}
+
 
 // TODO: error handling in defer blocks must be complete
 
@@ -877,6 +892,8 @@ int main() {
   test22(p);
   test23(p);
   test24(p);
+
+  test25();
 
   return 0;
 }

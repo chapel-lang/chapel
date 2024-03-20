@@ -11,18 +11,18 @@ Overview
 
 Historically, Chapel's IO module supported formatting options for reading and
 writing values in non-standard formats via the ``readf`` and ``writef`` methods
-(e.g., ``%jt`` for JSON). Chapel 1.31 introduces a new API that allows for
+(e.g., ``%jt`` for JSON). Chapel 1.32 introduced a new API that allows for
 user-defined formatting with ``fileReader`` and ``fileWriter``, rather than
 relying solely on built-in support in the standard library. This new API allows
 for the configuration of ``fileReader`` and ``fileWriter`` with user-defined
 types that can define the format used by methods like ``read`` and ``write``.
 
 For example, if a user wishes to write a record in JSON format they can now
-use the ``Json`` package module in Chapel 1.31:
+use the ``JSON`` standard module in Chapel 1.32:
 
 .. code-block:: chapel
 
-   use IO, Json;
+   use IO, JSON;
 
    record Person {
      var name : string;
@@ -32,35 +32,25 @@ use the ``Json`` package module in Chapel 1.31:
    var f = open("output.txt", ioMode.cw);
 
    // configure 'w' to always write in JSON format
-   var w = f.writer(serializer=new JsonSerializer());
+   var w = f.writer(serializer=new jsonSerializer());
 
    // writes:
    // {"name":"Sam", "age":20}
-   var p = new Person("Sam", 20); 
+   var p = new Person("Sam", 20);
    w.write(p);
 
 Serializers and Deserializers interact with user-defined types like ``Person``
-by invoking a particular set of methods which will be discussed in more detail
+by invoking particular methods whose API will be discussed in more detail
 later in this technote. By default, the compiler will generate methods on
 user-defined types capable of interacting with Serializers and Deserializers
 such that most types will simply work out of the box. For more complicated
 cases, users can implement their own methods on their types to customize
 serialization and deserialization.
 
-In the interest of supporting gradual updating of code, in Chapel 1.31 the
-standard IO library will *not* use Serializers or Deserializers by default.
-Users can opt-in to particular formats by creating ``fileReader`` and
-``fileWriter`` instances with new Serializer and Deserializer types. Users
-wishing to experiment with exclusively using this new feature can set the
-boolean config param ``useIOSerializers``:
-
-.. code-block:: sh
-
-   chpl foo.chpl -suseIOSerializers
-
-This config param configures ``fileReader`` and ``fileWriter`` to use the
-``DefaultDeserializer`` and ``DefaultSerializer`` types by default, which
-implement the exact same formatting as past releases.
+In Chapel 1.32, Serializers and Deserializers are enabled by default. Users
+wishing to opt-out of this capability can recompile their programs with
+the config param ``useIOSerializers`` set to ``false``. This config param
+will be available through the Chapel 2.0 release at minimum.
 
 API Changes to Standard IO
 --------------------------
@@ -87,11 +77,11 @@ Serializer or Deserializer. The following methods now contain new optional
                   param kind=iokind.dynamic, param locking=true,
                   hints = ioHintSet.empty,
                   in serializer: ?st = new DefaultSerializer())
-                
+
   proc file.writer(param kind=iokind.dynamic, param locking=true,
                    region: range(?) = 0.., hints = ioHintSet.empty,
                    in serializer: ?st = new DefaultSerializer())
-                   
+
   proc openReader(path:string,
                   param kind=iokind.dynamic, param locking=true,
                   region: range(?) = 0.., hints=ioHintSet.empty,
@@ -112,11 +102,11 @@ particular serialization formats:
 .. code-block:: chapel
 
    proc readData(data: [],
-                 reader: fileReader(deserializerType=JsonDeserializer, ?)) {
+                 reader: fileReader(deserializerType=jsonDeserializer, ?)) {
    }
 
    proc readData(data: [],
-                 reader: fileReader(deserializerType=BinaryDeserializer, ?)) {
+                 reader: fileReader(deserializerType=binaryDeserializer, ?)) {
    }
 
 Accessing Serializers and Deserializers
@@ -151,10 +141,10 @@ by ``in`` intent, or a ``type``.
 
    proc fileWriter.withSerializer(in serializer: ?st) :
      fileWriter(this.kind, this.locking, st)
-   
+
    proc fileReader.withDeserializer(type deserializerType) :
      fileReader(this.kind, this.locking, deserializerType)
-   
+
    proc fileReader.withDeserializer(in deserializer: ?dt) :
      fileReader(this.kind, this.locking, dt)
 
@@ -170,7 +160,7 @@ a simple process:
 
      for d in data {
        log.write("[INFO] ");
-       log.withSerializer(new JsonSerializer()).writeln(d);
+       log.withSerializer(new jsonSerializer()).writeln(d);
 
        this.sendInfo(d);
      }
@@ -186,7 +176,7 @@ initialization without any arguments.
 .. code-block:: chapel
 
    // Replacing the line from the previous example
-   log.withSerializer(JsonSerializer).writeln(d);
+   log.withSerializer(jsonSerializer).writeln(d);
 
 Methods That Invoke Serializers and Deserializers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -202,14 +192,28 @@ Serializers or Deserializers are:
 Reading Generic Types and Borrowed Classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In Chapel 1.31 generic types and borrowed classes are no longer valid arguments
-to the versions of ``read`` and ``readln`` that accept a ``type`` argument.
-Note that fully-instantiated generic types are still allowed.
+As of Chapel 1.31 generic types and borrowed classes are no longer valid
+arguments to the versions of ``read`` and ``readln`` that accept a ``type``
+argument. Note that fully-instantiated generic types are still allowed.
+
+.. _io-serializer-API:
 
 Serializer API
 --------------
 
-A Serializer must implement the ``serializeValue`` method:
+The API for a Serializer can be split into a few parts:
+
+1. The interface invoked by a ``fileWriter`` to serialize a value
+2. The user-defined ``serialize`` method describing how values of the type should be serialized
+3. The serializer interface used to implement ``serialize`` methods
+
+The fileWriter-Facing Serializer API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A Serializer must implement the ``serializeValue`` method, which will be used
+to serialize values passed to ``fileWriter.write`` and ``fileWriter.writeln``.
+
+The signature of the ``serializeValue`` method is:
 
 .. code-block:: chapel
 
@@ -224,6 +228,19 @@ non-locking.
 By convention Serializers will invoke a ``serialize`` method on records and
 classes, but notably may choose not to do so if the class instance is ``nil``.
 
+The implementation of ``serializeValue`` is expected to handle primitive types
+directly. Those primitive types are:
+- ``numeric`` types (e.g., integers, reals, complex numbers)
+- ``bool`` types
+- ``string`` and ``bytes`` types
+- ``nil`` and ``none`` values
+- ``enum`` types
+
+The argument ``val`` is defined to be a "primitive" type or a type that
+implements either the ``writeSerializable`` or ``serializable`` interfaces,
+both of which define a ``serialize`` method that a Serializer may invoke to
+allow for user-defined serialization of a type.
+
 The 'serialize' Method
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -232,30 +249,296 @@ named arguments "writer" and "serializer":
 
 .. code-block:: chapel
 
-   proc T.serialize(writer: fileWriter(?),
-                    ref serializer: writer.serializerType) throws
+   proc T.serialize(writer: fileWriter(?), ref serializer: ?st) throws
+
+Types implementing this method must also indicate that they satisfy the
+``writeSerializable`` interface in the type declaration. For example:
+
+.. code-block:: chapel
+
+   record R : writeSerializable {
+     // ...
+   }
+
+Please refer to the :ref:`interfaces technote<readme-interfaces>` for more
+information on interfaces and how they can be used.
+
+For classes, the ``serialize`` method signature must include ``override`` to
+account for the ``serialize`` method on the ``RootClass`` type.
 
 The ``writer`` and ``serializer`` are passed separately to help distinguish the
 method signature from other possible implementations named "serialize", as well
-as to make it slightly more convenient to call methods on the Serializer. A
-future release will standardize other methods on a Serializer that provide ways
-to serialize into common types, like lists or maps.
+as to make it slightly more convenient to call methods on the Serializer.
 
-It is an error for ``writer.serializer`` to refer to a different Serializer
-instance than the ``serializer`` argument. The Serializer is responsible for
-either passing itself to the 'serializer' argument, or if applicable can create
-a new instance of itself to pass. The appropriate choice here depends on the
-degree to which the Serializer relies on internal state, and how that internal
-state must be managed. If a copy must be made, then the ``withSerializer``
-method may be used to provide an alias.
+The ``serializer`` argument does not necessarily need to be of the same type as
+``writer.serializerType``. Instead, the argument simply needs to implement the
+Serializer API and must serialize in a compatible format with
+``writer.serializerType``. This constraint exists to allow for child classes to
+pass helper objects created by Serializers to parent class ``serialize``
+methods. See the :ref:`serializer inheritance<serializerInheritance>` section
+for more information.
+
+.. _io-serializer-user-API:
+
+The User-Facing Serializer API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user-facing part of the Serializer API is intended to allow users to
+serialize their types in a format-agnostic way. This is done by invoking a
+variety of API methods, instead of printing specific characters for a specific
+format.
+
+The user-facing part of the Serializer API is much larger, and is designed to
+support serializing various "kinds" of types. In particular, the API currently
+supports serializing Classes, Records, Tuples, Arrays, Lists, and Maps. A given
+implementation of a Serializer determines how to represent each kind of type
+in its format. For example, JSON lacks a native representation of tuples, and
+so the ``JSON`` Serializer represents both "list" and "tuple" type-kinds as
+JSON lists (e.g. ``[1, 2, 3]``).
+
+To begin serializing a kind of type, users will invoke one of six available
+"start" methods on a Serializer, each of which return a "helper" object that
+implements an API specific to that kind of type. Note that any of the "start"
+methods may return the same "helper" type as another method, in the case that
+it is useful for the helper to share logic among certain type kinds. For
+example, in the Chapel 1.32 release the ``defaultSerializer`` type returned
+the same helper object type for both Class and Record type kinds.
 
 .. note::
 
-   The set of standard builtin types (e.g. ranges and domains) on which this
-   method may be invoked is currently unstable.
+   In each of these methods, unless otherwise stated, it is entirely up to the
+   author of the Serializer to define their behavior. For example, ``name``
+   arguments for classes and records may not apply to a particular format, and
+   might be ignored.
+
+.. note::
+
+  In each of these groups of methods, it should be noted that the name of each
+  helper object is purely illustrative, and does not indicate the name of a
+  stable interface to be implemented in the future.
+
+The Record Helper
+~~~~~~~~~~~~~~~~~
+
+Users may begin serializing a Record type kind by invoking the ``startRecord``
+method on a Serializer. This method takes a ``name`` argument that represents
+the name of the record type, and a ``size`` argument that represents the
+number of fields to be serialized.
+
+.. code-block:: chapel
+
+  proc Serializer.startRecord(writer: fileWriter(false, this.type), name: string, size: int) : RecordHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Serialize a field named 'name'
+  proc RecordHelper.writeField(name: string, const field: ?) throws;
+
+  // End the record according to the serialization format.
+  proc RecordHelper.endRecord() throws;
+
+The Tuple Helper
+~~~~~~~~~~~~~~~~~
+
+Users may begin serializing a Tuple type kind by invoking the ``startTuple``
+method on a Serializer. This method takes a ``size`` argument that represents
+the number of elements to be serialized.
+
+.. code-block:: chapel
+
+  proc Serializer.startTuple(writer: fileWriter(false, this.type), size: int) : TupleHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Serialize an element of the tuple.
+  proc TupleHelper.writeElement(const element: ?) throws;
+
+  // End the tuple according to the serialization format.
+  proc TupleHelper.endTuple() throws;
+
+The Array Helper
+~~~~~~~~~~~~~~~~
+
+Users may begin serializing an Array type kind by invoking the ``startArray``
+method on a Serializer. This method takes a ``size`` argument that represents
+the number of array elements to be serialized.
+
+.. code-block:: chapel
+
+  proc Serializer.startArray(writer: fileWriter(false, this.type), size: int) : ArrayHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Serialize the start of a new dimension of size ``size``
+  proc ArrayHelper.startDim(size: int) throws;
+
+  // Serialize the end of the current dimension
+  proc ArrayHelper.endDim() throws;
+
+  // Serializer an element of the array.
+  proc ArrayHelper.writeElement(const element: ?) throws;
+
+  // End the array according to the serialization format.
+  proc ArrayHelper.endArray() throws;
+
+ArrayHelpers may also optionally implement a ``writeBulkElements`` method for
+performance:
+
+.. code-block:: chapel
+
+  // If the format permits, write 'numElements' of 'data' in bulk.
+  proc ArrayHelper.writeBulkElements(data: c_ptr(?eltType), numElements: int) throws;
+
+.. note::
+
+   Currently users can only test for ``writeBulkElements`` support by using
+   :mod:`Reflection`. Improvements to interfaces *may* provide a more elegant
+   approach to the 'optional' aspect of this method in the future.
+
+The List Helper
+~~~~~~~~~~~~~~~
+
+Users may begin serializing a List type kind by invoking the ``startList``
+method on a Serializer. This method takes a ``size`` argument that represents
+the number of list elements to be serialized.
+
+.. code-block:: chapel
+
+  proc Serializer.startList(writer: fileWriter(false, this.type), size: int) : ListHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Serialize the list element.
+  proc ListHelper.writeElement(const element: ?) throws;
+
+  // End the list according to the serialization format.
+  proc ListHelper.endList() throws;
+
+The Map Helper
+~~~~~~~~~~~~~~
+
+Users may begin serializing a Map type kind by invoking the ``startMap``
+method on a Serializer. This method takes a ``size`` argument that represents
+the number of map entries to be serialized.
+
+.. code-block:: chapel
+
+  proc Serializer.startMap(writer: fileWriter(false, this.type), size: int) : MapHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Serialize a map key.
+  proc MapHelper.writeKey(const key: ?) throws;
+
+  // Serialize a map value.
+  proc MapHelper.writeValue(const val: ?) throws;
+
+  // End the map according to the serialization format.
+  proc MapHelper.endMap() throws;
+
+.. _serializerInheritance:
+
+The Class Helper, Serializers, and Inheritance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Users may begin serializing a Class type kind by invoking the ``startClass``
+method on a Serializer. The ``writer`` argument is passed in and will be used
+by the returned ClassHelper to write serialized output. The ``name`` argument
+is expected to be the name of the class type being serialized. The ``size``
+argument is the number of fields being serialized in the current class,
+excluding any parent fields. Parent fields are not included to preserve
+encapsulation of class implementations and to avoid the inextricable coupling
+of parent and child classes.
+
+.. code-block:: chapel
+
+  proc Serializer.startClass(writer: fileWriter(false, this.type), name: string, size: int) : ClassHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Serialize a field named 'name'
+  proc ClassHelper.writeField(name: string, const field: ?) throws;
+
+  // End the class according to the serialization format
+  proc ClassHelper.endClass() throws;
+
+ClassHelpers are also required to implement *the rest* of the Serializer API
+since they may be passed to parent ``serialize`` methods in the
+compiler-generated default implementation of ``serialize`` methods on classes.
+
+This may be achieved without too much extra effort by using
+:ref:`forwarding<readme-forwarding>` on the stored ``fileWriter``'s
+``.serializer`` accessor. By allowing ClassHelpers to be passed to parent
+``serialize`` methods, formats may capture an inheritance hierarchy if such is
+relevant to their format.
+
+The following code snippet is an example of writing ``serialize`` methods for
+a parent and child class:
+
+.. code-block:: chapel
+
+  class Parent : writeSerializable {
+    var x : int;
+  }
+
+  class Child : Parent, writeSerializable {
+    var y : int;
+  }
+
+  // When serializing an instance of 'Parent', 'serializer' could be the same
+  // type as 'writer.serializerType'.
+  //
+  // When serializing an instance of 'Child', 'serializer' could be a
+  // ClassHelper type, and so the ClassHelper must satisfy the Serializer API.
+  override proc Parent.serialize(writer: fileWriter(?), ref serializer) {
+    var ser = serializer.startClass(writer, "Parent", 1);
+    ser.writeField("x", x);
+    ser.endClass();
+  }
+
+  override proc Child.serialize(writer: fileWriter(?), ref serializer) {
+    var ser = serializer.startClass(writer, "Child", 1);
+
+    // pass the ClassHelper 'ser' to the parent 'serialize' method
+    super.serialize(writer, ser);
+
+    ser.writeField("y", y);
+    ser.endClass();
+  }
+
+User Facing API Notes
+~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+   This document does not define what errors these methods may or may not
+   throw.
+
+.. _io-deserializer-API:
 
 Deserializer API
 ----------------
+
+The API for a Deserializer can be split into a few parts:
+
+1. The interface invoked by a ``fileReader`` to deserialize a value
+2. The user-defined ``deserialize`` method and initializer describing how values of the type should be deserialized
+3. The deserializer interface used to implement ``deserialize`` methods and deserializing initializers
+
+The fileReader-Facing Serializer API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A Deserializer must implement the following methods, corresponding to the
 versions of ``fileReader.read`` that accept either a type or a value:
@@ -283,9 +566,18 @@ method on records and classes. If a suitable ``deserialize`` method is not
 available, this method may attempt to invoke a suitable initializer and assign
 the result into the value.
 
-In both methods, the given ``fileReader`` is guaranteed to have a
-``deserializerType`` identical to the type whose method was called. The
-``fileReader`` is also defined to be non-locking.
+For classes, the ``deserializeValue`` method has the freedom to potentially
+free the given class and/or reassign it, depending on the needs of the
+Deserializer.
+
+The arguments ``val`` or ``readType`` are defined to be a "primitive" type or a
+type that implements at least one of the following interfaces:
+
+- ``readDeserializable``
+- ``initDeserializable``
+- ``serializable`` (combines ``writeSerializable`` with the two above)
+
+In both methods, the given ``fileReader`` is also defined to be non-locking.
 
 Note that while both methods may invoke initializers or methods that pass
 control back to the user, Deserializers may ignore those options in the case
@@ -300,19 +592,25 @@ including the argument names "reader" and "deserializer":
 .. code-block:: chapel
 
    proc T.init(reader: fileReader(?),
-               ref deserializer: reader.deserializerType) throws
+               ref deserializer: ?dt) throws
+
+Types implementing this method must also indicate that they satisfy the
+``initDeserializable`` interface. Please refer to the
+:ref:`interfaces technote<readme-interfaces>` for more information on
+interfaces and how they can be used.
 
 By default, the compiler will generate a suitable initializer with this
 signature provided that no other user-defined initializers exist.
 
 The ``reader`` and ``deserializer`` are passed separately to help distinguish
 the method signature from other possible initializers, as well as to make it
-slightly more convenient to call methods on the Deserializer. A future release
-will standardize other methods on a Deserializer that provide ways to
-deserialize into common types, like lists or maps.
+slightly more convenient to call methods on the Deserializer.
 
-As with the ``serialize`` method, it is an error for ``reader.deserializer`` to
-refer to a Deserializer other than the ``deserializer`` argument.
+The ``deserializer`` argument must implement the Deserializer API and must
+deserialize in a compatible format with ``reader.deserializerType``. This
+constraint exists to allow for child classes to pass helper objects created
+by Deserializers to parent initializers. See the previous section on
+:ref:`serializer inheritance<serializerInheritance>` for more information.
 
 Generic types have a slightly more complex initializer signature, in that there
 must be a ``type`` or ``param`` argument for each ``type`` or ``param`` field.
@@ -320,18 +618,18 @@ For example:
 
 .. code-block:: chapel
 
-   record G {
+   record G : initDeserializable {
      type A;
      type B;
      var x : A;
      var y : B;
    }
-   
+
    proc G.init(type A, type B,
                reader: fileReader, ref deserializer) throws {
      /* ... */
    }
-   
+
    // With a reader 'r'
    var x = r.read(G(int, real));
    // becomes something like...
@@ -356,37 +654,236 @@ its arguments to have the names "reader" and "deserializer":
 .. code-block:: chapel
 
    proc ref T.deserialize(reader: fileReader(?),
-                          ref deserializer: reader.deserializerType) throws
+                          ref deserializer: ?dt) throws
+
+For classes, this signature is slightly different in that it requires the
+``override`` keyword and a blank this-intent:
+
+.. code-block:: chapel
+
+   override proc T.deserialize(reader: fileReader(?),
+                               ref deserializer: ?dt) throws
 
 By default, the compiler will generate a suitable ``deserialize`` method with
 this signature provided.
 
-As with the ``serialize`` method, it is an error for ``reader.deserializer`` to
-refer to a Deserializer other than the ``deserializer`` argument.
+Types implementing this method must also indicate that they satisfy the
+``readDeserializable`` interface. Please refer to the
+:ref:`interfaces technote<readme-interfaces>` for more information on
+interfaces and how they can be used.
+
+.. _io-deserializer-user-API:
+
+The User-Facing Deserializer API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Like the Serializer API, the user-facing part of the Deserializer API is
+relatively large and supports the same set of type kinds as a Serializer. Also
+like the Serializer API, the Deserializer API works through the creation and
+use of helper objects returned by various "start" methods.
+
+The Deserializer API is also slightly larger due to the need for "type" and
+"by reference" versions of methods like ``readElement``, to match the desired
+behavior of the originating ``fileReader.read`` call. The List and Map type
+kinds also support a ``hasMore`` method to help users know when they can stop
+reading.
 
 .. note::
 
-   The set of standard builtin types (e.g. ranges and domains) on which this
-   method may be invoked is currently unstable.
+   In each of these methods, unless otherwise stated, it is entirely up to the
+   author of the Deserializer to define their behavior. For example, ``name``
+   arguments for classes and records may not apply to a particular format, and
+   might be ignored.
 
-Compiler-Generated Methods
---------------------------
+.. note::
 
-Generation of the deserializing initializer, or the ``serialize`` and
-``deserialize`` methods can be disabled with the flag
-``--no-io-gen-serialization``.
+  In each of these groups of methods, it should be noted that the name of each
+  helper object is purely illustrative, and does not indicate the name of a
+  stable interface to be implemented in the future.
 
-If the compiler sees a user-defined implementation of the ``serialize`` method,
-the ``deserialize`` method, or the deserializing initializer, then the compiler
-may choose to not automatically generate any of the other unimplemented
-methods. This is out of concern that the user has intentionally deviated from
-the compiler's default implementation of serialization and deserialization.
+The Record Helper
+~~~~~~~~~~~~~~~~~
 
-Until it is determined that ``readThis`` and ``writeThis`` will be deprecated,
-the compiler-generated versions of ``serialize`` and ``deserialize`` methods
-will call any user-defined ``readThis`` or ``writeThis`` methods available on
-the same type. If this behavior is undesirable, users may implement their own
-``serialize`` and ``deserialize`` methods, or they may use the following
-compiler flags:
-- ``--no-io-serialize-writeThis``
-- ``--no-io-deserialize-readThis``
+Users may begin deserializing a Record type kind by invoking the
+``startRecord`` method on a Deserializer. This method takes a ``name`` argument
+that represents the name of the record type.
+
+.. code-block:: chapel
+
+  proc Deserializer.startRecord(reader: fileReader(false, this.type), name: string) : RecordHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Deserialize a field named 'name', returns a value of type 'fieldType'
+  proc RecordHelper.readField(name: string, type fieldType) : fieldType throws;
+
+  // Deserialize a field named 'name' in-place.
+  proc RecordHelper.readField(name: string, ref field :?) throws;
+
+  // End the record according to the deserialization format.
+  proc RecordHelper.endRecord() throws;
+
+The Tuple Helper
+~~~~~~~~~~~~~~~~
+
+Users may begin deserializing a Tuple type kind by invoking the ``startTuple``
+method on a Deserializer.
+
+.. code-block:: chapel
+
+  proc Deserializer.startTuple(reader: fileReader(false, this.type)) : TupleHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Deserialize an element of the tuple, return a value of type 'eltType'
+  proc TupleHelper.readElement(type eltType) : eltType throws;
+
+  // Deserialize 'element' as a tuple element in-place.
+  proc TupleHelper.readElement(ref element: ?) throws;
+
+  // End the tuple according to the deserialization format.
+  proc TupleHelper.endTuple() throws;
+
+The Array Helper
+~~~~~~~~~~~~~~~~
+
+Users may begin deserializing an Array type kind by invoking the ``startArray``
+method on a Deserializer.
+
+.. code-block:: chapel
+
+  proc Deserializer.startArray(reader: fileReader(false, this.type)) : ArrayHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Deserialize an element of the array, return a value of type 'eltType'
+  proc ArrayHelper.readElement(type eltType) : eltType throws;
+
+  // Deserialize 'element' as an array element in-place.
+  proc ArrayHelper.readElement(ref element: ?) throws;
+
+  // Start deserializing a new dimension
+  proc ArrayHelper.startDim() throws;
+
+  // End the array dimension according to the deserialization format.
+  proc ArrayHelper.endDim() throws;
+
+  // End the array according to the deserialization format.
+  proc ArrayHelper.endArray() throws;
+
+ArrayHelpers may also optionally implement a ``readBulkElements`` method for
+performance:
+
+.. code-block:: chapel
+
+  // If the format permits, write 'numElements' of 'data' in bulk.
+  proc ArrayHelper.readBulkElements(data: c_ptr(?eltType), n: int) throws;
+
+.. note::
+
+   Currently users can only test for ``readBulkElements`` support by using
+   :mod:`Reflection`. Improvements to interfaces *may* provide a more elegant
+   approach to the 'optional' aspect of this method in the future.
+
+The List Helper
+~~~~~~~~~~~~~~~
+
+Users may begin deserializing a List type kind by invoking the ``startList``
+method on a Deserializer.
+
+.. code-block:: chapel
+
+  proc Deserializer.startList(reader: fileReader(false, this.type)) : ListHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Deserialize an element of the list, return a value of type 'eltType'
+  proc ListHelper.readElement(type eltType) : eltType throws;
+
+  // Deserialize 'element' as a list element in-place.
+  proc ListHelper.readElement(ref element: ?) throws;
+
+  // Returns 'true' if there are more elements to deserialize
+  proc ListHelper.hasMore() : bool throws;
+
+  // End the list according to the deserialization format.
+  proc ListHelper.endList() throws;
+
+The Map Helper
+~~~~~~~~~~~~~~
+
+Users may begin deserializing a Map type kind by invoking the ``startMap``
+method on a Deserializer.
+
+.. code-block:: chapel
+
+  proc Deserializer.startMap(reader: fileReader(false, this.type)) : MapHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Deserialize a key of the map, return a value of type 'keyType'
+  proc MapHelper.readKey(type keyType) : keyType throws;
+
+  // Deserialize 'key' as a map key in-place.
+  proc MapHelper.readKey(ref key: ?) throws;
+
+  // Deserialize a value of the map, return a value of type 'valType'
+  proc MapHelper.readValue(type valType) : valType throws;
+
+  // Deserialize 'value' as a map value in-place.
+  proc MapHelper.readValue(ref value: ?) throws;
+
+  // Returns 'true' if there are more map entries to deserialize
+  proc MapHelper.hasMore() : bool throws;
+
+  // End the map according to the deserialization format.
+  proc MapHelper.endMap() throws;
+
+The Class Helper
+~~~~~~~~~~~~~~~~
+
+Users may begin deserializing a Class type kind by invoking the ``startClass``
+method on a Deserializer. This method takes a ``name`` argument that represents
+the name of the class type.
+
+.. code-block:: chapel
+
+  proc Deserializer.startClass(reader: fileReader(false, this.type), name: string) : ClassHelper throws;
+
+The returned object must implement the following API:
+
+.. code-block:: chapel
+
+  // Deserialize a field named 'name', returns a value of type 'fieldType'
+  proc ClassHelper.readField(name: string, type fieldType) : fieldType throws;
+
+  // Deserialize a field named 'name' in-place.
+  proc ClassHelper.readField(name: string, ref field :?) throws;
+
+  // End the class according to the deserialization format.
+  proc ClassHelper.endClass() throws;
+
+Like in the Serializer API, the ClassHelper must implement *the rest* of the
+Deserializer API to allow for the ClassHelper to be passed to parent
+initializers and parent ``deserialize`` methods.
+
+The 'serializable' Interface
+----------------------------
+
+The ``serializable`` interface mentioned on this document is intended to be
+an interface that requires implementation of all three kinds of user-defined
+methods: ``serialize``, ``deserialize``, and a deserializing initializer.
+
+A formal definition of this interface is pending, following the standardization
+of interfaces in the language.
+

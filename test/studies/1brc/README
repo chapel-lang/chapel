@@ -1,0 +1,8 @@
+https://github.com/gunnarmorling/1brc
+
+This directory contains Chapel written versions of the "One Billion Row
+Challenge" (https://github.com/gunnarmorling/1brc).
+
+In these versions we're less focused on getting the absolute best performance
+possible and rather as using it as a benchmark to study (parallel) I/O
+performance.

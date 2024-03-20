@@ -28,17 +28,17 @@ config param blockSize = 16;
 config param blockPadding = 1;
 config type dataType = real(32);
 
-inline proc transposeNaive(original, output) {
+inline proc transposeNaive(original, ref output) {
+  @assertOnGpu
   foreach (x,y) in original.domain {
-    assertOnGpu();
     output[y,x] = original[x,y];
   }
 }
 
-inline proc transposeClever(original, output) {
+inline proc transposeClever(original, ref output) {
+  @assertOnGpu
+  @gpu.blockSize(blockSize * blockSize)
   foreach 0..<original.size {
-    assertOnGpu();
-    setBlockSize(blockSize * blockSize);
     param paddedBlockSize = blockSize + blockPadding;
     var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
 
@@ -108,12 +108,22 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 }
 
-inline proc transposeLowLevel(original, output) {
+inline proc transposeLowLevel(original, ref output) {
+  // arguments are: number of parameters, line no, file no
+  var cfg = __primitive("gpu init kernel cfg", 4, 0, 0);
+
+  // 1 is an enum value that says: "pass the address of this to the
+  //   kernel_params, while not offloading anything".
+  __primitive("gpu arg", cfg, c_ptrTo(output), 1);
+  __primitive("gpu arg", cfg, c_ptrToConst(original), 1);
+  __primitive("gpu arg", cfg, sizeX, 1);
+  __primitive("gpu arg", cfg, sizeY, 1);
+
   __primitive("gpu kernel launch",
           "transposeMatrix":chpl_c_string,
           /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
           /* block size */ blockSize, blockSize, 1,
-          /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
+          /* kernel config */ cfg);
 }
 
 var originalHost: [0..#sizeX, 0..#sizeY] dataType;

@@ -8,11 +8,11 @@ record RECTYPE {
     writeln("RECTYPE constructor");
     VARFIELD   = 200;
     CONSTFIELD = 300;
-    this.complete();
+    init this;
     initRT();
   }
 
-  proc initRT() {
+  proc ref initRT() {
     writeln("RECTYPE.initRT()");
     VARFIELD   *= 2;
     CONSTFIELD *= 3;

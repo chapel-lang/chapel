@@ -11,7 +11,7 @@ config const printTiming = false;
 
 const shift = (123, 456, 789);
 
-var Dist = new Block({1..m,1..n,1..o});
+var Dist = new blockDist({1..m,1..n,1..o});
 
 use Random, Time;
 

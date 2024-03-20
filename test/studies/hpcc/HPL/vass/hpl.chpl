@@ -41,7 +41,7 @@ config const epsilon = 2.0e-15;
 // specify the fixed seed explicitly
 //
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
+             seed = if useRandomSeed then NPBRandom.oddTimeSeed() else 31415;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -97,7 +97,7 @@ config var reproducible = false, verbose = false;
   // We use 'AbD' instead of 'MatVectSpace' throughout.
   //
   const AbD: domain(2, indexType)
-          dmapped DimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
+          dmapped dimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
           = {1..n, 1..n+1},
         MatrixSpace = AbD[.., ..n];
 
@@ -109,9 +109,9 @@ config var reproducible = false, verbose = false;
   //
   const
     replAD = {1..n, 1..blkSize}
-      dmapped DimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
+      dmapped dimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
     replBD = {1..blkSize, 1..n+1}
-      dmapped DimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
+      dmapped dimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
 
   var replA: [replAD] elemType,
       replB: [replBD] elemType;
@@ -136,7 +136,7 @@ config var reproducible = false, verbose = false;
 // vector of RHS values.
 //
 proc LUFactorize(n: indexType,
-                piv: [1..n] indexType) {
+                ref piv: [1..n] indexType) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -217,7 +217,7 @@ proc LUFactorize(n: indexType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(AD: domain(?), BD: domain(?), Rest: domain(?)) {
 
   // Prevent replication of unequal-sized slices
   if Rest.size == 0 then return;
@@ -226,18 +226,18 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  coforall dest in targetLocales[targetIds.dim(0).high, targetIds.dim(1)] do
+  coforall dest in targetLocales[targetIds.dim(0).high, targetIds.dim(1)] with (ref replA) do
     on dest do
       // replA on tgLocales[d1,i] gets a copy of Ab from tgLocales[d1,..]
       replA = Ab[1..n, AD.dim(1)];
 
-  coforall dest in targetLocales[targetIds.dim(0), targetIds.dim(1).high] do
+  coforall dest in targetLocales[targetIds.dim(0), targetIds.dim(1).high] with (ref replB) do
     on dest do
       // replB on tgLocales[i,d2] gets a copy of Ab from tgLocales[..,d2]
       replB = Ab[BD.dim(0), 1..n+1];
 
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
     // localize Rest explicitly as a workaround;
     // also hoist the innerRange computation
     const outterRange = Rest.dim(0)(row..#blkSize),
@@ -257,8 +257,8 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 // pivot vector accordingly
 //
 proc panelSolve(
-               panel: domain,
-               piv: [] indexType) {
+               panel: domain(?),
+               ref piv: [] indexType) {
 
   for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
@@ -287,7 +287,7 @@ proc panelSolve(
     Ab[k+1.., k..k] /= pivotVal;
     
     // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
+    forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -299,14 +299,14 @@ proc panelSolve(
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
           prevRows = tr.dim(0).low..row-1;
 
-    forall (i,j) in activeRow do
+    forall (i,j) in activeRow with (ref Ab) do
       for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
   }
@@ -394,7 +394,7 @@ proc gaxpyMinus(A: [],
                 y: [?yD]) {
   var res: [1..n] elemType;
 
-  forall i in 1..n do
+  forall i in 1..n with (ref res) do
     res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1];
 
   return res;

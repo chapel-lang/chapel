@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -75,6 +75,11 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMMetadata
 CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 {
   SymbolMap map;
+  return buildWithBodyFrom(forLoop, map);
+}
+
+CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop, SymbolMap &map)
+{
   CForLoop* retval = new CForLoop();
 
   retval->astloc            = forLoop->astloc;

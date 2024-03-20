@@ -9,10 +9,10 @@ proc scanArr(Dom) {
   writeln(Y);
 }
 
-const nonFirstLocDom = space dmapped Block(space, targetLocales=Locales[1..<numLocales]);
-const nonLastLocDom  = space dmapped Block(space, targetLocales=Locales[0..<numLocales-1]);
-const evenLocDom     = space dmapped Block(space, targetLocales=Locales[0..<numLocales by 2]);
-const allLocDom      = space dmapped Block(space, targetLocales=Locales[0..<numLocales]);
+const nonFirstLocDom = space dmapped blockDist(space, targetLocales=Locales[1..<numLocales]);
+const nonLastLocDom  = space dmapped blockDist(space, targetLocales=Locales[0..<numLocales-1]);
+const evenLocDom     = space dmapped blockDist(space, targetLocales=Locales[0..<numLocales by 2]);
+const allLocDom      = space dmapped blockDist(space, targetLocales=Locales[0..<numLocales]);
 
 scanArr(nonFirstLocDom);
 scanArr(nonLastLocDom);

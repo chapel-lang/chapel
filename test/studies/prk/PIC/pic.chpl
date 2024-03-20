@@ -121,7 +121,7 @@ for niter in 0..iterations {
 
   if niter == 1 then t.start();
 
-  forall i in 0..#particles.size {
+  forall i in 0..#particles.size with (ref particles) {
 
     var x0:real, y0:real; // for debug mode
 

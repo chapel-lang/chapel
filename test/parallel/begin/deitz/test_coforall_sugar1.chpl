@@ -18,7 +18,7 @@ var ss: unmanaged syncStack?;
 
 for i in 1..n {
   var me = pushSyncStack(ss);
-  begin {
+  begin with (ref A) {
     sleep(i:uint);
     A(i) = i;
     me.v.writeEF(true);

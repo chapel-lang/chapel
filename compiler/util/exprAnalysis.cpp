@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -258,6 +258,9 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_SUBTRACT:
     case PRIM_MULT:
     case PRIM_MOD:
+    case PRIM_FMA:
+    case PRIM_SQRT:
+    case PRIM_ABS:
     case PRIM_LSH:
     case PRIM_RSH:
     case PRIM_EQUAL:

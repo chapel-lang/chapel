@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -316,22 +316,26 @@ static found_init_t doFindInitPoints(Symbol* sym,
         return FOUND_USE;
 
       // if there are any catches, check them for uses;
-      // also a catch block prevents initialization in the try body
-      for_alist(elt, tr->_catches) {
-        if (CatchStmt* ctch = toCatchStmt(elt)) {
-          std::vector<CallExpr*> inits;
-          Expr* use = NULL;
-          Expr* start = ctch->body()->body.first();
-          found_init_t foundCatch = doFindInitPoints(sym, start, inits,
-                                                     use, allowReturns,
-                                                     ignoreFirstEndInBlock);
-          if (foundCatch == FOUND_USE || foundCatch == FOUND_INIT) {
-            // Consider even an assignment in a catch block as a use
-            usePreventingSplitInit = findSymExprFor(ctch, sym);
-            return FOUND_USE;
-          } else if (foundCatch != FOUND_RET && foundCatch != FOUND_THROW) {
-            allCatchesRet = false;
-            nonReturningCatch = ctch;
+      // also a catch block prevents initialization in the try body.
+      // but, don't worry about the compiler-generated catch blocks
+      // for a sync block's 'try'.
+      if (!tr->isSyncTry()) {
+        for_alist(elt, tr->_catches) {
+          if (CatchStmt* ctch = toCatchStmt(elt)) {
+            std::vector<CallExpr*> inits;
+            Expr* use = NULL;
+            Expr* start = ctch->body()->body.first();
+            found_init_t foundCatch = doFindInitPoints(sym, start, inits,
+                                                       use, allowReturns,
+                                                       ignoreFirstEndInBlock);
+            if (foundCatch == FOUND_USE || foundCatch == FOUND_INIT) {
+              // Consider even an assignment in a catch block as a use
+              usePreventingSplitInit = findSymExprFor(ctch, sym);
+              return FOUND_USE;
+            } else if (foundCatch != FOUND_RET && foundCatch != FOUND_THROW) {
+              allCatchesRet = false;
+              nonReturningCatch = ctch;
+            }
           }
         }
       }

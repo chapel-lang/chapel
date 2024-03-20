@@ -42,7 +42,7 @@ proc Launcher(exec: string) {
                       "--memLeaks=" + memLeaks:string],
                      executable=exec);
 
-  var workers: [1..numWorkers] subprocess(kind=iokind.dynamic, locking=true);
+  var workers: [1..numWorkers] subprocess(locking=true);
   coforall (worker,i,zipc) in zip(workers, workers.domain,
                                   zipcodes(numWorkers)) do
     worker = spawn(["worker%i".format(i), "--mode=Worker",
@@ -56,7 +56,7 @@ proc Launcher(exec: string) {
 }
 
 proc Master(exec: string) {
-  var rand = new RandomStream(real,13); rand.getNext();
+  var rand = new randomStream(real,13); rand.next();
   var ctxt: Context;
   var sock = ctxt.socket(ZMQ.PUB);
   sock.bind("tcp://*:5556");
@@ -67,9 +67,9 @@ proc Master(exec: string) {
 
   while true {
     var data = new WeatherData(
-      (rand.getNext()*100000):int,
-      (rand.getNext()*215):int - 80,
-      (rand.getNext()*50):int + 10);
+      (rand.next()*100000):int,
+      (rand.next()*215):int - 80,
+      (rand.next()*50):int + 10);
     sock.send(data);
   }
 }

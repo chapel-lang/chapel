@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,7 +33,12 @@
 #include "wellknown.h"
 #include "misc.h"
 
+#include "chpl/libraries/LibraryFile.h"
+#include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/parsing/parsing-queries.h"
+
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -82,8 +87,6 @@ static void          parseDependentModules(bool isInternal);
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
 
-std::vector<UniqueString> parsedPaths;
-
 // TODO: Remove me.
 struct YYLTYPE {
   int first_line;
@@ -108,6 +111,14 @@ static void maybePrintModuleFile(ModTag modTag, const char* path);
 
 class DynoErrorHandler : public chpl::Context::ErrorHandler {
   std::vector<chpl::owned<chpl::ErrorBase>> errors_;
+
+  // we'd like to silence certain types of warnings, but can't do it through
+  // Dyno-as-library because doing so would require knowing the result of
+  // parsing all files, which Dyno, as a query-based API, is not well-suited
+  // for. So, instead, we detect these warnings and stick them into a list
+  // "for later". Once we've parsed all the files, we can then decide whether
+  // to silence them or not.
+  std::vector<chpl::owned<chpl::ErrorBase>> deferredErrors_;
  public:
   DynoErrorHandler() = default;
   ~DynoErrorHandler() = default;
@@ -116,18 +127,31 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
     return errors_;
   }
 
+  const std::vector<chpl::owned<chpl::ErrorBase>>& deferredErrors() const {
+    return deferredErrors_;
+  }
+
   virtual void
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
-    errors_.push_back(err->clone());
+    if (err->type() == chpl::ErrorType::ImplicitFileModule) {
+      // Defer implicit module warning until we know which module is the
+      // 'main' one. Knowing this requires having parsed all files and
+      // checking them for 'proc main'.
+      deferredErrors_.push_back(err->clone());
+    } else {
+      errors_.push_back(err->clone());
+    }
   }
 
   inline void clear() { errors_.clear(); }
+  inline void clearDeferred() { deferredErrors_.clear(); }
 };
 
 // Call to insert an instance of the error handler above into the context.
 static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
 
 static bool dynoRealizeErrors(void);
+static bool dynoRealizeDeferredErrors(void);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -177,8 +201,6 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<VisibilityStmt*> sModReqdByInt;
 
-static std::set<std::string> gDynoGenLibPaths;
-
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
@@ -187,10 +209,6 @@ void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
-}
-
-void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
-  gDynoGenLibPaths.insert(std::string(newpath));
 }
 
 void setupModulePaths() {
@@ -323,7 +341,10 @@ static void addDynoLibFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isDynoLib(inputFileName)) {
       auto libPath = chpl::UniqueString::get(gContext, inputFileName);
-      chpl::parsing::registerFilePathsInLibrary(gContext, libPath);
+      auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
+      if (lib != nullptr) {
+        lib->registerLibrary(gContext);
+      }
     }
   }
 }
@@ -416,6 +437,122 @@ static UniqueString cleanLocalPath(UniqueString path) {
   return chpl::UniqueString::get(gContext, str);
 }
 
+static void gatherStdModuleNamesInDir(std::string dir,
+                                      std::set<UniqueString>& modNames) {
+  std::error_code EC;
+  llvm::sys::fs::directory_iterator I(dir, EC);
+  llvm::sys::fs::directory_iterator E;
+
+  std::set<std::string> moduleNamesHere;
+  std::set<std::string> subDirsHere;
+  while (true) {
+    if (I == E || EC) {
+      break;
+    }
+    // consider the file
+    llvm::StringRef fileName = llvm::sys::path::filename(I->path());
+    bool isdir = I->type() == llvm::sys::fs::file_type::directory_file;
+    if (isdir) {
+      subDirsHere.insert(fileName.str());
+    } else {
+      llvm::StringRef fileExt = llvm::sys::path::extension(fileName);
+      llvm::StringRef fileStem = llvm::sys::path::stem(fileName);
+      if (fileExt.equals(".chpl")) {
+        moduleNamesHere.insert(fileStem.str());
+      }
+    }
+
+    I.increment(EC);
+  }
+
+  if (EC) {
+    USR_FATAL("error in directory traversal of %s", dir.c_str());
+  }
+
+  // Consider the gathered module names & add them to the returned set.
+  for (const auto& name : moduleNamesHere) {
+    modNames.insert(UniqueString::get(gContext, name));
+  }
+
+  // Consider the subdirs. Visit any subdir that does not have
+  // the same name as a module here. This is meant to exclude submodules
+  // stored in different files. For example, if we have
+  //   SortedSet/
+  //   SortedSet.chpl
+  // then we should not traverse into SortedSet/ under the assumption
+  // that it is storing only submodules.
+  for (const auto& subdir : subDirsHere) {
+    if (moduleNamesHere.count(subdir) == 0) {
+      std::string subPath = dir + "/" + subdir;
+      gatherStdModuleNamesInDir(subPath, modNames);
+    }
+  }
+}
+
+static std::set<UniqueString> gatherStdModuleNames() {
+  // compute $CHPL_HOME/modules
+  const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
+  std::string modulesDir = bundledPath.str();
+
+  std::set<UniqueString> modNames;
+  gatherStdModuleNamesInDir(modulesDir + "/dists", modNames);
+  gatherStdModuleNamesInDir(modulesDir + "/internal", modNames);
+  gatherStdModuleNamesInDir(modulesDir + "/layouts", modNames);
+  // skip minimal
+  // skip packages (see below)
+  gatherStdModuleNamesInDir(modulesDir + "/standard", modNames);
+
+  // add select packages that don't have dependencies at compile time
+  // these particular ones are compiled by default even for "hello world"
+  std::vector<const char*> pkgModules = {"CopyAggregation",
+                                         "NPBRandom",
+                                         "RangeChunk",
+                                         "Search",
+                                         "Sort"};
+
+  for (auto name : pkgModules) {
+    modNames.insert(UniqueString::get(gContext, name));
+  }
+
+  // Workaround: if compiling for CHPL_LOCALE_MODEL!=gpu,
+  // then ignore the GPU module, to avoid later compilation errors.
+  if (!usingGpuLocaleModel()) {
+    modNames.erase(UniqueString::get(gContext, "GPU"));
+  }
+
+  return modNames;
+}
+
+static std::vector<UniqueString> gatherStdModulePaths() {
+  std::vector<UniqueString> genLibPaths;
+
+  // Gather the standard module names in the passed directory.
+  // This gathers module names rather than paths in order to
+  // support different implementations of the same module in different
+  // directories, e.g.
+  // modules/internal/comm/{ugni,ofi,...}/NetworkAtomicTypes.chpl
+  // In such a case, we just gather the name NetworkAtomicTypes,
+  // and let the usual module loading process select the appropriate
+  // one from the module search path.
+  auto modulesToLoad = gatherStdModuleNames();
+
+  const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
+  for (auto modName : modulesToLoad) {
+    auto mod = chpl::parsing::getToplevelModule(gContext, modName);
+    UniqueString parsedPath;
+    if (!mod) {
+      USR_FATAL("cannot find bundled module %s", modName.c_str());
+    }
+    if (mod && gContext->filePathForId(mod->id(), parsedPath)) {
+      if (parsedPath.startsWith(bundledPath)) {
+        genLibPaths.push_back(parsedPath);
+      }
+    }
+  }
+
+  return genLibPaths;
+}
+
 static void parseCommandLineFiles() {
   int         fileNum       =    0;
   const char* inputFileName = NULL;
@@ -451,10 +588,10 @@ static void parseCommandLineFiles() {
       // serialized file would have been listed on the command line. We
       // probably to clarify what it means to be listed on the command line.
       auto libPath = chpl::UniqueString::get(gContext, inputFileName);
-      auto lib = chpl::parsing::loadLibraryFile(gContext, libPath);
-      if (lib.isUser()) {
-        for (const auto& pair : lib.offsets()) {
-          parseFile(pair.first.c_str(), MOD_USER, true);
+      auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
+      for (auto path: lib->containedFilePaths()) {
+        if (!chpl::parsing::filePathIsInBundledModule(gContext, path)) {
+          parseFile(path.c_str(), MOD_USER, true);
         }
       }
     }
@@ -481,31 +618,34 @@ static void parseCommandLineFiles() {
     mod->addDefaultUses();
   }
 
-  if (gDynoGenLibPaths.size() > 0) {
-    for (std::string path : gDynoGenLibPaths) {
-      if (path == "<standard>") {
-        std::vector<UniqueString> todo;
-        for (auto& path : parsedPaths) {
-          const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
-          if (path.startsWith(modulePrefix)) {
-            todo.push_back(path);
-          }
-        }
-        chpl::parsing::LibraryFile::generate(gContext, todo,
-                                             "chpl_standard.dyno", false);
-      } else {
-        std::string justFile = path.substr(path.find_last_of("/") + 1);
-        auto dot = justFile.find_last_of(".");
-        std::string noExt = justFile.substr(0, dot);
-        auto ustr = chpl::UniqueString::get(gContext, path);
-        chpl::parsing::LibraryFile::generate(gContext, {ustr},
-                                             noExt + ".dyno", true);
+  if (fDynoGenLib) {
+    std::vector<UniqueString> genLibPaths;
+
+    if (fDynoGenStdLib) {
+      // gather the standard/internal module names with directory
+      // listing within $CHPL_HOME/modules, and compute paths from loading
+      // those. (The purpose of this is to handle things like
+      // modules/internal/comm/*/NetworkAtomicTypes.chpl where the module
+      // search path determines what should be loaded)
+      genLibPaths = gatherStdModulePaths();
+    } else {
+      // gather the files named on the command line
+      fileNum = 0;
+      while ((inputFileName = nthFilename(fileNum++))) {
+        genLibPaths.push_back(UniqueString::get(gContext, inputFileName));
       }
     }
+    // update the global variable
+    gDynoGenLibSourcePaths.swap(genLibPaths);
 
-    // As .dyno files become more capable, this exit will be moved further and
-    // further into resolution.
-    clean_exit(0);
+    // gather the top-level module names
+    using LFW = chpl::libraries::LibraryFileWriter;
+    auto vec = LFW::gatherTopLevelModuleNames(gContext,
+                                              gDynoGenLibSourcePaths);
+
+    for (UniqueString topLevelModuleName: vec) {
+      gDynoGenLibModuleNameAstrs.insert(astr(topLevelModuleName));
+    }
   }
 }
 
@@ -728,7 +868,7 @@ static void addModuleToDoneList(ModuleSymbol* module);
 // defining its modules twice.
 //
 static bool haveAlreadyParsed(const char* path) {
-  static std::set<std::string> parsedPaths;
+  static std::set<std::string> alreadyParsedPaths;
 
   // normalize the path if possible via realpath() and use 'path' otherwise
   const char* normpath = chplRealPath(path);
@@ -736,13 +876,15 @@ static bool haveAlreadyParsed(const char* path) {
     normpath = path;
   }
 
+  std::string npath(normpath);
+
   // check whether we've seen this path before
-  if (parsedPaths.count(normpath) > 0) {
+  if (alreadyParsedPaths.count(npath) > 0) {
     // if so, indicate it
     return true;
   } else {
     // otherwise, add it to our set and list of paths
-    parsedPaths.insert(normpath);
+    alreadyParsedPaths.insert(npath);
     return false;
   }
 }
@@ -963,36 +1105,111 @@ static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
 // Only install one of these for the entire session.
 static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
+static bool dynoRealizeError(const chpl::owned<chpl::ErrorBase>& err) {
+  bool hadErrors = false;
+  const chpl::ErrorBase* e = err.get();
+
+  if (e->kind() == chpl::ErrorBase::SYNTAX ||
+      e->kind() == chpl::ErrorBase::ERROR) {
+    // make a note if we found any errors
+    hadErrors = true;
+  }
+
+  // skip emitting warnings for '--no-warnings'
+  if (ignore_warnings && e->kind() == chpl::ErrorBase::WARNING) {
+    return hadErrors;
+  }
+
+  if (fDetailedErrors) {
+    chpl::Context::defaultReportError(gContext, e);
+    // Use production compiler's exit-on-error functionality for errors
+    // reported via new Dyno mechanism
+    setupDynoError(e->kind());
+  } else {
+    // Try to maintain compatibility with the old reporting mechanism
+    dynoDisplayError(gContext, e->toErrorMessage(gContext));
+  }
+  return hadErrors;
+}
+
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
   for (auto& err : gDynoErrorHandler->errors()) {
-    const chpl::ErrorBase* e = err.get();
-
-    if (e->kind() == chpl::ErrorBase::SYNTAX ||
-        e->kind() == chpl::ErrorBase::ERROR) {
-      // make a note if we found any errors
-      hadErrors = true;
-    }
-
-    // skip emitting warnings for '--no-warnings'
-    if (ignore_warnings && e->kind() == chpl::ErrorBase::WARNING) {
-      continue;
-    }
-
-    if (fDetailedErrors) {
-      chpl::Context::defaultReportError(gContext, e);
-      // Use production compiler's exit-on-error functionality for errors
-      // reported via new Dyno mechanism
-      setupDynoError(e->kind());
-    } else {
-      // Try to maintain compatibility with the old reporting mechanism
-      dynoDisplayError(gContext, e->toErrorMessage(gContext));
-    }
+    hadErrors |= dynoRealizeError(err);
   }
   gDynoErrorHandler->clear();
   return hadErrors;
 }
+
+static bool dynoRealizeDeferredErrors(void) {
+  INT_ASSERT(gDynoErrorHandler);
+  bool hadErrors = false;
+  auto mainModulePath = ModuleSymbol::mainModule()->path();
+
+  for (auto& err : gDynoErrorHandler->deferredErrors()) {
+    if (err->type() == chpl::ErrorType::ImplicitFileModule) {
+      auto errCast = (const chpl::ErrorImplicitFileModule*) err.get();
+      auto implicitMod = std::get<2>(errCast->info());
+
+      if (implicitMod->id().symbolPathWithoutRepeats(gContext) == mainModulePath) {
+        // Do not emit the implicit file module warning for the main module,
+        // since it's a very common pattern.
+        continue;
+      }
+    }
+
+    hadErrors |= dynoRealizeError(err);
+  }
+  gDynoErrorHandler->clearDeferred();
+  return hadErrors;
+}
+
+static void
+dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
+                        UniqueString parentSymbolPath) {
+
+  // this will not work otherwise
+  CHPL_ASSERT(!gContext->configuration().includeComments);
+
+  // test that we can serialize and then deserialize this uAST
+  for (auto ast : builderResult.topLevelExpressions()) {
+    std::stringstream ss;
+
+    // serialize to the string stream
+    chpl::Serializer ser(ss, /*LibraryFileAstRegistration*/ nullptr);
+    ast->serialize(ser);
+
+    // deserialize from the same
+    std::string got = ss.str();
+    auto des = chpl::Deserializer(gContext,
+                                  got.c_str(), got.size(),
+                                  ser.stringCache());
+
+    // this path should not actually be used in this testing
+    auto libPath = chpl::UniqueString::get(gContext, "test-serialize.dyno");
+
+    auto builder =
+      chpl::uast::Builder::createForLibraryFileModule(gContext,
+                                                      libPath,
+                                                      parentSymbolPath,
+                                                      /*LibraryFile*/ nullptr);
+
+    builder->addToplevelExpression(
+        chpl::uast::AstNode::deserializeWithoutIds(des));
+    chpl::uast::BuilderResult r = builder->result();
+
+    if (r.numTopLevelExpressions() != 1 ||
+        !ast->completeMatch(r.topLevelExpression(0))) {
+      ast->dump();
+      r.topLevelExpression(0)->dump();
+
+      USR_FATAL("Failed to (de)serialize %s\n",
+                builderResult.filePath().c_str());
+    }
+  }
+}
+
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -1010,29 +1227,19 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
-  chpl::UniqueString emptySymbolPath;
+  auto parentSymbolPath = chpl::UniqueString(); // always empty here
   auto& builderResult =
     chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
-                                                    emptySymbolPath);
+                                                    parentSymbolPath);
   gFilenameLookup.push_back(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
-
-  parsedPaths.push_back(path);
 
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
 
   if (fDynoVerifySerialization) {
-    std::stringstream ss;
-    chpl::Serializer ser(ss);
-    builderResult.serialize(ser);
-
-    chpl::Deserializer des(gContext, ss, ser.stringCache());
-    auto res = chpl::uast::BuilderResult::deserialize(des);
-    if (builderResult.equals(res) == false) {
-      USR_FATAL("Failed to (de)serialize %s\n", builderResult.filePath().c_str());
-    }
+    dynoVerifySerialization(builderResult, parentSymbolPath);
   }
 
   //
@@ -1219,6 +1426,8 @@ void parseAndConvertUast() {
   parseInternalModules();
 
   parseCommandLineFiles();
+
+  dynoRealizeDeferredErrors();
 
   checkConfigs();
 

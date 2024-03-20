@@ -59,7 +59,7 @@ proc R.init=(const ref arg: R) {
     assert(arg.canary == 42);
   }
 
-  this.complete();
+  init this;
   // allow copies of a default-initialized record.
   this.setup(x = arg.x, true);
 

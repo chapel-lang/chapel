@@ -1,0 +1,12 @@
+modify-const-array-of-record.chpl:10: error: const actual is passed to 'ref' formal 'this' of addOne()
+modify-const-array-of-record.chpl:3: note: to formal of type R
+modify-const-array-of-record.chpl:5: note: to ref formal here
+modify-const-array-of-record.chpl:14: error: const actual is passed to 'ref' formal 'this' of addOne()
+modify-const-array-of-record.chpl:3: note: to formal of type R
+modify-const-array-of-record.chpl:5: note: to ref formal here
+modify-const-array-of-record.chpl:15: error: const actual is passed to 'ref' formal 'this' of addOne()
+modify-const-array-of-record.chpl:3: note: to formal of type R
+modify-const-array-of-record.chpl:5: note: to ref formal here
+modify-const-array-of-record.chpl:17: error: const actual is passed to 'ref' formal 'this' of addOne()
+modify-const-array-of-record.chpl:3: note: to formal of type R
+modify-const-array-of-record.chpl:5: note: to ref formal here

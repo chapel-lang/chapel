@@ -32,8 +32,10 @@ with open(logfile, 'r') as f:
 with open(logfile, 'w') as f:
     for line in loglines:
       splitline = line.split(':')[0].strip() + ' :'
-      # Only look at the pass groups (front-end, middle-end, back-end)
-      if line.strip().startswith('total time'):
+      # Only look at the pass groups (front-end, middle-end, back-end) and
+      # overall total time. Skip lines without ':' to exclude the 'total time'
+      # line at the bottom of pass timing tables, which isn't in the perfkeys.
+      if line.strip().startswith('total time') and ':' in line.strip():
           f.write(splitline + '\n')
       # --print-passes prints detailed output after printing the total
       # time for each pass. This just strips all that output which

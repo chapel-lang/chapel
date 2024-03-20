@@ -65,7 +65,7 @@ proc CheckCorrectness(grainsize:string)
 	writeln("Grain size: ", grainsize,". Working with guided scheduling");
 	writeln();
 	t.start();
-	forall c in guided(r,nTasks) do {
+	forall c in guided(r,nTasks) with (ref A) do {
 	  sleep(delay / 1_000_000.0);
 	  A[c]=A[c]+1;
 	}
@@ -100,7 +100,7 @@ proc CheckCorrectness(grainsize:string)
 	writeln("Grain size: ", grainsize,". Working with guided scheduling");
 	writeln();
 	t.start();
-	forall c in guided(r,nTasks) do {
+	forall c in guided(r,nTasks) with (ref B) do {
 	  sleep(delay / 1_000_000.0);
 	  B[c]=B[c]+1;
 	}
@@ -138,7 +138,7 @@ proc CheckCorrectness(grainsize:string)
       writeln();
   
       t.start();
-      forall c in guided(r,nTasks) do {
+      forall c in guided(r,nTasks) with (ref C) do {
 	for j in c..n do{
 	  sleep(delay / 1_000_000.0);
 	  C[c,j]=C[c,j]+1;
@@ -191,7 +191,7 @@ proc CheckCorrectness(grainsize:string)
       writeln();
   
       t.start();
-      forall c in guided(r,nTasks) do {
+      forall c in guided(r,nTasks) with (ref D) do {
 	sleep(delayran(c) / 1_000_000.0);
 	D[c]=D[c]+1;
       }

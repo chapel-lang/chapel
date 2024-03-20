@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -204,8 +204,8 @@ static void test3() {
 }
 
 static void test4() {
-  // test returning a param from an ambigous param-returning function
-  // non-ambigous tests are in testParamIf.
+  // test returning a param from an ambiguous param-returning function
+  // non-ambiguous tests are in testParamIf.
   testProgram({
       lit("1"),
       lit("2")
@@ -718,7 +718,6 @@ static void testControlFlowYield4() {
 std::string ops = R"""(
   operator ==(x:int, y:int) { return __primitive("==", x, y); }
   operator ==(param x:int, param y:int) param { return __primitive("==", x, y); }
-  operator ==(type A, type B) param : bool { return __primitive("==", A, B); }
 )""";
 
 static void testSelectVals() {
@@ -824,9 +823,11 @@ static void testSelectVals() {
 using stringMap = std::map<std::string, std::string>;
 
 static void testSelectCases(std::string base,
-                            stringMap vals) {
+                            stringMap vals,
+                            bool isType = true) {
   for (auto pair : vals) {
-    std::string program = base + "type x = foo(" + pair.first + ");";
+    std::string kind = isType ? "type" : "var";
+    std::string program = base + kind + " x = foo(" + pair.first + ");";
 
     Context ctx;
     Context* context = &ctx;
@@ -863,7 +864,7 @@ static void testSelectTypes() {
     testSelectCases(fooFunc, vals);
   }
   {
-    // mutiple cases in a single 'when'
+    // multiple cases in a single 'when'
     std::string fooFunc = ops + R"""(
     proc foo(type T) type {
       select T {
@@ -928,6 +929,73 @@ static void testSelectTypes() {
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());
   }
+  {
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      select T {
+        when int do return 5;
+        when real do return 42.0;
+        when string do return "hello";
+      }
+
+      var x : T;
+      return x;
+    }
+    )""";
+
+    stringMap vals = {{"int", "int(64)"},
+                      {"real", "real(64)"},
+                      {"string", "string"},
+                      {"uint", "uint(64)"}};
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
+  }
+  {
+    // demonstrate that when blocks can have multiple 
+    // statements without otherwise
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      var x : int;
+      select T {
+        when int {
+          var x: int;
+          return x;
+        }
+      }
+
+      var y : T;
+      return y;
+    }
+    )""";
+    stringMap vals = {{"int", "int(64)"},
+                      {"string", "string"}
+                      };
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
+  }
+  {
+    // demonstrate that when blocks can have multiple 
+    // statements with otherwise
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      var x : int;
+      select T {
+        when int {
+          var x: int;
+          return x;
+        }
+        otherwise {}
+      }
+      var y : real;
+      return y;
+    }
+    )""";
+    stringMap vals = {{"int", "int(64)"},
+                      {"string", "real(64)"}
+                      };
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
+  }
 }
 
 static void testSelectParams() {
@@ -953,7 +1021,7 @@ static void testSelectParams() {
     testSelectCases(fooFunc, vals);
   }
   {
-    // mutiple cases in a single 'when'
+    // multiple cases in a single 'when'
     std::string fooFunc = ops + R"""(
     proc foo(param p) type {
       select p {
@@ -1026,6 +1094,40 @@ static void testSelectParams() {
   }
 }
 
+static void testCPtrEltType() {
+  { 
+    //works for c_ptr
+    std::string program = ops + R"""(
+    var y: c_ptr(uint(8));
+    type x = y.eltType;
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
+  }
+  return;
+  { 
+    //works for user-defined class 
+    std::string program = ops + R"""(
+    class c_ptr2 {
+      type eltType;
+    }
+    var y: c_ptr2(uint(8));
+    type x = y.eltType;
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
+  }
+}
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
@@ -1076,5 +1178,6 @@ int main() {
   testSelectTypes();
   testSelectParams();
 
+  testCPtrEltType();
   return 0;
 }

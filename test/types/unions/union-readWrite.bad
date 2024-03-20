@@ -1,0 +1,6 @@
+---------------
+writing: (x = 5)
+file contents: (x = 5)
+uncaught BadFormatError: bad format: missing expected literal (while reading string literal "y" with path "unknown" offset 6)
+  union-readWrite.chpl:38: thrown here
+  union-readWrite.chpl:38: uncaught here

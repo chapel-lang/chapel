@@ -63,10 +63,10 @@ As with the for statement, the indices may be omitted if they are
 unnecessary and the ``do`` keyword may be omitted before a block
 statement.
 
-The square bracketed form will resort to serial iteration when
-``iteratable-expression`` does not support parallel iteration. The
-``forall`` form will result in an error when parallel iteration is not
-available.
+The square bracketed form will resort to order-independent iteration
+(i.e. ``foreach``) when ``iteratable-expression`` does not support parallel
+iteration. The ``forall`` form will result in an error when parallel
+iteration is not available.
 
 The handling of the outer variables within the forall statement and the
 role of ``task-intent-clause`` are defined in
@@ -128,7 +128,7 @@ the current iteration of the forall loop.
 
    .. code-block:: chapel
 
-      forall i in 1..N do
+      forall i in 1..N with (ref a) do
         a(i) = b(i);
 
    the user has stated that the element-wise assignments can execute
@@ -139,7 +139,7 @@ the current iteration of the forall loop.
 
    .. code-block:: chapel
 
-      [i in 1..N] a(i) = b(i);
+      [i in 1..N with (ref a)] a(i) = b(i);
 
    
 
@@ -190,9 +190,10 @@ unnecessary. The ``do`` keyword is always required in the keyword-based
 notation.
 
 As with the forall statement, the square bracketed form will resort to
-serial iteration when ``iteratable-expression`` does not support
-parallel iteration. The ``forall`` form will result in an error when
-parallel iteration is not available.
+order-independent iteration (i.e. ``foreach``) when
+``iteratable-expression`` does not support parallel iteration. The
+``forall`` form will result in an error when parallel iteration is not
+available.
 
 The handling of the outer variables within the forall expression and the
 role of ``task-intent-clause`` are defined in
@@ -317,8 +318,19 @@ it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.
 
-Each formal argument of a task function or iterator has the default
-intent by default. For variables of primitive, enum, and class types,
+The implicit formals of task functions and iterators generally have
+:ref:`the default argument intent <The_Default_Intent>` by default. Note that
+the default intent allows the compiler to assume that the value will not be
+concurrently modified, except for values of ``sync`` or ``atomic`` type.
+
+Implicit formals of array types are an exception: they inherit their default
+intent from the array actual. An immutable array has a default intent of
+``const`` and a mutable array has a default intent of ``ref``. This allows
+arrays to be modified inside the body of a forall if it is modifiable outside
+the body of the forall. A mutable array can have an explicit ``const`` forall
+intent to make it immutable inside the body of a forall.
+
+For variables of primitive, enum, and class types,
 this has the effect of capturing the value of the variable at task
 creation time. Within the lexical scope of the forall construct, the
 variable name references the captured value instead of the original
@@ -426,7 +438,7 @@ destroyed.
       do
         writeln("shadow var: ", tpv.id, "  yield: ", str);
 
-   
+
 
    .. BLOCK-test-chapelprediff
 
@@ -494,7 +506,7 @@ iterator         0-based one-dimensional domain
    
    We would like to allow the iterator author to specify the shape of
    the iterator, i.e. the domain of the array that would capture the
-   result of the corresponding promoted expression, such as 
+   result of the corresponding promoted expression, such as
 
    .. code-block:: chapel
 
@@ -644,7 +656,7 @@ and :ref:`Parallel_Iterators` for parallel iteration.
 
 Consider a function ``f`` with formal arguments ``s1``, ``s2``, ... that
 are promoted and formal arguments ``a1``, ``a2``, ... that are not
-promoted. The call 
+promoted. The call
 
 .. code-block:: chapel
 
@@ -750,6 +762,41 @@ side array expressions alias the left-hand side expression.
    This follows because, in the former code, some of the new values that
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
+
+.. _Promoted_Array_Indexing:
+
+Promoted Array Indexing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Array indexing operations can also be promoted.
+For example, an array of indices can be used to index into another array,
+as in the following expression:
+
+.. code-block:: chapel
+
+   A[B]
+
+which results in the promoted expression:
+
+.. code-block:: chapel
+
+   [b in B] A[b]
+
+Modifying promoted expressions may introduce undesirable race conditions in
+code. For example, the following code will potentially result in an incorrect
+result:
+
+.. code-block:: chapel
+
+   B = [1, 2, 1];
+   A[B] += 3;
+
+To avoid this race, the above code could be written using an explicit loop
+statement and the proper intents, for example:
+
+.. code-block:: chapel
+
+   [b in B with (+ reduce A)] A[b] += 3;
 
 .. _Reductions_and_Scans:
 

@@ -5,7 +5,7 @@ use IO;
 config const inputfile = "lehmer10.dat";
 
 proc main() {
-  var Adat = open(inputfile, ioMode.r).reader();
+  var Adat = open(inputfile, ioMode.r).reader(locking=false);
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);
@@ -16,7 +16,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = {A1D,A1D}; 
+  const A2D = {A1D,A1D};
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -56,7 +56,7 @@ proc blockChol(A:[?D],blk) where (D.rank == 2) {
         A1(j,j) -= A1(j,k)*A1(j,k);
       }
 
-      if (A1(j,j) <= zero) then 
+      if (A1(j,j) <= zero) then
         halt("Matrix is not positive definite.");
       else
         A1(j,j) = sqrt(A1(j,j));
@@ -76,7 +76,7 @@ proc blockChol(A:[?D],blk) where (D.rank == 2) {
         }
       }
     }
-    
+
     for k in CurrentBlockInds {
       for i in TrailingBlockInds {
         A2(i,k) = A2(i,k)/A1(k,k);
@@ -84,7 +84,7 @@ proc blockChol(A:[?D],blk) where (D.rank == 2) {
       for (i,j) in {TrailingBlockInds,CurrentBlockInds(k+1..)} {
         A2(i,j) -= A1(j,k)*A2(i,k);
       }
-    }  
+    }
   }
 }
 
@@ -104,16 +104,16 @@ proc readSize(Adat) {
 
   Adat.read(n);
   return n;
-} 
+}
 
 proc readBlk(Adat) {
   var blk: int;
 
   Adat.read(blk);
   return blk;
-} 
+}
 
-proc initA(A,Adat){
+proc initA(ref A,Adat){
   for ij in A.domain {
     Adat.read(A(ij));
   }
@@ -128,4 +128,4 @@ proc writelower(A:[?D]) {
     }
   }
   writeln(L);
-} 
+}

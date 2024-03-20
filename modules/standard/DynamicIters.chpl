@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -87,23 +87,23 @@ where tag == iterKind.leader
   // # of tasks the range can fill. (fast) ceil so all work is represented
   const numChunks: int;
 
-  // divceilpos() doesn't accept two unsigned ints.
-  // divceil() doesn't accept args of non-matching signedness.
+  // divCeilPos() doesn't accept two unsigned ints.
+  // divCeil() doesn't accept args of non-matching signedness.
   //
-  // So we need to call divceil() for the former case, and
-  // divceilpos() for the latter.
+  // So we need to call divCeil() for the former case, and
+  // divCeilPos() for the latter.
   //
   // If c.size (of type c.idxType) is uint(64), we can safely cast the
   // chunkSize (asserted positive above) to uint(64), and can call
-  // divceil() on two unsigned ints.
+  // divCeil() on two unsigned ints.
   //
   // Otherwise, it isn't uint(64), and we can safely cast it to
-  // int(64).  Then we can call divceilpos() with it and any chunkSize
+  // int(64).  Then we can call divCeilPos() with it and any chunkSize
   // type, since then we know at least one arg is signed.
   if c.idxType == uint(64) then
-    numChunks = divceil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
+    numChunks = divCeil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
   else
-    numChunks = divceilpos(c.sizeAs(int), chunkSize): int;
+    numChunks = divCeilPos(c.sizeAs(int), chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(numChunks, defaultNumTasks(numTasks));
@@ -456,33 +456,32 @@ iter adaptive(c:range(?), numTasks:int=0) {
 
 
 // Parallel iterator
-/*
-The enum used to represent adaptive methods.
-
-- ``Whole``
-  Each task without work tries to steal from its neighbor range
-  until it exhausts that range. Then the task continues with the next
-  neighbor range, and so on until there is no more work. This is the default
-  policy.
-
-- ``RoundRobin``
-  Each task without work tries to steal once from its neighbor range, next
-  from the following neighbor range and so on in a round-robin way until
-  there is no more work.
-
-- ``WholeTail``
-  Similar to the ``Whole`` method, but now the splitting in the victim
-  range is performed from its tail.
-*/
+/* The enum used to represent adaptive methods. */
 enum Method {
+  /*
+    Each task without work tries to steal from its neighbor range
+    until it exhausts that range. Then the task continues with the next
+    neighbor range, and so on until there is no more work. This is the default
+    policy.
+  */
   Whole = 0,
+  /*
+    Each task without work tries to steal once from its neighbor range, next
+    from the following neighbor range and so on in a round-robin way until
+    there is no more work.
+  */
   RoundRobin = 1,
+  /*
+    Similar to the :enumconstant:`~Method.Whole` method, but now the splitting
+    in the victim range is performed from its tail.
+  */
   WholeTail = 2
 };
 
 /*
-  Used to select the adaptive stealing method. Defaults to ``Whole``.
-  See :data:`Method` for more information.
+  Used to select the adaptive stealing method.
+  Defaults to :enumconstant:`~Method.Whole`.
+  See :enum:`Method` for more information.
 */
 config param methodStealing = Method.Whole;
 
@@ -521,7 +520,7 @@ where tag == iterKind.leader
     var barrier : atomic int;
 
     // Start the parallel work
-    coforall tid in 0..#nTasks with (const in r) {
+    coforall tid in 0..#nTasks with (const in r, ref localWork, ref moreLocalWork, ref locks) {
 
       // Step 1: Initial range per Thread/Task
 

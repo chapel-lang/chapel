@@ -1,5 +1,5 @@
-Block
--------
+blockDist
+---------
 distributes: {1..10}
 across locales: LOCALE0 LOCALE1 LOCALE2 LOCALE3
 indexed via: {0..3}

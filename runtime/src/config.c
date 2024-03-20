@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -347,9 +347,13 @@ void initSetValue(const char* varName, const char* value,
     #endif
   }
   if (strcmp(varName, "numLocales") == 0) {
+    char buf[100];
     parseNumLocales(value, lineno, filename);
+    snprintf(buf, sizeof(buf), "%d", getArgNumLocales());
+    configVar->setValue = chpl_glom_strings(1, buf);
+  } else {
+    configVar->setValue = chpl_glom_strings(1, value);
   }
-  configVar->setValue = chpl_glom_strings(1, value);
 }
 
 
@@ -559,5 +563,3 @@ chpl_bool chpl_config_has_value(c_string v, c_string m) {
 c_string chpl_config_get_value(c_string v, c_string m) {
   return lookupSetValue(v, m);
 }
-
-

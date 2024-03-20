@@ -294,16 +294,16 @@ L(o2):	mulx(	-16,(dp), %r13, %r12)
 	mulx(	-8,(dp), %rbx, %rax)
 	add	%r12, %rbx
 	adc	$0, %rax
-	add	%r10, %r13			C add just to produce carry
-	mov	%r9, %r10
-	adc	%rbx, %r10
+	add	%r10, %r13		C 0  add just to produce carry
+	mov	%r9, %r10		C 1
+	adc	%rbx, %r10		C 1
 	mov	%r8, %rdx
-	mulx(	%r10, %rdx, %r12)		C next quotient
-	adc	%rbp, %rax
-	setc	R8(%rbp)
-	mov	32(up), %r9
-	add	%rax, %r9
-	adc	$0, R32(%rbp)
+	mulx(	%r10, %rdx, %r12)	C next quotient
+	adc	%rbp, %rax		C 2
+	setc	R8(%rbp)		C 3
+	mov	32(up), %r9		C 2
+	add	%rax, %r9		C 2
+	adc	$0, R32(%rbp)		C 3
 	lea	8(up), up
 	dec	un
 	jne	L(o2)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -208,7 +208,8 @@ struct TryCatchAnalyzer {
     // TODO: determine what to do in the cases skipped by this check
     if (rv.hasAst(ast)) {
       const ResolvedExpression& r = rv.byAst(ast);
-      if (auto bestResFn = r.mostSpecific().only()) {
+      if (auto bestResMsc = r.mostSpecific().only()) {
+        auto bestResFn = bestResMsc.fn();
         if (bestResFn->untyped()->throws()) {
           // are we in a throwing function or a try?
           if (!this->canThrow() && tryStack.size() == 0) {
@@ -231,7 +232,7 @@ struct TryCatchAnalyzer {
                 break;
               }
             }
-            if (!foundCatchAll) {
+            if (!foundCatchAll && !canThrow()) {
               context->error(ast, "call to throwing function '%s' is "
                                   "in a try but not handled",
                                   bestResFn->untyped()->name().c_str());

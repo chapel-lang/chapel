@@ -25,7 +25,7 @@ TEST(TensorSpecTest, JSONParsing) {
         })");
   EXPECT_TRUE(!!Value);
   LLVMContext Ctx;
-  Optional<TensorSpec> Spec = getTensorSpecFromJSON(Ctx, *Value);
+  std::optional<TensorSpec> Spec = getTensorSpecFromJSON(Ctx, *Value);
   EXPECT_TRUE(Spec);
   EXPECT_EQ(*Spec, TensorSpec::createSpec<int32_t>("tensor_name", {1, 4}, 2));
 }
@@ -58,4 +58,11 @@ TEST(TensorSpecTest, TensorSpecSizesAndTypes) {
   EXPECT_EQ(Spec3DLarge.getElementCount(), 80U);
   EXPECT_EQ(Spec3DLarge.getElementByteSize(), sizeof(float));
   EXPECT_EQ(Spec1D.getElementByteSize(), sizeof(int16_t));
+}
+
+TEST(TensorSpecTest, PrintValueForDebug) {
+  std::vector<int32_t> Values{1, 3};
+  EXPECT_EQ(tensorValueToString(reinterpret_cast<const char *>(Values.data()),
+                                TensorSpec::createSpec<int32_t>("name", {2})),
+            "1,3");
 }

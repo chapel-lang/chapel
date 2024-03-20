@@ -160,7 +160,9 @@ Procedures are defined with the following syntax:
      'type'
 
    return-intent:
+     'const'
      'const ref'
+     'out'
      'ref'
      'param'
      'type'
@@ -286,6 +288,9 @@ A formal argument’s intent (:ref:`Argument_Intents`) specifies
 how the actual argument is passed to the function. If no intent is
 specified, the default intent (:ref:`The_Default_Intent`) is
 applied, resulting in type-dependent behavior.
+
+A formal argument can include a type (e.g. ``arg: int``) and possibly a
+default value (e.g. ``arg = ""``).
 
 .. _Named_Arguments:
 
@@ -419,31 +424,67 @@ Argument Intents
 Argument intents specify how an actual argument is passed to a function
 where it is represented by the corresponding formal argument.
 
-Argument intents are categorized as being either *concrete* or
-*abstract*. Concrete intents are those in which the semantics of the
-intent keyword are independent of the argument’s type. Abstract intents
-are those in which the keyword (or lack thereof) expresses a general
-intention that will ultimately be implemented via one of the concrete
-intents. The specific choice of concrete intent depends on the
-argument’s type and may be implementation-defined. Abstract intents are
-provided to support productivity and code reuse.
+The argument intents are:
+ * :ref:`The_In_Intent` ``in``
+ * :ref:`The_Out_Intent` ``out``
+ * :ref:`The_Inout_Intent` ``inout``
+ * :ref:`The_Ref_Intent` ``ref``
+ * :ref:`The_Const_In_Intent` ``const in``
+ * :ref:`The_Const_Ref_Intent` ``const ref``
+ * :ref:`The_Const_Intent` ``const``
+ * :ref:`The_Default_Intent` (when no intent is given explicitly)
 
-.. _Concrete Intents:
+How should programmers choose among these intents?
 
-Concrete Intents
-~~~~~~~~~~~~~~~~
+ * The default intent and the ``const`` intent are designed to take the
+   most natural/least surprising action. The two are the same, except for
+   with synchronization types and tuples.
 
-The concrete intents are ``in``, ``out``, ``inout``, ``ref``,
-``const in``, and ``const ref``.
+ * The ``in`` and ``const in`` intents pass by value and are important
+   for transferring a value in to a function, for example, when storing a
+   value into a data structure. Using these intents for that use case can
+   help to avoid unnecessary copies.
+
+ * The ``ref`` and ``const ref`` intents pass by reference. The ``ref``
+   intent allows modifications of the referred-to value within the
+   function and can be important when the function is intended to mutate
+   its actual argument. While ``const ref`` does not allow the function
+   itself to modify the referred-to value, the formal can be relied upon
+   to track updates to the referred-to value through other variables or
+   references, unlike the ``const`` or default intent.
+
+ * The ``out`` transfers a value out of the function. The ``inout``
+   intent is a combination of ``in`` and ``out``.
+
+.. _Summary_of_Intents:
+
+Summary of Intents
+~~~~~~~~~~~~~~~~~~
+
+The following table summarizes the differences between the intents:
+
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
+\                                ``in`` ``out``   ``inout`` ``ref``  ``const in`` ``const ref`` ``const`` default
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
+initializes formal from actual?  yes    no        yes       no       yes          no            maybe     maybe
+sets actual from formal?         no     yes       yes       no       no           no            no        no
+refers to actual argument?       no     no        no        yes      no           yes           maybe     maybe
+formal can be read?              yes    yes       yes       yes      yes          yes           yes       yes
+formal can be modified?          yes    yes       yes       yes      no           no            no        no or yes
+local changes affect the actual? no     on return on return at once  N/A          N/A           N/A       N/A or yes
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
+
+See the sections on each intent for further details.
 
 .. _The_In_Intent:
 
 The In Intent
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 When ``in`` is specified as the intent, the formal argument represents a
-variable that is copy-initialized from the value of the actual argument,
-see :ref:`Copy_and_Move_Initialization`.
+variable that is initialized from the value of the actual argument (see
+:ref:`Copy_and_Move_Initialization`). Note that a copy is not necessarily
+created for an ``in`` intent (see :ref:`Copy_Elision` for details).
 
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
@@ -454,10 +495,72 @@ argument to the type of the formal.
 The formal can be modified within the function, but such changes are
 local to the function and not reflected back to the call site.
 
+This example shows a case where the ``in`` intent accepts a record
+but the code does not copy initialize:
+
+  *Example (copy-elision-in.chpl)*
+
+   .. BLOCK-test-chapelpre
+
+      record R {
+        var x: int = 0;
+        proc init() {
+          this.x = 0;
+          writeln("init (default)");
+        }
+        proc init(arg:int) {
+          this.x = arg;
+          writeln("init ", arg, " ", arg);
+        }
+        proc init=(other: R) {
+          this.x = other.x;
+          writeln("init= ", other.x);
+        }
+      }
+      operator R.=(ref lhs:R, rhs:R) {
+        writeln("lhs ", lhs.x, " = rhs ", rhs.x);
+        lhs.x = rhs.x;
+      }
+
+
+   .. code-block:: chapel
+
+      proc makeRecord() {
+        return new R(); // creates a new R record
+      }
+
+      proc acceptWithIn(in arg) { }
+
+      proc elideCopy() {
+        var x = makeRecord();
+        acceptWithIn(x); // copy to 'in arg' is elided
+                         // because 'x' is not used again
+        writeln("block ending");
+      }
+      elideCopy();
+
+      proc noElideCopy() {
+        var x = makeRecord();
+        acceptWithIn(x); // copy to 'in arg' remains because 'x' is used again
+        writeln(x); // 'x' used here
+        writeln("block ending");
+      }
+      noElideCopy();
+
+   .. BLOCK-test-chapeloutput
+
+      init (default)
+      block ending
+      init (default)
+      init= 0
+      (x = 0)
+      block ending
+
+
 .. _The_Out_Intent:
 
 The Out Intent
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 The ``out`` intent on a formal argument supports return-like behavior.
 As such, the type of an ``out`` formal is not considered when determining
@@ -495,7 +598,7 @@ function body rather than from the call site.
 .. _The_Inout_Intent:
 
 The Inout Intent
-^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~
 
 When ``inout`` is specified as the intent, the actual argument is
 copy-initialized into the formal argument, the called function body is
@@ -513,7 +616,7 @@ modified within the function.
 .. _The_Ref_Intent:
 
 The Ref Intent
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 When ``ref`` is specified as the intent, the actual argument is passed
 by reference. Any reads of, or modifications to, the formal argument are
@@ -532,7 +635,7 @@ model.
 .. _The_Const_In_Intent:
 
 The Const In Intent
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 The ``const in`` intent is identical to the ``in`` intent, except that
 modifications to the formal argument are prohibited within the function.
@@ -540,155 +643,134 @@ modifications to the formal argument are prohibited within the function.
 .. _The_Const_Ref_Intent:
 
 The Const Ref Intent
-^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~
 
 The ``const ref`` intent is identical to the ``ref`` intent, except that
-modifications to the formal argument are prohibited within the dynamic
-scope of the function. Note that the same or concurrent tasks may modify the
-actual argument while the function is executing and that these modifications
-may be visible to reads of the formal argument within the function’s
-dynamic scope (subject to the memory consistency model).
+modifications to the formal argument are prohibited within the function.
+The referred-to value can still be modified by other means during the
+execution of the routine. Such modifications are observable
+by the formal argument, subject to the memory consistency model.
 
-.. _Summary_of_Concrete_Intents:
+The following example shows such modification by means other than the
+``const ref`` formal. This program would be invalid if ``c`` used
+``const`` intent instead of ``const ref`` (see :ref:`The_Const_Intent`).
 
-Summary of Concrete Intents
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  *Example (const-ref-aliasing.chpl)*.
 
-The following table summarizes the differences between the concrete
-intents:
+   .. code-block:: chapel
 
-================================ ====== ========= ========= =========== ============ =============
-\                                ``in`` ``out``   ``inout`` ``ref``     ``const in`` ``const ref``
-================================ ====== ========= ========= =========== ============ =============
-initializes formal from actual?  yes    no        yes       no          yes          no
-sets actual from formal?         no     yes       yes       no          no           no
-refers to actual argument?       no     no        no        yes         no           yes
-formal can be read?              yes    yes       yes       yes         yes          yes
-formal can be modified?          yes    yes       yes       yes         no           no
-local changes affect the actual? no     on return on return immediately N/A          N/A
-================================ ====== ========= ========= =========== ============ =============
+      var a: int = 0;
+      proc f(ref b, const ref c) {
+        writeln(c); // outputs 0
+        a = 1;
+        writeln(c); // outputs 1, because 'c' refers to 'a'
+        b = 2;      // modifies 'a' because 'b' refers to 'a'
+        writeln(c); // outputs 2, because 'c' refers to 'a'
+      }
+      f(a, a);
 
-.. _Abstract_Intents:
+   .. BLOCK-test-chapeloutput
 
-Abstract Intents
-~~~~~~~~~~~~~~~~
-
-The abstract intents are ``const`` and the *default intent* (when no
-intent is specified).
+      0
+      1
+      2
 
 .. _The_Const_Intent:
 
 The Const Intent
-^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~
 
-The ``const`` intent specifies that the function will not and cannot
-modify the formal argument within its dynamic scope. Whether ``const``
-is interpreted as ``const in`` or ``const ref`` intent depends on the
-argument type.  Generally, small values, such as scalar types, will be
-passed by ``const in``; while larger values, such as domains and
-arrays, will be passed by ``const ref`` intent. The
-:ref:`Abstract_Intents_Table` below lists the meaning of the ``const``
-intent for each type.
+The ``const`` intent is broadly similar to the ``const ref`` intent;
+however it allows the implementation more freedom to optimize.  Generally
+speaking, the compiler will implement a ``const`` intent formal by
+choosing between ``const in`` and ``const ref`` in an
+implementation-defined manner. As such, it is appropriate when the actual
+value will not be modified anywhere within the function and additionally
+the actual value will not be modified by other means during the call.
+See the example in :ref:`The_Const_Ref_Intent` for an example of
+modification through other means.
+
+The ``const`` intent indicates that the function will not and cannot
+modify the formal argument within its dynamic scope.
+
+Unlike ``const in`` / ``in``, the ``const`` intent cannot be relied upon
+to transfer the ownership of a value. For record types, passing to a
+``const`` intent will not invoke a user-defined copy initializer.
+
+For synchronization types ``sync`` and ``atomic``, the ``const``
+intent is ``const ref`` and the remainder of this section does not apply.
+
+Otherwise, the ``const`` intent communicates to the compiler that it
+can make several assumptions to aid optimization within the function using
+a ``const`` formal:
+
+ * the value referred to by such a formal argument will not be modified
+   while the function is running
+
+ * if the formal is an array, the domain that the array is declared over
+   will not be modified while the function is running
+
+ * if the formal is an ``owned`` or ``shared``, the actual will not be
+   modified to point to a different object or ``nil`` while the function
+   is running.
+
+In the cases where these assumptions are not appropriate, code should use
+``const ref`` or ``const in`` as appropriate.
+
+  *Implementation Notes*.
+
+  In the current compiler implementation, ``const`` means ``const in``
+  for the following types:
+
+     * for ``bool``, ``int``, ``uint``, ``real``, and ``imag`` with
+       widths less than or equal to 64 bits
+
+     * for ``complex`` with widths less than or equal to  128 bits
+
+     * for ``borrowed`` and ``unmanaged`` class types
+
+     * for values of enumerated type
+
 
 .. _The_Default_Intent:
 
 The Default Intent
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
-When no intent is specified for a formal argument, the *default
-intent* is applied.  It is designed to take the most natural/least
-surprising action for the argument, based on its type.  In practice,
-this is ``const`` for most types (as defined by
-:ref:`The_Const_Intent`) to avoid surprises for programmers coming
-from languages where everything is passed by ``in`` or ``ref`` intent
-by default.  Exceptions are made for types where modification is
-considered part of their nature, such as types used for synchronization
-(like ``atomic``) and arrays.
+When no intent is specified for a formal argument, the *default intent*
+is applied. The default intent is designed to take the most natural/least
+surprising action for the argument.
 
-Default argument passing for tuples applies the default
-argument passing strategy to each tuple component as if it
-was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
+For most types, the default intent is the same as the ``const`` intent.
+See the description of the ``const`` intent in :ref:`The_Const_intent`
+for details including  assumptions that the compiler can make about
+default intent and ``const`` formals when optimizing.
 
-The :ref:`Abstract_Intents_Table` that follows defines the default
-intent for each type.
+However, the default intent for ``atomic`` and ``sync`` is ``ref`` because
+modification is considered part of their nature.
 
-.. _Abstract_Intents_Table:
+Additionally, tuples have a special default argument intent. See
+:ref:`Tuple_Argument_Intents` for details.
 
-Abstract Intents Table
-^^^^^^^^^^^^^^^^^^^^^^
+.. _Intents_for_owned_and_shared:
 
-The following table summarizes what these abstract intents mean for each
-type:
+Default and 'const' Intents for ’owned’ and ’shared’
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. table::
-    :widths: 28 18 22 32
-
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    |                         | ``const`` intent     |                         |                                                      |
-    | Type                    | meaning              | Default intent meaning  | Notes                                                |
-    +=========================+======================+=========================+======================================================+
-    | scalar types            |  ``const in``        | ``const in``            |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``bool``,              |                      |                         |                                                      |
-    | ``int``, ``uint``,      |                      |                         |                                                      |
-    | ``real``, ``imag``,     |                      |                         |                                                      |
-    | ``complex``)            |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | string-like types       | ``const ref``        | ``const ref``           |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``string``, ``bytes``) |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | ranges                  | ``const in``         | ``const in``            |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | domains / domain maps   | ``const ref``        | ``const ref``           |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | arrays                  | ``const ref``        | ``ref`` / ``const ref`` | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | records                 | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | auto-managed classes    | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_owned_and_shared`       |
-    | (``owned``, ``shared``) |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | non-managed classes     | ``const in``         | ``const in``            |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``borrowed``,          |                      |                         |                                                      |
-    | ``unmanaged``)          |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | tuples                  | per-element          | per-element             | see :ref:`Tuple_Argument_Intents`                    |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | unions                  | ``const ref``        | ``const ref``           |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | synchronization types   | ``const ref``        | ``ref``                 |                                                      |
-    | (``atomic``,            |                      |                         |                                                      |
-    | ``sync``, ``single``)   |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-
-.. _Default_Intent_for_Arrays_and_Record_this:
-
-Default Intent for Arrays and Record ’this’
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The default intent for arrays and for a ``this`` argument of record
-type (see :ref:`Method_receiver_and_this`) is ``ref`` or
-``const ref``. It is ``ref`` if the formal argument is modified inside
-the function, otherwise it is ``const ref``. Note that neither of these
-cause an array or record to be copied by default. The choice between
-``ref`` and ``const ref`` is similar to and interacts with return intent
-overloads (see :ref:`Return_Intent_Overloads`).
-
-.. _Default_Intent_for_owned_and_shared:
-
-Default Intent for ’owned’ and ’shared’
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The default intent for ``owned`` and ``shared`` arguments is
-``const ref``. Arguments can use the ``in`` or ``const in`` intents to
-transfer or share ownership if those arguments apply to ``owned`` or
-``shared`` types.
+The default intent for :type:`~OwnedObject.owned` and
+:type:`~SharedObject.shared` arguments is ``const``. To transfer the
+ownership from an :type:`~OwnedObject.owned` actual argument or to share
+the ownership with a :type:`~SharedObject.shared` actual argument, the
+formal argument needs to use the ``in`` or ``const in`` intent. Note that
+passing an actual argument of type :type:`~OwnedObject.owned` to a
+``const in`` formal will change the actual argument's value since it
+transfers ownership out of it.  Such ownership transfer will leave a
+value of nilable class type storing ``nil`` and leave a value of
+non-nilable class type dead (see :ref:`Variable_Lifetimes`).
 
    *Example (owned-any-intent.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -706,6 +788,11 @@ transfer or share ownership if those arguments apply to ``owned`` or
 
       owned SomeClass
       true
+
+If the default intent or ``const`` intent is used for an
+:type:`~OwnedObject.owned` or :type:`~SharedObject.shared` argument, then the
+actual argument is assumed to remain unchanged during the call and
+ownership transfer or ownership sharing will not occur.
 
 .. _Variable_Length_Argument_Lists:
 
@@ -841,9 +928,20 @@ The Default Return Intent
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When no ``return-intent`` is specified explicitly, the function returns
+a value in the same way as the ``out`` return intent,
+see :ref:`Out_Return_Intent`.
+
+.. _Out_Return_Intent:
+
+The Out Return Intent
+~~~~~~~~~~~~~~~~~~~~~
+
+A function with the ``out`` return intent returns
 a value that cannot be used as an lvalue. This value is obtained
 by copy-initialization from the returned expression,
 see :ref:`Copy_and_Move_Initialization`.
+
+It is an error to return a ``sync`` or ``atomic`` by ``out`` intent.
 
 .. _Ref_Return_Intent:
 
@@ -908,6 +1006,16 @@ The Const Ref Return Intent
 The ``const ref`` return intent is also available. It is a restricted
 form of the ``ref`` return intent. Calls to functions marked with the
 ``const ref`` return intent are not lvalue expressions.
+
+.. _Const_Return_Intent:
+
+The Const Return Intent
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``const`` return intent makes it up to the implementation to return a
+``const`` reference or to return a value.  Calls to functions marked with
+the ``const`` return intent are not lvalue expressions.
+
 
 .. _Return_Intent_Overloads:
 
@@ -1343,8 +1451,8 @@ function call and one of the following conditions is met:
   and the call qualifies the function name with the module name,
   see also :ref:`Importing_Modules`.
 
-- :math:`X` is a method and it is defined in the same module that defines
-  the receiver type.
+- :math:`X` is a method and it is visible in the module that defines the
+  receiver type.
 
 .. _Determining_Candidate_Functions:
 
@@ -1407,11 +1515,12 @@ according to the concrete intent of :math:`X_i`:
  * if :math:`X_i` uses ``ref`` intent, then :math:`T(A_i)`
    must be the same type as :math:`T(X_i)`
  * if :math:`X_i` uses ``const ref`` intent, then :math:`T(A_i)` and
-   :math:`T(X_i)` must be the same type or a subtype of :math:`T(X_i)` (see
-   :ref:`Subtype_Arg_Conversions`)
- * if :math:`X_i` uses ``in`` or ``inout`` intent, then :math:`T(A_i)`
-   must be the same type, a subtype of, or implicitly convertible to
-   :math:`T(X_i)`.
+   :math:`T(X_i)` must be the same type or a subtype of :math:`T(X_i)`
+   (see :ref:`Subtype_Arg_Conversions`) or a ``param``
+   (see :ref:`Implicit_Compile_Time_Constant_Conversions`)
+ * if :math:`X_i` uses ``in``, ``const in``, ``inout``, ``const``, or
+   default intent, then :math:`T(A_i)` must be the same type, a subtype
+   of, or implicitly convertible to :math:`T(X_i)`.
  * if :math:`X_i` uses  the ``out`` intent, it is always a legal
    argument mapping regardless of the type of the actual and formal.
    In the event that setting :math:`T(A_i)` from :math:`X_i` is not
@@ -1435,13 +1544,17 @@ the above rules will be checked with :math:`T(A_i)` == ``int``.
 Determining Most Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given a set of candidate functions, the following steps are applied to
+Given a set of candidate functions, several steps are applied to
 remove candidates from the set. After the process completes, the
 remaining candidates in the set are the most specific functions.
 
-1. If any candidate is more visible (or shadows) another candidate,
-   discard all candidates that are less visible than (or shadowed by)
-   another candidate.
+Before applying these steps, if there both non-operator method candidates
+and non-operator non-method candidates, issue an ambiguity error without
+doing further candidate selection.
+
+1. If any non-method candidate is more visible (or shadows) another
+   non-method candidate, discard all non-method candidates that are less
+   visible than (or shadowed by) another non-method candidate.
 
 2. If at least one candidate requires promotion and at least one
    candidate does not use promotion, discard all candidates that use
@@ -1608,6 +1721,12 @@ when:
    ``const ref``, or the default (blank) return intent
 
 -  at least two of the above return intents have a best function.
+
+.. note::
+
+  It is currently undefined how return intent overloading interacts with
+  the ``const`` return or yield intent.
+
 
 In that case, the compiler is able to choose between ``ref`` return,
 ``const ref`` return, and value return functions based upon the context

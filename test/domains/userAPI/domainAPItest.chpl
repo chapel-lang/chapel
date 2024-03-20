@@ -1,6 +1,6 @@
 config param testError = 0, testDisplayRepresentation = false;
 
-proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
+proc testDomainAPI2D(lbl, D: domain(?), idx, OOBidx1, OOBidx2, intDom) {
   writeln(lbl);
   writeln("------------");
   writeln(D);

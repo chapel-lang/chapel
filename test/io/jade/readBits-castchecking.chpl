@@ -4,11 +4,11 @@ use IO;
 config const testfile="test.bin";
 var f = open(testfile, ioMode.cwr);
 
-var w = f.writer(kind=ionative);
+var w = f.writer(serializer=new binarySerializer(), locking=false);
 var b = [0xaa, 0x86, 0x78, 0x52, 0x92, 0x87, 0x14, 0x55, 0x22, 0x99, 0x72, 0x18, 0x82, 0x78, 0x40, 0x82] :uint(8);
 w.writeBinary(b);
 
-var r = f.reader(kind=ionative);
+var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
 var tmp:uint(8);
 
 try {

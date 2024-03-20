@@ -104,10 +104,11 @@ writeln("Initially, B is:\n", B, "\n");
 
 //
 // An array's elements can be iterated over using Chapel's standard
-// loop forms like ``for``, ``foreach``, or ``forall``.  These cause
-// the index variable to refer to an array element in each iteration.
-// For example, the following loop increments each of ``B``'s elements
-// by 1, in parallel:
+// loop forms like ``for``, ``foreach``, or ``forall`` (see the
+// :ref:`Loops Primer <primers-loops>` for details).  These cause the
+// index variable to refer to an array element in each iteration.  For
+// example, the following loop increments each of ``B``'s elements by
+// 1, in parallel:
 //
 
 forall b in B do
@@ -127,7 +128,7 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // from the ranges specified within the array type's square brackets.
 // Array ``A2`` above will have the implicit domain ``{0..4}`` to
 // represent the five values in its initializing expression.
-
+//
 // An array's domain can be queried using the ``.domain`` method,
 // which returns a ``const ref`` to the domain in question.  For
 // example, here's a loop that iterates over B's indices in parallel
@@ -147,7 +148,7 @@ writeln("After decrementing B's elements, B is:\n", B, "\n");
 // ``D``:
 //
 
-proc negateAndPrintArr(X: [?D] real) {
+proc negateAndPrintArr(ref X: [?D] real) {
   writeln("within negateAndPrintArr, D is: ", D, "\n");
   forall (i,j) in D do
     X[i,j] = -X[i,j];
@@ -157,9 +158,11 @@ proc negateAndPrintArr(X: [?D] real) {
 negateAndPrintArr(B);
 
 //
-// Arrays are passed to routines by reference (``ref``) by default, so
-// the modifications to ``X`` in procedure ``negateAndPrintArr()`` are
-// reflected back in the actual argument ``B`` as well:
+// Arrays are passed to routines by constant (``const``) by
+// default, which does not allow them to be modified within the routine.
+// The above procedure ``negateAndPrintArr()`` must use a non-constant
+// reference intent (``ref``) explicitly, so that its modifications of ``X``
+// are both allowed and reflected in the actual argument ``B``:
 //
 
 writeln("After calling negateAndPrintArr, B is:\n", B, "\n");

@@ -1,5 +1,6 @@
 -sformat=FormatKind.default # basic-types.default.good
 -sformat=FormatKind.json # basic-types.json.good
--sformat=FormatKind.little # basic-types.little.good
--sformat=FormatKind.big # basic-types.big.good
+-sformat=FormatKind.little -swarnBinaryStructured=false # basic-types.little.good
+-sformat=FormatKind.big -swarnBinaryStructured=false # basic-types.big.good
+-sformat=FormatKind.object # basic-types.object.good
 -sformat=FormatKind.syntax # basic-types.syntax.good

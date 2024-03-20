@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1038,10 +1038,7 @@ module HDF5 {
 
     extern proc H5Epop(err_stack : hid_t, count : c_size_t) : herr_t;
 
-    // after c_FILE behavior deprecation, replace with:
-    // extern proc H5Eprint2(err_stack : hid_t, ref stream : c_ptr(c_FILE)) : herr_t;
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_ptr(chpl_cFile)) : herr_t;
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : chpl_cFilePtr) : herr_t;
+    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_ptr(c_FILE)) : herr_t;
 
     extern proc H5Ewalk2(err_stack : hid_t, direction : H5E_direction_t, func : H5E_walk2_t, client_data : c_ptr(void)) : herr_t;
 
@@ -1063,10 +1060,7 @@ module HDF5 {
 
     extern proc H5Epush1(file : c_ptrConst(c_char), func : c_ptrConst(c_char), line : c_uint, maj : H5E_major_t, min : H5E_minor_t, str : c_ptrConst(c_char)) : herr_t;
 
-    // after c_FILE behavior deprecation, replace with:
-    // extern proc H5Eprint1(ref stream : c_ptr(c_FILE)) : herr_t;
-    extern proc H5Eprint1(ref stream : c_ptr(chpl_cFile)) : herr_t;
-    extern proc H5Eprint1(ref stream : chpl_cFilePtr) : herr_t;
+    extern proc H5Eprint1(ref stream : c_ptr(c_FILE)) : herr_t;
 
     extern proc H5Eset_auto1(func : H5E_auto1_t, client_data : c_ptr(void)) : herr_t;
 
@@ -2391,7 +2385,7 @@ module HDF5 {
     }
 
     extern record H5F_info2_t {
-      var super : unnamedStruct1;
+      extern "super" var super_ : unnamedStruct1;
       var free : unnamedStruct2;
       var sohm : unnamedStruct3;
     }
@@ -3563,7 +3557,7 @@ module HDF5 {
     use BlockDist;
 
     const Space = filenames.domain;
-    const BlockSpace = Space dmapped Block(Space, locs,
+    const BlockSpace = Space dmapped blockDist(Space, locs,
                                            dataParTasksPerLocale=1);
     var files: [BlockSpace] ArrayWrapper(eltType, rank);
     forall (f, name) in zip(files, filenames) {
@@ -3634,7 +3628,7 @@ module HDF5 {
      Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
      and c_ptrConst(c_char).
    */
-  proc readHDF5Dataset(file_id, dsetName: string, data) {
+  proc readHDF5Dataset(file_id, dsetName: string, ref data) {
     if !isArray(data) then compilerError("'data' must be an array");
 
     type eltType = data.eltType;
@@ -3697,7 +3691,7 @@ module HDF5 {
   proc writeArraysToHDF5Files(dirName: string, dsetNames: [] string,
                               filenames: [] string, type eltType,
                               param rank: int,
-                              data: [] ArrayWrapper(eltType, rank),
+                              ref data: [] ArrayWrapper(eltType, rank),
                               mode: Hdf5OpenMode) throws {
     use BlockDist, FileSystem;
 
@@ -3894,7 +3888,7 @@ module HDF5 {
      to do preprocessing as desired before returning the data read.
    */
   class HDF5Preprocessor {
-    proc preprocess(A: []) {
+    proc preprocess(ref A: []) {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
@@ -3937,7 +3931,7 @@ module HDF5 {
       extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
                                    flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
 
-      proc isBlock(D: Block) param do return true;
+      proc isBlock(D: blockDist) param do return true;
       proc isBlock(D) param do return false;
 
       if !isBlock(A.dom.dist) {
@@ -4061,9 +4055,9 @@ module HDF5 {
       // A11, A12, B11, B12
       // A21, A22, B21, B22
       use BlockDist, CyclicDist, super.C_HDF5;
-      proc isBlock(D: Block) param do return true;
+      proc isBlock(D: blockDist) param do return true;
       proc isBlock(D) param do return false;
-      proc isCyclic(D: Cyclic) param do return true;
+      proc isCyclic(D: cyclicDist) param do return true;
       proc isCyclic(D) param do return false;
       if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
         compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");

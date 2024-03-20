@@ -24,13 +24,13 @@ proc R.init(x : int = 0, c : unmanaged C? = nil) {
   if debug then writeln("in R.init(", x, ", ", c, ")");
   this.x = x;
   this.c = c;
-  this.complete();
+  init this;
   this.setup(x, true);
 }
 
 proc R.init=(other:R) {
   if debug then writeln("in R.init=(", other, ")");
-  this.complete();
+  init this;
   this.setup(other.x, true);
 }
 

@@ -1,4 +1,4 @@
-operator *(D1: domain, D2: domain)
+operator *(D1: domain(?), D2: domain(?))
 {
   param strides = chpl_strideUnion(D1, D2);
   param rank = D1.rank + D2.rank;

@@ -4,7 +4,7 @@
 module Graph500_defs
 {
 
-  use BlockDist;
+//  use BlockDist;
 //  config param DISTRIBUTION_TYPE = "BLOCK";
   config param DISTRIBUTION_TYPE = "";
   config param REPRODUCIBLE_PROBLEMS = true;
@@ -24,7 +24,7 @@ module Graph500_defs
 
   const edgelist_domain =
     if DISTRIBUTION_TYPE == "BLOCK" then
-      {1..N_RAWEDGES} dmapped Block ( {1..N_RAWEDGES} )
+      {1..N_RAWEDGES} dmapped blockDist ( {1..N_RAWEDGES} )
     else
       {1..N_RAWEDGES} ;
 
@@ -46,7 +46,7 @@ module Graph500_defs
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
       else
         {1..N_VERTICES} ;
 
@@ -59,7 +59,7 @@ module Graph500_defs
       var neighbor_count: int=0;
       var self_edges: int=0;
       var duplicates: int=0;
-      var vlock$: sync bool = true;
+      var vlock: sync bool = true;
 
       proc init(nd: domain(1) = {1..0}) {
         this.nd = nd;
@@ -70,7 +70,7 @@ module Graph500_defs
         this.neighbor_count = other.neighbor_count;
         this.self_edges = other.self_edges;
         this.duplicates = other.duplicates;
-        this.vlock$ = other.vlock$.readXX();
+        this.vlock = other.vlock.readXX();
       }
 
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
@@ -81,20 +81,20 @@ module Graph500_defs
          return is_member;
       }
 
-      proc add_self_edge () {
-         vlock$.readFE();
+      proc ref add_self_edge () {
+         vlock.readFE();
          self_edges += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
-      proc add_duplicate () {
-         vlock$.readFE();
+      proc ref add_duplicate () {
+         vlock.readFE();
          duplicates += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
-      proc add_Neighbor (new_vertex_ID: vertex_id) {
-         vlock$.readFE();
+      proc ref add_Neighbor (new_vertex_ID: vertex_id) {
+         vlock.readFE();
          var ID: vertex_id = new_vertex_ID;
 //       Check again to make sure another thread did not recently
 //       add v to u's neighbor list
@@ -109,7 +109,7 @@ module Graph500_defs
            neighbor_count += 1;
            Neighbors[neighbor_count]= new_vertex_ID;
          }
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc grow_helper() {
@@ -133,7 +133,7 @@ module Graph500_defs
       proc init (my_vertices, Histogram){
         this.my_vertices = my_vertices;
         this.Histogram = Histogram;
-        this.complete();
+        init this;
          forall i in my_vertices {
             Vertices[i].nd = {1..Histogram[i]};
          }

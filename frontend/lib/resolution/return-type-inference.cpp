@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -82,16 +82,18 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
   if (const Class* c = ad->toClass()) {
     const BasicClassType* parentClassType = nullptr;
-    if (const AstNode* parentClassExpr = c->parentClass()) {
+    const AstNode* lastParentClass = nullptr;
+    for (auto inheritExpr : c->inheritExprs()) {
       // Resolve the parent class type expression
       ResolutionResultByPostorderID r;
       auto visitor =
         Resolver::createForParentClass(context, c,
                                        substitutions,
                                        poiScope, r);
-      parentClassExpr->traverse(visitor);
+      inheritExpr->traverse(visitor);
 
-      QualifiedType qt = r.byAst(parentClassExpr).type();
+      auto& rr = r.byAst(inheritExpr);
+      QualifiedType qt = rr.type();
       if (auto t = qt.type()) {
         if (auto bct = t->toBasicClassType()) {
           parentClassType = bct;
@@ -100,14 +102,28 @@ const CompositeType* helpGetTypeForDecl(Context* context,
           parentClassType = ct->basicClassType();
         }
       }
+
       if (qt.isType() && parentClassType != nullptr) {
+        // It's a valid parent class; is it the only one? (error otherwise).
+        if (lastParentClass) {
+          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
+        }
+        lastParentClass = inheritExpr;
+
         // OK
+      } else if (!rr.toId().isEmpty() &&
+                 parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
+        // OK, It's an interface.
       } else {
-        context->error(parentClassExpr, "invalid parent class expression");
-        parentClassType = BasicClassType::getObjectType(context);
+        context->error(inheritExpr, "invalid parent class expression");
+        parentClassType = BasicClassType::getRootClassType(context);
       }
-    } else {
-      parentClassType = BasicClassType::getObjectType(context);
+    }
+
+    // All the parent expressions could've been interfaces, and we just
+    // inherit from object.
+    if (!parentClassType) {
+      parentClassType = BasicClassType::getRootClassType(context);
     }
 
     const BasicClassType* insnFromBct = nullptr;
@@ -123,7 +139,6 @@ const CompositeType* helpGetTypeForDecl(Context* context,
         CHPL_ASSERT(false && "unexpected instantiatedFrom type");
       }
     }
-
 
     if (!parentClassType->isObjectType() && !substitutions.empty()) {
       // recompute the parent class type with substitutions
@@ -151,6 +166,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       // TODO: update this to call a method on ArrayType to get the id or path
     } else if (r->id().symbolPath() == "ChapelArray._array") {
       ret = ArrayType::getGenericArrayType(context);
+    } else if (r->id().symbolPath() == "ChapelLocale._locale") {
+      ret = CompositeType::getLocaleType(context);
     } else {
       const RecordType* insnFromRec = nullptr;
       if (instantiatedFrom != nullptr) {
@@ -183,7 +200,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
-// TOOD:
+// TODO:
 // This code will be duplicating a lot of stuff in VarScopeVisitor, but it's
 // different enough that I don't know how to proceed. I'm certain that there's
 // a general way to make all these traversals work.
@@ -195,7 +212,7 @@ struct ReturnInferenceSubFrame {
   // The frame associated with the given AST node.
   owned<ReturnInferenceFrame> frame = nullptr;
   // Whether this sub-frame should be skipped when combining sub-results.
-  // Occurrs in particular when a branch is known statically not to occur.
+  // Occurs in particular when a branch is known statically not to occur.
   bool skip = false;
 
   ReturnInferenceSubFrame(const AstNode* node) : astNode(node) {}
@@ -501,26 +518,13 @@ void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
 bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
   enterScope(sel);
 
-  bool foundParamTrue = false;
-  int otherwise = -1;
 
+  int paramTrueIdx = -1;
   for (int i = 0; i < sel->numWhenStmts(); i++) {
-    if (foundParamTrue) {
-      // previous case was param-true, so we skip all subsequent frames
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames[i].skip = true;
-      continue;
-    }
-
     auto when = sel->whenStmt(i);
-    if (when->isOtherwise()) {
-      CHPL_ASSERT(otherwise == -1);
-      otherwise = i;
-      continue;
-    }
 
     bool anyParamTrue = false;
-    bool allParamFalse = true;
+    bool allParamFalse = !when->isOtherwise(); //do not skip otherwise blocks
 
     for (auto caseExpr : when->caseExprs()) {
       auto res = rv.byAst(caseExpr);
@@ -529,26 +533,28 @@ bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
       allParamFalse = allParamFalse && res.type().isParamFalse();
     }
 
+    //if all cases are param false, the path will never be visited.
     if (allParamFalse) {
-      // statically never resolves, so skip this case
       auto& topFrame = returnFrames.back();
       topFrame->subFrames[i].skip = true;
-    } else {
-      when->traverse(rv);
+      continue;
     }
 
+    when->traverse(rv);
+
+    //if any case is param true, none of the following whens will be visited
     if (anyParamTrue) {
-      foundParamTrue = true;
+      paramTrueIdx = i;
+      break;
     }
   }
 
-  if (otherwise != -1) {
-    if (foundParamTrue) {
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames[otherwise].skip = true;
-    } else {
-      sel->whenStmt(otherwise)->traverse(rv);
-    }
+  // if we found a param true case, mark the frames for the remaining whens
+  if (paramTrueIdx == -1) return false;
+
+  auto& topFrame = returnFrames.back();
+  for (size_t i = paramTrueIdx+1; i < topFrame->subFrames.size(); i++) {
+    topFrame->subFrames[i].skip = true;
   }
 
   return false;
@@ -565,7 +571,7 @@ bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
   }
 
   if (functionKind == Function::ITER) {
-    // Plain returns don't count towards type infernence for iterators.
+    // Plain returns don't count towards type inference for iterators.
     return false;
   }
 
@@ -833,6 +839,98 @@ static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
   return QUERY_END(result);
 }
 
+static bool helpComputeCompilerGeneratedReturnType(Context* context,
+                                                   const TypedFnSignature* sig,
+                                                   const PoiScope* poiScope,
+                                                   QualifiedType& result,
+                                                   const UntypedFnSignature* untyped) {
+  if (untyped->name() == USTR("init") ||
+      untyped->name() == USTR("init=") ||
+      untyped->name() == USTR("deinit") ||
+      untyped->name() == USTR("=")) {
+      result = QualifiedType(QualifiedType::CONST_VAR,
+                             VoidType::get(context));
+      return true;
+  } else if (untyped->name() == USTR("==")) {
+      result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
+      return true;
+  } else if (untyped->name() == USTR(":")) {
+    // Assume that compiler-generated casts are actually cast.
+    auto input = sig->formalType(0);
+    auto outputType = sig->formalType(1);
+
+    result = QualifiedType(input.kind(), outputType.type());
+    return true;
+  } else if (untyped->idIsField() && untyped->isMethod()) {
+    // method accessor - compute the type of the field
+    QualifiedType ft = computeTypeOfField(context,
+                                          sig->formalType(0).type(),
+                                          untyped->id());
+    if (ft.isType() || ft.isParam()) {
+      // return the type as-is (preserving param/type-ness)
+      result = ft;
+    } else if (ft.isConst()) {
+      // return a const ref
+      result = QualifiedType(QualifiedType::CONST_REF, ft.type());
+    } else {
+      // return a ref
+      result = QualifiedType(QualifiedType::REF, ft.type());
+    }
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
+    auto dt = sig->formalType(0).type()->toDomainType();
+
+    if (untyped->name() == "idxType") {
+      result = dt->idxType();
+    } else if (untyped->name() == "rank") {
+      // Can't use `RankType::rank` because `D.rank` is defined for associative
+      // domains, even though they don't have a matching substitution.
+      result = QualifiedType(QualifiedType::PARAM,
+                             IntType::get(context, 64),
+                             IntParam::get(context, dt->rankInt()));
+    } else if (untyped->name() == "stridable") {
+      result = dt->stridable();
+    } else if (untyped->name() == "parSafe") {
+      result = dt->parSafe();
+    } else if (untyped->name() == "isRectangular") {
+      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
+      auto type = BoolType::get(context);
+      result = QualifiedType(QualifiedType::PARAM, type, val);
+    } else if (untyped->name() == "isAssociative") {
+      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
+      auto type = BoolType::get(context);
+      result = QualifiedType(QualifiedType::PARAM, type, val);
+    } else {
+      CHPL_ASSERT(false && "unhandled compiler-generated domain method");
+      return true;
+    }
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
+    auto at = sig->formalType(0).type()->toArrayType();
+    
+    if (untyped->name() == "domain") {
+      result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
+    } else if (untyped->name() == "eltType") {
+      result = at->eltType();
+    } else {
+      CHPL_ASSERT(false && "unhandled compiler-generated array method");
+    }
+      return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
+               untyped->name() == "size") {
+      auto tup = sig->formalType(0).type()->toTupleType();
+      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, tup->numElements()));
+      return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() && untyped->name() == "eltType") {
+      auto cpt = sig->formalType(0).type()->toCPtrType();
+      result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
+      return true;
+  } else {
+    CHPL_ASSERT(false && "unhandled compiler-generated record method");
+    return true;
+  }
+}
+
 // returns 'true' if it was a case handled here & sets 'result' in that case
 // returns 'false' if it needs to be computed with a ResolvedVisitor traversal
 static bool helpComputeReturnType(Context* context,
@@ -841,6 +939,10 @@ static bool helpComputeReturnType(Context* context,
                                   QualifiedType& result) {
   const UntypedFnSignature* untyped = sig->untyped();
 
+  // TODO: Optimize the order of this case and the isCompilerGenerated case
+  // such that we don't worry about instantiating the signature if we it's
+  // compiler generated and one of the ops we know the return type for, e.g.
+  // `==`, `init`, `init=`, `deinit`, and `=`.
   if (untyped->idIsFunction() && sig->needsInstantiation()) {
     // if it needs instantiation, we don't know the return type yet.
     result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
@@ -872,7 +974,10 @@ static bool helpComputeReturnType(Context* context,
     }
 
     // if there are no returns with a value, use void return type
-    if (fnAstReturnsNonVoid(context, ast->id()) == false) {
+    if (fn->linkage() == Decl::EXTERN && fn->returnType() == nullptr) {
+      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+      return true;
+    } else if (fnAstReturnsNonVoid(context, ast->id()) == false) {
       result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       return true;
     }
@@ -899,70 +1004,8 @@ static bool helpComputeReturnType(Context* context,
   // if method call and the receiver points to a composite type definition,
   // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
-    if (untyped->name() == USTR("init")) {
-      result = QualifiedType(QualifiedType::CONST_VAR,
-                             VoidType::get(context));
-      return true;
-    } else if (untyped->idIsField() && untyped->isMethod()) {
-      // method accessor - compute the type of the field
-      QualifiedType ft = computeTypeOfField(context,
-                                            sig->formalType(0).type(),
-                                            untyped->id());
-      if (ft.isType() || ft.isParam()) {
-        // return the type as-is (preserving param/type-ness)
-        result = ft;
-      } else if (ft.isConst()) {
-        // return a const ref
-        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
-      } else {
-        // return a ref
-        result = QualifiedType(QualifiedType::REF, ft.type());
-      }
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
-      auto dt = sig->formalType(0).type()->toDomainType();
-
-      if (untyped->name() == "idxType") {
-        result = dt->idxType();
-      } else if (untyped->name() == "rank") {
-        // Can't use `RankType::rank` because `D.rank` is defined for associative
-        // domains, even though they don't have a matching substitution.
-        result = QualifiedType(QualifiedType::PARAM,
-                               IntType::get(context, 64),
-                               IntParam::get(context, dt->rankInt()));
-      } else if (untyped->name() == "stridable") {
-        result = dt->stridable();
-      } else if (untyped->name() == "parSafe") {
-        result = dt->parSafe();
-      } else if (untyped->name() == "isRectangular") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
-        auto type = BoolType::get(context, 0);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else if (untyped->name() == "isAssociative") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
-        auto type = BoolType::get(context, 0);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
-        return true;
-      }
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
-      auto at = sig->formalType(0).type()->toArrayType();
-
-      if (untyped->name() == "domain") {
-        result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
-      } else if (untyped->name() == "eltType") {
-        result = at->eltType();
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated array method");
-      }
-
-      return true;
-    } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated method");
-      return true;
-    }
+    return helpComputeCompilerGeneratedReturnType(context, sig, poiScope,
+                                                  result, untyped);
   } else {
     CHPL_ASSERT(false && "case not handled");
     return true;
@@ -1077,9 +1120,11 @@ void computeReturnType(Resolver& resolver) {
     }
 
     // infer the return type
-    auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
-    v.process(fn->body(), resolver.byPostorder);
-    resolver.returnType = v.returnedType();
+    if (fn->linkage() != Decl::EXTERN) {
+      auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
+      v.process(fn->body(), resolver.byPostorder);
+      resolver.returnType = v.returnedType();
+    }
   }
 }
 

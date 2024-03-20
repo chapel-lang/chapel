@@ -1,0 +1,9 @@
+timezones.chpl:3: warning: Timezone functionality is unstable and may change in the future
+timezones.chpl:27: warning: tz is unstable; its type may change in the future
+timezones.chpl:28: warning: tz is unstable; its type may change in the future
+timezones.chpl:31: warning: 'utcOffset' is unstable
+timezones.chpl:32: warning: 'dst' is unstable
+timezones.chpl:33: warning: 'tzname' is unstable
+timezones.chpl:34: warning: 'utcOffset' is unstable
+timezones.chpl:35: warning: 'dst' is unstable
+timezones.chpl:36: warning: 'tzname' is unstable

@@ -1,8 +1,4 @@
-assertVectorized.chpl:2: In function 'doSum':
-assertVectorized.chpl:4: warning: Unknown attribute tool name 'llvm'
-assertVectorized.chpl:12: In function 'doSum2':
-assertVectorized.chpl:14: warning: Unknown attribute tool name 'llvm'
-assertVectorized.chpl:2: warning: loop on line 5 was marked 'assertVectorized' but did not vectorize
-assertVectorized.chpl:12: warning: loop on line 15 was marked 'assertVectorized' but did not vectorize
+assertVectorized.chpl:5: warning: loop on line 9 was marked 'assertVectorized' but did not vectorize
+assertVectorized.chpl:16: warning: loop on line 20 was marked 'assertVectorized' but did not vectorize
 result 131328
 result 7734.6

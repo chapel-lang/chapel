@@ -1,0 +1,9 @@
+printAdditionalErrors-1.chpl:19: warning: NOOOO, f1() does not resolve
+printAdditionalErrors-1.chpl:11: In function 'f2':
+printAdditionalErrors-1.chpl:12: error: cannot initialize 'y' of type 'int(8)' from a 'int(64)'
+printAdditionalErrors-1.chpl:22: warning: YESSS, f2() resolves
+printAdditionalErrors-1.chpl:14: In function 'f3':
+printAdditionalErrors-1.chpl:15: error: unresolved call 'f1(3, 4)'
+printAdditionalErrors-1.chpl:8: note: this candidate did not match: f1(x: int)
+printAdditionalErrors-1.chpl:15: note: because call includes 2 arguments
+printAdditionalErrors-1.chpl:8: note: but function can only accept 1 argument

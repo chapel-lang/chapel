@@ -1,0 +1,2 @@
+domainTupFormal.chpl:1: warning: please use 'domain(?)' instead of 'domain'
+hi

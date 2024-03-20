@@ -2,8 +2,8 @@
 
 record RR {
   var xx: int;
-  proc modify(ee: int) {
-    begin {
+  proc ref modify(ee: int) {
+    begin with (ref this) {
       doModify(this, ee);
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -173,6 +173,17 @@ static Expr* postFoldNormal(CallExpr* call) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
     if (ret != NULL && ret->immediate != NULL) {
+
+      // warn for certain numeric implicit conversions before we forget
+      // everything about the call
+      for_formals_actuals(formal, actual, call) {
+        if (SymExpr* actualSe = toSymExpr(actual)) {
+          warnForSomeNumericConversions(call,
+                                        formal->typeInfo(), actual->typeInfo(),
+                                        actualSe->symbol());
+        }
+      }
+
       retval = new SymExpr(ret);
 
       call->replace(retval);
@@ -238,6 +249,11 @@ static Expr* postFoldNormal(CallExpr* call) {
     retval = new SymExpr(new_StringSymbol(call->fname()));
     call->replace(retval);
   } else if (fn->hasFlag(FLAG_GET_FUNCTION_NAME)) {
+    if (fWarnUnstable && call->getFunction()->hasFlag(FLAG_ANONYMOUS_FN)) {
+      USR_WARN(call, "using 'getRoutineName' inside first-class procedures is "
+                     "currently unstable");
+    }
+
     retval = new SymExpr(new_StringSymbol(call->getFunction()->name));
     call->replace(retval);
   } else if (fn->hasFlag(FLAG_GET_MODULE_NAME)) {
@@ -601,6 +617,18 @@ static Expr* postFoldPrimop(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_UNARY_LNOT) == true) {
     FOLD_CALL1(P_prim_lnot);
 
+  } else if (call->isPrimitive(PRIM_ABS) == true) {
+    FOLD_CALL1(P_prim_abs);
+
+  } else if (call->isPrimitive(PRIM_SQRT) == true) {
+    FOLD_CALL1(P_prim_sqrt);
+
+  } else if (call->isPrimitive(PRIM_GET_REAL) == true) {
+    FOLD_CALL1(P_prim_get_real);
+
+  } else if (call->isPrimitive(PRIM_GET_IMAG) == true) {
+    FOLD_CALL1(P_prim_get_imag);
+
   } else if (call->isPrimitive(PRIM_ADD) == true) {
     FOLD_CALL2(P_prim_add);
 
@@ -657,7 +685,16 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false, call->astloc.filename());
+      // call is at the module scope if inside the module init
+      // and directly inside the module (ie no intervening blocks)
+      bool insideModuleInit =
+        call->parentSymbol && call->parentSymbol->hasFlag(FLAG_MODULE_INIT);
+      FnSymbol* moduleInit =
+        insideModuleInit ? toFnSymbol(call->parentSymbol) : nullptr;
+      BlockStmt* parentBlock = toBlockStmt(call->parentExpr);
+      bool atModuleScope = parentBlock && moduleInit && moduleInit->body == parentBlock;
+
+      processStringInRequireStmt(arg, atModuleScope, str, false, call->astloc.filename());
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");

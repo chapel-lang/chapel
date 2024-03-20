@@ -3,7 +3,7 @@ module FileHashing {
   /* SHA256Hash is a record storing a SHA256 hash value.
      It supports comparison and writeln.
    */
-  record SHA256Hash {
+  record SHA256Hash : hashable, writeSerializable {
     /* The actual hash value */
     var hashVal: 8*uint(32);
 
@@ -11,10 +11,10 @@ module FileHashing {
        in a good format.
        */
 
-    proc writeThis(f) throws {
+    proc serialize(writer, ref serializer) throws {
       for component in hashVal {
         var s = try! "%08xu".format(component);
-        f.write(s);
+        writer.write(s);
       }
     }
 
@@ -90,7 +90,7 @@ module FileHashing {
 
     var f = open(path, ioMode.r);
     var len = f.size;
-    var r = f.reader(kind=iokind.big, locking=false,
+    var r = f.reader(deserializer=new binaryDeserializer(endianness.big), locking=false,
                      region=0..#len);
 
 

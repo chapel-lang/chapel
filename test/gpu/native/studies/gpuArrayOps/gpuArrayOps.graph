@@ -1,13 +1,13 @@
 perfkeys: Cpu Array Init (s):, Gpu Array Init (s):
-files: arrayOps-d2h-from-h, arrayOps-d2h-from-h
+files: gpuArrayOps-d2h-from-h.dat, gpuArrayOps-d2h-from-h.dat
 graphkeys: Cpu Array Init, Gpu Array Init
 ylabel: Time (s)
 graphtitle: Array Initialization (100M ints)
 
 
 perfkeys: host to device copy (GB/s):, device to host copy (GB/s):, device to host copy (GB/s):
-files: gpuArrayOps-d2h-from-h, gpuArrayOps-d2h-from-h, gpuArrayOps-d2h-from-d
-graphkeys: Host-to-Device, Device-to-Host (host touch last), Device-to-Host (device touch last),
+files: gpuArrayOps-d2h-from-h.dat, gpuArrayOps-d2h-from-h.dat, gpuArrayOps-d2h-from-d.dat
+graphkeys: Host-to-Device, Device-to-Host (host touch last), Device-to-Host (device touch last)
 ylabel: Bandwidth (GiB/s)
 graphtitle: Data Copy Between Host and Device (100M ints)
 

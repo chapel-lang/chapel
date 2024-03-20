@@ -9,7 +9,7 @@ record MyRec {
 
   proc init(x : int) {
     if (x > 10) then
-      this.complete();
+      init this;
   }
 }
 

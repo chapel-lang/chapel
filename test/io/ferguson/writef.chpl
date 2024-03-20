@@ -38,7 +38,7 @@ module test {
 
   writeln("Part 4");
   writef("%?\n":t, (1,17));
-  stdout.withSerializer(JsonSerializer).writef("%?\n":t, (1,17));
+  stdout.withSerializer(jsonSerializer).writef("%?\n":t, (1,17));
 
   writeln("Part 5");
   writef("%*i\n":t, 17, 1);
@@ -67,11 +67,27 @@ module test {
 
   writeln("Part 8");
   writef("|%07i|\n":t, 7);
-  writef("|%-7i|\n":t, 7);
-  writef("|%0-7i|\n":t, 7);
-  writef("|% -7i|\n":t, 7);
+  // left
+  writef("|%<7i|\n":t, 7);
+  writef("|%0<7i|\n":t, 7);
+  writef("|% <7i|\n":t, 7);
+  // right
+  writef("|%>7i|\n":t, 7);
+  writef("|%0>7i|\n":t, 7);
+  writef("|% >7i|\n":t, 7);
+  // center
+  writef("|%^7i|\n":t, 7);
+  writef("|%0^7i|\n":t, 7);
+  writef("|% ^7i|\n":t, 7);
+  // include '+'
   writef("|%0+7i|\n":t, 7);
   writef("|% +7i|\n":t, 7);
+
+  writeln("Part 9");
+  writef("|%20'S|\n":t, "abcdef");
+  writef("|%<20'S|\n":t, "abcdef");
+  writef("|%>20'S|\n":t, "abcdef");
+  writef("|%^20'S|\n":t, "abcdef");
 
   writeln("From README");
   writef("%5i %5s %5r\n":t, 1, "test", 6.34);
@@ -80,7 +96,7 @@ module test {
   writef("%'S\n":t, "test \"\" \'\' !");
   writef("%{(S)}\n":t, "test ()");
   writef("%40s|\n":t, "test");
-  writef("%-40s|\n":t, "test");
+  writef("%<40s|\n":t, "test");
 
   writef("123456\n");
   writef("%6.6'S\n":t, "a");

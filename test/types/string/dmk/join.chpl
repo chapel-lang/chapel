@@ -1,7 +1,7 @@
 // Credit goes to Bryant for this test of a former bug in string.join().
 
-use Random.PCGRandom only PCGRandomStream;
-
+use Random;
+use CTypes only c_str;
 config const count = 100;
 
 proc get_str_with_concat(x: int, y: int): string {
@@ -13,11 +13,11 @@ proc get_str_with_join(x: int, y: int): string {
 }
 
 proc main() {
-  var r = new owned PCGRandomStream(int);
+  var r = new randomStream(int);
 
   for i in 1..count {
-    var x = r.getNext(1, 20000);
-    var y = r.getNext(1, 20000);
+    var x = r.next(1, 20000);
+    var y = r.next(1, 20000);
 
     var s1 = get_str_with_concat(x, y);
     var s2 = get_str_with_join(x, y);

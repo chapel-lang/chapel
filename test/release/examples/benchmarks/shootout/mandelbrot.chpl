@@ -18,7 +18,7 @@ type eltType = uint(bitsPerElt);   // element type used to store the image
 
 
 proc main() {
-  const xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
+  const xdim = 0..#divCeilPos(n, bitsPerElt);  // the compacted x dimension
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
@@ -52,12 +52,12 @@ proc main() {
   }
 
   //
-  // Get a lock-free writer channel on 'stdout', write the file header,
+  // Get a lock-free, binary fileWriter on 'stdout', write the file header,
   // and the image array.
   //
-  var w = (new file(1)).writer(iokind.native, locking=false);
+  var w = (new file(1)).writer(locking=false);
 
   w.writef("P4\n");
   w.writef("%i %i\n", n, n);
-  w.write(image);
+  w.writeBinary(image);
 }

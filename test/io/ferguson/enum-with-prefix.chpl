@@ -9,7 +9,7 @@ writeln(myenum.green);
 writeln(myenum.blue);
 writeln();
 
-var jsonOut = stdout.withSerializer(JsonSerializer);
+var jsonOut = stdout.withSerializer(jsonSerializer);
 
 writeln("JSON WRITE OF ENUM VALS");
 jsonOut.writef("%?\n", myenum.red);
@@ -19,9 +19,9 @@ writeln();
 
 proc reade(s: string) : myenum {
   var f = openMemFile();
-  f.writer().write(s);
+  f.writer(locking=false).write(s);
     
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   var e: myenum = myenum.red;
   reader.read(e);
@@ -30,9 +30,9 @@ proc reade(s: string) : myenum {
 
 proc readj(s: string) : myenum {
   var f = openMemFile();
-  f.writer().write(s);
+  f.writer(locking=false).write(s);
     
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var e: myenum = myenum.red;
   reader.readf("%?", e);

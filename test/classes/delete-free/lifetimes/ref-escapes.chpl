@@ -14,7 +14,7 @@ proc badder(inout x:int) ref {
 
 record R {
   var x:int;
-  proc get() ref { return x; }
+  proc ref get() ref { return x; }
 }
 
 proc baddest() ref {

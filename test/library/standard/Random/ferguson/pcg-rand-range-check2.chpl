@@ -33,28 +33,28 @@ for i in 0..#n {
   writeln();
 }
 
-var rs = createRandomStream(seed=seed, parSafe=false, eltType=uint(32), algorithm=RNG.PCG);
+var rs = new randomStream(seed=seed, eltType=uint(32));
 
 var got:[0..#n] uint(32);
 
 writeln("Numbers first time through");
 for i in 0..#n {
-  var num = rs.getNext(0, max);
+  var num = rs.next(0, max);
   writeln(num);
   assert(num <= max);
   got[i] = num;
 }
 
-writeln("Numbers with skipToNth each time");
+writeln("Numbers with skipTo each time");
 for i in 0..#n {
-  rs.skipToNth(i);
-  var num = rs.getNext(0, max);
+  rs.skipTo(i);
+  var num = rs.next(0, max);
   writeln(num);
   assert(num <= max);
   assert(got[i] == num);
 }
 
-var rs2 = createRandomStream(seed=seed, parSafe=false, eltType=uint(64), algorithm=RNG.PCG);
+var rs2 = new randomStream(seed=seed, eltType=uint(64));
 
 var max2:uint = (2**32 + max):uint;
 
@@ -62,31 +62,31 @@ var got2:[0..2*n] uint;
 
 writeln("Numbers first time through - 64");
 for i in 0..#n {
-  var num = rs2.getNext(0, max2);
+  var num = rs2.next(0, max2);
   writeln(num);
   assert(num <= max2);
   got2[i] = num;
 }
-got2[n] = rs2.getNext();
-got2[n+1] = rs2.getNext(0, 2**32);
-got2[n+2] = rs2.getNext();
+got2[n] = rs2.next();
+got2[n+1] = rs2.next(0, 2**32);
+got2[n+2] = rs2.next();
 
-writeln("Numbers with skipToNth each time - 64");
+writeln("Numbers with skipTo each time - 64");
 for i in 0..#n {
-  rs2.skipToNth(i);
-  var num = rs2.getNext(0, max2);
+  rs2.skipTo(i);
+  var num = rs2.next(0, max2);
   writeln(num);
   assert(num <= max2);
   assert(got2[i] == num);
 }
-rs2.skipToNth(n);
-var num = rs2.getNext();
+rs2.skipTo(n);
+var num = rs2.next();
 assert(got2[n] == num);
 
-rs2.skipToNth(n + 1);
-num = rs2.getNext(0, 2**32);
+rs2.skipTo(n + 1);
+num = rs2.next(0, 2**32);
 assert(got2[n+1] == num);
 
-rs2.skipToNth(n + 2);
-num = rs2.getNext();
+rs2.skipTo(n + 2);
+num = rs2.next();
 assert(got2[n+2] == num);

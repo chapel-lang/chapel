@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -687,7 +687,6 @@ enum {
   QIO_CONV_ARG_TYPE_CHAR,
   QIO_CONV_ARG_TYPE_STRING,
   QIO_CONV_ARG_TYPE_BINARY_STRING,
-  QIO_CONV_ARG_TYPE_REPR, // %t: deprecated
   QIO_CONV_ARG_TYPE_SERDE,
   QIO_CONV_ARG_TYPE_REGEX, // argument contains a regex
   QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL, // literal regex in string

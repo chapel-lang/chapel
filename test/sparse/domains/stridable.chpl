@@ -8,7 +8,7 @@ const D2 = D by 2;
 const SD: sparse subdomain(D);
 const SD2: sparse subdomain(D2);
 
-const BD = D dmapped Block({1..n});
+const BD = D dmapped blockDist({1..n});
 const BSD: sparse subdomain(BD);
 
 const SDCS: sparse subdomain({1..n, 1..n by 2}) dmapped CS();

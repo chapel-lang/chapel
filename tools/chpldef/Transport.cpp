@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,27 +18,29 @@
  * limitations under the License.
  */
 
-#include "./Transport.h"
-
+#include "Transport.h"
+#include "Server.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
+#include <cinttypes>
 #include <iostream>
 #include <fstream>
 
 namespace chpldef {
 
-// TODO: Will block until it sees a '\n' delimited line.
-static bool readLineTrimCarriageReturn(std::istream& is, std::string& out) {
-  std::getline(is, out);
+static Transport::Status
+streamReadLineTrimCarriageReturn(Transport* tp, std::string& out) {
+  auto ret = tp->read(0, out, Transport::READ_UNTIL_NEWLINE);
+  if (!out.empty() && out.back() == '\n') out.pop_back();
   if (!out.empty() && out.back() == '\r') out.pop_back();
-  bool ret = !is.bad() && !is.fail();
   return ret;
 }
 
 // SEE: 'clangd::JSONTransport::readStandardMessage' for signal handling.
-static bool readLength(std::istream& is, int length, std::string& out) {
+static bool
+streamReadLength(std::istream& is, int64_t length, std::string& out) {
   out.resize(length);
-  for (int bytes = length, read; bytes > 0; bytes -= read) {
+  for (int64_t bytes = length, read; bytes > 0; bytes -= read) {
     is.read(&out[0], bytes);
     read = is.gcount();
   }
@@ -47,18 +49,18 @@ static bool readLength(std::istream& is, int length, std::string& out) {
 
 // TODO: Remove the asserts by logging and returning an error/message.
 // SEE: 'clangd::JSONTransport::readStandardMessage' for robust impl...
-bool Transport::readJsonBlocking(Server* ctx, std::istream& is,
-                                 JsonValue& out) {
-  std::string line;
+Transport::Status Transport::readJson(Server* ctx, JsonValue& j) {
+  Status status = Transport::OK;
   bool err = false;
-  int length = 0;
+  std::string line;
+  int64_t length = 0;
 
   // Note the fatal crashes in this function. I've inserted these because
   // if we fail to read a line in the protocol, it's difficult or
   // impossible for the server to recover. At any rate, we can worry about
   // recovering later (and ideally, not reinvent the wheel).
-  err |= !readLineTrimCarriageReturn(is, line);
-  if (err) CHPLDEF_FATAL(ctx, "Reading first line of message data");
+  status = streamReadLineTrimCarriageReturn(this, line);
+  if (status) CHPLDEF_FATAL(ctx, "Reading first line of message data");
 
   static constexpr const char* prefix = "Content-Length:";
   err |= !(line.rfind(prefix) == 0);
@@ -72,35 +74,75 @@ bool Transport::readJsonBlocking(Server* ctx, std::istream& is,
   err |= length <= 0;
   if (err) CHPLDEF_FATAL(ctx, "Message length %s is invalid", str.c_str());
 
-  err |= !readLineTrimCarriageReturn(is, line);
+  status = streamReadLineTrimCarriageReturn(this, line);
+  if (status) CHPLDEF_FATAL(ctx, "Reading CRLF before payload");
+
   err |= !line.empty();
   if (err) CHPLDEF_FATAL(ctx, "Expected CRLF before payload");
 
-  err |= !readLength(is, length, line);
-  if (err) CHPLDEF_FATAL(ctx, "Failed to read payload data");
+  status = this->read(length, line);
+  if (status) CHPLDEF_FATAL(ctx, "Failed to read payload data");
 
-  // Create and write out the JSON now. No need to move the string into
-  // the parse call because the JSON value will always copy.
+  // Parse and write out the JSON now.
   if (auto json = llvm::json::parse(line)) {
-    out = std::move(*json);
-    return true;
+    j = std::move(*json);
+    return OK;
   }
 
   // Failed to parse.
-  ctx->verbose("Failed to parse JSON object of length: %d\n", length);
+  ctx->verbose("Failed to parse JSON object of size: %" PRId64 "\n", length);
   ctx->trace("String is: %s\n", line.c_str());
-  return false;
+  return ERROR_JSON_PARSE_FAILED;
 }
 
-// TODO: Is there a way to write to a 'std::ostream' with LLVM?
-bool Transport::sendJsonBlocking(Server* ctx, std::ostream& os,
-                                 const JsonValue& json) {
+// TODO: Is there a way to write the contents without the copies?
+Transport::Status Transport::sendJson(Server* ctx, const JsonValue& j) {
+  std::stringstream ss;
   const bool pretty = false;
-  std::string s = jsonToString(json, pretty);
-  os << "Content-Length: " << s.size() << "\r\n\r\n" << s;
-  os.flush();
-  bool ret = !os.bad() && !os.fail();
+  std::string contents = jsonToString(j, pretty);
+
+  ss << "Content-Length: " << contents.size() << "\r\n\r\n" << contents;
+
+  auto ret = this->send(ss.str());
+
+  if (ret != OK) {
+    ctx->trace("Failed to send JSON object of length: %zu\n",
+               contents.size());
+    ctx->trace("Payload is: %s\n", contents.c_str());
+  }
+
   return ret;
+}
+
+Transport::Status
+TransportStdio::read(int64_t size, std::string& str, Transport::Behavior b) {
+  if (size < 0) return ERROR_INVALID_SIZE;
+
+  bool readEntireContents = (size == 0);
+  bool readUntilNewline = (b & READ_UNTIL_NEWLINE);
+  int64_t bytesToRead = size;
+  Status ret = OK;
+
+  if (readUntilNewline) {
+    if (!readEntireContents) CHPLDEF_TODO();
+    std::getline(std::cin, str, '\n');
+    bool err = std::cin.fail() || std::cin.bad();
+    if (err) ret = ERROR;
+    return ret;
+  }
+
+  if (readEntireContents) CHPLDEF_TODO();
+  bool ok = streamReadLength(std::cin, bytesToRead, str);
+  if (!ok) ret = ERROR;
+
+  return ret;
+}
+
+Transport::Status
+TransportStdio::send(const std::string& str, Transport::Behavior b) {
+  std::cout << str;
+  bool err = std::cout.fail() || std::cout.bad();
+  return err ? ERROR : OK;
 }
 
 } // end namespace 'chpldef'

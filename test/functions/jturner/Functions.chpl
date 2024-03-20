@@ -6,8 +6,8 @@ iter reverse(arr) {
   }
 }
 
-proc foldLeft(arr, init, op) {
-  var ret = init;
+proc foldLeft(arr, initial, op) {
+  var ret = initial;
 
   for a in arr {
     ret = op(ret, a);
@@ -16,8 +16,8 @@ proc foldLeft(arr, init, op) {
   return ret;
 }
 
-proc foldRight(arr, init, op) {
-  var ret = init;
+proc foldRight(arr, initial, op) {
+  var ret = initial;
 
   for a in reverse(arr) {
     ret = op(a, ret);

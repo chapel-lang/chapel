@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,15 +72,15 @@ typedef struct _chpl_commDiagnostics {
 #undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
 
-void chpl_comm_startVerbose(chpl_bool, chpl_bool);
-void chpl_comm_stopVerbose(void);
-void chpl_comm_startVerboseHere(chpl_bool, chpl_bool);
-void chpl_comm_stopVerboseHere(void);
+void chpl_comm_startVerbose(chpl_bool, chpl_bool, int32_t, int32_t);
+void chpl_comm_stopVerbose(int32_t, int32_t);
+void chpl_comm_startVerboseHere(chpl_bool, chpl_bool, int32_t, int32_t);
+void chpl_comm_stopVerboseHere(int32_t, int32_t);
 
-void chpl_comm_startDiagnostics(chpl_bool);
-void chpl_comm_stopDiagnostics(void);
-void chpl_comm_startDiagnosticsHere(chpl_bool);
-void chpl_comm_stopDiagnosticsHere(void);
+void chpl_comm_startDiagnostics(chpl_bool, int32_t, int32_t);
+void chpl_comm_stopDiagnostics(int32_t, int32_t);
+void chpl_comm_startDiagnosticsHere(chpl_bool, int32_t, int32_t);
+void chpl_comm_stopDiagnosticsHere(int32_t, int32_t);
 void chpl_comm_resetDiagnosticsHere(void);
 void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd);
 

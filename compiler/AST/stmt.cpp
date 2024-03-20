@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -598,6 +598,58 @@ BlockStmt::isCoforallLoop() const {
 bool
 BlockStmt::isCForLoop() const {
   return false;
+}
+
+CallExpr* BlockStmt::getMarkerPrimIfExists(PrimitiveTag markerType) {
+  if (!this->body.empty()) {
+    if (auto call = toCallExpr(this->body.first())) {
+      if (call->isPrimitive(markerType)) {
+        return call;
+      }
+    }
+  }
+  return nullptr;
+}
+
+// See docs on PRIM_GPU_ATTRIBUTE_BLOCK and PRIM_GPU_PRIMITIVE_BLOCK
+// in primitive.cpp for what they do.
+
+bool BlockStmt::isGpuAttributeBlock() {
+  return getMarkerPrimIfExists(PRIM_GPU_ATTRIBUTE_BLOCK) != nullptr;
+}
+
+bool BlockStmt::isGpuPrimitivesBlock() {
+  return getMarkerPrimIfExists(PRIM_GPU_PRIMITIVE_BLOCK) != nullptr;
+}
+
+bool BlockStmt::isGpuMetadata() {
+  return this->isGpuAttributeBlock() ||
+         this->isGpuPrimitivesBlock();
+}
+
+BlockStmt* BlockStmt::getPrimitivesBlock() {
+  if (isGpuAttributeBlock()) {
+    auto lastBlock = toBlockStmt(body.last());
+    INT_ASSERT(lastBlock && lastBlock->isGpuPrimitivesBlock());
+    return lastBlock;
+  }
+  return nullptr;
+}
+
+void BlockStmt::noteUseOfGpuAttributeBlock(FnSymbol* user) {
+  auto marker = getMarkerPrimIfExists(PRIM_GPU_ATTRIBUTE_BLOCK);
+  INT_ASSERT(marker);
+  marker->insertAtTail(user);
+}
+
+BlockStmt* findEnclosingGpuAttributeBlock(Expr* search) {
+  while (search) {
+    if (auto block = toBlockStmt(search)) {
+      if (block->isGpuAttributeBlock()) return block;
+    }
+    search = search->parentExpr;
+  }
+  return nullptr;
 }
 
 void

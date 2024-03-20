@@ -5,7 +5,7 @@ var myRegex = new regex(b"a+");
 
 var str = b"oneatwo";
 
-var chplout = stdout.withSerializer(ChplSerializer);
+var chplout = stdout.withSerializer(chplSerializer);
 
 chplout.writef("%?\n", str.replaceAndCount(myRegex, b"\x00"));
 

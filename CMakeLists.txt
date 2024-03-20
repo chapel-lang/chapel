@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -35,8 +35,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Handle all (most?) the versioning information in one place
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
-set(CHPL_MAJOR_VERSION 1)
-set(CHPL_MINOR_VERSION 32)
+set(CHPL_MAJOR_VERSION 2)
+set(CHPL_MINOR_VERSION 1)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
@@ -243,6 +243,9 @@ endif()
 # set(DEBUG OFF CACHE BOOL "DEBUG flag from make") # CMake Debug?
 # set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
+# We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
+string(REPLACE "-std=c++14" "" CHPL_CXX_FLAGS "${CHPL_CXX_FLAGS}")
+string(REPLACE "-std=c++17" "" CHPL_CXX_FLAGS "${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ compile options ${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ link options ${CHPL_LD_FLAGS}")
 
@@ -322,6 +325,9 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # message(DEBUG "Setting ${CHPLENV_LINE} as ${CHPL_ENV_NAME} ${CHPL_ENV_VALUE}")
   set(${CHPL_ENV_NAME} ${CHPL_ENV_VALUE} CACHE STRING "overwritten description" FORCE)
 endforeach()
+# We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
+string(REPLACE "-std=c++17" "" CHPL_HOST_BUNDLED_COMPILE_ARGS "${CHPL_HOST_BUNDLED_COMPILE_ARGS}")
+string(REPLACE "-std=c++17" "" CHPL_HOST_SYSTEM_COMPILE_ARGS "${CHPL_HOST_SYSTEM_COMPILE_ARGS}")
 
 if ((CHPL_HOME STREQUAL CMAKE_BINARY_DIR) OR
     (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR))
@@ -349,21 +355,25 @@ add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
 
-# We are not ready to include 'chpldef' in an official release just yet.
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  if (EXISTS tools/chpldef)
-    add_subdirectory(tools/chpldef)
-  endif()
+# We are not ready to include 'chpldef' in an official release just yet. This
+# check works because the 'chpldef' source files are currently not included
+# in source releases.
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/chpldef)
+  # Exclude the language server from being included in 'make all'.
+  add_subdirectory(tools/chpldef EXCLUDE_FROM_ALL)
 endif()
 
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")
   # let the build and install rpaths be absolute (which is the default)
-  set_target_properties(chpl chpldoc
+  set_target_properties(chpl chpldoc ChplFrontendShared
                         PROPERTIES
                         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
-  install(TARGETS chpl chpldoc
+  install(TARGETS chpl
           RUNTIME DESTINATION bin)
+  install(TARGETS chpldoc OPTIONAL
+          RUNTIME DESTINATION bin)
+
 else()
   # use relative rpaths for the build and do not change them on install
   if (CMAKE_VERSION VERSION_LESS 3.16)
@@ -381,12 +391,14 @@ else()
       set(CHPL_INSTALL_RPATH "@executable_path/../../lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
     endif()
 
-    set_target_properties(chpl chpldoc
+    set_target_properties(chpl chpldoc ChplFrontendShared
                           PROPERTIES
                           BUILD_WITH_INSTALL_RPATH TRUE
                           INSTALL_RPATH ${CHPL_INSTALL_RPATH})
   endif()
 
-  install(TARGETS chpl chpldoc
+  install(TARGETS chpl
+          RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
+  install(TARGETS chpldoc OPTIONAL
           RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
 endif()

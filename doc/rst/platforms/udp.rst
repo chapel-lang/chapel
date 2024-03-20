@@ -59,7 +59,7 @@ Next, try running it across several machines.
    export GASNET_SSH_CMD=ssh
    # Disable X11 forwarding
    export GASNET_SSH_OPTIONS=-x
-   # Specify which hosts to spawn on.
+   # Specify which hosts to spawn on; SSH_SERVERS can be used equivalently
    export GASNET_SSH_SERVERS="host1 host2 host3 ..."
 
 where host1, host2, host3, ... are the names of the
@@ -124,6 +124,16 @@ found the following setting useful to disable such printing:
 .. code-block:: bash
 
    export GASNET_SSH_OPTIONS="-o LogLevel=Error"
+
+My console output seems to be jumbled or missing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We've had best results with console I/O and the UDP conduit when
+setting:
+
+  .. code-block:: bash
+
+    export GASNET_ROUTE_OUTPUT=0
 
 
 I'm seeing warnings from GASNet about using a higher-performance network

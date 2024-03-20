@@ -50,7 +50,7 @@ this.  In a world where larger scale SMPs are [again] becoming more
 common, particularly where at least some of them are NUMA-based
 architectures, processor affinity is going to become more and more
 important.  Just because developers have not yet realized that they
-have this problem does not mean that they won't evenutally figure it
+have this problem does not mean that they won't eventually figure it
 out.  :-)
 
 Note that if you're looking into processor affinity, if you're on a
@@ -447,7 +447,7 @@ affinity API emerge.
 The best way to report bugs, send comments, or ask questions is to
 sign up on the user's mailing list:
 
-        plpa-users@open-mpi.org
+     [The plpa-user list has been retired]
 
 Because of spam, only subscribers are allowed to post to this list
 (ensure that you subscribe with and post from exactly the same e-mail
@@ -455,6 +455,6 @@ address -- joe@example.com is considered different than
 joe@mycomputer.example.com!).  Visit this page to subscribe to the
 list:
 
-     http://www.open-mpi.org/mailman/listinfo.cgi/plpa-users
+     [The plpa-user list has been retired]
 
 Thanks for your time.

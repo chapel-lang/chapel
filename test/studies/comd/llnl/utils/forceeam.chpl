@@ -22,7 +22,7 @@ class InterpolationObject {
     this.dx = dx;
     this.invDx = 1.0/dx;
     this.nSpace = -1..n+1;
-    this.complete();
+    init this;
 
     var nSpaceInner : domain(1) = 0..n-1;
 
@@ -100,7 +100,7 @@ class ForceEAM : Force {
   proc init() {}
 
   proc init(potDir:string, potFile:string, potType:string) {
-    this.complete();
+    init this;
 
     this.potName = "EAM";
     var input_file = potDir + "/" + potFile;
@@ -119,7 +119,7 @@ class ForceEAM : Force {
   override proc epilogue() : void {
 if useChplVis then tagVdebug("setupEAMForce");
     const boxSpace = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
-    const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid);
+    const distSpace = boxSpace dmapped blockDist(boundingBox=boxSpace, targetLocales=locGrid);
     var eamDom : [locDom] unmanaged EAMDomain?;
     coforall ijk in locDom {
       on locGrid[ijk] {

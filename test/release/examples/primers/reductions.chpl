@@ -29,7 +29,7 @@ var A: [1..size, 1..size] real; // The 2D work array
    Uses the NPB random number generator for historical reasons.
 */
 
-fillRandom(A, seed, algorithm=RNG.NPB);
+fillRandom(A, seed);
 writeln("A is: "); writeln(A);
 writeln();
 

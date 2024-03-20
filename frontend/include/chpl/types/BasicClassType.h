@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,7 +45,7 @@ class BasicClassType final : public ManageableType {
   {
     // all classes should have a parent type, except for object
     // which doesn't.
-    CHPL_ASSERT(parentType_ || name == USTR("object"));
+    CHPL_ASSERT(parentType_ || name == USTR("RootClass"));
   }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -74,7 +74,7 @@ class BasicClassType final : public ManageableType {
       const BasicClassType* instantiatedFrom,
       CompositeType::SubstitutionsMap subs);
 
-  static const BasicClassType* getObjectType(Context* context);
+  static const BasicClassType* getRootClassType(Context* context);
 
   static const BasicClassType* getReduceScanOpType(Context* context);
 

@@ -4,12 +4,12 @@ record Wrapper {
   var val: int;
   var err: owned Error? = nil;
 
-  proc get(): int throws {
+  proc ref get(): int throws {
     if err then throw err;
     return val;
   }
 
-  proc oops() {
+  proc ref oops() {
     err = new owned StringError("called oops()");
   }
 }

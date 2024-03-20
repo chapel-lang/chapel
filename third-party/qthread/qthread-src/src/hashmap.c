@@ -204,8 +204,6 @@ void INTERNAL qt_hash_destroy_deallocate(qt_hash                h,
     qt_hash_destroy(h);
 } /*}}}*/
 
-#define PUT_COLLISION 0
-#define PUT_SUCCESS   1
 int INTERNAL qt_hash_put(qt_hash  h,
                          qt_key_t key,
                          void    *value)

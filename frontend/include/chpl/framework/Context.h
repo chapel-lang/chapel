@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_QUERIES_CONTEXT_H
-#define CHPL_QUERIES_CONTEXT_H
+#ifndef CHPL_FRAMEWORK_CONTEXT_H
+#define CHPL_FRAMEWORK_CONTEXT_H
 
 #include "chpl/framework/Context-detail.h"
 #include "chpl/framework/ID.h"
@@ -39,6 +39,14 @@
 #include <vector>
 
 #include "llvm/ADT/DenseMap.h"
+
+#ifdef HAVE_LLVM
+#include "llvm/IR/LLVMContext.h"
+#endif
+
+namespace llvm {
+  class LLVMContext;
+}
 
 namespace chpl {
   class Context;
@@ -103,6 +111,14 @@ class Context {
 
     /** Tool name (for use when creating the tmpDir in /tmp if needed) */
     std::string toolName = "chpl";
+
+    /**
+      If 'true', some comments will be included in the uAST.
+
+      Note that, even when this is set, some comments are not included (for
+      example, comments between actual arguments in a function call
+     */
+    bool includeComments = true;
 
     void swap(Configuration& other);
   };
@@ -316,6 +332,13 @@ class Context {
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
   querydetail::RevisionNumber gcCounter = 1;
 
+#ifdef HAVE_LLVM
+  owned<llvm::LLVMContext> llvmContext_ = nullptr;
+#else
+  // use a dummy pointer to make sure to have the same memory layout
+  owned<unsigned char> llvmContext_ = nullptr;
+#endif
+
   // --------- end all Context fields ---------
 
   void setupGlobalStrings();
@@ -378,7 +401,7 @@ class Context {
   getResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
             const std::tuple<ArgTs...>& tupleOfArgs);
 
-  void haltForRecursiveQuery(const querydetail::QueryMapResultBase* r);
+  void emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -428,6 +451,10 @@ class Context {
             const querydetail::QueryMapResultBase* resultEntry);
 
   void doNotCollectUniqueCString(const char *s);
+
+  void gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
+                            const querydetail::QueryMapResultBase* result,
+                            std::vector<TraceElement>& trace) const;
 
   // Future Work: make the context thread-safe
 
@@ -550,6 +577,8 @@ class Context {
     return result;
   }
 
+  optional<std::vector<TraceElement>> recoverFromSelfRecursion() const;
+
   /**
     Get or create a unique string and return it as a C string. If the passed
     string is NULL, this function will return an empty string.
@@ -668,7 +697,7 @@ class Context {
    markPointer can be used to mark a pointer, where
    it is considered owned if the type is owned.
 
-   This overload just calls markPointer.
+   This overload just calls markUnownedPointer.
    */
   template<typename T>
   void markPointer(const T* ptr) {
@@ -710,12 +739,28 @@ class Context {
 
     Returns the library's path by setting 'pathOut'.
    */
-  bool pathHasLibrary(const UniqueString& filePath, UniqueString& pathOut);
+  bool pathIsInLibrary(UniqueString filePath, UniqueString& pathOut);
 
   /**
-    Sets the library path for the given file path.
+    Return 'true' if the given module ID is supported by a library file.
+
+    Returns the library's path by setting 'pathOut'.
    */
-  void setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath);
+  bool moduleIsInLibrary(ID moduleId, UniqueString& pathOut);
+
+  /**
+    Register a module ID and file path to be supported by a library file.
+   */
+  void registerLibraryForModule(ID moduleId,
+                                UniqueString filePath,
+                                UniqueString libPath);
+
+#ifdef HAVE_LLVM
+  /**
+    Get the LLVMContext associated with this Context
+   */
+  llvm::LLVMContext& llvmContext();
+#endif
 
   /**
     This function increments the current revision number stored
@@ -881,6 +926,15 @@ class Context {
        const ResultType& (*queryFunction)(Context* context, ArgTs...),
        const std::tuple<ArgTs...>& tupleOfArgs);
 
+  template<typename ResultType,
+           typename... ArgTs>
+  const typename querydetail::QueryMap<ResultType, ArgTs...>::MapType*
+  querySavedResults(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...));
+
+  bool isResultUpToDate(const querydetail::QueryMapResultBase& resultEntry) const {
+    return resultEntry.lastChanged == this->currentRevisionNumber;
+  }
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly
@@ -970,9 +1024,9 @@ class Context {
           }
         });
   }
-
   /// \endcond
 };
+
 
 } // end namespace chpl
 

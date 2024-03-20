@@ -1,0 +1,3 @@
+struct foo {
+  char x;
+};

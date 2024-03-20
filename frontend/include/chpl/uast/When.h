@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/SimpleBlockLike.h"
+#include "chpl/uast/Block.h"
 
 namespace chpl {
 namespace uast {
@@ -33,38 +34,42 @@ namespace uast {
   This class represents a when statement. When statements make up the body
   of the select statement.
  */
-class When final : public SimpleBlockLike {
+class When final : public AstNode {
+ friend class AstNode;
+
  private:
-  When(AstList children, int numCaseExprs, BlockStyle blockStyle,
-       int bodyChildNum,
-       int numBodyStmts)
-    : SimpleBlockLike(asttags::When, std::move(children), blockStyle,
-                      bodyChildNum,
-                      numBodyStmts),
-      numCaseExprs_(numCaseExprs) {
+  // The position of this never changes.
+  static const int8_t caseExprChildNum_ = 0;
+  const int numCaseExprs_;
+  const BlockStyle blockStyle_;
+  
+  When(AstList children, int numCaseExprs, BlockStyle blockStyle)
+    : AstNode(asttags::When, std::move(children)),
+      numCaseExprs_(numCaseExprs),
+      blockStyle_(blockStyle) {
   }
 
-  When(Deserializer& des)
-    : SimpleBlockLike(asttags::When, des) {
-      numCaseExprs_ = des.read<int>();
-    }
+  void serializeInner(Serializer& ser) const override {
+    ser.writeVInt(numCaseExprs_);
+    ser.write(blockStyle_);
+  }
+
+  explicit When(Deserializer& des)
+    : AstNode(asttags::When, des),
+      numCaseExprs_(des.readVInt()),
+      blockStyle_(des.read<BlockStyle>()) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const When* rhs = other->toWhen();
-    return this->numCaseExprs_ == rhs->numCaseExprs_ &&
-      this->simpleBlockLikeContentsMatchInner(rhs);
+    return this->numCaseExprs_ == rhs->numCaseExprs_ && 
+           this->blockStyle_ == rhs->blockStyle_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    simpleBlockLikeMarkUniqueStringsInner(context);
+    
   }
   
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  // The position of this never changes.
-  static const int8_t caseExprChildNum_ = 0;
-
-  int numCaseExprs_;
 
  public:
 
@@ -78,12 +83,19 @@ class When final : public SimpleBlockLike {
                            AstList stmts);
 
   /**
-    Returns the number of case expressions for this when statement.
+    Returns the number of case expressions in this when statement.
   */
   int numCaseExprs() const {
     return numCaseExprs_;
   }
 
+  /**
+   Returns the block style of this when statement.
+  */
+  BlockStyle blockStyle() const {
+    return blockStyle_;
+  }
+  
   /**
     Returns the i'th case of this when statement.
   */
@@ -91,6 +103,14 @@ class When final : public SimpleBlockLike {
     if (numCaseExprs_ <= 0) return nullptr;
     CHPL_ASSERT(i >= 0 && i < numCaseExprs_);
     auto ret = child(i);
+    return ret;
+  }
+
+  /**
+    Returns the body node
+  */
+  const Block* body() const {
+    auto ret = child(numCaseExprs_)->toBlock();
     return ret;
   }
 
@@ -109,14 +129,6 @@ class When final : public SimpleBlockLike {
   bool isOtherwise() const {
     return numCaseExprs_ == 0;
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-    ser.write(numCaseExprs_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(When);
-
 };
 
 

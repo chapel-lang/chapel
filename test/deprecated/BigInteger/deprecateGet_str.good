@@ -1,2 +1,0 @@
-deprecateGet_str.chpl:5: warning: get_str is deprecated - please use a cast to a string or IO methods to get the string representation
-1

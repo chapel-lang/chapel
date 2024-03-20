@@ -11,12 +11,12 @@ config const iters = 50;
 const sizeRange = 0..#size;
 const iterRange = 0..#iters;
 
-var Dist = new Block(rank=2, idxType=int(64), boundingBox={sizeRange, sizeRange});
+var Dist = new blockDist(rank=2, idxType=int(64), boundingBox={sizeRange, sizeRange});
 var Dom: domain(2, int(64)) dmapped Dist = {sizeRange, sizeRange};
 var Bitmap: [Dom] bool;
 
 
-forall(i,j) in Dom do {
+forall(i,j) in Dom with (ref Bitmap) do {
   Bitmap(i,j) = work(i,j);
  }
 
@@ -38,7 +38,7 @@ proc work(x, y) : bool {
 
 const byteRange = 0..#(size/8);
 
-var ByteDist = new Block(rank=2, idxType=int(64), boundingBox={byteRange, sizeRange});
+var ByteDist = new blockDist(rank=2, idxType=int(64), boundingBox={byteRange, sizeRange});
 var ByteDom: domain(2, int(64)) dmapped ByteDist = {byteRange, sizeRange};
 var OutputArray: [ByteDom] uint(8);
 

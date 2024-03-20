@@ -1,4 +1,4 @@
-use Random;
+use NPBRandom;
 use Time;
 
 enum classVals {S, W, A, B, C};
@@ -122,7 +122,8 @@ proc rank(iteration: int) {
   keyArray(iteration) = iteration;
   keyArray(iteration+Imax) = Bmax - iteration;
 
-  accum(keyArray).add(1);
+  // accum(keyArray).add(1);
+  forall k in keyArray with (ref accum) do accum(k).add(1);
   ranks = accum.read();
 
   ranks = + scan ranks;
@@ -242,4 +243,3 @@ proc fullVerify() {
   else
     passedVerifications += 1;
 }
-

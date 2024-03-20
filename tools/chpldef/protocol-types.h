@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,18 +21,11 @@
 #ifndef CHPL_TOOLS_CHPLDEF_PROTOCOL_TYPES_H
 #define CHPL_TOOLS_CHPLDEF_PROTOCOL_TYPES_H
 
-#include "./Logger.h"
-#include "./misc.h"
-#include <type_traits>
-
-/** Bunch up some redundant overrides for protocol structs into a macro. */
-#define CHPLDEF_PROTOCOL_TYPE_OVERRIDES() \
-  virtual bool fromJson(const JsonValue& j, JsonPath p) override;  \
-  virtual JsonValue toJson() const override;
-
-/** Use this to declare protocol types that are empty. */
-#define CHPLDEF_PROTOCOL_EMPTY_TYPE(name__) \
-  struct name__ : EmptyProtocolType {}
+#include "Logger.h"
+#include "misc.h"
+#include <cstdint>
+#include <variant>
+#include <vector>
 
 /** This header contains types which help form the Microsoft language server
     protocol. The types attempt to follow the specification as faithfully
@@ -45,34 +38,57 @@
 */
 namespace chpldef {
 
+/** Forward declare request params/result types, even if they may not all
+    be defined (e.g., a notification does not have a result). */
+#define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
+  struct name__##Params; \
+  struct name__##Result;
+#include "./message-macro-list.h"
+#undef CHPLDEF_MESSAGE
+
 using OPT_TODO_TYPE = opt<int>;
 
-struct ProtocolType {
-  virtual bool fromJson(const JsonValue& j, JsonPath p) = 0;
-  virtual JsonValue toJson() const = 0;
+struct BaseProtocolType {
+  virtual bool fromJson(const JsonValue& j, JsonPath p);
+  virtual JsonValue toJson() const;
 
   /** By default, convert to JSON and then print the JSON. */
   virtual std::string toString() const;
-  virtual ~ProtocolType() = default;
+  virtual ~BaseProtocolType() = default;
 };
 
-struct EmptyProtocolType : ProtocolType {
+struct EmptyProtocolType : BaseProtocolType {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
   virtual JsonValue toJson() const override;
   virtual ~EmptyProtocolType() = default;
 };
 
-/** Information about the client. */
-struct ClientInfo : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+struct ProtocolTypeSend : BaseProtocolType {
+  virtual JsonValue toJson() const override = 0;
+  virtual ~ProtocolTypeSend() = default;
+};
 
+struct ProtocolTypeRecv : BaseProtocolType {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override = 0;
+  virtual ~ProtocolTypeRecv() = default;
+};
+
+struct ProtocolType : BaseProtocolType {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override = 0;
+  virtual JsonValue toJson() const override = 0;
+  virtual ~ProtocolType() = default;
+};
+
+struct ClientInfo : ProtocolTypeRecv {
   std::string name;
   opt<std::string> version;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
 /** TODO: Used to store 'chpldef' specific initialization options. */
-struct ChpldefInit : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+struct ChpldefInit : ProtocolTypeRecv {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
 /** As defined by the spec, this structure is deeply nested and absolutely
@@ -84,27 +100,25 @@ struct ChpldefInit : ProtocolType {
 
     TODO: If you add a field here, then adjust the (de)serializer methods.
 */
-struct ClientCapabilities : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+struct ClientCapabilities : ProtocolTypeRecv {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
-struct WorkspaceFolder : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
-
+struct WorkspaceFolder : ProtocolTypeRecv {
   std::string uri;
   std::string name;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
-struct TraceLevel : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
-
+struct TraceLevel : ProtocolTypeRecv {
   Logger::Level level;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
-struct InitializeParams : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
-
-  opt<int> processId;
+struct InitializeParams : ProtocolTypeRecv {
+  opt<int64_t> processId;
   opt<ClientInfo> clientInfo;
   opt<std::string> locale;
   opt<std::string> rootPath;  /** Deprecated -> 'rootUri'. */
@@ -113,19 +127,36 @@ struct InitializeParams : ProtocolType {
   ClientCapabilities capabilities;
   opt<TraceLevel> trace;
   opt<std::vector<WorkspaceFolder>> workspaceFolders;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
-struct TextDocumentSyncOptions : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+struct SaveOptions : ProtocolTypeSend {
+  opt<bool> includeText;
+
+  virtual JsonValue toJson() const override;
+};
+
+struct TextDocumentSyncOptions : ProtocolTypeSend {
+  enum Change {
+    None          = 0,
+    Full          = 1,
+    Incremental   = 2
+  };
+  opt<bool> openClose;
+  opt<Change> change;
+  opt<bool> willSave;
+  opt<bool> willSaveWaitUntil;
+  opt<SaveOptions> save;
+
+  virtual JsonValue toJson() const override;
 };
 
 /** Some of the 'provider' queries have more advanced types we can swap
     in to configure further -- see 'DeclarationRegistrationOptions'. */
-struct ServerCapabilities : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
-
+struct ServerCapabilities : ProtocolTypeSend {
   opt<std::string> positionEncoding;
-  OPT_TODO_TYPE textDocumentSync;
+  opt<TextDocumentSyncOptions> textDocumentSync;
   OPT_TODO_TYPE notebookDocumentSync;
   OPT_TODO_TYPE completionProvider;
   opt<bool> hoverProvider;
@@ -159,41 +190,192 @@ struct ServerCapabilities : ProtocolType {
   opt<bool> workspaceSymbolProvider;
   OPT_TODO_TYPE workspace;
   OPT_TODO_TYPE experimental;
+
+  virtual JsonValue toJson() const override;
 };
 
-struct ServerInfo : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
-
+struct ServerInfo : ProtocolTypeSend {
   std::string name;
   opt<std::string> version;
+
+  virtual JsonValue toJson() const override;
 };
 
-struct InitializeResult : ProtocolType {
-  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
-
+struct InitializeResult : ProtocolTypeSend {
   ServerCapabilities capabilities;
   opt<ServerInfo> serverInfo;
+
+  virtual JsonValue toJson() const override;
 };
 
-CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedParams);
-CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedResult);
+struct InitializedParams : EmptyProtocolType {};
+struct ShutdownParams : EmptyProtocolType {};
+struct ShutdownResult : EmptyProtocolType {};
+struct ExitParams : EmptyProtocolType {};
 
-CHPLDEF_PROTOCOL_EMPTY_TYPE(ShutdownParams);
-CHPLDEF_PROTOCOL_EMPTY_TYPE(ShutdownResult);
+struct TextDocumentItem : ProtocolTypeRecv {
+  std::string uri;
+  std::string languageId;
+  int64_t version = -1;
+  std::string text;
 
-CHPLDEF_PROTOCOL_EMPTY_TYPE(ExitParams);
-CHPLDEF_PROTOCOL_EMPTY_TYPE(ExitResult);
+  TextDocumentItem() = default;
+  TextDocumentItem(std::string uri, std::string languageId, int64_t version,
+                   std::string text)
+    : uri(std::move(uri)),
+      languageId(std::move(languageId)),
+      version(version),
+      text(std::move(text)) {}
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct DidOpenParams : ProtocolTypeRecv {
+  TextDocumentItem textDocument;
+
+  DidOpenParams() = default;
+  DidOpenParams(TextDocumentItem textDocument)
+    : textDocument(std::move(textDocument)) {}
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct DidChangeParams : ProtocolTypeRecv {
+  TextDocumentItem textDocument;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct DidSaveParams : ProtocolTypeRecv {
+  TextDocumentItem textDocument;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct DidCloseParams : ProtocolTypeRecv {
+  TextDocumentItem textDocument;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct TextDocumentIdentifier : ProtocolTypeRecv {
+  std::string uri;
+
+  TextDocumentIdentifier() = default;
+  TextDocumentIdentifier(std::string uri) : uri(std::move(uri)) {}
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct Position : ProtocolType {
+  uint64_t line = 0;            /** Zero-based position. */
+  uint64_t character = 0;       /** Zero-based position. */
+
+  Position() = default;
+  Position(uint64_t line, uint64_t character)
+    : line(line), character(character) {}
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  bool operator==(const Position& rhs) const;
+  bool operator!=(const Position& rhs) const;
+  bool operator<(const Position& rhs) const;
+  bool operator<=(const Position& rhs) const;
+  bool operator>(const Position& rhs) const;
+  bool operator>=(const Position& rhs) const;
+};
+
+struct Range : ProtocolType {
+  Position start;
+  Position end;
+
+  Range() = default;
+  Range(Position start, Position end)
+    : start(std::move(start)),
+      end(std::move(end)) {}
+  Range(const chpl::Location& loc);
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  bool operator==(const Range& rhs) const;
+  bool operator!=(const Range& rhs) const;
+
+  /** Determine if the start position of this is less than that of 'rhs'. */
+  bool operator<(const Range& rhs) const;
+  bool operator<=(const Range& rhs) const;
+
+  /** Determine if the end position of this is greater than that of 'rhs'. */
+  bool operator>(const Range& rhs) const;
+  bool operator>=(const Range& rhs) const;
+
+  /** Determine if this contains 'r'. Equal ranges contain each other. */
+  bool contains(const Range& r) const;
+
+  /** Determine if this contains the position 'p'. */
+  bool contains(const Position& p) const;
+
+  /** Determine if one range overlaps another. */
+  bool overlaps(const Range& r) const;
+
+  /** Determine if the end position is less than the start position. */
+  bool isNegative() const;
+};
+
+struct TextDocumentPositionParams : ProtocolTypeRecv {
+  TextDocumentIdentifier textDocument;
+  Position position;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct Location : ProtocolType {
+  std::string uri;
+  Range range;
+
+  Location(std::string uri, Range range)
+    : uri(std::move(uri)),
+      range(std::move(range)) {}
+  Location() = default;
+  Location(const chpl::Location& loc);
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  bool operator==(const Location& rhs) const;
+  bool operator!=(const Location& rhs) const;
+};
+
+struct LocationLink : ProtocolType {
+  opt<Range> originSelectionRange;
+  std::string targetUri;
+  Range targetRange;
+  Range targetSelectionRange;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+};
+
+using LocationArray = std::vector<Location>;
+using LocationLinkArray = std::vector<LocationLink>;
+
+struct DeclarationParams : TextDocumentPositionParams {};
+struct DefinitionParams : TextDocumentPositionParams {};
+
+struct DeclarationResult : ProtocolTypeSend {
+  opt<std::variant<LocationArray, LocationLinkArray>> result;
+
+  virtual JsonValue toJson() const override;
+};
+
+struct DefinitionResult : ProtocolTypeSend {
+  opt<std::variant<LocationArray, LocationLinkArray>> result;
+
+  virtual JsonValue toJson() const override;
+};
 
 /** Instantiate only if 'T' is derived from 'ProtocolType'. */
 template <typename T>
-CHPLDEF_ENABLE_IF_DERIVED(T, ProtocolType, bool)
+CHPLDEF_ENABLE_IF_DERIVED(T, BaseProtocolType, bool)
 fromJSON(const JsonValue& j, T& x, JsonPath p) {
   return x.fromJson(j, p);
 }
 
 /** Instantiate only if 'T' is derived from 'ProtocolType'. */
 template <typename T>
-CHPLDEF_ENABLE_IF_DERIVED(T, ProtocolType, JsonValue)
+CHPLDEF_ENABLE_IF_DERIVED(T, BaseProtocolType, JsonValue)
 toJSON(const T& x) {
   return x.toJson();
 }

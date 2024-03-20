@@ -10,7 +10,7 @@ class C {
 class D : C(?) {
   proc init(param x : int) {
     super.init(x);
-    this.complete();
+    init this;
     // Error message should say something about phase 1 or 2
     this.x = 42;
   }

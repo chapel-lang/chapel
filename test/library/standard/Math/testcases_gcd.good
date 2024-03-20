@@ -7,3 +7,73 @@
 8
 4
 0
+int(64)
+int(32) tests
+4
+2
+1
+1
+4
+4
+8
+4
+0
+int(32)
+int(16) tests
+4
+2
+1
+1
+4
+4
+8
+4
+0
+int(16)
+int(8) tests
+4
+2
+1
+1
+4
+4
+8
+4
+0
+int(8)
+uint(64) tests
+4
+2
+1
+1
+8
+4
+0
+uint(64)
+uint(32) tests
+4
+2
+1
+1
+8
+4
+0
+uint(32)
+uint(16) tests
+4
+2
+1
+1
+8
+4
+0
+uint(16)
+uint(8) tests
+4
+2
+1
+1
+8
+4
+0
+uint(8)

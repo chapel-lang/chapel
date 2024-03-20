@@ -66,7 +66,7 @@ proc main() {
 
 proc RandomAccessUpdate() {
 
-  [i in TableDomain] Table(i) = i:uint(64);
+  [i in TableDomain with (ref Table)] Table(i) = i:uint(64);
   
   for j in StreamDomain {
     var ran:uint(64) = RandomStart(BigStep*j);

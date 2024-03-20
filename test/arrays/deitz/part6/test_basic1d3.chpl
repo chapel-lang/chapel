@@ -4,12 +4,12 @@ var D : domain(1) = {1..n};
 
 var A : [D] int;
 
-[i in D] A(i) = i;
+[i in D with (ref A)] A(i) = i;
 
 writeln(A);
 
 var B : [D] int;
 
-[i in D] B(i) = A(i);
+[i in D with (ref B)] B(i) = A(i);
 
 writeln(B);

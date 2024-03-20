@@ -6,8 +6,8 @@ config const doDiagnostics=false;
 config  const n: int=4;
 var e=false;
 const S ={1..n,1..n};
-const Dom1: domain(2) dmapped Cyclic(startIdx=S.low)=S;
-//var Dist1 = new Block({1..n,1..n});
+const Dom1: domain(2) dmapped cyclicDist(startIdx=S.low)=S;
+//var Dist1 = new blockDist({1..n,1..n});
 //var Dom1: domain(2,int) dmapped Dist1 = {1..n,1..n};
 
 var A:[Dom1] int(64); //real

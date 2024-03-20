@@ -9,8 +9,8 @@ record MyMapper {
   }
 }
 
-var D: domain(int) dmapped Hashed(idxType=int, mapper=new MyMapper());
+var D: domain(int) dmapped hashedDist(idxType=int, mapper=new MyMapper());
 D += 0;
 D += 1;
 
-stdout.withSerializer(ChplSerializer).writef("%?\n", D);
+stdout.withSerializer(chplSerializer).writef("%?\n", D);

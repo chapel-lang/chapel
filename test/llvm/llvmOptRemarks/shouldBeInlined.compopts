@@ -1,5 +1,3 @@
---llvm-remarks='inline' # shouldBeInlined-optFailed.good
---llvm-remarks-function='main' # shouldBeInlined-optFailed.good
 --fast --llvm-remarks='inline'
 --fast --llvm-remarks-function='main'
 --fast --llvm-remarks-function='foo' # nothing.good

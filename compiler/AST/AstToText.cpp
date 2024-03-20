@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1481,7 +1481,7 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
 void AstToText::appendExpr(LoopExpr* expr, bool printingType)
 {
   std::string start,end;
-  if (expr->forall)
+  if (expr->type == FORALL_EXPR)
   {
     if (expr->maybeArrayType)
     {

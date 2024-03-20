@@ -1,6 +1,6 @@
 // Test that writes to array elements are fenced before a large transfer
 // containing those elements is issued.
-proc testArr(A) {
+proc testArr(ref A) {
   on Locales[numLocales-1] {
     var B: [A.domain] int = 1;
     for i in A.domain.first..#10 {

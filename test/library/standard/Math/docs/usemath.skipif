@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+
+# chpldoc, which this test relies on, requires Python version 3.6 or
+# greater
+version_is_good = True
+if sys.version_info[0] < 3:
+    version_is_good = False
+else:
+    if sys.version_info[0] == 3 and sys.version_info[1] <= 5:
+        version_is_good = False
+
+# this test uses sphinx-build, make sure it is in the venv at the expected spot
+
+chpl_home = os.environ.get("CHPL_HOME", "")
+sphinx_build = f"{chpl_home}/third-party/chpl-venv/install/chpldeps/bin/sphinx-build"
+sphinx_build_good = False
+if os.path.isfile(sphinx_build) and os.access(sphinx_build, os.X_OK):
+    sphinx_build_good = True
+
+print(not (version_is_good and sphinx_build_good))

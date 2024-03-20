@@ -1,0 +1,156 @@
+warning in unstableSymbols.doc.chpl:2: an implicit module named 'unstableSymbols.doc' is being introduced to contain file-scope code
+.. default-domain:: chpl
+
+.. module:: unstableSymbols.doc
+
+unstableSymbols.doc
+===================
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   unstableSymbols.doc/*
+
+.. data:: var a: int
+
+   .. warning::
+
+      a is unstable
+
+.. data:: var b: int
+
+   .. warning::
+
+      b is unstable, don't use it
+
+.. data:: var c: string
+
+   .. warning::
+
+      c is unstable
+
+   There was documentation of this symbol 
+
+.. data:: var d: string
+
+   .. warning::
+
+      d is unstable, don't use it
+
+   This symbol was also documented 
+
+.. data:: var e: real
+
+   This symbol is unstable 
+
+.. data:: var f: real
+
+   This symbol is also unstable 
+
+.. data:: var g: bool
+
+   .. warning::
+
+      g is unstable
+
+   This symbol is not considered stable 
+
+.. data:: var h: bool
+
+   .. warning::
+
+      h is unstable, don't use it
+
+   This symbol is also not considered stable 
+
+.. default-domain:: chpl
+
+.. module:: UnstableMod1
+
+UnstableMod1
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc.UnstableMod1;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc.UnstableMod1;
+
+.. warning::
+
+   UnstableMod1 is unstable
+
+.. default-domain:: chpl
+
+.. module:: UnstableMod2
+
+UnstableMod2
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc.UnstableMod2;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc.UnstableMod2;
+
+.. warning::
+
+   This module is unstable
+
+.. default-domain:: chpl
+
+.. module:: UnstableMod3
+   :synopsis: Including modules with documentation 
+
+UnstableMod3
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc.UnstableMod3;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc.UnstableMod3;
+
+.. warning::
+
+   This module is unstable
+
+Including modules with documentation 
+
+.. data:: var x: int
+
+   Just a regular symbol to show how it interacts 
+

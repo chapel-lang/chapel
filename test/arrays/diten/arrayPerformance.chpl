@@ -30,10 +30,9 @@ proc main {
   }
 }
 
-proc initialize(B) {
-  use Random;
-  var rnd = new RandomStream(eltType=real, seed=randSeed);
-  rnd.fillRandom(B);
+proc initialize(ref B) {
+  import Random;
+  Random.fillRandom(B, randSeed);
 }
 
 proc runTest(D, alpha: real) {

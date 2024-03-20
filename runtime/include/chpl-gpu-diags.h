@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,15 +55,15 @@ typedef struct _chpl_gpuDiagnostics {
 #undef _GPU_DIAGS_DECL
 } chpl_gpuDiagnostics;
 
-void chpl_gpu_startVerbose(chpl_bool, chpl_bool);
-void chpl_gpu_stopVerbose(void);
-void chpl_gpu_startVerboseHere(chpl_bool, chpl_bool);
-void chpl_gpu_stopVerboseHere(void);
+void chpl_gpu_startVerbose(chpl_bool, chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopVerbose(int32_t, int32_t);
+void chpl_gpu_startVerboseHere(chpl_bool, chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopVerboseHere(int32_t, int32_t);
 
-void chpl_gpu_startDiagnostics(chpl_bool);
-void chpl_gpu_stopDiagnostics(void);
-void chpl_gpu_startDiagnosticsHere(chpl_bool);
-void chpl_gpu_stopDiagnosticsHere(void);
+void chpl_gpu_startDiagnostics(chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopDiagnostics(int32_t, int32_t);
+void chpl_gpu_startDiagnosticsHere(chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopDiagnosticsHere(int32_t, int32_t);
 void chpl_gpu_resetDiagnosticsHere(void);
 void chpl_gpu_getDiagnosticsHere(chpl_gpuDiagnostics *cd);
 

@@ -36,7 +36,7 @@ proc matrixMult_ijk(
     const n : int,
     const A : [?AD] int,
     const B : [?BD] int,
-    C : [?CD] int)
+    ref C : [?CD] int)
 {
     for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
         for (cj,bj) in zip(CD.dim(1), BD.dim(1)) {

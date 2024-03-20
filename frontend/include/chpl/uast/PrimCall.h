@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,8 @@ namespace uast {
 
  */
 class PrimCall final : public Call {
+ friend class AstNode;
+
  private:
   // which primitive
   PrimitiveTag prim_;
@@ -52,7 +54,13 @@ class PrimCall final : public Call {
            /* hasCalledExpression */ false),
       prim_(prim) {
   }
-  PrimCall(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
+    ser.write(prim_);
+  }
+
+  explicit PrimCall(Deserializer& des)
     : Call(asttags::PrimCall, des) {
     prim_ = des.read<PrimitiveTag>();
   }
@@ -84,13 +92,6 @@ class PrimCall final : public Call {
 
   /** Returns the enum value of the primitive called */
   PrimitiveTag prim() const { return prim_; }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-    ser.write(prim_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(PrimCall);
 };
 
 

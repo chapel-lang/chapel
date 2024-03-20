@@ -9,7 +9,7 @@ proc checkShape(A : [?ad], B : [?bd]) {
   return true;
 }
 
-proc stridedAssign(A : [], B : [], debug=debugDefault) {
+proc stridedAssign(ref A : [], B : [], debug=debugDefault) {
   stridedAssign(A, A.domain, B, B.domain, debug=debug);
 }
 
@@ -17,7 +17,7 @@ proc stridedAssign(A : [], B : [], debug=debugDefault) {
 // -1 if the assignment result in incorrect data
 // 0 if the assignment did not occur (say, for arrays whose size did not match)
 // 1 if the assignment was successfull
-proc stridedAssign(A : [], sa, B : [], sb, debug=debugDefault) {
+proc stridedAssign(ref A : [], sa, B : [], sb, debug=debugDefault) {
   ref left = if isDomain(sa) then A[sa] else A[(...sa)];
   ref right = if isDomain(sb) then B[sb] else B[(...sb)];
   const ldom = left.domain;
@@ -57,7 +57,7 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=debugDefault) {
 
     var failOut = false,
         failIn  = false;
-    forall i in A.domain with ( || reduce failOut, || reduce failIn) {
+    forall i in A.domain with ( || reduce failOut, || reduce failIn, ref A) {
       const isFortyTwo = A[i] == 42;
       const inSlice = isMember(i);
       failIn = failIn || (inSlice && !isFortyTwo);

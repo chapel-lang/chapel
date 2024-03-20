@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 #include "primitive.h"
 #include "resolution.h"
 #include "TryStmt.h"
+
 
 #include "global-ast-vecs.h"
 
@@ -180,6 +181,57 @@ void check_flattenFunctions()
   // Suggestion: Ensure no nested functions.
 }
 
+static
+bool symbolIsUsedAsRef(Symbol* sym) {
+
+  auto checkForMove = [](SymExpr* use, CallExpr* call) {
+    SymExpr* lhs = toSymExpr(call->get(1));
+    Symbol* lhsSymbol = lhs->symbol();
+    return lhs != use && symbolIsUsedAsRef(lhsSymbol);
+  };
+
+  for_SymbolSymExprs(se, sym) {
+    if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
+  }
+  return false;
+}
+
+static
+void checkForPromotionsThatMayRace() {
+  // skip check if warning is off
+  if (!fWarnPotentialRaces) return;
+
+  // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
+  // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
+  for_alive_in_Vec(CallExpr, ce, gCallExprs) {
+
+    if (FnSymbol* fn = ce->theFnSymbol()) {
+      if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
+          fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
+
+        // We cannot rely on retTag to tell us if this promoted function returns
+        // a ref or not, we need to use the result of the call and see if it is
+        // used in any ref contexts.
+        // Assuming ce is used as a move/assign, get the lhs as a SymExpr. If its
+        // symbol is used as a ref (either a ref var or passed to a ref formal)
+        // then we should warn
+
+        if (CallExpr* parentCe = toCallExpr(ce->parentExpr)) {
+          if (isMoveOrAssign(parentCe)) {
+            if (SymExpr* lhs = toSymExpr(parentCe->get(1))) {
+              if(symbolIsUsedAsRef(lhs->symbol())) {
+                USR_WARN(ce,
+                         "modifying the result of a promoted index expression "
+                         "is a potential race condition");
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 void check_cullOverReferences()
 {
   check_afterEveryPass();
@@ -191,6 +243,8 @@ void check_cullOverReferences()
   for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
+
+  checkForPromotionsThatMayRace();
 }
 
 void check_lowerErrorHandling()
@@ -910,6 +964,7 @@ checkRetTypeMatchesRetVarType() {
 
     // auto ii functions break this rule, but only during the time that
     // they are prototypes.  After the body is filled in, they should obey it.
+    // But, for some of them, the body is never filled in.
     if (fn->hasFlag(FLAG_AUTO_II)) continue;
 
     // No body, so no return symbol.
@@ -952,6 +1007,26 @@ checkFormalActualTypesMatch()
         if (SymExpr* se = toSymExpr(actual)) {
           if (se->symbol() == gDummyRef && formal->hasFlag(FLAG_RETARG))
             // The compiler generates this combination.
+            continue;
+        }
+
+        // Allow raw_c_void_ptr/c_ptr(void) mismatch. Although implicit
+        // conversion between the two is allowed, the compiler currently inserts
+        // function such as chpl_here_free using raw_c_void_ptr after
+        // resolution.
+        // TODO: Remove this once we are using c_ptr(void) everywhere in the
+        // compiler and no longer have raw_c_void_ptr (dtCVoidPtr) sticking
+        // around.
+        if (isCVoidPtr(actual->typeInfo()) && isCVoidPtr(formal->type)) {
+          continue;
+        }
+
+        if ((isCPtrConstChar(formal->getValType()) ||
+             isCPtrConstChar(actual->getValType())) &&
+            (formal->getValType()==dtStringC ||
+             actual->getValType()==dtStringC)) {
+            // we allow conversion between these types in function resolution
+            // TODO: remove this once we get rid of c_string remnants
             continue;
         }
 

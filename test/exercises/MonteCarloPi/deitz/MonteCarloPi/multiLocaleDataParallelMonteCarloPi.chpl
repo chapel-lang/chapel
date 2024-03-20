@@ -29,7 +29,7 @@ writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 // accesses to this object, set parSafe to false to avoid locking
 // overhead.
 //
-var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+var rs = new randomStream(real, seed);
 
 //
 // Create a domain over the number of random points to generate.
@@ -37,15 +37,15 @@ var rs = new owned NPBRandomStream(real, seed, parSafe=false);
 // the number of points.  Distributed across all the locales using
 // the Block distribution.
 //
-var D = {1..n} dmapped Block({1..n});
+var D = {1..n} dmapped blockDist({1..n});
 
 //
 // Run the Monte Carlo simulation using a data parallel reduction to
 // compute the count.  The reduction is over a forall loop that
 // zippers two iterators over the RandomStream object (the second call
-// to iterate starts at the point after the first iterator finishes).
+// to next starts at the point after the first iterator finishes).
 //
-var count = + reduce [(x,y) in zip(rs.iterate(D),rs.iterate(D))] x**2+y**2 <= 1.0;
+var count = + reduce [(x,y) in zip(rs.next(D),rs.next(D))] x**2+y**2 <= 1.0;
 
 //
 // Output the approximation of PI.

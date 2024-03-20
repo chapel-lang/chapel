@@ -2,14 +2,14 @@ class C {
   var x: int;
 }
 
-class D : C {
+class D : C, writeSerializable {
   var y: real;
-  override proc writeThis(f) throws {
-    super.writeThis(f);
-    f.write("y is: ", y);
-  }
+
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    var ser = serializer.startClass(writer, "D", 1);
+    super.serialize(writer, ser);
+    ser.writeField("y", y);
+    ser.endClass();
   }
 }
 

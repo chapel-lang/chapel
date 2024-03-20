@@ -63,10 +63,10 @@ config const printParams = true,
 // across the locales.
 //
 const
-  TableDist = new Block(boundingBox={0..m-1},
+  TableDist = new blockDist(boundingBox={0..m-1},
                                  dataParTasksPerLocale=tasksPerLocale,
                                  dataParIgnoreRunningTasks=true),
-  UpdateDist = new Block(boundingBox={0..N_U-1},
+  UpdateDist = new blockDist(boundingBox={0..N_U-1},
                                   dataParTasksPerLocale=tasksPerLocale,
                                   dataParIgnoreRunningTasks=true);
 
@@ -100,9 +100,9 @@ proc main() {
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
-  // i in TableSpace"
+  // i in TableSpace".  "with (ref T)" is required since we are modifying "T".
   //
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace with (ref T)] T(i) = i;
   for loc in Locales {
     on loc {
       myBuckets = new unmanaged Buckets();
@@ -119,7 +119,7 @@ proc main() {
   // locale with the most pending updates, and do all of the updates
   // pending for that locale.
   //
-  forall (_, r) in zip(Updates, RAStream()) {
+  forall (_, r) in zip(Updates, RAStream()) with (ref T) {
     var loc = T.domain.distribution.idxToLocale(r&indexMask);
     if loc == here {
       T(r&indexMask) ^= r;
@@ -181,7 +181,7 @@ proc verifyResults() {
   //
   // Reverse the updates by recomputing them
   //
-  forall (_, r) in zip(Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) with (ref T) do
     on T.domain.distribution.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
 

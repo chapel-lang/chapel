@@ -10,8 +10,8 @@ Module Processing Options:
 
 Warning and Language Control Options:
       --[no-]permit-unhandled-module-errors
-                                      Permit unhandled errors in explicit
-                                      modules; such errors halt at runtime
+                                      Permit unhandled thrown errors; such
+                                      errors halt at runtime
       --[no-]warn-unstable            Enable [disable] warnings for uses of
                                       language features that are in flux
       --[no-]warnings                 Enable [disable] output of warnings
@@ -23,6 +23,35 @@ Warning and Language Control Options:
                                       Specify additional tool names for
                                       attributes that are expected in the
                                       source
+      --[no-]warn-potential-races     Enable [disable] output of warnings for
+                                      potential race conditions
+      --[no-]warn-int-to-uint         Enable [disable] warnings for implicitly
+                                      converting a potentially negative int
+                                      value of any width to a uint
+      --[no-]warn-small-integral-to-float
+                                      Enable [disable] warnings for implicitly
+                                      converting a small int/uint to a small
+                                      real/complex
+      --[no-]warn-integral-to-float   Enable [disable] warnings for implicitly
+                                      converting an int/uint to a real/complex
+                                      of any width
+      --[no-]warn-float-to-float      Enable [disable] warnings for implicitly
+                                      converting a real/imag/complex to a
+                                      real/imag/complex with different
+                                      precision
+      --[no-]warn-integral-to-integral
+                                      Enable [disable] warnings for implicitly
+                                      converting an int/uint to an int/uint
+                                      with different size
+      --[no-]warn-implicit-numeric-conversions
+                                      Enable [disable] warnings for implicitly
+                                      converting a value of numeric type to a
+                                      different numeric type
+      --[no-]warn-param-implicit-numeric-conversions
+                                      Enable [disable] int-to-uint,
+                                      real-to-real, and integral-to-integral
+                                      implicit conversion warnings to apply to
+                                      'param' values
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
@@ -88,6 +117,8 @@ Run-time Semantic Check Options:
                                       checks
       --[no-]bounds-checks            Enable [disable] bounds checking
       --[no-]cast-checks              Enable [disable] safeCast() value checks
+      --[no-]const-arg-checks         Enable [disable] const argument checks
+                                      (only when --warn-unstable is also used)
       --[no-]div-by-zero-checks       Enable [disable] divide-by-zero checks
       --[no-]formal-domain-checks     Enable [disable] formal domain checking
       --[no-]local-checks             Enable [disable] local block checking
@@ -133,6 +164,7 @@ Compilation Trace Options:
       --print-passes-file <filename>  Print compiler passes to <filename>
 
 Miscellaneous Options:
+      --[no-]detailed-errors          Enable [disable] detailed error messages
       --[no-]devel                    Compile as a developer [user]
       --explain-call <call>[:<module>][:<line>]
                                       Explain resolution of call

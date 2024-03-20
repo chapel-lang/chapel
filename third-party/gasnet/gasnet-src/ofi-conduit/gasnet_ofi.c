@@ -839,6 +839,10 @@ int gasnetc_ofi_init(void)
   // Especially important for work-arounds like MLX5_SCATTER_TO_CQE
   gasneti_propagate_env("MLX5_", GASNETI_PROPAGATE_ENV_PREFIX);
 
+  // Ensure uniform HFI_* env vars for psm2 provider
+  // Especially important for work-arounds like HFI_NO_CPUAFFINITY
+  gasneti_propagate_env("HFI_", GASNETI_PROPAGATE_ENV_PREFIX);
+
   // TODO: other providers?
 
 #if GASNETC_OFI_USE_THREAD_DOMAIN && GASNET_PAR

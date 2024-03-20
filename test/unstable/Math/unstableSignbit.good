@@ -1,0 +1,4 @@
+unstableSignbit.chpl:1: warning: signbit is unstable and may change its name in the future
+unstableSignbit.chpl:2: warning: signbit is unstable and may change its name in the future
+false
+true

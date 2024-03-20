@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,7 +35,7 @@ module BytesCasts {
     }
   }
 
-  operator :(x: bytes, type t:chpl_anybool) throws {
+  operator :(x: bytes, type t:bool) throws {
     var b = x.strip();
     if b.isEmpty() {
       // TODO engin: do we really need this check?
@@ -247,7 +247,7 @@ module BytesCasts {
   // complex
   //
   operator :(x: chpl_anycomplex, type t:bytes) {
-    if isnan(x.re) || isnan(x.im) then
+    if isNan(x.re) || isNan(x.im) then
       return b"nan";
     var re = (x.re):bytes;
     var im: bytes;

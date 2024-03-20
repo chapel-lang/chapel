@@ -46,7 +46,8 @@ see https://www.gnu.org/licenses/.  */
 #define MOD_1_2_TO_MOD_1_4_THRESHOLD        42
 #define PREINV_MOD_1_TO_MOD_1_THRESHOLD     15
 #define USE_PREINV_DIVREM_1                  1
-#define DIV_QR_1N_PI1_METHOD                 1  /* 34.95% faster than 2 */
+/* From gcc117.osuosl.org, 2023-07-27 */
+#define DIV_QR_1N_PI1_METHOD                 4  /* 8.57% faster than 2 */
 #define DIV_QR_1_NORM_THRESHOLD              5
 #define DIV_QR_1_UNNORM_THRESHOLD            5
 #define DIV_QR_2_PI2_THRESHOLD           MP_SIZE_T_MAX  /* never */

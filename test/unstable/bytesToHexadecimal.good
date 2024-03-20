@@ -1,0 +1,2 @@
+bytesToHexadecimal.chpl:1: warning: 'bytes.toHexadecimal' is unstable and may change in the future
+bytesToHexadecimal.chpl:2: warning: 'bytes.toHexadecimal' is unstable and may change in the future

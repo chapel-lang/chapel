@@ -14,35 +14,38 @@ record R2 {
 var sout = new file(1);
 
 var a = sout.writer(
-      serializer = new YamlSerializer(
+      serializer = new yamlSerializer(
         YamlSequenceStyle.Flow,
         YamlMappingStyle.Block,
         YamlScalarStyle.SingleQuoted,
         YamlDocumentStyle.Explicit
-        )
+        ),
+        locking=false
       );
 
 var b = sout.writer(
-      serializer = new YamlSerializer(
+      serializer = new yamlSerializer(
         YamlSequenceStyle.Block,
         YamlMappingStyle.Flow,
         YamlScalarStyle.Plain,
         YamlDocumentStyle.Implicit
-        )
+        ),
+        locking=false
       );
 
 var c = sout.writer(
-      serializer = new YamlSerializer(
+      serializer = new yamlSerializer(
         YamlSequenceStyle.Flow,
         YamlMappingStyle.Flow,
         YamlScalarStyle.Folded,
         YamlDocumentStyle.Explicit
-        )
+        ),
+        locking=false
       );
 
-var d = sout.writer(serializer = new YamlSerializer());
+var d = sout.writer(serializer = new yamlSerializer(), locking=false);
 
-var defaultFormat = sout.writer();
+var defaultFormat = sout.writer(locking=false);
 
 const longString = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In in nisl lobortis, rhoncus \
   metus dapibus, molestie mi. Donec porta lacus vitae dignissim posuere. In non auctor lorem. Nullam nec dui \

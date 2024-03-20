@@ -1,6 +1,6 @@
 /*
    Learn Chapel in Y Minutes
-   
+
    This primer will go over basic syntax and concepts in Chapel.
 */
 
@@ -121,7 +121,7 @@ References
 // be made to alias a variable other than the variable it is initialized with.
 // Here, ``refToActual`` refers to ``actual``.
 var actual = 10;
-ref refToActual = actual; 
+ref refToActual = actual;
 writeln(actual, " == ", refToActual); // prints the same value
 actual = -123; // modify actual (which refToActual refers to)
 writeln(actual, " == ", refToActual); // prints the same value
@@ -497,7 +497,7 @@ Procedures
 ----------
 */
 
-// Chapel procedures have similar syntax functions in other languages. 
+// Chapel procedures have similar syntax to functions in other languages.
 proc fibonacci(n : int) : int {
   if n <= 1 then return n;
   return fibonacci(n-1) + fibonacci(n-2);
@@ -540,7 +540,7 @@ writeln(defaultsProc(y=9.876, x=13));
 // For example, taking arrays as parameters. The query operator is used to
 // determine the domain of ``A``. This is useful for defining the return type,
 // though it's not required.
-proc invertArray(A: [?D] int): [D] int{
+proc invertArray(ref A: [?D] int): [D] int{
   for a in A do a = -a;
   return A;
 }
@@ -632,7 +632,7 @@ writeln("Outside After: ", (inVar, outVar, inoutVar, refVar));
 // ``refElement`` returns a reference to an element of array.
 // This makes more practical sense for class methods where references to
 // elements in a data-structure are returned via a method or iterator.
-proc refElement(array : [?D] ?T, idx) ref : T {
+proc refElement(ref array : [?D] ?T, idx) ref : T {
   return array[idx];
 }
 
@@ -849,7 +849,7 @@ class MyClass {
 
   // We can define an operator on our class as well, but
   // the definition has to be outside the class definition.
-  operator MyClass.+(A : MyClass, B : MyClass) : owned MyClass {
+  operator MyClass.+(A : borrowed MyClass, B : borrowed MyClass) : owned MyClass {
     return
       new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
                   memberBool = A.getMemberBool() || B.getMemberBool());
@@ -1137,47 +1137,28 @@ proc main() {
 // ``sync`` variables have two states: empty and full.
 // If you read an empty variable or write a full variable, you are waited
 // until the variable is full or empty again.
-  var someSyncVar$: sync int; // varName$ is a convention not a law.
+  var someSyncVar: sync int;
   sync {
     begin { // Reader task
       writeln("Reader: waiting to read.");
-      var read_sync = someSyncVar$.readFE();
+      var read_sync = someSyncVar.readFE();
       writeln("Reader: value is ", read_sync);
     }
 
     begin { // Writer task
       writeln("Writer: will write in...");
       countdown(3);
-      someSyncVar$.writeEF(123);
-    }
-  }
-
-// ``single`` vars can only be written once. A read on an unwritten ``single``
-// results in a wait, but when the variable has a value it can be read indefinitely.
-  var someSingleVar$: single int; // varName$ is a convention not a law.
-  sync {
-    begin { // Reader task
-      writeln("Reader: waiting to read.");
-      for i in 1..5 {
-        var read_single = someSingleVar$.readFF();
-        writeln("Reader: iteration ", i,", and the value is ", read_single);
-      }
-    }
-
-    begin { // Writer task
-      writeln("Writer: will write in...");
-      countdown(3);
-      someSingleVar$.writeEF(5); // first and only write ever.
+      someSyncVar.writeEF(123);
     }
   }
 
 // Here's an example using atomics and a ``sync`` variable to create a
 // count-down mutex (also known as a multiplexer).
   var count: atomic int; // our counter
-  var lock$: sync bool;   // the mutex lock
+  var lock: sync bool;   // the mutex lock
 
   count.write(2);       // Only let two tasks in at a time.
-  lock$.writeXF(true);  // Set lock$ to full (unlocked)
+  lock.writeXF(true);  // Set lock to full (unlocked)
   // Note: The value doesn't actually matter, just the state
   // (full:unlocked / empty:locked)
   // Also, writeXF() fills (F) the sync var regardless of its state (X)
@@ -1185,18 +1166,18 @@ proc main() {
   coforall task in 1..5 { // Generate tasks
     // Create a barrier
     do {
-      lock$.readFE();           // Read lock$ (wait)
+      lock.readFE();            // Read lock (wait)
     } while (count.read() < 1); // Keep waiting until a spot opens up
 
     count.sub(1);          // decrement the counter
-    lock$.writeXF(true); // Set lock$ to full (signal)
+    lock.writeXF(true); // Set lock to full (signal)
 
     // Actual 'work'
     writeln("Task #", task, " doing work.");
     sleep(2);
 
     count.add(1);        // Increment the counter
-    lock$.writeXF(true); // Set lock$ to full (signal)
+    lock.writeXF(true); // Set lock to full (signal)
   }
 
 // We can define the operations ``+ * & | ^ && || min max minloc maxloc``

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,14 +141,14 @@ module Buffers {
    */
   proc byteBuffer.init(len:int(64), out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbytes_create_calloc(this._bytes_internal, len);
     // The buffer is "retained" internally on creation, but only on success.
   }
   @chpldoc.nodoc
   proc byteBuffer.init(len:int(64)) {
     this.home = here;
-    this.complete();
+    init this;
     var error:errorCode = qbytes_create_calloc(this._bytes_internal, len);
     if error then try! ioerror(error, "in bytes initializer");
     // The buffer is retained internally on initialization, but only on success.
@@ -203,7 +203,7 @@ module Buffers {
   }
 
   @chpldoc.nodoc
-  proc byteBuffer.deinit() {
+  proc ref byteBuffer.deinit() {
     on this.home {
       qbytes_release(this._bytes_internal);
       this._bytes_internal = QBYTES_PTR_NULL;
@@ -296,14 +296,14 @@ module Buffers {
    */
   proc buffer.init(out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
   }
   @chpldoc.nodoc
   proc buffer.init() /*throws*/ {
     var error:errorCode = 0;
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
     // TODO: really want the following to be `try` once we can throw from
     // initializers
@@ -315,7 +315,7 @@ module Buffers {
       qbuffer_retain(x._buf_internal);
       this.home = here;
       this._buf_internal = x._buf_internal;
-      this.complete();
+      init this;
     } else {
       var error: errorCode = 0;
       this.init(error);
@@ -358,18 +358,18 @@ module Buffers {
      the buffer into it. This function should work even if buffer is
      remote.
 
-     :arg range: the region of the buffer to copy, for example buffer.all()
+     :arg bufRange: the region of the buffer to copy, for example buffer.all()
      :returns: a newly initialized bytes object on the current locale
    */
-  proc buffer.flatten(range:buffer_range) throws {
+  proc buffer.flatten(bufRange:buffer_range) throws {
     var ret: byteBuffer  = new byteBuffer();
     var err: errorCode = 0;
 
     if this.home == here {
-      err = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret._bytes_internal);
+      err = qbuffer_flatten(this._buf_internal, bufRange.start._bufit_internal, bufRange.end._bufit_internal, ret._bytes_internal);
     } else {
       var dst_locale = here;
-      var dst_len:int(64) = range.len;
+      var dst_len:int(64) = bufRange.len;
       ret = new byteBuffer(dst_len, error=err);
       if err then try ioerror(err, "in buffer.flatten");
 
@@ -378,8 +378,8 @@ module Buffers {
         // Copy the buffer to the bytes...
         err = bulk_put_buffer(dst_locale.id, dst_addr, dst_len,
                                 this._buf_internal,
-                                range.start._bufit_internal,
-                                range.end._bufit_internal);
+                                bufRange.start._bufit_internal,
+                                bufRange.end._bufit_internal);
       }
     }
     if err then try ioerror(err, "in buffer.flatten");
@@ -438,7 +438,7 @@ module Buffers {
 
 
   @chpldoc.nodoc
-  proc buffer.deinit() {
+  proc ref buffer.deinit() {
     on this.home {
       qbuffer_release(this._buf_internal);
       this._buf_internal = QBUFFER_PTR_NULL;

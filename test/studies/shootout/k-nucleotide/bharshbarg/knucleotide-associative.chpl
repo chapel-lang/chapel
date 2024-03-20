@@ -93,7 +93,7 @@ proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = new file(0);
   const fileLen = inFile.size;
-  var myin = inFile.reader(kind=ionative,locking=false);
+  var myin = inFile.reader(deserializer=new binaryDeserializer(),locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var tempdata : [1..lineSize] uint(8);

@@ -42,7 +42,7 @@ class GridCFGhostRegion {
   {
         
     this.grid = grid;
-    this.complete();
+    init this;
     
     
     //==== Calculate refinement ratio ====
@@ -635,7 +635,7 @@ proc GridVariable.refineValues (
 
 
   //===> Form interpolant data (values and differentials ===>
-  forall cell in coarse_cells {
+  forall cell in coarse_cells with (ref coarse_diffs) {
     var diff_mag, diff_sign, diff_low, diff_high, diff_cen: real;
     var shift: dimension*int;
 
@@ -662,7 +662,7 @@ proc GridVariable.refineValues (
   //===> Evaluate interpolant on fine cells ===>
   var fine_values: [fine_cells] real;
 
-  forall fine_cell in fine_cells {
+  forall fine_cell in fine_cells with (ref fine_values) {
     var coarse_cell = coarsen(fine_cell, ref_ratio);
     fine_values(fine_cell) = coarse_values(coarse_cell);
 

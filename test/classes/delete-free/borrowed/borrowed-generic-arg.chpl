@@ -3,7 +3,7 @@ class GenericClass {
   var v: int;
 }
 
-proc f(x: borrowed GenericClass) {
+proc f(x: borrowed GenericClass(?)) {
   writeln(x);
 }
 

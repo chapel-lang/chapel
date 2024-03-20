@@ -3,7 +3,6 @@ use Random, IO, CTypes;
 config const path = "binary-output.bin";
 config const maxbyte = 255;
 config const maxint = 1024;
-config const seed = SeedGenerator.oddCurrentTime;
 
 config const bufsz = 0;
 extern var qbytes_iobuf_size:c_size_t;
@@ -14,13 +13,13 @@ if bufsz > 0 {
 
 proc writer() {
   var f = open(path, ioMode.cw);
-  var w = f.writer(locking=false, serializer=new BinarySerializer());
+  var w = f.writer(locking=false, serializer=new binarySerializer());
   return w;
 }
 
 proc reader() {
   var f = open(path, ioMode.r);
-  var r = f.reader(locking=false, deserializer=new BinaryDeserializer());
+  var r = f.reader(locking=false, deserializer=new binaryDeserializer());
   return r;
 }
 
@@ -159,8 +158,7 @@ proc test5() {
 
 proc test6() {
   // Write 0..maxint using a permutation and then read it normally
-  var A:[0..maxint] int;
-  Random.permutation(A, seed=seed);
+  var A = Random.permute(0..maxint);
 
   // Write to the permutation
   {
@@ -187,8 +185,7 @@ proc test6() {
 
 proc test7() {
   // Write 0..maxint and then read with a permutation
-  var A:[0..maxint] int;
-  Random.permutation(A, seed=seed);
+  var A = Random.permute(0..maxint);
 
   {
     var w = writer();

@@ -2,88 +2,76 @@
 
 .. _Chapter-Domain_Maps:
 
-===========
-Domain Maps
-===========
+=============
+Distributions
+=============
 
-A domain map specifies the implementation of the domains and arrays that
+A distribution, also called a *domain map*,
+specifies the implementation of the domains and arrays that
 are *mapped* using it. That is, it defines how domain indices and array
 elements are mapped to locales, how they are stored in memory, and how
 operations such as accesses, iteration, and slicing are performed. Each
-domain and array is mapped using some domain map.
+domain and array is mapped using some distribution.
 
-A domain map is either a *layout* or a *distribution*. A layout
-describes domains and arrays that exist on a single locale, whereas a
-distribution describes domains and arrays that are partitioned across
-multiple locales.
+In general, a distribution describes domains and arrays
+that are partitioned across multiple locales.
+A *layout* is a distribution that describes domains and arrays
+that exist on a single locale.
 
-A domain map is represented in the program with an instance of a *domain
-map class*. Chapel provides a set of standard domain map classes. Users
-can create domain map classes as well.
+A distribution is represented in the program with an instance of a
+*distribution record*. Chapel provides a set of standard distributions.
+Users can create distributions as well.
 
-Domain maps are presented as follows:
+Distributions are presented as follows:
 
--  domain maps for domain types :ref:`Domain_Maps_For_Types`,
-   domain values :ref:`Domain_Maps_For_Values`, and arrays
-   :ref:`Domain_Maps_For_Arrays`
+-  distributions for
+   :ref:`domain types <Domain_Maps_For_Types>`,
+   :ref:`domain values <Domain_Maps_For_Values>`,
+   :ref:`arrays <Domain_Maps_For_Arrays>`
 
--  domain maps are not retained upon domain assignment
-   :ref:`Domain_Maps_Not_Assigned`
+-  :ref:`distributions are not retained upon domain assignment <Domain_Maps_Not_Assigned>`
 
--  standard layouts and distributions, such as Block and Cyclic, are
-   documented under
-   :ref:`Standard Layouts and Distributions <layouts_and_distributions>`
+-  :ref:`Standard Layouts and Distributions <layouts_and_distributions>`,
+   such as Block and Cyclic
 
--  specification of user-defined domain maps is forthcoming; please
+-  specification of user-defined distributions is forthcoming; please
    refer to the
    :ref:`Domain Map Standard Interface technical note <readme-dsi>`
 
 .. _Domain_Maps_For_Types:
 
-Domain Maps for Domain Types
-----------------------------
+Distributions for Domain Types
+------------------------------
 
-Each domain type has a domain map associated with it. This domain map is
+Each domain type has a distribution associated with it. This distribution is
 used to map all domain values of this type
-(:ref:`Domain_Maps_For_Values`).
+(see :ref:`Domain_Maps_For_Values`).
 
-If a domain type does not have a domain map specified for it explicitly
-as described below, a default domain map is provided by the Chapel
-implementation. Such a domain map will typically be a layout that maps
-the entire domain to the locale on which the domain value is created or
+If a domain type does not have a distribution specified for it explicitly
+as described below, a default distribution is provided by the Chapel
+implementation. Such a distribution will typically be a layout that maps
+the entire domain to the locale on which the current task is executed or
 the domain or array variable is declared.
 
-A domain map can be specified explicitly by providing a *dmap value* in
-a ``dmapped`` clause:
-
-
+A distribution can be specified explicitly using a ``dmapped`` clause:
 
 .. code-block:: syntax
 
    mapped-domain-type:
-     domain-type 'dmapped' dmap-value
+     domain-type 'dmapped' distribution-record
 
-   dmap-value:
+   distribution-record:
      expression
 
-A dmap value consists of an instance of a domain map class wrapped in an
-instance of the predefined record ``dmap``. The domain map class is
-chosen and instantiated by the user. ``dmap`` behaves like a generic
-record with a single generic field, which holds the domain map instance.
+where the ``distribution-record`` expression produces
+an instance of a distribution record.
 
-   *Example*.
+.. warning::
 
-   The code 
-
-   .. code-block:: chapel
-
-      use BlockDist;
-      var MyBlockDist: dmap(Block(rank=2));
-
-   declares a variable capable of storing dmap values for a
-   two-dimensional Block distribution. The Block distribution is
-   described in more detail in the standard library documentation.
-   See the module documentation for :mod:`BlockDist`.
+   The ``dmapped`` keyword and the ``dmapped`` clause
+   are currently unstable and may change in the future.
+   Factory functions provided by the desired distribution,
+   when available, should be used instead.
 
 ..
 
@@ -94,9 +82,10 @@ record with a single generic field, which holds the domain map instance.
    .. code-block:: chapel
 
       use BlockDist;
-      var MyBlockDist: dmap(Block(rank=2)) = new dmap(new Block({1..5,1..6}));
+      var MyBlockDist = new blockDist({1..5,1..6});
 
-   creates a dmap value wrapping a two-dimensional Block distribution
+   creates an instance of the Block distribution record
+   for two-dimensional domains and arrays
    with a bounding box of ``{1..5, 1..6}`` over all of the locales.
 
    *Example*.
@@ -106,17 +95,16 @@ record with a single generic field, which holds the domain map instance.
    .. code-block:: chapel
 
       use BlockDist;
-      var MyBlockDist = new dmap(new Block({1..5,1..6}));
+      var MyBlockDist = new blockDist({1..5,1..6});
       type MyBlockedDom = domain(2) dmapped MyBlockDist;
 
-   defines a two-dimensional rectangular domain type that is mapped
-   using a Block distribution.
+   defines the type of two-dimensional rectangular domains
+   that are mapped using a Block distribution.
 
 The following syntactic sugar is provided within the ``dmapped`` clause.
-If a ``dmapped`` clause starts with the name of a domain map class, it
+If a ``dmapped`` clause starts with the name of a distribution record, it
 is considered to be an initialization expression as if preceded by
-``new``. The resulting domain map instance is wrapped in a newly-created
-instance of ``dmap`` implicitly.
+``new``.
 
    *Example*.
 
@@ -125,23 +113,23 @@ instance of ``dmap`` implicitly.
    .. code-block:: chapel
 
       use BlockDist;
-      type BlockDom = domain(2) dmapped Block({1..5,1..6});
+      type BlockDom = domain(2) dmapped blockDist({1..5,1..6});
 
    is equivalent to 
 
    .. code-block:: chapel
 
       use BlockDist;
-      type BlockDom = domain(2) dmapped new dmap(new Block({1..5,1..6}));
+      type BlockDom = domain(2) dmapped new blockDist({1..5,1..6});
 
 .. _Domain_Maps_For_Values:
 
-Domain Maps for Domain Values
------------------------------
+Distributions for Domain Values
+-------------------------------
 
-A domain value is always mapped using the domain map of that value’s
+A domain value is always mapped using the distribution of that value's
 type. The type inferred for a domain literal
-(:ref:`Rectangular_Domain_Values`) has a default domain map.
+(see :ref:`Rectangular_Domain_Values`) has a default distribution.
 
    *Example*.
 
@@ -151,22 +139,19 @@ type. The type inferred for a domain literal
 
       use BlockDist;
       var MyDomLiteral = {1..2,1..3};
-      var MyBlockedDom: domain(2) dmapped Block({1..5,1..6}) = MyDomLiteral;
+      var MyBlockedDom: domain(2) dmapped blockDist({1..5,1..6}) = MyDomLiteral;
 
-   ``MyDomLiteral`` is given the inferred type of the domain literal and
-   so will be mapped using a default map. MyBlockedDom is given a type
-   explicitly, in accordance to which it will be mapped using a Block
-   distribution.
+   ``MyDomLiteral`` is a domain literal and so will be mapped using
+   a default distribution. MyBlockedDom is given a type explicitly,
+   therefore it will be mapped using a Block distribution.
 
-A domain value’s map can be changed explicitly with a ``dmapped``
-clause, in the same way as a domain type’s map.
-
-
+A domain value's distribution can be specified explicitly with a ``dmapped``
+clause, in the same way as a domain type's distribution.
 
 .. code-block:: syntax
 
    mapped-domain-expression:
-     domain-expression 'dmapped' dmap-value
+     domain-expression 'dmapped' distribution-record
 
 ..
 
@@ -177,18 +162,18 @@ clause, in the same way as a domain type’s map.
    .. code-block:: chapel
 
       use BlockDist;
-      var MyBlockedDomLiteral1 = {1..2,1..3} dmapped new dmap(new Block({1..5,1..6}));
-      var MyBlockedDomLiteral2 = {1..2,1..3} dmapped Block({1..5,1..6});
+      var MyBlockedDomLiteral1 = {1..2,1..3} dmapped new blockDist({1..5,1..6});
+      var MyBlockedDomLiteral2 = {1..2,1..3} dmapped blockDist({1..5,1..6});
 
    both ``MyBlockedDomLiteral1`` and ``MyBlockedDomLiteral2`` will be
    mapped using a Block distribution.
 
 .. _Domain_Maps_For_Arrays:
 
-Domain Maps for Arrays
-----------------------
+Distributions for Arrays
+------------------------
 
-Each array is mapped using the domain map of the domain over which the
+Each array is mapped using the distribution of the domain over which the
 array was declared.
 
    *Example*.
@@ -198,20 +183,20 @@ array was declared.
    .. code-block:: chapel
 
       use BlockDist;
-      var Dom: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
+      var Dom: domain(2) dmapped blockDist({1..5,1..6}) = {1..5,1..6};
       var MyArray: [Dom] real;
 
-   the domain map used for ``MyArray`` is the Block distribution from
+   the distribution used for ``MyArray`` is the Block distribution from
    the type of ``Dom``.
 
 .. _Domain_Maps_Not_Assigned:
 
-Domain Maps Are Not Retained upon Domain Assignment
----------------------------------------------------
+Distributions Are Not Retained upon Domain Assignment
+-----------------------------------------------------
 
-Domain assignment (:ref:`Domain_Assignment`) transfers only the
+:ref:`Domain assignment <Domain_Assignment>` transfers only the
 index set of the right-hand side expression. The implementation of the
-left-hand side domain expression, including its domain map, is
+left-hand side domain expression, including its distribution, is
 determined by its type and so does not change upon a domain assignment.
 
    *Example*.
@@ -221,10 +206,10 @@ determined by its type and so does not change upon a domain assignment.
    .. code-block:: chapel
 
       use BlockDist;
-      var Dom1: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
+      var Dom1: domain(2) dmapped blockDist({1..5,1..6}) = {1..5,1..6};
       var Dom2: domain(2) = Dom1;
 
-   ``Dom2`` is mapped using the default distribution, despite ``Dom1``
+   ``Dom2`` is mapped using a default distribution, despite ``Dom1``
    having a Block distribution.
 
 ..
@@ -236,11 +221,35 @@ determined by its type and so does not change upon a domain assignment.
    .. code-block:: chapel
 
       use BlockDist;
-      var Dom1: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
+      var Dom1: domain(2) dmapped blockDist({1..5,1..6}) = {1..5,1..6};
       var Dom2 = Dom1;
 
    ``Dom2`` is mapped using the same distribution as ``Dom1``. This is
    because the declaration of ``Dom2`` lacks an explicit type specifier
    and so its type is defined to be the type of its initialization
    expression, ``Dom1``. So in this situation the effect is that the
-   domain map does transfer upon an initializing assignment.
+   distribution does transfer upon initialization.
+
+.. _Predefined_Distribution_Operations:
+
+Predefined Operations on Distributions
+--------------------------------------
+
+Equality and Inequality
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Equality and inequality operators are defined to test if two distributions
+are equivalent or not:
+
+   .. code-block:: chapel
+
+     dist1 == dist2
+     dist1 != dist2
+
+targetLocales
+~~~~~~~~~~~~~
+
+Distributions that describe partitioning across multiple locales
+typically define the method ``targetLocales()`` that returns
+these locales as an array.
+

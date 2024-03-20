@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.31.0
+        export CHPL_HOME=~/chapel-2.0.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -146,6 +146,7 @@ CHPL_HOST_ARCH
         ========  =============================================================
         x86_64    64-bit AMD and Intel processors
         aarch64   64-bit ARM processors
+        arm64     an alternative name for 'aarch64'
         ========  =============================================================
 
    If unset, the default will be computed. The command ``uname -m``

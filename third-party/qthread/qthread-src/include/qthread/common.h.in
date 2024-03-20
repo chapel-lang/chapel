@@ -122,5 +122,7 @@
 #define QTHREAD_SPARCV9_64  9
 #define QTHREAD_TILEPRO	    10
 #define QTHREAD_TILEGX	    11
+#define QTHREAD_ARM         12
+#define QTHREAD_ARMV8_A64   13
 
 #endif

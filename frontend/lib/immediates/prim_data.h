@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 #define P_prim_mod            chpl::uast::primtags::PRIM_MOD
 #define P_prim_add            chpl::uast::primtags::PRIM_ADD
 #define P_prim_subtract       chpl::uast::primtags::PRIM_SUBTRACT
+#define P_prim_fma            chpl::uast::primtags::PRIM_FMA
 #define P_prim_lsh            chpl::uast::primtags::PRIM_LSH
 #define P_prim_rsh            chpl::uast::primtags::PRIM_RSH
 #define P_prim_less           chpl::uast::primtags::PRIM_LESS
@@ -46,5 +47,9 @@
 #define P_prim_minus          chpl::uast::primtags::PRIM_UNARY_MINUS
 #define P_prim_not            chpl::uast::primtags::PRIM_UNARY_NOT
 #define P_prim_lnot           chpl::uast::primtags::PRIM_UNARY_LNOT
+#define P_prim_abs            chpl::uast::primtags::PRIM_ABS
+#define P_prim_sqrt           chpl::uast::primtags::PRIM_SQRT
+#define P_prim_get_imag       chpl::uast::primtags::PRIM_GET_IMAG
+#define P_prim_get_real       chpl::uast::primtags::PRIM_GET_REAL
 
 #endif

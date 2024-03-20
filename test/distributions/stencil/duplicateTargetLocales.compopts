@@ -1,0 +1,2 @@
+-sStencilDist.allowDuplicateTargetLocales=false # duplicateTargetLocales.noallow.good
+-sStencilDist.allowDuplicateTargetLocales       # duplicateTargetLocales.allow.good

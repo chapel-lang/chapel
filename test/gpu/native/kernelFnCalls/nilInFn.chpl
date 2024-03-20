@@ -7,8 +7,8 @@ proc foo(ref x) {
 
 on here.gpus[0] {
   var x: c_ptr(int);
-  foreach i in 1..10 {
-    assertOnGpu();
+  @assertOnGpu
+  foreach i in 1..10 with (in x) {
     if i==1 then
       foo(x);
   }

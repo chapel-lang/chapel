@@ -276,6 +276,8 @@ _upcxx-inst: upcxx-built
 	@( echo ======== UPCXX install ========; set -x; \
 	   $(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) install || exit 1; ) $(TO_LOG)
 	/bin/ls -alR $(UPCXX_INSTDIR) $(TO_LOG)
+	$(UPCXX_INSTDIR)/bin/upcxx-info $(TO_LOG)
+	@echo "NOTE: Please ignore expected 'Config file not found' messages above " $(TO_LOG)
 	$(MAKE) launcher launcher-mpi 2>&1 | tee -a $(LOGFILE) $(PIPEEXIT)
 	@touch upcxx-install
 	@echo '#!/bin/sh' > $@ ; chmod +x $@

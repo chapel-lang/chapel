@@ -3,7 +3,7 @@ use BigInteger;
 
 config const n     = 20;
 const        Space = { 1 .. n };
-const        D     = Space dmapped Block(boundingBox = Space);
+const        D     = Space dmapped blockDist(boundingBox = Space);
 
 var A: [D] bigint;
 var B: [D] bigint;

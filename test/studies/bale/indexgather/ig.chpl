@@ -8,7 +8,7 @@ config const printStats = true,
              verify = true;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+             seed = if useRandomSeed then NPBRandom.oddTimeSeed() else 314159265;
 
 enum Mode {ordered, unordered, aggregated}
 config const mode = Mode.ordered;
@@ -25,11 +25,11 @@ const tableSize = M * numTasks;
 // The intuitive implementation of indexgather that uses fine-grained GETs
 proc main() {
   const Mspace = {0..tableSize-1};
-  const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
+  const D = Mspace dmapped cyclicDist(startIdx=Mspace.low);
   var A: [D] int = 0..tableSize-1;
 
   const Nspace = {0..numUpdates-1};
-  const D2 = Nspace dmapped Block(Nspace);
+  const D2 = Nspace dmapped blockDist(Nspace);
   var rindex: [D2] int;
 
   fillRandom(rindex, seed);
@@ -44,17 +44,17 @@ proc main() {
 
   select mode {
     when Mode.ordered {
-      forall i in D2 do
+      forall i in D2 with (ref tmp) do
         tmp[i] = A[rindex[i]];
     }
     when Mode.unordered {
       use UnorderedCopy;
-      forall i in D2 do
+      forall i in D2 with (ref tmp) do
         unorderedCopy(tmp[i], A[rindex[i]]);
     }
     when Mode.aggregated {
       use CopyAggregation;
-      forall i in D2 with (var agg = new SrcAggregator(int)) do
+      forall i in D2 with (var agg = new SrcAggregator(int), ref tmp) do
         agg.copy(tmp[i], A[rindex[i]]);
     }
   }

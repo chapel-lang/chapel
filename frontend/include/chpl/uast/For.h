@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,8 @@ namespace uast {
 
  */
 class For final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   For(AstList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
@@ -64,7 +66,12 @@ class For final : public IndexableLoop {
     CHPL_ASSERT(withClause() == nullptr);
   }
 
-  For(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
+    ser.write(isParam_);
+  }
+
+  explicit For(Deserializer& des)
     : IndexableLoop(asttags::For, des) {
     isParam_ = des.read<bool>();
   }
@@ -111,14 +118,6 @@ class For final : public IndexableLoop {
   bool isParam() const {
     return isParam_;
   }
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-    ser.write(isParam_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(For);
-
 };
 
 

@@ -1,0 +1,2 @@
+type-decls-arrays-1.chpl:8: warning: there is no checking that the domain of the initialization expression matches the domain of the declared type of the reference 'r1'
+type-decls-arrays-1.chpl:9: warning: there is no checking that the domain of the initialization expression matches the domain of the declared type of the reference 'r2'

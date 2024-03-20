@@ -9,7 +9,7 @@ record myR {
 
   proc init=(other: myR) {
     this.x = other.x;
-    this.complete();
+    init this;
     this.sx.writeEF(other.sx.readFE());
   }
 }

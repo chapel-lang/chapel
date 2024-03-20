@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ module MemMove {
       upon a call to :proc:`explicitDeinit()`. It should only be called
       when deinitialization would not occur otherwise.
 
-    :arg: A variable to deinitialize
+    :arg arg: A variable to deinitialize
   */
   @deprecated(notes="'explicitDeinit' is now deprecated; please use 'destroy' instead")
   proc explicitDeinit(ref arg: ?t) {
@@ -430,7 +430,7 @@ module MemMove {
                          const ref src:[] eltType, const srcRegion) : void throws {
     _checkArgs(dst, dstRegion, src, srcRegion);
 
-    forall (di, si) in zip(dstRegion, srcRegion) {
+    forall (di, si) in zip(dstRegion, srcRegion) with (ref dst) {
       moveInitialize(dst[di], moveFrom(src[si]));
     }
   }
@@ -505,11 +505,11 @@ module MemMove {
     const dstLo = d.indexOrder(dstStartIndex);
     const srcLo = d.indexOrder(srcStartIndex);
 
-    forall i in 0..<numElements {
+    forall i in 0..<numElements with (ref a) {
       const dstIdx = d.orderToIndex(dstLo + i);
       const srcIdx = d.orderToIndex(srcLo + i);
       ref dst = a[dstIdx];
-      ref src = a[srcIdx];
+      const ref src = a[srcIdx];
       _move(dst, src);
     }
   }
@@ -577,11 +577,11 @@ module MemMove {
     var srcLo = dstD.indexOrder(srcStartIndex);
 
     // TODO: Optimize communication for this loop?
-    forall i in 0..<numElements {
+    forall i in 0..<numElements with (ref dstA) {
       const dstIdx = dstD.orderToIndex(dstLo + i);
       const srcIdx = srcD.orderToIndex(srcLo + i);
       ref dst = dstA[dstIdx];
-      ref src = srcA[srcIdx];
+      const ref src = srcA[srcIdx];
       _move(dst, src);
     }
   }

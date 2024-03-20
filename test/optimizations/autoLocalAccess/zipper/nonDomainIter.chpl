@@ -24,6 +24,6 @@ var B = createArr({1..10}, int);
 
 var c = new C();
 
-forall (i, loopIdx) in zip(c, 1..) {
+forall (i, loopIdx) in zip(c, 1..) with (ref A) {
   A[i] = 2 * B[i] * loopIdx;
 }

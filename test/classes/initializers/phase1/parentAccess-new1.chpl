@@ -4,7 +4,7 @@ class Parent {
   proc init(_f1 : real) {
     f1 = _f1;
 
-    complete();
+    init this;
   }
 }
 
@@ -16,7 +16,7 @@ class Child : Parent {
 
     f2 = f1 - 3.2;
 
-    complete();
+    init this;
   }
 }
 

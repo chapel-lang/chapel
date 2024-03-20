@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,102 +26,49 @@
 
 using namespace chpldef;
 
-int main(int argc, char** argv) {
-  Server context;
-  Server* ctx = &context;
+static Server::Configuration prepareServerConfig(int argc, char** argv) {
+  Server::Configuration ret;
 
-  cmd::doParseOptions(ctx, argc, argv);
+  cmd::doParseOptions(argc, argv);
 
-  // Configure the logger instance that the context will use.
-  auto setupLogger = !cmd::logFile.empty()
-      ? Logger::createForFile(cmd::logFile)
-      : Logger();
-  if (!setupLogger.isLogging()) {
-    std::cerr << "Failed to open log file!" << std::endl;
+  if (!cmd::chplHome.empty()) {
+    ret.chplHome = cmd::chplHome;
+  } else if (const char* chplHomeEnv = getenv("CHPL_HOME")) {
+    ret.chplHome = chplHomeEnv;
   } else {
-    ctx->setLogger(std::move(setupLogger));
+    std::cerr << "No value for '$CHPL_HOME'!" << std::endl;
   }
 
-  // Get the logger and set the verbosity level.
-  auto& logger = ctx->logger();
-  logger.setLevel(cmd::logLevel);
+  ret.logFile = cmd::logFile;
+  ret.logLevel = cmd::logLevel;
+  ret.garbageCollectionFrequency = cmd::garbageCollectionFrequency;
+  ret.warnUnstable = cmd::warnUnstable;
+  ret.enableStandardLibrary = cmd::enableStandardLibrary;
+  ret.compilerDebugTrace = cmd::compilerDebugTrace;
+
+  // TODO: Configure transport with a flag.
+  ret.transport = chpl::toOwned(new TransportStdio());
+
+  return ret;
+}
+
+int main(int argc, char** argv) {
+  auto config = prepareServerConfig(argc, argv);
+  Server server(std::move(config));
+  Server* ctx = &server;
 
   // Flush every log message immediately to avoid losing info on crash.
-  logger.setFlushImmediately(true);
+  auto& log = ctx->logger();
+  log.setFlushImmediately(true);
 
   ctx->message("Logging to '%s' with level '%s'\n",
-               logger.filePath().c_str(),
-               logger.levelToString());
+               log.filePath().c_str(),
+               log.levelToString());
 
-  int run = 1;
-  int ret = 0;
-
-  while (run) {
-    ctx->message("Server awaiting message...\n");
-
-    auto json = JsonValue(nullptr);
-
-    // TODO: This operation blocks. We'd like non-blocking IO. There are a
-    // few ways to accomplish this. Ideally we find some sort of high-level,
-    // non-blocking "transport" abstraction that we can use.
-    //
-    //    -- LLVM might offer transport layer APIs
-    //    -- LLVM might offer non-blocking IO
-    //    -- C++ futures might be useful here, but we need to be able to
-    //       control which thread runs the future and its lifetime (to
-    //       make sure that the thread reading e.g., stdin is reliably
-    //       closed...).
-    //    -- We can do it ourselves using C++ threads, CVs, and locks, and
-    //       wrap it up in a neat little function that populates a queue
-    //       of messages for the context.
-    bool ok = Transport::readJsonBlocking(ctx, std::cin, json);
-    CHPL_ASSERT(ok);
-
-    if (logger.level() == Logger::TRACE) {
-      ctx->trace("Incoming JSON is %s\n", jsonToString(json).c_str());
-    }
-
-    // Create a message from the incoming JSON...
-    auto msg = Message::request(ctx, std::move(json));
-    CHPL_ASSERT(msg.get());
-
-    // Parsing the JSON could have failed.
-    if (msg->status() == Message::FAILED || msg->isResponse()) {
-      CHPLDEF_TODO();
-    }
-
-    CHPL_ASSERT(msg->status() == Message::PENDING);
-    CHPL_ASSERT(!msg->isOutbound());
-
-    if (msg->tag() == Message::Exit) {
-      CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
-      run = 0;
-    }
-
-    // We have an immediate response, so send it.
-    if (auto optRsp = Message::handle(ctx, msg.get())) {
-      auto pack = optRsp->pack();
-      if (logger.level() == Logger::TRACE) {
-        auto str = jsonToString(pack);
-        ctx->trace("Outgoing JSON is %s\n", str.c_str());
-      }
-
-      ok = Transport::sendJsonBlocking(ctx, std::cout, std::move(pack));
-      CHPL_ASSERT(ok);
-
-    // Response was delayed.
-    } else {
-      if (!msg->isNotification()) {
-        CHPLDEF_FATAL(ctx, "Handler response should not be delayed!");
-      }
-    }
-
-    // Flush the log in case something goes wrong.
-    logger.flush();
-  }
+  int ret = ctx->run();
 
   ctx->message("Server exiting with code '%d'\n", ret);
-  logger.flush();
+  log.flush();
 
   return ret;
 }

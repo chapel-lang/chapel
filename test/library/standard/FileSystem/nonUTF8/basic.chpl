@@ -50,7 +50,7 @@ here.chdir(dirname1);
 
 writeln("Creating file");
 var f = open(filename1, ioMode.cw);
-var writer = f.writer();
+var writer = f.writer(locking=false);
 writer.write("test file");
 writer.close();
 f.close();
@@ -127,7 +127,7 @@ var l: list(string);
 for f in listDir(dirname1) {
   l.pushBack(f);
 }
-var chplout = stdout.withSerializer(ChplSerializer);
+var chplout = stdout.withSerializer(chplSerializer);
 for f in sorted(l.toArray()) {
   chplout.writeln(f.encode(policy=encodePolicy.unescape));
 }

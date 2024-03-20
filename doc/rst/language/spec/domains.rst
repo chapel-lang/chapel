@@ -72,8 +72,8 @@ domain’s relationship with subdomains, index
 types (:ref:`Index_Types`), and
 arrays (:ref:`Association_of_Arrays_to_Domains`).
 
-The runtime representation of a domain is controlled by its domain map.
-Domain maps are presented in :ref:`Chapter-Domain_Maps`.
+The runtime representation of a domain is controlled by its distribution,
+see :ref:`Distributions <Chapter-Domain_Maps>`.
 
 .. _Domain_and_Array_Parallel_Safety:
 
@@ -98,19 +98,24 @@ may make concurrent queries and iterations on a domain as long as
 another task is not simultaneously modifying the domain's index
 set.
 
-By default, associative domains permit multiple tasks
-to modify their index sets concurrently.  This adds some amount of
-overhead to these operations.  If the user knows that all such
-modifications will be done serially or in a parallel-safe context,
-the overheads can be avoided by setting ``parSafe`` to ``false`` in
-the domain's type declaration.  For example, the following
-declaration creates an associative domain of strings where the
-implementation will do nothing to ensure that simultaneous
-modifications to the domain are parallel-safe:
+An associative domain may permit multiple tasks to modify its index
+set concurrently in a parallel-safe manner if its type is declared with
+``parSafe=true``. The following example demonstrates how to create a
+parallel-safe associative domain of strings:
 
   .. code-block:: chapel
 
-    var D: domain(string, parSafe=false);
+    var D: domain(string, parSafe=true);
+
+Note that declaring a domain with ``parSafe=true`` adds some amount of overhead
+to many domain operations. This is because such a domain uses locking on the
+underlying data structure each time the domain is modified. This overhead is
+unnecessary, for example, when the domain is operated upon only by a single
+task, in which case it can be avoided by declaring the domain's type with
+``parSafe=false`` or without an explicit ``parSafe`` setting.
+
+Note that the ``parSafe=true`` mode is currently unstable for associative
+domains. Its availability and behavior may change in the future.
 
 As with any other domain type, it is not safe to access an
 associative array while its domain is changing, regardless of
@@ -133,6 +138,10 @@ types include all of the associative domain types.
 
 These base domain types are discussed in turn in the following
 subsections.
+
+The keyword ``domain``, when not followed by parentheses, refers to
+a generic type that can be instantiated with any domain type.
+This type may also be written as ``domain(?)``.
 
 Rectangular Domains
 ~~~~~~~~~~~~~~~~~~~
@@ -181,21 +190,21 @@ where ``named-expression-list`` allows specifying the values of ``rank``,
    *Example (typeFunctionDomain.chpl)*.
 
    The following declarations both create an uninitialized rectangular
-   domain with three dimensions, with ``int`` indices: 
+   domain with three dimensions, with ``int`` indices:
 
    .. code-block:: chapel
 
       var D1 : domain(rank=3, idxType=int, strides=strideKind.one);
       var D2 : domain(3);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(D1);
       writeln(D2);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -261,7 +270,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 
    *Example*.
 
-   In the code 
+   In the code
 
    .. code-block:: chapel
 
@@ -298,7 +307,7 @@ for type:
           A[i,j] = 7 * i**2 + j;
       writeln(A);
 
-   produces 
+   produces
 
    .. code-block:: printoutput
 
@@ -313,6 +322,7 @@ type and can be used to describe sets or to create dictionary-style
 arrays (hash tables). The type of indices of an associative domain, or
 its ``idxType``, can be any primitive type except ``void`` or any class
 type.
+
 
 .. _Associative_Domain_Types:
 
@@ -372,7 +382,7 @@ the indices does not match a compiler error will be issued.
    .. note::
 
       *Future*
-      
+
       Due to implementation of ``==`` over arrays it is currently not possible
       to use arrays as indices within an associative domain.
 
@@ -386,14 +396,14 @@ the indices does not match a compiler error will be issued.
    associative domain are iterated is not the same as their
    specification order.
 
-   This code 
+   This code
 
    .. code-block:: chapel
 
-      var D : domain(string) = {"bar", "foo"};
+      const D : domain(string) = {"bar", "foo"};
       writeln(D);
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -413,10 +423,10 @@ Simple Subdomain Types and Values
 A subdomain is a domain whose indices are guaranteed to be a subset of
 those described by another domain known as its *parent domain*. A
 subdomain has the same type as its parent domain, and by default it
-inherits the domain map of its parent domain. All domain types support
+inherits the distribution of its parent domain. All domain types support
 subdomains.
 
-Simple subdomains are subdomains which are not sparse. Sparse subdomains
+Simple subdomains are subdomains that are not sparse. Sparse subdomains
 are discussed in the following section
 (:ref:`Sparse_Subdomain_Types_and_Values`). A simple subdomain
 inherits its representation (regular or irregular) from its base domain
@@ -432,7 +442,7 @@ subdomains, unless it is specifically distinguished as one or the other.
    Subdomains are provided in Chapel for a number of reasons: to
    facilitate the ability of the compiler or a reader to reason about
    the inter-relationship of distinct domain variables; to support the
-   author’s ability to omit redundant domain mapping specifications; to
+   author’s ability to omit redundant distribution specifications; to
    support the compiler’s ability to reason about the relative alignment
    of multiple domains; and to improve the compiler’s ability to prove
    away bounds checks for array accesses.
@@ -469,10 +479,8 @@ The default value of a simple subdomain type is the same as the default
 value of its parent’s type (:ref:`Rectangular_Domain_Values`,
 :ref:`Associative_Domain_Values`).
 
-A simple subdomain variable can be initialized or assigned to with a
-tuple of values of the parent’s ``idxType``. Indices can also be added
-to or removed from a simple subdomain as described in
-:ref:`Adding_and_Removing_Domain_Indices`. It is an error to
+A simple subdomain can be initialized or otherwise operated on
+in the same way as its parent domain. It is an error to
 attempt to add an index to a subdomain that is not also a member of the
 parent domain.
 
@@ -480,6 +488,12 @@ parent domain.
 
 Sparse Subdomain Types and Values
 ---------------------------------
+
+   .. warning::
+
+      Sparse domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+
 
 .. code-block:: syntax
 
@@ -513,8 +527,12 @@ the domain describes. If the parent domain defines an iteration order
 over its indices, the sparse subdomain inherits that order.
 
 There is no literal syntax for a sparse subdomain. However, a variable
-of a sparse subdomain type can be initialized using a tuple of values of
-the parent domain’s index type.
+of a sparse subdomain type can be initialized or assigned to
+with a tuple containing the desired index values.
+Each index value must be of the parent’s ``rank*idxType``, or,
+for a one-dimensional domain, of the parent's ``idxType``.
+Indices can also be added to or removed from a sparse subdomain
+as described in :ref:`Adding_and_Removing_Domain_Indices`.
 
 The default value for a sparse subdomain value is the empty set.
 
@@ -678,15 +696,20 @@ Domain Assignment
 All domain types support domain assignment.
 
 Domain assignment is by value and causes the target domain variable to
-take on the index set of the right-hand side expression. In practice,
+take on the index set of the right-hand side expression.
+*Note:* the distribution of the left-hand side domain is unaffected
+by domain assignment, as discussed :ref:`here <Domain_Maps_Not_Assigned>`.
+In practice,
 the right-hand side expression is often another domain value; a tuple of
 ranges (for regular domains); or a tuple of indices or a loop that
 enumerates indices (for irregular domains). If the domain variable being
 assigned was used to declare arrays, these arrays are reallocated as
 discussed in :ref:`Association_of_Arrays_to_Domains`.
 
-When assigning between two rectangular domains, they must have the same
-rank and assignment between the ranges in each dimension must be legal.
+
+Assignment between two rectangular domains performs dimension-wise
+range assignment. The two domains must have the same rank and
+assignment between the ranges in each dimension must be legal.
 
    *Example*.
 
@@ -708,15 +731,8 @@ rank and assignment between the ranges in each dimension must be legal.
 Domain Comparison
 ~~~~~~~~~~~~~~~~~
 
-   Equality operators are defined to test if two distributions
-   are equivalent or not:
-
-   .. code-block:: chapel
-
-     dist1 == dist2
-     dist1 != dist2
-
-   Or to test if two domains are equivalent or not:
+Equality operators are defined to test if two domains
+are equivalent or not:
 
    .. code-block:: chapel
 
@@ -791,7 +807,7 @@ be defined with either a domain or a list of ranges.
 
 The result of slicing, or a *slice*, is a new domain value that
 represents the intersection of the index set of the domain being sliced
-and the index set being applied. The type and domain map of the slice
+and the index set being applied. The type and distribution of the slice
 match the domain being sliced.
 
 Slicing can also be performed on an array, resulting in aliasing a
@@ -861,7 +877,7 @@ The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
 an integer in the case of a 1D domain). The operator produces a new domain
 obtained by applying the ``#`` operator to each of the component ranges
-of the argument domain, with the same domain map as the argument.
+of the argument domain, with the same distribution as the argument.
 
 .. _Adding_and_Removing_Domain_Indices:
 

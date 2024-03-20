@@ -1,13 +1,13 @@
-proc assign(A, n: int(32)) {
-  forall i in 0..#n {
+proc assign(ref A, n: int(32)) {
+  forall i in 0..#n with (ref A) {
     for j in 0..#n {
       A(i, j) = (i+j):int(32);
     }
   }
 }
 
-proc assign2(A, n: int(32)) {
-  forall i in 0..#n {
+proc assign2(ref A, n: int(32)) {
+  forall i in 0..#n with (ref A) {
     for j in 0..#n {
       A[i][j] = (i+j):int(32);
     }

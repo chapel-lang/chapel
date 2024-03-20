@@ -99,8 +99,8 @@ proc ioExample1LM() {
   var A = [1,2,3,4];
   var B:[A.domain] int;
 
-  tmp.writer().write(A);
-  tmp.reader().read(B);
+  tmp.writer(locking=false).write(A);
+  tmp.reader(locking=false).read(B);
   writeln("A: ", A);
   writeln("B: ", B);
 }
@@ -169,7 +169,7 @@ ownedExample9EOB();
 class Wrapper { var x; }
 proc f() {
   var a: [1..100] int;
-  forall i in a.domain {
+  forall i in a.domain with (ref a) {
     a[i] = i;
   }
   return new Wrapper(a);

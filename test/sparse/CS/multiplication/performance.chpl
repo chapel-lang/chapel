@@ -56,21 +56,21 @@ proc main() {
 proc populate(ref A, ref ADom, sparsity: real, seed: int) where A.isSparse() {
   const nnz = (ADom._value.parentDom.size * sparsity): int;
   var indices: [1..nnz] 2*int;
-  var randomIndices = createRandomStream(eltType=int, seed=seed);
+  var randomIndices = new randomStream(eltType=int, seed=seed);
   for idx in indices {
     // Ensure no duplicates
     var newIdx = idx, loc: nnz.type;
     while indices.find(newIdx, loc) {
-      newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high), randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
+      newIdx = (randomIndices.next(ADom.dim(0).low, ADom.dim(0).high), randomIndices.next(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
   }
 
   ADom += indices;
 
-  var randomReals = createRandomStream(eltType=real, seed=seed);
+  var randomReals = new randomStream(eltType=real, seed=seed);
   for idx in ADom {
-    A[idx] = randomReals.getNext();
+    A[idx] = randomReals.next();
   }
 }
 
@@ -78,18 +78,18 @@ proc populate(ref A, ref ADom, sparsity: real, seed: int) where A.isSparse() {
 proc populate(ref A: [?ADom], sparsity: real, seed: int) where !A.isSparse() {
   const nnz= (ADom.size * sparsity): int;
   var indices: [1..nnz] 2*int;
-  var randomIndices = createRandomStream(eltType=int, seed=seed);
+  var randomIndices = new randomStream(eltType=int, seed=seed);
   for idx in indices {
     // Ensure no duplicates
     var newIdx = idx, loc: nnz.type;
     while indices.find(newIdx, loc) {
-      newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high), randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
+      newIdx = (randomIndices.next(ADom.dim(0).low, ADom.dim(0).high), randomIndices.next(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
   }
 
-  var randomReals = createRandomStream(eltType=real, seed=seed);
+  var randomReals = new randomStream(eltType=real, seed=seed);
   for idx in indices {
-    A[idx] = randomReals.getNext();
+    A[idx] = randomReals.next();
   }
 }

@@ -1,36 +1,28 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/1.28.0/chapel-1.28.0.tar.gz"
-  sha256 "64eacfb5915e1b3c487e865f819faf9bb8771c9f83aac6512698ded1baab250e"
+  url "https://github.com/chapel-lang/chapel/releases/download/1.33.0/chapel-1.33.0.tar.gz"
+  sha256 "9dfd9bbab3eb1acf10242db909ccf17c1b07634452ca6ba8b238e69788d82883"
   license "Apache-2.0"
-  revision 1
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    sha256 arm64_ventura:  "02f2f907d5564b80034d763144584b56c551d3ee6024dba84f77a18e3581dddf"
-    sha256 arm64_monterey: "16e3fd0177ab450a788271b0e38e417ec459fc91d70b8d388a9fe85e78d0291b"
-    sha256 arm64_big_sur:  "c36c6e7cf4b30fefb9fe65aec07a04afdb168765c1a417318f75f65df0b4bd94"
-    sha256 ventura:        "bc45e9b7ea5aa0cc14b1158c4b62f88498f570a682b4128c2c5feee7ef41e9c8"
-    sha256 monterey:       "e2d386f7f931f4c684f5aa325b56c678fc1613935404d40de5d9e09933a3e41b"
-    sha256 big_sur:        "97697fee3e47ad73ad0e2cb80078ea2a7dd1110fa06e297e8b076fff4ec3bc84"
-    sha256 catalina:       "4a588c9b8fdb17f01109be986a3d8df929eb666ddc403499ffdaabd2d174e8e1"
-    sha256 x86_64_linux:   "44e78c563407371437e9cb150ffd1b1f02dfd6f2643ec82d88322ad5665346a1"
+    sha256 arm64_sonoma:   "bf48565f37d29f78919cdc53c05e23e5e610e915e82ede08573b06d4a9746d40"
+    sha256 arm64_ventura:  "ac622257bbef56945f8241d87a63982dae2311fa803f3233788c4a2d85af6b0b"
+    sha256 arm64_monterey: "03757fe09bfdbc1651aaa6b6ffbc54b14022ff13e19d62ca3abfe778de11371a"
+    sha256 sonoma:         "1a16b40a4a13bca828f12a497c521cbbd6d0add7c819a47583c4273769e921b8"
+    sha256 ventura:        "ad445bd4da02eca77f983c75d098716251df6af33e992627800bc4167b8b5947"
+    sha256 monterey:       "984f5634eb6875a9c4b311044305d6fea01a4c04e768d2e3e20dc617e7d91d27"
+    sha256 x86_64_linux:   "2e9f4c854f3bf0b2aa571c489e62ab7f398b1dfcb7ce87c12dc48930d94e6fac"
   end
 
-  depends_on "gmp"
-  depends_on "llvm@14"
-  depends_on "python@3.10"
   depends_on "cmake"
+  depends_on "gmp"
+  depends_on "llvm@15"
+  depends_on "python@3.11"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
-
-  # Work around Homebrew 11-arm64 CI issue, which outputs unwanted objc warnings like:
-  # objc[42134]: Class ... is implemented in both ... One of the two will be used. Which one is undefined.
-  # These end up incorrectly failing checkChplInstall test script when it checks for stdout/stderr.
-  # TODO: remove when Homebrew CI no longer outputs these warnings or 11-arm64 is no longer used.
-  patch :DATA
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
@@ -38,8 +30,8 @@ class Chapel < Formula
 
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
-    python = "python3.10"
-    # It should be noted that this will expand to: 'for cmd in python3.10 python3 python python2; do'
+    python = "python3.11"
+    # It should be noted that this will expand to: 'for cmd in python3.11 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
 
@@ -47,18 +39,21 @@ class Chapel < Formula
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
-    # This enables a workaround for
-    #   https://github.com/llvm/llvm-project/issues/54438
-    ENV["CHPL_HOST_USE_SYSTEM_LIBCXX"] = "yes"
-
     # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
     # package should be configured to use a reasonable GCC
     (libexec/"chplconfig").write <<~EOS
       CHPL_RE2=bundled
       CHPL_GMP=system
+      CHPL_MEM=cstdlib
+      CHPL_TASKS=fifo
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
+    # CHPL_MEM and CHPL_TASKS are currently being set this way due
+    # to this PR: https://github.com/chapel-lang/chapel/pull/23415.
+    # This is a workaround for an issue where the bundled jemalloc
+    # makefile is being run and failing when we are supposed to use
+    # the system jemalloc.
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
@@ -115,17 +110,3 @@ class Chapel < Formula
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
   end
 end
-
-__END__
-diff --git a/util/test/checkChplInstall b/util/test/checkChplInstall
-index 7d2eb78a88..a9ddf22054 100755
---- a/util/test/checkChplInstall
-+++ b/util/test/checkChplInstall
-@@ -189,6 +189,7 @@ fi
- if [ -n "${TEST_COMP_OUT}" ]; then
-     # apply "prediff"-like filter to remove gmake "clock skew detected" warnings, if any
-     TEST_COMP_OUT=$( grep <<<"${TEST_COMP_OUT}" -v \
-+        -e '^objc\(\[[0-9]*\]\)*: Class .* is implemented in both .* One of the two will be used\. Which one is undefined\. *$' \
-         -e '^g*make\(\[[0-9]*\]\)*: Warning: File .* has modification time .* in the future *$' \
-         -e '^g*make\(\[[0-9]*\]\)*: warning:  Clock skew detected\.  Your build may be incomplete\. *$' )
- fi

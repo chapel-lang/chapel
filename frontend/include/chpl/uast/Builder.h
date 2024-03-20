@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,10 @@ namespace chpl {
 class Context;
 class Location;
 
+namespace libraries {
+  class LibraryFile;
+}
+
 namespace uast {
 
 class AstNode;
@@ -45,32 +49,50 @@ class AstNode;
   from one file at a time.
  */
 class Builder final {
+ public:
+  struct SymbolTableInfo {
+    const AstNode* ast = nullptr;
+    int moduleIndex = 0;
+    int symbolIndex = 0;
+  };
+
+  using SymbolTableVec = std::vector<SymbolTableInfo>;
+
  private:
   // stores symbol path and repeat number (>0 for syms with same name)
   using pathVecT = std::vector<std::pair<UniqueString,int>>;
   // maps the name to the repeat number
   using declaredHereT = std::unordered_map<UniqueString,int>;
+  // maps from a uAST pointer to a location
+  using AstLocMap = std::unordered_map<const AstNode*, Location>;
 
-  Context* context_;
-  UniqueString filepath_;
+  Context* context_ = nullptr;
   UniqueString startingSymbolPath_;
-  AstList topLevelExpressions_;
+  BuilderResult br;
+  bool useNotedLocations_ = true;
+  bool expectSymbolTableVec_ = false;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
   // These are removed in the astToLocation_ map.
-  std::unordered_map<const AstNode*, Location> notedLocations_;
+  AstLocMap notedLocations_;
 
-  // the following maps are computed during assignIDs
-  llvm::DenseMap<ID, Location> idToLocation_;
-  std::vector<Location> commentToLocation_;
-  llvm::DenseMap<ID, const AstNode*> idToAst_;
-  llvm::DenseMap<ID, ID> idToParent_;
+  // These map AST to additional locations while the builder is building.
+  // This is an equivalent to notedLocations for the additional locations.
+  // The key type is just 'AstNode' so that we can use generic functions.
+  #define LOCATION_MAP(ast__, location__) \
+    AstLocMap CHPL_AST_LOC_MAP(ast__, location__);
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
-  Builder(Context* context, UniqueString filepath,
-          UniqueString startingSymbolPath)
-    : context_(context), filepath_(filepath),
-      startingSymbolPath_(startingSymbolPath)
+  SymbolTableVec symbolTableVec_;
+
+  Builder(Context* context, UniqueString filePath,
+          UniqueString startingSymbolPath,
+          const libraries::LibraryFile* lib)
+    : context_(context),
+      startingSymbolPath_(startingSymbolPath),
+      br(filePath, lib)
   {
   }
 
@@ -79,6 +101,9 @@ class Builder final {
   void doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                    int& commentIndex, pathVecT& pathVec,
                    declaredHereT& duplicates);
+
+  void noteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
+  void tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
 
  public:
   /** Construct a Builder for parsing a top-level module */
@@ -93,6 +118,13 @@ class Builder final {
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath);
 
+  /** Construct a Builder for use when reading uAST from a library file. */
+  static owned<Builder> createForLibraryFileModule(
+                                          Context* context,
+                                          UniqueString filePath,
+                                          UniqueString parentSymbolPath,
+                                          const libraries::LibraryFile* lib);
+
   Context* context() const { return context_; }
 
   /**
@@ -105,6 +137,19 @@ class Builder final {
     Record the location of an AST element.
    */
   void noteLocation(AstNode* ast, Location loc);
+
+  /** Note additional locations that are associated with an AST node.
+      Pairs an AST node (e.g., 'Dot') with a location.
+      For a list of all locations see "./all-location-maps.h". */
+  #define LOCATION_MAP(ast__, location__) \
+    void note##location__##Location(ast__* ast, Location loc); \
+    void tryNote##location__##Location(ast__* ast, Location loc);
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
+
+  /** Note the symbol table symbols so that the resulting
+      BuilderResult will have a working 'isSymbolTableSymbol' function. */
+  void noteSymbolTableSymbols(SymbolTableVec vec);
 
   /**
     Assign IDs to all of the AST elements added as toplevel expressions

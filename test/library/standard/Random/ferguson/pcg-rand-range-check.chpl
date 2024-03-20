@@ -57,11 +57,10 @@ var histo:[0..255] int;
 
 // Check we produce every random byte
 {
-  var rs = createRandomStream(seed = seed, parSafe=false,
-                            eltType = uint(8), algorithm=RNG.PCG);
+  var rs = new randomStream(seed = seed, eltType = uint(8));
 
   for i in 1..1000000 {
-    var got = rs.getNext();
+    var got = rs.next();
 
     histo[got] += 1;
   }
@@ -78,11 +77,10 @@ histo = 0;
 
 // Check we produce every random byte with sub-range
 {
-  var rs = createRandomStream(seed = seed, parSafe=false,
-                            eltType = uint(8), algorithm=RNG.PCG);
+  var rs = new randomStream(seed = seed, eltType = uint(8));
 
   for i in 1..1000000 {
-    var got = rs.getNext(5, 20);
+    var got = rs.next(5, 20);
     histo[got] += 1;
   }
 
@@ -98,11 +96,10 @@ histo = 0;
 
 // Check we produce every random byte with sub-range
 {
-  var rs = createRandomStream(seed = seed, parSafe=false,
-                            eltType = uint(64), algorithm=RNG.PCG);
+  var rs = new randomStream(seed = seed, eltType = uint(64));
 
   for i in 1..1000000 {
-    var got = rs.getNext(5, 20):int;
+    var got = rs.next(5, 20):int;
 
     histo[got] += 1;
   }
@@ -114,5 +111,3 @@ histo = 0;
     if verbose then writef("% 3i: %i\n", i, h);
   }
 }
-
-

@@ -19,8 +19,8 @@ record MyRecord {
 
 config const fileName = "test.txt";
 
-var chplOut = stdout.withSerializer(ChplSerializer),
-    jsonOut = stdout.withSerializer(JsonSerializer);
+var chplOut = stdout.withSerializer(chplSerializer),
+    jsonOut = stdout.withSerializer(jsonSerializer);
 
 // Let's create a few records and store them in an array.
 var A = [ new MyRecord(1,2,3.0,4.0,"test one", "test two"),

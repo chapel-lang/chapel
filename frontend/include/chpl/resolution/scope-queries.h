@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,6 +65,20 @@ namespace resolution {
                     llvm::ArrayRef<const Scope*> receiverScopes,
                     UniqueString name,
                     LookupConfig config);
+
+  /**
+    Same as lookupNameInScope but can produce warnings based on
+    the ID passed in.
+   */
+
+  std::vector<BorrowedIdsWithName>
+  lookupNameInScopeWithWarnings(Context* context,
+                                const Scope* scope,
+                                llvm::ArrayRef<const Scope*> receiverScopes,
+                                UniqueString name,
+                                LookupConfig config,
+                                ID idForWarnings);
+
 
   /**
     Same as lookupNameInScope but traces how each symbol was found,

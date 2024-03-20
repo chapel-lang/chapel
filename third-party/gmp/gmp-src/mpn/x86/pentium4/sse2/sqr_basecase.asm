@@ -41,7 +41,7 @@ C  * Look into different loop alignment, we now expand the code about 50 bytes
 C    with possibly needless alignment.
 C  * Use OSP, should solve feed-in latency problems.
 C  * Address relative slowness for un<=3 for Pentium M.  The old code is there
-C    considerably faster.  (1:20/14, 2:34:32, 3:66/57)
+C    considerably faster.  (1:20/14, 2:34/32, 3:66/57)
 
 C INPUT PARAMETERS
 C rp		sp + 4

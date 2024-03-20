@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -240,6 +240,7 @@ zip              return processToken(yyscanner, TZIP);
 "reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
 "init="          return processToken(yyscanner, TINITEQUALS);
+"init"           return processToken(yyscanner, TINIT);
 
 "=>"             return processToken(yyscanner, TALIAS);
 

@@ -1,6 +1,2 @@
 inCopyPassedToRef.chpl:1: In function 'main':
 inCopyPassedToRef.chpl:8: error: const actual is passed to 'ref' formal 'X' of foo()
-note: to formal of type [domain(1,int(64),one)] real(64)
-inCopyPassedToRef.chpl:11: note: to ref formal here
-inCopyPassedToRef.chpl:12: note: passed as ref here
-inCopyPassedToRef.chpl:12: note: passed as ref here

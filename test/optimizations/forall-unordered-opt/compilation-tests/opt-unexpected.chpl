@@ -11,7 +11,7 @@ proc set_then_atomic() {
   var tmp: [0..#N] int;
   var x:atomic int;
 
-  forall i in 0..#N {
+  forall i in 0..#N with (ref tmp) {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
     x.write(1); // don't optimize -- other thread could assume tmp updated
                 // after x is set
@@ -25,7 +25,7 @@ proc set_then_sync() {
   var tmp: [0..#N] int;
   var x:sync int;
 
-  forall i in 0..#N {
+  forall i in 0..#N with (ref tmp) {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
     x.writeEF(1); // don't optimize -- other thread could assume tmp updated
                   // after x is set
@@ -33,27 +33,12 @@ proc set_then_sync() {
 }
 set_then_sync();
 
-proc set_then_single() {
-  var A: [0..#M] int = 0..#M;
-  var rindex: [0..#N] int;
-  var tmp: [0..#N] int;
-  var x:single int;
-
-  forall i in 0..#N {
-    tmp.localAccess[i] = A[rindex.localAccess[i]];
-    x.writeEF(1); // don't optimize -- other thread could assume tmp updated
-                  // after x is set
-  }
-}
-set_then_single();
-
-
 proc histo_spin() {
   var A: [0..#M] atomic int;
   var B: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A) {
     A[r].add(1);
     while B[r].read() == 0 { }
     // don't optimize -- could be waiting on another task
@@ -67,7 +52,7 @@ proc histo_spin2() {
   var B: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A) {
     A[r].add(1);
     if r == 1 {
       while B[r].read() == 0 { }
@@ -328,27 +313,11 @@ proc mini_sync() {
 }
 mini_sync();
 
-// similar to mini_sync
-proc mini_single() {
-  var count: atomic int;
-  var myLock: single int;
-
-  forall r in 1..M {
-    // Acquire the lock
-    myLock.writeEF(1);
-    // Release the lock
-    myLock.writeEF(0);
-    // release the lock
-    count.add(1);
-  }
-}
-mini_single();
-
 // this case uses task-local storage and so shouldn't be optimized
 proc tls_hazard_atomic_conditional() {
   var taskCounter: atomic int;
   var iterationsForTask:[0..M] atomic int;
-  forall i in 1..N with (var id = taskCounter.fetchAdd(1)) {
+  forall i in 1..N with (var id = taskCounter.fetchAdd(1), ref iterationsForTask) {
     if 0 <= id && id <= M {
       iterationsForTask[id].add(1);
       assert(iterationsForTask[id].read() == 1);
@@ -362,7 +331,7 @@ tls_hazard_atomic_conditional();
 proc tls_hazard_atomic() {
   var taskCounter: atomic int;
   var iterationsForTask:[0..M] atomic int;
-  forall i in 1..N with (var id = taskCounter.fetchAdd(1)) {
+  forall i in 1..N with (var id = taskCounter.fetchAdd(1), ref iterationsForTask) {
     iterationsForTask[id].add(1);
     assert(iterationsForTask[id].read() == 1);
     // do something useful...
@@ -374,7 +343,7 @@ tls_hazard_atomic();
 proc tls_hazard_atomic_thread_id() {
   extern proc chpl_task_getId():chpl_taskID_t;
   var iterationsForTask:[0..M] atomic int;
-  forall i in 1..N {
+  forall i in 1..N with (ref iterationsForTask) {
     var id = chpl_task_getId():int;
     iterationsForTask[id].add(1);
     assert(iterationsForTask[id].read() == 1);
@@ -398,7 +367,7 @@ record buffer1 {
   }
 
 
-  inline proc enqueue(i:int) {
+  inline proc ref enqueue(i:int) {
     b[cnt] = i;
     cnt += 1;
     if cnt == b.size {
@@ -419,7 +388,7 @@ proc tls_hazard_buffer1() {
   var taskCounter: atomic int;
   var perTaskBuff: [0..M] buffer1;
 
-  forall i in 1..N with (var id=taskCounter.fetchAdd(1)) {
+  forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
     perTaskBuff[id].enqueue(i);
   }
 }
@@ -442,7 +411,7 @@ record buffer2 {
     this.cnt = other.cnt;
   }
 
-  inline proc enqueue(i:int) {
+  inline proc ref enqueue(i:int) {
     b[cnt] = i;
     if cnt == b.size-1 {
       //flushBuffer(b);
@@ -462,7 +431,7 @@ proc tls_hazard_buffer2() {
   var taskCounter: atomic int;
   var perTaskBuff: [0..M] buffer2;
 
-  forall i in 1..N with (var id=taskCounter.fetchAdd(1)) {
+  forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
     perTaskBuff[id].enqueue(i);
   }
 }
@@ -496,7 +465,7 @@ proc tls_signalling() {
       }
     }
 
-    forall i in 1..N with (var id=taskCounter.fetchAdd(1)) {
+    forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
       ref tls = perTaskBuff[id];
       if tls.deferredSignal then
         tls.signal.add(1);
@@ -528,7 +497,7 @@ proc tls_signalling2() {
       }
     }
 
-    forall i in 1..N with (var id=taskCounter.fetchAdd(1)) {
+    forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
       ref tls = perTaskBuff[id];
       if tls.deferredSignal {
         tls.signal.add(1);
@@ -575,7 +544,7 @@ proc mini_ra_lf1() {
   var indexMask = 1023;
   var Updates: [0..#M] int;
 
-  forall (_, r) in zip(Updates, rng_iter1()) do
+  forall (_, r) in zip(Updates, rng_iter1()) with (ref T) do
     T(r & indexMask).xor(r);
 }
 mini_ra_lf1();
@@ -605,7 +574,7 @@ proc mini_ra_lf2() {
   var indexMask = 1023;
   var Updates: [0..#M] int;
 
-  forall (_, r) in zip(Updates, rng_iter2()) do
+  forall (_, r) in zip(Updates, rng_iter2()) with (ref T) do
     T(r & indexMask).xor(r);
 }
 mini_ra_lf2();
@@ -636,7 +605,7 @@ proc mini_ra_lf3() {
   var indexMask = 1023;
   var Updates: [0..#M] int;
 
-  forall (_, r) in zip(Updates, rng_iter3()) do
+  forall (_, r) in zip(Updates, rng_iter3()) with (ref T) do
     T(r & indexMask).xor(r);
 }
 mini_ra_lf3();

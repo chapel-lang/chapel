@@ -1,13 +1,13 @@
 use BlockDist;
 
 var n = 10;
-var B = new Block({1..n});
+var B = new blockDist({1..n});
 var D = {1..n} dmapped B;
 var A: [D] real;
 
 inspectDist(A);
 
-// redistribute using the '.redistribute()' method on Block
+// redistribute using the '.redistribute()' method on blockDist
 
 for i in 1..10 {
   D = {1..0}; // reset domain to avoid need to preserve data
@@ -38,7 +38,7 @@ inspectDist(A);
 for i in 1..10 {
   D = {1..0}; // reset domain to avoid need to preserve data
   n *= 2;
-  B = new Block({1..n});
+  B = new blockDist({1..n});
   D = {1..n};
   inspectDist(A);
 
@@ -56,7 +56,7 @@ for i in 1..10 {
 var targetLocales = Locales;
 targetLocales[numLocales-1] = Locales[0];
 
-B = new Block(
+B = new blockDist(
 */
 
 proc inspectDist(X: [] ?t) {

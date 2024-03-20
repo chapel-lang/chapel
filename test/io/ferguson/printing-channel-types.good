@@ -1,4 +1,4 @@
 fileReader
-fileReader(native,false,nothing)
+fileReader(false,defaultDeserializer)
 fileWriter
-fileWriter(native,false,nothing)
+fileWriter(false,defaultSerializer)

@@ -31,6 +31,10 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 #define COUNT 2000
 #endif
 
+#ifdef MORE_SQR_TESTS
+void MORE_SQR_TESTS (gmp_randstate_ptr);
+#endif
+
 int
 main (int argc, char **argv)
 {
@@ -110,6 +114,10 @@ main (int argc, char **argv)
 	  }
       }
     TMP_FREE;
+
+#ifdef MORE_SQR_TESTS
+  MORE_SQR_TESTS (rands);
+#endif
   }
 
   tests_end ();

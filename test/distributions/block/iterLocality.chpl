@@ -1,6 +1,6 @@
 use BlockDist;
 
-const D = {1..8} dmapped Block({1..8});
+const D = {1..8} dmapped blockDist({1..8});
 var A: [D] real;
 var SD: sparse subdomain(D);
 SD += (1,);
@@ -9,9 +9,9 @@ SD += (6,);
 SD += (8,);
 var AS: [SD] real;
 
-proc exercise(desc, Dom, Arr) {
+proc exercise(desc, Dom, ref Arr) {
   writeln(desc, ": Dom");
-  forall i in Dom do
+  forall i in Dom with (ref Arr) do
     Arr[i] = here.id;
   writeln(Arr);
   writeln();

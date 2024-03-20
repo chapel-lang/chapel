@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -444,7 +444,7 @@ module ZMQ {
     proc init() {
       this.ctx = zmq_ctx_new();
       this.home = here;
-      this.complete();
+      init this;
       if this.ctx == nil {
         var errmsg: string;
         try! {
@@ -483,14 +483,14 @@ module ZMQ {
     proc init() {
       this.classRef = new unmanaged ContextClass();
       this.classRef.incRefCount();
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc
     proc init=(c: Context) {
       this.classRef = c.classRef;
       this.classRef.incRefCount();
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc
@@ -536,7 +536,7 @@ module ZMQ {
     proc init(ctx: Context, sockType: int) {
       this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
       this.home = here;
-      this.complete();
+      init this;
       if this.socket == nil {
         var errmsg: string;
         try! {
@@ -593,7 +593,7 @@ module ZMQ {
     proc init=(s: Socket) {
       this.classRef = s.classRef;
       this.classRef.incRefCount();
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc
@@ -614,7 +614,7 @@ module ZMQ {
 
       this.classRef = makeClass(ctx, sockType);
       this.context = ctx;
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc
@@ -683,7 +683,7 @@ module ZMQ {
       :returns: The last endpoint set, see the link above.
       :rtype: string
 
-      :throws ZMQError: Thrown when an error occurs getting the last endpoint.
+      :throws ZMQError: When an error occurs getting the last endpoint.
     */
     proc getLastEndpoint(): string throws {
       var ret: string;
@@ -716,7 +716,7 @@ module ZMQ {
       :returns: The linger period for the socket, see the link above.
       :rtype: c_int
 
-      :throws ZMQError: Thrown when an error occurs getting the linger.
+      :throws ZMQError: When an error occurs getting the linger.
     */
     proc getLinger(): c_int throws {
       var copy: c_int;
@@ -744,7 +744,7 @@ module ZMQ {
       :arg value: The new linger period for the socket.
       :type value: c_int
 
-      :throws ZMQError: Thrown when an error occurs setting the linger.
+      :throws ZMQError: When an error occurs setting the linger.
     */
     proc setLinger(value: c_int) throws {
       on classRef.home {
@@ -771,7 +771,7 @@ module ZMQ {
 
       :arg value: The new message filter for the socket.
 
-      :throws ZMQError: Thrown when an error occurs setting the message filter.
+      :throws ZMQError: When an error occurs setting the message filter.
     */
     proc setSubscribe(value: ?T) throws where isPODType(T) {
       on classRef.home {
@@ -813,7 +813,7 @@ module ZMQ {
 
       :arg value: The message filter to remove from the socket.
 
-      :throws ZMQError: Thrown when an error occurs setting the message filter.
+      :throws ZMQError: When an error occurs setting the message filter.
     */
     proc setUnsubscribe(value: ?T) throws where isPODType(T) {
       on classRef.home {

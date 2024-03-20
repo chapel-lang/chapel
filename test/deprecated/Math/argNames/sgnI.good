@@ -1,6 +1,0 @@
-sgnI.chpl:5: warning: The argument name 'i' is deprecated for 'sgn', please use 'x' instead
-sgnI.chpl:6: warning: The argument name 'i' is deprecated for 'sgn', please use 'x' instead
-sgnI.chpl:7: warning: The argument name 'i' is deprecated for param 'sgn', please use 'x' instead
--1
-0
-1

@@ -3,7 +3,7 @@ class Inner {
 
   proc init(xVal: int) throws {
     x = xVal;
-    this.complete();
+    init this;
     throw new Error();
   }
 }

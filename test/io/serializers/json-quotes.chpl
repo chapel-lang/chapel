@@ -5,10 +5,10 @@ proc main() {
   var f = openMemFile();
   var x = "with, \"quotes\" !";
   {
-    f.writer().withSerializer(JsonSerializer).writeln(x);
+    f.writer(locking=false).withSerializer(jsonSerializer).writeln(x);
   }
   {
-    var got = f.reader().withDeserializer(JsonDeserializer).read(string);
+    var got = f.reader(locking=false).withDeserializer(jsonDeserializer).read(string);
     assert(x == got);
   }
 }

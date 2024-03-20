@@ -19,19 +19,19 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-      maxChars = cmpl.size; // upper bound on number of nucleotides used
+      maxChars = cmpl.size: uint(8); //upper bound on number of nucleotides used
 
 // map from pairs of nucleotide characters to their reversed complements
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin = (new file(0)).reader(iokind.native, locking=false),
-    stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+var stdinBin = (new file(0)).reader(deserializer=new binaryDeserializer(), locking=false),
+    stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
   const chars = eol..<maxChars;
-  forall (i,j) in {chars, chars} do
+  forall (i,j) in {chars, chars} with (ref pairCmpl) do
     pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
   // variables for reading into a dynamically growing buffer
@@ -57,7 +57,7 @@ proc main(args: [] string) {
 
       // shift the remaining characters down (only in parallel if no overlap)
       serial (nextSeqStart < endOfRead) do
-        forall j in 0..<endOfRead do
+        forall j in 0..<endOfRead with (ref buff) do
           buff[j] = buff[j + nextSeqStart];
     }
 
@@ -75,7 +75,7 @@ proc main(args: [] string) {
   if readPos then revcomp(buff, readPos);
 }
 
-proc revcomp(seq, size) {
+proc revcomp(ref seq, size) {
   param chunkSize = linesPerChunk * cols; // the size of the chunks to deal out
 
   // compute how big the header is
@@ -141,7 +141,7 @@ proc revcomp(seq, size) {
   }
 }
 
-proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, ref buff, ref seq) {
   if spanLen%2 {
     charAfter -= 1;
     buff[dstFront] = cmpl[seq[charAfter]];

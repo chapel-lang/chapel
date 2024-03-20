@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,16 @@ bool cast(std::string str, int& out) noexcept {
   const char* cstr = str.c_str();
   errno = 0;
   int x = std::strtol(cstr, &end, 10);
+  if (errno == ERANGE || end == cstr) return false;
+  out = x;
+  return true;
+}
+
+bool cast(std::string str, int64_t& out) noexcept {
+  char* end = nullptr;
+  const char* cstr = str.c_str();
+  errno = 0;
+  int64_t x = std::strtoll(cstr, &end, 10);
   if (errno == ERANGE || end == cstr) return false;
   out = x;
   return true;

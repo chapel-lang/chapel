@@ -19,7 +19,7 @@ record QQ {
   const jj: int;
   proc init(arp:int) {
     jj = arp;
-    this.complete();
+    init this;
     writeln("init ", this);
   }
   proc deinit() {

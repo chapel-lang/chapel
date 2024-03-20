@@ -8,7 +8,7 @@ proc load_1layer_test(inout arr : [?D] real) {
 var tmp_arr : [D] real;
 
 var f = open("./FORTRAN/test_grid.dat", iomode.r);
-var r = f.reader(kind=ionative);
+var r = f.reader(deserializer=new binaryDeserializer());
 for j in 0..#ny {
   for i in 0..#nx {
     var tmp : real;
@@ -43,4 +43,3 @@ for i in D.dim(0) {
 }
 
 }
-

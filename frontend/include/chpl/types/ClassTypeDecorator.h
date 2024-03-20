@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,11 +54,15 @@ class ClassTypeDecorator final {
     GENERIC_NONNIL    = 13,
     GENERIC_NILABLE   = 14,
   };
+
+  /// \cond DO_NOT_DOCUMENT
   enum {
     NUM_DECORATORS = 12,
     MANAGEMENT_MASK = 0xfc,
     NILABILITY_MASK = 0x03,
   };
+  /// \endcond
+
 
   /** Given an integer i with 0 <= i < NUM_DECORATORS
       returns a decorator with that number. This can be used to
@@ -197,6 +201,12 @@ class ClassTypeDecorator final {
       and the passed decorator is an actual */
   ClassTypeDecorator combine(ClassTypeDecorator actual) const {
     return ClassTypeDecorator(combineDecorators(val_, actual.val_));
+  }
+
+  ClassTypeDecorator copyNilabilityFrom(ClassTypeDecorator other) const {
+    if (other.isNilable()) return addNilable();
+    if (other.isNonNilable()) return addNonNil();
+    return removeNilable();
   }
 
   bool operator==(ClassTypeDecorator other) const {

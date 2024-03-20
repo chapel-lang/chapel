@@ -10,10 +10,11 @@ proc f(x:bool) {
     return tmp;
   }
 }
-proc g(x) {
+proc g(ref x) {
   x[1] = one;
 }
-g(f(true));
+var t = f(true);
+g(t);
 
 // Does this print out 0 0 0 or 1 0 0 ?
 writeln(A);

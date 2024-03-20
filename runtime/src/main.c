@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
 
   // have everyone exit, returning the value returned by the user written main
   // or 0 if it didn't return anything
-  chpl_rt_finalize(chpl_gen_main_arg.return_value);
+  chpl_exit_all(chpl_gen_main_arg.return_value);
 
   return 0; // should never get here
 }

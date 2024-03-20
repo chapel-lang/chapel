@@ -1,0 +1,2 @@
+-shoistArray=true #basicArrayHoist-hoisted.good
+-shoistArray=false #basicArrayHoist-not-hoisted.good

@@ -71,7 +71,7 @@
      proc main(){
 
         var inFile = open(inputFile, ioMode.r);
-        var reader = inFile.reader();
+        var reader = inFile.reader(locking=false);
         processes = reader.read(int);
         D = {0..(processes-1)};
 
@@ -119,7 +119,7 @@
 
     /* Aims at selecting the leader from a set of nodes. */
     proc leader_elect() {
-        forall (i,p) in zip(D,processSet) {
+        forall (i,p) in zip(D,processSet) with (ref nval) {
             var x : int = (i + 1) % (processes);
             var sval : int = p!.send;
             sendMessage(x, sval);
@@ -127,7 +127,7 @@
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
         }
 
-        forall (i,pQ) in zip(D,processSet) {
+        forall (i,pQ) in zip(D,processSet) with (ref nval) {
             const p = pQ!;
             if(p.receivedId > p.leaderId) {
                 p.send = p.receivedId;
@@ -181,7 +181,7 @@
     /* Writes the leader to the user specified file. */
     proc printLeader() {
         var outfile = open(outputFile, ioMode.cw);
-        var writer = outfile.writer();
+        var writer = outfile.writer(locking=false);
         writer.writeln("Leader: ", processSet[0]!.leaderId);
         writeln("Leader: ", processSet[0]!.leaderId);
         writer.close();

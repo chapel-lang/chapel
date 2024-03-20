@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,6 +46,8 @@ namespace uast {
   interface 'Foo(A, B)'.
 */
 class Implements final : public AstNode {
+ friend class AstNode;
+
  private:
   int8_t typeIdentChildNum_;
   bool isExpressionLevel_;
@@ -78,11 +80,17 @@ class Implements final : public AstNode {
            interfaceExpr()->isFnCall());
   }
 
-  Implements(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(typeIdentChildNum_);
+    ser.write(isExpressionLevel_);
+  }
+
+  explicit Implements(Deserializer& des)
     : AstNode(asttags::Implements, des) {
       typeIdentChildNum_ = des.read<int8_t>();
       isExpressionLevel_ = des.read<bool>();
-    }
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Implements* lhs = this;
     const Implements* rhs = (const Implements*) other;
@@ -172,15 +180,6 @@ class Implements final : public AstNode {
                                  owned<Identifier> typeIdent,
                                  owned<AstNode> interfaceExpr,
                                  bool isExpressionLevel);
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(typeIdentChildNum_);
-    ser.write(isExpressionLevel_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Implements);
-
 };
 
 

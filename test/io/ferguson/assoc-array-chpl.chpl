@@ -7,11 +7,11 @@ proc main() {
   var B:[A.domain] int;
 
   {
-    tmp.writer(serializer = new ChplSerializer()).writef("%?\n", A);
+    tmp.writer(serializer = new chplSerializer(), locking=false).writef("%?\n", A);
   }
 
   {
-    tmp.reader(deserializer = new ChplDeserializer()).readf("%?\n", B);
+    tmp.reader(deserializer = new chplDeserializer(), locking=false).readf("%?\n", B);
   }
 
   for key in A.domain.sorted() {

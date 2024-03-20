@@ -33,12 +33,11 @@ var baseDom2D = {1..10, 1..10};
 }
 
 {
-  var assocDom: domain(string);
-  assocDom += ["foo", "bar"];
+  var assocDom: domain(string) = {"foo", "bar"};
   test(assocDom, "associative domain with string keys");
 }
 
-proc test(dom:domain, name) {
+proc test(dom:domain(?), name) {
   use CyclicDist;
 
   writeln("Testing ", name);
@@ -47,7 +46,7 @@ proc test(dom:domain, name) {
   var sourceArr: [dom] int;
 
 
-  forall i in dom {
+  forall i in dom with (ref destArr) {
     destArr[i] = sourceArr[generateIdx(i)]; // RHS will be seen as non-local
   }
 

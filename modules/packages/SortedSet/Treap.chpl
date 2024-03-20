@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,14 +64,14 @@ module Treap {
   }
 
   @chpldoc.nodoc
-  var _treapRandomStream = new RandomStream(int);
+  var _treapRandomStream = new randomStream(int);
 
   /*
     Helper procedure to get one random int
   */
   @chpldoc.nodoc
   proc _random(): int {
-    return _treapRandomStream.getNext();
+    return _treapRandomStream.next();
   }
 
   @chpldoc.nodoc
@@ -129,7 +129,7 @@ module Treap {
     }
   }
 
-  record treap {
+  record treap : writeSerializable {
     /* The type of the elements contained in this sortedSet.*/
     type eltType;
 
@@ -217,7 +217,7 @@ module Treap {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparator = comparator;
-      this.complete();
+      init this;
 
       for elem in iterable do _add(elem);
     }
@@ -365,7 +365,7 @@ module Treap {
        Used by sortedMap
      */
     @chpldoc.nodoc
-    proc _getReference(element: eltType) ref {
+    proc ref _getReference(element: eltType) ref {
       var node = _findRef(_root, element);
       if node == nil then
         boundsCheckHalt(try! "index %? out of bounds".format(element));
@@ -814,12 +814,10 @@ module Treap {
 
     /*
       Write the contents of this sortedSet to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
     */
-    proc const writeThis(ch: fileWriter) throws {
+    proc const serialize(writer, ref serializer) throws {
       _enter();
-      _visit(ch);
+      _visit(writer);
       _leave();
     }
 

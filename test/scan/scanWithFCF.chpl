@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A = Block.createArray({1..10}, real);
+var A = blockDist.createArray({1..10}, real);
 A = 1.0;
 var B = + scan A;
 

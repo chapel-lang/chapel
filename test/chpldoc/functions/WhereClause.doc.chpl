@@ -14,7 +14,7 @@ module M {
         writeln("processArr 2");
     }
 
-    proc processDom(dom: domain) where dom.rank == 2 {
+    proc processDom(dom: domain(?)) where dom.rank == 2 {
         writeln("processDom 1");
     }
 
@@ -28,6 +28,11 @@ module M {
 
     proc processRange(r: range) where r.low > 1 {
         writeln("processRange 2");
+    }
+
+    pragma "no where doc"
+    proc processRangeNW(r: range) where r.low > 1 {
+        writeln("processRange no where");
     }
 
     // From borrowed-in-where.chpl
@@ -49,7 +54,8 @@ module M {
     }
 
     // From CMO_array.chpl
-    iter these(param tag, followThis) ref where tag == iterKind.follower {
+    iter these_example(param tag, followThis) ref
+      where tag == iterKind.follower {
         yield followThis;
     }
 

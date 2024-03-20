@@ -2,7 +2,7 @@ use IO;
 use OS;
 use CTypes;
 
-proc testInsuffCapError(ch: fileReader) {
+proc testInsuffCapError(ch: fileReader(?)) {
     // array is too small to fit full file...
     var a : [0..<100] uint(8),
         num_b: int = 0;
@@ -27,5 +27,5 @@ proc testInsuffCapError(ch: fileReader) {
     writeln(s_from_array + s_remaining);
 }
 
-testInsuffCapError(openReader("./jab.txt"));
-testInsuffCapError(openReader("./jab.txt", region=..1032));
+testInsuffCapError(openReader("./jab.txt", locking=false));
+testInsuffCapError(openReader("./jab.txt", region=..1032, locking=false));

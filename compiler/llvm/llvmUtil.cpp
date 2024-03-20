@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -602,7 +602,9 @@ void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
 }
 
 bool isOpaquePointer(llvm::Type* ty) {
-#if HAVE_LLVM_VER >= 140
+#if HAVE_LLVM_VER >= 170
+  return ty->isPointerTy();
+#elif HAVE_LLVM_VER >= 140
   return ty->isOpaquePointerTy();
 #else
   return false; // older LLVMs did not have opaque pointers

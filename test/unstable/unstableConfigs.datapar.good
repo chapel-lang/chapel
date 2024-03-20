@@ -1,0 +1,7 @@
+unstableConfigs.chpl:XX: warning: Hey it's unstable!
+0
+0
+0
+<command-line arg>:1: warning: The variable 'dataParTasksPerLocale' is unstable and its interface is subject to change in the future
+<command-line arg>:2: warning: The variable 'dataParIgnoreRunningTasks' is unstable and its interface is subject to change in the future
+<command-line arg>:3: warning: The variable 'dataParMinGranularity' is unstable and its interface is subject to change in the future

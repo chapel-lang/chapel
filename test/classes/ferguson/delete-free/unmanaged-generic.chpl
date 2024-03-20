@@ -4,7 +4,7 @@ class C {
   var x: t;
 }
 
-proc f(arg: unmanaged C) {
+proc f(arg: unmanaged C(?)) {
   writeln(arg.type:string, " ", arg);
 }
 

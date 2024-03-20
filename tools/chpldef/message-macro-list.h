@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,12 +31,24 @@ CHPLDEF_MESSAGE(Initialized, 0, 1, initialized)
 CHPLDEF_MESSAGE(Shutdown, 0, 0, shutdown)
 CHPLDEF_MESSAGE(Exit, 0, 1, exit)
 
+/** The document's content is now managed by the client and the server
+    MUST NOT try to read the document's content using the document's
+    URI. Open in this sense means that it is managed by the client. An
+    open notification must not be sent more than once without a close
+    notification having been sent before. */
+CHPLDEF_MESSAGE(DidOpen, 0, 1, textDocument/didOpen)
+CHPLDEF_MESSAGE(DidChange, 0, 1, textDocument/didChange)
+CHPLDEF_MESSAGE(DidSave, 0, 1, textDocument/didSave)
+CHPLDEF_MESSAGE(DidClose, 0, 1, textDocument/didClose)
+
+CHPLDEF_MESSAGE(Declaration, 0, 0, textDocument/declaration)
+CHPLDEF_MESSAGE(Definition, 0, 0, textDocument/definition)
+
 /*
 CHPLDEF_MESSAGE(RegisterCapability, client/registerCapability)
 CHPLDEF_MESSAGE(UnregisterCapability, client/unregisterCapability)
 CHPLDEF_MESSAGE(SetTrace, $/setTrace)
 CHPLDEF_MESSAGE(LogTrace, $/logTrace)
-
 */
 
 //
@@ -53,12 +65,8 @@ CHPLDEF_MESSAGE(Progress, $/progress)
 //
 
 /*
-CHPLDEF_MESSAGE(DidOpen, textDocument/didOpen)
-CHPLDEF_MESSAGE(DidChange, textDocument/didChange)
-CHPLDEF_MESSAGE(WillSave, textDocument/willSave)
 CHPLDEF_MESSAGE(WillSaveWaitUntil, textDocument/willSaveWaitUntil)
-CHPLDEF_MESSAGE(DidSave, textDocument/didSave)
-CHPLDEF_MESSAGE(DidClose, textDocument/didClose)
+CHPLDEF_MESSAGE(WillSave, textDocument/willSave)
 */
 
 //
@@ -77,8 +85,6 @@ CHPLDEF_MESSAGE(NotebookDidClose, notebookDocument/didClose)
 //
 
 /*
-CHPLDEF_MESSAGE(GotoDeclaration, textDocument/declaration)
-CHPLDEF_MESSAGE(GotoDefinition, textDocument/definition)
 CHPLDEF_MESSAGE(GotoTypeDefinition, textDocument/typeDefinition)
 CHPLDEF_MESSAGE(GotoImplementation, textDocument/implementation)
 CHPLDEF_MESSAGE(FindReferences, textDocument/references)

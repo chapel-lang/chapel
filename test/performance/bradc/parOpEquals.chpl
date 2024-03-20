@@ -14,7 +14,7 @@ var A: [1..n] real;
 
 var B: [1..n] int;
 
-forall i in 1..n do
+forall i in 1..n with (ref B) do
   B[i] = i;
 
 
@@ -26,7 +26,8 @@ use Time;
 const startTime = timeSinceEpoch().totalSeconds();
 
 for i in 1..numIters do
-  A[B] += 1;
+  // A[B] += 1;
+  forall b in B with (ref A) do A[b] += 1;
 
 const stopTime = timeSinceEpoch().totalSeconds();
 if printTiming then

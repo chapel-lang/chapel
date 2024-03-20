@@ -139,7 +139,7 @@ proc main() {
   // A local domain, distributed domain, and array representing the image
   //
   const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
+  const pixelPlane = imageSize dmapped blockDist(imageSize);
   var pixels: [pixelPlane] pixelType;
 
   //
@@ -172,7 +172,7 @@ proc main() {
   //
   // The main loop that computes the image in parallel.
   //
-  forall (y, x) in pixelPlane {
+  forall (y, x) in pixelPlane with (ref pixels) {
     // If uncommented, the following line will print out where each
     // iteration is running to sanity check that the work is
     // distributed:
@@ -494,15 +494,15 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new owned RandomStream(seed=(if seed then seed
-                                                   else SeedGenerator.currentTime),
-                                     eltType=real);
+    var rng = if seed
+      then new randomStream(real, seed)
+      else new randomStream(real);
     for u in rands.urand do
-      u(X) = rng.getNext() - 0.5;
+      u(X) = rng.next() - 0.5;
     for u in rands.urand do
-      u(Y) = rng.getNext() - 0.5;
+      u(Y) = rng.next() - 0.5;
     for r in rands.irand do
-      r = (nran * rng.getNext()): int;
+      r = (nran * rng.next()): int;
   }
 
   return rands;
@@ -543,7 +543,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, ioMode.r).reader();
+                                     else open(scene, ioMode.r).reader(locking=true);
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect

@@ -4,7 +4,7 @@ record GenericRecord {
 
 record Wrapper {
   var f:GenericRecord(?);
-  proc init(f : GenericRecord) {
+  proc init(f : GenericRecord(?)) {
     this.f = f;
   }
 }

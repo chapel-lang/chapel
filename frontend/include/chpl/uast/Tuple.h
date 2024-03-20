@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,8 @@ namespace uast {
   \endrst
 */
 class Tuple final : public Call {
+ friend class AstNode;
+
  private:
   // TODO: Record trailing comma?
   Tuple(AstList children)
@@ -48,8 +50,11 @@ class Tuple final : public Call {
     CHPL_ASSERT(numChildren() >= 1);
   }
 
-  Tuple(Deserializer& des)
-    : Call(asttags::Tuple, des) { }
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
+  }
+
+  explicit Tuple(Deserializer& des) : Call(asttags::Tuple, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return this->callContentsMatchInner(other->toCall());
@@ -68,13 +73,6 @@ class Tuple final : public Call {
   static owned<Tuple> build(Builder* builder,
                             Location loc,
                             AstList exprs);
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Tuple);
-
 };
 
 

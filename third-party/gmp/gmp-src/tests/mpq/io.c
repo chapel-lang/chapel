@@ -69,9 +69,9 @@ main (int argc, char **argv)
       size_range = mpz_get_ui (bs) % 10 + 2;
 
       mpz_urandomb (bs, rands, size_range);
-      size = mpz_get_ui (bs);
-      mpz_errandomb (mpq_numref(op1), rands, 512L);
-      mpz_errandomb_nonzero (mpq_denref(op1), rands, 512L);
+      size = mpz_get_ui (bs) + 2;
+      mpz_errandomb (mpq_numref(op1), rands, size);
+      mpz_errandomb_nonzero (mpq_denref(op1), rands, size);
       mpq_canonicalize (op1);
 
       mpz_urandomb (bs, rands, 1);

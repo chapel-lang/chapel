@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -66,6 +66,7 @@ static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret);
+static GenRet maybeConvertToLocalPointer(Expr* expr, GenRet& act);
 
 // These functions operate on wide pointers. There are several different
 // kinds of wide pointers:
@@ -286,7 +287,7 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
   const llvm::DataLayout& layout = info->module->getDataLayout();
-  llvm::LLVMContext &ctx = info->llvmContext;
+  llvm::LLVMContext &ctx = gContext->llvmContext();
   llvm::Value* val = NULL;
   llvm::AllocaInst* alloca = NULL;
 
@@ -471,7 +472,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
     if (isOpaquePointer(addrType)) {
 #if HAVE_LLVM_VER >= 140
-      locAddrType = llvm::PointerType::getUnqual(info->llvmContext);
+      locAddrType = llvm::PointerType::getUnqual(gContext->llvmContext());
 #endif
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
@@ -564,7 +565,7 @@ void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
     return;
 
   llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
-      llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+      llvm::Type::getInt64Ty(gContext->llvmContext()), sizeInBytes);
 
   info->irBuilder->CreateInvariantStart(addr, size);
 }
@@ -1115,7 +1116,12 @@ GenRet doCodegenFieldPtr(
   // Reduce the Chapel reference or wide reference cases
   // to GEN_PTR or GEN_WIDE_PTR cases.
   if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
-    base = codegenDeref(base);
+    if (baseType->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      base = codegenDeref(base);
+      base = codegenValue(base);
+    } else {
+      base = codegenDeref(base);
+    }
     return doCodegenFieldPtr(base, c_field_name, chpl_field_name, special);
   }
 
@@ -2092,6 +2098,158 @@ GenRet codegenMod(GenRet a, GenRet b)
   return ret;
 }
 
+// TODO: We could call the C 'fma' function from 'math.h' here.
+static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
+  INT_FATAL("Should not reach here, user facing functions should call the "
+            "appropriate C intrinsic in module code instead");
+  GenRet ret;
+  return ret;
+}
+
+static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == bv.chplType && bv.chplType == cv.chplType);
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The FMA primitive can only evaluate floating point types!");
+  }
+
+  // The 'id' is the base intrinsic, and then 'tys' is used to mangle
+  // the name, for example to create 'llvm.fma.64'. Since the types of
+  // all arguments should be the same, we only need one type in 'tys'.
+  auto id = llvm::Intrinsic::fma;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val, bv.val, cv.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenFma(GenRet a, GenRet b, GenRet c) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+  if (c.chplType && c.chplType->symbol->isRefOrWideRef()) c = codegenDeref(c);
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  GenRet cv = codegenValue(c);
+  if (info->cfile) {
+    ret = emitFmaForC(av, bv, cv);
+  }
+  else {
+    ret = emitFmaForLlvm(av, bv, cv);
+  }
+  return ret;
+}
+
+static bool preferCMathOverLLVMIntr() {
+  // prefer using the cmath implementation if using CHPL_GPU=nvidia for better
+  // performance
+  return usingGpuLocaleModel() &&
+         getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA;
+}
+
+static GenRet emitSqrtCMath(GenRet av) {
+  GenRet ret;
+  if (av.chplType == dtReal[FLOAT_SIZE_64]) {
+    ret = codegenCallExpr("chpl_sqrt64", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
+    ret = codegenCallExpr("chpl_sqrt32", av);
+  } else {
+    INT_FATAL("The sqrt primitive can only evaluate floating point types!");
+  }
+  return ret;
+}
+
+static GenRet emitSqrtLLVMIntrinsic(GenRet av) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The sqrt primitive can only evaluate floating point types!");
+  }
+  auto id = llvm::Intrinsic::sqrt;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenSqrt(GenRet a) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  GenRet av = codegenValue(a);
+  if (info->cfile || preferCMathOverLLVMIntr()) {
+    ret = emitSqrtCMath(av);
+  } else {
+    ret = emitSqrtLLVMIntrinsic(av);
+  }
+  return ret;
+}
+
+static GenRet emitAbsCMath(GenRet av) {
+  GenRet ret;
+  if (av.chplType == dtReal[FLOAT_SIZE_64]) {
+    ret = codegenCallExpr("chpl_fabs64", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
+    ret = codegenCallExpr("chpl_fabs32", av);
+  } else {
+    INT_FATAL("The abs primitive can only evaluate floating point types!");
+  }
+  return ret;
+}
+
+static GenRet emitAbsLLVMIntrinsic(GenRet av) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The abs primitive can only evaluate floating point types!");
+  }
+  auto id = llvm::Intrinsic::fabs;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenAbs(GenRet a) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  GenRet av = codegenValue(a);
+  if (info->cfile || preferCMathOverLLVMIntr()) {
+    ret = emitAbsCMath(av);
+  } else {
+    ret = emitAbsLLVMIntrinsic(av);
+  }
+  return ret;
+}
+
+
 
 static
 GenRet codegenLsh(GenRet a, GenRet b)
@@ -2530,7 +2688,7 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
     // See Swift irgen::emitForeignParameter
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
     unsigned int addrSpace = layout.getAllocaAddrSpace();
     const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
@@ -2691,7 +2849,7 @@ static GenRet codegenCallExprInner(GenRet function,
     // See Swift irgen::emitForeignParameter
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
 
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
@@ -3142,7 +3300,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4)
   args.push_back(a4);
   codegenCallWithArgs(fnName, args);
 }
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5)
@@ -3155,7 +3313,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCallWithArgs(fnName, args);
 }
-*/
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
@@ -3240,6 +3398,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCallWithArgs(fnName, args);
 }*/
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -3259,6 +3418,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a11);
   codegenCallWithArgs(fnName, args);
 }
+*/
 
 /*
 static
@@ -3344,13 +3504,13 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     src = codegenValue(src);
     size = codegenValue(size);
 
-    llvm::Type *int8Ty = llvm::Type::getInt8Ty(info->llvmContext);
+    llvm::Type *int8Ty = llvm::Type::getInt8Ty(gContext->llvmContext());
     llvm::Type *types[3];
     unsigned addrSpaceDest = llvm::cast<llvm::PointerType>(dest.val->getType())->getAddressSpace();
     unsigned addrSpaceSrc = llvm::cast<llvm::PointerType>(src.val->getType())->getAddressSpace();
     types[0] = llvm::PointerType::get(int8Ty, addrSpaceDest);
     types[1] = llvm::PointerType::get(int8Ty, addrSpaceSrc);
-    types[2] = llvm::Type::getInt64Ty(info->llvmContext);
+    types[2] = llvm::Type::getInt64Ty(gContext->llvmContext());
     //types[3] = llvm::Type::getInt32Ty(info->llvmContext);
     //types[4] = llvm::Type::getInt1Ty(info->llvmContext);
 
@@ -3983,7 +4143,7 @@ static void codegenEmbedChapelAstMetadata(GenRet& gr, BaseAST* ast) {
   #ifdef HAVE_LLVM
   if (gGenInfo->cfile == nullptr && gr.val && fGenIDS) {
     if (auto insn = llvm::dyn_cast<llvm::Instruction>(gr.val)) {
-      llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+      llvm::LLVMContext& ctx = gContext->llvmContext();
       llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
       llvm::Constant* c = llvm::ConstantInt::get(int64Ty, ast->id);
       llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
@@ -4548,7 +4708,7 @@ DEFINE_PRIM(UNARY_PLUS) {
     else
       ret = tmp; // nothing is necessary.
   }
-  DEFINE_PRIM(UNARY_NOT) {
+DEFINE_PRIM(UNARY_NOT) {
     GenRet tmp = codegenValue(call->get(1));
 
     if (gGenInfo->cfile) {
@@ -4561,6 +4721,12 @@ DEFINE_PRIM(UNARY_PLUS) {
 }
 DEFINE_PRIM(UNARY_LNOT) {
   ret = codegenIsZero(call->get(1));
+}
+DEFINE_PRIM(SQRT) {
+  ret = codegenSqrt(call->get(1));
+}
+DEFINE_PRIM(ABS) {
+  ret = codegenAbs(call->get(1));
 }
 DEFINE_PRIM(ADD) {
     ret = codegenAdd(call->get(1), call->get(2));
@@ -4576,6 +4742,9 @@ DEFINE_PRIM(DIV) {
 }
 DEFINE_PRIM(MOD) {
     ret = codegenMod(call->get(1), call->get(2));
+}
+DEFINE_PRIM(FMA) {
+    ret = codegenFma(call->get(1), call->get(2), call->get(3));
 }
 DEFINE_PRIM(LSH) {
     ret = codegenLsh(call->get(1), call->get(2));
@@ -5045,8 +5214,8 @@ DEFINE_PRIM(SETCID) {
 DEFINE_PRIM(GETCID) {
     INT_ASSERT(call->get(1)->typeInfo() != dtNil);
 
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)   == true &&
-        call->get(1)->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
+    if (call->get(1)->getValType()->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)   == true &&
+        call->get(1)->getValType()->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
       INT_ASSERT(0);
     }
 
@@ -5141,8 +5310,7 @@ DEFINE_PRIM(SET_MEMBER) {
 DEFINE_PRIM(CHECK_NIL) {
     GenRet ptr = call->get(1);
 
-    if (ptr.chplType->symbol->hasFlag(FLAG_WIDE_CLASS))
-      ptr = codegenRaddr(ptr);
+    ptr = maybeConvertToLocalPointer(call->get(1), ptr);
 
     codegenCall("chpl_check_nil",
                 ptr,
@@ -5225,13 +5393,10 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
 
   // number of arguments that are not kernel params
   int nNonKernelParamArgs = is3d ? 7:3;
-  int nKernelParamArgs = call->numActuals() - nNonKernelParamArgs;
 
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
-  args.push_back(new_IntSymbol(call->astloc.lineno()));
-  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
@@ -5251,30 +5416,10 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
     else if (curArg <= nNonKernelParamArgs) {  // grid and block size args
       args.push_back(actual->codegen());
 
-      // if we finished adding non-kernel parameters, add number of kernel
-      // parameters first before the parameters themselves.
-      if (curArg == nNonKernelParamArgs) {
-        GenRet numParams = new_IntSymbol(nKernelParamArgs);
-        args.push_back(numParams);
-      }
     }
     else { // kernel args
-      Type* actualValType = actual->typeInfo()->getValType();
-
-      // TODO can we use codegenArgForFormal instead of this logic?
-      if (isClass(actualValType) || !isAggregateType(actualValType)) {
-        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        args.push_back(new_IntSymbol(0));
-      }
-      else if (actualSym->isRef()) {
-        INT_ASSERT(isAggregateType(actualValType));
-        args.push_back(actual->codegen());
-        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      }
-      else {
-        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      }
+      // must be the cfg arg
+      args.push_back(actual->codegen());
     }
     curArg++;
   }
@@ -5288,6 +5433,63 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
 
 DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
   ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+}
+
+DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
+  std::vector<GenRet> args;
+  auto numKernelArgs = call->get(1);
+  auto numKernelPids = call->get(2);
+
+  args.push_back(numKernelArgs->codegen());
+  args.push_back(numKernelPids->codegen());
+  args.push_back(new_IntSymbol(call->astloc.lineno()));
+  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+
+  ret = codegenCallExprWithArgs("chpl_gpu_init_kernel_cfg", args);
+}
+
+DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {
+  ret = codegenCallExpr("chpl_gpu_deinit_kernel_cfg", call->get(1)->codegen());
+}
+
+DEFINE_PRIM(GPU_ARG) {
+  std::vector<GenRet> args;
+
+  // the config
+  args.push_back(call->get(1)->codegen());
+
+  SymExpr* kindSE = toSymExpr(call->get(3));
+  INT_ASSERT(kindSE);
+
+  Immediate* imm = getSymbolImmediate(kindSE->symbol());
+  int8_t kind = imm->v_int8;
+
+  if ((kind & 1<<0) == GpuArgKind::ADDROF) {
+    args.push_back(codegenAddrOf(codegenValuePtr(call->get(2))));
+  }
+  else {
+    args.push_back(call->get(2)->codegen());
+  }
+
+  const char* fnName;
+  if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
+    fnName = "chpl_gpu_arg_offload";
+    args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
+  }
+  else {
+    fnName = "chpl_gpu_arg_pass";
+  }
+
+  ret = codegenCallExprWithArgs(fnName, args);
+}
+
+DEFINE_PRIM(GPU_PID_OFFLOAD) {
+  auto cfg = call->get(1);
+  auto pid = call->get(2);
+  auto size = call->get(3);
+
+  ret = codegenCallExpr("chpl_gpu_pid_offload", cfg->codegen(),
+                        pid->codegen(), size->codegen());
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
@@ -5309,7 +5511,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
   int bytesToAlloc = toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
 
   // Create a type for the shared array.
-  llvm::Type* elementType = llvm::Type::getInt8Ty(info->llvmContext);
+  llvm::Type* elementType = llvm::Type::getInt8Ty(gContext->llvmContext());
   auto* arrayType = llvm::ArrayType::get(elementType, bytesToAlloc);
 
   // Allocate the shared array in GPU shared memory.
@@ -5319,7 +5521,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
       llvm::GlobalValue::NotThreadLocal, 3, false);
 
   // Get a void* pointer to the shared array.
-  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(info->llvmContext, 3);
+  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(gContext->llvmContext(), 3);
   llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
 
   ret.val = sharedArrayPtr;
@@ -5559,8 +5761,10 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
 
 // Strided versions of get and put
 static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
-    // args are: localvar, dststr addr, locale, remote addr, srcstr addr
-    // count addr, strlevels, elem
+    // args are: local addr, dststr addr,
+    //           locale, sublocale, remote addr, srcstr addr,
+    //           count addr, strlevels,
+    //           line number, function id
     const char* fn;
     TypeSymbol* dt;
 
@@ -5570,94 +5774,109 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
       fn = "chpl_gen_comm_put_strd";
     }
 
-    GenRet localAddr = codegenValuePtr(call->get(1));
+    auto destData = call->get(1);
+    GenRet localAddr = codegenValuePtr(destData);
 
     // destination data array
-    if (call->get(1)->isWideRef()) {
-      Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    if (destData->isWideRef()) {
+      Symbol* sym = destData->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
       dt        = sym->typeInfo()->getValType()->symbol;
       localAddr = codegenRaddr(localAddr);
     } else {
-      dt = call->get(1)->typeInfo()->getValType()->symbol;
+      dt = destData->typeInfo()->getValType()->symbol;
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (destData->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         localAddr = codegenDeref(localAddr);
       }
     }
 
     // destination strides local array
-    GenRet dststr = codegenValuePtr(call->get(2));
+    auto destStride = call->get(2);
+    GenRet dststr = codegenValuePtr(destStride);
 
-    if (call->get(2)->isWideRef()) {
-      Symbol* sym = call->get(2)->typeInfo()->getField("addr", true);
+    if (destStride->isWideRef()) {
+      Symbol* sym = destStride->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       dststr = codegenRaddr(dststr);
-    } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    } else if (destStride->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       dststr = codegenDeref(dststr);
     }
 
     // locale id
     GenRet locale = codegenValueMaybeDeref(call->get(3));
 
-    // source data array
-    GenRet   remoteAddr = call->get(4);
+    // sublocale id
+    GenRet subloc = codegenValueMaybeDeref(call->get(4));
 
-    if (call->get(4)->isWideRef() == true) {
+    // source data array
+    auto srcExpr = call->get(5);
+    GenRet   remoteAddr = srcExpr;
+
+    if (srcExpr->isWideRef() == true) {
       remoteAddr = codegenRaddr(remoteAddr);
-    } else if (call->get(4)->isRef() == false) {
+    } else if (srcExpr->isRef() == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     // source strides local array
-    GenRet srcstr = codegenValuePtr(call->get(5));
+    auto srcStrideExpr = call->get(6);
+    GenRet srcstr = codegenValuePtr(srcStrideExpr);
 
-    if (call->get(5)->isWideRef()) {
-      Symbol* sym = call->get(5)->typeInfo()->getField("addr", true);
+    if (srcStrideExpr->isWideRef()) {
+      Symbol* sym = srcStrideExpr->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       srcstr = codegenRaddr(srcstr);
     } else {
-      if (call->get(5)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (srcStrideExpr->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         srcstr = codegenDeref(srcstr);
       }
     }
 
     // count local array
-    GenRet count = codegenValuePtr(call->get(6));
+    auto countExpr = call->get(7);
+    GenRet count = codegenValuePtr(countExpr);
 
-    if (call->get(6)->isWideRef()) {
-      Symbol* sym = call->get(6)->typeInfo()->getField("addr", true);
+    if (countExpr->isWideRef()) {
+      Symbol* sym = countExpr->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       count = codegenRaddr(count);
-    } else if (call->get(6)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    } else if (countExpr->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       count = codegenDeref(count);
     }
 
     // stridelevels
-    GenRet stridelevels = codegenValueMaybeDeref(call->get(7));
+    GenRet stridelevels = codegenValueMaybeDeref(call->get(8));
+
+    auto lineno = call->get(9);
+    auto fnID = call->get(10);
 
     // eltSize
     GenRet eltSize = codegenSizeof(dt->typeInfo());
 
-    codegenCall(fn,
-                codegenCastToVoidStar(localAddr),
-                codegenCastToVoidStar(dststr),
-                locale,
-                remoteAddr,
-                codegenCastToVoidStar(srcstr),
-                codegenCastToVoidStar(count),
-                stridelevels,
-                eltSize,
-                genCommID(gGenInfo),
-                call->get(8),
-                call->get(9));
+    std::vector<GenRet> args;
+
+    args.push_back(codegenCastToVoidStar(localAddr));
+    args.push_back(codegenCastToVoidStar(dststr));
+    args.push_back(locale);
+    args.push_back(subloc);
+    args.push_back(remoteAddr);
+    args.push_back(codegenCastToVoidStar(srcstr));
+    args.push_back(codegenCastToVoidStar(count));
+    args.push_back(stridelevels);
+    args.push_back(eltSize);
+    args.push_back(genCommID(gGenInfo));
+    args.push_back(lineno);
+    args.push_back(fnID);
+
+    codegenCallWithArgs(fn, args);
 }
 DEFINE_PRIM(CHPL_COMM_PUT_STRD) {
   codegenPutGetStrd(call, ret);
@@ -5918,7 +6137,13 @@ DEFINE_BASIC_PRIM(RT_ERROR)
 DEFINE_BASIC_PRIM(RT_WARNING)
 DEFINE_BASIC_PRIM(START_RMEM_FENCE)
 DEFINE_BASIC_PRIM(FINISH_RMEM_FENCE)
-DEFINE_BASIC_PRIM(ASSERT_ON_GPU)
+
+DEFINE_PRIM(ASSERT_ON_GPU) {
+  // Remove the string argument to the GPU primitive.
+  call->get(1)->remove();
+
+  ret = call->codegenBasicPrimitiveExpr();
+}
 
 DEFINE_PRIM(NEW_PRIV_CLASS) {
     GenRet arg = call->get(1);
@@ -6133,7 +6358,7 @@ DEFINE_PRIM(NO_ALIAS_SET) {
 
     Symbol* sym = toSymExpr(call->get(1))->symbol();
 
-    llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = gContext->llvmContext();
 
     if (info->noAliasDomain == NULL) {
       auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");
@@ -6200,6 +6425,54 @@ DEFINE_PRIM(COPIES_NO_ALIAS_SET) {
 
 DEFINE_PRIM(OPTIMIZATION_INFO) {
   // No action required here
+}
+
+DEFINE_PRIM(BREAKPOINT) {
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    ret = codegenCallExpr("chpl_debugtrap");
+  }
+  else {
+    #ifdef HAVE_LLVM
+    ret.val = info->irBuilder->CreateIntrinsic(llvm::Intrinsic::debugtrap, {}, {});
+    #endif
+  }
+}
+
+DEFINE_PRIM(CONST_ARG_HASH) {
+  INT_ASSERT(call->numActuals() == 1);
+  INT_ASSERT(call->get(1)->isRefOrWideRef());
+  GenRet arg = call->get(1);
+
+  if (call->get(1)->isWideRef()) {
+    // Don't send arg in with `&`
+    GenRet ptr = codegenValue(arg);
+    // Do shallow GET on record
+    GenRet val = codegenValue(codegenDeref(ptr));
+    // Create temporary that we can pass a pointer to
+    GenRet tmp = createTempVarWith(val);
+    GenRet addr = codegenAddrOf(tmp);
+
+    Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", addr,
+                          codegenSizeof(sym->typeInfo()->getValType()));
+  } else {
+    GenRet ptr = codegenValue(arg);
+
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", ptr,
+                          codegenSizeof(call->get(1)->typeInfo()->getValType()));
+  }
+}
+
+DEFINE_PRIM(CHECK_CONST_ARG_HASH) {
+    INT_ASSERT(call->numActuals() == 5);
+
+    codegenCall("check_const_hash_matches", call->get(1), call->get(2),
+                call->get(3), call->get(4), call->get(5));
 }
 
 DEFINE_BASIC_PRIM(ASCII)

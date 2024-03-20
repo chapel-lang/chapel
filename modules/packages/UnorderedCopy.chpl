@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,7 +42,7 @@
 
      const size = 10000;
      const space = {0..size};
-     const D = space dmapped Block(space);
+     const D = space dmapped blockDist(space);
      var A, reversedA: [D] int = D;
 
      forall i in D do

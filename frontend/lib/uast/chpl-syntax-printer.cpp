@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -555,9 +555,14 @@ struct ChplSyntaxVisitor {
   void visit(const Class* node) {
     ss_ << "class ";
     ss_ << node->name() << " ";
-    if (node->parentClass() != nullptr) {
+    if (node->numInheritExprs() > 0) {
       ss_ << ": ";
-      printAst(node->parentClass());
+      bool printComma = false;
+
+      for (auto inheritExpr : node->inheritExprs()) {
+        if (printComma) ss_ << ", ";
+        printAst(inheritExpr);
+      }
       ss_ << " ";
     }
     interpose(node->decls(), "\n", "{\n", "\n}", ";", true);
@@ -1123,6 +1128,18 @@ struct ChplSyntaxVisitor {
     printLinkage(node);
     ss_ << "record ";
     ss_ << node->name() << " ";
+
+    if (node->numInheritExprs() > 0) {
+      ss_ << ": ";
+      bool printComma = false;
+
+      for (auto interfaceExpr : node->inheritExprs()) {
+        if (printComma) ss_ << ", ";
+        printAst(interfaceExpr);
+      }
+      ss_ << " ";
+    }
+
     interpose(node->decls(), "\n", "{\n", "\n}",";", true);
   }
 
@@ -1247,6 +1264,8 @@ struct ChplSyntaxVisitor {
     printLinkage(node);
     ss_ << "union ";
     ss_ << node->name() << " ";
+    // TODO union inheritance: unions should have support for inheriting
+    // from interfaces, which means printing the interfaces here.
     interpose(node->decls(), "\n", "{\n", "\n}", ";", true);
   }
 
@@ -1316,7 +1335,7 @@ struct ChplSyntaxVisitor {
       interpose(node->caseExprs(), ", ");
       ss_ << " ";
     }
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
+    printBlockWithStyle(node->blockStyle(), node->body()->stmts(), "do ", ";", true);
   }
 
   void visit(const While* node) {
@@ -1521,14 +1540,19 @@ namespace chpl {
     if (innerIsRHS &&
         (USTR("-") == outer ||
          USTR("/") == outer ||  USTR("%") == outer ||
-         USTR("<<") == outer ||  USTR(">>") == outer ||
-         // (a==b)==true vs. a==(b==true)
-          USTR("==") == outer ||  USTR("!=") == outer)
+         USTR("<<") == outer ||  USTR(">>") == outer)
         && outerprec == innerprec)
       ret = true;
 
     // ** is right-associative, and a**(b**c) != (a**b)**c.
     if (!innerIsRHS &&  USTR("**") == outer && outerprec == innerprec)
+      ret = true;
+
+    // Like the above checks for equal-precedence ops, but  ==, !=, etc. are
+    // not associative. Since they're not associative, always add parens.
+    if((USTR("==") == outer ||  USTR("!=") == outer ||
+        USTR("<") == outer ||  USTR("<=") == outer ||
+        USTR(">") == outer ||  USTR(">=") == outer) && outerprec == innerprec)
       ret = true;
 
     return ret;

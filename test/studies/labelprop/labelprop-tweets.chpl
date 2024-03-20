@@ -84,10 +84,10 @@ proc main(args:[] string) {
   // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int) ) dmapped Hashed(idxType=(int, int));
+    var Pairs: domain( (int, int), parSafe=false) dmapped hashedDist(idxType=(int, int));
     run(todo, Pairs);
   } else {
-    var Pairs: domain( (int, int) );
+    var Pairs: domain( (int, int), parSafe=false);
     run(todo, Pairs);
   }
 }
@@ -100,7 +100,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
 
   const FilesSpace = {1..todo.size};
   const BlockSpace = if distributed then
-                       FilesSpace dmapped Block(boundingBox=FilesSpace)
+                       FilesSpace dmapped blockDist(boundingBox=FilesSpace)
                      else
                        FilesSpace;
   var allfiles:[BlockSpace] string;
@@ -178,7 +178,7 @@ record Empty {
 }
 
 
-proc process_json(logfile:fileReader, fname:string, ref Pairs) {
+proc process_json(logfile:fileReader(?), fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
   var got:bool;
@@ -187,13 +187,15 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
   var nlines = 0;
   var max_id = 0;
 
+  var jsonReader = logfile.withDeserializer(jsonDeserializer);
+
   if progress then
     writeln(fname, " : processing");
 
   while true {
     try! {
       try {
-        got = logfile.readf("%~jt", tweet);
+        got = jsonReader.read(tweet);
       } catch e: BadFormatError {
         if verbose {
             try! logfile.lock();
@@ -204,7 +206,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
         }
 
         // read over something else
-        got = logfile.readf("%~jt", empty);
+        got = logfile.read(empty);
       }
     } catch e: SystemError {
       try! logfile.lock();
@@ -218,7 +220,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
     } // halt on truly unknown error
 
     if got {
-      if verbose then stdout.withSerializer(JsonSerializer).writef("%?\n", tweet);
+      if verbose then stdout.withSerializer(jsonSerializer).write(tweet);
       var id = tweet.user.id;
       if max_id < id then max_id = id;
       for mentions in tweet.entities.user_mentions {
@@ -261,7 +263,7 @@ proc process_json(fname: string, ref Pairs)
     var sub = spawn(["gunzip", "-c", fname], stdout=pipeStyle.pipe);
     process_json(sub.stdout, fname, Pairs);
   } else {
-    var logfile = openReader(fname);
+    var logfile = openReader(fname, locking=false);
     process_json(logfile, fname, Pairs);
   }
 }
@@ -290,7 +292,7 @@ proc create_and_analyze_graph(ref Pairs)
   var nmutual = 0;
 
   // Build idToNode
-  var userIds:domain(int);
+  var userIds:domain(int, parSafe=true);
 
   forall (id, other_id) in Pairs with (ref userIds) {
     if Pairs.contains( (other_id, id) ) {
@@ -424,7 +426,7 @@ proc create_and_analyze_graph(ref Pairs)
 
   // re-seed the RNG if seed is 0.
   if seed == 0 {
-    seed = SeedGenerator.currentTime;
+    seed = NPBRandom.oddTimeSeed();
   }
 
 
@@ -437,8 +439,7 @@ proc create_and_analyze_graph(ref Pairs)
   //      with as much internal state as the yielded values)
   //   - yield values only within the requested range
   //     (in order to yield once, keep statistics)
-  var reorder:[G.vertices] int(32);
-  permutation(reorder, seed=seed);
+  var reorder = permute(G.vertices, seed);
   // Or we could just do it in the normal order...
 
   var go: atomic bool;
@@ -466,14 +467,14 @@ proc create_and_analyze_graph(ref Pairs)
 
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
-    serial !parallel { forall vid in reorder {
+    serial !parallel { forall vid in reorder with (ref labels) {
     //for vid in G.vertices {
 
       if printall then
         writeln("on node ", vid, " currently in group ", labels[vid]);
 
       // label -> count
-      var foundLabels:domain(int(32));
+      var foundLabels:domain(int(32), parSafe=false);
       var counts:[foundLabels] int;
 
       for nid in G.Neighbors(vid) {
@@ -499,10 +500,10 @@ proc create_and_analyze_graph(ref Pairs)
       var maxcount = 0;
       // TODO -- performance -- this allocates memory.
       // There might not be a tie.
-      var tiebreaker = createRandomStream(seed+vid, eltType=bool,
-                                        parSafe=false, algorithm=RNG.PCG);
+      var tiebreaker = new randomStream(seed+vid, eltType=bool);
+
       for (count,lab) in zip(counts, counts.domain) {
-        if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
+        if count > maxcount || (count == maxcount && tiebreaker.next()) {
           maxcount = count;
           maxlabel = lab;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -77,8 +77,8 @@ proc isIntegralType(type t) param do return
 proc isNothingType(type t) param do return t == nothing;
 
 /* Returns ``true`` if the type ``t`` is a ``bool`` type, of any width. */
-proc isBoolType(type t) param do return
-  (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
+proc isBoolType(type t) param do
+  return (t == bool);
 
 /* Returns ``true`` if the type ``t`` is an ``int`` type, of any width. */
 proc isIntType(type t) param do return
@@ -114,9 +114,11 @@ proc isEnumType(type t) param {
 }
 
 /* Return true if ``t`` is a class type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isClassType(type t) param do return __primitive("is class type", t);
 
 /* Return true if ``t`` is a record type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isRecordType(type t) param {
   if __primitive("is record type", t) == false then
     return false;
@@ -138,6 +140,7 @@ proc isRecordType(type t) param {
 }
 
 /* Return true if ``t`` is a union type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isUnionType(type t) param do return __primitive("is union type", t);
 
 /* Returns ``true`` if its argument is a tuple type.  */
@@ -455,8 +458,10 @@ proc isSingle(type t)    param do  return isSingleType(t);
 @chpldoc.nodoc
 proc isAtomic(type t)    param do  return isAtomicType(t);
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc
 proc isGeneric(type t)   param do  return isGenericType(t);
+
 @chpldoc.nodoc
 proc isHomogeneousTuple(type t)  param do  return isHomogeneousTupleType(t);
 @chpldoc.nodoc
@@ -583,7 +588,7 @@ that can be copy-initialized and ``false`` otherwise.
 
 Note that even if this function returns ``true``, it might be the case that the
 type only supports copy-initialization from mutable values.
-:record:`~OwnedObject.owned` is an example of a type with that behavior.
+:type:`~OwnedObject.owned` is an example of a type with that behavior.
 
 See also the specification section :ref:`Copy_Initialization_of_Records`.
 
@@ -595,7 +600,7 @@ proc isCopyable(e) param do return isCopyableValue(e);
 Returns ``true`` if the argument is a type or an expression of a type
 that can be copy-initialized from a ``const`` value and ``false`` otherwise.
 
-Returns ``false`` for :record:`~OwnedObject.owned` because copy-initialization
+Returns ``false`` for :type:`~OwnedObject.owned` because copy-initialization
 for that type leaves the source argument storing ``nil``.
 
 See also the specification section :ref:`Copy_Initialization_of_Records`.
@@ -610,7 +615,7 @@ can be assigned from another value and ``false`` otherwise.
 
 Note that even if this function returns ``true``, it might be the case that the
 type only supports assignment from mutable values.
-:record:`~OwnedObject.owned` is an example of a type with that behavior.
+:type:`~OwnedObject.owned` is an example of a type with that behavior.
 
 See also the specification section :ref:`Record_Assignment`.
 
@@ -622,7 +627,7 @@ proc isAssignable(e) param do return isCopyableValue(e);
 Returns ``true`` if the argument is a type or expression of a type that
 can be assigned from a ``const`` value and ``false`` otherwise.
 
-Returns ``false`` for  :record:`~OwnedObject.owned` because assignment
+Returns ``false`` for  :type:`~OwnedObject.owned` because assignment
 for that type leaves the source argument storing ``nil``.
 
 See also the specification section :ref:`Record_Assignment`.
@@ -710,14 +715,6 @@ It is not available for default-width ``bool``.
 proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(8) do return 8;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(16) do return 16;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(64) do return 64;
 @chpldoc.nodoc
 proc numBits(type t) param where t == int(8) do return 8;
 @chpldoc.nodoc
@@ -883,6 +880,7 @@ These methods perform the minimum number of runtime checks.
 For example, when casting from ``uint(8)`` to ``uint(64)``,
 no checks at all will be done.
 */
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
 inline proc integral.safeCast(type T: integral) : T {
   if castChecking then
     if const error = this.chpl_checkValue(T) then
@@ -937,16 +935,19 @@ proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
   return nil;
 }
 
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
 proc integral.safeCast(type T: bool) {
   if this != 0 && this != 1 then
     HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
   return this: bool;
 }
 
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
 proc bool.safeCast(type T: integral) {
   return this: T;
 }
 
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
 proc bool.safeCast(type T: bool) {
   return this;
 }
@@ -1012,28 +1013,28 @@ proc isCoercible(type from, type to) param {
   return __primitive("is_coercible", from, to);
 }
 
-/* Returns ``true`` if the type ``sub`` is a subtype of the type ``super``.
+/* Returns ``true`` if the type ``sub`` is a subtype of the type ``sup``.
    See also :ref:`Subtype`.
 
    In particular, returns ``true`` in any of these cases:
 
-     * ``sub`` is the same type as ``super``
-     * ``sub`` is an instantiation of a generic type ``super``
-     * ``sub`` is a class type inheriting from ``super``
-     * ``sub`` is non-nilable class type and ``super`` is the nilable version of the
+     * ``sub`` is the same type as ``sup``
+     * ``sub`` is an instantiation of a generic type ``sup``
+     * ``sub`` is a class type inheriting from ``sup``
+     * ``sub`` is non-nilable class type and ``sup`` is the nilable version of the
        same class type
    */
 pragma "docs only"
-proc isSubtype(type sub, type super) param {
-  return __primitive("is_subtype", super, sub);
+proc isSubtype(type sub, type sup) param {
+  return __primitive("is_subtype", sup, sub);
 }
 
 /* Similar to :proc:`isSubtype` but returns ``false`` if
-   ``sub`` and ``super`` refer to the same type.
+   ``sub`` and ``sup`` refer to the same type.
    */
 pragma "docs only"
-proc isProperSubtype(type sub, type super) param {
-  return __primitive("is_proper_subtype", super, sub);
+proc isProperSubtype(type sub, type sup) param {
+  return __primitive("is_proper_subtype", sup, sub);
 }
 
 /* :returns: isProperSubtype(a,b) */

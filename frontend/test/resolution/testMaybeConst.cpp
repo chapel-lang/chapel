@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -108,7 +108,7 @@ testMaybeRef(const char* test,
     // what function is called?
     const MostSpecificCandidates& candidates = re.mostSpecific();
     assert(candidates.numBest() == 1); // should be resolved by now
-    ID calledFnId = candidates.only()->untyped()->id();
+    ID calledFnId = candidates.only().fn()->untyped()->id();
     if (expectedCalledFnId != calledFnId) {
       printf("For Call ID %s, expected to call Function ID %s, bot got %s\n",
               ast->id().str().c_str(),

@@ -30,9 +30,9 @@ param nExtent = 13;
 type  AtomMatrix = nExtent*real;
 
 const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
-const GridDist = GridDom dmapped Block(GridDom);
+const GridDist = GridDom dmapped blockDist(GridDom);
 
-const LocalesDist = {0..#numLocales} dmapped Block({0..#numLocales});
+const LocalesDist = {0..#numLocales} dmapped blockDist({0..#numLocales});
 
 class Cache {
 	var space: sparse subdomain(GridDom);
@@ -87,7 +87,7 @@ proc main() {
 			}
 		}
 		//add up neighbors' contributions
-		forall (a, liz) in zip(GridDist, lizDoms) {
+		forall (a, liz) in zip(GridDist, lizDoms) with (ref atoms) {
 			local {
 				var total: AtomMatrix;
 				for ac in liz {

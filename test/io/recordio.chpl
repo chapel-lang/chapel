@@ -8,7 +8,7 @@
  */
 use IO;
 
-record MyRecord {
+record MyRecord : writeSerializable, readDeserializable {
   var i: int;
   var r: real;
   var s: string;
@@ -31,7 +31,7 @@ var B: [0..#3] MyRecord;
 
 {
   // Create a writer that we'll use to write the data.
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
 
   // Now let's write the records in a particular format:
   // 1 line per record
@@ -55,7 +55,7 @@ var B: [0..#3] MyRecord;
 
 // Now read the data. Way 1: use formatted I/O
 {
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   var rec:MyRecord;
   var i = 0;
@@ -88,22 +88,22 @@ var B: [0..#3] MyRecord;
    - the compiler will generate readThis/writeThis for you if you don't
      provide one
  */
-proc MyRecord.readThis(fr: fileReader) throws {
-  i = fr.read(int);
-  fr.readLiteral("\t");
-  r = fr.read(real);
-  fr.readLiteral("\t");
-  s = fr.read(string);
-  fr.readLiteral("\n");
+proc ref MyRecord.deserialize(reader, ref deserializer) throws {
+  i = reader.read(int);
+  reader.readLiteral("\t");
+  r = reader.read(real);
+  reader.readLiteral("\t");
+  s = reader.read(string);
+  reader.readLiteral("\n");
 }
 
-proc MyRecord.writeThis(fw: fileWriter) throws {
-  fw.write(i);
-  fw.writeLiteral("\t");
-  fw.write(r);
-  fw.writeLiteral("\t");
-  fw.write(s);
-  fw.writeLiteral("\n");
+proc MyRecord.serialize(writer, ref serializer) throws {
+  writer.write(i);
+  writer.writeLiteral("\t");
+  writer.write(r);
+  writer.writeLiteral("\t");
+  writer.write(s);
+  writer.writeLiteral("\n");
 }
 
 proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {
@@ -112,13 +112,13 @@ proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {
   this.s = s;
 }
 
-proc MyRecord.init(r: fileReader) throws {
+proc MyRecord.init(r: fileReader(?)) throws {
   this.init();
   readThis(r);
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   var rec:MyRecord;
   var i = 0;

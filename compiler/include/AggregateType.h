@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -122,7 +122,8 @@ public:
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              generateType(CallExpr* call,
-                                           const char* callString);
+                                           const char* callString,
+                                           bool allowAllNamedArgs=false);
   AggregateType*              generateType(SymbolMap& subs,
                                            CallExpr* call,
                                            const char* callString,
@@ -176,6 +177,8 @@ public:
 
   Type*                       cArrayElementType()                        const;
   int64_t                     cArrayLength()                             const;
+  Type*                       arrayElementType()                         const;
+  Type*                       finalArrayElementType()                    const;
 
   //
   // Public fields
@@ -255,7 +258,9 @@ private:
 
   AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
 
-  AggregateType*              discoverParentAndCheck(Expr* storesName);
+  void                        discoverParentAndCheck(Expr* storesName,
+                                                     AggregateType* &outParent,
+                                                     InterfaceSymbol* &outIfc);
 
   bool                        isFieldInThisClass(const char* name)       const;
 
@@ -266,17 +271,17 @@ private:
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap,
-                                         ArgSymbol*             fileReader,
-                                         ArgSymbol*             formatter);
+                                         Symbol*             formatter);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
 
-  bool                        handleSuperFields(FnSymbol*                    fn,
+  bool                        badParentInit();
+  void                        handleSuperFields(FnSymbol*                    fn,
                                                 const std::set<const char*>& names,
                                                 SymbolMap&                   fieldArgMap,
-                                                ArgSymbol* fileReader = nullptr,
-                                                ArgSymbol* deser = nullptr);
+                                                Symbol* fileReader,
+                                                Symbol* desHelper);
 
   std::vector<AggregateType*> instantiations;
 
@@ -294,16 +299,11 @@ private:
   bool                        mIsGenericWithSomeDefaults;
 };
 
-// support for deprecation by Vass in 1.31 to implement #17131
-AggregateType* dsiTypeBeingConstructed(CallExpr* parentCall);
-AggregateType* baseRectDsiParent(AggregateType* ag);
-Symbol* stridesFieldInDsiContext(Expr* use);
-
 extern AggregateType* dtObject;
-
 extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
+extern AggregateType* dtRange;
 extern AggregateType* dtOwned;
 extern AggregateType* dtShared;
 

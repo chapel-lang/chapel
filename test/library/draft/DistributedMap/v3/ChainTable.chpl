@@ -28,11 +28,11 @@ module ChainTable {
       this.keyType = keyType;
       this.valType = valType;
       this.numBuckets = initialCapacity;
-      this.complete();
+      init this;
       this.numEntries.write(0);
     }
 
-    proc init=(other: chainTable) {
+    proc init=(other: chainTable(?)) {
       this.keyType = other.keyType;
       this.valType = other.valType;
       this.numBuckets = other.numBuckets;
@@ -55,7 +55,7 @@ module ChainTable {
     // return the indices for a given key
     //  if an entry is already present for the key, return (bucket index, its index within the bucket)
     //  otherwise, return (bucket index, next open index in the bucket)
-    proc getSlotFor(key: keyType) : (uint, uint) {
+    proc ref getSlotFor(key: keyType) : (uint, uint) {
         var bucket_idx = this._bucketIdx(key);
         var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
         return if has_key
@@ -64,7 +64,7 @@ module ChainTable {
     }
 
     // copy a key-value pair into a slot with the given indices
-    proc fillSlot((bucket_idx, chain_idx): (uint, uint), in key: keyType, in val: valType) {
+    proc ref fillSlot((bucket_idx, chain_idx): (uint, uint), in key: keyType, in val: valType) {
         use MemMove;
 
         ref entry = this.buckets[bucket_idx][chain_idx];
@@ -77,7 +77,7 @@ module ChainTable {
 
     // copy a key-value pair out of a slot with the given indices,
     //  leaving the slot empty
-    proc remove((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
+    proc ref remove((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
       use MemMove;
 
       ref entry = this.buckets[bucket_idx][chain_idx];
@@ -99,7 +99,7 @@ module ChainTable {
     }
 
     // move the current entries into a new array of buckets with the given size
-    proc __rehash(newNumBuckets: uint) {
+    proc ref __rehash(newNumBuckets: uint) {
       use MemMove;
 
       var newBucketDom = {0..<newNumBuckets},
@@ -124,15 +124,15 @@ module ChainTable {
       this.numBuckets = newNumBuckets;
     }
 
-    proc __incrementStaticCount() {
+    proc ref __incrementStaticCount() {
       this.numStaticManagers.add(1);
     }
 
-    proc __decrementStaticCount() {
+    proc ref __decrementStaticCount() {
       this.numStaticManagers.sub(1);
     }
 
-    proc __maybeResize() {
+    proc ref __maybeResize() {
       var expectedNumManagers = this.numStaticManagers.read();
       do {
         if expectedNumManagers > 0 then return;
@@ -174,7 +174,7 @@ module ChainTable {
 
     // return the index of the next open slot
     // create a new slot if none are open
-    proc firstAvailableIndex() : uint {
+    proc ref firstAvailableIndex() : uint {
       for (e, idx) in zip(this.allEntries(), 0..) {
         if !e.isFull() then return idx;
       }

@@ -69,7 +69,7 @@ class LocTree {
                                          // reading something that has not yet
                                          // been set.
 
-    var oneAtATime$: sync bool = true;
+    var oneAtATime: sync bool = true;
 
     proc init(coeffDom: domain(1)) {
       this.coeffDom = coeffDom;
@@ -86,28 +86,28 @@ class LocTree {
 
      */
     proc this(node: Node) ref {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         if !nodes.contains(node) {
             nodes += node;
         }
 
         ref c = coeffs[node];
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
         return c;
     }
     proc this(node: Node) const ref {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         if !nodes.contains(node) {
           // This is a getter so it shouldn't be modifying what
           // we return, should be safe to return the zero vector.
           // FIXME: Zeroes should really be a const, but can't
           //        return const from a var fcn.
-          oneAtATime$.writeEF(true);
+          oneAtATime.writeEF(true);
           return zeroes;
         }
 
         ref c = coeffs[node];
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
         return c;
     }
 
@@ -144,9 +144,9 @@ class LocTree {
     /** Check if there are coefficients in box (lvl, idx)
      */
     proc has_coeffs(node: Node) {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         const b = nodes.contains(node);
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
         return b;
     }
 
@@ -154,9 +154,9 @@ class LocTree {
         does not exist, it is ignored.
      */
     proc remove(node: Node) {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         if nodes.contains(node) then nodes.remove(node);
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
     }
 
     iter node_iter(lvl: int) {
@@ -190,7 +190,7 @@ class FTree {
         this.coeffDom = {0..order-1};
 
         var tree: [LocaleSpace] unmanaged LocTree?;
-        coforall loc in Locales do
+        coforall loc in Locales with (ref tree) do
             on loc do tree[loc.id] = new unmanaged LocTree(coeffDom);
         this.tree = tree!;
     }

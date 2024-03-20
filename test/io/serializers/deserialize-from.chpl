@@ -1,41 +1,41 @@
 
 use IO;
 
-record R {
+record R : writeSerializable {
   var x : int;
 
-  proc serialize(writer: fileWriter, ref serializer) {
+  proc serialize(writer: fileWriter(?), ref serializer) {
     writer.write(x);
   }
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
+  proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
     return new R(reader.read(int));
   }
 }
 
-record G {
+record G : writeSerializable {
   var x;
 
-  proc serialize(writer: fileWriter, ref serializer) {
+  proc serialize(writer: fileWriter(?), ref serializer) {
     writer.write(x);
   }
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
+  proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
     type fieldType = __primitive("field by num", this, 1);
     return new G(reader.read(fieldType));
   }
 }
 
-class C {
+class C : writeSerializable {
   var x : int;
 
-  override proc serialize(writer: fileWriter, ref serializer) {
+  override proc serialize(writer: fileWriter(?), ref serializer) {
     writer.writeLiteral("<");
     writer.write(x);
     writer.writeLiteral(">");
   }
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
+  proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
     type retType = this;
     reader.readLiteral("<");
     var ret = new retType(reader.read(int));
@@ -51,10 +51,10 @@ class C {
 proc test(val, type T) {
   var f = openMemFile();
   {
-    f.writer().write(val);
+    f.writer(locking=false).write(val);
   }
   {
-    var read = f.reader().read(T);
+    var read = f.reader(locking=false).read(T);
 
     if isClassType(T) {
       if isNilableClassType(T) {

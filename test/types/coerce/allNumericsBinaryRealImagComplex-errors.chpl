@@ -21,15 +21,15 @@ proc f(x: complex(128), y: complex(128)) {
 
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1, type t2) {
-  writef(" Second actual %-12s -> ", t2:string);
+  writef(" Second actual %<12s -> ", t2:string);
   var x: t1;
   var y: t2;
   f(x, y);
 
-  writef("      Reversed %-12s -> ", "");
+  writef("      Reversed %<12s -> ", "");
   f(y, x);
 
-  writef("               %-12s ->   ", "+");
+  writef("               %<12s ->   ", "+");
   writeln((x+y).type:string);
 }
 
@@ -85,4 +85,3 @@ proc main() {
   callFVaryT2(complex(64));
   callFVaryT2(complex(128));
 }
-

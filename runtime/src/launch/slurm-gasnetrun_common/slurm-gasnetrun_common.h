@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include "chplcgfns.h"
 #include "chpllaunch.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
@@ -45,6 +46,8 @@
 #define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
+
+#define CHPL_LPN_VAR "LOCALES_PER_NODE"
 
 static char* debug = NULL;
 static char* walltime = NULL;
@@ -110,7 +113,8 @@ static chpl_bool getSlurmDebug(void) {
 
 static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
                                  int32_t numLocales,
-                                 int32_t numCoresPerLocale) {
+                                 int32_t numCoresPerLocale,
+                                 int32_t numNodes) {
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
 
   // command line walltime takes precedence over env var
@@ -142,9 +146,9 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   if (exclude)
     fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
   switch (sbatch) {
-  case slurm:
-    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
-    fprintf(slurmFile, "#SBATCH --ntasks-per-node=1\n");
+  case slurm: {
+    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
+    fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
     // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
@@ -153,6 +157,7 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
       fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
     break;
+  }
   default:
     break;
   }
@@ -172,7 +177,9 @@ static int propagate_environment(char* buf, size_t size)
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
+                                        int32_t numLocales,
+                                        int32_t numLocalesPerNode) {
+
   int i;
   int size;
   char baseCommand[2*FILENAME_MAX];
@@ -193,10 +200,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
       basenamePtr++;
   }
-
   chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
 
   chpl_compute_real_binary_name(argv[0]);
+
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -211,6 +219,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // command line partition takes precedence over env var
   if (!partition) {
     partition = getenv("CHPL_LAUNCHER_PARTITION");
+  }
+
+  // Chapel env var takes precedence over Slurm
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
+
+  // job's partition trumps everything
+  char *tmp = getenv("SLURM_JOB_PARTITION");
+  if (tmp) {
+    partition = tmp;
   }
 
   // command line exclude list takes precedence over env var
@@ -245,7 +264,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     slurmFile = fopen(slurmFilename, "w");
     fprintf(slurmFile, "#!/bin/sh\n\n");
     fprintf(slurmFile, "#SBATCH -J %s\n", jobName);
-    genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales, getNumCoresPerLocale());
+    genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales,
+                         getNumCoresPerLocale(), numNodes);
 
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
@@ -284,8 +304,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
     }
     len += snprintf(iCom+len, sizeof(iCom)-len, "-J %s ", jobName);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "-N %d ", numLocales);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks-per-node=1 ");
+    len += snprintf(iCom+len, sizeof(iCom)-len, "-N %d ", numNodes);
+    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
     if (nodeAccessStr != NULL)
       len += snprintf(iCom+len, sizeof(iCom)-len, "--%s ", nodeAccessStr);
     if (walltime)
@@ -304,7 +324,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += snprintf(iCom+len, sizeof(iCom)-len,
                    " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
-                   GASNETRUN_LAUNCHER, numLocales, numLocales);
+                   GASNETRUN_LAUNCHER, numLocales, numNodes);
     len += propagate_environment(iCom+len, sizeof(iCom) - len);
     len += snprintf(iCom+len, sizeof(iCom)-len, " %s %s",
                    chpl_get_real_binary_wrapper(),
@@ -338,12 +358,14 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
   int retcode;
 
   debug = getenv("CHPL_LAUNCHER_DEBUG");
 
-  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
+                                          numLocales, numLocalesPerNode),
             argv[0]);
   chpl_launch_cleanup();
   return retcode;

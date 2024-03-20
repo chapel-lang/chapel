@@ -168,7 +168,7 @@ method-call-expression as specified in :ref:`Method_Calls`.
       var c1: C = new C();
       c1.foo();
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -194,11 +194,8 @@ receiver argument should be passed to the method.
 When no ``this-intent`` is used, a default this intent applies. For
 methods on classes and other primitive types, the default this intent is
 the same as the default intent for that type. For record methods, the
-intent for the receiver formal argument is ``ref`` or ``const ref``,
-depending on whether the formal argument is modified inside of the
-method. Programmers wishing to be explicit about whether or not record
-methods modify the receiver can explicitly use the ``ref`` or
-``const ref`` ``this-intent``.
+intent for the receiver formal argument is ``const``.
+See :ref:`The_Default_Intent`.
 
 A method whose ``this-intent`` is ``type`` defines a *type method*. It
 can only be called on the type itself rather than on an instance of the
@@ -282,9 +279,7 @@ reference, allowing modifications to ``this``. If ``this-intent`` is
 cannot be modified inside the method. The ``this-intent`` can also
 describe an abstract intent as follows. If it is ``const``, the receiver
 argument will be passed with ``const`` intent. If it is left out
-entirely, the receiver will be passed with a default intent. For
-records, that default intent is ``ref`` if ``this`` is modified within
-the function and ``const ref`` otherwise. For other types, the default
+entirely, the receiver will be passed with a default intent. The default
 ``this`` intent matches the default argument intent described in
 :ref:`The_Default_Intent`.
 
@@ -509,3 +504,6 @@ keyword (see :ref:`Overriding_Base_Class_Methods`).
 Note that class methods without parentheses that return with ``type`` or
 ``param`` intent use a generic type for the ``this`` argument. See
 :ref:`Class_Methods` for more details.
+
+It is a redeclaration error to define a method without parentheses with
+the same name as a field.

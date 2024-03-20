@@ -4,8 +4,8 @@ var d : domain(1) = {1..n};
 
 var a : [d] [d] int;
 
-forall i1 in d {
-  forall i2 in d {
+forall i1 in d with (ref a) {
+  forall i2 in d with (ref a) {
     a(i1)(i2) = (i1-1) * n + i2;
   }
 }

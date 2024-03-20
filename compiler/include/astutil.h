@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,9 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<CondStmt*>& IBBs);
 void computeHasToplevelYields(BaseAST* ast, bool& result);
 
+// Given a detupled tuple 'sym', collect all its components.
+std::set<Symbol*> findAllDetupledComponents(Symbol* sym);
+
 // collect children asts in _an_ order. Today this is preorder
 // but callsites should transition to using collect_asts_{pre,post,un}order
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
@@ -70,8 +73,10 @@ void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs);
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts);
-void collectCForLoopStmts(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts);
+void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts);
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs);
+void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts);
+void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops);
 void collectMyCallExprs(BaseAST* ast,
                         std::vector<CallExpr*>& callExprs,
                         FnSymbol* fn);
@@ -229,5 +234,12 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 void cleanupAfterTypeRemoval();
 
 void convertToQualifiedRefs();
+
+bool shouldWarnUnstableFor(BaseAST* ast);
+
+bool symExprIsUsedAsRef(
+  SymExpr* use,
+  bool constRef,
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove);
 
 #endif

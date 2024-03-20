@@ -6,7 +6,7 @@ class Foo {
 
   proc init(val) {
     field = nested(val);
-    this.complete();
+    init this;
 
     // Where the function definition was placed shouldn't impact its viability
     proc nested(arg) {

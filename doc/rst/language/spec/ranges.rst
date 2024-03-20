@@ -46,7 +46,10 @@ follows.
    explicitly. Instead, infinite bound(s) are represented implicitly in
    the range’s type (:ref:`Range_Types`). When the low and/or high
    bound is :math:`\infty`, the represented sequence is unbounded in the
-   corresponding direction(s).
+   corresponding direction(s). However, when indices are drawn from
+   a finite type, such as booleans or enum constants, the represented
+   sequence always terminates when it runs out of legal indices
+   of this type.
 
 -  The *stride* is a non-zero integer. It defines the distance between
    any two adjacent members of the represented sequence. The sign of the
@@ -58,55 +61,39 @@ follows.
 
 -  The *alignment* is either a specific index value or is *ambiguous*.
    It defines how the represented sequence’s members are aligned
-   relative to the stride. For a range with a stride other than 1 or -1,
-   ambiguous alignment means that the represented sequence is undefined.
-   In such a case, certain operations discussed later result in an
-   error.
-   The alignment is always between zero and :math:`|stride|-1`,
-   inclusively.
+   relative to the stride. The alignment, when unambiguous,
+   is always between zero and :math:`|stride|-1`, inclusively.
 
-More formally, the represented sequence for the range
-:math:`(low, high, stride, alignmt)` contains all indices :math:`ix`
-such that:
+A range with unambiguous alignment is called *aligned*. Otherwise
+the range is *unaligned* and its represented sequence is undefined.
 
-=========================================================================== ============================================
-:math:`low \leq ix \leq high`                                               if :math:`stride = 1` or :math:`stride = -1`
-:math:`low \leq ix \leq high` and :math:`ix \equiv alignmt \pmod{|stride|}` if :math:`alignmt` is not ambiguous
-the represented sequence is undefined                                       otherwise
-=========================================================================== ============================================
+The represented sequence for an aligned range
+:math:`(low, high, stride, alignmt)`
+with integral indices contains all indices :math:`ix` such that:
 
-The sequence, if defined, is increasing if :math:`stride > 0` and
-decreasing if :math:`stride < 0`.
+   :math:`low \leq ix \leq high` and :math:`ix \equiv alignmt \pmod{|stride|}`
 
 If the represented sequence is defined but there are no indices
-satisfying the applicable equation(s) above, the range and its
+satisfying the above equation, the range and its
 represented sequence are *empty*. A common case of this occurs when the
 low bound is greater than the high bound.
 
 We say that a value :math:`ix` is *aligned* w.r.t. the range
 :math:`(low, high, stride, alignmt)` if:
 
--  :math:`alignmt` is not ambiguous and
-   :math:`ix \equiv alignmt \pmod{|stride|}`, or
-
--  :math:`stride` is 1 or -1.
+   :math:`alignmt` is not ambiguous and
+   :math:`ix \equiv alignmt \pmod{|stride|}`.
 
 Furthermore, :math:`\infty` is never aligned.
 
 Ranges have the following additional properties.
-
--  A range is *ambiguously aligned* if
-
-   -  its alignment is ambiguous, and
-
-   -  its stride is neither 1 nor -1.
 
 -  The *first index* is the first member of the represented sequence.
 
    A range *has no* first index when the first member is undefined, that
    is, in the following cases:
 
-   -  the range is ambiguously aligned,
+   -  the range is unaligned,
 
    -  the represented sequence is empty,
 
@@ -121,7 +108,7 @@ Ranges have the following additional properties.
    A range *has no* last index when the last member is undefined, that
    is, in the following cases:
 
-   -  it is ambiguously aligned,
+   -  the range is unaligned,
 
    -  the represented sequence is empty,
 
@@ -156,8 +143,8 @@ Range Types
 The type of a range is characterized by three properties:
 
 -  ``idxType`` is the type of the values in the range’s represented
-   sequence. However, when the range’s low and/or high bound is
-   :math:`\infty`, the represented sequence also contains indices that
+   sequence. However, when the range’s represented sequence is infinite,
+   it also contains indices that
    are not representable by ``idxType``.
 
    ``idxType`` must be an integral, boolean, or enumerated type and is
@@ -242,8 +229,8 @@ header:
                 param bounds  = boundKind.both,
                 param strides = strideKind.one) type
 
-As a special case, the keyword ``range`` without a parenthesized
-argument list refers to the range type with the default values of all
+As a special case, the keyword ``range`` written without a parenthesized
+argument list refers to the concrete range type with the default values of all
 its parameters, i.e., ``range(int, boundKind.both, strideKind.one)``.
 
    *Example (rangeVariable.chpl)*.
@@ -346,7 +333,7 @@ The value of a range literal is as follows:
 
 -  The stride is 1.
 
--  The alignment is ambiguous.
+-  The alignment is 0.
 
 .. _Range_Default_Values:
 
@@ -385,6 +372,12 @@ place of 0 and 1 above.  If the enum only has a single value, the
 default value uses the 0th value as the low bound and has an undefined
 high bound; the ``.size`` query should be used with such ranges before
 querying the high bound to determine whether or not it is valid.
+
+.. warning::
+
+   Default initialization of ranges with ``boundKind.low`` or
+   ``boundKind.high`` is unstable w.r.t. the value of their
+   finite bound.
 
 .. _Ranges_Common_Operations:
 
@@ -426,12 +419,23 @@ Range assignment is legal when:
 -  the ``strides`` parameter of the destination range is the same
    or more permissive than that of the source range.
 
+.. warning::
+
+   The ability to assign between two unbounded ranges with
+   incompatible idxTypes is deprecated.
+
 .. _Range_Comparisons:
 
 Range Comparisons
 ~~~~~~~~~~~~~~~~~
 
 Ranges can be compared using equality and inequality.
+
+.. warning::
+
+   Equality comparisons currently treat ranges over ``enum`` or ``bool`` types
+   as bounded on both ends regardless of their ``bounds`` parameters.
+   This behavior is unstable and might change in the future.
 
 .. function:: operator ==(r1: range(?), r2: range(?)): bool
 
@@ -825,8 +829,7 @@ the specified number of indices. Specifically:
 It is an error to apply the count operator with a positive count to a
 range that has no first index. It is also an error to apply the count
 operator with a negative count to a range that has no last index. It is
-an error to apply the count operator to a range that is ambiguously
-aligned.
+an error to apply the count operator to an unaligned range.
 It is an error if the count is greater than the ``size`` of the range.
 
    *Example (rangeCountOperator.chpl)*.
@@ -853,6 +856,12 @@ It is an error if the count is greater than the ``size`` of the range.
    Each of these ranges represents the ordered set of three indices: 6,
    4, 2.
 
+.. warning::
+
+   The count operator currently treats ranges over ``enum`` or ``bool`` types
+   as bounded on both ends regardless of their ``bounds`` parameters.
+   This behavior is unstable and might change in the future.
+
 .. _Range_Arithmetic:
 
 Arithmetic Operators
@@ -878,8 +887,8 @@ the result range are the same as for the input range.
 The stride of the resulting range is the same as the stride of the
 original. The alignment of the resulting range is shifted by the same
 amount as the high and low bounds. It is permissible to apply the shift
-operators to a range that is ambiguously aligned. In that case, the
-resulting range is also ambiguously aligned.
+operators to an unaligned range. In that case, the
+resulting range is also unaligned.
 
    *Example (rangeAdd.chpl)*.
 
@@ -902,6 +911,11 @@ resulting range is also ambiguously aligned.
    .. BLOCK-test-chapeloutput
 
       (0..3, 1..4)
+
+.. warning::
+
+   These operators are unstable.
+   They may be removed or change behavior in the future.
 
 .. _Range_Slicing:
 
@@ -950,8 +964,8 @@ Range slicing is specified by the syntax:
 
       (1..20, 3..20, 1..20 by 2, 1..20 by 6 align 3)
 
-It is an error for the first operand to be ambiguously aligned.
-If the second operand is ambiguously aligned, it is replaced
+It is an error for the first operand to be unaligned.
+If the second operand is unaligned, it is replaced
 with a range that is identical except it is given an alignment
 in such a way that that the intersection of the two ranges'
 represented sequences is non-empty, if possible.

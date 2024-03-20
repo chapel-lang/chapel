@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,10 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 
+extern "C" {
+  #include "complex-support.h"
+}
+
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
@@ -37,15 +41,6 @@
 #endif
 
 extern unsigned int open_hash_multipliers[256];
-
-struct complex64 {
-  float r;
-  float i;
-};
-struct complex128 {
-  double r;
-  double i;
-};
 
 using ImmString = chpl::detail::PODUniqueString;
 
@@ -76,8 +71,7 @@ enum IF1_string_kind : uint8_t {
 #define BOOL_SYS_WIDTH 0
 
 enum IF1_bool_type : uint8_t {
-  BOOL_SIZE_SYS, BOOL_SIZE_8, BOOL_SIZE_16, BOOL_SIZE_32,
-  BOOL_SIZE_64, BOOL_SIZE_NUM
+  BOOL_SIZE_SYS
 };
 
 // when updating these, be sure to also update int_type_precision!
@@ -103,7 +97,6 @@ enum IF1_complex_type : uint8_t {
 // 'int' type corresponds to an 'int(64)' since INT_SIZE_DEFAULT below
 // is INT_SIZE_64.
 //
-#define BOOL_SIZE_DEFAULT BOOL_SIZE_SYS
 #define INT_SIZE_DEFAULT INT_SIZE_64
 #define FLOAT_SIZE_DEFAULT FLOAT_SIZE_64
 #define COMPLEX_SIZE_DEFAULT COMPLEX_SIZE_128

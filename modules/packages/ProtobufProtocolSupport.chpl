@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,8 +48,8 @@ module ProtobufProtocolSupport {
     use CTypes;
     use OS.POSIX;
 
-    type writingChannel = fileWriter(iokind.little,false);
-    type readingChannel = fileReader(iokind.little,false);
+    type writingChannel = fileWriter(false);
+    type readingChannel = fileReader(false);
 
     // wireTypes
     const varint = 0;
@@ -60,7 +60,7 @@ module ProtobufProtocolSupport {
     proc unsignedVarintAppend(val:uint, ch: writingChannel) throws {
       if val == 0 {
         var zero: uint(8);
-        ch.write(zero);
+        ch.writeByte(zero);
         return;
       }
 
@@ -70,7 +70,7 @@ module ProtobufProtocolSupport {
         shiftVal = newVal >> 7;
         var k = if shiftVal != 0 then 0x80 else 0x00;
         var newByte = (newVal & 0x7F | k):uint(8);
-        ch.write(newByte);
+        ch.writeByte(newByte);
         newVal = shiftVal;
       }
     }
@@ -81,7 +81,7 @@ module ProtobufProtocolSupport {
       var len = 0;
       var s:uint(8);
       while true {
-        if !ch.read(s) then return (val, -1);
+        if !ch.readByte(s) then return (val, -1);
         val = val + ((s & 0x7F): uint << shift);
         shift = shift + 7;
         len = len + 1;
@@ -174,7 +174,7 @@ module ProtobufProtocolSupport {
 
     proc bytesAppendBase(val: bytes, ch: writingChannel) throws {
       unsignedVarintAppend((val.size):uint, ch);
-      ch.write(val);
+      ch.writeBytes(val);
     }
 
     proc bytesConsumeBase(ch: readingChannel): bytes throws {
@@ -193,22 +193,22 @@ module ProtobufProtocolSupport {
     }
 
     proc fixed32AppendBase(val: uint(32), ch: writingChannel) throws {
-      ch.write(val);
+      ch.writeBinary(val, endianness.little);
     }
 
     proc fixed32ConsumeBase(ch: readingChannel): uint(32) throws {
       var val: uint(32);
-      ch.read(val);
+      ch.readBinary(val, endianness.little);
       return val;
     }
 
     proc fixed64AppendBase(val: uint(64), ch: writingChannel) throws {
-      ch.write(val);
+      ch.writeBinary(val, endianness.little);
     }
 
     proc fixed64ConsumeBase(ch: readingChannel): uint(64) throws {
       var val: uint(64);
-      ch.read(val);
+      ch.readBinary(val, endianness.little);
       return val;
     }
 
@@ -300,14 +300,14 @@ module ProtobufProtocolSupport {
     proc serializeHelper(ref message, ch) throws {
       ch.lock();
       defer { ch.unlock(); }
-      var binCh: fileWriter(kind=iokind.little, locking=false) = ch;
+      var binCh: fileWriter(locking=false) = ch;
       message._serialize(binCh);
     }
 
     proc deserializeHelper(ref message, ch) throws {
       ch.lock();
       defer { ch.unlock(); }
-      var binCh: fileReader(kind=iokind.little, locking=false) = ch;
+      var binCh: fileReader(locking=false) = ch;
       message._deserialize(binCh);
     }
 
@@ -510,8 +510,8 @@ module ProtobufProtocolSupport {
 
     proc messageConsume(ch:readingChannel, type messageType) throws {
       var tmpMem = openMemFile();
-      var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
-      var memReader = tmpMem.reader(kind=iokind.little, locking=false);
+      var memWriter = tmpMem.writer(locking=false);
+      var memReader = tmpMem.reader(locking=false);
 
       var tmpObj: messageType;
       messageConsumeBase(ch, tmpObj, memWriter, memReader);
@@ -631,8 +631,8 @@ module ProtobufProtocolSupport {
       */
       var s: bytes;
       var tmpMem = openMemFile();
-      var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
-      var memReader = tmpMem.reader(kind=iokind.little, locking=false);
+      var memWriter = tmpMem.writer(locking=false);
+      var memReader = tmpMem.reader(locking=false);
 
       tagAppend(fieldNumber, wireType, memWriter);
       if wireType == varint {
@@ -659,11 +659,11 @@ module ProtobufProtocolSupport {
       var typeUrl: string;
       var value: bytes;
 
-      proc pack(messageObj) throws {
+      proc ref pack(messageObj) throws {
         var s: bytes;
         var tmpMem = openMemFile();
-        var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
-        var memReader = tmpMem.reader(kind=iokind.little, locking=false);
+        var memWriter = tmpMem.writer(locking=false);
+        var memReader = tmpMem.reader(locking=false);
 
         messageAppend(messageObj, 2, memWriter);
         memWriter.close();
@@ -681,8 +681,8 @@ module ProtobufProtocolSupport {
         }
 
         var tmpMem = openMemFile();
-        var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
-        var memReader = tmpMem.reader(kind=iokind.little, locking=false);
+        var memWriter = tmpMem.writer(locking=false);
+        var memReader = tmpMem.reader(locking=false);
 
         memWriter.write(this.value);
         memWriter.close();
@@ -700,10 +700,10 @@ module ProtobufProtocolSupport {
 
       proc _serialize(binCh) throws {
         stringAppend(this.typeUrl, 1, binCh);
-        binCh.write(this.value);
+        binCh.writeBytes(this.value);
       }
 
-      proc _deserialize(binCh) throws {
+      proc ref _deserialize(binCh) throws {
         while true {
           var (fieldNumber, wireType) = tagConsume(binCh);
           select fieldNumber {
@@ -1154,8 +1154,8 @@ module ProtobufProtocolSupport {
     proc messageRepeatedConsume(ch: readingChannel, type messageType) throws {
       var returnList: list(messageType);
       var tmpMem = openMemFile();
-      var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
-      var memReader = tmpMem.reader(kind=iokind.little, locking=false);
+      var memWriter = tmpMem.writer(locking=false);
+      var memReader = tmpMem.reader(locking=false);
 
       var tmpObj: messageType;
       messageConsumeBase(ch, tmpObj, memWriter, memReader);

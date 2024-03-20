@@ -12,7 +12,7 @@ var csrDom: sparse subdomain(ParentDom) dmapped CS(compressRows=true);
 var cscDom: sparse subdomain(ParentDom) dmapped CS(compressRows=false);
 var cooDom: sparse subdomain(ParentDom);
 
-var SparseDom = if layoutType == layoutTypes.csr then 
+var SparseDom = if layoutType == layoutTypes.csr then
                   csrDom
                else if layoutType == layoutTypes.csc then
                   cscDom
@@ -29,7 +29,7 @@ shuffle(inds1);
 
 var copyInds1 = inds1;
 
-SparseDom.bulkAdd(inds1, false, true, true);
+SparseDom.bulkAdd(inds1, false, true);
 for i in inds1 do SparseMat[i] = 1;
 
 writeln("After bulkAdd( , false, true, true)");
@@ -40,7 +40,7 @@ checkIntegrity(inds1, copyInds1);
 var inds2: [{dimRange}] 2*int;
 for i in dimRange do inds2[N-1-i] = (i,N-1-i);
 
-SparseDom.bulkAdd(inds2, false, true, false);
+SparseDom.bulkAddNoPreserveInds(inds2, false, true);
 for i in inds2 do SparseMat[i] = 2;
 
 writeln("After bulkAdd( , false, true, false)");
@@ -56,7 +56,7 @@ for i in dimRange {
 shuffle(inds3);
 
 var copyInds3 = inds3;
-SparseDom.bulkAdd(inds3, false, false, true);
+SparseDom.bulkAdd(inds3, false, false);
 for i in inds3 do SparseMat[i] = 3;
 
 writeln("After bulkAdd( , false, false, true)");
@@ -73,7 +73,7 @@ for i in dimRange {
 
 shuffle(inds4);
 
-SparseDom.bulkAdd(inds4, false, false, false);
+SparseDom.bulkAddNoPreserveInds(inds4, false, false);
 for i in inds4 do SparseMat[i] = 4;
 
 writeln("After bulkAdd( , false, false, false)");
@@ -85,7 +85,7 @@ proc print() {
       write(SparseMat[i,j], " ");
     }
     writeln();
-  } 
+  }
 }
 
 //column with duplicate indices -- sorted
@@ -120,6 +120,6 @@ print();
 checkIntegrity(inds6, copyInds6);
 
 proc checkIntegrity(a1, a2){
-  for (i1, i2) in zip(a1, a2) do 
+  for (i1, i2) in zip(a1, a2) do
     if i1!=i2 then halt("broken");
 }

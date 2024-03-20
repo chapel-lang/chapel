@@ -1,5 +1,5 @@
 hi hi
-Caught: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
-uncaught IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+Caught: IllegalArgumentError: chplSerializer does not support multidimensional arrays
+uncaught IllegalArgumentError: chplSerializer does not support multidimensional arrays
   readDifferentRankArrays.chpl:17: thrown here
   readDifferentRankArrays.chpl:17: uncaught here

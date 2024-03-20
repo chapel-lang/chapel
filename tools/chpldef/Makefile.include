@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -19,15 +19,17 @@
 DYNO_CHPLDEF_OBJDIR = $(COMPILER_BUILD)/chpldef
 
 DYNO_CHPLDEF_SRCS = \
-           chpldef.cpp \
-           command-line-flags.cpp \
-           Logger.cpp \
-           Message.cpp \
-           message-handle.cpp \
-           misc.cpp \
-           protocol-types.cpp \
-           Server.cpp \
-           Transport.cpp
+    chpldef.cpp \
+    command-line-flags.cpp \
+    compute-goto-declaration.cpp \
+    compute-lifecycle.cpp \
+    compute-synchronization.cpp \
+    Logger.cpp \
+    Message.cpp \
+    misc.cpp \
+    protocol-types.cpp \
+    Server.cpp \
+    Transport.cpp
 
 SRCS = $(DYNO_CHPLDEF_SRCS)
 

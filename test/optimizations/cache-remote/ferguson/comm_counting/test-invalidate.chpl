@@ -15,7 +15,7 @@ var buf = allocate(uint(8), testSize, alignment=testSize);
 // store buf as a _ddata so we can GET from it (otherwise always narrow)
 const A = buf:_ddata(uint(8));
 
-var rng = new RandomStream(int);
+var rng = new randomStream(int);
 
 var expectSum = 0;
 for i in 0..#testSize {
@@ -142,7 +142,7 @@ proc test_invalidate(const start:int, const size:int) {
   test_invalidate_mode(start, size, 0, -1, -1);
 
   // check reading 1 random byte within start..#size
-  var challengeOffset = rng.getNext(start, start+size-1);
+  var challengeOffset = rng.next(start, start+size-1);
   test_invalidate_mode(start, size, 1, challengeOffset, 1);
   // check reading the entire region start..#size
   test_invalidate_mode(start, size, 1, start, size);

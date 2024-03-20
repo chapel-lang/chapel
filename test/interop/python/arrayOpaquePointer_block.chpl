@@ -1,5 +1,5 @@
 use BlockDist;
-const D = {1..5} dmapped Block({1..5});
+const D = {1..5} dmapped blockDist({1..5});
 
 export proc makeBlockArray(): [D] int {
   var x: [D] int;
@@ -21,6 +21,6 @@ export proc printBlock(x: [D] int) {
   writeln(output);
 }
 
-export proc addEltBlock(x: [D] int, idx: int, val: int) {
+export proc addEltBlock(ref x: [D] int, idx: int, val: int) {
   x[idx] = val;
 }

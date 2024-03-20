@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@ namespace chpl {
   Reads the contents of a file into a string.
   If something failed, returns false and sets errorOut.
  */
-bool readfile(const char* path, std::string& strOut, std::string& errorOut);
+bool readFile(const char* path, std::string& strOut, std::string& errorOut);
 
 /**
   Writes a string to a file, replacing its contents.
@@ -58,11 +58,19 @@ bool fileExists(const char* path);
  */
 std::error_code ensureDirExists(const llvm::Twine& dirname);
 
+/**
+ * Check if the path specified is writeable by us.
+ *
+ * path the path to check write permission of
+ * returns bool
+ */
+bool isPathWriteable(const llvm::Twine& path);
+
 
 /**
  * creates a directory in the temp location for the system
- * with the pattern "<TMP>/<dirPrefix>-<username>.deleteme-XXXXXX/"
- * (where <TMP> is typically /tmp)
+ * with the pattern "[TMP]/[dirPrefix]-[username].deleteme-XXXXXX/"
+ * (where [TMP] is typically /tmp)
  *
  * prefix a prefix to put at the start of the directory name
  * tmpDirPathOut ref to a string that be set to the path of  the created dir
@@ -133,6 +141,11 @@ std::string fileHashToHex(const HashFileResult& hash);
   considered an implementation detail.
  */
 llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path);
+
+/**
+  Returns a hash of the passed string using the same hashing algorithm
+  as 'hashFile' */
+HashFileResult hashString(llvm::StringRef data);
 
 /**
   Sets the modification and access time of one file to the

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -63,15 +63,6 @@ module Collectives {
   import ChplConfig;
   use CTypes;
 
-  /* An enumeration of the different barrier implementations.  Used to choose
-     the implementation to use when constructing a new barrier object.
-
-     * `BarrierType.Atomic` uses Chapel atomic variables to control the barrier.
-     * `BarrierType.Sync` uses Chapel sync variables to control the barrier.
-  */
-  @deprecated(notes="BarrierType is deprecated, please use the default barrier implementation")
-  enum BarrierType {Atomic, Sync}
-
   /* A barrier that will cause `numTasks` to wait before proceeding. */
   record barrier {
     @chpldoc.nodoc
@@ -86,57 +77,6 @@ module Collectives {
     */
     proc init(numTasks: int) {
       bar = new unmanaged aBarrier(numTasks, reusable=true);
-      isowned = true;
-    }
-
-
-    /* Construct a new barrier object.
-
-       :arg numTasks: The number of tasks that will use this barrier
-       :arg reusable: Incur some extra overhead to allow reuse of this barrier?
-
-    */
-    @deprecated(notes="non-reusable barriers are deprecated, please remove the 'reusable' argument from this initializer call")
-    proc init(numTasks: int, reusable: bool) {
-      if reusable {
-        bar = new unmanaged aBarrier(numTasks, reusable=true);
-      } else {
-        bar = new unmanaged aBarrier(numTasks, reusable=false);
-      }
-      isowned = true;
-    }
-
-    /* Construct a new barrier object.
-
-       :arg numTasks: The number of tasks that will use this barrier
-       :arg barrierType: The barrier implementation to use
-       :arg reusable: Incur some extra overhead to allow reuse of this barrier?
-
-    */
-    @deprecated(notes="choosing a barrier type is deprecated, please remove the 'barrierType' argument")
-    proc init(numTasks: int,
-              barrierType: BarrierType,
-              reusable: bool = true) {
-      select barrierType {
-        when BarrierType.Atomic {
-          if reusable {
-            bar = new unmanaged aBarrier(numTasks, reusable=true);
-          } else {
-            bar = new unmanaged aBarrier(numTasks, reusable=false);
-          }
-        }
-        when BarrierType.Sync {
-          if reusable {
-            bar = new unmanaged sBarrier(numTasks, reusable=true);
-          } else {
-            bar = new unmanaged sBarrier(numTasks, reusable=false);
-          }
-        }
-        otherwise {
-          HaltWrappers.exhaustiveSelectHalt("unknown barrier type");
-          bar = new unmanaged BarrierBaseType(); // dummy
-        }
-      }
       isowned = true;
     }
 
@@ -190,18 +130,20 @@ module Collectives {
       return !bar.check();
     }
 
-    @deprecated(notes="'barrier.check()' is deprecated, please use '!barrier.pending()' instead")
-    inline proc check(): bool {
-      return bar.check();
-    }
-
     /* Reset the barrier, setting it to work with `nTasks` tasks.  If some
-       (but not all) tasks had already called :proc:`barrier` or :proc:`check`
+       (but not all) tasks had already called :proc:`barrier` or :proc:`pending`
        when :proc:`reset` is called, the behavior is undefined.
      */
     inline proc reset(nTasks: int) {
       bar.reset(nTasks);
     }
+
+    // This method is used in the WIP implementation of iterator contexts.
+    @chpldoc.nodoc
+    proc multiply(n: int) {
+      try! reset((bar:(unmanaged aBarrier)).n*n);
+    }
+
   }
 
   /* The BarrierBaseType class provides an abstract base type for barriers
@@ -262,7 +204,7 @@ module Collectives {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.complete();
+      init this;
       reset(n);
     }
 
@@ -272,7 +214,7 @@ module Collectives {
       this.reusable = reusable;
       this.procAtomics = procAtomics;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      this.complete();
+      init this;
       reset(n);
     }
 
@@ -355,113 +297,4 @@ module Collectives {
       return done.read();
     }
   }
-
-  /* A task barrier implemented using sync and single variables. Can be used
-     as a simple barrier or as a split-phase barrier.
-   */
- @chpldoc.nodoc class sBarrier: BarrierBaseType {
-    /* If true the barrier can be used multiple times.  When using this as a
-       split-phase barrier this causes :proc:`wait` to block until all tasks
-       have reached the wait */
-    param reusable = true;
-
-    @chpldoc.nodoc
-    var inGate: sync int;
-    @chpldoc.nodoc
-    var outGate: sync int;
-    @chpldoc.nodoc
-    var blockers: chpl__processorAtomicType(int);
-    @chpldoc.nodoc
-    var maxBlockers: int;
-
-    /* Construct a new `n` task Barrier.
-       :arg n: The number of tasks that will be involved in the barrier.
-     */
-    proc init(n: int, param reusable: bool) {
-      this.reusable = reusable;
-      this.complete();
-      reset(n);
-    }
-
-    /* inline */ override proc reset(nTasks: int) {
-      maxBlockers = nTasks;
-      blockers.write(0);
-      outGate.reset();
-      inGate.writeXF(0);
-    }
-
-    /* Block until `n` tasks have called this method.
-     */
-    /* inline */ override proc barrier() {
-      on this {
-        if boundsChecking && blockers.read() >= maxBlockers {
-          HaltWrappers.boundsCheckHalt("Too many callers to barrier()");
-        }
-        inGate.readFF();
-        var waiters = blockers.fetchAdd(1) + 1;
-
-        if waiters == maxBlockers {
-          inGate.reset();
-          outGate.writeXF(0);
-        } else {
-          outGate.readFF();
-        }
-
-        if reusable {
-          waiters = blockers.fetchSub(1) - 1;
-          if waiters == 0 {
-            outGate.reset();
-            inGate.writeXF(0);
-          }
-        }
-      }
-    }
-
-    /* Notify the barrier that this task has reached this point. */
-    /* inline */ override proc notify() {
-      on this {
-        if boundsChecking && blockers.read() >= maxBlockers {
-          HaltWrappers.boundsCheckHalt("Too many callers to notify()");
-        }
-
-        inGate.readFF();
-        var waiters = blockers.fetchAdd(1) + 1;
-        if waiters == maxBlockers {
-          inGate.reset();
-          outGate.writeXF(0);
-        }
-      }
-    }
-
-    /* Wait until `n` tasks have called :proc:`notify`. */
-    /* inline */ override proc wait() {
-      on this {
-        outGate.readFF();
-        if reusable {
-          var waiters = blockers.fetchSub(1) - 1;
-          if waiters == 0 {
-            outGate.reset();
-            inGate.writeXF(0);
-          }
-        }
-      }
-    }
-
-    /* Return `true` if `n` tasks have called :proc:`notify`
-     */
-    /* inline */ override proc check(): bool {
-      return outGate.isFull;
-    }
-  }
-
-  @chpldoc.nodoc
-  operator barrier.=(ref lhs: barrier, rhs: barrier) {
-    if lhs.isowned {
-      delete lhs.bar;
-    }
-    lhs.bar = rhs.bar;
-    lhs.isowned = false;
-  }
-
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -263,7 +263,7 @@ module ChapelHashtable {
       // Round initial capacity up to nearest power of 2
       this.startingSize = 2 << log2((initialCapacity/
                                      resizeThreshold):int-1);
-      this.complete();
+      init this;
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
       // All elements are memset to 0 (no initializer is run for the idxType)
@@ -380,7 +380,7 @@ module ChapelHashtable {
       var currentSlot = chpl__defaultHashWrapper(key):uint;
       const mask = numSlots-1;
 
-      foreach probe in 1..numSlots {
+      foreach probe in 1..numSlots with (ref currentSlot) {
         var uprobe = probe:uint;
 
         yield (currentSlot&mask):int;
@@ -396,7 +396,7 @@ module ChapelHashtable {
     // or a slot that was already present with that key.
     // It can rehash the table.
     // returns (foundFullSlot, slotNum)
-    proc findAvailableSlot(key: keyType): (bool, int) {
+    proc ref findAvailableSlot(key: keyType): (bool, int) {
       var slotNum = -1;
       var foundSlot = false;
 
@@ -427,13 +427,12 @@ module ChapelHashtable {
           // the deleted entries & the table should only ever be half
           // full of non-deleted entries.
           halt("couldn't add key -- ", tableNumFullSlots, " / ", tableSize, " taken");
-          return (false, -1);
         }
         return (foundSlot, slotNum);
       }
     }
 
-    proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
+    proc ref fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                   in key: keyType,
                   in val: valType) {
       use MemMove;
@@ -452,7 +451,7 @@ module ChapelHashtable {
       moveInitialize(tableEntry.key, key);
       moveInitialize(tableEntry.val, val);
     }
-    proc fillSlot(slotNum: int,
+    proc ref fillSlot(slotNum: int,
                   in key: keyType,
                   in val: valType) {
       ref tableEntry = table[slotNum];
@@ -479,7 +478,7 @@ module ChapelHashtable {
     // Clears a slot that is full
     // (Should not be called on empty/deleted slots)
     // Returns the key and value that were removed in the out arguments
-    proc clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
+    proc ref clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                    out key: keyType, out val: valType) {
       use MemMove;
 
@@ -494,13 +493,13 @@ module ChapelHashtable {
       tableNumFullSlots -= 1;
       tableNumDeletedSlots += 1;
     }
-    proc clearSlot(slotNum: int, out key: keyType, out val: valType) {
+    proc ref clearSlot(slotNum: int, out key: keyType, out val: valType) {
       // move the table entry into the key/val variables to be returned
       ref tableEntry = table[slotNum];
       clearSlot(tableEntry, key, val);
     }
 
-    proc maybeShrinkAfterRemove() {
+    proc ref maybeShrinkAfterRemove() {
       // The magic number of 4 was chosen here due to our power of 2
       // table sizes, where shrinking the table means halving the table
       // size, so if your table originally was 1/4 of `resizeThreshold`
@@ -545,7 +544,7 @@ module ChapelHashtable {
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
-    proc rehash(newSize:int) {
+    proc ref rehash(newSize:int) {
       use MemMove;
 
       // save the old table
@@ -625,13 +624,13 @@ module ChapelHashtable {
       }
     }
 
-    proc requestCapacity(numKeys:int) {
+    proc ref requestCapacity(numKeys:int) {
       if tableNumFullSlots < numKeys {
         rehash(_findPowerOf2(numKeys));
       }
     }
 
-    proc resize(grow:bool) {
+    proc ref resize(grow:bool) {
       if postponeResize then return;
 
       // double if you are growing, half if you are shrinking

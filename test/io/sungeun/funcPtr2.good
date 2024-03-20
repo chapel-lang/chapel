@@ -1,1 +1,1 @@
-blah()
+proc blah(): int { ... }

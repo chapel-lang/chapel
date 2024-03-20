@@ -1,7 +1,14 @@
 // Replicated Distribution
 
 /*
-  This primer demonstrates uses of the Replicated Distribution.
+  This primer demonstrates uses of replicatedDist,
+  the Replicated Distribution.
+
+  .. warning::
+
+    The Replicated Distribution is currently unstable.
+    Its functionality is likely to change in the future.
+
   To use this distribution in a Chapel program, the following module must be
   used:
 */
@@ -17,7 +24,8 @@
 // locales does a nice job of illustrating the distribution
 // characteristics.
 //
-// Like other distributions, Replicated supports options to map to a different
+// Like other distributions, ``replicatedDist`` supports options
+// to map to a different
 // virtual locale grid than the one used by default (a multidimensional
 // factoring of the built-in ``Locales`` array), as well as
 // to control the amount of parallelism used in data parallel
@@ -37,13 +45,13 @@ config const n = 8;
 const Space = {1..n, 1..n};
 
 
-// Replicated
-// ----------
+// Replicated Distribution
+// -----------------------
 //
-// The ``Replicated`` distribution is different from other distributions:
+// The ``replicatedDist`` distribution is different from other distributions:
 // each of the original domain's indices is replicated onto
 // each locale, as are the corresponding array elements.  For example,
-// a domain ``{1..3}`` distributed using ``Replicated`` will store
+// a domain ``{1..3}`` distributed using ``replicatedDist`` will store
 // three indices per locale that the distribution is targeting (by
 // default, all locales).  Similarly, an array declared over that
 // domain will store three elements per locale.  Each locale's copy of
@@ -62,7 +70,7 @@ const Space = {1..n, 1..n};
 //
 // Here's a declaration of a replicated domain and array:
 //
-const ReplicatedSpace = Space dmapped Replicated();
+const ReplicatedSpace = Space dmapped replicatedDist();
 var RA: [ReplicatedSpace] int;
 
 // Queries about the size of a replicated domain or array will return

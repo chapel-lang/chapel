@@ -1,4 +1,0 @@
-sqrtZ.chpl:4: warning: The argument name 'z' is deprecated for 'sqrt', please use 'x' instead
-sqrtZ.chpl:5: warning: The argument name 'z' is deprecated for 'sqrt', please use 'x' instead
-3.0 + 0.0i
-4.0 + 0.0i

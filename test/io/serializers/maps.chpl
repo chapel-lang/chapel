@@ -8,19 +8,27 @@ record R {
   var y : real;
 }
 
-proc test(m: map) {
+proc test(m: map(?)) {
   printDebugFmt(m);
+
+  // TODO: reading maps in default format is not supported, at least not
+  // when the key or value type is a string.
+  if FormatReader.type == defaultDeserializer &&
+     (m.keyType == string || m.valType == string) then return;
 
   var f = openMemFile();
   {
-    f.writer().withSerializer(FormatWriter).writeln(m);
+    f.writer(locking=false).withSerializer(FormatWriter).writeln(m);
   }
-  {
-    var x = f.reader().withDeserializer(FormatReader).read(m.type);
+  try {
+    var x = f.reader(locking=false).withDeserializer(FormatReader).read(m.type);
     if m != x then
       writeln("FAILURE: ", m.type:string);
     else
       writeln("SUCCESS: ", m.type:string);
+  } catch e {
+    writeln("FAILURE: ", m.type:string);
+    writeln("  ERROR: ", e.message());
   }
 }
 
@@ -58,5 +66,11 @@ proc main() {
       r.add(m[k], k);
 
     test(r);
+  }
+
+  {
+    var m : map(int, int);
+    for i in 1..5 do m.add(i, i**2);
+    test(m);
   }
 }

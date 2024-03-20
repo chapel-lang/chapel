@@ -168,7 +168,7 @@ module HTable {
      The `names`, `offsets`, `types` and `sizes` elements are the most
      relevant and may be passed on directly to the HDF5 routines.
   */
-  record H5MetaTable {
+  record H5MetaTable : writeSerializable {
     /* The chplType of the record. */
     type R;
 
@@ -202,7 +202,7 @@ module HTable {
       this.R = R;
       nFields = numFields(R);
       Rsize = c_sizeof(R);
-      this.complete();
+      init this;
 
       var r : R;
       for param ii in 0..<nFields {
@@ -237,9 +237,9 @@ module HTable {
     /* Debugging routine, prints a human-readable version of how the
        routine has parsed the field.
     */
-    proc writeThis(f) {
+    proc serialize(writer, ref serializer) {
       for ii in 1..nFields {
-        f.write(names[ii]:string, new ioLiteral(" "), offsets[ii], new ioNewline());
+        writer.writeln(names[ii]:string, " ", offsets[ii]);
       }
     }
 

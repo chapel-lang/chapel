@@ -16,10 +16,10 @@ config param useInit : bool = false;
 proc main() {
   var f = openMemFile();
   {
-    f.writer().write(new T(5));
+    f.writer(locking=false).write(new T(5));
   }
   {
-    var reader = f.reader().withDeserializer(DefaultDeserializer);
+    var reader = f.reader(locking=false).withDeserializer(defaultDeserializer);
     var val = new T(int, reader);
     writeln(val);
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ module UnorderedAtomics {
   }
 
   /* Unordered atomic add. */
-  inline proc AtomicT.unorderedAdd(val:valType): void {
+  inline proc ref AtomicT.unorderedAdd(val:valType): void {
     this.add(val);
   }
   @chpldoc.nodoc
@@ -99,7 +99,7 @@ module UnorderedAtomics {
   }
 
   /* Unordered atomic sub. */
-  inline proc AtomicT.unorderedSub(val:valType): void {
+  inline proc ref AtomicT.unorderedSub(val:valType): void {
     this.sub(val);
   }
   @chpldoc.nodoc
@@ -112,7 +112,7 @@ module UnorderedAtomics {
   }
 
   /* Unordered atomic or. */
-  inline proc AtomicT.unorderedOr(val:valType): void {
+  inline proc ref AtomicT.unorderedOr(val:valType): void {
     this.or(val);
   }
   @chpldoc.nodoc
@@ -126,7 +126,7 @@ module UnorderedAtomics {
   }
 
   /* Unordered atomic and. */
-  inline proc AtomicT.unorderedAnd(val:valType): void {
+  inline proc ref AtomicT.unorderedAnd(val:valType): void {
     this.and(val);
   }
   @chpldoc.nodoc
@@ -140,7 +140,7 @@ module UnorderedAtomics {
   }
 
   /* Unordered atomic xor. */
-  inline proc AtomicT.unorderedXor(val:valType): void {
+  inline proc ref AtomicT.unorderedXor(val:valType): void {
     this.xor(val);
   }
   @chpldoc.nodoc

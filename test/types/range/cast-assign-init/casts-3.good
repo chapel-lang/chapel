@@ -2,4 +2,8 @@
 1..10 by 1000
 IllegalArgumentError: bad cast from int(64) with a value greater than the maximum of int(8) to int(8)
 IllegalArgumentError: bad cast from int(64) with a value greater than the maximum of int(8) to int(8)
+
 true..true by 1000
+1..10 by 1000
+1..10 by 1000
+casts-3.chpl:18: error: halt reached - bad cast from int(64) with a value greater than the maximum of int(8) to int(8)

@@ -1,25 +1,25 @@
 use IO, IO.FormattedIO;
 
-record R {
+record R : writeSerializable, readDeserializable {
   var x: int;
 
-  proc writeThis(fw: fileWriter) throws {
-    fw.write("<", x, ">");
+  proc serialize(writer, ref serializer) throws {
+    writer.write("<", x, ">");
   }
 
-  proc readThis(fr: fileReader) throws {
-    fr.readLiteral("<");
-    this.x = fr.read(int);
-    fr.readLiteral(">");
+  proc ref deserialize(reader, ref deserializer) throws {
+    reader.readLiteral("<");
+    this.x = reader.read(int);
+    reader.readLiteral(">");
   }
 }
 
 var f = open("test.txt", ioMode.cwr),
     r = new R(1);
 
-f.writer().writef("an R: %?\n", r);
+f.writer(locking=false).writef("an R: %?\n", r);
 
 var r2 = new R(2);
-f.reader().readf("an R: %?\n", r2);
+f.reader(locking=false).readf("an R: %?\n", r2);
 
 writeln(r == r2);

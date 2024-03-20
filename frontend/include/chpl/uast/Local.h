@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,7 +49,11 @@ namespace uast {
 
  */
 class Local final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
+  int8_t condChildNum_;
+
   Local(AstList children, int8_t condChildNum, BlockStyle blockStyle,
         int bodyChildNum,
         int numBodyStmts)
@@ -59,7 +63,12 @@ class Local final : public SimpleBlockLike {
       condChildNum_(condChildNum) {
   }
 
-  Local(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
+    ser.write(condChildNum_);
+  }
+
+  explicit Local(Deserializer& des)
     : SimpleBlockLike(asttags::Local, des) {
     condChildNum_ = des.read<int8_t>();
   }
@@ -82,8 +91,6 @@ class Local final : public SimpleBlockLike {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t condChildNum_;
 
  public:
 
@@ -111,14 +118,6 @@ class Local final : public SimpleBlockLike {
   const AstNode* condition() const {
     return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-    ser.write(condChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Local);
-
 };
 
 

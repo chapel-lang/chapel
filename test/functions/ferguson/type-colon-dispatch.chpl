@@ -32,13 +32,13 @@ pragma "last resort"
 proc foo(type t) {
   writeln("any type");
 }
-proc foo(type t:R) {
+proc foo(type t:R(?)) {
   writeln("R");
 }
 proc foo(type t:borrowed Parent) {
   writeln("Parent");
 }
-proc foo(type t:borrowed GenericParent) {
+proc foo(type t:borrowed GenericParent(?)) {
   writeln("GenericParent");
 }
 proc foo(type t:borrowed GenericChild(int)) {

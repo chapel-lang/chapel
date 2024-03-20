@@ -31,7 +31,7 @@ module cuBLAS {
     return gpu_ptr;
   }
 
-  proc gpu_to_cpu(dst_ptr: c_ptr(void), src_ptr: DevicePtr, size: c_size_t){
+  proc gpu_to_cpu(dst_ptr: c_ptr(void), src_ptr: DevicePtr(?), size: c_size_t){
     require "c_cublas.h", "c_cublas.o";
     to_cpu(dst_ptr, src_ptr.val, size);
   }

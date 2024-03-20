@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,7 +33,7 @@ module ChapelArray {
   use ChapelDebugPrint;
   use CTypes;
   use ChapelPrivatization;
-  use ChplConfig only compiledForSingleLocale;
+  use ChplConfig only compiledForSingleLocale, CHPL_LOCALE_MODEL;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are
@@ -81,7 +81,7 @@ module ChapelArray {
   config param logAllArrEltAccess = false;
 
   proc _isPrivatized(value) param do
-    return !compiledForSingleLocale() &&
+    return (!compiledForSingleLocale() || CHPL_LOCALE_MODEL=="gpu") &&
            ((_privatization && value!.dsiSupportsPrivatization()) ||
             value!.dsiRequiresPrivatization());
     // _privatization is controlled by --[no-]privatization
@@ -256,14 +256,6 @@ module ChapelArray {
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
 
-  /* The traditional one-argument form of :proc:`.find()` on arrays
-     has been deprecated in favor of a new interface.  Compiling with
-     this set to `true` will opt into that new interface.  Note that
-     there is also a new two-argument form that is available
-     regardless of this setting. */
-  config param useNewArrayFind = false;
-
-
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
@@ -338,7 +330,7 @@ module ChapelArray {
     halt("Should never get here");
   }
 
-  proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
+  proc chpl__buildAssociativeArrayExpr( const elems ...?k ) {
     type keyType = elems(0).type;
     type valType = elems(1).type;
     var D : domain(keyType);
@@ -677,7 +669,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistType(type t: record) type {
-    compilerWarning("The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
+    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
     return t;
   }
 
@@ -691,7 +683,7 @@ module ChapelArray {
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
     return new _distribution(owned.release(x));
   }
-  proc chpl__buildDistValue(ref x:record) ref {
+  proc chpl__buildDistValue(const ref x:record) const ref {
     return x;
   }
 
@@ -699,7 +691,7 @@ module ChapelArray {
     compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistDMapValue(ref x: record) ref {
+  proc chpl__buildDistDMapValue(const ref x: record) const ref {
     compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'");
     return chpl__buildDistValue(x);
   }
@@ -711,176 +703,6 @@ module ChapelArray {
     return new _distribution(owned.release(x));
   }
 
-  //
-  // Distribution wrapper record
-  //
-  pragma "distribution"
-  pragma "ignore noinit"
-  @chpldoc.nodoc
-  record _distribution {
-    var _pid:int;  // only used when privatized
-    pragma "owned"
-    var _instance; // generic, but an instance of a subclass of BaseDist
-    var _unowned:bool; // 'true' for the result of 'getDistribution',
-                       // in which case, the record destructor should
-                       // not attempt to delete the _instance.
-
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this._pid      = _pid;
-      this._instance = _instance;
-      this._unowned  = _unowned;
-    }
-
-    proc init(value) {
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-      this._instance = _to_unmanaged(value);
-    }
-
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : _distribution) {
-      var value = other._value.dsiClone();
-      this.init(value);
-    }
-
-    inline proc _value {
-      if _isPrivatized(_instance) {
-        return chpl_getPrivatizedCopy(_instance.type, _pid);
-      } else {
-        return _instance;
-      }
-    }
-
-    forwarding _value except targetLocales;
-
-    inline proc _do_destroy() {
-      if ! _unowned && ! _instance.singleton() {
-        on _instance {
-          // Count the number of domains that refer to this distribution.
-          // and mark the distribution to be freed when that number reaches 0.
-          // If the number is 0, .remove() returns the distribution
-          // that should be freed.
-          var distToFree = _instance.remove();
-          if distToFree != nil {
-            _delete_dist(distToFree!, _isPrivatized(_instance));
-          }
-        }
-      }
-    }
-
-    proc deinit() {
-      _do_destroy();
-    }
-
-    proc clone() {
-      return new _distribution(_value.dsiClone());
-    }
-
-    /* This is a workaround for an internal failure I experienced when
-       this code was part of newRectangularDom() and relied on split init:
-       var x;
-       if __prim(...) then x = ...;
-       else if __prim(...) then x = ...;
-       else compilerError(...); */
-    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
-
-      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
-      // we use "method call resolves" instead of just "resolves".
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, strides, ranges) {
-        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-      }
-
-      // The following supports deprecation by Vass in 1.31 to implement #17131
-      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
-      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
-      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
-
-      param stridable = strides.toStridable();
-      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, stridable, ranges2) {
-
-        compilerWarning("the domain map '", _value.type:string,
-          "' needs to be updated from 'stridable: bool' to",
-          " 'strides: strideKind' because 'stridable' is deprecated");
-
-        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
-      }
-
-      compilerError("rectangular domains are not supported by",
-                    " the distribution ", this.type:string);
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
-
-      x.definedConst = definedConst;
-
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           definedConst: bool = false) {
-      var ranges: rank*range(idxType, boundKind.both, strides);
-      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
-    }
-
-    proc newAssociativeDom(type idxType, param parSafe: bool=true) {
-      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newSparseDom(param rank: int, type idxType, dom: domain) {
-      var x = _value.dsiNewSparseDom(rank, idxType, dom);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-
-    proc readThis(f) throws {
-      f.read(_value);
-    }
-
-    // TODO: Can't this be an initializer?
-    @chpldoc.nodoc
-    proc type deserializeFrom(reader, ref deserializer) throws {
-      var ret : this;
-      ret.readThis(reader);
-      return ret;
-    }
-
-    proc writeThis(f) throws {
-      f.write(_value);
-    }
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writer.write(_value);
-    }
-
-    proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
-
-    /*
-       Return an array of locales over which this distribution was declared.
-    */
-    proc targetLocales() const ref {
-      return _value.dsiTargetLocales();
-    }
-  }  // record _distribution
 
   @chpldoc.nodoc
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
@@ -930,22 +752,6 @@ module ChapelArray {
     return false;
   }
 
-  // supports deprecation by Vass in 1.31 to implement #17131
-  // A compatibility wrapper that allows code to work with domain maps
-  // whether they have been converted from stridable to strides or not.
-  proc chpl_dsiNewRectangularDom(dist, param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-    if __primitive("resolves",
-                   dist.dsiNewRectangularDom(rank, idxType, strides, ranges))
-    then
-      return dist.dsiNewRectangularDom(rank, idxType, strides, ranges);
-    else
-      return dist.dsiNewRectangularDom(rank, idxType,
-                                       strides.toStridable(), ranges);
-  }
-
   // Array wrapper record
   pragma "array"
   pragma "has runtime type"
@@ -956,7 +762,7 @@ module ChapelArray {
   // the serialize routines to fire, when their where-clause permits.
   pragma "always RVF"
   /* The array type */
-  record _array {
+  record _array : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
     pragma "alias scope from this"
@@ -990,6 +796,13 @@ module ChapelArray {
                              doiBulkTransferFromAny,  doiBulkTransferToAny,
                              chpl__serialize, chpl__deserialize;
 
+    // Hook into 'postinit' since arrays do not seem to offer 'init'.
+    proc postinit() {
+      if eltType == nothing {
+        compilerError("cannot initialize array with element type 'nothing'");
+      }
+    }
+
     @chpldoc.nodoc
     proc deinit() {
       _do_destroy_array(this);
@@ -1007,9 +820,6 @@ module ChapelArray {
        :proc:`idxType` above.  For a multidimensional array, it will be
        :proc:`rank` * :proc:`idxType`. */
     proc fullIdxType type do return this.domain.fullIdxType;
-
-    @deprecated("'.intIdxType' on arrays is deprecated; please let us know if you're relying on it")
-    proc intIdxType type do return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
@@ -1143,11 +953,12 @@ module ChapelArray {
     // array element access
     // When 'this' is 'const', so is the returned l-value.
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
-    inline proc ref this(i: rank*_value.dom.idxType) ref {
+    inline proc ref this(const i: rank*_value.dom.idxType) ref {
       const value = _value;
       if boundsChecking then
         checkAccess(i, value=value);
@@ -1163,7 +974,7 @@ module ChapelArray {
     }
     pragma "alias scope from this"
     @chpldoc.nodoc // value version, for POD types
-    inline proc const this(i: rank*_value.dom.idxType)
+    inline proc const this(const i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
       const value = _value;
@@ -1181,7 +992,7 @@ module ChapelArray {
     }
     pragma "alias scope from this"
     @chpldoc.nodoc // const ref version, for not-POD types
-    inline proc const this(i: rank*_value.dom.idxType) const ref
+    inline proc const this(const i: rank*_value.dom.idxType) const ref
     {
       const value = _value;
       if boundsChecking then
@@ -1197,25 +1008,27 @@ module ChapelArray {
         return value.dsiAccess(i(0));
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
-    inline proc ref this(i: _value.dom.idxType ...rank) ref do
+    inline proc ref this(const i: _value.dom.idxType ...rank) ref do
       return this(i);
 
     pragma "alias scope from this"
     @chpldoc.nodoc // value version, for POD types
-    inline proc const this(i: _value.dom.idxType ...rank)
+    inline proc const this(const i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType) do
       return this(i);
 
     pragma "alias scope from this"
     @chpldoc.nodoc // const ref version, for not-POD types
-    inline proc const this(i: _value.dom.idxType ...rank) const ref do
+    inline proc const this(const i: _value.dom.idxType ...rank) const ref do
       return this(i);
 
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1279,6 +1092,7 @@ module ChapelArray {
           return value.dsiLocalAccess(i(0));
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1306,6 +1120,7 @@ module ChapelArray {
     // dense case because we can represent a domain by a tuple of
     // ranges, but in the sparse case, is there a general representation?
     //
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1340,6 +1155,7 @@ module ChapelArray {
     }
 
     // array slicing by a tuple of ranges
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1378,6 +1194,7 @@ module ChapelArray {
     }
 
     // array rank change
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1442,6 +1259,7 @@ module ChapelArray {
 
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1453,6 +1271,7 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1463,6 +1282,18 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(d);
     }
 
+    @unstable("tryCopy() is subject to change in the future.")
+    proc tryCopy() throws {
+      use Reflection;
+      if !(__primitive("resolves", this.domain.
+                       tryCreateArray(this.eltType))) then
+        compilerError("cannot call 'tryCopy' on arrays that do not" +
+                      " support a 'tryCreateArray' method.");
+      var res = this.domain.tryCreateArray(this.eltType);
+      res = this;
+      return res;
+    }
+
     pragma "no copy return"
     proc chpl__localSliceDefaultArithArrHelp(d: domain) {
       if (_value.locale != here) then
@@ -1470,6 +1301,7 @@ module ChapelArray {
              _value.locale.id, " from locale ", here.id);
       return this(d);
     }
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1480,6 +1312,7 @@ module ChapelArray {
       return _value.dsiLocalSlice(r);
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1689,40 +1522,29 @@ module ChapelArray {
       compilerError("Reindexing non-rectangular arrays is not permitted.");
     }
 
+    // Note: This 'serialize' is required at the moment because the compiler
+    // generated 'serialize' is considered to be a last resort. Without this
+    // method we would incur promotion when trying to print arrays.
     @chpldoc.nodoc
-    proc writeThis(f) throws {
-      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
+    proc serialize(writer, ref serializer) throws {
+      var arrayStyle = writer.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !writer._binary();
       if rank > 1 && ischpl {
         throw new owned IllegalArgumentError("Cannot perform Chapel write of multidimensional array.");
       }
 
-      _value.dsiSerialWrite(f);
-    }
-
-    // Note: This 'serialize' is required at the moment because the compiler
-    // generated 'serialize', like 'writeThis' is considered to be a last
-    // resort. Without this method we would incur promotion when trying
-    // to print arrays.
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
-    }
-
-    @chpldoc.nodoc
-    proc readThis(f) throws {
-      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
-      if rank > 1 && ischpl {
-        throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
-      }
-
-      _value.dsiSerialRead(f);
+      _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
     proc ref deserialize(reader, ref deserializer) throws {
-      readThis(reader);
+      var arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !reader._binary();
+      if rank > 1 && ischpl {
+        throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
+      }
+
+      _value.dsiSerialRead(reader);
     }
 
     // TODO: Can we convert this to an initializer despite the potential issues
@@ -1730,7 +1552,7 @@ module ChapelArray {
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(reader);
+      ret.deserialize(reader, deserializer);
       return ret;
     }
 
@@ -1743,24 +1565,6 @@ module ChapelArray {
     @chpldoc.nodoc
     proc IRV ref where this.isSparse() {
       return _value.IRV;
-    }
-
-    /* Yield the array elements in sorted order. */
-    @deprecated(notes="'Array.sorted' is deprecated - use Sort.sort instead")
-    iter sorted(comparator:?t = chpl_defaultComparator()) {
-      if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
-        for i in _value.dsiSorted(comparator) {
-          yield i;
-        }
-      } else if Reflection.canResolveMethod(_value, "dsiSorted") {
-        compilerError(_value.type:string + " does not support dsiSorted(comparator)");
-      } else {
-        use Sort;
-        var copy = this;
-        sort(copy, comparator=comparator);
-        for ind in copy do
-          yield ind;
-      }
     }
 
     @chpldoc.nodoc
@@ -1781,6 +1585,7 @@ module ChapelArray {
 
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
+    @unstable("'hasSingleLocalSubdomain' on arrays is unstable and may change in the future")
     proc hasSingleLocalSubdomain() param {
       return _value.dsiHasSingleLocalSubdomain();
     }
@@ -1794,7 +1599,7 @@ module ChapelArray {
     */
     proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
-        compilerError("Domain's local domain is not a single domain");
+        compilerError("the array may have multiple local subdomains");
 
       return _value.dsiLocalSubdomain(loc);
     }
@@ -1806,6 +1611,7 @@ module ChapelArray {
                  place (defaults to `here`)
        :type loc: locale
     */
+    @unstable("'localSubdomains' on arrays is unstable and may change in the future")
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);
@@ -1835,24 +1641,6 @@ module ChapelArray {
       return this.sizeAs(uint) == 0;
     }
 
-    /* Return the first value in the array */
-    // The return type used here is currently not pretty in the generated
-    // documentation. Don't document it for now.
-    @chpldoc.nodoc
-    @deprecated(notes="head() is deprecated on arrays, use A[A.domain.low] instead")
-    proc head(): this._value.eltType {
-      return this[this.domain.low];
-    }
-
-    /* Return the last value in the array */
-    // The return type used here is currently not pretty in the generated
-    // documentation. Don't document it for now.
-    @chpldoc.nodoc
-    @deprecated(notes="tail() is deprecated on arrays, use A[A.domain.high] instead")
-    proc tail(): this._value.eltType {
-      return this[this.domain.high];
-    }
-
     /* Return the last element in the array. The array must be a
        rectangular 1-D array.
      */
@@ -1878,33 +1666,6 @@ module ChapelArray {
 
       return this(this.domain.first);
     }
-
-    /* Reverse the order of the values in the array. */
-    @deprecated(notes="'Array.reverse' is deprecated")
-    proc reverse() {
-      if (!chpl__isDense1DArray()) then
-        compilerError("reverse() is only supported on dense 1D arrays");
-      const lo = this.domain.low,
-            mid = this.domain.sizeAs(this.idxType) / 2,
-            hi = this.domain.high;
-      for i in 0..#mid {
-        this[lo + i] <=> this[hi - i];
-      }
-    }
-
-    /* Return a tuple containing ``true`` and the index of the first
-       instance of ``val`` in the array, or if ``val`` is not found, a
-       tuple containing ``false`` and an unspecified value is returned.
-     */
-     @deprecated(notes="The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use.")
-     proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
-      for i in this.domain {
-        if this[i] == val then return (true, i);
-      }
-      var arbInd: index(this.domain);
-      return (false, arbInd);
-    }
-
 
     /*
 
@@ -2050,7 +1811,7 @@ module ChapelArray {
     }
 
     proc chpl_isNonDistributedArray() param {
-      return domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
+      return chpl_domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
     }
 
     /* Return true if the argument ``a`` is an array with a rectangular
@@ -2123,7 +1884,7 @@ module ChapelArray {
     return init_elts_method(size, eltType) == ArrayInit.parallelInit;
   }
 
-  proc _deinitElements(array: _array) {
+  proc _deinitElements(ref array: _array) {
     param needsDestroy = __primitive("needs auto destroy", array.eltType);
     if needsDestroy {
       if _deinitElementsIsParallel(array.eltType, array.size) {
@@ -2197,9 +1958,16 @@ module ChapelArray {
 
   // How to cast arrays to strings
   @chpldoc.nodoc
+  @deprecated(notes="casting arrays to string is deprecated; please use 'try! \"%?\".format()' from IO.FormattedIO instead")
   operator :(x: [], type t:string) {
     import IO.FormattedIO.string;
     return try! "%?".format(x);
+  }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  operator :(in x: [] ?et, type t: et) where t == et {
+    return x;
   }
 
   pragma "fn returns aliasing array"
@@ -2448,7 +2216,7 @@ module ChapelArray {
   pragma "ignore transfer errors"
   private proc initCopyAfterTransfer(ref a: []) {
     if needsInitWorkaround(a.eltType) {
-      forall ai in a.domain {
+      forall ai in a.domain with (ref a) {
         ref aa = a[ai];
         pragma "no auto destroy"
         var copy: a.eltType = aa; // run copy initializer
@@ -2520,7 +2288,7 @@ module ChapelArray {
 
   private proc fixEltRuntimeTypesAfterTransfer(ref a: []) {
     if needsInitWorkaround(a.eltType) {
-      forall ai in a.domain {
+      forall ai in a.domain with (ref a) {
         ref aa = a[ai];
         fixRuntimeType(a.eltType, aa);
       }
@@ -2718,7 +2486,7 @@ module ChapelArray {
     } else {
       if kind==_tElt.move {
         if needsInitWorkaround(a.eltType) {
-          [ (ai, bb) in zip(a.domain, b) ] {
+          [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
             __primitive("=", aa, __primitive("steal", bb));
             fixRuntimeType(a.eltType, aa);
@@ -2732,7 +2500,7 @@ module ChapelArray {
         }
       } else if kind==_tElt.initCopy {
         if needsInitWorkaround(a.eltType) {
-          [ (ai, bb) in zip(a.domain, b) ] {
+          [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
             pragma "no auto destroy"
             var copy: a.eltType = bb; // init copy
@@ -2785,7 +2553,7 @@ module ChapelArray {
   }
 
   @chpldoc.nodoc
-  inline operator =(a: [], b: range(?)) {
+  inline operator =(ref a: [], b: range(?)) {
     if a.rank == 1 then
       chpl__transferArray(a, b);
     else
@@ -2927,221 +2695,221 @@ module ChapelArray {
   // op= overloads for array/scalar pairs
   //
   @chpldoc.nodoc
-  operator +=(a: [], b: _desync(a.eltType)) {
+  operator +=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e += b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator +=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator +=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e += b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator +=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator +=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e += b;
   }
 
   @chpldoc.nodoc
-  operator -=(a: [], b: _desync(a.eltType)) {
+  operator -=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e -= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator -=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator -=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e -= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator -=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator -=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e -= b;
   }
 
   @chpldoc.nodoc
-  operator *=(a: [], b: _desync(a.eltType)) {
+  operator *=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e *= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator *=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator *=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e *= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator *=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator *=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e *= b;
   }
 
   @chpldoc.nodoc
-  operator /=(a: [], b: _desync(a.eltType)) {
+  operator /=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e /= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator /=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator /=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e /= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator /=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator /=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e /= b;
   }
 
   @chpldoc.nodoc
-  operator %=(a: [], b: _desync(a.eltType)) {
+  operator %=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e %= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator %=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator %=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e %= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator %=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator %=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e %= b;
   }
 
   @chpldoc.nodoc
-  operator **=(a: [], b: _desync(a.eltType)) {
+  operator **=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e **= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator **=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator **=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e **= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator **=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator **=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e **= b;
   }
 
   @chpldoc.nodoc
-  operator &=(a: [], b: _desync(a.eltType)) {
+  operator &=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e &= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator &=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator &=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e &= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator &=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator &=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e &= b;
   }
 
   @chpldoc.nodoc
-  operator |=(a: [], b: _desync(a.eltType)) {
+  operator |=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e |= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator |=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator |=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e |= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator |=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator |=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e |= b;
   }
 
   @chpldoc.nodoc
-  operator ^=(a: [], b: _desync(a.eltType)) {
+  operator ^=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e ^= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator ^=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator ^=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e ^= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator ^=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator ^=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e ^= b;
   }
 
   @chpldoc.nodoc
-  operator >>=(a: [], b: _desync(a.eltType)) {
+  operator >>=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e >>= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator >>=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator >>=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e >>= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator >>=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator >>=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e >>= b;
   }
 
   @chpldoc.nodoc
-  operator <<=(a: [], b: _desync(a.eltType)) {
+  operator <<=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e <<= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator <<=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+  operator <<=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e <<= b;
   }
   // required to prevent deprecation warnings being related to internal modules
   @chpldoc.nodoc
   @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
-  operator <<=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+  operator <<=(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e <<= b;
   }
@@ -3150,7 +2918,7 @@ module ChapelArray {
   // Swap operator for arrays
   //
   @chpldoc.nodoc
-  inline operator <=>(x: [?xD], y: [?yD]) {
+  inline operator <=>(ref x: [?xD], ref y: [?yD]) {
     if x.rank != y.rank then
       compilerError("rank mismatch in array swap");
 
@@ -3698,12 +3466,6 @@ module ChapelArray {
 
   pragma "no copy returns owned"
   pragma "ignore transfer errors"
-  // This function has foralls that have PRIM_ASSIGN in them. They are typically
-  // subject to normalization and as part of gpuization we create temporaries
-  // for those primitive calls. But those temporaries don't get resolved. I
-  // imagine we'll need to have this function work on GPUs, or be callable from
-  // GPUs. So, we'll need to fix that.
-  pragma "no gpu codegen"
   proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
   {
     pragma "unsafe" pragma "no copy"
@@ -3728,9 +3490,24 @@ module ChapelArray {
           __primitive("=", r, copy);
         }
       }
+    } else if chpl_iteratorFromForeachExpr(ir) {
+      if needsInitWorkaround(result.eltType) {
+        foreach (ri, src) in zip(result.domain, ir) {
+          ref r = result[ri];
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      } else {
+        foreach (r, src) in zip(result, ir) {
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      }
     } else {
       if needsInitWorkaround(result.eltType) {
-        forall (ri, src) in zip(result.domain, ir) {
+        forall (ri, src) in zip(result.domain, ir) with (ref result) {
           ref r = result[ri];
           pragma "no auto destroy"
           var copy = src; // init copy, might be elided
@@ -3898,17 +3675,32 @@ module ChapelArray {
   //   var A: [1..3] real;
   //   foo(A);
   // 'castToVoidStar' says whether we should cast the result to c_ptr(void)
-  proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
-    if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
-      compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
+
+  proc chpl_arrayToPtrErrorHelper(const ref arr: []) {
+    if (!arr.isRectangular() || !chpl_domainDistIsLayout(arr.domain)) then
+      compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=3);
 
     if (arr._value.locale != here) then
       halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+  }
+
+  proc chpl_arrayToPtr(ref arr: [], param castToVoidStar: bool = false) {
+    chpl_arrayToPtrErrorHelper(arr);
 
     use CTypes;
     const ptr = c_pointer_return(arr[arr.domain.low]);
     if castToVoidStar then
       return ptr: c_ptr(void);
+    else
+      return ptr;
+  }
+  proc chpl_arrayToPtrConst(const ref arr: [], param castToVoidStar: bool = false) {
+    chpl_arrayToPtrErrorHelper(arr);
+
+    use CTypes;
+    const ptr = c_pointer_return_const(arr[arr.domain.low]);
+    if castToVoidStar then
+      return ptr: c_ptrConst(void);
     else
       return ptr;
   }

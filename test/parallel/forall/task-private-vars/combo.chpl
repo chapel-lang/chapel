@@ -1,9 +1,9 @@
 
-var s$ : sync int;
+var s : sync int;
 
 iter mydriver() {
   for i in 1..3 {
-    s$.writeEF(i);
+    s.writeEF(i);
     yield i;
   }
 }
@@ -13,7 +13,7 @@ iter myIter(param tag) {
   yield 666;
   coforall i in mydriver() {
     yield i * 1111;
-    s$.readFE();
+    s.readFE();
   }
 }
 
@@ -28,7 +28,7 @@ cnt.write(1);
 
 proc nextCnt(arg: int) {
   const curr = cnt.fetchAdd(1);
-  const ret  = curr + s$.readXX()*100;
+  const ret  = curr + s.readXX()*100;
   writeln("curr ", curr, "   ret ", ret, "   arg ", arg);
   return ret;
 }

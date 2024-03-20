@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,7 @@
 
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
+#include "symbol.h"
 
 class Expr;
 class VarSymbol;
@@ -29,6 +30,8 @@ void  parseCmdLineConfig(const char *, const char *);
 Expr* getCmdLineConfig(const char *);
 void  useCmdLineConfig(const char *, VarSymbol*);
 VarSymbol* isUsedCmdLineConfig(const char *);
+bool isSetCmdLineConfig(const char *, const char *);
+VarSymbol* getConfigParamBool(ModuleSymbol*, const char*);
 
 extern bool mainHasArgs;
 extern bool mainPreserveDelimiter;

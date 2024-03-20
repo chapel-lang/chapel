@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,6 +42,8 @@ namespace uast {
   The Formals are stored inside of a Function.
  */
 class Formal final : public VarLikeDecl {
+ friend class AstNode;
+
  public:
   enum Intent {
     // Use Qualifier here for consistent enum values.
@@ -72,7 +74,12 @@ class Formal final : public VarLikeDecl {
                   typeExpressionChildNum,
                   initExpressionChildNum) {
   }
-  Formal(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
+  }
+
+  explicit Formal(Deserializer& des)
     : VarLikeDecl(asttags::Formal, des) {
   }
 
@@ -113,13 +120,6 @@ class Formal final : public VarLikeDecl {
   inline bool isExplicitlyAnonymous() const {
     return name() == USTR("_");
   }
-
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Formal);
-
 };
 
 

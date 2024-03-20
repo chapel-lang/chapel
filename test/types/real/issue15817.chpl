@@ -11,7 +11,7 @@ use CTypes;
 record R {
   type T;
   var beta: T;
-  proc kernel(x: c_ptr) {
+  proc kernel(x: c_ptr(?)) {
     var dist: T = 0:T;
     dist += x[0]**this.beta;
     return 0.5:T;

@@ -25,13 +25,15 @@ or
 
 .. function:: proc processArr(arr: []) where arr.elemType == int
 
-.. function:: proc processDom(dom: domain) where dom.rank == 2
+.. function:: proc processDom(dom: domain(?)) where dom.rank == 2
 
 .. function:: proc processRec(r: MyRecord) where r.x > 0
 
 .. function:: proc processRange(r: [1..n] int, n: int) where n > 0
 
 .. function:: proc processRange(r: range) where r.low > 1
+
+.. function:: proc processRangeNW(r: range)
 
 .. function:: proc foo(type t) where isSubtype(t, int)
 
@@ -41,7 +43,7 @@ or
 
 .. function:: operator :(x: c_string, type t: c_ptrConst(?eltType)) where eltType == c_char || eltType == int(8) || eltType == uint(8)
 
-.. iterfunction:: iter these(param tag, followThis) ref where tag == iterKind.follower
+.. iterfunction:: iter these_example(param tag, followThis) ref where tag == iterKind.follower
 
 .. iterfunction:: iter cubeiter(param tag: iterKind, n: int, id: int = 0, off: int = -1): int where tag == iterKind.standalone
 

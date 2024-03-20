@@ -33,7 +33,7 @@ proc main {
 proc writeSquareArray(n, X, filename) {
   // Create an output file with the specified filename in write (ioMode.cw) mode
   var outfile = open(filename, ioMode.cw);
-  var writer = outfile.writer();
+  var writer = outfile.writer(locking=false);
 
   // Write the problem size in each dimension to the file
   writer.writeln(n, " ", n);
@@ -53,7 +53,7 @@ proc writeSquareArray(n, X, filename) {
 proc readArray(filename) {
   // Create an input file with the specified filename in read (ioMode.r) mode
   var infile = open(filename, ioMode.r);
-  var reader = infile.reader();
+  var reader = infile.reader(locking=false);
 
   // Read the number of rows and columns in the array in from the file
   var m = reader.read(int), 
@@ -82,7 +82,7 @@ proc readArray(filename) {
 proc SQR(const A)
 {
 	var R = A;
-	forall (i) in (A.domain) do R(i) *= R(i);
+	forall (i) in (A.domain) with (ref R) do R(i) *= R(i);
 	return R;
 }	
 

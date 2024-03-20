@@ -1,0 +1,6 @@
+submodule-in-used-vs-toplevel-in-file.chpl:7: In function 'main':
+submodule-in-used-vs-toplevel-in-file.chpl:9: warning: potentially surprising shadowing for 'MM'
+submodule-in-used-vs-toplevel-in-file.chpl:8: note: it refers to a symbol found through the 'use' of 'N' here
+submodule-in-used-vs-toplevel-in-file.chpl:2: note: leading to 'MM' defined here
+MM.chpl:1: note: but, there is a shadowed symbol 'MM' defined here
+0

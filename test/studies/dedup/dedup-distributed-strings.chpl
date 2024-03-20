@@ -33,7 +33,7 @@ proc main(args:[] string)
   // Create a distributed array of paths so that we can distribute the
   // work of hashing files to different Locales
   var n:int = paths.size;
-  var BlockN = {1..n} dmapped Block({1..n});
+  var BlockN = {1..n} dmapped blockDist({1..n});
   var distributedPaths:[BlockN] string;
   distributedPaths = paths.toArray();
  
@@ -48,7 +48,7 @@ proc main(args:[] string)
     startVdebug(vis);
 
   // Using the Spawn module, compute the SHA1 sums using an external program
-  forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
+  forall (id,path) in zip(distributedPaths.domain, distributedPaths) with (ref hashAndFile) {
     if verbose then
       writeln("Running sha1sum ", path);
     // The spawn call creates a subprocess. By specifying

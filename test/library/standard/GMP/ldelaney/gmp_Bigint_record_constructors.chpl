@@ -8,21 +8,15 @@ proc main(){
   var x6 : bigint = x5;
   var x7          = x3;
 
-  x1.writeThis(stdout);
-  writeln();
+  writeln(x1);
 
-  x3.writeThis(stdout);
-  writeln();
+  writeln(x3);
 
-  x4.writeThis(stdout);
-  writeln();
+  writeln(x4);
 
-  x5.writeThis(stdout);
-  writeln();
+  writeln(x5);
 
-  x6.writeThis(stdout);
-  writeln();
+  writeln(x6);
 
-  x7.writeThis(stdout);
-  writeln();
+  writeln(x7);
 }

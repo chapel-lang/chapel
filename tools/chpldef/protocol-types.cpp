@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,13 +21,43 @@
 #include "./protocol-types.h"
 #include "./misc.h"
 #include "llvm/Support/JSON.h"
+#include <cstdlib>
+#include <iostream>
+
+template <typename T>
+static void doAddField(chpldef::JsonObject& obj, const char* name,
+                       const T& field) {
+  obj[name] = field;
+}
+
+template <typename T>
+static void doAddField(chpldef::JsonObject& obj, const char* name,
+                       const chpldef::opt<T>& field) {
+  if (field) obj[name] = field;
+}
 
 /** Helper to make populating JSON object fields less painful. */
-#define FIELD_(name__) { #name__, name__ }
+#define FIELD_(obj__, name__) \
+  do { doAddField(obj__, #name__, name__); } while (0)
+
+/** Helper to make reading JSON object fields less painful. */
+#define MAP_(m__, name__) (m__.map(#name__, name__))
 
 namespace chpldef {
 
-std::string ProtocolType::toString() const {
+bool BaseProtocolType::fromJson(const JsonValue& j, JsonPath p) {
+  std::cerr << "Called 'BaseProtocolTypefromJson'!" << std::endl;
+  std::abort();
+  return false;
+}
+
+JsonValue BaseProtocolType::toJson() const {
+  std::cerr << "Called 'BaseProtocolType::toJson'!" << std::endl;
+  std::abort();
+  return nullptr;
+}
+
+std::string BaseProtocolType::toString() const {
   auto ret = jsonToString(toJson());
   return ret;
 }
@@ -37,8 +67,7 @@ bool EmptyProtocolType::fromJson(const JsonValue& j, JsonPath p) {
 }
 
 JsonValue EmptyProtocolType::toJson() const {
-  JsonValue ret(nullptr);
-  return ret;
+  return nullptr;
 }
 
 bool ClientInfo::fromJson(const JsonValue& j, JsonPath p) {
@@ -49,27 +78,12 @@ bool ClientInfo::fromJson(const JsonValue& j, JsonPath p) {
   return true;
 }
 
-JsonValue ClientInfo::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
 bool ChpldefInit::fromJson(const JsonValue& j, JsonPath p) {
   return true;
 }
 
-JsonValue ChpldefInit::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
 bool ClientCapabilities::fromJson(const JsonValue& j, JsonPath p) {
   return true;
-}
-
-JsonValue ClientCapabilities::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
 }
 
 bool InitializeParams::fromJson(const JsonValue& j, JsonPath p) {
@@ -87,21 +101,10 @@ bool InitializeParams::fromJson(const JsonValue& j, JsonPath p) {
   return true;
 }
 
-JsonValue InitializeParams::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
-bool InitializeResult::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_IMPOSSIBLE();
-  return true;
-}
-
 JsonValue InitializeResult::toJson() const {
-  JsonObject ret {
-    FIELD_(capabilities),
-    FIELD_(serverInfo)
-  };
+  JsonObject ret;
+  FIELD_(ret, capabilities);
+  FIELD_(ret, serverInfo);
   return ret;
 }
 
@@ -121,75 +124,263 @@ bool TraceLevel::fromJson(const JsonValue& j, JsonPath p) {
   return false;
 }
 
-JsonValue TraceLevel::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
 bool WorkspaceFolder::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_TODO();
-  return true;
-}
-
-JsonValue WorkspaceFolder::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
-bool ServerInfo::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_IMPOSSIBLE();
-  return true;
+  JsonMapper m(j, p);
+  return m && MAP_(m, uri) && MAP_(m, name);
 }
 
 JsonValue ServerInfo::toJson() const {
-  JsonObject ret { FIELD_(name), FIELD_(version) };
+  JsonObject ret;
+  FIELD_(ret, name);
+  FIELD_(ret, version);
   return ret;
-}
-
-bool ServerCapabilities::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_IMPOSSIBLE();
-  return true;
 }
 
 JsonValue ServerCapabilities::toJson() const {
-  JsonObject ret {
-    FIELD_(positionEncoding),
-    FIELD_(textDocumentSync),
-    FIELD_(notebookDocumentSync),
-    FIELD_(completionProvider),
-    FIELD_(hoverProvider),
-    FIELD_(signatureHelpProvider),
-    FIELD_(declarationProvider),
-    FIELD_(definitionProvider),
-    FIELD_(typeDefinitionProvider),
-    FIELD_(implementationProvider),
-    FIELD_(referencesProvider),
-    FIELD_(documentHighlightProvider),
-    FIELD_(documentSymbolProvider),
-    FIELD_(codeActionProvider),
-    FIELD_(codeLensProvider),
-    FIELD_(documentLinkProvider),
-    FIELD_(colorProvider),
-    FIELD_(documentFormattingProvider),
-    FIELD_(documentRangeFormattingProvider),
-    FIELD_(documentOnTypeFormattingProvider),
-    FIELD_(renameProvider),
-    FIELD_(foldingRangeProvider),
-    FIELD_(executeCommandProvider),
-    FIELD_(selectionRangeProvider),
-    FIELD_(linkEditingRangeProvider),
-    FIELD_(callHierarchyProvider),
-    FIELD_(semanticTokensProvider),
-    FIELD_(monikerProvider),
-    FIELD_(typeHierarchyProvider),
-    FIELD_(inlineValueProvider),
-    FIELD_(inlayHintProvider),
-    FIELD_(diagnosticProvider),
-    FIELD_(workspaceSymbolProvider),
-    FIELD_(workspace),
-    FIELD_(experimental)
-  };
+  JsonObject ret;
+  FIELD_(ret, positionEncoding);
+  FIELD_(ret, textDocumentSync);
+  FIELD_(ret, notebookDocumentSync);
+  FIELD_(ret, completionProvider);
+  FIELD_(ret, hoverProvider);
+  FIELD_(ret, signatureHelpProvider);
+  FIELD_(ret, declarationProvider);
+  FIELD_(ret, definitionProvider);
+  FIELD_(ret, typeDefinitionProvider);
+  FIELD_(ret, implementationProvider);
+  FIELD_(ret, referencesProvider);
+  FIELD_(ret, documentHighlightProvider);
+  FIELD_(ret, documentSymbolProvider);
+  FIELD_(ret, codeActionProvider);
+  FIELD_(ret, codeLensProvider);
+  FIELD_(ret, documentLinkProvider);
+  FIELD_(ret, colorProvider);
+  FIELD_(ret, documentFormattingProvider);
+  FIELD_(ret, documentRangeFormattingProvider);
+  FIELD_(ret, documentOnTypeFormattingProvider);
+  FIELD_(ret, renameProvider);
+  FIELD_(ret, foldingRangeProvider);
+  FIELD_(ret, executeCommandProvider);
+  FIELD_(ret, selectionRangeProvider);
+  FIELD_(ret, linkEditingRangeProvider);
+  FIELD_(ret, callHierarchyProvider);
+  FIELD_(ret, semanticTokensProvider);
+  FIELD_(ret, monikerProvider);
+  FIELD_(ret, typeHierarchyProvider);
+  FIELD_(ret, inlineValueProvider);
+  FIELD_(ret, inlayHintProvider);
+  FIELD_(ret, diagnosticProvider);
+  FIELD_(ret, workspaceSymbolProvider);
+  FIELD_(ret, workspace);
+  FIELD_(ret, experimental);
   return ret;
+}
+
+JsonValue TextDocumentSyncOptions::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, openClose);
+  if (change) ret["change"] = static_cast<int>(*change);
+  return ret;
+}
+
+bool TextDocumentItem::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return MAP_(m, uri) && MAP_(m, languageId) && MAP_(m, version) &&
+         MAP_(m, text);
+}
+
+bool DidOpenParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
+}
+
+bool DidSaveParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
+}
+
+bool DidCloseParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
+}
+
+bool DidChangeParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
+}
+
+JsonValue SaveOptions::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, includeText);
+  return ret;
+}
+
+bool TextDocumentIdentifier::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, uri);
+}
+
+bool Position::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, line) && MAP_(m, character);
+}
+
+JsonValue Position::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, line);
+  FIELD_(ret, character);
+  return ret;
+}
+
+bool Position::operator==(const Position& rhs) const {
+  return line == rhs.line && character == rhs.character;
+}
+
+bool Position::operator!=(const Position& rhs) const {
+  return !(*this == rhs);
+}
+
+bool Position::operator<(const Position& rhs) const {
+  return line < rhs.line || (line == rhs.line && character < rhs.character);
+}
+
+bool Position::operator<=(const Position& rhs) const {
+  return (*this < rhs) || (*this == rhs);
+}
+
+bool Position::operator>(const Position& rhs) const {
+  return !(*this <= rhs);
+}
+
+bool Position::operator>=(const Position& rhs) const {
+  return (*this > rhs) || (*this == rhs);
+}
+
+bool TextDocumentPositionParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument) && MAP_(m, position);
+}
+
+Location::Location(const chpl::Location& loc)
+    : uri(loc.path().c_str()),
+      range(Range(loc)) {}
+
+bool Location::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, uri) && MAP_(m, range);
+}
+
+JsonValue Location::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, uri);
+  FIELD_(ret, range);
+  return ret;
+}
+
+bool Location::operator==(const Location& rhs) const {
+  return uri == rhs.uri && range == rhs.range;
+}
+
+bool LocationLink::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, originSelectionRange) &&
+      MAP_(m, targetUri) &&
+      MAP_(m, targetRange) &&
+      MAP_(m, targetSelectionRange);
+}
+
+JsonValue LocationLink::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, originSelectionRange);
+  FIELD_(ret, targetUri);
+  FIELD_(ret, targetRange);
+  FIELD_(ret, targetSelectionRange);
+  return ret;
+}
+
+static Position constructPosition(int chapelLine, int chapelColumn) {
+  int line = chapelLine - 1;
+  int character = chapelColumn - 1;
+  CHPL_ASSERT(line >= 0 && character >= 0);
+  return Position(line, character);
+}
+
+static Position constructPositionAtStart(const chpl::Location& loc) {
+  return constructPosition(loc.firstLine(), loc.firstColumn());
+}
+
+static Position constructPositionAtEnd(const chpl::Location& loc) {
+  return constructPosition(loc.lastLine(), loc.lastColumn());
+}
+
+Range::Range(const chpl::Location& loc)
+  : start(constructPositionAtStart(loc)),
+    end(constructPositionAtEnd(loc)) {}
+
+bool Range::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, start) && MAP_(m, end);
+}
+
+JsonValue Range::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, start);
+  FIELD_(ret, end);
+  return ret;
+}
+
+bool Range::operator==(const Range& rhs) const {
+  return start == rhs.start && end == rhs.end;
+}
+
+bool Range::operator!=(const Range& rhs) const {
+  return !(*this == rhs);
+}
+
+bool Range::operator<(const Range& rhs) const {
+  return start < rhs.start;
+}
+
+bool Range::operator<=(const Range& rhs) const {
+  return (*this < rhs) || (*this == rhs);
+}
+
+bool Range::operator>(const Range& rhs) const {
+  return end > rhs.end;
+}
+
+bool Range::operator>=(const Range& rhs) const {
+  return (*this > rhs) || (*this == rhs);
+}
+
+bool Range::contains(const Range& r) const {
+  return start <= r.start && end >= r.end;
+}
+
+bool Range::contains(const Position& p) const {
+  return start <= p && end >= p;
+}
+
+bool Range::overlaps(const Range& r) const {
+  return contains(r.start) || contains(r.end);
+}
+
+bool Range::isNegative() const {
+  return end < start;
+}
+
+JsonValue DeclarationResult::toJson() const {
+  if (!result) return nullptr;
+  if (auto v = std::get_if<LocationArray>(&*result)) return *v;
+  if (auto v = std::get_if<std::vector<LocationLink>>(&*result)) return *v;
+  return nullptr;
+}
+
+JsonValue DefinitionResult::toJson() const {
+  if (!result) return nullptr;
+  if (auto v = std::get_if<std::vector<Location>>(&*result)) return *v;
+  if (auto v = std::get_if<std::vector<LocationLink>>(&*result)) return *v;
+  return nullptr;
 }
 
 } // end namespace 'chpldef'

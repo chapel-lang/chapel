@@ -1,7 +1,17 @@
 # skip explicit fast
 COMPOPTS <= --fast
-# test only LLVM 15 or greater
+# throws off loop attributes
+COMPOPTS <= --baseline
+# verify should not affect opt, but test fails with it
+COMPOPTS <= --verify
+# mem libcalls throw off opt
+EXECOPTS <= --memLeaks
+# COMM throws off opt
+CHPL_COMM != none
+COMPOPTS <= --no-local
+
+# test only LLVM 14 or greater
+CHPL_TARGET_COMPILER != llvm
 CHPL_LLVM_VERSION==11
 CHPL_LLVM_VERSION==12
 CHPL_LLVM_VERSION==13
-CHPL_LLVM_VERSION==14

@@ -1,0 +1,12 @@
+─── error in dotTypeOnType.chpl:4 [DotTypeOnType] ───
+  Can't apply '.type' to a type ('int(64)').
+      |
+    4 | type tType = t.type;
+      |              ⎺⎺⎺⎺⎺⎺
+      |
+  The '.type' accessor can only be applied to values, but the receiver of the above expression is the type 'int(64)'.
+  The receiver is declared as a 'type' variable here:
+      |
+    1 | type t = int;
+      |
+

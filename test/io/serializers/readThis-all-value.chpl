@@ -1,7 +1,7 @@
 
 use IO;
 
-record B {
+record B : serializable {
   var x : int;
 
   proc serialize(writer, ref serializer) throws {
@@ -18,7 +18,7 @@ record B {
     this.x = reader.read(int);
   }
 
-  proc deserialize(reader, ref deserializer) throws {
+  proc ref deserialize(reader, ref deserializer) throws {
     writeln("B.deserialize");
     x = reader.read(int);
   }
@@ -31,9 +31,9 @@ record A {
 proc main() {
   var a : A;
   var f = openMemFile();
-  f.writer().write(a);
+  f.writer(locking=false).write(a);
 
   var x : A;
-  f.reader().read(x);
+  f.reader(locking=false).read(x);
   writeln(x);
 }

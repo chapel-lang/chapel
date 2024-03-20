@@ -104,7 +104,7 @@ param ZETA_P_FREE = 0x800;
 
 config const filename = "sedov15oct.lmesh";
 var infile = open(filename, ioMode.r);
-var reader = infile.reader();
+var reader = infile.reader(locking=false);
 
 if debug then writeln("Reading problem size...");
 const (numElems, numNodes) = reader.read(int, int);
@@ -136,9 +136,9 @@ config param useBlockDist = false;
 
 // STYLE: I don't really like these names (ElemDist, NodeDist)
 
-const ElemDist = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
+const ElemDist = if useBlockDist then ElemSpace dmapped blockDist(ElemSpace)
                                  else ElemSpace;
-const NodeDist = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
+const NodeDist = if useBlockDist then NodeSpace dmapped blockDist(NodeSpace)
                                  else NodeSpace;
 
 

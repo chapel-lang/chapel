@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,6 +40,7 @@ void clearGenericWellKnownFunctions();
 
 // The well-known types
 extern AggregateType* dtArray;
+extern AggregateType* dtDomain;
 extern AggregateType* dtBaseArr;
 extern AggregateType* dtBaseDom;
 extern AggregateType* dtCFI_cdesc_t;

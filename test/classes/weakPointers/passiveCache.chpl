@@ -8,7 +8,7 @@ use Collectives;
 class PassiveCache {
     type dataType; // assuming this type has a an initializer that takes an int
     var items: map(int, weak(shared dataType));
-    var lock$: ChapelLocks.chpl_LocalSpinlock;
+    var lockVar: ChapelLocks.chpl_LocalSpinlock;
 
     proc init(type dt) {
         this.dataType = dt;
@@ -16,11 +16,11 @@ class PassiveCache {
     }
 
     inline proc lock() {
-      this.lock$.lock();
+      this.lockVar.lock();
     }
 
     inline proc unlock() {
-      this.lock$.unlock();
+      this.lockVar.unlock();
     }
 
     proc getOrBuild(key: int) : shared dataType {

@@ -5,12 +5,12 @@ use CyclicDist;
 
 config param zipRange = true;
 
-proc test(Orig : domain) {
+proc test(Orig : domain(?)) {
   var Copy = Orig;
   test(Orig, Copy);
 }
 
-proc makeArray(D : domain, type eltType = int) {
+proc makeArray(D : domain(?), type eltType = int) {
   var ret : [D] eltType;
   var cur = 0;
   for i in D {
@@ -20,13 +20,13 @@ proc makeArray(D : domain, type eltType = int) {
   return ret;
 }
 
-proc test(DA : domain, DB : domain) {
+proc test(DA : domain(?), DB : domain(?)) {
   var A = makeArray(DA);
   var B = makeArray(DB);
   test(A,B);
 }
 
-proc test(A : [?DA], B : [?DB]) {
+proc test(ref A : [?DA], B : [?DB]) {
   writeln("--- ", A.type:string, " vs. ", B.type:string, " ---");
   DA.distribution.displayRepresentation();
   writeln();
@@ -63,13 +63,13 @@ enum Dist {
 }
 use Dist;
 
-proc make(param dist : Dist, dom : domain, box = dom, targetLocales = Locales, startIdx = (dom.first,)) {
+proc make(param dist : Dist, dom : domain(?), box = dom, targetLocales = Locales, startIdx = (dom.first,)) {
   if dist == cyclic then
-    return dom dmapped Cyclic(startIdx,targetLocales=targetLocales);
+    return dom dmapped cyclicDist(startIdx,targetLocales=targetLocales);
   else if dist == block then
-    return dom dmapped Block(box, targetLocales=targetLocales);
+    return dom dmapped blockDist(box, targetLocales=targetLocales);
   else if dist == stencil then
-    return dom dmapped Stencil(box, targetLocales=targetLocales);
+    return dom dmapped stencilDist(box, targetLocales=targetLocales);
 }
 
 proc main() {
@@ -103,7 +103,19 @@ proc main() {
   test(make(cyclic,one),make(cyclic,one,startIdx=(2,)));
 
   // - different eltTypes
-  test(makeArray(make(block,one), real), makeArray(make(block,one), int));
-  test(makeArray(make(cyclic,one), real), makeArray(make(cyclic,one), int));
-  test(makeArray(make(stencil,one), real), makeArray(make(stencil,one), int));
+  {
+    var t1 = makeArray(make(block,one), real);
+    var t2 = makeArray(make(block,one), int);
+    test(t1, t2);
+  }
+  {
+    var t1 = makeArray(make(cyclic,one), real);
+    var t2 = makeArray(make(cyclic,one), int);
+    test(t1, t2);
+  }
+  {
+    var t1 = makeArray(make(stencil,one), real);
+    var t2 = makeArray(make(stencil,one), int);
+    test(t1, t2);
+  }
 }

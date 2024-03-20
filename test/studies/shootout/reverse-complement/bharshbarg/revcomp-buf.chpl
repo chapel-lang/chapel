@@ -26,20 +26,20 @@ record buf {
   const bufSize : int;
   var buf : [0..#bufSize] uint(8);
   var cur, cap, numLeft : int;
-  var chan : fileReader(kind=iokind.native, locking=false);
+  var chan : fileReader(locking=false, binaryDeserializer);
 
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
 
-    this.complete();
+    init this;
 
-    chan = fi.reader(locking=false);
+    chan = fi.reader(locking=false, deserializer=new binaryDeserializer());
     numLeft = fi.size;
   }
 
   // Returns (by ref-ish) a slice of the buffer starting at 'low'
   pragma "no copy return"
-  proc fill() {
+  proc ref fill() {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
@@ -57,11 +57,11 @@ record buf {
     return buf[low..max(0, cap-1)];
   }
 
-  proc consume(n : int) {
+  proc ref consume(n : int) {
     cur = min(cur + n, cap);
   }
 
-  proc _memchr(c : uint(8), arr : []) {
+  proc _memchr(c : uint(8), ref arr : []) {
     extern proc memchr(s:c_ptr(void), c : c_int, n : c_size_t) : c_ptr(void);
     const ptr = c_ptrTo(arr);
     const ret = memchr(ptr, c:c_int, arr.size:c_size_t);
@@ -72,7 +72,7 @@ record buf {
     return -1;
   }
 
-  proc readUntil(term : uint(8), ref data : list(uint(8))) : int {
+  proc ref readUntil(term : uint(8), ref data : list(uint(8))) : int {
     var read = 0;
     while true {
       var done = false, used = 0;
@@ -136,7 +136,7 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.

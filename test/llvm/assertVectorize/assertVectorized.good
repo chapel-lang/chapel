@@ -1,6 +1,2 @@
-assertVectorized.chpl:2: In function 'doSum':
-assertVectorized.chpl:4: warning: Unknown attribute tool name 'llvm'
-assertVectorized.chpl:12: In function 'doSum2':
-assertVectorized.chpl:14: warning: Unknown attribute tool name 'llvm'
 result 131328
 result 7734.6

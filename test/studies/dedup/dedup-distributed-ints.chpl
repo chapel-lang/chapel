@@ -25,7 +25,7 @@ proc main(args:[] string)
   }
 
   var n:int = paths.size;
-  var BlockN = {0..#n} dmapped Block({0..#n});
+  var BlockN = {0..#n} dmapped blockDist({0..#n});
   var distributedPaths:[BlockN] string;
   distributedPaths = paths.toArray();
  
@@ -37,7 +37,7 @@ proc main(args:[] string)
     startVdebug(vis);
 
   // Compute the SHA1 sums using the external program
-  forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
+  forall (id,path) in zip(distributedPaths.domain, distributedPaths) with (ref hashAndFileId) {
     if verbose then
       writeln("Running sha1sum ", path);
     var sub = spawn(["sha1sum", path], stdout=pipeStyle.pipe);
@@ -93,13 +93,13 @@ proc stringToHash(s:string): Hash {
 
   // Open up an in-memory "file"
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
   // Write int-sized substrings separated by spaces
   w.write(s[1..16], " ");
   w.write(s[17..32], " ");
   w.write(s[17..32]);
   w.close();
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var hash:Hash;
   // Use Formatted I/O to read hex values into integers
   r.readf("%xu%xu%xu", hash(0), hash(1), hash(2));

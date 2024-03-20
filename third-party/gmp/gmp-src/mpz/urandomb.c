@@ -33,7 +33,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-mpz_urandomb (mpz_ptr rop, gmp_randstate_t rstate, mp_bitcnt_t nbits)
+mpz_urandomb (mpz_ptr rop, gmp_randstate_ptr rstate, mp_bitcnt_t nbits)
 {
   mp_ptr rp;
   mp_size_t size;

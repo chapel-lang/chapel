@@ -1,0 +1,4 @@
+# The algorithm presented in EWD840 has a race condition
+# and also differs significantly from this implementation.
+# Disable testing until we fix the race condition,
+# possibly using atomics instead of syncs.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,8 @@ namespace uast {
   that takes two ints and returns an int.
 */
 class FunctionSignature final : public AstNode {
+ friend class AstNode;
+
  public:
   using ReturnIntent = Function::ReturnIntent;
   using Kind = Function::Kind;
@@ -86,14 +88,25 @@ class FunctionSignature final : public AstNode {
                  returnTypeChildNum_ < (ssize_t)children_.size());
   }
 
-  FunctionSignature(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(kind_);
+    ser.write(returnIntent_);
+    ser.writeVInt(formalsChildNum_);
+    ser.writeVInt(thisFormalChildNum_);
+    ser.writeVInt(numFormals_);
+    ser.writeVInt(returnTypeChildNum_);
+    ser.write(throws_);
+    ser.write(isParenless_);
+  }
+
+  explicit FunctionSignature(Deserializer& des)
     : AstNode(asttags::FunctionSignature, des) {
       kind_ = des.read<Kind>();
       returnIntent_ = des.read<ReturnIntent>();
-      formalsChildNum_ = des.read<int>();
-      thisFormalChildNum_ = des.read<int>();
-      numFormals_= des.read<int>();
-      returnTypeChildNum_ = des.read<int>();
+      formalsChildNum_ = des.readVInt();
+      thisFormalChildNum_ = des.readVInt();
+      numFormals_= des.readVInt();
+      returnTypeChildNum_ = des.readVInt();
       throws_ = des.read<bool>();
       isParenless_ = des.read<bool>();
     }
@@ -137,8 +150,8 @@ class FunctionSignature final : public AstNode {
     Return a way to iterate over the formals, including the method
     receiver, if present, as the first formal.
   */
-  AstListIteratorPair<AstNode> formals() const {
-    return childRange<AstNode>(formalsChildNum_, numFormals_);
+  AstListIteratorPair<Decl> formals() const {
+    return childRange<Decl>(formalsChildNum_, numFormals_);
   }
 
   /**
@@ -174,22 +187,8 @@ class FunctionSignature final : public AstNode {
     const AstNode* ret = this->child(returnTypeChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(kind_);
-    ser.write(returnIntent_);
-    ser.write(formalsChildNum_);
-    ser.write(thisFormalChildNum_);
-    ser.write(numFormals_);
-    ser.write(returnTypeChildNum_);
-    ser.write(throws_);
-    ser.write(isParenless_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(FunctionSignature);
-
 };
+
 
 } // end namespace uast
 } // end namespace chpl

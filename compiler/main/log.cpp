@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,11 +34,12 @@
 #include <sys/stat.h>
 
 char             log_dir   [FILENAME_MAX + 1]           = "./log";
-char             log_module[FILENAME_MAX + 1]           =      "";
+std::set<std::string> log_modules;
 
 bool             fLog                                   =    false;
 bool             fLogDir                                =    false;
 bool             fLogIds                                =    true;
+LogFormat        fLogFormat                             =    LogFormat::DEFAULT;
 
 int              fdump_html                             =       0;
 char             fdump_html_chpl_home[FILENAME_MAX + 1] =      "";
@@ -102,9 +103,19 @@ void logSelectPass(const char* arg) {
   clean_exit(1);
 }
 
+void logSelectFormat(const char* arg) {
+  if(!strcmp(arg, "default")) {
+    fLogFormat = LogFormat::DEFAULT;
+  } else if(!strcmp(arg, "nprint")) {
+    fLogFormat = LogFormat::NPRINT;
+  } else {
+    USR_FATAL("Unrecognized log format: %s (may be set to 'default' or 'nprint')\n", arg);
+  }
+}
+
 void setupLogfiles() {
   // Enable logging if --log-module is passed.
-  if (log_module[0] != '\0')
+  if (!log_modules.empty())
     fLog = true;
   // Enable logging if --log-pass is used
   if (logOnlyName.size() > 0)
@@ -114,9 +125,13 @@ void setupLogfiles() {
     fLog = true;
 
   if (fLog || fdump_html || *deletedIdFilename) {
-    // Remove the log directory to make sure there is no stale data
-    deleteDir(log_dir);
-    ensureDirExists(log_dir, "ensuring directory for log files exists");
+    // Remove the log directory to make sure there is no stale data.
+    // Only do this for the driver compilation phase (or monolithic mode) to
+    // avoid overwriting.
+    if (fDriverDoMonolithic || fDriverCompilationPhase) {
+      deleteDir(log_dir);
+      ensureDirExists(log_dir, "ensuring directory for log files exists");
+    }
   }
 
   if (log_dir[strlen(log_dir) - 1] != '/') {

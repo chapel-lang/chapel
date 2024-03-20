@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,7 +56,7 @@ static void test3() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var a: bool; var x = a || true;");
   assert(!qt.isParam() && !qt.hasParamPtr());
-  assert(qt.type() == BoolType::get(context, 0));
+  assert(qt.type() == BoolType::get(context));
 }
 
 static void test4() {
@@ -68,7 +68,7 @@ static void test4() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var a: bool; var x = a && false;");
   assert(!qt.isParam() && !qt.hasParamPtr());
-  assert(qt.type() == BoolType::get(context, 0));
+  assert(qt.type() == BoolType::get(context));
 }
 
 static void test5() {

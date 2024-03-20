@@ -5,7 +5,7 @@ isBoolType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:188: called as test(arg: bool)
+  isX.byBlankArgs-compWarns.chpl:180: called as test(arg: bool)
 
 int(8)
 isInt
@@ -20,7 +20,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:193: called as test(arg: int(8))
+  isX.byBlankArgs-compWarns.chpl:181: called as test(arg: int(8))
 
 int(16)
 isInt
@@ -35,7 +35,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:194: called as test(arg: int(16))
+  isX.byBlankArgs-compWarns.chpl:182: called as test(arg: int(16))
 
 int(32)
 isInt
@@ -50,7 +50,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:195: called as test(arg: int(32))
+  isX.byBlankArgs-compWarns.chpl:183: called as test(arg: int(32))
 
 int(64)
 isInt
@@ -65,7 +65,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:196: called as test(arg: int(64))
+  isX.byBlankArgs-compWarns.chpl:184: called as test(arg: int(64))
 
 uint(8)
 isUint
@@ -80,7 +80,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:197: called as test(arg: uint(8))
+  isX.byBlankArgs-compWarns.chpl:185: called as test(arg: uint(8))
 
 uint(16)
 isUint
@@ -95,7 +95,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:198: called as test(arg: uint(16))
+  isX.byBlankArgs-compWarns.chpl:186: called as test(arg: uint(16))
 
 uint(32)
 isUint
@@ -110,7 +110,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:199: called as test(arg: uint(32))
+  isX.byBlankArgs-compWarns.chpl:187: called as test(arg: uint(32))
 
 uint(64)
 isUint
@@ -125,7 +125,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:200: called as test(arg: uint(64))
+  isX.byBlankArgs-compWarns.chpl:188: called as test(arg: uint(64))
 
 real(32)
 isReal
@@ -137,7 +137,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:201: called as test(arg: real(32))
+  isX.byBlankArgs-compWarns.chpl:189: called as test(arg: real(32))
 
 real(64)
 isReal
@@ -149,7 +149,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:202: called as test(arg: real(64))
+  isX.byBlankArgs-compWarns.chpl:190: called as test(arg: real(64))
 
 imag(32)
 isImag
@@ -161,7 +161,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:203: called as test(arg: imag(32))
+  isX.byBlankArgs-compWarns.chpl:191: called as test(arg: imag(32))
 
 imag(64)
 isImag
@@ -173,7 +173,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:204: called as test(arg: imag(64))
+  isX.byBlankArgs-compWarns.chpl:192: called as test(arg: imag(64))
 
 complex(64)
 isComplex
@@ -185,7 +185,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:205: called as test(arg: complex(64))
+  isX.byBlankArgs-compWarns.chpl:193: called as test(arg: complex(64))
 
 complex(128)
 isComplex
@@ -197,7 +197,7 @@ isNumericType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:206: called as test(arg: complex(128))
+  isX.byBlankArgs-compWarns.chpl:194: called as test(arg: complex(128))
 
 string
 isString
@@ -206,13 +206,13 @@ isStringType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:207: called as test(arg: string)
+  isX.byBlankArgs-compWarns.chpl:195: called as test(arg: string)
 
 EnumType
 isEnum
 isEnumValue
 isEnumType
-  isX.byBlankArgs-compWarns.chpl:208: called as test(arg: EnumType)
+  isX.byBlankArgs-compWarns.chpl:196: called as test(arg: EnumType)
 
 3*int(64)
 isTuple
@@ -221,108 +221,96 @@ isTupleType
 isHomogeneousTuple
 isHomogeneousTupleValue
 isHomogeneousTupleType
-  isX.byBlankArgs-compWarns.chpl:209: called as test(arg: 3*int(64))
+  isX.byBlankArgs-compWarns.chpl:197: called as test(arg: 3*int(64))
 
 (int(64),real(64),string)
 isTuple
 isTupleValue
 isTupleType
-  isX.byBlankArgs-compWarns.chpl:210: called as test(arg: (int(64),real(64),string))
+  isX.byBlankArgs-compWarns.chpl:198: called as test(arg: (int(64),real(64),string))
 
 borrowed ClassType
 isClass
 isClassValue
 isClassType
-  isX.byBlankArgs-compWarns.chpl:211: called as test(arg: borrowed ClassType)
+  isX.byBlankArgs-compWarns.chpl:199: called as test(arg: borrowed ClassType)
 
 RecordSmall
 isRecord
 isRecordValue
 isRecordType
-  isX.byBlankArgs-compWarns.chpl:212: called as test(arg: RecordSmall)
+  isX.byBlankArgs-compWarns.chpl:200: called as test(arg: RecordSmall)
 
 UnionType
 isUnion
 isUnionValue
 isUnionType
-  isX.byBlankArgs-compWarns.chpl:213: called as test(arg: UnionType)
+  isX.byBlankArgs-compWarns.chpl:201: called as test(arg: UnionType)
 
 range(int(64),both,one)
 isRange
 isRangeValue
 isRangeType
-  isX.byBlankArgs-compWarns.chpl:214: called as test(arg: range(int(64),both,one))
+  isX.byBlankArgs-compWarns.chpl:202: called as test(arg: range(int(64),both,one))
 
 range(uint(8),neither,negative)
 isRange
 isRangeValue
 isRangeType
-  isX.byBlankArgs-compWarns.chpl:215: called as test(arg: range(uint(8),neither,negative))
+  isX.byBlankArgs-compWarns.chpl:203: called as test(arg: range(uint(8),neither,negative))
 
 DefaultDist
 isDmap
 isDmapValue
 isDmapType
-  isX.byBlankArgs-compWarns.chpl:216: called as test(arg: DefaultDist)
+  isX.byBlankArgs-compWarns.chpl:204: called as test(arg: DefaultDist)
 
 domain(1,int(64),one)
 isDomain
 isDomainValue
 isDomainType
-  isX.byBlankArgs-compWarns.chpl:217: called as test(arg: domain(1,int(64),one))
+  isX.byBlankArgs-compWarns.chpl:205: called as test(arg: domain(1,int(64),one))
 
 domain(2,uint(32),positive)
 isDomain
 isDomainValue
 isDomainType
-  isX.byBlankArgs-compWarns.chpl:218: called as test(arg: domain(2,uint(32),positive))
+  isX.byBlankArgs-compWarns.chpl:206: called as test(arg: domain(2,uint(32),positive))
 
 [domain(1,int(64),one)] int(64)
 isArray
 isArrayValue
 isArrayType
-  isX.byBlankArgs-compWarns.chpl:219: called as test(arg: [domain(1,int(64),one)] int(64))
+  isX.byBlankArgs-compWarns.chpl:207: called as test(arg: [domain(1,int(64),one)] int(64))
 
 [domain(2,uint(32),positive)] uint(16)
 isArray
 isArrayValue
 isArrayType
-  isX.byBlankArgs-compWarns.chpl:220: called as test(arg: [domain(2,uint(32),positive)] uint(16))
+  isX.byBlankArgs-compWarns.chpl:208: called as test(arg: [domain(2,uint(32),positive)] uint(16))
 
 sync int(64)
 isSync
 isSyncValue
 isSyncType
-  isX.byBlankArgs-compWarns.chpl:221: called as test(arg: sync int(64))
+  isX.byBlankArgs-compWarns.chpl:209: called as test(arg: sync int(64))
 
 sync real(64)
 isSync
 isSyncValue
 isSyncType
-  isX.byBlankArgs-compWarns.chpl:222: called as test(arg: sync real(64))
-
-single int(64)
-isSingle
-isSingleValue
-isSingleType
-  isX.byBlankArgs-compWarns.chpl:223: called as test(arg: single int(64))
-
-single real(64)
-isSingle
-isSingleValue
-isSingleType
-  isX.byBlankArgs-compWarns.chpl:224: called as test(arg: single real(64))
+  isX.byBlankArgs-compWarns.chpl:210: called as test(arg: sync real(64))
 
 atomic int(64)
 isAtomic
 isAtomicValue
 isAtomicType
-  isX.byBlankArgs-compWarns.chpl:225: called as test(arg: atomic int(64))
+  isX.byBlankArgs-compWarns.chpl:211: called as test(arg: atomic int(64))
 
 atomic real(64)
 isAtomic
 isAtomicValue
 isAtomicType
-  isX.byBlankArgs-compWarns.chpl:226: called as test(arg: atomic real(64))
+  isX.byBlankArgs-compWarns.chpl:212: called as test(arg: atomic real(64))
 
 error: done

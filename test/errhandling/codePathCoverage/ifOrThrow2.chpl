@@ -1,4 +1,4 @@
-proc testit2(d:domain) {
+proc testit2(d:domain(?)) {
   return d;
 }
 

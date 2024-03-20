@@ -6,7 +6,7 @@
 **************************************************************************/
 
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -204,7 +204,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
     }
 }
 
-#define CHPL_TASK_IMPL_RESET_SPAWN_ORDER() qthread_chpl_reset_spawn_order()
+#define CHPL_TASK_IMPL_RESET_SPAWN_ORDER() qthread_reset_target_shep()
 
 #define CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS() \
     chpl_task_impl_getFixedNumThreads()
@@ -216,7 +216,9 @@ chpl_bool chpl_task_impl_hasFixedNumThreads(void);
 
 #define CHPL_TASK_IMPL_IS_FIXED_THREAD() (qthread_shep() != NO_SHEPHERD)
 
-#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() CHPL_QTHREAD_TASKS_CAN_MIGRATE_THREADS
+// Even if CHPL_QTHREAD_TASKS_CAN_MIGRATE_THREADS returns true, we mark tasks
+// as unstealable once they've started, so running tasks can't migrate
+#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() false
 
 #ifdef __cplusplus
 } // end extern "C"

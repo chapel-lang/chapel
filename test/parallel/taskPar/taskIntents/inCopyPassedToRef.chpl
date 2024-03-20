@@ -8,7 +8,7 @@ proc main() {
     foo(B);
 }
 
-proc foo(X: [?D]) {
+proc foo(ref X: [?D]) {
   X[2] = - X[2];
   writeln(X);
 }

@@ -1,0 +1,5 @@
+localBlock.chpl:6: warning: local blocks are unstable, their behavior is likely to change in the future
+localBlock.chpl:9: warning: local blocks are unstable, their behavior is likely to change in the future
+localBlock.chpl:14: warning: local blocks are unstable, their behavior is likely to change in the future
+localBlock.chpl:19: warning: local blocks are unstable, their behavior is likely to change in the future
+On here locale LOCALE0

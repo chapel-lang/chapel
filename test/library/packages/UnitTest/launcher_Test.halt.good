@@ -8,7 +8,7 @@ note: index was 0 but array bounds are 1..0
 ======================================================================
 FAIL test_halt.chpl: test3()
 ----------------------------------------------------------------------
-AssertionError: assert failed - '2' != '3.0'
+AssertionError: in test_halt.chpl:15 - assert failed - '2' != '3.0'
 
 ----------------------------------------------------------------------
 Ran 3 tests in n seconds

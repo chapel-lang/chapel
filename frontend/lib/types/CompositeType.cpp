@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -100,7 +100,7 @@ void CompositeType::stringify(std::ostream& ss,
     bool emittedField = false;
     ss << "(";
 
-    if (superType != nullptr) {
+    if (superType != nullptr && stringKind != StringifyKind::CHPL_SYNTAX) {
       ss << "super:";
       superType->stringify(ss, stringKind);
       emittedField = true;
@@ -127,7 +127,7 @@ const RecordType* CompositeType::getStringType(Context* context) {
 }
 
 const RecordType* CompositeType::getRangeType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelRange.range");
+  auto symbolPath = UniqueString::get(context, "ChapelRange._range");
   auto name = UniqueString::get(context, "range");
   auto id = ID(symbolPath, -1, 0);
   return RecordType::get(context, id, name,
@@ -148,6 +148,14 @@ const RecordType* CompositeType::getLocaleType(Context* context) {
   auto symbolPath = UniqueString::get(context, "ChapelLocale._locale");
   auto name = UniqueString::get(context, "locale");
   auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
+const RecordType* CompositeType::getLocaleIDType(Context* context) {
+  auto name = UniqueString::get(context, "chpl_localeID_t");
+  auto id = ID();
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
@@ -175,7 +183,8 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
   if (noLibrary) {
     auto path = id.symbolPath();
     return path == "ChapelReduce.ReduceScanOp" ||
-           path == "Errors.Error";
+           path == "Errors.Error" || 
+           path == "CTypes.c_ptr";
   }
 
   return false;
@@ -188,7 +197,7 @@ const ClassType* CompositeType::getErrorType(Context* context) {
   auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
   auto bct = BasicClassType::get(context, id,
                                 name,
-                                BasicClassType::getObjectType(context),
+                                BasicClassType::getRootClassType(context),
                                 /* instantiatedFrom */ nullptr,
                                 SubstitutionsMap());
   return ClassType::get(context, bct, /* manager */ nullptr, dec);

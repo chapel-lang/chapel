@@ -18,7 +18,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ADT/DepthFirstIterator.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/Passes.h"
@@ -89,10 +88,10 @@ class CFIInstrInserter : public MachineFunctionPass {
 #define INVALID_OFFSET INT_MAX
   /// contains the location where CSR register is saved.
   struct CSRSavedLocation {
-    CSRSavedLocation(Optional<unsigned> R, Optional<int> O)
+    CSRSavedLocation(std::optional<unsigned> R, std::optional<int> O)
         : Reg(R), Offset(O) {}
-    Optional<unsigned> Reg;
-    Optional<int> Offset;
+    std::optional<unsigned> Reg;
+    std::optional<int> Offset;
   };
 
   /// Contains cfa offset and register values valid at entry and exit of basic
@@ -142,15 +141,16 @@ INITIALIZE_PASS(CFIInstrInserter, "cfi-instr-inserter",
 FunctionPass *llvm::createCFIInstrInserter() { return new CFIInstrInserter(); }
 
 void CFIInstrInserter::calculateCFAInfo(MachineFunction &MF) {
+  const TargetRegisterInfo &TRI = *MF.getSubtarget().getRegisterInfo();
   // Initial CFA offset value i.e. the one valid at the beginning of the
   // function.
   int InitialOffset =
       MF.getSubtarget().getFrameLowering()->getInitialCFAOffset(MF);
   // Initial CFA register value i.e. the one valid at the beginning of the
   // function.
-  unsigned InitialRegister =
+  Register InitialRegister =
       MF.getSubtarget().getFrameLowering()->getInitialCFARegister(MF);
-  const TargetRegisterInfo &TRI = *MF.getSubtarget().getRegisterInfo();
+  InitialRegister = TRI.getDwarfRegNum(InitialRegister, true);
   unsigned NumRegs = TRI.getNumRegs();
 
   // Initialize MBBMap.
@@ -187,8 +187,8 @@ void CFIInstrInserter::calculateOutgoingCFAInfo(MBBCFAInfo &MBBInfo) {
   // Determine cfa offset and register set by the block.
   for (MachineInstr &MI : *MBBInfo.MBB) {
     if (MI.isCFIInstruction()) {
-      Optional<unsigned> CSRReg;
-      Optional<int> CSROffset;
+      std::optional<unsigned> CSRReg;
+      std::optional<int> CSROffset;
       unsigned CFIIndex = MI.getOperand(0).getCFIIndex();
       const MCCFIInstruction &CFI = Instrs[CFIIndex];
       switch (CFI.getOperation()) {

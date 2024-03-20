@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,9 +28,6 @@
 #include <string>
 
 namespace chpl {
-
-class ErrorBase;
-
 namespace parsing {
 
 
@@ -73,7 +70,7 @@ class FileContents {
     std::swap(error_, other.error_);
   }
   static bool update(FileContents& keep, FileContents& addin) {
-    return defaultUpdate(keep, addin);
+    return chpl::defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
     if (error_ != nullptr) error_->mark(context);

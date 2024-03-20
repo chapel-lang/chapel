@@ -1,0 +1,5 @@
+-sformat=FormatKind.default # deserialize-by-ref.default.good
+-sformat=FormatKind.json # deserialize-by-ref.json.good
+-sformat=FormatKind.little -swarnBinaryStructured=false # deserialize-by-ref.little.good
+-sformat=FormatKind.object # deserialize-by-ref.object.good
+-sformat=FormatKind.syntax # deserialize-by-ref.syntax.good

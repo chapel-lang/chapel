@@ -1,1 +1,2 @@
+init-field-dflt-oknil-shared-from-nonnil-owned.chpl:8: warning: assigning owned class to shared class is deprecated.
 init-field-dflt-oknil-shared-from-nonnil-owned.chpl:13: error: done

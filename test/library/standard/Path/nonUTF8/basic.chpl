@@ -2,7 +2,7 @@ use FileSystem;
 use Path;
 use IO, ChplFormat;
 
-var chplout = stdout.withSerializer(ChplSerializer);
+var chplout = stdout.withSerializer(chplSerializer);
 
 proc repr(str) do
   chplout.writeln(str.encode(policy=encodePolicy.unescape));

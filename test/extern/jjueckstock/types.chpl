@@ -27,7 +27,7 @@ module OuterModule {
     typedef int my_int;
   } }
 
-  use C;
+  use C, CTypes;
 
   //NOTE: either C.my_struct or my_struct will work with the use C; statement.
   var strct: C.my_struct = new my_struct(42, "bar");

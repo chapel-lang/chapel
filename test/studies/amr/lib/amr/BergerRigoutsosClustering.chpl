@@ -146,7 +146,7 @@ class CandidateDomain {
     }
     signatures = calculate_signatures(0);
 
-    this.complete();
+    init this;
       
     for idx in D 
     {

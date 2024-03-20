@@ -14,7 +14,7 @@ proc set1(ref arg) {
   arg[1] = 1;
 }
 
-proc innerFnSets(arg) {
+proc innerFnSets(ref arg) {
 
   proc helpSet() {
     set1(arg);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include "chpl-tasks.h"
 #include "chpl-mem-desc.h"
+#include "gpu/chpl-gpu-reduce-util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,10 +36,13 @@ extern "C" {
 extern bool chpl_gpu_debug;
 extern int chpl_gpu_num_devices;
 extern bool chpl_gpu_no_cpu_mode_warning;
+extern bool chpl_gpu_sync_with_host;
+extern bool chpl_gpu_use_stream_per_task;
 
 
 #ifdef HAS_GPU_LOCALE
 
+__attribute__ ((format (printf, 1, 2)))
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
   if (chpl_gpu_debug) {
     va_list args;
@@ -51,7 +55,7 @@ static inline void CHPL_GPU_DEBUG(const char *str, ...) {
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
 // returns time from epoch in milliseconds. Used in macros below.
-static inline long double get_time() {
+static inline long double get_time(void) {
   struct timeval tv;
 
   gettimeofday(&tv, NULL);
@@ -81,17 +85,23 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 }
 
 void chpl_gpu_init(void);
+void chpl_gpu_task_end(void);
+void chpl_gpu_task_fence(void);
 void chpl_gpu_support_module_finished_initializing(void);
 
-void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                            const char* name,
+void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn);
+void chpl_gpu_deinit_kernel_cfg(void* cfg);
+void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size);
+void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size);
+void chpl_gpu_arg_pass(void* cfg, void* arg);
+void chpl_gpu_launch_kernel_flat(const char* name,
+                                 int64_t num_threads, int blk_dim,
+                                 void* cfg);
+
+void chpl_gpu_launch_kernel(const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            int nargs, ...);
-void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 int nargs, ...);
+                            void* cfg);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                    int32_t lineno, int32_t filename);
@@ -120,6 +130,21 @@ void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
                        c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
                        size_t size, int32_t commID, int ln, int32_t fn);
 
+void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
+                            void* dstaddr_arg, size_t* dststrides,
+                            c_nodeid_t srclocale, c_sublocid_t src_subloc,
+                            void* srcaddr_arg, size_t* srcstrides,
+                            size_t* count, int32_t strlevels, size_t elemSize,
+                            int32_t commID, int ln, int32_t fn);
+
+void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
+                          void* dstaddr_arg, size_t* dststrides,
+                          c_nodeid_t dstlocale, c_sublocid_t dst_subloc,
+                          void* srcaddr_arg, size_t* srcstrides,
+                          size_t* count, int32_t stridelevels, size_t elemSize,
+                          int32_t commID, int ln, int32_t fn);
+
+
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
                                   const void* src, size_t n, int32_t commID,
@@ -144,6 +169,30 @@ size_t chpl_gpu_get_alloc_size(void* ptr);
 
 bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
+
+bool chpl_gpu_can_reduce(void);
+bool chpl_gpu_can_sort(void);
+
+#define DECL_ONE_REDUCE(chpl_kind, data_type) \
+void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                               data_type* val, int* idx);
+
+GPU_CUB_WRAP(DECL_ONE_REDUCE, sum);
+GPU_CUB_WRAP(DECL_ONE_REDUCE, min);
+GPU_CUB_WRAP(DECL_ONE_REDUCE, max);
+GPU_CUB_WRAP(DECL_ONE_REDUCE, minloc);
+GPU_CUB_WRAP(DECL_ONE_REDUCE, maxloc);
+
+#undef DECL_ONE_REDUCE
+
+#define DECL_ONE_SORT(chpl_kind, data_type) \
+void chpl_gpu_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                        data_type* data_out, \
+                                        int n);
+
+GPU_CUB_WRAP(DECL_ONE_SORT, keys);
+
+#undef DECL_ONE_SORT
 
 #endif // HAS_GPU_LOCALE
 

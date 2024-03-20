@@ -1,1 +1,1 @@
-getCommDiagnostics()
+proc getCommDiagnostics(): [domain(1,int(64),one)] chpl_commDiagnostics { ... }

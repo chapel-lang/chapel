@@ -72,7 +72,7 @@ static const struct __gmp_rand_lc_scheme_struct __gmp_rand_lc_scheme[] =
 };
 
 int
-gmp_randinit_lc_2exp_size (gmp_randstate_t rstate, mp_bitcnt_t size)
+gmp_randinit_lc_2exp_size (gmp_randstate_ptr rstate, mp_bitcnt_t size)
 {
   const struct __gmp_rand_lc_scheme_struct *sp;
   mpz_t a;

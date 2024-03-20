@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,6 +52,15 @@ public:
     return path_.isEmpty();
   }
 
+  inline explicit operator bool() const {
+    return !isEmpty();
+  }
+
+  inline bool isValid() const {
+    return !isEmpty() && firstLine_ >= 1 && firstColumn_ >= 1 &&
+           lastLine_ >= 1 && lastColumn_ >= 1;
+  }
+
   UniqueString path() const { return path_; }
   int firstLine() const { return firstLine_; }
   int firstColumn() const { return firstColumn_; }
@@ -70,6 +79,7 @@ public:
   inline bool operator!=(const Location& other) const {
     return !(*this == other);
   }
+
   void swap(Location& other) {
     path_.swap(other.path_);
     std::swap(firstLine_, other.firstLine_);
@@ -84,6 +94,25 @@ public:
 
   size_t hash() const {
     return chpl::hash(path_, firstLine_, firstColumn_, lastLine_, lastColumn_);
+  }
+
+  /** Returns 'true' if this contains 'loc' or if this and 'loc' are equal.
+      Returns 'false' if either this or 'loc' are empty, or if paths do
+      not match. */
+  inline bool contains(const Location& loc) {
+    if (this->isEmpty() || loc.isEmpty()) return false;
+    if (this->path() != loc.path()) return false;
+    return firstLine() <= loc.firstLine() &&
+           firstColumn() <= loc.firstColumn() &&
+           lastLine() >= loc.lastLine() &&
+           lastColumn() >= loc.lastColumn();
+  }
+
+  /** Determine if this location is greater than the location 'rhs' without
+      considering paths. */
+  inline bool operator>(const Location& rhs) {
+    if (firstLine() > rhs.firstLine()) return true;
+    return firstLine() == rhs.firstLine() && firstColumn() > rhs.firstColumn();
   }
 
   void stringify(std::ostream& os, StringifyKind stringifyKind) const;

@@ -120,6 +120,9 @@
   "a4a99de4-f560-11eb-bb15-35b7469d4b43": [
     "compiler/include/ResolutionCandidate.h"
   ],
+  "01e4fb10-5500-11ee-81ec-fb959b7aa6d7": [
+    "compiler/include/astutil.h"
+  ],
   "82c1d8e6-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/include/baseAST.h"
   ],
@@ -187,6 +190,9 @@
   ],
   "2c837c22-d1aa-11e8-954d-10ddb1d4c3d5": [
     "compiler/llvm/llvmDebug.cpp"
+  ],
+  "15d77cf4-bd7b-11ee-b488-ff57a08c3497": [
+    "compiler/llvm/llvmExtractIR.cpp"
   ],
   "1de0f71c-d1aa-11e8-954d-10ddb1d4c3d5": [
     "compiler/llvm/llvmGlobalToWide.cpp"
@@ -258,9 +264,6 @@
   ],
   "e818580e-f560-11eb-bb15-35b7469d4b43": [
     "compiler/passes/convert-uast.cpp"
-  ],
-  "98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/docs.cpp"
   ],
   "9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/expandExternArrayCalls.cpp"
@@ -512,6 +515,9 @@
   "73f04412-d463-11ed-ae82-c11fabc62016": [
     "doc/rst/technotes/attributes.rst"
   ],
+  "308a2a9e-6257-11ee-a276-cf4fa088a92b": [
+    "doc/rst/technotes/driver.rst"
+  ],
   "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/dsi.rst"
   ],
@@ -611,6 +617,9 @@
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
   ],
+  "a32da940-924f-11ee-8bda-4776592287bc": [
+    "frontend/include/chpl/libraries/LibraryFileFormat.h"
+  ],
   "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
     "frontend/include/chpl/parsing/parser-error-classes-list.h"
   ],
@@ -622,6 +631,9 @@
   ],
   "5ccb9c1c-ac5b-11ed-b67e-4d191cd16eac": [
     "frontend/include/chpl/resolution/scope-types.h"
+  ],
+  "c9acac10-5500-11ee-81ec-fb959b7aa6d7": [
+    "frontend/include/chpl/types/AnyClassType.h"
   ],
   "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/AnyType.h"
@@ -650,6 +662,9 @@
   "e9f785aa-9f6f-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/IntType.h"
   ],
+  "cb0ba8ae-5500-11ee-81ec-fb959b7aa6d7": [
+    "frontend/include/chpl/types/ManageableType.h"
+  ],
   "0a7c5278-9f71-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/NothingType.h"
   ],
@@ -664,6 +679,9 @@
   ],
   "a9aa4b58-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/RealType.h"
+  ],
+  "868a79d8-bd7b-11ee-b488-ff57a08c3497": [
+    "frontend/include/chpl/types/Type.h"
   ],
   "16268030-9f71-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/UnknownType.h"
@@ -802,6 +820,9 @@
   ],
   "c010ed0a-9f72-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/uast/IndexableLoop.h"
+  ],
+  "ce539df0-5500-11ee-81ec-fb959b7aa6d7": [
+    "frontend/include/chpl/uast/Init.h"
   ],
   "32ad6e7e-9f73-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/uast/IntLiteral.h"
@@ -965,11 +986,23 @@
   "6e4d0562-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/framework/ErrorWriter.cpp"
   ],
+  "da9ccc58-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/framework/UniqueString.cpp"
+  ],
   "7003a24e-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/framework/error-classes-list.cpp"
   ],
+  "b04803a8-bd7b-11ee-b488-ff57a08c3497": [
+    "frontend/lib/immediates/complex-support.c"
+  ],
   "360f852e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/immediates/num.cpp"
+  ],
+  "ceb6bab6-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/libraries/LibraryFile.cpp"
+  ],
+  "c7f2b9fa-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/libraries/LibraryFileWriter.cpp"
   ],
   "95534796-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/Parser.cpp"
@@ -994,6 +1027,9 @@
   ],
   "d4c8ff4a-e553-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/parsing/parser-yylloc-default.h"
+  ],
+  "d5cb2580-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/parsing/parser-yyltype.h"
   ],
   "45947086-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parsing-queries.cpp"
@@ -1022,6 +1058,9 @@
   "1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/resolution-queries.cpp"
   ],
+  "12d6fc06-5501-11ee-81ec-fb959b7aa6d7": [
+    "frontend/lib/resolution/return-type-inference.cpp"
+  ],
   "8eccc1ce-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/resolution/scope-queries.cpp"
   ],
@@ -1036,6 +1075,9 @@
   ],
   "bd49d274-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/types/Param.cpp"
+  ],
+  "ca233edc-bd7b-11ee-b488-ff57a08c3497": [
+    "frontend/lib/types/Type.cpp"
   ],
   "2c60856a-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/uast/AstNode.cpp"
@@ -1067,11 +1109,17 @@
   "e091e076-d463-11ed-ae82-c11fabc62016": [
     "frontend/lib/util/filtering.cpp"
   ],
+  "d8d61abe-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/util/git-version.cpp"
+  ],
   "f0807cd2-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/subprocess.cpp"
   ],
   "eda6a798-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/terminal.cpp"
+  ],
+  "43c3e828-bd85-11ee-b488-ff57a08c3497": [
+    "frontend/test/resolution/testScopeResolve.cpp"
   ],
   "3eb6fb72-300f-11ed-b71b-d7492178b4dc": [
     "frontend/tools/chpldoc/arg.cpp"
@@ -1155,6 +1203,9 @@
   "5bc3089e-62df-11ec-8674-e995e73200ed": [
     "modules/internal/ChapelDomain.chpl"
   ],
+  "a2a12cd4-5502-11ee-81ec-fb959b7aa6d7": [
+    "modules/internal/ChapelGpuSupport.chpl"
+  ],
   "0ad18466-aac5-11ea-8acb-843835579daa": [
     "modules/internal/ChapelHashing.chpl"
   ],
@@ -1184,6 +1235,9 @@
   ],
   "5e553c42-d1c1-11e8-954d-10ddb1d4c3d5": [
     "modules/internal/OwnedObject.chpl"
+  ],
+  "8bd31148-5502-11ee-81ec-fb959b7aa6d7": [
+    "modules/internal/SharedObject.chpl"
   ],
   "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/String.chpl"
@@ -1221,8 +1275,11 @@
   "2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/Curl.chpl"
   ],
-  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+  "386cfb80-bd7c-11ee-b488-ff57a08c3497": [
     "modules/packages/DistributedBag.chpl"
+  ],
+  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "modules/packages/DistributedBagDeprecated.chpl"
   ],
   "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "modules/packages/DistributedDeque.chpl"
@@ -1260,6 +1317,12 @@
   "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MatrixMarket.chpl"
   ],
+  "8885f7a4-9250-11ee-8bda-4776592287bc": [
+    "modules/packages/NPBRandom.chpl"
+  ],
+  "1f7f5960-bd7c-11ee-b488-ff57a08c3497": [
+    "modules/packages/ParallelIO.chpl"
+  ],
   "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
     "modules/packages/ProtobufProtocolSupport.chpl"
   ],
@@ -1280,6 +1343,9 @@
     "runtime/include/chpl-visual-debug.h",
     "runtime/src/chpl-visual-debug.c"
   ],
+  "6cd0be9e-5502-11ee-81ec-fb959b7aa6d7": [
+    "modules/packages/YAML.chpl"
+  ],
   "24a5f32a-792f-11e6-807a-843835579daa": [
     "modules/packages/ZMQ.chpl"
   ],
@@ -1292,8 +1358,14 @@
   "7eb6ec46-e3ac-11ec-a8be-cd81bce0efc4": [
     "modules/standard/AutoMath.chpl"
   ],
+  "f7924bb6-5501-11ee-81ec-fb959b7aa6d7": [
+    "modules/standard/BigInteger.chpl"
+  ],
   "2de80716-9f6c-11ec-866d-111c8d7a1817": [
     "modules/standard/CTypes.chpl"
+  ],
+  "64c8a27a-5502-11ee-81ec-fb959b7aa6d7": [
+    "modules/standard/ChapelIO.chpl"
   ],
   "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
     "modules/standard/DateTime.chpl"
@@ -1340,9 +1412,6 @@
   "796d72aa-3f88-11ec-81f0-3de99c714400": [
     "modules/standard/Subprocess.chpl"
   ],
-  "83e8f86a-f561-11eb-bb15-35b7469d4b43": [
-    "modules/standard/Sys.chpl"
-  ],
   "f5a43844-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/standard/Time.chpl"
   ],
@@ -1367,14 +1436,26 @@
   "ca5cd802-68b8-11ea-b972-843835579daa": [
     "runtime/include/chpl-comm.h"
   ],
+  "9d9ca5ac-9250-11ee-8bda-4776592287bc": [
+    "runtime/include/chpl-const-arg-check.h"
+  ],
   "57e7dbc4-3010-11ed-b71b-d7492178b4dc": [
     "runtime/include/chpl-gpu-impl.h"
   ],
   "ceec8a70-68b8-11ea-b972-843835579daa": [
     "runtime/include/chpl-mem-array.h"
   ],
+  "d484d08e-5502-11ee-81ec-fb959b7aa6d7": [
+    "runtime/include/chpl-string-support.h"
+  ],
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
+  ],
+  "df53597c-5502-11ee-81ec-fb959b7aa6d7": [
+    "runtime/include/chplio.h"
+  ],
+  "d9c9da26-5502-11ee-81ec-fb959b7aa6d7": [
+    "runtime/include/chpltypes.h"
   ],
   "61f7efb8-bd82-11e9-8464-10ddb1d4c3d5": [
     "runtime/include/comm/ofi/chpl-comm-task-decls.h"
@@ -1403,8 +1484,14 @@
   "12605982-e3ad-11ec-a8be-cd81bce0efc4": [
     "runtime/include/os-module-support/posix.h"
   ],
+  "77c41520-5503-11ee-81ec-fb959b7aa6d7": [
+    "runtime/include/qio/qio_style.h"
+  ],
   "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/qio/sys.h"
+  ],
+  "ea2baae8-5502-11ee-81ec-fb959b7aa6d7": [
+    "runtime/include/tasks/qthreads/chpl-tasks-impl-fns.h"
   ],
   "0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/chpl-cache.c"
@@ -1420,6 +1507,9 @@
   ],
   "726887c4-bc39-11e6-9740-843835579daa": [
     "runtime/src/chplsys.c"
+  ],
+  "fc8e745e-5502-11ee-81ec-fb959b7aa6d7": [
+    "runtime/src/comm/gasnet/comm-gasnet-ex.c"
   ],
   "847163aa-bc39-11e6-9740-843835579daa": [
     "runtime/src/comm/gasnet/comm-gasnet.c"
@@ -1481,6 +1571,9 @@
   ],
   "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
+  ],
+  "ed017d7e-5502-11ee-81ec-fb959b7aa6d7": [
+    "runtime/src/launch/pbs-gasnetrun_ibv/launch-pbs-gasnetrun_ibv.c"
   ],
   "d56c6ea6-68b8-11ea-b972-843835579daa": [
     "runtime/src/launch/slurm-srun/launch-slurm-srun.c"

@@ -11,7 +11,7 @@ record ReplaceVarConcrete2 {
   var newName: int;
 
   @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
-  proc oldName ref: int {
+  proc ref oldName ref: int {
     return this.newName;
   }
 }
@@ -83,7 +83,7 @@ record ReplaceVarGeneric2 {
   var newName;
 
   @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
-  proc oldName ref{
+  proc ref oldName ref{
     return this.newName;
   }
 }
@@ -219,7 +219,7 @@ proc main() {
   // Check various declarations of a record with the new field present
   var r13: ReplaceVarGeneric2(?) = new ReplaceVarGeneric2(10);
   var r14 = new ReplaceVarGeneric2(0);
-  var r15: ReplaceVarGeneric2(int);
+  var r15: ReplaceVarGeneric2(int) = new ReplaceVarGeneric2(0);
   // Check direct references
   writeln(r13.newName);
   writeln(r13.oldName); // Should warn, but show the same value
@@ -244,7 +244,7 @@ proc main() {
   // Check various declarations of a record with the new field present
   var r16: ReplaceConstGeneric2(?) = new ReplaceConstGeneric2(3);
   var r17 = new ReplaceConstGeneric2(17);
-  var r18: ReplaceConstGeneric2(int);
+  var r18: ReplaceConstGeneric2(int) = new ReplaceConstGeneric2(0);
   // Check direct references
   writeln(r16.newName);
   writeln(r16.oldName); // Should warn, but show the same value

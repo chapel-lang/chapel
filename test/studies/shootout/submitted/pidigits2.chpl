@@ -68,3 +68,4 @@ iter genDigits(numDigits) {
     numer *= 10;
   }
 }
+use Compat, CompatGMP;

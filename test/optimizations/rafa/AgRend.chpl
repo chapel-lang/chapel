@@ -4,8 +4,8 @@ config const printOutput=false;
 config const doDiagnostics=false;
 
 config  const n: int=10000;
-var Dist1 = new Block({1..n});
-var Dist2 = new Block({1..2*n});
+var Dist1 = new blockDist({1..n});
+var Dist2 = new blockDist({1..2*n});
 var Dom1: domain(1,int) dmapped Dist1 = {1..n};
 var Dom2: domain(1,int) dmapped Dist2 = {1..n};
 var A:[Dom1] real; //int(64);
