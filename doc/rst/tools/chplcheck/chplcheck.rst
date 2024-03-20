@@ -139,7 +139,7 @@ VSCode
 ~~~~~~
 
 Install the ``chapel`` extension from the `Visual Studio Code marketplace
-<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel>`_.
+<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
 
 .. note::
 
