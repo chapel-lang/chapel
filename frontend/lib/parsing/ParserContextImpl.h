@@ -2167,7 +2167,8 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
 
 CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                    YYLTYPE locThenBodyAnchor,
+                                    YYLTYPE locThenKw,
+                                    YYLTYPE locThenBody,
                                     AstNode* condition,
                                     CommentsAndStmt thenCs) {
 
@@ -2177,10 +2178,10 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
 
   prepareStmtPieces(comments, thenExprLst, thenBlockStyle, locIf,
                     usesThenKeyword,
-                    locThenBodyAnchor,
+                    locThenKw,
                     thenCs);
 
-  auto thenBlock = consumeToBlock(locThenBodyAnchor, thenExprLst);
+  auto thenBlock = consumeToBlock(locThenBody, thenExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
@@ -2195,8 +2196,10 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
 
 CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                    YYLTYPE locThenBodyAnchor,
-                                    YYLTYPE locElse,
+                                    YYLTYPE locThenKw,
+                                    YYLTYPE locThenBody,
+                                    YYLTYPE locElseKw,
+                                    YYLTYPE locElseBody,
                                     AstNode* condition,
                                     CommentsAndStmt thenCs,
                                     CommentsAndStmt elseCs) {
@@ -2208,7 +2211,7 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   prepareStmtPieces(comments, thenExprLst, thenBlockStyle,
                     locIf,
                     usesThenKeyword,
-                    locThenBodyAnchor,
+                    locThenKw,
                     thenCs);
 
   const bool isElseBodyBlock = elseCs.stmt->isBlock();
@@ -2216,7 +2219,7 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   auto elseBlockStyle = isElseBodyBlock ? BlockStyle::EXPLICIT
                                         : BlockStyle::IMPLICIT;
 
-  auto thenBlock = consumeToBlock(locThenBodyAnchor, thenExprLst);
+  auto thenBlock = consumeToBlock(locThenBody, thenExprLst);
 
   // If the else body is a block, discard all comments preceding it.
   if (isElseBodyBlock) {
@@ -2227,9 +2230,9 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   auto elseExprLst = makeList(elseCs);
 
   // If else body is not a block, discard comments preceding the 'else'.
-  if (!isElseBodyBlock) discardCommentsFromList(elseExprLst, locElse);
+  if (!isElseBodyBlock) discardCommentsFromList(elseExprLst, locElseKw);
 
-  auto elseBlock = consumeToBlock(locElse, elseExprLst);
+  auto elseBlock = consumeToBlock(locElseBody, elseExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
