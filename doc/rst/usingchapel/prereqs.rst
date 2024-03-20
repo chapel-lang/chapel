@@ -94,7 +94,7 @@ We have used the following commands to install the above prerequisites:
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
 
 
-  * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM!=system incompatibility`)::
+  * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM!=system incompatibility`_)::
 
       sudo yum install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk python3 which
       sudo yum install wget tar openssl-devel
