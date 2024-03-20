@@ -52,8 +52,8 @@ configuration options, see `Using Chapel on an HPE Cray System`_ below.  If
 instead you wish to build Chapel from source, continue on to `Building
 Chapel for an HPE Cray System from Source`_ just below.
 
-Note that the Chapel module for HPE Cray EX systems does not yet have
-the gasnet communication layer built into it.  For multilocale execution
+Note that the Chapel module for HPE Cray EX systems does not currently have
+the GASNet communication layer built into it.  For multilocale execution
 on EX systems please use the ofi communication layer instead.
 
 For information on obtaining and installing the Chapel module please
