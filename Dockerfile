@@ -75,7 +75,7 @@ RUN cd $CHPL_HOME/bin && ln -s */* .
 # The .git folder is huge and we really don't need it.
 RUN rm -rf .git
 RUN for subdir in `ls test || true`; do \
-      if [ "$subdir" != "release" ]; then \
+      if [ "$subdir" != "release" && "$subdir" != "types" ]; then \
         rm -rf "test/$subdir"; \
       fi \
     done
