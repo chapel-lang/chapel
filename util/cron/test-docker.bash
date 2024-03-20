@@ -38,12 +38,12 @@ fi
 
 # Build chapel docker image. 
 cd $CHPL_HOME
-build_image chapel  ${CHPL_HOME}/util/cron/docker-chapel.bash
+build_image chapel/chapel  ${CHPL_HOME}/util/cron/docker-chapel.bash
 
 cd $CHPL_HOME/util/packaging/docker/gasnet
-build_image chapel_gasnet ${CHPL_HOME}/util/cron/docker-gasnet.bash
+build_image chapel/chapel_gasnet ${CHPL_HOME}/util/cron/docker-gasnet.bash
 
 cd $CHPL_HOME/util/packaging/docker/gasnet-smp
-build_image chapel_gasnet_smp ${CHPL_HOME}/util/cron/docker-gasnet.bash
+build_image chapel/chapel_gasnet_smp ${CHPL_HOME}/util/cron/docker-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
