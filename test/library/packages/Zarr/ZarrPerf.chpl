@@ -3,62 +3,55 @@ use Time;
 use BlockDist;
 use FileSystem;
 use IO;
-proc throughputTest(type dtype, param dimCount: int, arrayShape: dimCount*int, chunkShape: dimCount*int, bloscThreads: int(32)) {
-  var ranges: dimCount*range(int);
-  for i in 0..<dimCount do
-    ranges[i] = 0..<arrayShape[i];
-  const undistD : domain(dimCount) = ranges;
-  const Dist = new blockDist(boundingBox=undistD);
-  const D = Dist.createDomain(undistD);
-  var A: [D] dtype;
+use Random;
 
-  coforall loc in Locales do on loc {
-    forall i in A.localSubdomain() do
-      A[i] = if isTuple(i) then i[0]:dtype else i:dtype;
-  }
+config const scaling = "strong"; // testing strong or weak scaling
 
-  if exists("PerfStore") then rmTree("PerfStore");
-  var s: stopwatch;
-  s.start();
-  writeZarrArray("PerfStore", A, chunkShape, bloscThreads=bloscThreads);
-  const writeTime = s.elapsed();
+config const gbs = 10; // default size of array in GBs
 
-  s.restart();
-  var B = readZarrArray("PerfStore", dtype, dimCount);
-  const readTime = s.elapsed();
+var arraySize = 0;
 
-  assert(A.domain == B.domain);
-  coforall loc in Locales do on loc {
-    forall i in A.localSubdomain() do
-      assert(A[i] == B[i]);
-  }
+if scaling.toLower() == "strong" then
+  arraySize = gbs * Locales.size * 1000 ** 3;
+else if scaling.toLower() == "weak" then
+  arraySize = gbs * 1000 ** 3;
+else
+  writeln("Invalid scaling: %s. Valid options are 'strong' and 'weak'".format(scaling));
 
-  const arrayBytes = A.size:real * numBits(dtype) / 8;
-  const arrayGBs = arrayBytes:real / (1000 ** 3);
+const numFloats = arraySize / 4;
+const sideLength = (numFloats:real ** (1/3:real)):int;
 
-  const chunkBytes = (* reduce chunkShape) * numBits(dtype):real / 8;
-  const chunkMBs = chunkBytes:real / (1000 ** 2);
-  writeln("%?GB %?D array of %?, %?MB chunks. %n locales, %n bloscThreads".format(arrayGBs, dimCount, dtype:string, chunkMBs, Locales.size, bloscThreads));
-  writeln("%n GB/s writing".format(arrayGBs / writeTime));
-  writeln("%n GB/s reading".format(arrayGBs / readTime));
+var ranges: 3*range(int);
+for i in 0..<3 do
+  ranges[i] = 0..<sideLength;
+const undistD : domain(3) = ranges;
+const Dist = new blockDist(boundingBox=undistD);
+const D = Dist.createDomain(undistD);
+
+var A: [D] real(32);
+fillRandom(A);
+
+if exists("PerfStore") then rmTree("PerfStore");
+var s: stopwatch;
+s.restart();
+writeZarrArray("PerfStore", A, (512,512,512), bloscThreads=4);
+const writeTime = s.elapsed();
+
+
+s.restart();
+var B = readZarrArray("PerfStore", real(32), 3, bloscThreads=4);
+const readTime = s.elapsed();
+
+assert(A.domain == B.domain);
+coforall loc in Locales do on loc {
+  forall i in A.localSubdomain() do
+    assert(A[i] == B[i], i, " ", A[i], " ", B[i]);
 }
 
 
-throughputTest(real(32), 1, (1000**3,), (1000**2,),1);
-throughputTest(real(32), 1, (1000**3,), (1000**2,),2);
-throughputTest(real(32), 1, (1000**3,), (1000**2,),4);
-throughputTest(real(32), 2, (30000,30000), (1000,1000),1);
-throughputTest(real(32), 2, (30000,30000), (1000,1000),2);
-throughputTest(real(32), 2, (30000,30000), (1000,1000),4);
-throughputTest(real(32), 3, (1000,1000,1000), (100,100,100),1);
-throughputTest(real(32), 3, (1000,1000,1000), (100,100,100),2);
-throughputTest(real(32), 3, (1000,1000,1000), (100,100,100),4);
-throughputTest(int(32), 1, (1000**3,), (1000**2,),1);
-throughputTest(int(32), 1, (1000**3,), (1000**2,),2);
-throughputTest(int(32), 1, (1000**3,), (1000**2,),4);
-throughputTest(int(32), 2, (30000,30000), (1000,1000),1);
-throughputTest(int(32), 2, (30000,30000), (1000,1000),2);
-throughputTest(int(32), 2, (30000,30000), (1000,1000),4);
-throughputTest(int(32), 3, (1000,1000,1000), (100,100,100),1);
-throughputTest(int(32), 3, (1000,1000,1000), (100,100,100),2);
-throughputTest(int(32), 3, (1000,1000,1000), (100,100,100),4);
+writeln("Scaling: %s".format(scaling.toLower()));
+writeln("Num Locales: %n".format(Locales.size));
+var writeThroughput: real(64) = (arraySize:real / writeTime) / 1000 ** 3;
+var readThoughput: real(64) = (arraySize:real / readTime) / 1000 ** 3;
+writeln("Write Throughput: %7.2r GB/s".format(writeThroughput));
+writeln("Read Throughput: %7.2r GB/s".format(readThoughput));
