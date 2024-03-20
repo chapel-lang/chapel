@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: memory consistency model
 .. _Chapter-Memory_Consistency_Model:
 
 ========================
@@ -60,6 +62,8 @@ See *A Primer on Memory Consistency and Cache Coherence* by Sorin,
 This chapter will proceed in a manner inspired by the :math:`XC` memory
 model described there.
 
+.. index::
+   single: memory consistency model; sequential consistency for data-race-free programs
 .. _SC_for_DRF:
 
 Sequential Consistency for Data-Race-Free Programs
@@ -235,6 +239,8 @@ which preserve sequential program behavior:
 
 -  If :math:`S(a) <_p S'(a)` then :math:`S(a) <_m S'(a)`
 
+.. index::
+   single: memory consistency model; non-sequentially consistent atomic operations
 .. _non_sc_atomics:
 
 Non-Sequentially Consistent Atomic Operations
@@ -280,6 +286,8 @@ as ordinary loads or stores with two exceptions:
    eventually be visible to all other threads. This property is not true
    for normal loads and stores.
 
+.. index::
+   single: memory consistency model; unordered memory operations
 .. _unordered_operations:
 
 Unordered Memory Operations
@@ -395,6 +403,8 @@ move data between two arrays without requiring any ordering:
      unordered_store(B[P[i]], A[i]);
    }
 
+.. index::
+   single: memory consistency model; examples
 .. _MCM_examples:
 
 Examples

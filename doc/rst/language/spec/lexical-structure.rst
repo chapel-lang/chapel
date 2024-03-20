@@ -1,15 +1,21 @@
 .. default-domain:: chpl
 
+.. index::
+   single: lexical structure
 .. _Chapter-Lexical_Structure:
 
 =================
 Lexical Structure
 =================
 
+
 This section describes the lexical components of Chapel programs. The
 purpose of lexical analysis is to separate the raw input stream into a
 sequence of tokens suitable for input to the parser.
 
+.. index::
+   single: comments
+   single: lexical structure;comments
 .. _Comments:
 
 Comments
@@ -41,6 +47,9 @@ not start a comment but rather are part of the bytes or string literal.
         writeln("hello, world"); // output greeting with new line
       }
 
+.. index::
+   single: white space
+   single: lexical structure;white space
 .. _White_Space:
 
 White Space
@@ -50,6 +59,9 @@ White-space characters are spaces, tabs, line feeds, form feeds, and
 carriage returns. Along with comments, they delimit tokens, but are
 otherwise ignored.
 
+.. index::
+   single: case sensitivity
+   single: lexical structure;case sensitivity
 .. _Case_Sensitivity:
 
 Case Sensitivity
@@ -62,6 +74,8 @@ Chapel is a case sensitive language.
    The following identifiers are considered distinct: ``chapel``,
    ``Chapel``, and ``CHAPEL``.
 
+.. index::
+   single: lexical structure;tokens
 .. _Tokens:
 
 Tokens
@@ -70,6 +84,9 @@ Tokens
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
 
+.. index::
+   single: identifiers
+   single: lexical structure;identifiers
 .. _Identifiers:
 
 Identifiers
@@ -112,6 +129,9 @@ following syntax:
    The following are legal identifiers: ``Cray1``, ``Cray$``,
    ``legalIdentifier``, and ``legal_identifier``.
 
+.. index::
+   single: keywords
+   single: lexical structure;keywords
 .. _Keywords:
 
 Keywords
@@ -239,6 +259,9 @@ The following identifiers are keywords reserved for future use:
    pragma
    primitive
 
+.. index::
+   single: lexical structure;literals
+   single: literals;primitive type
 .. _Literals:
 
 Literals
@@ -497,6 +520,10 @@ A bytes literal can be either interpreted or uninterpreted.
      interpreted-bytes-literal
      uninterpreted-bytes-literal
 
+.. index::
+   single: lexical structure;operator
+   single: operators;lexical structure
+   single: lexical structure;punctuation
 .. _Operators_and_Punctuation:
 
 Operators and Punctuation
@@ -527,6 +554,10 @@ language:
 ``"`` ``'``                                                                                         string delimiters
 =================================================================================================== =============================
 
+.. index::
+   single: lexical structure;braces
+   single: lexical structure;parentheses
+   single: lexical structure;brackets
 .. _Grouping_Tokens:
 
 Grouping Tokens

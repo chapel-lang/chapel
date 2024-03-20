@@ -1,5 +1,12 @@
 .. default-domain:: chpl
 
+.. index::
+   single: domain maps
+   single: mapped; domain maps
+   single: layouts
+   single: distributions
+   single: domain maps; layouts
+   single: domain maps; distributions
 .. _Chapter-Domain_Maps:
 
 =============
@@ -38,6 +45,13 @@ Distributions are presented as follows:
    refer to the
    :ref:`Domain Map Standard Interface technical note <readme-dsi>`
 
+.. index::
+   single: domain maps for domain types
+   single: domains; domain maps for
+   single: dmap value
+   single: dmapped clause
+   single: domain maps; dmap value
+   single: domain maps; dmapped clause
 .. _Domain_Maps_For_Types:
 
 Distributions for Domain Types
@@ -122,6 +136,8 @@ is considered to be an initialization expression as if preceded by
       use BlockDist;
       type BlockDom = domain(2) dmapped new blockDist({1..5,1..6});
 
+.. index::
+   single: domain maps; for domain values
 .. _Domain_Maps_For_Values:
 
 Distributions for Domain Values
@@ -168,6 +184,9 @@ clause, in the same way as a domain type's distribution.
    both ``MyBlockedDomLiteral1`` and ``MyBlockedDomLiteral2`` will be
    mapped using a Block distribution.
 
+.. index::
+   single: domain maps; for arrays
+   single: arrays; domain maps
 .. _Domain_Maps_For_Arrays:
 
 Distributions for Arrays
@@ -189,6 +208,10 @@ array was declared.
    the distribution used for ``MyArray`` is the Block distribution from
    the type of ``Dom``.
 
+.. index::
+   single: domain maps; domain assignment
+   single: domains; assignment
+   single: assignment; domain
 .. _Domain_Maps_Not_Assigned:
 
 Distributions Are Not Retained upon Domain Assignment

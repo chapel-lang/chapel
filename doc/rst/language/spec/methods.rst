@@ -1,5 +1,11 @@
 .. default-domain:: chpl
 
+.. index::
+   single: methods
+   single: methods; primary
+   single: methods; secondary
+   single: primary methods
+   single: secondary methods
 .. _Chapter-Methods:
 
 =======
@@ -59,6 +65,10 @@ Method calls are described in :ref:`Method_Calls`.
 The use of ``this-intent`` is described in
 :ref:`Method_receiver_and_this`.
 
+.. index::
+   single: method calls
+   single: methods; calling
+   single: calls; methods
 .. _Method_Calls:
 
 Method Calls
@@ -137,6 +147,16 @@ a way that allows these methods to be called (see :ref:`Using_Modules` and
    Future work: the semantics of privacy specifiers for methods are still under
    discussion.
 
+.. index::
+   single: methods; receiver
+   single: this
+   single: classes; this
+   single: records; this
+   single: receiver
+   single: type methods
+   single: instance methods
+   single: methods; type
+   single: methods; instance
 .. _Method_receiver_and_this:
 
 The Method Receiver and the *this* Argument
@@ -310,6 +330,10 @@ entirely, the receiver will be passed with a default intent. The default
    Given a variable ``x = 2``, a call to ``x.doubleMe()`` will set ``x``
    to ``4``.
 
+.. index::
+   single: methods; indexing
+   single: this
+   single: methods; this
 .. _The_this_Method:
 
 The *this* Method
@@ -362,6 +386,10 @@ be declared with parentheses even if the argument list is empty.
       3
       thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 
+.. index::
+   single: methods; iterating
+   single: these
+   single: methods; these
 .. _The_these_Method:
 
 The *these* Method
