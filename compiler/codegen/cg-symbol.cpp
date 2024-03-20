@@ -2047,7 +2047,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   for_formals(formal, fn) {
     const clang::CodeGen::ABIArgInfo* argInfo = NULL;
     if (CGI) {
-      argInfo = getCGArgInfo(CGI, clangArgNum);
+      argInfo = getCGArgInfo(CGI, clangArgNum, fn);
     } else if (useDarwinArmFix(formal->type)) {
       argInfo = getSingleCGArgInfo(formal->type);
     }
@@ -2767,7 +2767,7 @@ void FnSymbol::codegenDef() {
     for_formals(arg, this) {
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
-        argInfo = getCGArgInfo(CGI, clangArgNum);
+        argInfo = getCGArgInfo(CGI, clangArgNum, this);
       } else if (useDarwinArmFix(arg->type)) {
         argInfo = getSingleCGArgInfo(arg->type);
       }
