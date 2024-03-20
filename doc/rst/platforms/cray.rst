@@ -50,7 +50,7 @@ system.  If the installation setup by your system administrator
 deviates from the default settings, or you are interested in other
 configuration options, see `Using Chapel on an HPE Cray System`_ below.  If
 instead you wish to build Chapel from source, continue on to `Building
-Chapel for a Cray System from Source`_ just below.
+Chapel for an HPE Cray System from Source`_ just below.
 
 Note that the Chapel module for HPE Cray EX systems does not yet have
 the gasnet communication layer built into it.  For multilocale execution
@@ -67,13 +67,13 @@ Getting Started with Chapel on HPE Apollo and Cray CS Systems
 On HPE Apollo and Cray CS systems, Chapel is not currently available
 as a module due to the wide diversity of configurations that these
 systems support.  For this reason, Chapel must be built from source on
-Cray CS systems using the `Building Chapel for a Cray System from
+these systems using the `Building Chapel for an HPE Cray System from
 Source`_ instructions just below.
 
 
----------------------------------------------
-Building Chapel for a Cray System from Source
----------------------------------------------
+--------------------------------------------------
+Building Chapel for an HPE Cray System from Source
+--------------------------------------------------
 
 1) Set ``CHPL_HOST_PLATFORM`` to the string representing your system
    type.
@@ -230,7 +230,7 @@ Using Chapel on an HPE Cray System
    Having the Cray PMI modules loaded when the program is compiled
    will prevent this problem.  We expect that eventually these modules
    will be loaded by default on EX systems, but so far this has not
-   consistentlybeen the case.
+   consistently been the case.
 
 
 3) Compile your Chapel program.  For example:
