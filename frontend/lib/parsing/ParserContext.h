@@ -556,13 +556,18 @@ struct ParserContext {
                                         // AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                       YYLTYPE locThenBodyAnchor,
+                                       // same as locThenBody if no 'then'
+                                       YYLTYPE locThenKw,
+                                       YYLTYPE locThenBody,
                                        AstNode* condition,
                                        CommentsAndStmt thenCs);
 
   CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                       YYLTYPE locThenBodyAnchor,
-                                       YYLTYPE locElse,
+                                       // same as locThenBody if no 'then'
+                                       YYLTYPE locThenKw,
+                                       YYLTYPE locThenBody,
+                                       YYLTYPE locElseKw,
+                                       YYLTYPE locElseBody,
                                        AstNode* condition,
                                        CommentsAndStmt thenCs,
                                        CommentsAndStmt elseCs);
