@@ -18,7 +18,7 @@ local imageName="$1"
 local script="$2" 
 # Remove any existing image with the tag before building docker image
 docker image rm --force $imageName
-docker build . -t $imageName
+docker build --load . -t $imageName
 containerid= docker image ls | grep $imageName | awk '{print$3}'
 cd ${CHPL_HOME}/util/cron
 echo 'writeln("Hello, world!");' > hello.chpl
