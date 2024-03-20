@@ -97,7 +97,8 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg);
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
+             FnSymbol* fn=nullptr);
 
 const clang::CodeGen::ABIArgInfo*
 getSingleCGArgInfo(Type* type);

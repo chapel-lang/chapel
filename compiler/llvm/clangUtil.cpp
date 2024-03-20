@@ -4002,17 +4002,25 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 }
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
+             FnSymbol* fn)
 {
 
   // Don't try to use the calling convention code for variadic args.
-  if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
-    return NULL;
+  if ((unsigned) curCArg >= CGI->arg_size()) {
+    if (CGI->isVariadic()) {
+      return NULL;
+    }
+    else {
+      USR_FATAL(fn, "Argument number mismatch in export proc");
+    }
+  }
 
   const clang::CodeGen::ABIArgInfo* argInfo = NULL;
 #if HAVE_LLVM_VER >= 100
   llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
   argInfo = &a[curCArg].info;
+
 #else
   int i = 0;
   for (auto &ii : CGI->arguments()) {
