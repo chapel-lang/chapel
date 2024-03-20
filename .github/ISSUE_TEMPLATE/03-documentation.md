@@ -1,24 +1,17 @@
 ---
-name: Performance Issue
-about: Report any performance issue observed within your code.
-title: ''
+name: Documentation
+about: Report any issue observed within the Chapel documentation or the `chpldoc` tool.
+title: '[Documentation]: '
 labels: ''
 ---
 
 ### Summary of Problem
-<!--
-What behavior did you observe when encountering this issue?
-What behavior did you expect to observe?
-Is this a blocking issue with no known work-arounds?
--->
 
-**Is it a blocker for you?**
+**Description:**
 <!--
-Tick putting 'x' inside the box.
+What did you observe when encountering this issue?
+What did you expect to observe?
 -->
-- [ ] Yes
-- [ ] No
-- [ ] Will be in the future
 
 ### Steps to Reproduce
 
@@ -34,21 +27,24 @@ Tick putting 'x' inside the box.
 ```
 
 **Compile command:**
-<!-- e.g. `chpl foo.chpl` -->
+<!-- e.g. `chpldoc foo.chpl` -->
 
-**Execution command:**
-<!-- e.g. `./foo -nl 4`
-If an input file is required, include it as well. -->
+**Additional steps:**
+<!-- Are there any additional steps needed to demonstrate the issue beyond calling `chpldoc`? -->
 
 **Associated Future Test(s):**
-<!-- Are there any tests in Chapel's test system that demonstrate this issue?
-     e.g. [`test/path/to/foo.chpl`](
-           https://github.com/chapel-lang/chapel/blob/main/test/path/to/foo.chpl
-          ) #1234 -->
+<!--
+Are there any tests in Chapel's test system that demonstrate this issue?
+e.g. [`test/path/to/foo.chpl`](
+      https://github.com/chapel-lang/chapel/blob/main/test/path/to/foo.chpl
+      ) #1234
+-->
 
 ### Configuration Information
 
-- Output of `chpl --version`:
+- Output of `chpldoc --version`:
 - Output of `$CHPL_HOME/util/printchplenv --anonymize`:
 - Back-end compiler and version, e.g. `gcc --version` or `clang --version`:
+- Sphinx version:
+- sphinxcontrib-chapeldomain version:
 - (For Cray systems only) Output of `module list`:

@@ -1,24 +1,20 @@
 ---
-name: Bug Report
-about: Report a bug and we will do our best to fix it.
-title: ''
-labels: ''
+name: Performance Issue
+about: Report any performance issue observed within your code.
+title: '[Performance]: '
+labels: 'type: Performance'
 ---
 
 ### Summary of Problem
+
+**Description:**
 <!--
 What behavior did you observe when encountering this issue?
 What behavior did you expect to observe?
-Is this a blocking issue with no known work-arounds?
 -->
 
-**Is it a blocker for you?**
-<!--
-Tick putting 'x' inside the box.
--->
-- [ ] Yes
-- [ ] No
-- [ ] Will be in the future
+**Is this a blocking issue with no known work-arounds?**
+<!-- Answer 'yes', 'no' or 'I don't know'. -->
 
 ### Steps to Reproduce
 
@@ -30,21 +26,19 @@ Tick putting 'x' inside the box.
 // Otherwise, you can attach it as a file or provide a URL to it.
 // To the extent possible, providing simplified programs demonstrating the
 // problem will be appreciated.
-// You can also replace this section with "Associated Future Test(s)" below.
 ```
 
 **Compile command:**
 <!-- e.g. `chpl foo.chpl` -->
 
-**Execution command:**
-<!-- e.g. `./foo -nl 4`
-If an input file is required, include it as well. -->
+`--fast` optimization flag enabled?
+<!-- Answer 'yes' or 'no'. -->
 
-**Associated Future Test(s):**
-<!-- Are there any tests in Chapel's test system that demonstrate this issue?
-     e.g. [`test/path/to/foo.chpl`](
-           https://github.com/chapel-lang/chapel/blob/main/test/path/to/foo.chpl
-          ) #1234 -->
+**Execution command:**
+<!--
+e.g. `./foo -nl 4`
+If an input file is required, include it as well.
+-->
 
 ### Configuration Information
 
