@@ -94,6 +94,8 @@ def get_compile_args(flag):
         ucp_val = get_uniq_cfg_path(flag)
         return third_party_utils.get_bundled_compile_args('jemalloc',
                                                           ucp=ucp_val)
+    elif jemalloc_val == 'system':
+        return third_party_utils.pkgconfig_get_system_compile_args('jemalloc')
     return ([ ], [ ])
 
 # flag is host or target
@@ -116,9 +118,8 @@ def get_link_args(flag):
             jemalloc_libs = run_command([jemalloc_config, '--libs'])
             morelibs += jemalloc_libs.split()
         return (libs, morelibs)
-
     if jemalloc_val == 'system':
-        return ([ ], ['-ljemalloc'])
+        return third_party_utils.pkgconfig_get_system_link_args('jemalloc')
 
     return ([ ], [ ])
 

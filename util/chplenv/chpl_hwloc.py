@@ -32,6 +32,8 @@ def get_compile_args():
     if hwloc_val == 'bundled':
          ucp_val = get_uniq_cfg_path()
          return third_party_utils.get_bundled_compile_args('hwloc', ucp=ucp_val)
+    elif hwloc_val == 'system':
+         return third_party_utils.pkgconfig_get_system_compile_args('hwloc')
 
     return ([ ], [ ])
 
@@ -51,8 +53,7 @@ def get_link_args():
         if exists and retcode != 0:
           err = "CHPL_HWLOC=system requires hwloc >= 2.1"
           error(err, ValueError)
-
-        return ([ ], ['-lhwloc'])
+        return third_party_utils.pkgconfig_get_system_link_args('hwloc')
 
     return ([ ], [ ])
 
