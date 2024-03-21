@@ -152,11 +152,26 @@ def register_rules(driver: LintDriver):
     @driver.basic_rule(Class)
     def MethodsAfterFields(context: Context, node: typing.Union[Record, Class]):
         method_seen = False
+        first_method = None
         for child in node:
             if isinstance(child, VarLikeDecl) and method_seen:
+
+                if first_method is not None:
+                    lines = context.get_file_text(node.location().path()).split(
+                        "\n"
+                    )
+                    remove_decl = ChapelFixit.build(child.location(), "")
+                    decl_text = range_to_text(child.location(), lines) + "\n"
+                    loc = first_method.location()
+                    add_decl = ChapelFixit(
+                        loc.path(), loc.start(), loc.start(), decl_text
+                    )
+                    return (False, [add_decl, remove_decl])
+
                 return False
             if isinstance(child, Function):
                 method_seen = True
+                first_method = child
         return True
 
     # Five things have to match between consecutive decls for this to warn:
@@ -363,6 +378,8 @@ def register_rules(driver: LintDriver):
                 continue
             exprs = list(iterand.exprs())
             if len(exprs) != 1:
+                continue
+            if not isinstance(exprs[0], Range):
                 continue
 
             if not lines:
