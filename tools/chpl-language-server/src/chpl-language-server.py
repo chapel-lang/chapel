@@ -1610,7 +1610,7 @@ def run_lsp():
         # the time being all hints are resolver-based, so we may
         # as well save ourselves the work of finding declarations and
         # calls to feed to those methods.
-        if ls.use_resolver:
+        if not ls.use_resolver:
             return inlays
 
         decls = fi.def_segments.range(params.range)
