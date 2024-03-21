@@ -20,7 +20,7 @@ Describe any work-arounds you've considered.
 ### Code Sample
 
 ```chapel
-// Please provide source code that you'd Chapel to support.
+// Please provide source code that you'd like Chapel to support.
 // You can insert your code inline if it's not too long.
 // Otherwise, you can attach it as a file or provide a URL to it.
 // To the extent possible, providing simplified programs demonstrating the
