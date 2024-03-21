@@ -2,7 +2,7 @@
 name: Documentation
 about: Report any issue observed within the Chapel documentation or the `chpldoc` tool.
 title: '[Documentation]: '
-labels: ''
+labels: 'area: Docs'
 ---
 
 ### Summary of Problem
@@ -18,8 +18,8 @@ What did you expect to observe?
 **Source Code:**
 
 ```chapel
-// Please provide source code that will reproduce the problem.
-// You can insert your code inline if it's not too long.
+// Please provide source code that will reproduce the problem if it seems to be
+// with chpldoc itself. You can insert your code inline if it's not too long.
 // Otherwise, you can attach it as a file or provide a URL to it.
 // To the extent possible, providing simplified programs demonstrating the
 // problem will be appreciated.
@@ -45,6 +45,6 @@ e.g. [`test/path/to/foo.chpl`](
 - Output of `chpldoc --version`:
 - Output of `$CHPL_HOME/util/printchplenv --anonymize`:
 - Back-end compiler and version, e.g. `gcc --version` or `clang --version`:
-- Sphinx version:
-- sphinxcontrib-chapeldomain version:
+- Sphinx version, e.g. `grep -E "^Sphinx" $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements2.txt`:
+- sphinxcontrib-chapeldomain version, e.g. `grep -E "^sphinxcontrib-chapeldomain" $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements3.txt`:
 - (For Cray systems only) Output of `module list`:
