@@ -66,7 +66,16 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);
 void print_llvm(llvm::Module* m);
-// print_clang is also available in another file
+
+// print_clang() is available in clangUtil.h,cpp
+
+void list_view(const llvm::Type* t);
+void list_view(const llvm::Value* v);
+void list_view(const llvm::Module *m);
+
+void nprint_view(const llvm::Type* t);
+void nprint_view(const llvm::Value* v);
+void nprint_view(const llvm::Module *m);
 
 llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx);
 
