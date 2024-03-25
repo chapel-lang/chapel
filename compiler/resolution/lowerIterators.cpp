@@ -1555,7 +1555,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         // need to create task private copies of the variable. We assume
         // that the user will not introduce a race condition involving modifying
         // the outside variable while we create these copies.
-        // 
+        //
         // The exact way to create these task private copies will depend on if
         // the loop is vectorized or gpuized or not so rather than deal with
         // this during iterator lowering we wrap a piece of code demonstrating
@@ -1623,7 +1623,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
           //      (INP_x))
           //
           // And we want:
-          // 
+          //
           //   PRIM_TASK_PRIVATE_SVAR_CAPTURE(init=(taskInd_x, capX));
           VarSymbol* taskIndVar = new VarSymbol(astr("taskInd_", svar->name), svar->type);
           taskIndVar->addFlag(FLAG_TASK_PRIVATE_VARIABLE);
