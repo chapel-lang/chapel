@@ -1,0 +1,3 @@
+# The problem at hand is caught by ASan during compilation. So, we can't test
+# the error message with ASan.
+CHPL_SANITIZE != none
