@@ -12,10 +12,10 @@ proc foo(type T, x : T(int, ?)) {
 
 proc main() {
   var x = new R(int, 5);
-  foo(R, x);
+  foo(R(?), x);
 
   if error {
     var y = new R(real, 5);
-    foo(R, y);
+    foo(R(?), y);
   }
 }

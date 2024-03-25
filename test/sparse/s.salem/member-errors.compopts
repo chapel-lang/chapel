@@ -1,1 +1,1 @@
---ignore-errors-for-pass
+-snoParSafeWarning --ignore-errors-for-pass

@@ -347,6 +347,16 @@ findMostSpecificCandidatesQuery(Context* context,
     // disambiguateByMatch(dctx, candidates);
     computeMostSpecificCandidates(context, dctx, candidates);
 
+  if (result.numBest() == 1) {
+    MostSpecificCandidate only;
+    if (result.bestRef()) only = result.bestRef();
+    else if (result.bestConstRef()) only = result.bestConstRef();
+    else if (result.bestValue()) only = result.bestValue();
+
+    // Ensure that the only result is in the 'ONLY' slot.
+    result = MostSpecificCandidates::getOnly(only);
+  }
+
   // Delete all of the FormalActualMaps
   for (auto elt : candidates) {
     delete elt;

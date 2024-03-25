@@ -72,11 +72,11 @@ for l in lines:
             name = m.group(1)
             sets[state].add(name)
         # add params
-        for m in re.finditer(r'param (\S*?) =', l):
+        for m in re.finditer(r'param (\S*?) +=', l):
             name = m.group(1)
             sets[state].add(name)
         # parenless proc params
-        for m in re.finditer(r'proc (\S*?) param', l):
+        for m in re.finditer(r'proc (\S*?) +param', l):
             name = m.group(1)
             sets[state].add(name)
         # check for deprecated and remove

@@ -245,7 +245,7 @@ private proc generateYAML() {
   const reposOverride = 'repos:\n'+
                         '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
   var yamlFile = open(yamlFilePath,ioMode.cw);
-  var yamlWriter = yamlFile.writer();
+  var yamlWriter = yamlFile.writer(locking=false);
   yamlWriter.write(reposOverride);
   yamlWriter.close();
 }
@@ -414,7 +414,7 @@ private proc editCompilers() {
    the dependencies in a toml in lock file format */
 proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
 
-  var exDom: domain(string);
+  var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
 
   for (name, spc) in zip(exDeps.A.keys(), exDeps.A.values()) {
@@ -455,7 +455,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
 proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml throws {
 
   var depList: list(shared Toml);
-  var spkgDom: domain(string);
+  var spkgDom: domain(string, parSafe=false);
   var spkgToml: [spkgDom] shared Toml?;
   var spkgInfo = new shared Toml(spkgToml);
 

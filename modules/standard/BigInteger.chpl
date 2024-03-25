@@ -411,16 +411,11 @@ module BigInteger {
       return ret;
     }
 
-    @chpldoc.nodoc
-    proc writeThis(writer) throws {
+    /* Writes this number to a :type:`~IO.fileWriter` */
+    proc serialize(writer, ref serializer) throws {
       var s: string;
       s = this.getStr();
       writer.write(s);
-    }
-
-    /* Writes this number to a :type:`~IO.fileWriter` */
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
     }
 
     /* Read this number from a :type:`~IO.fileReader` */
@@ -3691,6 +3686,7 @@ module BigInteger {
         :proc:`GMP.mpz_sgn` and
         `mpz_sgn <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fsgn>`_.
   */
+  @unstable("bigint.sgn is unstable and may change its name and return type in the future")
   proc bigint.sgn() : int {
     const this_ = this.localize();
     var ret : c_int;

@@ -111,6 +111,14 @@ static void maybePrintModuleFile(ModTag modTag, const char* path);
 
 class DynoErrorHandler : public chpl::Context::ErrorHandler {
   std::vector<chpl::owned<chpl::ErrorBase>> errors_;
+
+  // we'd like to silence certain types of warnings, but can't do it through
+  // Dyno-as-library because doing so would require knowing the result of
+  // parsing all files, which Dyno, as a query-based API, is not well-suited
+  // for. So, instead, we detect these warnings and stick them into a list
+  // "for later". Once we've parsed all the files, we can then decide whether
+  // to silence them or not.
+  std::vector<chpl::owned<chpl::ErrorBase>> deferredErrors_;
  public:
   DynoErrorHandler() = default;
   ~DynoErrorHandler() = default;
@@ -119,18 +127,31 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
     return errors_;
   }
 
+  const std::vector<chpl::owned<chpl::ErrorBase>>& deferredErrors() const {
+    return deferredErrors_;
+  }
+
   virtual void
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
-    errors_.push_back(err->clone());
+    if (err->type() == chpl::ErrorType::ImplicitFileModule) {
+      // Defer implicit module warning until we know which module is the
+      // 'main' one. Knowing this requires having parsed all files and
+      // checking them for 'proc main'.
+      deferredErrors_.push_back(err->clone());
+    } else {
+      errors_.push_back(err->clone());
+    }
   }
 
   inline void clear() { errors_.clear(); }
+  inline void clearDeferred() { deferredErrors_.clear(); }
 };
 
 // Call to insert an instance of the error handler above into the context.
 static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
 
 static bool dynoRealizeErrors(void);
+static bool dynoRealizeDeferredErrors(void);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -478,11 +499,26 @@ static std::set<UniqueString> gatherStdModuleNames() {
   gatherStdModuleNamesInDir(modulesDir + "/internal", modNames);
   gatherStdModuleNamesInDir(modulesDir + "/layouts", modNames);
   // skip minimal
-  gatherStdModuleNamesInDir(modulesDir + "/packages", modNames);
+  // skip packages (see below)
   gatherStdModuleNamesInDir(modulesDir + "/standard", modNames);
 
-  // leave out Treap since it is an 'include module' for SortedSet
-  modNames.erase(UniqueString::get(gContext, "Treap"));
+  // add select packages that don't have dependencies at compile time
+  // these particular ones are compiled by default even for "hello world"
+  std::vector<const char*> pkgModules = {"CopyAggregation",
+                                         "NPBRandom",
+                                         "RangeChunk",
+                                         "Search",
+                                         "Sort"};
+
+  for (auto name : pkgModules) {
+    modNames.insert(UniqueString::get(gContext, name));
+  }
+
+  // Workaround: if compiling for CHPL_LOCALE_MODEL!=gpu,
+  // then ignore the GPU module, to avoid later compilation errors.
+  if (!usingGpuLocaleModel()) {
+    modNames.erase(UniqueString::get(gContext, "GPU"));
+  }
 
   return modNames;
 }
@@ -582,7 +618,7 @@ static void parseCommandLineFiles() {
     mod->addDefaultUses();
   }
 
-  if (!gDynoGenLibOutput.empty()) {
+  if (fDynoGenLib) {
     std::vector<UniqueString> genLibPaths;
 
     if (fDynoGenStdLib) {
@@ -1069,34 +1105,63 @@ static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
 // Only install one of these for the entire session.
 static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
+static bool dynoRealizeError(const chpl::owned<chpl::ErrorBase>& err) {
+  bool hadErrors = false;
+  const chpl::ErrorBase* e = err.get();
+
+  if (e->kind() == chpl::ErrorBase::SYNTAX ||
+      e->kind() == chpl::ErrorBase::ERROR) {
+    // make a note if we found any errors
+    hadErrors = true;
+  }
+
+  // skip emitting warnings for '--no-warnings'
+  if (ignore_warnings && e->kind() == chpl::ErrorBase::WARNING) {
+    return hadErrors;
+  }
+
+  if (fDetailedErrors) {
+    chpl::Context::defaultReportError(gContext, e);
+    // Use production compiler's exit-on-error functionality for errors
+    // reported via new Dyno mechanism
+    setupDynoError(e->kind());
+  } else {
+    // Try to maintain compatibility with the old reporting mechanism
+    dynoDisplayError(gContext, e->toErrorMessage(gContext));
+  }
+  return hadErrors;
+}
+
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
   for (auto& err : gDynoErrorHandler->errors()) {
-    const chpl::ErrorBase* e = err.get();
-
-    if (e->kind() == chpl::ErrorBase::SYNTAX ||
-        e->kind() == chpl::ErrorBase::ERROR) {
-      // make a note if we found any errors
-      hadErrors = true;
-    }
-
-    // skip emitting warnings for '--no-warnings'
-    if (ignore_warnings && e->kind() == chpl::ErrorBase::WARNING) {
-      continue;
-    }
-
-    if (fDetailedErrors) {
-      chpl::Context::defaultReportError(gContext, e);
-      // Use production compiler's exit-on-error functionality for errors
-      // reported via new Dyno mechanism
-      setupDynoError(e->kind());
-    } else {
-      // Try to maintain compatibility with the old reporting mechanism
-      dynoDisplayError(gContext, e->toErrorMessage(gContext));
-    }
+    hadErrors |= dynoRealizeError(err);
   }
   gDynoErrorHandler->clear();
+  return hadErrors;
+}
+
+static bool dynoRealizeDeferredErrors(void) {
+  INT_ASSERT(gDynoErrorHandler);
+  bool hadErrors = false;
+  auto mainModulePath = ModuleSymbol::mainModule()->path();
+
+  for (auto& err : gDynoErrorHandler->deferredErrors()) {
+    if (err->type() == chpl::ErrorType::ImplicitFileModule) {
+      auto errCast = (const chpl::ErrorImplicitFileModule*) err.get();
+      auto implicitMod = std::get<2>(errCast->info());
+
+      if (implicitMod->id().symbolPathWithoutRepeats(gContext) == mainModulePath) {
+        // Do not emit the implicit file module warning for the main module,
+        // since it's a very common pattern.
+        continue;
+      }
+    }
+
+    hadErrors |= dynoRealizeError(err);
+  }
+  gDynoErrorHandler->clearDeferred();
   return hadErrors;
 }
 
@@ -1361,6 +1426,8 @@ void parseAndConvertUast() {
   parseInternalModules();
 
   parseCommandLineFiles();
+
+  dynoRealizeDeferredErrors();
 
   checkConfigs();
 

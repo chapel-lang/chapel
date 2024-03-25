@@ -616,6 +616,7 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   INT_ASSERT(blk->getFunction());
 
   this->loop_ = toCForLoop(blk);
+
   this->parentFn_ = toFnSymbol(blk->getFunction());
   this->assertionReporter_.noteGpuizableAssertion(findCompileTimeGpuAssertions());
   this->isEligible_ = evaluateLoop();
@@ -669,6 +670,18 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
     CallExpr *call = toCallExpr(expr);
     if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
       return call;
+    }
+
+    // When inserted via attributes, the assert_on_gpu primitive can also
+    // occur inside a single scopeless block marked with another primitive.
+    BlockStmt *blk = toBlockStmt(expr);
+    if (blk && blk->isGpuPrimitivesBlock()) {
+      for_alist(expr, blk->body) {
+        CallExpr *call = toCallExpr(expr);
+        if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+          return call;
+        }
+      }
     }
   }
 
@@ -845,10 +858,11 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
-      // classifyPrimitive gets mad that that this primitive should already
-      // have been removed from the tree. We know it's safe, so just
+      // classifyPrimitive gets mad that that our internal marker primitives
+      // should already have been removed from the tree. We know it's safe, so just
       // leave it.
-      if (call->primitive->tag == PRIM_GPU_ELIGIBLE) continue;
+      if (call->primitive->tag == PRIM_GPU_ELIGIBLE ||
+          call->primitive->tag == PRIM_GPU_PRIMITIVE_BLOCK) continue;
 
       // only primitives that are fast and local are allowed for now
       bool inLocal = inLocalBlock(call);
@@ -993,6 +1007,8 @@ struct KernelActual {
 // GpuKernel
 // ----------------------------------------------------------------------------
 
+static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
+
 // Given a GpuizableLoop that was determined to be "eligible" we generate an
 // outlined function
 // for GPU code generation that:
@@ -1008,7 +1024,8 @@ class GpuKernel {
   std::vector<KernelActual> kernelActuals_;
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
-  SymExpr* blockSize_;
+  CallExpr* blockSizeCall_;
+  BlockStmt* gpuPrimitivesBlock_;
 
   public:
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1016,14 +1033,15 @@ class GpuKernel {
   FnSymbol* fn() const { return fn_; }
   const std::vector<KernelActual>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
-  SymExpr* blockSize() const {return blockSize_; }
+  CallExpr* blockSizeCall() const {return blockSizeCall_; }
+  BlockStmt* gpuPrimitivesBlock() const { return gpuPrimitivesBlock_; }
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
-  void determineBlockSize();
-  static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
+  void findGpuPrimitives();
   void populateBody(FnSymbol *outlinedFunction);
   void normalizeOutlinedFunction();
+  void setLateGpuizationFailure(bool flag);
   void finalize();
 
   void generateIndexComputation();
@@ -1036,11 +1054,12 @@ class GpuKernel {
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
   , lateGpuizationFailure_(false)
-  , blockSize_(nullptr)
+  , blockSizeCall_(nullptr)
+  , gpuPrimitivesBlock_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
-  determineBlockSize();
+  findGpuPrimitives();
   populateBody(fn_);
   if(!lateGpuizationFailure_) {
     finalize();
@@ -1201,7 +1220,7 @@ void GpuKernel::generateEarlyReturn() {
   fn_->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
 }
 
-void GpuKernel::determineBlockSize() {
+void GpuKernel::findGpuPrimitives() {
   std::vector<CallExpr*> callExprsInBody;
   for_alist(node, gpuLoop.gpuLoop()->body) {
     collectCallExprs(node, callExprsInBody);
@@ -1209,19 +1228,22 @@ void GpuKernel::determineBlockSize() {
 
   for_vector(CallExpr, callExpr, callExprsInBody) {
     if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      if (blockSize_ != nullptr) {
+      if (blockSizeCall_ != nullptr) {
         USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
       }
-      blockSize_ = toSymExpr(callExpr->get(1));
+      blockSizeCall_ = callExpr;
+    } else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
+      gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
     }
   }
 }
 
-bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
+bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
   if (!call) return false;
 
   return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
-         call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE);
+         call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
+         call->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK);
 }
 
 void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
@@ -1253,6 +1275,11 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
       this->copyMap_.put(def->sym, newDef->sym);
 
       outlinedFunction->insertBeforeEpilogue(newDef);
+    }
+    else if (isBlockStmt(node) && toBlockStmt(node)->isGpuPrimitivesBlock()) {
+      // GPU primitives blocks need not be in the kernel, since they
+      // set launch-time properties of a kernel.
+      copyNode = false;
     }
     else {
       // We also need to copy any defs that appear in blocks.
@@ -1306,7 +1333,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
                 addKernelArgument(sym);
               }
               else {
-                INT_FATAL("Malformed PRIM_GET_MEMBER_*");
+                this->setLateGpuizationFailure(true);
               }
             }
             else if (parent->isPrimitive()) {
@@ -1322,7 +1349,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
               }
             }
             else {
-              INT_FATAL("Unexpected call expression");
+              this->setLateGpuizationFailure(true);
             }
           } else if (CondStmt* cond = toCondStmt(symExpr->parentExpr)) {
             // Parent is a conditional statement.
@@ -1330,7 +1357,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
               addKernelArgument(sym);
             }
           } else {
-            INT_FATAL("Unexpected symbol expression");
+            this->setLateGpuizationFailure(true);
           }
         }
       }
@@ -1344,6 +1371,9 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
   update_symbols(outlinedFunction->body, &copyMap_);
 }
 
+void GpuKernel::setLateGpuizationFailure(bool flag) {
+  this->lateGpuizationFailure_ = flag;
+}
 
 void GpuKernel::normalizeOutlinedFunction() {
   normalize(fn_);
@@ -1355,7 +1385,7 @@ void GpuKernel::normalizeOutlinedFunction() {
   collectDefExprs(fn_, defExprsInBody);
   for_vector (DefExpr, def, defExprsInBody) {
     if(def->sym->type == dtUnknown) {
-      this->lateGpuizationFailure_ = true;
+      this->setLateGpuizationFailure(true);
     }
   }
 
@@ -1454,6 +1484,17 @@ class CpuBoundLoopCleanup {
   public:
 
   static void doit(CForLoop *loop) {
+    // 'gpu primitive blocks' contain several GPU primitives as well as
+    // any temporaries used for computing their arguments. We know for sure
+    // they don't need to go into the CPU loop.
+    std::vector<BlockStmt*> blocksInBody;
+    collectBlockStmts(loop, blocksInBody);
+    for (auto block : blocksInBody) {
+      if (block->isGpuPrimitivesBlock()) {
+        block->remove();
+      }
+    }
+
     std::vector<CallExpr*> callExprsInBody;
     for_alist(node, loop->body) {
       collectCallExprs(node, callExprsInBody);
@@ -1526,16 +1567,32 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
   return numThreads;
 }
 
-static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
+static CallExpr* generateGPUCall(GpuKernel& info, BlockStmt* gpuBlock, VarSymbol* numThreads) {
   CallExpr *call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
 
   call->insertAtTail(info.fn());
 
   call->insertAtTail(numThreads);  // total number of GPU threads
 
-  if (info.blockSize()) {
-    // sets blockSize if specified with by "gpu set BlockSize" primitive
-    call->insertAtTail(info.blockSize()->copy());
+  // If the parent of the call is 'gpu primitives' block, it was constructed
+  // specifically to 'fence off' GPU primitives. There may be
+  // some additional temps etc. that are used for computing block size.
+  // We need to lift them, too. Since we're "consuming" the GPU loop,
+  // just modify the parent block in place.
+  if (auto primitivesBlock = info.gpuPrimitivesBlock()) {
+    INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
+    for_alist(expr, primitivesBlock->body) {
+      if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
+        expr->remove();
+      }
+    }
+
+    gpuBlock->insertAtTail(primitivesBlock->remove());
+    primitivesBlock->flattenAndRemove();
+  }
+
+  if (auto blockSizeCall = info.blockSizeCall()) {
+    call->insertAtTail(blockSizeCall->get(1)->copy());
   } else {
     int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize : 512;
     call->insertAtTail(new_IntSymbol(blockSize));
@@ -1583,7 +1640,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
 
   // populate the gpu block
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
-  CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
+  CallExpr* gpuCall = generateGPUCall(kernel, gpuBlock, numThreads);
   gpuCall->insertAtTail(new SymExpr(cfg));
   gpuBlock->insertAtTail(gpuCall);
   gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
@@ -1766,7 +1823,7 @@ static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
 // remove it.
 static void cleanupTaskIndependentCapturePrimitives() {
   for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
-    if(callExpr->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE))
+    if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE))
       cleanupTaskIndependentCapturePrimitive(callExpr);
 }
 

@@ -8,7 +8,7 @@ use Graph500_defs;
 proc BFS ( root : vertex_id, ParentTree, G )
 {
 
-  type Vertex_List = domain ( vertex_id );
+  type Vertex_List = domain (vertex_id, parSafe=true);
   var visited : [vertex_domain] sync int = -1;
 
   var Active_Level = new Level_Set (Vertex_List);

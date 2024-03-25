@@ -513,10 +513,6 @@ module EpochManager {
       }
 
       @chpldoc.nodoc
-      proc readThis(f) throws {
-        compilerError("Reading a Vector is not supported");
-      }
-      @chpldoc.nodoc
       proc deserialize(reader, ref deserializer) throws {
         compilerError("Reading a Vector is not supported");
       }
@@ -527,12 +523,9 @@ module EpochManager {
         compilerError("Deserializing a Vector is not yet supported");
       }
 
-      proc writeThis(f) throws {
-        f.write("(Vector) {", this.toArray(), "}");
-      }
       @chpldoc.nodoc
       override proc serialize(writer, ref serializer) throws {
-        writeThis(writer);
+        writer.write("(Vector) {", this.toArray(), "}");
       }
     }
 
@@ -574,7 +567,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     /*
       Default initialize the manager.
@@ -861,7 +854,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted on current locale
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     //  Vector for bulk transfer of remote objects marked deleted on current
     //  locale

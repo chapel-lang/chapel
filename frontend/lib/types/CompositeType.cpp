@@ -153,6 +153,14 @@ const RecordType* CompositeType::getLocaleType(Context* context) {
                          SubstitutionsMap());
 }
 
+const RecordType* CompositeType::getLocaleIDType(Context* context) {
+  auto name = UniqueString::get(context, "chpl_localeID_t");
+  auto id = ID();
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
 bool CompositeType::isMissingBundledType(Context* context, ID id) {
   return isMissingBundledClassType(context, id) ||
          isMissingBundledRecordType(context, id);
@@ -175,7 +183,8 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
   if (noLibrary) {
     auto path = id.symbolPath();
     return path == "ChapelReduce.ReduceScanOp" ||
-           path == "Errors.Error";
+           path == "Errors.Error" || 
+           path == "CTypes.c_ptr";
   }
 
   return false;

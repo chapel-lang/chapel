@@ -30,7 +30,7 @@ add_custom_command(
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../COPYRIGHT
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
-add_executable(chpldoc chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
+add_executable(chpldoc EXCLUDE_FROM_ALL chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
 target_link_libraries(chpldoc ChplFrontend)
 target_include_directories(chpldoc PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}

@@ -353,6 +353,11 @@ uast::AstTag idToTag(Context* context, ID id);
 bool idIsParenlessFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is a nested function.
+ */
+bool idIsNestedFunction(Context* context, ID id);
+
+/**
  Returns true if the ID refers to a private declaration.
  */
 bool idIsPrivateDecl(Context* context, ID id);

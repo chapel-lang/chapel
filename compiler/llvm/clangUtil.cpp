@@ -1365,7 +1365,7 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
-          info->llvmContext);
+          gContext->llvmContext());
 
         INT_ASSERT(Builder);
         INT_ASSERT(!info->module);
@@ -2045,7 +2045,8 @@ static void loadModuleFromBitcode() {
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
   auto bitcodeResult =
-      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext);
+      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(),
+                             gContext->llvmContext());
   INT_ASSERT(bitcodeResult &&
              "could not deserialize module from loaded bitcode");
   info->module = bitcodeResult.get().release();
@@ -2309,6 +2310,11 @@ void finishCodegenLLVM() {
 
   if(debug_info)debug_info->finalize();
 
+  // finish bringing in symbols from separately compiled .dyno files
+  if (fDynoLibGenOrUse && !fDynoGenLib) {
+    linkInDynoFiles();
+  }
+
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
@@ -2319,7 +2325,7 @@ void finishCodegenLLVM() {
     }
   }
 
-  // Run all LLVM optimizations.
+  // Run all LLVM optimizations and save to .bc files.
   llvmRunOptimizations();
 
 #ifdef HAVE_LLVM
@@ -2500,7 +2506,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
   PassInstrumentationCallbacks PIC;
   StandardInstrumentations SI(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
@@ -2644,7 +2650,7 @@ void prepareCodegenLLVM()
   info->PIC = new PassInstrumentationCallbacks();
   info->SI = new StandardInstrumentations(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
@@ -3327,7 +3333,8 @@ llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
 #if HAVE_LLVM_VER >= 120
-  llvm::Type* t = llvm::StructType::getTypeByName(info->llvmContext, name);
+  llvm::Type* t = llvm::StructType::getTypeByName(gContext->llvmContext(),
+                                                  name);
 #else
   llvm::Type* t = info->module->getTypeByName(name);
 #endif
@@ -3995,17 +4002,25 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 }
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
+             FnSymbol* fn)
 {
 
   // Don't try to use the calling convention code for variadic args.
-  if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
-    return NULL;
+  if ((unsigned) curCArg >= CGI->arg_size()) {
+    if (CGI->isVariadic()) {
+      return NULL;
+    }
+    else {
+      USR_FATAL(fn, "Argument number mismatch in export proc");
+    }
+  }
 
   const clang::CodeGen::ABIArgInfo* argInfo = NULL;
 #if HAVE_LLVM_VER >= 100
   llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
   argInfo = &a[curCArg].info;
+
 #else
   int i = 0;
   for (auto &ii : CGI->arguments()) {
@@ -4449,7 +4464,7 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   // load into new module
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
-                                 info->llvmContext);
+                                 gContext->llvmContext());
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
@@ -4861,6 +4876,11 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   std::string inputs = "-inputs=/dev/null";
   std::string outputs = "-outputs=" + fatbinFilename;
 #endif
+  auto sdkString = std::string(gGpuSdkPath);
+  // check file exists, maybe use alternate path (say if spack installed)
+  std::string lldBin = pathExists((sdkString + "/llvm/bin/lld").c_str()) ?
+                       sdkString + "/llvm/bin/lld"  :
+                       sdkString + "/bin/lld";
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
     std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
@@ -4870,8 +4890,9 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                          "--triple=amdgcn-amd-amdhsa --mcpu=" + gpuArch + " " +
                          artifactFilename + " " +
                          "-o " + gpuObject;
-    std::string lldCmd = std::string(gGpuSdkPath) +
-                        "/llvm/bin/lld -flavor gnu" +
+
+    std::string lldCmd = lldBin +
+                         " -flavor gnu" +
                          " --no-undefined -shared" +
                          " -plugin-opt=-amdgpu-internalize-symbols" +
                          " -plugin-opt=mcpu=" + gpuArch +
@@ -5120,7 +5141,8 @@ void makeBinaryLLVM(void) {
     // to avoid unused argument errors for optimization flags.
 
     if(debugCCode) {
-      options += " -g";
+      bool isDarwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+      options += isDarwin ? "-gfull" : "-g";
     }
 
     // We used to supply link args here *and* later on
@@ -5176,6 +5198,27 @@ void makeBinaryLLVM(void) {
       // Runs the LLVM link command for executables.
       runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
                      dotOFiles, clangLDArgs);
+    }
+
+    // TODO: Library compiles can produce a '.a' archive as output which
+    // 'dsymutil' doesn't seem to know how to handle. So we'll probably
+    // need a more complicated invocation.
+    const bool generateDarwinSymArchive =
+          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && debugCCode &&
+          !fLibraryCompile;
+
+    if (generateDarwinSymArchive) {
+      const char* bin = "dsymutil";
+      const char* sfx = ".dSYM";
+      const char* tmp = astr(tmpbinname, sfx);
+      const char* out = astr(executableFilename, sfx);
+
+      // TODO: The innermost binary in the .dSYM with all the DWARF info
+      // will have the name "executable.tmp", is there a way to give it a
+      // better name?
+      std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
+      mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
+      moveResultFromTmp(out, tmp);
     }
 
     // If we're not using a launcher, copy the program here
@@ -5574,18 +5617,36 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
 }
 
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
+  const bool targetExists = llvm::sys::fs::exists(resultName);
+  bool isTargetDirectory = false;
   std::error_code err;
 
-  // rm -f hello
-  if( printSystemCommands )
-    printf("rm -f %s\n", resultName);
+  if (targetExists) {
+    err = llvm::sys::fs::is_directory(tmpbinname, isTargetDirectory);
+    if (err) {
+      USR_FATAL("Failed to determine if '%s' is a directory: %s\n",
+                tmpbinname,
+                err.message().c_str());
+    }
 
-  err = llvm::sys::fs::remove(resultName);
-  if (err) {
-    USR_FATAL("removing file %s failed: %s\n",
-              resultName,
-              err.message().c_str());
+    // Debug message, e.g., 'rm -f hello'
+    if (printSystemCommands) {
+      const char* hdr = isTargetDirectory ? "Removing directory: rm -rf"
+                                          : "Removing file: rm -f";
+      printf("%s %s\n", hdr, resultName);
+    }
+
+    err = isTargetDirectory
+          ? llvm::sys::fs::remove_directories(resultName, false)
+          : llvm::sys::fs::remove(resultName);
+    if (err) {
+      const char* hdr = isTargetDirectory
+            ? "Removing directory"
+            : "Removing file";
+      USR_FATAL("%s %s failed: %s\n", hdr, resultName, err.message().c_str());
+    }
   }
+
   // mv tmp/hello.tmp hello
   if( printSystemCommands )
     printf("mv %s %s\n", tmpbinname, resultName);

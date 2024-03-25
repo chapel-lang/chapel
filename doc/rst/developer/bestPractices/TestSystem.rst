@@ -36,6 +36,7 @@ Outline
 
      - `Controlling How It Runs`_
 
+       - `Running Multiple Times`_
        - `Limiting Time Taken`_
 
      - `With Varying Output`_
@@ -261,6 +262,22 @@ another test), give an empty file with the suffix ``.notest``.  A directory with
 an empty ``NOTEST`` file will similarly not be run by the testing system (unless
 its contents are explicitly listed in the call to ``start_test``).
 
+Running Multiple Times
+~~~~~~~~~~~~~~~~~~~~~~
+
+By default, each correctness test is run only once. It is possible to
+specify that a test should be run multiple times by providing a ``.numtrials``
+file for that test, or by passing ``-num-trials`` to ``start_test``.  For
+instance, the following file would cause the test to be run 10 times:
+
+``foo.numtrials``
+
+  .. code-block:: text
+
+    10
+
+Note that a ``.numtrials`` file will override any explicit ``-num-trials`` value.
+
 Limiting Time Taken
 ~~~~~~~~~~~~~~~~~~~
 
@@ -277,8 +294,8 @@ test is usually quick but occasionally hangs, a smaller timeout value can help
 speed up the time to run the testing system when the failure mode does occur.
 
 Note that if the value in this file is longer than the global timeout, any
-explicit ``-num-trials`` value or ``.perfnumtrials`` file will be ignored (see
-`A Performance Test`_ for more details on the ``-num-trials`` setting).
+explicit ``-num-trials`` value or ``.numtrials`` file will be ignored and the
+test will run only once.
 
 Tests With Varying Output
 +++++++++++++++++++++++++
@@ -552,7 +569,8 @@ done using files, as in correctness testing, where the filenames tend
 to start with ``PERF*`` or ``.perf*``.  For example, ``foo.perfcompopts`` would
 specify compiler options that should be used when compiling the test
 for performance mode while ``foo.perfexecopts`` specifies execution-time
-options for performance testing.
+options for performance testing. The number of trials for performance
+testing can be specified in a ``foo.perfnumtrials`` file.
 
 Comparing Multiple Versions
 +++++++++++++++++++++++++++
@@ -999,6 +1017,8 @@ foo.suppressif      line separated list of conditions under which the test is
                     ``.future`` is likely more appropriate for the test.
 foo.timeout         time in seconds after which start_test should stop this test
                     See `Limiting Time Taken`_ for more information
+foo.numtrials       number of execution trials to run
+NUMTRIALS           directory-wide number of execution trials to run
 ..
 -------------------------------------------------------------------------------
 **performance** (replace "perf" with "ml-" and "cc-" as necessary)

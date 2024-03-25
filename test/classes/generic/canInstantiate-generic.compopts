@@ -1,0 +1,4 @@
+-suseGeneric=false -suseSyncFormal=true # canInstantiate-generic.1.good
+-suseGeneric=true -suseSyncFormal=true # canInstantiate-generic.2.good
+-suseGeneric=false -suseSyncFormal=false # canInstantiate-generic.3.good
+-suseGeneric=true -suseSyncFormal=false # canInstantiate-generic.4.good

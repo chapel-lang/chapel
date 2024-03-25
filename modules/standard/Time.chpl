@@ -596,21 +596,16 @@ module Time {
 
   // This method exists to work around a bug in chpldoc where the
   // 'private use' above this method somehow breaks documentation for the
-  // method that follows (formerly 'writeThis')
+  // method that follows
   @chpldoc.nodoc
   proc date._chpldoc_workaround() { }
 
-  @chpldoc.nodoc
-  proc date.writeThis(f) throws {
-    f.write(this:string);
-  }
-
   /* Writes this `date` formatted as ``YYYY-MM-DD`` */
   proc date.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(this:string);
   }
 
-  // Exists to support some common functionality for `dateTime.readThis`
+  // Exists to support some common functionality for `dateTime.deserialize`
   @chpldoc.nodoc
   proc ref date._readCore(f) throws {
     const dash = "-";
@@ -622,27 +617,22 @@ module Time {
     chpl_day = f.read(int);
   }
 
-  @chpldoc.nodoc
-  proc ref date.readThis(f) throws {
-    import JSON.jsonDeserializer;
-
-    const binary = f._binary(),
-          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
-            isSubtype(f.deserializerType, jsonDeserializer);
-
-    if isjson then
-      f.readLiteral('"');
-
-    this._readCore(f);
-
-    if isjson then
-      f.readLiteral('"');
-  }
-
   /* Reads this `date` with the same format used by :proc:`date.serialize` */
   proc ref date.deserialize(reader, ref deserializer) throws {
-    readThis(reader);
+    import JSON.jsonDeserializer;
+
+    const binary = reader._binary(),
+          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
+            isSubtype(reader.deserializerType, jsonDeserializer);
+
+    if isjson then
+      reader.readLiteral('"');
+
+    this._readCore(reader);
+
+    if isjson then
+      reader.readLiteral('"');
   }
 
   //
@@ -651,7 +641,7 @@ module Time {
   @chpldoc.nodoc
   proc date.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(reader);
+    this.deserialize(reader, deserializer);
   }
 
   /* Operators on date values */
@@ -926,16 +916,11 @@ module Time {
     return str;
   }
 
-  @chpldoc.nodoc
-  proc time.writeThis(f) throws {
-    f.write(this:string);
-  }
-
   /* Writes this `time` formatted as  ``hh:mm:ss.ssssss``,
      followed by ``±hh:mm`` if a timezone is specified
    */
   proc time.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(this:string);
   }
 
   // Exists to support some common functionality for `dateTime.deserialize`
@@ -952,27 +937,22 @@ module Time {
     chpl_microsecond = f.read(int);
   }
 
-  @chpldoc.nodoc
-  proc ref time.readThis(f) throws {
-    import JSON.jsonDeserializer;
-
-    const binary = f._binary(),
-          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
-            isSubtype(f.deserializerType, jsonDeserializer);
-
-    if isjson then
-      f.readLiteral('"');
-
-    this._readCore(f);
-
-    if isjson then
-      f.readLiteral('"');
-  }
-
   /* Reads this `time` with the same format used by :proc:`time.serialize` */
   proc ref time.deserialize(reader, ref deserializer) throws {
-    readThis(reader);
+    import JSON.jsonDeserializer;
+
+    const binary = reader._binary(),
+          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
+            isSubtype(reader.deserializerType, jsonDeserializer);
+
+    if isjson then
+      reader.readLiteral('"');
+
+    this._readCore(reader);
+
+    if isjson then
+      reader.readLiteral('"');
   }
 
   //
@@ -981,7 +961,7 @@ module Time {
   @chpldoc.nodoc
   proc time.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(reader);
+    this.deserialize(reader, deserializer);
   }
 
 
@@ -1616,43 +1596,33 @@ module Time {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  @chpldoc.nodoc
-  proc dateTime.writeThis(f) throws {
-    f.write(this:string);
-  }
-
   /* Writes this `dateTime` formatted as ``YYYY-MM-DDThh:mm:ss.ssssss``,
      followed by ``±hh:mm`` if a timezone is specified
   */
   proc dateTime.serialize(writer, ref serializer) throws {
-    writeThis(writer);
-  }
-
-  @chpldoc.nodoc
-  proc ref dateTime.readThis(f) throws {
-    import JSON.jsonDeserializer;
-
-    const binary = f._binary(),
-          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
-            isSubtype(f.deserializerType, jsonDeserializer);
-
-    if isjson then
-      f.readLiteral('"');
-
-    chpl_date._readCore(f);
-    f.readLiteral("T");
-    chpl_time._readCore(f);
-
-    if isjson then
-      f.readLiteral('"');
+    writer.write(this:string);
   }
 
   /* Reads this `dateTime` with the same format used by
      :proc:`dateTime.serialize`
    */
   proc ref dateTime.deserialize(reader, ref deserializer) throws {
-    readThis(reader);
+    import JSON.jsonDeserializer;
+
+    const binary = reader._binary(),
+          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
+            isSubtype(reader.deserializerType, jsonDeserializer);
+
+    if isjson then
+      reader.readLiteral('"');
+
+    chpl_date._readCore(reader);
+    reader.readLiteral("T");
+    chpl_time._readCore(reader);
+
+    if isjson then
+      reader.readLiteral('"');
   }
 
   //
@@ -1661,7 +1631,7 @@ module Time {
   @chpldoc.nodoc
   proc dateTime.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(reader);
+    this.deserialize(reader, deserializer);
   }
 
 

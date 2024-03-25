@@ -238,14 +238,11 @@ module CString {
     // cs = nil;
   }
 
-  proc chpl_c_string.writeThis(x) throws {
+  proc chpl_c_string.serialize(writer, ref serializer) throws {
     compilerError("Cannot write a c_string, use one of the 'string.create*ingBuffer' methods to create a string first.");
   }
-  proc chpl_c_string.serialize(writer, ref serializer) throws {
-    writeThis(writer);
-  }
 
-  proc chpl_c_string.readThis(x) throws {
+  proc chpl_c_string.deserialize(reader, ref deserializer) throws {
     compilerError("Cannot read a c_string, use string.");
   }
 

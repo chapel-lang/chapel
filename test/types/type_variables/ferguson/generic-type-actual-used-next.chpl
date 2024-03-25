@@ -5,4 +5,4 @@ proc f(type t, x: t) {
 }
 
 var x = new GenericRecord(1);
-f(GenericRecord, x);
+f(GenericRecord(?), x);

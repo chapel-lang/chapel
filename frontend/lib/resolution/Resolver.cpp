@@ -61,6 +61,8 @@ static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
     return QualifiedType::MODULE;
   } else if (isTypeDecl(tag)) {
     return QualifiedType::TYPE;
+  } else if (asttags::isEnumElement(tag)) {
+    return QualifiedType::CONST_VAR;
   }
 
   return QualifiedType::UNKNOWN;
@@ -224,11 +226,13 @@ Resolver::createForInitializer(Context* context,
 Resolver
 Resolver::createForScopeResolvingFunction(Context* context,
                                           const Function* fn,
-                                          ResolutionResultByPostorderID& byId) {
+                                          ResolutionResultByPostorderID& byId,
+                                          owned<OuterVariables> outerVars) {
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.typedSignature = nullptr; // re-set below
   ret.signatureOnly = true; // re-set below
   ret.scopeResolveOnly = true;
+  ret.outerVars = std::move(outerVars);
   ret.fnBody = fn->body();
 
   ret.byPostorder.setupForFunction(fn);
@@ -319,6 +323,15 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
   ret.fieldTypesOnly = true;
+  return ret;
+}
+
+Resolver
+Resolver::createForEnumElements(Context* context,
+                                const uast::Enum* enumNode,
+                                ResolutionResultByPostorderID& byPostorder) {
+  auto ret = Resolver(context, enumNode, byPostorder, nullptr);
+  ret.byPostorder.setupForSymbol(enumNode);
   return ret;
 }
 
@@ -416,6 +429,46 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   context->error(ast, "%s", msg);
   auto t = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   return t;
+}
+
+static bool isOuterVariable(Resolver* rv, ID target) {
+  if (target.isEmpty()) return false;
+
+  // E.g., a function, or a class/record/union/enum. We don't need to track
+  // this, and shouldn't, because its current instantiation may not make any
+  // sense in this context. As well, these things have an "infinite lifetime",
+  // and are always reachable.
+  if (target.isSymbolDefiningScope()) return false;
+
+
+  auto parentSymbolId = target.parentSymbolId(rv->context);
+
+  // No match if there is no parent or if the parent is the resolver symbol.
+  if (parentSymbolId.isEmpty()) return false;
+  if (rv->symbol && parentSymbolId == rv->symbol->id()) return false;
+
+  switch (parsing::idToTag(rv->context, parentSymbolId)) {
+    case asttags::Function: return true;
+
+    // Module-scope variables are not considered outer-variables. However,
+    // variables declared in a module initializer statement can be, e.g.,
+    /**
+      module M {
+        if someCondition {
+          var someVar = 42;
+          proc f() { writeln(someVar); }
+          f();
+        }
+      }
+    */
+    case asttags::Module: {
+      auto targetParentId = parsing::idToParentId(rv->context, target);
+      return parentSymbolId != targetParentId;
+    } break;
+    default: break;
+  }
+
+  return false;
 }
 
 /**
@@ -1522,7 +1575,10 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
   if (!c.exprType().hasTypePtr()) {
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     r.setMostSpecific(c.mostSpecific());
-    return true;
+
+    // If the call was specially handled, assume special-case logic has already
+    // issued its own error.
+    return !c.speciallyHandled();
   } else {
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
@@ -1581,7 +1637,7 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
                                             const CallResolutionResult& c,
                                             AssociatedAction::Action action,
                                             ID id) {
-  if (!c.exprType().hasTypePtr()) {
+  if (!c.exprType().hasTypePtr() && !c.speciallyHandled()) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   } else {
     // save candidates as associated functions
@@ -2132,6 +2188,8 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (asttags::isAggregateDecl(tag)) {
     const Type* t = initialTypeForTypeDecl(context, id);
     return QualifiedType(QualifiedType::TYPE, t);
+  } else if (asttags::isModule(tag)) {
+    return QualifiedType(QualifiedType::MODULE, nullptr);
   }
 
   if (asttags::isFunction(tag)) {
@@ -2154,7 +2212,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);
-  auto parentTag = asttags::Module;
+  auto parentTag = asttags::AST_TAG_UNKNOWN;
   if (!parentId.isEmpty()) {
     parentTag = parsing::idToTag(context, parentId);
   }
@@ -2192,8 +2250,6 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     }
   }
 
-  CHPL_ASSERT(ct); // or else, pattern not handled yet
-
   if (ct) {
     auto newDefaultsPolicy = defaultsPolicy;
     if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS &&
@@ -2224,7 +2280,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   // Otherwise it is a case not handled yet
   // TODO: handle outer function variables
-  CHPL_ASSERT(false && "not yet handled");
+  CHPL_UNIMPL("not yet handled");
   auto unknownType = UnknownType::get(context);
   return QualifiedType(QualifiedType::UNKNOWN, unknownType);
 }
@@ -2273,6 +2329,11 @@ bool Resolver::enter(const uast::Conditional* cond) {
       auto t = reVar.type().type();
       bool ok = t->isClassType() || t->isBasicClassType();
       if (!ok) CHPL_REPORT(context, IfVarNonClassType, cond, reVar.type());
+      if (auto ct = t->toClassType()) {
+        reVar.setType(QualifiedType(
+            reVar.type().kind(),
+            ct->withDecorator(context, ct->decorator().addNonNil())));
+      }
     }
   }
 
@@ -2768,6 +2829,13 @@ void Resolver::resolveIdentifier(const Identifier* ident,
 
     maybeEmitWarningsForId(this, type, ident, id);
 
+    // Record uses of outer variables.
+    if (isOuterVariable(this, id) && outerVars) {
+      const ID& mention = ident->id();
+      const ID& var = id;
+      outerVars->add(context, mention, var);
+    }
+
     if (type.kind() == QualifiedType::TYPE) {
       // now, for a type that is generic with defaults,
       // compute the default version when needed. e.g.
@@ -2960,10 +3028,33 @@ bool Resolver::enter(const NamedDecl* decl) {
 }
 
 void Resolver::exit(const NamedDecl* decl) {
-  if (decl->id().postOrderId() < 0) {
-    // It's a symbol with a different path, e.g. a Function.
-    // Don't try to resolve it now in this
-    // traversal. Instead, resolve it e.g. when the function is called.
+  // We are resolving a symbol with a different path (e.g., a Function or
+  // a CompositeType declaration). In most cases we do not try to resolve
+  // in this traversal. However, if we are a nested function and the child
+  // is also a nested function, we need to check and potentially propagate
+  // their outer variable set into our own.
+  auto idChild = decl->id();
+  if (idChild.isSymbolDefiningScope()) {
+    if (this->symbol != nullptr &&
+        parsing::idIsNestedFunction(context, this->symbol->id()) &&
+        parsing::idIsNestedFunction(context, idChild) &&
+        outerVars.get()) {
+      if (auto ovs = computeOuterVariables(context, idChild)) {
+        for (int i = 0; i < ovs->numVariables(); i++) {
+
+          // If the variable is reaching in the child function, it means it
+          // was defined in one of _our_ parent(s). So we need to track it.
+          if (ovs->isReachingVariable(i)) {
+            ID var = ovs->variable(i);
+
+            // Mentions from child functions are not recorded in the parent
+            // function's info, so just use the first (as a convenience).
+            ID mention = ovs->firstMention(var);
+            outerVars->add(context, mention, var);
+          }
+        }
+      }
+    }
     return;
   }
 
@@ -3309,20 +3400,7 @@ void Resolver::exit(const Call* call) {
                              &actualAsts);
 
   // With some exceptions (see below), don't try to resolve a call that accepts:
-  enum SkipReason {
-    NONE = 0,
-
-    /* an unknown param (e.g. param int, without a value) */
-    UNKNOWN_PARAM,
-    /* a type that is a generic type unless there are substitutions */
-    GENERIC_TYPE,
-    /* a value of generic type */
-    GENERIC_VALUE,
-    /* UnknownType, ErroneousType */
-    UNKNOWN_ACT, ERRONEOUS_ACT,
-    /* other reason to skip */
-    OTHER_REASON,
-  } skip = NONE;
+  SkipCallResolutionReason skip = NONE;
   // EXCEPT, to handle split-init with an 'out' formal,
   // the actual argument can have unknown / generic type if it
   // refers directly to a particular variable.
@@ -3349,7 +3427,10 @@ void Resolver::exit(const Call* call) {
       if (t != nullptr && t->isErroneousType()) {
         // always skip if there is an ErroneousType
         skip = ERRONEOUS_ACT;
-      } else if (!toId.isEmpty() && !isNonOutFormal) {
+      } else if (!toId.isEmpty() && !isNonOutFormal &&
+                 qt.kind() != QualifiedType::PARAM &&
+                 qt.kind() != QualifiedType::TYPE &&
+                 qt.isRef() == false) {
         // don't skip because it could be initialized with 'out' intent,
         // but not for non-out formals because they can't be split-initialized.
       } else {
@@ -3397,6 +3478,11 @@ void Resolver::exit(const Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+  } else {
+    // We're skipping the call, but explicitly store the 'unknown type'
+    // in the map.
+    ResolvedExpression& r = byPostorder.byAst(call);
+    r.setType(QualifiedType());
   }
 
   inLeafCall = nullptr;
@@ -3482,7 +3568,28 @@ void Resolver::exit(const Dot* dot) {
   bool resolvingCalledDot = (inLeafCall &&
                              dot == inLeafCall->calledExpression());
   if (resolvingCalledDot && !scopeResolveOnly) {
-    // we will handle it when resolving the FnCall
+    // We will handle it when resolving the FnCall.
+
+    // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
+    // it later if needed.
+    if (!receiver.type().isUnknown() && receiver.type().type() &&
+        receiver.type().type()->isCompositeType()) {
+      std::vector<CallInfoActual> actuals;
+      actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
+      auto ci = CallInfo(/* name */ dot->field(),
+                         /* calledType */ QualifiedType(),
+                         /* isMethodCall */ true,
+                         /* hasQuestionArg */ false,
+                         /* isParenless */ true, actuals);
+      auto inScope = scopeStack.back();
+      auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+      if (!c.mostSpecific().isEmpty()) {
+        // save the most specific candidates in the resolution result for the id
+        ResolvedExpression& r = byPostorder.byAst(dot);
+        handleResolvedCall(r, dot, ci, c);
+      }
+    }
+
     return;
   }
 
@@ -3800,6 +3907,13 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
   auto forLoop = loop->toFor();
   bool isParamLoop = forLoop != nullptr && forLoop->isParam();
+
+  // whether this is a param or regular loop, before entering its body
+  // or considering its iterand, resolve expressions in the loop's attribute
+  // group.
+  if (auto ag = loop->attributeGroup()) {
+    ag->traverse(*this);
+  }
 
   if (isParamLoop) {
     const AstNode* iterand = loop->iterand();

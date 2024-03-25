@@ -1344,6 +1344,10 @@ bool chpl_gpu_can_reduce(void) {
   return chpl_gpu_impl_can_reduce();
 }
 
+bool chpl_gpu_can_sort(void) {
+  return chpl_gpu_impl_can_sort();
+}
+
 #define DEF_ONE_REDUCE(kind, data_type)\
 void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
                                           data_type* val, int* idx) { \
@@ -1363,12 +1367,36 @@ void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
   CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " returned\n"); \
 }
 
-GPU_REDUCE(DEF_ONE_REDUCE, sum)
-GPU_REDUCE(DEF_ONE_REDUCE, min)
-GPU_REDUCE(DEF_ONE_REDUCE, max)
-GPU_REDUCE(DEF_ONE_REDUCE, minloc)
-GPU_REDUCE(DEF_ONE_REDUCE, maxloc)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, sum)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, min)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, max)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, minloc)
+GPU_CUB_WRAP(DEF_ONE_REDUCE, maxloc)
 
 #undef DEF_ONE_REDUCE
+
+#define DEF_ONE_SORT(chpl_kind, data_type)\
+void chpl_gpu_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                        data_type* data_out, \
+                                        int n) { \
+  CHPL_GPU_DEBUG("chpl_gpu_sort_" #chpl_kind "_" #data_type " called\n"); \
+  \
+  int dev = chpl_task_getRequestedSubloc(); \
+  chpl_gpu_impl_use_device(dev); \
+  void* stream = get_stream(dev); \
+  \
+  chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_in, data_out, n, stream); \
+  \
+  if (chpl_gpu_sync_with_host) { \
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream); \
+    wait_stream(stream); \
+  } \
+  \
+  CHPL_GPU_DEBUG("chpl_gpu_sort_" #chpl_kind "_" #data_type " returned\n"); \
+}
+
+GPU_CUB_WRAP(DEF_ONE_SORT, keys)
+
+#undef DEF_ONE_SORT
 
 #endif

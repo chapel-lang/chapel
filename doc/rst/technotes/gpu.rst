@@ -113,39 +113,41 @@ Setup
 Requirements
 ~~~~~~~~~~~~
 
-* ``LLVM`` must be used as Chapel's backend compiler (i.e.
-  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
-  about these settings see :ref:`Optional Settings <readme-chplenv>`.
+First, please make sure you are using Chapel's `preferred configuration
+<../usingchapel/QUICKSTART.html#using-chapel-in-its-preferred-configuration>`_
+as the starting point. Specifically, the "quickstart" configuration can not be
+used with GPU support.
 
-  * If using a ``system`` LLVM:
+The following are further requirements for GPU support:
 
-    * it must have been built with support for the relevant target of GPU you
-      wish to generate code for (e.g.  NVPTX to target NVIDIA GPUs and AMDGPU to
-      target AMD GPUs).
+* For targeting NVIDIA or AMD GPUs, ``LLVM`` must be used as Chapel's backend
+  compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``).
 
-    * we expect it to be the same version as the bundled version (currently 17).
-      Older versions may work; however, we only make efforts to test GPU support
-      with this version.
+* Specifically for targeting NVIDIA GPUs:
 
-* Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed
-  (unless using `CPU-as-Device mode`_)
+  * CUDA toolkit version 11.x or 12.x must be installed.
 
-  * For targeting NVIDIA GPUs, we support CUDA versions from 11.x to 12.x
-    (inclusive).
+  * ``CHPL_LLVM`` must be set to ``system`` or ``bundled``.
 
-    * If using version 12.x you must use the bundled LLVM
-      (``CHPL_LLVM=bundled``).
+  * We test with system LLVM 17. Older versions may work.
 
-  * If targeting AMD GPUs, we require ROCm version 4.x or <5.5. ROCm versions
-    greater than 5.4 are not supported, yet.
+    * Note that LLVM versions older than 16 do not support CUDA 12.
 
-    * You can check the current status of ROCm 5.x support `here
+  * If using ``CHPL_LLVM=system``, it must have been built with support for
+    NVPTX target. You can check supported targets of your LLVM installation by
+    running ``llvm-config --targets-built``.
+
+* Specifically for targeting AMD GPUs:
+
+  * ROCm version 4.x or <5.5 must be installed.
+
+    * You can check the current status of ROCm version support `here
       <https://github.com/chapel-lang/chapel/issues/23480>`_.
 
-    * When using ROCm, you must use the LLVM that is bundled with your version
-      of ROCm. Chapel will auto-detect the right LLVM from your ROCm
-      installation, just make sure to use ``CHPL_LLVM=system``.
+  * ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm installations come
+    with LLVM. Setting ``CHPL_LLVM=system`` will allow you to use that LLVM.
 
+* For using the `CPU-as-Device mode`_, none of the above requirements apply.
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -188,11 +190,11 @@ code for and interacts with GPUs. These variables include:
   defaults to ``array_on_device``. Changing this variable requires rebuilding
   Chapel. For more information, see the `Memory Strategies`_ section.
 
-* ``CHPL_GPU_BLOCK_SIZE`` --- specifies default block size when launching
+* ``CHPL_GPU_BLOCK_SIZE`` --- specifies the default block size when launching
   kernels. If unset, defaults to 512. This variable may also be set by passing
   the ``chpl`` compiler ``--gpu-block-size=<block_size>``. It can also be
-  overwritten on a per-kernel basis by using the :proc:`~GPU.setBlockSize`
-  function.
+  overwritten on a per-kernel basis by using the ``@gpu.blockSize(n)`` loop
+  attribute (described in more detail in `GPU-Related Attributes`_).
 
 * ``CHPL_GPU_SPECIALIZATION`` --- if set, outlines bodies of 'on' statements
   and clones all functions reachable from that block. The 'on' statement is
@@ -235,8 +237,8 @@ architecture to compile for. The default value is ``sm_60`` for
 ``CHPL_GPU=nvidia``. You may also use the ``--gpu-arch`` compiler flag to
 set GPU architecture.  If using AMD, this variable must be set. `This table in
 the ROCm documentation
-<https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html#linux-supported-gpus>`_
-has possible architecture values (see the "LLVM Target" column). For NVIDIA, see
+<https://rocm.docs.amd.com/en/latest/reference/gpu-arch/gpu-arch-spec-overview.html>`_
+has possible architecture values (see the "LLVM target name" column). For NVIDIA, see
 the `CUDA Compute Capability <https://developer.nvidia.com/cuda-gpus>`_ table.
 
 For NVIDIA, the ``CHPL_GPU_ARCH`` variable can also be set to a comma-separated
@@ -245,6 +247,45 @@ given compute capabilities, and to bundle the different versions in a single
 executable. When the program is executed, the compute capability best suited
 for the available GPU will be loaded by the CUDA runtime. Support for this
 feature for AMD GPUs is planned, but not currently available.
+
+GPU-Related Attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Chapel's GPU support makes use of attributes (see `Attributes in Chapel <./attributes.html>`_)
+to control various aspects of how code is compiled or executed on the GPU.
+Specifically, the two GPU-specific Chapel attributes are ``@assertOnGpu``
+(described in `Diagnostics and Utilities`_) and ``@gpu.blockSize``. Because
+Chapel's GPU support primarily works by converting eligible loops into GPU
+kernels, GPU-specific attributes primarily apply to loops. The following
+example demonstrates these attributes:
+
+.. code-block:: chapel
+
+   config const myBlockSize = 128;
+
+   on here.gpus[0] {
+     @assertOnGpu
+     @gpu.blockSize(myBlockSize)
+     foreach i in 1..1024 { /* ... your code here ... */ }
+   }
+
+In the above code, ``@assertOnGpu`` ensures that the ``foreach`` loop is
+GPU-eligible, and ``@gpu.blockSize`` sets the block size for the kernel to
+``myBlockSize``.
+
+In addition to applying GPU attributes to loops, Chapel provides (experimental)
+support for applying them to variable declarations. This is intended for use
+with variables whose initializers contain GPU-bound code. The following example
+demonstrates initializing an array ``A`` from a ``foreach`` expression:
+
+.. code-block:: chapel
+
+   @assertOnGpu
+   @gpu.blockSize(128)
+   var A = foreach i in 1..1024 do i * i;
+
+Currently, only explicit loop expressions are supported (i.e., GPU
+attributes are not applied to promoted function calls). This is an area of
+active development.
 
 CPU-as-Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -467,7 +508,10 @@ In the generated assembly, kernels are named
 ``chpl_gpu_kernel_<fileName>_line_<num>_`` (with ``filename`` replaced with the
 file containing the outlined loop and ``num`` as the line number of the loop
 header. For example, a kernel on line 3 of ``chpl.foo`` will be named
-``chpl_gpu_kernel_foo_line_3_``).
+``chpl_gpu_kernel_foo_line_3_``). The kernel name may have a number as a suffix
+if the same line of code required multiple kernels to be generated. Typically,
+this can happen if the loop in question was in a generic function with multiple
+instantiations.
 
 Chapel Tasks and GPU Execution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -497,11 +541,6 @@ improvements in the future.
 
 * Intel GPUs are not supported, yet.
 
-* For AMD GPUs:
-
-    * It's not currently possible to compile for multiple AMD GPU architectures
-      at the same time.
-
 * Distributed arrays cannot be used within GPU kernels.
 
 * PGAS style communication is not available within GPU kernels; that is:
@@ -516,12 +555,18 @@ improvements in the future.
   supported (a limited set of functions used by Chapel's runtime library are
   supported).
 
+* It's not currently possible to compile for multiple AMD GPU architectures
+  at the same time.
+
 * Associative arrays cannot be used on GPU sublocales with
   ``CHPL_GPU_MEM_STRATEGY=array_on_device``.
 
 * ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
+
+* `GPU-Related Attributes`_ on variables are not yet applied to promoted
+  function calls.
 
 Using C Interoperability
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -541,7 +586,7 @@ Performance Tips
   you may wish to install `NVIDIA's `driver persistence daemon
   <https://docs.nvidia.com/deploy/driver-persistence/index.html#persistence-daemon>`_
   to alleviate this issue.
-  
+
 Tested Configurations
 ---------------------
 
@@ -552,14 +597,31 @@ marked with * are covered in our nightly testing configuration.
 
   * Hardware: RTX A2000, P100*, V100*, A100* and H100
 
-  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0*
+  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0*, 12.2, 12.4
 
 * AMD
 
-  * Hardware: MI60*, MI100 and MI250X
+  * Hardware: MI60*, MI100 and MI250X*
 
-  * Software:ROCm 4.2*, 4.4, 5.4
+  * Software:ROCm 4.2*, 4.4, 5.4*
 
+
+GPU Support on Windows Subsystem for Linux
+------------------------------------------------
+
+NVIDIA GPUs can be used on Windows through through WSL. To enable GPU support on
+WSL we require the CUDA Toolkit to be installed in the WSL environment and the
+NVIDIA driver to be installed on the Windows host. See the `NVIDIA documentation
+<https://docs.nvidia.com/cuda/wsl-user-guide/index.html#getting-started-with-cuda-on-wsl-2>`_
+for more information on setting up CUDA on WSL.
+See `Using Chapel on WSL <../platforms/windows.html#using-chapel-on-wsl>`_
+for more information on using Chapel with WSL.
+
+  .. note::
+
+    This configuration is not currently tested nightly. Please report any issues
+    you encounter when using Chapel on WSL by `filing a bug report
+    <https://github.com/chapel-lang/chapel/issues/new>`_
 
 Further Information
 -------------------

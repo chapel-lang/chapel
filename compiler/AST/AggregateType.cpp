@@ -1837,6 +1837,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
 
+  handleDefaultAssociativeWarnings(field, field->defPoint->exprType,
+                                   /*initExpr*/ nullptr, this);
+
   return retval;
 }
 
@@ -3287,4 +3290,32 @@ int64_t AggregateType::cArrayLength() const {
   if (sizeInt < 0)
     USR_FATAL(symbol, "c_array must have positive size");
   return sizeInt;
+}
+
+Type* AggregateType::arrayElementType() const {
+  if (!symbol->hasFlag(FLAG_ARRAY)) return nullptr;
+  Type* ret = nullptr;
+  Type* instType = this->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  if (!instClass) return nullptr;
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while (ts == nullptr) {
+    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if (ts != nullptr) ret = ts->type;
+  return ret;
+}
+
+Type* AggregateType::finalArrayElementType() const {
+  AggregateType* arrayType = (AggregateType*) this;
+  Type* ret = nullptr;
+  do {
+    ret = arrayType->arrayElementType();
+    arrayType = toAggregateType(ret);
+  } while (arrayType && arrayType->symbol->hasFlag(FLAG_ARRAY));
+  return ret;
 }

@@ -524,10 +524,10 @@ module JSON {
           // it as a proper key for the map.
           var f = openMemFile();
           {
-            f.writer().withSerializer(jsonSerializer).write(key);
+            f.writer(locking=false).withSerializer(jsonSerializer).write(key);
           }
           var tmp : string;
-          f.reader().readAll(tmp);
+          f.reader(locking=false).readAll(tmp);
           writer.write(tmp);
         }
       }
@@ -583,9 +583,6 @@ module JSON {
 
     return (m, lastPos);
   }
-
-  @deprecated(notes="'JsonSerializer' is deprecated; please use 'jsonSerializer' instead")
-  type JsonSerializer = jsonSerializer;
 
   /*
     A JSON format deserializer to be used by :record:`~IO.fileReader`.
@@ -1109,9 +1106,9 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(defaultSerializer).write(s);
+            f.writer(locking=false).withSerializer(defaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(jsonDeserializer).read(keyType);
+          return f.reader(locking=false).withDeserializer(jsonDeserializer).read(keyType);
         }
       }
 
@@ -1130,9 +1127,9 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(defaultSerializer).write(s);
+            f.writer(locking=false).withSerializer(defaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(jsonDeserializer).read(key);
+          return f.reader(locking=false).withDeserializer(jsonDeserializer).read(key);
         }
       }
 
@@ -1174,7 +1171,4 @@ module JSON {
       }
     }
   }
-
-  @deprecated(notes="'JsonDeserializer' is deprecated; please use 'jsonDeserializer' instead")
-  type JsonDeserializer = jsonDeserializer;
 }

@@ -151,6 +151,12 @@ public:
   virtual bool        isCoforallLoop()                             const;
   virtual bool        isCForLoop()                                 const;
 
+  bool isGpuAttributeBlock();
+  bool isGpuPrimitivesBlock();
+  bool isGpuMetadata();
+  BlockStmt* getPrimitivesBlock();
+  void noteUseOfGpuAttributeBlock(FnSymbol* user);
+
   virtual void        checkConstLoops();
   virtual bool        deadBlockCleanup();
   void                appendChapelStmt(BlockStmt* stmt);
@@ -197,10 +203,13 @@ public:
   CallExpr*           byrefVars;     // task intents - task constructs only
 
 private:
+  CallExpr*           getMarkerPrimIfExists(PrimitiveTag markerType);
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
 
   CallExpr*           blockInfo;
 };
+
+BlockStmt* findEnclosingGpuAttributeBlock(Expr* startFrom);
 
 /************************************* | **************************************
 *                                                                             *

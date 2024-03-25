@@ -2,7 +2,7 @@ config const iters = 300;
 config const trials = 2000/here.maxTaskPar;
 config const n = 80;
 
-var D: domain(real);
+var D: domain(real, parSafe=true);
 
 for i in 1..trials {
   coforall t in 1..n with (ref D) {

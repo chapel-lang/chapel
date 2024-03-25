@@ -52,6 +52,7 @@
 
 bool normalized = false;
 
+static void        preNormalizeHandleStaticVars();
 static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
@@ -130,7 +131,42 @@ static TypeSymbol* expandTypeAlias(SymExpr* se);
 *                                                                             *
 ************************************** | *************************************/
 
+static void handleSharedCArrays() {
+  forv_expanding_Vec(CallExpr, call, gCallExprs)
+   if (call->isPrimitive(PRIM_HOIST_TO_CONTEXT))
+
+    // The particular definition we expect is a default-init c_array, which is:
+    //
+    //    unknown myArray;
+    //    unknown call_tmp;
+    //    call_tmp = c_array(t, k);
+    //    __primitive("default init var", myArray, call_tmp);
+
+    if (DefExpr* hoistDefExpr = toSymExpr(call->get(2))->symbol()->defPoint)
+     if (DefExpr* typeDefExpr = toDefExpr(hoistDefExpr->next))
+      if (CallExpr* typeAssign = toCallExpr(typeDefExpr->next))
+       if (typeAssign->isPrimitive(PRIM_MOVE))
+        if (CallExpr* typeCall = toCallExpr(typeAssign->get(2)))
+         if (CallExpr* initCall = toCallExpr(typeAssign->next))
+          if (initCall->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+           if (SymExpr* typeConstructor = toSymExpr(typeCall->baseExpr))
+            if (typeConstructor->symbol()->hasFlag(FLAG_C_ARRAY))
+   // if all the above conditions succeeded, add a shared variant
+   {
+    SET_LINENO(hoistDefExpr);
+    auto newBlock = new BlockStmt();
+    auto newArr = new VarSymbol(astr("shared_", hoistDefExpr->sym->name));
+    newArr->qual = Qualifier::QUAL_REF;
+    newBlock->insertAtTail(new DefExpr(newArr));
+    newBlock->insertAtTail(new CallExpr(PRIM_MOVE, newArr,
+                new CallExpr("createSharedCArray", typeDefExpr->sym)));
+    initCall->insertAfter(newBlock);
+   }
+}
+
+
 void normalize() {
+  preNormalizeHandleStaticVars();
 
   insertModuleInit();
 
@@ -264,6 +300,9 @@ void normalize() {
     }
   }
 
+  if (fIteratorContexts)
+    handleSharedCArrays();
+
   find_printModuleInit_stuff();
 }
 
@@ -283,6 +322,63 @@ void normalize(FnSymbol* fn) {
 void normalize(Expr* expr) {
   normalizeBase(expr, false);
 }
+
+static void preNormalizeHandleStaticVars() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR)) {
+      SET_LINENO(call);
+
+      Expr* anchor = call;
+      while (anchor && !anchor->list) anchor = anchor->parentExpr;
+      INT_ASSERT(anchor);
+
+      // Put the 'static variable' into its own temp. The initialization code
+      // will also be copied into the conditional, but we need it here above
+      // to make sure that the static wrapper has the right type.
+      auto initVarTemp = newTemp("staticVarInit");
+      auto initVarDef = new DefExpr(initVarTemp, call->get(1)->remove());
+      auto initVarBlock = new BlockStmt(BLOCK_SCOPELESS);
+      initVarBlock->insertAtTail(initVarDef);
+
+      // Create the container for the static variable. This is defined in
+      // module code.
+      auto wrapperTypeTemp = newTemp("staticVarType");
+      auto wrapperTypeDef = new DefExpr(wrapperTypeTemp,
+        new CallExpr("chpl__functionStaticVariableWrapperType",
+                     new CallExpr(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE,
+                                  new CallExpr(PRIM_TYPEOF, initVarTemp))));
+      wrapperTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+
+      auto wrapperVar = new VarSymbol("staticWrapper", dtUnknown);
+      auto wrapperDef = new DefExpr(wrapperVar, nullptr, wrapperTypeTemp);
+      auto wrapperBlock = new BlockStmt(BLOCK_SCOPELESS);
+      wrapperBlock->insertAtTail(wrapperTypeDef);
+      wrapperBlock->insertAtTail(wrapperDef);
+      wrapperBlock->insertAtTail(new CallExpr(PRIM_STATIC_FUNCTION_VAR_WRAPPER,
+                                              wrapperVar, initVarTemp));
+      wrapperBlock->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
+
+      anchor->insertBefore(initVarBlock);
+      anchor->insertBefore(wrapperBlock);
+
+      // Copy the variable initialization code. The _copy_ will be kept, inside
+      // the condition, to initialize the variable only if necessary.
+      SymbolMap map;
+      auto computeValueBlock = initVarBlock->copy(&map);
+      auto computeValueSym = map.get(initVarTemp);
+      auto setValueCall = new CallExpr("setValue", gMethodToken, wrapperVar,
+                                       computeValueSym);
+      computeValueBlock->insertAtTail(setValueCall);
+      auto readyPred = new CallExpr("callerShouldComputeValue", gMethodToken,
+                                    wrapperVar);
+      auto readyCond = new CondStmt(readyPred, computeValueBlock);
+      anchor->insertBefore(readyCond);
+
+      call->replace(new CallExpr("getValue", gMethodToken, wrapperVar));
+    }
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -2704,7 +2800,10 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 ************************************** | *************************************/
 
 static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
-  propagateMarkedGeneric(var, init);
+  if (var->hasFlag(FLAG_TEMP)) {
+    // propagate (?) through type temps for 'owned MyClass(?)' etc
+    propagateMarkedGeneric(var, init);
+  }
 
   // Generate a type constructor call for generic-with-defaults types
   // (Note, this does not work correctly during resolution).

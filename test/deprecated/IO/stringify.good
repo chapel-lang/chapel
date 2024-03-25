@@ -1,2 +1,0 @@
-stringify.chpl:7: warning: 'stringify(x)' is deprecated; please use 'try! "%?".format(x)' from IO.FormattedIO instead
-r: (x = 1, y = 2)

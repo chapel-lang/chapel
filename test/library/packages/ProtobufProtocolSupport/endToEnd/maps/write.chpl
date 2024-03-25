@@ -3,7 +3,7 @@ use maps;
 use IO;
 
 var file = open("out", ioMode.cw);
-var writingChannel = file.writer();
+var writingChannel = file.writer(locking=false);
 
 var messageObj = new mapTest();
 

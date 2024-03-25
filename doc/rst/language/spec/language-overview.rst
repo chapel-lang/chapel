@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: overview
+   single: language overview
 .. _Chapter-Language_Overview:
 
 =================
@@ -25,6 +28,8 @@ This section provides a brief overview of the Chapel language by
 discussing first the guiding principles behind the design of the
 language and second how to get started with Chapel.
 
+.. index::
+   single: language principles
 .. _Guiding_Principles:
 
 Guiding Principles
@@ -46,6 +51,8 @@ abstractions. The second two principles were motivated by a desire to
 narrow the gulf between high-performance parallel programming languages
 and mainstream programming and scripting languages.
 
+.. index::
+   single: language principles; general parallel programming
 .. _General_Parallel_Programming:
 
 General Parallel Programming
@@ -108,6 +115,8 @@ parallelism in an architecturally-neutral way to perform reasonably on
 all of them. Naturally, Chapel programmers can tune their code to more
 closely match a particular machine’s characteristics.
 
+.. index::
+   single: language principles; locality-aware programming
 .. _Locality_Aware_Programming:
 
 Locality-Aware Programming
@@ -123,6 +132,8 @@ SPMD-based programming models in which such details are explicitly
 specified by the programmer on a process-by-process basis via the
 multiple cooperating program instances.
 
+.. index::
+   single: language principles; object-oriented programming
 .. _Object_Oriented_Programming:
 
 Object-Oriented Programming
@@ -140,6 +151,8 @@ of the mainstream programming community. Chapel supports traditional
 reference-based classes as well as value classes that are assigned and
 passed by value.
 
+.. index::
+   single: language principles; generic programming
 .. _Generic_Programming:
 
 Generic Programming
@@ -157,6 +170,8 @@ compiler create versions of the code for each required type signature
 rather than by relying on dynamic typing which would result in
 unacceptable runtime overheads for the HPC community.
 
+.. index::
+   single: main
 .. _Getting_Started:
 
 Getting Started

@@ -3,4 +3,4 @@
 --------------------
 [5 => 25, 8 => 64, 1 => 1, 6 => 36, 2 => 4, 10 => 100, 3 => 9]
 ====================
-SUCCESS: [DefaultAssociativeDom(int(64),true)] int(64)
+SUCCESS: [DefaultAssociativeDom(int(64),false)] int(64)

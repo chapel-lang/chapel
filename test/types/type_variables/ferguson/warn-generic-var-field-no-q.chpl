@@ -34,7 +34,7 @@ proc main() {
   var myvar5: GR = new GR(int, 5);
   var myvar6: GR(?) = new GR(int, 6);
 
-  genericFn(GR);
+  genericFn(GR(?));
 
   compilerError("done");
 }

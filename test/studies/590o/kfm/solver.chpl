@@ -12,7 +12,7 @@ var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
 var infile = open(infilename, ioMode.r);
-var reader = infile.reader();
+var reader = infile.reader(locking=false);
 
 for ij in TableSpace {
    var str: string;

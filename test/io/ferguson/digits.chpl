@@ -28,17 +28,6 @@ if test == 2 {
 }
 
 if test == 3 {
-  var got:string;
-  while readf("%|1s", got) {
-    if got.isDigit() {
-      var i = got:int;
-      writeln(i);
-    }
-  }
-}
-
-
-if test == 4 {
   var chr:int;
   while readf("%c", chr) {
     // Ascii '0' is code 0x30, se we subtract that to get the digit.

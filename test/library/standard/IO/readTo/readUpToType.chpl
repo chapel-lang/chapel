@@ -27,7 +27,7 @@ proc xyType.serialize(writer, ref serializer) throws {
   writer.write("(", this.x, ", ", this.y, ")");
 }
 
-var r = openReader("xy.txt");
+var r = openReader("xy.txt", locking=false);
 
 // read to the start of the XY input
 writeln(r.readTo("|"));

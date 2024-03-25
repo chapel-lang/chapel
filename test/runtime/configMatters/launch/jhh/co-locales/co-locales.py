@@ -62,23 +62,11 @@ def setup():
 class ColocaleArgs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        global numSockets
         # Should not be set by default
         if 'CHPL_RT_LOCALES_PER_NODE' in os.environ:
             del os.environ['CHPL_RT_LOCALES_PER_NODE']
-
-        # Determine the number of sockets per node
-        cmd = ["sinfo", "--format=%X", "--noheader", "--exact"]
-        partition = os.environ.get('CHPL_LAUNCHER_PARTITION')
-        if partition is not None:
-            cmd += ["--partition", partition]
-            if verbose:
-                print("Partition: ", partition)
-
-        numSockets = int(runCmd(cmd))
-        if numSockets == 1:
-            self.skipTest("Node has only one socket.")
-
+        os.environ['CHPL_LAUNCHER_SLURM_VERSION'] = 'slurm'
+        os.environ['CHPL_LAUNCHER_CORES_PER_LOCALE'] = '256'
     def setUp(self):
         if skipReason is not None:
             self.skipTest(skipReason)
@@ -146,7 +134,7 @@ class ColocaleArgs(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError) as cm:
             output = self.runCmd("./hello -nl 3xZ -v --dry-run")
         self.assertEqual(cm.exception.stdout.strip(),
-            '<command-line arg>:1: error: "Z" is not a valid number of locales per node.')
+            '<command-line arg>:1: error: "Z" is not a valid number of co-locales.')
 
     def test_09_no_default(self):
         """Three nodes, no locales-per-node default"""
@@ -195,10 +183,37 @@ class ColocaleArgs(unittest.TestCase):
         """Arg overrides CHPL_RT_LOCALES_PER_NODE"""
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '4'
         output = self.runCmd("./hello -nl 3x2 -v --dry-run")
-        print(output)
         self.assertTrue('--nodes=3' in output or '-N 3' in output)
         self.assertIn('--ntasks=6', output)
 
+    def test_16_valid_suffixes(self):
+        """Allow valid suffixes"""
+        for s in ['s', 'socket', 'numa', 'llc', 'c', 'core']:
+            with self.subTest(s=s):
+                output=self.runCmd("./hello -nl 3x2%s -v --dry-run" % s)
+                self.assertTrue('--nodes=3' in output or '-N 3' in output)
+                self.assertIn('--ntasks=6', output)
+
+    def test_17_invalid_suffix(self):
+        """Reject invalid suffix"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl -3x2z -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "z" is not a valid suffix.')
+
+    def test_18_invalid_suffix2(self):
+        """Reject invalid suffix that starts with a valid character"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl -3x2ss -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "ss" is not a valid suffix.')
+
+    def test_19_invalid_suffix3(self):
+        """Suffix must follow locales-per-node"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl -3xs -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "s" is not a valid number of co-locales.')
 
 # copied from sub_test.py
 # report an error message and exit
@@ -282,10 +297,6 @@ def main(argv):
     compiler = argv[1]
     name = os.path.join(getDir(compiler), argv[0])
     del argv[1]
-
-    # Add sbatch and srun to our path
-    path = os.environ['PATH']
-    os.environ['PATH'] = os.path.join(os.getcwd(), "bin") + ":" + path
 
     if skipReason is None:
         # Compile the test program

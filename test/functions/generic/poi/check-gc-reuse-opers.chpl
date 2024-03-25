@@ -24,7 +24,7 @@ module Lib {
   proc libAS(myArg) { r1 = r2;                  } // =
   proc libLT(myArg) { var lt = r1 < r2;         } // <
   proc libCF(myArg) { var castF = r1: int;      } // cast from
-  proc libCT(myArg) { var castT = 1: MyRecord;  } // cast to
+  proc libCT(myArg) { var castT = 1: MyRecord(?);  } // cast to
 }
 
 module User {

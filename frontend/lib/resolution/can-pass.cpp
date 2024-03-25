@@ -287,7 +287,7 @@ bool CanPassResult::canConvertNumeric(Context* context,
     // don't convert bools to reals (per spec: "unintended by programmer")
 
     // coerce any integer type to any width real
-    if (actualT->isNumericType())
+    if (actualT->isIntegralType())
       return true;
 
     // convert real from smaller size
@@ -781,12 +781,12 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
     return true;
 
   if (formalT->isAnyIteratorClassType()) {
-    CHPL_UNIMPL("iterator classes"); // TODO: represent iterators
+    // TODO: represent iterators
     return false;
   }
 
   if (formalT->isAnyIteratorRecordType()) {
-    CHPL_UNIMPL("iterator records"); // TODO: represent iterators
+    // TODO: represent iterators
     return false;
   }
 

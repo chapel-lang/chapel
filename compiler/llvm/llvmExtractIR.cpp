@@ -84,6 +84,23 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   }
 
   // cleanup a-la llvm-extract
+  removeUnreferencedLLVM(&M);
+
+  // Put the linkage for functions back
+  for (const auto& pair: saveLinkage) {
+    const std::string& name = pair.first;
+    GlobalValue::LinkageTypes linkage = pair.second;
+    if (Function* f = M.getFunction(name)) {
+      f->setLinkage(linkage);
+    }
+  }
+
+  return ownedM;
+}
+
+void removeUnreferencedLLVM(llvm::Module* mod) {
+  Module& M = *mod;
+
 #if HAVE_LLVM_VER >= 170
   LoopAnalysisManager LAM;
   FunctionAnalysisManager FAM;
@@ -102,6 +119,8 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   PM.addPass(GlobalDCEPass());           // Delete unreachable globals
   PM.addPass(StripDeadDebugInfoPass());  // Remove dead debug info
   PM.addPass(StripDeadPrototypesPass()); // Remove dead func decls
+
+  PM.run(M, MAM);
 #else
   legacy::PassManager Passes;
 
@@ -111,17 +130,6 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
 
   Passes.run(M);
 #endif
-
-  // Put the linkage for functions back
-  for (const auto& pair: saveLinkage) {
-    const std::string& name = pair.first;
-    GlobalValue::LinkageTypes linkage = pair.second;
-    if (Function* f = M.getFunction(name)) {
-      f->setLinkage(linkage);
-    }
-  }
-
-  return ownedM;
 }
 
 void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*> *gvs) {

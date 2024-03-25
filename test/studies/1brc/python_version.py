@@ -2,7 +2,7 @@
 
 import time, csv, sys
 
-filename = 'million_entries.txt'
+filename = 'measurements.txt'
 reportTime = False
 
 start_time = time.time()

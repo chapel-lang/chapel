@@ -167,6 +167,7 @@ void convertFieldsOfRecordThis(FnSymbol* fn);
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
 void  resolveForallStmts2();
+bool shouldReplaceForLoopWithForall(ForLoop *forLoop);
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
@@ -302,8 +303,9 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
-void warnForIntUintConversion(BaseAST* context, Type* formalType,
-                              Type* actualType, Symbol* actual);
+// warn for some int -> uint and small int -> real
+void warnForSomeNumericConversions(BaseAST* context, Type* formalType,
+                                   Type* actualType, Symbol* actual);
 
 void lvalueCheck(CallExpr* call);
 
@@ -401,6 +403,10 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 // as a field or variable (it should be, var x: domain(?)).
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere);
+
+void handleDefaultAssociativeWarnings(Symbol* sym,
+                                      Expr* typeExpr, Expr* initExpr,
+                                      AggregateType* forFieldInHere);
 
 // These enable resolution for functions that don't really match
 // according to the language definition in order to get more errors

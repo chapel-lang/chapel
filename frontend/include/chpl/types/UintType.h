@@ -45,15 +45,15 @@ class UintType final : public PrimitiveType {
 
   static const owned<UintType>& getUintType(Context* context, int bitwidth);
 
-  /** what is stored in bitwidth_ for the default 'uint'? */
-  static int defaultBitwidth() {
-    return 64;
-  }
-
  public:
   ~UintType() = default;
 
   static const UintType* get(Context* context, int bitwidth);
+
+  /** what is stored in bitwidth_ for the default 'uint'? */
+  static int defaultBitwidth() {
+    return 64;
+  }
 
   int bitwidth() const override {
     return bitwidth_;

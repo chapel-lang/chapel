@@ -36,6 +36,7 @@ public:
                                        LLVMMetadataList attrs = {});
 
   static CForLoop*       buildWithBodyFrom(ForLoop* forLoop);
+  static CForLoop*       buildWithBodyFrom(ForLoop* forLoop, SymbolMap &map);
 
   static CForLoop*       loopForClause(BlockStmt* clause);
 

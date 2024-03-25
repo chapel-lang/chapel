@@ -33,7 +33,7 @@ var reader: fileReader(locking=true);
 
 if initFromFile {
   infile = open(filename, ioMode.r);
-  reader = infile.reader();
+  reader = infile.reader(locking=true);
 }
 
 

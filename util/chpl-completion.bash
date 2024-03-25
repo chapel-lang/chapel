@@ -81,7 +81,6 @@ _chpl ()
 --fast \
 --fast-followers \
 --force-vectorize \
---foreach-intents \
 --formal-domain-checks \
 --gasnet-segment \
 --gdb \
@@ -121,6 +120,7 @@ _chpl ()
 --io-deserialize-readThis \
 --io-gen-serialization \
 --io-serialize-writeThis \
+--iterator-contexts \
 --launcher \
 --ldflags \
 --lib-linkage \
@@ -205,7 +205,6 @@ _chpl ()
 --no-explain-verbose \
 --no-fast-followers \
 --no-force-vectorize \
---no-foreach-intents \
 --no-formal-domain-checks \
 --no-gen-ids \
 --no-gpu-specialization \
@@ -228,6 +227,7 @@ _chpl ()
 --no-io-deserialize-readThis \
 --no-io-gen-serialization \
 --no-io-serialize-writeThis \
+--no-iterator-contexts \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
@@ -277,6 +277,7 @@ _chpl ()
 --no-report-auto-local-access \
 --no-report-blocking \
 --no-resolve-concrete-fns \
+--no-return-by-ref \
 --no-scalar-replacement \
 --no-specialize \
 --no-split-initialization \
@@ -289,8 +290,14 @@ _chpl ()
 --no-warn-array-of-range \
 --no-warn-const-loops \
 --no-warn-domain-literal \
---no-warn-int-uint \
+--no-warn-float-to-float \
+--no-warn-implicit-numeric-conversions \
+--no-warn-int-to-uint \
+--no-warn-integral-to-float \
+--no-warn-integral-to-integral \
+--no-warn-param-implicit-numeric-conversions \
 --no-warn-potential-races \
+--no-warn-small-integral-to-float \
 --no-warn-special \
 --no-warn-tuple-iteration \
 --no-warn-unknown-attribute-toolname \
@@ -316,6 +323,7 @@ _chpl ()
 --preserve-inlined-line-numbers \
 --print-additional-errors \
 --print-all-candidates \
+--print-bootstrap-commands \
 --print-callgraph \
 --print-callstack-on-error \
 --print-chpl-home \
@@ -347,6 +355,7 @@ _chpl ()
 --report-auto-aggregation \
 --report-auto-local-access \
 --report-blocking \
+--report-context-adjustments \
 --report-dead-blocks \
 --report-dead-modules \
 --report-gpu \
@@ -360,6 +369,7 @@ _chpl ()
 --report-scalar-replace \
 --report-vectorized-loops \
 --resolve-concrete-fns \
+--return-by-ref \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
@@ -386,8 +396,14 @@ _chpl ()
 --warn-array-of-range \
 --warn-const-loops \
 --warn-domain-literal \
---warn-int-uint \
+--warn-float-to-float \
+--warn-implicit-numeric-conversions \
+--warn-int-to-uint \
+--warn-integral-to-float \
+--warn-integral-to-integral \
+--warn-param-implicit-numeric-conversions \
 --warn-potential-races \
+--warn-small-integral-to-float \
 --warn-special \
 --warn-tuple-iteration \
 --warn-unknown-attribute-toolname \
@@ -532,7 +548,14 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-vectorize \
+--no-warn-float-to-float \
+--no-warn-implicit-numeric-conversions \
+--no-warn-int-to-uint \
+--no-warn-integral-to-float \
+--no-warn-integral-to-integral \
+--no-warn-param-implicit-numeric-conversions \
 --no-warn-potential-races \
+--no-warn-small-integral-to-float \
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
@@ -579,7 +602,14 @@ _chpl ()
 --using-attribute-toolname \
 --vectorize \
 --version \
+--warn-float-to-float \
+--warn-implicit-numeric-conversions \
+--warn-int-to-uint \
+--warn-integral-to-float \
+--warn-integral-to-integral \
+--warn-param-implicit-numeric-conversions \
 --warn-potential-races \
+--warn-small-integral-to-float \
 --warn-unknown-attribute-toolname \
 --warn-unstable \
 --warnings \

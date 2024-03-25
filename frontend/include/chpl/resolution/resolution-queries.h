@@ -71,6 +71,31 @@ types::QualifiedType getInstantiationType(Context* context,
                                           types::QualifiedType actualType,
                                           types::QualifiedType formalType);
 
+/**
+  Returns a map from enum element IDs to their numeric values.
+  The caller is responsible for validating that node is an enum ID.
+  If an invalid ID is given, an empty map is returned.
+
+  Abstract elements are not stored in the returned map, to distinguish
+  from non-abstract elements whose values could not be computed.
+ */
+const std::map<ID, types::QualifiedType>&
+computeNumericValuesOfEnumElements(Context* context, ID node);
+
+const chpl::optional<types::QualifiedType>&
+computeUnderlyingTypeOfEnum(Context* context, ID element);
+
+/**
+  Returns the numeric value of an enum element.
+  The caller is responsible for validating that element is an enum element ID.
+  If an invalid ID is given, an empty optional is returned.
+ */
+const chpl::optional<types::QualifiedType>&
+computeNumericValueOfEnumElement(Context* context, ID element);
+
+ID lookupEnumElementByNumericValue(Context* context,
+                                   const ID& node,
+                                   const types::QualifiedType& value);
 
 /////// function resolution
 
@@ -208,6 +233,9 @@ ApplicabilityResult instantiateSignature(Context* context,
   Compute a ResolvedFunction given a TypedFnSignature.
   Checks the generic cache for potential for reuse. When reuse occurs,
   the ResolvedFunction might point to a different TypedFnSignature.
+
+  This function will resolve a nested function if it does not refer to
+  any outer variables.
  */
 const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
@@ -234,6 +262,12 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
   do full resolution of types or paren-ful calls in the body.
  */
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
+
+/**
+  Compute the set of outer variables referenced by this function. Will return
+  'nullptr' if there are no outer variables.
+  */
+const OuterVariables* computeOuterVariables(Context* context, ID id);
 
 /*
  * Scope-resolve an AggregateDecl's fields, along with their type expressions

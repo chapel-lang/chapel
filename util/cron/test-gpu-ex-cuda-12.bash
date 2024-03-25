@@ -12,10 +12,7 @@ export CHPL_LLVM=bundled  # CUDA 12 is only supported with bundled LLVM
 export CHPL_COMM=none
 export CHPL_LOCALE_MODEL=gpu
 export CHPL_LAUNCHER_PARTITION=allgriz
-
 export CHPL_GPU=nvidia  # amd is also detected automatically
-
-export CHPL_NIGHTLY_TEST_DIRS="gpu/native"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12"
 $CWD/nightly -cron ${nightly_args}

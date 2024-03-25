@@ -1,1 +1,1 @@
---no-overload-sets-checks
+--no-overload-sets-checks --no-warn-implicit-numeric-conversions

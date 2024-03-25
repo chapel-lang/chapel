@@ -46,7 +46,7 @@ using namespace uast;
   } \
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
 #include "generated-types-list.h"
 
 static const char* blockStyleToString(BlockStyle blockStyle) {
@@ -63,6 +63,14 @@ static const char* opKindToString(Range::OpKind kind) {
     case Range::OPEN_HIGH: return "..<";
     default: return "";
   }
+}
+
+static std::optional<chpl::Location> getValidLocation(const chpl::Location& loc) {
+  /*isEmpty doesn't work since that only relies upon path, which is set*/
+  if (loc.line() != -1) {
+    return loc;
+  }
+  return std::nullopt;
 }
 
 template <typename T> struct InvokeHelper {};
@@ -146,7 +154,7 @@ ACTUAL_ITERATOR(FnCall);
   }; \
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
 #include "generated-types-list.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
@@ -161,6 +169,6 @@ ACTUAL_ITERATOR(FnCall);
   TYPE.tp_new = PyType_GenericNew; \
 
 void setupGeneratedTypes() {
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
 #include "generated-types-list.h"
 }

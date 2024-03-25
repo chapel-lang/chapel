@@ -177,6 +177,8 @@ public:
 
   Type*                       cArrayElementType()                        const;
   int64_t                     cArrayLength()                             const;
+  Type*                       arrayElementType()                         const;
+  Type*                       finalArrayElementType()                    const;
 
   //
   // Public fields

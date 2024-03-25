@@ -760,10 +760,6 @@ record chpl_PrivatizedDistHelper : writeSerializable {
 
   proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
 
-  proc writeThis(f) throws {
-    f.write(_value);
-  }
-
   @chpldoc.nodoc
   proc serialize(writer, ref serializer) throws {
     writer.write(_value);

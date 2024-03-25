@@ -136,16 +136,9 @@ module SortedSet {
 
     /*
       Write the contents of this sortedSet to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
     */
-    inline proc const writeThis(ch: fileWriter) throws {
-      instance.writeThis(ch);
-    }
-
-    @chpldoc.nodoc
     inline proc const serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      instance.serialize(writer, serializer);
     }
 
     /*

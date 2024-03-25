@@ -14,7 +14,7 @@ if doTestEmpty {
   writeln("matches on empty channel");
 
   proc testEmpty(re:string) {
-    var fr = f.reader();
+    var fr = f.reader(locking=false);
     writeln("[", re, "]  ", fr.matches(new regex(re), 0, 6), " ", fr.offset());
   }
 
@@ -38,14 +38,14 @@ if doTestEmpty {
 }
 
 
-{ var w = f.writer(); w.write("xyab"); }
+{ var w = f.writer(locking=false); w.write("xyab"); }
 
 if doTestXY {
 
   writeln("\nmatches on non-empty channel");
 
   proc testXY(re:string) {
-    var fr1 = f.reader();
+    var fr1 = f.reader(locking=false);
     for mm in fr1.matches(new regex(re), 0, 6) {
       var ss: string;
       fr1.extractMatch(mm(0), ss);
@@ -77,7 +77,7 @@ if doTestSearch {
   writeln("\nsearch");
 
   proc testSearch(re:string) {
-    var fr = f.reader();
+    var fr = f.reader(locking=false);
     writeln("[", re, "]   ", fr.search(new regex(re)), " ", fr.offset());
   }
 
@@ -103,7 +103,7 @@ if doTestSearchExtract {
   writeln("\nsearch and extract");
 
   proc testSearchExtract(re:string) {
-    var fr = f.reader();
+    var fr = f.reader(locking=false);
     var ss: string;
     writeln("[", re, "]   ", fr.search(new regex(re), ss), " <", ss, "> ", fr.offset());
   }

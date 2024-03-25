@@ -201,6 +201,35 @@ std::string tupleTypeString() {
   return tupleTypeStringImpl<Elems...>(std::make_index_sequence<sizeof...(Elems)>());
 }
 
+template <typename T>
+std::string iteratorTypeString() {
+  return std::string("typing.Iterator[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
+
+template <typename T>
+PyObject* wrapNilable(ContextObject* context, const Nilable<T>& opt) {
+  if (opt.value) {
+    return PythonReturnTypeInfo<T>::wrap(context, opt.value);
+  } else {
+    Py_RETURN_NONE;
+  }
+}
+
+template <typename T>
+Nilable<T> unwrapNilable(ContextObject* context, PyObject* opt) {
+  if (opt == Py_None) {
+    return {nullptr};
+  } else {
+    return PythonReturnTypeInfo<T>::unwrap(context, opt);
+  }
+}
+
+template <typename T>
+std::string nilableTypeString() {
+  return std::string("typing.Optional[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
+
+
 /* Invoke the DEFINE_INOUT_TYPE macro for each type we want to support.
    New types should be added here. We might consider performing these invocations
    using X-macros for the entire AST class hierarchy if we wanted to be
@@ -211,9 +240,9 @@ DEFINE_INOUT_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNWR
 DEFINE_INOUT_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), PyUnicode_AsUTF8(TO_UNWRAP));
 DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->value_, PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_INOUT_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
-DEFINE_INOUT_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->value_);
-DEFINE_INOUT_TYPE(const chpl::types::Type*, "ChapelType", wrapType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->value_);
-DEFINE_INOUT_TYPE(const chpl::types::Param*, "Param", wrapParam(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(const chpl::uast::AstNode*, "AstNode", wrapGeneratedType(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(const chpl::types::Type*, "ChapelType", wrapGeneratedType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->value_);
+DEFINE_INOUT_TYPE(const chpl::types::Param*, "Param", wrapGeneratedType(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(chpl::Location, "Location", (PyObject*) LocationObject::create(TO_WRAP), ((LocationObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 DEFINE_INOUT_TYPE(PyObject*, "typing.Any", TO_WRAP, TO_UNWRAP);
@@ -226,8 +255,16 @@ template <typename T>
 T_DEFINE_INOUT_TYPE(std::set<T>, setTypeString<T>(), wrapSet(CONTEXT, TO_WRAP), unwrapSet<T>(CONTEXT, TO_UNWRAP));
 template <typename T>
 T_DEFINE_INOUT_TYPE(std::optional<T>, optionalTypeString<T>(), wrapOptional(CONTEXT, TO_WRAP), unwrapOptional<T>(CONTEXT, TO_UNWRAP));
+template <typename T>
+T_DEFINE_INOUT_TYPE(Nilable<T>, nilableTypeString<T>(), wrapNilable(CONTEXT, TO_WRAP), unwrapNilable<T>(CONTEXT, TO_UNWRAP));
 template <typename ... Elems>
 T_DEFINE_INOUT_TYPE(std::tuple<Elems...>, tupleTypeString<Elems...>(), wrapTuple(CONTEXT, TO_WRAP), unwrapTuple<Elems...>(CONTEXT, TO_UNWRAP));
+template <typename ElemType>
+T_DEFINE_INOUT_TYPE(TypedIterAdapterBase<ElemType>*, iteratorTypeString<ElemType>(), wrapIterAdapter(CONTEXT, TO_WRAP), (TypedIterAdapterBase<ElemType>*) ((AstIterObject*) TO_UNWRAP)->iterAdapter);
+
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) \
+  DEFINE_INOUT_TYPE(const TYPE*, #NAME, wrapGeneratedType(CONTEXT, (ROOT_TYPE*) TO_WRAP), ((ROOT##Object*) TO_UNWRAP)->value_->to##NAME());
+#include "generated-types-list.h"
 
 #undef T_DEFINE_INOUT_TYPE
 #undef DEFINE_INOUT_TYPE

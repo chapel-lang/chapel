@@ -60,8 +60,8 @@ module JsonStuff {
     var fbTwo = new FooBar('fbTwo', 2, false, foo, bar);
     write("Writing FooBar to JSON: "); try! jsonOut.writeln(fb);
     var mem = try! openMemFile();
-    try! mem.writer(serializer = new jsonSerializer()).write(fb);
-    var reader = try! mem.reader(deserializer = new jsonDeserializer());
+    try! mem.writer(serializer = new jsonSerializer(), locking=false).write(fb);
+    var reader = try! mem.reader(deserializer = new jsonDeserializer(), locking=false);
 
     var f = new FooBar();
     try! reader.readf("%?", f);

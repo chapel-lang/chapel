@@ -115,6 +115,18 @@ void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
     callExprs.push_back(callExpr);
 }
 
+void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts) {
+  AST_CHILDREN_CALL(ast, collectBlockStmts, blockStmts);
+  if (BlockStmt* blockStmt = toBlockStmt(ast))
+    blockStmts.push_back(blockStmt);
+}
+
+void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops) {
+  AST_CHILDREN_CALL(ast, collectForLoops, forLoops);
+  if (ForLoop* forLoop = toForLoop(ast))
+    forLoops.push_back(forLoop);
+}
+
 void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
                            FnSymbol* parent_fn) {
   AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
@@ -1035,6 +1047,49 @@ pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 }
 
 
+static ModuleSymbol* getToplevelModule(FnSymbol* fn) {
+  if (fn->defPoint == nullptr) {
+    return nullptr;
+  }
+
+  // find the top-level module
+  ModuleSymbol* topLevelModule = nullptr;
+  for (ModuleSymbol* cur = fn->defPoint->getModule();
+       cur && cur->defPoint;
+       cur = cur->defPoint->getModule()) {
+    if (isModuleSymbol(cur) && cur != theProgram && cur != rootModule) {
+      topLevelModule = cur;
+    }
+  }
+
+  return topLevelModule;
+}
+
+static bool separatelyCompilingModule(ModuleSymbol* topLevelModule) {
+  return gDynoGenLibModuleNameAstrs.count(topLevelModule->name) > 0;
+}
+
+static bool keepFnForSeparateCompilation(FnSymbol* fn) {
+  if (!fDynoGenLib) {
+    return false;
+  }
+
+  ModuleSymbol* mod = getToplevelModule(fn);
+  if (mod && separatelyCompilingModule(mod)) {
+    // Workaround: don't keep 'iteratorIndex' functions in
+    // ChapelIteratorSupport because these can call 'getValue' functions
+    // that contain partial and invalid AST.
+    if (0 == strcmp(mod->name, "ChapelIteratorSupport") &&
+        0 == strcmp(fn->name, "iteratorIndex")) {
+      return false;
+    }
+
+    // generally, keep functions in modules being separately compiled
+    return true;
+  }
+  return false;
+}
+
 // Visit and mark functions (and types) which are reachable from
 // externally visible symbols.
 static void
@@ -1062,10 +1117,17 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
 
-  // Mark exported symbols and module init/deinit functions as visible.
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE))
+  // Mark things to consider always visible:
+  //  * exported symbols
+  //  * always-resolve functions
+  //  * functions in modules being separately compiled
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_EXPORT) ||
+        fn->hasFlag(FLAG_ALWAYS_RESOLVE) ||
+        keepFnForSeparateCompilation(fn)) {
       pruneVisit(fn, fns, types);
+    }
+  }
 
   // Mark well-known functions as visible
   std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
@@ -1172,19 +1234,43 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
   }
 }
 
+static bool shouldRemoveSymBeforeCodeGeneration(Symbol* sym) {
+  if (!sym || !sym->inTree() || !sym->type) return false;
 
-void cleanupAfterTypeRemoval()
-{
+  // Do not remove symbols with at least one use.
+  if (sym->firstSymExpr()) return false;
+
+  // Do not remove formals or functions.
+  if (isArgSymbol(sym) || isFnSymbol(sym)) return false;
+
+  // Do not remove fields.
+  if (isTypeSymbol(sym->defPoint->parentSymbol)) return false;
+
+  if (sym->type == dtUninstantiated &&
+      sym != dtUninstantiated->symbol) {
+    return true;
+  }
+  return false;
+}
+
+void cleanupAfterTypeRemoval() {
   //
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->inTree()                             &&
-        def->sym->type                   != NULL  &&
-        isAggregateType(def->sym->type)  ==  true &&
-        isTypeSymbol(def->sym)           == false &&
-        def->sym->type->symbol->inTree() == false)
-      def->sym->type = dtNothing;
+    auto sym = def->sym;
+    if (!def->inTree() || !sym || !sym->type) continue;
+
+    if (!sym->type->symbol->inTree() && isAggregateType(sym->type) &&
+        !isTypeSymbol(sym)) {
+      sym->type = dtNothing;
+    }
+
+    // Some types must never reach code generation, as they have no runtime
+    // representation. E.g., 'uninstantiated' is one of these types.
+    // Temporaries can be introduced with this type when resolving methods
+    // over any partially-instantiated type.
+    if (shouldRemoveSymBeforeCodeGeneration(sym)) def->remove();
   }
 
   // Clear out any uses of removed types in Type::substitutionsPostResolve

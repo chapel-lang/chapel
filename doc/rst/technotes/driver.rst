@@ -21,7 +21,7 @@ subprocesses depending on which backend is used. By contrast, many compiler
 executables (including ``gcc`` and ``clang``) are actually `compiler drivers`.
 A compiler driver is a smaller program responsible for processing arguments and
 invoking separate processes for the different stages of compilation required. As
-of release 1.34, ``chpl`` runs as a compiler driver by default, with the
+of release 2.0, ``chpl`` runs as a compiler driver by default, with the
 following phases run as separate subprocesses:
 
 - ``compilation``: Everything through code generation (C code or LLVM bitcode).
@@ -82,7 +82,7 @@ Development History
   phases: `compilation`, which is responsible for everything through code
   generation (C code or LLVM bitcode), and `makeBinary`, which is responsible
   for binary generation (including linking).
-- In release 1.34, the driver mode is on by default, and the
+- In release 2.0, the driver mode is on by default, and the
   ``--compiler-driver`` flag is unstable. The new unstable
   ``--no-compiler-driver`` flag allows opting out of the driver mode and will
   cause the compiler to run monolithically as before. Both flags will be removed

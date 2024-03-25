@@ -92,7 +92,7 @@ module GPU
      This function is intended to be called from within a GPU kernel and is
      useful for debugging purposes.
 
-     Currently using :proc:`~ChapelIO.write` to send output to ``stdout`` will
+     Currently using :proc:`~IO.write` to send output to ``stdout`` will
      make a loop ineligible for GPU execution; use :proc:`gpuWrite` instead.
 
      Currently this function will only work if values of type
@@ -244,9 +244,17 @@ module GPU
     }
   }
 
+  @chpldoc.nodoc
+  inline proc createSharedCArray(type theType : c_array(?t, ?k)) ref {
+    var voidPtr = __primitive("gpu allocShared", numBytes(t) * k);
+    var arrayPtr = voidPtr : c_ptr(theType);
+    return arrayPtr.deref();
+  }
+
   /*
     Set the block size for kernels launched on the GPU.
    */
+  @deprecated(notes="the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.")
   inline proc setBlockSize(blockSize: integral) {
     __primitive("gpu set blockSize", blockSize);
   }
@@ -787,7 +795,7 @@ module GPU
 
   // This function requires that startIdx and endIdx are within the bounds of the array
   // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
-  private proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
+  private inline proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan
@@ -887,11 +895,61 @@ module GPU
 
   private import Time;
 
+  // We no doc it so we can test this independently
+  @chpldoc.nodoc
+  proc gpuExternSort(ref gpuInputArr : [] ?t) {
+    param cTypeName = if      t==int(8)   then "int8_t"
+                      else if t==int(16)  then "int16_t"
+                      else if t==int(32)  then "int32_t"
+                      else if t==int(64)  then "int64_t"
+                      else if t==uint(8)  then "uint8_t"
+                      else if t==uint(16) then "uint16_t"
+                      else if t==uint(32) then "uint32_t"
+                      else if t==uint(64) then "uint64_t"
+                      else if t==real(32) then "float"
+                      else if t==real(64) then "double"
+                      else                     "unknown";
+
+    if cTypeName == "unknown" {
+      compilerError("Arrays with ", t:string,
+                    " elements cannot be sorted with gpuExternSort functions");
+    }
+
+    // Only useful when calling gpuExternSort directly
+    extern proc chpl_gpu_can_sort(): bool;
+    if !chpl_gpu_can_sort() {
+      gpuSort(gpuInputArr);
+      return;
+    }
+
+    proc getExternFuncName(param op: string) param: string {
+      return "chpl_gpu_sort_"+op+"_"+cTypeName;
+    }
+
+    // find the extern function we'll use
+    // (there's only one right now, the infrastructure allows more)
+    param externFunc = getExternFuncName("keys");
+    extern externFunc proc sort_fn(data, temp, size);
+
+    // Make another array which is needed for the sort
+    var temp : gpuInputArr.type;
+
+    const basePtr = c_ptrToConst(gpuInputArr);
+    const tempPtr = c_ptrTo(temp);
+    // Do the sort
+    sort_fn(basePtr, tempPtr, gpuInputArr.size);
+
+    // The sorted values are in temp, so we need to copy them back
+    // to the original array
+    // TODO: Maybe change this to a  <=> to just swap pointers
+    gpuInputArr = temp;
+  }
+
   /*
     Sort an array on the GPU.
     The array must be in GPU-accessible memory and the function must
     be called from outside a GPU-eligible loop.
-    Only arrays with uint eltType are supported.
+    Only arrays of numeric types are supported.
     A simple example is the following:
 
      .. code-block:: chapel
@@ -902,21 +960,49 @@ module GPU
          writeln(Arr); // [1, 2, 3, 4, 5]
        }
   */
-  proc gpuSort(ref gpuInputArr : [] uint) {
+  proc gpuSort(ref gpuInputArr : [] ?t) {
     if !here.isGpu() then halt("gpuSort must be run on a gpu locale");
-
     if gpuInputArr.size == 0 then return;
+
+    if CHPL_GPU=="cpu" {
+      use Sort only sort;
+      sort(gpuInputArr);
+      return;
+    }
+
+    extern proc chpl_gpu_can_sort(): bool;
+    if chpl_gpu_can_sort() {
+      gpuExternSort(gpuInputArr);
+      return;
+    }
+
+    fallBackRadixSort(gpuInputArr);
+  }
+
+  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where isCoercible(t, uint){
     // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
     // TODO better heuristic here?
     var chunkSize = Math.divCeil(gpuInputArr.size, 2000);
     parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
   }
 
+  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where !isCoercible(t, uint){
+    compilerError("GPU Based sorting is only supported for arrays of type uint for ROCm version <5.0.0. Upgrade your ROCm install to sort all primitive numeric types");
+  }
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
-  proc parallelRadixSort(ref gpuInputArr : [] uint, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
-                         const distributed : bool = false) { // The last argument is for multi GPU sort that is pending a patch before it can work
-
+  proc parallelRadixSort(ref gpuInputArr : [] ?t, const bitsAtATime : int = 8,
+                         const chunkSize : int = 512, const noisy : bool = false,
+                         const distributed : bool = false) where isCoercible(t, uint){
+    // The last argument (distributed) is for multi GPU sort that is pending a
+    // patch before it can work
+    if !here.isGpu() then halt("parallelRadixSort must be run on a gpu locale");
+    if gpuInputArr.size == 0 then return;
+    if CHPL_GPU=="cpu" {
+      use Sort only sort;
+      sort(gpuInputArr);
+      return;
+    }
     // How many bits we sort at once based on the bitsAtATime
     const buckets = 1 << bitsAtATime; // 2^bitsAtATime, ex: 2^4 = 16 = 0b10000
     const bitMask = buckets - 1; // 2^bitsAtATime - 1, ex: 2^4 - 1 = 15 = 0b1111
@@ -940,12 +1026,12 @@ module GPU
     // we create the prefixSum arrays, one for each chunk
     // And we only create it once
     // This was we can reuse it for each iteration of radix Sort
-    var prefixSums : [0..<numChunks*buckets] uint;
+    var prefixSums : [0..<numChunks*buckets] t;
 
     var timer : Time.stopwatch;
     // Ceiling on number of iterations based on max element in array
     timer.start();
-    var maxVal = max(uint);
+    var maxVal = max(t);
     // Reduce can be used to do this faster
     // We do this because the preferred ways below either don't work or take too long
     // But I'm leaving this as is due to https://github.com/chapel-lang/chapel/issues/22736
@@ -1012,11 +1098,11 @@ module GPU
     }
   }
 
-  private proc parallelCount(ref gpuCounts : [], ref gpuInputArr : [] uint, const exp : int,
+  private proc parallelCount(ref gpuCounts : [], ref gpuInputArr : [] ?t, const exp : int,
                     const bitMask : int, const chunkSize : int,
                     const numChunks : int,  const numChunksThisGpu : int = numChunks,
                     const startChunk : int = 0,
-                    const gpuId : int = 0, const resetCountsArray = true) {
+                    const gpuId : int = 0, const resetCountsArray = true) where isCoercible(t, uint){
 
     // Instead of using a nested array of arrays, use a simple 1D array of
     // size numChunks*buckets which is a column major representation
@@ -1047,8 +1133,8 @@ module GPU
 
   // Multi GPU Experimental function
   // This won't work for now since it wasn't updated with the modularization of radix sort
-  private proc distributedCount(ref counts : [], ref gpuInputArr : [] uint, const exp : int, const bitMask : int,
-                        const numChunks : int, const numGpus : int ) {
+  private proc distributedCount(ref counts : [], ref gpuInputArr : [] ?t, const exp : int, const bitMask : int,
+                        const numChunks : int, const numGpus : int ) where isCoercible(t, uint){
     // Counts should be all 0s
     // counts = 0;
 
@@ -1085,9 +1171,9 @@ module GPU
     }
   }
 
-  private proc parallelScatter(ref gpuOffsets : [], ref gpuInputArr : [] uint,
+  private proc parallelScatter(ref gpuOffsets : [], ref gpuInputArr : [] ?t,
                        const exp : int, const bitMask : int,
-                       const chunkSize : int, const numChunks : int) {
+                       const chunkSize : int, const numChunks : int) where isCoercible(t, uint){
 
     var gpuOutputArr : gpuInputArr.type;
     const arrSize = gpuInputArr.size;

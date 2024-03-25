@@ -457,6 +457,9 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 
   checkSurprisingGenericDecls(fn, fn->retExprType->body.tail, nullptr);
 
+  handleDefaultAssociativeWarnings(fn, fn->retExprType->body.tail,
+                                   /*initExpr*/ nullptr, /*field*/ nullptr);
+
   retType = fn->retExprType->body.tail->typeInfo();
 
   if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
@@ -897,6 +900,7 @@ static void markIteratorAndLoops(FnSymbol* fn) {
           bool justYield = isLoopBodyJustYield(loop);
           if (justYield || markAllYieldingLoops) {
             loop->orderIndependentSet(true);
+            loop->exemptFromImplicitIntents();
           } else {
             if (fReportVectorizedLoops && fExplainVerbose) {
               if (!isLeaderIterator(fn)) {
@@ -2118,12 +2122,14 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
         if (isIterator) {
-          // This feels like it should be:
-          // retType = dtVoid;
-          //
-          // but that leads to compiler generated assignments of 'void' to
-          // variables, which isn't allowed.  If we fib and claim that it
-          // returns 'nothing', those assignments get removed and all is well.
+          const bool emitError = !fn->hasFlag(FLAG_PROMOTION_WRAPPER);
+          if (emitError) {
+            // TODO: Right now this has to be USR_FATAL in order to avoid
+            // the possibility of subsequent errors about 'nothing'.
+            USR_FATAL(fn, "iterators with no reachable 'yield' statements "
+                          "must declare their return type");
+          }
+
           retType = dtNothing;
         } else {
           retType = dtVoid;
@@ -2757,7 +2763,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     INT_ASSERT(toValType == toType->type);
 
     // generate a warning in some cases for int->uint implicit conversion
-    warnForIntUintConversion(insertBefore, toValType, fromValType, from);
+    warnForSomeNumericConversions(insertBefore, toValType, fromValType, from);
   }
 
   // seemingly redundant toType->type->symbol is for lowered runtime type vars

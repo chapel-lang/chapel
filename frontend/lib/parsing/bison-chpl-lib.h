@@ -147,6 +147,7 @@ extern int yychpl_debug;
     AstNode* where;
     ParserExprList* lifetime;
     ParserExprList* body;
+    TextLocation headerLoc;
   };
 
   // A struct to thread along some pieces of a module before it is built.
@@ -264,12 +265,12 @@ extern int yychpl_debug;
   #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
-#line 300 "chpl.ypp"
+#line 301 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 273 "bison-chpl-lib.h"
+#line 274 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -497,14 +498,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 308 "chpl.ypp"
+#line 309 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 316 "chpl.ypp"
+#line 317 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -513,6 +514,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 517 "bison-chpl-lib.h"
+#line 518 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

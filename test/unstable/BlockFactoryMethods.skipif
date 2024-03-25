@@ -1,0 +1,2 @@
+# valgrind does not handle indirect modification checking correctly, so skip
+CHPL_TEST_VGRND_EXE == on

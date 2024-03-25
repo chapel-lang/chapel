@@ -37,10 +37,10 @@ IO module's serialization/deserialization API. For example:
     var b: string;
   }
 
-  var myFile = open("r.yaml", ioMode.cwr),
+  var writer = openWriter("r.yaml", serializer = new yamlSerializer()),
       r1 = new R(1, "hello");
 
-  myFile.writer().withSerializer(new yamlSerializer()).write(r1);
+  writer.write(r1);
 
   /* r.yaml:
     --- R!
@@ -49,7 +49,7 @@ IO module's serialization/deserialization API. For example:
     ...
   */
 
-  var r2 = myFile.reader().withDeserializer(new yamlDeserializer()).read(R);
+  var r2 = myFile.reader(locking=false).withDeserializer(new yamlDeserializer()).read(R);
   assert(r1 == r2);
 
 Yaml files can also be written and parsed directly using the :type:`YamlValue`
@@ -943,12 +943,8 @@ module YAML {
     }
 
     @chpldoc.nodoc
-    proc writeThis(fw) throws {
-      fw.write("Empty YamlValue");
-    }
-    @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("Empty YamlValue");
     }
 
     @chpldoc.nodoc
@@ -1022,21 +1018,18 @@ module YAML {
       }
     }
 
-    override proc writeThis(fw) throws {
-      var first = true;
-      fw.writeLiteral("{");
-      for k in this._map.keys() {
-        if first then first = false;
-                 else fw.writeLiteral(", ");
-        fw.write(k);
-        fw.writeLiteral(": ");
-        fw.write(this._map[k]);
-      }
-      fw.writeLiteral("}");
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      var first = true;
+      writer.writeLiteral("{");
+      for k in this._map.keys() {
+        if first then first = false;
+                 else writer.writeLiteral(", ");
+        writer.write(k);
+        writer.writeLiteral(": ");
+        writer.write(this._map[k]);
+      }
+      writer.writeLiteral("}");
     }
 
     @chpldoc.nodoc
@@ -1095,19 +1088,16 @@ module YAML {
       return l;
     }
 
-    override proc writeThis(fw) throws {
-      var first = true;
-      fw.writeLiteral("[");
-      for v in this._seq {
-        if first then first = false;
-                 else fw.writeLiteral(", ");
-        fw.write(v);
-      }
-      fw.writeLiteral("]");
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      var first = true;
+      writer.writeLiteral("[");
+      for v in this._seq {
+        if first then first = false;
+                 else writer.writeLiteral(", ");
+        writer.write(v);
+      }
+      writer.writeLiteral("]");
     }
 
     @chpldoc.nodoc
@@ -1223,14 +1213,11 @@ module YAML {
         return "";
     }
 
-    override proc writeThis(fw) throws {
-      if this.yamlType == YamlScalarType.UserDefined
-        then fw.write(this.tag, " ", this.value);
-        else fw.write(this.value);
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      if this.yamlType == YamlScalarType.UserDefined
+        then writer.write(this.tag, " ", this.value);
+        else writer.write(this.value);
     }
 
     @chpldoc.nodoc
@@ -1259,12 +1246,9 @@ module YAML {
       return this._alias : bytes;
     }
 
-    override proc writeThis(fw) throws {
-      fw.write("*", this._alias);
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("*", this._alias);
     }
 
     @chpldoc.nodoc
@@ -1928,13 +1912,8 @@ module YAML {
 
     // -------- meta --------
     @chpldoc.nodoc
-    proc LibYamlEmitter.serialize(fw, serializer) throws {
-      fw.write("---LimYamlEmitter---");
-    }
-
-    @chpldoc.nodoc
-    proc LibYamlEmitter.writeThis(fw) throws {
-      fw.write("---LimYamlEmitter---");
+    proc LibYamlEmitter.serialize(writer, serializer) throws {
+      writer.write("---LimYamlEmitter---");
     }
 
     // ----------------------------------------------------
@@ -2047,13 +2026,8 @@ module YAML {
 
     // -------- meta --------
     @chpldoc.nodoc
-    proc LibYamlParser.serialize(fw, serializer) throws {
-      fw.write("---LimYamlParser---");
-    }
-
-    @chpldoc.nodoc
-    proc LibYamlParser.writeThis(fw) throws {
-      fw.write("---LimYamlParser---");
+    proc LibYamlParser.serialize(writer, serializer) throws {
+      writer.write("---LimYamlParser---");
     }
 
     // ----------------------------------------------------

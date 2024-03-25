@@ -171,9 +171,10 @@ static void test4c(Parser* parser) {
   assert(mod->numStmts() == 1);
   auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
-  assert(enumDecl->numDeclOrComments() == 2);
-  auto a = enumDecl->declOrComment(0)->toEnumElement();
-  auto b = enumDecl->declOrComment(1)->toEnumElement();
+  assert(enumDecl->numDeclOrComments() == 3);
+  assert(enumDecl->declOrComment(0)->isComment());
+  auto a = enumDecl->declOrComment(1)->toEnumElement();
+  auto b = enumDecl->declOrComment(2)->toEnumElement();
   checkTest4(enumDecl, a, b);
 }
 

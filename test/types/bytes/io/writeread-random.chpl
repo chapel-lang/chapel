@@ -22,14 +22,14 @@ var bytesChannel = openTempFile();
 
 {
   // write them to a channel
-  var bytesWriter = bytesChannel.writer();
+  var bytesWriter = bytesChannel.writer(locking=false);
   bytesWriter.write(randomBytes);
   bytesWriter.close();
 }
 
 {
   // read them into a different object
-  var bytesReader = bytesChannel.reader();
+  var bytesReader = bytesChannel.reader(locking=false);
   var readBytes = bytesReader.readAll(bytes);
   bytesReader.close();
   // compare
@@ -43,17 +43,17 @@ var bytesChannel = openTempFile();
 
 {
   // write them to a channel
-  var bytesWriter = bytesChannel.writer();
-  bytesWriter.writef("%|*s", randomBytes.size, randomBytes);
+  var bytesWriter = bytesChannel.writer(locking=false);
+  bytesWriter.writeBinary(randomBytes, randomBytes.size);
   bytesWriter.close();
 }
 
 {
   // read them into a different object
-  var bytesReader = bytesChannel.reader();
+  var bytesReader = bytesChannel.reader(locking=false);
   var readBytes = b"";
   var readLen = randomBytes.size;
-  bytesReader.readf("%|*s", readLen, readBytes);
+  bytesReader.readBinary(readBytes, readLen);
   bytesReader.close();
   // compare
   if readBytes == randomBytes {

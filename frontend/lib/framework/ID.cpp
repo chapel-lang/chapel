@@ -25,6 +25,20 @@
 
 namespace chpl {
 
+UniqueString ID::symbolPathWithoutRepeats(Context* context) const {
+  std::string ret = "";
+  bool needsDot = false;
+
+  auto expanded = expandSymbolPath(context, symbolPath_);
+  for (auto pathPair : expanded) {
+    if (needsDot) ret += ".";
+    needsDot = true;
+
+    ret += pathPair.first.c_str();
+  }
+
+  return UniqueString::get(context, ret.c_str());
+}
 
 // find the last '.' but don't count \.
 // returns -1 if none was found

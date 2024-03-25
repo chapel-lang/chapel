@@ -110,7 +110,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
 	packages/ArgumentParser.chpl \
 	packages/AtomicObjects.chpl \
-	packages/BinaryIO.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/Channel.chpl \
@@ -158,6 +157,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
 	packages/YAML.chpl \
+	packages/Zarr.chpl \
 	packages/ZMQ.chpl \
 
 

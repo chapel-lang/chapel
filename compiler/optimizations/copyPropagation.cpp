@@ -503,7 +503,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
     // special primitive. We don't want copy propagation modifying this
     // variable.
     if (CallExpr *call = toCallExpr(se->parentExpr)) {
-      if (call->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE)) {
+      if (call->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE)) {
         continue;
       }
     }

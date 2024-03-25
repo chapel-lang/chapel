@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-GPU_SRCS = gpu-nvidia.c gpu-nvidia-reduce.cc
+GPU_SRCS = gpu-nvidia.c gpu-nvidia-cub.cc
 
 SRCS = $(GPU_SRCS)
 
@@ -30,6 +30,6 @@ RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version \
                     -Xclang -fcuda-allow-variadic-functions \
                     --offload-arch=$(CHPL_MAKE_GPU_ARCH)
 
-$(RUNTIME_OBJ_DIR)/gpu-nvidia-reduce.o: gpu-nvidia-reduce.cc \
+$(RUNTIME_OBJ_DIR)/gpu-nvidia-cub.o: gpu-nvidia-cub.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
 	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

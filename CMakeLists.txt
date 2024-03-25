@@ -35,8 +35,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Handle all (most?) the versioning information in one place
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
-set(CHPL_MAJOR_VERSION 1)
-set(CHPL_MINOR_VERSION 34)
+set(CHPL_MAJOR_VERSION 2)
+set(CHPL_MINOR_VERSION 1)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
@@ -369,8 +369,11 @@ if (INSTALLATION_MODE STREQUAL "prefix")
   set_target_properties(chpl chpldoc ChplFrontendShared
                         PROPERTIES
                         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
-  install(TARGETS chpl chpldoc
+  install(TARGETS chpl
           RUNTIME DESTINATION bin)
+  install(TARGETS chpldoc OPTIONAL
+          RUNTIME DESTINATION bin)
+
 else()
   # use relative rpaths for the build and do not change them on install
   if (CMAKE_VERSION VERSION_LESS 3.16)
@@ -394,6 +397,8 @@ else()
                           INSTALL_RPATH ${CHPL_INSTALL_RPATH})
   endif()
 
-  install(TARGETS chpl chpldoc
+  install(TARGETS chpl
+          RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
+  install(TARGETS chpldoc OPTIONAL
           RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
 endif()

@@ -24,7 +24,7 @@ testBinaryRead("./input/ti32le.bin", makeSignedArray(32), endianness.little);
 testBinaryRead("./input/ti64le.bin", makeSignedArray(64), endianness.little);
 
 proc testBinaryRead(path: string, expected_values, endian: endianness = endianness.native) {
-    var reader = openReader(path);
+    var reader = openReader(path, locking=false);
     var values : expected_values.type;
 
     try {

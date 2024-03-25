@@ -703,145 +703,6 @@ module ChapelArray {
     return new _distribution(owned.release(x));
   }
 
-  //
-  // Distribution wrapper record
-  //
-  pragma "distribution"
-  pragma "ignore noinit"
-  @chpldoc.nodoc
-  record _distribution : writeSerializable, readDeserializable {
-    var _pid:int;  // only used when privatized
-    pragma "owned"
-    var _instance; // generic, but an instance of a subclass of BaseDist
-    var _unowned:bool; // 'true' for the result of 'getDistribution',
-                       // in which case, the record destructor should
-                       // not attempt to delete the _instance.
-
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this._pid      = _pid;
-      this._instance = _instance;
-      this._unowned  = _unowned;
-    }
-
-    proc init(value) {
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-      this._instance = _to_unmanaged(value);
-    }
-
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : _distribution) {
-      var value = other._value.dsiClone();
-      this.init(value);
-    }
-
-    inline proc _value {
-      if _isPrivatized(_instance) {
-        return chpl_getPrivatizedCopy(_instance.type, _pid);
-      } else {
-        return _instance;
-      }
-    }
-
-    forwarding _value except targetLocales;
-
-    inline proc _do_destroy() {
-      if ! _unowned && ! _instance.singleton() {
-        on _instance {
-          // Count the number of domains that refer to this distribution.
-          // and mark the distribution to be freed when that number reaches 0.
-          // If the number is 0, .remove() returns the distribution
-          // that should be freed.
-          var distToFree = _instance.remove();
-          if distToFree != nil {
-            _delete_dist(distToFree!, _isPrivatized(_instance));
-          }
-        }
-      }
-    }
-
-    proc deinit() {
-      _do_destroy();
-    }
-
-    proc clone() {
-      return new _distribution(_value.dsiClone());
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-      var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-
-      x.definedConst = definedConst;
-
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           definedConst: bool = false) {
-      var ranges: rank*range(idxType, boundKind.both, strides);
-      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
-    }
-
-    proc newAssociativeDom(type idxType, param parSafe: bool=true) {
-      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newSparseDom(param rank: int, type idxType, dom: domain) {
-      var x = _value.dsiNewSparseDom(rank, idxType, dom);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-
-    proc readThis(f) throws {
-      f.read(_value);
-    }
-
-    @chpldoc.nodoc
-    proc ref deserialize(reader, ref deserializer) throws {
-      readThis(reader);
-    }
-
-    // TODO: Can't this be an initializer?
-    @chpldoc.nodoc
-    proc type deserializeFrom(reader, ref deserializer) throws {
-      var ret : this;
-      ret.readThis(reader);
-      return ret;
-    }
-
-    proc writeThis(f) throws {
-      f.write(_value);
-    }
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writer.write(_value);
-    }
-
-    proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
-
-    /*
-       Return an array of locales over which this distribution was declared.
-    */
-    proc targetLocales() const ref {
-      return _value.dsiTargetLocales();
-    }
-  }  // record _distribution
 
   @chpldoc.nodoc
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
@@ -934,6 +795,13 @@ module ChapelArray {
     forwarding _value except doiBulkTransferFromKnown, doiBulkTransferToKnown,
                              doiBulkTransferFromAny,  doiBulkTransferToAny,
                              chpl__serialize, chpl__deserialize;
+
+    // Hook into 'postinit' since arrays do not seem to offer 'init'.
+    proc postinit() {
+      if eltType == nothing {
+        compilerError("cannot initialize array with element type 'nothing'");
+      }
+    }
 
     @chpldoc.nodoc
     proc deinit() {
@@ -1654,40 +1522,29 @@ module ChapelArray {
       compilerError("Reindexing non-rectangular arrays is not permitted.");
     }
 
+    // Note: This 'serialize' is required at the moment because the compiler
+    // generated 'serialize' is considered to be a last resort. Without this
+    // method we would incur promotion when trying to print arrays.
     @chpldoc.nodoc
-    proc writeThis(f) throws {
-      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f._binary();
+    proc serialize(writer, ref serializer) throws {
+      var arrayStyle = writer.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !writer._binary();
       if rank > 1 && ischpl {
         throw new owned IllegalArgumentError("Cannot perform Chapel write of multidimensional array.");
       }
 
-      _value.dsiSerialWrite(f);
-    }
-
-    // Note: This 'serialize' is required at the moment because the compiler
-    // generated 'serialize', like 'writeThis' is considered to be a last
-    // resort. Without this method we would incur promotion when trying
-    // to print arrays.
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
-    }
-
-    @chpldoc.nodoc
-    proc readThis(f) throws {
-      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f._binary();
-      if rank > 1 && ischpl {
-        throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
-      }
-
-      _value.dsiSerialRead(f);
+      _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
     proc ref deserialize(reader, ref deserializer) throws {
-      readThis(reader);
+      var arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !reader._binary();
+      if rank > 1 && ischpl {
+        throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
+      }
+
+      _value.dsiSerialRead(reader);
     }
 
     // TODO: Can we convert this to an initializer despite the potential issues
@@ -1695,7 +1552,7 @@ module ChapelArray {
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(reader);
+      ret.deserialize(reader, deserializer);
       return ret;
     }
 

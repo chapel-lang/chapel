@@ -18,7 +18,7 @@ can be done with ``mason publish`` or manually.
       4) Ensure your package has a remote origin.
       5) Run ``mason publish`` in your package
       6) Go to the link provided to open a pull request to the mason registry.
-      7) Wait for mason-registry gatekeepers to approve PR.
+      7) Wait for mason-registry maintainers to approve PR.
 
 Manual Steps:
       1) Write a library or binary package in chapel using mason
@@ -28,10 +28,10 @@ Manual Steps:
       5) Create a branch of the mason-registry and add your package's ``Mason.toml`` under ``Bricks/<package_name>/<version>.toml``
       6) Add a source field to your ``<version>.toml`` pointing to your package's repository.
       7) Open a PR in the mason-registry for your newly created branch containing just your <version>.toml.
-      8) Wait for mason-registry gatekeepers to approve the PR.
+      8) Wait for mason-registry maintainers to approve the PR.
 
 Once your package is uploaded,  please notify the chapel team if your package should be taken down.
-Your package may be removed by the Mason gatekeepers if the integrity of the package is not maintained.
+Your package may be removed by the Mason maintainers if the integrity of the package is not maintained.
 
 
 

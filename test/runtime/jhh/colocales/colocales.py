@@ -66,68 +66,133 @@ def skipif():
 def stringify(lst):
     return " ".join([str(i) for i in lst])
 
+class TestFramework(unittest.TestCase):
+    """
+    This class defines utility functions and the test cases (which start
+    with 'test_'). The tests in this class are not run directly, but
+    instead are run from subclasses that use different machine
+    topologies.
+    """
+    def setUp(self):
+        if skipReason is not None:
+            self.skipTest(skipReason)
+        self.env = os.environ.copy()
+
+    def runCmd(self, cmd, env=None):
+        if env is None:
+            env = self.env
+        output = runCmd(cmd, env=env, check=False);
+        return output
+
+    # Returns a list of cores in the specified partition
+    def getCores(self,  index, partitions):
+        if index == "all":
+            return sorted([x for lst in [self.getCores(i, partitions)
+                          for i in range(0,partitions)] for x in lst])
+        else:
+            coresPerPartition = int((self.cores * self.sockets) /
+                                    partitions)
+            return [i + (index * coresPerPartition)
+                            for i in range(0,coresPerPartition)]
+
+    # Returns a list of cores in the specified socket.
+    def getSocketCores(self, socket):
+        return self.getCores(socket, self.sockets)
+
+    # Returns a list of cores in the specified NUMA domain
+    def getNumaCores(self, numa):
+        return self.getCores(numa, self.sockets * self.numas)
+
+    # Returns a list of cores in the specified L3 cache
+    def getCacheCores(self, cache):
+        return self.getCores(cache, self.sockets * self.caches)
+
+    # Returns a list of threads (PUs) in the specified partition
+    def getThreads(self, index, partitions):
+        if index == "all":
+            return sorted([x for lst in [self.getThreads(i, partitions)
+                        for i in range(0,partitions)] for x in lst])
+        cores = self.getCores(index, partitions)
+        threads = []
+        for t in range(0, self.threads):
+            threads += [cores[i] + (t * self.sockets * self.cores)
+                        for i in range(0, len(cores))]
+        return threads
+
+    # Returns a list of threads in the specified socket
+    def getSocketThreads(self, socket):
+        return self.getThreads(socket, self.sockets)
+
+    # Returns a list of threads in the specified NUMA domain
+    def getNumaThreads(self, numa):
+        return self.getThreads(numa, self.sockets * self.numas)
+
+    # Returns a list of threads in the specified L3 cache
+    def getCacheThreads(self, cache):
+        return self.getThreads(cache, self.sockets * self.caches)
+
+    def in_socket_test(self, socket, nic):
+        """
+        Locale in socket should use cores and threads in that socket and
+        the closest NIC, no matter which NIC is suggested.
+        """
+        output = self.runCmd("./colocales -r %d -n %d -N %s" %
+                         (socket, self.sockets, nic))
+        cpus = stringify(self.getSocketCores(socket))
+        self.assertIn("Physical CPUs: %s\n" % cpus, output)
+        cpus = stringify(self.getSocketThreads(socket))
+        self.assertIn("Logical CPUs: %s\n" % cpus, output)
+        self.assertIn("NIC: " + self.nicForSocket[socket], output)
+
+    def in_numa_test(self, numa, nic):
+        """
+        Locale in NUMA should use cores and threads in that NUMA and
+        the closest NIC, no matter which NIC is suggested.
+        """
+        numas = self.numas * self.sockets
+        output = self.runCmd("./colocales -r %d -n %d -N %s" %
+                         (numa, numas, nic))
+        cpus = stringify(self.getNumaCores(numa))
+        self.assertIn("Physical CPUs: %s\n" % cpus, output)
+        cpus = stringify(self.getNumaThreads(numa))
+        self.assertIn("Logical CPUs: %s\n" % cpus, output)
+        self.assertIn("NIC: " + self.nicForNuma[numa], output)
+
+
+    def in_cache_test(self, cache, nic):
+        """
+        Locale in L3 cache should use cores and threads in that cache and
+        the closest NIC, no matter which NIC is suggested.
+        """
+        caches = self.caches * self.sockets
+        output = self.runCmd("./colocales -r %d -n %d -N %s" %
+                         (cache, caches, nic))
+        cpus = stringify(self.getCacheCores(cache))
+        self.assertIn("Physical CPUs: %s\n" % cpus, output)
+        cpus = stringify(self.getCacheThreads(cache))
+        self.assertIn("Logical CPUs: %s\n" % cpus, output)
+        self.assertIn("NIC: " + self.nicForCache[cache], output)
+
+    def in_core_test(self, core, nic):
+        """
+        Locale in a core should use only that core and its threads and
+        the closest NIC, no matter which NIC is suggested.
+        """
+        cores = self.cores * self.sockets
+        output = self.runCmd("./colocales -r %d -n %d -N %s" %
+                         (core, cores, nic))
+        cpus = stringify(self.getCores(core, cores))
+        self.assertIn("Physical CPUs: %s\n" % cpus, output)
+        cpus = stringify(self.getThreads(core, cores))
+        self.assertIn("Logical CPUs: %s\n" % cpus, output)
+        self.assertIn("NIC: " + self.nicForCore[core], output)
+
 class TestCases(object):
     """
     This outer class prevents the unittest framework from running the
     test cases in TestCase.
     """
-    class TestCase(unittest.TestCase):
-        """
-        This class defines utility functions and the test cases (which start
-        with 'test_'). The tests in this class are not run directly, but
-        instead are run from subclasses that use different machine
-        topologies.
-        """
-        def setUp(self):
-            if skipReason is not None:
-                self.skipTest(skipReason)
-            self.env = os.environ.copy()
-
-        def runCmd(self, cmd, env=None):
-            if env is None:
-                env = self.env
-            output = runCmd(cmd, env=env, check=False);
-            return output
-
-        # Returns a list of cores in the specified partition
-        def getCores(self,  index, partitions):
-            if index == "all":
-                return sorted([x for lst in [self.getCores(i, partitions)
-                              for i in range(0,partitions)] for x in lst])
-            else:
-                coresPerPartition = int((self.cores * self.sockets) /
-                                        partitions)
-                return [i + (index * coresPerPartition)
-                                for i in range(0,coresPerPartition)]
-
-        # Returns a list of cores in the specified socket.
-        def getSocketCores(self, socket):
-            return self.getCores(socket, self.sockets)
-
-        # Returns a list of cores in the specified NUMA domain
-        def getNumaCores(self, numa):
-            return self.getCores(numa, self.sockets * self.numas)
-
-        # Returns a list of threads (PUs) in the specified partition
-        def getThreads(self, index, partitions):
-            if index == "all":
-                return sorted([x for lst in [self.getThreads(i, partitions)
-                            for i in range(0,partitions)] for x in lst])
-            cores = self.getCores(index, partitions)
-            threads = []
-            for t in range(0, self.threads):
-                threads += [cores[i] + (t * self.sockets * self.cores)
-                            for i in range(0, len(cores))]
-            return threads
-
-        # Returns a list of threads in the specified socket
-        def getSocketThreads(self, socket):
-            return self.getThreads(socket, self.sockets)
-
-        # Returns a list of threads in the specified NUMA domain
-        def getNumaThreads(self, numa):
-            return self.getThreads(numa, self.sockets * self.numas)
-
+    class TestCase(TestFramework):
         def test_00_base(self):
             """
             One locale, should have access to all cores and threads and use
@@ -149,19 +214,6 @@ class TestCases(object):
                 self.skipTest("only one NIC")
             output = self.runCmd("./colocales -N %s" % self.nics[1])
             self.assertIn("NIC: " + self.nics[1], output)
-
-        def in_socket_test(self, socket, nic):
-            """
-            Locale in socket should use cores and threads in that socket and
-            the closest NIC, no matter which NIC is suggested.
-            """
-            output = self.runCmd("./colocales -r %d -n %d -N %s" %
-                             (socket, self.sockets, nic))
-            cpus = stringify(self.getSocketCores(socket))
-            self.assertIn("Physical CPUs: %s\n" % cpus, output)
-            cpus = stringify(self.getSocketThreads(socket))
-            self.assertIn("Logical CPUs: %s\n" % cpus, output)
-            self.assertIn("NIC: " + self.nicForSocket[socket], output)
 
         def test_02_suggest_nic_in_socket(self):
             """
@@ -186,20 +238,6 @@ class TestCases(object):
                 with self.subTest(i=i):
                     self.in_socket_test(i,
                                    self.nicForSocket[(i+1)%self.sockets])
-
-        def in_numa_test(self, numa, nic):
-            """
-            Locale in NUMA should use cores and threads in that NUMA and
-            the closest NIC, no matter which NIC is suggested.
-            """
-            numas = self.numas * self.sockets
-            output = self.runCmd("./colocales -r %d -n %d -N %s" %
-                             (numa, numas, nic))
-            cpus = stringify(self.getNumaCores(numa))
-            self.assertIn("Physical CPUs: %s\n" % cpus, output)
-            cpus = stringify(self.getNumaThreads(numa))
-            self.assertIn("Logical CPUs: %s\n" % cpus, output)
-            self.assertIn("NIC: " + self.nicForNuma[numa], output)
 
         def test_04_suggest_nic_in_numa(self):
             """
@@ -232,6 +270,23 @@ sockets, cores, etc., from those files, but for now we just hard-code that
 information because there are only a few configurations.
 """
 
+def setupEx2(obj):
+        obj.env['HWLOC_XMLFILE'] = 'ex2.xml'
+        obj.sockets = 2
+        obj.numas = 4
+        obj.caches = 8
+        obj.cores = 64
+        obj.threads = 2
+        obj.nics= ['0000:21:00.0', '0000:a1:00.0']
+        obj.nicForSocket = ['0000:21:00.0', '0000:a1:00.0']
+        obj.nicForNuma = ['0000:21:00.0', '0000:21:00.0', '0000:21:00.0',
+                           '0000:21:00.0', '0000:a1:00.0', '0000:a1:00.0',
+                           '0000:a1:00.0', '0000:a1:00.0']
+        obj.nicForCache = [obj.nics[int(i/obj.caches)]
+                            for i in range(0, obj.sockets * obj.caches)]
+        obj.nicForCore = [obj.nics[int(i/obj.cores)]
+                            for i in range(0, obj.sockets * obj.cores)]
+
 class Ex2Tests(TestCases.TestCase):
     """
     HPE Cray EX. Two sockets, four NUMA domains per socket, 64 cores per
@@ -239,16 +294,7 @@ class Ex2Tests(TestCases.TestCase):
     """
     def setUp(self):
         super().setUp()
-        self.env['HWLOC_XMLFILE'] = 'ex2.xml'
-        self.sockets = 2
-        self.numas = 4
-        self.cores = 64
-        self.threads = 2
-        self.nics= ['0000:21:00.0', '0000:a1:00.0']
-        self.nicForSocket = ['0000:21:00.0', '0000:a1:00.0']
-        self.nicForNuma = ['0000:21:00.0', '0000:21:00.0', '0000:21:00.0',
-                           '0000:21:00.0', '0000:a1:00.0', '0000:a1:00.0',
-                           '0000:a1:00.0', '0000:a1:00.0']
+        setupEx2(self)
 
     def test_10_generalized(self):
         """
@@ -344,6 +390,90 @@ class M6inTests(TestCases.TestCase):
                     self.assertNotIn(nic, nics)
                     nics.append(nic)
                     break
+
+class SuffixTests(TestFramework):
+    """
+    Tests functionality of "-nl" type suffix
+    """
+    def setUp(self):
+        super().setUp()
+        setupEx2(self)
+
+    def test_00_socket_basic(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "socket"
+        for i in range(0, self.sockets):
+            with self.subTest(i=i):
+                self.in_socket_test(i, self.nicForSocket[i])
+
+    def test_01_socket_too_many_colocales(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "socket"
+        output = self.runCmd("./colocales -r 0 -n %d" % (self.sockets+1))
+        self.assertIn("error: Node only has %d socket(s)\n" % self.sockets,
+                      output)
+
+    def test_02_numa_basic(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "numa"
+        for i in range(0, self.sockets * self.numas):
+            with self.subTest(i=i):
+                self.in_numa_test(i, self.nicForNuma[i])
+
+    def test_03_numa_too_many_colocales(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "numa"
+        output = self.runCmd("./colocales -r 0 -n %d" %
+                             (self.sockets*self.numas+1))
+        self.assertIn("error: Node only has %d NUMA domain(s)\n" %
+                      (self.sockets * self.numas), output)
+
+    def test_04_cache_basic(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "cache"
+        for i in range(0, self.sockets * self.caches):
+            with self.subTest(i=i):
+                self.in_cache_test(i, self.nicForCache[i])
+
+    def test_05_cache_too_many_colocales(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "cache"
+        output = self.runCmd("./colocales -r 0 -n %d" %
+                             (self.sockets*self.caches+1))
+        self.assertIn("error: Node only has %d L3 cache(s)\n" %
+                      (self.sockets * self.caches), output)
+
+    def test_06_core_basic(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "core"
+        for i in range(0, self.sockets * self.cores):
+            with self.subTest(i=i):
+                self.in_core_test(i, self.nicForCore[i])
+
+    def test_07_core_too_many_colocales(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "core"
+        output = self.runCmd("./colocales -r 0 -n %d" %
+                             (self.sockets*self.cores+1))
+        self.assertIn("error: Node only has %d core(s)\n" %
+                      (self.sockets * self.cores), output)
+
+    def test_08_socket_unused_cores(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "socket"
+        output = self.runCmd("./colocales -r 0 -n 1")
+        self.assertIn("warning: %d cores are unused" % self.cores, output)
+
+    def test_09_numa_unused_cores(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "numa"
+        output = self.runCmd("./colocales -r 0 -n 1")
+        self.assertIn("warning: %d cores are unused" %
+                      ((self.cores/self.numas * (self.numas - 1)) +
+                       self.cores), output)
+
+    def test_10_cache_unused_cores(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "cache"
+        output = self.runCmd("./colocales -r 0 -n 1")
+        self.assertIn("warning: %d cores are unused" %
+                      ((self.cores/self.caches * (self.caches - 1)) +
+                       self.cores), output)
+
+    def test_11_core_unused_cores(self):
+        self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "core"
+        output = self.runCmd("./colocales -r 0 -n 1")
+        self.assertIn("warning: %d cores are unused" %
+                      (self.cores * self.sockets - 1), output)
 
 def main(argv):
     global verbose

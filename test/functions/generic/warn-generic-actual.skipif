@@ -1,0 +1,2 @@
+# work around issue #24113
+COMPOPTS <= --baseline

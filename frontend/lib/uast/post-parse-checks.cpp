@@ -23,6 +23,7 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/parser-error.h"
+#include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
 #include <string.h>
@@ -119,6 +120,7 @@ struct Visitor {
   void checkSparseKeyword(const FnCall* node);
   void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
+  void checkNonAssociativeComparisons(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
@@ -689,7 +691,7 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
                " their behavior is likely to change in the future.");
 }
 
-// TODO: remove this check and warning after 1.34?
+// TODO: remove this check and warning after 2.0?
 void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
   // suppress this warning from chpldoc
   if (isUserCode())
@@ -707,6 +709,61 @@ void Visitor::checkDmappedKeyword(const OpCall* node) {
     if (shouldEmitUnstableWarning(node))
       warn(node, "'dmapped' keyword is unstable,"
            " instead please use factory functions when available");
+}
+
+static int binOpPrecedence(UniqueString ustr) {
+  bool unary = false;
+  bool postfix = false;
+  return opToPrecedence(ustr, unary, postfix);
+}
+
+static void collectEqualPrecedenceOpsWithoutParens(Context* context,
+                                                   const OpCall* node,
+                                                   int prec,
+                                                   std::vector<const OpCall*>& ops,
+                                                   std::vector<const AstNode*>& operands) {
+  auto check = [context, prec, &ops, &operands](const AstNode* child) {
+    if (auto childOp = child->toOpCall()) {
+      if (childOp->numActuals() == 2 && binOpPrecedence(childOp->op()) == prec) {
+        // The child only counts as a 'problem' if it's not parenthesized.
+        if (parsing::locateExprParenthWithAst(context, childOp).line() == -1) {
+          collectEqualPrecedenceOpsWithoutParens(context, childOp, prec, ops, operands);
+          return;
+        }
+      }
+    }
+
+    operands.push_back(child);
+  };
+
+  check(node->actual(0));
+  ops.push_back(node);
+  check(node->actual(1));
+}
+
+void Visitor::checkNonAssociativeComparisons(const OpCall* node) {
+  if (node->numActuals() != 2) return;
+
+  auto lessThanPrec = binOpPrecedence(USTR("<"));
+  auto eqPrec = binOpPrecedence(USTR("=="));
+  auto opPrec = binOpPrecedence(node->op());
+
+  if (opPrec != lessThanPrec && opPrec != eqPrec) return;
+
+  // If the parent is an operator with the same precedence, avoid re-running
+  // the check since the parent would've already tried.
+  if (!parents_.empty()) {
+    auto parentOp = parents_.back()->toOpCall();
+    if (parentOp && binOpPrecedence(parentOp->op()) == opPrec) return;
+  }
+
+  std::vector<const OpCall*> ops;
+  std::vector<const AstNode*> operands;
+  collectEqualPrecedenceOpsWithoutParens(context_, node, opPrec, ops, operands);
+
+  if (ops.size() > 1) {
+    CHPL_REPORT(context_, NonAssociativeComparison, node, ops, operands);
+  }
 }
 
 
@@ -1338,14 +1395,22 @@ void Visitor::checkParenfulDeprecation(const AttributeGroup* node) {
 void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   // Store attributes we recognize in "all-global-strings.h"
   // then a USTR() on the attribute name will work or not work
-  if (node->name() == USTR("deprecated") ||
-      node->name() == USTR("unstable") ||
-      node->name() == USTR("stable") ||
-      node->name() == USTR("assertOnGpu") ||
-      node->name().startsWith(USTR("chpldoc.")) ||
-      node->name().startsWith(USTR("llvm."))) {
-      // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
-      return;
+
+  if (node->name() == USTR("functionStatic")) {
+    // Recognized but unstable.
+    if (shouldEmitUnstableWarning(node)) {
+      warn(node, "function-static variables using @functionStatic are unstable.");
+    }
+  } else if (node->name() == USTR("deprecated") ||
+             node->name() == USTR("unstable") ||
+             node->name() == USTR("stable") ||
+             node->name() == USTR("functionStatic") ||
+             node->name() == USTR("assertOnGpu") ||
+             node->name() == USTR("gpu.blockSize") ||
+             node->name().startsWith(USTR("chpldoc.")) ||
+             node->name().startsWith(USTR("llvm."))) {
+    // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
+    return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
     error(node, "Unknown top-level attribute '%s'", node->name().c_str());
@@ -1373,10 +1438,36 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto attributeGroup = parents_[parents_.size() - 1];
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
   auto node = parents_[parents_.size() - 2];
-  if (attr->name() == USTR("assertOnGpu")) {
+  if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.blockSize")) {
     if (node->isForall() || node->isForeach()) return;
+    if (auto var = node->toVariable()) {
+       if (!var->isField()) return;
+    }
 
-    CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+    if (attr->name() == USTR("assertOnGpu")) {
+      CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+    } else {
+      CHPL_ASSERT(attr->name() == USTR("gpu.blockSize"));
+      CHPL_REPORT(context_, InvalidBlockSize, node, attr);
+    }
+  } else if (attr->name() == USTR("functionStatic")) {
+    if (!node->isVariable()) {
+      error(node, "the '@functionStatic' attribute can only be applied to variables.");
+      return;
+    } else {
+      auto parentSymId = node->id().parentSymbolId(context_);
+      auto parentSymAst = parsing::idToAst(context_, parentSymId);
+      auto parentSymFunction = parentSymAst->toFunction();
+
+      if (!parentSymFunction) {
+        error(node, "the '@functionStatic' attribute can only be applied to variables in functions.");
+        return;
+      }
+
+      if (parentSymFunction->isMethod()) {
+        error(node, "the '@functionStatic' attribute cannot be applied to variables in methods.");
+      }
+    }
   }
 }
 
@@ -1416,6 +1507,7 @@ void Visitor::visit(const PrimCall* node) {
 
 void Visitor::visit(const OpCall* node) {
   checkDmappedKeyword(node);
+  checkNonAssociativeComparisons(node);
 }
 
 void Visitor::visit(const Variable* node) {
@@ -1556,7 +1648,7 @@ void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
     if (seenOtherwise && !when->isOtherwise()) {
       CHPL_REPORT(context_, WhenAfterOtherwise, sel, seenOtherwise, when);
       break;
-    } 
+    }
     if (when->isOtherwise())  seenOtherwise = when;
   }
 }

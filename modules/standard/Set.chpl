@@ -516,8 +516,9 @@ module Set {
       :yields: A constant reference to an element in this set.
     */
     iter const these() const ref {
-      foreach idx in 0..#_htb.tableSize do
+      foreach idx in 0..#_htb.tableSize {
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      }
     }
 
     @chpldoc.nodoc
@@ -543,7 +544,7 @@ module Set {
     }
 
     @chpldoc.nodoc
-    proc const writeThis(ch: fileWriter) throws {
+    proc const _defaultWriteHelper(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
 
@@ -571,7 +572,7 @@ module Set {
     */
     proc const serialize(writer:fileWriter(?), ref serializer) throws {
       if serializer.type == IO.defaultSerializer {
-        writeThis(writer);
+        _defaultWriteHelper(writer);
       } else {
         on this {
           _enter(); defer _leave();

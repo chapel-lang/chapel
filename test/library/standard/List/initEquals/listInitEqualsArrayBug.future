@@ -1,2 +1,1 @@
-bug: init= segfaults at runtime
-#24305
+#24305: List of arrays with specified runtime type breaks at runtime

@@ -1,7 +1,7 @@
 /*
  Test to make sure we do/don't warn about the changed behavior (depending on
  if using chpl or chpldoc) in these primitives from v1.31 to v1.32.
- Should remove when we stop warning about the change, likely with v1.34.
+ Should remove when we stop warning about the change.
 */
 
 inline proc GET(addr, node, rAddr, size) {

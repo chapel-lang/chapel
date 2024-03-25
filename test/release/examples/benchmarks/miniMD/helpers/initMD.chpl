@@ -144,7 +144,7 @@ if generating {
     numBins(i) = (5.0/6.0 * problemSize(i)) : int;
 } else {
   dataFile = open(data_file, ioMode.r);
-  dataReader = dataFile.reader();
+  dataReader = dataFile.reader(locking=false);
 
   dataReader.readln(); // skip first line
 
@@ -308,7 +308,7 @@ proc inputFile() {
     return;
   }
 
-  var r = fchan.reader();
+  var r = fchan.reader(locking=false);
 
   // skip first line
   r.readln();

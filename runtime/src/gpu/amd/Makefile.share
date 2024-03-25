@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-GPU_SRCS = gpu-amd-reduce.cc gpu-amd.c
+GPU_SRCS = gpu-amd-cub.cc gpu-amd.c
 
 SRCS = $(GPU_SRCS)
 
@@ -26,6 +26,6 @@ RUNTIME_CXXFLAGS += -x hip --offload-arch=$(CHPL_MAKE_GPU_ARCH)
 # Some ROCm headers have `foo()`, suppress warnings/errors from them
 RUNTIME_CFLAGS += -Wno-strict-prototypes
 
-$(RUNTIME_OBJ_DIR)/gpu-amd-reduce.o: gpu-amd-reduce.cc \
+$(RUNTIME_OBJ_DIR)/gpu-amd-cub.o: gpu-amd-cub.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
 	PATH=$(PATH):$(CHPL_MAKE_ROCM_PATH)/llvm/bin $(CXX) -c -std=c++17 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

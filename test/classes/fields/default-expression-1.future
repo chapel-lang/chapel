@@ -1,0 +1,2 @@
+bug: default field expression prevents coercion
+#24593

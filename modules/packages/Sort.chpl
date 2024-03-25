@@ -1576,24 +1576,20 @@ module SampleSortHelp {
     var numBuckets: int;
     var equalBuckets: bool;
 
-    proc writeThis(ch) throws {
-      ch.write("SampleBucketizer(");
-      ch.write("\n logBuckets=", logBuckets);
-      ch.write("\n numBuckets=", numBuckets);
-      ch.write("\n equalBuckets=", equalBuckets);
-      ch.write("\n storage=");
-      for i in 0..numBuckets {
-        ch.write((try! " %xt".format(storage[i])));
-      }
-      ch.write("\n sortedStorage=");
-      for i in 0..numBuckets {
-        ch.write(try! " %xt".format(sortedStorage[i]));
-      }
-      ch.write(")\n");
-    }
-
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("SampleBucketizer(");
+      writer.write("\n logBuckets=", logBuckets);
+      writer.write("\n numBuckets=", numBuckets);
+      writer.write("\n equalBuckets=", equalBuckets);
+      writer.write("\n storage=");
+      for i in 0..numBuckets {
+        writer.write((try! " %xt".format(storage[i])));
+      }
+      writer.write("\n sortedStorage=");
+      for i in 0..numBuckets {
+        writer.write(try! " %xt".format(sortedStorage[i]));
+      }
+      writer.write(")\n");
     }
 
     proc getNumBuckets() {
@@ -2430,7 +2426,7 @@ module TwoArrayPartitioning {
         counts[bin] += 1;
       }
       // Now store the counts into the global counts array
-      foreach bin in 0..#nBuckets {
+      foreach bin in 0..#nBuckets with (ref state) {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
       }
     }
@@ -2842,15 +2838,12 @@ module TwoArrayDistributedPartitioning {
       init this;
       tasks.pushBack(t);
     }
-    proc writeThis(f) throws {
-      f.write("TwoArrayDistSortTask");
-      for t in tasks {
-        f.write(" ");
-        f.write(t);
-      }
-    }
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("TwoArrayDistSortTask");
+      for t in tasks {
+        writer.write(" ");
+        writer.write(t);
+      }
     }
 
     proc isEmpty() {

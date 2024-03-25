@@ -6,7 +6,7 @@ use IO;
 
 proc main() {
   var f = openMemFile();
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   try {
     var x = r.read(int);

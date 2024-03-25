@@ -814,18 +814,11 @@ module Treap {
 
     /*
       Write the contents of this sortedSet to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
     */
-    proc const writeThis(ch: fileWriter) throws {
-      _enter();
-      _visit(ch);
-      _leave();
-    }
-
-    @chpldoc.nodoc
     proc const serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      _enter();
+      _visit(writer);
+      _leave();
     }
 
     /*

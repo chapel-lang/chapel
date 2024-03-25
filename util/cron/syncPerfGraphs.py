@@ -65,7 +65,7 @@ def syncToCrayWebhost(dirToSync, destDir, logFile, numRetries):
     # Assumes correct username and authentication for iad1-shared-b8-21.dreamhost.com is
     # configured for the current system.
     webHost = 'chapcs11.us.cray.com'
-    perfBaseDir = '/users/chapelu/public_html/perf'
+    perfBaseDir = '/hpcdc/data/users/chapelu/public_html/perf'
     perfDir = posixpath.join(perfBaseDir, destDir)
 
     rsyncDesc = 'rsync perf graphs to internal webhost'

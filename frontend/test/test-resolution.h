@@ -23,7 +23,6 @@
 #include "test-parsing.h"
 
 #include "chpl/resolution/resolution-types.h"
-#include "chpl/types/QualifiedType.h"
 
 // forward declare classes and namespaces
 namespace chpl {
@@ -71,8 +70,11 @@ std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariablesInit(Context* context, std::string program, const std::vector<std::string>& variables);
 
 void ensureParamInt(const QualifiedType& type, int64_t expectedValue);
+void ensureParamUint(const QualifiedType& type, uint64_t expectedValue);
 void ensureParamBool(const QualifiedType& type, bool expectedValue);
 void ensureParamString(const QualifiedType& type, const std::string& expectedValue);
 void ensureErroneousType(const QualifiedType& type);
+
+QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
 
 #endif

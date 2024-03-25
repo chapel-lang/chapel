@@ -46,6 +46,9 @@ public:
   bool                    isOrderIndependent()                            const;
   void                    orderIndependentSet(bool b);
 
+  void                    exemptFromImplicitIntents();
+  bool                    isExemptFromImplicitIntents()                   const;
+
   // for RV rv.loop.vectorize.enable
   bool                    hasVectorizationHazard()                        const;
   void                    setHasVectorizationHazard(bool v);
@@ -72,6 +75,7 @@ protected:
   LabelSymbol*            mBreakLabel;
   LabelSymbol*            mContinueLabel;
   bool                    mOrderIndependent;
+  bool                    mExemptFromImplicitIntents;
   bool                    mVectorizationHazard;
   bool                    mParallelAccessVectorizationHazard;
   LLVMMetadataList        mLLVMMetadataList;

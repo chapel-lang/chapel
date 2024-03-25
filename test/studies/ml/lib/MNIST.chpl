@@ -6,7 +6,7 @@ proc loadImages(num: int, fileName: string = "week2/emnist/data/train-images-idx
 
     var deserializer = new binaryDeserializer(endianness.big);
 
-    var fr = openReader(fileName, deserializer=deserializer);
+    var fr = openReader(fileName, deserializer=deserializer, locking=false);
 
     var magicNumber = fr.read(int(32));
     if magicNumber != 2051 then {
@@ -27,6 +27,7 @@ proc loadImages(num: int, fileName: string = "week2/emnist/data/train-images-idx
                 raw[i,j] = fr.read(uint(8));
             }
         }
+        // note: this is a 32-bit divide today
         var image: [imageDomain] real = raw / 255.0;
         return image;
     }
@@ -45,7 +46,7 @@ proc loadLabels(num: int, fileName: string = "week2/emnist/data/train-labels-idx
 
     var deserializer = new binaryDeserializer(endianness.big);
 
-    var fr = openReader(fileName, deserializer=deserializer);
+    var fr = openReader(fileName, deserializer=deserializer, locking=false);
 
     var magicNumber = fr.read(int(32));
     if magicNumber != 2049 then {

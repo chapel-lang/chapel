@@ -155,6 +155,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (name == "domain" || name == "eltType") {
       return true;
     }
+  } else if (type->isCPtrType()) {
+    if (name == "eltType") {
+      return true;
+    }
   }
 
   return false;
@@ -194,9 +198,10 @@ generateInitParts(Context* context,
   // If the receiver is a basic class C, use 'const in x: borrowed C'.
   } else if (auto basic = compType->toBasicClassType()) {
     const Type* manager = nullptr;
-    auto nonNilBorrowed  = ClassTypeDecorator::BORROWED_NONNIL;
-    auto decor = ClassTypeDecorator(nonNilBorrowed);
-    auto receiverType = ClassType::get(context, basic, manager, decor);
+    auto borrowedNonnilDecor =
+        ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+    auto receiverType =
+        ClassType::get(context, basic, manager, borrowedNonnilDecor);
     CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
 
@@ -223,7 +228,8 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
   // TODO: generic types
   if (rf.isGeneric()) {
-    CHPL_ASSERT(false && "Not handled yet!");
+    CHPL_UNIMPL("generating 'init' signatures for generic types is not yet supported");
+    return nullptr;
   }
 
   // TODO: super fields and invoking super
@@ -678,6 +684,40 @@ generateRecordComparison(Context* context, const CompositeType* lhsType) {
                                       /*rhs*/  QualifiedType::CONST_REF);
 }
 
+static const TypedFnSignature*
+generateCPtrMethod(Context* context, const CPtrType * cpt, UniqueString name) {
+  // Build a basic function signature for methods on a cptr
+  // TODO: we should really have a way to just set the return type here
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, cpt));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ cpt->getId(context),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, cpt->getId(context)),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, const Type* type,
                                 UniqueString name, bool parenless) {
@@ -687,7 +727,7 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType);
+    CHPL_ASSERT(compType || type->isCPtrType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
@@ -707,16 +747,103 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       } else if (name == USTR("=")) {
         result = generateRecordAssignment(context, recordType);
       } else {
-        CHPL_ASSERT(false && "record method not implemented yet!");
+        CHPL_UNIMPL("record method not implemented yet!");
       }
+    } else if (auto cPtrType = type->toCPtrType()) {
+      result = generateCPtrMethod(context, cPtrType, name);
     } else {
-      CHPL_ASSERT(false && "should not be reachable");
+      CHPL_UNIMPL("should not be reachable");
     }
   }
 
-  CHPL_ASSERT(result->untyped()->name() == name);
+  CHPL_ASSERT(result == nullptr || result->untyped()->name() == name);
 
   return QUERY_END(result);
+}
+
+static void
+setupGeneratedEnumCastFormals(Context* context,
+                              const EnumType* enumType,
+                              std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
+                              std::vector<QualifiedType>& formalTypes,
+                              bool isFromCast /* otherwise, it's a "to" cast */) {
+  const Type* fromType;
+  const Type* toType;
+
+  if (isFromCast) {
+    fromType = enumType;
+    toType = AnyIntegralType::get(context);
+  } else {
+    fromType = AnyIntegralType::get(context);
+    toType = enumType;
+  }
+
+  auto fromQt = QualifiedType(QualifiedType::DEFAULT_INTENT, fromType);
+  auto toQt = QualifiedType(QualifiedType::TYPE, toType);
+
+  auto ufsFrom =
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "from"),
+                                       false, nullptr);
+  ufsFormals.push_back(std::move(ufsFrom));
+  auto ufsTo =
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "to"),
+                                       false, nullptr);
+  ufsFormals.push_back(std::move(ufsTo));
+
+  formalTypes.push_back(fromQt);
+  formalTypes.push_back(toQt);
+}
+
+static const TypedFnSignature*
+generateToOrFromCastForEnum(Context* context,
+                            const types::QualifiedType& lhs,
+                            const types::QualifiedType& rhs,
+                            bool isFromCast /* otherwise, it's a "to" cast */) {
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  auto enumType = isFromCast ? lhs.type()->toEnumType() : rhs.type()->toEnumType();
+
+  if (enumType->isAbstract()) return nullptr;
+
+  setupGeneratedEnumCastFormals(context, enumType, ufsFormals, formalTypes,
+                                isFromCast);
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ enumType->id(),
+                        /*name*/ USTR(":"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, enumType->id()),
+                        /*kind*/ uast::Function::Kind::OPERATOR,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ true,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+  return ret;
+}
+
+static const TypedFnSignature*
+generateCastFromEnum(Context* context,
+                     const types::QualifiedType& lhs,
+                     const types::QualifiedType& rhs) {
+  return generateToOrFromCastForEnum(context, lhs, rhs, /*isFromCast*/ true);
+}
+
+static const TypedFnSignature*
+generateCastToEnum(Context* context,
+                   const types::QualifiedType& lhs,
+                   const types::QualifiedType& rhs) {
+  return generateToOrFromCastForEnum(context, lhs, rhs, /*isFromCast*/ false);
 }
 
 /**
@@ -731,6 +858,33 @@ const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const Type* type,
                            UniqueString name, bool parenless) {
   return getCompilerGeneratedMethodQuery(context, type, name, parenless);
+}
+
+static const TypedFnSignature* const&
+getCompilerGeneratedBinaryOpQuery(Context* context,
+                                  types::QualifiedType lhs,
+                                  types::QualifiedType rhs,
+                                  UniqueString name) {
+  QUERY_BEGIN(getCompilerGeneratedBinaryOpQuery, context, lhs, rhs, name);
+
+  const TypedFnSignature* result = nullptr;
+  if (name == USTR(":")) {
+    if (lhs.type() && lhs.type()->isEnumType()) {
+      result = generateCastFromEnum(context, lhs, rhs);
+    } else if (rhs.type() && rhs.type()->isEnumType()) {
+      result = generateCastToEnum(context, lhs, rhs);
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const TypedFnSignature*
+getCompilerGeneratedBinaryOp(Context* context,
+                             const types::QualifiedType lhs,
+                             const types::QualifiedType rhs,
+                             UniqueString name) {
+  return getCompilerGeneratedBinaryOpQuery(context, lhs, rhs, name);
 }
 
 

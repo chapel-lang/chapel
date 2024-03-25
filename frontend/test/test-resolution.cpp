@@ -245,6 +245,15 @@ void ensureParamInt(const QualifiedType& type, int64_t expectedValue) {
   assert(type.param()->toIntParam()->value() == expectedValue);
 }
 
+void ensureParamUint(const QualifiedType& type, uint64_t expectedValue) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isUintType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isUintParam());
+  assert(type.param()->toUintParam()->value() == expectedValue);
+}
+
 void ensureParamBool(const QualifiedType& type, bool expectedValue) {
   assert(type.kind() == QualifiedType::PARAM);
   assert(type.type() != nullptr);
@@ -266,4 +275,25 @@ void ensureParamString(const QualifiedType& type, const std::string& expectedVal
 void ensureErroneousType(const QualifiedType& type) {
   assert(type.type() != nullptr);
   assert(type.type()->isErroneousType());
+}
+
+
+QualifiedType getTypeForFirstStmt(Context* context,
+                                  const std::string& program) {
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, program);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 1);
+  auto stmt = m->stmt(0);
+  assert(stmt);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  const auto& resolvedExpr = rr.byAst(stmt);
+
+  return resolvedExpr.type();
 }

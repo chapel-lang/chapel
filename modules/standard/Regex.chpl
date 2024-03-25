@@ -960,7 +960,7 @@ record regex : serializable {
 
   // TODO this could use _serialize to get the pattern and options
   @chpldoc.nodoc
-  proc writeThis(f) throws {
+  proc serialize(writer, ref serializer) throws {
     var pattern:exprType;
     on this.home {
       var patternTemp:c_ptrConst(c_char);
@@ -970,21 +970,17 @@ record regex : serializable {
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    f.write("new regex(\"", pattern, "\")");
-  }
-  @chpldoc.nodoc
-  proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write("new regex(\"", pattern, "\")");
   }
 
   @chpldoc.nodoc
-  proc ref readThis(f) throws {
+  proc ref deserialize(reader, ref deserializer) throws {
     var pattern:exprType;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    if f.matchLiteral("new regex(\"") &&
-       f.read(pattern) &&
-       f.matchLiteral("\")") then
+    if reader.matchLiteral("new regex(\"") &&
+       reader.read(pattern) &&
+       reader.matchLiteral("\")") then
       on this.home {
         var localPattern = pattern.localize();
         var opts: qio_regex_options_t;
@@ -996,15 +992,11 @@ record regex : serializable {
                                   this._regex);
       }
   }
-  @chpldoc.nodoc
-  proc ref deserialize(reader, ref deserializer) throws {
-    readThis(reader);
-  }
 
   @chpldoc.nodoc
   proc init(type exprType, reader: fileReader, ref deserializer) throws {
     this.init(exprType);
-    readThis(reader);
+    this.deserialize(reader, deserializer);
   }
 }
 

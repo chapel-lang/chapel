@@ -8,7 +8,7 @@ proc loop (A, B) {
 
   // interleave by 4 will load each array 4 times per loop iteration
   @llvm.metadata(("llvm.loop.vectorize.width", 8), ("llvm.loop.interleave.count", 4))
-  foreach i in 1..511 {
+  foreach i in 1..511 with (ref sum) {
     // CHECK: load <8 x i32>
     // CHECK: load <8 x i32>
     // CHECK: load <8 x i32>

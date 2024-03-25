@@ -72,6 +72,8 @@
 static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
                                     llvm::SmallVectorImpl<ArgSymbol*>& actualFormals);
 
+static void markExplicitDomainParsafeVars(CallExpr* call);
+
 static void addDefaultTokensAndReorder(FnSymbol *fn,
                                        CallInfo& info,
                                        llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFml);
@@ -193,6 +195,10 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   // Remove any NamedExprs since they are no longer needed
   // now that the arguments are in the correct order
   removeNamedExprs(retval, call);
+
+  if (!anyDefault) {
+    markExplicitDomainParsafeVars(call);
+  }
 
   // Now, consider each argument, and handle:
   //  coercion
@@ -395,6 +401,66 @@ void addDefaultTokensAndReorder(FnSymbol *fn,
   for_formals(formal, fn) {
     actualFormals[i] = formal;
     i++;
+  }
+}
+
+static void markExplicitDomainParsafeVars(CallExpr* call) {
+  // handled here rather than in preFold in order have named
+  // argument processing already done
+  // And we don't do it in functionResolution so we can catch it before
+  // default arguments are inserted into the calls.
+  if (call->isNamed("chpl__buildDomainRuntimeType")) {
+    // Add checks to see if this is an associative domain or not
+    // and if it is, check to see if it passes an explicit parSafe arg.
+    // set a flag if it does.
+
+    // if the 2nd arg is a type variable, it's an associative domain
+    // (rectangular domain would use a range etc)
+    Symbol* secondArg = toSymExpr(call->get(2))->symbol();
+    if (secondArg->hasFlag(FLAG_TYPE_VARIABLE)) {
+      // this is an associative domain
+
+      // check if the optional 3rd argument is present, which indicates
+      // that a parSafe value was provided
+      if (call->numActuals() >= 3 && isSymExpr(call->get(3))) {
+        // this is an associative domain with an explicit parSafe flag
+        Symbol* parSafe = toSymExpr(call->get(3))->symbol();
+        // Check if parSafe is true and warn unstable
+        if (shouldWarnUnstableFor(call) && parSafe == gTrue) {
+          USR_WARN(call, "parSafe=true is unstable for associative domains and arrays, and its behavior may change in the future");
+        }
+        // handle local variables
+        CallExpr* parent = toCallExpr(call->parentExpr);
+        if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          Symbol* retTemp = toSymExpr(parent->get(1))->symbol();
+          if (retTemp && retTemp->hasFlag(FLAG_TEMP)) {
+            // look at all mentions of the temp, b/c it might be mentioned
+            // twice in a split init scenario
+            for_SymbolSymExprs(se, retTemp) {
+              if (CallExpr* inCall = toCallExpr(se->parentExpr)) {;
+                if (inCall->isPrimitive(PRIM_INIT_VAR) ||
+                    inCall->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+                    inCall->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
+                    inCall->isPrimitive(PRIM_INIT_FIELD) ||
+                    inCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
+                    inCall->isPrimitive(PRIM_MOVE) ||
+                    inCall->isPrimitive(PRIM_ASSIGN)) {
+                  if (Symbol* var = toSymExpr(inCall->get(1))->symbol()) {
+                    // TODO: if needed, add unstable warning here
+                    var->addFlag(FLAG_EXPLICIT_PAR_SAFE);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // handle formals with declared type
+        if (ArgSymbol* formal = toArgSymbol(call->parentSymbol)) {
+            formal->addFlag(FLAG_EXPLICIT_PAR_SAFE);
+        }
+      }
+    }
   }
 }
 
@@ -1484,8 +1550,9 @@ static void addArgCoercion(FnSymbol*  fn,
   SET_LINENO(actual);
 
   // generate a warning in some cases for int->uint implicit conversion
-  warnForIntUintConversion(call, formal->type, actual->symbol()->type,
-                           actual->symbol());
+  // generate a warning in some cases for small int -> real implicit conversion
+  warnForSomeNumericConversions(call, formal->type, actual->symbol()->type,
+                                actual->symbol());
 
   Symbol*     prevActual = actual->symbol();
   TypeSymbol* ats        = prevActual->type->symbol;
@@ -1971,6 +2038,10 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       inTmpToActualMap.put(actual->symbol(), origActualSym);
     }
   }
+
+  handleDefaultAssociativeWarnings(formal, /*typeExpr*/ nullptr,
+                                   /*initExpr*/ actual,
+                                   /*for field*/ nullptr);
 }
 
 static void handleOutIntents(FnSymbol* fn, CallExpr* call,

@@ -1,5 +1,9 @@
 .. default-domain:: chpl
 
+.. index::
+   single: conversions
+   single: conversions; source type
+   single: conversions; target type
 .. _Chapter-Conversions:
 
 ===========
@@ -13,6 +17,12 @@ expression can be a type expression. We refer to these two types as the
 implicit (:ref:`Implicit_Conversions`) or
 explicit (:ref:`Explicit_Conversions`).
 
+.. index::
+   single: conversions; implicit
+   single: implicit conversions
+   see: coercions; implicit conversions
+   single: implicit conversions; occurs at
+   single: implicit conversions; allowed types
 .. _Implicit_Conversions:
 
 Implicit Conversions
@@ -65,6 +75,14 @@ Additionally, implicit conversions for initialization and assignment can
 be defined for record types, as specified in
 :ref:`Implicit_Conversion_Init_Assign`.
 
+.. index::
+   single: implicit conversions; numeric
+   pair: implicit conversions; int
+   pair: implicit conversions; uint
+   pair: implicit conversions; real
+   pair: implicit conversions; imag
+   pair: implicit conversions; complex
+   pair: implicit conversions; bool
 .. _Implicit_NumBool_Conversions:
 
 Implicit Numeric and Bool Conversions
@@ -149,6 +167,9 @@ complex(\ :math:`s`)                                                            
 ==================== ================= ================ ================= ================= ====================
 
 
+.. index::
+   pair: implicit conversions; literals
+   pair: implicit conversions; params
 .. _Implicit_Compile_Time_Constant_Conversions:
 
 Implicit Compile-Time Constant Conversions
@@ -176,6 +197,8 @@ implicitly convert:
  * to ``uint`` of matching or greater size or to ``real``
  * or, to ``complex`` of any size.
 
+.. index::
+   pair: implicit conversions; ranges
 .. _Implicit_Range_Conversions:
 
 Implicit Range Conversions
@@ -200,6 +223,10 @@ conversion is allowed when:
  - the ``strides`` of the target is ``negative``
    and the ``strides`` of the source is ``negOne``.
 
+.. index::
+   pair: implicit conversions; classes
+   single: implicit conversions; nilability
+   single: implicit conversions; borrowing
 .. _Implicit_Class_Conversions:
 
 Implicit Class Conversions
@@ -235,6 +262,10 @@ See :ref:`Class_Lifetime_and_Borrows`.  For example:
       f(c); // equivalent to f(c.borrow())
 
 
+.. index::
+   single: implicit conversions; type arguments
+   single: implicit conversions; subtype
+   single: subtype
 .. _Subtype:
 .. _Subtype_Arg_Conversions:
 .. _Implicit_Type_Arg_Conversions:
@@ -385,6 +416,9 @@ when one type is a subtype of another.
 
      true
 
+.. index::
+   pair: implicit conversions; assignment
+   pair: implicit conversions; initialization
 .. _Implicit_Conversion_Init_Assign:
 
 Implicit Conversions for Initialization and Assignment
@@ -492,6 +526,9 @@ without ``init=`` or to provide ``init=`` without ``=``.
       c is (intValue = 3) : myInteger
       d is (intValue = 4) : myInteger
 
+.. index::
+   single: implicit conversions; for calls
+   single: calls; implicit conversion
 .. _Implicit_Conversion_Call:
 
 Implicit Conversions for Function Calls
@@ -533,6 +570,9 @@ Implicit conversions are not applied for actual arguments passed to
    Should Chapel allow user-defined implicit conversions for function
    calls?  If so, how would the user define them?
 
+.. index::
+   pair: implicit conversions; conditionals
+   single: implicit conversion; boolean
 .. _Implicit_Conversion_Conditionals:
 .. _Implicit_Statement_Bool_Conversions:
 
@@ -564,6 +604,11 @@ indicated in their documentation.
    conditionals? If so, how would the user define them?
 
 
+.. index::
+   single: conversions; explicit
+   single: conversions; casts
+   single: casts
+   see: explicit conversions; casts
 .. _Explicit_Conversions:
 
 Explicit Conversions
@@ -599,6 +644,8 @@ An explicit conversion from a type to the same type is allowed for any
 type. Such a conversion does not change the value of the expression.
 
 
+.. index::
+   single: casts; numeric
 .. _Explicit_Numeric_Conversions:
 
 Explicit Numeric Conversions
@@ -679,6 +726,11 @@ for converting from real, except that the imaginary part of the result
 is set using the input value, and the real part of the result is set to
 zero.
 
+Explicitly converting between ``real(k)`` and ``imag(k)`` will copy the
+represented number while changing whether or not it is imaginary.
+
+.. index::
+   single: casts; tuple to complex
 .. _Explicit_Tuple_to_Complex_Conversion:
 
 Explicit Tuple to Complex Conversion
@@ -692,6 +744,8 @@ is ``complex(64)``, each member of the two-tuple must be convertible to
 resulting complex value; the second member of the tuple becomes the
 imaginary part of the resulting complex value.
 
+.. index::
+   single: casts; enums
 .. _Explicit_Enumeration_Conversions:
 
 Explicit Enumeration Conversions
@@ -736,6 +790,8 @@ the matching symbol.  If no symbol has the given integer value, an
 ``IllegalArgumentError`` is thrown.
 
 
+.. index::
+   pair: casts; classes
 .. _Explicit_Class_Conversions:
 
 Explicit Class Conversions
@@ -795,6 +851,8 @@ has different nilability or memory management strategy. Supposing that
 The conversions in this subsection apply when the source is either an
 expression or a type expression.
 
+.. index::
+   pair: casts; ranges
 .. _Explicit_Range_Conversions:
 
 Explicit Range Conversions
@@ -813,6 +871,8 @@ either because the source stride is not representable within the
 target's stride type or it is of the opposite sign than expected
 by the target's ``strides`` parameter.
 
+.. index::
+   pair: casts; domains
 .. _Explicit_Domain_Conversions:
 
 Explicit Domain Conversions
@@ -823,6 +883,8 @@ to another rectangular domain type of the same ``rank``.
 Such conversion is performed dimension-wise following the rules
 for explicit range conversions (see :ref:`Explicit_Range_Conversions`).
 
+.. index::
+   pair: casts; string to bytes
 .. _Explicit_String_to_Bytes_Conversions:
 
 Explicit String to Bytes Conversions
@@ -833,6 +895,8 @@ An expression of ``string`` type can be explicitly converted to a
 contain arbitrary bytes. Instead, ``bytes.decode()`` method should be
 used to produce a ``string`` from a ``bytes``.
 
+.. index::
+   single: casts; type to string
 .. _Explicit_Type_to_String_Conversions:
 
 Explicit Type to String Conversions
@@ -856,7 +920,8 @@ resultant ``string`` is the name of the type.
 
    This program will print out the string ``"real(64)"``.
 
-
+.. index::
+   single: casts; user-defined
 .. _User_Defined_Casts:
 
 User-Defined Casts

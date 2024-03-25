@@ -90,6 +90,16 @@ template<typename T> struct mark<std::vector<T>> {
   }
 };
 
+template<typename T> struct mark<chpl::optional<T>> {
+  void operator()(Context* context, const chpl::optional<T>& keep) const {
+    if (keep) {
+      chpl::mark<T> marker;
+      marker(context, *keep);
+    }
+  }
+};
+
+
 template<typename K, typename V> struct mark<std::map<K, V>> {
   void operator()(Context* context, const std::map<K, V>& keep) const {
     for (auto &p : keep) {

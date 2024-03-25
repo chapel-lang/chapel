@@ -6,5 +6,5 @@ writeln(o);
 
 mmwrite("cmplx.mtx", o);
 
-var r = openReader("cmplx.mtx");
+var r = openReader("cmplx.mtx", locking=false);
 for l in r.lines() { writeln(l); }

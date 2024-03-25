@@ -113,18 +113,136 @@ struct ConvertedSymbolsMap {
   void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
 };
 
+struct Converter;
+
 struct LoopAttributeInfo {
+ public:
   // LLVM metadata from various @llvm attributes.
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
+  // The @gpu.blockSize attribute, if one is provided by the user.
+  const uast::Attribute* blockSizeAttr = nullptr;
 
-  void insertGpuEligibilityAssertion(BlockStmt* body) {
-    if (assertOnGpuAttr) {
-      body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                      new SymExpr(gTrue)));
+ private:
+  LLVMMetadataPtr tupleToLLVMMetadata(Context* context,
+                                      const uast::Tuple* node) const {
+    if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
+
+    if (!node->actual(0)->isStringLiteral()) return nullptr;
+    auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
+
+    if (node->numActuals() == 1) {
+      return LLVMMetadata::construct(attrName);
+    } else {
+      auto attrVal = node->actual(1);
+
+      if (auto str = attrVal->toStringLiteral())
+        return LLVMMetadata::constructString(attrName, str->value().astr(context));
+      else if (auto int_ = attrVal->toIntLiteral())
+        return LLVMMetadata::constructInt(attrName, int_->value());
+      else if (auto bool_ = attrVal->toBoolLiteral())
+        return LLVMMetadata::constructBool(attrName, bool_->value());
+      else if (auto tup = attrVal->toTuple()) {
+        auto v = tupleToLLVMMetadata(context, tup);
+        if (v == nullptr) return nullptr;
+        return LLVMMetadata::constructMetadata(attrName, v);
+      }
+      else return nullptr;
     }
   }
+
+  LLVMMetadataPtr nodeToLLVMMetadata(Context* context,
+                                     const uast::AstNode* node) const {
+    if (node->isTuple()) {
+      return tupleToLLVMMetadata(context, node->toTuple());
+    } else if (node->isStringLiteral()) {
+      auto attrName = node->toStringLiteral()->value().astr(context);
+      return LLVMMetadata::construct(attrName);
+    } else {
+      return nullptr;
+    }
+  }
+
+  LLVMMetadataList buildLLVMMetadataList(Context* context,
+                                         const uast::Attribute* node) const {
+    LLVMMetadataList llvmAttrs;
+
+    for (auto act: node->actuals()) {
+      auto attr = nodeToLLVMMetadata(context, act);
+      if (attr != nullptr) {
+        llvmAttrs.push_back(attr);
+      } else {
+        auto loc = chpl::parsing::locateId(context, node->id());
+        std::string msg = "Invalid value for '" + node->name().str() + "'";
+        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
+        context->report(std::move(err));
+      }
+    }
+    return llvmAttrs;
+  }
+
+  LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) const {
+    auto attrName = astr("chpl.loop.assertvectorized");
+    return LLVMMetadata::constructBool(attrName, true);
+  }
+
+  void readLlvmAttributes(Context* context,
+                          const uast::AttributeGroup* attrs) {
+    if (auto a = attrs->getAttributeNamed(USTR("llvm.metadata"))) {
+      auto userAttrs = buildLLVMMetadataList(context, a);
+      this->llvmMetadata.insert(this->llvmMetadata.end(),
+                                userAttrs.begin(),
+                                userAttrs.end());
+    }
+    if (auto a = attrs->getAttributeNamed(USTR("llvm.assertVectorized"))) {
+      this->llvmMetadata.push_back(buildAssertVectorize(a));
+    }
+  }
+
+  void readNativeGpuAttributes(const uast::AttributeGroup* attrs) {
+    this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
+  }
+
+ public:
+  static LoopAttributeInfo fromExplicitLoop(Context* context,
+                                            const uast::Loop* node) {
+    auto attrs = node->attributeGroup();
+    if (attrs == nullptr) return {};
+
+    LoopAttributeInfo into;
+    into.readLlvmAttributes(context, attrs);
+    into.readNativeGpuAttributes(attrs);
+
+    return into;
+  }
+
+  static LoopAttributeInfo fromVariableDeclaration(Context* context,
+                                                   const uast::Variable* node) {
+    auto attrs = node->attributeGroup();
+    if (attrs == nullptr) return {};
+
+    // Do not bother parsing LLVM attributes, since they don't apply to loops.
+    LoopAttributeInfo into;
+    into.readNativeGpuAttributes(attrs);
+
+    return into;
+  }
+
+  bool empty() const {
+    return llvmMetadata.size() == 0 &&
+           assertOnGpuAttr == nullptr &&
+           blockSizeAttr == nullptr;
+  }
+
+  operator bool() const {
+    return !empty();
+  }
+
+  void insertGpuEligibilityAssertion(BlockStmt* body);
+  void insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  void insertPrimitives(Converter& converter, BlockStmt* body);
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -136,13 +254,14 @@ static ConvertedSymbolsMap gConvertedSyms;
 
 struct Converter {
   struct ModStackEntry {
-    const uast::Module* mod;
+    const uast::Module* mod = nullptr;
     // If we detect a module use and the module is already converted, store it here.
     std::vector<ModuleSymbol*> usedModules;
     // If we detect a module use and the module is not converted, store the ID here.
     std::vector<ID> usedModuleIds;
-    ModStackEntry(const uast::Module* mod)
-      : mod(mod) {
+    bool isFromLibraryFile = false;
+    ModStackEntry(const uast::Module* mod, bool isFromLibraryFile)
+      : mod(mod), isFromLibraryFile(isFromLibraryFile) {
     }
   };
   struct SymStackEntry {
@@ -163,6 +282,7 @@ struct Converter {
   bool inTupleAssign = false;
   bool inImportOrUse = false;
   bool inForwardingDecl = false;
+  bool inTypeExpression = false;
   bool canScopeResolve = false;
   bool trace = false;
   int delegateCounter = 0;
@@ -333,85 +453,10 @@ struct Converter {
     return nullptr;
   }
 
-  LLVMMetadataPtr tupleToLLVMMetadata(const uast::Tuple* node) {
-    if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
-
-    if (!node->actual(0)->isStringLiteral()) return nullptr;
-    auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
-
-    if (node->numActuals() == 1) {
-      return LLVMMetadata::construct(attrName);
-    } else {
-      auto attrVal = node->actual(1);
-
-      if (auto str = attrVal->toStringLiteral())
-        return LLVMMetadata::constructString(attrName, str->value().astr(context));
-      else if (auto int_ = attrVal->toIntLiteral())
-        return LLVMMetadata::constructInt(attrName, int_->value());
-      else if (auto bool_ = attrVal->toBoolLiteral())
-        return LLVMMetadata::constructBool(attrName, bool_->value());
-      else if (auto tup = attrVal->toTuple()) {
-        auto v = tupleToLLVMMetadata(tup);
-        if (v == nullptr) return nullptr;
-        return LLVMMetadata::constructMetadata(attrName, v);
-      }
-      else return nullptr;
-    }
-  }
-
-  LLVMMetadataPtr nodeToLLVMMetadata(const uast::AstNode* node) {
-    if (node->isTuple()) {
-      return tupleToLLVMMetadata(node->toTuple());
-    } else if (node->isStringLiteral()) {
-      auto attrName = node->toStringLiteral()->value().astr(context);
-      return LLVMMetadata::construct(attrName);
-    } else {
-      return nullptr;
-    }
-  }
-
-  LLVMMetadataList buildLLVMMetadataList(const uast::Attribute* node) {
-    LLVMMetadataList llvmAttrs;
-
-    for (auto act: node->actuals()) {
-      auto attr = nodeToLLVMMetadata(act);
-      if (attr != nullptr) {
-        llvmAttrs.push_back(attr);
-      } else {
-        auto loc = chpl::parsing::locateId(context, node->id());
-        std::string msg = "Invalid value for '" + node->name().str() + "'";
-        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
-        context->report(std::move(err));
-      }
-    }
-    return llvmAttrs;
-  }
-
-  LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) {
-    auto attrName = astr("chpl.loop.assertvectorized");
-    return LLVMMetadata::constructBool(attrName, true);
-  }
-
-  LoopAttributeInfo buildLoopAttributes(const uast::Loop* node) {
-    auto attrs = node->attributeGroup();
-    if (attrs == nullptr) return {};
-
-    auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
-    auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
-    auto assertOnGpu = UniqueString::get(context, "assertOnGpu");
-
-    LoopAttributeInfo toReturn;
-
-    if (auto a = attrs->getAttributeNamed(llvmMetadata)) {
-      auto userAttrs = buildLLVMMetadataList(a);
-      toReturn.llvmMetadata.insert(toReturn.llvmMetadata.end(), userAttrs.begin(), userAttrs.end());
-    }
-    if (auto a = attrs->getAttributeNamed(assertVectorized)) {
-      toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
-    }
-    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(assertOnGpu);
-
-    return toReturn;
+  void readNativeGpuAttributes(LoopAttributeInfo& into,
+                               const uast::AttributeGroup* attrs) {
+    into.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    into.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
   }
 
   Expr* visit(const uast::AttributeGroup* node) {
@@ -438,6 +483,11 @@ struct Converter {
   }
 
   void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
+    if (modStack.size() > 0 && modStack.back().isFromLibraryFile) {
+      // If we are converting a symbol in a module from a .dyno
+      // file, mark the symbol as precompiled.
+      sym->addFlag(FLAG_PRECOMPILED);
+    }
 
     const uast::AttributeGroup* attr;
     // use the query to get the AttributeGroup or you might miss the attributes
@@ -1405,7 +1455,6 @@ struct Converter {
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
-        //if(fForeachIntents && parent->toForeach()) {
         if(parent->toForeach()) {
           USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
         }
@@ -1494,7 +1543,7 @@ struct Converter {
 
       if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName);
+        conv = convertVariable(var, useLinkageName).entireExpr;
       } else {
         // TODO: Might need to do something different on this path.
         conv = convertAST(decl);
@@ -1699,13 +1748,20 @@ struct Converter {
 
   /// Loops ///
 
+  LLVMMetadataList extractLlvmAttributesAndRejectOthers(const uast::Loop* node) {
+    auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
+    if (loopAttributes.assertOnGpuAttr != nullptr) {
+      CHPL_REPORT(context, InvalidGpuAssertion, node,
+                  loopAttributes.assertOnGpuAttr);
+    }
+    return std::move(loopAttributes.llvmMetadata);
+  }
+
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    auto loopAttributes = buildLoopAttributes(node);
-    if (loopAttributes.assertOnGpuAttr)
-      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
-    return DoWhileStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
+    return DoWhileStmt::build(condExpr, body,
+                              extractLlvmAttributesAndRejectOthers(node));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1720,10 +1776,8 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    auto loopAttributes = buildLoopAttributes(node);
-    if (loopAttributes.assertOnGpuAttr)
-      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
-    return WhileDoStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
+    return WhileDoStmt::build(condExpr, body,
+                              extractLlvmAttributesAndRejectOthers(node));
   }
 
   /// IndexableLoops ///
@@ -1744,7 +1798,7 @@ struct Converter {
         return new UnresolvedSymExpr("chpl__tuple_blank");
       }
 
-      return convertVariable(var, false);
+      return convertVariable(var, false).requireDefOnly();
 
     // For tuples, recursively call 'convertLoopIndexDecl' on each element.
     // to produce a CallExpr containing DefExprs
@@ -1816,6 +1870,7 @@ struct Converter {
   // be handled by a separate builder, as those are array types.
   Expr* visit(const uast::BracketLoop* node) {
     if (node->isExpressionLevel()) {
+      if (inTypeExpression) return convertArrayType(node);
       return convertBracketLoopExpr(node);
     } else {
       INT_ASSERT(node->iterand());
@@ -1833,8 +1888,8 @@ struct Converter {
         INT_ASSERT(intents);
       }
 
-      auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
+      loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1915,11 +1970,8 @@ struct Converter {
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
-      auto loopAttributes = buildLoopAttributes(node);
-      if (loopAttributes.assertOnGpuAttr)
-        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr, std::move(loopAttributes.llvmMetadata));
+                                  isForExpr, extractLlvmAttributesAndRejectOthers(node));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1964,8 +2016,8 @@ struct Converter {
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
 
-      auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
+      loopAttributes.insertPrimitives(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1973,11 +2025,6 @@ struct Converter {
 
   Expr* visit(const uast::Foreach* node) {
     Expr* ret = nullptr;
-
-    if (!fForeachIntents && node->withClause()) {
-      USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
-                                               "support task intents");
-    }
 
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
@@ -1995,8 +2042,8 @@ struct Converter {
                                  maybeArrayType, zippered);
     } else {
       auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-      auto loopAttributes = buildLoopAttributes(node);
-      loopAttributes.insertGpuEligibilityAssertion(body);
+      auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
+      loopAttributes.insertPrimitives(*this, body);
       ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                       zippered,
                                       isForExpr, std::move(loopAttributes.llvmMetadata));
@@ -2582,7 +2629,7 @@ struct Converter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName);
+        conv = convertVariable(var, useLinkageName).entireExpr;
 
         DefExpr* defExpr = toDefExpr(conv);
         INT_ASSERT(defExpr);
@@ -2629,7 +2676,7 @@ struct Converter {
       // Do not use the visitor because it produces a block statement.
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName);
+        conv = convertVariable(var, useLinkageName).entireExpr;
 
       // It must be a tuple.
       } else {
@@ -3130,15 +3177,7 @@ struct Converter {
       }
     }
 
-    Expr* retType = nullptr;
-    if (auto retTypeExpr = node->returnType()) {
-      if (auto arrayTypeExpr = retTypeExpr->toBracketLoop()) {
-        retType = convertArrayType(arrayTypeExpr);
-      } else {
-        retType = convertAST(retTypeExpr);
-      }
-    }
-
+    Expr* retType = convertTypeExpressionOrNull(node->returnType());
     Expr* whereClause = convertExprOrNull(node->whereClause());
 
     Expr* lifetimeConstraints = nullptr;
@@ -3298,9 +3337,7 @@ struct Converter {
 
     RetTag retTag = convertRetTag(node->returnIntent());
     auto nodeRetType = node->returnType();
-    Expr* retType = (nodeRetType && nodeRetType->isBracketLoop())
-            ? convertArrayType(nodeRetType->toBracketLoop())
-            : convertExprOrNull(nodeRetType);
+    Expr* retType = convertTypeExpressionOrNull(nodeRetType);
 
     // TODO: I'd like to get rid of these build calls (if Michael
     // has not already gotten rid of them on main), as there's not
@@ -3422,7 +3459,9 @@ struct Converter {
 
     // Push the current module name before descending into children.
     // Add a ModStackEntry to the end of the modStack
-    this->modStack.emplace_back(node);
+    UniqueString unused;
+    bool isFromLibraryFile = context->moduleIsInLibrary(node->id(), unused);
+    this->modStack.push_back(ModStackEntry(node, isFromLibraryFile));
 
     // Also add to symStack
     pushToSymStack(node, resolved);
@@ -3510,22 +3549,24 @@ struct Converter {
     return INTENT_BLANK;
   }
 
-  Expr* convertTypeExpression(const uast::AstNode* node,
-                              bool isFormalType=false) {
-    if (!node) return nullptr;
-    Expr* ret = nullptr;
+  Expr* convertTypeExpression(const uast::AstNode* node) {
+    INT_ASSERT(node != nullptr);
 
     astlocMarker markAstLoc(node->id());
 
-    if (auto bkt = node->toBracketLoop()) {
-      ret = convertArrayType(bkt, isFormalType);
-    } else {
-      ret = convertAST(node);
-    }
+    bool oldInTypeExpression = inTypeExpression;
+    inTypeExpression = true;
+    Expr* ret = convertAST(node);
+    inTypeExpression = oldInTypeExpression;
 
     INT_ASSERT(ret);
 
     return ret;
+  }
+
+  Expr* convertTypeExpressionOrNull(const uast::AstNode* node) {
+    if (!node) return nullptr;
+    return convertTypeExpression(node);
   }
 
   DefExpr* visit(const uast::Formal* node) {
@@ -3533,7 +3574,7 @@ struct Converter {
 
     astlocMarker markAstLoc(node->id());
 
-    Expr* typeExpr = convertTypeExpression(node->typeExpression(), true);
+    Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
     auto ret =  buildArgDefExpr(intentTag, node->name().c_str(),
@@ -3575,18 +3616,10 @@ struct Converter {
   Expr* visit(const uast::VarArgFormal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
 
-    Expr* typeExpr = nullptr;
+    Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = nullptr;
 
     INT_ASSERT(!node->initExpression());
-
-    if (node->typeExpression()) {
-      if (auto bkt = node->typeExpression()->toBracketLoop()) {
-        typeExpr = convertArrayType(bkt);
-      } else {
-        typeExpr = convertAST(node->typeExpression());
-      }
-    }
 
     Expr* varargsVariable = convertExprOrNull(node->count());
     if (!varargsVariable) {
@@ -3614,7 +3647,7 @@ struct Converter {
     ShadowVarPrefix prefix = convertTaskVarIntent(node);
     // TODO: can we avoid this UnresolvedSymExpr ?
     Expr* nameExp = new UnresolvedSymExpr(node->name().c_str());
-    Expr* type = convertTypeExpression(node->typeExpression());
+    Expr* type = convertTypeExpressionOrNull(node->typeExpression());
     Expr* init = convertExprOrNull(node->initExpression());
 
     auto ret = ShadowVarSymbol::buildForPrefix(prefix, nameExp, type, init);
@@ -3688,8 +3721,7 @@ struct Converter {
     return false;
   }
 
-  CallExpr* convertArrayType(const uast::BracketLoop* node,
-                             bool isFormalType=false) {
+  CallExpr* convertArrayType(const uast::BracketLoop* node) {
     astlocMarker markAstLoc(node->id());
 
     INT_ASSERT(node->isExpressionLevel());
@@ -3727,7 +3759,6 @@ struct Converter {
 
       // If there is a type query, extract it from the domain.
       if (lastTypeQuery) {
-        CHPL_ASSERT(isFormalType);
         CHPL_ASSERT(!domActuals);
         domActuals = convertAST(lastTypeQuery);
       }
@@ -3772,13 +3803,74 @@ struct Converter {
     return ret;
   }
 
+  // When converting variables etc. with @assertOnGpu or @blockSize,
+  // we don't just create a DefExpr; we also create an enclosing block which
+  // contains calls to primitives that implement @assertOnGpu and @blockSize.
+  //
+  // This data structure contains pointers to both.
+  struct VariableDefInfo {
+    DefExpr* variableDef;
+    Expr* entireExpr;
+
+    /**
+      Helper for code that calls 'convertVariable' but doesn't expect to handle
+      blocks with additional primitives, which can be introduced by that call
+      for GPU attributes that need to be propagated to init expressions.
+     */
+    Expr* requireDefOnly() const {
+      CHPL_ASSERT(entireExpr == variableDef);
+      return variableDef;
+    }
+  };
+
   // Returns a DefExpr that has not yet been inserted into the tree.
-  DefExpr* convertVariable(const uast::Variable* node,
+  VariableDefInfo convertVariable(const uast::Variable* node,
                            bool useLinkageName) {
     astlocMarker markAstLoc(node->id());
 
+    bool isStatic = false;
+    if (auto ag = node->attributeGroup()) {
+      if (ag->getAttributeNamed(USTR("functionStatic"))) {
+        if (!node->initExpression()) {
+          USR_FATAL(node->id(), "function-static variables must have an initializer.");
+        }
+        isStatic = true;
+      }
+    }
+
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
+
+    if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
+      // is it a module-scope variable?
+      bool moduleScopeVar = false;
+      const uast::Module* mod = nullptr;
+      if (symStack.size() > 0 && modStack.size() > 0) {
+        const uast::AstNode* sym = symStack.back().ast;
+        mod = modStack.back().mod;
+        if (mod == sym) {
+          // it's not in a function/type/etc.
+          // is it within a block or within the module directly?
+          moduleScopeVar = true;
+          // TODO: make this a parsing query
+          for (auto ast = parsing::parentAst(context, node);
+               ast != nullptr && ast != mod;
+               ast = parsing::parentAst(context, ast)) {
+            if (ast->isTupleDecl() || ast->isMultiDecl()) {
+              // these are OK and still declare a top-level variable
+            } else {
+              moduleScopeVar = false;
+            }
+          }
+        }
+      }
+      // adjust the cname for module-scope variables
+      if (moduleScopeVar && mod) {
+        varSym->cname = astr(mod->id().symbolPath().c_str(),
+                             ".",
+                             varSym->name);
+      }
+    }
 
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
     attachSymbolStorage(node->kind(), varSym);
@@ -3807,41 +3899,52 @@ struct Converter {
       varSym->cname = convertLinkageNameAstr(node);
     }
 
-    Expr* typeExpr = nullptr;
-
-    // If there is a bracket loop it is almost certainly an array type, so
-    // special case it. Otherwise, just use the generic conversion call.
-    if (const uast::AstNode* te = node->typeExpression()) {
-      if (const uast::BracketLoop* bkt = te->toBracketLoop()) {
-        typeExpr = convertArrayType(bkt);
-      } else {
-        typeExpr = toExpr(convertAST(te));
-      }
-    }
-
+    Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = nullptr;
 
     if (const uast::AstNode* ie = node->initExpression()) {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
-          auto convArrayType = convertArrayType(bkt);
+        auto convArrayType = convertArrayType(bkt);
 
-          // Use this builder because it is performing checks for skyline
-          // arrays amongst other things (that are too arcane for me).
-          initExpr = buildForallLoopExprFromArrayType(convArrayType);
-        } else {
-          initExpr = convertAST(ie);
-        }
+        // Use this builder because it is performing checks for skyline
+        // arrays amongst other things (that are too arcane for me).
+        initExpr = buildForallLoopExprFromArrayType(convArrayType);
+      } else {
+        initExpr = convertAST(ie);
+      }
+
+      if (isStatic) {
+        initExpr = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
+      }
     } else {
       initExpr = convertExprOrNull(node->initExpression());
     }
 
-    auto ret = new DefExpr(varSym, initExpr, typeExpr);
+    auto def = new DefExpr(varSym, initExpr, typeExpr);
+    VariableDefInfo ret = { def, /* entireExpr */ nullptr };
+    // Note: entireExpr is set below depending on if there are any attributes.
+
+    auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
+    if (!loopFlags.empty()) {
+      auto block = new BlockStmt(BLOCK_SCOPELESS);
+      block->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
+      block->insertAtTail(def);
+
+      auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
+      block->insertAtTail(primBlock);
+      primBlock->insertAtTail(new CallExpr(PRIM_GPU_PRIMITIVE_BLOCK));
+      loopFlags.insertPrimitives(*this, primBlock);
+
+      ret.entireExpr = block;
+    } else {
+      ret.entireExpr = def;
+    }
 
     // If the init expression of this variable is a domain and this
     // variable is not const, propagate that information by setting
     // 'definedConst' in the domain to false.
-    setDefinedConstForDefExprIfApplicable(ret, &ret->sym->flags);
+    setDefinedConstForDefExprIfApplicable(def, &def->sym->flags);
 
     // Fix up the AST based on the type, if it should be known
     setVariableType(node, varSym);
@@ -3856,19 +3959,19 @@ struct Converter {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
-    auto defExpr = convertVariable(node, true);
-    INT_ASSERT(defExpr);
-    auto varSym = toVarSymbol(defExpr->sym);
+    auto info = convertVariable(node, true);
+    INT_ASSERT(info.entireExpr && info.variableDef);
+    auto varSym = toVarSymbol(info.variableDef->sym);
     INT_ASSERT(varSym);
 
-    stmts->insertAtTail(defExpr);
+    stmts->insertAtTail(info.entireExpr);
 
     // Special handling for extern type variables.
     if (isTypeVar) {
       if (node->linkage() == uast::Decl::EXTERN) {
         INT_ASSERT(!node->isConfig());
-        INT_ASSERT(defExpr->sym && isVarSymbol(defExpr->sym));
-        auto varSym = toVarSymbol(defExpr->sym);
+        INT_ASSERT(info.variableDef->sym && isVarSymbol(info.variableDef->sym));
+        auto varSym = toVarSymbol(info.variableDef->sym);
         auto linkageName = node->linkageName() ? varSym->cname : nullptr;
         stmts = convertTypesToExtern(stmts, linkageName);
 
@@ -4032,6 +4135,31 @@ struct Converter {
   }
 
 };
+
+void LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+  if (assertOnGpuAttr) {
+    body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
+                                    new SymExpr(gTrue)));
+  }
+}
+
+void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  if (blockSizeAttr) {
+    if (blockSizeAttr->numActuals() != 1) {
+      USR_FATAL(blockSizeAttr->id(),
+                "'@gpu.blockSize' attribute must have exactly one argument: "
+                "the block size");
+    }
+
+    Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
+    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+  }
+}
+
+void LoopAttributeInfo::insertPrimitives(Converter& converter, BlockStmt* body) {
+  insertGpuEligibilityAssertion(body);
+  insertBlockSizeCall(converter, body);
+}
 
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::AstNode* node) {
@@ -4814,6 +4942,8 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     }
 
     se->setSymbol(sym);
+    fixedUp.insert(se);
+
     // Not all symExprs are noted as fixups (due to lowering and AST
     // transformations), so visit the temporary conversion symbol's recorded
     // symExprs to try handle these stragglers.

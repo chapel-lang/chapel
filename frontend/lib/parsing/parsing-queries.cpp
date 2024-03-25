@@ -147,7 +147,7 @@ const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
   UniqueString libPath;
-  if (context->pathHasLibrary(path, libPath)) {
+  if (context->pathIsInLibrary(path, libPath)) {
     auto lib = libraries::LibraryFile::load(context, libPath);
     return lib->loadSourceAst(context, path);
   } else {
@@ -857,6 +857,14 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
 }
 
+bool idIsNestedFunction(Context* context, ID id) {
+  if (id.isEmpty() || !idIsFunction(context, id)) return false;
+  if (auto up = id.parentSymbolId(context)) {
+    return idIsFunction(context, up);
+  }
+  return false;
+}
+
 bool idIsFunction(Context* context, ID id) {
   // Functions always have their own ID symbol scope,
   // and if it's not a function, we can return false
@@ -984,6 +992,7 @@ const ID& idToParentId(Context* context, ID id) {
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
+  if (node == nullptr) return nullptr;
   auto parentId = idToParentId(context, node->id());
   if (parentId.isEmpty()) return nullptr;
   return idToAst(context, parentId);

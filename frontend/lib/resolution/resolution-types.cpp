@@ -40,6 +40,33 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+void OuterVariables::add(Context* context, ID mention, ID var) {
+  ID mentionParent = mention.parentSymbolId(context);
+  ID symbolParent = symbol_.parentSymbolId(context);
+  ID varParent = var.parentSymbolId(context);
+  const bool isReachingUse = symbolParent != varParent;
+  const bool isChildUse = mentionParent != symbol_;
+
+  CHPL_ASSERT(varParent != symbol_);
+  if (!isReachingUse) {
+    CHPL_ASSERT(mention && symbol_.contains(mention));
+  }
+
+  auto it = idToVarAndMentionIndices_.find(var);
+  if (it == idToVarAndMentionIndices_.end()) {
+    auto p = std::make_pair(variables_.size(), std::vector<size_t>());
+    it = idToVarAndMentionIndices_.emplace_hint(it, var, std::move(p));
+    variables_.push_back(var);
+    if (isReachingUse) numReachingVariables_++;
+  }
+
+  // Don't bother storing the mention for a child use.
+  if (!isChildUse) {
+    it->second.second.push_back(mentions_.size());
+    mentions_.push_back(mention);
+  }
+}
+
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
@@ -317,39 +344,20 @@ CallInfo CallInfo::create(Context* context,
       name = calledIdent->name();
     } else if (auto calledDot = called->toDot()) {
       name = calledDot->field();
+    } else if (auto op = called->toOpCall()) {
+      name = op->op();
     } else {
       CHPL_UNIMPL("CallInfo without a name");
     }
   }
 
-  // Check for method call, maybe construct a receiver.
-  if (!call->isOpCall()) {
-    if (auto called = call->calledExpression()) {
-      if (auto calledDot = called->toDot()) {
-
-        const AstNode* receiver = calledDot->receiver();
-        const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
-        const QualifiedType& qtReceiver = reReceiver.type();
-
-        // Check to make sure the receiver is a value or type.
-        if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
-            qtReceiver.kind() != QualifiedType::FUNCTION &&
-            qtReceiver.kind() != QualifiedType::MODULE) {
-
-          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-          if (actualAsts != nullptr) {
-            actualAsts->push_back(receiver);
-          }
-          calledType = qtReceiver;
-          isMethodCall = true;
-        }
-      }
-    }
-  }
-
-  // Get the type of the called expression.
-  if (isMethodCall == false) {
-    if (auto calledExpr = call->calledExpression()) {
+  // Set up a method call if relevant.
+  if (auto calledExpr = call->calledExpression()) {
+    // It shouldn't be possible to have definitions that could match either a
+    // normal method call or a call to 'this' on a field, so no need to
+    // disambiguate here; assume it'll be one or the other.
+    if (byPostorder.hasAst(calledExpr)) {
+      // If we have a resolved type for the expression, call its 'this'.
       const ResolvedExpression& r = byPostorder.byAst(calledExpr);
       calledType = r.type();
 
@@ -367,6 +375,27 @@ CallInfo CallInfo::create(Context* context,
         }
         // and reset calledType
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      }
+    } else if (!call->isOpCall()) {
+      // Check for normal method call, maybe construct a receiver.
+      if (auto called = call->calledExpression()) {
+        if (auto calledDot = called->toDot()) {
+          const AstNode* receiver = calledDot->receiver();
+          const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
+          const QualifiedType& qtReceiver = reReceiver.type();
+
+          // Check to make sure the receiver is a value or type.
+          if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
+              qtReceiver.kind() != QualifiedType::FUNCTION &&
+              qtReceiver.kind() != QualifiedType::MODULE) {
+            actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+            if (actualAsts != nullptr) {
+              actualAsts->push_back(receiver);
+            }
+            calledType = qtReceiver;
+            isMethodCall = true;
+          }
+        }
       }
     }
   }

@@ -2,7 +2,6 @@ packageModules.chpl:XX: warning: AllLocalesBarriers is unstable
 packageModules.chpl:XX: warning: ArgumentParser is unstable.
 packageModules.chpl:XX: warning: AtomicObjects is unstable
 packageModules.chpl:XX: warning: BLAS is unstable
-packageModules.chpl:XX: warning: BinaryIO module is deprecated; please use the IO module instead
 packageModules.chpl:XX: warning: Buffers is unstable
 packageModules.chpl:XX: warning: Channel is unstable
 packageModules.chpl:XX: warning: ChplFormat module is considered unstable pending naming changes
@@ -50,4 +49,5 @@ packageModules.chpl:XX: warning: UnorderedCopy is unstable
 packageModules.chpl:XX: warning: UnrolledLinkedList is unstable
 packageModules.chpl:XX: warning: VisualDebug is unstable
 packageModules.chpl:XX: warning: The YAML module is considered unstable pending various name and design changes.
+packageModules.chpl:XX: warning: Zarr is unstable
 packageModules.chpl:XX: warning: ZMQ is unstable
