@@ -1,8 +1,8 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/1.32.0/chapel-1.32.0.tar.gz"
-  sha256 "9fb139756ebb63ab722856273457673fc7368b26d9a9483333650510506c0a96"
+  url "https://github.com/chapel-lang/chapel/releases/download/1.33.0/chapel-1.33.0.tar.gz"
+  sha256 "9dfd9bbab3eb1acf10242db909ccf17c1b07634452ca6ba8b238e69788d82883"
   license "Apache-2.0"
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
@@ -44,13 +44,16 @@ class Chapel < Formula
     (libexec/"chplconfig").write <<~EOS
       CHPL_RE2=bundled
       CHPL_GMP=system
-    # These lines are added as part of this PR: https://github.com/chapel-lang/chapel/pull/23415.
-    # This is a workaround for an issue where the 
       CHPL_MEM=cstdlib
       CHPL_TASKS=fifo
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
+    # CHPL_MEM and CHPL_TASKS are currently being set this way due
+    # to this PR: https://github.com/chapel-lang/chapel/pull/23415.
+    # This is a workaround for an issue where the bundled jemalloc
+    # makefile is being run and failing when we are supposed to use
+    # the system jemalloc.
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
