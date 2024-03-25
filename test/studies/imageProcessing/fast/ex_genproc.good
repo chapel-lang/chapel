@@ -1,0 +1,6 @@
+Demo type argument
+  castto 314.159 to int32  314
+  castto 314.159 to uint8  58
+Demo param argument and unspecified argument type
+  fill 4-tuple (2.178, 2.178, 2.178, 2.178)
+  type is 4*real(64)

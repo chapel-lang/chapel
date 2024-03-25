@@ -1,0 +1,28 @@
+
+Starting test bench for circumference
+  checking radius 3
+  checking radius 4
+  checking radius 5
+  checking radius 6
+  checking radius 7
+  checking radius 8
+  checking radius 9
+  all tests passed
+
+Starting test bench for is_corner
+  all tests passed
+
+Starting test bench for is_corner_with_details
+  test 1 expected start at (11, 13), got (7, 9)
+  test 1 expected dpix of  22.0, got  16.0
+  test 2 expected start at (12, 12), got (8, 12)
+  test 2 expected dpix of  25.0, got  13.0
+  test 3 expected dpix of  26.0, got  25.0
+  test 4 expected start at (13, 10), got (10, 7)
+  test 4 expected dpix of  19.0, got  11.0
+  test 5 expected start at (11, 13), got (9, 13)
+  test 5 expected dpix of  26.0, got  14.0
+  some test failed
+
+Test Bench Summary
+  some test FAILED

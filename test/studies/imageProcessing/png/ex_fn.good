@@ -1,0 +1,20 @@
+
+tstfn1:  arg1 = 1   arg2 = 3
+
+tstfn2:  arg1 = 2.718   arg2 = dummy string
+tstfn2:  arg1 = 3.14   arg2 = dummy string
+tstfn2:  arg1 = 2.718   arg2 = a new string
+tstfn2:  arg1 = 1.41   arg2 = another string
+tstfn2:  arg1 = 1.41   arg2 = another string
+
+tstfn3a:  no args
+tstfn3b:  no args
+
+tstfn4:  call1 = 3   call2 = 3.0   call3 = 10
+         call4 = 10.807   call5 = 5   call6 = 9.807
+
+tstfn5:  real part 5.0   complex 0.0
+tstfn5:  real part 6.0   complex 0.0
+tstfn5:  real part 1.0   complex 1.0
+
+tstfn6:  arg1 = 6.14   val1 = 3.14
