@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-# Skip if not doing performance testing
-if [ -z "$CHPL_TEST_PERF" ]; then
-  echo "True"
-  exit
-fi
-
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 CHOP_BRANCH=main
 CHOP_URL=${CHOP_URL:-https://github.com/tcarneirop/ChOp.git}
