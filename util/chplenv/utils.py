@@ -20,6 +20,7 @@ def warning(msg):
         sys.stderr.write(msg)
         sys.stderr.write('\n')
 
+continue_on_error = False
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
@@ -30,7 +31,8 @@ def error(msg, exception=Exception):
         sys.stderr.write('\nError: ')
         sys.stderr.write(msg)
         sys.stderr.write('\n')
-        sys.exit(1)
+        if not continue_on_error:
+            sys.exit(1)
 
 
 def memoize(func):

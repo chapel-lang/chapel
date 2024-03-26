@@ -42,6 +42,9 @@ Options:
                  this flag always excludes CHPL_HOME and CHPL_MAKE
   --bash        Print variables in format: export CHPL_KEY=VALUE
   --csh         Print variables in format: setenv CHPL_KEY VALUE
+
+  [misc]
+  --continue    Continue processing even if an error occurs
 """
 
 from collections import namedtuple
@@ -518,6 +521,9 @@ def parse_args():
     parser.add_option('--bash',   action='store_const', dest='format', const='bash')
     parser.add_option('--csh',    action='store_const', dest='format', const='csh')
 
+    #[misc]
+    parser.add_option('--continue', action='store_true', dest='continue_on_error')
+
     #[hidden]
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
 
@@ -561,6 +567,9 @@ def main():
     if options.format == 'path' and 'internal' in contents:
         stdout.write('--path and --internal are incompatible flags\n')
         exit(1)
+
+    if options.continue_on_error:
+        utils.continue_on_error = True
 
     # Populate ENV_VALS
     compute_all_values()
