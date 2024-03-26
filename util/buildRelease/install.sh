@@ -381,7 +381,7 @@ then
 fi
 
 CHPL_LANGUAGE_SERVER="bin/$CHPL_BIN_SUBDIR"/chpl-language-server
-# comes with chpl-language-serverh
+# comes with chpl-language-server
 CHPL_SHIM="bin/$CHPL_BIN_SUBDIR"/chpl-shim
 
 # copy chpl-language-server
