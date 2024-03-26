@@ -37,6 +37,7 @@ module Zarr {
   require "blosc.h";
   require "-lblosc";
 
+  @chpldoc.nodoc
   module Blosc {
     use CTypes;
     extern proc blosc_init();
@@ -66,6 +67,7 @@ module Zarr {
     var dimension_names: list(string);
   };
 
+  @chpldoc.nodoc
   proc dtypeString(type dtype) throws {
     select dtype {
       when real(32) do return "f4";
@@ -76,6 +78,7 @@ module Zarr {
     throw Error("Unexpected data type, only real and int types are supported.");
   }
 
+  @chpldoc.nodoc
   proc getMetadata(directoryPath: string) throws {
     var metadataPath = joinPath(directoryPath, ".zarray");
     var r = openReader(metadataPath, deserializer = new jsonDeserializer(), locking=false);
@@ -84,6 +87,7 @@ module Zarr {
     return md;
   }
 
+  @chpldoc.nodoc
   proc validateMetadata(metadata: zarrMetadataV2, type dtype, param dimCount) throws {
     //dimensionality matches
     if dimCount != metadata.shape.size then
@@ -114,16 +118,18 @@ module Zarr {
   }
 
 
-
+  @chpldoc.nodoc
   proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndices: ?dimCount * int) {
     var indexStrings: dimCount*string;
     for i in 0..<dimCount do indexStrings[i] = chunkIndices[i] : string;
     return joinPath(directoryPath, delimiter.join(indexStrings));
   }
+  @chpldoc.nodoc
   proc buildChunkPath(directoryPath: string, delimiter: string, chunkIndex: int) {
     return joinPath(directoryPath, chunkIndex:string);
   }
 
+  @chpldoc.nodoc
   proc getLocalChunks(D: domain(?), localD: domain(?), chunkShape: ?dimCount*int): domain(dimCount) {
 
     const totalShape = D.shape;
@@ -155,6 +161,7 @@ module Zarr {
     const thisChunkDomain: domain(dimCount) = thisChunkRange;
     return thisChunkDomain;
   }
+  @chpldoc.nodoc
   proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: int) {
     return getChunkDomain(chunkShape, (chunkIndices,));
   }
