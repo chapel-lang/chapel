@@ -865,6 +865,7 @@ class CLSConfig:
         add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
         add_bool_flag("dead-code", "dead_code", True)
         add_bool_flag("evaluate-expressions", "eval_expressions", True)
+        add_bool_flag("show-instantiations", "show_instantiations", True)
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
@@ -917,6 +918,7 @@ class ChapelLanguageServer(LanguageServer):
         self.param_inlays: bool = config.get("param_inlays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
+        self.show_instantiations: bool = config.get("show_instantiations")
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
@@ -1665,6 +1667,14 @@ def run_lsp():
 
     @server.feature(TEXT_DOCUMENT_CODE_LENS)
     async def code_lens(ls: ChapelLanguageServer, params: CodeLensParams):
+
+        # return early if the resolver is not being used or the feature is disabled
+        if not ls.use_resolver:
+            return None
+
+        if not ls.show_instantiations:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
