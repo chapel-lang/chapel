@@ -1559,7 +1559,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
           // The exact way to create these task private copies will depend on
           // if the loop is vectorized or gpuized or not so rather than deal
           // with this during iterator lowering we wrap a piece of code
-          // demonstrating how to copy the in intent'd variable in a primitive 
+          // demonstrating how to copy the in intent'd variable in a primitive
           // like this:
           //
           //   var taskIndX = PRIM_TASK_PRIVATE_SVAR_CAPTURE(x);
