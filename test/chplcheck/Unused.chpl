@@ -27,5 +27,10 @@ module Unused {
     for (i,j) in {1..10,1..10} do
       writeln(i);
   }
+
+  @chplcheck.ignore("UnusedFormal")
+  proc myProcIgnored(A, B) {}
+
   myProc(1,2);
+  myProcIgnored(1,2);
 }
