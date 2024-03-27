@@ -490,6 +490,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
                        conversion);
 }
 
+// TODO: this doesn't need to be its own method
 CanPassResult CanPassResult::canPassClassTypes(Context* context,
                                                const ClassType* actualCt,
                                                const ClassType* formalCt) {
@@ -859,7 +860,7 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   if (auto actualCt = actualT->toClassType()) {
     // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
-      CanPassResult got = canPassClassTypes(context, actualCt, formalCt);
+      CanPassResult got = canPassSubtypeOrBorrowing(context, actualCt, formalCt);
       if (got.passes() && got.instantiates()) {
         return got;
       }
