@@ -95,7 +95,8 @@ proc repeatMake(desc, alu, n) {
   for i in 0..n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
-    stdout.write(s[lo..#len], newline);
+    stdout.writeBinary(s[lo..#len]);
+    stdout.writeln();
   }
 }
 
@@ -134,7 +135,7 @@ proc randomMake(desc, a, n) {
     }
     line_buff[numBytes] = newline;
 
-    stdout.write(line_buff[0..numBytes]);
+    stdout.writeBinary(line_buff[0..numBytes]);
   }
 }
 

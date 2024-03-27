@@ -19,20 +19,20 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 
 
 proc main(args: [] string) {
-  var stdinBin  = (new file(0)).reader(locking=false),
-      stdoutBin = (new file(1)).writer(locking=false),
+  var stdin  = (new file(0)).reader(locking=false),
+      stdout = (new file(1)).writer(locking=false),
       bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
       end = 0;
 
   // read in the data using an incrementally growing buffer
-  while stdinBin.read(buf[end..]) {
+  while stdin.readBinary(buf[end..]) {
     end = bufLen;
     bufLen += min(1024**2, bufLen);
     bufDom = {0..<bufLen};
   }
-  end = stdinBin.offset()-1;
+  end = stdin.offset()-1;
 
   // process the buffer a sequence at a time, working from the end
   var hi = end;
@@ -55,7 +55,7 @@ proc main(args: [] string) {
   }
 
   // write out the transformed buffer
-  stdoutBin.write(buf[..end]);
+  stdout.writeBinary(buf[..end]);
 }
 
 

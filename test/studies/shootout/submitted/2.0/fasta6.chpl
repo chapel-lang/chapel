@@ -74,7 +74,7 @@ proc repeatMake(param alu, n) {
 
   var extra = n - wholeBuffers*len*lineLen;
   extra += extra/lineLen;
-  stdout.write(buffer[..<extra]);
+  stdout.writeBinary(buffer[..<extra]);
 
   if n % lineLen != 0 {
     stdout.writeln();
@@ -118,7 +118,7 @@ proc randomMake(nuclInfo, n) {
         buffer[j*bytesPerLine + k] = hash[getNextRand()];
       }
     }
-    stdout.write(buffer);
+    stdout.writeBinary(buffer);
   }
 
   // compute number of complete lines remaining and fill them in
@@ -138,7 +138,7 @@ proc randomMake(nuclInfo, n) {
     buffer[offset + k] = hash[getNextRand()];
   }
 
-  stdout.write(buffer[0..<offset+extra]);
+  stdout.writeBinary(buffer[0..<offset+extra]);
 
   // add a final linefeed if needed
   if (extra != 0) {

@@ -90,7 +90,8 @@ proc repeatMake(desc, alu, n) {
   for i in 0..n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
-    stdout.write(s[lo..#len], newline);
+    stdout.writeBinary(s[lo..#len]);
+    stdout.writeln();
   }
 }
 
@@ -156,7 +157,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 
       // Write the output in a coordinated manner
       outGo[tid].waitFor(i);
-      stdout.write(myBuff[0..#off]);
+      stdout.writeBinary(myBuff[0..#off]);
       outGo[nextTid].write(i+chunkSize);
     }
   }
