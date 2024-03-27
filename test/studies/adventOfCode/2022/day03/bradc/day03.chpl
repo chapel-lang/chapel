@@ -14,22 +14,25 @@ iter readRucksacks() {
   }
 }
 
+proc rucksacksToPriority((compartment1, compartment2)) {
+  var items: set(uint(8));
+
+  for item in compartment1 do
+    items.add(item);
+
+  for item in compartment2 {
+    if items.contains(item) {
+      return itemToPriority(item);
+    }
+  }
+  halt("We didn't find any items of overlap!");
+}
+
 proc sumOfPriorities(Rucksacks) {
   var sum = 0;
 
-  forall (compartment1, compartment2) in Rucksacks with (+ reduce sum) {
-    var items: set(uint(8));
-
-    for item in compartment1 do
-      items.add(item);
-
-    for item in compartment2 {
-      if items.contains(item) {
-        sum += itemToPriority(item);
-        break;
-      }
-    }
-  }
+  forall compartments in Rucksacks with (+ reduce sum) do
+    sum += rucksacksToPriority(compartments);
 
   return sum;
 }
