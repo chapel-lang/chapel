@@ -523,6 +523,7 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
                                                   actualCt->decorator(),
                                                   formalCt->decorator());
       if (!decResult.passes()) return decResult;
+      CHPL_ASSERT(!decResult.promotes_);
 
       if (actualCt->decorator().isManaged() &&
           formalCt->decorator().isManaged() &&
@@ -534,37 +535,29 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
       auto actualBct = actualCt->basicClassType();
       auto formalBct = formalCt->basicClassType();
 
-      // code below assumes this
-      CHPL_ASSERT(decResult.passes());
-      CHPL_ASSERT(!decResult.promotes_);
-
       // Only consider subtype conversions here.
       bool converts = (decResult.conversionKind_ == SUBTYPE ||
                        decResult.conversionKind_ == BORROWS_SUBTYPE);
       bool instantiates = decResult.instantiates_;
 
+      bool pass = false;
       if (formalCt->manageableType()->isAnyClassType()) {
         // Formal is the generic `class`. This is an instantiation since
-        // that's always generic, but it might also be a conversion if nilability
-        // is involved.
-
-        // all class conversions are subtype conversions
-        ConversionKind conversion = converts ? SUBTYPE : NONE;
-
-        return CanPassResult(/* no fail reason */ {},
-                             /* instantiates */ true,
-                             /*promotes*/ false,
-                             conversion);
+        // that's always generic, but it might also be a conversion if
+        // nilability is involved.
+        instantiates = true;
+        pass = true;
       } else if (actualCt->manageableType()->isAnyClassType()) {
         CHPL_ASSERT(false && "probably shouldn't happen");
       } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
         // or there was instantiation
+        pass = true;
+      }
 
-        // all class conversions are subtype conversions
+      if (pass) {
         ConversionKind conversion = converts ? SUBTYPE : NONE;
-
         return CanPassResult(/* no fail reason */ {},
                              instantiates,
                              /*promotes*/ false,
