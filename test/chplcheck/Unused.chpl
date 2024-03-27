@@ -14,6 +14,18 @@ module Unused {
         writeln(i);
       }
     }
+
+    // test with unrelated attribute; previously this (wrongly) silenced warnigns
+    @chplcheck.ignore("UnusedFormal")
+    for i in 1..10 {}
+
+    // silencing UnusedLoopIndex should definitely work, though.
+    @chplcheck.ignore("UnusedLoopIndex")
+    for i in 1..10 {}
+
+    @chplcheck.ignore("UnusedLoopIndex")
+    for (i,j) in {1..10,1..10} do
+      writeln(i);
   }
   myProc(1,2);
 }
