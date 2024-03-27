@@ -58,6 +58,26 @@ def load_module(driver: LintDriver, file_path: str):
         raise ValueError(f"Could not find rule function '{rule_func_name}' in {file_path}")
     rule_func(driver)
 
+def print_rules(driver: LintDriver, show_all=True):
+    padding = max(len(rule) for (rule, _) in driver.rules_and_descriptions())
+    for (rule, description) in driver.rules_and_descriptions():
+        if description is None:
+            description = ""
+        description = description.strip()
+
+        prefix = ""
+        if rule not in driver.SilencedRules:
+            if show_all:
+                prefix = "* "
+        else:
+            if show_all:
+                prefix = "  "
+            else:
+                continue
+
+
+        print(f"  {prefix}{rule.ljust(padding)}   {description}")
+
 def main():
     parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
     parser.add_argument('filenames', nargs='*')
@@ -67,6 +87,8 @@ def main():
     parser.add_argument('--skip-unstable', action='store_true', default=False)
     parser.add_argument('--internal-prefix', action='append', dest='internal_prefixes', default=[])
     parser.add_argument("--add-rules", action='append', default=[], help="Add a custom rule file")
+    parser.add_argument("--list-rules", action='store_true', default=False, help="List all available rules")
+    parser.add_argument("--list-active-rules", action='store_true', default=False, help="List all currently enabled rules")
     args = parser.parse_args()
 
     driver = LintDriver(skip_unstable = args.skip_unstable, internal_prefixes = args.internal_prefixes)
@@ -75,8 +97,18 @@ def main():
     for p in args.add_rules:
         load_module(driver, os.path.abspath(p))
 
+    if args.list_rules:
+        print("Available rules (default rules marked with *):")
+        print_rules(driver)
+        return
+
     driver.disable_rules(*args.disabled_rules)
     driver.enable_rules(*args.enabled_rules)
+
+    if args.list_active_rules:
+        print("Active rules:")
+        print_rules(driver, show_all=False)
+        return
 
     if args.lsp:
         run_lsp(driver)

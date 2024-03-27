@@ -58,6 +58,20 @@ class LintDriver:
         self.skip_unstable = skip_unstable
         self.internal_prefixes = internal_prefixes
 
+    def rules_and_descriptions(self):
+        # Use a dict in case a rule is registered multiple times.
+        to_return = {}
+
+        for rule in self.BasicRules:
+            to_return[rule[0]] = rule[2].__doc__
+
+        for rule in self.AdvancedRules:
+            to_return[rule[0]] = rule[1].__doc__
+
+        to_return = list(to_return.items())
+        to_return.sort()
+        return to_return
+
     def disable_rules(self, *rules):
         """
         Tell the driver to silence / skip warning for the given rules.
