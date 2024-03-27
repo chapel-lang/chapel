@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# GPU native testing on a Cray EX (using none for CHPL_COMM)
+# GPU native testing on a Cray EX
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-native-gpu.bash
