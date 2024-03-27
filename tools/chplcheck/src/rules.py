@@ -248,11 +248,13 @@ def register_rules(driver):
                 for child in node:
                     yield from variables(child)
 
-        for (_, match) in chapel.each_matching(root, [IndexableLoop, ("?decl", Decl), chapel.rest]):
-            node = match["decl"]
+        for (loop, match) in chapel.each_matching(root, IndexableLoop):
+            node = loop.index()
+            if node is None:
+                continue
 
             for index in variables(node):
-                indices[index.unique_id()] = index
+                indices[index.unique_id()] = (index, loop)
 
         for (use, _) in chapel.each_matching(root, Identifier):
             refersto = use.to_node()
