@@ -1,0 +1,39 @@
+all var
+After A
+In initCopy(definedConst=false)domain definedConst: true
+Normal path
+After B
+After C
+In initCopy(definedConst=false)domain definedConst: true
+Normal path
+After D
+
+const A, var others
+After A
+In initCopy(definedConst=false)domain definedConst: true
+Normal path
+After B
+After C
+In initCopy(definedConst=false)domain definedConst: true
+Normal path
+After D
+
+var A, const others
+After A
+In initCopy(definedConst=true)domain definedConst: true
+Normal path
+After B
+After C
+In initCopy(definedConst=true)domain definedConst: true
+Normal path
+After D
+
+var Dom, var A, const others
+After A
+In initCopy(definedConst=true)domain definedConst: false
+Normal path
+After B
+After C
+In initCopy(definedConst=true)domain definedConst: false
+Normal path
+After D
