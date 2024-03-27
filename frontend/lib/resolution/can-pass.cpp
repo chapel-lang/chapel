@@ -993,7 +993,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     return fail(FAIL_UNKNOWN_FORMAL_TYPE); // unknown formal type, can't resolve
   }
 
-  if (isTypeGeneric(context, formalQT)) {
+  if (formalQT.isParam() == false && isTypeGeneric(context, formalQT)) {
     // Check to see if we should proceed with instantiation.
     // Further checking will occur after the instantiation occurs,
     // so checking here just rules out predictable situations.
@@ -1056,6 +1056,11 @@ CanPassResult CanPassResult::canPass(Context* context,
 
     case QualifiedType::PARAM:
       {
+        if (formalQT.hasParamPtr() == false &&
+            formalQT.type()->isAnyType()) {
+          return instantiate();
+        }
+
         auto got = canConvert(context, actualQT, formalQT);
         if (got.passes()) {
           // if the formal parameter value is unknown, we need
