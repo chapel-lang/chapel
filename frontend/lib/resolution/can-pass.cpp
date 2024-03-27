@@ -503,7 +503,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
 // kind of NONE or SUBTYPE.
 // It's returning CanPassResult in order to also reflect if instantiation
 // was necessary.
-CanPassResult CanPassResult::canPassSubtype(Context* context,
+CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
                                             const Type* actualT,
                                             const Type* formalT) {
   // nil -> pointers
@@ -578,7 +578,7 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
   return fail(FAIL_EXPECTED_SUBTYPE);
 }
 
-// Like canPassSubtype, but considers subtyping conversions and/or implicit
+// Like canPassSubtypeNonBorrowing, but considers subtyping conversions and/or implicit
 // borrowing conversions.
 // This function returns CanPassResult which always has
 // conversion kind of NONE, SUBTYPE, BORROWS, or BORROWS_SUBTYPE.
@@ -587,7 +587,7 @@ CanPassResult CanPassResult::canPassSubtypeOrBorrowing(Context* context,
                                                        const Type* formalT) {
   // First check if we can pass directly or with subtype conversion, ignoring
   // any borrowing that may be necessary.
-  auto result = canPassSubtype(context, actualT, formalT);
+  auto result = canPassSubtypeNonBorrowing(context, actualT, formalT);
   if (result.passes()) {
     const ConversionKind subtypingConversion = result.conversionKind_;
     CHPL_ASSERT(subtypingConversion == NONE || subtypingConversion == SUBTYPE);
@@ -1027,7 +1027,8 @@ CanPassResult CanPassResult::canPass(Context* context,
           }
         }
         // TODO: promotion
-        return canPassSubtype(context, actualT, formalT);
+
+        return canPassSubtypeNonBorrowing(context, actualT, formalT);
       }
 
     case QualifiedType::PARAM:
