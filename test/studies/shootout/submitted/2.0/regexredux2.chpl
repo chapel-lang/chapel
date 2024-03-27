@@ -25,7 +25,7 @@ proc main(args: [] string) {
     ("<[^>]*>", "|"), ("\\|[^|][^|]*\\|", "-")
   ];
 
-  var data = stdin.read(string); // read in the entire file
+  var data = stdin.readAll(string); // read in the entire file
   const initLen = data.size;
 
   // remove newlines
