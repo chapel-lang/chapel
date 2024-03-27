@@ -1,7 +1,7 @@
 SRCS := $(wildcard *.chpl)
 BINS = $(SRCS:%.chpl=%)
 
-#CHPL_FLAGS=--warn-unstable
+CHPL_FLAGS=--warn-unstable
 
 all: $(BINS)
 
