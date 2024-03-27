@@ -10,6 +10,7 @@ Dependencies can be invoked as subcommands in the following ways:
   python3 path/to/chpldeps sphinx-build <sphinx options>
   python3 path/to/chpldeps rst2man <rst2man options>
   python3 path/to/chpldeps register-python-argcomplete
+  python3 path/to/chpldeps version <package name>
   python3 path/to/chpldeps path/to/something.py <something.py options>
 
 For the last case, this program assumes that something.py has a
