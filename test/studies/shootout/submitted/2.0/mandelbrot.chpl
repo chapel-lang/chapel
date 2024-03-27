@@ -54,13 +54,7 @@ proc main() {
     }
   }
 
-  //
-  // Get a lock-free writer channel on 'stdout', write the file header,
-  // and the image array.
-  //
-  var w = (new file(1)).writer(locking=false);
-
-  w.writef("P4\n");
-  w.writef("%i %i\n", n, n);
-  w.write(image);
+  stdout.writef("P4\n");
+  stdout.writef("%i %i\n", n, n);
+  stdout.writeBinary(image);
 }
