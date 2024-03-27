@@ -12,8 +12,7 @@ const table = createTable();    // create the table of code complements
 
 proc main(args: [] string) {
   use IO;
-  const stdin = (new file(0)).reader(locking=false),
-        stdout = (new file(1)).writer(locking=false);
+  const stdin = (new file(0)).reader(locking=false);
 
   // read in the data using an incrementally growing buffer
   var bufLen = 8 * 1024,
