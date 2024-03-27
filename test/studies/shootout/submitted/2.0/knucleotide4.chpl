@@ -37,7 +37,7 @@ proc main(args: [] string) {
   } while lineSize > 0;
 
   // Resize our array to the amount actually read
-  dataDom = {1..idx};
+  dataDom = {1..idx+1};
 
   // Make everything uppercase
   forall d in data do
