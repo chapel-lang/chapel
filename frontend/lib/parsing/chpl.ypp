@@ -1789,55 +1789,55 @@ zippered_iterator:
 if_stmt:
   TIF expr TTHEN stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, $2, $4);
   }
 | TIF expr block_stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, $2, $3);
   }
 | TIF expr TTHEN stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, @5, @6, $2, $4, $6);
   }
 | TIF expr block_stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, @4, @5, $2, $3, $5);
   }
 | TIF ifvar TTHEN stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, $2, $4);
   }
 | TIF ifvar block_stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, $2, $3);
   }
 | TIF ifvar TTHEN stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, @5, @6, $2, $4, $6);
   }
 | TIF ifvar block_stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, @4, @5, $2, $3, $5);
   }
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(true, @1, @5, op, $6);
+    $$ = context->buildConditionalStmt(true, @$, @5, @6, op, $6);
   }
 | TIF expr assignop_ident expr block_stmt %prec TNOELSE
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(false, @1, @5, op, $5);
+    $$ = context->buildConditionalStmt(false, @$, @5, @5, op, $5);
   }
 | TIF expr assignop_ident expr TTHEN stmt TELSE stmt
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(true, @1, @5, @7, op, $6, $8);
+    $$ = context->buildConditionalStmt(true, @$, @5, @6, @7, @8, op, $6, $8);
   }
 | TIF expr assignop_ident expr block_stmt TELSE stmt
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(false, @1, @5, @6, op, $5, $7);
+    $$ = context->buildConditionalStmt(false, @$, @5, @5, @6, @7, op, $5, $7);
   }
 ;
 
