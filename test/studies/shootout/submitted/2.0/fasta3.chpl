@@ -81,7 +81,6 @@ proc sumProbs(ref alphabet: []) {
 //
 use IO;
 const stdout = (new file(1)).writer(locking=false);
-param newline = "\n".toByte();
 
 //
 // Repeat sequence "alu" for n characters
@@ -133,7 +132,7 @@ proc randomMake(desc, a, n) {
         line_buff[i] = nucl: int(8);
       }
     }
-    line_buff[numBytes] = newline;
+    line_buff[numBytes] = "\n".toByte();
 
     stdout.writeBinary(line_buff[0..numBytes]);
   }
