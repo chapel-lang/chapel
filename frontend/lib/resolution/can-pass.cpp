@@ -516,6 +516,7 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
     if (auto formalCt = formalT->toClassType()) {
       // owned Child -> owned Parent
       // owned Child -> owned Parent?
+      // owned Child? -> owned Parent?
 
       // check decorators allow passing
       CanPassResult decResult = canPassDecorators(context,
