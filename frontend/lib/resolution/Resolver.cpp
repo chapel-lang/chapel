@@ -1075,8 +1075,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   } else {
     // otherwise both declaredType and initExprType are provided.
     // check that they are compatible
-    auto got = canPass(context, initExprType,
-                       QualifiedType(declKind, declaredType.type()));
+    auto fullDeclType = QualifiedType(declKind, declaredType.type());
+    auto got = canPass(context, initExprType, fullDeclType);
     if (!got.passes()) {
       if (declaredType.type()->isExternType()) {
         auto varDT = QualifiedType(QualifiedType::VAR, declaredType.type());
@@ -1131,7 +1131,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         }
       } else {
         // get instantiation type
-        auto t = getInstantiationType(context, initExprType, declaredType);
+        auto t = getInstantiationType(context, initExprType, fullDeclType);
         typePtr = t.type();
         if (inferParam) {
           paramPtr = t.param();
