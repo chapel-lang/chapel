@@ -45,6 +45,4 @@ e.g. [`test/path/to/foo.chpl`](
 - Output of `chpldoc --version`:
 - Output of `$CHPL_HOME/util/printchplenv --anonymize`:
 - Back-end compiler and version, e.g. `gcc --version` or `clang --version`:
-- Sphinx version, e.g. `grep -E "^Sphinx" $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements2.txt`:
-- sphinxcontrib-chapeldomain version, e.g. `grep -E "^sphinxcontrib-chapeldomain" $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements3.txt`:
 - (For Cray systems only) Output of `module list`:
