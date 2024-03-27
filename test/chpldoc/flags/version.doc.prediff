@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+cat $2 | \
+  sed 's/^\(chpldoc version \)\(.\{0,\}\)$/\1VERSION/' > $2.prediff.tmp
+mv $2.prediff.tmp $2
+
+cat $2 | \
+  sed 's/^\(\tSphinx version \)\(.\{0,\}\)$/\1VERSION/' > $2.prediff.tmp
+mv $2.prediff.tmp $2
+
+cat $2 | \
+  sed 's/^\(\tsphinxcontrib-chapeldomain version \)\(.\{0,\}\)$/\1VERSION/' > $2.prediff.tmp
+mv $2.prediff.tmp $2
+
+cat $2 | \
+  sed 's/^\(Copyright 2020-\)\([0-9]\{1,\}\)\( Hewlett Packard Enterprise Development LP\)$/\1YEAR\3/' > $2.prediff.tmp
+mv $2.prediff.tmp $2

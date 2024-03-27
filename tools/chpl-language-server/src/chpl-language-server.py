@@ -51,6 +51,7 @@ from lsprotocol.types import (
     Location,
     MessageType,
     Diagnostic,
+    DiagnosticRelatedInformation,
     Range,
     Position,
 )
@@ -864,6 +865,7 @@ class CLSConfig:
         add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
         add_bool_flag("dead-code", "dead_code", True)
         add_bool_flag("evaluate-expressions", "eval_expressions", True)
+        add_bool_flag("show-instantiations", "show_instantiations", True)
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
@@ -881,7 +883,6 @@ class CLSConfig:
                 )
         n_markers = len(self.args["end_markers"])
         if n_markers != len(set(self.args["end_markers"])):
-
             raise argparse.ArgumentError(
                 None, "Cannot specify the same end marker multiple times"
             )
@@ -917,6 +918,7 @@ class ChapelLanguageServer(LanguageServer):
         self.param_inlays: bool = config.get("param_inlays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
+        self.show_instantiations: bool = config.get("show_instantiations")
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
@@ -1032,7 +1034,17 @@ class ChapelLanguageServer(LanguageServer):
 
         _, errors = self.get_file_info(uri, do_update=True)
 
-        diagnostics = [error_to_diagnostic(e) for e in errors]
+        diagnostics = []
+        for e in errors:
+            diag = error_to_diagnostic(e)
+            diag.related_information = [
+                DiagnosticRelatedInformation(
+                    location_to_location(note_loc), note_msg
+                )
+                for (note_loc, note_msg) in e.notes()
+            ]
+            diagnostics.append(diag)
+
         return diagnostics
 
     def get_text(self, text_doc: TextDocument, rng: Range) -> str:
@@ -1331,7 +1343,6 @@ class ChapelLanguageServer(LanguageServer):
 
         for pattern in self.end_marker_patterns.values():
             for node, _ in chapel.each_matching(ast, pattern.pattern):
-
                 end_loc = location_to_range(node.location()).end
                 header_loc = pattern.header_location(node)
                 goto_loc = pattern.goto_location(node)
@@ -1656,6 +1667,14 @@ def run_lsp():
 
     @server.feature(TEXT_DOCUMENT_CODE_LENS)
     async def code_lens(ls: ChapelLanguageServer, params: CodeLensParams):
+
+        # return early if the resolver is not being used or the feature is disabled
+        if not ls.use_resolver:
+            return None
+
+        if not ls.show_instantiations:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)

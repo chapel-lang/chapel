@@ -361,9 +361,10 @@ def validate(chplLocaleModel):
     # (e.g. CUDA or ROCm)
     gpu.validate_sdk_version()
 
+    if chpl_tasks.get() == 'fifo':
+        error("The 'fifo' tasking model is not supported with GPU support")
+
     if get() == 'cpu':
-        if chpl_tasks.get() == 'fifo':
-            error("The 'fifo' tasking model is not supported with CPU-as-device mode")
         return True
 
     if chpl_compiler.get('target') != 'llvm':

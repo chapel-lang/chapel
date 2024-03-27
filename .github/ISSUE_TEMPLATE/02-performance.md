@@ -1,16 +1,20 @@
-<!--
-If you are filing an issue that is not a bug report, please feel free to erase
-this template and describe the issue as clearly as possible.
--->
-
+---
+name: Performance Issue
+about: Report any performance issue observed within your code.
+title: '[Performance]: '
+labels: 'type: Performance'
+---
 
 ### Summary of Problem
+
+**Description:**
 <!--
 What behavior did you observe when encountering this issue?
 What behavior did you expect to observe?
-Is this a blocking issue with no known work-arounds?
 -->
 
+**Is this a blocking issue with no known work-arounds?**
+<!-- Answer 'yes', 'no' or 'I don't know'. -->
 
 ### Steps to Reproduce
 
@@ -22,21 +26,19 @@ Is this a blocking issue with no known work-arounds?
 // Otherwise, you can attach it as a file or provide a URL to it.
 // To the extent possible, providing simplified programs demonstrating the
 // problem will be appreciated.
-// You can also replace this section with "Associated Future Test(s)" below.
 ```
 
 **Compile command:**
 <!-- e.g. `chpl foo.chpl` -->
 
-**Execution command:**
-<!-- e.g. `./foo -nl 4`
-If an input file is required, include it as well. -->
+`--fast` optimization flag enabled?
+<!-- Answer 'yes' or 'no'. -->
 
-**Associated Future Test(s):**
-<!-- Are there any tests in Chapel's test system that demonstrate this issue?
-     e.g. [`test/path/to/foo.chpl`](
-           https://github.com/chapel-lang/chapel/blob/main/test/path/to/foo.chpl
-          ) #1234 -->
+**Execution command:**
+<!--
+e.g. `./foo -nl 4`
+If an input file is required, include it as well.
+-->
 
 ### Configuration Information
 
@@ -44,4 +46,3 @@ If an input file is required, include it as well. -->
 - Output of `$CHPL_HOME/util/printchplenv --anonymize`:
 - Back-end compiler and version, e.g. `gcc --version` or `clang --version`:
 - (For Cray systems only) Output of `module list`:
-
