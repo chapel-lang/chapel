@@ -993,7 +993,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     return fail(FAIL_UNKNOWN_FORMAL_TYPE); // unknown formal type, can't resolve
   }
 
-  if (formalQT.isParam() == false && isTypeGeneric(context, formalQT)) {
+  if (isTypeGeneric(context, formalQT)) {
     // Check to see if we should proceed with instantiation.
     // Further checking will occur after the instantiation occurs,
     // so checking here just rules out predictable situations.
@@ -1006,6 +1006,12 @@ CanPassResult CanPassResult::canPass(Context* context,
     if (!got.passes() && formalQT.kind() == QualifiedType::TYPE) {
       // Instantiation may not be necessary for generic type formals: we
       // could be passing a (subtype) generic type actual.
+      // Fall through to the checks below.
+    } else if (!got.passes() && formalQT.isParam()) {
+      // 'isTypeGeneric' will return 'true' if there is not a param value
+      // for the given QualifiedType, which is usually the case for a param
+      // formal despite the presence of a type expression.
+      //
       // Fall through to the checks below.
     } else {
       return got;
@@ -1056,11 +1062,6 @@ CanPassResult CanPassResult::canPass(Context* context,
 
     case QualifiedType::PARAM:
       {
-        if (formalQT.hasParamPtr() == false &&
-            formalQT.type()->isAnyType()) {
-          return instantiate();
-        }
-
         auto got = canConvert(context, actualQT, formalQT);
         if (got.passes()) {
           // if the formal parameter value is unknown, we need

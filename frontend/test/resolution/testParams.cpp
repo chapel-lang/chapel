@@ -161,13 +161,18 @@ static void test6() {
     proc bar(param arg) param {
       return arg;
     }
+    proc gen(param arg: int(?w)) param {
+      return __primitive("+", arg, w);
+    }
+
 
     param fooval = foo(0xffff);
     param barval = bar(0);
+    param genval = gen(36);
 
     param p : int(32) = 0x1234;
   )""";
-  std::vector<std::string> names = {"fooval", "barval", "p"};
+  std::vector<std::string> names = {"fooval", "barval", "genval", "p"};
   auto vals = resolveTypesOfVariables(context, program, names);
 
   auto fooval = vals["fooval"];
@@ -177,6 +182,10 @@ static void test6() {
   auto barval = vals["barval"];
   ensureParamInt(barval, 0);
   assert(barval.type()->toIntType()->bitwidth() == 64);
+
+  auto genval = vals["genval"];
+  ensureParamInt(genval, 100);
+  assert(genval.type()->toIntType()->bitwidth() == 64);
 
   auto pval = vals["p"];
   ensureParamInt(pval, 0x1234);
