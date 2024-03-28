@@ -216,6 +216,22 @@ module GPU
   }
 
   /*
+    Causes the executing thread to wait until all warp lanes named in mask
+    have executed a ``syncWarp()`` (with the same mask) before resuming
+    execution.
+    Each calling thread must have its own bit set in the mask and all
+    non-exited threads named in mask must execute a corresponding
+    ``syncWarp()`` with the same mask, or the result is undefined.
+  */
+  inline proc syncWarp(mask : uint(32) = 0xffffffff) {
+    pragma "codegen for GPU"
+    extern "chpl_gpu_force_warp_sync" proc chpl_syncWarp(mask);
+
+    __primitive("chpl_assert_on_gpu", false);
+    chpl_syncWarp(mask);
+  }
+
+  /*
     Allocate block shared memory, enough to store ``size`` elements of
     ``eltType``. Returns a :type:`CTypes.c_ptr` to the allocated array. Note that
     although every thread in a block calls this procedure, the same shared array
