@@ -77,6 +77,14 @@ static bool passesInstantiates(CanPassResult r) {
          r.conversionKind() == CanPassResult::NONE;
 }
 
+static bool passesInstantiatesBorrowing(CanPassResult r) {
+  return r.passes() &&
+         r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS;
+}
+
 /*
 static bool passesOther(CanPassResult r) {
   return r.passes() &&
@@ -408,6 +416,13 @@ static void test7() {
                          ClassType::get(context, bctArg, mgmtArg, decArg));
   };
 
+  auto borrowedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, borrowedQ));
+  auto unmanagedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, unmanagedQ));
+
   auto ownedMgmt = AnyOwnedType::get(context);
 
   auto borrowedParent   = qt(basicParent, nullptr,   borrowed);
@@ -544,6 +559,11 @@ static void test7() {
   r = canPass(c, ownedChild,       unmanagedParentQ); assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParent);  assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParentQ); assert(doesNotPass(r));
+
+
+  // check passing to generic class type
+  r = canPass(c, unmanagedChildQ, unmanagedGenericRefQt); assert(passesInstantiates(r));
+  r = canPass(c, unmanagedChildQ, borrowedGenericRefQt); assert(passesInstantiatesBorrowing(r));
 }
 
 static void test8() {
