@@ -10,10 +10,12 @@ diff $CWD/../../../../compiler/main/BUILD_VERSION $CWD/zero.txt > /dev/null 2>&1
 # During release mode:
 # echo ""
 
-# print Sphinx and chapeldomain version from pip
-PIP="$CWD/../../../../util/config/run-in-venv.bash python3 -m pip"
-python_deps=$($PIP freeze)
+# print Sphinx and chapeldomain versions
+python=$($CWD/../../../../util/config/find-python.sh)
+chpldeps=$("$python" "$CWD/../../../../util/chplenv/chpl_home_utils.py" --chpldeps)
 printf "\tSphinx version "
-echo $python_deps | grep -o 'Sphinx==[^ ]*' | grep -o '[^=]*$'
+ls $chpldeps | grep -io 'Sphinx-[0-9.]*.dist-info' | \
+  grep -o '[0-9.]*' | rev | cut -c2- | rev
 printf "\tsphinxcontrib-chapeldomain version "
-echo $python_deps | grep -o 'sphinxcontrib-chapeldomain==[^ ]*' | grep -o '[^=]*$'
+ls $chpldeps | grep -io 'sphinxcontrib_chapeldomain-[0-9.]*.dist-info' | \
+  grep -o '[0-9.]*' | rev | cut -c2- | rev
