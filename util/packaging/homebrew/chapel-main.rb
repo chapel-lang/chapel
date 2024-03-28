@@ -1,24 +1,24 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/1.33.0/chapel-1.33.0.tar.gz"
-  sha256 "9dfd9bbab3eb1acf10242db909ccf17c1b07634452ca6ba8b238e69788d82883"
+  url "https://github.com/chapel-lang/chapel/releases/download/2.0.0/chapel-2.0.0.tar.gz"
+  sha256 "b5387e9d37b214328f422961e2249f2687453c2702b2633b7d6a678e544b9a02"
   license "Apache-2.0"
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    sha256 arm64_sonoma:   "bf48565f37d29f78919cdc53c05e23e5e610e915e82ede08573b06d4a9746d40"
-    sha256 arm64_ventura:  "ac622257bbef56945f8241d87a63982dae2311fa803f3233788c4a2d85af6b0b"
-    sha256 arm64_monterey: "03757fe09bfdbc1651aaa6b6ffbc54b14022ff13e19d62ca3abfe778de11371a"
-    sha256 sonoma:         "1a16b40a4a13bca828f12a497c521cbbd6d0add7c819a47583c4273769e921b8"
-    sha256 ventura:        "ad445bd4da02eca77f983c75d098716251df6af33e992627800bc4167b8b5947"
-    sha256 monterey:       "984f5634eb6875a9c4b311044305d6fea01a4c04e768d2e3e20dc617e7d91d27"
-    sha256 x86_64_linux:   "2e9f4c854f3bf0b2aa571c489e62ab7f398b1dfcb7ce87c12dc48930d94e6fac"
+    sha256 arm64_sonoma:   "e7ea9cadf5ba880d79b9aee5e82756faae156717bf4fcbf08edf2a6730beef78"
+    sha256 arm64_ventura:  "e7f3fa3355572f34be363ba6ad9832770e88326f598dd017e8b270e79499a5b1"
+    sha256 arm64_monterey: "96f19eb98b6323aa5405722ff4460ef41a287ae579656cacfebad903bf596413"
+    sha256 sonoma:         "49cfd27778bdf6d3e994a1ec7e343ef8893feb4b7c13043437f44f534b819e60"
+    sha256 ventura:        "1dc143ee5c62f2df2a62eaf4b0664489860790f68bec53b145ed35d0e14b7d31"
+    sha256 monterey:       "a5d7b507a654b3b40ffe22254e7c925a6aab5f740b9b66ab6dcc51d4d41f8daa"
+    sha256 x86_64_linux:   "eca86d0e17808b7e346ea8edbb5d95ec917b347e25f67bdf8fe27037b6b21914"
   end
 
   depends_on "cmake"
   depends_on "gmp"
-  depends_on "llvm@15"
+  depends_on "llvm"
   depends_on "python@3.11"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
@@ -49,11 +49,6 @@ class Chapel < Formula
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
-    # CHPL_MEM and CHPL_TASKS are currently being set this way due
-    # to this PR: https://github.com/chapel-lang/chapel/pull/23415.
-    # This is a workaround for an issue where the bundled jemalloc
-    # makefile is being run and failing when we are supposed to use
-    # the system jemalloc.
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
@@ -68,6 +63,8 @@ class Chapel < Formula
       with_env(CHPL_LLVM: "system") do
         system "make"
       end
+      # TODO: a bug (in the formula?) is causing chpldoc to not be installed
+      # see https://github.com/chapel-lang/chapel/issues/24639
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "chpldoc"
       end
@@ -102,11 +99,16 @@ class Chapel < Formula
     cd libexec do
       with_env(CHPL_LLVM: "system") do
         system "util/test/checkChplInstall"
+        # TODO: enable when bug affecting chpldoc install is resolved
+        # system "util/test/checkChplDoc"
       end
       with_env(CHPL_LLVM: "none") do
         system "util/test/checkChplInstall"
+        # TODO: enable when bug affecting chpldoc install is resolved
+        # system "util/test/checkChplDoc"
       end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    system bin/"mason", "--version"
   end
 end
