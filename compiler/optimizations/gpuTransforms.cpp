@@ -38,6 +38,7 @@
 #include "timer.h"
 #include "misc.h"
 #include "view.h"
+#include "expr.h"
 
 #include "global-ast-vecs.h"
 
@@ -854,7 +855,8 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
   visitedFns.insert(blk->getFunction());
 
   std::vector<CallExpr*> calls;
-  collectCallExprs(blk, calls);
+
+  collectCallExprsExceptInGpuBlock(blk, calls);
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
