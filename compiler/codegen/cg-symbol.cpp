@@ -1103,9 +1103,11 @@ transformTypeForPointer(Type* type) {
     return referenced->codegen().c + " *";
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-    // TODO: add const qualifier for const pointers?
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
-    return pointedTo->codegen().c + " *";
+    bool isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
+    std::string ret = isConst ? "const " : "";
+    ret += pointedTo->codegen().c + " *";
+    return ret;
   }
   std::string typeName = type->codegen().c;
   return typeName;
