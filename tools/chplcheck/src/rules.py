@@ -123,7 +123,9 @@ def register_rules(driver: LintDriver):
 
     @driver.basic_rule(Loop)
     @driver.basic_rule(SimpleBlockLike)
-    def DoKeywordAndBlock(context: Context, node: typing.Union[Loop, SimpleBlockLike]):
+    def DoKeywordAndBlock(
+        context: Context, node: typing.Union[Loop, SimpleBlockLike]
+    ):
         """
         Warn for redundant 'do' keyword before a curly brace '{'.
         """
@@ -432,6 +434,27 @@ def register_rules(driver: LintDriver):
         if not isinstance(root, Comment):
             lines = context.get_file_text(root.location().path()).split("\n")
 
+        def is_range_like(node: AstNode):
+            """
+            a node is range like if its a range, a `count` expr with a
+            range-like on the lhs, a `by` expr with a range-like on the lhs, or
+            an `align` expr with a range-like on the lhs
+            """
+
+            if isinstance(node, Range):
+                return True
+            if (
+                isinstance(node, OpCall)
+                and node.is_binary_op()
+                and (
+                    node.op() == "#"
+                    or node.op() == "by"
+                    or node.op() == "align"
+                )
+            ):
+                return is_range_like(list(node.actuals())[0])
+            return False
+
         for loop, _ in chapel.each_matching(root, IndexableLoop):
             iterand = loop.iterand()
             if not isinstance(iterand, Domain):
@@ -439,7 +462,8 @@ def register_rules(driver: LintDriver):
             exprs = list(iterand.exprs())
             if len(exprs) != 1:
                 continue
-            if not isinstance(exprs[0], Range):
+            # only warn for ranges or count operators
+            if not is_range_like(exprs[0]):
                 continue
 
             if not lines:
