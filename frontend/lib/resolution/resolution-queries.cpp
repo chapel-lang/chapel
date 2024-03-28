@@ -3668,14 +3668,30 @@ gatherAndFilterCandidatesForwarding(Context* context,
     auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
     const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
                                                      useDefaults);
-    const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
-    if (fields.numForwards() > 0 ||
-        exprs.numForwards() > 0) {
-      // and check for cycles
-      bool cycleFound = emitErrorForForwardingCycles(context, ct);
-      if (cycleFound == false) {
-        forwards.addForwarding(fields);
-        forwards.addForwarding(exprs);
+
+    if (context->isQueryRunning(resolveForwardingExprs, std::make_tuple(ct))) {
+      // If we are trying to resolve a method call while collecting forwarding
+      // candidates, do not try to use forwarding to resolve that method.
+      //
+      // TODO: this may not be sufficient. For instance, we may have multiple
+      // forwarding statements in succession that bring in necessary methods:
+      //
+      //     forwarding var hasSomething: SomeType;
+      //     forwarding methodFromHasSomething();
+      //
+      // A more robust approach might split forwarding statement resolution
+      // into individual queries, and skip the code below only if the current
+      // forwarding statement is being used to resolve itself.
+    } else {
+      const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
+      if (fields.numForwards() > 0 ||
+          exprs.numForwards() > 0) {
+        // and check for cycles
+        bool cycleFound = emitErrorForForwardingCycles(context, ct);
+        if (cycleFound == false) {
+          forwards.addForwarding(fields);
+          forwards.addForwarding(exprs);
+        }
       }
     }
   }
