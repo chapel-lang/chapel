@@ -3682,6 +3682,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
       // A more robust approach might split forwarding statement resolution
       // into individual queries, and skip the code below only if the current
       // forwarding statement is being used to resolve itself.
+      //
+      // https://github.com/chapel-lang/chapel/issues/24709
     } else {
       const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
       if (fields.numForwards() > 0 ||
