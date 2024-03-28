@@ -1007,6 +1007,12 @@ CanPassResult CanPassResult::canPass(Context* context,
       // Instantiation may not be necessary for generic type formals: we
       // could be passing a (subtype) generic type actual.
       // Fall through to the checks below.
+    } else if (!got.passes() && formalQT.isParam()) {
+      // 'isTypeGeneric' will return 'true' if there is not a param value
+      // for the given QualifiedType, which is usually the case for a param
+      // formal despite the presence of a type expression.
+      //
+      // Fall through to the checks below.
     } else {
       return got;
     }

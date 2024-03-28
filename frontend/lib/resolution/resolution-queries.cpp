@@ -1384,6 +1384,9 @@ QualifiedType getInstantiationType(Context* context,
       auto pt = CPtrType::getConst(context, actualPt->eltType());
       return QualifiedType(formalType.kind(), pt);
     }
+  } else if (actualType.isParam() && formalType.isParam() &&
+             formalType.hasParamPtr() == false ) {
+    return Param::fold(context, nullptr, PrimitiveTag::PRIM_CAST, actualType, formalType);
   }
 
   // TODO: sync type -> value type?
