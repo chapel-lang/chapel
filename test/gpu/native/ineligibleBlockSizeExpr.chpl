@@ -11,9 +11,15 @@ proc computeBlockSize(input: int) {
 }
 
 on here.gpus[0] {
-  for size in [128, 256,512] {
-    @gpu.blockSize(computeBlockSize(size))
+    @gpu.blockSize(computeBlockSize(128))
     @assertOnGpu
     foreach 1..1024 {}
-  }
+
+    @gpu.blockSize(computeBlockSize(256))
+    @assertOnGpu
+    foreach 1..1024 {}
+
+    @gpu.blockSize(computeBlockSize(512))
+    @assertOnGpu
+    foreach 1..1024 {}
 }
