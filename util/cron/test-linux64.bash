@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test default configuration on full suite.
+# Test default configuration on full suite and blog posts.
 
 CWD=$(cd $(dirname $0) ; pwd)
 
@@ -9,4 +9,4 @@ source $CWD/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64"
 
-$CWD/nightly -cron -mason -protobuf -futures ${nightly_args} $(get_nightly_paratest_args 8)
+$CWD/nightly -cron -mason -protobuf -futures -blog ${nightly_args} $(get_nightly_paratest_args 8)
