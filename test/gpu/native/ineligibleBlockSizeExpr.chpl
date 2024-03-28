@@ -6,13 +6,13 @@ use GpuDiagnostics;
 startVerboseGpu();
 
 pragma "no gpu codegen"
-proc computeDomainSize(input: int) {
+proc computeBlockSize(input: int) {
   return input;
 }
 
 on here.gpus[0] {
   for size in [128, 256,512] {
-    @gpu.blockSize(computeDomainSize(size))
+    @gpu.blockSize(computeBlockSize(size))
     @assertOnGpu
     foreach 1..1024 {}
   }
