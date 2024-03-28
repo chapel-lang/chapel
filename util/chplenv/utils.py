@@ -20,18 +20,18 @@ def warning(msg):
         sys.stderr.write(msg)
         sys.stderr.write('\n')
 
-continue_on_error = False
+ignore_errors = False
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
     developer = os.environ.get('CHPL_DEVELOPER')
-    if developer and developer != "0" and not continue_on_error:
+    if developer and developer != "0" and not ignore_errors:
         raise exception(msg)
     else:
         sys.stderr.write('\nError: ')
         sys.stderr.write(msg)
         sys.stderr.write('\n')
-        if not continue_on_error:
+        if not ignore_errors:
             sys.exit(1)
 
 
