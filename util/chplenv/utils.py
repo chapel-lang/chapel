@@ -79,10 +79,12 @@ def run_command(command, stdout=True, stderr=False, cmd_input=None):
                                                                cmd_input)
     if not exists:
         error("command not found: {0}".format(command[0]), OSError)
-    if returncode != 0:
-        error("command failed: {0}\noutput was:\n{1}".format(command,
-                                                             my_stderr),
-              CommandError)
+    elif returncode != 0:
+        error(
+            "command failed: {0}\noutput was:\n{1}".format(command, my_stderr),
+            CommandError,
+        )
+
     if stdout and stderr:
         return my_stdout, my_stderr
     elif stdout:
