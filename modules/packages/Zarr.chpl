@@ -235,7 +235,6 @@ module Zarr {
 
     // Create buffer for compressed bytes
     var compressedBuffer = allocate(t, copyOut.size + 16);
-
     // Compress the chunk's data
     var bytesCompressed = blosc_compress(_bloscLevel, 0, c_sizeof(t), copyOut.size*c_sizeof(t), c_ptrTo(copyOut), compressedBuffer, (copyOut.size + 16) * c_sizeof(t));
     if bytesCompressed == 0 then
@@ -379,7 +378,7 @@ module Zarr {
         ref thisChunkSlice = hereA.localSlice(thisChunkHere);
         const chunkPath = buildChunkPath(directoryPath, ".", chunkIndices);
         locks[chunkIndices].writeEF(true);
-        writeChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
+        writeChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice, bloscLevel=bloscLevel);
         locks[chunkIndices].readFE();
       }
     }

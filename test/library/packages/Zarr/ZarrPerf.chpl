@@ -7,19 +7,28 @@ use Random;
 
 config const scaling = "strong"; // testing strong or weak scaling
 
-config const gbs = 10; // default size of array in GBs
+config const arrayGBs: real = 2.0; // default size of array in GBs (per locale)
+config const chunkGBs: real = 0.1; // default size of chunks in GBs
+
+config const compressionLevel: int(32) = 9; // default compression level
+
+config const bloscThreads: int(32) = 4; // default number of threads for Blosc
+
+
 
 var arraySize = 0;
-
 if scaling.toLower() == "strong" then
-  arraySize = gbs * Locales.size * 1000 ** 3;
+  arraySize = (arrayGBs * Locales.size * 1000 ** 3):int;
 else if scaling.toLower() == "weak" then
-  arraySize = gbs * 1000 ** 3;
+  arraySize = (arrayGBs * 1000 ** 3):int;
 else
   writeln("Invalid scaling: %s. Valid options are 'strong' and 'weak'".format(scaling));
 
+var chunkSize = chunkGBs * 1000 ** 3;
+
 const numFloats = arraySize / 4;
 const sideLength = (numFloats:real ** (1/3:real)):int;
+const chunkLength = ((chunkSize / 4) ** (1/3:real)):int;
 
 var ranges: 3*range(int);
 for i in 0..<3 do
@@ -34,12 +43,12 @@ fillRandom(A);
 if exists("PerfStore") then rmTree("PerfStore");
 var s: stopwatch;
 s.restart();
-writeZarrArray("PerfStore", A, (512,512,512), bloscThreads=4);
+writeZarrArray("PerfStore", A, (chunkLength,chunkLength,chunkLength), bloscThreads=bloscThreads, bloscLevel=compressionLevel);
 const writeTime = s.elapsed();
 
 
 s.restart();
-var B = readZarrArray("PerfStore", real(32), 3, bloscThreads=4);
+var B = readZarrArray("PerfStore", real(32), 3, bloscThreads=bloscThreads);
 const readTime = s.elapsed();
 
 assert(A.domain == B.domain);
@@ -51,7 +60,11 @@ coforall loc in Locales do on loc {
 
 writeln("Scaling: %s".format(scaling.toLower()));
 writeln("Num Locales: %n".format(Locales.size));
+writeln("Compression Level: %n".format(compressionLevel));
+writeln("Blosc Threads: %n".format(bloscThreads));
+writeln("Array Size (GBs): %n".format(arrayGBs));
+writeln("Chunk Size (GBs): %n".format(chunkGBs));
 var writeThroughput: real(64) = (arraySize:real / writeTime) / 1000 ** 3;
 var readThoughput: real(64) = (arraySize:real / readTime) / 1000 ** 3;
-writeln("Write Throughput: %7.2r GB/s".format(writeThroughput));
-writeln("Read Throughput: %7.2r GB/s".format(readThoughput));
+writeln("Write Throughput: %7.4r GB/s".format(writeThroughput));
+writeln("Read Throughput: %7.4r GB/s".format(readThoughput));
