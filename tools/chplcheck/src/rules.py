@@ -38,16 +38,28 @@ def check_pascal_case(node):
 def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context, node):
+        """
+        Warn for variables that are not 'camelCase' or 'PascalCase'.
+        """
+
         if node.name() == "_": return True
         if node.linkage() == 'extern': return True
         return check_camel_case(node) or check_pascal_case(node)
 
     @driver.basic_rule(Record)
     def CamelCaseRecords(context, node):
+        """
+        Warn for records that are not 'camelCase'.
+        """
+
         return check_camel_case(node)
 
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context, node):
+        """
+        Warn for functions that are not 'camelCase'.
+        """
+
         # Override functions / methods can't control the name, that's up
         # to the parent.
         if node.is_override(): return True
@@ -60,22 +72,42 @@ def register_rules(driver):
 
     @driver.basic_rule(Class)
     def PascalCaseClasses(context, node):
+        """
+        Warn for classes that are not 'PascalCase'.
+        """
+
         return check_pascal_case(node)
 
     @driver.basic_rule(Module)
     def PascalCaseModules(context, node):
+        """
+        Warn for modules that are not 'PascalCase'.
+        """
+
         return node.kind() == "implicit" or check_pascal_case(node)
 
     @driver.basic_rule(Module, default=False)
     def UseExplicitModules(context, node):
+        """
+        Warn for code that relies on auto-inserted implicit modules.
+        """
+
         return node.kind() != "implicit"
 
     @driver.basic_rule(Loop)
     def DoKeywordAndBlock(context, node):
+        """
+        Warn for redundant 'do' keyword before a curly brace '{'.
+        """
+
         return node.block_style() != "unnecessary"
 
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context, node):
+        """
+        Warn for nested 'coforall' loops, which could lead to performance hits.
+        """
+
         parent = node.parent()
         while parent is not None:
             if isinstance(parent, Coforall):
@@ -85,10 +117,18 @@ def register_rules(driver):
 
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
     def BoolLitInCondStmt(context, node):
+        """
+        Warn for boolean literals like 'true' in a conditional statement.
+        """
+
         return False
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context, node):
+        """
+        Warn for user-defined names that start with the 'chpl_' reserved prefix.
+        """
+
         if node.name().startswith("chpl_"):
             path = node.location().path()
             return context.is_bundled_path(path)
@@ -97,6 +137,10 @@ def register_rules(driver):
     @driver.basic_rule(Record)
     @driver.basic_rule(Class)
     def MethodsAfterFields(context, node):
+        """
+        Warn for classes or records that mix field and method definitions.
+        """
+
         method_seen = False
         for child in node:
             if isinstance(child, VarLikeDecl) and method_seen:
@@ -113,6 +157,10 @@ def register_rules(driver):
     # 5. same pragmas
     @driver.advanced_rule(default=False)
     def ConsecutiveDecls(context, root):
+        """
+        Warn for consecutive variable declarations that can be combined.
+        """
+
         def is_relevant_decl(node):
             var_node = None
             if isinstance(node, MultiDecl):
@@ -191,6 +239,10 @@ def register_rules(driver):
 
     @driver.advanced_rule
     def MisleadingIndentation(context, root):
+        """
+        Warn for single-statement blocks that look like they might be multi-statement blocks.
+        """
+
         prev, prevloop = None, None
         for child in root:
             if isinstance(child, Comment): continue
@@ -212,6 +264,10 @@ def register_rules(driver):
 
     @driver.advanced_rule(default=False)
     def UnusedFormal(context, root):
+        """
+        Warn for unused formals in functions.
+        """
+
         formals = dict()
         uses = set()
 
@@ -238,6 +294,10 @@ def register_rules(driver):
 
     @driver.advanced_rule
     def UnusedLoopIndex(context, root):
+        """
+        Warn for unused index variables in loops.
+        """
+
         indices = dict()
         uses = set()
 
