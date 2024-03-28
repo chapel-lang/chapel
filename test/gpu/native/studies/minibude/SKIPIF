@@ -13,11 +13,14 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 MINIBUDE_URL=${MINIBUDE_URL:-https://github.com/milthorpe/miniBUDE.git}
 MINIBUDE_BRANCH=${MINIBUDE_BRANCH:-v2}
 
-# Clone miniBUDE, skipif clone failed, add extra output to fail nightly job
+# Clone miniBUDE, skipif clone failed. Timeouts are frequent enough we don't
+# want to cause a failure.  It would be nice to add extra output to the log to
+# explain why it skipped but any output beyond "True" or "False" (even if sent
+# to stderr) will cause the skipif itself to fail.
 rm -rf miniBUDE
 if ! git clone ${MINIBUDE_URL} --branch=${MINIBUDE_BRANCH} --depth=1 2>gitClone.out; then
-  echo "git clone failed; output:" >&2
-  cat gitClone.out >&2
+  #echo "git clone failed; output:" >&2
+  #cat gitClone.out >&2
   echo "True"
   exit
 fi
