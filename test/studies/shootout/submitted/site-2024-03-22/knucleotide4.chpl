@@ -12,32 +12,28 @@ config param columns = 61;
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const consoleIn = new file(0),
+  const consoleIn = openfd(0),
         fileLen = consoleIn.size,
-        stdinNoLock = consoleIn.reader(locking=false);
+        stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),
       lineSize = 0,
       numRead = 0;
 
-  do {
-    lineSize = stdinNoLock.readLine(buff);
+  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
     numRead += lineSize;
-  } while lineSize > 0 && !startsWithThree(buff);
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  do {
-    lineSize = stdinNoLock.readLine(data[idx..]);
+  while stdinNoLock.readline(data, lineSize, idx) do
     idx += lineSize - 1;
-  } while lineSize > 0;
 
   // Resize our array to the amount actually read
-  dataDom = {1..idx+1};
+  dataDom = {1..idx};
 
   // Make everything uppercase
   forall d in data do
@@ -57,11 +53,10 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in zip(freqs.keys(), freqs.values()) do (f,s.val);
+  var arr = for (s,f) in freqs.items() do (f,s.val);
 
   // print the array, sorted by decreasing frequency
-  sort(arr, reverseComparator);
-  for (f, s) in arr do
+  for (f, s) in arr.sorted(reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -89,7 +84,7 @@ proc calculate(data, param nclSize) {
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
-    for (k,v) in zip(myFreqs.keys(), myFreqs.values()) do
+    for (k,v) in myFreqs.items() do
       freqs[k] += v;
     lock.writeEF(true); // release lock
   }
@@ -136,10 +131,10 @@ inline proc startsWithThree(data) {
 }
 
 
-record hashVal: hashable {
+record hashVal {
   var val: int;
   proc hash() {
-    return val: uint;
+    return val;
   }
 }
 

@@ -67,7 +67,7 @@ proc main() {
 //
 // Scan the alphabets' probabilities to compute cut-offs
 //
-proc sumProbs(ref alphabet: []) {
+proc sumProbs(alphabet: []) {
   var p = 0.0;
   for letter in alphabet {
     ref (_,prob) = letter;
@@ -80,7 +80,8 @@ proc sumProbs(ref alphabet: []) {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 use IO;
-const stdout = (new file(1)).writer(locking=false);
+const stdout = openfd(1).writer(kind=iokind.native, locking=false);
+param newline = "\n".toByte();
 
 //
 // Repeat sequence "alu" for n characters
@@ -94,8 +95,7 @@ proc repeatMake(desc, alu, n) {
   for i in 0..n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
-    stdout.writeBinary(s[lo..#len]);
-    stdout.writeln();
+    stdout.write(s[lo..#len], newline);
   }
 }
 
@@ -132,9 +132,9 @@ proc randomMake(desc, a, n) {
         line_buff[i] = nucl: int(8);
       }
     }
-    line_buff[numBytes] = "\n".toByte();
+    line_buff[numBytes] = newline;
 
-    stdout.writeBinary(line_buff[0..numBytes]);
+    stdout.write(line_buff[0..numBytes]);
   }
 }
 
