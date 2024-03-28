@@ -240,9 +240,10 @@ struct LoopAttributeInfo {
     return !empty();
   }
 
-  void insertGpuEligibilityAssertion(BlockStmt* body);
-  void insertBlockSizeCall(Converter& converter, BlockStmt* body);
-  void insertPrimitives(Converter& converter, BlockStmt* body);
+  bool insertGpuEligibilityAssertion(BlockStmt* body);
+  bool insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  BlockStmt* createPrimitivesBlock(Converter& converter);
+  void insertPrimitivesBlockAtHead(Converter& converter, BlockStmt* body);
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -1889,7 +1890,7 @@ struct Converter {
       }
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitives(*this, body);
+      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -2017,7 +2018,7 @@ struct Converter {
       bool serialOK = false;
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitives(*this, body);
+      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -2043,7 +2044,7 @@ struct Converter {
     } else {
       auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitives(*this, body);
+      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
       ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                       zippered,
                                       isForExpr, std::move(loopAttributes.llvmMetadata));
@@ -3931,10 +3932,9 @@ struct Converter {
       block->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
       block->insertAtTail(def);
 
-      auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
-      block->insertAtTail(primBlock);
-      primBlock->insertAtTail(new CallExpr(PRIM_GPU_PRIMITIVE_BLOCK));
-      loopFlags.insertPrimitives(*this, primBlock);
+      if (auto primBlock = loopFlags.createPrimitivesBlock(*this)) {
+        block->insertAtTail(primBlock);
+      }
 
       ret.entireExpr = block;
     } else {
@@ -4136,14 +4136,16 @@ struct Converter {
 
 };
 
-void LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
   if (assertOnGpuAttr) {
     body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
                                     new SymExpr(gTrue)));
+    return true;
   }
+  return false;
 }
 
-void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
   if (blockSizeAttr) {
     if (blockSizeAttr->numActuals() != 1) {
       USR_FATAL(blockSizeAttr->id(),
@@ -4153,12 +4155,27 @@ void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
 
     Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
     body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+    return true;
   }
+  return false;
 }
 
-void LoopAttributeInfo::insertPrimitives(Converter& converter, BlockStmt* body) {
-  insertGpuEligibilityAssertion(body);
-  insertBlockSizeCall(converter, body);
+BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
+  auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
+  primBlock->insertAtTail(new CallExpr(PRIM_GPU_PRIMITIVE_BLOCK));
+
+  bool insertedAny = false;
+  insertedAny |= insertGpuEligibilityAssertion(primBlock);
+  insertedAny |= insertBlockSizeCall(converter, primBlock);
+
+  return insertedAny ? primBlock : nullptr;
+}
+
+void LoopAttributeInfo::insertPrimitivesBlockAtHead(Converter& converter,
+                                                    BlockStmt* body) {
+  if (auto primBlock = createPrimitivesBlock(converter)) {
+    body->insertAtHead(primBlock);
+  }
 }
 
 /// Generic conversion calling the above functions ///
