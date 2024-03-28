@@ -19,14 +19,16 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-      maxChars = cmpl.size: uint(8); // upper bound on number of nucleotides used
+      maxChars = cmpl.size; // upper bound on number of nucleotides used
 
 // map from pairs of nucleotide characters to their reversed complements
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin  = (new file(0)).reader(locking=false),
-    stdoutBin = (new file(1)).writer(locking=false);
+var stdinBin  = openfd(0).reader(iokind.native, locking=false,
+                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+    stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
@@ -75,7 +77,7 @@ proc main(args: [] string) {
   if readPos then revcomp(buff, readPos);
 }
 
-proc revcomp(ref seq, size) {
+proc revcomp(seq, size) {
   param chunkSize = linesPerChunk * cols; // the size of the chunks to deal out
 
   // compute how big the header is
@@ -141,7 +143,7 @@ proc revcomp(ref seq, size) {
   }
 }
 
-proc revcomp(in dstFront, in charAfter, spanLen, ref buff, ref seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
   if spanLen%2 {
     charAfter -= 1;
     buff[dstFront] = cmpl[seq[charAfter]];
@@ -150,8 +152,8 @@ proc revcomp(in dstFront, in charAfter, spanLen, ref buff, ref seq) {
 
   for 2..spanLen by -2 {
     charAfter -= 2;
-    const src = c_ptrTo(seq[charAfter]): c_ptr(void): c_ptr(uint(16)),
-          dst = c_ptrTo(buff[dstFront]): c_ptr(void): c_ptr(uint(16));
+    const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
+          dst = c_ptrTo(buff[dstFront]): c_ptr(uint(16));
     dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }

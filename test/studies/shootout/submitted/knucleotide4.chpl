@@ -12,9 +12,9 @@ config param columns = 61;
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const consoleIn = openfd(0),
+  const consoleIn = new file(0),
         fileLen = consoleIn.size,
-        stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
+        stdinNoLock = consoleIn.reader(locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),
@@ -57,10 +57,11 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in freqs.items() do (f,s.val);
+  var arr = for (s,f) in zip(freqs.keys(), freqs.values()) do (f,s.val);
 
   // print the array, sorted by decreasing frequency
-  for (f, s) in sorted(arr, reverseComparator) do
+  sort(arr, reverseComparator);
+  for (f, s) in arr do
    writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -88,7 +89,7 @@ proc calculate(data, param nclSize) {
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
-    for (k,v) in myFreqs.items() do
+    for (k,v) in zip(myFreqs.keys(), myFreqs.values()) do
       freqs[k] += v;
     lock.writeEF(true); // release lock
   }
@@ -135,11 +136,10 @@ inline proc startsWithThree(data) {
 }
 
 
-record hashVal {
+record hashVal: hashable {
   var val: int;
   proc hash() {
-    return val;
+    return val: uint;
   }
 }
 
-use Compat, CompatIOKind;

@@ -25,11 +25,12 @@ proc main(args: [] string) {
     ("<[^>]*>", "|"), ("\\|[^|][^|]*\\|", "-")
   ];
 
-  var data = stdin.readAll(string); // read in the entire file
+  var data: string;
+  stdin.readstring(data); // read in the entire file
   const initLen = data.size;
 
   // remove newlines
-  data = data.replace(new regex(">.*\n|\n"), "");
+  data = compile(">.*\n|\n").sub("", data);
 
   var copy = data; // make a copy so we can perform replacements in parallel
 
@@ -39,12 +40,12 @@ proc main(args: [] string) {
     // fire off a task to perform replacements
     begin with (ref copy) {
       for (f, r) in subst do
-        copy = copy.replace(new regex(f), r);
+        copy = compile(f).sub(r, copy);
     }
 
     // count patterns
     forall (pattern, result) in zip(variants, results) do
-      for m in (new regex(pattern)).matches(data) do
+      for m in compile(pattern).matches(data) do
         result += 1;
   }
 

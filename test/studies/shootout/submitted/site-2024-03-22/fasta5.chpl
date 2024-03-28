@@ -75,7 +75,7 @@ proc main() {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 use IO;
-const stdout = (new file(1)).writer(locking=false);
+const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = "\n".toByte();
 
 //
@@ -90,8 +90,7 @@ proc repeatMake(desc, alu, n) {
   for i in 0..n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
-    stdout.writeBinary(s[lo..#len]);
-    stdout.writeln();
+    stdout.write(s[lo..#len], newline);
   }
 }
 
@@ -157,7 +156,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 
       // Write the output in a coordinated manner
       outGo[tid].waitFor(i);
-      stdout.writeBinary(myBuff[0..#off]);
+      stdout.write(myBuff[0..#off]);
       outGo[nextTid].write(i+chunkSize);
     }
   }
@@ -168,7 +167,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 //
 var lastRand = seed;
 
-proc getRands(n, ref arr) {
+proc getRands(n, arr) {
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
     arr[i] = lastRand;

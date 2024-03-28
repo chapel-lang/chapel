@@ -1,52 +1,39 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Ben Harshbarger and Brad Chamberlain
-   derived from the GNU C++ version by Branimir Maksimovic
+   contributed by Ben McDonald
+   derived from the Chapel #3 version by Ben Harshbarger and Brad Chamberlain
 */
 
 use IO, Map, Sort;
 
-config param tableSize = 2**16,
-             columns = 61;
+config param columns = 61;
 
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const consoleIn = new file(0),
+  const consoleIn = openfd(0),
         fileLen = consoleIn.size,
-        stdinNoLock = consoleIn.reader(locking=false);
+        stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),
       lineSize = 0,
       numRead = 0;
 
-  do {
-    lineSize = stdinNoLock.readLine(buff);
+  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
     numRead += lineSize;
-  } while lineSize > 0 && !startsWithThree(buff);
-
-// was:
-//  while stdinNoLock.readLine(buff, lineSize) && !startsWithThree(buff) do
-//    numRead += lineSize;
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  do {
-    lineSize = stdinNoLock.readLine(data[idx..]);
+  while stdinNoLock.readline(data, lineSize, idx) do
     idx += lineSize - 1;
-  } while lineSize > 0;
-
-// was:
-//  while stdinNoLock.readline(data, lineSize, idx) do
-//    idx += lineSize - 1;
 
   // Resize our array to the amount actually read
-  dataDom = {1..idx+1};
+  dataDom = {1..idx};
 
   // Make everything uppercase
   forall d in data do
@@ -66,11 +53,10 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in zip(freqs.keys(), freqs.values()) do (f,s);
+  var arr = for (s,f) in freqs.items() do (f,s.val);
 
   // print the array, sorted by decreasing frequency
-  sort(arr, reverseComparator);
-  for (f, s) in arr do
+  for (f, s) in arr.sorted(reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -82,23 +68,23 @@ proc writeCount(data, param str) {
         freqs = calculate(data, str.numBytes),
         d = hash(strBytes, strBytes.domain.low, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d, str.numBytes));
+  writeln(freqs[d], "\t", decode(d.val, str.numBytes));
 }
 
 
 proc calculate(data, param nclSize) {
-  var freqs = new map(int, int);
+  var freqs = new map(hashVal, int);
 
   var lock: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks with (ref freqs) {
-    var myFreqs = new map(int, int);
+    var myFreqs = new map(hashVal, int);
 
     for i in tid..(data.size-nclSize) by numTasks do
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
-    for (k,v) in zip(myFreqs.keys(), myFreqs.values()) do
+    for (k,v) in myFreqs.items() do
       freqs[k] += v;
     lock.writeEF(true); // release lock
   }
@@ -134,7 +120,7 @@ inline proc hash(str, beg, param size) {
     data |= toNum[str[beg+i]];
   }
 
-  return data;
+  return new hashVal(data);
 }
 
 
@@ -142,5 +128,13 @@ inline proc startsWithThree(data) {
   return data[1] == ">".toByte() &&
          data[2] == "T".toByte() &&
          data[3] == "H".toByte();
+}
+
+
+record hashVal {
+  var val: int;
+  proc hash() {
+    return val;
+  }
 }
 
