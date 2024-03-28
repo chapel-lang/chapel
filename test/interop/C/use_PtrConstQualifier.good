@@ -1,0 +1,2 @@
+8
+const int32_t * printAndReturn(const int32_t * x);

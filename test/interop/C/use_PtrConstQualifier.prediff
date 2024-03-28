@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep printAndReturn lib/PtrConstQualifier.h >> $2
