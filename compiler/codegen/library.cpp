@@ -849,11 +849,11 @@ static void makePYFile() {
       libraries += getCompilelineOption("multilocale-lib-deps");
     }
 
-    char copyOfLib[libraries.length() + 1];
-    libraries.copy(copyOfLib, libraries.length(), 0);
+    auto copyOfLib = std::make_unique<char[]>(libraries.length() + 1);
+    libraries.copy(copyOfLib.get(), libraries.length(), 0);
     copyOfLib[libraries.length()] = '\0';
     int prefixLen = strlen("-l");
-    char* curSection = strtok(copyOfLib, " \n");
+    char* curSection = strtok(copyOfLib.get(), " \n");
     // Get the libraries from compileline --libraries, taking the `name`
     // portion from all `-lname` parts of that command's output
     while (curSection != NULL) {
