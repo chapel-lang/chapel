@@ -407,7 +407,7 @@ def register_rules(driver: LintDriver):
         if not isinstance(root, Comment):
             lines = context.get_file_text(root.location().path()).split("\n")
         for unused in indices.keys() - uses:
-            node = indices[unused]
+            node, loop = indices[unused]
             fixit = None
             parent = node.parent()
             if parent and isinstance(parent, TupleDecl):
@@ -423,7 +423,7 @@ def register_rules(driver: LintDriver):
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
                 fixit = ChapelFixit.build(parent.location(), text)
 
-            yield (node, None, fixit)
+            yield (node, loop, fixit)
 
     @driver.advanced_rule
     def SimpleDomainAsRange(context: Context, root: AstNode):

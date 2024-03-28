@@ -190,12 +190,13 @@ class LintDriver:
         for result in func(context, root):
             if isinstance(result, tuple):
                 node, anchor, fixit = result
-                if anchor and not self._should_check_rule(name, anchor):
+                if anchor is not None and not self._should_check_rule(name, anchor):
                     continue
                 if fixit is not None and not isinstance(fixit, list):
                     fixit = [fixit]
             else:
                 node = result
+                fixit = None
 
             # It's not clear how, if it all, advanced rules should be silenced
             # by attributes (i.e., where do you put the @chplcheck.ignore
