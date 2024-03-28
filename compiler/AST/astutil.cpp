@@ -115,6 +115,18 @@ void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
     callExprs.push_back(callExpr);
 }
 
+void collectCallExprsExceptInGpuBlock(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+  if (auto blk = toBlockStmt(ast)) {
+    if (blk->isGpuPrimitivesBlock()) {
+      return;
+    }
+  }
+
+  AST_CHILDREN_CALL(ast, collectCallExprsExceptInGpuBlock, callExprs);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    callExprs.push_back(callExpr);
+}
+
 void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts) {
   AST_CHILDREN_CALL(ast, collectBlockStmts, blockStmts);
   if (BlockStmt* blockStmt = toBlockStmt(ast))
