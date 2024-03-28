@@ -191,22 +191,23 @@ def register_rules(driver):
 
     @driver.advanced_rule
     def MisleadingIndentation(context, root):
-        prev = None
+        prev, prevloop = None, None
         for child in root:
             if isinstance(child, Comment): continue
             yield from MisleadingIndentation(context, child)
 
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:
-                    yield child
+                    yield (child, prevloop)
 
-            prev = None
+            prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
                 grandchildren = list(child)
                 # safe to access [-1], loops must have at least 1 child
                 for blockchild in reversed(list(grandchildren[-1])):
                     if isinstance(blockchild, Comment): continue
                     prev = blockchild
+                    prevloop = child
                     break
 
     @driver.advanced_rule(default=False)
@@ -233,7 +234,7 @@ def register_rules(driver):
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
-            yield formals[unused]
+            yield (formals[unused], formals[unused].parent())
 
     @driver.advanced_rule
     def UnusedLoopIndex(context, root):
@@ -247,11 +248,13 @@ def register_rules(driver):
                 for child in node:
                     yield from variables(child)
 
-        for (_, match) in chapel.each_matching(root, [IndexableLoop, ("?decl", Decl), chapel.rest]):
-            node = match["decl"]
+        for (loop, match) in chapel.each_matching(root, IndexableLoop):
+            node = loop.index()
+            if node is None:
+                continue
 
             for index in variables(node):
-                indices[index.unique_id()] = index
+                indices[index.unique_id()] = (index, loop)
 
         for (use, _) in chapel.each_matching(root, Identifier):
             refersto = use.to_node()
