@@ -62,7 +62,7 @@ proc main() {
   // Write the file header and the image array.
   stdout.writef("P4\n");
   stdout.writef("%i %i\n", n, n);
-  stdout.write(image);
+  stdout.writeBinary(image);
 }
 
 //
