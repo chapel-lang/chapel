@@ -20,7 +20,6 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 
 proc main(args: [] string) {
   var consoleIn  = stdin.getFile().reader(locking=false),
-      consoleOut = stdout.getFile().writer(locking=false),
       bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
@@ -55,7 +54,7 @@ proc main(args: [] string) {
   }
 
   // write out the transformed buffer
-  consoleOut.writeBinary(buf[..end]);
+  stdout.writeBinary(buf[..end]);
 }
 
 
