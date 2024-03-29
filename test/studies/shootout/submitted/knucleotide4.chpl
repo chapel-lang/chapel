@@ -73,7 +73,7 @@ proc writeCount(data, param str) {
         freqs = calculate(data, str.numBytes),
         d = hash(strBytes, strBytes.domain.low, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d.val, str.numBytes));
+  writeln(freqs.get(d, 0), "\t", decode(d.val, str.numBytes));
 }
 
 
