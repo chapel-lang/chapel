@@ -50,6 +50,8 @@ class NilType final : public Type {
   ~NilType() = default;
 
   static const NilType* get(Context* context);
+
+  void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
 
 
