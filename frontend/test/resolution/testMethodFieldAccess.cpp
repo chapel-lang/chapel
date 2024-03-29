@@ -1066,14 +1066,13 @@ static void testExample21() {
                   proc x where false do return 0;
                 }
 
-                proc main() {
-                  var rr: r;
-                  rr.x;
+                proc r.fn() {
+                  return x;
                 }
               }
            )"""",
-           "M.main",
-           "M.main@3",
+           "M.fn",
+           "M.fn@2",
            "M.r.x");
 }
 
@@ -1086,14 +1085,13 @@ static void testExample22() {
                   proc x where false do return 0;
                 }
 
-                proc main() {
-                  var rr: r;
-                  rr.x;
+                proc r.fn() {
+                  return x;
                 }
               }
            )"""",
-           "M.main",
-           "M.main@3",
+           "M.fn",
+           "M.fn@2",
            "M.r.x");
 }
 
@@ -1106,14 +1104,13 @@ static void testExample23() {
                   proc x where true do return 0;
                 }
 
-                proc main() {
-                  var rr: r;
-                  rr.x;
+                proc r.fn() {
+                  return x;
                 }
               }
            )"""",
-           "M.main",
-           "M.main@3",
+           "M.fn",
+           "M.fn@2",
            "" /* ambiguity error */);
 }
 
