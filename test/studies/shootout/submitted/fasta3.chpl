@@ -80,13 +80,13 @@ proc sumProbs(ref alphabet: []) {
 // Create lock-free version of 'stdout' for efficiency
 //
 use IO;
-const consoleOut = stdout.getFile().writer(locking=false);
+const stdout = (new file(1)).writer(locking=false);
 
 //
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  consoleOut.writef("%s", desc);
+  stdout.writef("%s", desc);
 
   const r = alu.size,
         s = [i in 0..r+lineLength] alu[i % r]: int(8);
@@ -94,8 +94,8 @@ proc repeatMake(desc, alu, n) {
   for i in 0..n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
-    consoleOut.writeBinary(s[lo..#len]);
-    consoleOut.writeln();
+    stdout.writeBinary(s[lo..#len]);
+    stdout.writeln();
   }
 }
 
@@ -105,7 +105,7 @@ proc repeatMake(desc, alu, n) {
 proc randomMake(desc, a, n) {
   var line_buff: [0..lineLength] int(8);
 
-  consoleOut.writef("%s", desc);
+  stdout.writef("%s", desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
 
@@ -134,7 +134,7 @@ proc randomMake(desc, a, n) {
     }
     line_buff[numBytes] = "\n".toByte();
 
-    consoleOut.writeBinary(line_buff[0..numBytes]);
+    stdout.writeBinary(line_buff[0..numBytes]);
   }
 }
 

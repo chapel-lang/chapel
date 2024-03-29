@@ -12,9 +12,10 @@ config param tableSize = 2**16,
 
 
 proc main(args: [] string) {
-  // Open stdin and a binary reader channel
-  const fileLen = stdin.getFile().size,
-        consoleIn = stdin.getFile().reader(locking=false);
+  // Create a non-locking version of 'stdin' and query its size
+  const consoleIn = new file(0),
+        fileLen = consoleIn.size,
+        stdin = consoleIn.reader(locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),
@@ -22,7 +23,7 @@ proc main(args: [] string) {
       numRead = 0;
 
   do {
-    lineSize = consoleIn.readLine(buff);
+    lineSize = stdin.readLine(buff);
     numRead += lineSize;
   } while lineSize > 0 && !startsWithThree(buff);
 
@@ -32,7 +33,7 @@ proc main(args: [] string) {
       idx = 1;
 
   do {
-    lineSize = consoleIn.readLine(data[idx..]);
+    lineSize = stdin.readLine(data[idx..]);
     idx += lineSize - 1;
   } while lineSize > 0;
 
