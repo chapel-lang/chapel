@@ -1152,6 +1152,44 @@ static void testExample25() {
            "M.x");
 }
 
+static void testExample26() {
+  testCall("example26.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x where false do return 1;
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* both false; no matches. */);
+}
+
+static void testExample27() {
+  testCall("example27.chpl",
+           R""""(
+              module M {
+                proc x where false do return 1;
+                record r {
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* both false; no matches. */);
+}
+
 int main() {
   test1r();
   test1c();
@@ -1212,6 +1250,8 @@ int main() {
   testExample23();
   testExample24();
   testExample25();
+  testExample26();
+  testExample27();
 
   return 0;
 }
