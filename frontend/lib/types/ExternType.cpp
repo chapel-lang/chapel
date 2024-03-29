@@ -32,7 +32,9 @@ const owned<ExternType>& ExternType::getExternType(Context* context,
 
 void ExternType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
-  ss << "extern type ";
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "extern type ";
+  }
   linkageName().stringify(ss, stringKind);
 }
 

@@ -36,6 +36,10 @@ const VoidType* VoidType::get(Context* context) {
   return getVoidType(context).get();
 }
 
+void VoidType::stringify(std::ostream& ss, StringifyKind stringKind) const {
+  ss << "void";
+}
+
 
 } // end namespace types
 } // end namespace chpl
