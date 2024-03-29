@@ -38,6 +38,7 @@ const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
                      ("g", 0.1975473066391),
                      ("t", 0.3015094502008)],
 
+      // Create lock-free version of 'stdout' for efficiency
       consoleOut = stdout.getFile().writer(locking=false);
 
 
