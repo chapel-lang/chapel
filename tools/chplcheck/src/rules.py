@@ -136,6 +136,8 @@ def register_rules(driver: LintDriver):
             text = range_to_text(node.location(), lines)
             # TODO: this should be smarter about the do keyword
             text = re.sub(r"\bdo( *)", "", text, 1)
+            # remove any trailing whitespace
+            text = re.sub(r" +\n", "\n", text)
             return (check, ChapelFixit.build(node.location(), text))
 
         return (check, None)
@@ -405,8 +407,10 @@ def register_rules(driver: LintDriver):
                         "\n"
                     )
                 index_text = range_to_text(node.location(), lines)
-                # TODO: this should use loop_header() instead of location()
-                text = range_to_text(parent.location(), lines)
+                loc = parent.header_location()
+                if not loc:
+                    loc = parent.location()
+                text = range_to_text(loc, lines)
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
                 fixit = ChapelFixit.build(parent.location(), text)
 
