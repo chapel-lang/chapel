@@ -488,7 +488,11 @@ struct Resolver {
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   llvm::ArrayRef<const Scope*> receiverScopes);
+                   llvm::ArrayRef<const Scope*> receiverScopes,
+                   bool& outIsOverloadedParenless);
+
+
+  void tryResolveParenlessCall(const uast::Identifier* ident, bool considerMethodScopes);
 
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
