@@ -2826,13 +2826,37 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                       /* isParenless */ true,
                       actuals);
   auto inScope = scopeStack.back();
-  if (considerMethodScopes) {
+
+  // If some IDs were methods and some weren't, we have to resolve two
+  // calls: one with the (implicit) receiver, and one without.
+  if (info.hasMethodCandidates() && info.hasNonMethodCandidates()) {
+    auto cMethod = resolveGeneratedCallInMethod(context, ident, ci,
+                                               inScope, poiScope,
+                                               methodReceiverType());
+    auto cNonMethod = resolveGeneratedCall(context, ident, ci,
+                                           inScope, poiScope);
+
+    if (!cMethod.mostSpecific().isEmpty() &&
+        !cNonMethod.mostSpecific().foundCandidates()) {
+      // Only found a valid method call.
+      handleResolvedCall(r, ident, ci, cMethod);
+    } else if (!cNonMethod.mostSpecific().isEmpty() &&
+               !cMethod.mostSpecific().foundCandidates()) {
+      // Only found a valid non-method call.
+      handleResolvedCall(r, ident, ci, cNonMethod);
+    } else {
+      // Found both, so we have an ambiguity.
+      context->error(ident, "TODO");
+    }
+  } else if (info.hasMethodCandidates()) {
     auto c = resolveGeneratedCallInMethod(context, ident, ci,
                                           inScope, poiScope,
                                           methodReceiverType());
     // save the most specific candidates in the resolution result
     handleResolvedCall(r, ident, ci, c);
   } else {
+    CHPL_ASSERT(info.hasNonMethodCandidates());
+
     // as above, but don't consider method scopes
     auto c = resolveGeneratedCall(context, ident, ci,
                                   inScope, poiScope);
