@@ -19,19 +19,19 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 
 
 proc main(args: [] string) {
-  var consoleIn = stdin.getFile().reader(locking=false),
+  var stdin = (new file(0)).reader(locking=false),
       bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
       end = 0;
 
   // read in the data using an incrementally growing buffer
-  while consoleIn.readBinary(buf[end..]) {
+  while stdin.readBinary(buf[end..]) {
     end = bufLen;
     bufLen += min(1024**2, bufLen);
     bufDom = {0..<bufLen};
   }
-  end = consoleIn.offset() - 1;
+  end = stdin.offset() - 1;
 
   // process the buffer a sequence at a time, working from the end
   var hi = end;

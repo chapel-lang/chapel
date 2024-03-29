@@ -75,7 +75,7 @@ proc main() {
 // Create lock-free version of 'stdout' for efficiency
 //
 use IO;
-const consoleOut = stdout.getFile().writer(locking=false);
+const stdout = (new file(1)).writer(locking=false);
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
