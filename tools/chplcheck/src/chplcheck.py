@@ -64,6 +64,7 @@ def load_module(driver: LintDriver, file_path: str):
         )
     rule_func(driver)
 
+
 def apply_fixits(fixits: List[ChapelFixit]):
     """
     Apply a list of fixits
@@ -94,9 +95,10 @@ def apply_fixits(fixits: List[ChapelFixit]):
         with open(file, "w") as f:
             f.writelines(lines)
 
+
 def print_rules(driver: LintDriver, show_all=True):
     padding = max(len(rule) for (rule, _) in driver.rules_and_descriptions())
-    for (rule, description) in driver.rules_and_descriptions():
+    for rule, description in driver.rules_and_descriptions():
         if description is None:
             description = ""
         description = description.strip()
@@ -111,20 +113,46 @@ def print_rules(driver: LintDriver, show_all=True):
             else:
                 continue
 
-
         print(f"  {prefix}{rule.ljust(padding)}   {description}")
 
+
 def main():
-    parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
-    parser.add_argument('filenames', nargs='*')
-    parser.add_argument('--disable-rule', action='append', dest='disabled_rules', default=[])
-    parser.add_argument('--enable-rule', action='append', dest='enabled_rules', default=[])
-    parser.add_argument('--lsp', action='store_true', default=False)
-    parser.add_argument('--skip-unstable', action='store_true', default=False)
-    parser.add_argument('--internal-prefix', action='append', dest='internal_prefixes', default=[])
-    parser.add_argument("--add-rules", action='append', default=[], help="Add a custom rule file")
-    parser.add_argument("--list-rules", action='store_true', default=False, help="List all available rules")
-    parser.add_argument("--list-active-rules", action='store_true', default=False, help="List all currently enabled rules")
+    parser = argparse.ArgumentParser(
+        prog="chplcheck", description="A linter for the Chapel language"
+    )
+    parser.add_argument("filenames", nargs="*")
+    parser.add_argument(
+        "--disable-rule", action="append", dest="disabled_rules", default=[]
+    )
+    parser.add_argument(
+        "--enable-rule", action="append", dest="enabled_rules", default=[]
+    )
+    parser.add_argument("--lsp", action="store_true", default=False)
+    parser.add_argument("--skip-unstable", action="store_true", default=False)
+    parser.add_argument(
+        "--internal-prefix",
+        action="append",
+        dest="internal_prefixes",
+        default=[],
+    )
+    parser.add_argument(
+        "--add-rules",
+        action="append",
+        default=[],
+        help="Add a custom rule file",
+    )
+    parser.add_argument(
+        "--list-rules",
+        action="store_true",
+        default=False,
+        help="List all available rules",
+    )
+    parser.add_argument(
+        "--list-active-rules",
+        action="store_true",
+        default=False,
+        help="List all currently enabled rules",
+    )
     parser.add_argument(
         "--fixit",
         action="store_true",
