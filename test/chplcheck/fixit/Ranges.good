@@ -39,22 +39,22 @@ module SimpleDomainAsRange {
 
   @chplcheck.ignore("UnusedLoopIndex")
   forall i in 1..<10 with (ref A) {
-    
+
   }
 
   @chplcheck.ignore("UnusedLoopIndex")
   forall i in 1..#10 with (ref A) {
-    
+
   }
 
   @chplcheck.ignore("UnusedLoopIndex")
   forall i in 1..#10 by 2 with (ref A) {
-    
+
   }
 
   @chplcheck.ignore("UnusedLoopIndex")
   forall i in 1..#10 align 2 with (ref A) {
-    
+
   }
 
   @chplcheck.ignore("UnusedLoopIndex")
@@ -67,22 +67,22 @@ module SimpleDomainAsRange {
   }
 
   forall 1..<10 with (ref A) {
-    
+
   }
 
   forall 1..#10 with (ref A) {
-    
+
   }
 
   forall 1..#10 by 2 with (ref A) {
-    
+
   }
 
   forall 1..#10 align 2 with (ref A) {
-    
+
   }
 
   forall 1..#10 by 2 align 2 with (ref A) {
-    
+
   }
 }
