@@ -72,7 +72,7 @@ proc main() {
 }
 
 //
-// Redefine stdout to use lock-free binary I/O and capture a newline
+// Create lock-free version of 'stdout' for efficiency
 //
 use IO;
 const consoleOut = stdout.getFile().writer(locking=false);
