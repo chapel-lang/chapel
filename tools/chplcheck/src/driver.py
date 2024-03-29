@@ -22,6 +22,7 @@ from typing import Any, Callable, Iterator, List, Optional, Tuple
 
 import chapel
 from fixits import ChapelFixit
+import rule_types
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
 
@@ -60,8 +61,8 @@ class LintDriver:
 
     def __init__(self, skip_unstable: bool, internal_prefixes: List[str]):
         self.SilencedRules: List[str] = []
-        self.BasicRules: List[Tuple[str, Any, Callable]] = []
-        self.AdvancedRules: List[Tuple[str, Callable]] = []
+        self.BasicRules: List[Tuple[str, Any, rule_types.BasicRule]] = []
+        self.AdvancedRules: List[Tuple[str, rule_types.AdvancedRule]] = []
         self.skip_unstable: bool = skip_unstable
         self.internal_prefixes: List[str] = internal_prefixes
 
@@ -147,7 +148,7 @@ class LintDriver:
         self,
         context: chapel.Context,
         root: chapel.AstNode,
-        rule: Tuple[str, Any, Callable],
+        rule: Tuple[str, Any, rule_types.BasicRule],
     ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[ChapelFixit]]]]:
         (name, nodetype, func) = rule
 
@@ -164,11 +165,10 @@ class LintDriver:
 
             val = func(context, node)
             check, fixit = None, None
-            if isinstance(val, tuple):
-                check, fixit = val
+            if isinstance(val, rule_types.FullBasicRuleResult):
+                check, fixit = val.check, val.fixit
                 if fixit is not None and not isinstance(fixit, list):
                     fixit = [fixit]
-
             else:
                 check = val
             if not check:
@@ -178,7 +178,7 @@ class LintDriver:
         self,
         context: chapel.Context,
         root: chapel.AstNode,
-        rule: Tuple[str, Callable],
+        rule: Tuple[str, rule_types.AdvancedRule],
     ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[ChapelFixit]]]]:
         (name, func) = rule
 
@@ -188,19 +188,17 @@ class LintDriver:
             return
 
         for result in func(context, root):
-            if isinstance(result, tuple):
-                node, anchor, fixit = result
-                if anchor is not None and not self._should_check_rule(name, anchor):
+            if isinstance(result, rule_types.FullAdvancedRuleResult):
+                node, anchor, fixit = result.node, result.anchor, result.fixit
+                if anchor is not None and not self._should_check_rule(
+                    name, anchor
+                ):
                     continue
                 if fixit is not None and not isinstance(fixit, list):
                     fixit = [fixit]
             else:
                 node = result
                 fixit = None
-
-            # It's not clear how, if it all, advanced rules should be silenced
-            # by attributes (i.e., where do you put the @chplcheck.ignore
-            # attribute?). For now, do not silence them on a per-node basis.
 
             # For advanced rules, the traversal of the AST is out of our hands,
             # so we can't stop it from going into unstable modules. Instead,

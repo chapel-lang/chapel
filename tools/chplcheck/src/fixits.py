@@ -21,11 +21,13 @@ import chapel
 from dataclasses import dataclass
 import typing
 
+
 @dataclass
 class ChapelFixit:
     """
     Represents a fixit for a Chapel diagnostic.
     """
+
     path: str
     start: typing.Tuple[int, int]
     end: typing.Tuple[int, int]
@@ -33,7 +35,9 @@ class ChapelFixit:
 
     @classmethod
     def build(cls, location: chapel.Location, text: str) -> "ChapelFixit":
-        return ChapelFixit(location.path(), location.start(), location.end(), text)
+        return ChapelFixit(
+            location.path(), location.start(), location.end(), text
+        )
 
     @classmethod
     def to_dict(cls, fixit: "ChapelFixit") -> typing.Dict:
@@ -41,9 +45,9 @@ class ChapelFixit:
             "location": {
                 "path": fixit.path,
                 "start": fixit.start,
-                "end": fixit.end
+                "end": fixit.end,
             },
-            "text": fixit.text
+            "text": fixit.text,
         }
 
     @classmethod
@@ -53,10 +57,17 @@ class ChapelFixit:
             return None
 
         location = data["location"]
-        if "path" not in location or "start" not in location or "end" not in location:
+        if (
+            "path" not in location
+            or "start" not in location
+            or "end" not in location
+        ):
             return None
 
-        return ChapelFixit(location["path"], location["start"], location["end"], data["text"])
+        return ChapelFixit(
+            location["path"], location["start"], location["end"], data["text"]
+        )
+
 
 def range_to_text(rng: chapel.Location, lines: typing.List[str]) -> str:
     """

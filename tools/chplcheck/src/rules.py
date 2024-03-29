@@ -24,6 +24,7 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import ChapelFixit, range_to_text
+from rule_types import FullBasicRuleResult, FullAdvancedRuleResult
 
 
 def name_for_linting(context: Context, node: NamedDecl) -> str:
@@ -138,9 +139,11 @@ def register_rules(driver: LintDriver):
             text = re.sub(r"\bdo( *)", "", text, 1)
             # remove any trailing whitespace
             text = re.sub(r" +\n", "\n", text)
-            return (check, ChapelFixit.build(node.location(), text))
+            return FullBasicRuleResult(
+                check, ChapelFixit.build(node.location(), text)
+            )
 
-        return (check, None)
+        return check
 
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context: Context, node: Coforall):
@@ -177,7 +180,9 @@ def register_rules(driver: LintDriver):
                 text = ""
 
         if text is not None:
-            return (False, ChapelFixit.build(node.location(), text))
+            return FullBasicRuleResult(
+                False, ChapelFixit.build(node.location(), text)
+            )
         else:
             return False
 
@@ -360,7 +365,9 @@ def register_rules(driver: LintDriver):
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
-            yield (formals[unused], formals[unused].parent(), None)
+            yield FullAdvancedRuleResult(
+                formals[unused], formals[unused].parent()
+            )
 
     @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
@@ -414,7 +421,7 @@ def register_rules(driver: LintDriver):
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
                 fixit = ChapelFixit.build(parent.location(), text)
 
-            yield (node, loop, fixit)
+            yield FullAdvancedRuleResult(node, loop, fixit)
 
     @driver.advanced_rule
     def SimpleDomainAsRange(context: Context, root: AstNode):
@@ -462,4 +469,6 @@ def register_rules(driver: LintDriver):
 
             s = range_to_text(exprs[0].location(), lines)
 
-            yield (iterand, None, ChapelFixit.build(iterand.location(), s))
+            yield FullAdvancedRuleResult(
+                iterand, fixit=ChapelFixit.build(iterand.location(), s)
+            )
