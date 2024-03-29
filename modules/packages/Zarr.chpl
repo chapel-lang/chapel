@@ -137,7 +137,7 @@ module Zarr {
       var l = if dimCount != 1 then localD.low[i] else localD.low;
       var h = if dimCount != 1 then localD.high[i] else localD.high;
       var low = floor(l:real / chunkShape[i]:real):int;
-      var high = ceil(h / chunkShape[i]:real):int;
+      var high = floor(h / chunkShape[i]:real):int;
       localChunks[i] = max(low,0)..min(high,chunkCounts[i]-1);
     }
     const localChunkDomain: domain(dimCount) = localChunks;
