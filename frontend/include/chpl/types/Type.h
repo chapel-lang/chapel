@@ -323,6 +323,12 @@ class Type {
   */
   static bool isMutatedOnCopy(Context* context, const Type* t);
 
+  /*
+    Determine if a type is mutated when it is assigned. Right now this is
+    the same as 'isMutatedOnCopy'.
+  */
+  static bool isMutatedOnAssignment(Context* context, const Type* t);
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT

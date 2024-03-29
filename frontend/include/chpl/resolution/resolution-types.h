@@ -1073,6 +1073,9 @@ class TypedFnSignature {
     return formalTypes_[i];
   }
 
+  /** Returns true if the function is a method. */
+  bool isMethod() const { return untyped()->isMethod(); }
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT

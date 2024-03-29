@@ -665,10 +665,13 @@ generateRecordBinaryOperator(Context* context, UniqueString op,
 
 static const TypedFnSignature*
 generateRecordAssignment(Context* context, const CompositeType* lhsType) {
+  auto rhsKind = !Type::isMutatedOnAssignment(context, lhsType)
+    ? QualifiedType::CONST_REF
+    : QualifiedType::REF;
   return generateRecordBinaryOperator(context, USTR("="), lhsType,
                                       /*this*/ QualifiedType::CONST_REF,
-                                      /*lhs*/  QualifiedType::CONST_REF,
-                                      /*rhs*/  QualifiedType::CONST_REF);
+                                      /*lhs*/  QualifiedType::REF,
+                                      /*rhs*/  rhsKind);
 }
 
 static const TypedFnSignature*

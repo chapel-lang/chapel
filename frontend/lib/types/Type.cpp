@@ -322,5 +322,9 @@ bool Type::isMutatedOnCopy(Context* context, const Type* t) {
   return false;
 }
 
+bool Type::isMutatedOnAssignment(Context* context, const Type* t) {
+  return Type::isMutatedOnCopy(context, t);
+}
+
 } // end namespace types
 } // end namespace chpl

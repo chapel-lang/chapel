@@ -41,28 +41,56 @@ using namespace types;
 struct AdjustMaybeRefs {
   using RV = MutatingResolvedVisitor<AdjustMaybeRefs>;
 
-  typedef enum {
-    REF = 1,
-    CONST_REF = 2,
-    VALUE = 3,
-    REF_MAYBE_CONST = 4, // used temporarily for recursive cases
-  } Access;
+  // An abstracted view over a QualifiedType. Here 'OUT' and 'INOUT' kinds
+  // are viewed as being a form of 'ref'. Kinds that are not references are
+  // considered "VALUE" and generally ignored.
+  class Access {
+    QualifiedType type_;
+  public:
+    Access() = default;
+    Access(QualifiedType type) : type_(std::move(type)) {}
+    Access(QualifiedType::Kind q, const Type* t) : type_(QualifiedType(q, t)) {}
+    const QualifiedType& type() const { return type_; }
+    QualifiedType::Kind kind() const { return type_.kind(); }
+    bool isRef() const {
+      return kind() == QualifiedType::REF ||
+             kind() == QualifiedType::OUT ||
+             kind() == QualifiedType::INOUT;
+    }
+    bool isConstRef() const {
+      return kind() == QualifiedType::CONST_REF;
+    }
+    bool isRefMaybeConst() const {
+      return kind() == QualifiedType::REF_MAYBE_CONST;
+    }
+    bool isValue() const {
+      return !isRef() && !isConstRef() && !isRefMaybeConst();
+    }
+    bool isConst() const {
+      return type_.isConst();
+    }
+  };
+
+  // The default access is an access by 'value'. This is a per-instance
+  // member because 'static' variables are wonky in C++.
+  Access defaultAccess_ = Access(QualifiedType::UNKNOWN, nullptr);
 
   struct ExprStackEntry {
     const AstNode* ast = nullptr;
-    Access access = VALUE;
+    Access access;
     // For a call, which formal in which fn is the nested expression passed to?
     const TypedFnSignature* calledFn = nullptr;
     int formalIdx = -1;
 
     ExprStackEntry() = default;
     ExprStackEntry(const AstNode* ast, Access access)
-      : ast(ast), access(access)
+      : ast(ast), access(std::move(access))
     {
     }
     ExprStackEntry(const AstNode* ast, Access access,
                    const TypedFnSignature* calledFn, int formalIdx)
-      : ast(ast), access(access), calledFn(calledFn), formalIdx(formalIdx)
+      : ast(ast), access(std::move(access)), calledFn(calledFn),
+        formalIdx(formalIdx)
     {
     }
   };
@@ -85,10 +113,7 @@ struct AdjustMaybeRefs {
                ResolutionResultByPostorderID& byPostorder);
 
   static const Decl* declFromIdOrNull(Context* context, const ID& id);
-  static Access accessForQualifier(Qualifier q);
-  static Access accessForQualifier(const QualifiedType& qt);
-  static Access accessForTargetAst(const AstNode* ast, RV& rv);
-  Access currentAccess();
+  const Access& currentAccess();
 
   bool findInitOrAssignmentParts(const AstNode* ast, RV& rv,
                                  const AssociatedAction& action,
@@ -160,131 +185,130 @@ AdjustMaybeRefs::declFromIdOrNull(Context* context, const ID& id) {
   return nullptr;
 }
 
-AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
-  if (q == Qualifier::REF ||
-      q == Qualifier::OUT ||
-      q == Qualifier::INOUT) {
-    return REF;
-  }
-
-  if (q == Qualifier::CONST_REF) {
-    return CONST_REF;
-  }
-
-  if (q == Qualifier::REF_MAYBE_CONST) {
-    return REF_MAYBE_CONST;
-  }
-
-  return VALUE; // including IN at least
+const AdjustMaybeRefs::Access& AdjustMaybeRefs::currentAccess() {
+  return exprStack.empty() ? defaultAccess_ : exprStack.back().access;
 }
 
-AdjustMaybeRefs::Access
-AdjustMaybeRefs::accessForQualifier(const QualifiedType& qt) {
-  return accessForQualifier(qt.kind());
-}
-
-// TODO: Unused, decide if we even need this sort of thing.
-AdjustMaybeRefs::Access
-AdjustMaybeRefs::accessForTargetAst(const AstNode* ast, RV& rv) {
-  if (!ast || !ast->id()) return VALUE;
-
-  Context* context = rv.context();
-  auto& re = rv.byAst(ast);
-  auto parentSymbolId = ast->id().parentSymbolId(context);
-
-  // TODO: Need universal way to get outer variable or non-local AST access.
-  if (auto& id = re.toId()) {
-    if (auto decl = declFromIdOrNull(rv.context(), id)) {
-      if (id.isSymbolDefiningScope() || !parentSymbolId.contains(id)) {
-        CHPL_UNIMPL("Access for non-local or primary symbols!");
-        return VALUE;
-      }
-      auto& reDecl = rv.byAst(decl);
-      return accessForQualifier(reDecl.type());
-    }
-  }
-
-  return VALUE;
-}
-
-AdjustMaybeRefs::Access AdjustMaybeRefs::currentAccess() {
-  Access access = VALUE;
-  if (exprStack.size() > 0) {
-    access = exprStack.back().access;
-  }
-  return access;
-}
-
+// Tricky cases for 'bar(foo())' where 'foo()' returns by 'const ref'...
+// The 'bar()' function could take by 'in' intent, in which case we may
+// copy-init from 'foo()'. Or it could take by 'out', in which case there is
+// assignment from 'bar()' -> 'foo()' afterwards (and possibly a copy from
+// 'foo()' -> 'bar()' before).
+// TODO: It might be worth adjusting associated actions to account for this
+// trickiness. They could store multiple IDs, one per formal.
+// TODO: Can we combine this process and the process that happens for calls?
 bool
 AdjustMaybeRefs::findInitOrAssignmentParts(const AstNode* ast, RV& rv,
                                            const AssociatedAction& action,
                                            ExprStackEntry& lhs,
                                            ExprStackEntry& rhs) {
+  Context* context = rv.context();
+
+  CHPL_ASSERT(action.id() == ast->id());
+
   if (auto op = ast->toOpCall()) {
     if (op->op() == USTR("=")) {
       CHPL_ASSERT(op->numActuals() == 2);
-      auto qtLhs = rv.byAst(op->actual(0)).type();
-      auto qtRhs = rv.byAst(op->actual(1)).type();
-      lhs = { op->actual(0), accessForQualifier(qtLhs) };
-      rhs = { op->actual(1), accessForQualifier(qtRhs) };
+      lhs = { op->actual(0), rv.byAst(op->actual(0)).type() };
+      rhs = { op->actual(1), rv.byAst(op->actual(1)).type() };
       return true;
     }
   } else if (auto var = ast->toVarLikeDecl()) {
     auto& reVar = rv.byAst(ast);
     if (auto initExpr = var->initExpression()) {
-      auto& reInitExpr = rv.byAst(initExpr);
-      lhs = { var, accessForQualifier(reVar.type()) };
-      rhs = { initExpr, accessForQualifier(reInitExpr.type()) };
+      lhs = { var, reVar.type() };
+      rhs = { initExpr, rv.byAst(initExpr).type() };
       return true;
     }
 
-  // TODO: Detect 'out' vs 'in' patterns, maybe inspect parent call?
+  // We have to determine the LHS by inspecting the parent of the call.
+  // In many cases we can't be sure, so just use the parent and its type.
+  // However, if the parent is itself a call, then try to map to the
+  // corresponding actual.
   } else if (auto call = ast->toCall()) {
-    return false;
+    auto parent = parsing::parentAst(context, call);
+
+    // Set something general in case we can't find out more details.
+    lhs = { parent, rv.byAst(parent).type() };
+    rhs = { call, rv.byAst(call).type() };
+
+    // If the parent is a call, try to retrieve the formal using the actual.
+    if (auto parentCall = parent->toCall()) {
+      if (call == parentCall->calledExpression()) {
+        CHPL_UNIMPL("Const checking associated actions when call "
+                    "is base expression");
+        return false;
+      } else {
+        for (int i = 0; i < parentCall->numActuals(); i++) {
+          if (call != parentCall->actual(i)) continue;
+
+          auto& reParentCall = rv.byAst(parentCall);
+          auto& mfs = reParentCall.mostSpecific().only();
+          if (!mfs) return false;
+
+          // Try to use more specific details for the LHS.
+          auto& fam = mfs.formalActualMap();
+          if (auto fa = fam.byActualIdx(i)) {
+            auto& formalType = fa->formalType();
+            lhs = { fa->formal(), formalType, mfs.fn(), i };
+          }
+        }
+      }
+    }
+    return true;
   }
 
   return false;
 }
 
-/*
-TODO:
-How do I know if it's assigning from or assigning to?
- bar(foo())
-bar could have in intent -> assign to formal from foo()
-bar could have out intent -> assign from formal to foo()
+static const char* initOrAssignStr(AssociatedAction::Action a) {
+  switch (a) {
+    case AssociatedAction::ASSIGN: return "assign";
+    case AssociatedAction::COPY_INIT: return "copy initialize";
+    case AssociatedAction::INIT_OTHER: return "copy initialize";
+    default: break;
+  }
+  return nullptr;
+}
 
-what about an 'in' intent call to 'init='/'=' that has a 'ref' rhs?
-like 'owned' ?
-*/
-// consider each associated action
 void AdjustMaybeRefs::constCheckAssociatedActions(const AstNode* ast, RV& rv) {
   auto& re = rv.byAst(ast);
 
   for (auto& a : re.associatedActions()) {
-    gdbShouldBreakHere();
-
-    ExprStackEntry lhs;
-    ExprStackEntry rhs;
-    bool found = findInitOrAssignmentParts(ast, rv, a, lhs, rhs);
-    if (!found) continue;
-
-    // auto& reLhs = rv.byAst(lhs.ast);
-    auto& reRhs = rv.byAst(rhs.ast);
-    // bool isLhsConst = reLhs.type().isConst();
-    bool isRhsConst = reRhs.type().isConst();
-
     switch (a.action()) {
-      case AssociatedAction::ASSIGN: {
-        CHPL_ASSERT(false && "Not implemented yet!");
-      } break;
+      case AssociatedAction::ASSIGN:
       case AssociatedAction::COPY_INIT:
       case AssociatedAction::INIT_OTHER: {
-        // bool isSameType = a.action() == AssociatedAction::COPY_INIT;
+        ExprStackEntry lhs;
+        ExprStackEntry rhs;
+
         auto fn = a.fn();
-        CHPL_ASSERT(fn && fn->numFormals() == 2);
-        auto requiredAccessRhs = accessForQualifier(fn->formalType(1));
-        if (isRhsConst && requiredAccessRhs == REF) {
-          context->error(ast, "cannot copy-initialize from const");
+        bool found = findInitOrAssignmentParts(ast, rv, a, lhs, rhs);
+        if (!found) continue;
+
+        Access rhsRequiredAccess;
+        if (a.action() == AssociatedAction::ASSIGN) {
+          CHPL_ASSERT((fn->isMethod() && fn->numFormals() == 3) ||
+                      (fn->numFormals() == 2));
+          rhsRequiredAccess = fn->isMethod() ? fn->formalType(2)
+                                             : fn->formalType(1);
+        } else {
+          CHPL_ASSERT(fn->isMethod() && fn->numFormals() == 2);
+          rhsRequiredAccess = fn->formalType(1);
+        }
+
+        // If RHS actual is const (either ref or value) and RHS formal for
+        // the copy-initializer function is mutable 'ref', then issue error.
+        if (rhs.access.isConst() && rhsRequiredAccess.isRef()) {
+
+          // Do not warn, we will have caught this pattern when descending
+          // as you cannot pass a const thing to a `inout` formal.
+          if (lhs.access.kind() != QualifiedType::INOUT) {
+
+            // TODO: Create an actual error class for me instead.
+            const char* actionStr = initOrAssignStr(a.action());
+            context->error(rhs.ast, "cannot %s from const", actionStr);
+          }
         }
       } break;
       default: break;
@@ -296,8 +320,7 @@ bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
 
   // visit the type expression, if any
   if (auto typeExpr = ast->typeExpression()) {
-    Access access = VALUE;
-    exprStack.push_back(ExprStackEntry(typeExpr, access));
+    exprStack.push_back(ExprStackEntry(typeExpr, defaultAccess_));
 
     typeExpr->traverse(rv);
 
@@ -307,15 +330,15 @@ bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
   // visit the init expr, if any
   if (auto initExpr = ast->initExpression()) {
     ResolvedExpression& re = rv.byAst(ast);
-    Access access = accessForQualifier(re.type().kind());
+    Access access = re.type();
     exprStack.push_back(ExprStackEntry(initExpr, access));
 
     initExpr->traverse(rv);
 
     exprStack.pop_back();
 
-    // const checking for e.g. 'ref x = constVar;'
-    if (access == REF) {
+    // TODO: Create an actual error class for me instead.
+    if (access.isRef()) {
       ResolvedExpression& initExprRe = rv.byAst(initExpr);
       if (initExprRe.type().isConst()) {
         context->error(ast, "cannot create a mutable ref to const");
@@ -336,13 +359,12 @@ bool AdjustMaybeRefs::enter(const Identifier* ast, RV& rv) {
   if (rv.hasAst(ast)) {
     toId = rv.byAst(ast).toId();
   }
-  if (!toId.isEmpty() &&
-      refMaybeConstFormals.count(toId) > 0) {
-    auto access = currentAccess();
-    if (access == REF) {
+  if (!toId.isEmpty() && refMaybeConstFormals.count(toId) > 0) {
+    auto& access = currentAccess();
+    if (access.isRef()) {
       // record that the formal must be 'REF'
       refMaybeConstFormalsUsedRef.insert(toId);
-    } else if (access == REF_MAYBE_CONST) {
+    } else if (access.isRefMaybeConst()) {
       // issue an error for too much recursion
       context->error(ast, "Too much recursion to infer ref-maybe-const");
     }
@@ -360,26 +382,25 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
-    Access access = currentAccess();
+    auto& access = currentAccess();
     MostSpecificCandidate bestRef = candidates.bestRef();
     MostSpecificCandidate bestConstRef = candidates.bestConstRef();
     MostSpecificCandidate bestValue = candidates.bestValue();
     MostSpecificCandidate best = {};
-    if (access == REF) {
+    if (access.isRef()) {
       if (bestRef) best = bestRef;
       else if (bestConstRef) best = bestConstRef;
       else best = bestValue;
-    } else if (access == CONST_REF) {
+    } else if (access.isConstRef() || access.isRefMaybeConst()) {
+      if (access.isRefMaybeConst()) {
+        context->error(ast, "Too much recursion to infer return "
+                            "intent overload");
+      }
       if (bestConstRef) best = bestConstRef;
       else if (bestValue) best = bestValue;
       else best = bestRef;
-    } else if (access == REF_MAYBE_CONST) {
-      // raise an error
-      context->error(ast, "Too much recursion to infer return intent overload");
-      if (bestConstRef) best = bestConstRef;
-      else if (bestValue) best = bestValue;
-      else best = bestRef;
-    } else { // access == VALUE
+    } else {
+      CHPL_ASSERT(access.isValue());
       if (bestValue) best = bestValue;
       else if (bestConstRef) best = bestConstRef;
       else best = bestRef;
@@ -391,6 +412,8 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
     // (all that actually needs to change is the return intent)
     re.setType(returnType(context, best.fn(), resolver.poiScope));
   }
+
+  constCheckAssociatedActions(ast, rv);
 
   // there should be only one candidate at this point
   CHPL_ASSERT(candidates.numBest() <= 1);
@@ -417,23 +440,32 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
       if (fa->hasActual()) {
         const AstNode* actualAst = actualAsts[actualIdx];
-        Access access = accessForQualifier(fa->formalType().kind());
+        Access formalAccess = fa->formalType();
 
-        exprStack.push_back(ExprStackEntry(actualAst, access,
+        exprStack.push_back(ExprStackEntry(actualAst, formalAccess,
                                            fn, formalIdx));
 
         actualAst->traverse(rv);
 
         // check for const-ness errors after return-intent overloads
         // are chosen
-        if (access == REF) {
+        if (formalAccess.isRef()) {
           ResolvedExpression& actualRe = rv.byAst(actualAst);
-          if (actualRe.type().isConst()) {
-            context->error(actualAst, "cannot pass const to non-const");
+          Access actualAccess = actualRe.type();
+          if (actualAccess.isConst()) {
+            // TODO: Make a proper error class for me instead.
+            if (formalAccess.kind() == QualifiedType::INOUT) {
+              context->error(actualAst, "cannot pass const actual to inout "
+                                        "formal");
+            } else if (fn->untyped()->name() == USTR("=")) {
+              bool isTarget = fn->isMethod() ? formalIdx == 1 : formalIdx == 0;
+              auto str = isTarget ? "assign to" : "assign from";
+              context->error(actualAst, "cannot %s const", str);
+            } else {
+              context->error(actualAst, "cannot pass const to non-const");
+            }
           }
         }
-
-        constCheckAssociatedActions(actualAst, rv);
         exprStack.pop_back();
       }
     }
