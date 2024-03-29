@@ -58,7 +58,7 @@ struct Resolver {
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   std::set<UniqueString> namesWithErrorsEmitted;
-  const uast::Call* inLeafCall = nullptr;
+  std::vector<const uast::Call*> callNodeStack;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
@@ -206,6 +206,12 @@ struct Resolver {
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
 
+  /**
+    During AST traversal, find the last called expression we entered.
+    e.g., will return 'f' if we just entered 'f()'.
+   */
+  const chpl::uast::AstNode* nearestCalledExpression() const;
+
   // Set the composite type of this Resolver. It is an error to call this
   // method when a composite type is already set.
   void setCompositeType(const types::CompositeType* ct);
@@ -335,6 +341,11 @@ struct Resolver {
   void issueErrorForFailedModuleDot(const uast::Dot* dot,
                                     ID moduleId,
                                     LookupConfig failedConfig);
+
+  // after resolving the child nodes of the call as needed, perform call resolution
+  // if appropriate. This is a helper function because it has some complicated
+  // control flow, and we want to make sure to always keep callNodeStack in sync.
+  void handleCallExpr(const uast::Call* call);
 
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific

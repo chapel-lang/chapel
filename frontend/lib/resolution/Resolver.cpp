@@ -394,6 +394,12 @@ Resolver::paramLoopResolver(Resolver& parent,
   return ret;
 }
 
+const AstNode* Resolver::nearestCalledExpression() const {
+  if (callNodeStack.empty()) return nullptr;
+
+  return callNodeStack.back()->calledExpression();
+}
+
 void Resolver::setCompositeType(const CompositeType* ct) {
   CHPL_ASSERT(this->inCompositeType == nullptr);
   this->inCompositeType = ct;
@@ -2552,8 +2558,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
-  bool resolvingCalledIdent = (inLeafCall &&
-                               ident == inLeafCall->calledExpression());
+  bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
@@ -2842,8 +2847,8 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       //   record R { type t = int; }
       //   var x: R; // should refer to R(int)
       bool computeDefaults = true;
-      bool resolvingCalledIdent = (inLeafCall &&
-                                   ident == inLeafCall->calledExpression());
+      bool resolvingCalledIdent = nearestCalledExpression() == ident;
+
       if (resolvingCalledIdent) {
         computeDefaults = false;
       }
@@ -2962,7 +2967,7 @@ bool Resolver::enter(const TypeQuery* tq) {
 
   if (!foundFormalSubstitution) {
     // No substitution (i.e. initial signature) so use AnyType
-    if (inLeafCall && isCallToIntEtc(inLeafCall)) {
+    if (!callNodeStack.empty() && isCallToIntEtc(callNodeStack.back())) {
       auto defaultInt = IntType::get(context, 0);
       result.setType(QualifiedType(QualifiedType::PARAM, defaultInt));
     } else {
@@ -3329,7 +3334,7 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
 }
 
 bool Resolver::enter(const Call* call) {
-  inLeafCall = call;
+  callNodeStack.push_back(call);
   auto op = call->toOpCall();
 
   if (op && initResolver) {
@@ -3371,9 +3376,10 @@ void Resolver::prepareCallInfoActuals(const Call* call,
                            /* actualAsts */ nullptr);
 }
 
-void Resolver::exit(const Call* call) {
-  if (scopeResolveOnly)
+void Resolver::handleCallExpr(const uast::Call* call) {
+  if (scopeResolveOnly) {
     return;
+  }
 
   if (initResolver && initResolver->handleResolvingCall(call))
     return;
@@ -3484,8 +3490,13 @@ void Resolver::exit(const Call* call) {
     ResolvedExpression& r = byPostorder.byAst(call);
     r.setType(QualifiedType());
   }
+}
 
-  inLeafCall = nullptr;
+void Resolver::exit(const Call* call) {
+  handleCallExpr(call);
+
+  // Always remove the call from the stack to make sure it's properly set.
+  callNodeStack.pop_back();
 }
 
 bool Resolver::enter(const Dot* dot) {
@@ -3565,8 +3576,7 @@ void Resolver::exit(const Dot* dot) {
 
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
 
-  bool resolvingCalledDot = (inLeafCall &&
-                             dot == inLeafCall->calledExpression());
+  bool resolvingCalledDot = nearestCalledExpression() == dot;
   if (resolvingCalledDot && !scopeResolveOnly) {
     // We will handle it when resolving the FnCall.
 
