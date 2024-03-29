@@ -12,7 +12,7 @@ const table = createTable();    // create the table of code complements
 
 proc main(args: [] string) {
   use IO;
-  const stdin = (new file(0)).reader(locking=false);
+  const consoleIn = stdin.getFile().reader(locking=false);
 
   // read in the data using an incrementally growing buffer
   var bufLen = 8 * 1024,
@@ -21,14 +21,14 @@ proc main(args: [] string) {
       end = 0;
 
   do {
-    const more = stdin.readBinary(buf[end..]);
+    const more = consoleIn.readBinary(buf[end..]);
     if more {
       end = bufLen;
       bufLen += min(1024**2, bufLen);
       bufDom = {0..<bufLen};
     }
   } while more;
-  end = stdin.offset()-1;
+  end = consoleIn.offset()-1;
 
   // process the buffer a sequence at a time, working from the end
   var hi = end;

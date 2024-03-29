@@ -38,18 +38,17 @@ const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
                      ("g", 0.1975473066391),
                      ("t", 0.3015094502008)],
 
-      // Redefine stdout to use lock-free binary I/O
-      stdout = (new file(1)).writer(locking=false);
+      consoleOut = stdout.getFile().writer(locking=false);
 
 
 proc main() {
-  stdout.writeln(">ONE Homo sapiens alu");
+  consoleOut.writeln(">ONE Homo sapiens alu");
   repeatMake(ALU, 2*n);
 
-  stdout.writeln(">TWO IUB ambiguity codes");
+  consoleOut.writeln(">TWO IUB ambiguity codes");
   randomMake(IUB, 3*n);
 
-  stdout.writeln(">THREE Homo sapiens frequency");
+  consoleOut.writeln(">THREE Homo sapiens frequency");
   randomMake(HomoSapiens, 5*n);
 }
 
@@ -69,15 +68,15 @@ proc repeatMake(param alu, n) {
 
   const wholeBuffers = n / (len*lineLen);
   for i in 0..<wholeBuffers {
-    stdout.write(buffer);
+    consoleOut.write(buffer);
   }
 
   var extra = n - wholeBuffers*len*lineLen;
   extra += extra/lineLen;
-  stdout.writeBinary(buffer[..<extra]);
+  consoleOut.writeBinary(buffer[..<extra]);
 
   if n % lineLen != 0 {
-    stdout.writeln();
+    consoleOut.writeln();
   }
 }
 
@@ -118,7 +117,7 @@ proc randomMake(nuclInfo, n) {
         buffer[j*bytesPerLine + k] = hash[getNextRand()];
       }
     }
-    stdout.writeBinary(buffer);
+    consoleOut.writeBinary(buffer);
   }
 
   // compute number of complete lines remaining and fill them in
@@ -138,11 +137,11 @@ proc randomMake(nuclInfo, n) {
     buffer[offset + k] = hash[getNextRand()];
   }
 
-  stdout.writeBinary(buffer[0..<offset+extra]);
+  consoleOut.writeBinary(buffer[0..<offset+extra]);
 
   // add a final linefeed if needed
   if (extra != 0) {
-    stdout.writeln();
+    consoleOut.writeln();
   }
 
 }
