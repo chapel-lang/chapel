@@ -135,7 +135,7 @@ def register_rules(driver: LintDriver):
             lines = context.get_file_text(node.location().path()).split("\n")
             text = range_to_text(node.location(), lines)
             # TODO: this should be smarter about the do keyword
-            text = re.sub(r"\bdo\s*", "", text, 1)
+            text = re.sub(r"\bdo( *)", "", text, 1)
             return (check, ChapelFixit.build(node.location(), text))
 
         return (check, None)
