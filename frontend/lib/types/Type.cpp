@@ -159,7 +159,9 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   for (int i = 0; i < leadingSpaces; i++) {
     ss << "  ";
   }
-  ss << "type ";
+  if (stringKind != chpl::StringifyKind::CHPL_SYNTAX) {
+    ss << "type ";
+  }
   ss << typetags::tagToString(this->tag());
 }
 
