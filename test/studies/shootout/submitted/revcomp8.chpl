@@ -20,11 +20,11 @@ param readSize = 65536,      // size to read at a time
 
       maxChars = cmpl.size: uint(8); // upper bound on # of nucleotides used
 
-    // map from pairs of nucleotide characters to their reversed complements
-var pairCmpl: [0..<join(maxChars, maxChars)] uint(16),
+// map from pairs of nucleotide characters to their reversed complements
+var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
-    // define non-locking versions of stdin/stdout for efficiency
-    stdin  = (new file(0)).reader(locking=false),
+// define non-locking versions of stdin/stdout for efficiency
+var stdin  = (new file(0)).reader(locking=false),
     stdout = (new file(1)).writer(locking=false);
 
 proc main(args: [] string) {

@@ -32,12 +32,12 @@ proc main(args: [] string) {
       idx = 1;
 
   do {
-    lineSize = stdin.readLine(data[idx..]);
-    idx += lineSize - 1;
+    lineSize = stdin.readLine(data[idx..], stripNewline=true);
+    idx += lineSize;
   } while lineSize > 0;
 
   // Resize our array to the amount actually read
-  dataDom = {1..idx+1};
+  dataDom = {1..idx};
 
   // Make everything uppercase
   forall d in data do
@@ -73,7 +73,7 @@ proc writeCount(data, param str) {
         freqs = calculate(data, str.numBytes),
         d = hash(strBytes, strBytes.domain.low, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d.val, str.numBytes));
+  writeln(freqs.get(d, 0), "\t", decode(d.val, str.numBytes));
 }
 
 
@@ -85,7 +85,7 @@ proc calculate(data, param nclSize) {
   coforall tid in 1..numTasks with (ref freqs) {
     var myFreqs = new map(hashVal, int);
 
-    for i in tid..(data.size-nclSize) by numTasks do
+    for i in tid..(data.size - nclSize) by numTasks do
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
