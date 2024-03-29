@@ -425,6 +425,9 @@ def register_rules(driver: LintDriver):
 
     @driver.advanced_rule
     def SimpleDomainAsRange(context: Context, root: AstNode):
+        """
+        Warn for simple domains in loops that can be ranges.
+        """
         lines = None
         # dyno fault if we try to query .location on a Comment
         if not isinstance(root, Comment):
