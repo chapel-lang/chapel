@@ -2580,21 +2580,43 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
   return false;
 }
 
+static const LookupConfig identifierLookupConfig = LOOKUP_DECLS |
+                                                   LOOKUP_IMPORT_AND_USE |
+                                                   LOOKUP_PARENTS |
+                                                   LOOKUP_EXTERN_BLOCKS;
+
+
+void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
+                                           const Scope* scope,
+                                           llvm::ArrayRef<const Scope*> receiverScopes,
+                                           LookupConfig prevConfig) {
+  auto pair = namesWithErrorsEmitted.insert(ident->name());
+  if (pair.second) {
+    // insertion took place so emit the error
+    bool printFirstMention = identHasMoreMentions(ident);
+
+    std::vector<ResultVisibilityTrace> traceResult;
+    auto vec = lookupNameInScopeTracing(context, scope, receiverScopes,
+                                   ident->name(), prevConfig,
+                                   traceResult);
+
+    // emit an ambiguity error if this is not resolving a called ident
+    CHPL_REPORT(context, AmbiguousIdentifier,
+                ident, printFirstMention, vec, traceResult);
+  }
+}
+
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
                            llvm::ArrayRef<const Scope*> receiverScopes,
                            ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
-  outParenlessOverloadInfo = ParenlessOverloadInfo::notOverloaded();
   const Scope* scope = scopeStack.back();
+  outParenlessOverloadInfo = ParenlessOverloadInfo::notOverloaded();
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
-  LookupConfig config = LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS |
-                        LOOKUP_EXTERN_BLOCKS;
-
+  LookupConfig config = identifierLookupConfig;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
@@ -2639,20 +2661,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
     } else if (ambiguous &&
                !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
                !resolvingCalledIdent) {
-      auto pair = namesWithErrorsEmitted.insert(ident->name());
-      if (pair.second) {
-        // insertion took place so emit the error
-        bool printFirstMention = identHasMoreMentions(ident);
-
-        std::vector<ResultVisibilityTrace> traceResult;
-        vec = lookupNameInScopeTracing(context, scope, receiverScopes,
-                                       ident->name(), config,
-                                       traceResult);
-
-        // emit an ambiguity error if this is not resolving a called ident
-        CHPL_REPORT(context, AmbiguousIdentifier,
-                    ident, printFirstMention, vec, traceResult);
-      }
+      issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config);
     }
   }
 
@@ -2814,7 +2823,7 @@ QualifiedType Resolver::getSuperType(Context* context,
 
 void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                                        const Identifier* ident,
-                                       bool considerMethodScopes) {
+                                       llvm::ArrayRef<const Scope*> receiverScopes) {
 
   ResolvedExpression& r = byPostorder.byAst(ident);
   // resolve a parenless call
@@ -2825,6 +2834,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
+  CHPL_ASSERT(!scopeStack.empty());
   auto inScope = scopeStack.back();
 
   // If some IDs were methods and some weren't, we have to resolve two
@@ -2845,8 +2855,17 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       // Only found a valid non-method call.
       handleResolvedCall(r, ident, ci, cNonMethod);
     } else {
-      // Found both, so we have an ambiguity.
-      context->error(ident, "TODO");
+      // Found both, it's an ambiguity after all. Issue the ambiguity error
+      // late, for which we need to recover some context.
+
+      LookupConfig config = identifierLookupConfig;
+      bool resolvingCalledIdent = nearestCalledExpression() == ident;
+      if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+
+      issueAmbiguityErrorIfNeeded(ident, inScope, receiverScopes, config);
+      auto& rr = byPostorder.byAst(ident);
+      rr.setType(QualifiedType());
+
     }
   } else if (info.hasMethodCandidates()) {
     auto c = resolveGeneratedCallInMethod(context, ident, ci,
@@ -2892,7 +2911,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     // This might be fine, if their 'where' clauses leave only one.
     //
     // Call resolution will issue an error if the overload selection fails.
-    tryResolveParenlessCall(parenlessInfo, ident, /* considerMethodScopes */ true);
+    tryResolveParenlessCall(parenlessInfo, ident, receiverScopes);
   } else if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {

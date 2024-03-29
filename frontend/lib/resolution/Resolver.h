@@ -508,6 +508,14 @@ struct Resolver {
 
   bool identHasMoreMentions(const uast::Identifier* ident);
 
+  // When an identifier is ambiguous, try issuing an error, but only if
+  // one hasn't been issued before. In doing so, re-run scope search to
+  // figure out how each candidate was found.
+  void issueAmbiguityErrorIfNeeded(const chpl::uast::Identifier* ident,
+                                   const Scope* scope,
+                                   llvm::ArrayRef<const Scope*> receiverScopes,
+                                   LookupConfig prevConfig);
+
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
                    llvm::ArrayRef<const Scope*> receiverScopes,
@@ -516,7 +524,7 @@ struct Resolver {
 
   void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                                const uast::Identifier* ident,
-                               bool considerMethodScopes);
+                               llvm::ArrayRef<const Scope*> receiverScopes);
 
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
