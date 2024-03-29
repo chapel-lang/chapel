@@ -415,11 +415,11 @@ def register_rules(driver: LintDriver):
                     )
                 index_text = range_to_text(node.location(), lines)
                 loc = parent.header_location()
-                if not loc:
+                if loc is None:
                     loc = parent.location()
                 text = range_to_text(loc, lines)
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
-                fixit = ChapelFixit.build(parent.location(), text)
+                fixit = ChapelFixit.build(loc, text)
 
             yield FullAdvancedRuleResult(node, loop, fixit)
 
