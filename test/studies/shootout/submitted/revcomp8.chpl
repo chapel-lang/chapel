@@ -22,11 +22,10 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
       maxChars = cmpl.size: uint(8); // upper bound on number of nucleotides used
 
 // map from pairs of nucleotide characters to their reversed complements
-var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
+var pairCmpl: [0..<join(maxChars, maxChars)] uint(16),
 
 // channels for doing efficient console I/O
-
-var consoleIn  = stdin.getFile().reader(locking=false),
+    consoleIn  = stdin.getFile().reader(locking=false),
     consoleOut = stdout.getFile().writer(locking=false);
 
 proc main(args: [] string) {
