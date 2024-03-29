@@ -33,8 +33,8 @@ proc main(args: [] string) {
       idx = 1;
 
   do {
-    lineSize = stdin.readLine(data[idx..]);
-    idx += lineSize - 1;
+    lineSize = stdin.readLine(data[idx..], stripNewline=true);
+    idx += lineSize;
   } while lineSize > 0;
 
   // Resize our array to the amount actually read
@@ -64,7 +64,7 @@ proc writeFreqs(data, param nclSize) {
   sort(arr, reverseComparator);
   for (f, s) in arr do
    writef("%s %.3dr\n", decode(s, nclSize),
-           (100.0 * f) / (data.size - nclSize + 1));
+           (100.0 * f) / (data.size - nclSize));
   writeln();
 }
 
@@ -86,7 +86,7 @@ proc calculate(data, param nclSize) {
   coforall tid in 1..numTasks with (ref freqs) {
     var myFreqs = new map(int, int);
 
-    for i in tid..(data.size - nclSize + 1) by numTasks do
+    for i in tid..(data.size - nclSize) by numTasks do
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
