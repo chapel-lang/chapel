@@ -37,9 +37,10 @@ from lsprotocol.types import (
 )
 from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
 from fixits import ChapelFixit
+from driver import LintDriver
 
 
-def run_lsp(driver):
+def run_lsp(driver: LintDriver):
     """
     Start a language server on the standard input/output, and use it to
     report linter warnings as LSP diagnostics.
