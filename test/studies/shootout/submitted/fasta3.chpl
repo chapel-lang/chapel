@@ -77,16 +77,16 @@ proc sumProbs(ref alphabet: []) {
 }
 
 //
-// Redefine stdout to use lock-free binary I/O and capture a newline
+// Redefine stdout to use lock-free I/O
 //
 use IO;
-const stdout = (new file(1)).writer(locking=false);
+const consoleOut = stdout.getFile().writer(locking=false);
 
 //
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc);
+  consoleOut.writef("%s", desc);
 
   const r = alu.size,
         s = [i in 0..r+lineLength] alu[i % r]: int(8);
@@ -94,8 +94,8 @@ proc repeatMake(desc, alu, n) {
   for i in 0..n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
-    stdout.writeBinary(s[lo..#len]);
-    stdout.writeln();
+    consoleOut.writeBinary(s[lo..#len]);
+    consoleOut.writeln();
   }
 }
 
@@ -105,7 +105,7 @@ proc repeatMake(desc, alu, n) {
 proc randomMake(desc, a, n) {
   var line_buff: [0..lineLength] int(8);
 
-  stdout.writef("%s", desc);
+  consoleOut.writef("%s", desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
 
@@ -134,7 +134,7 @@ proc randomMake(desc, a, n) {
     }
     line_buff[numBytes] = "\n".toByte();
 
-    stdout.writeBinary(line_buff[0..numBytes]);
+    consoleOut.writeBinary(line_buff[0..numBytes]);
   }
 }
 

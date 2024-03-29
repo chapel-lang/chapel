@@ -25,8 +25,9 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin  = (new file(0)).reader(locking=false),
-    stdoutBin = (new file(1)).writer(locking=false);
+
+var consoleIn  = stdin.getFile().reader(locking=false),
+    consoleOut = stdout.getFile().writer(locking=false);
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
@@ -42,7 +43,7 @@ proc main(args: [] string) {
 
   do {
     // read 'readSize' new characters
-    var newChars = stdinBin.readBinary(c_ptrTo(buff[readPos]), readSize),
+    var newChars = consoleIn.readBinary(c_ptrTo(buff[readPos]), readSize),
         nextSeqStart: int;
 
     // if the new characters contain the start of the next sequence,
@@ -85,7 +86,7 @@ proc revcomp(ref seq, size) {
   }
 
   // write out the header
-  stdoutBin.writeBinary(c_ptrTo(seq[0]), headerSize);
+  consoleOut.writeBinary(c_ptrTo(seq[0]), headerSize);
 
   // set up the atomic variables we'll use to coordinate between tasks
   var charsLeft, charsWritten: atomic int = size - (headerSize + 1);
@@ -132,7 +133,7 @@ proc revcomp(ref seq, size) {
 
       // take turns writing out our chunks
       charsWritten.waitFor(myStartChar);
-      stdoutBin.writeBinary(c_ptrTo(myBuff[0]), myChunkSize);
+      consoleOut.writeBinary(c_ptrTo(myBuff[0]), myChunkSize);
       charsWritten.write(myStartChar - myChunkSize);
 
       // grab the next chunk of work

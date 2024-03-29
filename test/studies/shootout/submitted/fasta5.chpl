@@ -75,8 +75,7 @@ proc main() {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 use IO;
-const stdout = (new file(1)).writer(locking=false);
-param newline = "\n".toByte();
+const consoleOut = stdout.getFile().writer(locking=false);
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
@@ -110,6 +109,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
     cp = 1 + (p*IM): randType;
   }
 
+  param newline = "\n".toByte();
   // guard when tasks can access the random numbers or output stream
   var randGo, outGo: [0..#numTasks] atomic int;
 
