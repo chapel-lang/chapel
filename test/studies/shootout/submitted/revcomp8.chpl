@@ -7,26 +7,24 @@
 
 use IO, CTypes;
 
-config param readSize = 65536,
-             linesPerChunk = 8192;
+param readSize = 65536,      // size to read at a time
+      linesPerChunk = 8192,  // number of lines to deal per task
+      eol = '\n'.toByte(),   // end-of-line, as an integer
+      cols = 61,             // # of characters per full row (including '\n')
 
-param eol = '\n'.toByte(),  // end-of-line, as an integer
-      cols = 61,            // # of characters per full row (including '\n')
-
-      // A 'bytes' value that stores the complement of each base at its index
+      // a 'bytes' value that stores the complement of each base at its index
       cmpl = b"          \n                                                  "
            + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R",
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-      maxChars = cmpl.size: uint(8); // upper bound on number of nucleotides used
+      maxChars = cmpl.size: uint(8); // upper bound on # of nucleotides used
 
-// map from pairs of nucleotide characters to their reversed complements
-var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
+    // map from pairs of nucleotide characters to their reversed complements
+var pairCmpl: [0..<join(maxChars, maxChars)] uint(16),
 
-// channels for doing efficient console I/O
-
-var consoleIn  = stdin.getFile().reader(locking=false),
+    // channels for doing efficient console I/O
+    consoleIn  = stdin.getFile().reader(locking=false),
     consoleOut = stdout.getFile().writer(locking=false);
 
 proc main(args: [] string) {
@@ -143,7 +141,7 @@ proc revcomp(ref seq, size) {
 }
 
 proc revcomp(in dstFront, in charAfter, spanLen, ref buff, ref seq) {
-  if spanLen%2 {
+  if spanLen % 2 {
     charAfter -= 1;
     buff[dstFront] = cmpl[seq[charAfter]];
     dstFront += 1;

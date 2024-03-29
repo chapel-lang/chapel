@@ -21,7 +21,7 @@ proc main() {
   const ydim = 0..#n,                          // the image's y dimension
         xdim = 0..#divCeilPos(n, bitsPerElt);  // the compacted x dimension
 
-  var image : [ydim, xdim] eltType;            // the compacted bitmap image
+  var image: [ydim, xdim] eltType;             // the compacted bitmap image
 
   forall y in dynamic(ydim, chunkSize) {       // for all rows...
     for xelt in xdim {                         //   for each column element...

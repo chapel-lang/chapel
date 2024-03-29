@@ -21,7 +21,7 @@ proc main() {
   const xsize = divCeilPos(n, bitsPerElt),  // the compacted x dimension
         imgSpace = {0..#n, 0..#xsize};      // the compacted image size
 
-  var image : [imgSpace] eltType,           // the compacted image
+  var image: [imgSpace] eltType,            // the compacted image
       xval, yval: [0..#n] real;             // pre-computed (x,y) values
 
   // precompute (x, y) values from the complex plane

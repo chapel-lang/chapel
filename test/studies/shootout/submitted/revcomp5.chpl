@@ -19,8 +19,7 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 
 
 proc main(args: [] string) {
-  var consoleIn  = stdin.getFile().reader(locking=false),
-      consoleOut = stdout.getFile().writer(locking=false),
+  var consoleIn = stdin.getFile().reader(locking=false),
       bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
@@ -32,7 +31,7 @@ proc main(args: [] string) {
     bufLen += min(1024**2, bufLen);
     bufDom = {0..<bufLen};
   }
-  end = consoleIn.offset()-1;
+  end = consoleIn.offset() - 1;
 
   // process the buffer a sequence at a time, working from the end
   var hi = end;
@@ -44,9 +43,8 @@ proc main(args: [] string) {
 
     // skip past header line
     var seqlo = lo;
-    while buf[seqlo] != eol {
+    while buf[seqlo] != eol do
       seqlo += 1;
-    }
 
     // reverse and complement the sequence
     revcomp(buf, seqlo+1, hi);
@@ -55,7 +53,7 @@ proc main(args: [] string) {
   }
 
   // write out the transformed buffer
-  consoleOut.writeBinary(buf[..end]);
+  stdout.writeBinary(buf[..end]);
 }
 
 

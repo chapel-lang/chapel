@@ -77,7 +77,7 @@ proc sumProbs(ref alphabet: []) {
 }
 
 //
-// Redefine stdout to use lock-free I/O
+// Create lock-free version of 'stdout' for efficiency
 //
 use IO;
 const consoleOut = stdout.getFile().writer(locking=false);
