@@ -1,0 +1,23 @@
+module BoolLits {
+  proc myProc () {
+    writeln("true");
+
+    writeln("true");
+
+    {
+      writeln("true");
+    }
+
+    {
+      writeln("true");
+    }
+
+    {
+      writeln("true");
+    }
+
+    {
+      writeln("true");
+    }
+  }
+}
