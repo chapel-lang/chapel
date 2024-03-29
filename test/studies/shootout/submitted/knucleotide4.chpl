@@ -37,7 +37,7 @@ proc main(args: [] string) {
   } while lineSize > 0;
 
   // Resize our array to the amount actually read
-  dataDom = {1..idx+1};
+  dataDom = {1..idx};
 
   // Make everything uppercase
   forall d in data do
@@ -63,7 +63,7 @@ proc writeFreqs(data, param nclSize) {
   sort(arr, reverseComparator);
   for (f, s) in arr do
    writef("%s %.3dr\n", decode(s, nclSize),
-           (100.0 * f) / (data.size - nclSize));
+           (100.0 * f) / (data.size - nclSize + 1));
   writeln();
 }
 
@@ -85,7 +85,7 @@ proc calculate(data, param nclSize) {
   coforall tid in 1..numTasks with (ref freqs) {
     var myFreqs = new map(hashVal, int);
 
-    for i in tid..(data.size-nclSize) by numTasks do
+    for i in tid..(data.size - nclSize + 1) by numTasks do
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
