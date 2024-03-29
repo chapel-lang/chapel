@@ -324,7 +324,7 @@ def register_rules(driver: LintDriver):
 
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:
-                    yield (child, prevloop, None)
+                    yield FullAdvancedRuleResult(child, prevloop)
 
             prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
