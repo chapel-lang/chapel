@@ -112,6 +112,34 @@ struct GatherFieldsOrFormals {
   void exit(const AstNode* ast) { }
 };
 
+
+Resolver::ParenlessOverloadInfo
+Resolver::ParenlessOverloadInfo::notOverloaded() {
+  return Resolver::ParenlessOverloadInfo {};
+}
+
+Resolver::ParenlessOverloadInfo
+Resolver::ParenlessOverloadInfo::fromBorrowedIds(Context* context,
+                                                 const std::vector<BorrowedIdsWithName>& bids) {
+  bool anyMethodOrField = false;
+  bool anyNonMethodOrField = false;
+
+  for (auto& ids : bids) {
+    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
+      if (idIt.curIdAndFlags().isMethodOrField()) {
+        anyMethodOrField = true;
+      } else {
+        anyNonMethodOrField = true;
+      }
+
+      if (!parsing::idIsParenlessFunction(context, idIt.curIdAndFlags().id())) {
+        return notOverloaded();
+      }
+    }
+  }
+  return Resolver::ParenlessOverloadInfo(anyMethodOrField, anyNonMethodOrField);
+}
+
 Resolver
 Resolver::createForModuleStmt(Context* context, const Module* mod,
                               const AstNode* modStmt,
@@ -2555,9 +2583,9 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
                            llvm::ArrayRef<const Scope*> receiverScopes,
-                           bool& outIsOverloadedParenless) {
+                           ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
-  outIsOverloadedParenless = false;
+  outParenlessOverloadInfo = ParenlessOverloadInfo::notOverloaded();
   const Scope* scope = scopeStack.back();
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
@@ -2576,16 +2604,15 @@ Resolver::lookupIdentifier(const Identifier* ident,
   bool notFound = vec.empty();
   bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
 
-  if (ambiguous) {
-    // The ambiguity could be due to having found multiple parenless procs.
+  if (!vec.empty()) {
+    // We might be ambiguous, but due to having found multiple parenless procs.
     // It's not certain that this is an error; in particular, some parenless
     // procs can be ruled out if their 'where' clauses are false. If even
     // one identifier is not a parenless proc, there's an ambiguity.
-    outIsOverloadedParenless = std::all_of(vec.begin(), vec.end(), [this](auto& ids) {
-      return std::all_of(ids.begin(), ids.end(), [this](auto& id) {
-        return parsing::idIsParenlessFunction(context, id);
-      });
-    });
+    //
+    // outParenlessOverloadInfo will be falsey if we found non-parenless-proc
+    // IDs, in which case we should emit an ambiguity error.
+    outParenlessOverloadInfo = ParenlessOverloadInfo::fromBorrowedIds(context, vec);
   }
 
   // TODO: these errors should be enabled for scope resolution
@@ -2609,7 +2636,9 @@ Resolver::lookupIdentifier(const Identifier* ident,
           CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
         }
       }
-    } else if (ambiguous && !outIsOverloadedParenless && !resolvingCalledIdent) {
+    } else if (ambiguous &&
+               !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
+               !resolvingCalledIdent) {
       auto pair = namesWithErrorsEmitted.insert(ident->name());
       if (pair.second) {
         // insertion took place so emit the error
@@ -2783,7 +2812,10 @@ QualifiedType Resolver::getSuperType(Context* context,
   return QualifiedType();
 }
 
-void Resolver::tryResolveParenlessCall(const Identifier* ident, bool considerMethodScopes) {
+void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
+                                       const Identifier* ident,
+                                       bool considerMethodScopes) {
+
   ResolvedExpression& r = byPostorder.byAst(ident);
   // resolve a parenless call
   std::vector<CallInfoActual> actuals;
@@ -2828,15 +2860,15 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   }
 
   // lookupIdentifier reports any errors that are needed
-  bool isOverloadedParenless = false;
-  auto vec = lookupIdentifier(ident, receiverScopes, isOverloadedParenless);
+  auto parenlessInfo = ParenlessOverloadInfo::notOverloaded();
+  auto vec = lookupIdentifier(ident, receiverScopes, parenlessInfo);
 
-  if (isOverloadedParenless && !scopeResolveOnly) {
+  if (parenlessInfo.areCandidatesOnlyParenlessProcs() && !scopeResolveOnly) {
     // Ambiguous, but a special case: there are many parenless functions.
     // This might be fine, if their 'where' clauses leave only one.
     //
     // Call resolution will issue an error if the overload selection fails.
-    tryResolveParenlessCall(ident, /* considerMethodScopes */ true);
+    tryResolveParenlessCall(parenlessInfo, ident, /* considerMethodScopes */ true);
   } else if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
@@ -2847,7 +2879,6 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     // vec.size() == 1 and vec[0].numIds() <= 1
     const IdAndFlags& idv = vec[0].firstIdAndFlags();
     const ID& id = idv.id();
-    bool isMethodOrField = idv.isMethodOrField();
     QualifiedType type;
 
     // empty IDs from the scope resolution process are builtins or super
@@ -2904,19 +2935,16 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       }
     // Do not resolve function calls under 'scopeResolveOnly'
     } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
-      if (!scopeResolveOnly) {
-        tryResolveParenlessCall(ident, /* considerMethodScopes */ isMethodOrField);
-      } else {
-        // Possibly a "compatibility hack" with production: we haven't checked
-        // whether the call is valid, but the production scope resolver doesn't
-        // care and assumes `ident` points to this parenless function. Setting
-        // the toId also helps determine if this is a method call and should
-        // have `this` inserted, as well as whether or not to turn this
-        // into a parenless call.
-        ResolvedExpression& r = byPostorder.byAst(ident);
-        validateAndSetToId(r, ident, id);
-      }
-      return;
+      CHPL_ASSERT(scopeResolveOnly && "resolution of parenless functions should've happened above");
+
+      // Possibly a "compatibility hack" with production: we haven't checked
+      // whether the call is valid, but the production scope resolver doesn't
+      // care and assumes `ident` points to this parenless function. Setting
+      // the toId also helps determine if this is a method call and should
+      // have `this` inserted, as well as whether or not to turn this
+      // into a parenless call.
+
+      // Fall through to validateAndSetToId
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
       // Possibly a "compatibility hack" with production: we haven't checked

@@ -34,6 +34,28 @@ struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
 
+  struct ParenlessOverloadInfo {
+   private:
+    bool hasMethodCandidates_ = false;
+    bool hasNonMethodCandidates_ = false;
+
+    ParenlessOverloadInfo() = default;
+    ParenlessOverloadInfo(bool hasMethodCandidates, bool hasNonMethodCandidates)
+      : hasMethodCandidates_(hasMethodCandidates),
+        hasNonMethodCandidates_(hasNonMethodCandidates) {}
+   public:
+    static ParenlessOverloadInfo notOverloaded();
+    static ParenlessOverloadInfo fromBorrowedIds(Context* context,
+                                                 const std::vector<BorrowedIdsWithName>&);
+
+    bool areCandidatesOnlyParenlessProcs() const {
+      return hasMethodCandidates_ || hasNonMethodCandidates_;
+    }
+
+    bool hasMethodCandidates() const { return hasMethodCandidates_; }
+    bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
+  };
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -489,10 +511,12 @@ struct Resolver {
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
                    llvm::ArrayRef<const Scope*> receiverScopes,
-                   bool& outIsOverloadedParenless);
+                   ParenlessOverloadInfo& outParenlessOverloadInfo);
 
 
-  void tryResolveParenlessCall(const uast::Identifier* ident, bool considerMethodScopes);
+  void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
+                               const uast::Identifier* ident,
+                               bool considerMethodScopes);
 
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
