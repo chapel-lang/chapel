@@ -2854,6 +2854,10 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                !cMethod.mostSpecific().foundCandidates()) {
       // Only found a valid non-method call.
       handleResolvedCall(r, ident, ci, cNonMethod);
+    } else if (cMethod.mostSpecific().isEmpty() && cNonMethod.mostSpecific().isEmpty()) {
+      // Found neither; lots of candidates, but none worked! Use handleResolvedCall
+      // on cMethod to issue an error and record the result.
+      handleResolvedCall(r, ident, ci, cMethod);
     } else {
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
