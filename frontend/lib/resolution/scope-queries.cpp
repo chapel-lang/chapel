@@ -160,11 +160,6 @@ struct GatherDecls {
       // since dyno handles tuple types directly rather
       // than through a record.
       skip = true;
-    } else if (d->isClass() &&
-        d->attributeGroup() != nullptr &&
-        d->attributeGroup()->hasPragma(uast::pragmatags::PRAGMA_C_PTR_CLASS) &&
-        (d->name() == "c_ptr" || d->name() == "c_ptrConst")) {
-      skip = true;
     }
 
     if (skip == false) {

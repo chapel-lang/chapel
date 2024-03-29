@@ -2676,6 +2676,15 @@ doIsCandidateApplicableInitial(Context* context,
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
+  // Ignore the 'eltType' declaration in the fake c_ptr[Const] classes. A
+  // compiler-generated function will handle it since we're representing the
+  // type entirely within the frontend.
+  if ((candidateId.symbolPath() == CPtrType::getId(context).symbolPath() ||
+      candidateId.symbolPath() == CPtrType::getConstId(context).symbolPath()) &&
+      ci.name() == "eltType") {
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  }
+
   if (isVariable(tag)) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
       // calling a field accessor
@@ -3035,6 +3044,12 @@ static const Type* getCPtrType(Context* context,
                                const CallInfo& ci) {
   UniqueString name = ci.name();
   bool isConst;
+
+  // 'typeForId' should have prepared this for us if 'CTypes' was in scope.
+  auto called = ci.calledType();
+  if (!(called.hasTypePtr() && called.type()->isCPtrType())) {
+    return nullptr;
+  }
 
   if (name == USTR("c_ptr")) {
     isConst = false;
@@ -3502,6 +3517,8 @@ lookupCalledExpr(Context* context,
       if (auto compType = t->getCompositeType()) {
         receiverScopes =
           Resolver::gatherReceiverAndParentScopesForType(context, compType);
+      } else if (auto cptr = t->toCPtrType()) {
+        receiverScopes.push_back(scopeForId(context, cptr->id(context)));
       }
     }
   }
