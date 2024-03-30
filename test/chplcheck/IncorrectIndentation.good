@@ -1,0 +1,13 @@
+IncorrectIndentation.chpl:1: node violates rule UseExplicitModules
+IncorrectIndentation.chpl:9: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:13: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:18: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:22: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:27: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:38: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:42: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:47: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:51: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:56: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:65: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:69: node violates rule IncorrectIndentation
