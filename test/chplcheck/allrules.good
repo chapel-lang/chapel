@@ -7,6 +7,7 @@ Available rules (default rules marked with *):
   * ChplPrefixReserved           Warn for user-defined names that start with the 'chpl_' reserved prefix.
     ConsecutiveDecls             Warn for consecutive variable declarations that can be combined.
   * DoKeywordAndBlock            Warn for redundant 'do' keyword before a curly brace '{'.
+  * IncorrectIndentation         Warn for inconsistent or missing indentation
   * MethodsAfterFields           Warn for classes or records that mix field and method definitions.
   * MisleadingIndentation        Warn for single-statement blocks that look like they might be multi-statement blocks.
     NestedCoforalls              Warn for nested 'coforall' loops, which could lead to performance hits.
