@@ -370,9 +370,6 @@ def register_rules(driver):
         Warn for inconsistent or missing indentation
         """
 
-        prev_depth = None
-        prev_line = None
-
         # First, recurse and find warnings in children.
         for child in root:
             yield from IncorrectIndentation(context, child)
@@ -413,6 +410,10 @@ def register_rules(driver):
         if not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
             parent_depth = parent_for_indentation.location().start()[1]
 
+        prev = None
+        prev_depth = None
+        prev_line = None
+
         for child in root:
             if isinstance(child, Comment): continue
 
@@ -431,11 +432,15 @@ def register_rules(driver):
             #   var x: int;
             #     var y: int;
             elif prev_depth and depth != prev_depth:
-                yield child
+                # Special case, slightly coarse: avoid double-warning with
+                # MisleadingIndentation
+                if not(prev and isinstance(prev, Loop) and prev.block_style() == "implicit"):
+                    yield child
 
                 # Do not update 'prev_depth'; use original prev_depth as
                 # reference for next sibling.
                 prev_line = line
+                prev = child
                 continue
 
             # Warn for children that are not indented relative to parent
@@ -447,4 +452,5 @@ def register_rules(driver):
                 yield child
 
             prev_depth = depth
+            prev = child
             prev_line = line
