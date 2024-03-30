@@ -310,6 +310,32 @@ static void test22() {
   });
 }
 
+static void test23() {
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+  module M{
+    module X {
+      proc foo() {
+        use CTypes;
+
+        var ret : c_ptr(int);
+        return ret;
+      }
+    }
+
+    use X;
+
+    var ptr = foo();
+    var x = ptr[0];
+  }
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"ptr", "x"});
+  assert(vars["ptr"].type()->isCPtrType());
+  assert(vars["x"].type()->isIntType());
+}
+
 int main() {
   setupContext();
 
@@ -335,6 +361,8 @@ int main() {
   test20();
   test21();
   test22();
+
+  test23();
 
   delete context;
 
