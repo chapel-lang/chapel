@@ -363,3 +363,83 @@ def register_rules(driver):
                 continue
 
             yield iterand, loop
+
+    @driver.advanced_rule
+    def IncorrectIndentation(context, root):
+        """
+        Warn for inconsistent or missing indentation
+        """
+
+        prev_depth = None
+        prev_line = None
+
+        # First, recurse and find warnings in children.
+        for child in root:
+            yield from IncorrectIndentation(context, child)
+
+        def contains_statements(node):
+            """
+            Returns true for allow-listed AST nodes that contain
+            just a list of statements.
+            """
+            return isinstance(node, (Record, Class, Module, Block))
+
+        def unwrap_intermediate_block(node):
+            """
+            If a block is used as part of a loop or function definition,
+            use the function definition as the root node for indentation
+            checks.
+            """
+            if not isinstance(node, Block):
+                return node
+
+            parent = node.parent()
+            if parent and isinstance(parent, (Function, Loop)):
+                return parent
+            return node
+
+        # If root is something else (e.g., function call), do not
+        # apply indentation rules; only apply them to things that contain
+        # a list of statements.
+        is_eligible_parent_for_indentation = contains_statements(root)
+        if not is_eligible_parent_for_indentation:
+            return
+
+        # For implicit modules, proper code will technically be on the same
+        # line as the module's body. But we don't want to warn about that,
+        # since we don't want to ask all code to be indented one level deeper.
+        parent_for_indentation = unwrap_intermediate_block(root)
+        parent_depth = None
+        if not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
+            parent_depth = parent_for_indentation.location().start()[1]
+
+        for child in root:
+            if isinstance(child, Comment): continue
+
+            # VarLikeDecl nodes currently use the name as the 'location',
+            # which does not indicate their actual indentation.
+            if isinstance(child, VarLikeDecl): continue
+
+            (line, depth) = child.location().start()
+
+            # Warn for two statements on one line:
+            #   var x: int; var y: int;
+            if line == prev_line:
+                yield child
+
+            # Warn for misaligned siblings:
+            #   var x: int;
+            #     var y: int;
+            elif prev_depth and depth != prev_depth:
+                yield child
+
+            # Warn for children that are not indented relative to parent
+            #
+            #   record r {
+            #   var x: int;
+            #   }
+            elif parent_depth and depth == parent_depth:
+                yield child
+
+            prev_depth = depth
+            prev_line = line
