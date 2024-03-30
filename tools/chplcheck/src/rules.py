@@ -383,16 +383,23 @@ def register_rules(driver):
 
         def unwrap_intermediate_block(node):
             """
-            If a block is used as part of a loop or function definition,
-            use the function definition as the root node for indentation
-            checks.
+            Given a node, find the reference indentation that its children
+            should be compared against.
+
+            This method also rules out certain nodes that should
+            not be used for parent-child indentation comparison.
             """
             if not isinstance(node, Block):
                 return node
 
             parent = node.parent()
-            if parent and isinstance(parent, (Function, Loop)):
+            if not parent:
+                return node
+
+            if isinstance(parent, (Function, Loop)):
                 return parent
+            elif isinstance(parent, Conditional) and parent.is_expression_level():
+                return None
             return node
 
         # If root is something else (e.g., function call), do not
@@ -402,24 +409,34 @@ def register_rules(driver):
         if not is_eligible_parent_for_indentation:
             return
 
+        parent_for_indentation = unwrap_intermediate_block(root)
+        parent_depth = None
+        if parent_for_indentation is None:
+            # don't compare against any parent depth.
+            pass
+
         # For implicit modules, proper code will technically be on the same
         # line as the module's body. But we don't want to warn about that,
         # since we don't want to ask all code to be indented one level deeper.
-        parent_for_indentation = unwrap_intermediate_block(root)
-        parent_depth = None
-        if not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
+        elif not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
             parent_depth = parent_for_indentation.location().start()[1]
 
         prev = None
         prev_depth = None
         prev_line = None
 
-        for child in root:
+        # We only care about misaligned statements, so we don't want to do stuff
+        # like warn for inherit-exprs or pragmas on a record.
+        iterable = root
+        if isinstance(root, AggregateDecl):
+            iterable = root.decls_or_comments()
+
+        for child in iterable:
             if isinstance(child, Comment): continue
 
             # NamedDecl nodes currently use the name as the location, which
             # does not indicate their actual indentation.
-            if isinstance(child, NamedDecl): continue
+            if isinstance(child, (NamedDecl, TupleDecl, ForwardingDecl)): continue
 
             (line, depth) = child.location().start()
 
