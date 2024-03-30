@@ -416,9 +416,9 @@ def register_rules(driver):
         for child in root:
             if isinstance(child, Comment): continue
 
-            # VarLikeDecl nodes currently use the name as the 'location',
-            # which does not indicate their actual indentation.
-            if isinstance(child, VarLikeDecl): continue
+            # NamedDecl nodes currently use the name as the location, which
+            # does not indicate their actual indentation.
+            if isinstance(child, NamedDecl): continue
 
             (line, depth) = child.location().start()
 
@@ -432,6 +432,11 @@ def register_rules(driver):
             #     var y: int;
             elif prev_depth and depth != prev_depth:
                 yield child
+
+                # Do not update 'prev_depth'; use original prev_depth as
+                # reference for next sibling.
+                prev_line = line
+                continue
 
             # Warn for children that are not indented relative to parent
             #
