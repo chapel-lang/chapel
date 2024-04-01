@@ -1,0 +1,4 @@
+missingNew.chpl:14: warning: unnecessary type construction call
+missingNew.chpl:1: note: 'myManager' has no generic fields
+missingNew.chpl:14: note: remove the '()'
+note: this warning will become an error in the future
