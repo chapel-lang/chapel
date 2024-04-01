@@ -112,6 +112,29 @@ struct GatherFieldsOrFormals {
   void exit(const AstNode* ast) { }
 };
 
+
+Resolver::ParenlessOverloadInfo
+Resolver::ParenlessOverloadInfo::fromBorrowedIds(Context* context,
+                                                 const std::vector<BorrowedIdsWithName>& bids) {
+  bool anyMethodOrField = false;
+  bool anyNonMethodOrField = false;
+
+  for (auto& ids : bids) {
+    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
+      if (idIt.curIdAndFlags().isMethodOrField()) {
+        anyMethodOrField = true;
+      } else {
+        anyNonMethodOrField = true;
+      }
+
+      if (!parsing::idIsParenlessFunction(context, idIt.curIdAndFlags().id())) {
+        return {};
+      }
+    }
+  }
+  return Resolver::ParenlessOverloadInfo(anyMethodOrField, anyNonMethodOrField);
+}
+
 Resolver
 Resolver::createForModuleStmt(Context* context, const Module* mod,
                               const AstNode* modStmt,
@@ -2552,19 +2575,43 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
   return false;
 }
 
+static const LookupConfig identifierLookupConfig = LOOKUP_DECLS |
+                                                   LOOKUP_IMPORT_AND_USE |
+                                                   LOOKUP_PARENTS |
+                                                   LOOKUP_EXTERN_BLOCKS;
+
+
+void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
+                                           const Scope* scope,
+                                           llvm::ArrayRef<const Scope*> receiverScopes,
+                                           LookupConfig prevConfig) {
+  auto pair = namesWithErrorsEmitted.insert(ident->name());
+  if (pair.second) {
+    // insertion took place so emit the error
+    bool printFirstMention = identHasMoreMentions(ident);
+
+    std::vector<ResultVisibilityTrace> traceResult;
+    auto vec = lookupNameInScopeTracing(context, scope, receiverScopes,
+                                   ident->name(), prevConfig,
+                                   traceResult);
+
+    // emit an ambiguity error if this is not resolving a called ident
+    CHPL_REPORT(context, AmbiguousIdentifier,
+                ident, printFirstMention, vec, traceResult);
+  }
+}
+
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
-                           llvm::ArrayRef<const Scope*> receiverScopes) {
+                           llvm::ArrayRef<const Scope*> receiverScopes,
+                           ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
+  outParenlessOverloadInfo = ParenlessOverloadInfo();
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
-  LookupConfig config = LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS |
-                        LOOKUP_EXTERN_BLOCKS;
-
+  LookupConfig config = identifierLookupConfig;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
@@ -2573,6 +2620,17 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   bool notFound = vec.empty();
   bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
+
+  if (!vec.empty()) {
+    // We might be ambiguous, but due to having found multiple parenless procs.
+    // It's not certain that this is an error; in particular, some parenless
+    // procs can be ruled out if their 'where' clauses are false. If even
+    // one identifier is not a parenless proc, there's an ambiguity.
+    //
+    // outParenlessOverloadInfo will be falsey if we found non-parenless-proc
+    // IDs, in which case we should emit an ambiguity error.
+    outParenlessOverloadInfo = ParenlessOverloadInfo::fromBorrowedIds(context, vec);
+  }
 
   // TODO: these errors should be enabled for scope resolution
   // but for now, they are off, as a temporary measure to enable
@@ -2595,21 +2653,10 @@ Resolver::lookupIdentifier(const Identifier* ident,
           CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
         }
       }
-    } else if (ambiguous && !resolvingCalledIdent) {
-      auto pair = namesWithErrorsEmitted.insert(ident->name());
-      if (pair.second) {
-        // insertion took place so emit the error
-        bool printFirstMention = identHasMoreMentions(ident);
-
-        std::vector<ResultVisibilityTrace> traceResult;
-        vec = lookupNameInScopeTracing(context, scope, receiverScopes,
-                                       ident->name(), config,
-                                       traceResult);
-
-        // emit an ambiguity error if this is not resolving a called ident
-        CHPL_REPORT(context, AmbiguousIdentifier,
-                    ident, printFirstMention, vec, traceResult);
-      }
+    } else if (ambiguous &&
+               !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
+               !resolvingCalledIdent) {
+      issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config);
     }
   }
 
@@ -2769,6 +2816,74 @@ QualifiedType Resolver::getSuperType(Context* context,
   return QualifiedType();
 }
 
+void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
+                                       const Identifier* ident,
+                                       llvm::ArrayRef<const Scope*> receiverScopes) {
+
+  ResolvedExpression& r = byPostorder.byAst(ident);
+  // resolve a parenless call
+  std::vector<CallInfoActual> actuals;
+  auto ci = CallInfo (/* name */ ident->name(),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ false,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ true,
+                      actuals);
+  CHPL_ASSERT(!scopeStack.empty());
+  auto inScope = scopeStack.back();
+
+  // If some IDs were methods and some weren't, we have to resolve two
+  // calls: one with the (implicit) receiver, and one without.
+  if (info.hasMethodCandidates() && info.hasNonMethodCandidates()) {
+    auto cMethod = resolveGeneratedCallInMethod(context, ident, ci,
+                                               inScope, poiScope,
+                                               methodReceiverType());
+    auto cNonMethod = resolveGeneratedCall(context, ident, ci,
+                                           inScope, poiScope);
+
+    if (!cMethod.mostSpecific().isEmpty() &&
+        !cNonMethod.mostSpecific().foundCandidates()) {
+      // Only found a valid method call.
+      handleResolvedCall(r, ident, ci, cMethod);
+    } else if (!cNonMethod.mostSpecific().isEmpty() &&
+               !cMethod.mostSpecific().foundCandidates()) {
+      // Only found a valid non-method call.
+      handleResolvedCall(r, ident, ci, cNonMethod);
+    } else if (cMethod.mostSpecific().isEmpty() && cNonMethod.mostSpecific().isEmpty()) {
+      // Found neither; lots of candidates, but none worked! Use handleResolvedCall
+      // on cMethod to issue an error and record the result.
+      handleResolvedCall(r, ident, ci, cMethod);
+    } else {
+      // Found both, it's an ambiguity after all. Issue the ambiguity error
+      // late, for which we need to recover some context.
+
+      LookupConfig config = identifierLookupConfig;
+      bool resolvingCalledIdent = nearestCalledExpression() == ident;
+      if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+
+      issueAmbiguityErrorIfNeeded(ident, inScope, receiverScopes, config);
+      auto& rr = byPostorder.byAst(ident);
+      rr.setType(QualifiedType(QualifiedType::UNKNOWN,
+                               ErroneousType::get(context)));
+
+    }
+  } else if (info.hasMethodCandidates()) {
+    auto c = resolveGeneratedCallInMethod(context, ident, ci,
+                                          inScope, poiScope,
+                                          methodReceiverType());
+    // save the most specific candidates in the resolution result
+    handleResolvedCall(r, ident, ci, c);
+  } else {
+    CHPL_ASSERT(info.hasNonMethodCandidates());
+
+    // as above, but don't consider method scopes
+    auto c = resolveGeneratedCall(context, ident, ci,
+                                  inScope, poiScope);
+    // save the most specific candidates in the resolution result
+    handleResolvedCall(r, ident, ci, c);
+  }
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
@@ -2788,9 +2903,16 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   }
 
   // lookupIdentifier reports any errors that are needed
-  auto vec = lookupIdentifier(ident, receiverScopes);
+  auto parenlessInfo = ParenlessOverloadInfo();
+  auto vec = lookupIdentifier(ident, receiverScopes, parenlessInfo);
 
-  if (vec.size() == 0) {
+  if (parenlessInfo.areCandidatesOnlyParenlessProcs() && !scopeResolveOnly) {
+    // Ambiguous, but a special case: there are many parenless functions.
+    // This might be fine, if their 'where' clauses leave only one.
+    //
+    // Call resolution will issue an error if the overload selection fails.
+    tryResolveParenlessCall(parenlessInfo, ident, receiverScopes);
+  } else if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
     // can't establish the type. If this is in a function
@@ -2800,7 +2922,6 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     // vec.size() == 1 and vec[0].numIds() <= 1
     const IdAndFlags& idv = vec[0].firstIdAndFlags();
     const ID& id = idv.id();
-    bool isMethodOrField = idv.isMethodOrField();
     QualifiedType type;
 
     // empty IDs from the scope resolution process are builtins or super
@@ -2857,40 +2978,16 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       }
     // Do not resolve function calls under 'scopeResolveOnly'
     } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
-      ResolvedExpression& r = byPostorder.byAst(ident);
-      if (!scopeResolveOnly) {
-        // resolve a parenless call
-        std::vector<CallInfoActual> actuals;
-        auto ci = CallInfo (/* name */ ident->name(),
-                            /* calledType */ QualifiedType(),
-                            /* isMethodCall */ false,
-                            /* hasQuestionArg */ false,
-                            /* isParenless */ true,
-                            actuals);
-        auto inScope = scopeStack.back();
-        if (isMethodOrField) {
-          auto c = resolveGeneratedCallInMethod(context, ident, ci,
-                                                inScope, poiScope,
-                                                methodReceiverType());
-          // save the most specific candidates in the resolution result
-          handleResolvedCall(r, ident, ci, c);
-        } else {
-          // as above, but don't consider method scopes
-          auto c = resolveGeneratedCall(context, ident, ci,
-                                        inScope, poiScope);
-          // save the most specific candidates in the resolution result
-          handleResolvedCall(r, ident, ci, c);
-        }
-      } else {
-        // Possibly a "compatibility hack" with production: we haven't checked
-        // whether the call is valid, but the production scope resolver doesn't
-        // care and assumes `ident` points to this parenless function. Setting
-        // the toId also helps determine if this is a method call and should
-        // have `this` inserted, as well as whether or not to turn this
-        // into a parenless call.
-        validateAndSetToId(r, ident, id);
-      }
-      return;
+      CHPL_ASSERT(scopeResolveOnly && "resolution of parenless functions should've happened above");
+
+      // Possibly a "compatibility hack" with production: we haven't checked
+      // whether the call is valid, but the production scope resolver doesn't
+      // care and assumes `ident` points to this parenless function. Setting
+      // the toId also helps determine if this is a method call and should
+      // have `this` inserted, as well as whether or not to turn this
+      // into a parenless call.
+
+      // Fall through to validateAndSetToId
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
       // Possibly a "compatibility hack" with production: we haven't checked

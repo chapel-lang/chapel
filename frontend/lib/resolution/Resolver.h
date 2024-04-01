@@ -34,6 +34,43 @@ struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
 
+  /**
+    When looking up matches for a particular identifier, we might encounter
+    several. This is not always an error: specifically, we might be finding
+    multiple parenless procedures, each with a potentially-false 'where' clause.
+
+    This struct contains additional information to be returned from identifier
+    lookup to help detect this case, and adjust the resolution strategy
+    accordingly.
+   */
+  struct ParenlessOverloadInfo {
+   private:
+    /* Whether some of the parenless procedures were methods. This means the
+       receiver type should be considered when resolving the call. */
+    bool hasMethodCandidates_ = false;
+    /* Whether some of the parenless procedures were not methods. This
+       means non-method resolution should be attempted. */
+    bool hasNonMethodCandidates_ = false;
+
+    ParenlessOverloadInfo(bool hasMethodCandidates, bool hasNonMethodCandidates)
+      : hasMethodCandidates_(hasMethodCandidates),
+        hasNonMethodCandidates_(hasNonMethodCandidates) {}
+   public:
+    ParenlessOverloadInfo() = default;
+
+    static ParenlessOverloadInfo fromBorrowedIds(Context* context,
+                                                 const std::vector<BorrowedIdsWithName>&);
+
+    bool areCandidatesOnlyParenlessProcs() const {
+      // Note: constructor sets both to false when it discovers a single
+      //       non-parenless candidate.
+      return hasMethodCandidates_ || hasNonMethodCandidates_;
+    }
+
+    bool hasMethodCandidates() const { return hasMethodCandidates_; }
+    bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
+  };
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -486,9 +523,23 @@ struct Resolver {
 
   bool identHasMoreMentions(const uast::Identifier* ident);
 
+  // When an identifier is ambiguous, try issuing an error, but only if
+  // one hasn't been issued before. In doing so, re-run scope search to
+  // figure out how each candidate was found.
+  void issueAmbiguityErrorIfNeeded(const chpl::uast::Identifier* ident,
+                                   const Scope* scope,
+                                   llvm::ArrayRef<const Scope*> receiverScopes,
+                                   LookupConfig prevConfig);
+
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   llvm::ArrayRef<const Scope*> receiverScopes);
+                   llvm::ArrayRef<const Scope*> receiverScopes,
+                   ParenlessOverloadInfo& outParenlessOverloadInfo);
+
+
+  void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
+                               const uast::Identifier* ident,
+                               llvm::ArrayRef<const Scope*> receiverScopes);
 
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
