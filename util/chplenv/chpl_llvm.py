@@ -400,20 +400,25 @@ def validate_llvm_config():
             clang_version = get_clang_version(clang)
             llvm_version = str(get_llvm_config_version(llvm_config)).strip()
             if clang_version is None:
-                error(f"Could not determine version of {name} at '{clang}'")
+                error(
+                    "Could not determine version of {} at '{}'".format(
+                        name, clang
+                    )
+                )
             elif llvm_version not in clang_version:
                 error(
-                    f"Version of {name} at '{clang}' does not match version of" +
-                    f" LLVM at '{llvm_config}'\n" +
-                    f"LLVM version: {llvm_version}\n" +
-                    f"{name} version: {clang_version}"
+                    "Version of {} at '{}' does not".format(name, clang) +
+                    " match version of LLVM at '{}'\n".format(llvm_config) +
+                    "LLVM version: {}\n".format(llvm_version) +
+                    "{} version: {}".format(name, clang_version)
                 )
             else:
                 error(
-                    f"Missing or wrong version for {name} at '{clang}'" +
-                    f" (using LLVM at {llvm_config})"
+                    "Missing or wrong version for {} at '{}'".format(
+                        name, clang
+                    )
+                    + " (using LLVM at {})".format(llvm_version)
                 )
-
 
         if not is_system_clang_version_ok(clang_c):
             print_clang_version_error(clang_c)
