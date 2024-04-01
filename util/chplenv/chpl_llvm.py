@@ -417,7 +417,7 @@ def validate_llvm_config():
                     "Missing or wrong version for {} at '{}'".format(
                         name, clang
                     )
-                    + " (using LLVM at {})".format(llvm_version)
+                    + " (using LLVM at {})".format(llvm_config)
                 )
 
         if not is_system_clang_version_ok(clang_c):
