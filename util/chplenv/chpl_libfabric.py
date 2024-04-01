@@ -24,7 +24,7 @@ def get():
                 libfabric_val = 'bundled'
         if libfabric_val == 'none':
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
-        if platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
+        elif platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
             warning('CHPL_LIBFABRIC!=system is discouraged on HPE Cray EX')
     else:
         libfabric_val = 'none'

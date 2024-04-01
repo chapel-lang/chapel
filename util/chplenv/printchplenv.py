@@ -9,39 +9,42 @@ filtered [filter].
 The default [content] provides user-facing variables.
 
 Options:
-  -h, --help    Show this help message and exit
+  -h, --help       Show this help message and exit
 
   [shortcut]
-  --all         Shortcut for --compiler --runtime --launcher, includes defaults
+  --all            Shortcut for --compiler --runtime --launcher, includes defaults
 
   [content]
-  --compiler    Select variables describing the configuration of the compiler
-  --runtime     Select variables describing the configuration of the runtime
-  --launcher    Select variables describing the configuration of the launcher
-  --internal    Select additional variables used during builds
-                 this flag is incompatible with [format]: --path
+  --compiler       Select variables describing the configuration of the compiler
+  --runtime        Select variables describing the configuration of the runtime
+  --launcher       Select variables describing the configuration of the launcher
+  --internal       Select additional variables used during builds
+                    this flag is incompatible with [format]: --path
 
   [filter]
-  --[no-]tidy   (default) [don't] Omit sub-variables irrelevant to the current
-                 configuration
-  --anonymize   Omit machine specific details, script location, and CHPL_HOME
-  --overrides   Omit variables that have not been user supplied via environment
-                 or chplconfig
-  --only-path   Omit variables that do not contibute to the build path
+  --[no-]tidy      (default) [don't] Omit sub-variables irrelevant to the current
+                    configuration
+  --anonymize      Omit machine specific details, script location, and CHPL_HOME
+  --overrides      Omit variables that have not been user supplied via environment
+                    or chplconfig
+  --only-path      Omit variables that do not contibute to the build path
 
   [format]
-  --pretty      (default) Print variables in format: CHPL_KEY: VALUE
-                 indicating which options are set by environment variables (*)
-                 and which are set by configuration files (+)
-  --simple      Print variables in format: CHPL_KEY=VALUE
-                 output is compatible with chplconfig format
-  --cmake       Print variables in format: CHPL_KEY VALUE with quotes stripped
-                 from values. Output is compatible with cmake format
-  --make        Print variables in format: CHPL_MAKE_KEY=VALUE
-  --path        Print variables in format: VALUE1/VALUE2/...
-                 this flag always excludes CHPL_HOME and CHPL_MAKE
-  --bash        Print variables in format: export CHPL_KEY=VALUE
-  --csh         Print variables in format: setenv CHPL_KEY VALUE
+  --pretty         (default) Print variables in format: CHPL_KEY: VALUE
+                    indicating which options are set by environment variables (*)
+                    and which are set by configuration files (+)
+  --simple         Print variables in format: CHPL_KEY=VALUE
+                    output is compatible with chplconfig format
+  --cmake          Print variables in format: CHPL_KEY VALUE with quotes stripped
+                    from values. Output is compatible with cmake format
+  --make           Print variables in format: CHPL_MAKE_KEY=VALUE
+  --path           Print variables in format: VALUE1/VALUE2/...
+                    this flag always excludes CHPL_HOME and CHPL_MAKE
+  --bash           Print variables in format: export CHPL_KEY=VALUE
+  --csh            Print variables in format: setenv CHPL_KEY VALUE
+
+  [misc]
+  --ignore-errors  Continue processing even if an error occurs
 """
 
 from collections import namedtuple
@@ -518,6 +521,9 @@ def parse_args():
     parser.add_option('--bash',   action='store_const', dest='format', const='bash')
     parser.add_option('--csh',    action='store_const', dest='format', const='csh')
 
+    #[misc]
+    parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
+
     #[hidden]
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
 
@@ -561,6 +567,9 @@ def main():
     if options.format == 'path' and 'internal' in contents:
         stdout.write('--path and --internal are incompatible flags\n')
         exit(1)
+
+    if options.ignore_errors:
+        utils.ignore_errors = True
 
     # Populate ENV_VALS
     compute_all_values()

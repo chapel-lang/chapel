@@ -47,14 +47,12 @@ def get(flag='target'):
     if flag == 'host':
         if linux and mem_val == 'jemalloc' and jemalloc_val == 'system':
             error("CHPL_HOST_JEMALLOC=system is not supported on Linux for host builds")
-
-        if darwin and mem_val == 'jemalloc' and jemalloc_val == 'bundled':
+        elif darwin and mem_val == 'jemalloc' and jemalloc_val == 'bundled':
             error("CHPL_HOST_JEMALLOC=bundled is not supported on Mac for host builds")
 
     if mem_val == 'jemalloc' and jemalloc_val == 'none':
         error("CHPL_JEMALLOC must not be 'none' when CHPL_MEM is jemalloc")
-
-    if mem_val != 'jemalloc' and jemalloc_val != 'none':
+    elif mem_val != 'jemalloc' and jemalloc_val != 'none':
         error("CHPL_JEMALLOC must be 'none' when CHPL_MEM is not jemalloc")
 
     return jemalloc_val
