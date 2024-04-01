@@ -641,7 +641,7 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
 }
 
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
-  auto parenlessInfo = Resolver::ParenlessOverloadInfo::notOverloaded();
+  auto parenlessInfo = Resolver::ParenlessOverloadInfo();
   auto scope = initResolver_.methodReceiverScopes();
   auto vec = initResolver_.lookupIdentifier(node, scope, parenlessInfo);
 

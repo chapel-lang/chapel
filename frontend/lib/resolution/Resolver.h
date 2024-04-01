@@ -34,21 +34,36 @@ struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
 
+  /**
+    When looking up matches for a particular identifier, we might encounter
+    several. This is not always an error: specifically, we might be finding
+    multiple parenless procedures, each with a potentially-false 'where' clause.
+
+    This struct contains additional information to be returned from identifier
+    lookup to help detect this case, and adjust the resolution strategy
+    accordingly.
+   */
   struct ParenlessOverloadInfo {
    private:
+    /* Whether some of the parenless procedures were methods. This means the
+       receiver type should be considered when resolving the call. */
     bool hasMethodCandidates_ = false;
+    /* Whether some of the parenless procedures were not methods. This
+       means non-method resolution should be attempted. */
     bool hasNonMethodCandidates_ = false;
 
-    ParenlessOverloadInfo() = default;
     ParenlessOverloadInfo(bool hasMethodCandidates, bool hasNonMethodCandidates)
       : hasMethodCandidates_(hasMethodCandidates),
         hasNonMethodCandidates_(hasNonMethodCandidates) {}
    public:
-    static ParenlessOverloadInfo notOverloaded();
+    ParenlessOverloadInfo() = default;
+
     static ParenlessOverloadInfo fromBorrowedIds(Context* context,
                                                  const std::vector<BorrowedIdsWithName>&);
 
     bool areCandidatesOnlyParenlessProcs() const {
+      // Note: constructor sets both to false when it discovers a single
+      //       non-parenless candidate.
       return hasMethodCandidates_ || hasNonMethodCandidates_;
     }
 

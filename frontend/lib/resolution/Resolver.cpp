@@ -114,11 +114,6 @@ struct GatherFieldsOrFormals {
 
 
 Resolver::ParenlessOverloadInfo
-Resolver::ParenlessOverloadInfo::notOverloaded() {
-  return Resolver::ParenlessOverloadInfo {};
-}
-
-Resolver::ParenlessOverloadInfo
 Resolver::ParenlessOverloadInfo::fromBorrowedIds(Context* context,
                                                  const std::vector<BorrowedIdsWithName>& bids) {
   bool anyMethodOrField = false;
@@ -133,7 +128,7 @@ Resolver::ParenlessOverloadInfo::fromBorrowedIds(Context* context,
       }
 
       if (!parsing::idIsParenlessFunction(context, idIt.curIdAndFlags().id())) {
-        return notOverloaded();
+        return {};
       }
     }
   }
@@ -2612,7 +2607,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
                            ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
-  outParenlessOverloadInfo = ParenlessOverloadInfo::notOverloaded();
+  outParenlessOverloadInfo = ParenlessOverloadInfo();
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
@@ -2868,7 +2863,8 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
 
       issueAmbiguityErrorIfNeeded(ident, inScope, receiverScopes, config);
       auto& rr = byPostorder.byAst(ident);
-      rr.setType(QualifiedType());
+      rr.setType(QualifiedType(QualifiedType::UNKNOWN,
+                               ErroneousType::get(context)));
 
     }
   } else if (info.hasMethodCandidates()) {
@@ -2907,7 +2903,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   }
 
   // lookupIdentifier reports any errors that are needed
-  auto parenlessInfo = ParenlessOverloadInfo::notOverloaded();
+  auto parenlessInfo = ParenlessOverloadInfo();
   auto vec = lookupIdentifier(ident, receiverScopes, parenlessInfo);
 
   if (parenlessInfo.areCandidatesOnlyParenlessProcs() && !scopeResolveOnly) {
