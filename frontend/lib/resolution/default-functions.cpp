@@ -695,6 +695,8 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
   std::vector<QualifiedType> formalTypes;
 
   formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+
+  // Allow calling 'eltType' on either a type or value
   auto qual = receiverType.isType() ? QualifiedType::TYPE : QualifiedType::CONST_REF;
   formalTypes.push_back(QualifiedType(qual, cpt));
 
@@ -705,7 +707,7 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ false,
-                        /*idTag*/ asttags::Record, /*parsing::idToTag(context, cpt->getId(context)),*/
+                        /*idTag*/ asttags::Record,
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(formals),
                         /*whereClause*/ nullptr);
@@ -721,6 +723,8 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
   return result;
 }
 
+// TODO: Is the use of a QualifiedType for 'receiverType' going to result in
+// too many queries differentiated by the kind?
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
