@@ -83,6 +83,14 @@ int chpl_topo_reserveCPUPhysical(void);
 //
 int chpl_topo_bindCPU(int id);
 
+// Binds the current thread to the logical accessible CPUs. This restricts the
+// thread to the locale's CPUs (e.g., if the locale is running in a socket
+// its progress thread should also run in that socket).
+//
+// Returns 0 on success, 1 otherwise
+//
+int chpl_topo_bindLogAccCPUs(void);
+
 //
 // how many NUMA domains are there?
 //
