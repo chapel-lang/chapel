@@ -2676,15 +2676,6 @@ doIsCandidateApplicableInitial(Context* context,
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
-  // Ignore the 'eltType' declaration in the fake c_ptr[Const] classes. A
-  // compiler-generated function will handle it since we're representing the
-  // type entirely within the frontend.
-  if ((candidateId.symbolPath() == CPtrType::getId(context).symbolPath() ||
-      candidateId.symbolPath() == CPtrType::getConstId(context).symbolPath()) &&
-      ci.name() == "eltType") {
-    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
-  }
-
   if (isVariable(tag)) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
       // calling a field accessor
