@@ -684,7 +684,7 @@ inline void chpl_gpu_launch_kernel_flat(const char* name,
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d, %p)\n"
                  "\tKernel: %s\n",
-                 chpl_task_getRequestedSubloc(), stream,
+                 chpl_task_getRequestedSubloc(), cfg->stream,
                  name);
 }
 

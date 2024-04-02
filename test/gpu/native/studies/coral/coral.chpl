@@ -125,7 +125,7 @@ proc main(args: [] string) {
   // Read in array
   if inputSize == -1 {
     var f = open(in_array, ioMode.r);
-    var r = f.reader(deserializer=new binaryDeserializer());
+    var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
     for i in 0..#5 {
       for j in 0..#x {
         for k in 0..#y {
@@ -146,16 +146,6 @@ proc main(args: [] string) {
   // Create Block distribution of interior of PNG
   const offset = nx+1; // maybe needs to be +1 to account for truncation?
 
-  /*
-
-     The code below can be used to use multiple locales. It is something
-     that existed in the original implementation, so we are keeping it for
-     now.
-
-     const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-     const D = Inner dmapped blockDist(Inner, targetLocales=myTargetLocales);
-
-  */
   const Inner = ImageSpace.expand(-offset);
   const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
   const D = blockDist.createDomain(Inner, targetLocales=myTargetLocales);
@@ -166,10 +156,11 @@ proc main(args: [] string) {
 
   writeln("Starting coforall loop.");
 
+  // TODO the triple coforalls could be in a standalone iterator
   coforall loc in Locales do on loc {
     var locOutput = D.localSubdomain();
     var locInput = locOutput.expand(offset);
-    var locImage: [0..#5, locInput.dim(0), locInput.dim(1)] real(32);
+    var locImage: [0..#5, (...locInput.dims())] real(32);
 
     locImage = Array[locImage.domain];
 
@@ -192,20 +183,16 @@ proc main(args: [] string) {
              _computeChunkStartEnd(locOutput.dim(0).size,
                                    loc.gpus.size*numWorkers*numChunksPerWorker,
                                    globalChunkId+1);
-          // offset for 1-based support function and start offset
+          // offset for 1-based support function (_computeChunkStartEnd) and
+          // start offset
           outRowStart += locOutput.dim(0).low-1;
           outRowEnd += locOutput.dim(0).low-1;
 
           const MyInner = {outRowStart..outRowEnd, locOutput.dim(1)};
-
           var OutputGpu: [MyInner] real(64) = noinit; // D
 
-
           const MyInnerExpanded = MyInner.expand(offset);
-
-          const MyArrayDom = {0..#5, MyInnerExpanded.dim(0),
-                              MyInnerExpanded.dim(1)};
-
+          const MyArrayDom = {0..#5, (...MyInnerExpanded.dims())};
           var locArray : [MyArrayDom] Array.eltType = noinit;
 
           commTimer.start();
@@ -218,7 +205,6 @@ proc main(args: [] string) {
               locCenterMaskDomain, locRightMaskDomain,
               OutputGpu, t);
           convolveTimer.stop();
-
 
           commTimer.start();
           OutputHost[MyInner] = OutputGpu;
