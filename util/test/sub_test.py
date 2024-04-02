@@ -620,6 +620,14 @@ def runSkipIf(skipifName):
     if stderr or status:
         raise RuntimeError(errmsg)
 
+    # Print stdout up to the last line and consider only the last line
+    lines = stdout.splitlines()
+    if len(lines) == 0:
+      return stdout
+    elif len(lines) > 1:
+      print("\n".join(lines[:-1]))
+    stdout = lines[-1]
+
     return stdout
 
 # Translate some known failures into more easily understood forms
