@@ -389,6 +389,34 @@ static void testIfVarNonNilInThen() {
   guard.realizeErrors();
 }
 
+static void testIfVarBorrow() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R"""(
+    class C {
+      var i : int;
+    }
+
+    proc retClass() : owned C? {
+      return new C(5);
+    }
+
+    if const obj = retClass() {
+      var x = obj.i;
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "obj"});
+  assert(vars["x"].type()->isIntType());
+  auto obj = vars["obj"].type()->toClassType();
+  assert(obj->decorator().isNonNilable());
+  assert(obj->decorator().isBorrowed());
+  assert(obj->basicClassType()->name() == "C");
+}
+
 int main() {
   test1();
   test2();
@@ -396,6 +424,7 @@ int main() {
   test4();
   test5();
   test6();
+  testIfVarBorrow();
   testIfVarErrorUseInElseBranch1();
   testIfVarErrorUseInElseBranch2();
   testIfVarErrorUseInElseBranch3();
