@@ -83,9 +83,9 @@ int chpl_topo_reserveCPUPhysical(void);
 //
 int chpl_topo_bindCPU(int id);
 
-// Binds the current thread to the logical accessible CPUs. This restricts the
-// thread to the locale's CPUs (e.g., if the locale is running in a socket
-// its progress thread should also run in that socket).
+// Binds the current thread to the accessible logical CPUs (PUs). This
+// restricts the thread to the locale's PUs (i.e., the progress thread should
+// use the same PUs as the locale).
 //
 // Returns 0 on success, 1 otherwise
 //
