@@ -84,7 +84,7 @@ static GenRet codegenRaddr(GenRet wide);
 static GenRet codegenRlocale(GenRet wide);
 static GenRet codegenRnode(GenRet wide);
 
-static GenRet codegenAddrOf(GenRet r);
+static GenRet codegenAddrOf(GenRet r, bool isConst);
 
 // These typedefs exist just to avoid needing ifdefs in fn prototypes
 #ifdef HAVE_LLVM
@@ -1656,7 +1656,7 @@ GenRet codegenValuePtr(GenRet r)
 // Converts an L-value pointer into a
 // pointer value, so that it can for example
 // be stored in another pointer.
-static GenRet codegenAddrOf(GenRet r)
+static GenRet codegenAddrOf(GenRet r, bool isConst = false)
 {
   GenRet ret = r;
 
@@ -1668,7 +1668,7 @@ static GenRet codegenAddrOf(GenRet r)
     ret.isLVPtr = GEN_VAL;
     return ret;
   } else if( r.isLVPtr == GEN_PTR ) {
-    if(r.chplType) ret.chplType = getOrMakeRefTypeDuringCodegen(r.chplType);
+    if(r.chplType) ret.chplType = getOrMakeRefTypeDuringCodegen(r.chplType, isConst);
     ret.isLVPtr = GEN_VAL;
   } else {
     INT_FATAL("misuse of codegenAddrOf");
@@ -6876,11 +6876,13 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_ARRAY_GET: {
       /* Get a pointer to the i'th array element */
       // ('_array_get' array idx)
+      /* gdbShouldBreakHere(); */
+      TypeSymbol* arrTS = call->get(1)->typeInfo()->symbol;
+
       GenRet aPtr = call->get(1);
       GenRet elem = codegenElementPtr(aPtr, call->get(2));
-      GenRet ref  = codegenAddrOf(elem);
+      GenRet ref  = codegenAddrOf(elem, arrTS->hasFlag(FLAG_C_PTRCONST_CLASS));
 
-      TypeSymbol* arrTS = call->get(1)->typeInfo()->symbol;
 
       // Handle the case that the array is a wide class/reference
       if (arrTS->hasFlag(FLAG_WIDE_CLASS) || arrTS->hasFlag(FLAG_WIDE_REF)) {
