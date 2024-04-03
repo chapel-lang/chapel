@@ -3409,17 +3409,16 @@ considerCompilerGeneratedMethods(Context* context,
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& receiver = ci.actual(0);
-  // TODO: This should be the QualifiedType in case of type methods
-  auto receiverType = receiver.type().type();
+  auto receiverType = receiver.type();
 
   // if not compiler-generated, then nothing to do
-  if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
+  if (!needCompilerGeneratedMethod(context, receiverType.type(), ci.name(),
                                    ci.isParenless())) {
     return nullptr;
   }
 
   // get the compiler-generated function, may be generic
-  auto tfs = getCompilerGeneratedMethod(context, receiver.type(), ci.name(),
+  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
                                         ci.isParenless());
   return tfs;
 }
