@@ -559,7 +559,7 @@ if ($multilocale == 1) {
 #
 if ($testblog == 1) {
     print "Cloning blog repo\n";
-    mysystem("cd $basetmpdir && git clone https://github.com/chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
+    mysystem("cd $basetmpdir && git clone git\@github.com:chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
     mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
     if ($blogonly == 0) {
         # copy the relevant blog source files into the test directory so they'll be
