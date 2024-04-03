@@ -1442,7 +1442,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
       // constness, and we don't want to have to add that support everywhere.
       // Here, we cast away the constness so this pointer can be assigned into
       // a non-const call tmp without issue, for dereferencing or other use.
-      ret.c = "(" + ret.c + "(void*)" + ")";
+      ret.c = "((void*)" + ret.c + ")";
     }
   } else {
 #ifdef HAVE_LLVM
