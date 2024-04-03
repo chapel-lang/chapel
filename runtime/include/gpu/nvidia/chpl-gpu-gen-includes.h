@@ -60,7 +60,7 @@ __device__ static inline void chpl_gpu_force_sync() {
   asm volatile("bar.sync 0;" : : : "memory");
 }
 
-__device__ static inline void chpl_gpu_force_warp_sync(unsigned mask=0xffffffff) {
+__device__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
   // Call nvidia's syncwarp
   __syncwarp(mask);
 }
