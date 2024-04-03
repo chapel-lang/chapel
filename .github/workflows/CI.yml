@@ -80,7 +80,8 @@ jobs:
     - name: make test-dyno-with-asserts
       # 'make modules' so the ChapelSysCTypes module is available
       run: |
-        CHPL_HOME=$PWD make modules && make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
+        CHPL_HOME=$PWD make modules
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
     - name: run dyno linters
       run: |
         CHPL_HOME=$PWD CHPL_HOST_CC=clang-13 CHPL_HOST_CXX=clang++-13 make run-dyno-linters
