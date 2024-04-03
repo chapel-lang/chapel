@@ -1453,7 +1453,7 @@ static void passArgsToNestedFns() {
 }
 
 
-Type* getOrMakeRefTypeDuringCodegen(Type* type, bool isConst) {
+Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
   // BHARSH TODO: This check causes a failure for the following test:
   //   execflags/tmacd/config_ref
@@ -1467,14 +1467,11 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type, bool isConst) {
   INT_ASSERT(type != dtUnknown);
 
   refType = type->refType;
-  if( ! refType || isConst) {
+  if( ! refType ) {
     SET_LINENO(type->symbol);
     AggregateType* ref = new AggregateType(AGGREGATE_RECORD);
-    TypeSymbol* refTs = new TypeSymbol(astr("_const_ref_", type->symbol->cname), ref);
+    TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
     refTs->addFlag(FLAG_REF);
-    if (isConst) {
-      refTs->addFlag(FLAG_CONST);
-    }
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
     refTs->addFlag(FLAG_NO_OBJECT);
     theProgram->block->insertAtTail(new DefExpr(refTs));

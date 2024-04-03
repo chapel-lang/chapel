@@ -326,7 +326,7 @@ returnInfoArrayIndexValue(CallExpr* call) {
 static QualifiedType
 returnInfoArrayIndex(CallExpr* call) {
   QualifiedType tmp = returnInfoArrayIndexValue(call);
-  return QualifiedType(tmp.type()->refType, QUAL_CONST_REF);
+  return QualifiedType(tmp.type()->refType, QUAL_REF);
 }
 
 static QualifiedType
