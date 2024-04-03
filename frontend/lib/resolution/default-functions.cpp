@@ -707,7 +707,7 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ false,
-                        /*idTag*/ asttags::Record,
+                        /*idTag*/ asttags::Class,
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(formals),
                         /*whereClause*/ nullptr);
