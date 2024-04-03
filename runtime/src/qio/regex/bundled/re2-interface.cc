@@ -320,32 +320,238 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   return ret;
 }
 
-int64_t qio_regex_replace(qio_regex_t* regex, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t startpos, int64_t endpos, qio_bool global, const char** str_out, int64_t* len_out)
-{
-  // This could make fewer copies of everything...
-  // ... but it will work for the moment and this is the
-  //     expedient way.
-  StringPiece rewrite(repl, repl_len);
-  std::string s(str, str_len);
-  int64_t ret = 0;
-  if (RE2* re = (RE2*) regex->regex) {
-    char* output = NULL;
-    if( global ) {
-      ret = RE2::GlobalReplace(&s, *re, rewrite);
-    } else {
-      if( RE2::Replace(&s, *re, rewrite) ) {
-        ret = 1;
-      } else {
-        ret = 0;
-      }
+
+// returns true for OK
+static bool append(char*& buf, // buffer
+                   int64_t& buf_sz, // allocated size
+                   int64_t& buf_len, // amount used
+                   const char* data, // to append
+                   int64_t data_len) {
+  if (data_len == 0)
+    return true; // nothing else to do
+
+  if (data_len < 0)
+    return false;
+
+  if (buf == NULL || buf_len + data_len > buf_sz) {
+    // reallocate buf
+    int64_t new_sz = buf_sz * 2;
+    if (new_sz < data_len) {
+      new_sz = data_len + 32;
     }
-    output = (char*) qio_malloc(s.length()+1);
-    memcpy(output, s.data(), s.length());
-    output[s.length()] = '\0';
-    *str_out = output;
-    *len_out = s.length();
+    if (new_sz < 64) {
+      new_sz = 64;
+    }
+    char* new_buf = (char*) qio_realloc((void*)buf, new_sz);
+    if (new_buf == NULL) return false; // failure to allocate
+    // record the new buffer and size for the caller
+    buf = new_buf;
+    buf_sz = new_sz;
   }
-  return ret;
+
+  // append the data
+  assert(buf_len >= 0 && data_len >= 0 && buf_sz >= 0);
+  assert(buf_len + data_len <= buf_sz);
+  memcpy(buf + buf_len, data, data_len);
+  buf_len += data_len;
+
+  return true; // everything is OK
+}
+
+static bool append_rewrite(char*& buf, // buffer
+                           int64_t& buf_sz, // allocated size
+                           int64_t& buf_len, // amount used
+                           const StringPiece& rewrite,
+                           const StringPiece* vec,
+                           int veclen) {
+  for (const char *s = rewrite.data(), *end = s + rewrite.size();
+       s < end;
+       s++) {
+    if (*s != '\\') {
+      // append 1 byte
+      append(buf, buf_sz, buf_len, s, 1);
+      continue;
+    }
+    s++;
+    int c = (s < end) ? *s : -1;
+    if (isdigit(c)) {
+      int n = (c - '0');
+      if (n >= veclen) {
+        return false;
+      }
+      StringPiece snip = vec[n];
+      if (!snip.empty())
+        append(buf, buf_sz, buf_len, snip.data(), snip.size());
+    } else if (c == '\\') {
+      const char* backslash = "\\";
+      append(buf, buf_sz, buf_len, backslash, 1);
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+static int free_and_return_error(char* buf) {
+  if (buf != NULL) qio_free((void*)buf);
+  return -1;
+}
+
+// these should match re2.cc
+static const int kMaxArgs = 16;
+static const int kVecSize = 1+kMaxArgs;
+
+
+// returns the number of replacements made or -1 for an error
+/*
+static int replace_first(const RE2& re, const StringPiece& rewrite,
+                         const StringPiece& str,
+                         const char** str_out, int64_t* len_out) {
+  StringPiece vec[kVecSize];
+  int nvec = 1 + RE2::MaxSubmatch(rewrite);
+  if (nvec > 1 + re.NumberOfCapturingGroups())
+    return -1;
+  if (nvec > static_cast<int>(sizeof(vec)/sizeof(StringPiece)))
+    return -1;
+  if (!re.Match(str, 0, str.size(), RE2::UNANCHORED, vec, nvec))
+    return 0;
+
+  // check that vec[0] makes sense
+  assert(vec[0].data() >= str.data());
+  assert(vec[0].data() + vec[0].size() <= str.data() + str.size());
+
+  char* buf = NULL;
+  int64_t buf_sz = 0;
+  int64_t buf_len = 0;
+  int64_t matchStart = vec[0].data() - str.data();
+
+  // copy any data from before the first match
+  if (!append(buf, buf_sz, buf_len, str.data(), matchStart))
+    return free_and_return_error(buf);
+
+  // copy the replacement instead of the first match
+  if (nvec == 1) {
+    // if there are no submatch replacements e.g. \\1, just copy the replacement
+    if (!append(buf, buf_sz, buf_len, rewrite.data(), rewrite.size()))
+      return free_and_return_error(buf);
+  } else {
+    if (!append_rewrite(buf, buf_sz, buf_len, rewrite, vec, nvec))
+      return free_and_return_error(buf);
+  }
+
+  int64_t matchEnd = matchStart + vec[0].size();
+
+  // then copy anything after the first match
+  if (str.size() > matchEnd)
+    if (!append(buf, buf_sz, buf_len,
+                str.data() + matchEnd, str.size() - matchEnd))
+      return free_and_return_error(buf);
+
+  // done
+  return 1;
+}
+*/
+
+static int replace(const RE2& re, const StringPiece& rewrite,
+                   const StringPiece& str,
+                   int maxreplace,
+                   const char** str_out, int64_t* len_out) {
+  StringPiece vec[kVecSize];
+  int nvec = 1 + RE2::MaxSubmatch(rewrite);
+  if (nvec > 1 + re.NumberOfCapturingGroups())
+    return -1;
+  if (nvec > static_cast<int>(sizeof(vec)/sizeof(StringPiece)))
+    return -1;
+
+  const char* p = str.data();
+  const char* ep = p + str.size();
+  const char* lastend = NULL;
+
+  char* buf = NULL;
+  int64_t buf_sz = 0;
+  int64_t buf_len = 0;
+
+  int count = 0;
+  while (p <= ep) {
+    if (!re.Match(str, static_cast<size_t>(p - str.data()),
+                  str.size(), RE2::UNANCHORED, vec, nvec))
+      break;
+
+    // append the data before the match
+    if (p < vec[0].data())
+      if (!append(buf, buf_sz, buf_len, p, vec[0].data() - p))
+        return free_and_return_error(buf);
+
+    if (vec[0].data() == lastend && vec[0].empty()) {
+      // Disallow empty match at end of last match: skip ahead.
+      //
+      if (re.options().encoding() == RE2::Options::EncodingUTF8) {
+        // append the character
+        int bad;
+        int nbytes = 0;
+        int32_t chr = 0;
+        bad = chpl_enc_decode_char_buf_utf8(&chr, &nbytes, p, ep - p, false);
+        if (bad == 0) {
+          if (!append(buf, buf_sz, buf_len, p, nbytes))
+            return free_and_return_error(buf);
+          p += nbytes;
+          continue;
+        }
+      }
+      // append a character; either not in UTF-8 mode or there
+      // is some UTF-8 encoding issue
+      if (p < ep)
+        if (!append(buf, buf_sz, buf_len, p, 1))
+          return free_and_return_error(buf);
+
+      p++;
+      continue;
+    }
+
+    // append the rewrite
+    if (!append_rewrite(buf, buf_sz, buf_len, rewrite, vec, nvec))
+      return free_and_return_error(buf);
+
+    // continue with just after the match
+    p = vec[0].data() + vec[0].size();
+    lastend = p;
+    count++;
+
+    // stop if we have replaced too many
+    if (count == maxreplace)
+      break;
+  }
+
+  // if (count == 0)
+  //  return 0;
+
+  // append anything after the last match
+  if (p < ep)
+    if (!append(buf, buf_sz, buf_len, p, ep - p))
+      return free_and_return_error(buf);
+
+  // append a null byte
+  const char* empty = "";
+  if (!append(buf, buf_sz, buf_len, empty, 1))
+    return free_and_return_error(buf);
+
+  // return buffer to caller
+  *str_out = buf;
+  *len_out = buf_len;
+
+  return count;
+}
+
+int64_t qio_regex_replace(qio_regex_t* regex, const char* repl, int64_t repl_len, const char* str, int64_t str_len, int64_t maxreplace, const char** str_out, int64_t* len_out)
+{
+  if (RE2* re = (RE2*) regex->regex) {
+    StringPiece rewrite(repl, repl_len);
+    StringPiece s(str, str_len);
+    return replace(*re, rewrite, s,
+                   maxreplace,
+                   str_out, len_out);
+  }
+  return 0;
 }
 
 int qio_regex_channel_read_byte(qio_channel_s* ch);
