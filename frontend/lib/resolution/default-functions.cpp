@@ -723,8 +723,6 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
   return result;
 }
 
-// TODO: Is the use of a QualifiedType for 'receiverType' going to result in
-// too many queries differentiated by the kind?
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
@@ -866,7 +864,15 @@ generateCastToEnum(Context* context,
 const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
                            UniqueString name, bool parenless) {
-  return getCompilerGeneratedMethodQuery(context, receiverType, name, parenless);
+  // Normalize recieverType to allow TYPE methods on c_ptr, and to otherwise
+  // use the VAR Kind. The Param* value is also stripped away to reduce
+  // queries.
+  auto qt = receiverType;
+  bool isCPtr = qt.hasTypePtr() ? qt.type()->isCPtrType() : false;
+  if (!(qt.isType() && isCPtr)) {
+    qt = QualifiedType(QualifiedType::VAR, qt.type());
+  }
+  return getCompilerGeneratedMethodQuery(context, qt, name, parenless);
 }
 
 static const TypedFnSignature* const&
