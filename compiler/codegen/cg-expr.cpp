@@ -1434,7 +1434,9 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
 
   if( info->cfile ) {
     base = codegenValue(base); // even for tuple, for style.
-    ret.c = "(" + base.c + " + " + index.c + ")";
+    std::string voidCast =
+        baseType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS) ? "(void*)" : "";
+    ret.c = "(" + voidCast + "(" + base.c + " + " + index.c + "))";
   } else {
 #ifdef HAVE_LLVM
     unsigned AS = base.val->getType()->getPointerAddressSpace();
