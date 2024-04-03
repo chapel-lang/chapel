@@ -160,6 +160,15 @@ struct GatherDecls {
       // since dyno handles tuple types directly rather
       // than through a record.
       skip = true;
+    } else if (d->name() == "eltType" &&
+               atFieldLevel && tagParent == asttags::Class &&
+               (d->id().symbolPath().startsWith("CTypes.c_ptr") ||
+                d->id().symbolPath().startsWith("Ctypes.c_ptrConst"))) {
+      // skip gathering the 'eltType' field of the dummy c_ptr[Const] classes,
+      // since we're representing those types entirely within the frontend.
+      //
+      // TODO: Remove this once we have replaced those classes.
+      skip = true;
     }
 
     if (skip == false) {

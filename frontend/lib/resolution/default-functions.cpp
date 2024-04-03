@@ -685,24 +685,29 @@ generateRecordComparison(Context* context, const CompositeType* lhsType) {
 }
 
 static const TypedFnSignature*
-generateCPtrMethod(Context* context, const CPtrType * cpt, UniqueString name) {
+generateCPtrMethod(Context* context, QualifiedType receiverType,
+                   UniqueString name) {
   // Build a basic function signature for methods on a cptr
   // TODO: we should really have a way to just set the return type here
+  const CPtrType* cpt = receiverType.type()->toCPtrType();
   const TypedFnSignature* result = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
 
   formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, cpt));
+
+  // Allow calling 'eltType' on either a type or value
+  auto qual = receiverType.isType() ? QualifiedType::TYPE : QualifiedType::CONST_REF;
+  formalTypes.push_back(QualifiedType(qual, cpt));
 
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ cpt->getId(context),
+                        /*id*/ cpt->id(context),
                         /*name*/ name,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, cpt->getId(context)),
+                        /*idTag*/ asttags::Class,
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(formals),
                         /*whereClause*/ nullptr);
@@ -719,9 +724,11 @@ generateCPtrMethod(Context* context, const CPtrType * cpt, UniqueString name) {
 }
 
 static const TypedFnSignature* const&
-getCompilerGeneratedMethodQuery(Context* context, const Type* type,
+getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
-  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name, parenless);
+  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, receiverType, name, parenless);
+
+  const Type* type = receiverType.type();
 
   const TypedFnSignature* result = nullptr;
 
@@ -749,8 +756,8 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       } else {
         CHPL_UNIMPL("record method not implemented yet!");
       }
-    } else if (auto cPtrType = type->toCPtrType()) {
-      result = generateCPtrMethod(context, cPtrType, name);
+    } else if (type->isCPtrType()) {
+      result = generateCPtrMethod(context, receiverType, name);
     } else {
       CHPL_UNIMPL("should not be reachable");
     }
@@ -855,9 +862,17 @@ generateCastToEnum(Context* context,
   If no method was generated, returns nullptr.
 */
 const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context, const Type* type,
+getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
                            UniqueString name, bool parenless) {
-  return getCompilerGeneratedMethodQuery(context, type, name, parenless);
+  // Normalize recieverType to allow TYPE methods on c_ptr, and to otherwise
+  // use the VAR Kind. The Param* value is also stripped away to reduce
+  // queries.
+  auto qt = receiverType;
+  bool isCPtr = qt.hasTypePtr() ? qt.type()->isCPtrType() : false;
+  if (!(qt.isType() && isCPtr)) {
+    qt = QualifiedType(QualifiedType::VAR, qt.type());
+  }
+  return getCompilerGeneratedMethodQuery(context, qt, name, parenless);
 }
 
 static const TypedFnSignature* const&

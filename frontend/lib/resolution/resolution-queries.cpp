@@ -3036,6 +3036,12 @@ static const Type* getCPtrType(Context* context,
   UniqueString name = ci.name();
   bool isConst;
 
+  // 'typeForId' should have prepared this for us if 'CTypes' was in scope.
+  auto called = ci.calledType();
+  if (!(called.hasTypePtr() && called.type()->isCPtrType())) {
+    return nullptr;
+  }
+
   if (name == USTR("c_ptr")) {
     isConst = false;
   } else if (name == USTR("c_ptrConst")) {
@@ -3403,11 +3409,10 @@ considerCompilerGeneratedMethods(Context* context,
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& receiver = ci.actual(0);
-  // TODO: This should be the QualifiedType in case of type methods
-  auto receiverType = receiver.type().type();
+  auto receiverType = receiver.type();
 
   // if not compiler-generated, then nothing to do
-  if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
+  if (!needCompilerGeneratedMethod(context, receiverType.type(), ci.name(),
                                    ci.isParenless())) {
     return nullptr;
   }
@@ -3502,6 +3507,8 @@ lookupCalledExpr(Context* context,
       if (auto compType = t->getCompositeType()) {
         receiverScopes =
           Resolver::gatherReceiverAndParentScopesForType(context, compType);
+      } else if (auto cptr = t->toCPtrType()) {
+        receiverScopes.push_back(scopeForId(context, cptr->id(context)));
       }
     }
   }
@@ -4066,7 +4073,9 @@ findMostSpecificAndCheck(Context* context,
   }
 
   // note any most-specific candidates from POI in poiInfo.
-  {
+  // TODO: This can be the case for generated calls, but is skipping the POI
+  // accumulation safe?
+  if (call != nullptr) {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
       for (const MostSpecificCandidate& candidate : mostSpecific) {

@@ -1332,7 +1332,8 @@ CallResolutionResult resolvePrimCall(Context* context,
           break;
         } else if (actualType.type()->isStringType() ||
                    actualType.type()->isBytesType() ||
-                   actualType.type()->isCStringType()) {
+                   actualType.type()->isCStringType() ||
+                   actualType.type()->isCPtrType()) {
           // for non-param string/bytes, the return type is just a default int
           type = QualifiedType(QualifiedType::CONST_VAR,
                                IntType::get(context, 0));
@@ -1640,10 +1641,25 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = QualifiedType(QualifiedType::CONST_VAR,
                            CompositeType::getLocaleIDType(context));
       break;
+
+    case PRIM_ARRAY_GET: {
+        if (ci.numActuals() == 2 && ci.actual(0).type().hasTypePtr()) {
+          auto index = ci.actual(1).type();
+          if (index.hasTypePtr() && index.type()->isIntegralType()) {
+            auto act = ci.actual(0).type();
+            if (auto ptr = act.type()->toCPtrType()) {
+              type = QualifiedType(QualifiedType::REF, ptr->eltType());
+            }
+          } else {
+            context->error(call, "bad call to primitive \"%s\": second argument must be an integral type", primTagToName(prim));
+          }
+        }
+      }
+      break;
+
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
     case PRIM_TUPLE_EXPAND:
-    case PRIM_ARRAY_GET:
     case PRIM_MAYBE_LOCAL_THIS:
     case PRIM_MAYBE_LOCAL_ARR_ELEM:
     case PRIM_MAYBE_AGGREGATE_ASSIGN:
