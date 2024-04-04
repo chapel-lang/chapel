@@ -252,11 +252,16 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
 
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
-    const auto& resolvedStmt = resolveModuleStmt(context, id);
+    // 'typeForModuleLevelSymbol' can be called with an 'id' corresponding to a
+    // variable declared as part of a MultiDecl or TupleDecl. Using that 'id'
+    // with 'resolveModuleStmt' will return a bogus result because that 'id'
+    // is not at the statement level.
+    auto stmtId = parsing::idToContainingMultiDeclId(context, id);
+    const auto& resolvedStmt = resolveModuleStmt(context, stmtId);
     if (resolvedStmt.hasId(id)) {
       result = resolvedStmt.byId(id).type();
       if (result.needsSplitInitTypeInfo(context) && !isCurrentModule) {
-        ID moduleId = parsing::idToParentId(context, id);
+        ID moduleId = parsing::idToParentId(context, stmtId);
         const auto& resolvedModule = resolveModule(context, moduleId);
         assert(resolvedModule.hasId(id));
         result = resolvedModule.byId(id).type();

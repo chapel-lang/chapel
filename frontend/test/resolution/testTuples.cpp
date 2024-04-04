@@ -272,6 +272,74 @@ static void test9() {
   assert(cQt.type() == IntType::get(context, 0));
 }
 
+static void test9b() {
+  printf("test9b\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  {
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      var (a, b) = (1, 2);
+
+      var xa = a;
+      var xb = b;
+    )""";
+
+    auto vars = resolveTypesOfVariables(context, program, {"xa", "xb"});
+    assert(vars["xa"].type()->isIntType());
+    assert(vars["xb"].type()->isIntType());
+  }
+  {
+    context->advanceToNextRevision(false);
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+    var ((a, b), (c, d)) = ((1, "hello"), (42.0, 5:uint));
+
+    var xa = a;
+    var xb = b;
+    var xc = c;
+    var xd = d;
+    )""";
+
+    auto vars = resolveTypesOfVariables(context, program,
+                                        {"xa", "xb", "xc", "xd"});
+    assert(vars["xa"].type()->isIntType());
+    assert(vars["xb"].type()->isStringType());
+    assert(vars["xc"].type()->isRealType());
+    assert(vars["xd"].type()->isUintType());
+  }
+  {
+    context->advanceToNextRevision(false);
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+    proc foo() {
+      return ((1, ("two", 3.0)), ((4:uint, b"five"), 6.0i));
+    }
+
+    var ((a, (b, c)), ((d, e), f)) = foo();
+    var xa = a;
+    var xb = b;
+    var xc = c;
+    var xd = d;
+    var xe = e;
+    var xf = f;
+    )""";
+
+    auto vars = resolveTypesOfVariables(context, program,
+                                        {"xa", "xb", "xc", "xd", "xe", "xf"});
+    assert(vars["xa"].type()->isIntType());
+    assert(vars["xb"].type()->isStringType());
+    assert(vars["xc"].type()->isRealType());
+    assert(vars["xd"].type()->isUintType());
+    assert(vars["xe"].type()->isBytesType());
+    assert(vars["xf"].type()->isImagType());
+  }
+}
+
 static void test10() {
   printf("test10\n");
   Context ctx;
@@ -585,6 +653,7 @@ int main() {
   test7();
   test8();
   test9();
+  test9b();
   test10();
   test11();
   test12();
