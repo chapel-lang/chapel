@@ -671,6 +671,7 @@ module String {
   // submodule can be `private use`d from other String-supporting modules.
   @chpldoc.nodoc
   module NVStringFactory {
+    use ChapelStandard; // For '=' operators between ints
     use BytesStringCommon;
     use ByteBufferHelpers only bufferType;
 
