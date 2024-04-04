@@ -505,12 +505,13 @@ std::string getPythonTypeName(Type* type, PythonFileType pxd) {
         return base + " *";
       }
     } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      bool isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
       Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
       std::string base = getPythonTypeName(pointedTo, pxd);
       if (pxd == C_PYX) {
         return "";
       } else {
-        return base + " *";
+        return isConst ? "const " + base + " *" : base + " *";
       }
     } else {
       return type->codegen().c;
