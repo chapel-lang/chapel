@@ -1,1 +1,1 @@
-CHPL_COMM == gasnet
+CHPL_COMM != none
