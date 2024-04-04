@@ -1627,10 +1627,11 @@ static void collectVisibleSymbols(Context* context,
                                 const Scope* scope,
                                 std::set<std::pair<const Scope*, ID>> checkedScopes,
                                 std::map<UniqueString, BorrowedIdsWithName>& into,
-                                const VisibilitySymbols* inVisibilitySymbols) {
+                                const VisibilitySymbols* inVisibilitySymbols,
+                                bool skipPrivateVisibilities) {
   ID visStmtId;
   if (inVisibilitySymbols) {
-    if (inVisibilitySymbols->isPrivate()) {
+    if (inVisibilitySymbols->isPrivate() && skipPrivateVisibilities) {
       return;
     }
 
@@ -1674,9 +1675,12 @@ static void collectVisibleSymbols(Context* context,
   }
 
   auto resolvedVisStmts = resolveVisibilityStmts(context, scope);
+  if (!resolvedVisStmts) return;
+
   for (auto& vis : resolvedVisStmts->visibilityClauses()) {
     std::map<UniqueString, BorrowedIdsWithName> subInto;
-    collectVisibleSymbols(context, vis.scope(), checkedScopes, subInto, &vis);
+    collectVisibleSymbols(context, vis.scope(), checkedScopes, subInto, &vis,
+                          /* skipPrivateVisibilities */ inVisibilitySymbols != nullptr);
 
     for (auto pair : subInto) {
       if (!allowedByVisibility(pair.first)) continue;
@@ -1688,10 +1692,18 @@ static void collectVisibleSymbols(Context* context,
 
 std::map<UniqueString, BorrowedIdsWithName>
 getSymbolsExportedFromScope(Context* context,
-                          const Scope* scope) {
+                            const Scope* scope) {
   std::map<UniqueString, BorrowedIdsWithName> into;
   std::set<std::pair<const Scope*, ID>> checkedScopes;
-  collectVisibleSymbols(context, scope, checkedScopes, into, nullptr);
+  collectVisibleSymbols(context, scope, checkedScopes, into, nullptr,
+                        /* skipPrivateVisibilities */ false);
+
+  if (scope->autoUsesModules()) {
+    auto scope = scopeForAutoModule(context);
+    collectVisibleSymbols(context, scope, checkedScopes, into, nullptr,
+                          /* skipPrivateVisibilities */ false);
+  }
+
   return into;
 }
 
