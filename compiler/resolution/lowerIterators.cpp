@@ -1655,16 +1655,16 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         continue;
 
      case TFI_REDUCE_OP:
-        // to be implemented
-        INT_ASSERT(false);
-        break;
-
       case TFI_REDUCE:
       case TFI_REDUCE_PARENT_AS:
       case TFI_REDUCE_PARENT_OP:
-      case TFI_TASK_PRIVATE:
-        // to be implemented
+        // to be implemented. Reduce intents should have given a user-friendly
+        // error message during parsing.
         INT_ASSERT(false);
+
+       case TFI_TASK_PRIVATE:
+        // to be implemented
+        USR_FATAL_CONT(forLoop, "var intents can not be used in foreach loops");
     }
   }
 }
