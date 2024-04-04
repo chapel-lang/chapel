@@ -205,6 +205,11 @@ def completion_item_for_decl(
     if not kind:
         return None
 
+    # For now, we show completion for global symbols (not x.<complete>),
+    # so it seems like we ought to rule out methods.
+    if kind == SymbolKind.Method:
+        return None
+
     return CompletionItem(
         label=override_name if override_name else decl.name(),
         kind=decl_kind_to_completion_kind(kind),
