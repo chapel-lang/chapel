@@ -234,12 +234,29 @@ static void test5() {
   assert(dQt.type() == RealType::get(context, 0));
 }
 
+static void test6() {
+  printf("test6\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    var a, b : int;
+
+    var x = a;
+    )""";
+
+  auto xt = resolveTypeOfX(context, program);
+  assert(xt->isIntType());
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }
