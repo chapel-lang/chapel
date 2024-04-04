@@ -1625,6 +1625,12 @@ nbody:
     - Refactor PRIM_NEW resolution to enable promotion (#10919)
   05/03/19:
     - Govern slice expressions by slicing domain (#12931)
+  12/18/23:
+    - Always use -fno-math-errno to configure the LLVM optimizer (#24066)
+  02/21/24:
+    - Codegen sqrt and fabs directly to llvm intrinsics when possible (#24455)
+  04/03/24:
+    - Change param-based nbody to foreach-based (#24745)
 
 no-op:
   02/24/17:
