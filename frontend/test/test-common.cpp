@@ -73,3 +73,20 @@ const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
   mod->traverse(col);
   return col.only();
 }
+
+std::unique_ptr<chpl::Context> buildStdContext() {
+  std::string chpl_home;
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+  } else {
+    printf("CHPL_HOME must be set");
+    exit(1);
+  }
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context* context = new Context(config);
+  chpl::parsing::setupModuleSearchPaths(context, false, false, {}, {});
+
+  std::unique_ptr<chpl::Context> ret(context);
+  return ret;
+}
