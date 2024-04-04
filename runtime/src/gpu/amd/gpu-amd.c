@@ -29,8 +29,8 @@
 #include "chplcgfns.h"
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
-#include "../common/rocm-utils.h"
-#include "../common/rocm-version.h"
+#include "gpu/amd/rocm-utils.h"
+#include "gpu/amd/rocm-version.h"
 
 
 #include <assert.h>

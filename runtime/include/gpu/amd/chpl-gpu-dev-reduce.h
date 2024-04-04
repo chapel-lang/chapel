@@ -25,13 +25,15 @@
 #include "chpltypes.h"
 #include <hip/hip_common.h>
 #include <hip/hip_runtime.h>
-#include "gpu/amd/rocm-version.h"
 
-#if ROCM_VERSION_MAJOR >= 5
+#define ROCM_VERSION_MAJOR 5
+//#include "gpu/amd/rocm-version.h"
+
+//#if ROCM_VERSION_MAJOR >= 5
 // if we include this all the time, we get unused function errors
-#include "gpu/amd/rocm-utils.h"
+//#include "gpu/amd/rocm-utils.h"
 #include <hipcub/hipcub.hpp>
-#endif
+//#endif
 
 //
 // TODO use chpl-gpu-reduce-util instead, or add these there
