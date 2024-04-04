@@ -96,7 +96,7 @@ CLASS_BEGIN(Scope)
   PLAIN_GETTER(Scope, visible_nodes, "Get the nodes corresponding to declarations exported from this scope",
                VisibileSymbols,
                VisibileSymbols toReturn;
-               for (auto& pair : getSymbolsExportedFromScope(context, node)) {
+               for (auto& pair : getSymbolsAvailableInScope(context, node)) {
                  std::vector<const chpl::uast::AstNode*> into;
                  for (auto id : pair.second) {
                     if (id.isEmpty()) continue;

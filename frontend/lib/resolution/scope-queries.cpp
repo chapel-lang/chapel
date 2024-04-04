@@ -1623,24 +1623,13 @@ lookupNameInScopeWithSet(Context* context,
   return vec;
 }
 
-static void collectVisibleSymbols(Context* context,
+static std::map<UniqueString, BorrowedIdsWithName> const&
+getSymbolsAvailableInScopeQuery(Context* context,
                                 const Scope* scope,
-                                std::set<std::pair<const Scope*, ID>> checkedScopes,
-                                std::map<UniqueString, BorrowedIdsWithName>& into,
-                                const VisibilitySymbols* inVisibilitySymbols,
-                                bool skipPrivateVisibilities) {
-  ID visStmtId;
-  if (inVisibilitySymbols) {
-    if (inVisibilitySymbols->isPrivate() && skipPrivateVisibilities) {
-      return;
-    }
+                                const VisibilitySymbols* inVisibilitySymbols) {
+  QUERY_BEGIN(getSymbolsAvailableInScopeQuery, context, scope, inVisibilitySymbols);
 
-    visStmtId = inVisibilitySymbols->visibilityClauseId();
-  }
-
-  if (!checkedScopes.emplace(scope, visStmtId).second) {
-    return;
-  }
+  std::map<UniqueString, BorrowedIdsWithName> toReturn;
 
   auto allowedByVisibility = [inVisibilitySymbols](UniqueString name) {
     if (!inVisibilitySymbols) return true;
@@ -1667,44 +1656,53 @@ static void collectVisibleSymbols(Context* context,
   for (auto& decl : scope->declared()) {
     if (!allowedByVisibility(decl.first)) continue;
 
-    auto flagSet = IdAndFlags::PUBLIC;
+    auto flagSet = 0;
+    if (inVisibilitySymbols) flagSet |= IdAndFlags::PUBLIC;
+
     auto exclude = IdAndFlags::FlagSet::empty();
     if (auto borrowed = decl.second.borrow(flagSet, exclude)) {
-      into.try_emplace(decl.first, *borrowed);
+      toReturn.try_emplace(decl.first, *borrowed);
     }
   }
 
   auto resolvedVisStmts = resolveVisibilityStmts(context, scope);
-  if (!resolvedVisStmts) return;
+  if (!resolvedVisStmts) return QUERY_END(toReturn);
 
   for (auto& vis : resolvedVisStmts->visibilityClauses()) {
-    std::map<UniqueString, BorrowedIdsWithName> subInto;
-    collectVisibleSymbols(context, vis.scope(), checkedScopes, subInto, &vis,
-                          /* skipPrivateVisibilities */ inVisibilitySymbols != nullptr);
+    if (vis.isPrivate() && inVisibilitySymbols != nullptr) continue;
 
-    for (auto pair : subInto) {
+    if (context->isQueryRunning(getSymbolsAvailableInScopeQuery,
+                                std::make_tuple(vis.scope(), &vis))) {
+      continue;
+    }
+
+    auto visStmtSymbols =
+      getSymbolsAvailableInScopeQuery(context, vis.scope(), &vis);
+    for (auto& pair : visStmtSymbols) {
       if (!allowedByVisibility(pair.first)) continue;
-      into.try_emplace(pair.first, std::move(pair.second));
+      toReturn.try_emplace(pair.first, pair.second);
     }
   }
+
+  return QUERY_END(toReturn);
 }
 
 
 std::map<UniqueString, BorrowedIdsWithName>
-getSymbolsExportedFromScope(Context* context,
-                            const Scope* scope) {
-  std::map<UniqueString, BorrowedIdsWithName> into;
-  std::set<std::pair<const Scope*, ID>> checkedScopes;
-  collectVisibleSymbols(context, scope, checkedScopes, into, nullptr,
-                        /* skipPrivateVisibilities */ false);
+getSymbolsAvailableInScope(Context* context,
+                           const Scope* scope) {
+  auto inScope = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
 
   if (scope->autoUsesModules()) {
     auto scope = scopeForAutoModule(context);
-    collectVisibleSymbols(context, scope, checkedScopes, into, nullptr,
-                          /* skipPrivateVisibilities */ false);
+    auto inAuto = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
+
+    for (auto& pair : inAuto) {
+      inScope.try_emplace(pair.first, pair.second);
+    }
   }
 
-  return into;
+  return inScope;
 }
 
 static

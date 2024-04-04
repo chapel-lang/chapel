@@ -104,7 +104,7 @@ namespace resolution {
                            CheckedScopes& visited);
 
   std::map<UniqueString, BorrowedIdsWithName>
-  getSymbolsExportedFromScope(Context* context,
+  getSymbolsAvailableInScope(Context* context,
                             const Scope* scope);
 
   /**
