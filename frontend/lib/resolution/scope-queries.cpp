@@ -1623,6 +1623,78 @@ lookupNameInScopeWithSet(Context* context,
   return vec;
 }
 
+static void collectVisibleSymbols(Context* context,
+                                const Scope* scope,
+                                std::set<std::pair<const Scope*, ID>> checkedScopes,
+                                std::map<UniqueString, BorrowedIdsWithName>& into,
+                                const VisibilitySymbols* inVisibilitySymbols) {
+  ID visStmtId;
+  if (inVisibilitySymbols) {
+    if (inVisibilitySymbols->isPrivate()) {
+      return;
+    }
+
+    visStmtId = inVisibilitySymbols->visibilityClauseId();
+  }
+
+  if (!checkedScopes.emplace(scope, visStmtId).second) {
+    return;
+  }
+
+  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name) {
+    if (!inVisibilitySymbols) return true;
+    auto kind = inVisibilitySymbols->kind();
+
+    if (kind == VisibilitySymbols::ALL_CONTENTS) {
+      return true;
+    }
+
+    if (kind == VisibilitySymbols::SYMBOL_ONLY ||
+        kind == VisibilitySymbols::CONTENTS_EXCEPT) {
+      auto& namePairs = inVisibilitySymbols->names();
+      bool anyMatches =
+        std::any_of(namePairs.begin(), namePairs.end(), [name](auto& pair) {
+          return pair.first == name;
+        });
+
+      return kind == VisibilitySymbols::SYMBOL_ONLY ? anyMatches : !anyMatches;
+    }
+
+    return false;
+  };
+
+  for (auto& decl : scope->declared()) {
+    if (!allowedByVisibility(decl.first)) continue;
+
+    auto flagSet = IdAndFlags::PUBLIC;
+    auto exclude = IdAndFlags::FlagSet::empty();
+    if (auto borrowed = decl.second.borrow(flagSet, exclude)) {
+      into.try_emplace(decl.first, *borrowed);
+    }
+  }
+
+  auto resolvedVisStmts = resolveVisibilityStmts(context, scope);
+  for (auto& vis : resolvedVisStmts->visibilityClauses()) {
+    std::map<UniqueString, BorrowedIdsWithName> subInto;
+    collectVisibleSymbols(context, vis.scope(), checkedScopes, subInto, &vis);
+
+    for (auto pair : subInto) {
+      if (!allowedByVisibility(pair.first)) continue;
+      into.try_emplace(pair.first, std::move(pair.second));
+    }
+  }
+}
+
+
+std::map<UniqueString, BorrowedIdsWithName>
+getSymbolsExportedFromScope(Context* context,
+                          const Scope* scope) {
+  std::map<UniqueString, BorrowedIdsWithName> into;
+  std::set<std::pair<const Scope*, ID>> checkedScopes;
+  collectVisibleSymbols(context, scope, checkedScopes, into, nullptr);
+  return into;
+}
+
 static
 bool doIsWholeScopeVisibleFromScope(Context* context,
                                    const Scope* checkScope,

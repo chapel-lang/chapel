@@ -103,6 +103,10 @@ namespace resolution {
                            LookupConfig config,
                            CheckedScopes& visited);
 
+  std::map<UniqueString, BorrowedIdsWithName>
+  getSymbolsExportedFromScope(Context* context,
+                            const Scope* scope);
+
   /**
     Returns true if all of checkScope is visible from fromScope
     due to scope containment or whole-module use statements.
