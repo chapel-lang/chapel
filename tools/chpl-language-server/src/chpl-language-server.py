@@ -600,7 +600,9 @@ class FileInfo:
                 continue
 
             for name, nodes in scope.visible_nodes():
-                self.visible_decls.extend((name, node) for node in nodes)
+                # Just take the first value to avoid showing N entries for
+                # overloaded functions.
+                self.visible_decls.append((name, nodes[0]))
 
     def _search_instantiations(
         self,
