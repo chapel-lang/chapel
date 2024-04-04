@@ -37,6 +37,7 @@
 #include "qio.h" // for channel operations
 #include "chpltypes.h" // must be before "error.h" to prevent include errors
 #include "error.h"
+#include "encoding/encoding-support.h"
 #undef printf
 
 #include "re2/re2.h"
@@ -227,14 +228,12 @@ void qio_regex_create_compile_flags(const char* str, int64_t str_len, const char
 void qio_regex_retain(const qio_regex_t* compiled)
 {
   re_t* re = (re_t*) compiled->regex;
-  //fprintf(stdout, "Retain %p\n", re);
   DO_RETAIN(re);
 }
 
 void qio_regex_release(qio_regex_t* compiled)
 {
   re_t* re = (re_t*) compiled->regex;
-  //fprintf(stdout, "Release %p\n", re);
   DO_RELEASE(re, re_free);
   compiled->regex = NULL;
 }
@@ -473,6 +472,10 @@ static int replace(const RE2& re, const StringPiece& rewrite,
 
   int count = 0;
   while (p <= ep) {
+    // don't try to replace anything if we are replacing 0
+    if (maxreplace == 0)
+      break;
+
     if (!re.Match(str, static_cast<size_t>(p - str.data()),
                   str.size(), RE2::UNANCHORED, vec, nvec))
       break;
@@ -482,7 +485,12 @@ static int replace(const RE2& re, const StringPiece& rewrite,
       if (!append(buf, buf_sz, buf_len, p, vec[0].data() - p))
         return free_and_return_error(buf);
 
-    if (vec[0].data() == lastend && vec[0].empty()) {
+    if (vec[0].data() == lastend && vec[0].empty() && count > 0) {
+      // quit if we are at the end (trailing \0 added later)
+      if (p == ep) {
+        break;
+      }
+
       // Disallow empty match at end of last match: skip ahead.
       //
       if (re.options().encoding() == RE2::Options::EncodingUTF8) {
@@ -537,7 +545,7 @@ static int replace(const RE2& re, const StringPiece& rewrite,
 
   // return buffer to caller
   *str_out = buf;
-  *len_out = buf_len;
+  *len_out = buf_len-1; // do not count trailing null byte
 
   return count;
 }
