@@ -91,6 +91,24 @@ CLASS_BEGIN(Scope)
                  toReturn.push_back(mod);
                }
                return toReturn)
+  PLAIN_GETTER(Scope, parent_scope, "Get the parent (outer) scope of this scope",
+               Nilable<const chpl::resolution::Scope*>, return node->parentScope())
+  PLAIN_GETTER(Scope, visible_nodes, "Get the nodes corresponding to declarations exported from this scope",
+               VisibileSymbols,
+               VisibileSymbols toReturn;
+               for (auto& pair : getSymbolsExportedFromScope(context, node)) {
+                 std::vector<const chpl::uast::AstNode*> into;
+                 for (auto id : pair.second) {
+                    if (id.isEmpty()) continue;
+                    into.push_back(parsing::idToAst(context, id));
+                 }
+
+                 if (!into.empty()) {
+                   toReturn.emplace_back(pair.first, std::move(into));
+                 }
+               }
+
+               return toReturn)
 CLASS_END(Scope)
 
 CLASS_BEGIN(Error)
