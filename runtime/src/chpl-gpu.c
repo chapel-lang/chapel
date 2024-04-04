@@ -457,6 +457,7 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
 }
 
 static bool cfg_can_reduce(kernel_cfg* cfg) {
+  // reductions are not supported with multi-dimensional kernels, yet
   return (cfg->blk_dim_x > 0 &&
           cfg->blk_dim_y == 1 &&
           cfg->blk_dim_z == 1);
@@ -676,20 +677,13 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
 
   for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
-    CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p %p\n", cfg->reduce_vars[i].buffer,
-                  cfg->reduce_vars[i].outer_var,
-                  cfg->reduce_vars[i].wrapper, (*(cfg->reduce_vars[i].wrapper)));
+    CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n", cfg->reduce_vars[i].buffer,
+                  cfg->reduce_vars[i].outer_var, cfg->reduce_vars[i].wrapper);
 
-    // TODO drop cast
-    cfg->reduce_vars[i].wrapper((double*)cfg->reduce_vars[i].buffer,
-                                     cfg->grd_dim_x,
-                                     (double*)cfg->reduce_vars[i].outer_var,
-                                     NULL);
-    // TODO fix this
-    /*chpl_gpu_sum_reduce_double((double*)cfg->reduce_vars[i].buffer,*/
-                               /*cfg->grd_dim_x,*/
-                               /*(double*)cfg->reduce_vars[i].outer_var,*/
-                               /*NULL);*/
+    cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
+                                cfg->grd_dim_x,
+                                cfg->reduce_vars[i].outer_var,
+                                NULL); // no minloc/maxloc, yet
   }
 }
 

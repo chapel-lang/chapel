@@ -1009,15 +1009,14 @@ enum ReductionKind { SUM, MIN, MAX, UNSUPPORTED };
 
 struct ReductionInfo {
   Symbol* symInLoop;
-  ArgSymbol* buffer;  // argument to the kernel: is a void* pointing at the
-                      // reduction buffer
+  ArgSymbol* buffer;  // an additional argument to the kernel: is a void*
+                      // pointing at the reduction buffer
   FnSymbol* wrapper;  // function that wraps around the "fake-generic" runtime
-                      // function and casts void* to correct data type 
+                      // function and casts the void* buffer to the correct data
+                      // type 
   ReductionKind kind;  // we don't support user-defined reductions, yet. So we
                        // have to determine the reduction kind in order to call
                        // the correct CUB function
-  //std::string devFnName;  // the device function that should be invoked at the
-                          //// end of the kernel
 };
 
 class GpuKernel;
@@ -1113,7 +1112,6 @@ class GpuKernel {
   Symbol* addKernelArgument(Symbol* symInLoop);
   Symbol* addLocalVariable(Symbol* symInLoop);
 
-  //std::set<ReductionPair> redTemps_;
   std::map<Symbol*, ReductionInfo> reductionInfo;
 };
 
@@ -1224,6 +1222,21 @@ bool KernelArg::eligible() {
   return !this->isReduce() || this->redInfo_.kind != ReductionKind::UNSUPPORTED;
 }
 
+/* We need to give runtime a function to invoke to do the final reduction. The
+ * tricky part is: runtime is type-agnostic, where everything is a `void*`. So,
+ * this function should take `void*` arguments, cast them properly, and call the
+ * correct function in the runtime that will perform the final reduction.
+ *
+ * The function we create looks like:
+ *
+ * void reduce_0_chpl_gpu_kernel_Foo_line_5(void* in_data, int32_t, num_elems,
+ *                                          void* out_data, void* out_idx) {
+ *
+ *   // type-casting is handled at codegen time
+ *   PRIM_GPU_REDUCE_WRAPPER("chpl_gpu_sum_reduce_int32_t", int(32), in_data,
+ *                           num_elems, out_data, out_idx);
+ * }
+ */
 FnSymbol* KernelArg::generateFinalReductionWrapper() {
   
   // here, we need to create an unambiguous name for the wrapper. This is
@@ -1256,23 +1269,6 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   std::string fnToCall = "chpl_gpu_";
   fnToCall += this->reduceKindFnName();
   fnToCall += "_reduce";
-
-  //Type* dataType = this->actual_->typeInfo()->getRefType();
-  //Type* dataType = this->actual_->typeInfo()->getValType();
-
-  //VarSymbol* castInData = new VarSymbol("cast_in_data", dataType);
-  //CallExpr* castInMove = new CallExpr(PRIM_MOVE, castInData,
-                                      //new CallExpr(PRIM_CAST, dataType->symbol,
-                                                   //inData));
-  //ret->insertAtTail(new DefExpr(castInData));
-  //ret->insertAtTail(castInMove);
-
-  //VarSymbol* castOutData = new VarSymbol("cast_out_data", dataType);
-  //CallExpr* castOutMove = new CallExpr(PRIM_MOVE, castOutData,
-                                       //new CallExpr(PRIM_CAST, dataType->symbol,
-                                                    //outData));
-  //ret->insertAtTail(new DefExpr(castOutData));
-  //ret->insertAtTail(castOutMove);
 
   CallExpr* finalReduce = new CallExpr(PRIM_GPU_REDUCE_WRAPPER);
   finalReduce->insertAtTail(new_CStringSymbol(fnToCall.c_str()));
@@ -1358,7 +1354,7 @@ std::string KernelArg::reduceKindFnName() {
 std::string KernelArg::generateDevFnName() {
   std::string ret = "chpl_gpu_dev_";
   ret += this->reduceKindFnName();
-  ret += "_breduce";
+  ret += "_breduce"; // for "block reduce" -- this only reduces within a block
 
   return ret;
 }
@@ -1420,14 +1416,18 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
     fn_->insertFormalAtTail(formal);
     copyMap_.put(symInLoop, formal);
 
+    // if reduction variable, add an additional argument for the buffer
     if (ArgSymbol* reduceBuffer = arg.reduceBuffer()) {
       fn_->insertFormalAtTail(reduceBuffer);
       this->incReductionBufs();
     }
 
+    // if reduction variable, add the function definiton for the final reduction
+    // wrapper
     if (FnSymbol* reduceWrapper = arg.reduceWrapper()) {
       fn_->defPoint->insertBefore(new DefExpr(reduceWrapper));
     }
+
     kernelActuals_.push_back(arg);
 
     return formal;
@@ -1693,24 +1693,14 @@ void GpuKernel::populateBody() {
   }
 
 
-  //for (ReductionPair redPair: this->redTemps_) {
-  //for (ReductionPair redPair: this->redTemps_) {
   for (auto actual: this->kernelActuals()) {
     if (CallExpr* reduceCall = actual.generatePrimGpuBlockReduce(blockSize())) {
-      // this should be executed even if the thread was OOB
+      // this should be executed even if the thread was OOB, that's why we put
+      // it in postBody
       this->postBody_->insertAtTail(reduceCall);
     }
 
   }
-  //for (auto const& [symInLoop, redInfo]: reductionInfo) {
-    //CallExpr* blockReduce = new CallExpr(PRIM_GPU_BLOCK_REDUCE,
-                                         //symInLoop,
-                                         //redInfo.buffer,
-                                         //redInfo.wrapper,
-                                         //blockSize());
-
-    //outlinedFunction->insertBeforeEpilogue(blockReduce);
-  //}
 
   update_symbols(this->userBody_, &copyMap_);
   update_symbols(this->postBody_, &copyMap_);

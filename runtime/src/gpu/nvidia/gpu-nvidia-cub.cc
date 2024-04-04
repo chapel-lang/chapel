@@ -37,10 +37,6 @@
 #include "../common/cuda-utils.h"
 #include "gpu/chpl-gpu-reduce-util.h"
 
-//void chpl_gpu_dev_block_reduce(int64_t thread_val) {
-  //printf("thread_val: %ld\n", thread_val);
-//}
-
 // this version doesn't do anything with `idx`. Having a unified interface makes
 // the implementation in the rest of the runtime and the modules more
 // straightforward.
