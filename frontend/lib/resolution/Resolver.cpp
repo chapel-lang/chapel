@@ -2356,12 +2356,18 @@ bool Resolver::enter(const uast::Conditional* cond) {
     auto& reVar = byPostorder.byAst(var);
     if (!reVar.type().isUnknown()) {
       auto t = reVar.type().type();
-      bool ok = t->isClassType() || t->isBasicClassType();
-      if (!ok) CHPL_REPORT(context, IfVarNonClassType, cond, reVar.type());
+
+      // Resolve as non-nil borrowed class
       if (auto ct = t->toClassType()) {
-        reVar.setType(QualifiedType(
-            reVar.type().kind(),
-            ct->withDecorator(context, ct->decorator().addNonNil())));
+        if (auto basicClass = ct->basicClassType()) {
+          auto newClassType = ClassType::get(context,
+              basicClass,
+              /* no manager for borrowed class */ nullptr,
+              ct->decorator().toBorrowed().addNonNil());
+          reVar.setType(QualifiedType(reVar.type().kind(), newClassType));
+        }
+      } else {
+        CHPL_REPORT(context, IfVarNonClassType, cond, reVar.type());
       }
     }
   }
