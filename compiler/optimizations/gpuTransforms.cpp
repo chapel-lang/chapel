@@ -1082,7 +1082,6 @@ class GpuKernel {
 
   int nReductionBufs_ = 0;
 
-  BlockStmt* earlyReturnBlock_;
   BlockStmt* userBody_;
   BlockStmt* postBody_;
 
@@ -1108,7 +1107,6 @@ class GpuKernel {
   void finalize();
 
   void generateIndexComputation();
-  //void generateEarlyReturn();
   void generateOOBCond();
   void generatePostBody();
   void markGPUSubCalls(FnSymbol* fn);
@@ -1161,7 +1159,6 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   fn_->addFlag(FLAG_GPU_CODEGEN);
 
   generateIndexComputation();
-  //generateEarlyReturn();
   generateOOBCond();
   generatePostBody();
 
@@ -1505,39 +1502,10 @@ void GpuKernel::generateIndexComputation() {
 /*
  * Adds the following AST to a GPU kernel
  *
- * def chpl_is_oob;
- * chpl_is_oob = `calculated thread idx` > upperBound
- * if (chpl_is_oob) {
- *   return;
- * }
- *
- */
-//void GpuKernel::generateEarlyReturn() {
-  //Symbol* localUpperBound = addKernelArgument(gpuLoop.upperBound());
-
-  //VarSymbol* isOOB = new VarSymbol("chpl_is_oob", dtBool);
-  //fn_->insertAtTail(new DefExpr(isOOB));
-
-  //CallExpr* comparison = new CallExpr(PRIM_GREATER,
-                                      //kernelIndices_[0],
-                                      //localUpperBound);
-  //fn_->insertAtTail(new CallExpr(PRIM_MOVE, isOOB, comparison));
-
-  //BlockStmt* thenBlock = new BlockStmt();
-  //earlyReturnBlock_ = new BlockStmt(); // we'll use this block to add new
-                                       //// statements right before early return
-  //thenBlock->insertAtTail(earlyReturnBlock_);
-  //thenBlock->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-  //fn_->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
-//}
-
-/*
- * Adds the following AST to a GPU kernel
- *
- * def chpl_is_oob;
- * chpl_is_oob = `calculated thread idx` > upperBound
- * if (chpl_is_oob) {
- *   return;
+ * def chpl_is_in_bounds;
+ * chpl_is_in_bounds = `calculated thread idx` <= upperBound
+ * if (chpl_is_in_bounds) {
+ *   // this BlockStmt is now userBody_
  * }
  *
  */
