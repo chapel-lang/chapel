@@ -77,10 +77,9 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCAr
 
 bool isCTypeUnion(const char* name);
 
-llvm::MaybeAlign getPointerAlign(int addrSpace);
-llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td);
-llvm::MaybeAlign getCTypeAlignment(const clang::QualType &qt);
-llvm::MaybeAlign getAlignment(Type* type);
+llvm::MaybeAlign getPointerAlign();  //from clang, in the default address space
+int getCTypeAlignment(Type* type);
+int getCTypeAlignment(const clang::QualType &qt);
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD);
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);

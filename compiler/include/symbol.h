@@ -439,6 +439,12 @@ public:
 *                                                                   *
 ********************************* | ********************************/
 
+// TypeSymbol::llvmAlignment et al. obey this convention in LLVM codegen
+enum AlignmentStatus {
+  ALIGNMENT_UNINIT = 0,   // used only for assertions
+  ALIGNMENT_DEFER  = 1    // defer to LLVM to calculate
+  // >1 ==> the ABI alignment
+};
 
 // These map from Chapel function types to LLVM function types. They
 // live here rather than in 'llvmUtil.h' because of a name conflict
@@ -454,7 +460,23 @@ class TypeSymbol final : public Symbol {
   // for this type has already been codegen'd
   // and cache it if it has.
 #ifdef HAVE_LLVM
+  // These type and alignment are set or finalized upon Type::codegenDef().
+  // For a class type, they store the info about the corresponding struct.
   llvm::Type* llvmImplType;
+  int         llvmAlignment;  // see AlignmentStatus
+
+  bool hasLLVMType() const;
+
+  // The following pairs return the same result except for class types, where
+  //  - the "Structure" versions return the info about its struct,
+  //  - the non-structure versions return the info about the pointer.
+  llvm::Type* getLLVMStructureType();
+  llvm::Type* getLLVMType();
+  int getLLVMStructureAlignment();  // these two may return ALIGNMENT_DEFER
+  int getLLVMAlignment();
+
+  int getABIAlignment(llvm::Type* llvmType);  // always >= 1, never "defer"
+
   llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
   llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
   llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
@@ -464,12 +486,11 @@ class TypeSymbol final : public Symbol {
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
-  llvm::Type* getLLVMStructureType();         // get structure type for class
-  llvm::Type* getLLVMType();                  // get pointer to structure type for class
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmImplType;
+  int   llvmAlignment;
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
@@ -717,6 +738,16 @@ inline bool ShadowVarSymbol::isCompilerAdded() const {
       return false;
   }
 }
+
+#ifdef HAVE_LLVM
+inline bool TypeSymbol::hasLLVMType() const { return llvmImplType != nullptr; }
+inline llvm::Type* Type::getLLVMType() { return symbol->getLLVMType();  }
+inline int Type::getLLVMAlignment()    { return symbol->getLLVMAlignment();}
+
+static inline
+bool isDeferredAlignment(int align) { return align <= ALIGNMENT_DEFER; }
+int  llvmAlignmentOrDefer(int alignment, llvm::Type* type);
+#endif
 
 
 /************************************* | **************************************

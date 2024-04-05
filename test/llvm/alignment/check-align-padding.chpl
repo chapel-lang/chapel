@@ -1,3 +1,5 @@
+use CTypes;
+
 extern {
   #include <stdio.h>
   #include <stdbool.h>
@@ -10,10 +12,6 @@ extern {
     uint64_t a __attribute__((aligned (16)));
   };
 
-  int64_t getOffset(void* base, void* field);
-  int64_t getOffset(void* base, void* field) {
-    return (int64_t)((char*)field-(char*)base);
-  }
 }
 
 record int8int64 {
@@ -45,15 +43,16 @@ record int64aligned16b {
 
 proc compute(ref arg) {
   writeln("Working with ", arg.type:string, " = ", arg);
+  writeln("size: ", c_sizeof(arg.type));
   printFieldOffsets(arg);
 }
-
-extern proc getOffset(const ref base, const ref field): int(64);
 
 proc printFieldOffsets(ref base: ?t) {
   use Reflection;
   for param i in 0..getNumFields(t)-1 {
-    writeln(getFieldName(base.type, i), ": ", getField(base, i).type:string, " = ", getOffset(base, getField(base, i)));
+    param fieldName = getFieldName(base.type, i);
+    writeln(fieldName, ": ", getField(base, i).type:string,
+            " = ", c_offsetof(base.type, fieldName));
   }
 }
 
@@ -72,4 +71,8 @@ proc main() {
   v6.field2.x = 0;
   v6.field2.a = 0;
   compute(v6);
+  var v7: aligned16test;
+  v7.x = 0;
+  v7.a = 0;
+  compute(v7);
 }

@@ -267,22 +267,35 @@ GenRet DefExpr::codegen() {
 ************************************* | ************************************/
 
 #ifdef HAVE_LLVM
-llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name)
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, Type* astType,
+                                Symbol* astSymbol, const char* name)
 {
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
   llvm::AllocaInst* val = NULL;
 
   val = createAllocaInFunctionEntry(irBuilder, type, name);
+  setValueAlignment(val, astType, astSymbol);
 
   return val;
 }
 
-llvm::AllocaInst* createVarLLVM(llvm::Type* type)
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, Type* astType,
+                                Symbol* astSymbol)
 {
   char name[32];
   snprintf(name, sizeof(name), "chpl_macro_tmp_%d", codegen_tmp++);
-  return createVarLLVM(type, name);
+  return createVarLLVM(type, astType, astSymbol, name);
+}
+
+// 'alignment' is expected to follow 'AlignmentStatus'
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name,
+                                int alignment)
+{
+  llvm::AllocaInst* result = createVarLLVM(type, (Type*)nullptr,
+                                           (Symbol*)nullptr, name);
+  setValueAlignment(result, alignment);
+  return result;
 }
 
 llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
@@ -303,6 +316,30 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
       std::pair<llvm::AllocaInst*, llvm::Type*>(alloca, newType));
 
   return val;
+}
+
+// 'alignment' is expected to follow 'AlignmentStatus'
+void setValueAlignment(llvm::Value* value, int alignment) {
+  if (! isDeferredAlignment(alignment)) {
+    llvm::Align align = llvm::Align(alignment);
+    // todo: avoid a branch when compiler knows the arg is a GlobalVariable
+    if (auto val = llvm::dyn_cast<llvm::AllocaInst>(value))
+      val->setAlignment(align);
+    else if (auto val = llvm::dyn_cast<llvm::GlobalVariable>(value))
+      val->setAlignment(align);
+    else
+      INT_FATAL("unexpected llvm::Value");
+  }
+}
+
+// 'astSymbol' and 'astType' are used to determine the alignment.
+// 'astSymbol' can be null when called from createTempVar()
+// 'astType' can be also null when called from createTempVar(ctype, alignment)
+void setValueAlignment(llvm::Value* value, Type* astType, Symbol* astSymbol) {
+  // Future work: we have propagated 'astSymbol' all the way to here so that
+  // we can check its desired alignment, in addition to astType's, if any.
+  if (astType == nullptr) return;
+  setValueAlignment(value, astType->getLLVMAlignment());
 }
 
 static
@@ -1507,7 +1544,9 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   return ret;
 }
 
-GenRet createTempVar(const char* ctype)
+// 'alignment' is expected to follow 'AlignmentStatus'
+// 'alignment' is UNUSED for C codegen
+GenRet createTempVar(const char* ctype, int alignment)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -1524,7 +1563,7 @@ GenRet createTempVar(const char* ctype)
     bool isUnsigned;
     llvm::Type* llTy = info->lvt->getType(ctype, &isUnsigned);
     INT_ASSERT(llTy);
-    ret.val = createVarLLVM(llTy, name);
+    ret.val = createVarLLVM(llTy, name, alignment);
     ret.isUnsigned = isUnsigned;
 #endif
   }
@@ -1532,13 +1571,14 @@ GenRet createTempVar(const char* ctype)
 }
 
 // use this function for chplTypes
+// the created temp obeys t's alignment
 GenRet createTempVar(Type* t)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if( info->cfile ) {
     // Just use the C-name.
-    ret = createTempVar(t->symbol->cname);
+    ret = createTempVar(t->symbol->cname, 0); // alignment is unused here
   } else {
 #ifdef HAVE_LLVM
     // We need to code-generate the type in the event
@@ -1547,15 +1587,9 @@ GenRet createTempVar(Type* t)
     // (to do with references and references pointers)
     // It's not a problem for C since the type will
     // be added to the header before the C compiler runs.
-    GenRet tmp = t;
-    llvm::Type* llTy = tmp.type;
-    INT_ASSERT(llTy);
-
-    llvm::AllocaInst* alloca = createVarLLVM(llTy);
-    llvm::MaybeAlign alignment = getAlignment(t);
-    if (alignment) {
-      alloca->setAlignment(*alignment);
-    }
+    // getLLVMType() code-generates the type, if needed.
+    llvm::Type* llTy = t->getLLVMType();
+    llvm::AllocaInst* alloca = createVarLLVM(llTy, t, (Symbol*)nullptr);
     ret.isLVPtr = GEN_PTR;
     ret.val = alloca;
 #endif
@@ -2471,7 +2505,8 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     char name[32];
     snprintf(name, sizeof(name), "chpl_macro_tmp_tv_%d", codegen_tmp++);
 
-    llvm::Value* tmp = createVarLLVM(values.a->getType(), name);
+    llvm::Value* tmp = createVarLLVM(values.a->getType(), ret.chplType,
+                                     (Symbol*)nullptr, name);
 
     llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(
         codegenValue(cond).val, blockIfTrue, blockIfFalse);
@@ -2791,20 +2826,16 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
     INT_ASSERT(val->getType()->isPointerTy());
 
     std::vector<llvm::Value *> llArgs;
-    llvm::AllocaInst* sret = nullptr;
     llvm::Type* chapelRetTy = nullptr;
     bool chapelRetTySigned = false;
-    llvm::MaybeAlign retAlignment;
 
     auto chplFnRetType = chplFnType->returnType();
     if (chplFnRetType == dtNothing || chplFnRetType == dtVoid) {
       chapelRetTy = llvm::Type::getVoidTy(ctx);
     } else {
-
       // TODO: What about indirect calls (e.g. our struct return opt)?
       chapelRetTy = chplFnRetType->codegen().type;
       chapelRetTySigned = is_signed(chplFnRetType);
-      retAlignment = getAlignment(chplFnRetType);
     }
 
     // TODO: Consult what is done for calls to static addresses.
@@ -2854,10 +2885,6 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
     trackLLVMValue(c);
 
     ret.val = c;
-
-    if (sret) {
-      ret.val = codegenLoadLLVM(sret, chplFnType->returnType());
-    }
 
     if (chapelRetTy && ret.val->getType() != chapelRetTy) {
       ret.val = convertValueToType(ret.val, chapelRetTy,
@@ -2964,14 +2991,14 @@ static GenRet codegenCallExprInner(GenRet function,
     llvm::AllocaInst* sret = NULL;
     llvm::Type* chapelRetTy = NULL;
     bool chplRetTySigned = false;
-    llvm::MaybeAlign retAlignment;
+    int retAlignment = ALIGNMENT_DEFER;
     if (fn) {
       if (fn->retType == dtNothing || fn->retType == dtVoid) {
         chapelRetTy = llvm::Type::getVoidTy(ctx);
       } else {
         chapelRetTy = fn->retType->codegen().type;
         chplRetTySigned = is_signed(fn->retType);
-        retAlignment = getAlignment(fn->retType);
+        retAlignment = fn->retType->getLLVMAlignment();
       }
     } else if (FD) {
       clang::QualType retTy = FD->getCallResultType();
@@ -3000,11 +3027,7 @@ static GenRet codegenCallExprInner(GenRet function,
 
       if (returnInfo.isIndirect()) {
         // Create a temporary for holding the return value
-        sret = createVarLLVM(chapelRetTy);
-
-        if (retAlignment) {
-          sret->setAlignment(*retAlignment);
-        }
+        sret = createVarLLVM(chapelRetTy, "chpl_ret_temp", retAlignment);
         llArgs.push_back(sret);
       }
     }
@@ -4654,7 +4677,7 @@ DEFINE_PRIM(RETURN) {
                 nullptr, arg, returnInfo->getInAllocaFieldIndex());
             trackLLVMValue(sret);
 
-            auto align = getPointerAlign(0);
+            llvm::MaybeAlign align = getPointerAlign();
 #if HAVE_LLVM_VER >= 130
             llvm::Value* v = irBuilder->CreateAlignedLoad(sret->getType(),
                                                           sret,
@@ -6121,7 +6144,13 @@ DEFINE_PRIM(DYNAMIC_CAST) {
 DEFINE_PRIM(STACK_ALLOCATE_CLASS) {
     AggregateType* at = toAggregateType(call->get(1)->typeInfo());
     const char* struct_name = at->classStructName(true);
-    GenRet tmp = createTempVar(struct_name);
+    GenRet tmp = createTempVar(struct_name,
+#ifdef HAVE_LLVM
+      gGenInfo->cfile ? 0 : at->symbol->getLLVMStructureAlignment()
+#else
+      0  // ignored for C codegen
+#endif
+    );
 
     ret = codegenCast(at, codegenAddrOf(tmp));
 }

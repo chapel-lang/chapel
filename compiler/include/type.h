@@ -38,6 +38,10 @@
 #include <string>
 #include <vector>
 
+#ifdef HAVE_LLVM
+namespace llvm { class Type; }
+#endif
+
 /*
   Things which must be changed if instance variables are added
   to Types:
@@ -123,6 +127,10 @@ public:
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
+#ifdef HAVE_LLVM
+  llvm::Type* getLLVMType();
+  int getLLVMAlignment();
+#endif
 
 protected:
   Type(AstTag astTag, Symbol* init_defaultVal);
