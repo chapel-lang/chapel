@@ -605,7 +605,18 @@ class FileInfo:
             if not scope:
                 continue
 
+            file = ast.location().path()
+            in_bundled_module = self.context.context.is_bundled_path(file)
+
             for name, nodes in scope.visible_nodes():
+                # Don't show internal symbols to the user, even if they
+                # are technically in scope. The exception is if we're currently
+                # editing a standard file.
+                skip_prefixes = ["chpl_", "chpldev_", "_"]
+                if any(name.startswith(prefix) for prefix in skip_prefixes):
+                    if not in_bundled_module:
+                        continue
+
                 # Just take the first value to avoid showing N entries for
                 # overloaded functions.
                 self.visible_decls.append((name, nodes[0]))
