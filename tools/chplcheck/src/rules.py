@@ -323,3 +323,43 @@ def register_rules(driver):
 
         for unused in indices.keys() - uses:
             yield indices[unused]
+
+    @driver.advanced_rule
+    def SimpleDomainAsRange(context: Context, root: AstNode):
+        """
+        Warn for simple domains in loops that can be ranges.
+        """
+
+        def is_range_like(node: AstNode):
+            """
+            a node is range like if its a range, a `count` expr with a
+            range-like on the lhs, a `by` expr with a range-like on the lhs, or
+            an `align` expr with a range-like on the lhs
+            """
+
+            if isinstance(node, Range):
+                return True
+            if (
+                isinstance(node, OpCall)
+                and node.is_binary_op()
+                and (
+                    node.op() == "#"
+                    or node.op() == "by"
+                    or node.op() == "align"
+                )
+            ):
+                return is_range_like(node.actual(0))
+            return False
+
+        for loop, _ in chapel.each_matching(root, IndexableLoop):
+            iterand = loop.iterand()
+            if not isinstance(iterand, Domain):
+                continue
+            exprs = list(iterand.exprs())
+            if len(exprs) != 1:
+                continue
+            # only warn for ranges or count operators
+            if not is_range_like(exprs[0]):
+                continue
+
+            yield iterand, loop
