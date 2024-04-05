@@ -3310,8 +3310,13 @@ static bool resolveFnCallSpecial(Context* context,
         second.type()->isIntType()) {
       auto tup = thisType.type()->toTupleType();
       auto val = second.param()->toIntParam()->value();
-      auto member = tup->elementType(val);
-      exprTypeOut = member;
+      if (val < 0 || val >= tup->numElements()) {
+        CHPL_REPORT(context, TupleIndexOOB, astForErr->toCall(), tup, val);
+        exprTypeOut = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+      } else {
+        auto member = tup->elementType(val);
+        exprTypeOut = member;
+      }
       return true;
     }
   }

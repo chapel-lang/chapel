@@ -1419,6 +1419,18 @@ void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
              "but expansion can only be used on tuples.");
 }
 
+void ErrorTupleIndexOOB::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::Call*>(info_);
+  auto type = std::get<const types::TupleType*>(info_);
+  auto index = std::get<const int>(info_);
+
+  wr.heading(kind_, type_, call, "tuple index out of bounds");
+  wr.message("In the following expression:");
+  wr.code(call, { call });
+  wr.message("the index value is '", index, "' but the valid indices for this",
+             " tuple are in the range 0..", type->numElements()-1);
+}
+
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info_);
   auto elemName = std::get<UniqueString>(info_);
