@@ -26,10 +26,10 @@
 #include <hip/hip_common.h>
 #include <hip/hip_runtime.h>
 #include "gpu/amd/rocm-version.h"
+#include "gpu/amd/rocm-utils.h"
 
 #if ROCM_VERSION_MAJOR >= 5
 // if we include this all the time, we get unused function errors
-#include "gpu/amd/rocm-utils.h"
 #include <hipcub/hipcub.hpp>
 #endif
 
@@ -70,11 +70,13 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
   } \
 }
 #else
+// we don't produce an error message here, because the final reduction will
+// trigger the error. On device, the best we could do is printf, which would
+// result in a wall of text
 #define DEF_ONE_DEV_SUM_REDUCE(impl_kind, chpl_kind, data_type, block_size) \
 __device__ static inline void \
 chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
                                                               data_type* interim_res) { \
-  chpl_internal_error("'reduce' expressions and intents are not supported with AMD GPUs using ROCm version <5\n");\
 }
 #endif
 
@@ -96,12 +98,14 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
   } \
 }
 #else
+// we don't produce an error message here, because the final reduction will
+// trigger the error. On device, the best we could do is printf, which would
+// result in a wall of text
 #define DEF_ONE_DEV_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type, block_size) \
 __device__ static inline void \
 chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
                                                               data_type* interim_res) { \
 \
-  chpl_internal_error("'reduce' expressions and intents are not supported with AMD GPUs using ROCm version <5\n");\
 }
 #endif
 
