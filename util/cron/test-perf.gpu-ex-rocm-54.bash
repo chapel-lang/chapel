@@ -15,7 +15,7 @@ export CHPL_GPU=amd  # also detected by default
 export CHPL_GPU_ARCH=gfx90a
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-ex-rocm-54"
 
-export CHPL_TEST_PERF_CONFIG_NAME="1-node-mi60"
+export CHPL_TEST_PERF_CONFIG_NAME="1-node-mi250x"
 source $CWD/common-native-gpu-perf.bash
 # make sure this comes after setting SUBDIR (set by native-gpu-perf) and
 # CONFIG_NAME
