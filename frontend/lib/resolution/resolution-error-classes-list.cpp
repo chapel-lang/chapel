@@ -831,7 +831,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
-      auto formalDecl = badPass.formal()->toNamedDecl();
+      auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = nullptr;
       if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
         actualExpr = call->actual(badPass.actualIdx());
@@ -840,7 +840,13 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
       wr.code(fn->id(), { formalDecl });
 
-      wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+      std::string formalName;
+      if (auto named = formalDecl->toNamedDecl()) {
+        formalName = "'" + named->name().str() + "'";
+      } else if (formalDecl->isTupleDecl()) {
+        // TODO: should we do anything fancy here?
+      }
+      wr.message("The formal ", formalName, " expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
       if (actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }
