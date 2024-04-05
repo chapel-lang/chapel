@@ -4044,11 +4044,15 @@ bool Resolver::enter(const IndexableLoop* loop) {
       const Range* rng = iterand->toRange();
       ResolvedExpression& lowRE = byPostorder.byAst(rng->lowerBound());
       ResolvedExpression& hiRE = byPostorder.byAst(rng->upperBound());
-      auto low = lowRE.type().param()->toIntParam();
-      auto hi = hiRE.type().param()->toIntParam();
+      // TODO: Simplify once we no longer use nullptr for param()
+      auto lowParam = lowRE.type().param();
+      auto hiParam = hiRE.type().param();
+      auto low = lowParam ? lowParam->toIntParam() : nullptr;
+      auto hi = hiParam ? hiParam->toIntParam() : nullptr;
 
       if (low == nullptr || hi == nullptr) {
         context->error(loop, "param loops may only iterate over range literals with integer bounds");
+        return false;
       }
 
       std::vector<ResolutionResultByPostorderID> loopResults;
