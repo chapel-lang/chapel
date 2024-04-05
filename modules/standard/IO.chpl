@@ -839,6 +839,7 @@ use CTypes;
 public use OS;
 private use Reflection;
 public use ChapelIO only write, writeln, writef;
+use ByteBufferHelpers;
 
 /*
 The :type:`ioMode` type is an enum. When used as arguments when opening files, its
@@ -8114,39 +8115,86 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
     try ch.lock(); defer { ch.unlock(); }
 
-    var binary:uint(8) = qio_channel_binary(ch._channel_internal);
-    var byteorder:uint(8) = qio_channel_byteorder(ch._channel_internal);
+    // note the current channel position
+    var pos = qio_channel_offset_unlocked(ch._channel_internal);
 
-    if binary {
-      err = qio_channel_read_string(false, byteorder,
-                                    iostringstyleInternal.data_toeof:int(64),
-                                    ch._channel_internal, tx,
-                                    lenread, uselen);
-    } else {
-      var save_style: iostyleInternal = ch._styleInternal();
-      var style: iostyleInternal = ch._styleInternal();
-      style.string_format = QIO_STRING_FORMAT_TOEOF;
-      ch._set_styleInternal(style);
-
-      if t == string {
-        err = qio_channel_scan_string(false,
-                                      ch._channel_internal, tx,
-                                      lenread, uselen);
+    // adjust uselen according to the channel's region,
+    // which cannot change during this read
+    var end = qio_channel_end_offset_unlocked(ch._channel_internal);
+    if end != max(int(64)) {
+      // if the channel had an end position set, compute distance to it
+      var channelLen = end - pos;
+      if channelLen < uselen {
+        uselen = channelLen;
       }
-      else {
-        err = qio_channel_scan_bytes(false,
-                                     ch._channel_internal, tx,
-                                     lenread, uselen);
-      }
-      ch._set_styleInternal(save_style);
     }
 
-    var tmp = t.createAdoptingBuffer(tx, length=lenread);
+    // compute a guess as to the size to read based on the file length.
+    // this is only a guess & it's possible it will be out of date
+    // by the time we actually read.
+    var guessReadSize = 0;
+    {
+      var fp: qio_file_ptr_t = nil;
+      qio_channel_get_file_ptr(ch._channel_internal, fp);
+      var err:errorCode = 0;
+      var fileLen:int(64) = -1;
+      if fp {
+        err = qio_file_length(fp, fileLen);
+      }
+      if !err && pos >= 0 && fileLen >= 0 {
+        guessReadSize = fileLen - pos;
+      } else {
+        guessReadSize = 0;
+      }
+      // limit the size to read by uselen
+      if guessReadSize > uselen {
+        guessReadSize = uselen;
+      }
+    }
+
+    // Note: remainder of this function assumes that the file data
+    // is in the same string encoding as the result (UTF-8). If/when
+    // fileReader supports other encodings, this will need to be updated.
+
+    // proactively allocate 'guessReadSize'
+    var buff: bufferType = nil;
+    var buffSz = 0;
+    var n:c_ssize_t = 0; // how many bytes have we read into buff?
+    assert(guessReadSize >= 0);
+    (buff, buffSz) = bufferAlloc(guessReadSize+1); // room for trailing \0
+
+    // then try to read repeatedly until we have read 'uselen' or reach EOF
+    while n < uselen {
+      var err:errorCode = 0;
+      var amtRead:c_ssize_t = 0;
+      if n >= buffSz {
+        // if we need more room in the buffer, grow it
+        var requestSz = 2*buffSz;
+        if requestSz < 16 then requestSz = 16;
+        (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
+      }
+      assert(n < buffSz);
+      err = qio_channel_read(false, ch._channel_internal,
+                             buff[n], // read starting with data here
+                             min(uselen - n, buffSz - n),
+                             amtRead);
+      n += amtRead;
+      if err == EEOF {
+        // reached EOF so we need to stop
+        break;
+      }
+    }
+
+    // add the trailing \0
+    (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
+    buff[n] = 0;
+
+    var tmp = t.createAdoptingBuffer(buff, length=n);
     out_var <=> tmp;
+    lenread = n;
   }
 
   return (err, lenread);
-
 }
 
 /*
