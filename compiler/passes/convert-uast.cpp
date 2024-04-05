@@ -736,7 +736,7 @@ struct Converter {
             ret = new CallExpr(se);
           }
           if (isFieldAccess) {
-            INT_FATAL("resolving field access call not yet implemented");
+            CHPL_UNIMPL("resolving field access call not yet implemented");
             // TODO: convert it to a call to the field accessor
             // using the resolved TypedFnSignature from rr
           }
@@ -847,7 +847,7 @@ struct Converter {
       astlocMarker markAstLoc(stmt->id());
       Expr* e = convertAST(stmt);
       if (!e) continue;
-      if (ret) INT_FATAL("implicit block with multiple statements");
+      if (ret) CHPL_UNIMPL("implicit block with multiple statements");
       ret = isBlockStmt(e) ? toBlockStmt(e) : buildChapelStmt(e);
     }
 
@@ -1255,7 +1255,7 @@ struct Converter {
       case uast::New::SHARED: symManager = dtShared->symbol; break;
       case uast::New::UNMANAGED: symManager = dtUnmanaged->symbol; break;
       case uast::New::BORROWED: symManager = dtBorrowed->symbol; break;
-      default: INT_FATAL("Not handled!"); break;
+      default: CHPL_UNIMPL("Unhandled new expression"); break;
     }
 
     INT_ASSERT(symManager);
@@ -1463,7 +1463,7 @@ struct Converter {
         Expr* riExpr = convertScanReduceOp(rd->op());
         svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
       } else {
-        INT_FATAL("Not handled!");
+        CHPL_UNIMPL("Unhandled with clause");
       }
 
       INT_ASSERT(svs != nullptr);
@@ -1812,7 +1812,7 @@ struct Converter {
 
     // Else it's something that we haven't seen yet.
     } else {
-      INT_FATAL("Not handled yet!");
+      CHPL_UNIMPL("Unhandled Decl");
       return nullptr;
     }
   }
@@ -2071,7 +2071,7 @@ struct Converter {
           actualList->insertAtTail(rhs);
           hasConvertedThisIter = true;
         } else {
-          if (isAssociativeList) INT_FATAL("Not possible!");
+          if (isAssociativeList) CHPL_UNIMPL("Invalid associative list");
         }
       }
 
@@ -2475,7 +2475,8 @@ struct Converter {
         } else if (call->numActuals() == 1) {
           child = call->get(1);
         } else {
-          INT_FATAL(call, "unexpected form for new expression (no actuals)");
+          CHPL_UNIMPL("unexpected form for new expression (no actuals)");
+          return nullptr;
         }
         child->remove();
         auto toNilable = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, child);
@@ -2875,7 +2876,7 @@ struct Converter {
         return RET_TYPE;
     }
 
-    INT_FATAL("case not handled");
+    CHPL_UNIMPL("return intent case not handled");
     return RET_VALUE;
   }
 
@@ -2973,7 +2974,7 @@ struct Converter {
 
     } else {
       // should not arrive here, or else we missed something
-      INT_FATAL("should not be reached");
+      CHPL_UNIMPL("Unhandled lifetime clause");
       return nullptr;
     }
   }
@@ -3115,7 +3116,7 @@ struct Converter {
           conv = buildTupleArgDefExpr(tag, tuple, type, init);
           INT_ASSERT(conv);
         } else {
-          INT_FATAL("Not handled yet!");
+          CHPL_UNIMPL("Unhandled formal");
         }
 
         // Attaches def to function's formal list.
@@ -3304,7 +3305,7 @@ struct Converter {
           conv = toDefExpr(convertAST(anon));
           INT_ASSERT(conv);
         } else {
-          INT_FATAL("Not handled yet!");
+          INT_FATAL("Unhandled formal in function signature");
         }
 
         // Attaches def to function's formal list.
@@ -3545,7 +3546,7 @@ struct Converter {
         return INTENT_TYPE;
     }
 
-    INT_FATAL("case not handled");
+    CHPL_UNIMPL("Unhandled formal intent");
     return INTENT_BLANK;
   }
 
@@ -4220,7 +4221,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
       if (nBest == 0) {
         // nothing to do
       } else if (nBest > 1) {
-        INT_FATAL("return intent overloading not yet handled");
+        CHPL_UNIMPL("return intent overloading not yet handled");
       } else if (nBest == 1) {
         const resolution::TypedFnSignature* sig = candidates.only().fn();
         Symbol* fn = findConvertedFn(sig);
@@ -4359,27 +4360,27 @@ Type* Converter::convertClassType(const types::QualifiedType qt) {
     }
   }
 
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled class type");
   return nullptr;
 }
 
 Type* Converter::convertEnumType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled enum type");
   return nullptr;
 }
 
 Type* Converter::convertExternType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled extern type");
   return nullptr;
 }
 
 Type* Converter::convertFunctionType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled function type");
   return nullptr;
 }
 
 Type* Converter::convertBasicClassType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled basic class type");
   return nullptr;
 }
 
@@ -4391,17 +4392,17 @@ Type* Converter::convertRecordType(const types::QualifiedType qt) {
     return dtBytes;
   }
 
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("unhandled record type");
   return nullptr;
 }
 
 Type* Converter::convertTupleType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled tuple type");
   return nullptr;
 }
 
 Type* Converter::convertUnionType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled union type");
   return nullptr;
 }
 
@@ -4937,7 +4938,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     if (isTemporaryConversionSymbol(sym)) {
-      INT_FATAL("could not find target symbol for sym fixup for %s within %s",
+      context->error(inAst, "could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
 
@@ -4966,7 +4967,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     auto usedM = toModuleSymbol(sym);
     if (!usedM) {
-      INT_FATAL("could not find target symbol for module fixup for %s within %s",
+      context->error(inAst, "could not find target symbol for module fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
 
@@ -4983,7 +4984,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
     FnSymbol* fn = findConvertedFn(target, /* trace */ false);
     if (fn == nullptr) {
-      INT_FATAL("could not find target function for call fixup %s within %s",
+      context->error(inAst, "could not find target function for call fixup %s within %s",
                  target->untyped()->name().c_str(),
                  inSymbolId.str().c_str());
     }

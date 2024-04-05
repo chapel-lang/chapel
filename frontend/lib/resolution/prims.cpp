@@ -882,7 +882,6 @@ static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
   return makeParamBool(context, false);
 }
 
