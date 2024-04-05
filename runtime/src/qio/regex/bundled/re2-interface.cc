@@ -335,8 +335,8 @@ static bool append(char*& buf, // buffer
   if (buf == NULL || buf_len + data_len > buf_sz) {
     // reallocate buf
     int64_t new_sz = buf_sz * 2;
-    if (new_sz < data_len) {
-      new_sz = data_len + 32;
+    if (new_sz < buf_len + data_len) {
+      new_sz = buf_len + data_len + 32;
     }
     if (new_sz < 64) {
       new_sz = 64;
