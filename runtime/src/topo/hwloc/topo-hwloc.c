@@ -1167,6 +1167,28 @@ int chpl_topo_bindCPU(int id) {
   return status;
 }
 
+//
+// Binds the current thread to the accessible logical CPUs (PUs). This
+// restricts the thread to the locale's PUs (i.e., the progress thread should
+// use the same PUs as the locale).
+//
+// Returns 0 on success, 1 otherwise
+//
+int chpl_topo_bindLogAccCPUs(void) {
+  int status = 1;
+  if (topoSupport->cpubind->set_thisthread_cpubind) {
+    int flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
+    CHK_ERR_ERRNO(hwloc_set_cpubind(topology, logAccSet, flags) == 0);
+    status = 0;
+  }
+  if (debug) {
+    char buf[1024];
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+    _DBG_P("chpl_topo_bindLogAccCPUs %s status: %d", buf, status);
+  }
+  return status;
+}
+
 chpl_bool chpl_topo_isOversubscribed(void) {
   _DBG_P("oversubscribed = %s", oversubscribed ? "True" : "False");
   return oversubscribed;
