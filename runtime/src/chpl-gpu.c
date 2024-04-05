@@ -463,30 +463,6 @@ static bool cfg_can_reduce(kernel_cfg* cfg) {
           cfg->blk_dim_z == 1);
 }
 
-static void cfg_add_reduce_var_for_arg(kernel_cfg* cfg, void* arg,
-                                       size_t elem_size,
-                                       reduce_wrapper_fn_t wrapper) {
-  // create the reduction buffer
-  const int i = cfg->cur_reduce_var;
-  assert(i < cfg->n_reduce_vars);
-
-  void* buf = chpl_gpu_mem_array_alloc((cfg->grd_dim_x)*elem_size,
-                                       CHPL_RT_MD_GPU_KERNEL_ARG,
-                                       cfg->ln, cfg->fn);
-  CHPL_GPU_DEBUG("Allocated reduction buffer: %p num elems:%d elem_size:%zu\n",
-                 buf, cfg->grd_dim_x, elem_size);
-
-  cfg->reduce_vars[i].buffer = buf;
-  cfg->reduce_vars[i].outer_var = arg;
-  cfg->reduce_vars[i].elem_size = elem_size;
-  cfg->reduce_vars[i].wrapper = wrapper;
-
-  // pass that normally
-  cfg_add_direct_param((kernel_cfg*)cfg, &(cfg->reduce_vars[i].buffer));
-
-  cfg->cur_reduce_var++;
-}
-
 static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   // n_pids is what the compiler asks for. There can be some arrays
   // with pid=-1 and n_pids will include those. But we don't need to offload
@@ -664,7 +640,26 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
   if (cfg_can_reduce(cfg)) {
     // pass the argument normally
     cfg_add_direct_param(cfg, arg);
-    cfg_add_reduce_var_for_arg(cfg, arg, elem_size, wrapper);
+
+    // create the reduction buffer
+    const int i = cfg->cur_reduce_var;
+    assert(i < cfg->n_reduce_vars);
+
+    void* buf = chpl_gpu_mem_array_alloc((cfg->grd_dim_x)*elem_size,
+                                         CHPL_RT_MD_GPU_KERNEL_ARG,
+                                         cfg->ln, cfg->fn);
+    CHPL_GPU_DEBUG("Allocated reduction buffer: %p num elems:%d elem_size:%zu\n",
+                   buf, cfg->grd_dim_x, elem_size);
+
+    cfg->reduce_vars[i].buffer = buf;
+    cfg->reduce_vars[i].outer_var = arg;
+    cfg->reduce_vars[i].elem_size = elem_size;
+    cfg->reduce_vars[i].wrapper = wrapper;
+
+    // pass the reduction buffer normally
+    cfg_add_direct_param((kernel_cfg*)cfg, &(cfg->reduce_vars[i].buffer));
+
+    cfg->cur_reduce_var++;
 
     CHPL_GPU_DEBUG("\tAdded by-reduce param (at %d): %p\n", cfg->cur_param, arg);
   }
