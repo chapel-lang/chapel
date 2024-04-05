@@ -210,11 +210,12 @@ def completion_item_for_decl(
     if kind == SymbolKind.Method:
         return None
 
+    name_to_use = override_name if override_name else decl.name()
     return CompletionItem(
-        label=override_name if override_name else decl.name(),
+        label=name_to_use,
         kind=decl_kind_to_completion_kind(kind),
-        insert_text=decl.name(),
-        sort_text=decl.name(),
+        insert_text=name_to_use,
+        sort_text=name_to_use,
     )
 
 

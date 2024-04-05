@@ -1631,7 +1631,9 @@ getSymbolsAvailableInScopeQuery(Context* context,
 
   std::map<UniqueString, BorrowedIdsWithName> toReturn;
 
-  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name) {
+  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name, UniqueString& renameTo) {
+    renameTo = name;
+
     if (!inVisibilitySymbols) return true;
     auto kind = inVisibilitySymbols->kind();
 
@@ -1639,29 +1641,35 @@ getSymbolsAvailableInScopeQuery(Context* context,
       return true;
     }
 
-    if (kind == VisibilitySymbols::SYMBOL_ONLY ||
+    if (kind == VisibilitySymbols::ONLY_CONTENTS ||
         kind == VisibilitySymbols::CONTENTS_EXCEPT) {
       auto& namePairs = inVisibilitySymbols->names();
-      bool anyMatches =
-        std::any_of(namePairs.begin(), namePairs.end(), [name](auto& pair) {
-          return pair.first == name;
-        });
 
-      return kind == VisibilitySymbols::SYMBOL_ONLY ? anyMatches : !anyMatches;
+      bool anyMatches = false;
+      for (auto& namePair : namePairs) {
+        if (namePair.first != name) continue;
+
+        anyMatches = true;
+        renameTo = namePair.second;
+        break;
+      }
+
+      return kind == VisibilitySymbols::CONTENTS_EXCEPT ? !anyMatches : anyMatches;
     }
 
     return false;
   };
 
   for (auto& decl : scope->declared()) {
-    if (!allowedByVisibility(decl.first)) continue;
+    UniqueString renameTo;
+    if (!allowedByVisibility(decl.first, renameTo)) continue;
 
     auto flagSet = 0;
     if (inVisibilitySymbols) flagSet |= IdAndFlags::PUBLIC;
 
     auto exclude = IdAndFlags::FlagSet::empty();
     if (auto borrowed = decl.second.borrow(flagSet, exclude)) {
-      toReturn.try_emplace(decl.first, *borrowed);
+      toReturn.try_emplace(renameTo, *borrowed);
     }
   }
 
@@ -1679,8 +1687,9 @@ getSymbolsAvailableInScopeQuery(Context* context,
     auto visStmtSymbols =
       getSymbolsAvailableInScopeQuery(context, vis.scope(), &vis);
     for (auto& pair : visStmtSymbols) {
-      if (!allowedByVisibility(pair.first)) continue;
-      toReturn.try_emplace(pair.first, pair.second);
+      UniqueString renameTo;
+      if (!allowedByVisibility(pair.first, renameTo)) continue;
+      toReturn.try_emplace(renameTo, pair.second);
     }
   }
 
