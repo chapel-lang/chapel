@@ -612,6 +612,11 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
     chpl_gpu_mem_free(cfg->priv_table_dev, cfg->ln, cfg->fn);
   }
 
+  for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
+    chpl_gpu_mem_free(cfg->reduce_vars[i].buffer, cfg->ln, cfg->fn);
+  }
+  chpl_mem_free(cfg->reduce_vars, cfg->ln, cfg->fn);
+
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
   CHPL_GPU_DEBUG("Deinitialized kernel config\n");
 }
