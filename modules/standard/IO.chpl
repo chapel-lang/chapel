@@ -1330,6 +1330,7 @@ private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleIntern
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):errorCode;
+private extern proc qio_file_length_guess(f:qio_file_ptr_t):int(64);
 
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal, bufIoMax:int(64)):errorCode;
 
@@ -8133,15 +8134,14 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // this is only a guess & it's possible it will be out of date
     // by the time we actually read.
     var guessReadSize = 0;
-    if uselen > 1000 { // avoid the 'stat' call for small reads
+    {
       var fp: qio_file_ptr_t = nil;
       qio_channel_get_file_ptr(ch._channel_internal, fp);
-      var locErr:errorCode = 0;
       var fileLen:int(64) = -1;
       if fp {
-        locErr = qio_file_length(fp, fileLen);
+        fileLen = qio_file_length_guess(fp);
       }
-      if !locErr && pos >= 0 && fileLen >= 0 {
+      if pos >= 0 && fileLen >= 1 {
         guessReadSize = fileLen - pos;
       }
       // limit the size to read by uselen
