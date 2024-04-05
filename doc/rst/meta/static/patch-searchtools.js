@@ -1,6 +1,6 @@
---- searchtools.js	2024-03-14 17:18:07.389035224 -0400
-+++ searchtools.js	2024-03-14 17:55:58.410810922 -0400
-@@ -64,9 +64,38 @@
+--- searchtools.js	2024-03-18 14:33:26.022582578 -0400
++++ searchtools.js	2024-03-18 14:46:19.742546602 -0400
+@@ -64,9 +64,40 @@
    const showSearchSummary = DOCUMENTATION_OPTIONS.SHOW_SEARCH_SUMMARY;
    const contentRoot = document.documentElement.dataset.content_root;
  
@@ -26,9 +26,11 @@
 +  else if (docName.startsWith("modules/"))
 +    typestr = "standard library";
 +
++  let useTitle = title;
++  if (showTitle) useTitle = showTitle;
 +  let mydescr;
 +  if (typestr || descr) {
-+    mydescr = " ("; 
++    mydescr = " (";
 +    if (typestr != "") mydescr += typestr;
 +    if (descr) {
 +      if (typestr != "") mydescr += " ";
@@ -40,10 +42,12 @@
    let requestUrl;
    let linkUrl;
    if (docBuilder === "dirhtml") {
-@@ -86,9 +115,11 @@
+@@ -85,10 +116,12 @@
+   let linkEl = listItem.appendChild(document.createElement("a"));
    linkEl.href = linkUrl + anchor;
    linkEl.dataset.score = score;
-   linkEl.innerHTML = title;
+-  linkEl.innerHTML = title;
++  linkEl.innerHTML = useTitle;
 +
 +  if (mydescr)
 +    listItem.appendChild(document.createElement("span")).innerHTML = mydescr;
@@ -54,7 +58,7 @@
      // highlight search terms in the description
      if (SPHINX_HIGHLIGHT_ENABLED)  // set in sphinx_highlight.js
        highlightTerms.forEach((term) => _highlightText(listItem, term, "highlighted"));
-@@ -295,11 +326,12 @@
+@@ -295,11 +328,12 @@
            let score = Math.round(100 * queryLower.length / title.length)
            results.push([
              docNames[file],
@@ -68,7 +72,7 @@
            ]);
          }
        }
-@@ -312,11 +344,12 @@
+@@ -312,11 +346,12 @@
            let score = Math.round(100 * queryLower.length / entry.length)
            results.push([
              docNames[file],
@@ -82,7 +86,7 @@
            ]);
          }
        }
-@@ -432,6 +465,7 @@
+@@ -432,6 +467,7 @@
          descr,
          score,
          filenames[match[0]],
@@ -90,7 +94,7 @@
        ]);
      };
      Object.keys(objects).forEach((prefix) =>
-@@ -539,6 +573,7 @@
+@@ -539,6 +575,7 @@
          null,
          score,
          filenames[file],
