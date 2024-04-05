@@ -348,7 +348,7 @@ def register_rules(driver):
                     or node.op() == "align"
                 )
             ):
-                return is_range_like(list(node.actuals())[0])
+                return is_range_like(node.actual(0))
             return False
 
         for loop, _ in chapel.each_matching(root, IndexableLoop):
@@ -362,4 +362,4 @@ def register_rules(driver):
             if not is_range_like(exprs[0]):
                 continue
 
-            yield iterand
+            yield iterand, loop
