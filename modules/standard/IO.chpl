@@ -8125,7 +8125,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
       // if the channel had an end position set, compute distance to it
       var channelLen = end - pos;
       if channelLen < uselen {
-        uselen = channelLen;
+        uselen = channelLen + 1; // +1 to get an EOF back even if already there
       }
     }
 
@@ -8133,18 +8133,16 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // this is only a guess & it's possible it will be out of date
     // by the time we actually read.
     var guessReadSize = 0;
-    {
+    if uselen > 1000 { // avoid the 'stat' call for small reads
       var fp: qio_file_ptr_t = nil;
       qio_channel_get_file_ptr(ch._channel_internal, fp);
-      var err:errorCode = 0;
+      var locErr:errorCode = 0;
       var fileLen:int(64) = -1;
       if fp {
-        err = qio_file_length(fp, fileLen);
+        locErr = qio_file_length(fp, fileLen);
       }
-      if !err && pos >= 0 && fileLen >= 0 {
+      if !locErr && pos >= 0 && fileLen >= 0 {
         guessReadSize = fileLen - pos;
-      } else {
-        guessReadSize = 0;
       }
       // limit the size to read by uselen
       if guessReadSize > uselen {
@@ -8165,7 +8163,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
     // then try to read repeatedly until we have read 'uselen' or reach EOF
     while n < uselen {
-      var err:errorCode = 0;
+      var locErr:errorCode = 0;
       var amtRead:c_ssize_t = 0;
       if n >= buffSz {
         // if we need more room in the buffer, grow it
@@ -8174,13 +8172,14 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
       }
       assert(n < buffSz);
-      err = qio_channel_read(false, ch._channel_internal,
-                             buff[n], // read starting with data here
-                             min(uselen - n, buffSz - n),
-                             amtRead);
+      locErr = qio_channel_read(false, ch._channel_internal,
+                                buff[n], // read starting with data here
+                                min(uselen - n, buffSz - n),
+                                amtRead);
       n += amtRead;
-      if err == EEOF {
-        // reached EOF so we need to stop
+      if locErr {
+        // reached EOF or other error so we need to stop
+        err = locErr;
         break;
       }
     }
