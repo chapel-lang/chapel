@@ -8189,7 +8189,16 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
     buff[n] = 0;
 
-    var tmp = t.createAdoptingBuffer(buff, length=n);
+    // if the buffer contains invalid UTF-8, createAdoptingBuffer
+    // will throw. Make sure to free the buffer in that case.
+    var tmp: t;
+    try {
+      tmp = t.createAdoptingBuffer(buff, length=n);
+    } catch e {
+      bufferFree(buff);
+      throw e;
+    }
+
     out_var <=> tmp;
     lenread = n;
   }
