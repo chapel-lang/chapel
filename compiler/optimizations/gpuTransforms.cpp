@@ -1222,23 +1222,26 @@ bool KernelArg::eligible() {
   return !this->isReduce() || this->redInfo_.kind != ReductionKind::UNSUPPORTED;
 }
 
-/* We need to give runtime a function to invoke to do the final reduction. The
- * tricky part is: runtime is type-agnostic, where everything is a `void*`. So,
- * this function should take `void*` arguments, cast them properly, and call the
- * correct function in the runtime that will perform the final reduction.
- *
- * The function we create looks like:
- *
+/* We need to give runtime a function to invoke to do the final reduction. We
+ * can't have the pointer to a runtime function easily, nor have the runtime
+ * find the function based off of its name (There might be a dlopen trick for
+ * that if we absolutely need to:
+ * https://github.com/Cray/chapel-private/issues/5312#issuecomment-1928811564).
+ * So we create a wrapper function which we can actually pass as a function
+ * pointer to the runtime.
+ * 
  * void reduce_0_chpl_gpu_kernel_Foo_line_5(void* in_data, int32_t, num_elems,
  *                                          void* out_data, void* out_idx) {
  *
- *   // type-casting is handled at codegen time
- *   PRIM_GPU_REDUCE_WRAPPER("chpl_gpu_sum_reduce_int32_t", int(32), in_data,
+ *   // Note that we can't call functions by name here, either. So we pass the
+ *   // function's prefix (chpl_gpu_sum_reduce) and the data type (int(32)).
+ *   // Codegen will generate the correct function call
+ *   // (chpl_gpu_sum_reduce_int32_t) based on those.
+ *   PRIM_GPU_REDUCE_WRAPPER("chpl_gpu_sum_reduce", int(32), in_data,
  *                           num_elems, out_data, out_idx);
  * }
  */
 FnSymbol* KernelArg::generateFinalReductionWrapper() {
-  
   // here, we need to create an unambiguous name for the wrapper. This is
   // because we are marking it an `export`. export-ed functions don't get unique
   // names during codegen, so wires get crossed.
