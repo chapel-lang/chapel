@@ -400,57 +400,7 @@ static int free_and_return_error(char* buf) {
 static const int kMaxArgs = 16;
 static const int kVecSize = 1+kMaxArgs;
 
-
-// returns the number of replacements made or -1 for an error
-/*
-static int replace_first(const RE2& re, const StringPiece& rewrite,
-                         const StringPiece& str,
-                         const char** str_out, int64_t* len_out) {
-  StringPiece vec[kVecSize];
-  int nvec = 1 + RE2::MaxSubmatch(rewrite);
-  if (nvec > 1 + re.NumberOfCapturingGroups())
-    return -1;
-  if (nvec > static_cast<int>(sizeof(vec)/sizeof(StringPiece)))
-    return -1;
-  if (!re.Match(str, 0, str.size(), RE2::UNANCHORED, vec, nvec))
-    return 0;
-
-  // check that vec[0] makes sense
-  assert(vec[0].data() >= str.data());
-  assert(vec[0].data() + vec[0].size() <= str.data() + str.size());
-
-  char* buf = NULL;
-  int64_t buf_sz = 0;
-  int64_t buf_len = 0;
-  int64_t matchStart = vec[0].data() - str.data();
-
-  // copy any data from before the first match
-  if (!append(buf, buf_sz, buf_len, str.data(), matchStart))
-    return free_and_return_error(buf);
-
-  // copy the replacement instead of the first match
-  if (nvec == 1) {
-    // if there are no submatch replacements e.g. \\1, just copy the replacement
-    if (!append(buf, buf_sz, buf_len, rewrite.data(), rewrite.size()))
-      return free_and_return_error(buf);
-  } else {
-    if (!append_rewrite(buf, buf_sz, buf_len, rewrite, vec, nvec))
-      return free_and_return_error(buf);
-  }
-
-  int64_t matchEnd = matchStart + vec[0].size();
-
-  // then copy anything after the first match
-  if (str.size() > matchEnd)
-    if (!append(buf, buf_sz, buf_len,
-                str.data() + matchEnd, str.size() - matchEnd))
-      return free_and_return_error(buf);
-
-  // done
-  return 1;
-}
-*/
-
+// this function is loosly based upon RE2::GlobalReplace
 static int replace(const RE2& re, const StringPiece& rewrite,
                    const StringPiece& str,
                    int maxreplace,
@@ -529,9 +479,6 @@ static int replace(const RE2& re, const StringPiece& rewrite,
     if (count == maxreplace)
       break;
   }
-
-  // if (count == 0)
-  //  return 0;
 
   // append anything after the last match
   if (p < ep)
