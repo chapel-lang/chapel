@@ -120,6 +120,11 @@ class Context {
      */
     bool includeComments = true;
 
+    /**
+      Disable breakpoint in Context::report.
+     */
+    bool disableErrorBreakpoints = false;
+
     void swap(Configuration& other);
   };
 
