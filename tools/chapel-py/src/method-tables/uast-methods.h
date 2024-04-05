@@ -451,6 +451,11 @@ CLASS_END(StringLikeLiteral)
 CLASS_BEGIN(Call)
   PLAIN_GETTER(Call, actuals, "Get the arguments to this Call node",
                IterAdapterBase*, return mkIterPair(node->actuals()))
+  PLAIN_GETTER(Call, num_actuals, "Get the number of actuals for this Call node",
+               int, return node->numActuals())
+  METHOD(Call, actual, "Get the n'th actual of this Call node",
+         const chpl::uast::AstNode*(int),
+         return node->actual(std::get<0>(args)))
   PLAIN_GETTER(Call, called_expression, "Get the expression invoked by this Call node",
                const chpl::uast::AstNode*, return node->calledExpression())
   PLAIN_GETTER(Call, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",

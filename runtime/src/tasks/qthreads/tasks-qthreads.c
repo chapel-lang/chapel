@@ -841,6 +841,14 @@ static void *comm_task_wrapper(void *arg)
             chpl_warning(msg, 0, 0);
         }
         _DBG_P("comm task bound to CPU %d", rarg->cpu);
+    } else {
+        int rc = chpl_topo_bindLogAccCPUs();
+        if (rc) {
+            chpl_warning(
+                "binding comm task to accessible PUs failed",
+                0, 0);
+        }
+        _DBG_P("comm task bound to accessible PUs");
     }
     (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;

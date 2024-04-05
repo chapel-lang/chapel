@@ -96,11 +96,14 @@ void CompositeType::stringify(std::ostream& ss,
 
   auto sorted = sortedSubstitutions();
 
-  if (superType || !sorted.empty()) {
+  bool printSupertype =
+    superType != nullptr && stringKind != StringifyKind::CHPL_SYNTAX;
+
+  if (printSupertype || !sorted.empty()) {
     bool emittedField = false;
     ss << "(";
 
-    if (superType != nullptr && stringKind != StringifyKind::CHPL_SYNTAX) {
+    if (printSupertype) {
       ss << "super:";
       superType->stringify(ss, stringKind);
       emittedField = true;
@@ -108,9 +111,23 @@ void CompositeType::stringify(std::ostream& ss,
 
     for (const auto& sub : sorted) {
       if (emittedField) ss << ", ";
-      sub.first.stringify(ss, stringKind);
-      ss << ":";
-      sub.second.stringify(ss, stringKind);
+
+      if (stringKind != StringifyKind::CHPL_SYNTAX) {
+        sub.first.stringify(ss, stringKind);
+        ss << ":";
+        sub.second.stringify(ss, stringKind);
+      } else {
+        if (sub.second.isType() || (sub.second.isParam() && sub.second.param() == nullptr)) {
+          sub.second.type()->stringify(ss, stringKind);
+        } else if (sub.second.isParam()) {
+          sub.second.param()->stringify(ss, stringKind);
+        } else {
+          // Some odd configuration; fall back to printing the qualified type.
+          CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
+          sub.second.stringify(ss, stringKind);
+        }
+      }
+
       emittedField = true;
     }
     ss << ")";
@@ -184,7 +201,8 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
     auto path = id.symbolPath();
     return path == "ChapelReduce.ReduceScanOp" ||
            path == "Errors.Error" || 
-           path == "CTypes.c_ptr";
+           path == "CTypes.c_ptr" ||
+           path == "CTypes.c_ptrConst";
   }
 
   return false;

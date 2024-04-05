@@ -451,7 +451,7 @@ def register_rules(driver: LintDriver):
                     or node.op() == "align"
                 )
             ):
-                return is_range_like(list(node.actuals())[0])
+                return is_range_like(node.actual(0))
             return False
 
         for loop, _ in chapel.each_matching(root, IndexableLoop):
@@ -473,5 +473,7 @@ def register_rules(driver: LintDriver):
             s = range_to_text(exprs[0].location(), lines)
 
             yield FullAdvancedRuleResult(
-                iterand, fixit=ChapelFixit.build(iterand.location(), s)
+                iterand,
+                anchor=loop,
+                fixit=ChapelFixit.build(iterand.location(), s),
             )

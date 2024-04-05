@@ -112,7 +112,7 @@ proc getField(const ref obj:?t, param idx: int) type
 
    :arg obj: a class or record
    :arg idx: which field to get
-   :returns: an rvalue referring to that field.
+   :returns: a const reference to that field.
  */
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param idx:int) const ref do
@@ -154,7 +154,7 @@ proc getField(const ref obj:?t, param name: string) type
 
    :arg obj: a class or record
    :arg name: the name of a field
-   :returns: an rvalue referring to that field.
+   :returns: a const reference to that field.
  */
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param name:string) const ref {
@@ -210,7 +210,7 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
 
    :arg x: a class or record
    :arg i: which field to get
-   :returns: an rvalue referring to that field.
+   :returns: a mutable reference to that field.
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
@@ -225,7 +225,7 @@ inline proc getFieldRef(ref x:?t, param i:int) ref {
 
    :arg x: a class or record
    :arg s: the name of a field
-   :returns: an rvalue referring to that field.
+   :returns: a mutable reference to that field.
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")

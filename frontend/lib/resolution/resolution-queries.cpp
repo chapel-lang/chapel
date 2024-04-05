@@ -252,11 +252,16 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
 
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
-    const auto& resolvedStmt = resolveModuleStmt(context, id);
+    // 'typeForModuleLevelSymbol' can be called with an 'id' corresponding to a
+    // variable declared as part of a MultiDecl or TupleDecl. Using that 'id'
+    // with 'resolveModuleStmt' will return a bogus result because that 'id'
+    // is not at the statement level.
+    auto stmtId = parsing::idToContainingMultiDeclId(context, id);
+    const auto& resolvedStmt = resolveModuleStmt(context, stmtId);
     if (resolvedStmt.hasId(id)) {
       result = resolvedStmt.byId(id).type();
       if (result.needsSplitInitTypeInfo(context) && !isCurrentModule) {
-        ID moduleId = parsing::idToParentId(context, id);
+        ID moduleId = parsing::idToParentId(context, stmtId);
         const auto& resolvedModule = resolveModule(context, moduleId);
         assert(resolvedModule.hasId(id));
         result = resolvedModule.byId(id).type();
@@ -3036,6 +3041,12 @@ static const Type* getCPtrType(Context* context,
   UniqueString name = ci.name();
   bool isConst;
 
+  // 'typeForId' should have prepared this for us if 'CTypes' was in scope.
+  auto called = ci.calledType();
+  if (!(called.hasTypePtr() && called.type()->isCPtrType())) {
+    return nullptr;
+  }
+
   if (name == USTR("c_ptr")) {
     isConst = false;
   } else if (name == USTR("c_ptrConst")) {
@@ -3403,11 +3414,10 @@ considerCompilerGeneratedMethods(Context* context,
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& receiver = ci.actual(0);
-  // TODO: This should be the QualifiedType in case of type methods
-  auto receiverType = receiver.type().type();
+  auto receiverType = receiver.type();
 
   // if not compiler-generated, then nothing to do
-  if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
+  if (!needCompilerGeneratedMethod(context, receiverType.type(), ci.name(),
                                    ci.isParenless())) {
     return nullptr;
   }
@@ -3502,6 +3512,8 @@ lookupCalledExpr(Context* context,
       if (auto compType = t->getCompositeType()) {
         receiverScopes =
           Resolver::gatherReceiverAndParentScopesForType(context, compType);
+      } else if (auto cptr = t->toCPtrType()) {
+        receiverScopes.push_back(scopeForId(context, cptr->id(context)));
       }
     }
   }
@@ -3668,14 +3680,32 @@ gatherAndFilterCandidatesForwarding(Context* context,
     auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
     const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
                                                      useDefaults);
-    const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
-    if (fields.numForwards() > 0 ||
-        exprs.numForwards() > 0) {
-      // and check for cycles
-      bool cycleFound = emitErrorForForwardingCycles(context, ct);
-      if (cycleFound == false) {
-        forwards.addForwarding(fields);
-        forwards.addForwarding(exprs);
+
+    if (context->isQueryRunning(resolveForwardingExprs, std::make_tuple(ct))) {
+      // If we are trying to resolve a method call while collecting forwarding
+      // candidates, do not try to use forwarding to resolve that method.
+      //
+      // TODO: this may not be sufficient. For instance, we may have multiple
+      // forwarding statements in succession that bring in necessary methods:
+      //
+      //     forwarding var hasSomething: SomeType;
+      //     forwarding methodFromHasSomething();
+      //
+      // A more robust approach might split forwarding statement resolution
+      // into individual queries, and skip the code below only if the current
+      // forwarding statement is being used to resolve itself.
+      //
+      // https://github.com/chapel-lang/chapel/issues/24709
+    } else {
+      const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
+      if (fields.numForwards() > 0 ||
+          exprs.numForwards() > 0) {
+        // and check for cycles
+        bool cycleFound = emitErrorForForwardingCycles(context, ct);
+        if (cycleFound == false) {
+          forwards.addForwarding(fields);
+          forwards.addForwarding(exprs);
+        }
       }
     }
   }
@@ -4048,7 +4078,9 @@ findMostSpecificAndCheck(Context* context,
   }
 
   // note any most-specific candidates from POI in poiInfo.
-  {
+  // TODO: This can be the case for generated calls, but is skipping the POI
+  // accumulation safe?
+  if (call != nullptr) {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
       for (const MostSpecificCandidate& candidate : mostSpecific) {

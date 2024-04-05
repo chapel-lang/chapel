@@ -641,8 +641,9 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
 }
 
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
+  auto parenlessInfo = Resolver::ParenlessOverloadInfo();
   auto scope = initResolver_.methodReceiverScopes();
-  auto vec = initResolver_.lookupIdentifier(node, scope);
+  auto vec = initResolver_.lookupIdentifier(node, scope, parenlessInfo);
 
   // Handle and exit early if there were no ambiguities.
   if (vec.size() == 1 && vec[0].numIds() == 1) {

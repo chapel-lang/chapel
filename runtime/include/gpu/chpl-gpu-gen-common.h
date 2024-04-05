@@ -138,6 +138,11 @@ __host__ static inline void chpl_gpu_force_sync() {
   chpl_internal_error("chpl_gpu_force_sync called from host");
 }
 
+__host__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  chpl_internal_error("chpl_gpu_force_warp_sync called from host");
+}
+
+
 __device__ static inline
 void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
                                    c_sublocid_t src_subloc, void* raddr,

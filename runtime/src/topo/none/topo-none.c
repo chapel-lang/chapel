@@ -66,6 +66,10 @@ int chpl_topo_bindCPU(int id) {
   return 1;
 }
 
+int chpl_topo_bindLogAccCPUs(void) {
+  return 1;
+}
+
 
 int chpl_topo_getNumNumaDomains(void) {
   return 1;

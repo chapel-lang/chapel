@@ -1342,6 +1342,72 @@ static void test22() {
   }
 }
 
+static void test23() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    std::string prog =
+      R"""(
+      record R {
+        var x : int;
+
+        proc foo() {
+          return 5;
+        }
+      }
+
+      proc helper() {
+        var r : R;
+        return r;
+      }
+
+      proc foo() {
+        return "hello";
+      }
+
+      // should be an int, not a string.
+      var x = helper().foo();
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+      record Inner {
+        var x : int;
+
+        proc innerFoo() {
+          return x;
+        }
+      }
+
+      record Outer {
+        var inner : Inner;
+
+        proc helper() const ref {
+          return inner;
+        }
+      }
+
+      var o : Outer;
+      var x = o.helper().innerFoo();
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -1365,6 +1431,7 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
 
   return 0;
 }
