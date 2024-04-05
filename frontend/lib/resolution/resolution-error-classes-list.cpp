@@ -1424,11 +1424,11 @@ void ErrorTupleIndexOOB::write(ErrorWriterBase& wr) const {
   auto type = std::get<const types::TupleType*>(info_);
   auto index = std::get<const int>(info_);
 
-  wr.heading(kind_, type_, call, "tuple index out of bounds");
+  wr.heading(kind_, type_, call, "tuple index ", index, " is out of bounds");
   wr.message("In the following expression:");
   wr.code(call, { call });
   wr.message("the index value is '", index, "' but the valid indices for this",
-             " tuple are in the range 0..", type->numElements()-1);
+             " tuple are in the range 0..", type->numElements()-1, " (inclusive)");
 }
 
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
