@@ -514,6 +514,14 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     return;
   }
 
+  if (auto call = ast->toOpCall()) {
+    if (call->op() == "=" && call->child(0)->isTuple()) {
+      // Tuple unpacking assignment, handled directly by Resolver
+      // (a, b, c) = foo();
+      return;
+    }
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
