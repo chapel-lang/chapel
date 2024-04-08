@@ -4409,7 +4409,8 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
-  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, { scope, scope, poiScope });
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+                                CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
 
@@ -4433,7 +4434,8 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
-  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, { scope, scope, poiScope });
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+                                CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
 
@@ -4463,7 +4465,7 @@ tryResolveAssignHelper(Context* context,
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
   auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
-                                { scope, scope, /* poiScope */ nullptr });
+                                CallScopeInfo::forNormalCall(scope, /* poiScope */ nullptr));
   return c.mostSpecific().only().fn();
 }
 

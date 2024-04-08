@@ -1209,7 +1209,7 @@ CallResolutionResult resolvePrimCall(Context* context,
         bool resolveFn = prim == PRIM_CALL_AND_FN_RESOLVES ||
                          prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
 
-        CallScopeInfo inScopes = { inScope, inScope, inPoiScope };
+        auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
         type = primCallResolves(context, ci, forMethod, resolveFn, call, inScopes);
       }
       break;

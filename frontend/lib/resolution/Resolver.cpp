@@ -1048,7 +1048,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      std::move(actuals));
-  CallScopeInfo inScopes = { scopeStack.back(), scopeStack.back(), poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
   auto rr = resolveGeneratedCall(context, nullptr, ci, inScopes);
   if (rr.mostSpecific().only()) {
     ret = rr.exprType();
@@ -1123,7 +1123,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
 
         // TODO: store an associated action?
         const Scope* scope = scopeStack.back();
-        CallScopeInfo inScopes = { scope, scope, poiScope };
+        auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
         auto c = resolveGeneratedCall(context, declForErr, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
@@ -1816,7 +1816,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
 
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
-  CallScopeInfo inScopes = { scope, scope, poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
 
   // Finally, try to resolve = between the elements
   int i = 0;
@@ -1982,7 +1982,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
-  CallScopeInfo inScopes = { inScope, inScope, inPoiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
   // note: the resolution machinery will get compiler generated candidates
   auto crr = resolveGeneratedCall(context, call, ci, inScopes);
@@ -2104,7 +2104,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                                  /* moduleScopeId */ nullptr,
                                  /* rename */ UniqueString::get(context, "chpl__buildIndexType"));
       auto scope = scopeStack.back();
-      CallScopeInfo inScopes = { scope, scope, poiScope };
+      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
       auto& r = byPostorder.byAst(call);
@@ -2464,7 +2464,7 @@ bool Resolver::enter(const uast::Select* sel) {
   enterScope(sel);
 
   const Scope* scope = scopeStack.back();
-  CallScopeInfo inScopes = { scope, scope, poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
   bool foundParamTrue = false;
   int otherwise = -1;
 
@@ -2843,7 +2843,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                       actuals);
   CHPL_ASSERT(!scopeStack.empty());
   auto inScope = scopeStack.back();
-  CallScopeInfo inScopes = { inScope, inScope, poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
 
   // If some IDs were methods and some weren't, we have to resolve two
   // calls: one with the (implicit) receiver, and one without.
@@ -3504,7 +3504,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
-  CallScopeInfo inScopes = { scope, scope, poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
 
   // try to resolve it as a special call (e.g. Tuple assignment)
   if (resolveSpecialCall(call)) {
@@ -3512,9 +3512,11 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   }
 
   std::vector<const uast::AstNode*> actualAsts;
+  ID moduleScopeId;
   auto ci = CallInfo::create(context, call, byPostorder,
                              /* raiseErrors */ true,
-                             &actualAsts);
+                             &actualAsts,
+                             &moduleScopeId);
 
   // With some exceptions (see below), don't try to resolve a call that accepts:
   SkipCallResolutionReason skip = NONE;
@@ -3702,7 +3704,7 @@ void Resolver::exit(const Dot* dot) {
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
       auto inScope = scopeStack.back();
-      CallScopeInfo inScopes = {inScope, inScope, poiScope};
+      auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(context, dot, ci, inScopes);
       if (!c.mostSpecific().isEmpty()) {
         // save the most specific candidates in the resolution result for the id
@@ -3838,7 +3840,7 @@ void Resolver::exit(const Dot* dot) {
                       /* isParenless */ true,
                       actuals);
   auto inScope = scopeStack.back();
-  CallScopeInfo inScopes = {inScope, inScope, poiScope};
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
   auto c = resolveGeneratedCall(context, dot, ci, inScopes);
   // save the most specific candidates in the resolution result for the id
   ResolvedExpression& r = byPostorder.byAst(dot);
@@ -4006,7 +4008,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
                         /* isParenless */ false,
                         actuals);
     auto inScope = resolver.scopeStack.back();
-    CallScopeInfo inScopes = {inScope, inScope, resolver.poiScope};
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, resolver.poiScope);
     auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
 
     if (c.mostSpecific().only()) {
@@ -4249,7 +4251,7 @@ constructReduceScanOpClass(Resolver& resolver,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
-  CallScopeInfo inScopes = {scope, scope, resolver.poiScope};
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
   auto c = resolveGeneratedCall(context, reduceOrScan, ci, inScopes);
   auto opType = c.exprType();
 
@@ -4330,7 +4332,7 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
                       /* isParenless */ false,
                       typeActuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
-  CallScopeInfo inScopes = {scope, scope, resolver.poiScope};
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
   auto c = resolveGeneratedCall(context, reduceOrScan, ci, inScopes);
   return c.exprType();
 }

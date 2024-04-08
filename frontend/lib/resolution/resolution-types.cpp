@@ -25,6 +25,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -966,6 +967,15 @@ void CallResolutionResult::stringify(std::ostream& ss,
   exprType_.stringify(ss, stringKind);
 }
 
+CallScopeInfo CallScopeInfo::forNormalCall(const Scope* scope, const PoiScope* poiScope) {
+  return CallScopeInfo(scope, scope, poiScope);
+}
+
+CallScopeInfo CallScopeInfo::forQualifiedCall(Context* context, const ID& moduleId,
+                                      const Scope* scope, const PoiScope* poiScope) {
+  auto moduleScope = scopeForModule(context, moduleId);
+  return CallScopeInfo(scope, moduleScope, poiScope);
+}
 
 const char* AssociatedAction::kindToString(Action a) {
   switch (a) {

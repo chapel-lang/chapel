@@ -497,7 +497,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         /* isParenless */ false,
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
-    CallScopeInfo inScopes = { scope, scope, resolver.poiScope };
+    auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
     auto c = resolveGeneratedCall(context, ast, ci, inScopes);
     ResolvedExpression& opR = rv.byAst(ast);
     resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
@@ -533,7 +533,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  CallScopeInfo inScopes = { scope, scope, resolver.poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
   auto c = resolveGeneratedCall(context, ast, ci, inScopes);
   ResolvedExpression& opR = rv.byAst(ast);
 
@@ -570,7 +570,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  CallScopeInfo inScopes = { scope, scope, resolver.poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
   auto c = resolveGeneratedCall(context, ast, ci, inScopes);
 
   std::vector<const AstNode*> actualAsts;
@@ -762,7 +762,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  CallScopeInfo inScopes = { scope, scope, resolver.poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
   auto c = resolveGeneratedCall(context, ast, ci, inScopes);
 
   // Should we associate it with the current statement or the current block?

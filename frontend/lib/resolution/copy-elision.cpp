@@ -136,7 +136,7 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  CallScopeInfo inScopes = { scope, scope, poiScope };
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
   auto c = resolveGeneratedCall(context, ast, ci, inScopes);
   const MostSpecificCandidates& fns = c.mostSpecific();
   // return intent overloading should not be possible with an init=
