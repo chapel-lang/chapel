@@ -1435,6 +1435,15 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   if( info->cfile ) {
     base = codegenValue(base); // even for tuple, for style.
     ret.c = "(" + base.c + " + " + index.c + ")";
+    if (baseType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+      // For our const C pointer representation, we will codegen the type as
+      // const, but want to use it as non-const most places in the generated C.
+      // This is because the rest of code generation doesn't try to handle C
+      // constness, and we don't want to have to add that support everywhere.
+      // Here, we cast away the constness so this pointer can be assigned into
+      // a non-const call tmp without issue, for dereferencing or other use.
+      ret.c = "((void*)" + ret.c + ")";
+    }
   } else {
 #ifdef HAVE_LLVM
     unsigned AS = base.val->getType()->getPointerAddressSpace();
