@@ -99,13 +99,13 @@ proc main() {
      the file, then a write/read channel to it, then close in the opposite
      order. */
   var fout = open("tst.out", ioMode.cw);
-  var chout = fout.writer(serializer = s);
+  var chout = fout.writer(serializer = s, locking=false);
   chout.write(kout);
   chout.close();
   fout.close();
 
   var fin = open("tst.out", ioMode.r);
-  var chin = fin.reader(deserializer = d);
+  var chin = fin.reader(deserializer = d, locking=false);
   chin.read(kin);
   chin.close();
   fin.close();
