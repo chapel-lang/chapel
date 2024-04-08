@@ -72,6 +72,7 @@ $python2 = 0;
 $pythonDep = 0;
 $testblog = 0;
 $blogonly = 0;
+$blogdir = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -168,9 +169,11 @@ while (@ARGV) {
         $protobuf_build = 1;
     } elsif ($flag eq "-blog") {
         $testblog = 1;
+        $blogdir = shift @ARGV;
     } elsif ($flag eq "-blogonly") {
         $blogonly = 1;
         $testblog = 1;
+        $blogdir = shift @ARGV;
     } else {
         $printusage = 1;
         last;
@@ -209,8 +212,8 @@ if ($printusage == 1) {
     print "\t-debug                         : check out sources and run for individual user (default)\n";
     print "\t-cron                          : use for nightly cron runs only\n";
     print "\t-baseline                      : run testins using --baseline\n";
-    print "\t-blog                          : test the chapel blog with nightly tests\n";
-    print "\t-blogonly                      : only run the chapel blog tests\n";
+    print "\t-blog <blogdir>                : test the chapel blog at <blogdir> with nightly tests\n";
+    print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> specifies root of blog repo\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
@@ -555,19 +558,23 @@ if ($multilocale == 1) {
 }
 
 #
-# clone blog repo if blog testing requested
+# check the blog repo dir if blog testing requested
 #
 if ($testblog == 1) {
-    print "Cloning blog repo\n";
-    mysystem("cd $basetmpdir && git clone git\@github.com:chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
-    mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
+    print "checking blog repo\n";
+    unless(-d $cronlogdir) {
+        print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
+        exit 1;
+    }
+    # mysystem("cd $basetmpdir && git clone git\@github.com:chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
+    # mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
     if ($blogonly == 0) {
         # copy the relevant blog source files into the test directory so they'll be
         # ran alongside all the other tests
         mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", 1, 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", 1, 1, 1);
+        mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
+        mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
+        mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", 1, 1, 1);
     }
 }
 
@@ -605,7 +612,7 @@ if (!($dist eq "")) {
 if ($blogonly == 1) {
     # test the sub-directories explicitly to avoid a bunch of skipped directories,
     # and also avoid the problem of testing the archetypes directory
-    $testflags = "$testflags $basetmpdir/chapel-blog/chpl-src/ $basetmpdir/chapel-blog/content/posts";
+    $testflags = "$testflags $blogdir/chpl-src/ $blogdir/content/posts";
 }
 
 if ($hello == 1) {
