@@ -371,6 +371,26 @@ if ($memleakslog ne "") {
 $testbindirname = dirname($0);
 $utildir = "$testbindirname/../../util";
 
+#
+# check the blog repo dir if blog testing requested
+#
+if ($testblog == 1) {
+    print "checking blog repo\n";
+    unless(-d $blogdir) {
+        print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
+        exit 1;
+    }
+    # mysystem("cd $basetmpdir && git clone git\@github.com:chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
+    # mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
+    if ($blogonly == 0) {
+        # copy the relevant blog source files into the test directory so they'll be
+        # ran alongside all the other tests
+        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", 1, 1, 1);
+        mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
+        mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
+        mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", 1, 1, 1);
+    }
+}
 
 # Determine which make to use.
 $make = "";
@@ -557,26 +577,6 @@ if ($multilocale == 1) {
     $testflags = "$testflags -multilocale-only";
 }
 
-#
-# check the blog repo dir if blog testing requested
-#
-if ($testblog == 1) {
-    print "checking blog repo\n";
-    unless(-d $blogdir) {
-        print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
-        exit 1;
-    }
-    # mysystem("cd $basetmpdir && git clone git\@github.com:chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
-    # mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
-    if ($blogonly == 0) {
-        # copy the relevant blog source files into the test directory so they'll be
-        # ran alongside all the other tests
-        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", 1, 1, 1);
-        mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
-        mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
-        mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", 1, 1, 1);
-    }
-}
 
 #
 # don't bother making the spec tests if we're only testing hello, world programs;
