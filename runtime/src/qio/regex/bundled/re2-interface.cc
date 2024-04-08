@@ -20,8 +20,8 @@
 
 #include <limits>
 #include <pthread.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 
 // We have run into issues when using our chpl-atomics.h file from C++ code
 // under CHPL_ATOMICS=cstdlib. As a workaround, just use std::atomic and avoid
@@ -372,7 +372,7 @@ static bool append_rewrite(char*& buf, // buffer
       continue;
     }
     s++;
-    int c = (s < end) ? *s : -1;
+    int c = (s < end) ? *s : EOF;
     if (isdigit(c)) {
       int n = (c - '0');
       if (n >= veclen) {
@@ -392,7 +392,7 @@ static bool append_rewrite(char*& buf, // buffer
 }
 
 static int free_and_return_error(char* buf) {
-  if (buf != NULL) qio_free((void*)buf);
+  qio_free((void*)buf);
   return -1;
 }
 
@@ -445,11 +445,11 @@ static int replace(const RE2& re, const StringPiece& rewrite,
       //
       if (re.options().encoding() == RE2::Options::EncodingUTF8) {
         // append the character
-        int bad;
         int nbytes = 0;
         int32_t chr = 0;
-        bad = chpl_enc_decode_char_buf_utf8(&chr, &nbytes, p, ep - p, false);
-        if (bad == 0) {
+        int failed =
+          chpl_enc_decode_char_buf_utf8(&chr, &nbytes, p, ep - p, false);
+        if (failed == 0) {
           if (!append(buf, buf_sz, buf_len, p, nbytes))
             return free_and_return_error(buf);
           p += nbytes;
