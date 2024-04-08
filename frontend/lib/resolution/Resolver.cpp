@@ -2843,6 +2843,9 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                       actuals);
   CHPL_ASSERT(!scopeStack.empty());
   auto inScope = scopeStack.back();
+
+  // Note: this is only ever used from resolveIdentifier, so no qualifiers
+  // are needed; resolve as an unqualified call.
   auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
 
   // If some IDs were methods and some weren't, we have to resolve two
