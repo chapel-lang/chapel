@@ -63,11 +63,11 @@ int chpl_topo_reserveCPUPhysical(void) {
 
 
 int chpl_topo_bindCPU(int id) {
-  return 1;
+  return 0;
 }
 
 int chpl_topo_bindLogAccCPUs(void) {
-  return 1;
+  return 0;
 }
 
 
