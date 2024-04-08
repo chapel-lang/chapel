@@ -18,11 +18,7 @@ DESCRIPTION
 -----------
 
 The **chpl** command invokes the Chapel compiler. **chpl** converts one
-or more Chapel source files into an executable. It does this by
-compiling Chapel code to C99 code and then invoking the target
-platform's C compiler to create the executable. However, most users will
-not need to be aware of the use of C as an intermediate format during
-compilation.
+or more Chapel source files into an executable.
 
 SOURCE FILES
 ------------
