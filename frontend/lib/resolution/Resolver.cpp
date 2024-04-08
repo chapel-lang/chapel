@@ -2101,6 +2101,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto ci = CallInfo::create(context, call, byPostorder,
                                  /* raiseErrors */ true,
                                  /* actualAsts */ nullptr,
+                                 /* moduleScopeId */ nullptr,
                                  /* rename */ UniqueString::get(context, "chpl__buildIndexType"));
       auto scope = scopeStack.back();
       CallScopeInfo inScopes = { scope, scope, poiScope };

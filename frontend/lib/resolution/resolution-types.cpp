@@ -323,6 +323,7 @@ CallInfo CallInfo::create(Context* context,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
                           std::vector<const uast::AstNode*>* actualAsts,
+                          ID* moduleScopeId,
                           UniqueString rename) {
 
   // Pieces of the CallInfo we need to prepare.

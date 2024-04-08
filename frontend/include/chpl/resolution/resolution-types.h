@@ -617,6 +617,7 @@ class CallInfo {
                          const ResolutionResultByPostorderID& byPostorder,
                          bool raiseErrors = true,
                          std::vector<const uast::AstNode*>* actualAsts=nullptr,
+                         ID* moduleScopeId=nullptr,
                          UniqueString rename = UniqueString());
 
   /** Construct a CallInfo by adding a method receiver argument to
