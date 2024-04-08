@@ -27,21 +27,19 @@ Chapel recognizes four source file types: **.chpl**, .c, .h, and .o.
 
 **foo.chpl**
 
-    Chapel sources are compiled by the Chapel compiler into C intermediate
-    code, which is then passed to the target compiler to be compiled into
-    object code.
+    Chapel source file.
 
 **foo.c**
 
-    C source files are passed directly to the target C compiler.
+    C source file.
 
 **foo.h**
 
-    C header files are included in the generated C code.
+    C header file.
 
 **foo.o**
 
-    Object files are passed directly to the target linker.
+    Object file.
 
 OPTIONS
 -------
