@@ -562,7 +562,7 @@ if ($multilocale == 1) {
 #
 if ($testblog == 1) {
     print "checking blog repo\n";
-    unless(-d $cronlogdir) {
+    unless(-d $blogdir) {
         print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
         exit 1;
     }
