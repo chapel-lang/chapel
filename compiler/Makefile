@@ -78,9 +78,16 @@ LIBS = -lm
 
 all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
 
+# TODO: this target will make it impossible to run make clean later
+# (without make'ing again) because the clean target relies on having the
+# CMakeCache.txt around to perform the cleanup operations on generated files
+clean-cmakecache: FORCE
+	rm -f $(COMPILER_BUILD)/CMakeCache.txt
+
 clean: FORCE $(CLEANSUBDIRS) echocompilerdir
 	@cd $(COMPILER_BUILD) && $(CMAKE) --build . --target clean
 	rm -f $(CLEAN_TARGS)
+	@$(MAKE) clean-cmakecache
 
 cleanall: $(CLEANALLSUBDIRS) echocompilerdir
 	rm -rf $(CLEANALL_TARGS)
@@ -212,6 +219,7 @@ $(CHPL): FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD) | $(CHPL_BIN_DIR)
 MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
 
 $(CHPLDOC): FORCE $(COMPILER_BUILD) $(MAKEALLCHPLDOCSUBDIRS) | $(CHPL_BIN_DIR)
+	@echo $(CMAKE_FLAGS)
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpldoc
 
 chpldoc: FORCE $(CHPLDOC)
