@@ -3504,7 +3504,6 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
 
   // try to resolve it as a special call (e.g. Tuple assignment)
   if (resolveSpecialCall(call)) {
@@ -3517,6 +3516,10 @@ void Resolver::handleCallExpr(const uast::Call* call) {
                              /* raiseErrors */ true,
                              &actualAsts,
                              &moduleScopeId);
+  auto inScopes =
+    moduleScopeId.isEmpty() ?
+    CallScopeInfo::forNormalCall(scope, poiScope) :
+    CallScopeInfo::forQualifiedCall(context, moduleScopeId, scope, poiScope);
 
   // With some exceptions (see below), don't try to resolve a call that accepts:
   SkipCallResolutionReason skip = NONE;
