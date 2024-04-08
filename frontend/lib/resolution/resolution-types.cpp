@@ -318,6 +318,36 @@ void CallInfo::prepareActuals(Context* context,
   }
 }
 
+// returns true if values of this kind should be treated as 'functional':
+// if a call `x(args)` is being resolved, and `x` is a function value, then
+// we should resolve `x.this(args)` instead.
+static bool isKindForFunctionalValue(QualifiedType::Kind kind) {
+  return kind != QualifiedType::UNKNOWN &&
+         kind != QualifiedType::TYPE &&
+         kind != QualifiedType::FUNCTION;
+}
+
+// Returns true if, given a called dot's receiver's kind, that kind
+// indicates the receiver should be treated as a method receiver. I.e.,
+// if we have `x.f(args)`, returns true if the above should be treated
+// as a method call with `f(this = x, args)`.
+static bool isKindForMethodReceiver(QualifiedType::Kind kind) {
+  return kind != QualifiedType::UNKNOWN &&
+         kind != QualifiedType::FUNCTION &&
+         kind != QualifiedType::MODULE;
+}
+
+static optional<QualifiedType>
+tryGetType(const AstNode* node, const ResolutionResultByPostorderID& byPostorder) {
+  if (node) {
+    if (auto r = byPostorder.byAstOrNull(node)) {
+      return r->type();
+    }
+  }
+
+  return {};
+}
+
 CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
@@ -357,14 +387,17 @@ CallInfo CallInfo::create(Context* context,
     // It shouldn't be possible to have definitions that could match either a
     // normal method call or a call to 'this' on a field, so no need to
     // disambiguate here; assume it'll be one or the other.
-    if (byPostorder.hasAst(calledExpr)) {
-      // If we have a resolved type for the expression, call its 'this'.
-      const ResolvedExpression& r = byPostorder.byAst(calledExpr);
-      calledType = r.type();
 
-      if (calledType.kind() != QualifiedType::UNKNOWN &&
-          calledType.kind() != QualifiedType::TYPE &&
-          calledType.kind() != QualifiedType::FUNCTION) {
+    const AstNode* dotReceiver = nullptr;
+    if (auto dot = calledExpr->toDot()) dotReceiver = dot->receiver();
+    auto calledExprType = tryGetType(calledExpr, byPostorder);
+    auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
+    (void) dotReceiverType;
+
+    if (calledExprType) {
+      calledType = *calledExprType;
+
+      if (isKindForFunctionalValue(calledType.kind())) {
         // If e.g. x is a value (and not a function)
         // then x(0) translates to x.this(0)
         name = USTR("this");
@@ -377,26 +410,19 @@ CallInfo CallInfo::create(Context* context,
         // and reset calledType
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
       }
-    } else if (!call->isOpCall()) {
+    } else if (!call->isOpCall() && dotReceiver) {
       // Check for normal method call, maybe construct a receiver.
-      if (auto called = call->calledExpression()) {
-        if (auto calledDot = called->toDot()) {
-          const AstNode* receiver = calledDot->receiver();
-          const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
-          const QualifiedType& qtReceiver = reReceiver.type();
+      const ResolvedExpression& reReceiver = byPostorder.byAst(dotReceiver);
+      const QualifiedType& qtReceiver = reReceiver.type();
 
-          // Check to make sure the receiver is a value or type.
-          if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
-              qtReceiver.kind() != QualifiedType::FUNCTION &&
-              qtReceiver.kind() != QualifiedType::MODULE) {
-            actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-            if (actualAsts != nullptr) {
-              actualAsts->push_back(receiver);
-            }
-            calledType = qtReceiver;
-            isMethodCall = true;
-          }
+      // Check to make sure the receiver is a value or type.
+      if (isKindForMethodReceiver(qtReceiver.kind())) {
+        actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+        if (actualAsts != nullptr) {
+          actualAsts->push_back(dotReceiver);
         }
+        calledType = qtReceiver;
+        isMethodCall = true;
       }
     }
   }
