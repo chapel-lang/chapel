@@ -1728,6 +1728,7 @@ module OS {
  */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws
   {
     if error {
@@ -1770,6 +1771,7 @@ module OS {
    */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
   {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
