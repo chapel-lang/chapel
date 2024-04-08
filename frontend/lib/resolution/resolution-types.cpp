@@ -392,9 +392,12 @@ CallInfo CallInfo::create(Context* context,
     if (auto dot = calledExpr->toDot()) dotReceiver = dot->receiver();
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
-    (void) dotReceiverType;
 
-    if (calledExprType) {
+    if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
+      // In calls like `M.f()`, where `M` is a module, we need to restrict
+      // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
+      if (moduleScopeId != nullptr) *moduleScopeId = dotReceiver->id();
+    } else if (calledExprType && !calledExprType->isUnknown()) {
       calledType = *calledExprType;
 
       if (isKindForFunctionalValue(calledType.kind())) {
@@ -410,20 +413,15 @@ CallInfo CallInfo::create(Context* context,
         // and reset calledType
         calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
       }
-    } else if (!call->isOpCall() && dotReceiver) {
+    } else if (!call->isOpCall() && dotReceiverType &&
+               isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
-      const ResolvedExpression& reReceiver = byPostorder.byAst(dotReceiver);
-      const QualifiedType& qtReceiver = reReceiver.type();
-
-      // Check to make sure the receiver is a value or type.
-      if (isKindForMethodReceiver(qtReceiver.kind())) {
-        actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-        if (actualAsts != nullptr) {
-          actualAsts->push_back(dotReceiver);
-        }
-        calledType = qtReceiver;
-        isMethodCall = true;
+      actuals.push_back(CallInfoActual(*dotReceiverType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(dotReceiver);
       }
+      calledType = *dotReceiverType;
+      isMethodCall = true;
     }
   }
 
