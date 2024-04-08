@@ -601,6 +601,9 @@ class FileInfo:
     def _collect_possibly_visible_decls(self, asts: List[chapel.AstNode]):
         self.visible_decls = []
         for ast in asts:
+            if isinstance(ast, chapel.Comment):
+                continue
+
             scope = ast.scope()
             if not scope:
                 continue
