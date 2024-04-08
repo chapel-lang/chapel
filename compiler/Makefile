@@ -85,6 +85,9 @@ clean-cmakecache: FORCE
 	rm -f $(COMPILER_BUILD)/CMakeCache.txt
 
 clean: FORCE $(CLEANSUBDIRS) echocompilerdir
+	@if [ -f $(COMPILER_BUILD)/CMakeCache.txt ]; then \
+		cd $(COMPILER_BUILD) && $(CMAKE) . ; \
+	fi
 	@cd $(COMPILER_BUILD) && $(CMAKE) --build . --target clean
 	rm -f $(CLEAN_TARGS)
 	@$(MAKE) clean-cmakecache
