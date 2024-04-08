@@ -409,8 +409,7 @@ struct Resolver {
   void handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                          const uast::Call* call,
                                          const CallInfo& ci,
-                                         const Scope* scope,
-                                         const PoiScope* poiScope,
+                                         const CallScopeInfo& inScopes,
                                          const types::QualifiedType& receiverType,
                                          const CallResolutionResult& c);
   // like handleResolvedCall saves the call in associatedFns.

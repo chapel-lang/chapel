@@ -1048,7 +1048,8 @@ Resolver::computeCustomInferType(const AstNode* decl,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      std::move(actuals));
-  auto rr = resolveGeneratedCall(context, nullptr, ci, scopeStack.back(), poiScope);
+  CallScopeInfo inScopes = { scopeStack.back(), scopeStack.back(), poiScope };
+  auto rr = resolveGeneratedCall(context, nullptr, ci, inScopes);
   if (rr.mostSpecific().only()) {
     ret = rr.exprType();
     handleResolvedAssociatedCall(byPostorder.byAst(decl), decl, ci, rr,
@@ -1122,7 +1123,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
 
         // TODO: store an associated action?
         const Scope* scope = scopeStack.back();
-        auto c = resolveGeneratedCall(context, declForErr, ci, scope, poiScope);
+        CallScopeInfo inScopes = { scope, scope, poiScope };
+        auto c = resolveGeneratedCall(context, declForErr, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
@@ -1631,8 +1633,7 @@ void Resolver::handleResolvedCall(ResolvedExpression& r,
 void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                                  const uast::Call* call,
                                                  const CallInfo& ci,
-                                                 const Scope* scope,
-                                                 const PoiScope* poiScope,
+                                                 const CallScopeInfo& inScopes,
                                                  const QualifiedType& receiverType,
                                                  const CallResolutionResult& c) {
 
@@ -1644,7 +1645,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       // this time to preserve the list of rejected candidates.
 
       std::vector<ApplicabilityResult> rejected;
-      std::ignore = resolveCallInMethod(context, call, ci, scope, poiScope,
+      std::ignore = resolveCallInMethod(context, call, ci, inScopes,
                                         receiverType, &rejected);
 
       if (!rejected.empty()) {
@@ -1815,6 +1816,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
 
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
+  CallScopeInfo inScopes = { scope, scope, poiScope };
 
   // Finally, try to resolve = between the elements
   int i = 0;
@@ -1834,7 +1836,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                           /* isParenless */ false,
                           actuals);
 
-      auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
+      auto c = resolveGeneratedCall(context, actual, ci, inScopes);
       handleResolvedAssociatedCall(r, astForErr, ci, c,
                                    AssociatedAction::ASSIGN,
                                    lhsTuple->id());
@@ -1980,9 +1982,10 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
+  CallScopeInfo inScopes = { inScope, inScope, inPoiScope };
 
   // note: the resolution machinery will get compiler generated candidates
-  auto crr = resolveGeneratedCall(context, call, ci, inScope, inPoiScope);
+  auto crr = resolveGeneratedCall(context, call, ci, inScopes);
 
   CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
 
@@ -2100,7 +2103,8 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                                  /* actualAsts */ nullptr,
                                  /* rename */ UniqueString::get(context, "chpl__buildIndexType"));
       auto scope = scopeStack.back();
-      auto result = resolveGeneratedCall(context, call, ci, scope, poiScope);
+      CallScopeInfo inScopes = { scope, scope, poiScope };
+      auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
       auto& r = byPostorder.byAst(call);
       handleResolvedCall(r, call, ci, result);
@@ -2459,6 +2463,7 @@ bool Resolver::enter(const uast::Select* sel) {
   enterScope(sel);
 
   const Scope* scope = scopeStack.back();
+  CallScopeInfo inScopes = { scope, scope, poiScope };
   bool foundParamTrue = false;
   int otherwise = -1;
 
@@ -2489,7 +2494,7 @@ bool Resolver::enter(const uast::Select* sel) {
                             /* hasQuestionArg */ false,
                             /* isParenless */ false,
                             actuals);
-        auto c = resolveGeneratedCall(context, caseExpr, ci, scope, poiScope);
+        auto c = resolveGeneratedCall(context, caseExpr, ci, inScopes);
         handleResolvedAssociatedCall(caseResult, caseExpr, ci, c,
                                      AssociatedAction::COMPARE,
                                      caseExpr->id());
@@ -2837,15 +2842,16 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                       actuals);
   CHPL_ASSERT(!scopeStack.empty());
   auto inScope = scopeStack.back();
+  CallScopeInfo inScopes = { inScope, inScope, poiScope };
 
   // If some IDs were methods and some weren't, we have to resolve two
   // calls: one with the (implicit) receiver, and one without.
   if (info.hasMethodCandidates() && info.hasNonMethodCandidates()) {
     auto cMethod = resolveGeneratedCallInMethod(context, ident, ci,
-                                               inScope, poiScope,
+                                               inScopes,
                                                methodReceiverType());
     auto cNonMethod = resolveGeneratedCall(context, ident, ci,
-                                           inScope, poiScope);
+                                           inScopes);
 
     if (!cMethod.mostSpecific().isEmpty() &&
         !cNonMethod.mostSpecific().foundCandidates()) {
@@ -2875,7 +2881,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
     }
   } else if (info.hasMethodCandidates()) {
     auto c = resolveGeneratedCallInMethod(context, ident, ci,
-                                          inScope, poiScope,
+                                          inScopes,
                                           methodReceiverType());
     // save the most specific candidates in the resolution result
     handleResolvedCall(r, ident, ci, c);
@@ -2884,7 +2890,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
 
     // as above, but don't consider method scopes
     auto c = resolveGeneratedCall(context, ident, ci,
-                                  inScope, poiScope);
+                                  inScopes);
     // save the most specific candidates in the resolution result
     handleResolvedCall(r, ident, ci, c);
   }
@@ -3497,6 +3503,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
+  CallScopeInfo inScopes = { scope, scope, poiScope };
 
   // try to resolve it as a special call (e.g. Tuple assignment)
   if (resolveSpecialCall(call)) {
@@ -3578,12 +3585,11 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   if (!skip) {
     auto receiverType = methodReceiverType();
     CallResolutionResult c
-      = resolveCallInMethod(context, call, ci,
-                            scope, poiScope, receiverType);
+      = resolveCallInMethod(context, call, ci, inScopes, receiverType);
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
-    handleResolvedCallPrintCandidates(r, call, ci, scope, poiScope, receiverType, c);
+    handleResolvedCallPrintCandidates(r, call, ci, inScopes, receiverType, c);
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
@@ -3695,7 +3701,8 @@ void Resolver::exit(const Dot* dot) {
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
       auto inScope = scopeStack.back();
-      auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+      CallScopeInfo inScopes = {inScope, inScope, poiScope};
+      auto c = resolveGeneratedCall(context, dot, ci, inScopes);
       if (!c.mostSpecific().isEmpty()) {
         // save the most specific candidates in the resolution result for the id
         ResolvedExpression& r = byPostorder.byAst(dot);
@@ -3830,7 +3837,8 @@ void Resolver::exit(const Dot* dot) {
                       /* isParenless */ true,
                       actuals);
   auto inScope = scopeStack.back();
-  auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
+  CallScopeInfo inScopes = {inScope, inScope, poiScope};
+  auto c = resolveGeneratedCall(context, dot, ci, inScopes);
   // save the most specific candidates in the resolution result for the id
   ResolvedExpression& r = byPostorder.byAst(dot);
   handleResolvedCall(r, dot, ci, c);
@@ -3997,8 +4005,8 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
                         /* isParenless */ false,
                         actuals);
     auto inScope = resolver.scopeStack.back();
-    auto c = resolveGeneratedCall(context, iterand, ci,
-                                  inScope, resolver.poiScope);
+    CallScopeInfo inScopes = {inScope, inScope, resolver.poiScope};
+    auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
 
     if (c.mostSpecific().only()) {
       idxType = c.exprType();
@@ -4240,7 +4248,8 @@ constructReduceScanOpClass(Resolver& resolver,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
-  auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
+  CallScopeInfo inScopes = {scope, scope, resolver.poiScope};
+  auto c = resolveGeneratedCall(context, reduceOrScan, ci, inScopes);
   auto opType = c.exprType();
 
   // Couldn't resolve the call; is opName a valid reduction?
@@ -4320,7 +4329,8 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
                       /* isParenless */ false,
                       typeActuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
-  auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
+  CallScopeInfo inScopes = {scope, scope, resolver.poiScope};
+  auto c = resolveGeneratedCall(context, reduceOrScan, ci, inScopes);
   return c.exprType();
 }
 

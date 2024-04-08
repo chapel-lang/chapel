@@ -226,8 +226,7 @@ static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
 static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
                                       bool forMethod, bool resolveFn,
                                       const PrimCall* call,
-                                      const Scope* inScope,
-                                      const PoiScope* inPoiScope) {
+                                      const CallScopeInfo& inScopes) {
   if ((forMethod && ci.numActuals() < 2) ||
       (!forMethod && ci.numActuals() < 1)) {
     return QualifiedType();
@@ -255,7 +254,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
                            std::move(actuals));
   auto callResult = context->runAndTrackErrors([&](Context* context) {
     return resolveGeneratedCall(context, call, callInfo,
-                                inScope, inPoiScope);
+                                inScopes);
   });
   const TypedFnSignature* bestCandidate = nullptr;
   for (auto candidate : callResult.result().mostSpecific()) {
@@ -271,7 +270,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
     if (resolveFn) {
       // We did find a candidate; resolve the function body.
       auto bodyResult = context->runAndTrackErrors([&](Context* context) {
-        return resolveFunction(context, bestCandidate, inPoiScope);
+        return resolveFunction(context, bestCandidate, inScopes.poiScope());
       });
       callAndFnResolved &= bodyResult.ranWithoutErrors();
     }
@@ -1210,8 +1209,8 @@ CallResolutionResult resolvePrimCall(Context* context,
         bool resolveFn = prim == PRIM_CALL_AND_FN_RESOLVES ||
                          prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
 
-        type = primCallResolves(context, ci, forMethod, resolveFn, call,
-                                inScope, inPoiScope);
+        CallScopeInfo inScopes = { inScope, inScope, inPoiScope };
+        type = primCallResolves(context, ci, forMethod, resolveFn, call, inScopes);
       }
       break;
 

@@ -366,8 +366,7 @@ filterCandidatesInstantiating(Context* context,
 CallResolutionResult resolveCall(Context* context,
                                  const uast::Call* call,
                                  const CallInfo& ci,
-                                 const Scope* inScope,
-                                 const PoiScope* inPoiScope,
+                                 const CallScopeInfo& inScopes,
                                  std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
@@ -381,8 +380,7 @@ CallResolutionResult resolveCall(Context* context,
 CallResolutionResult resolveCallInMethod(Context* context,
                                          const uast::Call* call,
                                          const CallInfo& ci,
-                                         const Scope* inScope,
-                                         const PoiScope* inPoiScope,
+                                         const CallScopeInfo& inScopes,
                                          types::QualifiedType implicitReceiver,
                                          std::vector<ApplicabilityResult>* rejected = nullptr);
 
@@ -395,8 +393,7 @@ CallResolutionResult resolveCallInMethod(Context* context,
 CallResolutionResult resolveGeneratedCall(Context* context,
                                           const uast::AstNode* astForErr,
                                           const CallInfo& ci,
-                                          const Scope* inScope,
-                                          const PoiScope* inPoiScope,
+                                          const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
@@ -412,8 +409,7 @@ CallResolutionResult
 resolveGeneratedCallInMethod(Context* context,
                              const uast::AstNode* astForErr,
                              const CallInfo& ci,
-                             const Scope* inScope,
-                             const PoiScope* inPoiScope,
+                             const CallScopeInfo& inScopes,
                              types::QualifiedType implicitReceiver);
 
 // tries to resolve an (unambiguous) init=
