@@ -397,7 +397,8 @@ CallInfo CallInfo::create(Context* context,
     if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
-      if (moduleScopeId != nullptr) *moduleScopeId = dotReceiver->id();
+      if (moduleScopeId != nullptr)
+        *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
     } else if (calledExprType && !calledExprType->isUnknown()) {
       calledType = *calledExprType;
 
