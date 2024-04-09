@@ -3514,6 +3514,8 @@ lookupCalledExpr(Context* context,
           Resolver::gatherReceiverAndParentScopesForType(context, compType);
       } else if (auto cptr = t->toCPtrType()) {
         receiverScopes.push_back(scopeForId(context, cptr->id(context)));
+      } else if (const ExternType* et = t->toExternType()) {
+        receiverScopes.push_back(scopeForId(context, et->id()));
       }
     }
   }
