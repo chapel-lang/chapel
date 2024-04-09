@@ -8196,7 +8196,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     while n < uselen {
       var locErr:errorCode = 0;
       var amtRead:c_ssize_t = 0;
-      if n >= buffSz {
+      if n >= buffSz - 1 { // - 1 for trailing \0
         // if we need more room in the buffer, grow it
         // this will happen if we have not read all of 'uselen' yet
         // but there is more data in the file (as when guessReadSize
@@ -8208,7 +8208,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
       assert(n < buffSz);
       locErr = qio_channel_read(false, ch._channel_internal,
                                 buff[n], // read starting with data here
-                                min(uselen - n, buffSz - n),
+                                min(uselen - n, buffSz - 1 - n), // -1 for \0
                                 amtRead);
       n += amtRead;
       if locErr {
@@ -8219,7 +8219,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     }
 
     // add the trailing \0
-    (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
+    assert(n < buffSz); // make sure there is room for the trailing \0
     buff[n] = 0;
 
     // if the buffer contains invalid UTF-8, createAdoptingBuffer
