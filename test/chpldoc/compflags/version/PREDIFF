@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
 
-sed -e '/^Running Sphinx v/,/URL_ROOT:/d;s/^ *//;/LANGUAGE:/,$d' $2 > $2.tmp
-mv $2.tmp $2
+# if the docs build suceeded, replace the output to check with
+# the generated VERSION line, trimmed to remove leading spaces
+if [ -f docs/_static/documentation_options.js ]
+then
+  grep VERSION docs/_static/documentation_options.js | sed 's/^ *//' > $2.tmp
+  mv $2.tmp $2
+fi
