@@ -8118,6 +8118,8 @@ private proc computeUseLen(ch: fileReader, len: int, pos: int): c_ssize_t {
     }
   }
 
+  assert(uselen >= 0);
+
   return uselen;
 }
 
@@ -8140,6 +8142,8 @@ proc computeGuessReadSize(ch: fileReader, uselen: int, pos: int): c_ssize_t {
   if guessReadSize > uselen {
     guessReadSize = uselen;
   }
+
+  assert(guessReadSize >= 0);
 
   return guessReadSize;
 }
@@ -8186,7 +8190,6 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     var buff: bufferType = nil;
     var buffSz = 0;
     var n:c_ssize_t = 0; // how many bytes have we read into buff?
-    assert(guessReadSize >= 0);
     (buff, buffSz) = bufferAlloc(guessReadSize+1); // room for trailing \0
 
     // then try to read repeatedly until we have read 'uselen' or reach EOF
