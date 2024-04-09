@@ -25,6 +25,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -318,11 +319,42 @@ void CallInfo::prepareActuals(Context* context,
   }
 }
 
+// returns true if values of this kind should be treated as 'functional':
+// if a call `x(args)` is being resolved, and `x` is a value, then
+// we should resolve `x.this(args)` instead.
+static bool isKindForFunctionalValue(QualifiedType::Kind kind) {
+  return kind != QualifiedType::UNKNOWN &&
+         kind != QualifiedType::TYPE &&
+         kind != QualifiedType::FUNCTION;
+}
+
+// Returns true if, given a called dot's receiver's kind, that kind
+// indicates the receiver should be treated as a method receiver. I.e.,
+// if we have `x.f(args)`, returns true if the above should be treated
+// as a method call with `f(this = x, args)`.
+static bool isKindForMethodReceiver(QualifiedType::Kind kind) {
+  return kind != QualifiedType::UNKNOWN &&
+         kind != QualifiedType::FUNCTION &&
+         kind != QualifiedType::MODULE;
+}
+
+static optional<QualifiedType>
+tryGetType(const AstNode* node, const ResolutionResultByPostorderID& byPostorder) {
+  if (node) {
+    if (auto r = byPostorder.byAstOrNull(node)) {
+      return r->type();
+    }
+  }
+
+  return {};
+}
+
 CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
                           std::vector<const uast::AstNode*>* actualAsts,
+                          ID* moduleScopeId,
                           UniqueString rename) {
 
   // Pieces of the CallInfo we need to prepare.
@@ -356,47 +388,42 @@ CallInfo CallInfo::create(Context* context,
     // It shouldn't be possible to have definitions that could match either a
     // normal method call or a call to 'this' on a field, so no need to
     // disambiguate here; assume it'll be one or the other.
-    if (byPostorder.hasAst(calledExpr)) {
-      // If we have a resolved type for the expression, call its 'this'.
-      const ResolvedExpression& r = byPostorder.byAst(calledExpr);
-      calledType = r.type();
 
-      if (calledType.kind() != QualifiedType::UNKNOWN &&
-          calledType.kind() != QualifiedType::TYPE &&
-          calledType.kind() != QualifiedType::FUNCTION) {
-        // If e.g. x is a value (and not a function)
-        // then x(0) translates to x.this(0)
-        name = USTR("this");
-        // add the 'this' argument as well
-        isMethodCall = true;
-        actuals.push_back(CallInfoActual(calledType, USTR("this")));
-        if (actualAsts != nullptr) {
-          actualAsts->push_back(calledExpr);
-        }
-        // and reset calledType
-        calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    const AstNode* dotReceiver = nullptr;
+    if (auto dot = calledExpr->toDot()) dotReceiver = dot->receiver();
+    auto calledExprType = tryGetType(calledExpr, byPostorder);
+    auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
+
+    if (calledExprType && isKindForFunctionalValue(calledExprType->kind())) {
+      // If e.g. x is a value (and not a function, then x(0) translates to x.this(0)
+      // Run this case even if the receiver is a module, since we might be
+      // trying to invoke 'this' on value x in M.x.
+
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(calledExpr);
       }
-    } else if (!call->isOpCall()) {
+      // and reset calledType
+      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
+      // In calls like `M.f()`, where `M` is a module, we need to restrict
+      // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
+      if (moduleScopeId != nullptr)
+        *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
+    } else if (calledExprType && !calledExprType->isUnknown()) {
+      calledType = *calledExprType;
+    } else if (!call->isOpCall() && dotReceiverType &&
+               isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
-      if (auto called = call->calledExpression()) {
-        if (auto calledDot = called->toDot()) {
-          const AstNode* receiver = calledDot->receiver();
-          const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
-          const QualifiedType& qtReceiver = reReceiver.type();
-
-          // Check to make sure the receiver is a value or type.
-          if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
-              qtReceiver.kind() != QualifiedType::FUNCTION &&
-              qtReceiver.kind() != QualifiedType::MODULE) {
-            actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
-            if (actualAsts != nullptr) {
-              actualAsts->push_back(receiver);
-            }
-            calledType = qtReceiver;
-            isMethodCall = true;
-          }
-        }
+      actuals.push_back(CallInfoActual(*dotReceiverType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(dotReceiver);
       }
+      calledType = *dotReceiverType;
+      isMethodCall = true;
     }
   }
 
@@ -941,6 +968,15 @@ void CallResolutionResult::stringify(std::ostream& ss,
   exprType_.stringify(ss, stringKind);
 }
 
+CallScopeInfo CallScopeInfo::forNormalCall(const Scope* scope, const PoiScope* poiScope) {
+  return CallScopeInfo(scope, scope, poiScope);
+}
+
+CallScopeInfo CallScopeInfo::forQualifiedCall(Context* context, const ID& moduleId,
+                                      const Scope* scope, const PoiScope* poiScope) {
+  auto moduleScope = scopeForModule(context, moduleId);
+  return CallScopeInfo(scope, moduleScope, poiScope);
+}
 
 const char* AssociatedAction::kindToString(Action a) {
   switch (a) {
