@@ -212,8 +212,8 @@ if ($printusage == 1) {
     print "\t-debug                         : check out sources and run for individual user (default)\n";
     print "\t-cron                          : use for nightly cron runs only\n";
     print "\t-baseline                      : run testins using --baseline\n";
-    print "\t-blog <blogdir>                : test the chapel blog at <blogdir> with nightly tests\n";
-    print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> specifies root of blog repo\n";
+    print "\t-blog <blogdir>                : test the chapel blog at <blogdir> with nightly tests. <blogdir> could alternatively be specified with CHPL_NIGHTLY_BLOGDIR\n";
+    print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> specifies root of blog repo. <blogdir> could alternatively be specified with CHPL_NIGHTLY_BLOGDIR\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
@@ -377,8 +377,11 @@ $utildir = "$testbindirname/../../util";
 if ($testblog == 1) {
     print "checking blog repo\n";
     unless(-d $blogdir) {
-        print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
-        exit 1;
+        $blogdir = $ENV{'CHPL_NIGHTLY_BLOGDIR'};
+        unless(-d $blogdir) {
+            print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
+            exit 1;
+        }
     }
     # mysystem("cd $basetmpdir && git clone git\@github.com:chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
     # mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
