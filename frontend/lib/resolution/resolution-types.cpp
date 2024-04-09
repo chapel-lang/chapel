@@ -320,7 +320,7 @@ void CallInfo::prepareActuals(Context* context,
 }
 
 // returns true if values of this kind should be treated as 'functional':
-// if a call `x(args)` is being resolved, and `x` is a function value, then
+// if a call `x(args)` is being resolved, and `x` is a value, then
 // we should resolve `x.this(args)` instead.
 static bool isKindForFunctionalValue(QualifiedType::Kind kind) {
   return kind != QualifiedType::UNKNOWN &&

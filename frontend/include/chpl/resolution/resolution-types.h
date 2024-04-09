@@ -1868,7 +1868,7 @@ class CallResolutionResult {
     For instance, when resolving `M.f()`, we don't want to look for `f` in
     the current scope, only in the scope of `M`. The call scope is not
     always the same as the 'lookup scope' because while resolving `M.f`,
-    we still want to use the 'scall scope' for POI.
+    we still want to use the 'call scope' for POI.
   * The 'POI scope', which is used when resolving calls in generic functions
     as described in the first bullet.
 
