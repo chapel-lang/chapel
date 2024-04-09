@@ -8095,6 +8095,55 @@ proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
   return lenRead > 0;
 }
 
+// helper function to compute the length to read
+// assumes that the fileReader is already locked
+private proc computeUseLen(ch: fileReader, len: int, pos: int): c_ssize_t {
+  var uselen: c_ssize_t;
+
+  if len < 0 {
+    uselen = max(c_ssize_t);
+  } else {
+    uselen = len:c_ssize_t;
+    if c_ssize_t != int(64) then assert( len == uselen );
+  }
+
+  // adjust uselen according to the channel's region,
+  // which cannot change during this read
+  var end = qio_channel_end_offset_unlocked(ch._channel_internal);
+  if end != max(int(64)) {
+    // if the channel had an end position set, compute distance to it
+    var channelLen = end - pos;
+    if channelLen < uselen {
+      uselen = channelLen + 1; // +1 to get an EOF back even if already there
+    }
+  }
+
+  return uselen;
+}
+
+// helper function to compute the initial buffer size when reading
+// to a string/bytes
+private
+proc computeGuessReadSize(ch: fileReader, uselen: int, pos: int): c_ssize_t {
+  var guessReadSize:c_ssize_t = 0;
+  var fp: qio_file_ptr_t = nil;
+  qio_channel_get_file_ptr(ch._channel_internal, fp);
+  var fileLen:int(64) = -1;
+  if fp {
+    fileLen = qio_file_length_guess(fp);
+  }
+  if pos >= 0 && fileLen >= 1 && fileLen > pos {
+    guessReadSize = (fileLen - pos):c_ssize_t;
+  }
+
+  // limit the size to read by uselen
+  if guessReadSize > uselen {
+    guessReadSize = uselen;
+  }
+
+  return guessReadSize;
+}
+
 private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
   throws
 {
@@ -8106,52 +8155,24 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     var tx:c_ptrConst(c_char);
     var lentmp:int(64);
     var actlen:int(64);
-    var uselen:c_ssize_t;
-
-    if len == -1 then uselen = max(c_ssize_t);
-    else {
-      uselen = len:c_ssize_t;
-      if c_ssize_t != int(64) then assert( len == uselen );
-    }
 
     try ch.lock(); defer { ch.unlock(); }
 
     // note the current channel position
     var pos = qio_channel_offset_unlocked(ch._channel_internal);
 
-    // adjust uselen according to the channel's region,
-    // which cannot change during this read
-    var end = qio_channel_end_offset_unlocked(ch._channel_internal);
-    if end != max(int(64)) {
-      // if the channel had an end position set, compute distance to it
-      var channelLen = end - pos;
-      if channelLen < uselen {
-        uselen = channelLen + 1; // +1 to get an EOF back even if already there
-      }
-    }
+    // Compute the maximum amount we could read as a 'c_ssize_t'
+    // based upon 'len' and the channel's region.
+    // This handles len==-1 as well as a channel with a bounded region.
+    const uselen:c_ssize_t = computeUseLen(ch, len, pos);
 
-    // compute a guess as to the size to read based on the file length.
-    // this is only a guess & it's possible it will be out of date
+    // Compute a guess as to the size to read based on the file length.
+    // This is only a guess & it's possible it will be out of date
     // by the time we actually read.
-    // we'll use this guess to decide how much to allocate up-front.
-    // we don't want to allocate all of 'len' up front if it's bigger
+    // We'll use this guess to decide how much to allocate up-front.
+    // We don't want to allocate all of 'len' up front if it's bigger
     // than the observed channel size or the initial file size.
-    var guessReadSize:c_ssize_t = 0;
-    {
-      var fp: qio_file_ptr_t = nil;
-      qio_channel_get_file_ptr(ch._channel_internal, fp);
-      var fileLen:int(64) = -1;
-      if fp {
-        fileLen = qio_file_length_guess(fp);
-      }
-      if pos >= 0 && fileLen >= 1 && fileLen > pos {
-        guessReadSize = (fileLen - pos):c_ssize_t;
-      }
-      // limit the size to read by uselen
-      if guessReadSize > uselen {
-        guessReadSize = uselen;
-      }
-    }
+    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, uselen, pos);
 
     // Note: remainder of this function assumes that the file data
     // is in the same string encoding as the result (UTF-8). If/when
