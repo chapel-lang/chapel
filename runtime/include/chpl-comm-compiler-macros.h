@@ -277,7 +277,7 @@ void chpl_check_local(c_nodeid_t node, int32_t ln, int32_t file, const char* err
 }
 
 static inline
-void chpl_check_nil(const void* ptr, int32_t lineno, int32_t filename)
+void chpl_check_nil(void* ptr, int32_t lineno, int32_t filename)
 {
   if (ptr == nil)
     chpl_error("attempt to dereference nil", lineno, filename);

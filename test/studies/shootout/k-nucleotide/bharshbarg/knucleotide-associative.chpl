@@ -2,7 +2,7 @@ use IO;
 use Map;
 use Sort;
 
-extern proc memcpy(ref x : [], b:c_ptrConst(c_char) , len:int);
+extern proc memcpy(x : [], b:c_ptrConst(c_char) , len:int);
 
 config const tableSize = 1 << 16;
 config const lineSize = 61;

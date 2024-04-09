@@ -171,6 +171,16 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
 WARN_CXXFLAGS += -Wsuggest-override -Wno-error=suggest-override
 endif
 
+# Don't warn about const qualifiers that are discarded on assignment
+# this is a temporary workaround to the issue that c_ptrConst types don't
+# currently include the const qualifier in generated code
+# see https://github.com/chapel-lang/chapel/pull/22122
+# which removed the const qualifiers
+# maybe added in gcc 4.6.0?
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-discarded-qualifiers
+endif
+
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
