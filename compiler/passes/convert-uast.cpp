@@ -3305,7 +3305,7 @@ struct Converter {
           conv = toDefExpr(convertAST(anon));
           INT_ASSERT(conv);
         } else {
-          INT_FATAL("Unhandled formal in function signature");
+          CHPL_UNIMPL("Unhandled formal in function signature");
         }
 
         // Attaches def to function's formal list.

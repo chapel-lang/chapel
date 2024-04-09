@@ -807,6 +807,31 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.codeForDef(id);
 }
 
+static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
+  std::string ret = "(";
+  int count = 0;
+  for (auto decl : tup->decls()) {
+    if (count != 0) {
+      ret += ",";
+    }
+    count += 1;
+
+    if (decl->isTupleDecl()) {
+      ret += buildTupleDeclName(decl->toTupleDecl());
+    } else {
+      ret += decl->toFormal()->name().str();
+    }
+  }
+
+  if (count == 1) {
+    ret += ",";
+  }
+
+  ret += ")";
+
+  return ret;
+}
+
 void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info_);
   auto call = node->toCall();
@@ -844,7 +869,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       if (auto named = formalDecl->toNamedDecl()) {
         formalName = "'" + named->name().str() + "'";
       } else if (formalDecl->isTupleDecl()) {
-        // TODO: should we do anything fancy here?
+        formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
       wr.message("The formal ", formalName, " expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
       if (actualExpr) {
