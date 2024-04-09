@@ -1472,6 +1472,7 @@ private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
 private extern proc qio_encode_to_string(chr:int(32)):c_ptrConst(c_char);
 private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_ptrConst(c_char), buflen:c_ssize_t):errorCode;
+private extern proc chpl_enc_utf8_decode(ref state: uint(32), ref codep:uint(32), byte: uint(32)): uint(32);
 
 private extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):errorCode;
 private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):errorCode;
@@ -8095,15 +8096,22 @@ proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
   return lenRead > 0;
 }
 
-// helper function to compute the length to read
+// helper function to compute the length to read (in bytes)
 // assumes that the fileReader is already locked
-private proc computeUseLen(ch: fileReader, len: int, pos: int): c_ssize_t {
+private proc computeMaxBytesToRead(ch: fileReader,
+                                   len: int,
+                                   pos: int,
+                                   type t): c_ssize_t {
   var uselen: c_ssize_t;
 
   if len < 0 {
     uselen = max(c_ssize_t);
   } else {
     uselen = len:c_ssize_t;
+    if t == string {
+      // len is in codepoints, but each codepoint could be 4 bytes
+      uselen = 4*uselen;
+    }
     if c_ssize_t != int(64) then assert( len == uselen );
   }
 
@@ -8126,7 +8134,7 @@ private proc computeUseLen(ch: fileReader, len: int, pos: int): c_ssize_t {
 // helper function to compute the initial buffer size when reading
 // to a string/bytes
 private
-proc computeGuessReadSize(ch: fileReader, uselen: int, pos: int): c_ssize_t {
+proc computeGuessReadSize(ch: fileReader, maxBytes: int, pos: int): c_ssize_t {
   var guessReadSize:c_ssize_t = 0;
   var fp: qio_file_ptr_t = nil;
   qio_channel_get_file_ptr(ch._channel_internal, fp);
@@ -8138,9 +8146,9 @@ proc computeGuessReadSize(ch: fileReader, uselen: int, pos: int): c_ssize_t {
     guessReadSize = (fileLen - pos):c_ssize_t;
   }
 
-  // limit the size to read by uselen
-  if guessReadSize > uselen {
-    guessReadSize = uselen;
+  // limit the size to read by maxBytes
+  if guessReadSize > maxBytes {
+    guessReadSize = maxBytes;
   }
 
   assert(guessReadSize >= 0);
@@ -8148,6 +8156,7 @@ proc computeGuessReadSize(ch: fileReader, uselen: int, pos: int): c_ssize_t {
   return guessReadSize;
 }
 
+// note: len is in codepoints when t == string, and in bytes otherwise
 private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
   throws
 {
@@ -8168,7 +8177,15 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // Compute the maximum amount we could read as a 'c_ssize_t'
     // based upon 'len' and the channel's region.
     // This handles len==-1 as well as a channel with a bounded region.
-    const uselen:c_ssize_t = computeUseLen(ch, len, pos);
+    // This is an amount in bytes.
+    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, t);
+    // Compute the maximum number of codepoints we could read
+    const maxChars:c_ssize_t;
+    if t == string {
+      maxChars = if len < 0 then max(c_ssize_t) else len;
+    } else {
+      maxChars = maxBytes;
+    }
 
     // Compute a guess as to the size to read based on the file length.
     // This is only a guess & it's possible it will be out of date
@@ -8176,7 +8193,8 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // We'll use this guess to decide how much to allocate up-front.
     // We don't want to allocate all of 'len' up front if it's bigger
     // than the observed channel size or the initial file size.
-    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, uselen, pos);
+    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, maxBytes, pos);
+    //writeln("initially allocating ", guessReadSize+1);
 
     // Note: remainder of this function assumes that the file data
     // is in the same string encoding as the result (UTF-8). If/when
@@ -8190,27 +8208,56 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     var buff: bufferType = nil;
     var buffSz = 0;
     var n:c_ssize_t = 0; // how many bytes have we read into buff?
+    var nChars:c_ssize_t = 0; // how many codepoints have we read?
+    var utf8state:uint(32) = 0;
+    var utf8cp:uint(32) = 0;
     (buff, buffSz) = bufferAlloc(guessReadSize+1); // room for trailing \0
 
-    // then try to read repeatedly until we have read 'uselen' or reach EOF
-    while n < uselen {
+    // then try to read repeatedly until we have read 'maxChars' reach EOF
+    while n < maxBytes && nChars < maxChars {
       var locErr:errorCode = 0;
       var amtRead:c_ssize_t = 0;
       if n >= buffSz - 1 { // - 1 for trailing \0
         // if we need more room in the buffer, grow it
-        // this will happen if we have not read all of 'uselen' yet
+        // this will happen if we have not read all of 'maxBytes' yet
         // but there is more data in the file (as when guessReadSize
         // was innacurate for one reason or another)
         var requestSz = 2*buffSz;
+        // make sure to at least request 16 bytes
         if requestSz < 16 then requestSz = 16;
+        // but don't ever ask for more bytes than maxBytes + 1
+        if requestSz > maxBytes + 1 then requestSz = maxBytes + 1;
+        //writeln("requesting ", requestSz);
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
       }
       assert(n < buffSz);
+      const readN = min(maxBytes - n,      // Don't exceed max byte count
+                        maxChars - nChars, // Don't exceed codepoint count,
+                                           // assuming max 1 byte per codepoint
+                        buffSz - 1 - n);   // Don't exceed allocated buffer
+                                           // space (-1 for trailing \0)
+
+      //writeln("reading ", readN);
       locErr = qio_channel_read(false, ch._channel_internal,
                                 buff[n], // read starting with data here
-                                min(uselen - n, buffSz - 1 - n), // -1 for \0
-                                amtRead);
+                                readN, amtRead);
+      //writeln("we have read ", amtRead);
+
+      if t == string {
+        // compute the number of codepoints read so far
+        for j in 0..<amtRead {
+          //writeln("read byte ", buff[n+j]);
+          chpl_enc_utf8_decode(utf8state, utf8cp, buff[n+j]);
+          if utf8state <= 1 {
+            // decoded a character (or error)
+            //writeln("decoded character ", utf8cp);
+            nChars += 1;
+          }
+        }
+      }
+
       n += amtRead;
+
       if locErr {
         // reached EOF or other error so we need to stop
         err = locErr;
