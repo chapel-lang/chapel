@@ -29,7 +29,7 @@
 #include "chpl/uast/Variable.h"
 
 static QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
-  assert(r->name() == "range");
+  assert(r->name() == "_range");
   auto fields = fieldsForTypeDecl(context, r, DefaultsPolicy::IGNORE_DEFAULTS);
 
   assert(fields.fieldName(0) == "idxType");
