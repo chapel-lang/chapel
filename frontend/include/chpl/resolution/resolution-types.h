@@ -611,6 +611,11 @@ class CallInfo {
 
       If actualAsts is provided and not 'nullptr', it will be updated
       to contain the uAST pointers for each actual.
+
+      If moduleScopeId is provided and not 'nullptr', it will be updated
+      with the ID of the scope that should be searched for candidates.
+      That is, if the call expression is 'M.f(...)' for a module 'M', then
+      'moduleScopeId' will be set to the ID of the module 'M'.
    */
   static CallInfo create(Context* context,
                          const uast::Call* call,
