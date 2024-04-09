@@ -8133,7 +8133,10 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // compute a guess as to the size to read based on the file length.
     // this is only a guess & it's possible it will be out of date
     // by the time we actually read.
-    var guessReadSize = 0;
+    // we'll use this guess to decide how much to allocate up-front.
+    // we don't want to allocate all of 'len' up front if it's bigger
+    // than the observed channel size or the initial file size.
+    var guessReadSize:c_ssize_t = 0;
     {
       var fp: qio_file_ptr_t = nil;
       qio_channel_get_file_ptr(ch._channel_internal, fp);
@@ -8141,8 +8144,8 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
       if fp {
         fileLen = qio_file_length_guess(fp);
       }
-      if pos >= 0 && fileLen >= 1 {
-        guessReadSize = fileLen - pos;
+      if pos >= 0 && fileLen >= 1 && fileLen > pos {
+        guessReadSize = (fileLen - pos):c_ssize_t;
       }
       // limit the size to read by uselen
       if guessReadSize > uselen {
@@ -8153,6 +8156,10 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // Note: remainder of this function assumes that the file data
     // is in the same string encoding as the result (UTF-8). If/when
     // fileReader supports other encodings, this will need to be updated.
+    // In particular, the character-set translation will need to be done;
+    // that could be handled by reading differently with read-characters
+    // functions; or it could be handled by translating the data that was
+    // read and is now in memory.
 
     // proactively allocate 'guessReadSize'
     var buff: bufferType = nil;
@@ -8167,6 +8174,9 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
       var amtRead:c_ssize_t = 0;
       if n >= buffSz {
         // if we need more room in the buffer, grow it
+        // this will happen if we have not read all of 'uselen' yet
+        // but there is more data in the file (as when guessReadSize
+        // was innacurate for one reason or another)
         var requestSz = 2*buffSz;
         if requestSz < 16 then requestSz = 16;
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);

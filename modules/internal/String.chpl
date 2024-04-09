@@ -511,9 +511,8 @@ module String {
     :type length: `int`
 
     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.`DecodeError` if `x` contains non-UTF-8 characters. In that
-     event, this function does not free `x`; that is the caller's
-     responsibility.
+     characters. In that event, this function does not free `x`; that is
+     the caller's responsibility.
 
     :returns: A new :type:`string`
   */
