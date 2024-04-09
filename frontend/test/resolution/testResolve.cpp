@@ -1515,6 +1515,27 @@ static void test24() {
     // Ignore warnings for 'implicit module'.
     assert(guard.realizeErrors(/* countWarnings */ false) == 0);
   }
+
+  {
+    // nested module qualified access should work too.
+    std::string prog =
+      R"""(
+      module M {
+        module N {
+          proc fn() do return 42;
+        }
+      }
+      var x = M.N.fn();
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+
+    // Ignore warnings for 'implicit module'.
+    assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+  }
 }
 
 int main() {
