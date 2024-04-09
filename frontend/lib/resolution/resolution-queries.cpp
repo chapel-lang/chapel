@@ -994,8 +994,7 @@ static Type::Genericity getFieldsGenericity(Context* context,
     int n = tt->numElements();
     for (int i = 0; i < n; i++) {
       auto g = getTypeGenericityIgnoring(context, tt->elementType(i), ignore);
-      CHPL_ASSERT(g != Type::MAYBE_GENERIC);
-      if (g == Type::GENERIC) {
+      if (g == Type::GENERIC || g == Type::MAYBE_GENERIC) {
         combined = g;
       } else if (g == Type::GENERIC_WITH_DEFAULTS &&
                  combined == Type::CONCRETE) {
@@ -2110,8 +2109,11 @@ ApplicabilityResult instantiateSignature(Context* context,
       if (isTfsForInitializer(result)) {
         auto resolvedFn = resolveInitializer(context, result, poiScope);
         auto newTfs = resolvedFn->signature();
-        CHPL_ASSERT(!newTfs->needsInstantiation());
-        result = newTfs;
+        if (newTfs->needsInstantiation()) {
+          context->error(newTfs->id(), "Failure to resolve initializer");
+        } else {
+          result = newTfs;
+        }
       } else {
         CHPL_ASSERT(false && "Not handled yet!");
         std::ignore = resolveFunction(context, result, poiScope);
@@ -2684,18 +2686,24 @@ doIsCandidateApplicableInitial(Context* context,
   if (isVariable(tag)) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
       // calling a field accessor
-      auto ct = ci.actual(0).type().type()->getCompositeType();
-      CHPL_ASSERT(ct);
-      auto containingType = isNameOfField(context, ci.name(), ct);
-      CHPL_ASSERT(containingType != nullptr);
-      return ApplicabilityResult::success(fieldAccessor(context, containingType, ci.name()));
-    } else {
-      // not a candidate
-      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+      //
+      // TODO: This doesn't have anything to do with this candidate. Shouldn't
+      // we be handling this somewhere else?
+      if (auto ct = ci.actual(0).type().type()->getCompositeType()) {
+        if (auto containingType = isNameOfField(context, ci.name(), ct)) {
+          auto ret = fieldAccessor(context, containingType, ci.name());
+          return ApplicabilityResult::success(ret);
+        }
+      }
     }
+    // not a candidate
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
-  CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
+  if (!isFunction(tag)) {
+    context->error(candidateId, "Found non-function where function was expected");
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  }
 
   if (ci.isMethodCall() && (ci.name() == "init" || ci.name() == "init=")) {
     // TODO: test when record has defaults for type/param fields
@@ -3494,8 +3502,10 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            tfs,
                                                            ci,
                                                            poi);
-  CHPL_ASSERT(instantiated.success());
-  CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
+  if (!instantiated.success() ||
+      instantiated.candidate()->needsInstantiation()) {
+    context->error(tfs->id(), "invalid instantiation of compiler-generated method");
+  }
 
   candidates.addCandidate(instantiated.candidate());
 }
@@ -4328,7 +4338,13 @@ CallResolutionResult resolveCall(Context* context,
     return resolveTupleExpr(context, tuple, ci, inScope, inPoiScope);
   }
 
-  CHPL_ASSERT(false && "should not be reached");
+  if (call) {
+    std::string msg = "resolveCall cannot handle tag: ";
+    msg += asttags::tagToString(call->tag());
+    CHPL_UNIMPL(msg.c_str());
+  } else {
+    CHPL_UNIMPL("resolveCall with null Call*");
+  }
   MostSpecificCandidates emptyCandidates;
   QualifiedType emptyType;
   PoiInfo emptyPoi;

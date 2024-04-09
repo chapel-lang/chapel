@@ -122,6 +122,8 @@ static bool isBuiltinTypeOperator(UniqueString name) {
 bool
 needCompilerGeneratedMethod(Context* context, const Type* type,
                             UniqueString name, bool parenless) {
+  if (type == nullptr) return false;
+
   if (isNameOfCompilerGeneratedMethod(name) ||
       (type->isRecordType() && !isBuiltinTypeOperator(name))) {
     if (!areOverloadsPresentInDefiningScope(context, type, name)) {

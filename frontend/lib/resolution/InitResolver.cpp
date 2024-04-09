@@ -225,7 +225,7 @@ bool InitResolver::isFinalReceiverStateValid(void) {
     }
 
     if (state->qt.genericity() == Type::GENERIC) {
-      CHPL_ASSERT(false && "Not handled yet!");
+      CHPL_UNIMPL("Unhandled generic initializer state");
       ret = false;
     }
   }
@@ -255,6 +255,11 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     if (state->qt.isType() || state->qt.isParam())
       if (!state->qt.isGenericOrUnknown())
         subs.insert({id, state->qt});
+  }
+
+  if (subs.size() == 0) {
+    ctx_->error(ctInitial->id(), "unable to instantiate generic type from initializer");
+    return currentRecvType_;
   }
 
   const Type* ret = nullptr;
