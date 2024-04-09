@@ -8134,7 +8134,7 @@ private proc computeMaxBytesToRead(ch: fileReader,
 // helper function to compute the initial buffer size when reading
 // to a string/bytes
 private
-proc computeGuessReadSize(ch: fileReader, maxBytes: int, pos: int): c_ssize_t {
+proc computeGuessReadSize(ch: fileReader, maxChars: int, pos: int): c_ssize_t {
   var guessReadSize:c_ssize_t = 0;
   var fp: qio_file_ptr_t = nil;
   qio_channel_get_file_ptr(ch._channel_internal, fp);
@@ -8147,8 +8147,8 @@ proc computeGuessReadSize(ch: fileReader, maxBytes: int, pos: int): c_ssize_t {
   }
 
   // limit the size to read by maxBytes
-  if guessReadSize > maxBytes {
-    guessReadSize = maxBytes;
+  if guessReadSize > maxChars {
+    guessReadSize = maxChars;
   }
 
   assert(guessReadSize >= 0);
@@ -8193,8 +8193,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // We'll use this guess to decide how much to allocate up-front.
     // We don't want to allocate all of 'len' up front if it's bigger
     // than the observed channel size or the initial file size.
-    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, maxBytes, pos);
-    //writeln("initially allocating ", guessReadSize+1);
+    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, maxChars, pos);
 
     // Note: remainder of this function assumes that the file data
     // is in the same string encoding as the result (UTF-8). If/when
@@ -8227,7 +8226,6 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
         if requestSz < 16 then requestSz = 16;
         // but don't ever ask for more bytes than maxBytes + 1
         if requestSz > maxBytes + 1 then requestSz = maxBytes + 1;
-        //writeln("requesting ", requestSz);
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
       }
       assert(n < buffSz);
@@ -8237,20 +8235,16 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
                         buffSz - 1 - n);   // Don't exceed allocated buffer
                                            // space (-1 for trailing \0)
 
-      //writeln("reading ", readN);
       locErr = qio_channel_read(false, ch._channel_internal,
                                 buff[n], // read starting with data here
                                 readN, amtRead);
-      //writeln("we have read ", amtRead);
 
       if t == string {
         // compute the number of codepoints read so far
         for j in 0..<amtRead {
-          //writeln("read byte ", buff[n+j]);
           chpl_enc_utf8_decode(utf8state, utf8cp, buff[n+j]);
           if utf8state <= 1 {
             // decoded a character (or error)
-            //writeln("decoded character ", utf8cp);
             nChars += 1;
           }
         }
