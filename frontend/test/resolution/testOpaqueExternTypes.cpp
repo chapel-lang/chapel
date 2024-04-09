@@ -94,7 +94,7 @@ static void test2() {
   assert(anotherType.type()->isExternType());
   assert(anotherType.type()->toExternType()->linkageName() == "mytype");
 
-  assert(types.at("differentTypes").isParamTrue());
+  assert(types.at("differentTypes").isParamFalse());
 }
 
 // Make sure name similarity doesn't affect linkage-based equality.
@@ -118,15 +118,15 @@ static void test3() {
       return anotherType;
     }
 
-    param shouldBeTrue = f1() == f2();
-    param shouldBeFalse = f3() == f2();
+    param shouldBeFalse1 = f1() == f2();
+    param shouldBeFalse2 = f3() == f2();
     )""";
 
 
-  auto types = resolveTypesOfVariables(context, program, { "shouldBeTrue", "shouldBeFalse" });
+  auto types = resolveTypesOfVariables(context, program, { "shouldBeFalse1", "shouldBeFalse2" });
 
-  assert(types.at("shouldBeTrue").isParamTrue());
-  assert(types.at("shouldBeFalse").isParamFalse());
+  assert(types.at("shouldBeFalse1").isParamFalse());
+  assert(types.at("shouldBeFalse2").isParamFalse());
 }
 
 // Thorough test of externT from Atomics.chpl, but using if-then instead
