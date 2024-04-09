@@ -3694,9 +3694,15 @@ void Resolver::exit(const Dot* dot) {
 
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
 
+  bool deferToFunctionResolution = false;
   bool resolvingCalledDot = nearestCalledExpression() == dot;
   if (resolvingCalledDot && !scopeResolveOnly) {
-    // We will handle it when resolving the FnCall.
+    // When resolving `a.b()`, we likely want to perform call resolution,
+    // as b(this=a). This happens when the parent function call expression is
+    // processed. So, we can skip the work here. However, before we do skip,
+    // handle other cases, such as `M.b()` where `M.b` is a value being
+    // called using `proc this`.
+    deferToFunctionResolution = true;
 
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
@@ -3717,9 +3723,8 @@ void Resolver::exit(const Dot* dot) {
         ResolvedExpression& r = byPostorder.byAst(dot);
         handleResolvedCall(r, dot, ci, c);
       }
+      return;
     }
-
-    return;
   }
 
   if (dot->field() == USTR("type")) {
@@ -3833,7 +3838,7 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
-  if (scopeResolveOnly)
+  if (scopeResolveOnly || deferToFunctionResolution)
     return;
 
   // resolve a.x where a is a record/class and x is a field or parenless method

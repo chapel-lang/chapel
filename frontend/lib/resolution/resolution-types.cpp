@@ -394,27 +394,27 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
-    if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
+    if (calledExprType && isKindForFunctionalValue(calledExprType->kind())) {
+      // If e.g. x is a value (and not a function, then x(0) translates to x.this(0)
+      // Run this case even if the receiver is a module, since we might be
+      // trying to invoke 'this' on value x in M.x.
+
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(calledExpr);
+      }
+      // and reset calledType
+      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
       if (moduleScopeId != nullptr)
         *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
     } else if (calledExprType && !calledExprType->isUnknown()) {
       calledType = *calledExprType;
-
-      if (isKindForFunctionalValue(calledType.kind())) {
-        // If e.g. x is a value (and not a function)
-        // then x(0) translates to x.this(0)
-        name = USTR("this");
-        // add the 'this' argument as well
-        isMethodCall = true;
-        actuals.push_back(CallInfoActual(calledType, USTR("this")));
-        if (actualAsts != nullptr) {
-          actualAsts->push_back(calledExpr);
-        }
-        // and reset calledType
-        calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
-      }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
