@@ -65,11 +65,11 @@ _chpl ()
 --dynamic \
 --dynamic-auto-local-access \
 --dyno \
+--dyno-break-error \
 --dyno-break-on-hash \
 --dyno-debug-trace \
 --dyno-gen-lib \
 --dyno-gen-std \
---dyno-no-break-error \
 --dyno-scope-bundled \
 --dyno-scope-production \
 --dyno-scope-resolve \
@@ -197,8 +197,8 @@ _chpl ()
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
 --no-dyno \
+--no-dyno-break-error \
 --no-dyno-debug-trace \
---no-dyno-no-break-error \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
 --no-dyno-scope-resolve \
