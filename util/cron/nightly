@@ -169,10 +169,10 @@ while (@ARGV) {
         $protobuf_build = 1;
     } elsif ($flag eq "-blog") {
         $testblog = 1;
-        $blogdir = shift @ARGV;
     } elsif ($flag eq "-blogonly") {
         $blogonly = 1;
         $testblog = 1;
+    } elsif ($flag eq "-blogdir") {
         $blogdir = shift @ARGV;
     } else {
         $printusage = 1;
@@ -212,8 +212,9 @@ if ($printusage == 1) {
     print "\t-debug                         : check out sources and run for individual user (default)\n";
     print "\t-cron                          : use for nightly cron runs only\n";
     print "\t-baseline                      : run testins using --baseline\n";
-    print "\t-blog <blogdir>                : test the chapel blog at <blogdir> with nightly tests. <blogdir> could alternatively be specified with CHPL_NIGHTLY_BLOGDIR\n";
-    print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> specifies root of blog repo. <blogdir> could alternatively be specified with CHPL_NIGHTLY_BLOGDIR\n";
+    print "\t-blog                          : test the chapel blog with nightly tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
+    print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
+    print "\t-blogdir <blogdir>             : specify the root of the chapel-blog repo to use with -blog or -blogonly";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
