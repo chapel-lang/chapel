@@ -435,7 +435,13 @@ def register_rules(driver):
 
             # some NamedDecl nodes currently use the name as the location, which
             # does not indicate their actual indentation.
-            if isinstance(child, (NamedDecl, TupleDecl, ForwardingDecl)):
+            if isinstance(child, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+                continue
+            # private function locations are bugged and don't include the 'private'
+            # keyword.
+            #
+            # https://github.com/chapel-lang/chapel/issues/24818
+            if isinstance(child, Function) and child.visibility() == "private":
                 continue
 
             line, depth = child.location().start()
