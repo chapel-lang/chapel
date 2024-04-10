@@ -364,6 +364,8 @@ def register_rules(driver: LintDriver):
         """
         Warn for unused index variables in loops.
         """
+        if isinstance(root, Comment):
+            return
 
         indices = dict()
         uses = set()
@@ -390,8 +392,7 @@ def register_rules(driver: LintDriver):
                 uses.add(refersto.unique_id())
 
         # dyno fault if we try to query .location on a Comment
-        if not isinstance(root, Comment):
-            lines = context.get_file_text(root.location().path()).split("\n")
+        lines = context.get_file_text(root.location().path()).split("\n")
         for unused in indices.keys() - uses:
             node, loop = indices[unused]
             fixit = None
@@ -399,10 +400,6 @@ def register_rules(driver: LintDriver):
             if parent and isinstance(parent, TupleDecl):
                 fixit = Fixit.build(node.location(), "_")
             elif parent and isinstance(parent, IndexableLoop):
-                if not lines:
-                    lines = context.get_file_text(root.location().path()).split(
-                        "\n"
-                    )
                 index_text = range_to_text(node.location(), lines)
                 loc = parent.header_location()
                 if loc is None:
@@ -418,10 +415,10 @@ def register_rules(driver: LintDriver):
         """
         Warn for simple domains in loops that can be ranges.
         """
-        lines = None
+        if isinstance(root, Comment):
+            return
         # dyno fault if we try to query .location on a Comment
-        if not isinstance(root, Comment):
-            lines = context.get_file_text(root.location().path()).split("\n")
+        lines = context.get_file_text(root.location().path()).split("\n")
 
         def is_range_like(node: AstNode):
             """
@@ -454,11 +451,6 @@ def register_rules(driver: LintDriver):
             # only warn for ranges or count operators
             if not is_range_like(exprs[0]):
                 continue
-
-            if not lines:
-                lines = context.get_file_text(loop.location().path()).split(
-                    "\n"
-                )
 
             s = range_to_text(exprs[0].location(), lines)
 
