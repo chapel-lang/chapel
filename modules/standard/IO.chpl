@@ -1472,7 +1472,7 @@ private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
 private extern proc qio_encode_to_string(chr:int(32)):c_ptrConst(c_char);
 private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_ptrConst(c_char), buflen:c_ssize_t):errorCode;
-extern proc qio_encode_char_buf(dst: c_ptr(void), chr: int(32)): errorCode;
+private extern proc qio_encode_char_buf(dst: c_ptr(void), chr: int(32)): errorCode;
 private extern proc chpl_enc_utf8_decode(ref state: uint(32), ref codep:uint(32), byte: uint(32)): uint(32);
 
 private extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):errorCode;
