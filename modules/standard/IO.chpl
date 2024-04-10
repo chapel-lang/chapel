@@ -511,6 +511,25 @@ operating system streams standard input, standard output, and standard error.
 
 All three are safe to use concurrently.
 
+Unicode Support
+---------------
+
+Most I/O operations default to working with textual data in the UTF-8 encoding.
+This choice of UTF-8 matches the encoding used by the ``string`` type (see
+:ref:`Chapter-Strings`).
+
+To work with non-UTF-8 data, it's necessary to use binary I/O routines (e.g.
+:proc:`fileReader.readByte`, :proc:`fileReader.readBytes`,
+:proc:`fileReader.readBinary` :proc:`fileReader.readBits`) or do I/O with a
+serializer or deserializer that uses a binary format, such as
+:record:`~IO.binaryDeserializer`.
+
+Generally speaking, if invalid UTF-8 is encountered when reading textual data, a
+``SystemError`` will be throw with ``EILSEQ`` and the channel position will be
+left just after the first byte of UTF-8 that was determined to be invalid. Some
+routines have other error handling behavior as described in their documentation
+(for example, see :proc:`fileReader.readThrough`).
+
 .. _about-io-error-handling:
 
 Error Handling
