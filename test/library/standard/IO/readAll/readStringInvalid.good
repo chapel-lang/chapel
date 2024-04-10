@@ -1,1 +1,1 @@
-caught expected error DecodeError: Invalid UTF-8 character encountered.
+caught expected error SystemError: Invalid or incomplete multibyte or wide character:  (in fileReader.readAll(ref s: string) with path "unknown" offset 1)
