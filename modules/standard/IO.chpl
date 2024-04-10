@@ -8158,7 +8158,7 @@ proc computeGuessReadSize(ch: fileReader, maxChars: int, pos: int): c_ssize_t {
 }
 
 // note: len is in codepoints when t == string, and in bytes otherwise
-private proc readBytesImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (errorCode, int(64))
   throws
 {
   var err:errorCode = 0;
@@ -8173,7 +8173,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (err
     // Compute the maximum amount we could read as a 'c_ssize_t'
     // based upon 'len' and the channel's region.
     // This handles len==-1 as well as a channel with a bounded region.
-    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, t);
+    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, bytes);
 
     // Compute a guess as to the size to read based on the file length.
     // This is only a guess & it's possible it will be out of date
@@ -8228,8 +8228,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (err
     (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
     buff[n] = 0;
 
-    var tmp: bytes = t.createAdoptingBuffer(buff, length=n, size=buffSz);
-
+    var tmp: bytes = bytes.createAdoptingBuffer(buff, length=n, size=buffSz);
     out_var <=> tmp;
     lenread = n;
   }
@@ -8237,7 +8236,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (err
   return (err, lenread);
 }
 
-private proc readStringImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) : (errorCode, int(64))
   throws
 {
   var err:errorCode = 0;
@@ -8252,7 +8251,7 @@ private proc readStringImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (er
     // Compute the maximum amount we could read as a 'c_ssize_t'
     // based upon 'len' and the channel's region.
     // This is an amount in bytes.
-    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, t);
+    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, string);
     // Compute the maximum number of codepoints we could read
     const maxChars:c_ssize_t = if len < 0 then max(c_ssize_t) else len;
 
