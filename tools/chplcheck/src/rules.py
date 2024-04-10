@@ -363,3 +363,130 @@ def register_rules(driver):
                 continue
 
             yield iterand, loop
+
+    @driver.advanced_rule
+    def IncorrectIndentation(context: Context, root: AstNode):
+        """
+        Warn for inconsistent or missing indentation
+        """
+
+        # First, recurse and find warnings in children.
+        for child in root:
+            yield from IncorrectIndentation(context, child)
+
+        def contains_statements(node: AstNode) -> bool:
+            """
+            Returns true for allow-listed AST nodes that contain
+            just a list of statements.
+            """
+            classes = (
+                Record,
+                Class,
+                Module,
+                SimpleBlockLike,
+                Interface,
+                Union,
+                Enum,
+                Cobegin
+            )
+            return isinstance(node, classes)
+
+        def unwrap_intermediate_block(node: AstNode) -> Optional[AstNode]:
+            """
+            Given a node, find the reference indentation that its children
+            should be compared against.
+
+            This method also rules out certain nodes that should
+            not be used for parent-child indentation comparison.
+            """
+            if not isinstance(node, Block):
+                return node
+
+            parent = node.parent()
+            if not parent:
+                return node
+
+            if isinstance(parent, (Function, Loop)):
+                return parent
+            elif isinstance(parent, Conditional) and parent.is_expression_level():
+                return None
+            return node
+
+        # If root is something else (e.g., function call), do not
+        # apply indentation rules; only apply them to things that contain
+        # a list of statements.
+        is_eligible_parent_for_indentation = contains_statements(root)
+        if not is_eligible_parent_for_indentation:
+            return
+
+        parent_for_indentation = unwrap_intermediate_block(root)
+        parent_depth = None
+        if parent_for_indentation is None:
+            # don't compare against any parent depth.
+            pass
+        # For implicit modules, proper code will technically be on the same
+        # line as the module's body. But we don't want to warn about that,
+        # since we don't want to ask all code to be indented one level deeper.
+        elif not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
+            parent_depth = parent_for_indentation.location().start()[1]
+
+        prev = None
+        prev_depth = None
+        prev_line = None
+
+        # We only care about misaligned statements, so we don't want to do stuff
+        # like warn for inherit-exprs or pragmas on a record.
+        iterable = root
+        if isinstance(root, AggregateDecl):
+            iterable = root.decls_or_comments()
+        elif isinstance(root, SimpleBlockLike):
+            iterable = root.stmts()
+
+        for child in iterable:
+            if isinstance(child, Comment): continue
+
+            # some NamedDecl nodes currently use the name as the location, which
+            # does not indicate their actual indentation.
+            if isinstance(child, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+                continue
+            # private function locations are bugged and don't include the 'private'
+            # keyword.
+            #
+            # https://github.com/chapel-lang/chapel/issues/24818
+            if isinstance(child, Function) and child.visibility() == "private":
+                continue
+
+            line, depth = child.location().start()
+
+            # Warn for two statements on one line:
+            #   var x: int; var y: int;
+            if line == prev_line:
+                # Exception for enums, which are allowed to be on the same line.
+                #   enum color { red, green, blue }
+                if not isinstance(child, EnumElement):
+                    yield child
+            # Warn for misaligned siblings:
+            #   var x: int;
+            #     var y: int;
+            elif prev_depth and depth != prev_depth:
+                # Special case, slightly coarse: avoid double-warning with
+                # MisleadingIndentation
+                if not(prev and isinstance(prev, Loop) and prev.block_style() == "implicit"):
+                    yield child
+
+                # Do not update 'prev_depth'; use original prev_depth as
+                # reference for next sibling.
+                prev_line = line
+                prev = child
+                continue
+            # Warn for children that are not indented relative to parent
+            #
+            #   record r {
+            #   var x: int;
+            #   }
+            elif parent_depth and depth == parent_depth:
+                yield child
+
+            prev_depth = depth
+            prev = child
+            prev_line = line

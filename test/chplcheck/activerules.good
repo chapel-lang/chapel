@@ -5,6 +5,7 @@ Active rules:
   CamelCaseRecords             Warn for records that are not 'camelCase'.
   ChplPrefixReserved           Warn for user-defined names that start with the 'chpl_' reserved prefix.
   DoKeywordAndBlock            Warn for redundant 'do' keyword before a curly brace '{'.
+  IncorrectIndentation         Warn for inconsistent or missing indentation
   MethodsAfterFields           Warn for classes or records that mix field and method definitions.
   MisleadingIndentation        Warn for single-statement blocks that look like they might be multi-statement blocks.
   PascalCaseClasses            Warn for classes that are not 'PascalCase'.

@@ -338,6 +338,8 @@ CLASS_END(Yield)
 CLASS_BEGIN(SimpleBlockLike)
   PLAIN_GETTER(SimpleBlockLike, block_style, "Get the block style of this SimpleBlockLike node",
                const char*, return blockStyleToString(node->blockStyle()))
+  PLAIN_GETTER(SimpleBlockLike, stmts, "Get the statements contained in this SimpleBlockLike.",
+               IterAdapterBase*, return mkIterPair(node->stmts()))
 CLASS_END(SimpleBlockLike)
 
 CLASS_BEGIN(Begin)
