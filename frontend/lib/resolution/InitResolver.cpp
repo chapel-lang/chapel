@@ -275,10 +275,16 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   auto& rfNoDefaults = fieldsForTypeDecl(ctx_, ctInitial,
                                         DefaultsPolicy::IGNORE_DEFAULTS);
   auto& rfDefaults = fieldsForTypeDecl(ctx_, ctInitial,
-                                       DefaultsPolicy::IGNORE_DEFAULTS);
+                                       DefaultsPolicy::USE_DEFAULTS);
   CompositeType::SubstitutionsMap subs;
 
   if (!rfNoDefaults.isGeneric()) return currentRecvType_;
+
+  auto isValidQtForSubstitutions = [this](const QualifiedType qt) {
+    if (qt.isUnknown()) return false;
+    if (!qt.isType() && !qt.isParam()) return false;
+    return getTypeGenericity(this->ctx_, qt.type()) == Type::CONCRETE;
+  };
 
   for (int i = 0; i < rfNoDefaults.numFields(); i++) {
     auto id = rfNoDefaults.fieldDeclId(i);
@@ -289,10 +295,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     if (isInitiallyConcrete) continue;
 
     // TODO: Will need to relax this as we go.
-    // TODO: 'isGenericOrUnknown' isn't the right test here - e.g. if we have
-    // a type field set to 'string'
-    if ((state->qt.isType() || state->qt.isParam()) &&
-        !state->qt.isGenericOrUnknown()) {
+    if (isValidQtForSubstitutions(state->qt)) {
       subs.insert({id, state->qt});
     } else {
       // generic field without a substitution form the initializer.
@@ -301,7 +304,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
       // First, try a default from the original (base) type.
       QualifiedType qtForSub = rfDefaults.fieldType(i);
 
-      if (qtForSub.isGenericOrUnknown() && !subs.empty()) {
+      if (!isValidQtForSubstitutions(qtForSub) && !subs.empty()) {
         // There's no default value in the base type. But we already have
         // substitutions from previous fields. If the composite type is
         // dependently typed, we might be able to compute defaults that
@@ -313,8 +316,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
         qtForSub = rfIntermediate.fieldType(i);
       }
 
-      if ((qtForSub.isType() || qtForSub.isParam()) &&
-          !qtForSub.isGenericOrUnknown()) {
+      if (isValidQtForSubstitutions(qtForSub)) {
         subs.insert({id, qtForSub});
       }
     }
@@ -413,23 +415,15 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
   auto state = fieldStateFromId(id);
   if (!state || !state->initPointId.isEmpty()) return false;
 
-  if (state->qt.isParam()) {
-    // TODO: not yet implemented
-    state->qt = QualifiedType(QualifiedType::PARAM, ErroneousType::get(ctx_));
-  } else if (state->qt.isType()) {
-    // TODO: not yet implemented
-    state->qt = QualifiedType(QualifiedType::TYPE, ErroneousType::get(ctx_));
-  } else {
-    auto ct = typeToCompType(currentRecvType_);
-    auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
-    for (int i = 0; i < rf.numFields(); i++) {
-      auto id = rf.fieldDeclId(i);
-      auto state = fieldStateFromId(id);
-      CHPL_ASSERT(state);
-      CHPL_ASSERT(state->qt.kind() == rf.fieldType(i).kind());
-      state->qt = rf.fieldType(i);
-      state->isInitialized = true;
-    }
+  auto ct = typeToCompType(currentRecvType_);
+  auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto id = rf.fieldDeclId(i);
+    auto state = fieldStateFromId(id);
+    CHPL_ASSERT(state);
+    CHPL_ASSERT(state->qt.kind() == rf.fieldType(i).kind());
+    state->qt = rf.fieldType(i);
+    state->isInitialized = true;
   }
 
   return true;
