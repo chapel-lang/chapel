@@ -20,6 +20,7 @@
 #
 
 import argparse
+from collections import defaultdict
 import importlib.util
 import os
 import sys
@@ -69,10 +70,8 @@ def apply_fixits(fixits: List[ChapelFixit]):
     """
     Apply a list of fixits
     """
-    fixit_per_file = {}
-    for fixit in fixits:
-        if fixit.path not in fixit_per_file:
-            fixit_per_file[fixit.path] = []
+    fixit_per_file = defaultdict(lambda: [])
+    for fixit in fixits:  
         fixit_per_file[fixit.path].append(fixit)
 
     # Apply fixits in reverse order to avoid invalidating the locations of
@@ -82,8 +81,8 @@ def apply_fixits(fixits: List[ChapelFixit]):
         with open(file, "r") as f:
             lines = f.readlines()
         for fixit in fixits:
-            (line_start, char_start) = fixit.start
-            (line_end, char_end) = fixit.end
+            line_start, char_start = fixit.start
+            line_end, char_end = fixit.end
             lines[line_start - 1] = (
                 lines[line_start - 1][: char_start - 1]
                 + fixit.text
@@ -117,48 +116,17 @@ def print_rules(driver: LintDriver, show_all=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog="chplcheck", description="A linter for the Chapel language"
-    )
+    parser = argparse.ArgumentParser(prog="chplcheck", description="A linter for the Chapel language")
     parser.add_argument("filenames", nargs="*")
-    parser.add_argument(
-        "--disable-rule", action="append", dest="disabled_rules", default=[]
-    )
-    parser.add_argument(
-        "--enable-rule", action="append", dest="enabled_rules", default=[]
-    )
+    parser.add_argument("--disable-rule", action="append", dest="disabled_rules", default=[])
+    parser.add_argument("--enable-rule", action="append", dest="enabled_rules", default=[])
     parser.add_argument("--lsp", action="store_true", default=False)
     parser.add_argument("--skip-unstable", action="store_true", default=False)
-    parser.add_argument(
-        "--internal-prefix",
-        action="append",
-        dest="internal_prefixes",
-        default=[],
-    )
-    parser.add_argument(
-        "--add-rules",
-        action="append",
-        default=[],
-        help="Add a custom rule file",
-    )
-    parser.add_argument(
-        "--list-rules",
-        action="store_true",
-        default=False,
-        help="List all available rules",
-    )
-    parser.add_argument(
-        "--list-active-rules",
-        action="store_true",
-        default=False,
-        help="List all currently enabled rules",
-    )
-    parser.add_argument(
-        "--fixit",
-        action="store_true",
-        default=False,
-        help="Apply fixits for the relevant rules",
-    )
+    parser.add_argument("--internal-prefix", action="append", dest="internal_prefixes", default=[])
+    parser.add_argument("--add-rules", action="append", default=[], help="Add a custom rule file")
+    parser.add_argument("--list-rules", action="store_true", default=False, help="List all available rules")
+    parser.add_argument("--list-active-rules", action="store_true", default=False,  help="List all currently enabled rules")
+    parser.add_argument("--fixit", action="store_true", default=False, help="Apply fixits for the relevant rules")
     args = parser.parse_args()
 
     driver = LintDriver(
