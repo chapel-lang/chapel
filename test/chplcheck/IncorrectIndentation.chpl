@@ -68,3 +68,26 @@ writeln("hi");
 for 1..10 {
 writeln("hi");
 }
+
+module NestedOuter {
+  module NestedInner {
+    writeln("hi");
+     writeln("??");
+    writeln("??");
+    record nestedRecord {
+      proc firstProc() {}
+       proc secondProc() {}
+      proc thirdProc() {}
+
+      proc nestedProcOuter() {
+        proc nestedProcInner(x: int) do return x;
+          proc nestedProcInner(x: string) {
+            writeln(x);
+             writeln(x);
+            writeln(x);
+            return x;
+          }
+      }
+    }
+  }
+}

@@ -11,3 +11,7 @@ IncorrectIndentation.chpl:51: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:56: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:65: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:69: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:75: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:79: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:84: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:86: node violates rule IncorrectIndentation
