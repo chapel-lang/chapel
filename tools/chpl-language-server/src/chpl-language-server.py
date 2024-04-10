@@ -1549,11 +1549,9 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
-        items.extend(
-            completion_item_for_decl(decl, override_name=name)
-            for (name, decl) in fi.visible_decls
-            if isinstance(decl, chapel.NamedDecl)
-        )
+        for (name, decl) in fi.visible_decls:
+            if isinstance(decl, chapel.NamedDecl):
+                items.append(completion_item_for_decl(decl, override_name=name))
         items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
 
         items = [item for item in items if item]

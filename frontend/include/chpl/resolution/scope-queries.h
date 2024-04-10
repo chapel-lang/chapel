@@ -103,6 +103,15 @@ namespace resolution {
                            LookupConfig config,
                            CheckedScopes& visited);
 
+  /**
+    Collect all symbols that are available in this scope, including ones
+    brought in through visibility statements. This function follows the
+    same rules as lookupNameInScope, except it collects all symbols instead
+    of one with a specific name.
+
+    Currently, this is only intended for tool support; the resolver itself
+    should rely on lookupNameInScope.
+   */
   std::map<UniqueString, BorrowedIdsWithName>
   getSymbolsAvailableInScope(Context* context,
                             const Scope* scope);

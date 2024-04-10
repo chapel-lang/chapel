@@ -1647,11 +1647,11 @@ getSymbolsAvailableInScopeQuery(Context* context,
 
       bool anyMatches = false;
       for (auto& namePair : namePairs) {
-        if (namePair.first != name) continue;
-
-        anyMatches = true;
-        renameTo = namePair.second;
-        break;
+        if (namePair.first == name) {
+          anyMatches = true;
+          renameTo = namePair.second;
+          break;
+        }
       }
 
       return kind == VisibilitySymbols::CONTENTS_EXCEPT ? !anyMatches : anyMatches;
@@ -1664,11 +1664,11 @@ getSymbolsAvailableInScopeQuery(Context* context,
     UniqueString renameTo;
     if (!allowedByVisibility(decl.first, renameTo)) continue;
 
-    auto flagSet = 0;
-    if (inVisibilitySymbols) flagSet |= IdAndFlags::PUBLIC;
+    auto flags = 0;
+    if (inVisibilitySymbols) flags |= IdAndFlags::PUBLIC;
 
     auto exclude = IdAndFlags::FlagSet::empty();
-    if (auto borrowed = decl.second.borrow(flagSet, exclude)) {
+    if (auto borrowed = decl.second.borrow(flags, exclude)) {
       toReturn.try_emplace(renameTo, *borrowed);
     }
   }

@@ -94,8 +94,8 @@ CLASS_BEGIN(Scope)
   PLAIN_GETTER(Scope, parent_scope, "Get the parent (outer) scope of this scope",
                Nilable<const chpl::resolution::Scope*>, return node->parentScope())
   PLAIN_GETTER(Scope, visible_nodes, "Get the nodes corresponding to declarations exported from this scope",
-               VisibileSymbols,
-               VisibileSymbols toReturn;
+               std::vector<VisibleSymbol>,
+               std::vector<VisibleSymbol> toReturn;
                for (auto& pair : getSymbolsAvailableInScope(context, node)) {
                  std::vector<const chpl::uast::AstNode*> into;
                  for (auto id : pair.second) {

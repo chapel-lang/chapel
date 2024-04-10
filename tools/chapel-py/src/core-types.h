@@ -56,7 +56,7 @@ struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resol
   static constexpr const char* DocStr = "A scope in the Chapel program, such as a block.";
 };
 
-using VisibileSymbols = std::vector<std::tuple<chpl::UniqueString, std::vector<const chpl::uast::AstNode*>>>;
+using VisibleSymbol = std::tuple<chpl::UniqueString, std::vector<const chpl::uast::AstNode*>>;
 
 struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*> {
   static constexpr const char* Name = "AstNode";
