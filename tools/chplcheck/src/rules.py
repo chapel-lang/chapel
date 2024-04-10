@@ -379,7 +379,17 @@ def register_rules(driver):
             Returns true for allow-listed AST nodes that contain
             just a list of statements.
             """
-            return isinstance(node, (Record, Class, Module, Block))
+            classes = (
+                Record,
+                Class,
+                Module,
+                SimpleBlockLike,
+                Interface,
+                Union,
+                Enum,
+                Cobegin
+            )
+            return isinstance(node, classes)
 
         def unwrap_intermediate_block(node: AstNode) -> Optional[AstNode]:
             """
@@ -429,6 +439,8 @@ def register_rules(driver):
         iterable = root
         if isinstance(root, AggregateDecl):
             iterable = root.decls_or_comments()
+        elif isinstance(root, SimpleBlockLike):
+            iterable = root.stmts()
 
         for child in iterable:
             if isinstance(child, Comment): continue
