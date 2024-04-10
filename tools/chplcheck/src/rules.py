@@ -139,9 +139,7 @@ def register_rules(driver: LintDriver):
             text = re.sub(r"\bdo( *)", "", text, 1)
             # remove any trailing whitespace
             text = re.sub(r" +\n", "\n", text)
-            return FullBasicRuleResult(
-                Fixit.build(node.location(), text)
-            )
+            return FullBasicRuleResult(Fixit.build(node.location(), text))
 
         return check
 
@@ -180,9 +178,7 @@ def register_rules(driver: LintDriver):
                 text = ""
 
         if text is not None:
-            return FullBasicRuleResult(
-                Fixit.build(node.location(), text)
-            )
+            return FullBasicRuleResult(Fixit.build(node.location(), text))
         else:
             return False
 
@@ -265,13 +261,7 @@ def register_rules(driver: LintDriver):
             var_linkage = var_node.linkage()
 
             var_pragmas = " ".join(var_node.pragmas())
-            return (
-                var_type,
-                var_kind,
-                var_attributes,
-                var_linkage,
-                var_pragmas,
-            )
+            return var_type, var_kind, var_attributes, var_linkage, var_pragmas
 
         def recurse(node):
             consecutive = []
