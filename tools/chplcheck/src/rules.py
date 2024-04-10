@@ -365,7 +365,7 @@ def register_rules(driver):
             yield iterand, loop
 
     @driver.advanced_rule
-    def IncorrectIndentation(context, root):
+    def IncorrectIndentation(context: Context, root: AstNode):
         """
         Warn for inconsistent or missing indentation
         """
@@ -374,14 +374,14 @@ def register_rules(driver):
         for child in root:
             yield from IncorrectIndentation(context, child)
 
-        def contains_statements(node):
+        def contains_statements(node: AstNode) -> bool:
             """
             Returns true for allow-listed AST nodes that contain
             just a list of statements.
             """
             return isinstance(node, (Record, Class, Module, Block))
 
-        def unwrap_intermediate_block(node):
+        def unwrap_intermediate_block(node: AstNode) -> Optional[AstNode]:
             """
             Given a node, find the reference indentation that its children
             should be compared against.
@@ -414,7 +414,6 @@ def register_rules(driver):
         if parent_for_indentation is None:
             # don't compare against any parent depth.
             pass
-
         # For implicit modules, proper code will technically be on the same
         # line as the module's body. But we don't want to warn about that,
         # since we don't want to ask all code to be indented one level deeper.
@@ -434,17 +433,17 @@ def register_rules(driver):
         for child in iterable:
             if isinstance(child, Comment): continue
 
-            # NamedDecl nodes currently use the name as the location, which
+            # some NamedDecl nodes currently use the name as the location, which
             # does not indicate their actual indentation.
-            if isinstance(child, (NamedDecl, TupleDecl, ForwardingDecl)): continue
+            if isinstance(child, (NamedDecl, TupleDecl, ForwardingDecl)):
+                continue
 
-            (line, depth) = child.location().start()
+            line, depth = child.location().start()
 
             # Warn for two statements on one line:
             #   var x: int; var y: int;
             if line == prev_line:
                 yield child
-
             # Warn for misaligned siblings:
             #   var x: int;
             #     var y: int;
@@ -459,7 +458,6 @@ def register_rules(driver):
                 prev_line = line
                 prev = child
                 continue
-
             # Warn for children that are not indented relative to parent
             #
             #   record r {
