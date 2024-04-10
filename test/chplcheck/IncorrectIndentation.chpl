@@ -91,3 +91,215 @@ module NestedOuter {
     }
   }
 }
+
+on here
+{
+  writeln("hi");
+  writeln("??");
+}
+
+on here
+{
+writeln("hi");
+}
+
+on here {
+writeln("hi");
+}
+
+on here {
+  writeln("hi");
+    writeln("hi");
+}
+
+on here {
+  writeln("hi"); writeln("hi");
+}
+
+on here {
+  for 1..10 do
+  writeln("hi");
+}
+
+begin
+{
+  writeln("hi");
+  writeln("??");
+}
+
+begin
+{
+writeln("hi");
+}
+
+begin {
+writeln("hi");
+}
+
+begin {
+  writeln("hi");
+    writeln("hi");
+}
+
+begin {
+  writeln("hi"); writeln("hi");
+}
+
+begin {
+  for 1..10 do
+  writeln("hi");
+}
+
+var dummy: int;
+
+begin with (ref dummy)
+{
+  writeln("hi");
+  writeln("??");
+}
+
+begin with (ref dummy)
+{
+writeln("hi");
+}
+
+begin with (ref dummy) {
+writeln("hi");
+}
+
+begin with (ref dummy) {
+  writeln("hi");
+    writeln("hi");
+}
+
+begin with (ref dummy) {
+  writeln("hi"); writeln("hi");
+}
+
+begin with (ref dummy) {
+  for 1..10 do
+  writeln("hi");
+}
+
+// Note: 'cobegins' with one statement throw warning, so all tests here include
+// at least two statements.
+
+cobegin
+{
+  writeln("hi");
+  writeln("??");
+}
+
+cobegin
+{
+writeln("hi");
+writeln("hi");
+}
+
+cobegin {
+writeln("hi");
+writeln("hi");
+}
+
+cobegin {
+  writeln("hi");
+    writeln("hi");
+}
+
+cobegin {
+  writeln("hi"); writeln("hi");
+}
+
+cobegin {
+  writeln("hi");
+  for 1..10 do
+  writeln("hi");
+}
+
+cobegin with (ref dummy)
+{
+  writeln("hi");
+  writeln("??");
+}
+
+cobegin with (ref dummy)
+{
+writeln("hi");
+writeln("hi");
+}
+
+cobegin with (ref dummy) {
+writeln("hi");
+writeln("hi");
+}
+
+cobegin with (ref dummy) {
+  writeln("hi");
+    writeln("hi");
+}
+
+cobegin with (ref dummy) {
+  writeln("hi"); writeln("hi");
+}
+
+cobegin with (ref dummy) {
+  writeln("hi");
+  for 1..10 do
+  writeln("hi");
+}
+
+enum e1
+{
+  first,
+  second
+}
+
+enum e2
+{
+first
+}
+
+enum e3 {
+first
+}
+
+enum e4 {
+  first,
+    second
+}
+
+enum e5 {
+  first, second
+}
+
+union u1
+{
+  var element: int;
+  proc firstProc() {}
+}
+
+union u2
+{
+  var element: int;
+
+proc firstProc() {}
+}
+
+union u3 {
+  var element: int;
+
+proc firstProc() {}
+}
+
+union u4 {
+  var element: int;
+
+  proc firstProc() {}
+    proc secondProc() {}
+}
+
+union u5 {
+  var element: int;
+
+  proc firstProc() {} proc secondProc() {}
+}
