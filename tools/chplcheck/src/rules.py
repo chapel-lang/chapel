@@ -23,7 +23,7 @@ import typing
 import chapel
 from chapel import *
 from driver import LintDriver
-from fixits import ChapelFixit, range_to_text
+from fixits import Fixit, range_to_text
 from rule_types import FullBasicRuleResult, FullAdvancedRuleResult
 
 
@@ -140,7 +140,7 @@ def register_rules(driver: LintDriver):
             # remove any trailing whitespace
             text = re.sub(r" +\n", "\n", text)
             return FullBasicRuleResult(
-                check, ChapelFixit.build(node.location(), text)
+                Fixit.build(node.location(), text)
             )
 
         return check
@@ -181,7 +181,7 @@ def register_rules(driver: LintDriver):
 
         if text is not None:
             return FullBasicRuleResult(
-                False, ChapelFixit.build(node.location(), text)
+                Fixit.build(node.location(), text)
             )
         else:
             return False
@@ -407,7 +407,7 @@ def register_rules(driver: LintDriver):
             fixit = None
             parent = node.parent()
             if parent and isinstance(parent, TupleDecl):
-                fixit = ChapelFixit.build(node.location(), "_")
+                fixit = Fixit.build(node.location(), "_")
             elif parent and isinstance(parent, IndexableLoop):
                 if not lines:
                     lines = context.get_file_text(root.location().path()).split(
@@ -419,7 +419,7 @@ def register_rules(driver: LintDriver):
                     loc = parent.location()
                 text = range_to_text(loc, lines)
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
-                fixit = ChapelFixit.build(loc, text)
+                fixit = Fixit.build(loc, text)
 
             yield FullAdvancedRuleResult(node, loop, fixit)
 
@@ -475,5 +475,5 @@ def register_rules(driver: LintDriver):
             yield FullAdvancedRuleResult(
                 iterand,
                 anchor=loop,
-                fixit=ChapelFixit.build(iterand.location(), s),
+                fixit=Fixit.build(iterand.location(), s),
             )

@@ -24,14 +24,14 @@ from collections import defaultdict
 import importlib.util
 import os
 import sys
-from typing import List
+from typing import List, Optional
 
 import chapel
 import chapel.replace
 from driver import LintDriver
 from lsp import run_lsp
 from rules import register_rules
-from fixits import ChapelFixit
+from fixits import Fixit
 
 
 def print_violation(node: chapel.AstNode, name: str):
@@ -66,12 +66,12 @@ def load_module(driver: LintDriver, file_path: str):
     rule_func(driver)
 
 
-def apply_fixits(fixits: List[ChapelFixit]):
+def apply_fixits(fixits: List[Fixit], suffix: Optional[str]=None):
     """
     Apply a list of fixits
     """
     fixit_per_file = defaultdict(lambda: [])
-    for fixit in fixits:  
+    for fixit in fixits:
         fixit_per_file[fixit.path].append(fixit)
 
     # Apply fixits in reverse order to avoid invalidating the locations of
@@ -91,7 +91,8 @@ def apply_fixits(fixits: List[ChapelFixit]):
             if line_start != line_end:
                 lines[line_start:line_end] = [""] * (line_end - line_start)
 
-        with open(file, "w") as f:
+        outfile = file if suffix is None else file + suffix
+        with open(outfile, "w") as f:
             f.writelines(lines)
 
 
@@ -127,6 +128,7 @@ def main():
     parser.add_argument("--list-rules", action="store_true", default=False, help="List all available rules")
     parser.add_argument("--list-active-rules", action="store_true", default=False,  help="List all currently enabled rules")
     parser.add_argument("--fixit", action="store_true", default=False, help="Apply fixits for the relevant rules")
+    parser.add_argument("--fixit-suffix", default=None, help="Suffix to append to the original file name when applying fixits. If not set (the default), the original file will be overwritten.")
     args = parser.parse_args()
 
     driver = LintDriver(
@@ -170,7 +172,7 @@ def main():
                 fixits = [fixits for (_, _, fixits) in violations if fixits]
                 # flatten the list of fixits
                 fixits = [f for sublist in fixits for f in sublist]
-                apply_fixits(fixits)
+                apply_fixits(fixits, suffix=args.fixit_suffix)
                 violations = [
                     (node, rule, fixit)
                     for (node, rule, fixit) in violations

@@ -23,7 +23,7 @@ import typing
 
 
 @dataclass
-class ChapelFixit:
+class Fixit:
     """
     Represents a fixit for a Chapel diagnostic.
     """
@@ -34,13 +34,13 @@ class ChapelFixit:
     text: str
 
     @classmethod
-    def build(cls, location: chapel.Location, text: str) -> "ChapelFixit":
-        return ChapelFixit(
+    def build(cls, location: chapel.Location, text: str) -> "Fixit":
+        return Fixit(
             location.path(), location.start(), location.end(), text
         )
 
     @classmethod
-    def to_dict(cls, fixit: "ChapelFixit") -> typing.Dict:
+    def to_dict(cls, fixit: "Fixit") -> typing.Dict:
         return {
             "location": {
                 "path": fixit.path,
@@ -51,7 +51,7 @@ class ChapelFixit:
         }
 
     @classmethod
-    def from_dict(cls, data: typing.Dict) -> typing.Optional["ChapelFixit"]:
+    def from_dict(cls, data: typing.Dict) -> typing.Optional["Fixit"]:
 
         if "location" not in data or "text" not in data:
             return None
@@ -64,7 +64,7 @@ class ChapelFixit:
         ):
             return None
 
-        return ChapelFixit(
+        return Fixit(
             location["path"], location["start"], location["end"], data["text"]
         )
 

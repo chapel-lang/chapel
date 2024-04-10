@@ -21,7 +21,7 @@ import functools
 from typing import Any, Callable, Iterator, List, Optional, Tuple
 
 import chapel
-from fixits import ChapelFixit
+from fixits import Fixit
 import rule_types
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
@@ -149,7 +149,7 @@ class LintDriver:
         context: chapel.Context,
         root: chapel.AstNode,
         rule: Tuple[str, Any, rule_types.BasicRule],
-    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[ChapelFixit]]]]:
+    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
         (name, nodetype, func) = rule
 
         # If we should ignore the rule no matter the node, no reason to run
@@ -166,7 +166,7 @@ class LintDriver:
             val = func(context, node)
             check, fixit = None, None
             if isinstance(val, rule_types.FullBasicRuleResult):
-                check, fixit = val.check, val.fixit
+                check, fixit = False, val.fixit
                 if fixit is not None and not isinstance(fixit, list):
                     fixit = [fixit]
             else:
@@ -179,7 +179,7 @@ class LintDriver:
         context: chapel.Context,
         root: chapel.AstNode,
         rule: Tuple[str, rule_types.AdvancedRule],
-    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[ChapelFixit]]]]:
+    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
         (name, func) = rule
 
         # If we should ignore the rule no matter the node, no reason to run
@@ -266,7 +266,7 @@ class LintDriver:
 
     def run_checks(
         self, context: chapel.Context, asts: List[chapel.AstNode]
-    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[ChapelFixit]]]]:
+    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
         """
         Runs all the rules registered with this node, yielding warnings for
         all non-silenced rules that are violated in the given ASTs.

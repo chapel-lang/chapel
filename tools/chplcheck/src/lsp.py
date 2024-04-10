@@ -36,7 +36,7 @@ from lsprotocol.types import (
     TextEdit,
 )
 from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
-from fixits import ChapelFixit
+from fixits import Fixit
 from driver import LintDriver
 
 
@@ -111,7 +111,7 @@ def run_lsp(driver: LintDriver):
                     severity=DiagnosticSeverity.Warning,
                 )
                 if fixits:
-                    fixits = [ChapelFixit.to_dict(f) for f in fixits]
+                    fixits = [Fixit.to_dict(f) for f in fixits]
                     diagnostic.data = {"rule": rule, "fixits": fixits}
                 diagnostics.append(diagnostic)
 
@@ -149,7 +149,7 @@ def run_lsp(driver: LintDriver):
                 continue
             if "fixits" not in d.data:
                 continue
-            fixits = [ChapelFixit.from_dict(f) for f in d.data["fixits"]]
+            fixits = [Fixit.from_dict(f) for f in d.data["fixits"]]
             if not fixits:
                 continue
 

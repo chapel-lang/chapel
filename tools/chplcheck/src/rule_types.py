@@ -21,18 +21,15 @@ import typing
 from dataclasses import dataclass
 
 import chapel
-from fixits import ChapelFixit
+from fixits import Fixit
 
 
 @dataclass
 class FullBasicRuleResult:
-    check: bool
-    fixit: typing.Optional[
-        typing.Union[ChapelFixit, typing.List[ChapelFixit]]
-    ] = None
+    fixit: typing.Union[Fixit, typing.List[Fixit]]
 
 
-BasicRuleResult = typing.Union[bool, ChapelFixit]
+BasicRuleResult = typing.Union[bool, FullBasicRuleResult]
 BasicRule = typing.Callable[[chapel.Context, chapel.AstNode], BasicRuleResult]
 
 
@@ -41,7 +38,7 @@ class FullAdvancedRuleResult:
     node: chapel.AstNode
     anchor: typing.Optional[chapel.AstNode] = None
     fixit: typing.Optional[
-        typing.Union[ChapelFixit, typing.List[ChapelFixit]]
+        typing.Union[Fixit, typing.List[Fixit]]
     ] = None
 
 
