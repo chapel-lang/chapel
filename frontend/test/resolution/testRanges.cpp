@@ -165,6 +165,21 @@ static void test6(Context* context) {
   assert(idxTypeInt->bitwidth() == 64);
 }
 
+static void test7(Context* context) {
+  // test range without bound
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         proc f(r: range(?)) do return 42;
+                         var x = f(1..10);
+                         )"""", true);
+  assert(qt.type() != nullptr);
+  assert(qt.type()->isIntType());
+  assert(qt.type()->toIntType()->isDefaultWidth());
+}
+
 int main() {
   // first test runs without environment and stdlib.
   test1();
@@ -178,5 +193,6 @@ int main() {
   test4(ctx);
   test5(ctx);
   test6(ctx);
+  test7(ctx);
   return 0;
 }
