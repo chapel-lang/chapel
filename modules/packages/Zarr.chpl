@@ -19,9 +19,9 @@
 
 /*
   Support for distributed reading and writing of Zarr stores. Support is
-  limited to v2 Zarr arrays stored on local filesystems. The module uses
-  c-blosc to compress and decompress chunks. Zarr specification:
-  https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+  limited to v2 Zarr arrays stored on local filesystems. NFS is not supported.
+  The module uses c-blosc to compress and decompress chunks. Zarr
+  specification: https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
 */
 module Zarr {
   use IO;
