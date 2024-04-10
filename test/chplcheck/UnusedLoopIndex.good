@@ -1,0 +1,6 @@
+UnusedLoopIndex.chpl:2: node violates rule UnusedLoopIndex
+UnusedLoopIndex.chpl:3: node violates rule UnusedLoopIndex
+UnusedLoopIndex.chpl:6: node violates rule UnusedLoopIndex
+UnusedLoopIndex.chpl:9: node violates rule UnusedLoopIndex
+UnusedLoopIndex.chpl:9: node violates rule UnusedLoopIndex
+[Success matching fixit for UnusedLoopIndex]

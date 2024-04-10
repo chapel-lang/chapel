@@ -7,3 +7,8 @@ SimpleDomainAsRange.chpl:52: node violates rule SimpleDomainAsRange
 SimpleDomainAsRange.chpl:54: node violates rule SimpleDomainAsRange
 SimpleDomainAsRange.chpl:56: node violates rule SimpleDomainAsRange
 SimpleDomainAsRange.chpl:58: node violates rule SimpleDomainAsRange
+SimpleDomainAsRange.chpl:63: node violates rule SimpleDomainAsRange
+SimpleDomainAsRange.chpl:67: node violates rule SimpleDomainAsRange
+SimpleDomainAsRange.chpl:71: node violates rule SimpleDomainAsRange
+SimpleDomainAsRange.chpl:75: node violates rule SimpleDomainAsRange
+[Success matching fixit for SimpleDomainAsRange]

@@ -4,6 +4,11 @@ module BoolLits {
 
     writeln("true");
 
+    while true {
+      writeln("and I loop!");
+      break;
+    }
+
     {
       writeln("true");
     }

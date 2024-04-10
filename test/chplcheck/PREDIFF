@@ -1,4 +1,5 @@
 #!/bin/bash
+
 $CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
   --enable-rule BoolLitInCondStatement \
   --enable-rule UseExplicitModules \
@@ -9,5 +10,34 @@ $CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
   --skip-unstable \
   $1.chpl >> $2
 if sed "s#$(pwd)/##" $2 >$2.tmp; then
-    mv $2.tmp $2
+  mv $2.tmp $2
+fi
+
+# if there is a good-fixit file, try and run checkcheck with fixit
+if [ -e $1.good-fixit ]; then
+  # backup the original file
+  cp $1.chpl $1.chpl.orig
+
+  $CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
+    --enable-rule BoolLitInCondStatement \
+    --enable-rule UseExplicitModules \
+    --enable-rule UnusedFormal \
+    --enable-rule CamelOrPascalCaseVariables \
+    --enable-rule NestedCoforalls \
+    --internal-prefix "myprefix_" --internal-prefix "_" \
+    --skip-unstable \
+    --fixit \
+    $1.chpl >/dev/null
+
+  # copy the fixed file to the output
+  cp $1.chpl $1.out.fixit
+  # restore the original file
+  mv $1.chpl.orig $1.chpl
+
+  if diff $1.good-fixit $1.out.fixit; then
+    echo "[Success matching fixit for $1]" >> $2
+    rm $1.out.fixit
+  else
+    echo "[Error matching fixit for $1]" >> $2
+  fi
 fi
