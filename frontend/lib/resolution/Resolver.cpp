@@ -3322,65 +3322,37 @@ void Resolver::exit(const Range* range) {
     return;
   }
 
-  ResolvedExpression& re = byPostorder.byAst(range);
+  // Encode the type of the range as two bits: bounded below, bounded above.
+  int boundType = (range->lowerBound() != nullptr) << 1 |
+                  (range->upperBound() != nullptr);
 
-  // fetch default fields for `stridable` and `idxType`
-  const ResolvedFields& resolvedFields = fieldsForTypeDecl(context, rangeType,
-      DefaultsPolicy::USE_DEFAULTS);
-  CHPL_ASSERT(resolvedFields.fieldName(0) == "idxType");
-  CHPL_ASSERT(resolvedFields.fieldName(1) == "bounds");
-  CHPL_ASSERT(resolvedFields.fieldName(2) == "strides");
+  // Decide which Chapel function to call for this.
+  static const char* functions[] = {
+    "chpl_build_unbounded_range",
+    "chpl_build_high_bounded_range",
+    "chpl_build_low_bounded_range",
+    "chpl_build_bounded_range"
+  };
+  const char* function = functions[boundType];
 
-  // Determine index type, either via inference or by using the default.
-  QualifiedType idxType;
-  if (range->lowerBound() || range->upperBound()) {
-    // We have bounds. Try to infer type from them
-    std::vector<QualifiedType> suppliedTypes;
-    if (auto lower = range->lowerBound()) {
-      suppliedTypes.push_back(byPostorder.byAst(lower).type());
-    }
-    if (auto upper = range->upperBound()) {
-      suppliedTypes.push_back(byPostorder.byAst(upper).type());
-    }
-    auto idxTypeResult = commonType(context, suppliedTypes);
-    if (!idxTypeResult) {
-      re.setType(CHPL_TYPE_ERROR(context, IncompatibleRangeBounds, range,
-                                 suppliedTypes[0], suppliedTypes[1]));
-      return;
-    } else {
-      idxType = *idxTypeResult;
-    }
-  } else {
-    // No bounds. Use default.
-    idxType = resolvedFields.fieldType(0);
+  std::vector<CallInfoActual> actuals;
+  if (range->lowerBound()) {
+    actuals.emplace_back(/* type */ byPostorder.byAst(range->lowerBound()).type(),
+                         /* byName */ UniqueString());
   }
-
-  // Determine the value for `bounds`.
-  ID refersToId; // Needed for out parameter of typeForEnumElement
-  const char* rangeTypeName;
-  if (range->lowerBound() && range->upperBound()) {
-    rangeTypeName = "both";
-  } else if (range->lowerBound()) {
-    rangeTypeName = "low";
-  } else if (range->upperBound()) {
-    rangeTypeName = "high";
-  } else {
-    rangeTypeName = "neither";
+  if (range->upperBound()) {
+    actuals.emplace_back(/* type */ byPostorder.byAst(range->upperBound()).type(),
+                         /* byName */ UniqueString());
   }
-  auto boundKindType = EnumType::getBoundKindType(context);
-  auto boundedType = typeForEnumElement(boundKindType,
-                                        UniqueString::get(context, rangeTypeName),
-                                        range);
-
-  auto subMap = SubstitutionsMap();
-  subMap.insert({resolvedFields.fieldDeclId(0), std::move(idxType)});
-  subMap.insert({resolvedFields.fieldDeclId(1), std::move(boundedType)});
-  subMap.insert({resolvedFields.fieldDeclId(2), resolvedFields.fieldType(2)});
-
-  const RecordType* rangeTypeInst =
-      RecordType::get(context, rangeType->id(), rangeType->name(),
-                      rangeType, std::move(subMap));
-  re.setType(QualifiedType(QualifiedType::CONST_VAR, rangeTypeInst));
+  auto ci = CallInfo(/* name */ UniqueString::get(context, function),
+                     /* calledType */ QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+  auto scope = scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto c = resolveGeneratedCall(context, range, ci, inScopes);
+  handleResolvedCall(byPostorder.byAst(range), range, ci, c);
 }
 
 bool Resolver::enter(const uast::Domain* decl) {
