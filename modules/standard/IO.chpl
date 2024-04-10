@@ -1472,6 +1472,7 @@ private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
 private extern proc qio_encode_to_string(chr:int(32)):c_ptrConst(c_char);
 private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_ptrConst(c_char), buflen:c_ssize_t):errorCode;
+extern proc qio_encode_char_buf(dst: c_ptr(void), chr: int(32)): errorCode;
 private extern proc chpl_enc_utf8_decode(ref state: uint(32), ref codep:uint(32), byte: uint(32)): uint(32);
 
 private extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):errorCode;
@@ -7893,7 +7894,7 @@ proc fileReader.readAll(type t=bytes): t throws
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref s: string): int throws {
-  const (err, lenread) = readBytesOrString(this, s, -1);
+  const (err, lenread) = readStringImpl(this, s, -1);
 
   if err != 0 && err != EEOF {
     try this._ch_ioerror(err, "in fileReader.readAll(ref s: string)");
@@ -7916,7 +7917,7 @@ proc fileReader.readAll(ref s: string): int throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref b: bytes): int throws {
-  const (err, lenread) = readBytesOrString(this, b, -1);
+  const (err, lenread) = readBytesImpl(this, b, -1);
 
   if err != 0 && err != EEOF {
     try this._ch_ioerror(err, "in fileReader.readAll(ref b: bytes)");
@@ -8013,7 +8014,7 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
 */
 proc fileReader.readString(maxSize: int): string throws {
   var ret: string = "";
-  var (e, numRead) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readStringImpl(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
   else if e == EEOF && numRead == 0 then
@@ -8039,7 +8040,7 @@ proc fileReader.readString(maxSize: int): string throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readString(ref s: string, maxSize: int): bool throws {
-  var (e, lenRead) = readBytesOrString(this, s, maxSize);
+  var (e, lenRead) = readStringImpl(this, s, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
 
@@ -8063,7 +8064,7 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
 */
 proc fileReader.readBytes(maxSize: int): bytes throws {
   var ret: bytes = b"";
-  var (e, numRead) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readBytesImpl(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
   else if e == EEOF && numRead == 0 then
@@ -8089,7 +8090,7 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
-  var (e, lenRead) = readBytesOrString(this, b, maxSize);
+  var (e, lenRead) = readBytesImpl(this, b, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
 
@@ -8157,18 +8158,13 @@ proc computeGuessReadSize(ch: fileReader, maxChars: int, pos: int): c_ssize_t {
 }
 
 // note: len is in codepoints when t == string, and in bytes otherwise
-private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+private proc readBytesImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
   throws
 {
-
   var err:errorCode = 0;
   var lenread:int(64);
 
   on ch._home {
-    var tx:c_ptrConst(c_char);
-    var lentmp:int(64);
-    var actlen:int(64);
-
     try ch.lock(); defer { ch.unlock(); }
 
     // note the current channel position
@@ -8177,15 +8173,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // Compute the maximum amount we could read as a 'c_ssize_t'
     // based upon 'len' and the channel's region.
     // This handles len==-1 as well as a channel with a bounded region.
-    // This is an amount in bytes.
     const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, t);
-    // Compute the maximum number of codepoints we could read
-    const maxChars:c_ssize_t;
-    if t == string {
-      maxChars = if len < 0 then max(c_ssize_t) else len;
-    } else {
-      maxChars = maxBytes;
-    }
 
     // Compute a guess as to the size to read based on the file length.
     // This is only a guess & it's possible it will be out of date
@@ -8193,62 +8181,39 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     // We'll use this guess to decide how much to allocate up-front.
     // We don't want to allocate all of 'len' up front if it's bigger
     // than the observed channel size or the initial file size.
-    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, maxChars, pos);
-
-    // Note: remainder of this function assumes that the file data
-    // is in the same string encoding as the result (UTF-8). If/when
-    // fileReader supports other encodings, this will need to be updated.
-    // In particular, the character-set translation will need to be done;
-    // that could be handled by reading differently with read-characters
-    // functions; or it could be handled by translating the data that was
-    // read and is now in memory.
+    const guessReadSize:c_ssize_t =
+      computeGuessReadSize(ch, maxBytes, pos)+1; // +1 for trailing \0
 
     // proactively allocate 'guessReadSize'
     var buff: bufferType = nil;
     var buffSz = 0;
     var n:c_ssize_t = 0; // how many bytes have we read into buff?
-    var nChars:c_ssize_t = 0; // how many codepoints have we read?
-    var utf8state:uint(32) = 0;
-    var utf8cp:uint(32) = 0;
-    (buff, buffSz) = bufferAlloc(guessReadSize+1); // room for trailing \0
+    (buff, buffSz) = bufferAlloc(guessReadSize); // room for trailing \0
 
-    // then try to read repeatedly until we have read 'maxChars' reach EOF
-    while n < maxBytes && nChars < maxChars {
+    // then try to read repeatedly until we have read 'maxBytes' or reach EOF
+    while n < maxBytes {
       var locErr:errorCode = 0;
       var amtRead:c_ssize_t = 0;
-      if n >= buffSz - 1 { // - 1 for trailing \0
+      if n >= buffSz {
         // if we need more room in the buffer, grow it
         // this will happen if we have not read all of 'maxBytes' yet
         // but there is more data in the file (as when guessReadSize
         // was innacurate for one reason or another)
         var requestSz = 2*buffSz;
         // make sure to at least request 16 bytes
-        if requestSz < 16 then requestSz = 16;
+        if requestSz < n + 16 then requestSz = n + 16;
         // but don't ever ask for more bytes than maxBytes + 1
-        if requestSz > maxBytes + 1 then requestSz = maxBytes + 1;
+        if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 1 then
+           requestSz = maxBytes + 1;
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
+        assert(n < buffSz);
       }
-      assert(n < buffSz);
-      const readN = min(maxBytes - n,      // Don't exceed max byte count
-                        maxChars - nChars, // Don't exceed codepoint count,
-                                           // assuming max 1 byte per codepoint
-                        buffSz - 1 - n);   // Don't exceed allocated buffer
-                                           // space (-1 for trailing \0)
+      const readN = min(maxBytes - n, // Don't exceed max byte count
+                        buffSz - n);  // Don't exceed allocated buffer space
 
       locErr = qio_channel_read(false, ch._channel_internal,
                                 buff[n], // read starting with data here
                                 readN, amtRead);
-
-      if t == string {
-        // compute the number of codepoints read so far
-        for j in 0..<amtRead {
-          chpl_enc_utf8_decode(utf8state, utf8cp, buff[n+j]);
-          if utf8state <= 1 {
-            // decoded a character (or error)
-            nChars += 1;
-          }
-        }
-      }
 
       n += amtRead;
 
@@ -8260,18 +8225,88 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
     }
 
     // add the trailing \0
-    assert(n < buffSz); // make sure there is room for the trailing \0
+    (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
     buff[n] = 0;
 
-    // if the buffer contains invalid UTF-8, createAdoptingBuffer
-    // will throw. Make sure to free the buffer in that case.
-    var tmp: t;
-    try {
-      tmp = t.createAdoptingBuffer(buff, length=n);
-    } catch e {
-      bufferFree(buff);
-      throw e;
+    var tmp: bytes = t.createAdoptingBuffer(buff, length=n, size=buffSz);
+
+    out_var <=> tmp;
+    lenread = n;
+  }
+
+  return (err, lenread);
+}
+
+private proc readStringImpl(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+  throws
+{
+  var err:errorCode = 0;
+  var lenread:int(64);
+
+  on ch._home {
+    try ch.lock(); defer { ch.unlock(); }
+
+    // note the current channel position
+    var pos = qio_channel_offset_unlocked(ch._channel_internal);
+
+    // Compute the maximum amount we could read as a 'c_ssize_t'
+    // based upon 'len' and the channel's region.
+    // This is an amount in bytes.
+    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, t);
+    // Compute the maximum number of codepoints we could read
+    const maxChars:c_ssize_t = if len < 0 then max(c_ssize_t) else len;
+
+    // Compute a guess as to the size to read based on the file length,
+    // assuming 1-byte-per-codepoint.
+    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, maxChars, pos)+5;
+          // +5 -- room for 4 bytes per codepoint + 1 byte for trailing \0
+
+    // proactively allocate 'guessReadSize'
+    var buff: bufferType = nil;
+    var buffSz = 0;
+    var n:c_ssize_t = 0; // how many bytes have we read into buff?
+    var nChars:c_ssize_t = 0; // how many codepoints have we read?
+    (buff, buffSz) = bufferAlloc(guessReadSize);
+
+    // then try to read repeatedly until we have read 'maxChars' reach EOF
+    while n < maxBytes && nChars < maxChars {
+      var locErr:errorCode = 0;
+      var amtRead:c_ssize_t = 0;
+      var codepoint: int(32);
+      locErr = qio_channel_read_char(false, ch._channel_internal, codepoint);
+      if locErr {
+        // reached EOF or other error so we need to stop
+        err = locErr;
+        break;
+      }
+
+      var codepointSz = qio_nbytes_char(codepoint):c_ssize_t;
+      if n + codepointSz > buffSz { // make sure there is room for codepointSz
+        var requestSz = 2*buffSz;
+        // make sure to at least request 16 bytes
+        if requestSz < n + 16 then requestSz = n + 16;
+        // but don't ever ask for more bytes than maxBytes + 5
+        if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 5 then
+          requestSz = maxBytes + 5;
+        (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
+        assert(n + codepointSz < buffSz);
+      }
+
+      // store the codepoint in the buffer
+      qio_encode_char_buf(buff + n, codepoint);
+      nChars += 1;
+      n += codepointSz;
     }
+
+    // add the trailing \0
+    (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
+    buff[n] = 0;
+
+    var tmp: string =
+      NVStringFactory.chpl_createStringWithOwnedBufferNV(buff,
+                                                         length=n,
+                                                         size=buffSz,
+                                                         numCodepoints=nChars);
 
     out_var <=> tmp;
     lenread = n;
