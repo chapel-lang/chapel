@@ -461,7 +461,10 @@ def register_rules(driver):
             # Warn for two statements on one line:
             #   var x: int; var y: int;
             if line == prev_line:
-                yield child
+                # Exception for enums, which are allowed to be on the same line.
+                #   enum color { red, green, blue }
+                if not isinstance(child, EnumElement):
+                    yield child
             # Warn for misaligned siblings:
             #   var x: int;
             #     var y: int;
