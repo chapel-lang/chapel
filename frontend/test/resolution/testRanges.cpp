@@ -180,6 +180,23 @@ static void test7(Context* context) {
   assert(qt.type()->toIntType()->isDefaultWidth());
 }
 
+static void test8(Context* context) {
+  // test range without bound
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         var x = new range(int, 0, 10);
+                         )"""", true);
+  auto rangeType = qt.type()->toRecordType();
+  assert(rangeType != nullptr);
+  auto idxType = getRangeIndexType(context, rangeType, "both");
+  assert(idxType.type() != nullptr);
+  auto idxTypeInt = idxType.type()->toIntType();
+  assert(idxTypeInt->bitwidth() == 64);
+}
+
 int main() {
   // first test runs without environment and stdlib.
   test1();
@@ -194,5 +211,6 @@ int main() {
   test5(ctx);
   test6(ctx);
   test7(ctx);
+  test8(ctx);
   return 0;
 }
