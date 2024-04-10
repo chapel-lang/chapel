@@ -8985,27 +8985,11 @@ proc fileReader.readBinary(ref arg:numeric, endian: endianness):bool throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
-  var e:errorCode = 0,
-      didRead = false;
+  var (e, lenRead) = readStringImpl(this, s, maxSize);
 
-  on this._home {
-    var len: int(64),
-        tx: c_ptrConst(c_char);
+  if e != 0 && e != EEOF then throw createSystemError(e);
 
-    e = qio_channel_read_string(false, endianness.native: c_int,
-                                qio_channel_str_style(this._channel_internal),
-                                this._channel_internal, tx, len, maxSize:c_ssize_t);
-
-    if len > 0 then didRead = true;
-    s = try! string.createAdoptingBuffer(tx, length=len);
-  }
-
-  if e == EEOF {
-    return didRead;
-  } else if e != 0 {
-    throw createSystemOrChplError(e);
-  }
-  return true;
+  return lenRead > 0;
 }
 
 /*
@@ -9024,29 +9008,12 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
-  var e:errorCode = 0,
-      didRead = false;
+  var (e, lenRead) = readBytesImpl(this, b, maxSize);
 
-  on this._home {
-    var len: int(64),
-        tx: c_ptrConst(c_char);
+  if e != 0 && e != EEOF then throw createSystemError(e);
 
-    e = qio_channel_read_string(false, endianness.native: c_int,
-                                qio_channel_str_style(this._channel_internal),
-                                this._channel_internal, tx, len, maxSize:c_ssize_t);
-
-    if len > 0 then didRead = true;
-    b = try! bytes.createAdoptingBuffer(tx, length=len);
-  }
-
-  if e == EEOF {
-    return didRead;
-  } else if e != 0 {
-    throw createSystemOrChplError(e);
-  }
-  return true;
+  return lenRead > 0;
 }
-
 
 @chpldoc.nodoc
 @deprecated("'ReadBinaryArrayReturnInt' is deprecated — 'readBinary' now returns an int by default when reading an array")
