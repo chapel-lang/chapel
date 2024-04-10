@@ -1,13 +1,13 @@
 readLine
   got expected error and offset
 readThrough
-  missing error
+  got expected error and offset
 readTo
-  missing error
+  got expected error and offset
 advanceThrough
-  missing error
+  no error, as expected
 advanceTo
-  missing error
+  no error, as expected
 readString
   got expected error and offset
 readAll(string)

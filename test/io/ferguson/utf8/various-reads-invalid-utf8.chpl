@@ -24,6 +24,10 @@ proc unexpected() {
   writeln("  missing error");
 }
 
+proc expectNoError() {
+  writeln("  no error, as expected");
+}
+
 proc main() {
   {
     writeln("readLine");
@@ -65,7 +69,7 @@ proc main() {
     var r = makeReader();
     try {
       r.advanceThrough("x");
-      unexpected();
+      expectNoError();
     } catch e {
       expect(r, e, 0);
     }
@@ -76,7 +80,7 @@ proc main() {
     var r = makeReader();
     try {
       r.advanceTo("x");
-      unexpected();
+      expectNoError();
     } catch e {
       expect(r, e, 0);
     }
