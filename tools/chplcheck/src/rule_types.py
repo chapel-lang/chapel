@@ -25,16 +25,26 @@ from fixits import Fixit
 
 
 @dataclass
-class FullBasicRuleResult:
+class BasicRuleResult:
+    """
+    Result type for basic rules. Rules can also return a plain boolean to
+    represent a simple pass/fail result, with no fixit.
+    """
     fixit: typing.Union[Fixit, typing.List[Fixit]]
 
 
-BasicRuleResult = typing.Union[bool, FullBasicRuleResult]
-BasicRule = typing.Callable[[chapel.Context, chapel.AstNode], BasicRuleResult]
+_BasicRuleResult = typing.Union[bool, BasicRuleResult]
+"""Internal type for basic rule results"""
+BasicRule = typing.Callable[[chapel.Context, chapel.AstNode], _BasicRuleResult]
+"""Function type for basic rules"""
 
 
 @dataclass
-class FullAdvancedRuleResult:
+class AdvancedRuleResult:
+    """
+    Result type for advanced rules. Advanced rules can also return a plain
+    boolean to represent a simple pass/fail result, with no fixit.
+    """
     node: chapel.AstNode
     anchor: typing.Optional[chapel.AstNode] = None
     fixit: typing.Optional[
@@ -42,12 +52,16 @@ class FullAdvancedRuleResult:
     ] = None
 
 
-AdvancedRuleResult = typing.Iterator[
-    typing.Union[chapel.AstNode, FullAdvancedRuleResult]
+_AdvancedRuleResult = typing.Iterator[
+    typing.Union[chapel.AstNode, AdvancedRuleResult]
 ]
+"""Internal type for advanced rule results"""
 AdvancedRule = typing.Callable[
-    [chapel.Context, chapel.AstNode], AdvancedRuleResult
+    [chapel.Context, chapel.AstNode], _AdvancedRuleResult
 ]
+"""Function type for advanced rules"""
 
-RuleResult = typing.Union[BasicRuleResult, AdvancedRuleResult]
+RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult]
+"""Union type for all rule results"""
 Rule = typing.Union[BasicRule, AdvancedRule]
+"""Union type for all rules"""

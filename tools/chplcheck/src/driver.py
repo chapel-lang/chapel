@@ -165,7 +165,7 @@ class LintDriver:
 
             val = func(context, node)
             check, fixit = None, None
-            if isinstance(val, rule_types.FullBasicRuleResult):
+            if isinstance(val, rule_types.BasicRuleResult):
                 check, fixit = False, val.fixit
                 if fixit is not None and not isinstance(fixit, list):
                     fixit = [fixit]
@@ -188,7 +188,7 @@ class LintDriver:
             return
 
         for result in func(context, root):
-            if isinstance(result, rule_types.FullAdvancedRuleResult):
+            if isinstance(result, rule_types.AdvancedRuleResult):
                 node, anchor, fixit = result.node, result.anchor, result.fixit
                 if anchor is not None and not self._should_check_rule(
                     name, anchor

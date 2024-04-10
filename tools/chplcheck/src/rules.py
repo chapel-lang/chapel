@@ -24,7 +24,7 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, range_to_text
-from rule_types import FullBasicRuleResult, FullAdvancedRuleResult
+from rule_types import BasicRuleResult, AdvancedRuleResult
 
 
 def name_for_linting(context: Context, node: NamedDecl) -> str:
@@ -139,7 +139,7 @@ def register_rules(driver: LintDriver):
             text = re.sub(r"\bdo( *)", "", text, 1)
             # remove any trailing whitespace
             text = re.sub(r" +\n", "\n", text)
-            return FullBasicRuleResult(Fixit.build(node.location(), text))
+            return BasicRuleResult(Fixit.build(node.location(), text))
 
         return check
 
@@ -178,7 +178,7 @@ def register_rules(driver: LintDriver):
                 text = ""
 
         if text is not None:
-            return FullBasicRuleResult(Fixit.build(node.location(), text))
+            return BasicRuleResult(Fixit.build(node.location(), text))
         else:
             return False
 
@@ -314,7 +314,7 @@ def register_rules(driver: LintDriver):
 
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:
-                    yield FullAdvancedRuleResult(child, prevloop)
+                    yield AdvancedRuleResult(child, prevloop)
 
             prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
@@ -355,7 +355,7 @@ def register_rules(driver: LintDriver):
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
-            yield FullAdvancedRuleResult(
+            yield AdvancedRuleResult(
                 formals[unused], formals[unused].parent()
             )
 
@@ -408,7 +408,7 @@ def register_rules(driver: LintDriver):
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
                 fixit = Fixit.build(loc, text)
 
-            yield FullAdvancedRuleResult(node, loop, fixit)
+            yield AdvancedRuleResult(node, loop, fixit)
 
     @driver.advanced_rule
     def SimpleDomainAsRange(context: Context, root: AstNode):
@@ -454,7 +454,7 @@ def register_rules(driver: LintDriver):
 
             s = range_to_text(exprs[0].location(), lines)
 
-            yield FullAdvancedRuleResult(
+            yield AdvancedRuleResult(
                 iterand,
                 anchor=loop,
                 fixit=Fixit.build(iterand.location(), s),
