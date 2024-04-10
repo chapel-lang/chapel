@@ -2014,7 +2014,17 @@ ApplicabilityResult instantiateSignature(Context* context,
 
   // use the existing signature if there were no substitutions
   if (substitutions.size() == 0 && formalTypes.size() == 0) {
-    return ApplicabilityResult::success(sig);
+    // Even if no instantiations occurred due to formals, an initializer
+    // might end up creating substitutions when we resolve its body
+    // and process assignments like `this.someType = bla`. So, do not
+    // short-circuit in that case.
+    if (!isTfsForInitializer(sig)) {
+      return ApplicabilityResult::success(sig);
+    } else {
+      // normally we do this when we add a substitution, but we haven't
+      // added any substitutions yet.
+      formalsInstantiated.resize(sig->numFormals());
+    }
   }
 
   bool needsInstantiation = false;
