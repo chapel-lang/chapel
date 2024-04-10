@@ -33,12 +33,7 @@ def name_for_linting(context: Context, node: NamedDecl) -> str:
     # Strip dollar signs.
     name = name.replace("$", "")
 
-    # if the name is inside an internal module, strip leading `_` and `chpl_`
-    if context.is_bundled_path(node.location().path()):
-        if name.startswith("_"):
-            name = name[1:]
-        if name.startswith("chpl_"):
-            name = name[5:]
+    # TODO: thread `internal_prefixes` through to this and strip them for linting
 
     return name
 
@@ -355,9 +350,7 @@ def register_rules(driver: LintDriver):
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
-            yield AdvancedRuleResult(
-                formals[unused], formals[unused].parent()
-            )
+            yield AdvancedRuleResult(formals[unused], formals[unused].parent())
 
     @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
