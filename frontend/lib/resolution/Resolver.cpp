@@ -1375,7 +1375,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         linkageName = linkageNameNode->toStringLiteral()->value();
       }
       qtKind = QualifiedType::TYPE;
-      typePtr = ExternType::get(context, linkageName);
+      typePtr = ExternType::get(context, linkageName, var->id());
       paramPtr = nullptr;
     } else if (!typeExprT.hasTypePtr() && useType != nullptr) {
       // use type from argument to resolveNamedDecl
