@@ -394,9 +394,7 @@ def register_rules(driver: LintDriver):
                 fixit = Fixit.build(node.location(), "_")
             elif parent and isinstance(parent, IndexableLoop):
                 index_text = range_to_text(node.location(), lines)
-                loc = parent.header_location()
-                if loc is None:
-                    loc = parent.location()
+                loc = parent.header_location() or parent.location()
                 text = range_to_text(loc, lines)
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
                 fixit = Fixit.build(loc, text)
