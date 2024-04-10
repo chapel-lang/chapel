@@ -1867,11 +1867,10 @@ proc BlockImpl.dsiTargetLocales() const ref {
 }
 
 proc BlockImpl.chpl__locToLocIdx(loc: locale) {
-  var ret = (false, targetLocDom.first);
   for locIdx in targetLocDom do
     if (targetLocales[locIdx] == loc) then
-      ret = (true, locIdx);
-  return ret;
+      return (true, locIdx);
+  return (false, targetLocDom.first);
 }
 
 // Block subdomains are continuous
