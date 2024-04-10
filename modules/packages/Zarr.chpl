@@ -50,6 +50,22 @@ module Zarr {
   }
   private use Blosc;
 
+  /* Turns on/off profiling of Zarr IO */
+  config param zarrProfiling = false;
+
+  
+  private var times: map(string, atomic real);
+  
+  /* 
+    Returns a map of profiling results for Zarr IO operations. The keys are
+    the names of the operations and the values are the total time spent in
+    each operation across all threads. Requires that zarrProfiling be set to
+    true. 
+  */
+  iter zarrProfilingResults() throws {
+    for key in times.keys() do yield (key, times[key].read());
+  }
+
   record zarrMetadataV2 {
     var zarr_format: int;
     var chunks: list(int);
@@ -175,24 +191,33 @@ module Zarr {
     :throws Error: If the decompression fails
   */
   proc readChunk(param dimCount: int, chunkPath: string, chunkDomain: domain(dimCount), ref arraySlice: [] ?t) throws {
+    var s: stopwatch;
     const f: file;
     // if the file does not exist, the chunk is empty
+    if zarrProfiling then s.restart();
     try {
       f = open(chunkPath, ioMode.r);
     } catch {
       arraySlice[arraySlice.domain] = 0;
       return;
     }
+    if zarrProfiling then times["Opening File, Read"].add(s.elapsed());
 
-    const r = f.reader(deserializer = new binaryDeserializer(), locking=true);
-    var compressedChunk = r.readAll(bytes); // TODO: stream straight through to blosc
+    if zarrProfiling then s.restart();
+    const r = f.reader(deserializer = new binaryDeserializer(), locking=false, hints=ioHintSet.mmap(useMmap=true) | ioHintSet.prefetch);
+    if zarrProfiling then times["Creating Reader"].add(s.elapsed());
+
+    if zarrProfiling then s.restart();
+    const compressedChunk = r.readAll(bytes); // TODO: stream straight through to blosc
     var readBytes = compressedChunk.size;
-
+    if zarrProfiling then times["Reading File"].add(s.elapsed());
+    if zarrProfiling then s.restart();
     var copyIn: [chunkDomain] t;
     var numRead = blosc_decompress(compressedChunk.c_str(), c_ptrTo(copyIn), copyIn.size*c_sizeof(t));
     if numRead <= 0 {
       throw new Error("Failed to decompress data from %?. Blosc error code: %?".format(chunkPath, numRead));
     }
+    if zarrProfiling then times["Decompression"].add(s.elapsed());
 
     arraySlice[arraySlice.domain] = copyIn[arraySlice.domain];
   }
@@ -221,29 +246,40 @@ module Zarr {
     :throws Error: If the compression fails
   */
   proc writeChunk(param dimCount, chunkPath: string, chunkDomain: domain(dimCount), ref arraySlice: [] ?t, bloscLevel: int(32) = 9) throws {
+    var s: stopwatch;
+    
     //bloscLevel must be between 0 and 9
     var _bloscLevel = min(9,max(0,bloscLevel));
 
     // If this chunk is entirely contained in the array slice, we can write
     // it out immediately. Otherwise, we need to read in the chunk and update
     // it with the partial data before writing
+    if zarrProfiling then s.restart();
     var copyOut: [chunkDomain] t;
     if (chunkDomain != arraySlice.domain) {
       readChunk(dimCount, chunkPath, chunkDomain, copyOut);
     }
     copyOut[arraySlice.domain] = arraySlice[arraySlice.domain];
+    if zarrProfiling then times["Reading to Update"].add(s.elapsed());
 
+    if zarrProfiling then s.restart();
     // Create buffer for compressed bytes
     var compressedBuffer = allocate(t, copyOut.size + 16);
     // Compress the chunk's data
     var bytesCompressed = blosc_compress(_bloscLevel, 0, c_sizeof(t), copyOut.size*c_sizeof(t), c_ptrTo(copyOut), compressedBuffer, (copyOut.size + 16) * c_sizeof(t));
     if bytesCompressed == 0 then
       throw new Error("Failed to compress bytes");
+    if zarrProfiling then times["Compression"].add(s.elapsed());
 
     // Write it to storage
+    if zarrProfiling then s.restart();
     const f = open(chunkPath, ioMode.cw);
     const w = f.writer(serializer = new binarySerializer(),locking=true);
+    if zarrProfiling then times["Opening File, Write"].add(s.elapsed());
+
+    if zarrProfiling then s.restart();
     w.writeBinary(compressedBuffer: c_ptr(void),bytesCompressed);
+    if zarrProfiling then times["Writing File"].add(s.elapsed());
   }
 
   /*

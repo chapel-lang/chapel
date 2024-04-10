@@ -7,7 +7,7 @@ use Random;
 
 config const scaling = "strong"; // testing strong or weak scaling
 
-config const arrayGBs: real = 2.0; // default size of array in GBs (per locale)
+config const arrayGBs: real = 0.3; // default size of array in GBs (per locale)
 config const chunkGBs: real = 0.1; // default size of chunks in GBs
 
 config const compressionLevel: int(32) = 9; // default compression level
@@ -37,19 +37,23 @@ const undistD : domain(3) = ranges;
 const Dist = new blockDist(boundingBox=undistD);
 const D = Dist.createDomain(undistD);
 
+var s: stopwatch;
+var writeTime = -1.0;
+var readTime = -1.0;
+
 var A: [D] real(32);
 fillRandom(A);
 
 if exists("PerfStore") then rmTree("PerfStore");
-var s: stopwatch;
+
 s.restart();
 writeZarrArray("PerfStore", A, (chunkLength,chunkLength,chunkLength), bloscThreads=bloscThreads, bloscLevel=compressionLevel);
-const writeTime = s.elapsed();
-
+writeTime = s.elapsed();
 
 s.restart();
 var B = readZarrArray("PerfStore", real(32), 3, bloscThreads=bloscThreads);
-const readTime = s.elapsed();
+readTime = s.elapsed();
+
 
 assert(A.domain == B.domain);
 coforall loc in Locales do on loc {
@@ -57,14 +61,6 @@ coforall loc in Locales do on loc {
     assert(A[i] == B[i], i, " ", A[i], " ", B[i]);
 }
 
-
-writeln("Scaling: %s".format(scaling.toLower()));
-writeln("Num Locales: %n".format(Locales.size));
-writeln("Compression Level: %n".format(compressionLevel));
-writeln("Blosc Threads: %n".format(bloscThreads));
-writeln("Array Size (GBs): %n".format(arrayGBs));
-writeln("Chunk Size (GBs): %n".format(chunkGBs));
 var writeThroughput: real(64) = (arraySize:real / writeTime) / 1000 ** 3;
-var readThoughput: real(64) = (arraySize:real / readTime) / 1000 ** 3;
-writeln("Write Throughput: %7.4r GB/s".format(writeThroughput));
-writeln("Read Throughput: %7.4r GB/s".format(readThoughput));
+var readThroughput: real(64) = (arraySize:real / readTime) / 1000 ** 3;
+writeln("%s,%n,%n,%n,%n,%n,%7.4r,%7.4r".format(scaling, Locales.size, compressionLevel, bloscThreads, arrayGBs, chunkGBs, writeThroughput, readThroughput));
