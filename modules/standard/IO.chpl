@@ -7239,12 +7239,13 @@ inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
 // Assumes we are already on the locale with the fileReader and that
 // it is already locked.
 // Passing -1 to 'nCodepoints' tells this function to compute the number
-// of codepoints itself, and store the result in 'cachedNumCodepoints'.
+// of codepoints itself, and store the result in 'cachedNumCodepoints';
+// additionally, it will check that the string is valid UTF-8.
 @chpldoc.nodoc
 proc readStringBytesData(ref s: ?t /*: string or bytes*/,
-                                 _channel_internal:qio_channel_ptr_t,
-                                 nBytes: int,
-                                 nCodepoints: int): errorCode {
+                         _channel_internal:qio_channel_ptr_t,
+                         nBytes: int,
+                         nCodepoints: int): errorCode {
   import BytesStringCommon;
   var sLoc: t;
   ref sLocal = if s.locale == here then s else sLoc;
@@ -7262,12 +7263,29 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
     sLocal.buffLen = nBytes;
     if nBytes != 0 then sLocal.buff[nBytes] = 0; // include null-byte
     if t == string {
-      if nCodepoints == -1
-        then sLocal.cachedNumCodepoints = BytesStringCommon.countNumCodepoints(sLocal);
-        else sLocal.cachedNumCodepoints = nCodepoints;
+      if nCodepoints == -1 {
+        // validate the string
+        var byteI: c_ssize_t = 0;
+        var codepointI: c_ssize_t = 0;
+        while byteI < nBytes {
+          var codepoint: int(32);
+          var gotbytes: c_int;
+          err = qio_decode_char_buf(codepoint, gotbytes,
+                                    (sLocal.buff + byteI):c_ptrConst(c_char),
+                                    nBytes - byteI);
+          if err then break;
+          codepointI += 1;
+          byteI += gotbytes;
+        }
+        sLocal.cachedNumCodepoints = codepointI;
+      } else {
+        sLocal.cachedNumCodepoints = nCodepoints;
+      }
       sLocal.hasEscapes = false;
     }
-  } else {
+  }
+
+  if err {
     sLocal.buffLen = 0;
     if t == string {
       sLocal.cachedNumCodepoints = 0;
@@ -7561,16 +7579,16 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 
     // read the given number of bytes into 's', advancing the pointer that many bytes
     // then, ensure the number of codepoints does not exceed the specified maxSize
-    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    qio_channel_mark(false, this._channel_internal);
     const err = readStringBytesData(s, this._channel_internal, bytesToRead, -1);
     if err {
-      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      qio_channel_revert_unlocked(this._channel_internal);
       try this._ch_ioerror(err, "in readThrough(string)");
     } else {
       if maxSize >= 0 && s.numCodepoints > maxSize {
         qio_channel_revert_unlocked(this._channel_internal);
         try this._ch_ioerror(EFORMAT:errorCode, "in readThrough(string)");
-      } else if maxSize > 0 {
+      } else {
         qio_channel_commit_unlocked(this._channel_internal);
       }
     }
@@ -7699,16 +7717,16 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
 
     // read the given number of bytes into 's', advancing the pointer that many bytes
     // then, ensure the number of codepoints does not exceed the specified maxSize
-    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    qio_channel_mark(false, this._channel_internal);
     const err = readStringBytesData(s, this._channel_internal, bytesOffset, -1);
     if err {
-      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      qio_channel_revert_unlocked(this._channel_internal);
       try this._ch_ioerror(err, "in fileReader.readTo(string)");
     } else {
       if maxSize >= 0 && s.numCodepoints >= maxSize {
         qio_channel_revert_unlocked(this._channel_internal);
         try this._ch_ioerror(EFORMAT:errorCode, "in fileReader.readTo(string)");
-      } else if maxSize > 0  {
+      } else {
         qio_channel_commit_unlocked(this._channel_internal);
       }
     }
@@ -8236,6 +8254,9 @@ private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (
   return (err, lenread);
 }
 
+// read up to 'len' bytes of string data (less if we reach EOF)
+// if 'len' is negative, read until EOF
+// stores the result in 'out_var'.
 private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) : (errorCode, int(64))
   throws
 {
