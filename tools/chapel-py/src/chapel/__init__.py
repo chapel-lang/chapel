@@ -377,7 +377,7 @@ def range_to_tokens(
         (
             line_start - 1,
             char_start - 1,
-            len(lines[line_start - 1]) - char_start,
+            len(lines[line_start - 1]) - char_start + 1,
         )
     ]
     for line in range(line_start + 1, line_end):
