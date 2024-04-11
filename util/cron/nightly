@@ -379,6 +379,11 @@ if ($testblog == 1) {
     print "checking blog repo\n";
     unless(-d $blogdir) {
         $blogdir = $ENV{'CHPL_NIGHTLY_BLOGDIR'};
+        if ($blogdir eq "") {
+            print "Error: specified blog testing but blogdir was not specified!\n";
+            print "\tPlease specify the location of chapel-blog with -blogdir or by setting CHPL_NIGHTLY_BLOGDIR\n";
+            exit 1;
+        }
         unless(-d $blogdir) {
             print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
             exit 1;
@@ -595,6 +600,17 @@ if ($examples == 1) {
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
+
+if ($blogonly == 1) {
+    # test the sub-directories explicitly to avoid a bunch of skipped directories,
+    # and also avoid the problem of testing the archetypes directory
+    $testdirs .= " $blogdir/chpl-src/ $blogdir/content/posts";
+    if ($parnodefile ne "") {
+        mysystem("cd $testdir && echo $testdir > DIRFILE", "making directory file", 1, 1);
+        $testflags = "$testflags -dirfile DIRFILE";
+    }
+}
+
 if ($parnodefile eq "") {
     $testflags = "$testflags $testdirs";
 } else {
@@ -608,13 +624,6 @@ if ($parnodefile eq "") {
 if (!($dist eq "")) {
     $testdirs .= " distributions/robust/arithmetic";
     $testflags = "$testflags distributions/robust/arithmetic";
-}
-
-
-if ($blogonly == 1) {
-    # test the sub-directories explicitly to avoid a bunch of skipped directories,
-    # and also avoid the problem of testing the archetypes directory
-    $testflags = "$testflags $blogdir/chpl-src/ $blogdir/content/posts";
 }
 
 if ($hello == 1) {
