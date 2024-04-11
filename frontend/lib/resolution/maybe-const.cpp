@@ -96,6 +96,9 @@ struct AdjustMaybeRefs {
   bool enter(const Call* ast, RV& rv);
   void exit(const Call* ast, RV& rv);
 
+  bool enter(const NamedDecl* ast, RV& rv);
+  void exit(const NamedDecl* ast, RV& rv);
+
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);
 };
@@ -335,6 +338,18 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   return false;
 }
 void AdjustMaybeRefs::exit(const Call* ast, RV& rv) {
+}
+
+bool AdjustMaybeRefs::enter(const uast::NamedDecl* node, RV& rv) {
+  if (node->id().isSymbolDefiningScope()) {
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it e.g. when the function is called.
+    return false;
+  }
+  return true;
+}
+void AdjustMaybeRefs::exit(const uast::NamedDecl* node, RV& rv) {
 }
 
 bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {
