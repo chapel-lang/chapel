@@ -59,7 +59,7 @@ setup(
         Extension(
             "chapel.core",
             glob.glob("src/*.cpp"),
-            depends=glob.glob("src/*.h"),
+            depends = glob.glob("src/**/*.h", recursive=True),
             extra_compile_args=CXXFLAGS,
             extra_link_args=LDFLAGS,
         )
