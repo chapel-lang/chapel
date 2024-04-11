@@ -588,6 +588,12 @@ class FileInfo:
                 # about standard files applies here too.
                 documented_nodes = []
                 for node in nodes:
+                    # apply aforementioned exception
+                    if in_bundled_module:
+                        documented_nodes.append(node)
+                        continue
+
+                    # avoid nodes with nodoc attribute.
                     ag = node.attribute_group()
                     if not ag or not ag.get_attribute_named("chpldoc.nodoc"):
                         documented_nodes.append(node)
