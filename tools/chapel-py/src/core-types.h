@@ -126,7 +126,7 @@ struct TypedSignatureAndPoiScope {
 
 struct TypedSignatureObject : public PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope> {
   static constexpr const char* Name = "TypedSignature";
-  static constexpr const char* DocStr = "The signature of a particular function. Could include types gathred when instantiating the function";
+  static constexpr const char* DocStr = "The signature of a particular function. Could include types gathered when instantiating the function";
 
   static Py_hash_t hash(TypedSignatureObject* self) {
     return chpl::hash(self->value_.signature, self->value_.poiScope);
