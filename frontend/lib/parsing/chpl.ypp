@@ -698,6 +698,10 @@ stmt_base:
     auto node = Defer::build(BUILDER, LOC(@$), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
@@ -770,6 +774,10 @@ tryable_stmt:
     auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2),
                                std::move(taskBodies));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
@@ -791,6 +799,10 @@ tryable_stmt:
     auto node = Local::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -803,6 +815,10 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Local::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -816,6 +832,10 @@ tryable_stmt:
     auto node = On::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                           std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -829,6 +849,10 @@ tryable_stmt:
     auto node = Serial::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                               std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -841,6 +865,10 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Serial::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -855,6 +883,10 @@ tryable_stmt:
     auto node = Sync::build(BUILDER, LOC(@$), blockStyle,
                             std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
@@ -1056,14 +1088,17 @@ include_module_stmt:
 block_stmt_body:
   TLCBR TRCBR
   {
+    context->noteCurlyBraces(@1, @2);
     $$ = context->blockToParserExprList(@1, @2, nullptr);
   }
 | TLCBR stmt_ls TRCBR
   {
+    context->noteCurlyBraces(@1, @3);
     $$ = context->blockToParserExprList(@1, @3, $2);
   }
 | TLCBR error TRCBR
   {
+    context->noteCurlyBraces(@1, @3);
     context->clearComments();
     // create a list of stmts that just has an ErroneousExpr
     auto errorExpr = ErroneousExpression::build(BUILDER, LOC(@2));
@@ -1624,6 +1659,10 @@ loop_stmt_base:
                                std::move(body),
                                toOwned($4),
                                context->popLoopAttributeGroup());
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1639,6 +1678,10 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1654,6 +1697,10 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1689,6 +1736,10 @@ loop_stmt_base:
                            /*isParam*/ true,
                            context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @5));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);

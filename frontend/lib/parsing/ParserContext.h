@@ -74,6 +74,7 @@ struct ParserContext {
   int numAttributesBuilt;
   std::vector<owned<AttributeGroup>> loopAttributes;
   YYLTYPE declStartLocation;
+  YYLTYPE curlyBraceLocation;
 
   // this type and stack helps the parser know if a function
   // declaration is a method.
@@ -113,6 +114,7 @@ struct ParserContext {
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;
+    this->curlyBraceLocation       = emptyLoc;
     this->atEOF                   = false;
     this->includeComments =
       builder->context()->configuration().includeComments;
@@ -167,6 +169,11 @@ struct ParserContext {
   ParserScope currentScope();
   bool currentScopeIsAggregate();
   void exitScope(asttags::AstTag tag, UniqueString name);
+
+  void noteCurlyBraces(YYLTYPE left, YYLTYPE right);
+  bool hasCurlyBracesLoc();
+  YYLTYPE curlyBracesLoc();
+  void resetCurlyBracesLoc();
 
   // Given a location, create a new one pointing to the end of it.
   YYLTYPE makeLocationAtLast(YYLTYPE location) {
