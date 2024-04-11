@@ -50,9 +50,18 @@ CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 LDFLAGS = []
 LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontendShared", "-Wl,-rpath", chpl_lib_path]
 
-setup(name = "chapel",
-      version = "0.1",
-      package_dir = {'': 'src'},
-      packages = ['chapel', 'chapel.replace', 'chapel.visitor', 'chapel.lsp'],
-      ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
-      )
+setup(
+    name="chapel",
+    version="0.1",
+    package_dir={"": "src"},
+    packages=["chapel", "chapel.replace", "chapel.visitor", "chapel.lsp"],
+    ext_modules=[
+        Extension(
+            "chapel.core",
+            glob.glob("src/*.cpp"),
+            depends = glob.glob("src/**/*.h", recursive=True),
+            extra_compile_args=CXXFLAGS,
+            extra_link_args=LDFLAGS,
+        )
+    ],
+)
