@@ -131,6 +131,9 @@ CLASS_BEGIN(Attribute)
 CLASS_END(Attribute)
 
 CLASS_BEGIN(AttributeGroup)
+  METHOD(AttributeGroup, get_attribute_named, "Get the attribute with a particular name, if any",
+         Nilable<const chpl::uast::AstNode*>(chpl::UniqueString),
+         return node->getAttributeNamed(std::get<0>(args)))
   PLAIN_GETTER(AttributeGroup, is_unstable, "Check if this AttributeGroup contains the 'unstable' attribute",
                bool, return node->isUnstable())
   PLAIN_GETTER(AttributeGroup, is_deprecated, "Check if this AttributeGroup contains the 'deprecated' attribute",
