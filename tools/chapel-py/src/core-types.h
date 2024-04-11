@@ -51,6 +51,25 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static constexpr const char* Name = "Location";
   static constexpr const char* DocStr = "An object that represents the location of an AST node in a source file.";
 
+  static PyObject* nb_add(LocationObject* self, PyObject* other) {
+    if (other->ob_type != &LocationObject::PythonType) {
+      Py_RETURN_NOTIMPLEMENTED;
+    }
+    auto otherCast = (LocationObject*) other;
+
+    if (self->value_.path() != otherCast->value_.path()) {
+      // raise value error
+      PyErr_SetString(PyExc_ValueError, "Cannot add locations from different files");
+    }
+
+    auto newLoc = chpl::Location(self->value_.path(),
+                                 self->value_.firstLine(),
+                                 self->value_.firstColumn(),
+                                 otherCast->value_.lastLine(),
+                                 otherCast->value_.lastColumn());
+    return (PyObject*) LocationObject::create(newLoc);
+  }
+
   static PyObject* nb_subtract(LocationObject* self, PyObject* other) {
     if (other->ob_type != &LocationObject::PythonType) {
       Py_RETURN_NOTIMPLEMENTED;
@@ -120,6 +139,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
     configuring.tp_str = (reprfunc) str;
     configuring.tp_as_number = &location_as_number;
     configuring.tp_as_number->nb_subtract = (binaryfunc) nb_subtract;
+    configuring.tp_as_number->nb_add = (binaryfunc) nb_add;
     return configuring;
   }
 };
