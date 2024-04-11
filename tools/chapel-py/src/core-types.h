@@ -82,13 +82,18 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
     }
 
     auto cmpLess = [](LineColumnPair lhs, LineColumnPair rhs) {
-      return std::get<0>(lhs) < std::get<0>(rhs) || (std::get<0>(lhs) == std::get<0>(rhs) && std::get<1>(lhs) < std::get<1>(rhs));
+      return std::get<0>(lhs) < std::get<0>(rhs) ||
+             (std::get<0>(lhs) == std::get<0>(rhs) &&
+              std::get<1>(lhs) < std::get<1>(rhs));
     };
     auto cmpGreater = [](LineColumnPair lhs, LineColumnPair rhs) {
-      return std::get<0>(lhs) > std::get<0>(rhs) || (std::get<0>(lhs) == std::get<0>(rhs) && std::get<1>(lhs) > std::get<1>(rhs));
+      return std::get<0>(lhs) > std::get<0>(rhs) ||
+             (std::get<0>(lhs) == std::get<0>(rhs) &&
+              std::get<1>(lhs) > std::get<1>(rhs));
     };
     auto cmpEqual = [](LineColumnPair lhs, LineColumnPair rhs) {
-      return std::get<0>(lhs) == std::get<0>(rhs) && std::get<1>(lhs) == std::get<1>(rhs);
+      return std::get<0>(lhs) == std::get<0>(rhs) &&
+             std::get<1>(lhs) == std::get<1>(rhs);
     };
     auto min = [cmpLess](LineColumnPair lhs, LineColumnPair rhs) {
       return cmpLess(lhs, rhs) ? lhs : rhs;
@@ -106,20 +111,32 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
       return min(A.start, B.start)..min(A.end, B.start)
     */
 
-    auto A_start = std::make_tuple(self->value_.firstLine(), self->value_.firstColumn());
-    auto A_end = std::make_tuple(self->value_.lastLine(), self->value_.lastColumn());
-    auto B_start = std::make_tuple(otherCast->value_.firstLine(), otherCast->value_.firstColumn());
-    auto B_end = std::make_tuple(otherCast->value_.lastLine(), otherCast->value_.lastColumn());
+    auto A_start = std::make_tuple(self->value_.firstLine(),
+                                   self->value_.firstColumn());
+    auto A_end = std::make_tuple(self->value_.lastLine(),
+                                 self->value_.lastColumn());
+    auto B_start = std::make_tuple(otherCast->value_.firstLine(),
+                                   otherCast->value_.firstColumn());
+    auto B_end = std::make_tuple(otherCast->value_.lastLine(),
+                                 otherCast->value_.lastColumn());
 
     if (cmpLess(B_end, A_start) && cmpGreater(B_start, A_end)) {
       return (PyObject*)self;
     } else if (cmpEqual(A_start, B_start)) {
-      auto newLoc = chpl::Location(self->value_.path(), otherCast->value_.lastLine(), otherCast->value_.lastColumn(), self->value_.lastLine(), self->value_.lastColumn());
+      auto newLoc = chpl::Location(self->value_.path(),
+                                   otherCast->value_.lastLine(),
+                                   otherCast->value_.lastColumn(),
+                                   self->value_.lastLine(),
+                                   self->value_.lastColumn());
       return (PyObject*) LocationObject::create(newLoc);
     } else {
       auto start = min(A_start, B_start);
       auto end = min(A_end, B_start);
-      auto newLoc = chpl::Location(self->value_.path(), std::get<0>(start), std::get<1>(start), std::get<0>(end), std::get<1>(end));
+      auto newLoc = chpl::Location(self->value_.path(),
+                                   std::get<0>(start),
+                                   std::get<1>(start),
+                                   std::get<0>(end),
+                                   std::get<1>(end));
       return (PyObject*) LocationObject::create(newLoc);
     }
   }
