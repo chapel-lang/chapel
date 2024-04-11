@@ -584,9 +584,20 @@ class FileInfo:
                     if not in_bundled_module:
                         continue
 
+                # Only show nodes without @chpldoc.nodoc. The exception
+                # about standard files applies here too.
+                documented_nodes = []
+                for node in nodes:
+                    ag = node.attribute_group()
+                    if not ag or not ag.get_attribute_named("chpldoc.nodoc"):
+                        documented_nodes.append(node)
+
+                if len(documented_nodes) == 0:
+                    continue
+
                 # Just take the first value to avoid showing N entries for
                 # overloaded functions.
-                self.visible_decls.append((name, nodes[0]))
+                self.visible_decls.append((name, documented_nodes[0]))
 
     def _search_instantiations(
         self,
