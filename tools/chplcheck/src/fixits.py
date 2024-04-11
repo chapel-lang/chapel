@@ -67,24 +67,3 @@ class Fixit:
         return Fixit(
             location["path"], location["start"], location["end"], data["text"]
         )
-
-
-def range_to_text(rng: chapel.Location, lines: typing.List[str]) -> str:
-    """
-    Convert a Chapel location to a string. If the location spans multiple
-    lines, it gets truncated into 1 line. The lines and columns are
-    zero-indexed.
-    """
-
-    (line_start, char_start) = rng.start()
-    (line_end, char_end) = rng.end()
-
-    if line_start == line_end:
-        return lines[line_start - 1][char_start - 1 : char_end - 1]
-
-    text = [lines[line_start - 1][char_start - 1 :]]
-    for line in range(line_start + 1, line_end):
-        text.append(lines[line - 1])
-    text.append(lines[line_end - 1][: char_end - 1])
-
-    return "\n".join([t for t in text])
