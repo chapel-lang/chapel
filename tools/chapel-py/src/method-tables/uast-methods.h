@@ -385,7 +385,7 @@ CLASS_BEGIN(Loop)
                const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(Loop, body, "Get the body of this Loop node",
                const chpl::uast::AstNode*, return node->body())
-  PLAIN_GETTER(IndexableLoop, header_location, "Get the Location of this Loop node's header",
+  PLAIN_GETTER(Loop, header_location, "Get the Location of this Loop node's header",
                std::optional<chpl::Location>,
                auto loc = chpl::parsing::locateLoopHeaderWithAst(context, node);
                return getValidLocation(loc))
