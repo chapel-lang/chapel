@@ -11,4 +11,5 @@ Active rules:
   MisleadingIndentation        Warn for single-statement blocks that look like they might be multi-statement blocks.
   PascalCaseClasses            Warn for classes that are not 'PascalCase'.
   PascalCaseModules            Warn for modules that are not 'PascalCase'.
+  SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
   UnusedLoopIndex              Warn for unused index variables in loops.
