@@ -78,6 +78,7 @@
   AST_NODE(Try)                        // old AST: TryStmt
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(VisibilityClause)           //
+  AST_NODE(When)                       //
   AST_NODE(WithClause)                 //
   AST_NODE(Yield)                      //
 
@@ -90,7 +91,6 @@
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
     AST_NODE(Sync)                     //
-    AST_NODE(When)                     //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
   AST_BEGIN_SUBCLASSES(Loop)           // old AST: LoopExpr / LoopStmt
