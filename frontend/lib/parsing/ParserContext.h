@@ -692,10 +692,14 @@ struct ParserContext {
                       CommentsAndStmt block,
                       bool hasParensAroundError);
 
-  CommentsAndStmt buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
+  CommentsAndStmt buildWhenStmt(YYLTYPE location,
+                                YYLTYPE headerLocation,
+                                ParserExprList* caseExprs,
                                 BlockOrDo blockOrDo);
 
-  CommentsAndStmt buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
+  CommentsAndStmt buildSelectStmt(YYLTYPE location,
+                                  YYLTYPE headerLocation,
+                                  owned<AstNode> expr,
                                   ParserExprList* whenStmts);
 
   CommentsAndStmt

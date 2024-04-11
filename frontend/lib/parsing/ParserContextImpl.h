@@ -924,6 +924,10 @@ ParserContext::buildBeginStmt(YYLTYPE location, YYLTYPE locBegin,
                            blockStyle,
                            std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locBegin));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
   CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
   return finishStmt(ret);
 }
@@ -1082,6 +1086,10 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                             blockStyle,
                             std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locHeader));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
 
   CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
 
@@ -3004,7 +3012,9 @@ AstNode* ParserContext::buildCatch(YYLTYPE location, AstNode* error,
 }
 
 CommentsAndStmt
-ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
+ParserContext::buildWhenStmt(YYLTYPE location,
+                             YYLTYPE headerLocation,
+                             ParserExprList* caseExprs,
                              BlockOrDo blockOrDo) {
 
   // No need to gather comments, they'll have been collected here...
@@ -3027,6 +3037,11 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
                           std::move(caseList),
                           blockStyle,
                           std::move(stmtList));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
@@ -3034,7 +3049,9 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
 }
 
 CommentsAndStmt
-ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
+ParserContext::buildSelectStmt(YYLTYPE location,
+                               YYLTYPE headerLocation,
+                               owned<AstNode> expr,
                                ParserExprList* whenStmts) {
   auto comments = gatherCommentsFromList(whenStmts, location);
 
@@ -3062,6 +3079,7 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
   auto node = Select::build(builder, convertLocation(location),
                             std::move(expr),
                             std::move(stmts));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 

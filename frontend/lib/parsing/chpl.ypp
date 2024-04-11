@@ -2094,13 +2094,15 @@ throw_stmt:
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
   {
-    $$ = context->buildSelectStmt(@$, toOwned($2), $4);
+    $$ = context->buildSelectStmt(@$, context->makeSpannedLocation(@1, @2), toOwned($2), $4);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@3, @5));
   }
 | TSELECT expr TLCBR error TRCBR
   {
     auto comments = context->gatherComments(@$);
     auto node = ErroneousExpression::build(BUILDER, LOC(@4));
     $$ = { .comments=comments, .stmt=node.release() };
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@3, @5));
   }
 ;
 
@@ -2112,17 +2114,17 @@ when_stmt_ls:
 when_stmt:
   TWHEN expr_ls do_stmt
   {
-    $$ = context->buildWhenStmt(@$, $2, $3);
+    $$ = context->buildWhenStmt(@$, context->makeSpannedLocation(@1, @2), $2, $3);
   }
 | TOTHERWISE stmt
   {
     BlockOrDo blockOrDo = { .cs=$2, .usesDo=false };
-    $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
+    $$ = context->buildWhenStmt(@$, @1, nullptr, blockOrDo);
   }
 | TOTHERWISE no_loop_attributes TDO stmt
   {
     BlockOrDo blockOrDo = { .cs=$4, .usesDo=true };
-    $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
+    $$ = context->buildWhenStmt(@$, @1, nullptr, blockOrDo);
     context->popLoopAttributeGroup();
   }
 ;
