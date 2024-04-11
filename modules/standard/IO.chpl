@@ -8175,7 +8175,6 @@ proc computeGuessReadSize(ch: fileReader, maxChars: int, pos: int): c_ssize_t {
   return guessReadSize;
 }
 
-// note: len is in codepoints when t == string, and in bytes otherwise
 private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (errorCode, int(64))
   throws
 {
@@ -8254,7 +8253,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (
   return (err, lenread);
 }
 
-// read up to 'len' bytes of string data (less if we reach EOF)
+// read up to 'len' codepoints of string data (less if we reach EOF)
 // if 'len' is negative, read until EOF
 // stores the result in 'out_var'.
 private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) : (errorCode, int(64))
