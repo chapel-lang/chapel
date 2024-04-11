@@ -149,6 +149,14 @@ def register_rules(driver):
                 method_seen = True
         return True
 
+    @driver.basic_rule(EmptyStmt)
+    def EmptyStmts(context, node):
+        """
+        Warn for empty statements (i.e., unnecessary semicolons).
+        """
+
+        return False
+
     #Five things have to match between consecutive decls for this to warn:
     # 1. same type
     # 2. same kind
@@ -448,6 +456,9 @@ def register_rules(driver):
             # some NamedDecl nodes currently use the name as the location, which
             # does not indicate their actual indentation.
             if isinstance(child, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+                continue
+            # Empty statements get their own warnings, no need to warn here.
+            elif isinstance(child, EmptyStmt):
                 continue
             # private function locations are bugged and don't include the 'private'
             # keyword.
