@@ -73,7 +73,7 @@ CLASS_BEGIN(Location)
                LineColumnPair, return std::make_tuple(node.lastLine(), node.lastColumn()))
   PLAIN_GETTER(Location, path, "Get the file path of this Location",
                chpl::UniqueString, return node.path())
-  METHOD(Location, clamped_to, "Get this Location clamped to the given Location",
+  METHOD(Location, clamp_left, "Get this Location clamped to the given Location",
          chpl::Location(chpl::Location),
          auto other = std::get<0>(args);
          auto selfStartLine = node.firstLine();
