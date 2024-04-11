@@ -464,7 +464,10 @@ def register_rules(driver):
             # keyword.
             #
             # https://github.com/chapel-lang/chapel/issues/24818
-            if isinstance(child, Function) and child.visibility() == "private":
+            elif (
+                isinstance(child, (Function, Use, Import))
+                and child.visibility() != ""
+            ):
                 continue
 
             line, depth = child.location().start()
