@@ -73,6 +73,47 @@ CLASS_BEGIN(Location)
                LineColumnPair, return std::make_tuple(node.lastLine(), node.lastColumn()))
   PLAIN_GETTER(Location, path, "Get the file path of this Location",
                chpl::UniqueString, return node.path())
+  METHOD(Location, clamped_to, "Get this Location clamped to the given Location",
+         chpl::Location(chpl::Location),
+         auto other = std::get<0>(args);
+         auto selfStartLine = node.firstLine();
+         auto selfStartColumn = node.firstColumn();
+         auto selfEndLine = node.lastLine();
+         auto selfEndColumn = node.lastColumn();
+
+         auto otherStartLine = other.firstLine();
+         auto otherStartColumn = other.firstColumn();
+         auto otherEndLine = other.lastLine();
+         auto otherEndColumn = other.lastColumn();
+
+         LineColumnPair start;
+         if (selfStartLine > otherStartLine) {
+            start = std::make_tuple(selfStartLine, selfStartColumn);
+         } else if (selfStartLine < otherStartLine) {
+            start = std::make_tuple(otherStartLine, otherStartColumn);
+         } else {
+            if (selfStartColumn > otherStartColumn) {
+              start = std::make_tuple(selfStartLine, selfStartColumn);
+            } else {
+              start = std::make_tuple(otherStartLine, otherStartColumn);
+            }
+         }
+         LineColumnPair end;
+         if (selfEndLine > otherEndLine) {
+            end = std::make_tuple(selfEndLine, selfEndColumn);
+         } else if (selfEndLine < otherEndLine) {
+            end = std::make_tuple(otherEndLine, otherEndColumn);
+         } else {
+            if (selfEndColumn > otherEndColumn) {
+              end = std::make_tuple(selfEndLine, selfEndColumn);
+            } else {
+              end = std::make_tuple(otherEndLine, otherEndColumn);
+            }
+         }
+
+    return Location(node.path(), std::get<0>(start), std::get<1>(start),
+                    std::get<0>(end), std::get<1>(end))
+  )
 CLASS_END(Location)
 
 CLASS_BEGIN(Scope)

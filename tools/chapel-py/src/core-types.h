@@ -44,9 +44,62 @@ PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
+static PyNumberMethods location_as_number;
+
 struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static constexpr const char* Name = "Location";
   static constexpr const char* DocStr = "An object that represents the location of an AST node in a source file.";
+
+  static PyObject* nb_subtract(LocationObject* self, PyObject* other) {
+    if (other->ob_type != &LocationObject::PythonType) {
+      Py_RETURN_NOTIMPLEMENTED;
+    }
+    auto otherCast = (LocationObject*) other;
+
+    if (self->value_.path() != otherCast->value_.path()) {
+      Py_RETURN_NONE;
+    }
+
+    auto min = [](int a, int b) { return a < b ? a : b; };
+    // auto max = [](int a, int b) { return a > b ? a : b; };
+
+
+    // if other is not fully contained by self, return None
+    if (self->value_.firstLine() > otherCast->value_.firstLine() ||
+        (self->value_.firstLine() == otherCast->value_.firstLine() && self->value_.firstColumn() > otherCast->value_.firstColumn()) ||
+        self->value_.lastLine() < otherCast->value_.lastLine() ||
+        (self->value_.lastLine() == otherCast->value_.lastLine() && self->value_.lastColumn() < otherCast->value_.lastColumn())) {
+      Py_RETURN_NONE;
+    }
+
+    // assuming self fully contains other, subtract other from self
+
+    auto firstLine = self->value_.firstLine();
+    auto firstColumn = self->value_.firstColumn();
+    auto lastLine = otherCast->value_.firstLine();
+    auto lastColumn = otherCast->value_.firstColumn();
+
+    auto newLoc = chpl::Location(self->value_.path(), firstLine, firstColumn, lastLine, lastColumn);
+    return (PyObject*) LocationObject::create(newLoc);
+  }
+
+  static PyObject* str(LocationObject* self) {
+    return PyUnicode_FromFormat("%s:%d:%d-%d:%d",
+      self->value_.path().c_str(),
+      self->value_.firstLine(),
+      self->value_.firstColumn(),
+      self->value_.lastLine(),
+      self->value_.lastColumn());
+  }
+
+  static PyTypeObject configurePythonType() {
+    // Configure the necessary methods to make inserting into sets working:
+    PyTypeObject configuring = PythonClassWithObject<LocationObject, chpl::Location>::configurePythonType();
+    configuring.tp_str = (reprfunc) str;
+    configuring.tp_as_number = &location_as_number;
+    configuring.tp_as_number->nb_subtract = (binaryfunc) nb_subtract;
+    return configuring;
+  }
 };
 
 using LineColumnPair = std::tuple<int, int>;
