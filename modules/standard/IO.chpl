@@ -5059,6 +5059,8 @@ proc fileWriter.advance(amount:int(64)) throws {
    :throws UnexpectedEofError: If the requested ``separator`` could not
                                be found.
    :throws SystemError: If data could not be read from the ``file``.
+                        In that event, the fileReader's offset will be
+                        left near at the position where the error occurred.
 */
 proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes {
   on this._home {
@@ -5109,6 +5111,8 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
    :throws EofError: If the ``fileReader`` offset is already at EOF.
    :throws UnexpectedEofError: If the requested ``separator`` could not be found.
    :throws SystemError: If data could not be read from the ``fileReader``.
+                        In that event, the fileReader's offset will be
+                        left near at the position where the error occurred.
 */
 proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   on this._home {
@@ -7142,7 +7146,7 @@ inline proc fileReader.read(ref args ...?k):bool throws {
   The array's size is not changed to accommodate bytes. If a newline is not
   found before the array is filled, or ``maxSize`` bytes are read, a
   :class:`~OS.BadFormatError` is thrown and the ``fileReader`` offset is
-  returned to its original position.
+  returned to the position it had when this routine was called.
 
   :arg a: A 1D DefaultRectangular non-strided array storing ``int(8)`` or
           ``uint(8)``. Values are overwritten.
@@ -7155,10 +7159,12 @@ inline proc fileReader.read(ref args ...?k):bool throws {
             (i.e., the ``fileReader`` was already at EOF).
 
   :throws IllegalArgumentError: If ``maxSize > a.size``
-  :throws BadFormatError: If the line is longer than ``maxSize``. File
-                          offset is not moved.
+  :throws BadFormatError: If the line is longer than ``maxSize``. The
+                          fileReader's offset is not moved in that case.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
  */
 proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
@@ -7310,6 +7316,8 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
                           :record:`fileReader` offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readLine(ref s: string,
                          maxSize=-1,
@@ -7397,6 +7405,8 @@ proc fileReader.readLine(ref s: string,
                           offset is not moved.
   :throws SystemError: If data could not be read from the :record:`fileReader`
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readLine(ref b: bytes,
                          maxSize=-1,
@@ -7490,6 +7500,8 @@ proc fileReader.readLine(ref b: bytes,
                           offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readLine(type t=string, maxSize=-1,
                          stripNewline=false): t throws where t==string || t==bytes {
@@ -7531,6 +7543,8 @@ proc fileReader.readLine(type t=string, maxSize=-1,
                           `maxSize` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
   where t==string || t==bytes
@@ -7561,6 +7575,8 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
                           `maxSize` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -7620,6 +7636,8 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
                           ``maxSize`` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -7672,6 +7690,8 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
                           moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   where t==string || t==bytes
@@ -7702,6 +7722,8 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
                           moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
   var atEof = false;
@@ -7753,6 +7775,8 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
                           moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
   var atEof = false;
@@ -7879,6 +7903,8 @@ private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode
                     was already at EOF.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readAll(type t=bytes): t throws
   where t==string || t==bytes
@@ -7910,6 +7936,8 @@ proc fileReader.readAll(type t=bytes): t throws
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readAll(ref s: string): int throws {
   const (err, lenread) = readStringImpl(this, s, -1);
@@ -7933,6 +7961,8 @@ proc fileReader.readAll(ref s: string): int throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readAll(ref b: bytes): int throws {
   const (err, lenread) = readBytesImpl(this, b, -1);
@@ -7964,6 +7994,8 @@ proc fileReader.readAll(ref b: bytes): int throws {
                                      fit into ``a``.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readAll(ref a: [?d] ?t): int throws
   where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
@@ -8029,6 +8061,8 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
   :throws EofError: If the ``fileReader`` offset was already at EOF.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readString(maxSize: int): string throws {
   var ret: string = "";
@@ -8056,6 +8090,8 @@ proc fileReader.readString(maxSize: int): string throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readString(ref s: string, maxSize: int): bool throws {
   var (e, lenRead) = readStringImpl(this, s, maxSize);
@@ -8079,6 +8115,8 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
   :throws EofError: If the ``fileReader`` offset was already at EOF.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readBytes(maxSize: int): bytes throws {
   var ret: bytes = b"";
@@ -8106,6 +8144,8 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
   var (e, lenRead) = readBytesImpl(this, b, maxSize);
@@ -9003,6 +9043,8 @@ proc fileReader.readBinary(ref arg:numeric, endian: endianness):bool throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   var (e, lenRead) = readStringImpl(this, s, maxSize);
@@ -9026,6 +9068,8 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   var (e, lenRead) = readBytesImpl(this, b, maxSize);
@@ -9057,6 +9101,8 @@ config param ReadBinaryArrayReturnInt = true;
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near at the position where the error occurred.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native): int throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
@@ -9125,6 +9171,8 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
 
    :throws SystemError: If data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
+                        In that event, the fileReader's offset will be
+                        left near at the position where the error occurred.
 */
 proc fileReader.readBinary(ref data: [] ?t, endian: endianness):int throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
@@ -9180,6 +9228,8 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = endianness.native): b
 
    :throws SystemError: If data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
+                        In that event, the fileReader's offset will be
+                        left near at the position where the error occurred.
 */
 proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
   var e: errorCode = 0,
@@ -9208,6 +9258,8 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 
    :throws SystemError: If data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
+                        In that event, the fileReader's offset will be
+                        left near at the position where the error occurred.
 */
 proc fileReader.readBinary(ptr: c_ptr(void), maxBytes: int): int throws {
   var e: errorCode = 0,
