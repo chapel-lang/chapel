@@ -23,7 +23,7 @@ import typing
 import chapel
 from chapel import *
 from driver import LintDriver
-from fixits import Fixit, range_to_text
+from fixits import Fixit
 from rule_types import BasicRuleResult, AdvancedRuleResult
 
 
@@ -129,7 +129,7 @@ def register_rules(driver: LintDriver):
         check = node.block_style() != "unnecessary"
         if not check:
             lines = context.get_file_text(node.location().path()).split("\n")
-            text = range_to_text(node.location(), lines)
+            text = "\n".join(range_to_text(node.location(), lines))
             # TODO: this should be smarter about the do keyword
             text = re.sub(r"\bdo( *)", "", text, 1)
             # remove any trailing whitespace
@@ -164,11 +164,11 @@ def register_rules(driver: LintDriver):
 
         text = None
         if cond.value() == "true":
-            text = range_to_text(node.then_block().location(), lines)
+            text = "\n".join(range_to_text(node.then_block().location(), lines))
         elif cond.value() == "false":
             else_block = node.else_block()
             if else_block is not None:
-                text = range_to_text(else_block.location(), lines)
+                text = "\n".join(range_to_text(else_block.location(), lines))
             else:
                 text = ""
 
@@ -393,9 +393,9 @@ def register_rules(driver: LintDriver):
             if parent and isinstance(parent, TupleDecl):
                 fixit = Fixit.build(node.location(), "_")
             elif parent and isinstance(parent, IndexableLoop):
-                index_text = range_to_text(node.location(), lines)
+                index_text = "\n".join(range_to_text(node.location(), lines))
                 loc = parent.header_location() or parent.location()
-                text = range_to_text(loc, lines)
+                text = "\n".join(range_to_text(loc, lines))
                 text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
                 fixit = Fixit.build(loc, text)
 
@@ -443,7 +443,7 @@ def register_rules(driver: LintDriver):
             if not is_range_like(exprs[0]):
                 continue
 
-            s = range_to_text(exprs[0].location(), lines)
+            s = "\n".join(range_to_text(exprs[0].location(), lines))
 
             yield AdvancedRuleResult(
                 iterand,

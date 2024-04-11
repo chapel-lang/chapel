@@ -355,3 +355,43 @@ def files_with_contexts(files):
 
         for filename in to_yield:
             yield (filename, ctx)
+
+def range_to_tokens(
+    rng: Location, lines: List[str]
+) -> List[typing.Tuple[int, int, int]]:
+    """
+    Convert a Chapel location to a list of token-compatible ranges. If a location
+    spans multiple lines, it gets split into multiple tokens. The lines
+    and columns are zero-indexed.
+
+    Returns a list of (line, column, length).
+    """
+
+    line_start, char_start = rng.start()
+    line_end, char_end = rng.end()
+
+    if line_start == line_end:
+        return [(line_start - 1, char_start - 1, char_end - char_start)]
+
+    tokens = [
+        (
+            line_start - 1,
+            char_start - 1,
+            len(lines[line_start - 1]) - char_start,
+        )
+    ]
+    for line in range(line_start + 1, line_end):
+        tokens.append((line - 1, 0, len(lines[line - 1])))
+    tokens.append((line_end - 1, 0, char_end - 1))
+
+    return tokens
+
+
+def range_to_text(rng: Location, lines: List[str]) -> List[str]:
+    """
+    Convert a Chapel location to a list of strings
+    """
+    text = []
+    for line, column, length in range_to_tokens(rng, lines):
+        text.append(lines[line][column : column + length + 1])
+    return text

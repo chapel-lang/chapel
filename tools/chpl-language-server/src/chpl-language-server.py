@@ -237,47 +237,6 @@ def get_symbol_information(
     return None
 
 
-def range_to_tokens(
-    rng: chapel.Location, lines: List[str]
-) -> List[Tuple[int, int, int]]:
-    """
-    Convert a Chapel location to a list of token-compatible ranges. If a location
-    spans multiple lines, it gets split into multiple tokens. The lines
-    and columns are zero-indexed.
-
-    Returns a list of (line, column, length).
-    """
-
-    (line_start, char_start) = rng.start()
-    (line_end, char_end) = rng.end()
-
-    if line_start == line_end:
-        return [(line_start - 1, char_start - 1, char_end - char_start)]
-
-    tokens = [
-        (
-            line_start - 1,
-            char_start - 1,
-            len(lines[line_start - 1]) - char_start,
-        )
-    ]
-    for line in range(line_start + 1, line_end):
-        tokens.append((line - 1, 0, len(lines[line - 1])))
-    tokens.append((line_end - 1, 0, char_end - 1))
-
-    return tokens
-
-
-def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
-    """
-    Convert a Chapel location to a string. If the location spans multiple
-    lines, it gets truncated into 1 line.
-    """
-    text = []
-    for line, column, length in range_to_tokens(rng, lines):
-        text.append(lines[line][column : column + length + 1])
-    return " ".join([t.strip() for t in text])
-
 
 def encode_deltas(
     tokens: List[Tuple[int, int, int]], token_type: int, token_modifiers: int
@@ -1358,7 +1317,8 @@ class ChapelLanguageServer(LanguageServer):
                 if re.search(self._curly_bracket_with_comment, curly_line):
                     continue
 
-                text = range_to_text(header_loc, file_lines)
+                text = chapel.range_to_text(header_loc, file_lines)
+                text = " ".join([t.strip() for t in text])
                 loc = location_to_location(goto_loc) if goto_loc else None
                 to_insert = " // " + text
                 edit = TextEdit(
