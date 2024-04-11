@@ -45,6 +45,7 @@ PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
 static PyNumberMethods location_as_number;
+using LineColumnPair = std::tuple<int, int>;
 
 struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static constexpr const char* Name = "Location";
@@ -57,30 +58,51 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
     auto otherCast = (LocationObject*) other;
 
     if (self->value_.path() != otherCast->value_.path()) {
-      Py_RETURN_NONE;
+      // raise value error
+      PyErr_SetString(PyExc_ValueError, "Cannot subtract locations from different files");
     }
 
-    auto min = [](int a, int b) { return a < b ? a : b; };
-    // auto max = [](int a, int b) { return a > b ? a : b; };
+    auto cmpLess = [](LineColumnPair lhs, LineColumnPair rhs) {
+      return std::get<0>(lhs) < std::get<0>(rhs) || (std::get<0>(lhs) == std::get<0>(rhs) && std::get<1>(lhs) < std::get<1>(rhs));
+    };
+    auto cmpGreater = [](LineColumnPair lhs, LineColumnPair rhs) {
+      return std::get<0>(lhs) > std::get<0>(rhs) || (std::get<0>(lhs) == std::get<0>(rhs) && std::get<1>(lhs) > std::get<1>(rhs));
+    };
+    auto cmpEqual = [](LineColumnPair lhs, LineColumnPair rhs) {
+      return std::get<0>(lhs) == std::get<0>(rhs) && std::get<1>(lhs) == std::get<1>(rhs);
+    };
+    auto min = [cmpLess](LineColumnPair lhs, LineColumnPair rhs) {
+      return cmpLess(lhs, rhs) ? lhs : rhs;
+    };
+    auto max = [cmpGreater](LineColumnPair lhs, LineColumnPair rhs) {
+      return cmpGreater(lhs, rhs) ? lhs : rhs;
+    };
 
+    /*
+    if (B.end < A.start) and (B.start > A.end):
+      return A
+    elif A.start == B.start:
+      return B.end..A.end
+    else
+      return min(A.start, B.start)..min(A.end, B.start)
+    */
 
-    // if other is not fully contained by self, return None
-    if (self->value_.firstLine() > otherCast->value_.firstLine() ||
-        (self->value_.firstLine() == otherCast->value_.firstLine() && self->value_.firstColumn() > otherCast->value_.firstColumn()) ||
-        self->value_.lastLine() < otherCast->value_.lastLine() ||
-        (self->value_.lastLine() == otherCast->value_.lastLine() && self->value_.lastColumn() < otherCast->value_.lastColumn())) {
-      Py_RETURN_NONE;
+    auto A_start = std::make_tuple(self->value_.firstLine(), self->value_.firstColumn());
+    auto A_end = std::make_tuple(self->value_.lastLine(), self->value_.lastColumn());
+    auto B_start = std::make_tuple(otherCast->value_.firstLine(), otherCast->value_.firstColumn());
+    auto B_end = std::make_tuple(otherCast->value_.lastLine(), otherCast->value_.lastColumn());
+
+    if (cmpLess(B_end, A_start) && cmpGreater(B_start, A_end)) {
+      return (PyObject*)self;
+    } else if (cmpEqual(A_start, B_start)) {
+      auto newLoc = chpl::Location(self->value_.path(), otherCast->value_.lastLine(), otherCast->value_.lastColumn(), self->value_.lastLine(), self->value_.lastColumn());
+      return (PyObject*) LocationObject::create(newLoc);
+    } else {
+      auto start = min(A_start, B_start);
+      auto end = min(A_end, B_start);
+      auto newLoc = chpl::Location(self->value_.path(), std::get<0>(start), std::get<1>(start), std::get<0>(end), std::get<1>(end));
+      return (PyObject*) LocationObject::create(newLoc);
     }
-
-    // assuming self fully contains other, subtract other from self
-
-    auto firstLine = self->value_.firstLine();
-    auto firstColumn = self->value_.firstColumn();
-    auto lastLine = otherCast->value_.firstLine();
-    auto lastColumn = otherCast->value_.firstColumn();
-
-    auto newLoc = chpl::Location(self->value_.path(), firstLine, firstColumn, lastLine, lastColumn);
-    return (PyObject*) LocationObject::create(newLoc);
   }
 
   static PyObject* str(LocationObject* self) {
@@ -101,8 +123,6 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
     return configuring;
   }
 };
-
-using LineColumnPair = std::tuple<int, int>;
 
 struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resolution::Scope*> {
   static constexpr const char* Name = "Scope";
