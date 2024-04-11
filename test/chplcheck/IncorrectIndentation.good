@@ -57,3 +57,6 @@ IncorrectIndentation.chpl:285: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:291: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:298: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:304: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:307: node violates rule EmptyStmts
+IncorrectIndentation.chpl:313: node violates rule IncorrectIndentation
+IncorrectIndentation.chpl:320: node violates rule IncorrectIndentation

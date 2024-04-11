@@ -303,3 +303,23 @@ union u5 {
 
   proc firstProc() {} proc secondProc() {}
 }
+
+enum color { red, green, blue }; // semicolon warning does not issue bad indentation
+
+// Since locations are incorrectly reported with 'public' and 'private',
+// these shouldn't warn.
+module M7 {
+  proc f1 {}
+    proc g1 {}
+  public proc f2 {}
+    public proc g2 {}
+  private proc f3 {}
+    private proc g3 {}
+
+  use super.M1;
+    use super.M1;
+  public use super.M2;
+    public use super.M2;
+  private use super.M2;
+    private use super.M2;
+}
