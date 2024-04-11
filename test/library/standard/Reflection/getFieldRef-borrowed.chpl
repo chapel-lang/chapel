@@ -1,6 +1,9 @@
 // this is a library function `Reflection.getFieldRef`, specifically.
 import Reflection;
 
+config param useOwned = true;
+type fieldType = if useOwned then owned FieldType? else shared FieldType?;
+
 class FieldType {
   var x: int;
   proc setup() {
@@ -10,10 +13,13 @@ class FieldType {
 }
 
 record MainType {
-  var field: owned FieldType?;
+  var field: fieldType;
 
   proc init() {
-    this.field = new FieldType();
+    if useOwned then
+      this.field = new owned FieldType();
+    else
+      this.field = new shared FieldType();
     init this;
     this.field!.setup();  // Resolved Bug: non-lvalue actual is passed to 'ref'
                           // formal 'this' of setup()
