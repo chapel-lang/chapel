@@ -393,11 +393,13 @@ def register_rules(driver: LintDriver):
             if parent and isinstance(parent, TupleDecl):
                 fixit = Fixit.build(node.location(), "_")
             elif parent and isinstance(parent, IndexableLoop):
-                index_text = "\n".join(range_to_text(node.location(), lines))
                 loc = parent.header_location() or parent.location()
-                text = "\n".join(range_to_text(loc, lines))
-                text = re.sub(f"{index_text}\\s+in\\s+", "", text, 1)
-                fixit = Fixit.build(loc, text)
+                before_loc = loc - node.location()
+                after_loc = loc.clamped_to(parent.iterand().location())
+                before_lines = "\n".join(range_to_text(before_loc, lines))
+                after_lines = "\n".join(range_to_text(after_loc, lines))
+
+                fixit = Fixit.build(loc, before_lines + after_lines)
 
             yield AdvancedRuleResult(node, loop, fixit)
 
@@ -450,3 +452,11 @@ def register_rules(driver: LintDriver):
                 anchor=loop,
                 fixit=Fixit.build(iterand.location(), s),
             )
+
+
+def loc_intersection(loc1: Location, loc2: Location):
+    loc1_start, loc1_end = loc1.start(), loc1.end()
+    loc2_start, loc2_end = loc2.start(), loc2.end()
+
+    start = (max(loc1_start[0], loc2_start[0]), max(loc1_start[1], loc2_start[1]))
+    end = (min(loc1_end[0], loc2_end[0]), min(loc1_end[1], loc2_end[1]))
