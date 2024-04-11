@@ -393,5 +393,5 @@ def range_to_text(rng: Location, lines: List[str]) -> List[str]:
     """
     text = []
     for line, column, length in range_to_tokens(rng, lines):
-        text.append(lines[line][column : column + length + 1])
+        text.append(lines[line][column : column + length])
     return text
