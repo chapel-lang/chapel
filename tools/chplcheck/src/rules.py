@@ -129,12 +129,26 @@ def register_rules(driver: LintDriver):
         check = node.block_style() != "unnecessary"
         if not check:
             lines = context.get_file_text(node.location().path()).split("\n")
-            text = "\n".join(range_to_text(node.location(), lines))
-            # TODO: this should be smarter about the do keyword
-            text = re.sub(r"\bdo( *)", "", text, 1)
-            # remove any trailing whitespace
-            text = re.sub(r" +\n", "\n", text)
-            return BasicRuleResult(Fixit.build(node.location(), text))
+            header_loc = (
+                node.header_location()
+                if isinstance(node, Loop)
+                else node.block_header()
+            )
+            body_loc = node.curly_braces_location()
+            if header_loc is None or body_loc is None:
+                return check
+
+            header_text = "\n".join(range_to_text(header_loc, lines))
+            body_text = "\n".join(range_to_text(body_loc, lines))
+
+            sep = " "
+            if header_loc.end()[0] != body_loc.start()[0]:
+                indent = " " * (body_loc.start()[1] - 1)
+                sep = "\n" + indent
+
+            return BasicRuleResult(
+                Fixit.build(node.location(), header_text + sep + body_text)
+            )
 
         return check
 
@@ -395,7 +409,7 @@ def register_rules(driver: LintDriver):
             elif parent and isinstance(parent, IndexableLoop):
                 loc = parent.header_location() or parent.location()
                 before_loc = loc - node.location()
-                after_loc = loc.clamped_to(parent.iterand().location())
+                after_loc = loc.clamp_left(parent.iterand().location())
                 before_lines = "\n".join(range_to_text(before_loc, lines))
                 after_lines = "\n".join(range_to_text(after_loc, lines))
 
