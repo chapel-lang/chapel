@@ -93,6 +93,10 @@ CLASS_BEGIN(AstNode)
                std::optional<chpl::Location>,
                auto loc = chpl::parsing::locateBlockHeaderWithAst(context, node);
                return getValidLocation(loc))
+  PLAIN_GETTER(AstNode, curly_braces_location, "Get the Location of the curly braces of this AstNode node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateCurlyBracesWithAst(context, node);
+               return getValidLocation(loc))
 CLASS_END(AstNode)
 
 CLASS_BEGIN(AnonFormal)
