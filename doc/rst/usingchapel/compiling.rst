@@ -58,6 +58,7 @@ Flags                   Description
 ``-O``                  turns on optimization of the generated C code
 ``--fast``              turns on ``--no-checks``, ``-O``, and enables
                         many other optimizations
+``--M <dir>``           add the specified directory to the module search path
 ``--savec <dir>``       saves the generated C code in the specified
                         directory
 ``-g``                  support debugging of the generated C code
@@ -108,4 +109,4 @@ auto-complete the option and add a space, ready for the next option.
   .. code-block:: sh
 
      % chpl --cac<tab>
-     % chpl --cache-remote 
+     % chpl --cache-remote
