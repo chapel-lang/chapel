@@ -181,19 +181,18 @@ def register_rules(driver: LintDriver):
         assert isinstance(cond, BoolLiteral)
 
         text = None
-        if cond.value() == "true":
+        if cond.value():
             text = "\n".join(range_to_text(node.then_block().location(), lines))
-        elif cond.value() == "false":
+        else:
             else_block = node.else_block()
             if else_block is not None:
                 text = "\n".join(range_to_text(else_block.location(), lines))
             else:
                 text = ""
+        # should be set in all branches
+        assert text is not None
 
-        if text is not None:
-            return BasicRuleResult(Fixit.build(node.location(), text))
-        else:
-            return False
+        return BasicRuleResult(Fixit.build(node.location(), text))
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):

@@ -424,7 +424,7 @@ CLASS_END(For)
 
 CLASS_BEGIN(BoolLiteral)
   PLAIN_GETTER(BoolLiteral, value, "Get the value of this BoolLiteral node",
-               const char*, return (node->value() ? "true" : "false"))
+               bool, return node->value())
 CLASS_END(BoolLiteral)
 
 CLASS_BEGIN(ImagLiteral)
