@@ -156,7 +156,7 @@ def _node_to_string(node: chapel.AstNode) -> List[Component]:
     elif isinstance(node, chapel.Identifier):
         return [_wrap_str(node.name())]
     elif isinstance(node, chapel.BoolLiteral):
-        return [_wrap_str(node.value())]
+        return [_wrap_str("true" if node.value() else "false")]
     elif isinstance(
         node,
         (

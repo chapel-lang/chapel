@@ -1010,8 +1010,8 @@ proc type blockDist.createArray(
 ) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   if boundsChecking then
-  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
-    if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
+    for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+      if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
 
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;

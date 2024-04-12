@@ -17,77 +17,100 @@
 # limitations under the License.
 #
 
+import re
+import typing
+
 import chapel
 from chapel import *
-import re
+from driver import LintDriver
+from fixits import Fixit
+from rule_types import BasicRuleResult, AdvancedRuleResult
 
-def name_for_linting(node):
+
+def name_for_linting(context: Context, node: NamedDecl) -> str:
     name = node.name()
 
     # Strip dollar signs.
     name = name.replace("$", "")
 
+    # TODO: thread `internal_prefixes` through to this and strip them for linting
+
     return name
 
-def check_camel_case(node):
-    return re.fullmatch(r'([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?', name_for_linting(node))
 
-def check_pascal_case(node):
-    return re.fullmatch(r'(([A-Z][a-z]*|\d+)+|[A-Z]+)?', name_for_linting(node))
+def check_camel_case(context: Context, node: NamedDecl):
+    return re.fullmatch(
+        r"([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?", name_for_linting(context, node)
+    )
 
-def register_rules(driver):
+
+def check_pascal_case(context: Context, node: NamedDecl):
+    return re.fullmatch(
+        r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?", name_for_linting(context, node)
+    )
+
+
+def register_rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
-    def CamelOrPascalCaseVariables(context, node):
+    def CamelOrPascalCaseVariables(context: Context, node: VarLikeDecl):
         """
         Warn for variables that are not 'camelCase' or 'PascalCase'.
         """
 
-        if node.name() == "_": return True
-        if node.linkage() == 'extern': return True
-        return check_camel_case(node) or check_pascal_case(node)
+        if node.name() == "_":
+            return True
+        if node.linkage() == "extern":
+            return True
+        return check_camel_case(context, node) or check_pascal_case(
+            context, node
+        )
 
     @driver.basic_rule(Record)
-    def CamelCaseRecords(context, node):
+    def CamelCaseRecords(context: Context, node: Record):
         """
         Warn for records that are not 'camelCase'.
         """
 
-        return check_camel_case(node)
+        return check_camel_case(context, node)
 
     @driver.basic_rule(Function)
-    def CamelCaseFunctions(context, node):
+    def CamelCaseFunctions(context: Context, node: Function):
         """
         Warn for functions that are not 'camelCase'.
         """
 
         # Override functions / methods can't control the name, that's up
         # to the parent.
-        if node.is_override(): return True
+        if node.is_override():
+            return True
 
-        if node.linkage() == 'extern': return True
-        if node.kind() == 'operator': return True
-        if node.name() == 'init=': return True
+        if node.linkage() == "extern":
+            return True
+        if node.kind() == "operator":
+            return True
+        if node.name() == "init=":
+            return True
 
-        return check_camel_case(node)
+        return check_camel_case(context, node)
 
     @driver.basic_rule(Class)
-    def PascalCaseClasses(context, node):
+    def PascalCaseClasses(context: Context, node: Class):
         """
         Warn for classes that are not 'PascalCase'.
         """
 
-        return check_pascal_case(node)
+        return check_pascal_case(context, node)
 
     @driver.basic_rule(Module)
-    def PascalCaseModules(context, node):
+    def PascalCaseModules(context: Context, node: Module):
         """
         Warn for modules that are not 'PascalCase'.
         """
 
-        return node.kind() == "implicit" or check_pascal_case(node)
+        return node.kind() == "implicit" or check_pascal_case(context, node)
 
     @driver.basic_rule(Module, default=False)
-    def UseExplicitModules(context, node):
+    def UseExplicitModules(_, node: Module):
         """
         Warn for code that relies on auto-inserted implicit modules.
         """
@@ -95,15 +118,47 @@ def register_rules(driver):
         return node.kind() != "implicit"
 
     @driver.basic_rule(Loop)
-    def DoKeywordAndBlock(context, node):
+    @driver.basic_rule(SimpleBlockLike)
+    @driver.basic_rule(When)
+    def DoKeywordAndBlock(
+        context: Context, node: typing.Union[Loop, SimpleBlockLike]
+    ):
         """
         Warn for redundant 'do' keyword before a curly brace '{'.
         """
 
-        return node.block_style() != "unnecessary"
+        check = node.block_style() != "unnecessary"
+        if not check:
+            lines = context.get_file_text(node.location().path()).split("\n")
+
+            if isinstance(node, Loop):
+                header_loc = node.header_location()
+                if isinstance(node, IndexableLoop) and node.with_clause():
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc = header_loc + with_.location()
+            else:
+                header_loc = node.block_header()
+            body_loc = node.curly_braces_location()
+            if header_loc is None or body_loc is None:
+                return check
+
+            header_text = range_to_text(header_loc, lines)
+            body_text = range_to_text(body_loc, lines)
+
+            sep = " "
+            if header_loc.end()[0] != body_loc.start()[0]:
+                indent = " " * (body_loc.start()[1] - 1)
+                sep = "\n" + indent
+
+            return BasicRuleResult(
+                Fixit.build(node.location(), header_text + sep + body_text)
+            )
+
+        return check
 
     @driver.basic_rule(Coforall, default=False)
-    def NestedCoforalls(context, node):
+    def NestedCoforalls(context: Context, node: Coforall):
         """
         Warn for nested 'coforall' loops, which could lead to performance hits.
         """
@@ -116,15 +171,32 @@ def register_rules(driver):
         return True
 
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
-    def BoolLitInCondStmt(context, node):
+    def BoolLitInCondStmt(context: Context, node: Conditional):
         """
         Warn for boolean literals like 'true' in a conditional statement.
         """
 
-        return False
+        lines = context.get_file_text(node.location().path()).split("\n")
+
+        cond = node.condition()
+        assert isinstance(cond, BoolLiteral)
+
+        text = None
+        if cond.value():
+            text = range_to_text(node.then_block().location(), lines)
+        else:
+            else_block = node.else_block()
+            if else_block is not None:
+                text = range_to_text(else_block.location(), lines)
+            else:
+                text = ""
+        # should be set in all branches
+        assert text is not None
+
+        return BasicRuleResult(Fixit.build(node.location(), text))
 
     @driver.basic_rule(NamedDecl)
-    def ChplPrefixReserved(context, node):
+    def ChplPrefixReserved(context: Context, node: NamedDecl):
         """
         Warn for user-defined names that start with the 'chpl_' reserved prefix.
         """
@@ -136,7 +208,7 @@ def register_rules(driver):
 
     @driver.basic_rule(Record)
     @driver.basic_rule(Class)
-    def MethodsAfterFields(context, node):
+    def MethodsAfterFields(context: Context, node: typing.Union[Record, Class]):
         """
         Warn for classes or records that mix field and method definitions.
         """
@@ -164,7 +236,7 @@ def register_rules(driver):
     # 4. same linkage
     # 5. same pragmas
     @driver.advanced_rule(default=False)
-    def ConsecutiveDecls(context, root):
+    def ConsecutiveDecls(_, root: AstNode):
         """
         Warn for consecutive variable declarations that can be combined.
         """
@@ -173,7 +245,8 @@ def register_rules(driver):
             var_node = None
             if isinstance(node, MultiDecl):
                 for child in node:
-                    if isinstance(child, Variable): var_node = child
+                    if isinstance(child, Variable):
+                        var_node = child
                 else:
                     return None
             elif isinstance(node, Variable):
@@ -185,56 +258,59 @@ def register_rules(driver):
             var_type_expr = var_node.type_expression()
 
             if isinstance(var_type_expr, FnCall):
-                #for function call, we need to match all the components
-                var_type = ''
+                # for function call, we need to match all the components
+                var_type = ""
                 for child in var_type_expr:
                     if child is None:
                         continue
-                    if 'name' in dir(child):
+                    if "name" in dir(child):
                         var_type += child.name()
-                    elif 'text' in dir(child):
+                    elif "text" in dir(child):
                         var_type += child.text()
             elif isinstance(var_type_expr, Identifier):
                 var_type = var_type_expr.name()
 
             var_kind = var_node.kind()
 
-            var_attributes = ''
+            var_attributes = ""
             var_attribute_group = var_node.attribute_group()
             if var_attribute_group:
                 var_attributes = " ".join(
-                    [a.name() for a in var_attribute_group if a is not None])
+                    [a.name() for a in var_attribute_group if a is not None]
+                )
 
             var_linkage = var_node.linkage()
 
-            var_pragmas = ' '.join(var_node.pragmas())
-            return (var_type, var_kind, var_attributes, var_linkage, var_pragmas)
+            var_pragmas = " ".join(var_node.pragmas())
+            return var_type, var_kind, var_attributes, var_linkage, var_pragmas
 
         def recurse(node):
             consecutive = []
             last_characteristics = None
 
             for child in node:
-                #we want to skip Comments entirely
-                if isinstance(child,Comment):
+                # we want to skip Comments entirely
+                if isinstance(child, Comment):
                     continue
 
-                #we want to do MultiDecls and TupleDecls, but not recurse
+                # we want to do MultiDecls and TupleDecls, but not recurse
                 skip_children = isinstance(child, (MultiDecl, TupleDecl))
 
                 if not skip_children:
                     yield from recurse(child)
 
                 new_characteristics = is_relevant_decl(child)
-                compatible = new_characteristics is not None and \
-                    new_characteristics == last_characteristics
+                compatible = (
+                    new_characteristics is not None
+                    and new_characteristics == last_characteristics
+                )
 
                 last_characteristics = new_characteristics
 
                 if compatible:
                     consecutive.append(child)
                 else:
-                    #this one doesn't match, yield any from previous sequence
+                    # this one doesn't match, yield any from previous sequence
                     # and start looking for matches for this one
                     if len(consecutive) > 1:
                         yield consecutive[1]
@@ -253,25 +329,27 @@ def register_rules(driver):
 
         prev, prevloop = None, None
         for child in root:
-            if isinstance(child, Comment): continue
+            if isinstance(child, Comment):
+                continue
             yield from MisleadingIndentation(context, child)
 
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:
-                    yield (child, prevloop)
+                    yield AdvancedRuleResult(child, prevloop)
 
             prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
                 grandchildren = list(child)
                 # safe to access [-1], loops must have at least 1 child
                 for blockchild in reversed(list(grandchildren[-1])):
-                    if isinstance(blockchild, Comment): continue
+                    if isinstance(blockchild, Comment):
+                        continue
                     prev = blockchild
                     prevloop = child
                     break
 
     @driver.advanced_rule(default=False)
-    def UnusedFormal(context, root):
+    def UnusedFormal(_, root: AstNode):
         """
         Warn for unused formals in functions.
         """
@@ -279,7 +357,7 @@ def register_rules(driver):
         formals = dict()
         uses = set()
 
-        for (formal, _) in chapel.each_matching(root, Formal):
+        for formal, _ in chapel.each_matching(root, Formal):
             # For now, it's harder to tell if we're ignoring 'this' formals
             # (what about method calls with implicit receiver?). So skip
             # 'this' formals.
@@ -292,31 +370,34 @@ def register_rules(driver):
 
             formals[formal.unique_id()] = formal
 
-        for (use, _) in chapel.each_matching(root, Identifier):
+        for use, _ in chapel.each_matching(root, Identifier):
             refersto = use.to_node()
             if refersto:
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
-            yield (formals[unused], formals[unused].parent())
+            yield AdvancedRuleResult(formals[unused], formals[unused].parent())
 
     @driver.advanced_rule
-    def UnusedLoopIndex(context, root):
+    def UnusedLoopIndex(context: Context, root: AstNode):
         """
         Warn for unused index variables in loops.
         """
+        if isinstance(root, Comment):
+            return
 
         indices = dict()
         uses = set()
 
         def variables(node):
             if isinstance(node, Variable):
-                if node.name() != "_": yield node
+                if node.name() != "_":
+                    yield node
             elif isinstance(node, TupleDecl):
                 for child in node:
                     yield from variables(child)
 
-        for (loop, match) in chapel.each_matching(root, IndexableLoop):
+        for loop, _ in chapel.each_matching(root, IndexableLoop):
             node = loop.index()
             if node is None:
                 continue
@@ -324,19 +405,38 @@ def register_rules(driver):
             for index in variables(node):
                 indices[index.unique_id()] = (index, loop)
 
-        for (use, _) in chapel.each_matching(root, Identifier):
+        for use, _ in chapel.each_matching(root, Identifier):
             refersto = use.to_node()
             if refersto:
                 uses.add(refersto.unique_id())
 
+        lines = context.get_file_text(root.location().path()).split("\n")
         for unused in indices.keys() - uses:
-            yield indices[unused]
+            node, loop = indices[unused]
+            fixit = None
+            parent = node.parent()
+            if parent and isinstance(parent, TupleDecl):
+                fixit = Fixit.build(node.location(), "_")
+            elif parent and isinstance(parent, IndexableLoop):
+                loc = parent.header_location() or parent.location()
+                before_loc = loc - node.location()
+                after_loc = loc.clamp_left(parent.iterand().location())
+                before_lines = range_to_text(before_loc, lines)
+                after_lines = range_to_text(after_loc, lines)
+
+                fixit = Fixit.build(loc, before_lines + after_lines)
+
+            yield AdvancedRuleResult(node, loop, fixit)
 
     @driver.advanced_rule
     def SimpleDomainAsRange(context: Context, root: AstNode):
         """
         Warn for simple domains in loops that can be ranges.
         """
+        # dyno fault if we try to query .location on a Comment
+        if isinstance(root, Comment):
+            return
+        lines = context.get_file_text(root.location().path()).split("\n")
 
         def is_range_like(node: AstNode):
             """
@@ -370,7 +470,13 @@ def register_rules(driver):
             if not is_range_like(exprs[0]):
                 continue
 
-            yield iterand, loop
+            s = range_to_text(exprs[0].location(), lines)
+
+            yield AdvancedRuleResult(
+                iterand,
+                anchor=loop,
+                fixit=Fixit.build(iterand.location(), s),
+            )
 
     @driver.advanced_rule
     def IncorrectIndentation(context: Context, root: AstNode):
@@ -416,8 +522,8 @@ def register_rules(driver):
 
             if isinstance(parent, (Function, Loop)):
                 return parent
-            elif isinstance(parent, Conditional) and parent.is_expression_level():
-                return None
+            elif isinstance(parent, Conditional):
+                return None if parent.is_expression_level() else parent
             return node
 
         # If root is something else (e.g., function call), do not

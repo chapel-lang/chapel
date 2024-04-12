@@ -19,30 +19,35 @@
 # limitations under the License.
 #
 
-import chapel
-import chapel
-import chapel.replace
-import sys
 import argparse
-from driver import LintDriver
-from rules import register_rules
-from lsp import run_lsp
-
+from collections import defaultdict
+import importlib.util
 import os
 import sys
-import importlib.util
+from typing import List, Optional
 
-def print_violation(node, name):
+import chapel
+import chapel.replace
+from driver import LintDriver
+from lsp import run_lsp
+from rules import register_rules
+from fixits import Fixit
+
+
+def print_violation(node: chapel.AstNode, name: str):
     location = node.location()
     first_line, _ = location.start()
-    print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
+    print(
+        "{}:{}: node violates rule {}".format(location.path(), first_line, name)
+    )
+
 
 def load_module(driver: LintDriver, file_path: str):
     """
     Load a module from a file path.
     This is used to extend the linter with custom rules.
     """
-    module_name = os.path.basename(file_path).removesuffix('.py')
+    module_name = os.path.basename(file_path).removesuffix(".py")
 
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None:
@@ -55,12 +60,45 @@ def load_module(driver: LintDriver, file_path: str):
     rule_func_name = "rules"
     rule_func = getattr(module, rule_func_name, None)
     if rule_func is None or not callable(rule_func):
-        raise ValueError(f"Could not find rule function '{rule_func_name}' in {file_path}")
+        raise ValueError(
+            f"Could not find rule function '{rule_func_name}' in {file_path}"
+        )
     rule_func(driver)
+
+
+def apply_fixits(fixits: List[Fixit], suffix: Optional[str]=None):
+    """
+    Apply a list of fixits
+    """
+    fixit_per_file = defaultdict(lambda: [])
+    for fixit in fixits:
+        fixit_per_file[fixit.path].append(fixit)
+
+    # Apply fixits in reverse order to avoid invalidating the locations of
+    # subsequent fixits
+    for file, fixits in fixit_per_file.items():
+        fixits.sort(key=lambda f: f.start, reverse=True)
+        with open(file, "r") as f:
+            lines = f.readlines()
+        for fixit in fixits:
+            line_start, char_start = fixit.start
+            line_end, char_end = fixit.end
+            lines[line_start - 1] = (
+                lines[line_start - 1][: char_start - 1]
+                + fixit.text
+                + lines[line_end - 1][char_end - 1 :]
+            )
+            if line_start != line_end:
+                lines[line_start:line_end] = [""] * (line_end - line_start)
+
+        outfile = file if suffix is None else file + suffix
+        with open(outfile, "w") as f:
+            f.writelines(lines)
+
 
 def print_rules(driver: LintDriver, show_all=True):
     padding = max(len(rule) for (rule, _) in driver.rules_and_descriptions())
-    for (rule, description) in driver.rules_and_descriptions():
+    for rule, description in driver.rules_and_descriptions():
         if description is None:
             description = ""
         description = description.strip()
@@ -75,23 +113,28 @@ def print_rules(driver: LintDriver, show_all=True):
             else:
                 continue
 
-
         print(f"  {prefix}{rule.ljust(padding)}   {description}")
 
+
 def main():
-    parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
-    parser.add_argument('filenames', nargs='*')
-    parser.add_argument('--disable-rule', action='append', dest='disabled_rules', default=[])
-    parser.add_argument('--enable-rule', action='append', dest='enabled_rules', default=[])
-    parser.add_argument('--lsp', action='store_true', default=False)
-    parser.add_argument('--skip-unstable', action='store_true', default=False)
-    parser.add_argument('--internal-prefix', action='append', dest='internal_prefixes', default=[])
-    parser.add_argument("--add-rules", action='append', default=[], help="Add a custom rule file")
-    parser.add_argument("--list-rules", action='store_true', default=False, help="List all available rules")
-    parser.add_argument("--list-active-rules", action='store_true', default=False, help="List all currently enabled rules")
+    parser = argparse.ArgumentParser(prog="chplcheck", description="A linter for the Chapel language")
+    parser.add_argument("filenames", nargs="*")
+    parser.add_argument("--disable-rule", action="append", dest="disabled_rules", default=[])
+    parser.add_argument("--enable-rule", action="append", dest="enabled_rules", default=[])
+    parser.add_argument("--lsp", action="store_true", default=False)
+    parser.add_argument("--skip-unstable", action="store_true", default=False)
+    parser.add_argument("--internal-prefix", action="append", dest="internal_prefixes", default=[])
+    parser.add_argument("--add-rules", action="append", default=[], help="Add a custom rule file")
+    parser.add_argument("--list-rules", action="store_true", default=False, help="List all available rules")
+    parser.add_argument("--list-active-rules", action="store_true", default=False,  help="List all currently enabled rules")
+    parser.add_argument("--fixit", action="store_true", default=False, help="Apply fixits for the relevant rules")
+    parser.add_argument("--fixit-suffix", default=None, help="Suffix to append to the original file name when applying fixits. If not set (the default), the original file will be overwritten.")
     args = parser.parse_args()
 
-    driver = LintDriver(skip_unstable = args.skip_unstable, internal_prefixes = args.internal_prefixes)
+    driver = LintDriver(
+        skip_unstable=args.skip_unstable,
+        internal_prefixes=args.internal_prefixes,
+    )
     # register rules before enabling/disabling
     register_rules(driver)
     for p in args.add_rules:
@@ -116,21 +159,35 @@ def main():
 
     printed_warning = False
 
-    for (filename, context) in chapel.files_with_contexts(args.filenames):
+    for filename, context in chapel.files_with_contexts(args.filenames):
         context.set_module_paths([], [])
 
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as errors:
             asts = context.parse(filename)
             violations = list(driver.run_checks(context, asts))
-            #sort the failures in order of appearance
-            violations.sort(key=lambda f : f[0].location().start()[0])
-            for (node, rule) in violations:
+
+            if args.fixit:
+                # apply fixits, if any, then print remaining violations
+                fixits = [fixits for (_, _, fixits) in violations if fixits]
+                # flatten the list of fixits
+                fixits = [f for sublist in fixits for f in sublist]
+                apply_fixits(fixits, suffix=args.fixit_suffix)
+                violations = [
+                    (node, rule, fixit)
+                    for (node, rule, fixit) in violations
+                    if not fixit
+                ]
+
+            # sort the failures in order of appearance
+            violations.sort(key=lambda f: f[0].location().start()[0])
+            for node, rule, _ in violations:
                 print_violation(node, rule)
                 printed_warning = True
 
     if printed_warning:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
