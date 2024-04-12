@@ -52,16 +52,11 @@ def check_pascal_case(context: Context, node: NamedDecl):
 def build_ignore_fixit(anchor: AstNode, lines: List[str], rule_name: str) -> Fixit:
     # TODO: how should this handle multiple ignores?
     loc = anchor.location()
-    text = "\n".join(range_to_text(loc, lines))
+    text = range_to_text(loc, lines)
     indent_amount = max(loc.start()[1] - 1, 0)
     indent = " "* indent_amount
-    text = (
-        f'@chplcheck.ignore("{rule_name}")\n'
-        + indent + text
-    )
-    ignore = Fixit.build(
-        Edit.build(loc, text)
-    )
+    text = f'@chplcheck.ignore("{rule_name}")\n' + indent + text
+    ignore = Fixit.build(Edit.build(loc, text))
     ignore.description = "Ignore this warning"
     return ignore
 
@@ -244,10 +239,9 @@ def register_rules(driver: LintDriver):
         """
         Warn for empty statements (i.e., unnecessary semicolons).
         """
-
         return False
 
-    #Five things have to match between consecutive decls for this to warn:
+    # Five things have to match between consecutive decls for this to warn:
     # 1. same type
     # 2. same kind
     # 3. same attributes
