@@ -58,6 +58,9 @@ Flags                   Description
 ``-O``                  turns on optimization of the generated C code
 ``--fast``              turns on ``--no-checks``, ``-O``, and enables
                         many other optimizations
+``-s <name[=expr]>``    set a config variable with the given expression
+                        as its default value (config params must be set
+                        to values that are known at compile time)
 ``--M <dir>``           add the specified directory to the module search path
 ``--savec <dir>``       saves the generated C code in the specified
                         directory
@@ -66,9 +69,6 @@ Flags                   Description
                         the back-end C compiler
 ``--ldflags <flags>``   specify flags that should be used when invoking
                         the back-end linker
-``-s <name[=expr]>``    set a config variable with the given expression
-                        as its default value (config params must be set
-                        to values that are known at compile time)
 ``--print-passes``      print the compiler passes as they execute
 ``--print-commands``    print the system commands that the compiler
                         executes
