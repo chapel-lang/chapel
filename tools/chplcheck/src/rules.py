@@ -220,10 +220,15 @@ def register_rules(driver: LintDriver):
         return True
 
     @driver.basic_rule(EmptyStmt)
-    def EmptyStmts(context, node):
+    def EmptyStmts(_, node: EmptyStmt):
         """
         Warn for empty statements (i.e., unnecessary semicolons).
         """
+        p = node.parent()
+        if p and isinstance(p, SimpleBlockLike) and len(list(p.stmts())) == 1:
+            # dont warn if the EmptyStmt is the only statement in a block
+            return True
+
         return BasicRuleResult(Fixit.build(Edit.build(node.location(), "")))
 
     # Five things have to match between consecutive decls for this to warn:
