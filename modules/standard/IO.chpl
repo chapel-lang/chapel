@@ -8336,8 +8336,6 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
     var nChars:c_ssize_t = 0; // how many codepoints have we read?
     (buff, buffSz) = bufferAlloc(guessReadSize);
 
-    //writeln("starting with buffSz ", buffSz);
-
     // then try to read repeatedly until we have read 'maxChars' or reach EOF
     while nChars < maxChars {
       var locErr:errorCode = 0;
@@ -8351,7 +8349,6 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
           requestSz = maxBytes + 5;
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
         assert(n + 5 < buffSz);
-        //writeln("reallocated buffSz ", buffSz);
       }
 
       const bytesRemaining = buffSz - n;
@@ -8360,10 +8357,6 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
                              else max(c_ssize_t);
       var readCodepoints:c_ssize_t = 0;
       var readBytes:c_ssize_t = 0;
-      //writeln("n ", n);
-      //writeln("nChars ", nChars);
-      //writeln("bytesRemaining ", bytesRemaining);
-      //writeln("charsRemaining ", charsRemaining);
       locErr = qio_channel_read_chars(false, ch._channel_internal,
                                       buff[n], // store starting here
                                       bytesRemaining,
@@ -8371,8 +8364,6 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
                                       readBytes,
                                       readCodepoints);
 
-      ////writeln("readBytes ", readBytes);
-      //writeln("readCodepoints ", readCodepoints);
       nChars += readCodepoints;
       n += readBytes;
 
