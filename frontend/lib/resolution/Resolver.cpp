@@ -2984,9 +2984,27 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       bool computeDefaults = true;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
+      // For calls like
+      //
+      //   type myType = anotherType(int)
+      //
+      // Use the generic version of anotherType to feed as receiver.
       if (resolvingCalledIdent) {
         computeDefaults = false;
       }
+
+      // Other special exceptions like 'r' in:
+      //
+      //  proc r.init() { ... }
+      //
+      if (!genericReceiverOverrideStack.empty()) {
+        auto& topEntry = genericReceiverOverrideStack.back();
+        if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
+            topEntry.second == parsing::parentAst(context, ident)) {
+          computeDefaults = false;
+        }
+      }
+
       if (computeDefaults) {
         type = computeTypeDefaults(*this, type);
       }
@@ -3099,6 +3117,21 @@ bool Resolver::enter(const TypeQuery* tq) {
 void Resolver::exit(const TypeQuery* tq) {
 }
 
+// Treat receiver types specially in terms of generic resolution. That is,
+// when resolving the following initializer when r is generic with defaults,
+//
+//   proc r.init() {}
+//
+// Make sure r's defaults aren't used so that the most general receiver is
+// constructed. On the other hand, defaults _should_ be used for more
+// complicated expressions:
+//
+//   proc (someTypeFn(r)).init() {}
+//
+static bool shouldUseGenericTypeForTypeExpr(const NamedDecl* decl) {
+ return decl->isFormal() && decl->name() == USTR("this");
+}
+
 bool Resolver::enter(const NamedDecl* decl) {
 
   if (decl->id().postOrderId() < 0) {
@@ -3114,6 +3147,13 @@ bool Resolver::enter(const NamedDecl* decl) {
   emitMultipleDefinedSymbolErrors(context, scope);
 
   enterScope(decl);
+
+  if (shouldUseGenericTypeForTypeExpr(decl)) {
+    // Empty string indicates that all identifiers should be treated as
+    // non-defaulted. Using 'decl' means that only the top-level identifiers
+    // will be resolved this way.
+    genericReceiverOverrideStack.emplace_back(UniqueString(), decl);
+  }
 
   // This logic exists to prioritize the field's type expression when
   // resolving a field's type. If the type expression is concrete, then we
@@ -3144,6 +3184,10 @@ bool Resolver::enter(const NamedDecl* decl) {
 }
 
 void Resolver::exit(const NamedDecl* decl) {
+  if (shouldUseGenericTypeForTypeExpr(decl)) {
+    genericReceiverOverrideStack.pop_back();
+  }
+
   // We are resolving a symbol with a different path (e.g., a Function or
   // a CompositeType declaration). In most cases we do not try to resolve
   // in this traversal. However, if we are a nested function and the child
@@ -3838,6 +3882,10 @@ void Resolver::exit(const Dot* dot) {
 }
 
 bool Resolver::enter(const New* node) {
+  if (auto ident = node->typeExpression()->toIdentifier()) {
+    genericReceiverOverrideStack.emplace_back(ident->name(), node);
+  }
+
   return true;
 }
 
@@ -3919,6 +3967,10 @@ static void resolveNewForUnion(Resolver& rv, const New* node,
 }
 
 void Resolver::exit(const New* node) {
+  if (auto ident = node->typeExpression()->toIdentifier()) {
+    genericReceiverOverrideStack.pop_back();
+  }
+
   if (scopeResolveOnly)
     return;
 

@@ -96,6 +96,7 @@ struct Resolver {
   std::set<ID> instantiatedFieldOrFormals;
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
+  std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
