@@ -197,6 +197,80 @@ static void test8(Context* context) {
   assert(idxTypeInt->bitwidth() == 64);
 }
 
+static void test9(Context* context) {
+  // test the count operator on a bounded range
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts =  resolveTypesOfVariables(context,
+      R""""(
+      var y : int;
+      var lower: int(32);
+      var x1 = lower..;
+      var x2 = lower..#10;
+      )"""", {"x1", "x2"});
+
+  {
+    // Check the first range
+    auto qt = qts.at("x1");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "low");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+  {
+    // Check the counted range
+    auto qt = qts.at("x2");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "both");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+}
+
+static void test10(Context* context) {
+  // test the count operator on a bounded range
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts =  resolveTypesOfVariables(context,
+      R""""(
+      var y : int;
+      var higher: int(32);
+      var x1 = ..higher;
+      var x2 = ..higher#10;
+      )"""", {"x1", "x2"});
+
+  {
+    // Check the first range
+    auto qt = qts.at("x1");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "high");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+  {
+    // Check the counted range
+    auto qt = qts.at("x2");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "both");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+}
+
 int main() {
   // first test runs without environment and stdlib.
   test1();
@@ -212,5 +286,7 @@ int main() {
   test6(ctx);
   test7(ctx);
   test8(ctx);
+  test9(ctx);
+  test10(ctx);
   return 0;
 }
