@@ -2258,6 +2258,10 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return typeForModuleLevelSymbol(context, id, isCurrentModule);
   }
 
+  if (asttags::isEnum(parentTag) && asttags::isEnumElement(tag)) {
+    return typeForScopeResolvedEnumElement(parentId, id, /* ambiguous */ false);
+  }
+
   // If the id is contained within a class/record/union that we are resolving,
   // get the resolved field.
   const CompositeType* ct = nullptr;
@@ -3641,6 +3645,15 @@ Resolver::typeForScopeResolvedEnumElement(const EnumType* enumType,
   }
 }
 
+QualifiedType
+Resolver::typeForScopeResolvedEnumElement(const ID& enumTypeId,
+                                          const ID& refersToId,
+                                          bool ambiguous) {
+  auto type = initialTypeForTypeDecl(context, enumTypeId);
+  CHPL_ASSERT(type && type->isEnumType());
+  return typeForScopeResolvedEnumElement(type->toEnumType(), refersToId,
+                                         ambiguous);
+}
 
 QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
                                            UniqueString elementName,
