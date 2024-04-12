@@ -224,7 +224,7 @@ def register_rules(driver: LintDriver):
         """
         Warn for empty statements (i.e., unnecessary semicolons).
         """
-        return False
+        return BasicRuleResult(Fixit.build(Edit.build(node.location(), "")))
 
     # Five things have to match between consecutive decls for this to warn:
     # 1. same type
