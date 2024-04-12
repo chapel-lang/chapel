@@ -75,44 +75,10 @@ CLASS_BEGIN(Location)
                chpl::UniqueString, return node.path())
   METHOD(Location, clamp_left, "Get this Location clamped to the given Location",
          chpl::Location(chpl::Location),
-         auto other = std::get<0>(args);
-         auto selfStartLine = node.firstLine();
-         auto selfStartColumn = node.firstColumn();
-         auto selfEndLine = node.lastLine();
-         auto selfEndColumn = node.lastColumn();
+         auto left = node;
+         auto right = std::get<0>(args);
 
-         auto otherStartLine = other.firstLine();
-         auto otherStartColumn = other.firstColumn();
-         auto otherEndLine = other.lastLine();
-         auto otherEndColumn = other.lastColumn();
-
-         LineColumnPair start;
-         if (selfStartLine > otherStartLine) {
-            start = std::make_tuple(selfStartLine, selfStartColumn);
-         } else if (selfStartLine < otherStartLine) {
-            start = std::make_tuple(otherStartLine, otherStartColumn);
-         } else {
-            if (selfStartColumn > otherStartColumn) {
-              start = std::make_tuple(selfStartLine, selfStartColumn);
-            } else {
-              start = std::make_tuple(otherStartLine, otherStartColumn);
-            }
-         }
-         LineColumnPair end;
-         if (selfEndLine > otherEndLine) {
-            end = std::make_tuple(selfEndLine, selfEndColumn);
-         } else if (selfEndLine < otherEndLine) {
-            end = std::make_tuple(otherEndLine, otherEndColumn);
-         } else {
-            if (selfEndColumn > otherEndColumn) {
-              end = std::make_tuple(selfEndLine, selfEndColumn);
-            } else {
-              end = std::make_tuple(otherEndLine, otherEndColumn);
-            }
-         }
-
-    return Location(node.path(), std::get<0>(start), std::get<1>(start),
-                    std::get<0>(end), std::get<1>(end))
+         return Location(left.path(), std::max(left.start(), right.start()), left.end());
   )
 CLASS_END(Location)
 
