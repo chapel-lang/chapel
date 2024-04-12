@@ -5076,8 +5076,13 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
       // slow advance to multi-byte separator
       const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
       // handle system errors
-      if readError != 0 && readError != EEOF
-        then try this._ch_ioerror(readError, "in advanceThrough(" + t:string + ")");
+      if readError != 0 && readError != EEOF {
+        if readError == ESHORT {
+          throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+        } else {
+          try this._ch_ioerror(readError, "in advanceThrough(" + t:string + ")");
+        }
+      }
 
       // advance past the separator
       err = qio_channel_advance(false, this._channel_internal, byteOffset + separator.numBytes);
