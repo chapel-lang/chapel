@@ -8194,13 +8194,21 @@ private proc computeMaxBytesToRead(ch: fileReader,
 // helper function to compute the initial buffer size when reading
 // to a string/bytes
 private
-proc computeGuessReadSize(ch: fileReader, maxChars: int, pos: int): c_ssize_t {
+proc computeGuessReadSize(ch: fileReader, maxChars: c_ssize_t, pos: int): c_ssize_t {
   var guessReadSize:c_ssize_t = 0;
   var fp: qio_file_ptr_t = nil;
   qio_channel_get_file_ptr(ch._channel_internal, fp);
   var fileLen:int(64) = -1;
   if fp {
-    fileLen = qio_file_length_guess(fp);
+    if maxChars == max(c_ssize_t) {
+      // try to find the file size with seek etc when doing readAll
+      var err:errorCode = qio_file_length(fp, fileLen);
+      // if there was an error, ignore it, but don't use the file length
+      if err then fileLen = 0;
+    } else {
+      // use the file length from when it was opened to avoid overhead
+      fileLen = qio_file_length_guess(fp);
+    }
   }
   if pos >= 0 && fileLen >= 1 && fileLen > pos {
     guessReadSize = (fileLen - pos):c_ssize_t;
