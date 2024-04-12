@@ -1,2 +1,0 @@
-qio_channel_advance_past_byte should return QIO_ESHORT when the separator is not found,
-and QIO_EEOF when the call is made from EOF
