@@ -5071,7 +5071,13 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
     if separator.numBytes == 1 {
       // fast advance to the single-byte separator
       err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, max(int(64)), true);
-      if err then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+      if err {
+        if err == ESHORT {
+          throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+        } else {
+          try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+        }
+      }
     } else {
       // slow advance to multi-byte separator
       const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
@@ -5128,13 +5134,23 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
     if separator.numBytes == 1 {
       // fast advance to the single-byte separator
       err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, max(int(64)), false);
-      if err then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
-
+      if err {
+        if err == ESHORT {
+          throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+        } else {
+          try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
+        }
+      }
     } else {
       // slow advance to multi-byte separator or EOF
       const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
-      if readError != 0 && readError != EEOF
-        then try this._ch_ioerror(readError, "in advanceTo(" + t:string + ")");
+      if readError != 0 && readError != EEOF {
+        if err == ESHORT {
+          throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+        } else {
+          try this._ch_ioerror(readError, "in advanceTo(" + t:string + ")");
+        }
+      }
 
       // advance to separator, or to EOF if not found
       err = qio_channel_advance(
