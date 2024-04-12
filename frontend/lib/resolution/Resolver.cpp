@@ -2908,12 +2908,6 @@ void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
-  if (ident->name() == USTR("nil")) {
-    result.setType(QualifiedType(QualifiedType::CONST_VAR,
-                                 NilType::get(context)));
-    return;
-  }
-
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
   CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
