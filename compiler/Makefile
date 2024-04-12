@@ -84,10 +84,14 @@ clean-cmakecache: FORCE
 # reruns the cmake configure step if the cache wasn't found or else the
 # cmake --build . --target clean command will fail
 clean: FORCE $(CLEANSUBDIRS) echocompilerdir
-	@if [ -f $(COMPILER_BUILD)/CMakeCache.txt ]; then \
-		cd $(COMPILER_BUILD) && $(CMAKE) . ; \
+	@if [ -d $(COMPILER_BUILD) ]; then \
+		cd $(COMPILER_BUILD) ; \
+		if [ ! -f CMakeCache.txt ]; then \
+			$(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) ; \
+		fi ; \
+		$(CMAKE) --build . --target clean ; \
+		cd - ; \
 	fi
-	@cd $(COMPILER_BUILD) && $(CMAKE) --build . --target clean
 	rm -f $(CLEAN_TARGS)
 	@$(MAKE) clean-cmakecache
 
