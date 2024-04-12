@@ -3669,7 +3669,7 @@ module HDF5 {
      clear the contents of an existing file.  `Append` will add to a file
      that already exists.  Both will open a new empty file.
    */
-  enum Hdf5OpenMode { Truncate, Append };
+  enum Hdf5OpenMode { Truncate, Append }
 
   /* Write the arrays from the :record:`ArrayWrapper` records stored in
      the `data` argument to the corresponding filename in the

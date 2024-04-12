@@ -571,7 +571,7 @@ module ConcurrentMap {
       :yields: A copy of one of the keys contained in this map.
     */
     iter keys() : keyType {
-      for (key, val) in this {
+      for (key, _) in this {
         yield key;
       }
     }
@@ -582,7 +582,7 @@ module ConcurrentMap {
       :yields: A copy of one of the values contained in this map.
     */
     iter values() : valType {
-      for (key, val) in this {
+      for (_, val) in this {
         yield val;
       }
     }
@@ -623,7 +623,7 @@ module ConcurrentMap {
         }
       }
 
-      coforall tid in 1..here.maxTaskPar {
+      coforall 1..here.maxTaskPar {
         var workListTok : owned TokenWrapper = workList.getToken();
         var deferredListTok : owned TokenWrapper = deferredList.getToken();
         while (true) {
@@ -695,7 +695,7 @@ module ConcurrentMap {
       :yields: A copy of one of the keys contained in this map.
     */
     iter keys(param tag:iterKind) where tag == iterKind.standalone {
-      forall (key, val) in this {
+      forall (key, _) in this {
         yield key;
       }
     }
@@ -706,7 +706,7 @@ module ConcurrentMap {
       :yields: A copy of one of the values contained in this map.
     */
     iter values(param tag:iterKind) where tag == iterKind.standalone {
-      forall (key, val) in this {
+      forall (_, val) in this {
         yield val;
       }
     }
@@ -1031,7 +1031,7 @@ module ConcurrentMap {
     */
     proc keysToArray(): [] keyType throws {
       var stack = new Stack(keyType);
-      for (key, val) in this {
+      for (key, _) in this {
         stack.push(key);
       }
 
@@ -1054,7 +1054,7 @@ module ConcurrentMap {
     */
     proc valuesToArray(): [] valType throws {
       var stack = new Stack(valType);
-      for (key, val) in this {
+      for (_, val) in this {
         stack.push(val);
       }
 

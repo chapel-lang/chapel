@@ -171,7 +171,7 @@ in memory.
 module BLAS {
 
   /* Available BLAS implementations for ``blasImpl`` */
-  enum BlasImpl {blas, mkl, off};
+  enum BlasImpl {blas, mkl, off}
   use BlasImpl;
 
   /* Specifies which header filename to include, based on the BLAS
@@ -214,19 +214,19 @@ module BLAS {
   }
 
   /* Define row or column order */
-  enum Order {Row=101: c_int, Col};
+  enum Order {Row=101: c_int, Col}
 
   /* Operation of matrix : none, transpose, or adjoint */
-  enum Op {N=111 : c_int, T, H}; // NoTranspose, Transpose, Adjoint
+  enum Op {N=111 : c_int, T, H} // NoTranspose, Transpose, Adjoint
 
   /* Storage for symmetric matrices */
-  enum Uplo {Upper=121 : c_int, Lower};
+  enum Uplo {Upper=121 : c_int, Lower}
 
   /* Assume a unit or non-unit diagonal */
-  enum Diag {NonUnit=131 : c_int, Unit};
+  enum Diag {NonUnit=131 : c_int, Unit}
 
   /* Operate on the left or right side */
-  enum Side {Left=141 : c_int, Right};
+  enum Side {Left=141 : c_int, Right}
 
   /* Level 3 BLAS */
 
@@ -1773,10 +1773,10 @@ module BLAS {
   proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType) {
     require header;
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_srotg (c_ptrTo(a), c_ptrTo(b), c_ptrTo(c), c_ptrTo(s));
       }
-      when real(64) do{
+      when real(64) {
         cblas_drotg (c_ptrTo(a), c_ptrTo(b), c_ptrTo(c), c_ptrTo(s));
       }
       otherwise {
@@ -1836,10 +1836,10 @@ module BLAS {
       throw new owned IllegalArgumentError("illegal argument 'P': must consist of 5 elements, passed to rotmg");
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_srotmg(c_ptrTo(d1),c_ptrTo(d2),c_ptrTo(b1),b2,P);
       }
-      when real(64) do{
+      when real(64) {
         cblas_drotmg(c_ptrTo(d1),c_ptrTo(d2),c_ptrTo(b1),b2,P);
       }
       otherwise {
@@ -1880,10 +1880,10 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_srot(N, X, incX, Y, incY, c, s);
       }
-      when real(64) do{
+      when real(64) {
         cblas_drot(N, X, incX, Y, incY, c, s);
       }
       otherwise {
@@ -1944,10 +1944,10 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_srotm(N, X, incX, Y, incY,  P);
       }
-      when real(64) do{
+      when real(64) {
         cblas_drotm(N, X, incX, Y, incY, P);
       }
       otherwise {
@@ -1983,16 +1983,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_sswap (N, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
         cblas_dswap (N, X, incX, Y, incY);
       }
-      when complex(64) do{
+      when complex(64) {
         cblas_cswap (N, X, incX, Y, incY);
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zswap (N, X, incX, Y, incY);
       }
       otherwise {
@@ -2026,16 +2026,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_sscal (N, alpha, X, incX);
       }
-      when real(64) do{
+      when real(64) {
         cblas_dscal (N, alpha, X, incX);
       }
-      when complex(64) do{
+      when complex(64) {
         cblas_cscal (N, c_ptrToConst(alpha), X, incX);
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zscal (N, c_ptrToConst(alpha), X, incX);
       }
       otherwise {
@@ -2071,16 +2071,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_scopy (N, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
         cblas_dcopy (N, X, incX, Y, incY);
       }
-      when complex(64) do{
+      when complex(64) {
         cblas_ccopy (N, X, incX, Y, incY);
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zcopy (N, X, incX, Y, incY);
       }
       otherwise {
@@ -2117,16 +2117,16 @@ module BLAS {
 
     const N = D.size: c_int;
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_saxpy (N, alpha, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
         cblas_daxpy (N, alpha, X, incX, Y, incY);
       }
-      when complex(64) do{
+      when complex(64) {
         cblas_caxpy (N, c_ptrToConst(alpha), X, incX, Y, incY);
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zaxpy (N, c_ptrToConst(alpha), X, incX, Y, incY);
       }
       otherwise {
@@ -2157,10 +2157,10 @@ module BLAS {
     const N = xD.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         return cblas_sdot (N, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
        return cblas_ddot (N,X, incX, Y, incY);
       }
       otherwise {
@@ -2194,10 +2194,10 @@ module BLAS {
     var res: eltType;
 
     select eltType {
-      when complex(64) do{
+      when complex(64) {
         cblas_cdotu_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zdotu_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       otherwise {
@@ -2233,10 +2233,10 @@ module BLAS {
     var res: eltType;
 
     select eltType {
-      when complex(64) do{
+      when complex(64) {
         cblas_cdotc_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zdotc_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       otherwise {
@@ -2316,16 +2316,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-     when real(32) do{
+     when real(32) {
         return cblas_snrm2 (N,  X, incX);
       }
-      when real(64) do{
+      when real(64) {
         return cblas_dnrm2 (N, X, incX);
       }
-      when complex(64) do{
+      when complex(64) {
         return cblas_scnrm2 (N, X, incX);
       }
-      when complex(128) do{
+      when complex(128) {
         return cblas_dznrm2 (N, X, incX);
       }
       otherwise {
@@ -2355,16 +2355,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-     when real(32) do{
+     when real(32) {
         return cblas_sasum(N, X, incX);
       }
-     when real(64) do{
+     when real(64) {
         return cblas_dasum(N, X, incX);
       }
-     when complex(64) do{
+     when complex(64) {
         return cblas_scasum(N, X, incX);
       }
-      when complex(128) do{
+      when complex(128) {
         return cblas_dzasum(N, X, incX);
       }
       otherwise {
@@ -2394,16 +2394,16 @@ module BLAS {
     const r = D.dim(0);
 
     select eltType {
-     when real(32) do{
+     when real(32) {
         return r.orderToIndex(cblas_isamax(N, X, incX));
       }
-     when real(64) do{
+     when real(64) {
         return r.orderToIndex(cblas_idamax(N, X, incX));
       }
-     when complex(64) do{
+     when complex(64) {
         return r.orderToIndex(cblas_icamax(N, X, incX));
       }
-      when complex(128) do{
+      when complex(128) {
         return r.orderToIndex(cblas_izamax(N, X, incX));
       }
       otherwise {
