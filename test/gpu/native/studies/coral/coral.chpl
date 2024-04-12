@@ -96,6 +96,8 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
 proc main(args: [] string) {
 
   var t : stopwatch;
+
+  var timeBeforeCoforall: real;
   t.start();
 
   const radius = (sqrt(window_size) / 2) : int;
@@ -151,8 +153,11 @@ proc main(args: [] string) {
   const D = blockDist.createDomain(Inner, targetLocales=myTargetLocales);
   var OutputHost : [D] real(64); // D
 
-  if report_times then
-    writeln("Elapsed time at start of coforall loop: ", t.elapsed(), " seconds.");
+  if report_times {
+    timeBeforeCoforall = t.elapsed();
+    writeln("Elapsed time at start of coforall loop: ", timeBeforeCoforall,
+            " seconds.");
+  }
 
   writeln("Starting coforall loop.");
 
@@ -221,8 +226,11 @@ proc main(args: [] string) {
     }
   }
 
-  if report_times then
-    writeln("Elapsed time to finish coforall loop: ", t.elapsed(), " seconds.");
+  if report_times {
+    const now = t.elapsed();
+    writeln("Elapsed time at the end of coforall loop: ", now, " seconds.");
+    writeln("Convolve time: ", now-timeBeforeCoforall);
+  }
 
   if report_checksum {
       writeln("Checksum: ", + reduce OutputHost);
