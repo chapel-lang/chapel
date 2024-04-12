@@ -3832,6 +3832,7 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
         err = QIO_ESHORT;
       }
       if (err) {
+        qio_channel_revert_unlocked(ch);
         break;
       }
       if (tmp == byte) {
