@@ -56,7 +56,7 @@ module Zarr {
   private var timerDomain: domain(string,parSafe=false) = {"Compression",
     "Decompression", "Opening File, Read", "Opening File, Write",
     "Creating Reader", "Reading File", "Creating Writer", "Writing File",
-    "Reading to Update"};
+    "Reading to Update", "Copying In", "Creating Compressed Buffer"};
   private var times: [timerDomain] atomic real;
   
   /* 
@@ -74,7 +74,7 @@ module Zarr {
     var chunks: list(int);
     var dtype: string;
     var shape: list(int);
-  };
+  }
 
   /* Unused until support is added for v3.0 stores */
   record zarrMetadataV3 {
@@ -83,7 +83,7 @@ module Zarr {
     var shape: list(int);
     var data_type: string;
     var dimension_names: list(string);
-  };
+  }
 
   private proc dtypeString(type dtype) throws {
     select dtype {
@@ -142,7 +142,8 @@ module Zarr {
     return joinPath(directoryPath, chunkIndex:string);
   }
 
-  private proc getLocalChunks(D: domain(?), localD: domain(?), chunkShape: ?dimCount*int): domain(dimCount) {
+  /* Returns the domain of chunks that the calling locale is responsible for */
+  proc getLocalChunks(D: domain(?), localD: domain(?), chunkShape: ?dimCount*int): domain(dimCount) {
 
     const totalShape = D.shape;
     var chunkCounts: dimCount*int;
@@ -200,13 +201,13 @@ module Zarr {
     try {
       f = open(chunkPath, ioMode.r);
     } catch {
-      arraySlice[arraySlice.domain] = 0;
+      arraySlice = 0;
       return;
     }
     if zarrProfiling then times["Opening File, Read"].add(s.elapsed());
 
     if zarrProfiling then s.restart();
-    const r = f.reader(deserializer = new binaryDeserializer(), locking=false, hints=ioHintSet.mmap(useMmap=true) | ioHintSet.prefetch);
+    const r = f.reader(deserializer = new binaryDeserializer(), locking=false);
     if zarrProfiling then times["Creating Reader"].add(s.elapsed());
 
     if zarrProfiling then s.restart();
@@ -221,7 +222,9 @@ module Zarr {
     }
     if zarrProfiling then times["Decompression"].add(s.elapsed());
 
-    arraySlice[arraySlice.domain] = copyIn[arraySlice.domain];
+    if zarrProfiling then s.restart();
+    arraySlice = copyIn[arraySlice.domain];
+    if zarrProfiling then times["Copying In"].add(s.elapsed());
   }
 
   /*
@@ -261,13 +264,17 @@ module Zarr {
     if (chunkDomain != arraySlice.domain) {
       readChunk(dimCount, chunkPath, chunkDomain, copyOut);
     }
-    copyOut[arraySlice.domain] = arraySlice[arraySlice.domain];
+    copyOut[arraySlice.domain] = arraySlice;
     if zarrProfiling then times["Reading to Update"].add(s.elapsed());
 
-    if zarrProfiling then s.restart();
+    
     // Create buffer for compressed bytes
+    if zarrProfiling then s.restart();
     var compressedBuffer = allocate(t, copyOut.size + 16);
+    if zarrProfiling then times["Creating Compressed Buffer"].add(s.elapsed());
+
     // Compress the chunk's data
+    if zarrProfiling then s.restart();
     var bytesCompressed = blosc_compress(_bloscLevel, 0, c_sizeof(t), copyOut.size*c_sizeof(t), c_ptrTo(copyOut), compressedBuffer, (copyOut.size + 16) * c_sizeof(t));
     if bytesCompressed == 0 then
       throw new Error("Failed to compress bytes");
@@ -276,8 +283,10 @@ module Zarr {
     // Write it to storage
     if zarrProfiling then s.restart();
     const f = open(chunkPath, ioMode.cw);
-    const w = f.writer(serializer = new binarySerializer(),locking=true);
     if zarrProfiling then times["Opening File, Write"].add(s.elapsed());
+    if zarrProfiling then s.restart();
+    const w = f.writer(serializer = new binarySerializer(),locking=false);
+    if zarrProfiling then times["Creating Writer"].add(s.elapsed());
 
     if zarrProfiling then s.restart();
     w.writeBinary(compressedBuffer: c_ptr(void),bytesCompressed);
@@ -330,7 +339,7 @@ module Zarr {
       ref hereA = A[hereD];
 
       const localChunks = getLocalChunks(D, hereD, chunkShape);
-      forall chunkIndices in localChunks do {
+      forall chunkIndices in localChunks {
 
         const chunkPath = buildChunkPath(directoryPath, ".", chunkIndices);
 
