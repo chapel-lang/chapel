@@ -4516,6 +4516,11 @@ static qioerr qio_channel_read_chars_impl(qio_channel_t* restrict ch, char* rest
       }
     }
 
+    if (nCodepoints >= maxCodepoints) {
+      // stop if we have read the requested number of codepoints
+      break;
+    }
+
     // mark, and then try to read a whole codepoint
     err = qio_channel_mark(false, ch);
     if (err) {
