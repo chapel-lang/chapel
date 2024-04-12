@@ -3789,9 +3789,11 @@ error:
   return err;
 }
 
-qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, const int consume_byte)
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, int64_t max_bytes_to_advance, const int consume_byte)
 {
   qioerr err=0;
+  int64_t advanced = 0;
+  bool foundit = false;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -3801,7 +3803,7 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
   }
 
   // Is there room in our fast path buffer?
-  while (err==0) {
+  while (err==0 && advanced < max_bytes_to_advance) {
     if( qio_space_in_ptr_diff(1, ch->cached_end, ch->cached_cur) ) {
       size_t len = qio_ptr_diff(ch->cached_end, ch->cached_cur);
       void* found = memchr(ch->cached_cur, byte, len);
@@ -3809,28 +3811,37 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
         ssize_t off = qio_ptr_diff(found, ch->cached_cur);
         if ( consume_byte ) off += 1;
         ch->cached_cur = qio_ptr_add(ch->cached_cur, off);
+        foundit = true;
         break;
       } else {
         // We checked the data in the buffer, advance to the next section.
         ch->cached_cur = ch->cached_end;
+        advanced += qio_ptr_diff(ch->cached_end, ch->cached_cur);
       }
     } else {
       // There's not enough data in the buffer, apparently. Try it the slow way.
       qio_channel_mark(false, ch);
-      ssize_t amt_read;
-      uint8_t tmp;
+      ssize_t amt_read = 0;
+      uint8_t tmp = 0;
       err = _qio_slow_read(ch, &tmp, 1, &amt_read);
-      if( err == 0 ) {
-        if (tmp == byte) {
-          if ( consume_byte ) qio_channel_commit_unlocked(ch);
-          else qio_channel_revert_unlocked(ch);
-          break;
-        }
-        if (amt_read != 1) err = QIO_ESHORT;
+      if (err == 0 && amt_read != 1) err = QIO_ESHORT;
+      if (err) {
+        break;
       }
-      // advance 1 byte
-      qio_channel_revert_unlocked(ch);
+      if (tmp == byte) {
+        if ( consume_byte ) qio_channel_commit_unlocked(ch);
+        else qio_channel_revert_unlocked(ch);
+        foundit = true;
+        break;
+      }
+      // if not found, advance 1 byte and continue
+      qio_channel_commit_unlocked(ch);
+      advanced += 1;
     }
+  }
+
+  if (!err && !foundit) {
+    err = QIO_ESHORT; // separator not found
   }
 
   if( threadsafe ) {
