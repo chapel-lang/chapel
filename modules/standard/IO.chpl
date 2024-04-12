@@ -1468,6 +1468,7 @@ private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_p
 
 
 private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):errorCode;
+private extern proc qio_channel_read_chars(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, maxBytes:c_ssize_t, maxCodepoints:c_ssize_t, ref readBytes: c_ssize_t, ref readCodepoints: c_ssize_t):errorCode;
 
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
 private extern proc qio_encode_to_string(chr:int(32)):c_ptrConst(c_char);
@@ -8269,7 +8270,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (
                         buffSz - n);  // Don't exceed allocated buffer space
 
       locErr = qio_channel_read(false, ch._channel_internal,
-                                buff[n], // read starting with data here
+                                buff[n], // store starting here
                                 readN, amtRead);
 
       n += amtRead;
@@ -8327,34 +8328,54 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
     var nChars:c_ssize_t = 0; // how many codepoints have we read?
     (buff, buffSz) = bufferAlloc(guessReadSize);
 
-    // then try to read repeatedly until we have read 'maxChars' reach EOF
-    while n < maxBytes && nChars < maxChars {
+    //writeln("starting with buffSz ", buffSz);
+
+    // then try to read repeatedly until we have read 'maxChars' or reach EOF
+    while nChars < maxChars {
       var locErr:errorCode = 0;
-      var amtRead:c_ssize_t = 0;
-      var codepoint: int(32);
-      locErr = qio_channel_read_char(false, ch._channel_internal, codepoint);
+
+      if n + 5 > buffSz {
+        var requestSz = 2*buffSz;
+        // make sure to at least request 16 bytes
+        if requestSz < n + 16 then requestSz = n + 16;
+        // but don't ever ask for more bytes than maxBytes + 1
+        if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 5 then
+          requestSz = maxBytes + 5;
+        (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
+        assert(n + 5 < buffSz);
+        //writeln("reallocated buffSz ", buffSz);
+      }
+
+      const bytesRemaining = buffSz - n;
+      const charsRemaining = if maxChars < max(c_ssize_t)
+                             then maxChars - nChars
+                             else max(c_ssize_t);
+      var readCodepoints:c_ssize_t = 0;
+      var readBytes:c_ssize_t = 0;
+      //writeln("n ", n);
+      //writeln("nChars ", nChars);
+      //writeln("bytesRemaining ", bytesRemaining);
+      //writeln("charsRemaining ", charsRemaining);
+      locErr = qio_channel_read_chars(false, ch._channel_internal,
+                                      buff[n], // store starting here
+                                      bytesRemaining,
+                                      charsRemaining,
+                                      readBytes,
+                                      readCodepoints);
+
+      ////writeln("readBytes ", readBytes);
+      //writeln("readCodepoints ", readCodepoints);
+      nChars += readCodepoints;
+      n += readBytes;
+
       if locErr {
         // reached EOF or other error so we need to stop
         err = locErr;
         break;
       }
 
-      var codepointSz = qio_nbytes_char(codepoint):c_ssize_t;
-      if n + codepointSz > buffSz { // make sure there is room for codepointSz
-        var requestSz = 2*buffSz;
-        // make sure to at least request 16 bytes
-        if requestSz < n + 16 then requestSz = n + 16;
-        // but don't ever ask for more bytes than maxBytes + 5
-        if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 5 then
-          requestSz = maxBytes + 5;
-        (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
-        assert(n + codepointSz < buffSz);
-      }
-
-      // store the codepoint in the buffer
-      qio_encode_char_buf(buff + n, codepoint);
-      nChars += 1;
-      n += codepointSz;
+      // should have read something if there was no error
+      assert(readBytes > 0);
     }
 
     // add the trailing \0
