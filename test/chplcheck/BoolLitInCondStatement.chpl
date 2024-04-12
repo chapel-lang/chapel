@@ -5,7 +5,7 @@ module BoolLits {
     else
       writeln("false");
 
-    if false then 
+    if false then
       writeln("false");
     else
       writeln("true");

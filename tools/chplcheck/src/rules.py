@@ -119,6 +119,7 @@ def register_rules(driver: LintDriver):
 
     @driver.basic_rule(Loop)
     @driver.basic_rule(SimpleBlockLike)
+    @driver.basic_rule(When)
     def DoKeywordAndBlock(
         context: Context, node: typing.Union[Loop, SimpleBlockLike]
     ):
