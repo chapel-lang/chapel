@@ -3848,7 +3848,10 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
   }
 
   if (!err && !foundit) {
-    err = QIO_ESHORT; // separator not found
+    if (advanced >= max_bytes_to_advance)
+      err = qio_int_to_err(EFORMAT); // separator not found until limit
+    else
+      err = QIO_ESHORT; // separator not found until EOF
   }
 
   if (!foundit && advanced == 0 && err == QIO_ESHORT) {

@@ -5072,7 +5072,7 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
       // fast advance to the single-byte separator
       err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, max(int(64)), true);
       if err {
-        if err == ESHORT {
+        if err == ESHORT || err == EFORMAT {
           throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
         } else {
           try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
@@ -5083,7 +5083,7 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
       const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
       // handle system errors
       if readError != 0 && readError != EEOF {
-        if readError == ESHORT {
+        if readError == ESHORT || err == EFORMAT {
           throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
         } else {
           try this._ch_ioerror(readError, "in advanceThrough(" + t:string + ")");
@@ -5135,7 +5135,7 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
       // fast advance to the single-byte separator
       err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, max(int(64)), false);
       if err {
-        if err == ESHORT {
+        if err == ESHORT || err == EFORMAT {
           throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
         } else {
           try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
@@ -5145,7 +5145,7 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
       // slow advance to multi-byte separator or EOF
       const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
       if readError != 0 && readError != EEOF {
-        if err == ESHORT {
+        if err == ESHORT || err == EFORMAT {
           throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
         } else {
           try this._ch_ioerror(readError, "in advanceTo(" + t:string + ")");
@@ -7551,7 +7551,8 @@ proc fileReader.readLine(type t=string, maxSize=-1,
 
   :arg separator: The separator to match with. Must be a :type:`~String.string`
                   or :type:`~Bytes.bytes`.
-  :arg maxSize: The maximum number of bytes to read. For the default value of
+  :arg maxSize: The maximum number of bytes (for t==bytes) or codepoints (for
+                t==string) to read. For the default value of
                 ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned
                         ``string`` or ``bytes``. If ``true``, the returned
@@ -7586,7 +7587,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
 
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
-  :arg maxSize: The maximum number of bytes to read. For the default value
+  :arg maxSize: The maximum number of codepoints to read. For the default value
                 of ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``string``.
                        If ``true``, the separator will not be included in ``s``.
@@ -7609,8 +7610,10 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
     const (searchErr, found, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
-    // handle system error
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(string)");
+    // handle system error & not found within maxSize
+    if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
+      try this._ch_ioerror(searchErr, "in readThrough(string)");
+    }
 
     // compute the number of bytes to read into 's'
     const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
@@ -7647,7 +7650,7 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 
   :arg separator: The separator to match with.
   :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
-  :arg maxSize: The maximum number of codepoints to read. For the default value
+  :arg maxSize: The maximum number of bytes to read. For the default value
                 of ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
                        If ``true``, the separator will not be included in ``b``.
@@ -7667,7 +7670,9 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
 
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
     const (searchErr, found, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(bytes)");
+    if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
+      try this._ch_ioerror(searchErr, "in readThrough(bytes)");
+    }
 
     // compute the number of bytes to read into 'b'
     const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
@@ -7700,7 +7705,8 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
 
   :arg separator: The separator to match with. Must be a :type:`~String.string`
                   or :type:`~Bytes.bytes`.
-  :arg maxSize: The maximum number of bytes to read. For the default
+  :arg maxSize: The maximum number of bytes (for t==bytes) or codepoints (for
+                t==string) to read. For the default
                 value of ``-1``, this method can read until EOF.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
             up to the ``separator``.
@@ -7734,7 +7740,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
 
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
-  :arg maxSize: The maximum number of bytes to read. For the default value
+  :arg maxSize: The maximum number of codepoints to read. For the default value
                 of ``-1``, this method will read until EOF.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
             ``fileReader`` was already at EOF).
@@ -7756,7 +7762,9 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
     //  (this would be a single pass and would not require retroactive codepoint checking)
 
     const (searchErr, _, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(string)");
+    if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
+      try this._ch_ioerror(searchErr, "in fileReader.readTo(string)");
+    }
     atEof = searchErr == EEOF && bytesOffset == 0;
 
     // read the given number of bytes into 's', advancing the pointer that many bytes
@@ -7806,7 +7814,9 @@ proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws 
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, _, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(bytes)");
+    if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
+      try this._ch_ioerror(searchErr, "in fileReader.readTo(bytes)");
+    }
     atEof = searchErr == EEOF && bytesOffset == 0;
 
     const err = readStringBytesData(b, this._channel_internal, bytesOffset, 0);
@@ -7823,9 +7833,10 @@ proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws 
   does not move the channel's pointer
 
  returns: (0, true, byte_offset) if found
-          (EFORMAT, false, maxBytes) if not found
+          (EFORMAT, false, maxBytes) if not found within maxBytes
           (EFORMAT, false, 0) if separator is empty
-          (EEOF, false, bytes_to_eof) if EOF
+          (EEOF, false, 0) if the channel was already at EOF
+          (ESHORT, false, bytes_to_eof) if reached EOF before the pattern
           (error_code, false, 0) system error
 */
 private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode, bool, int)
@@ -7850,52 +7861,58 @@ private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode
     //   so that reverting B puts the pointer **before** the separator)
     err = qio_channel_advance_past_byte(false, ch_internal, firstByte,
                                         maxToRead, /* consume */ false);
-    if err == EEOF {
+    if err == EEOF || err == ESHORT {
+      // do further checking for the rest of the separator below
       break;
+    } else if err == EFORMAT {
+      qio_channel_revert_unlocked(ch_internal); // A
+      return (err, false, maxBytes);
     } else if err {
       qio_channel_revert_unlocked(ch_internal); // A
       return (err, false, 0);
     }
 
-    // try to match the entire separator
-    qio_channel_mark(false, ch_internal); // B
-    numMatched = 0;
-    for i in 0..<numSepBytes {
-      // read a byte to match with
-      nextByte = qio_channel_read_byte(false, ch_internal);
+    // try to match the entire separator if we aren't at EOF already
+    if err == 0 {
+      qio_channel_mark(false, ch_internal); // B
+      numMatched = 0;
+      for i in 0..<numSepBytes {
+        // read a byte to match with
+        nextByte = qio_channel_read_byte(false, ch_internal);
 
-      // check for errors
+        // check for errors
+        if nextByte < 0 {
+          err = -nextByte;
+          if err == EEOF {
+            break;
+          } else {
+            qio_channel_revert_unlocked(ch_internal); // B
+            qio_channel_revert_unlocked(ch_internal); // A
+            return (err, false, 0);
+          }
+        }
+
+        if nextByte == sepLocal.byte(i)
+          then numMatched += 1;
+          else break;
+      }
+      qio_channel_revert_unlocked(ch_internal); // B
+
+      if numMatched == numSepBytes {
+        foundSeparator = true;
+        break;
+      }
+
+      // consume an additional byte to move the search forward
+      nextByte = qio_channel_read_byte(false, ch_internal);
       if nextByte < 0 {
         err = -nextByte;
         if err == EEOF {
           break;
         } else {
-          qio_channel_revert_unlocked(ch_internal); // B
           qio_channel_revert_unlocked(ch_internal); // A
-          return (err, false, 0);
+          return(err, false, 0);
         }
-      }
-
-      if nextByte == sepLocal.byte(i)
-        then numMatched += 1;
-        else break;
-    }
-    qio_channel_revert_unlocked(ch_internal); // B
-
-    if numMatched == numSepBytes {
-      foundSeparator = true;
-      break;
-    }
-
-    // consume an additional byte to move the search forward
-    nextByte = qio_channel_read_byte(false, ch_internal);
-    if nextByte < 0 {
-      err = -nextByte;
-      if err == EEOF {
-        break;
-      } else {
-        qio_channel_revert_unlocked(ch_internal); // A
-        return(err, false, 0);
       }
     }
   }
@@ -7907,8 +7924,15 @@ private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode
 
   // should return EFORMAT if separator wasn't found before maxBytes bytes were read
   // (if reading a string, the number of codepoints will also need to be checked later)
-  if err != EEOF && numBytesRead == maxToRead then err = EFORMAT:errorCode;
-  else if err != EEOF then err = 0;
+  if !foundSeparator {
+    if numBytesRead >= maxToRead {
+      err = EFORMAT:errorCode;
+    } else if err == EEOF || err == ESHORT {
+      // choose between EEOF and ESHORT according to if some data was read
+      if numBytesRead > 0 then err = ESHORT:errorCode;
+      else err = EEOF:errorCode;
+    }
+  } else err = 0; // such errors should have been returned already above
 
   return (err, foundSeparator, numBytesRead);
 }

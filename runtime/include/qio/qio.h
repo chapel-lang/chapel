@@ -1226,6 +1226,9 @@ qioerr qio_channel_end_peek_cached(const int threadsafe, qio_channel_t* ch, void
   return err;
 }
 
+// returns EEOF if it started at EOF
+// returns ESHORT if the separator is not found and EOF is reached
+// returns EFORMAT if the separator is not found within max_bytes_to_advance
 qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, int64_t max_bytes_to_advance, const int consume_byte);
 
 qioerr qio_channel_begin_peek_buffer(const int threadsafe, qio_channel_t* ch, int64_t require, int writing, qbuffer_t** buf_out, qbuffer_iter_t* start_out, qbuffer_iter_t* end_out);
