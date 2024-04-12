@@ -92,7 +92,7 @@ module Map {
     type valType;
 
     /* If `true`, this map will perform parallel safe operations. */
-    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future");
+    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future")
     param parSafe = false;
 
     /*
