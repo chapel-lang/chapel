@@ -487,6 +487,9 @@ def register_rules(driver: LintDriver):
             return False
 
         for loop, _ in chapel.each_matching(root, IndexableLoop):
+            # dont warn for array types
+            if isinstance(loop, BracketLoop) and loop.is_maybe_array_type():
+                continue
             iterand = loop.iterand()
             if not isinstance(iterand, Domain):
                 continue
