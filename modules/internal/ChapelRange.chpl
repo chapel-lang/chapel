@@ -2348,12 +2348,18 @@ private proc isBCPindex(type t) param do
     if isPositiveStride(newStrides, st) then
       // start from the low index
       return if hasLowBoundForIter(r)
-             then newAlignedRange(r.chpl_alignedLowAsIntForIter)
+             // inlined: newAlignedRange(r.chpl_alignedLowAsIntForIter)
+             // because Dyno can't helper capturing nested functions.
+             then new range(i, b, newStrides, lw, hh, st,
+                            r.chpl_alignedLowAsIntForIter, true, true)
              else if st == 1 then newZeroAlmtRange() else newUnalignedRange();
     else
       // start from the high index
       return if hasHighBoundForIter(r)
-             then newAlignedRange(r.chpl_alignedHighAsIntForIter)
+             // inlined: newAlignedRange(r.chpl_alignedHighAsIntForIter)
+             // because Dyno can't helper capturing nested functions.
+             then new range(i, b, newStrides, lw, hh, st,
+                            r.chpl_alignedHighAsIntForIter, true, true)
              else if st == -1 then newZeroAlmtRange() else newUnalignedRange();
 
     proc newAlignedRange(alignment) do
