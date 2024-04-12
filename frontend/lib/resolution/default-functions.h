@@ -54,7 +54,8 @@ bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
   If no method was generated, returns nullptr.
 */
 const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context, const types::Type* type,
+getCompilerGeneratedMethod(Context* context,
+                           const types::QualifiedType receiverType,
                            UniqueString name, bool parenless);
 
 /**

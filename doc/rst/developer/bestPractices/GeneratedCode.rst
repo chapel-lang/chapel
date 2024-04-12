@@ -56,15 +56,14 @@ How to benchmark/time it?
  ::
 
   use Time;
-  var mytimer:Timer;
-  mytimer.clear();
-
-  mytimer.start();
+  var mytimer: stopwatch;
+  
+  mytimer.restart();
 
   ... measured code goes here ...
   mytimer.stop();
 
-  writeln("time taken: " + mytimer.elapsed() + " seconds");
+  writeln("time taken: ", mytimer.elapsed(), " seconds");
 
 .. _Time Module: https://chapel-lang.org/docs/modules/standard/Time.html
 

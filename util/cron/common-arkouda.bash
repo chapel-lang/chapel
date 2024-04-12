@@ -48,7 +48,7 @@ if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
 
-export CHPL_WHICH_RELEASE_FOR_ARKOUDA="1.33.0"
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.0.0"
 # test against Chapel release (checking out current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release

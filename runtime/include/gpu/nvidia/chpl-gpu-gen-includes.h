@@ -60,6 +60,11 @@ __device__ static inline void chpl_gpu_force_sync() {
   asm volatile("bar.sync 0;" : : : "memory");
 }
 
+__device__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  // Call nvidia's syncwarp
+  __syncwarp(mask);
+}
+
 __device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __nvvm_read_ptx_sreg_tid_x(); }
 __device__ static inline uint32_t chpl_gpu_getThreadIdxY() { return __nvvm_read_ptx_sreg_tid_y(); }
 __device__ static inline uint32_t chpl_gpu_getThreadIdxZ() { return __nvvm_read_ptx_sreg_tid_z(); }

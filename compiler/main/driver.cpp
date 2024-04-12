@@ -382,6 +382,7 @@ bool fDynoGenLib = false;
 bool fDynoGenStdLib = false;
 bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
 size_t fDynoBreakOnHash = 0;
+bool fDynoNoBreakError = false;
 
 bool fResolveConcreteFns = false;
 bool fIdBasedMunging = false;
@@ -585,8 +586,8 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
     char *arg = argv[i];
     // Handle " and \" in strings
     while (char *dq = strchr(arg, '"')) {
-      char targ[strlen(argv[i])+4];
-      memcpy(targ, arg, dq-arg);
+      auto targ = std::make_unique<char[]>(strlen(argv[i])+4);
+      memcpy(targ.get(), arg, dq-arg);
       if ((dq==argv[i]) || ((dq!=argv[i]) && (*(dq-1)!='\\'))) {
         targ[dq-arg] = '\\';
         targ[dq-arg+1] = '"';
@@ -596,7 +597,7 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
         targ[dq-arg+1] = '\0';
       }
       arg = dq+1;
-      compileCommand = astr(compileCommand, targ);
+      compileCommand = astr(compileCommand, targ.get());
       if (arg == NULL) break;
     }
     if (arg)
@@ -1528,6 +1529,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
+ {"dyno-break-error", ' ', NULL, "Enable breakpoint for user errors from the frontend", "n", &fDynoNoBreakError, NULL, NULL},
  {"resolve-concrete-fns", ' ', NULL, "Enable [disable] resolving concrete functions",  "N", &fResolveConcreteFns, NULL, NULL},
 
  {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
@@ -2373,6 +2375,10 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   // comments do not need to be preserved for the compiler
   config.includeComments = false;
+
+  if (fDynoNoBreakError) {
+    config.disableErrorBreakpoints = true;
+  }
 
   // Replace the current gContext with one using the new configuration.
   auto oldContext = gContext;

@@ -113,10 +113,10 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
     case pbspro_select:
     case unknown:
       if (numCoresPerLocale) {
-        fprintf(pbsFile, "#PBS -l place=scatter,select=%d:ncpus=%d\n",
+        fprintf(pbsFile, "#PBS -l place=scatter:exclhost,select=%d:ncpus=%d\n",
                 numNodes, numCoresPerLocale);
       } else {
-        fprintf(pbsFile, "#PBS -l place=scatter,select=%d\n",numNodes);
+        fprintf(pbsFile, "#PBS -l place=scatter:exclhost,select=%d\n",numNodes);
       }
       break;
     case pbspro_mpp:

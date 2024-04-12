@@ -511,7 +511,8 @@ module String {
     :type length: `int`
 
     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.`DecodeError` if `x` contains non-UTF-8 characters.
+     characters. In that event, this function does not free `x`; that is
+     the caller's responsibility.
 
     :returns: A new :type:`string`
   */
@@ -544,7 +545,8 @@ module String {
     :type length: `int`
 
     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.
+     characters. In that event, this function does not free `x`; that is the
+     caller's responsibility.
 
     :returns: A new :type:`string`
   */
@@ -570,7 +572,8 @@ module String {
      :type length: `int`
 
      :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-      characters.
+      characters. In that event, this function does not free `x`; that is the
+      caller's responsibility.
 
      :returns: A new :type:`string`
   */
@@ -671,6 +674,7 @@ module String {
   // submodule can be `private use`d from other String-supporting modules.
   @chpldoc.nodoc
   module NVStringFactory {
+    use ChapelStandard; // For '=' operators between ints
     use BytesStringCommon;
     use ByteBufferHelpers only bufferType;
 

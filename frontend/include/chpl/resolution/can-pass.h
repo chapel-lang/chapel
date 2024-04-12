@@ -114,17 +114,13 @@ class CanPassResult {
                                          types::ClassTypeDecorator actual,
                                          types::ClassTypeDecorator formal);
 
-  static CanPassResult canPassClassTypes(Context* context,
-                                         const types::ClassType* actualCt,
-                                         const types::ClassType* formalCt);
+  static CanPassResult canPassSubtypeNonBorrowing(Context* context,
+                                      const types::Type* actualT,
+                                      const types::Type* formalT);
 
   static CanPassResult canPassSubtypeOrBorrowing(Context* context,
                                                  const types::Type* actualT,
                                                  const types::Type* formalT);
-
-  static CanPassResult canPassSubtype(Context* context,
-                                      const types::Type* actualT,
-                                      const types::Type* formalT);
 
   static CanPassResult canConvertTuples(Context* context,
                                         const types::TupleType* aT,

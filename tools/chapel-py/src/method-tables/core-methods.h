@@ -91,13 +91,48 @@ CLASS_BEGIN(Scope)
                  toReturn.push_back(mod);
                }
                return toReturn)
+  PLAIN_GETTER(Scope, parent_scope, "Get the parent (outer) scope of this scope",
+               Nilable<const chpl::resolution::Scope*>, return node->parentScope())
+  PLAIN_GETTER(Scope, visible_nodes, "Get the nodes corresponding to declarations exported from this scope",
+               std::vector<VisibleSymbol>,
+               std::vector<VisibleSymbol> toReturn;
+               for (auto& pair : getSymbolsAvailableInScope(context, node)) {
+                 std::vector<const chpl::uast::AstNode*> into;
+                 for (auto id : pair.second) {
+                    if (id.isEmpty()) continue;
+                    into.push_back(parsing::idToAst(context, id));
+                 }
+
+                 if (!into.empty()) {
+                   toReturn.emplace_back(pair.first, std::move(into));
+                 }
+               }
+
+               return toReturn)
 CLASS_END(Scope)
 
 CLASS_BEGIN(Error)
+  PLAIN_GETTER(Error, code_snippets, "Get the locations of code snippets printed by this error",
+               std::vector<chpl::ErrorCodeSnippet>,
+
+               CompatibilityWriter writer(context);
+               node->write(writer);
+               return writer.codeSnippets())
   PLAIN_GETTER(Error, location, "Get the location at which this error occurred",
                chpl::Location, return node->location(context))
   PLAIN_GETTER(Error, message, "Retrieve the contents of this error message",
                std::string, return node->message())
+  PLAIN_GETTER(Error, notes, "Get the locations and text of additional notes printed by this error",
+               std::vector<LocationAndNote>,
+
+               std::vector<LocationAndNote> toReturn;
+               CompatibilityWriter writer(context);
+               node->write(writer);
+               for (auto& note : writer.notes()) {
+                 toReturn.push_back(std::make_tuple(std::get<0>(note).computeLocation(context),
+                                                    std::get<1>(note)));
+               }
+               return toReturn)
   PLAIN_GETTER(Error, kind, "Retrieve the kind ('error', 'warning') of this type of error",
                const char*, return chpl::ErrorBase::getKindName(node->kind()))
   PLAIN_GETTER(Error, type, "Retrieve the unique name of this type of error",

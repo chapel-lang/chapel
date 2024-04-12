@@ -3,21 +3,44 @@
 Tools
 =====
 
-Contents:
+Documentation
+-------------
 
 .. toctree::
-   :hidden:
+   :maxdepth: 1
+   :glob:
+
+   chpldoc/chpldoc
+
+Development
+-----------
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   chpl-language-server/chpl-language-server
+   chplcheck/chplcheck
+   chplvis/chplvis
+   mason/mason
+
+Interoperability
+----------------
 
 .. toctree::
    :maxdepth: 1
    :glob:
 
    c2chapel/c2chapel
-   chpldoc/chpldoc
-   chplvis/chplvis
-   mason/mason
    protoc-gen-chpl/protoc-gen-chpl
-   unstableWarningAnonymizer/unstableWarningAnonymizer
+
+
+Other
+-----
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
    chapel-py/chapel-py
-   chplcheck/chplcheck
-   chpl-language-server/chpl-language-server
+   unstableWarningAnonymizer/unstableWarningAnonymizer

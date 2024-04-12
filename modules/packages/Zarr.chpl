@@ -37,7 +37,7 @@ module Zarr {
   require "blosc.h";
   require "-lblosc";
 
-  module Blosc {
+  private module Blosc {
     use CTypes;
     extern proc blosc_init();
     extern proc blosc_compress(clevel: c_int, doshuffle: c_int, typesize: c_size_t,
@@ -76,7 +76,7 @@ module Zarr {
     var shape: list(int);
   };
 
-  // Unused until support is added for v3.0 stores
+  /* Unused until support is added for v3.0 stores */
   record zarrMetadataV3 {
     var zarr_format: int;
     var node_type: string;
@@ -85,7 +85,7 @@ module Zarr {
     var dimension_names: list(string);
   };
 
-  proc dtypeString(type dtype) throws {
+  private proc dtypeString(type dtype) throws {
     select dtype {
       when real(32) do return "f4";
       when real(64) do return "f8";
@@ -95,7 +95,7 @@ module Zarr {
     throw Error("Unexpected data type, only real and int types are supported.");
   }
 
-  proc getMetadata(directoryPath: string) throws {
+  private proc getMetadata(directoryPath: string) throws {
     var metadataPath = joinPath(directoryPath, ".zarray");
     var r = openReader(metadataPath, deserializer = new jsonDeserializer(), locking=false);
     var md: zarrMetadataV2;
@@ -103,7 +103,7 @@ module Zarr {
     return md;
   }
 
-  proc validateMetadata(metadata: zarrMetadataV2, type dtype, param dimCount) throws {
+  private proc validateMetadata(metadata: zarrMetadataV2, type dtype, param dimCount) throws {
     //dimensionality matches
     if dimCount != metadata.shape.size then
       throw new Error("Expected metadata shape field to have %i dimensions: %?".format(dimCount, metadata.shape));
@@ -133,17 +133,16 @@ module Zarr {
   }
 
 
-
-  proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndices: ?dimCount * int) {
+  private proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndices: ?dimCount * int) {
     var indexStrings: dimCount*string;
     for i in 0..<dimCount do indexStrings[i] = chunkIndices[i] : string;
     return joinPath(directoryPath, delimiter.join(indexStrings));
   }
-  proc buildChunkPath(directoryPath: string, delimiter: string, chunkIndex: int) {
+  private proc buildChunkPath(directoryPath: string, delimiter: string, chunkIndex: int) {
     return joinPath(directoryPath, chunkIndex:string);
   }
 
-  proc getLocalChunks(D: domain(?), localD: domain(?), chunkShape: ?dimCount*int): domain(dimCount) {
+  private proc getLocalChunks(D: domain(?), localD: domain(?), chunkShape: ?dimCount*int): domain(dimCount) {
 
     const totalShape = D.shape;
     var chunkCounts: dimCount*int;
@@ -165,7 +164,7 @@ module Zarr {
 
 
   /* Returns the domain of the `chunkIndices`-th chunk for chunks of size `chunkShape` */
-  proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: dimCount*int) {
+  private proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: dimCount*int) {
     var thisChunkRange: dimCount*range(int);
     for i in 0..<dimCount {
       const start = chunkIndices[i] * chunkShape[i];
@@ -174,7 +173,7 @@ module Zarr {
     const thisChunkDomain: domain(dimCount) = thisChunkRange;
     return thisChunkDomain;
   }
-  proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: int) {
+  private proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: int) {
     return getChunkDomain(chunkShape, (chunkIndices,));
   }
 

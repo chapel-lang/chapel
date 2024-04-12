@@ -6,7 +6,7 @@
    derived from the GNU C version by Greg Buchholz
 */
 
-use DynamicIters, IO;
+use DynamicIters, IO, Math;
 
 config const n = 200,              // image size in pixels (n x n)
              maxIter = 50,         // max # of iterations per pixel
@@ -19,9 +19,9 @@ type eltType = uint(bitsPerElt);   // element type used to store the image
 
 proc main() {
   const ydim = 0..#n,                          // the image's y dimension
-        xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
+        xdim = 0..#divCeilPos(n, bitsPerElt);  // the compacted x dimension
 
-  var image : [ydim, xdim] eltType;            // the compacted bitmap image
+  var image: [ydim, xdim] eltType;             // the compacted bitmap image
 
   forall y in dynamic(ydim, chunkSize) {       // for all rows...
     for xelt in xdim {                         //   for each column element...
@@ -54,14 +54,7 @@ proc main() {
     }
   }
 
-  //
-  // Get a lock-free writer channel on 'stdout', write the file header,
-  // and the image array.
-  //
-  var w = openfd(1).writer(iokind.native, locking=false);
-
-  w.writef("P4\n");
-  w.writef("%i %i\n", n, n);
-  w.write(image);
+  stdout.writef("P4\n");
+  stdout.writef("%i %i\n", n, n);
+  stdout.writeBinary(image);
 }
-use Compat;

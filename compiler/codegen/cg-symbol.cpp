@@ -1103,9 +1103,11 @@ transformTypeForPointer(Type* type) {
     return referenced->codegen().c + " *";
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-    // TODO: add const qualifier for const pointers?
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
-    return pointedTo->codegen().c + " *";
+    bool isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
+    std::string ret = isConst ? "const " : "";
+    ret += pointedTo->codegen().c + " *";
+    return ret;
   }
   std::string typeName = type->codegen().c;
   return typeName;
@@ -2047,7 +2049,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   for_formals(formal, fn) {
     const clang::CodeGen::ABIArgInfo* argInfo = NULL;
     if (CGI) {
-      argInfo = getCGArgInfo(CGI, clangArgNum);
+      argInfo = getCGArgInfo(CGI, clangArgNum, fn);
     } else if (useDarwinArmFix(formal->type)) {
       argInfo = getSingleCGArgInfo(formal->type);
     }
@@ -2621,6 +2623,25 @@ bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
   return false;
 }
 
+#ifdef HAVE_LLVM
+
+// Ensure stack allocation for numeric in-intent formals of 'export' functions.
+// Other in-intent formals are stack-allocated along other code paths.
+static bool needTempForExportInIntent(ArgSymbol* formal) {
+  return (formal->intent & INTENT_FLAG_IN)  &&
+         isPrimitiveType(formal->type)      &&
+         formal->defPoint->parentSymbol->hasFlag(FLAG_EXPORT);
+}
+
+static GenRet createTempVarForFormal(ArgSymbol* astArg, llvm::Value* llvmArg) {
+  GenRet gArg;
+  gArg.val = llvmArg;
+  gArg.chplType = astArg->typeInfo();
+  return createTempVarWith(gArg);
+}
+
+#endif
+
 void FnSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -2765,9 +2786,11 @@ void FnSymbol::codegenDef() {
     }
 
     for_formals(arg, this) {
+      if (arg->id == breakOnCodegenID) gdbShouldBreakHere();
+
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
-        argInfo = getCGArgInfo(CGI, clangArgNum);
+        argInfo = getCGArgInfo(CGI, clangArgNum, this);
       } else if (useDarwinArmFix(arg->type)) {
         argInfo = getSingleCGArgInfo(arg->type);
       }
@@ -2819,7 +2842,15 @@ void FnSymbol::codegenDef() {
             val = convertValueToType(val, chapelArgTy,
                                      is_signed(argType), true);
 
-          info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+          if (needTempForExportInIntent(arg)) {
+            GenRet tempVar = createTempVarForFormal(arg, val);
+
+            info->lvt->addValue(arg->cname, tempVar.val,
+                                tempVar.isLVPtr, tempVar.isUnsigned);
+          }
+          else {
+            info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+          }
         } else {
           // handle a more complex direct argument
           // (possibly in multiple registers)
@@ -2903,11 +2934,8 @@ void FnSymbol::codegenDef() {
               val = convertValueToType(val, chapelArgTy,
                                        is_signed(argType), true);
 
-            GenRet gArg;
-            gArg.val = val;
-            gArg.chplType = arg->typeInfo();
+            GenRet tempVar = createTempVarForFormal(arg, val);
 
-            GenRet tempVar = createTempVarWith(gArg);
             info->lvt->addValue(arg->cname, tempVar.val,
                                 tempVar.isLVPtr, tempVar.isUnsigned);
           }
@@ -2919,13 +2947,11 @@ void FnSymbol::codegenDef() {
         // consume the LLVM argument
         llvm::Argument* llArg = &*ai++;
 
-        GenRet gArg;
-        gArg.val = llArg;
-        gArg.chplType = arg->typeInfo();
-        GenRet tempVar = createTempVarWith(gArg);
+        GenRet tempVar = createTempVarForFormal(arg, llArg);
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, tempVar.isUnsigned);
+
         // debug info for formal arguments
         if(debug_info){
           debug_info->get_formal_arg(arg, clangArgNum+1);

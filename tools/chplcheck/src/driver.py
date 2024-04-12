@@ -58,6 +58,20 @@ class LintDriver:
         self.skip_unstable = skip_unstable
         self.internal_prefixes = internal_prefixes
 
+    def rules_and_descriptions(self):
+        # Use a dict in case a rule is registered multiple times.
+        to_return = {}
+
+        for rule in self.BasicRules:
+            to_return[rule[0]] = rule[2].__doc__
+
+        for rule in self.AdvancedRules:
+            to_return[rule[0]] = rule[1].__doc__
+
+        to_return = list(to_return.items())
+        to_return.sort()
+        return to_return
+
     def disable_rules(self, *rules):
         """
         Tell the driver to silence / skip warning for the given rules.
@@ -136,7 +150,14 @@ class LintDriver:
         if not self._should_check_rule(name):
             return
 
-        for node in func(context, root):
+        for result in func(context, root):
+            if isinstance(result, tuple):
+                node, anchor = result
+                if not self._should_check_rule(name, anchor):
+                    continue
+            else:
+                node = result
+
             # It's not clear how, if it all, advanced rules should be silenced
             # by attributes (i.e., where do you put the @chplcheck.ignore
             # attribute?). For now, do not silence them on a per-node basis.
@@ -178,6 +199,10 @@ class LintDriver:
         An advanced rule is a function that gets called on a root AST node,
         and is expected to traverse that AST to find places where warnings
         need to be emitted.
+
+        Advanced rules should yield either the node to be warned for, or
+        a tuple of (node, anchor). The anchor is checked for silencing,
+        making it possible to support @chplcheck.ignore for the advanced rule.
 
         The name of the decorated function is used as the name of the rule.
         """

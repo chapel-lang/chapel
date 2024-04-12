@@ -1,0 +1,5 @@
+#!/bin/bash
+$CHPL_HOME/tools/chplcheck/chplcheck --list-active-rules $1.chpl >> $2
+if sed "s#$(pwd)/##" $2 >$2.tmp; then
+    mv $2.tmp $2
+fi

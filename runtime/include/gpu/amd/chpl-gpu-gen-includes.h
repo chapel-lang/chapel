@@ -60,6 +60,13 @@ __device__ static inline void chpl_gpu_force_sync() {
   __builtin_amdgcn_s_barrier();
 }
 
+__device__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  // no-op
+  // AMD gpu's have no architectures which need a syncWarp operation
+  // This is because as of the time of writing, HIP guarantees that all
+  // threads within a warp will be executed in lockstep
+}
+
 __device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __builtin_amdgcn_workitem_id_x(); }
 __device__ static inline uint32_t chpl_gpu_getThreadIdxY() { return __builtin_amdgcn_workitem_id_y(); }
 __device__ static inline uint32_t chpl_gpu_getThreadIdxZ() { return __builtin_amdgcn_workitem_id_z(); }

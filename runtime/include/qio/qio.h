@@ -531,6 +531,13 @@ void* qio_file_get_plugin(qio_file_t* f) {
 // Calls fflush on a FILE* first.
 qioerr qio_file_length(qio_file_t* f, int64_t *len_out);
 
+// Returns a guess for the length of an open file, if available.
+// In some cases the file length is measured when the file is opened.
+// Returns 0 if the file length was not available.
+static inline int64_t qio_file_length_guess(qio_file_t* f) {
+  return f->initial_length;
+}
+
 /* CHANNELS ..... */
 
 /* A Read and Write Buffered channels support:

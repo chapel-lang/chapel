@@ -38,16 +38,28 @@ def check_pascal_case(node):
 def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context, node):
+        """
+        Warn for variables that are not 'camelCase' or 'PascalCase'.
+        """
+
         if node.name() == "_": return True
         if node.linkage() == 'extern': return True
         return check_camel_case(node) or check_pascal_case(node)
 
     @driver.basic_rule(Record)
     def CamelCaseRecords(context, node):
+        """
+        Warn for records that are not 'camelCase'.
+        """
+
         return check_camel_case(node)
 
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context, node):
+        """
+        Warn for functions that are not 'camelCase'.
+        """
+
         # Override functions / methods can't control the name, that's up
         # to the parent.
         if node.is_override(): return True
@@ -60,22 +72,42 @@ def register_rules(driver):
 
     @driver.basic_rule(Class)
     def PascalCaseClasses(context, node):
+        """
+        Warn for classes that are not 'PascalCase'.
+        """
+
         return check_pascal_case(node)
 
     @driver.basic_rule(Module)
     def PascalCaseModules(context, node):
+        """
+        Warn for modules that are not 'PascalCase'.
+        """
+
         return node.kind() == "implicit" or check_pascal_case(node)
 
     @driver.basic_rule(Module, default=False)
     def UseExplicitModules(context, node):
+        """
+        Warn for code that relies on auto-inserted implicit modules.
+        """
+
         return node.kind() != "implicit"
 
     @driver.basic_rule(Loop)
     def DoKeywordAndBlock(context, node):
+        """
+        Warn for redundant 'do' keyword before a curly brace '{'.
+        """
+
         return node.block_style() != "unnecessary"
 
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context, node):
+        """
+        Warn for nested 'coforall' loops, which could lead to performance hits.
+        """
+
         parent = node.parent()
         while parent is not None:
             if isinstance(parent, Coforall):
@@ -85,10 +117,18 @@ def register_rules(driver):
 
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
     def BoolLitInCondStmt(context, node):
+        """
+        Warn for boolean literals like 'true' in a conditional statement.
+        """
+
         return False
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context, node):
+        """
+        Warn for user-defined names that start with the 'chpl_' reserved prefix.
+        """
+
         if node.name().startswith("chpl_"):
             path = node.location().path()
             return context.is_bundled_path(path)
@@ -97,6 +137,10 @@ def register_rules(driver):
     @driver.basic_rule(Record)
     @driver.basic_rule(Class)
     def MethodsAfterFields(context, node):
+        """
+        Warn for classes or records that mix field and method definitions.
+        """
+
         method_seen = False
         for child in node:
             if isinstance(child, VarLikeDecl) and method_seen:
@@ -104,6 +148,14 @@ def register_rules(driver):
             if isinstance(child, Function):
                 method_seen = True
         return True
+
+    @driver.basic_rule(EmptyStmt)
+    def EmptyStmts(context, node):
+        """
+        Warn for empty statements (i.e., unnecessary semicolons).
+        """
+
+        return False
 
     #Five things have to match between consecutive decls for this to warn:
     # 1. same type
@@ -113,6 +165,10 @@ def register_rules(driver):
     # 5. same pragmas
     @driver.advanced_rule(default=False)
     def ConsecutiveDecls(context, root):
+        """
+        Warn for consecutive variable declarations that can be combined.
+        """
+
         def is_relevant_decl(node):
             var_node = None
             if isinstance(node, MultiDecl):
@@ -191,26 +247,35 @@ def register_rules(driver):
 
     @driver.advanced_rule
     def MisleadingIndentation(context, root):
-        prev = None
+        """
+        Warn for single-statement blocks that look like they might be multi-statement blocks.
+        """
+
+        prev, prevloop = None, None
         for child in root:
             if isinstance(child, Comment): continue
             yield from MisleadingIndentation(context, child)
 
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:
-                    yield child
+                    yield (child, prevloop)
 
-            prev = None
+            prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
                 grandchildren = list(child)
                 # safe to access [-1], loops must have at least 1 child
                 for blockchild in reversed(list(grandchildren[-1])):
                     if isinstance(blockchild, Comment): continue
                     prev = blockchild
+                    prevloop = child
                     break
 
     @driver.advanced_rule(default=False)
     def UnusedFormal(context, root):
+        """
+        Warn for unused formals in functions.
+        """
+
         formals = dict()
         uses = set()
 
@@ -233,10 +298,14 @@ def register_rules(driver):
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
-            yield formals[unused]
+            yield (formals[unused], formals[unused].parent())
 
     @driver.advanced_rule
     def UnusedLoopIndex(context, root):
+        """
+        Warn for unused index variables in loops.
+        """
+
         indices = dict()
         uses = set()
 
@@ -247,11 +316,13 @@ def register_rules(driver):
                 for child in node:
                     yield from variables(child)
 
-        for (_, match) in chapel.each_matching(root, [IndexableLoop, ("?decl", Decl), chapel.rest]):
-            node = match["decl"]
+        for (loop, match) in chapel.each_matching(root, IndexableLoop):
+            node = loop.index()
+            if node is None:
+                continue
 
             for index in variables(node):
-                indices[index.unique_id()] = index
+                indices[index.unique_id()] = (index, loop)
 
         for (use, _) in chapel.each_matching(root, Identifier):
             refersto = use.to_node()
@@ -260,3 +331,176 @@ def register_rules(driver):
 
         for unused in indices.keys() - uses:
             yield indices[unused]
+
+    @driver.advanced_rule
+    def SimpleDomainAsRange(context: Context, root: AstNode):
+        """
+        Warn for simple domains in loops that can be ranges.
+        """
+
+        def is_range_like(node: AstNode):
+            """
+            a node is range like if its a range, a `count` expr with a
+            range-like on the lhs, a `by` expr with a range-like on the lhs, or
+            an `align` expr with a range-like on the lhs
+            """
+
+            if isinstance(node, Range):
+                return True
+            if (
+                isinstance(node, OpCall)
+                and node.is_binary_op()
+                and (
+                    node.op() == "#"
+                    or node.op() == "by"
+                    or node.op() == "align"
+                )
+            ):
+                return is_range_like(node.actual(0))
+            return False
+
+        for loop, _ in chapel.each_matching(root, IndexableLoop):
+            iterand = loop.iterand()
+            if not isinstance(iterand, Domain):
+                continue
+            exprs = list(iterand.exprs())
+            if len(exprs) != 1:
+                continue
+            # only warn for ranges or count operators
+            if not is_range_like(exprs[0]):
+                continue
+
+            yield iterand, loop
+
+    @driver.advanced_rule
+    def IncorrectIndentation(context: Context, root: AstNode):
+        """
+        Warn for inconsistent or missing indentation
+        """
+
+        # First, recurse and find warnings in children.
+        for child in root:
+            yield from IncorrectIndentation(context, child)
+
+        def contains_statements(node: AstNode) -> bool:
+            """
+            Returns true for allow-listed AST nodes that contain
+            just a list of statements.
+            """
+            classes = (
+                Record,
+                Class,
+                Module,
+                SimpleBlockLike,
+                Interface,
+                Union,
+                Enum,
+                Cobegin
+            )
+            return isinstance(node, classes)
+
+        def unwrap_intermediate_block(node: AstNode) -> Optional[AstNode]:
+            """
+            Given a node, find the reference indentation that its children
+            should be compared against.
+
+            This method also rules out certain nodes that should
+            not be used for parent-child indentation comparison.
+            """
+            if not isinstance(node, Block):
+                return node
+
+            parent = node.parent()
+            if not parent:
+                return node
+
+            if isinstance(parent, (Function, Loop)):
+                return parent
+            elif isinstance(parent, Conditional) and parent.is_expression_level():
+                return None
+            return node
+
+        # If root is something else (e.g., function call), do not
+        # apply indentation rules; only apply them to things that contain
+        # a list of statements.
+        is_eligible_parent_for_indentation = contains_statements(root)
+        if not is_eligible_parent_for_indentation:
+            return
+
+        parent_for_indentation = unwrap_intermediate_block(root)
+        parent_depth = None
+        if parent_for_indentation is None:
+            # don't compare against any parent depth.
+            pass
+        # For implicit modules, proper code will technically be on the same
+        # line as the module's body. But we don't want to warn about that,
+        # since we don't want to ask all code to be indented one level deeper.
+        elif not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
+            parent_depth = parent_for_indentation.location().start()[1]
+
+        prev = None
+        prev_depth = None
+        prev_line = None
+
+        # We only care about misaligned statements, so we don't want to do stuff
+        # like warn for inherit-exprs or pragmas on a record.
+        iterable = root
+        if isinstance(root, AggregateDecl):
+            iterable = root.decls_or_comments()
+        elif isinstance(root, SimpleBlockLike):
+            iterable = root.stmts()
+
+        for child in iterable:
+            if isinstance(child, Comment): continue
+
+            # some NamedDecl nodes currently use the name as the location, which
+            # does not indicate their actual indentation.
+            if isinstance(child, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+                continue
+            # Empty statements get their own warnings, no need to warn here.
+            elif isinstance(child, EmptyStmt):
+                continue
+            # private function locations are bugged and don't include the 'private'
+            # keyword.
+            #
+            # https://github.com/chapel-lang/chapel/issues/24818
+            elif (
+                isinstance(child, (Function, Use, Import))
+                and child.visibility() != ""
+            ):
+                continue
+
+            line, depth = child.location().start()
+
+            # Warn for two statements on one line:
+            #   var x: int; var y: int;
+            if line == prev_line:
+                # Exception for enums, which are allowed to be on the same line.
+                #   enum color { red, green, blue }
+                if not isinstance(child, EnumElement):
+                    yield child
+            # Warn for misaligned siblings:
+            #   var x: int;
+            #     var y: int;
+            elif prev_depth and depth != prev_depth:
+                # Special case, slightly coarse: avoid double-warning with
+                # MisleadingIndentation
+                if not(prev and isinstance(prev, Loop) and prev.block_style() == "implicit"):
+                    yield child
+
+                # Do not update 'prev_depth'; use original prev_depth as
+                # reference for next sibling.
+                prev_line = line
+                prev = child
+                continue
+            # Warn for children that are not indented relative to parent
+            #
+            #   record r {
+            #   var x: int;
+            #   }
+            elif parent_depth and depth == parent_depth:
+                yield child
+
+            prev_depth = depth
+            prev = child
+            prev_line = line

@@ -276,7 +276,7 @@ def test_directory(test, test_type):
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        prune_if = run_command([test_env, skip_file_name]).strip()
+                        prune_if = process_skipif_output(run_command([test_env, skip_file_name]).strip())
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
@@ -292,7 +292,7 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
-                        skip_test = run_command([test_env, "SKIPIF"]).strip()
+                        skip_test = process_skipif_output(run_command([test_env, "SKIPIF"]).strip())
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
                             logger.write("[Skipping directory based on SKIPIF "
@@ -1605,6 +1605,15 @@ def run_command(cmd, stderr=None):
     if sys.version_info[0] >= 3 and not isinstance(output, str):
         output = str(output, 'utf-8')
 
+    return output
+
+def process_skipif_output(output):
+    lines = output.splitlines()
+    if len(lines) == 0:
+      return output
+    elif len(lines) > 1:
+      print("\n".join(lines[:-1]))
+    output = lines[-1]
     return output
 
 def run_git_command(command):
