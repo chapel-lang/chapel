@@ -1003,6 +1003,24 @@ module Random {
       return res;
     }
 
+    proc ref sample(const ref arr: [?d] ?t, n: int, weights: [?dw] ?wt, withReplacement=false): [] t throws
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, wt)
+    {
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty array");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= arr.size when withReplacement=false");
+
+      if d.size != dw.size then
+        throw new IllegalArgumentError("'weights' must have the same size as 'arr'");
+
+      const ds = this.sample(d, n, weights, withReplacement);
+      var res: [0..<n] t;
+      forall (i, di) in zip(res.domain, ds) do res[i] = arr[di];
+      return res;
+    }
+
     /*
       Sample ``n`` random indices from a domain.
 
@@ -1059,6 +1077,83 @@ module Random {
       return samples;
     }
 
+    proc ref sample(d: domain, n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] d.idxType throws
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, wt)
+    {
+      import Sort;
+      import Search;
+
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty domain");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= d.size when withReplacement=false");
+
+      if d.size != dw.size then
+        throw new IllegalArgumentError("'weights' must have the same size as 'd'");
+
+      var weightsCopy: [0..<d.size] wt = weights;
+
+      proc normalizedWeights(): ([0..<d.size] wt, eltType, eltType)
+        where isIntegralType(wt) || isBoolType(wt)
+      {
+        const cwn = + scan weightsCopy;
+        return (cwn, 0:eltType, cwn[d.size-1]:eltType);
+      }
+
+      proc normalizedWeights(): ([0..<d.size] wt, eltType, eltType)
+        where isRealType(wt)
+      {
+        const cw = + scan weightsCopy,
+              cwn = cw / cw[d.size-1];
+        return (cwn, 0.0:eltType, 1.0:eltType);
+      }
+
+      var (cwn, sampleLow, sampleHigh) = normalizedWeights();
+
+      if !Sort.isSorted(cwn) then
+        throw new IllegalArgumentError("'weights' cannot contain negative values");
+
+      if cwn[d.size-1] <= 1e-15 then
+        throw new IllegalArgumentError("'weights' must contain at least one non-zero value");
+
+      const dOut = {0..<n};
+      var samples: [dOut] d.idxType;
+
+      if withReplacement {
+        for i in dOut {
+          const r = this.next(sampleLow, sampleHigh);
+          var ii = 0;
+            if isRealType(wt)
+              then (_, ii) = Search.binarySearch(cwn, r);
+              else ii = binarySearchFirst(cwn, r);
+          samples[i] = d.orderToIndex(ii);
+        }
+      } else {
+        var indices: domain(int, parSafe=false),
+            i = 0,
+            ii = 0;
+
+        while i < n {
+          (cwn, sampleLow, sampleHigh) = normalizedWeights();
+
+          do {
+            const r = this.next(sampleLow, sampleHigh);
+            if isRealType(wt)
+              then (_, ii) = Search.binarySearch(cwn, r);
+              else ii = binarySearchFirst(cwn, r);
+          } while indices.contains(ii);
+
+          indices += ii;
+          samples[i] = d.orderToIndex(ii);
+          i += 1;
+          weightsCopy[ii] = 0;
+        }
+      }
+
+      return samples;
+    }
+
     /*
       Sample ``n`` random values from a range.
 
@@ -1083,6 +1178,21 @@ module Random {
         throw new IllegalArgumentError("Number of samples must be >= 1 and <= r.size when withReplacement=false");
 
       return this.sample({r}, n, withReplacement);
+    }
+
+    proc ref sample(r: range(bounds=boundKind.both, ?), n: int, weights: [?dw] ?wt, withReplacement=false): [] r.idxType throws
+      where isCoercible(this.eltType, wt)
+    {
+      if r.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty range");
+
+      if n < 1 || (n > r.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= r.size when withReplacement=false");
+
+      if r.size != dw.size then
+        throw new IllegalArgumentError("'weights' must have the same size as 'r'");
+
+      return this.sample({r}, n, weights, withReplacement);
     }
 
     /*
@@ -1339,6 +1449,31 @@ module Random {
       ser.writeField("seed", this.seed);
       ser.endRecord();
     }
+  }
+
+  // Do a binary search of 'a' for the first occurrence of 'x'
+  // returns the index of the first occurrence of 'x' in 'a' between 'start' and 'stop'
+  // or the index where 'x' should be inserted to maintain sorted order
+  private proc binarySearchFirst(
+    const ref a: [?d] ?t,
+    x: t,
+    start: d.idxType = d.low,
+    stop: d.idxType = d.high
+  ): d.idxType
+    where isIntegralType(t)
+  {
+    if start >= stop then return stop;
+    const mid = (start + stop) / 2;
+
+    if a[mid] == x then return linSearchLeft(a, x, mid);
+    if a[mid] < x then return binarySearchFirst(a, x, mid + 1, stop);
+                  else return binarySearchFirst(a, x, start, mid - 1);
+  }
+
+  private proc linSearchLeft(const ref a: [?d] ?t, x: t, start: d.idxType): d.idxType {
+    var i = start;
+    while i > d.low && a[i-1] == x do i -= 1;
+    return i;
   }
 
   /*
