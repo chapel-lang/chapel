@@ -53,8 +53,11 @@ module Zarr {
   /* Turns on/off profiling of Zarr IO */
   config param zarrProfiling = false;
 
-  
-  private var times: map(string, atomic real);
+  private var timerDomain: domain(string,parSafe=false) = {"Compression",
+    "Decompression", "Opening File, Read", "Opening File, Write",
+    "Creating Reader", "Reading File", "Creating Writer", "Writing File",
+    "Reading to Update"};
+  private var times: [timerDomain] atomic real;
   
   /* 
     Returns a map of profiling results for Zarr IO operations. The keys are
