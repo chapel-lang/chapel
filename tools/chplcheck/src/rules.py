@@ -371,6 +371,8 @@ def register_rules(driver: LintDriver):
         """
         Warn for unused formals in functions.
         """
+        if isinstance(root, Comment):
+            return
 
         formals = dict()
         uses = set()
