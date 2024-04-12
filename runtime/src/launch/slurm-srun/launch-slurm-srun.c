@@ -174,8 +174,12 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     }
   }
   if (!found) {
-    chpl_error("unable to determine number of cores per locale; "
-               "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+    char msg[2048];
+    snprintf(msg, sizeof(msg),
+            "unable to determine number of cores per locale; "
+             "please set CHPL_LAUNCHER_CORES_PER_LOCALE\n"
+             "Output of \"sinfo\" was: %s", buf);
+    chpl_error(msg, 0, 0);
   }
 
   if (nomultithread) {
