@@ -3806,6 +3806,9 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
   while (err==0 && advanced < max_bytes_to_advance) {
     if( qio_space_in_ptr_diff(1, ch->cached_end, ch->cached_cur) ) {
       size_t len = qio_ptr_diff(ch->cached_end, ch->cached_cur);
+      if (len > max_bytes_to_advance - advanced) {
+        len = max_bytes_to_advance - advanced;
+      }
       void* found = memchr(ch->cached_cur, byte, len);
       if (found != NULL) {
         ssize_t off = qio_ptr_diff(found, ch->cached_cur);
@@ -3815,8 +3818,8 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
         break;
       } else {
         // We checked the data in the buffer, advance to the next section.
-        ch->cached_cur = ch->cached_end;
         advanced += qio_ptr_diff(ch->cached_end, ch->cached_cur);
+        ch->cached_cur = ch->cached_end;
       }
     } else {
       // There's not enough data in the buffer, apparently. Try it the slow way.
@@ -3824,7 +3827,10 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
       ssize_t amt_read = 0;
       uint8_t tmp = 0;
       err = _qio_slow_read(ch, &tmp, 1, &amt_read);
-      if (err == 0 && amt_read != 1) err = QIO_ESHORT;
+      if ((err == 0 && amt_read != 1) ||
+          (qio_err_to_int(err) == EEOF && advanced > 0)) {
+        err = QIO_ESHORT;
+      }
       if (err) {
         break;
       }
@@ -3842,6 +3848,10 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
 
   if (!err && !foundit) {
     err = QIO_ESHORT; // separator not found
+  }
+
+  if (!foundit && advanced == 0 && err == QIO_ESHORT) {
+    err = QIO_EEOF;
   }
 
   if( threadsafe ) {
