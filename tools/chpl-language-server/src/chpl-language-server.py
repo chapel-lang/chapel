@@ -446,6 +446,8 @@ class EndMarkerPattern:
                         chapel.Sync,
                         chapel.Local,
                         chapel.Manage,
+                        chapel.Select,
+                        chapel.When,
                     ]
                 ),
                 header_location=lambda node: (
