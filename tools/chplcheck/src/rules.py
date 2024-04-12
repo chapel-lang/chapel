@@ -129,11 +129,15 @@ def register_rules(driver: LintDriver):
         check = node.block_style() != "unnecessary"
         if not check:
             lines = context.get_file_text(node.location().path()).split("\n")
-            header_loc = (
-                node.header_location()
-                if isinstance(node, Loop)
-                else node.block_header()
-            )
+
+            if isinstance(node, Loop):
+                header_loc = node.header_location()
+                if isinstance(node, IndexableLoop) and node.with_clause():
+                    with_ = node.with_clause()
+                    assert with_ is not None
+                    header_loc = header_loc + with_.location()
+            else:
+                header_loc = node.block_header()
             body_loc = node.curly_braces_location()
             if header_loc is None or body_loc is None:
                 return check
