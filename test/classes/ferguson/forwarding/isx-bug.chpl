@@ -302,7 +302,7 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
     // perturb the destination locale by our ID to avoid bottlenecks
     //
     const dstlocid = (locid+taskID) % numTasks;
-    const transferSize = bucketSizes[dstlocid] * numBytes(keyType);
+    const transferSize = bucketSizes[dstlocid];
     const dstOffset = recvOffset[dstlocid].fetchAdd(transferSize);
     const srcOffset = sendOffsets[dstlocid];
 
@@ -314,7 +314,10 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
 
     var Ridx = myBucketedKeys._instance.getDataIndex(srcOffset);
     var Rdata = _ddata_shift(keyType, myBucketedKeys._instance.theData, Ridx);
-    put(c_addrOf(Ldata[0]), c_addrOf(Rdata[0]), Ldata.locale.id, transferSize);
+    __primitive("chpl_comm_put", Rdata[0], Ldata.locale.id, Ldata[0], transferSize * numBytes(keyType));
+    // We run into issues about locality w.r.t.c pointers which can be avoided by changing
+    // the interface of the communcations module
+    // put(c_addrOf(Ldata[0]), c_addrOf(Rdata[0]), Ldata.locale.id, transferSize);
   }
 
 }
