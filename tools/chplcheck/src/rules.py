@@ -523,8 +523,8 @@ def register_rules(driver: LintDriver):
 
             if isinstance(parent, (Function, Loop)):
                 return parent
-            elif isinstance(parent, Conditional) and parent.is_expression_level():
-                return None
+            elif isinstance(parent, Conditional):
+                return None if parent.is_expression_level() else parent
             return node
 
         # If root is something else (e.g., function call), do not
