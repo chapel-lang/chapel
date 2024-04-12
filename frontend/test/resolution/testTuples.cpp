@@ -396,6 +396,39 @@ static void test11() {
   assert(tt->elementType(0).type()->isRealType());
 }
 
+static void test11b() {
+  printf("test11b\n");
+  auto uctx = buildStdContext();
+  auto context = uctx.get();
+  ErrorGuard guard(context);
+
+  // Exercises a case where the frontend was attempting to resolve an '='
+  // operator between "(a, b)" and "foo()", and naturally running into
+  // constness errors. The Resolver handles this already, so we shouldn't ever
+  // bother to resolve that assignment.
+  auto t = resolveTypeOfX(context,
+                R""""(
+                record R { var i : int; }
+
+                proc foo() {
+                  return (new R(5), new R(42));
+                }
+
+                proc helper() {
+                  var a : R;
+                  var b : R;
+
+                  (a, b) = foo();
+
+                  return a;
+                }
+
+                var x = helper();
+                )"""");
+
+  assert(t->isRecordType());
+}
+
 static void test12() {
   printf("test12\n");
   Context ctx;
@@ -656,6 +689,7 @@ int main() {
   test9b();
   test10();
   test11();
+  test11b();
   test12();
   test13();
   test14();

@@ -807,6 +807,31 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.codeForDef(id);
 }
 
+static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
+  std::string ret = "(";
+  int count = 0;
+  for (auto decl : tup->decls()) {
+    if (count != 0) {
+      ret += ",";
+    }
+    count += 1;
+
+    if (decl->isTupleDecl()) {
+      ret += buildTupleDeclName(decl->toTupleDecl());
+    } else {
+      ret += decl->toFormal()->name().str();
+    }
+  }
+
+  if (count == 1) {
+    ret += ",";
+  }
+
+  ret += ")";
+
+  return ret;
+}
+
 void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info_);
   auto call = node->toCall();
@@ -831,7 +856,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
-      auto formalDecl = badPass.formal()->toNamedDecl();
+      auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = nullptr;
       if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
         actualExpr = call->actual(badPass.actualIdx());
@@ -840,7 +865,13 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
       wr.code(fn->id(), { formalDecl });
 
-      wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+      std::string formalName;
+      if (auto named = formalDecl->toNamedDecl()) {
+        formalName = "'" + named->name().str() + "'";
+      } else if (formalDecl->isTupleDecl()) {
+        formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
+      }
+      wr.message("The formal ", formalName, " expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
       if (actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }
@@ -1417,6 +1448,18 @@ void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
   wr.code(call, { expansion });
   wr.message("the expanded element has non-tuple type '", type.type(), "', "
              "but expansion can only be used on tuples.");
+}
+
+void ErrorTupleIndexOOB::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::Call*>(info_);
+  auto type = std::get<const types::TupleType*>(info_);
+  auto index = std::get<const int>(info_);
+
+  wr.heading(kind_, type_, call, "tuple index ", index, " is out of bounds");
+  wr.message("In the following expression:");
+  wr.code(call, { call });
+  wr.message("the index value is '", index, "' but the valid indices for this",
+             " tuple are in the range 0..", type->numElements()-1, " (inclusive)");
 }
 
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {

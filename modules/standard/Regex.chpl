@@ -395,7 +395,7 @@ extern record qio_regex_string_piece_t {
 private extern proc qio_regex_string_piece_isnull(ref sp:qio_regex_string_piece_t):bool;
 
 private extern proc qio_regex_match(const ref re:qio_regex_t, text:c_ptrConst(c_char), textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, ref submatch:qio_regex_string_piece_t, nsubmatch:int(64)):bool;
-private extern proc qio_regex_replace(const ref re:qio_regex_t, repl:c_ptrConst(c_char), repllen:int(64), text:c_ptrConst(c_char), textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_ptrConst(c_char), ref replaced_len:int(64)):int(64);
+private extern proc qio_regex_replace(const ref re:qio_regex_t, repl:c_ptrConst(c_char), repllen:int(64), text:c_ptrConst(c_char), textlen:int(64), maxreplace:int(64), ref replaced:c_ptrConst(c_char), ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
@@ -1113,85 +1113,6 @@ proc bytes.replaceAndCount(pattern: regex(bytes), replacement:bytes,
 
 private inline proc doReplaceAndCount(x: ?t, pattern: regex(t), replacement: t,
                                       count=-1) where (t==string || t==bytes) {
-  if count<0 || count==1 then
-    return doReplaceAndCountFast(x, pattern, replacement, global=(count!=1));
-  else
-    return doReplaceAndCountSlow(x, pattern, replacement, count);
-
-}
-
-private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
-                                   count=-1) where (t==string || t==bytes) {
-  use ByteBufferHelpers;
-
-  var regexCopy:regex(t);
-  if pattern.home != here then regexCopy = pattern;
-  const localRegex = if pattern.home != here then regexCopy._regex
-                                             else pattern._regex;
-
-  const localX = x.localize();
-
-  var matchesDom = {0..#initBufferSizeForSlowReplaceAndCount};
-  var matches: [matchesDom] qio_regex_string_piece_t;
-
-  var curIdx = 0;
-  var totalBytesToRemove = 0;
-  var totalChunksToRemove = 0;
-  for i in 0..<count {
-    if i == matchesDom.size then matchesDom = {0..#matchesDom.size*2};
-
-    var got = qio_regex_match(localRegex, localX.c_str(), x.numBytes,
-                              startpos=curIdx, endpos=x.numBytes,
-                              QIO_REGEX_ANCHOR_UNANCHORED, matches[i], 1);
-    if !got then break;
-
-    curIdx = matches[i].offset + matches[i].len;
-    totalBytesToRemove += matches[i].len;
-    totalChunksToRemove += 1;
-  }
-  if totalChunksToRemove == 0 then return (x,0);
-
-  const numBytesInResult = x.numBytes-totalBytesToRemove+
-                           (totalChunksToRemove*replacement.numBytes);
-
-  var (newBuff, buffSize) = bufferAlloc(numBytesInResult+1);
-  newBuff[numBytesInResult] = 0;
-
-  const localRepl = replacement.localize();
-  var readIdx = 0;
-  var writeIdx = 0;
-  for i in 0..#totalChunksToRemove {
-    var readOffset = matches[i].offset;
-
-    // copy from the original string
-    const copyLen = readOffset-readIdx;
-    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
-                      dst_off=writeIdx, src_off=readIdx);
-    writeIdx += copyLen;
-
-    // copy the replacement
-    bufferMemcpyLocal(dst=newBuff, src=localRepl.buff, len=localRepl.numBytes,
-                      dst_off=writeIdx);
-    writeIdx += localRepl.numBytes;
-
-    readIdx = (readOffset+matches[i].len);
-  }
-
-  // handle the last part
-  if readIdx < localX.numBytes {
-    const copyLen = localX.numBytes-readIdx;
-    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
-                      dst_off=writeIdx, src_off=readIdx);
-  }
-
-  var ret = try! t.createAdoptingBuffer(newBuff, length=numBytesInResult,
-                                         size=buffSize);
-
-  return (ret, totalChunksToRemove);
-}
-
-private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
-                                   global:bool) where (t==string || t==bytes) {
   var regexCopy:regex(t);
   if pattern.home != here then regexCopy = pattern;
   const localRegex = if pattern.home != here then regexCopy._regex
@@ -1204,10 +1125,11 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
 
   var replaced:c_ptrConst(c_char);
   var replaced_len:int(64);
-  var nreplaced: int = qio_regex_replace(localRegex, replacement.localize().c_str(),
-                                    replacement.numBytes, x.localize().c_str(),
-                                    x.numBytes, pos:int, endpos:int, global,
-                                    replaced, replaced_len);
+  var nreplaced: int =
+    qio_regex_replace(localRegex, replacement.localize().c_str(),
+                      replacement.numBytes, x.localize().c_str(),
+                      x.numBytes, count,
+                      replaced, replaced_len);
 
   var ret = try! t.createAdoptingBuffer(replaced, replaced_len);
 

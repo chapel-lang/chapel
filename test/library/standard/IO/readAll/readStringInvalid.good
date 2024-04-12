@@ -1,0 +1,1 @@
+caught expected error SystemError: Invalid or incomplete multibyte or wide character:  (in fileReader.readAll(ref s: string) with path "unknown" offset 1)

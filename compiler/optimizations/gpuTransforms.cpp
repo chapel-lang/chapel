@@ -38,6 +38,7 @@
 #include "timer.h"
 #include "misc.h"
 #include "view.h"
+#include "expr.h"
 
 #include "global-ast-vecs.h"
 
@@ -854,7 +855,8 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
   visitedFns.insert(blk->getFunction());
 
   std::vector<CallExpr*> calls;
-  collectCallExprs(blk, calls);
+
+  collectCallExprsExceptInGpuBlock(blk, calls);
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
@@ -1008,6 +1010,7 @@ struct KernelActual {
 // ----------------------------------------------------------------------------
 
 static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
+static bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call);
 
 // Given a GpuizableLoop that was determined to be "eligible" we generate an
 // outlined function
@@ -1244,6 +1247,12 @@ bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
   return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
          call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
          call->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK);
+}
+
+bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call) {
+  if (!call) return false;
+
+  return call->isPrimitive(PRIM_ASSERT_ON_GPU);
 }
 
 void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
@@ -1485,12 +1494,23 @@ class CpuBoundLoopCleanup {
 
   static void doit(CForLoop *loop) {
     // 'gpu primitive blocks' contain several GPU primitives as well as
-    // any temporaries used for computing their arguments. We know for sure
-    // they don't need to go into the CPU loop.
+    // any temporaries used for computing their arguments. Some of these
+    // attributes are not meant for the host loop (e.g., they're meant
+    // for configuring the GPU loop), but others are (e.g., assertOnGpu
+    // should run on the CPU and cause a runtime error).
+    //
+    // Remove the 'gpu primitives block' as a whole, but preserve the
+    // individual GPU primitives that are meant for the host loop.
     std::vector<BlockStmt*> blocksInBody;
     collectBlockStmts(loop, blocksInBody);
     for (auto block : blocksInBody) {
       if (block->isGpuPrimitivesBlock()) {
+        for_alist(blockExpr, block->body) {
+          if (isCallToPrimitiveWithHostRuntimeEffect(toCallExpr(blockExpr))) {
+            block->insertBefore(blockExpr->remove());
+          }
+        }
+
         block->remove();
       }
     }

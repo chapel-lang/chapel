@@ -15,7 +15,7 @@ module Nested {
     coforall outer in 1..8 {
       for i in 1..10 {
         coforall tid in 1..8 {
-        writeln(outer + i + tid);
+          writeln(outer + i + tid);
         }
       }
     }

@@ -199,16 +199,23 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
 
 def completion_item_for_decl(
     decl: chapel.NamedDecl,
+    override_name: Optional[str] = None
 ) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
         return None
 
+    # For now, we show completion for global symbols (not x.<complete>),
+    # so it seems like we ought to rule out methods.
+    if kind == SymbolKind.Method:
+        return None
+
+    name_to_use = override_name if override_name else decl.name()
     return CompletionItem(
-        label=decl.name(),
+        label=name_to_use,
         kind=decl_kind_to_completion_kind(kind),
-        insert_text=decl.name(),
-        sort_text=decl.name(),
+        insert_text=name_to_use,
+        sort_text=name_to_use,
     )
 
 
@@ -482,7 +489,7 @@ class FileInfo:
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
-    possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
+    visible_decls: List[Tuple[str, chapel.AstNode]] = field(init=False)
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
@@ -550,17 +557,31 @@ class FileInfo:
             if scope:
                 self.used_modules.extend(scope.used_imported_modules())
 
-    def _collect_possibly_visible_decls(self):
-        self.possibly_visible_decls = []
-        for mod in self.used_modules:
-            for child in mod:
-                if not isinstance(child, chapel.NamedDecl):
-                    continue
+    def _collect_possibly_visible_decls(self, asts: List[chapel.AstNode]):
+        self.visible_decls = []
+        for ast in asts:
+            if isinstance(ast, chapel.Comment):
+                continue
 
-                if child.visibility() == "private":
-                    continue
+            scope = ast.scope()
+            if not scope:
+                continue
 
-                self.possibly_visible_decls.append(child)
+            file = ast.location().path()
+            in_bundled_module = self.context.context.is_bundled_path(file)
+
+            for name, nodes in scope.visible_nodes():
+                # Don't show internal symbols to the user, even if they
+                # are technically in scope. The exception is if we're currently
+                # editing a standard file.
+                skip_prefixes = ["chpl_", "chpldev_", "_"]
+                if any(name.startswith(prefix) for prefix in skip_prefixes):
+                    if not in_bundled_module:
+                        continue
+
+                # Just take the first value to avoid showing N entries for
+                # overloaded functions.
+                self.visible_decls.append((name, nodes[0]))
 
     def _search_instantiations(
         self,
@@ -618,7 +639,7 @@ class FileInfo:
 
         self.siblings = chapel.SiblingMap(asts)
         self._collect_used_modules(asts)
-        self._collect_possibly_visible_decls()
+        self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
             with self.context.context.track_errors() as _:
@@ -1488,9 +1509,9 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
-        items.extend(
-            completion_item_for_decl(decl) for decl in fi.possibly_visible_decls
-        )
+        for (name, decl) in fi.visible_decls:
+            if isinstance(decl, chapel.NamedDecl):
+                items.append(completion_item_for_decl(decl, override_name=name))
         items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
 
         items = [item for item in items if item]

@@ -46,7 +46,7 @@ for using Chapel:
 
 In addition, several optional components have additional requirements:
 
-  * Python 3.7 or newer is required if you want to use chpldoc, c2chapel,
+  * Python 3.9 or newer is required if you want to use chpldoc, c2chapel,
     or Chapel's test system. These additionally require ``python3-devel``
     or the equivalent package; ``python3`` and ``pip3`` commands; and the
     ``venv`` Python package.
