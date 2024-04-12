@@ -1338,7 +1338,7 @@ class ChapelLanguageServer(LanguageServer):
                 if re.search(self._curly_bracket_with_comment, curly_line):
                     continue
 
-                text = chapel.range_to_text(header_loc, file_lines)
+                text = chapel.range_to_lines(header_loc, file_lines)
                 text = " ".join([t.strip() for t in text])
                 loc = location_to_location(goto_loc) if goto_loc else None
                 to_insert = " // " + text

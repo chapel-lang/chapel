@@ -143,8 +143,8 @@ def register_rules(driver: LintDriver):
             if header_loc is None or body_loc is None:
                 return check
 
-            header_text = "\n".join(range_to_text(header_loc, lines))
-            body_text = "\n".join(range_to_text(body_loc, lines))
+            header_text = range_to_text(header_loc, lines)
+            body_text = range_to_text(body_loc, lines)
 
             sep = " "
             if header_loc.end()[0] != body_loc.start()[0]:
@@ -183,11 +183,11 @@ def register_rules(driver: LintDriver):
 
         text = None
         if cond.value():
-            text = "\n".join(range_to_text(node.then_block().location(), lines))
+            text = range_to_text(node.then_block().location(), lines)
         else:
             else_block = node.else_block()
             if else_block is not None:
-                text = "\n".join(range_to_text(else_block.location(), lines))
+                text = range_to_text(else_block.location(), lines)
             else:
                 text = ""
         # should be set in all branches
@@ -410,7 +410,6 @@ def register_rules(driver: LintDriver):
             if refersto:
                 uses.add(refersto.unique_id())
 
-        # dyno fault if we try to query .location on a Comment
         lines = context.get_file_text(root.location().path()).split("\n")
         for unused in indices.keys() - uses:
             node, loop = indices[unused]
@@ -422,8 +421,8 @@ def register_rules(driver: LintDriver):
                 loc = parent.header_location() or parent.location()
                 before_loc = loc - node.location()
                 after_loc = loc.clamp_left(parent.iterand().location())
-                before_lines = "\n".join(range_to_text(before_loc, lines))
-                after_lines = "\n".join(range_to_text(after_loc, lines))
+                before_lines = range_to_text(before_loc, lines)
+                after_lines = range_to_text(after_loc, lines)
 
                 fixit = Fixit.build(loc, before_lines + after_lines)
 
@@ -434,9 +433,9 @@ def register_rules(driver: LintDriver):
         """
         Warn for simple domains in loops that can be ranges.
         """
+        # dyno fault if we try to query .location on a Comment
         if isinstance(root, Comment):
             return
-        # dyno fault if we try to query .location on a Comment
         lines = context.get_file_text(root.location().path()).split("\n")
 
         def is_range_like(node: AstNode):
@@ -471,7 +470,7 @@ def register_rules(driver: LintDriver):
             if not is_range_like(exprs[0]):
                 continue
 
-            s = "\n".join(range_to_text(exprs[0].location(), lines))
+            s = range_to_text(exprs[0].location(), lines)
 
             yield AdvancedRuleResult(
                 iterand,

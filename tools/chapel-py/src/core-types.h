@@ -51,7 +51,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static constexpr const char* Name = "Location";
   static constexpr const char* DocStr = "An object that represents the location of an AST node in a source file.";
 
-  static PyObject* nb_add(LocationObject* self, PyObject* other) {
+  static PyObject* add(LocationObject* self, PyObject* other) {
     if (other->ob_type != &LocationObject::PythonType) {
       Py_RETURN_NOTIMPLEMENTED;
     }
@@ -69,7 +69,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
     return (PyObject*) LocationObject::create(newLoc);
   }
 
-  static PyObject* nb_subtract(LocationObject* self, PyObject* other) {
+  static PyObject* subtract(LocationObject* self, PyObject* other) {
     if (other->ob_type != &LocationObject::PythonType) {
       Py_RETURN_NOTIMPLEMENTED;
     }
@@ -83,7 +83,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
     /*
     if (B.end < A.start) and (B.start > A.end):
       return A
-    elif A.start == B.start:
+    elif (B.start <= A.start) and (A.start <= B.end):
       return B.end..A.end
     else
       return min(A.start, B.start)..min(A.end, B.start)
@@ -96,13 +96,11 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
 
     if (B_end < A_start && B_start > A_end) {
       return (PyObject*)self;
-    } else if (A_start == B_start) {
+    } else if (B_start <= A_start && A_start <= B_end) {
       auto newLoc = chpl::Location(self->value_.path(), B_end, A_end);
       return (PyObject*) LocationObject::create(newLoc);
     } else {
-      auto start = std::min(A_start, B_start);
-      auto end = std::min(A_end, B_start);
-      auto newLoc = chpl::Location(self->value_.path(), start, end);
+      auto newLoc = chpl::Location(self->value_.path(), A_start, B_start);
       return (PyObject*) LocationObject::create(newLoc);
     }
   }
@@ -121,8 +119,8 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
     PyTypeObject configuring = PythonClassWithObject<LocationObject, chpl::Location>::configurePythonType();
     configuring.tp_str = (reprfunc) str;
     configuring.tp_as_number = &location_as_number;
-    configuring.tp_as_number->nb_subtract = (binaryfunc) nb_subtract;
-    configuring.tp_as_number->nb_add = (binaryfunc) nb_add;
+    configuring.tp_as_number->nb_subtract = (binaryfunc) subtract;
+    configuring.tp_as_number->nb_add = (binaryfunc) add;
     return configuring;
   }
 };

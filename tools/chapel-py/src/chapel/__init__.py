@@ -387,7 +387,7 @@ def range_to_tokens(
     return tokens
 
 
-def range_to_text(rng: Location, lines: List[str]) -> List[str]:
+def range_to_lines(rng: Location, lines: List[str]) -> List[str]:
     """
     Convert a Chapel location to a list of strings
     """
@@ -395,3 +395,9 @@ def range_to_text(rng: Location, lines: List[str]) -> List[str]:
     for line, column, length in range_to_tokens(rng, lines):
         text.append(lines[line][column : column + length])
     return text
+
+def range_to_text(rng: Location, lines: List[str]) -> str:
+    """
+    Convert a Chapel location to a single string
+    """
+    return "\n".join(range_to_lines(rng, lines))
