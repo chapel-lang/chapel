@@ -62,16 +62,10 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
       PyErr_SetString(PyExc_ValueError, "Cannot add locations from different files");
     }
 
-    chpl::Location newLoc;
-    if (self->value_.start() < otherCast->value_.start()) {
-      newLoc = chpl::Location(self->value_.path(),
-                              self->value_.start(),
-                              otherCast->value_.end());
-    } else {
-      newLoc = chpl::Location(self->value_.path(),
-                              otherCast->value_.start(),
-                              self->value_.end());
-    }
+    auto newLoc =
+      chpl::Location(self->value_.path(),
+                    std::min(self->value_.start(), otherCast->value_.start()),
+                    std::max(self->value_.end(), otherCast->value_.end()));
     return (PyObject*) LocationObject::create(newLoc);
   }
 
