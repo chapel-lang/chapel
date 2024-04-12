@@ -469,11 +469,3 @@ def register_rules(driver: LintDriver):
                 anchor=loop,
                 fixit=Fixit.build(iterand.location(), s),
             )
-
-
-def loc_intersection(loc1: Location, loc2: Location):
-    loc1_start, loc1_end = loc1.start(), loc1.end()
-    loc2_start, loc2_end = loc2.start(), loc2.end()
-
-    start = (max(loc1_start[0], loc2_start[0]), max(loc1_start[1], loc2_start[1]))
-    end = (min(loc1_end[0], loc2_end[0]), min(loc1_end[1], loc2_end[1]))
