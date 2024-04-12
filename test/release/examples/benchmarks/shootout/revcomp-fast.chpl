@@ -31,7 +31,7 @@ proc main(args: [] string) {
       proc findNextDesc() throws {
         try {
           input.advanceThrough(">");
-        } catch (e:EofError) {
+        } catch (e:UnexpectedEofError) {
           return (true, len-1);
         }
         return (false, input.offset()-1);
