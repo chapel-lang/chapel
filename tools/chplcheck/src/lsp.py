@@ -24,10 +24,6 @@ from pygls.server import LanguageServer
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import (
-    TEXT_DOCUMENT_DID_CHANGE,
-    DidChangeTextDocumentParams,
-)
-from lsprotocol.types import (
     TEXT_DOCUMENT_CODE_ACTION,
     CodeActionParams,
     CodeAction,
@@ -124,15 +120,9 @@ def run_lsp(driver: LintDriver):
 
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
     @server.feature(TEXT_DOCUMENT_DID_SAVE)
-    # must run on DID_CHANGE, or the fixits will not refresh
-    @server.feature(TEXT_DOCUMENT_DID_CHANGE)
     async def did_open(
         ls: LanguageServer,
-        params: Union[
-            DidOpenTextDocumentParams,
-            DidSaveTextDocumentParams,
-            DidChangeTextDocumentParams,
-        ],
+        params: Union[DidOpenTextDocumentParams, DidSaveTextDocumentParams],
     ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         ls.publish_diagnostics(text_doc.uri, build_diagnostics(text_doc.uri))
