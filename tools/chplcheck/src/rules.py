@@ -52,7 +52,7 @@ def check_pascal_case(context: Context, node: NamedDecl):
 def build_ignore_fixit(anchor: AstNode, lines: List[str], rule_name: str) -> Fixit:
     # TODO: how should this handle multiple ignores?
     loc = anchor.location()
-    text = range_to_text(loc, lines)
+    text = "\n".join(range_to_text(loc, lines))
     indent_amount = max(loc.start()[1] - 1, 0)
     indent = " "* indent_amount
     text = (
