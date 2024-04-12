@@ -23,7 +23,7 @@ import typing
 
 
 @dataclass
-class Fixit:
+class Edit:
     """
     Represents a fixit for a Chapel diagnostic.
     """
@@ -34,13 +34,13 @@ class Fixit:
     text: str
 
     @classmethod
-    def build(cls, location: chapel.Location, text: str) -> "Fixit":
-        return Fixit(
+    def build(cls, location: chapel.Location, text: str) -> "Edit":
+        return Edit(
             location.path(), location.start(), location.end(), text
         )
 
     @classmethod
-    def to_dict(cls, fixit: "Fixit") -> typing.Dict:
+    def to_dict(cls, fixit: "Edit") -> typing.Dict:
         return {
             "location": {
                 "path": fixit.path,
@@ -51,7 +51,7 @@ class Fixit:
         }
 
     @classmethod
-    def from_dict(cls, data: typing.Dict) -> typing.Optional["Fixit"]:
+    def from_dict(cls, data: typing.Dict) -> typing.Optional["Edit"]:
 
         if "location" not in data or "text" not in data:
             return None
@@ -64,6 +64,58 @@ class Fixit:
         ):
             return None
 
-        return Fixit(
+        return Edit(
             location["path"], location["start"], location["end"], data["text"]
         )
+
+
+@dataclass
+class Fixit:
+    edits: typing.List[Edit]
+    description: typing.Optional[str] = None
+
+    @classmethod
+    def build(cls, *edits: Edit) -> "Fixit":
+        return Fixit(list(edits))
+
+    @classmethod
+    def to_dict(cls, fixit: "Fixit") -> typing.Dict:
+        return {
+            "edits": [Edit.to_dict(e) for e in fixit.edits],
+            "description": fixit.description if fixit.description else "",
+        }
+
+    @classmethod
+    def from_dict(cls, data: typing.Dict) -> typing.Optional["Fixit"]:
+        if "edits" not in data:
+            return None
+
+        edits = []
+        for edit in data["edits"]:
+            e = Edit.from_dict(edit)
+            if e is not None:
+                edits.append(e)
+        desc = data.get("description", None)
+
+        return Fixit(edits, desc)
+
+
+def range_to_text(rng: chapel.Location, lines: typing.List[str]) -> str:
+    """
+    Convert a Chapel location to a string. If the location spans multiple
+    lines, it gets truncated into 1 line. The lines and columns are
+    zero-indexed.
+    """
+
+    (line_start, char_start) = rng.start()
+    (line_end, char_end) = rng.end()
+
+    if line_start == line_end:
+        return lines[line_start - 1][char_start - 1 : char_end - 1]
+
+    text = [lines[line_start - 1][char_start - 1 :]]
+    for line in range(line_start + 1, line_end):
+        text.append(lines[line - 1])
+    text.append(lines[line_end - 1][: char_end - 1])
+
+    return "\n".join([t for t in text])

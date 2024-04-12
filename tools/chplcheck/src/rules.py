@@ -23,7 +23,7 @@ import typing
 import chapel
 from chapel import *
 from driver import LintDriver
-from fixits import Fixit
+from fixits import Fixit, Edit
 from rule_types import BasicRuleResult, AdvancedRuleResult
 
 
@@ -49,6 +49,21 @@ def check_pascal_case(context: Context, node: NamedDecl):
         r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?", name_for_linting(context, node)
     )
 
+def build_ignore_fixit(anchor: AstNode, lines: List[str], rule_name: str) -> Fixit:
+    # TODO: how should this handle multiple ignores?
+    loc = anchor.location()
+    text = range_to_text(loc, lines)
+    indent_amount = max(loc.start()[1] - 1, 0)
+    indent = " "* indent_amount
+    text = (
+        f'@chplcheck.ignore("{rule_name}")\n'
+        + indent + text
+    )
+    ignore = Fixit.build(
+        Edit.build(loc, text)
+    )
+    ignore.description = "Ignore this warning"
+    return ignore
 
 def register_rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -151,9 +166,10 @@ def register_rules(driver: LintDriver):
                 indent = " " * (body_loc.start()[1] - 1)
                 sep = "\n" + indent
 
-            return BasicRuleResult(
-                Fixit.build(node.location(), header_text + sep + body_text)
-            )
+            new_text = header_text + sep + body_text
+            fixit = Fixit.build(Edit.build(node.location(), new_text))
+            ignore = build_ignore_fixit(node, lines, DoKeywordAndBlock.__name__)
+            return BasicRuleResult([fixit, ignore])
 
         return check
 
@@ -193,7 +209,7 @@ def register_rules(driver: LintDriver):
         # should be set in all branches
         assert text is not None
 
-        return BasicRuleResult(Fixit.build(node.location(), text))
+        return BasicRuleResult(Fixit.build(Edit.build(node.location(), text)))
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
@@ -216,7 +232,9 @@ def register_rules(driver: LintDriver):
         method_seen = False
         for child in node:
             if isinstance(child, VarLikeDecl) and method_seen:
-                return False
+                lines = context.get_file_text(node.location().path()).split("\n")
+                ignore = build_ignore_fixit(node, lines, MethodsAfterFields.__name__)
+                return BasicRuleResult(ignore)
             if isinstance(child, Function):
                 method_seen = True
         return True
@@ -349,7 +367,7 @@ def register_rules(driver: LintDriver):
                     break
 
     @driver.advanced_rule(default=False)
-    def UnusedFormal(_, root: AstNode):
+    def UnusedFormal(context: Context, root: AstNode):
         """
         Warn for unused formals in functions.
         """
@@ -375,8 +393,13 @@ def register_rules(driver: LintDriver):
             if refersto:
                 uses.add(refersto.unique_id())
 
+        lines = context.get_file_text(root.location().path()).split("\n")
         for unused in formals.keys() - uses:
-            yield AdvancedRuleResult(formals[unused], formals[unused].parent())
+            anchor = formals[unused].parent()
+            ignore = build_ignore_fixit(anchor, lines, UnusedFormal.__name__)
+            yield AdvancedRuleResult(
+                formals[unused], anchor, fixit=[ignore]
+            )
 
     @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
@@ -416,7 +439,7 @@ def register_rules(driver: LintDriver):
             fixit = None
             parent = node.parent()
             if parent and isinstance(parent, TupleDecl):
-                fixit = Fixit.build(node.location(), "_")
+                fixit = Fixit.build(Edit.build(node.location(), "_"))
             elif parent and isinstance(parent, IndexableLoop):
                 loc = parent.header_location() or parent.location()
                 before_loc = loc - node.location()
@@ -424,9 +447,11 @@ def register_rules(driver: LintDriver):
                 before_lines = range_to_text(before_loc, lines)
                 after_lines = range_to_text(after_loc, lines)
 
-                fixit = Fixit.build(loc, before_lines + after_lines)
+                fixit = Fixit.build(Edit.build(loc, before_lines + after_lines))
 
-            yield AdvancedRuleResult(node, loop, fixit)
+            ignore = build_ignore_fixit(loop, lines, UnusedLoopIndex.__name__)
+            fixits = [fixit, ignore] if fixit else [ignore]
+            yield AdvancedRuleResult(node, loop, fixits)
 
     @driver.advanced_rule
     def SimpleDomainAsRange(context: Context, root: AstNode):
@@ -472,10 +497,11 @@ def register_rules(driver: LintDriver):
 
             s = range_to_text(exprs[0].location(), lines)
 
+            fixit = Fixit.build(Edit.build(iterand.location(), s))
+            ignore = build_ignore_fixit(loop, lines, SimpleDomainAsRange.__name__)
+
             yield AdvancedRuleResult(
-                iterand,
-                anchor=loop,
-                fixit=Fixit.build(iterand.location(), s),
+                iterand, anchor=loop, fixit=[fixit, ignore]
             )
 
     @driver.advanced_rule

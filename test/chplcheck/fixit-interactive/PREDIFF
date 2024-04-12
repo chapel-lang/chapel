@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# backup the original file
+cp $1.chpl $1.chpl.orig
+
+$CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
+  --enable-rule BoolLitInCondStatement \
+  --enable-rule UseExplicitModules \
+  --enable-rule UnusedFormal \
+  --enable-rule CamelOrPascalCaseVariables \
+  --enable-rule NestedCoforalls \
+  --internal-prefix "myprefix_" --internal-prefix "_" \
+  --skip-unstable \
+  --fixit --interactive \
+  $1.chpl <$1.input >/dev/null
+
+# copy the fixed file to the output
+cp $1.chpl $2
+
+# restore the original file
+mv $1.chpl.orig $1.chpl
+

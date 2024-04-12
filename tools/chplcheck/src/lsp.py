@@ -32,7 +32,7 @@ from lsprotocol.types import (
     TextEdit,
 )
 from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
-from fixits import Fixit
+from fixits import Fixit, Edit
 from driver import LintDriver
 
 
@@ -143,28 +143,32 @@ def run_lsp(driver: LintDriver):
             if not fixits:
                 continue
 
-            changes = dict()
             for f in fixits:
                 if not f:
                     continue
-                uri = "file://" + f.path
-                start = f.start
-                end = f.end
-                rng = Range(
-                    start=Position(max(start[0] - 1, 0), max(start[1] - 1, 0)),
-                    end=Position(max(end[0] - 1, 0), max(end[1] - 1, 0)),
+                changes = dict()
+                for e in f.edits:
+                    uri = "file://" + e.path
+                    start = e.start
+                    end = e.end
+                    rng = Range(
+                        start=Position(max(start[0] - 1, 0), max(start[1] - 1, 0)),
+                        end=Position(max(end[0] - 1, 0), max(end[1] - 1, 0)),
+                    )
+                    edit = TextEdit(range=rng, new_text=e.text)
+                    if uri not in changes:
+                        changes[uri] = []
+                    changes[uri].append(edit)
+                title = "Apply Fix for {}".format(name)
+                if f.description:
+                    title += " ({})".format(f.description)
+                action = CodeAction(
+                    title=title,
+                    kind=CodeActionKind.QuickFix,
+                    diagnostics=[d],
+                    edit=WorkspaceEdit(changes=changes),
                 )
-                edit = TextEdit(range=rng, new_text=f.text)
-                if uri not in changes:
-                    changes[uri] = []
-                changes[uri].append(edit)
-            action = CodeAction(
-                title="Apply Fix for {}".format(name),
-                kind=CodeActionKind.QuickFix,
-                diagnostics=[d],
-                edit=WorkspaceEdit(changes=changes),
-            )
-            actions.append(action)
+                actions.append(action)
         return actions
 
     server.start_io()
