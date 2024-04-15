@@ -749,7 +749,7 @@ static void test6() {
   assert(rACallGeneric == rBCallGeneric);
 }
 
-// check that parenless calls do not use POI
+// check that parenless non-method calls do not use POI
 static void test7() {
   printf("test7\n");
   Context ctx;
@@ -805,6 +805,65 @@ static void test7() {
   assert(rFoo.mostSpecific().isEmpty());
 }
 
+// check that parenless method calls do use POI
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+    module Library {
+      proc callFoo(x) {
+        x.foo;
+      }
+    }
+    module Application {
+      use Library;
+      proc int.foo { return 1; }
+      proc main() {
+        callFoo(1);
+      }
+    }
+   )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  auto Lib = vec[0]->toModule();
+  auto App = vec[1]->toModule();
+  assert(Lib);
+  assert(Lib->numStmts() == 1);
+  assert(App);
+  assert(App->numStmts() == 3);
+
+  auto intFooDecl = App->stmt(1)->toFunction();
+  assert(intFooDecl);
+  auto main = App->stmt(2)->toFunction();
+  assert(main);
+  auto callCallFoo = main->stmt(0)->toCall();
+  assert(callCallFoo);
+  auto callFoo = Lib->stmt(0)->toFunction();
+  assert(callFoo);
+  auto dot = callFoo->stmt(0)->toDot();
+  assert(dot);
+  auto foo = dot->field() == "foo";
+  assert(foo);
+
+  auto rMain = resolveConcreteFunction(context, main->id());
+  assert(rMain);
+
+  auto rCallFoo = resolveOnlyCandidate(context, rMain->byAst(callCallFoo));
+  assert(rCallFoo);
+
+  auto rFoo = rCallFoo->byAst(dot);
+  assert(rFoo.associatedActions().size() == 0);
+  assert(!rFoo.mostSpecific().isEmpty());
+  assert(rFoo.mostSpecific().only().fn() != nullptr);
+  assert(rFoo.mostSpecific().only().fn()->id() == intFooDecl->id());
+}
+
 
 int main() {
   test1();
@@ -817,6 +876,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }
