@@ -8201,7 +8201,7 @@ proc computeGuessReadSize(ch: fileReader, maxChars: c_ssize_t, pos: int): c_ssiz
   var fileLen:int(64) = -1;
   if fp {
     if maxChars == max(c_ssize_t) {
-      // try to find the file size with seek etc when doing readAll
+      // try to find the file size with stat etc when doing readAll
       var err:errorCode = qio_file_length(fp, fileLen);
       // if there was an error, ignore it, but don't use the file length
       if err then fileLen = 0;
@@ -8344,7 +8344,7 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
         var requestSz = 2*buffSz;
         // make sure to at least request 16 bytes
         if requestSz < n + 16 then requestSz = n + 16;
-        // but don't ever ask for more bytes than maxBytes + 1
+        // but don't ever ask for more bytes than maxBytes + 5
         if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 5 then
           requestSz = maxBytes + 5;
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
