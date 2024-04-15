@@ -511,7 +511,7 @@ there are multiple enclosing generic functions or the call is nested
 within a concrete function that is, in turn, nested in generic
 function(s), the point of instantiation is the call site of the innermost
 generic function. This rule does not apply to non-method functions declared
-without parantheses (:ref:`Functions_without_Parentheses`): such
+without parentheses (:ref:`Functions_without_Parentheses`): such
 functions cannot be discovered through the point of instantiation.
 
 If no candidate functions are found during the initial steps of
