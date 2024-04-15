@@ -1468,6 +1468,7 @@ private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_p
 
 
 private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):errorCode;
+private extern proc qio_channel_read_chars(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, maxBytes:c_ssize_t, maxCodepoints:c_ssize_t, ref readBytes: c_ssize_t, ref readCodepoints: c_ssize_t):errorCode;
 
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
 private extern proc qio_encode_to_string(chr:int(32)):c_ptrConst(c_char);
@@ -8193,13 +8194,21 @@ private proc computeMaxBytesToRead(ch: fileReader,
 // helper function to compute the initial buffer size when reading
 // to a string/bytes
 private
-proc computeGuessReadSize(ch: fileReader, maxChars: int, pos: int): c_ssize_t {
+proc computeGuessReadSize(ch: fileReader, maxChars: c_ssize_t, pos: int): c_ssize_t {
   var guessReadSize:c_ssize_t = 0;
   var fp: qio_file_ptr_t = nil;
   qio_channel_get_file_ptr(ch._channel_internal, fp);
   var fileLen:int(64) = -1;
   if fp {
-    fileLen = qio_file_length_guess(fp);
+    if maxChars == max(c_ssize_t) {
+      // try to find the file size with stat etc when doing readAll
+      var err:errorCode = qio_file_length(fp, fileLen);
+      // if there was an error, ignore it, but don't use the file length
+      if err then fileLen = 0;
+    } else {
+      // use the file length from when it was opened to avoid overhead
+      fileLen = qio_file_length_guess(fp);
+    }
   }
   if pos >= 0 && fileLen >= 1 && fileLen > pos {
     guessReadSize = (fileLen - pos):c_ssize_t;
@@ -8269,7 +8278,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (
                         buffSz - n);  // Don't exceed allocated buffer space
 
       locErr = qio_channel_read(false, ch._channel_internal,
-                                buff[n], // read starting with data here
+                                buff[n], // store starting here
                                 readN, amtRead);
 
       n += amtRead;
@@ -8327,20 +8336,11 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
     var nChars:c_ssize_t = 0; // how many codepoints have we read?
     (buff, buffSz) = bufferAlloc(guessReadSize);
 
-    // then try to read repeatedly until we have read 'maxChars' reach EOF
-    while n < maxBytes && nChars < maxChars {
+    // then try to read repeatedly until we have read 'maxChars' or reach EOF
+    while nChars < maxChars {
       var locErr:errorCode = 0;
-      var amtRead:c_ssize_t = 0;
-      var codepoint: int(32);
-      locErr = qio_channel_read_char(false, ch._channel_internal, codepoint);
-      if locErr {
-        // reached EOF or other error so we need to stop
-        err = locErr;
-        break;
-      }
 
-      var codepointSz = qio_nbytes_char(codepoint):c_ssize_t;
-      if n + codepointSz > buffSz { // make sure there is room for codepointSz
+      if n + 5 > buffSz {
         var requestSz = 2*buffSz;
         // make sure to at least request 16 bytes
         if requestSz < n + 16 then requestSz = n + 16;
@@ -8348,13 +8348,33 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
         if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 5 then
           requestSz = maxBytes + 5;
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
-        assert(n + codepointSz < buffSz);
+        assert(n + 5 < buffSz);
       }
 
-      // store the codepoint in the buffer
-      qio_encode_char_buf(buff + n, codepoint);
-      nChars += 1;
-      n += codepointSz;
+      const bytesRemaining = buffSz - n;
+      const charsRemaining = if maxChars < max(c_ssize_t)
+                             then maxChars - nChars
+                             else max(c_ssize_t);
+      var readCodepoints:c_ssize_t = 0;
+      var readBytes:c_ssize_t = 0;
+      locErr = qio_channel_read_chars(false, ch._channel_internal,
+                                      buff[n], // store starting here
+                                      bytesRemaining,
+                                      charsRemaining,
+                                      readBytes,
+                                      readCodepoints);
+
+      nChars += readCodepoints;
+      n += readBytes;
+
+      if locErr {
+        // reached EOF or other error so we need to stop
+        err = locErr;
+        break;
+      }
+
+      // should have read something if there was no error
+      assert(readBytes > 0);
     }
 
     // add the trailing \0

@@ -476,6 +476,9 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
   return err;
 }
 
+// read as many UTF-8 characters as fit into maxBytes / maxCodepoints
+qioerr qio_channel_read_chars(const int threadsafe, qio_channel_t* restrict ch, char* restrict buf, ssize_t maxBytes, ssize_t maxCodepoints, ssize_t* readBytes, ssize_t* readCodepoints);
+
 // Return the number of bytes used in encoding chr,
 // or 0 if it's an invalid character.
 static inline
