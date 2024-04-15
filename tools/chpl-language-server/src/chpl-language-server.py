@@ -1635,19 +1635,16 @@ def run_lsp():
         if not node_and_loc:
             return None
 
-        # only add highlights for the current document
-        should_add = lambda x: x.get_uri() == text_doc_uri
-
         # todo: it would be nice if this differentiated between read and write
         highlights = []
-        if should_add(node_and_loc):
+        # only highlight the declaration if it is in the current document
+        if node_and_loc.get_uri() == text_doc_uri:
             dh = DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
             highlights.append(dh)
         uses = fi.uses_here.get(node_and_loc.node.unique_id(), [])
         highlights += [
             DocumentHighlight(use.rng, DocumentHighlightKind.Text)
             for use in uses
-            if should_add(use)
         ]
 
         return highlights
