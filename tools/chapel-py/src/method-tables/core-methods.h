@@ -93,9 +93,7 @@ CLASS_BEGIN(Scope)
                  auto& id = moduleIds[i];
                  if (!reportedIds.insert(id).second) continue;
                  auto ast = parsing::idToAst(context, id);
-                 auto mod = ast->toModule();
-                 CHPL_ASSERT(mod != nullptr);
-                 toReturn.push_back(mod);
+                 if (auto mod = ast->toModule()) toReturn.push_back(mod);
                }
                return toReturn)
   PLAIN_GETTER(Scope, parent_scope, "Get the parent (outer) scope of this scope",
