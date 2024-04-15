@@ -1867,7 +1867,7 @@ struct GatherModulesVisitor {
   void handleUseOrImport(const AstNode* node) {
     if (processUsedModules_) {
       auto scope = resolution::scopeForId(context_, node->id());
-      auto used = resolution::findUsedImportedModules(context_, scope);
+      auto used = resolution::findUsedImportedIds(context_, scope);
       for (auto id: used) {
         if (idIsInBundledModule(context_, id)) {
           continue;
