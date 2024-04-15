@@ -265,7 +265,7 @@ def register_rules(driver: LintDriver):
     @driver.basic_rule(TupleDecl)
     def UnusedTupleUnpack(context: Context, node: TupleDecl):
         """
-        Warn for unused tuple unpacking, such as `(_, _)`.
+        Warn for unused tuple unpacking, such as '(_, _)'.
         """
 
         varset = set(variables(node))
