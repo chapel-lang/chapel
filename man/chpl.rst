@@ -18,9 +18,9 @@ DESCRIPTION
 -----------
 
 The **chpl** command invokes the Chapel compiler. **chpl** converts one
-or more Chapel source files into an executable. **chpl** produces object files
-using either LLVM (preferred, default) or C. See LLVM Code Generation Options
-or C Code Generation Options below.
+or more Chapel source files into an executable. **chpl** can be configured to
+produce object files using either LLVM or a C compiler. See LLVM Code Generation
+Options or C Code Generation Options below.
 
 SOURCE FILES
 ------------
