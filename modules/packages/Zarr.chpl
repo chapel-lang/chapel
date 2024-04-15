@@ -58,12 +58,12 @@ module Zarr {
     "Creating Reader", "Reading File", "Creating Writer", "Writing File",
     "Reading to Update", "Copying In", "Creating Compressed Buffer"};
   private var times: [timerDomain] atomic real;
-  
-  /* 
+
+  /*
     Returns a map of profiling results for Zarr IO operations. The keys are
     the names of the operations and the values are the total time spent in
     each operation across all threads. Requires that zarrProfiling be set to
-    true. 
+    true.
   */
   iter zarrProfilingResults() throws {
     for key in times.keys() do yield (key, times[key].read());
@@ -252,7 +252,7 @@ module Zarr {
   */
   proc writeChunk(param dimCount, chunkPath: string, chunkDomain: domain(dimCount), ref arraySlice: [] ?t, bloscLevel: int(32) = 9) throws {
     var s: stopwatch;
-    
+
     //bloscLevel must be between 0 and 9
     var _bloscLevel = min(9,max(0,bloscLevel));
 
@@ -267,7 +267,7 @@ module Zarr {
     copyOut[arraySlice.domain] = arraySlice;
     if zarrProfiling then times["Reading to Update"].add(s.elapsed());
 
-    
+
     // Create buffer for compressed bytes
     if zarrProfiling then s.restart();
     var compressedBuffer = allocate(t, copyOut.size + 16);
