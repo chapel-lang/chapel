@@ -1538,6 +1538,23 @@ static void test24() {
   }
 }
 
+static void test25() {
+  // Test that 'none' has type 'nothing'
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    // straightforward case for qualified module
+    std::string prog = "var x = none;";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isNothingType());
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -1563,6 +1580,7 @@ int main() {
   test22();
   test23();
   test24();
+  test25();
 
   return 0;
 }
