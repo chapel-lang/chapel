@@ -3967,7 +3967,7 @@ static void resolveNewForUnion(Resolver& rv, const New* node,
 }
 
 void Resolver::exit(const New* node) {
-  if (auto ident = node->typeExpression()->toIdentifier()) {
+  if (node->typeExpression()->isIdentifier()) {
     genericReceiverOverrideStack.pop_back();
   }
 
