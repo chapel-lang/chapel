@@ -78,6 +78,7 @@
 #else
 #include "llvm/Support/Host.h"
 #endif
+#include "llvm/Support/CodeGen.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
@@ -98,10 +99,6 @@ using LlvmOptimizationLevel = llvm::OptimizationLevel;
 #else
 #include "llvm/Support/TargetRegistry.h"
 using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
-#endif
-
-#if HAVE_LLVM_VER >= 90
-#include "llvm/Support/CodeGen.h"
 #endif
 
 #ifdef HAVE_LLVM_RV
@@ -1753,17 +1750,10 @@ void setupClang(GenInfo* info, std::string mainFile)
   //CompilerInvocation* CI =
   //  createInvocationFromCommandLine(clangArgs, clangInfo->Diags);
 
-#if HAVE_LLVM_VER >= 100
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             job->getArguments(),
             *clangDiags);
-#else
-  bool success = CompilerInvocation::CreateFromArgs(
-            Clang->getInvocation(),
-            &job->getArguments().front(), (&job->getArguments().back())+1,
-            *clangDiags);
-#endif
 
   CompilerInvocation* CI = &Clang->getInvocation();
 
@@ -1951,7 +1941,7 @@ static llvm::TargetOptions getTargetOptions(
 
   Options.FunctionSections = CodeGenOpts.FunctionSections;
   Options.DataSections = CodeGenOpts.DataSections;
-#if LLVM_VERSION_MAJOR == 120
+#if LLVM_VERSION_MAJOR == 12
   // clang::CodeGenOptions::IgnoreXCOFFVisibility first appeared in
   // LLVM version 12 and then went away in version 13.
   Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
@@ -2439,11 +2429,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   PMBuilder.LoopsInterleaved = CodeGenOpts.UnrollLoops;
   PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;
 #if HAVE_LLVM_VER < 150
-#if HAVE_LLVM_VER > 60
   PMBuilder.PrepareForThinLTO = CodeGenOpts.PrepareForThinLTO;
-#else
-  PMBuilder.PrepareForThinLTO = CodeGenOpts.EmitSummaryIndex;
-#endif
   PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
 #endif
 
@@ -3937,11 +3923,7 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
 
   clang::CanQual<clang::FunctionProtoType> proto =
              FTy.getAs<clang::FunctionProtoType>();
-#if HAVE_LLVM_VER >= 90
   return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
-#else
-  return clang::CodeGen::arrangeFreeFunctionType(CGM, proto, FD);
-#endif
 }
 
 
@@ -4016,23 +3998,8 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
     }
   }
 
-  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
-#if HAVE_LLVM_VER >= 100
   llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
-  argInfo = &a[curCArg].info;
-
-#else
-  int i = 0;
-  for (auto &ii : CGI->arguments()) {
-    if (i == curCArg) {
-      argInfo = &ii.info;
-      break;
-    }
-    i++;
-  }
-#endif
-
-  return argInfo;
+  return &a[curCArg].info;
 }
 
 //
@@ -4190,7 +4157,6 @@ bool isCTypeUnion(const char* name) {
   return false;
 }
 
-#if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -4229,28 +4195,6 @@ llvm::MaybeAlign getAlignment(::Type* type) {
     return llvm::MaybeAlign();
   }
 }
-
-#else
-uint64_t getPointerAlign(int addrSpace) {
-  GenInfo* info = gGenInfo;
-  INT_ASSERT(info);
-  ClangInfo* clangInfo = info->clangInfo;
-  INT_ASSERT(clangInfo);
-
-  uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
-  return align;
-}
-unsigned getCTypeAlignment(const clang::TypeDecl* td) {
-  return helpGetCTypeAlignment(td);
-}
-unsigned getCTypeAlignment(const clang::QualType& qt) {
-  return helpGetCTypeAlignment(qt);
-}
-unsigned getAlignment(::Type* type) {
-  return helpGetAlignment(type);
-}
-#endif
-
 
 bool isBuiltinExternCFunction(const char* cname)
 {
@@ -4603,12 +4547,7 @@ void setupForGlobalToWide(void) {
   llvm::Type* retType = llvm::Type::getInt8PtrTy(ginfo->module->getContext());
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
-                          dummy, retType, argType
-#if HAVE_LLVM_VER < 90
-                          );
-#else
-                          ).getCallee();
-#endif
+                        dummy, retType, argType).getCallee();
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
 
   // Mark the function as external so that it will not be removed
@@ -5276,12 +5215,7 @@ static void llvmEmitObjectFile(void) {
       if (error || outputOfile.has_error())
         USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
 
-#if HAVE_LLVM_VER >= 100
       llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
-#else
-      llvm::TargetMachine::CodeGenFileType FileType =
-        llvm::TargetMachine::CGFT_ObjectFile;
-#endif
 
       {
         llvm::legacy::PassManager emitPM;
@@ -5289,16 +5223,8 @@ static void llvmEmitObjectFile(void) {
         emitPM.add(createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
 
-#if HAVE_LLVM_VER > 60
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                                 nullptr,
-                                                 FileType,
-                                                 disableVerify);
-#else
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                                 FileType,
-                                                 disableVerify);
-#endif
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile, nullptr,
+                                                 FileType, disableVerify);
 
         emitPM.run(*info->module);
 

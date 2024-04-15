@@ -1008,14 +1008,7 @@ void VarSymbol::codegenDef() {
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type), type);
     }
 
-#if HAVE_LLVM_VER >= 100
-    llvm::MaybeAlign alignment;
-#else
-    unsigned alignment = 0;
-#endif
-
-    alignment = getAlignment(type);
-
+    llvm::MaybeAlign alignment = getAlignment(type);
     llvm::Type *varType = type->codegen().type;
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
 
@@ -2097,11 +2090,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
           if (argInfo->getInReg()) b.addAttribute(llvm::Attribute::InReg);
 
           if (argInfo->getIndirectByVal()) {
-          #if HAVE_LLVM_VER >= 90
             b.addByValAttr(argTy);
-          #else
-            b.addAttribute(llvm::Attribute::ByVal);
-          #endif
           }
 
           clang::CharUnits align = argInfo->getIndirectAlign();
@@ -2902,19 +2891,8 @@ void FnSymbol::codegenDef() {
             // if we allocated a temporary, memcpy from it to the main var
             //
             if (srcSize > dstSize) {
-              irBuilder->CreateMemCpy(ptr,
-#if HAVE_LLVM_VER >= 100
-                                      llvm::MaybeAlign(),
-#else
-                                      0,
-#endif
-                                      storeAdr,
-#if HAVE_LLVM_VER >= 100
-                                      llvm::MaybeAlign(),
-#else
-                                      0,
-#endif
-                                      dstSize);
+              irBuilder->CreateMemCpy(ptr, llvm::MaybeAlign(),
+                                      storeAdr, llvm::MaybeAlign(), dstSize);
             }
 
             info->lvt->addValue(arg->cname, tmp.val,

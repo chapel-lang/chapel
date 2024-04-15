@@ -2769,11 +2769,7 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
 
     // Emit the indirect call.
     llvm::CallInst* c = nullptr;
-    #if HAVE_LLVM_VER >= 90
     c = info->irBuilder->CreateCall(fnType, val, llArgs);
-    #else
-    c = info->irBuilder->CreateCall(val, llArgs);
-    #endif
 
     ret.val = c;
 
@@ -3120,11 +3116,7 @@ static GenRet codegenCallExprInner(GenRet function,
       c = info->irBuilder->CreateCall(func, llArgs);
     } else {
       if (!fnType) INT_FATAL("Could not compute called function type");
-#if HAVE_LLVM_VER >= 90
       c = info->irBuilder->CreateCall(fnType, val, llArgs);
-#else
-      c = info->irBuilder->CreateCall(val, llArgs);
-#endif
     }
 
     if (func) {
@@ -3517,7 +3509,6 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     llvm::Function *func = llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::memcpy, types);
     //llvm::FunctionType *fnType = func->getFunctionType();
 
-#if HAVE_LLVM_VER >= 70
     // LLVM 7 and later: memcpy has no alignment argument
     llvm::Value* llArgs[4];
 
@@ -3528,21 +3519,6 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     // LLVM memcpy intrinsic has additional argument isvolatile
     // isVolatile?
     llArgs[3] = llvm::ConstantInt::get(llvm::Type::getInt1Ty(info->module->getContext()), 0, false);
-
-#else
-    // LLVM 6 and earlier: memcpy had alignment argument
-    llvm::Value* llArgs[5];
-
-    llArgs[0] = convertValueToType(dest.val, types[0], false);
-    llArgs[1] = convertValueToType(src.val, types[1], false);
-    llArgs[2] = convertValueToType(size.val, types[2], false);
-
-    // LLVM memcpy intrinsic has additional arguments alignment, isvolatile
-    // alignment
-    llArgs[3] = llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->module->getContext()), 0, false);
-    // isVolatile?
-    llArgs[4] = llvm::ConstantInt::get(llvm::Type::getInt1Ty(info->module->getContext()), 0, false);
-#endif
 
     // We can't use IRBuilder::CreateMemCpy because that adds
     //  a cast to i8 (in address space 0).
