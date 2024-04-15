@@ -785,6 +785,8 @@ static void test7() {
   assert(App);
   assert(App->numStmts() == 3);
 
+  auto fooDecl = App->stmt(1)->toFunction();
+  assert(fooDecl);
   auto main = App->stmt(2)->toFunction();
   assert(main);
   auto callCallFoo = main->stmt(0)->toCall();
