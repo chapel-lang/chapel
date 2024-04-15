@@ -26,6 +26,39 @@ from driver import LintDriver
 from fixits import Fixit
 from rule_types import BasicRuleResult, AdvancedRuleResult
 
+def variables(node: AstNode):
+    if isinstance(node, Variable):
+        if node.name() != "_":
+            yield node
+    elif isinstance(node, TupleDecl):
+        for child in node:
+            yield from variables(child)
+
+def file_lines_for_node(context: Context, node: AstNode):
+     return context.get_file_text(node.location().path()).split("\n")
+
+def fixit_remove_unused_node(node: AstNode, lines: Optional[List[str]] = None, context: Optional[Context] = None):
+    parent = node.parent()
+    if parent is None:
+        return
+
+    if lines is None:
+        if context is None:
+            raise ValueError("Either 'lines' or 'context' must be provided")
+        else:
+            lines = file_lines_for_node(context, parent)
+
+    if parent and isinstance(parent, TupleDecl):
+        return Fixit.build(node.location(), "_")
+    elif parent and isinstance(parent, IndexableLoop):
+        loc = parent.header_location() or parent.location()
+        before_loc = loc - node.location()
+        after_loc = loc.clamp_left(parent.iterand().location())
+        before_lines = range_to_text(before_loc, lines)
+        after_lines = range_to_text(after_loc, lines)
+
+        return Fixit.build(loc, before_lines + after_lines)
+    return None
 
 def name_for_linting(context: Context, node: NamedDecl) -> str:
     name = node.name()
@@ -229,6 +262,20 @@ def register_rules(driver: LintDriver):
 
         return False
 
+    @driver.basic_rule(TupleDecl)
+    def UnusedTupleUnpack(context: Context, node: TupleDecl):
+        """
+        Warn for unused tuple unpacking, such as `(_, _)`.
+        """
+
+        varset = set(variables(node))
+        if len(varset) == 0:
+            fixit = fixit_remove_unused_node(node, context = context)
+            if fixit is not None:
+                return BasicRuleResult(fixit)
+            return False
+        return True
+
     #Five things have to match between consecutive decls for this to warn:
     # 1. same type
     # 2. same kind
@@ -389,14 +436,6 @@ def register_rules(driver: LintDriver):
         indices = dict()
         uses = set()
 
-        def variables(node):
-            if isinstance(node, Variable):
-                if node.name() != "_":
-                    yield node
-            elif isinstance(node, TupleDecl):
-                for child in node:
-                    yield from variables(child)
-
         for loop, _ in chapel.each_matching(root, IndexableLoop):
             node = loop.index()
             if node is None:
@@ -414,18 +453,7 @@ def register_rules(driver: LintDriver):
         for unused in indices.keys() - uses:
             node, loop = indices[unused]
             fixit = None
-            parent = node.parent()
-            if parent and isinstance(parent, TupleDecl):
-                fixit = Fixit.build(node.location(), "_")
-            elif parent and isinstance(parent, IndexableLoop):
-                loc = parent.header_location() or parent.location()
-                before_loc = loc - node.location()
-                after_loc = loc.clamp_left(parent.iterand().location())
-                before_lines = range_to_text(before_loc, lines)
-                after_lines = range_to_text(after_loc, lines)
-
-                fixit = Fixit.build(loc, before_lines + after_lines)
-
+            fixit = fixit_remove_unused_node(node, lines)
             yield AdvancedRuleResult(node, loop, fixit)
 
     @driver.advanced_rule
