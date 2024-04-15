@@ -244,7 +244,6 @@ def get_symbol_information(
     return None
 
 
-
 def encode_deltas(
     tokens: List[Tuple[int, int, int]], token_type: int, token_modifiers: int
 ) -> List[int]:
@@ -1627,7 +1626,8 @@ def run_lsp():
     async def document_highlight(
         ls: ChapelLanguageServer, params: DocumentHighlightParams
     ):
-        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        text_doc_uri = params.text_document.uri
+        text_doc = ls.workspace.get_text_document(text_doc_uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
@@ -1635,14 +1635,20 @@ def run_lsp():
         if not node_and_loc:
             return None
 
+        # only add highlights for the current document
+        should_add = lambda x: x.get_uri() == text_doc_uri
+
         # todo: it would be nice if this differentiated between read and write
-        highlights = [
-            DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+        highlights = []
+        if should_add(node_and_loc):
+            dh = DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+            highlights.append(dh)
+        uses = fi.uses_here.get(node_and_loc.node.unique_id(), [])
+        highlights += [
+            DocumentHighlight(use.rng, DocumentHighlightKind.Text)
+            for use in uses
+            if should_add(use)
         ]
-        for use in fi.uses_here.get(node_and_loc.node.unique_id(), []):
-            highlights.append(
-                DocumentHighlight(use.rng, DocumentHighlightKind.Text)
-            )
 
         return highlights
 
