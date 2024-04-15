@@ -80,9 +80,18 @@ def apply_fixits(fixits: List[Fixit], suffix: Optional[str]=None):
         fixits.sort(key=lambda f: f.start, reverse=True)
         with open(file, "r") as f:
             lines = f.readlines()
+
+        prev_start = None
         for fixit in fixits:
-            line_start, char_start = fixit.start
-            line_end, char_end = fixit.end
+            start = fixit.start
+            line_start, char_start = start
+            end = fixit.end
+            line_end, char_end = end
+
+            # Skip overlapping fixits
+            if prev_start is not None and end > prev_start:
+                continue
+
             lines[line_start - 1] = (
                 lines[line_start - 1][: char_start - 1]
                 + fixit.text
@@ -90,6 +99,8 @@ def apply_fixits(fixits: List[Fixit], suffix: Optional[str]=None):
             )
             if line_start != line_end:
                 lines[line_start:line_end] = [""] * (line_end - line_start)
+
+            prev_start = start
 
         outfile = file if suffix is None else file + suffix
         with open(outfile, "w") as f:
