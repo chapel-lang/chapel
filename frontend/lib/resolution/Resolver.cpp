@@ -3307,12 +3307,6 @@ void Resolver::exit(const Range* range) {
     return;
   }
 
-  // For the time being, we're resolving ranges by manually finding the record
-  // and instantiating it appropriately. However, long-term, range literals
-  // should be equivalent to a call to chpl_build_bounded_range. The resolver
-  // cannot handle this right now, but in the future, the below implementation
-  // should be replaced with one that resolves the call.
-
   const RecordType* rangeType = CompositeType::getRangeType(context);
   if (CompositeType::isMissingBundledRecordType(context, rangeType->id())) {
     // The range record is part of the standard library, but
