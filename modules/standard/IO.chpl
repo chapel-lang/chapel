@@ -7279,7 +7279,7 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
           var gotbytes: c_int;
           err = qio_decode_char_buf(codepoint, gotbytes,
                                     (sLocal.buff + byteI):c_ptrConst(c_char),
-                                    nBytes - byteI);
+                                    len - byteI);
           if err then break;
           codepointI += 1;
           byteI += gotbytes;
@@ -8168,11 +8168,13 @@ private proc computeMaxBytesToRead(ch: fileReader,
     uselen = max(c_ssize_t);
   } else {
     uselen = len:c_ssize_t;
+    if c_ssize_t != int(64) {
+      assert( len == uselen );
+    }
     if t == string {
       // len is in codepoints, but each codepoint could be 4 bytes
       uselen = 4*uselen;
     }
-    if c_ssize_t != int(64) then assert( len == uselen );
   }
 
   // adjust uselen according to the channel's region,
@@ -8180,7 +8182,7 @@ private proc computeMaxBytesToRead(ch: fileReader,
   var end = qio_channel_end_offset_unlocked(ch._channel_internal);
   if end != max(int(64)) {
     // if the channel had an end position set, compute distance to it
-    var channelLen = end - pos;
+    var channelLen = (end - pos):c_ssize_t;
     if channelLen < uselen {
       uselen = channelLen + 1; // +1 to get an EOF back even if already there
     }
@@ -8274,11 +8276,11 @@ private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
         assert(n < buffSz);
       }
-      const readN = min(maxBytes - n, // Don't exceed max byte count
-                        buffSz - n);  // Don't exceed allocated buffer space
+      const readN = min(maxBytes - n,           // Don't exceed max byte count
+                        buffSz:c_ssize_t - n);  // Or allocated buffer space
 
       locErr = qio_channel_read(false, ch._channel_internal,
-                                buff[n], // store starting here
+                                buff[n], // read starting with data here
                                 readN, amtRead);
 
       n += amtRead;
@@ -8322,7 +8324,7 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
     // This is an amount in bytes.
     const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, string);
     // Compute the maximum number of codepoints we could read
-    const maxChars:c_ssize_t = if len < 0 then max(c_ssize_t) else len;
+    const maxChars:c_ssize_t = if len < 0 then max(c_ssize_t) else len:c_ssize_t;
 
     // Compute a guess as to the size to read based on the file length,
     // assuming 1-byte-per-codepoint.
@@ -8351,7 +8353,7 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
         assert(n + 5 < buffSz);
       }
 
-      const bytesRemaining = buffSz - n;
+      const bytesRemaining = buffSz:c_ssize_t - n;
       const charsRemaining = if maxChars < max(c_ssize_t)
                              then maxChars - nChars
                              else max(c_ssize_t);
