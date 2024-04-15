@@ -58,7 +58,7 @@ Flags                   Description
 ``-O``                  turns on optimization of the generated C code
 ``--fast``              turns on ``--no-checks``, ``-O``, and enables
                         many other optimizations
-``-s <name[=expr]>``    set a config variable with the given expression
+``-s <name[=expr]>``    set a config declaration with the given expression
                         as its default value (config params must be set
                         to values that are known at compile time)
 ``--M <dir>``           add the specified directory to the module search path
