@@ -1376,6 +1376,7 @@ bool GlobalToWide::run(Module &M) {
       assert(info->putFnType);
       assert(info->getPutFnType);
       assert(info->memsetFnType);
+
       assert(info->globalSpace > 0);
       assert(info->localeIdType);
       assert(info->nodeIdType);

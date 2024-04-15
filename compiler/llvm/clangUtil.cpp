@@ -4547,8 +4547,7 @@ void setupForGlobalToWide(void) {
   llvm::Type* retType = llvm::Type::getInt8PtrTy(ginfo->module->getContext());
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
-                          dummy, retType, argType
-                          ).getCallee();
+                        dummy, retType, argType).getCallee();
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
 
   // Mark the function as external so that it will not be removed
@@ -5224,10 +5223,8 @@ static void llvmEmitObjectFile(void) {
         emitPM.add(createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
 
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                                 nullptr,
-                                                 FileType,
-                                                 disableVerify);
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile, nullptr,
+                                                 FileType, disableVerify);
 
         emitPM.run(*info->module);
 

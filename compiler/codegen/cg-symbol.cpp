@@ -2891,11 +2891,8 @@ void FnSymbol::codegenDef() {
             // if we allocated a temporary, memcpy from it to the main var
             //
             if (srcSize > dstSize) {
-              irBuilder->CreateMemCpy(ptr,
-                                      llvm::MaybeAlign(),
-                                      storeAdr,
-                                      llvm::MaybeAlign(),
-                                      dstSize);
+              irBuilder->CreateMemCpy(ptr, llvm::MaybeAlign(),
+                                      storeAdr, llvm::MaybeAlign(), dstSize);
             }
 
             info->lvt->addValue(arg->cname, tmp.val,
