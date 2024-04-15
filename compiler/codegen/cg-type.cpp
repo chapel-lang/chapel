@@ -377,11 +377,7 @@ void AggregateType::codegenDef() {
 #ifdef HAVE_LLVM
       int paramID = 0;
       std::vector<llvm::Type*> params;
-#if HAVE_LLVM_VER >= 100
       std::vector<llvm::MaybeAlign> aligns;
-#else
-      std::vector<unsigned> aligns;
-#endif
 
       if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS)) {
         llvm::Type* cidType = info->lvt->getType("chpl__class_id");
@@ -518,11 +514,7 @@ void AggregateType::codegenDef() {
         if (aligns.size() == params.size()) {
           for (size_t i = 0; i < params.size(); i++) {
             unsigned offset = info->module->getDataLayout().getStructLayout(stype)->getElementOffset(i);
-#if HAVE_LLVM_VER >= 100
             unsigned align = 1 << Log2(aligns[i].valueOrOne());
-#else
-            unsigned align = aligns[i];
-#endif
             if ((offset % align) != 0) {
               // Not aligned. Issue an error. In the future, we expect to add
               // padding to make it aligned.

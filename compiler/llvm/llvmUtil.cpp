@@ -61,17 +61,10 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
 
   if( insertBefore ) {
     if (align != 0) {
-#if HAVE_LLVM_VER >= 100
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
                                      size, llvm::Align(align),
                                      name, insertBefore);
-#else
-      tempVar = new llvm::AllocaInst(type,
-                                     DL.getAllocaAddrSpace(),
-                                     size, align,
-                                     name, insertBefore);
-#endif
     } else {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
@@ -79,17 +72,10 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
     }
   } else {
     if (align != 0) {
-#if HAVE_LLVM_VER >= 100
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
                                      size, llvm::Align(align),
                                      name, entryBlock);
-#else
-      tempVar = new llvm::AllocaInst(type,
-                                     DL.getAllocaAddrSpace(),
-                                     size, align,
-                                     name, entryBlock);
-#endif
     } else {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
