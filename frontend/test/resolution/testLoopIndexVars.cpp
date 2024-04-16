@@ -472,6 +472,102 @@ static void testIndexScope() {
   assert(!guard.realizeErrors());
 }
 
+static void testSerialZip() {
+  printf("testSerialZip\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto program = R""""(
+                  record r {}
+                  iter r.these() do yield 0;
+                  var r1 = new r();
+                  for tup in zip(r1, r1) do tup;
+                  )"""";
+
+  const Module* m = parseModule(context, program);
+  auto iter = m->stmt(1)->toFunction();
+  auto var = m->stmt(2)->toVariable();
+  auto loop = m->stmt(3)->toFor();
+  assert(iter && var && loop && loop->iterand() && loop->index());
+  auto index = loop->index();
+  auto zip = loop->iterand()->toZip();
+  assert(zip);
+
+  auto& rr = resolveModule(context, m->id());
+  auto& reZip = rr.byAst(zip);
+
+  assert(reZip.associatedActions().empty());
+
+  assert(zip->numActuals() == 2);
+  for (auto actual : zip->actuals()) {
+    auto& re = rr.byAst(actual);
+    assert(re.toId() == var->id());
+    assert(re.associatedActions().size() == 1);
+    auto& aa = re.associatedActions().back();
+    assert(aa.action() == AssociatedAction::ITERATE);
+    auto fn = aa.fn();
+    assert(fn->untyped()->kind() == Function::ITER);
+  }
+
+  auto t = reZip.type().type()->toTupleType();
+  assert(t && t->numElements() == 2);
+  assert(t->elementType(0).type() == IntType::get(context, 0));
+  assert(t->elementType(1).type() == IntType::get(context, 0));
+
+  auto& reIndex = rr.byAst(index);
+  assert(reIndex.type() == reZip.type());
+  assert(!guard.realizeErrors());
+}
+
+static void testParallelZipLeaderFollower() {
+  printf("testParallelZip\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto program = R""""(
+                  record r {}
+                  iter r.these(param tag: iterKind) where tag == iterKind.leader do yield 0;
+                  iter r.these(param tag: iterKind) where tag == iterKind.follower do yield 0;
+                  var r1 = new r();
+                  for tup in zip(r1, r1) do tup;
+                  )"""";
+
+  const Module* m = parseModule(context, program);
+  auto iter = m->stmt(1)->toFunction();
+  auto var = m->stmt(2)->toVariable();
+  auto loop = m->stmt(3)->toFor();
+  assert(iter && var && loop && loop->iterand() && loop->index());
+  auto index = loop->index();
+  auto zip = loop->iterand()->toZip();
+  assert(zip);
+
+  auto& rr = resolveModule(context, m->id());
+  auto& reZip = rr.byAst(zip);
+
+  assert(reZip.associatedActions().empty());
+
+  assert(zip->numActuals() == 2);
+  for (auto actual : zip->actuals()) {
+    auto& re = rr.byAst(actual);
+    assert(re.toId() == var->id());
+    assert(re.associatedActions().size() == 1);
+    auto& aa = re.associatedActions().back();
+    assert(aa.action() == AssociatedAction::ITERATE);
+    auto fn = aa.fn();
+    assert(fn->untyped()->kind() == Function::ITER);
+  }
+
+  auto t = reZip.type().type()->toTupleType();
+  assert(t && t->numElements() == 2);
+  assert(t->elementType(0).type() == IntType::get(context, 0));
+  assert(t->elementType(1).type() == IntType::get(context, 0));
+
+  auto& reIndex = rr.byAst(index);
+  assert(reIndex.type() == reZip.type());
+  assert(!guard.realizeErrors());
+}
 
 int main() {
   testSimpleLoop("for");
@@ -489,6 +585,8 @@ int main() {
   testParamFor();
   testNestedParamFor();
   testIndexScope();
+  testSerialZip();
+  testParallelZipLeaderFollower();
 
   return 0;
 }

@@ -592,6 +592,9 @@ struct Resolver {
   bool enter(const uast::Call* call);
   void exit(const uast::Call* call);
 
+  bool enter(const uast::Zip* zip);
+  void exit(const uast::Zip* zip);
+
   bool enter(const uast::Dot* dot);
   void exit(const uast::Dot* dot);
 
