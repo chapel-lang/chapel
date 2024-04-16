@@ -181,7 +181,10 @@ module FFTW {
 
   // Planner functions
   // Complex : 4.3.1
-  // NOTE : We pass in arrays using ref
+  // NOTE : We pass in arrays using ref as the FFTW interface expects it. It
+  // is unclear whether this is actually necessary on FFTW's side. We might
+  // be able to take 'const ref' in our wrappers and manually discard constness
+  // instead, to allow passing in const Chapel data.
 
   // TODO: Can we have the plan_dft() routine below take in native
   // Chapel types without changing the external C constants from
