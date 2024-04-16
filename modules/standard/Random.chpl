@@ -598,7 +598,7 @@ module Random {
     const ref weights: [?dw] real,
     withReplacement=false
   ): [] t throws
-    where is1DRectangularDomain(d)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
   {
     if weights.size != arr.size then
       throw new IllegalArgumentError("weights array must have the same size as the array");
@@ -629,11 +629,11 @@ module Random {
   proc sample(
     const ref arr: [?d] ?t,
     n: int,
-    const ref weights: [d] real,
+    const ref weights: [?dw] real,
     withReplacement=false,
     seed: int
   ): [] t throws
-    where is1DRectangularDomain(d)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
   {
     if weights.size != arr.size then
       throw new IllegalArgumentError("weights array must have the same size as the array");
@@ -707,7 +707,7 @@ module Random {
     const ref weights: [?dw] real,
     withReplacement=false
   ): [] d.idxType throws
-    where is1DRectangularDomain(d)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
   {
     if weights.size != d.size then
       throw new IllegalArgumentError("weights array must have the same size as the domain");
@@ -742,7 +742,7 @@ module Random {
     withReplacement=false,
     seed: int
   ): [] d.idxType throws
-    where is1DRectangularDomain(d)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
   {
     if weights.size != d.size then
       throw new IllegalArgumentError("weights array must have the same size as the domain");
@@ -811,7 +811,9 @@ module Random {
     n: int,
     const ref weights: [?dw] real,
     withReplacement=false
-  ): [] r.idxType throws {
+  ): [] r.idxType throws
+    where is1DRectangularDomain(dw)
+  {
     if weights.size != r.size then
       throw new IllegalArgumentError("weights array must have the same size as the range");
 
@@ -844,7 +846,9 @@ module Random {
     const ref weights: [?dw] real,
     withReplacement=false,
     seed: int
-  ): [] r.idxType throws {
+  ): [] r.idxType throws
+    where is1DRectangularDomain(dw)
+  {
     if weights.size != r.size then
       throw new IllegalArgumentError("weights array must have the same size as the range");
 
@@ -1316,7 +1320,7 @@ module Random {
                                     size as ``d``.
     */
     proc ref sample(d: domain, n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] d.idxType throws
-      where is1DRectangularDomain(d) && isCoercible(this.eltType, wt)
+      where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isCoercible(this.eltType, wt)
     {
       import Sort;
       import Search;
@@ -1438,7 +1442,7 @@ module Random {
                                     size as ``r``.
     */
     proc ref sample(r: range(bounds=boundKind.both, ?), n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] r.idxType throws
-      where isCoercible(this.eltType, wt)
+      where is1DRectangularDomain(dw) && isCoercible(this.eltType, wt)
     {
       if r.size < 1 then
         throw new IllegalArgumentError("Cannot sample from an empty range");
