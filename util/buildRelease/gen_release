@@ -77,7 +77,8 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     }
 
     print "[gen_release] Cloning the sources (repo: $git_url branch: $git_branch)...\n";
-    SystemOrDie("git clone --branch $git_branch $git_url $rootdir");
+    $reference_repo = "/cray/css/users/chapelu/cached_repos/chapel.git";
+    SystemOrDie("git clone --reference-if-able $reference_repo --branch $git_branch $git_url $rootdir");
 
     if (exists($ENV{'CHPL_GEN_RELEASE_COMMIT'})) {
         $commit = $ENV{'CHPL_GEN_RELEASE_COMMIT'};
