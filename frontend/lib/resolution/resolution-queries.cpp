@@ -328,6 +328,12 @@ const QualifiedType& typeForBuiltin(Context* context,
     result = QualifiedType(QualifiedType::TYPE, t);
   } else if (searchGlobals != globalMap.end()) {
     result = searchGlobals->second;
+  } else if (name == USTR("nil")) {
+    result = QualifiedType(QualifiedType::CONST_VAR,
+                           NilType::get(context));
+  } else if (name == USTR("none")) {
+    result = QualifiedType(QualifiedType::CONST_VAR,
+                           NothingType::get(context));
   } else {
     // Could be a non-type builtin like 'index'
     result = QualifiedType();

@@ -536,6 +536,40 @@ static void test9() {
   assert(guard.numErrors() == 0);
 }
 
+static void test10() {
+  // Ensure that secondary methods like 'proc x.myMethod()' are generic
+  // even if 'x' is generic-with-defaults.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T = int;
+      var field : T;
+    }
+
+    proc R.myMethod(): T do return this.field;
+
+    var r1: R(int);
+    var r2: R(bool);
+
+    var x1 = r1.myMethod();
+    var x2 = r2.myMethod();
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "x1", "x2" });
+
+  auto t1 = vars.at("x1");
+  assert(t1.type());
+  assert(t1.type()->isIntType());
+  assert(t1.type()->toIntType()->isDefaultWidth());
+
+  auto t2 = vars.at("x2");
+  assert(t2.type());
+  assert(t2.type()->isBoolType());
+}
+
 
 int main() {
   test1();
@@ -547,6 +581,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }

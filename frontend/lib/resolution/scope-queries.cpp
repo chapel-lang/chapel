@@ -379,6 +379,10 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
     scope->addBuiltin(pair.first);
   }
 
+  // TODO: maybe we can represent these as 'NilLiteral' and 'NoneLiteral' nodes?
+  scope->addBuiltin(USTR("nil"));
+  scope->addBuiltin(USTR("none"));
+
   populateScopeWithBuiltinKeywords(context, scope);
 }
 

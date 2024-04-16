@@ -96,6 +96,7 @@ struct Resolver {
   std::set<ID> instantiatedFieldOrFormals;
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
+  std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
@@ -491,8 +492,12 @@ struct Resolver {
   // Given the results of looking up an enum element, construct a QualifiedType.
   types::QualifiedType
   typeForScopeResolvedEnumElement(const types::EnumType* enumType,
-                                            const ID& refersToId,
-                                            bool ambiguous);
+                                  const ID& refersToId,
+                                  bool ambiguous);
+  types::QualifiedType
+  typeForScopeResolvedEnumElement(const ID& enumTypeId,
+                                  const ID& refersToId,
+                                  bool ambiguous);
   // Given a particular enum type, determine the type of a particular element.
   types::QualifiedType typeForEnumElement(const types::EnumType* type,
                                           UniqueString elemName,
