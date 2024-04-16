@@ -592,7 +592,12 @@ module Random {
                                   empty. If ``weights`` does not have the same
                                   size as ``arr``.
   */
-  proc sample(const ref arr: [?d] ?t, n: int, weights: [?dw] real, withReplacement=false): [] t throws
+  proc sample(
+    const ref arr: [?d] ?t,
+    n: int,
+    const ref weights: [?dw] real,
+    withReplacement=false
+  ): [] t throws
     where is1DRectangularDomain(d)
   {
     if weights.size != arr.size then
@@ -621,7 +626,13 @@ module Random {
                                   empty. If ``weights`` does not have the same
                                   size as ``arr``.
   */
-  proc sample(const ref arr: [?d] ?t, n: int, weights: [d] real, withReplacement=false, seed: int): [] t throws
+  proc sample(
+    const ref arr: [?d] ?t,
+    n: int,
+    const ref weights: [d] real,
+    withReplacement=false,
+    seed: int
+  ): [] t throws
     where is1DRectangularDomain(d)
   {
     if weights.size != arr.size then
@@ -690,7 +701,12 @@ module Random {
                                   empty. If ``weights`` does not have the same
                                   size as ``d``.
   */
-  proc sample(d: domain(?), n: int, weights: [?dw] real, withReplacement=false): [] d.idxType throws
+  proc sample(
+    d: domain(?),
+    n: int,
+    const ref weights: [?dw] real,
+    withReplacement=false
+  ): [] d.idxType throws
     where is1DRectangularDomain(d)
   {
     if weights.size != d.size then
@@ -719,7 +735,13 @@ module Random {
                                   empty. If ``weights`` does not have the same
                                   size as ``d``.
   */
-  proc sample(d: domain(?), n: int, weights: [?dw] real, withReplacement=false, seed: int): [] d.idxType throws
+  proc sample(
+    d: domain(?),
+    n: int,
+    const ref weights: [?dw] real,
+    withReplacement=false,
+    seed: int
+  ): [] d.idxType throws
     where is1DRectangularDomain(d)
   {
     if weights.size != d.size then
@@ -784,7 +806,12 @@ module Random {
                                   empty. If ``weights`` does not have the same
                                   size as ``r``.
   */
-  proc sample(r: range(bounds=boundKind.both, ?), n: int, weights: [?dw] real, withReplacement=false): [] r.idxType throws {
+  proc sample(
+    r: range(bounds=boundKind.both, ?),
+    n: int,
+    const ref weights: [?dw] real,
+    withReplacement=false
+  ): [] r.idxType throws {
     if weights.size != r.size then
       throw new IllegalArgumentError("weights array must have the same size as the range");
 
@@ -811,7 +838,13 @@ module Random {
                                   empty. If ``weights`` does not have the same
                                   size as ``r``.
   */
-  proc sample(r: range(bounds=boundKind.both, ?), n: int, weights: [?dw] real, withReplacement=false, seed: int): [] r.idxType throws {
+  proc sample(
+    r: range(bounds=boundKind.both, ?),
+    n: int,
+    const ref weights: [?dw] real,
+    withReplacement=false,
+    seed: int
+  ): [] r.idxType throws {
     if weights.size != r.size then
       throw new IllegalArgumentError("weights array must have the same size as the range");
 
@@ -1170,7 +1203,26 @@ module Random {
       return res;
     }
 
-    proc ref sample(const ref arr: [?d] ?t, n: int, weights: [?dw] ?wt, withReplacement=false): [] t throws
+    /*
+      Sample ``n`` random elements from an array, where each array element has
+      a corresponding weight.
+
+      Elements with relatively larger weights are more likely to be sampled.
+
+      :arg arr: The 1D rectangular array to sample from. Its domain's ``idxType``
+                should be coercible from this stream's ``eltType``.
+      :arg n: The number of elements to sample
+      :arg weights: An array of weights corresponding to the elements in ``arr``
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random elements sampled from the array
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``arr`` is
+                                    empty. If ``weights`` does not have the same
+                                    size as ``arr``.
+    */
+    proc ref sample(const ref arr: [?d] ?t, n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] t throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, wt)
     {
       if d.size < 1 then
@@ -1244,6 +1296,25 @@ module Random {
       return samples;
     }
 
+    /*
+      Sample ``n`` random indices from a domain, where each index has a
+      corresponding weight.
+
+      Indices with relatively larger weights are more likely to be sampled.
+
+      :arg d: The 1D rectangular domain to sample from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+      :arg n: The number of indices to sample
+      :arg weights: An array of weights corresponding to the indices in ``d``
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random indices sampled from the domain
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > d.size`` and
+                                    ``withReplacement=false``. If ``d`` is
+                                    empty. If ``weights`` does not have the same
+                                    size as ``d``.
+    */
     proc ref sample(d: domain, n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] d.idxType throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, wt)
     {
@@ -1347,7 +1418,26 @@ module Random {
       return this.sample({r}, n, withReplacement);
     }
 
-    proc ref sample(r: range(bounds=boundKind.both, ?), n: int, weights: [?dw] ?wt, withReplacement=false): [] r.idxType throws
+    /*
+      Sample ``n`` random values from a range where each value has a
+      corresponding weight.
+
+      Values with relatively larger weights are more likely to be sampled.
+
+      :arg r: The fully bounded range to sample from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+      :arg n: The number of values to sample
+      :arg weights: An array of weights corresponding to the values in ``r``
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random values sampled from the range
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > r.size`` and
+                                    ``withReplacement=false``. If ``r`` is
+                                    empty. If ``weights`` does not have the same
+                                    size as ``r``.
+    */
+    proc ref sample(r: range(bounds=boundKind.both, ?), n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] r.idxType throws
       where isCoercible(this.eltType, wt)
     {
       if r.size < 1 then
