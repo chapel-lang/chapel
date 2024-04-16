@@ -184,6 +184,22 @@ void chpl_topo_pre_comm_init(char *accessiblePUsMask) {
   //
   topoSupport = hwloc_topology_get_support(topology);
 
+#ifdef DEBUG
+  struct hwloc_topology_cpubind_support *cpubind = topoSupport->cpubind;
+  _DBG_P("set_thisproc_cpubind: %d", cpubind->set_thisproc_cpubind);
+  _DBG_P("get_thisproc_cpubind: %d", cpubind->get_thisproc_cpubind);
+  _DBG_P("set_proc_cpubind: %d", cpubind->set_proc_cpubind);
+  _DBG_P("get_proc_cpubind: %d", cpubind->get_proc_cpubind);
+  _DBG_P("set_thisthread_cpubind: %d", cpubind->set_thisthread_cpubind);
+  _DBG_P("get_thisthread_cpubind: %d", cpubind->get_thisthread_cpubind);
+  _DBG_P("set_thread_cpubind: %d", cpubind->set_thread_cpubind);
+  _DBG_P("get_thread_cpubind: %d", cpubind->get_thread_cpubind);
+  _DBG_P("get_thisproc_last_cpu_location: %d",
+         cpubind->get_thisproc_last_cpu_location);
+  _DBG_P("get_thisthread_last_cpu_location: %d",
+         cpubind->get_thisthread_last_cpu_location);
+#endif
+
   //
   // TODO: update comment
   // For now, don't support setting memory locality when comm=ugni or
@@ -1175,7 +1191,7 @@ int chpl_topo_bindCPU(int id) {
 // Returns 0 on success, 1 otherwise
 //
 int chpl_topo_bindLogAccCPUs(void) {
-  int status = 1;
+  int status = 0; // default to success if binding not supported
   if (topoSupport->cpubind->set_thisthread_cpubind) {
     int flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
     CHK_ERR_ERRNO(hwloc_set_cpubind(topology, logAccSet, flags) == 0);
