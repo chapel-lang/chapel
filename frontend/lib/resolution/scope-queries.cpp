@@ -2661,7 +2661,7 @@ const Scope* scopeForModule(Context* context, ID id) {
 
 
 const
-std::vector<ID> findUsedImportedModules(Context* context,
+std::vector<ID> findUsedImportedIds(Context* context,
                                         const Scope* scope) {
   auto result = resolveVisibilityStmts(context, scope);
   std::vector<ID> ids;
