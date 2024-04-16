@@ -1798,37 +1798,37 @@ inline proc LAPACKE_zggsvp(matrix_order : lapack_memory_order, jobu : string, jo
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_sgtcon(norm : c_char, n : c_int, ref dl : [] c_float, ref d : [] c_float, ref du : [] c_float, du2 : [] c_float, ref ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int;
+extern proc LAPACKE_sgtcon(norm : c_char, n : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_sgtcon(norm : string, n : c_int, ref dl : [] c_float, ref d : [] c_float, ref du : [] c_float, du2 : [] c_float, ref ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int{
+inline proc LAPACKE_sgtcon(norm : string, n : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int{
   require header;
   return LAPACKE_sgtcon(norm.toByte() : c_char, n, dl, d, du, du2, ipiv, anorm, rcond);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_dgtcon(norm : c_char, n : c_int, ref dl : [] c_double, ref d : [] c_double, ref du : [] c_double, du2 : [] c_double, ref ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int;
+extern proc LAPACKE_dgtcon(norm : c_char, n : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_dgtcon(norm : string, n : c_int, ref dl : [] c_double, ref d : [] c_double, ref du : [] c_double, du2 : [] c_double, ref ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int{
+inline proc LAPACKE_dgtcon(norm : string, n : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int{
   require header;
   return LAPACKE_dgtcon(norm.toByte() : c_char, n, dl, d, du, du2, ipiv, anorm, rcond);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_cgtcon(norm : c_char, n : c_int, ref dl : [] complex(64), ref d : [] complex(64), ref du : [] complex(64), du2 : [] complex(64), ref ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int;
+extern proc LAPACKE_cgtcon(norm : c_char, n : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_cgtcon(norm : string, n : c_int, ref dl : [] complex(64), ref d : [] complex(64), ref du : [] complex(64), du2 : [] complex(64), ref ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int{
+inline proc LAPACKE_cgtcon(norm : string, n : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, anorm : c_float, ref rcond : c_float) : c_int{
   require header;
   return LAPACKE_cgtcon(norm.toByte() : c_char, n, dl, d, du, du2, ipiv, anorm, rcond);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_zgtcon(norm : c_char, n : c_int, ref dl : [] complex(128), ref d : [] complex(128), ref du : [] complex(128), du2 : [] complex(128), ref ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int;
+extern proc LAPACKE_zgtcon(norm : c_char, n : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_zgtcon(norm : string, n : c_int, ref dl : [] complex(128), ref d : [] complex(128), ref du : [] complex(128), du2 : [] complex(128), ref ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int{
+inline proc LAPACKE_zgtcon(norm : string, n : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, anorm : c_double, ref rcond : c_double) : c_int{
   require header;
   return LAPACKE_zgtcon(norm.toByte() : c_char, n, dl, d, du, du2, ipiv, anorm, rcond);
 }
@@ -1882,37 +1882,37 @@ extern proc LAPACKE_cgtsv(matrix_order : lapack_memory_order, n : c_int, nrhs : 
 extern proc LAPACKE_zgtsv(matrix_order : lapack_memory_order, n : c_int, nrhs : c_int, ref dl : [] complex(128), ref d : [] complex(128), ref du : [] complex(128), ref b : [] complex(128), ldb : c_int) : c_int;
 
 @chpldoc.nodoc
-extern proc LAPACKE_sgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, ref dl : [] c_float, ref d : [] c_float, ref du : [] c_float, ref dlf : [] c_float, ref df : [] c_float, ref duf : [] c_float, du2 : [] c_float, ref ipiv : [] c_int, ref b : [] c_float, ldb : c_int, ref x : [] c_float, ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int;
+extern proc LAPACKE_sgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, ref dlf : [] c_float, ref df : [] c_float, ref duf : [] c_float, du2 : [] c_float, ref ipiv : [] c_int, b : [] c_float, ldb : c_int, ref x : [] c_float, ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_sgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, ref dl : [] c_float, ref d : [] c_float, ref du : [] c_float, ref dlf : [] c_float, ref df : [] c_float, ref duf : [] c_float, du2 : [] c_float, ref ipiv : [] c_int, ref b : [] c_float, ldb : c_int, ref x : [] c_float, ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int{
+inline proc LAPACKE_sgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, ref dlf : [] c_float, ref df : [] c_float, ref duf : [] c_float, du2 : [] c_float, ref ipiv : [] c_int, b : [] c_float, ldb : c_int, ref x : [] c_float, ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int{
   require header;
   return LAPACKE_sgtsvx(matrix_order, fact.toByte() : c_char, trans.toByte() : c_char, n, nrhs, dl, d, du, dlf, df, duf, du2, ipiv, b, ldb, x, ldx, rcond, ferr, berr);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_dgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, ref dl : [] c_double, ref d : [] c_double, ref du : [] c_double, ref dlf : [] c_double, ref df : [] c_double, ref duf : [] c_double, du2 : [] c_double, ref ipiv : [] c_int, ref b : [] c_double, ldb : c_int, ref x : [] c_double, ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int;
+extern proc LAPACKE_dgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, ref dlf : [] c_double, ref df : [] c_double, ref duf : [] c_double, du2 : [] c_double, ref ipiv : [] c_int, b : [] c_double, ldb : c_int, ref x : [] c_double, ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_dgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, ref dl : [] c_double, ref d : [] c_double, ref du : [] c_double, ref dlf : [] c_double, ref df : [] c_double, ref duf : [] c_double, du2 : [] c_double, ref ipiv : [] c_int, ref b : [] c_double, ldb : c_int, ref x : [] c_double, ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int{
+inline proc LAPACKE_dgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, ref dlf : [] c_double, ref df : [] c_double, ref duf : [] c_double, du2 : [] c_double, ref ipiv : [] c_int, b : [] c_double, ldb : c_int, ref x : [] c_double, ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int{
   require header;
   return LAPACKE_dgtsvx(matrix_order, fact.toByte() : c_char, trans.toByte() : c_char, n, nrhs, dl, d, du, dlf, df, duf, du2, ipiv, b, ldb, x, ldx, rcond, ferr, berr);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_cgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, ref dl : [] complex(64), ref d : [] complex(64), ref du : [] complex(64), ref dlf : [] complex(64), ref df : [] complex(64), ref duf : [] complex(64), du2 : [] complex(64), ref ipiv : [] c_int, ref b : [] complex(64), ldb : c_int, ref x : [] complex(64), ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int;
+extern proc LAPACKE_cgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), ref dlf : [] complex(64), ref df : [] complex(64), ref duf : [] complex(64), du2 : [] complex(64), ref ipiv : [] c_int, b : [] complex(64), ldb : c_int, ref x : [] complex(64), ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_cgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, ref dl : [] complex(64), ref d : [] complex(64), ref du : [] complex(64), ref dlf : [] complex(64), ref df : [] complex(64), ref duf : [] complex(64), du2 : [] complex(64), ref ipiv : [] c_int, ref b : [] complex(64), ldb : c_int, ref x : [] complex(64), ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int{
+inline proc LAPACKE_cgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), ref dlf : [] complex(64), ref df : [] complex(64), ref duf : [] complex(64), du2 : [] complex(64), ref ipiv : [] c_int, b : [] complex(64), ldb : c_int, ref x : [] complex(64), ldx : c_int, ref rcond : c_float, ref ferr : [] c_float, ref berr : [] c_float) : c_int{
   require header;
   return LAPACKE_cgtsvx(matrix_order, fact.toByte() : c_char, trans.toByte() : c_char, n, nrhs, dl, d, du, dlf, df, duf, du2, ipiv, b, ldb, x, ldx, rcond, ferr, berr);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_zgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, ref dl : [] complex(128), ref d : [] complex(128), ref du : [] complex(128), ref dlf : [] complex(128), ref df : [] complex(128), ref duf : [] complex(128), du2 : [] complex(128), ref ipiv : [] c_int, ref b : [] complex(128), ldb : c_int, ref x : [] complex(128), ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int;
+extern proc LAPACKE_zgtsvx(matrix_order : lapack_memory_order, fact : c_char, trans : c_char, n : c_int, nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), ref dlf : [] complex(128), ref df : [] complex(128), ref duf : [] complex(128), du2 : [] complex(128), ref ipiv : [] c_int, b : [] complex(128), ldb : c_int, ref x : [] complex(128), ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_zgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, ref dl : [] complex(128), ref d : [] complex(128), ref du : [] complex(128), ref dlf : [] complex(128), ref df : [] complex(128), ref duf : [] complex(128), du2 : [] complex(128), ref ipiv : [] c_int, ref b : [] complex(128), ldb : c_int, ref x : [] complex(128), ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int{
+inline proc LAPACKE_zgtsvx(matrix_order : lapack_memory_order, fact : string, trans : string, n : c_int, nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), ref dlf : [] complex(128), ref df : [] complex(128), ref duf : [] complex(128), du2 : [] complex(128), ref ipiv : [] c_int, b : [] complex(128), ldb : c_int, ref x : [] complex(128), ldx : c_int, ref rcond : c_double, ref ferr : [] c_double, ref berr : [] c_double) : c_int{
   require header;
   return LAPACKE_zgtsvx(matrix_order, fact.toByte() : c_char, trans.toByte() : c_char, n, nrhs, dl, d, du, dlf, df, duf, du2, ipiv, b, ldb, x, ldx, rcond, ferr, berr);
 }
@@ -2218,19 +2218,19 @@ inline proc LAPACKE_zheevx(matrix_order : lapack_memory_order, jobz : string, ra
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_chegst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref a : [] complex(64), lda : c_int, ref b : [] complex(64), ldb : c_int) : c_int;
+extern proc LAPACKE_chegst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref a : [] complex(64), lda : c_int, b : [] complex(64), ldb : c_int) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_chegst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref a : [] complex(64), lda : c_int, ref b : [] complex(64), ldb : c_int) : c_int{
+inline proc LAPACKE_chegst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref a : [] complex(64), lda : c_int, b : [] complex(64), ldb : c_int) : c_int{
   require header;
   return LAPACKE_chegst(matrix_order, itype, uplo.toByte() : c_char, n, a, lda, b, ldb);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_zhegst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref a : [] complex(128), lda : c_int, ref b : [] complex(128), ldb : c_int) : c_int;
+extern proc LAPACKE_zhegst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref a : [] complex(128), lda : c_int, b : [] complex(128), ldb : c_int) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_zhegst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref a : [] complex(128), lda : c_int, ref b : [] complex(128), ldb : c_int) : c_int{
+inline proc LAPACKE_zhegst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref a : [] complex(128), lda : c_int, b : [] complex(128), ldb : c_int) : c_int{
   require header;
   return LAPACKE_zhegst(matrix_order, itype, uplo.toByte() : c_char, n, a, lda, b, ldb);
 }
@@ -2578,19 +2578,19 @@ inline proc LAPACKE_zhpevx(matrix_order : lapack_memory_order, jobz : string, ra
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_chpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref ap : [] complex(64), ref bp : [] complex(64)) : c_int;
+extern proc LAPACKE_chpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref ap : [] complex(64), bp : [] complex(64)) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_chpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref ap : [] complex(64), ref bp : [] complex(64)) : c_int{
+inline proc LAPACKE_chpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref ap : [] complex(64), bp : [] complex(64)) : c_int{
   require header;
   return LAPACKE_chpgst(matrix_order, itype, uplo.toByte() : c_char, n, ap, bp);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_zhpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref ap : [] complex(128), ref bp : [] complex(128)) : c_int;
+extern proc LAPACKE_zhpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : c_char, n : c_int, ref ap : [] complex(128), bp : [] complex(128)) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_zhpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref ap : [] complex(128), ref bp : [] complex(128)) : c_int{
+inline proc LAPACKE_zhpgst(matrix_order : lapack_memory_order, itype : c_int, uplo : string, n : c_int, ref ap : [] complex(128), bp : [] complex(128)) : c_int{
   require header;
   return LAPACKE_zhpgst(matrix_order, itype, uplo.toByte() : c_char, n, ap, bp);
 }
@@ -5494,16 +5494,16 @@ inline proc LAPACKE_zstegr(matrix_order : lapack_memory_order, jobz : string, ra
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_sstein(matrix_order : lapack_memory_order, n : c_int, ref d : [] c_float, ref e : [] c_float, m : c_int, ref w : [] c_float, ref iblock : [] c_int, ref isplit : [] c_int, ref z : [] c_float, ldz : c_int, ref ifailv : [] c_int) : c_int;
+extern proc LAPACKE_sstein(matrix_order : lapack_memory_order, n : c_int, d : [] c_float, e : [] c_float, m : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, ref z : [] c_float, ldz : c_int, ifailv : [] c_int) : c_int;
 
 @chpldoc.nodoc
-extern proc LAPACKE_dstein(matrix_order : lapack_memory_order, n : c_int, ref d : [] c_double, ref e : [] c_double, m : c_int, ref w : [] c_double, ref iblock : [] c_int, ref isplit : [] c_int, ref z : [] c_double, ldz : c_int, ref ifailv : [] c_int) : c_int;
+extern proc LAPACKE_dstein(matrix_order : lapack_memory_order, n : c_int, d : [] c_double, e : [] c_double, m : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, ref z : [] c_double, ldz : c_int, ifailv : [] c_int) : c_int;
 
 @chpldoc.nodoc
-extern proc LAPACKE_cstein(matrix_order : lapack_memory_order, n : c_int, ref d : [] c_float, ref e : [] c_float, m : c_int, ref w : [] c_float, ref iblock : [] c_int, ref isplit : [] c_int, ref z : [] complex(64), ldz : c_int, ref ifailv : [] c_int) : c_int;
+extern proc LAPACKE_cstein(matrix_order : lapack_memory_order, n : c_int, d : [] c_float, e : [] c_float, m : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, ref z : [] complex(64), ldz : c_int, ifailv : [] c_int) : c_int;
 
 @chpldoc.nodoc
-extern proc LAPACKE_zstein(matrix_order : lapack_memory_order, n : c_int, ref d : [] c_double, ref e : [] c_double, m : c_int, ref w : [] c_double, ref iblock : [] c_int, ref isplit : [] c_int, ref z : [] complex(128), ldz : c_int, ref ifailv : [] c_int) : c_int;
+extern proc LAPACKE_zstein(matrix_order : lapack_memory_order, n : c_int, d : [] c_double, e : [] c_double, m : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, ref z : [] complex(128), ldz : c_int, ifailv : [] c_int) : c_int;
 
 @chpldoc.nodoc
 extern proc LAPACKE_sstemr(matrix_order : lapack_memory_order, jobz : c_char, rang : c_char, n : c_int, ref d : [] c_float, ref e : [] c_float, vl : c_float, vu : c_float, il : c_int, iu : c_int, ref m : c_int, ref w : [] c_float, ref z : [] c_float, ldz : c_int, nzc : c_int, ref isuppz : [] c_int, ref tryrac : c_int) : c_int;
@@ -10102,37 +10102,37 @@ extern proc LAPACKE_clacn2_work(n : c_int, ref v : [] complex(64), ref x : [] co
 extern proc LAPACKE_zlacn2_work(n : c_int, ref v : [] complex(128), ref x : [] complex(128), ref est : c_double, ref kase : c_int, ref isave : [] c_int) : c_int;
 
 @chpldoc.nodoc
-extern proc LAPACKE_slacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, ref a : [] c_float, lda : c_int, ref b : [] c_float, ldb : c_int) : c_int;
+extern proc LAPACKE_slacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, a : [] c_float, lda : c_int, ref b : [] c_float, ldb : c_int) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_slacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, ref a : [] c_float, lda : c_int, ref b : [] c_float, ldb : c_int) : c_int{
+inline proc LAPACKE_slacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, a : [] c_float, lda : c_int, ref b : [] c_float, ldb : c_int) : c_int{
   require header;
   return LAPACKE_slacpy_work(matrix_order, uplo.toByte() : c_char, m, n, a, lda, b, ldb);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_dlacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, ref a : [] c_double, lda : c_int, ref b : [] c_double, ldb : c_int) : c_int;
+extern proc LAPACKE_dlacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, a : [] c_double, lda : c_int, ref b : [] c_double, ldb : c_int) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_dlacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, ref a : [] c_double, lda : c_int, ref b : [] c_double, ldb : c_int) : c_int{
+inline proc LAPACKE_dlacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, a : [] c_double, lda : c_int, ref b : [] c_double, ldb : c_int) : c_int{
   require header;
   return LAPACKE_dlacpy_work(matrix_order, uplo.toByte() : c_char, m, n, a, lda, b, ldb);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_clacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, ref a : [] complex(64), lda : c_int, ref b : [] complex(64), ldb : c_int) : c_int;
+extern proc LAPACKE_clacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, a : [] complex(64), lda : c_int, ref b : [] complex(64), ldb : c_int) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_clacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, ref a : [] complex(64), lda : c_int, ref b : [] complex(64), ldb : c_int) : c_int{
+inline proc LAPACKE_clacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, a : [] complex(64), lda : c_int, ref b : [] complex(64), ldb : c_int) : c_int{
   require header;
   return LAPACKE_clacpy_work(matrix_order, uplo.toByte() : c_char, m, n, a, lda, b, ldb);
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_zlacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, ref a : [] complex(128), lda : c_int, ref b : [] complex(128), ldb : c_int) : c_int;
+extern proc LAPACKE_zlacpy_work(matrix_order : lapack_memory_order, uplo : c_char, m : c_int, n : c_int, a : [] complex(128), lda : c_int, ref b : [] complex(128), ldb : c_int) : c_int;
 
 @chpldoc.nodoc
-inline proc LAPACKE_zlacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, ref a : [] complex(128), lda : c_int, ref b : [] complex(128), ldb : c_int) : c_int{
+inline proc LAPACKE_zlacpy_work(matrix_order : lapack_memory_order, uplo : string, m : c_int, n : c_int, a : [] complex(128), lda : c_int, ref b : [] complex(128), ldb : c_int) : c_int{
   require header;
   return LAPACKE_zlacpy_work(matrix_order, uplo.toByte() : c_char, m, n, a, lda, b, ldb);
 }
@@ -18589,16 +18589,16 @@ extern proc LAPACK_clacn2(ref n : c_int, ref v : [] complex(64), ref x : [] comp
 extern proc LAPACK_zlacn2(ref n : c_int, ref v : [] complex(128), ref x : [] complex(128), ref est : c_double, ref kase : c_int, ref isave : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, ref a : [] c_float, ref lda : c_int, ref b : [] c_float, ref ldb : c_int) : c_ptr(void);
+extern proc LAPACK_slacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, ref b : [] c_float, ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, ref a : [] c_double, ref lda : c_int, ref b : [] c_double, ref ldb : c_int) : c_ptr(void);
+extern proc LAPACK_dlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, ref b : [] c_double, ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, ref a : [] complex(64), ref lda : c_int, ref b : [] complex(64), ref ldb : c_int) : c_ptr(void);
+extern proc LAPACK_clacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, ref b : [] complex(64), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, ref a : [] complex(128), ref lda : c_int, ref b : [] complex(128), ref ldb : c_int) : c_ptr(void);
+extern proc LAPACK_zlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, ref b : [] complex(128), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
 extern proc LAPACK_clacp2(ref uplo : c_char, ref m : c_int, ref n : c_int, ref a : [] c_float, ref lda : c_int, ref b : [] complex(64), ref ldb : c_int) : c_ptr(void);
@@ -22120,7 +22120,7 @@ inline proc lacn2(n : c_int, ref v : [] complex(128), ref x : [] complex(128), r
 /*
 Wrapped procedure of LAPACKE_slacpy for the type real(32).
  */
-inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, ref a : [] real(32), ref b : [] real(32)): c_int{
+inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, a : [] real(32), ref b : [] real(32)): c_int{
   require header;
   return ClassicLAPACK.LAPACKE_slacpy(matrix_order, uplo.toByte() : c_char, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int);
 }
@@ -22128,7 +22128,7 @@ inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, ref a : [] 
 /*
 Wrapped procedure of LAPACKE_dlacpy for the type real(64).
  */
-inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, ref a : [] real(64), ref b : [] real(64)): c_int{
+inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, a : [] real(64), ref b : [] real(64)): c_int{
   require header;
   return ClassicLAPACK.LAPACKE_dlacpy(matrix_order, uplo.toByte() : c_char, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int);
 }
@@ -22136,7 +22136,7 @@ inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, ref a : [] 
 /*
 Wrapped procedure of LAPACKE_clacpy for the type complex(64).
  */
-inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, ref a : [] complex(64), ref b : [] complex(64)): c_int{
+inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, a : [] complex(64), ref b : [] complex(64)): c_int{
   require header;
   return ClassicLAPACK.LAPACKE_clacpy(matrix_order, uplo.toByte() : c_char, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int);
 }
@@ -22144,7 +22144,7 @@ inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, ref a : [] 
 /*
 Wrapped procedure of LAPACKE_zlacpy for the type complex(128).
  */
-inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, ref a : [] complex(128), ref b : [] complex(128)): c_int{
+inline proc lacpy(matrix_order : lapack_memory_order, uplo : string, a : [] complex(128), ref b : [] complex(128)): c_int{
   require header;
   return ClassicLAPACK.LAPACKE_zlacpy(matrix_order, uplo.toByte() : c_char, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int);
 }
