@@ -1380,7 +1380,7 @@ private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):errorCode;
-private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int, max_bytos_to_advance:int(64), consume:c_int):errorCode;
+private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int, max_bytes_to_advance:int(64), consume:c_int):errorCode;
 
 private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
@@ -4805,6 +4805,11 @@ proc fileReader._ch_ioerror(error:errorCode, msg:string) throws {
   try ioerror(error, msg, path, offset);
 }
 
+proc fileReader._ch_ioerror(error:c_int, msg:string) throws {
+  extern proc qio_int_to_err(a:int(32)):errorCode;
+  try _ch_ioerror(qio_int_to_err(error), msg);
+}
+
 @chpldoc.nodoc
 proc fileReader._ch_ioerror(errstr:string, msg:string) throws {
   var path:string = "unknown";
@@ -5056,6 +5061,7 @@ proc fileWriter.advance(amount:int(64)) throws {
    :arg separator: The separator to match with. Must be a :type:`~String.string`
     or :type:`~Bytes.bytes`.
 
+   :throws IllegalArgumentError: If the separator is empty
    :throws EofError: If the ``fileReader`` offset was already at EOF.
    :throws UnexpectedEofError: If the requested ``separator`` could not
                                be found.
@@ -5072,35 +5078,37 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
       // fast advance to the single-byte separator
       err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, max(int(64)), true);
       if err {
-        if err == ESHORT || err == EFORMAT {
+        if err == EEOF {
+          try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+        } else if err == ESHORT {
           throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
         } else {
           try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
         }
       }
+    } else if separator.numBytes == 0 {
+      throw new IllegalArgumentError("advanceThrough(" + t:string + ") called with empty separator");
     } else {
       // slow advance to multi-byte separator
-      const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      const (readError, found, bytesRead) = _findSeparator(separator, -1, this._channel_internal);
       // handle system errors
-      if readError != 0 && readError != EEOF {
-        if readError == ESHORT || err == EFORMAT {
-          throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
-        } else {
-          try this._ch_ioerror(readError, "in advanceThrough(" + t:string + ")");
-        }
+      if readError != 0 &&
+         readError != EEOF && readError != ESHORT && readError != EFORMAT {
+        try this._ch_ioerror(readError, "in advanceThrough(" + t:string + ")");
       }
 
       // advance past the separator
-      err = qio_channel_advance(false, this._channel_internal, byteOffset + separator.numBytes);
+      err = qio_channel_advance(false, this._channel_internal, bytesRead + separator.numBytes);
       // handle system errors
       if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
 
-      // didn't read anything
-      if err == EEOF && byteOffset == 0
-        then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
-      // separator not found
-      else if err == EEOF && !found
-        then throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+      if bytesRead == 0 {
+        // throw EofError
+        try this._ch_ioerror(EEOF, "in advanceThrough(" + t:string + ")");
+      } else if !found {
+        // throw UnexpectedEofError
+        try this._ch_ioerror(ESHORT, "separator not found in advanceThrough(" + t:string + ")");
+      }
     }
   }
 }
@@ -7832,7 +7840,7 @@ proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws 
 
   does not move the channel's pointer
 
- returns: (0, true, byte_offset) if found
+ returns: (0, true, bytes_to_sep) if found
           (EFORMAT, false, maxBytes) if not found within maxBytes
           (EFORMAT, false, 0) if separator is empty
           (EEOF, false, 0) if the channel was already at EOF

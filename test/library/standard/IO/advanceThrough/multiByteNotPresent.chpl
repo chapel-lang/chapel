@@ -13,6 +13,8 @@ proc testAdvancePast(r, sep) {
     writeln(e);
   }
 
+  assert(r.atEOF());
+
   try {
     // try reading at EOF
     r.advanceThrough(sep);
