@@ -87,6 +87,8 @@ CLASS_BEGIN(AstNode)
 
          auto sigObj = std::get<0>(args);
          auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
+         if (!resolvedFn) return {};
+
          auto r = resolvedFn->byAstOrNull(node);
          return ResolvedExpressionObject::tryCreate(contextObject, r))
   PLAIN_GETTER(AstNode, block_header, "Get the header Location of this block-like AstNode node",
