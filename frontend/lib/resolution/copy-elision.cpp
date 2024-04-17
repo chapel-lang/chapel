@@ -178,6 +178,8 @@ FindElidedCopies::copyElisionAllowedForTypes(const QualifiedType& lhsType,
       kindAllowsCopyElision(rhsType.kind())) {
     if (lhsType.type() == rhsType.type()) {
       return true;
+    } else if (lhsType.isUnknown() || rhsType.isUnknown()) {
+      return false;
     } else if (isRecordLike(lhsType.type())) {
       // check to see if an there is an init= to initialize
       // lhsType from rhsType but that uses the 'in' intent on the

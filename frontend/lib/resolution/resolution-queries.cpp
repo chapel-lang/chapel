@@ -3239,6 +3239,13 @@ static bool resolveFnCallSpecial(Context* context,
     auto src = ci.actual(0).type();
     auto dst = ci.actual(1).type();
 
+    auto targetParamGuess = Param::tryGuessParamTagFromType(dst.type());
+    if (!targetParamGuess) {
+      // We're casting a param value, but the destination type can't be
+      // a param. This should be treated as a non-special cast.
+      return false;
+    }
+
     bool isDstType = dst.kind() == QualifiedType::TYPE;
     bool isParamTypeCast = src.kind() == QualifiedType::PARAM && isDstType;
 
