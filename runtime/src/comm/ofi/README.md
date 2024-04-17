@@ -509,9 +509,9 @@ capabilities:
 
 and the following message orderings:
 
-    FI_ORDER_ATOMIC_RAW
-    FI_ORDER_ATOMIC_WAR
     FI_ORDER_ATOMIC_WAW
+    FI_ORDER_RMA_WAW
+    FI_ORDER_SAS
 
 Note that there is no explicitly asserted ordering here between RMA and
 atomic operations.  That is achieved by by fenced operations and their
@@ -523,6 +523,11 @@ when that is needed.  With a bound transmit context we can wait to do
 this on an as-needed basis across the same transmit-receive endpoint
 pair, but in any other case we have to do it immediately after the
 operation that may create the dangling store.
+
+FI_ORDER_RMA_WAW is needed to ensure that multiple writes by a single task to
+the same memory address occur in program order. Note that this is a stronger
+guarantee than is necessary to enforce the MCM because it ensures that all
+writes by a task occur in program order, independent of memory address.
 
 #### Message-order MCM Mode
 
