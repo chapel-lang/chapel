@@ -2939,6 +2939,8 @@ static void helpComputeClangArgs(std::string& clangCC,
   // of cabs but it appears to slow down simple complex multiplication.
   if (ffloatOpt > 0) { // --no-ieee-float
     clangCCArgs.push_back("-ffast-math");
+    // turn off inf warnings
+    clangCCArgs.push_back("-Wno-nan-infinity-disabled");
   } else {
     if (ffloatOpt < 0) { // --ieee-float
       clangCCArgs.push_back("-fno-fast-math"); // -fno-fast-math
