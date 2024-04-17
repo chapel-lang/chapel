@@ -7569,6 +7569,7 @@ proc fileReader.readLine(type t=string, maxSize=-1,
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
             up to (and possibly including) the separator.
 
+  :throws IllegalArgumentError: If the separator is empty
   :throws EofError: If nothing could be read because the ``fileReader``
                     was already at EOF.
   :throws BadFormatError: If the separator was not found in the next
@@ -7603,6 +7604,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
             ``fileReader`` was already at EOF).
 
+  :throws IllegalArgumentError: If the separator is empty
   :throws BadFormatError: If the separator was not found in the next
                           `maxSize` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
@@ -7613,6 +7615,10 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
 proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
+
+    if separator.numBytes == 0 {
+      throw new IllegalArgumentError("readThrough(string) called with empty separator");
+    }
 
     // performance TODO: investigate using qio_channel_read_string as a fast path for single-byte separators
     //  (this would be a single pass and would not require retroactive codepoint checking)
@@ -7666,6 +7672,7 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
             ``fileReader`` was already at EOF).
 
+  :throws IllegalArgumentError: If the separator is empty
   :throws BadFormatError: If the separator was not found in the next
                           ``maxSize`` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
@@ -7676,6 +7683,10 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
+
+    if separator.numBytes == 0 {
+      throw new IllegalArgumentError("readThrough(bytes) called with empty separator");
+    }
 
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
     const (searchErr, found, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
@@ -7720,6 +7731,7 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
             up to the ``separator``.
 
+  :throws IllegalArgumentError: If the separator is empty
   :throws EofError: If nothing could be read because the ``fileReader``
                     was already at EOF.
   :throws BadFormatError: If the separator was not found in the next
@@ -7754,6 +7766,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
             ``fileReader`` was already at EOF).
 
+  :throws IllegalArgumentError: If the separator is empty
   :throws BadFormatError: If the separator was not found in the next
                           `maxSize` bytes. The ``fileReader`` offset is not
                           moved.
@@ -7766,6 +7779,10 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
   var atEof = false;
   on this._home {
     try this.lock(); defer { this.unlock(); }
+
+    if separator.numBytes == 0 {
+      throw new IllegalArgumentError("readTo(string) called with empty separator");
+    }
 
     // performance TODO: investigate using qio_channel_read_string as a fast path for single-byte separators
     //  (this would be a single pass and would not require retroactive codepoint checking)
@@ -7809,6 +7826,7 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
             ``fileReader`` was already at EOF).
 
+  :throws IllegalArgumentError: If the separator is empty
   :throws BadFormatError: If the separator was not found in the next
                           ``maxSize`` bytes. The ``fileReader`` offset is not
                           moved.
@@ -7821,6 +7839,10 @@ proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws 
   var atEof = false;
   on this._home {
     try this.lock(); defer { this.unlock(); }
+
+    if separator.numBytes == 0 {
+      throw new IllegalArgumentError("readTo(bytes) called with empty separator");
+    }
 
     const (searchErr, _, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
