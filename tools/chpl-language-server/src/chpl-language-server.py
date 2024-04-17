@@ -1216,7 +1216,7 @@ class ChapelLanguageServer(LanguageServer):
             )
             if dead_branch:
                 loc = dead_branch.location()
-                return range_to_tokens(loc, lines)
+                return chapel.range_to_tokens(loc, lines)
 
         return []
 
