@@ -1316,6 +1316,7 @@ static FnSymbol* finalizeHolder(ImplementsStmt* istm, FnSymbol*   reqFn,
   FnSymbol* wrapper = new FnSymbol(target->name);
   wrapper->addFlag(FLAG_INLINE);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
+  wrapper->addFlag(FLAG_COMPILER_GENERATED);
   wrapperFnForImplementsStmt(istm)->defPoint->insertAfter(new DefExpr(wrapper));
 
   for (Symbol* dup: formalDups)
