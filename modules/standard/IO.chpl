@@ -5128,6 +5128,7 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
    :arg separator: The separator to match with. Must be a :type:`~String.string` or
     :type:`~Bytes.bytes`.
 
+   :throws IllegalArgumentError: If the separator is empty
    :throws EofError: If the ``fileReader`` offset is already at EOF.
    :throws UnexpectedEofError: If the requested ``separator`` could not be found.
    :throws SystemError: If data could not be read from the ``fileReader``.
@@ -5149,30 +5150,30 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
           try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
         }
       }
+    } else if separator.numBytes == 0 {
+      throw new IllegalArgumentError("advanceTo(" + t:string + ") called with empty separator");
     } else {
       // slow advance to multi-byte separator or EOF
-      const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
-      if readError != 0 && readError != EEOF {
-        if err == ESHORT || err == EFORMAT {
-          throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
-        } else {
-          try this._ch_ioerror(readError, "in advanceTo(" + t:string + ")");
-        }
+      const (readError, found, bytesRead) = _findSeparator(separator, -1, this._channel_internal);
+      if readError != 0 &&
+         readError != EEOF && readError != ESHORT && readError != EFORMAT {
+        try this._ch_ioerror(readError, "in advanceTo(" + t:string + ")");
       }
 
       // advance to separator, or to EOF if not found
       err = qio_channel_advance(
         false, this._channel_internal,
-        byteOffset + if found then 0 else separator.numBytes
+        bytesRead + if found then 0 else separator.numBytes
       );
       if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
 
-      // didn't read anything
-      if err == EEOF && byteOffset == 0
-        then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
-      // didn't find separator
-      else if err == EEOF && !found
-        then throw new UnexpectedEofError("separator not found in advanceTo(" + t:string + ")");
+      if bytesRead == 0 {
+        // throw EofError
+        try this._ch_ioerror(EEOF, "in advanceTo(" + t:string + ")");
+      } else if !found {
+        // throw UnexpectedEofError
+        try this._ch_ioerror(ESHORT, "separator not found in advanceTo(" + t:string + ")");
+      }
     }
   }
 }
