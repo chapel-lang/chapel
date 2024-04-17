@@ -9605,7 +9605,7 @@ proc fileReader.assertEOF(errStr: string = "- Not at EOF") {
 @chpldoc.nodoc
 proc fileReader.atEOF(): bool throws {
   var tmp:uint(8);
-  return !(try this.read(tmp));
+  return !(try this.readByte(tmp));
 }
 
 /*
