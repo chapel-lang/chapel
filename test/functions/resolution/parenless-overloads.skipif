@@ -1,2 +1,0 @@
-# Skip this test under Dyno
-CHPL_DYNO_SCOPE_RESOLVE!=false
