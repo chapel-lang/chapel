@@ -4805,6 +4805,8 @@ proc fileReader._ch_ioerror(error:errorCode, msg:string) throws {
   try ioerror(error, msg, path, offset);
 }
 
+// this version accepts an integral error code
+@chpldoc.nodoc
 proc fileReader._ch_ioerror(error:c_int, msg:string) throws {
   extern proc qio_int_to_err(a:int(32)):errorCode;
   try _ch_ioerror(qio_int_to_err(error), msg);
