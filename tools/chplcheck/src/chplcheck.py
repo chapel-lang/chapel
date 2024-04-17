@@ -109,7 +109,7 @@ def apply_fixits(
                         edits_to_apply.extend(fixit.edits)
                         done = True
                     except (ValueError, IndexError):
-                        print("Invalid choice, please try again")
+                        print("Please enter a number corresponding to an option")
             except KeyboardInterrupt:
                 # apply no edits, return the original violations
                 return violations
