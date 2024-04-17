@@ -8,8 +8,8 @@ if [ -f /data/cf/chapel/chpl-deps/setup_chpl_deps.bash ] ; then
   source /data/cf/chapel/chpl-deps/setup_chpl_deps.bash
 elif [ "$(hostname -s)" == "osprey" ]; then
   # ditto for osprey
-  if [ -f /cray/css/users/chapelu/chpl-deps/load_chpl_deps.bash ] ; then
-    source /cray/css/users/chapelu/chpl-deps/load_chpl_deps.bash
+  if [ -f /lus/scratch/chapelu/chpl-deps/osprey/load_chpl_deps.bash ] ; then
+    source /lus/scratch/chapelu/chpl-deps/osprey/load_chpl_deps.bash
   fi
 else
   # For our internal testing, this is necessary to get the latest version of gcc
