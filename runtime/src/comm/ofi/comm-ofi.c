@@ -3892,7 +3892,7 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
              "dummy GET from %d for %s ordering",
              (int) node, dbgOrderStr);
   uint64_t flags = (mcmMode == mcmm_msgOrdFence) ?
-                      FI_FENCE | FI_DELIVERY_COMPLETE : 0;
+                      (FI_FENCE | FI_DELIVERY_COMPLETE) : 0;
   atomic_bool txnDone;
   void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
   ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
