@@ -4259,14 +4259,30 @@ resolveIterTypeConsideringTag(Resolver& rv,
   CHPL_ASSERT(needSerial || iterKindFormal.type() == iterKindType &&
                             iterKindFormal.hasParamPtr());
 
-  // TODO: Do we need to shield from 'unresolved call' errors here?
-  iterand->traverse(rv);
+  auto traversalErrors = context->runAndTrackErrors([&](Context* context) {
+    iterand->traverse(rv);
+    return nullptr;
+  });
 
   ResolvedExpression& iterandRE = rv.byPostorder.byAst(iterand);
   auto& MSC = iterandRE.mostSpecific();
   auto fn = !MSC.isEmpty() && MSC.numBest() == 1 ? MSC.only().fn() : nullptr;
   bool isIter = fn && fn->untyped()->kind() == uast::Function::Kind::ITER;
   bool wasIterandTypeResolved = !iterandRE.type().isUnknownOrErroneous();
+
+  // Publish all errors except a 'NoMatchingCandidates' for the iterand.
+  // We may publish it later.
+  owned<ErrorBase> noCandidatesError = nullptr;
+  for (auto& e : traversalErrors.errors()) {
+    if (!isIter && e->type() == NoMatchingCandidates) {
+      auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
+      if (std::get<0>(nmc->info()) == iterand) {
+        std::swap(noCandidatesError, e);
+        continue;
+      }
+    }
+    context->report(std::move(e));
+  }
 
   // Attempt to detect if this is a forwarded leader iterator.
   QualifiedType forwardedTag = unknown;
@@ -4310,68 +4326,76 @@ resolveIterTypeConsideringTag(Resolver& rv,
   // This is because the 'tag' and 'followThis' actuals are injected by us
   // and do not appear in the source code.
   } else if (wasIterandTypeResolved || (!needSerial && iterand->isCall())) {
+    bool shouldCreateTheseCall = wasIterandTypeResolved && !isIter;
+
     CHPL_ASSERT(!isForwardedIterTag);
 
-    bool shouldCreateTheseCall = wasIterandTypeResolved && !isIter;
-    auto call = iterand->toCall();
-    std::vector<CallInfoActual> actuals;
-    std::vector<CallInfoActual> oldActuals;
+    // Pieces of the iterator call we need to prepare.
+    UniqueString callName;
+    types::QualifiedType callCalledType;
+    bool callIsMethodCall = false;
+    bool callHasQuestionArg = false;
+    bool callIsParenless = false;
+    std::vector<CallInfoActual> callActuals;
 
     // If we are constructing a new 'these()' call, add a new receiver.
     if (shouldCreateTheseCall) {
-      actuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
+      callName = USTR("these");
+      callCalledType = iterandRE.type();
+      callIsMethodCall = true;
+      callActuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
 
     // The iterand is an unresolved call, or it is a resolved iterator but
     // not the one that we need. Regather existing actuals and reuse the
     // receiver if it is present.
     } else {
+      auto call = iterand->toCall();
+      CHPL_ASSERT(call);
+
       bool raiseErrors = false;
       auto tmp = CallInfo::create(context, call, rv.byPostorder, raiseErrors);
+
+      callName = tmp.name();
+      callCalledType = tmp.calledType();
+      callIsMethodCall = tmp.isMethodCall();
+      callIsParenless = tmp.isParenless();
       for (int i = 0; i < tmp.numActuals(); i++) {
-        auto& actual = tmp.actual(i);
-        if (i == 0 && tmp.isMethodCall()) {
-          actuals.push_back(actual);
-        } else {
-          oldActuals.push_back(actual);
-        }
+        callActuals.push_back(tmp.actual(i));
       }
     }
 
     if (!needSerial) {
-      actuals.push_back(CallInfoActual(iterKindFormal, USTR("tag")));
+      callActuals.push_back(CallInfoActual(iterKindFormal, USTR("tag")));
     }
 
     if (needFollower) {
-      actuals.push_back(CallInfoActual(followThisFormal, USTR("followThis")));
+      auto x = CallInfoActual(followThisFormal, USTR("followThis"));
+      callActuals.push_back(std::move(x));
     }
 
-    if (!oldActuals.empty()) {
-      CHPL_ASSERT(!wasIterandTypeResolved);
-      actuals.insert(actuals.end(), oldActuals.begin(), oldActuals.end());
-    }
-
-    auto ci = CallInfo (/* name */ USTR("these"),
-                        /* calledType */ iterandRE.type(),
-                        /* isMethodCall */ true,
-                        /* hasQuestionArg */ false,
-                        /* isParenless */ false,
-                        std::move(actuals));
+    auto ci = CallInfo(std::move(callName),
+                       std::move(callCalledType),
+                       std::move(callIsMethodCall),
+                       std::move(callHasQuestionArg),
+                       std::move(callIsParenless),
+                       std::move(callActuals));
     auto inScope = rv.scopeStack.back();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
 
-    // TODO: Speculate.
     auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
 
     if (c.mostSpecific().only()) {
       idxType = c.exprType();
-
-      // TODO: Speculate.
       rv.handleResolvedCall(iterandRE, astForErr, ci, c,
                             { { AssociatedAction::ITERATE, iterand->id() } });
     } else if (wasIterandTypeResolved) {
       if (emitErrors) CHPL_REPORT(context, NonIterable, astForErr, iterand,
                                   iterandRE.type());
     }
+  }
+
+  if (idxType.isUnknownOrErroneous() && noCandidatesError) {
+    context->report(std::move(noCandidatesError));
   }
 
   return idxType;
