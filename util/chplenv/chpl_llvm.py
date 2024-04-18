@@ -1039,7 +1039,9 @@ def compute_host_link_settings():
         # Starting with clang 18, clang needs additional libraries
         if llvm_version not in ('11', '12', '13', '14', '15', '16', '17'):
             llvm_components.append('frontenddriver')
-            clang_static_libs.append('-lclangAPINotes')
+            # clangAPINotes must go immediately after clangSema
+            idx = clang_static_libs.index('-lclangSema') + 1
+            clang_static_libs.insert(idx, '-lclangAPINotes')
 
     # quit early if the llvm value is unset
     if llvm_val == 'unset':
