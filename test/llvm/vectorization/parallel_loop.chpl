@@ -10,24 +10,17 @@
 // has no loop carried dependency, and adding
 // parallel_loop_access metadata is necessary
 
-proc loop (ref A, B, C, D) {
+config const N = 512;
+proc loop (ref A, B, n) {
   // CHECK: <4 x i32>
-  var sum : int(32) = 0;
-  foreach i in 0..511 with (ref sum) {
-     if(C[i] < D[i]) {
-       sum += C[i]+5;
-     }
-     A[A[i]] = B[i];
-     A[i] = B[i+1];
+  foreach i in 0..<n {
+    A[A[i]] = B[i];
+    A[i] = B[i+1];
   }
-  return sum;
 }
 
-var A : [0..511] int(32);
-var B : [0..511] int(32);
-var C : [0..511] int(32);
-var D : [0..511] int(32);
+var A : [0..<N] int(32);
+var B : [0..<N] int(32);
 
-var res = loop(A, B, C, D);
+loop(A, B, N);
 writeln("Sum of A is ", + reduce A);
-writeln("Res is ", res);
