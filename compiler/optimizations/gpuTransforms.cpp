@@ -773,12 +773,6 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
   collectSymExprs(this->loop_, symExprs);
   for(auto *symExpr : symExprs) {
     Symbol* sym = symExpr->symbol();
-    // forall loops that contain a reduction intent introduce a temporary
-    // variable with a special flag that we'll look for (for the time being we
-    // want to not gpuize these loops).
-    if(sym->hasFlag(FLAG_REDUCTION_TEMP)) {
-      //return false;
-    }
     // gotos that jump outside the loop cannot be gpuized
     if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
       if (auto label = toSymExpr(gotostmt->label)) {
@@ -1000,11 +994,6 @@ bool GpuizableLoop::extractUpperBound() {
   return true;
 }
 
-struct KernelActual {
-  Symbol* sym;
-  int8_t kind;  // assigned to one or more values of GpuArgKind or'd together
-};
-
 enum ReductionKind { SUM, MIN, MAX, UNSUPPORTED };
 
 struct ReductionInfo {
@@ -1022,6 +1011,10 @@ struct ReductionInfo {
 class GpuKernel;
 
 class KernelArg {
+  // we generate wrappers as export functions so that we can easily pass them
+  // around as function pointers. Export functions are not subject to codegen
+  // uniquefying their names. So, we do it ourselves. "For a given kernel name,
+  // what's the ID we should "assign" to this wrapper" is what this map stores.
   static std::map<std::string, int> wrapperDisambigMap;
 
   private:
@@ -1033,17 +1026,17 @@ class KernelArg {
 
   public:
     KernelArg(Symbol* symInLoop, GpuKernel* kernel);
-    int8_t kind() { return kind_; }
-    ArgSymbol* formal() { return formal_; }
-    Type* getType() { return actual_->typeInfo(); }
+    int8_t kind() const { return kind_; }
+    ArgSymbol* formal() const { return formal_; }
+    Type* getType() const { return actual_->typeInfo(); }
 
-    bool eligible();
-    ArgSymbol* reduceBuffer();
-    FnSymbol* reduceWrapper();
-    CallExpr* generatePrimGpuArg(Symbol* cfg);
-    CallExpr* generatePrimGpuBlockReduce(Symbol* blockSize);
-    std::string generateDevFnName();
-    std::string reduceKindFnName();
+    bool isEligible() const;
+    ArgSymbol* reduceBuffer() const;
+    FnSymbol* reduceWrapper() const;
+    CallExpr* generatePrimGpuArg(Symbol* cfg) const;
+    CallExpr* generatePrimGpuBlockReduce(Symbol* blockSize) const;
+    std::string generateDevFnName() const;
+    std::string reduceKindFnName() const;
 
   private:
     bool isReduce() const { return kind_&GpuArgKind::REDUCE; }
@@ -1051,6 +1044,7 @@ class KernelArg {
     void findReduceKind();
 };
 
+std::map<std::string, int> KernelArg::wrapperDisambigMap;
 
 // ----------------------------------------------------------------------------
 // GpuKernel
@@ -1081,8 +1075,8 @@ class GpuKernel {
 
   int nReductionBufs_ = 0;
 
-  BlockStmt* userBody_;
-  BlockStmt* postBody_;
+  BlockStmt* userBody_; // where the loop's body goes
+  BlockStmt* postBody_; // executed by all GPU threads (even if oob) at the end
 
   public:
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1095,7 +1089,6 @@ class GpuKernel {
   BlockStmt* gpuPrimitivesBlock() const { return gpuPrimitivesBlock_; }
   Symbol* blockSize() const {return blockSize_; }
   int nReductionBufs() const {return nReductionBufs_; }
-  void incReductionBufs() { nReductionBufs_ += 1; }
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
@@ -1106,13 +1099,13 @@ class GpuKernel {
   void finalize();
 
   void generateIndexComputation();
-  void generateOOBCond();
+  void generateOobCond();
   void generatePostBody();
   void markGPUSubCalls(FnSymbol* fn);
   Symbol* addKernelArgument(Symbol* symInLoop);
   Symbol* addLocalVariable(Symbol* symInLoop);
 
-  std::map<Symbol*, ReductionInfo> reductionInfo;
+  void incReductionBufs() { nReductionBufs_ += 1; }
 };
 
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
@@ -1157,7 +1150,7 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   fn_->addFlag(FLAG_GPU_CODEGEN);
 
   generateIndexComputation();
-  generateOOBCond();
+  generateOobCond();
   generatePostBody();
 
   insertionPoint->insertBefore(new DefExpr(fn_));
@@ -1218,7 +1211,7 @@ void KernelArg::findReduceKind() {
   }
 }
 
-bool KernelArg::eligible() {
+bool KernelArg::isEligible() const {
   return !this->isReduce() || this->redInfo_.kind != ReductionKind::UNSUPPORTED;
 }
 
@@ -1240,6 +1233,10 @@ bool KernelArg::eligible() {
  *   PRIM_GPU_REDUCE_WRAPPER("chpl_gpu_sum_reduce", int(32), in_data,
  *                           num_elems, out_data, out_idx);
  * }
+ *
+ * As of the initial implementation, `chpl_gpu_arg_reduce` runtime function
+ * takes the function we generate here as an argument. The function pointer type
+ * is `reduce_wrapper_fn_t` in the runtime.
  */
 FnSymbol* KernelArg::generateFinalReductionWrapper() {
   // here, we need to create an unambiguous name for the wrapper. This is
@@ -1287,8 +1284,6 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   return ret;
 }
 
-std::map<std::string, int> KernelArg::wrapperDisambigMap;
-
 KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel) :
   actual_(symInLoop), kernel_(kernel) {
 
@@ -1330,7 +1325,7 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel) :
                                          astr(symInLoop->name, "_interim"),
                                          symInLoop->getRefType());
     this->findReduceKind();
-    if (this->eligible()) {
+    if (this->isEligible()) {
       // we create the reduction wrapper only if this arg is eligible for GPU
       // execution. That's because we'll thwart gpuization later in compilation
       // and we don't want to create this useless wrapper that might try to call
@@ -1340,7 +1335,7 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel) :
   }
 }
 
-std::string KernelArg::reduceKindFnName() {
+std::string KernelArg::reduceKindFnName() const {
   switch (this->redInfo_.kind) {
     case ReductionKind::SUM:
       return "sum";
@@ -1354,7 +1349,7 @@ std::string KernelArg::reduceKindFnName() {
   return "unsupported";
 }
 
-std::string KernelArg::generateDevFnName() {
+std::string KernelArg::generateDevFnName() const {
   std::string ret = "chpl_gpu_dev_";
   ret += this->reduceKindFnName();
   ret += "_breduce"; // for "block reduce" -- this only reduces within a block
@@ -1362,7 +1357,7 @@ std::string KernelArg::generateDevFnName() {
   return ret;
 }
 
-ArgSymbol* KernelArg::reduceBuffer() {
+ArgSymbol* KernelArg::reduceBuffer() const {
   if (this->isReduce()) {
     ArgSymbol* buffer = this->redInfo_.buffer;
     INT_ASSERT(buffer);
@@ -1372,7 +1367,7 @@ ArgSymbol* KernelArg::reduceBuffer() {
   return nullptr;
 }
 
-FnSymbol* KernelArg::reduceWrapper() {
+FnSymbol* KernelArg::reduceWrapper() const {
   if (this->isReduce()) {
     FnSymbol* wrapper = this->redInfo_.wrapper;
     INT_ASSERT(wrapper);
@@ -1382,7 +1377,7 @@ FnSymbol* KernelArg::reduceWrapper() {
   return nullptr;
 }
 
-CallExpr* KernelArg::generatePrimGpuArg(Symbol* cfg) {
+CallExpr* KernelArg::generatePrimGpuArg(Symbol* cfg) const {
   CallExpr* ret = new CallExpr(PRIM_GPU_ARG, cfg, this->actual_,
                                new_IntSymbol(this->kind_));
 
@@ -1393,7 +1388,7 @@ CallExpr* KernelArg::generatePrimGpuArg(Symbol* cfg) {
   return ret;
 }
 
-CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) {
+CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) const {
   if (this->isReduce()) {
     std::string devFnName = this->generateDevFnName();
     return new CallExpr(PRIM_GPU_BLOCK_REDUCE,
@@ -1408,7 +1403,7 @@ CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) {
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   KernelArg arg(symInLoop, this);
 
-  if (!arg.eligible()) {
+  if (!arg.isEligible()) {
     this->lateGpuizationFailure_ = true;
     return nullptr;
   }
@@ -1512,7 +1507,7 @@ void GpuKernel::generateIndexComputation() {
  * }
  *
  */
-void GpuKernel::generateOOBCond() {
+void GpuKernel::generateOobCond() {
   Symbol* localUpperBound = addKernelArgument(gpuLoop.upperBound());
 
   VarSymbol* isInBounds = new VarSymbol("chpl_is_in_bounds", dtBool);

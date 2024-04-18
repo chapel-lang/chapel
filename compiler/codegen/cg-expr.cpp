@@ -5471,6 +5471,8 @@ DEFINE_PRIM(GPU_BLOCK_REDUCE) {
 }
 
 DEFINE_PRIM(GPU_REDUCE_WRAPPER) {
+  // GPU_REDUCE_WRAPPER(c"function name without type", data type, ...)
+  // "..." args are directly passed to the runtime
   int curArg = 1;
   VarSymbol* fnNameSym = toVarSymbol(toSymExpr(call->get(curArg++))->symbol());
   INT_ASSERT(isCStringImmediate(fnNameSym));

@@ -15,7 +15,7 @@ on here.gpus[0] {
   if useInitVal {
     sumVar = 100;
     minVar = -100;
-    maxVar = 100;
+    maxVar = n+100;
 
     expectedSumVar += sumVar;
     expectedMinVar = minVar;

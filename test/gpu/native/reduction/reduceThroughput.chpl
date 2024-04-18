@@ -19,7 +19,8 @@ inline proc doSumReduce(const ref Arr) {
 }
 
 writeln("Using ", if useGpu then "gpu" else "cpu");
-writeln("Using ", if useExpr then "expression" else "function");
+if reportPerf then // otherwise a complication for correctness testing
+  writeln("Using ", if useExpr then "expression" else "function");
 
 on if useGpu then here.gpus[0] else here {
   var Arr: [0..<n] dataType;
