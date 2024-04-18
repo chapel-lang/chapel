@@ -602,6 +602,80 @@ static void testParallelZip() {
   assert(!guard.realizeErrors());
 }
 
+static void testForallStandaloneThese() {
+  printf("testForallStandaloneThese\n");
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+  ErrorGuard guard(context);
+
+  auto program = R""""(
+                  record r {}
+                  iter r.these(param tag: iterKind) where tag == iterKind.standalone do yield 0;
+                  var r1 = new r();
+                  forall i in r1 do i;
+                  )"""";
+
+  const Module* m = parseModule(context, program);
+  auto iterStandalone = m->stmt(1)->toFunction();
+  auto loop = m->stmt(3)->toForall();
+  assert(iterStandalone && loop->iterand() &&
+         loop->iterand()->isIdentifier() &&
+         loop->index());
+  auto ident = loop->iterand()->toIdentifier();
+  auto index = loop->index();
+
+  auto& rr = resolveModule(context, m->id());
+  auto& reIdent = rr.byAst(ident);
+
+  assert(reIdent.associatedActions().size() == 1);
+  auto& aa = reIdent.associatedActions().back();
+  assert(aa.action() == AssociatedAction::ITERATE);
+  auto fn = aa.fn();
+  assert(fn->untyped()->kind() == Function::ITER &&
+         fn->untyped()->numFormals() == 2 &&
+         fn->formalType(1) == getIterKindConstant(context, "standalone"));
+
+  auto& reIndex = rr.byAst(index);
+  assert(reIndex.type().type() == IntType::get(context, 0));
+  assert(!guard.realizeErrors());
+}
+
+static void testForallStandaloneRedirect() {
+  printf("testForallStandaloneRedirect\n");
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+  ErrorGuard guard(context);
+
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+
+  const Module* m = parseModule(context, program);
+  auto iterStandalone = m->stmt(0)->toFunction();
+  auto loop = m->stmt(1)->toForall();
+  assert(iterStandalone && loop->iterand() &&
+         loop->iterand()->isCall() &&
+         loop->index());
+  auto call = loop->iterand()->toCall();
+  auto index = loop->index();
+
+  auto& rr = resolveModule(context, m->id());
+  auto& reCall = rr.byAst(call);
+
+  assert(reCall.associatedActions().size() == 1);
+  auto& aa = reCall.associatedActions().back();
+  assert(aa.action() == AssociatedAction::ITERATE);
+  auto fn = aa.fn();
+  assert(fn->untyped()->kind() == Function::ITER &&
+         fn->untyped()->numFormals() == 1 &&
+         fn->formalType(0) == getIterKindConstant(context, "standalone"));
+
+  auto& reIndex = rr.byAst(index);
+  assert(reIndex.type().type() == IntType::get(context, 0));
+  assert(!guard.realizeErrors());
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -620,6 +694,8 @@ int main() {
   testIndexScope();
   testSerialZip();
   testParallelZip();
+  testForallStandaloneThese();
+  testForallStandaloneRedirect();
 
   return 0;
 }
