@@ -520,28 +520,41 @@ static void testSerialZip() {
   assert(!guard.realizeErrors());
 }
 
-static void testParallelZipLeaderFollower() {
+static QualifiedType getIterKindConstant(Context* context, const char* str) {
+  auto ik = EnumType::getIterKindType(context);
+  if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
+    auto ustr = UniqueString::get(context, str);
+    auto it = m->find(ustr);
+    if (it != m->end()) return it->second;
+  }
+  return { QualifiedType::UNKNOWN, UnknownType::get(context) };
+}
+
+static void testParallelZip() {
   printf("testParallelZip\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
   ErrorGuard guard(context);
 
   auto program = R""""(
                   record r {}
-                  iter r.these(param tag: iterKind) where tag == iterKind.leader do yield 0;
-                  iter r.these(param tag: iterKind) where tag == iterKind.follower do yield 0;
+                  iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter r.these(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
                   var r1 = new r();
-                  for tup in zip(r1, r1) do tup;
+                  forall tup in zip(r1, r1) do tup;
                   )"""";
 
   const Module* m = parseModule(context, program);
-  auto iter = m->stmt(1)->toFunction();
-  auto var = m->stmt(2)->toVariable();
-  auto loop = m->stmt(3)->toFor();
-  assert(iter && var && loop && loop->iterand() && loop->index());
+  auto iterLeader = m->stmt(1)->toFunction();
+  auto iterFollower = m->stmt(2)->toFunction();
+  auto var = m->stmt(3)->toVariable();
+  auto loop = m->stmt(4)->toForall();
+  assert(iterLeader && iterFollower && var && loop &&
+         loop->iterand() &&
+         loop->iterand()->isZip() &&
+         loop->index());
   auto index = loop->index();
   auto zip = loop->iterand()->toZip();
-  assert(zip);
 
   auto& rr = resolveModule(context, m->id());
   auto& reZip = rr.byAst(zip);
@@ -549,14 +562,34 @@ static void testParallelZipLeaderFollower() {
   assert(reZip.associatedActions().empty());
 
   assert(zip->numActuals() == 2);
-  for (auto actual : zip->actuals()) {
+  for (int i = 0; i < zip->numActuals(); i++) {
+    auto actual = zip->actual(i);
     auto& re = rr.byAst(actual);
     assert(re.toId() == var->id());
-    assert(re.associatedActions().size() == 1);
-    auto& aa = re.associatedActions().back();
+    bool isLeaderActual = (i == 0);
+
+    // Only the first actual should have a leader iterator attached.
+    if (isLeaderActual) {
+      assert(re.associatedActions().size() == 2);
+      auto& aa = re.associatedActions()[0];
+      assert(aa.action() == AssociatedAction::ITERATE);
+      auto fn = aa.fn();
+      assert(fn->untyped()->kind() == Function::ITER &&
+             fn->untyped()->numFormals() == 2 &&
+             fn->formalType(1) == getIterKindConstant(context, "leader"));
+    } else {
+      assert(re.associatedActions().size() == 1);
+    }
+
+    // Check all actuals for the follower iterator.
+    auto idxFollower = isLeaderActual ? 1 : 0;
+    auto& aa = re.associatedActions()[idxFollower];
     assert(aa.action() == AssociatedAction::ITERATE);
     auto fn = aa.fn();
-    assert(fn->untyped()->kind() == Function::ITER);
+    assert(fn->untyped()->kind() == Function::ITER &&
+           fn->untyped()->numFormals() == 3 &&
+           fn->formalType(1) == getIterKindConstant(context, "follower") &&
+           fn->untyped()->formalName(2) == "followThis");
   }
 
   auto t = reZip.type().type()->toTupleType();
@@ -586,7 +619,7 @@ int main() {
   testNestedParamFor();
   testIndexScope();
   testSerialZip();
-  testParallelZipLeaderFollower();
+  testParallelZip();
 
   return 0;
 }

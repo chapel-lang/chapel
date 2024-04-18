@@ -68,6 +68,11 @@ const EnumType* EnumType::getIterKindType(Context* context) {
   auto symbolPath = UniqueString::get(context, "ChapelBase.iterKind");
   auto name = UniqueString::get(context, "iterKind");
   auto id = ID(symbolPath, -1, 0);
+
+  // Try to parse the containing module if present so queries will be set.
+  auto up = id.parentSymbolId(context);
+  std::ignore = parsing::getToplevelModule(context, up.symbolPath());
+
   return EnumType::get(context, id, name);
 }
 
@@ -82,7 +87,7 @@ getParamConstantsMapQuery(Context* context, const EnumType* et) {
       auto param = EnumParam::get(context, elem->id());
       QualifiedType qt(QualifiedType::PARAM, et, param);
       auto it = ret.find(elem->name());
-      if (it == ret.end()) continue;
+      if (it != ret.end()) continue;
       ret.emplace_hint(it, elem->name(), std::move(qt));
     }
   }
