@@ -26,11 +26,6 @@ from driver import LintDriver
 from fixits import Fixit, Edit
 from rule_types import BasicRuleResult, AdvancedRuleResult
 
-
-def get_lines(context: Context, node: AstNode) -> typing.List[str]:
-    path = node.location().path()
-    return context.get_file_text(path).splitlines()
-
 def name_for_linting(context: Context, node: NamedDecl) -> str:
     name = node.name()
 
@@ -52,17 +47,6 @@ def check_pascal_case(context: Context, node: NamedDecl):
     return re.fullmatch(
         r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?", name_for_linting(context, node)
     )
-
-def build_ignore_fixit(anchor: AstNode, lines: List[str], rule_name: str) -> Fixit:
-    # TODO: how should this handle multiple ignores?
-    loc = anchor.location()
-    text = range_to_text(loc, lines)
-    indent_amount = max(loc.start()[1] - 1, 0)
-    indent = " "* indent_amount
-    text = f'@chplcheck.ignore("{rule_name}")\n' + indent + text
-    ignore = Fixit.build(Edit.build(loc, text))
-    ignore.description = "Ignore this warning"
-    return ignore
 
 def register_rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -143,7 +127,7 @@ def register_rules(driver: LintDriver):
 
         check = node.block_style() != "unnecessary"
         if not check:
-            lines = get_lines(context, node)
+            lines = chapel.get_file_lines(context, node)
 
             if isinstance(node, Loop):
                 header_loc = node.header_location()
@@ -167,8 +151,7 @@ def register_rules(driver: LintDriver):
 
             new_text = header_text + sep + body_text
             fixit = Fixit.build(Edit.build(node.location(), new_text))
-            ignore = build_ignore_fixit(node, lines, DoKeywordAndBlock.__name__)
-            return BasicRuleResult([fixit, ignore])
+            return BasicRuleResult(node, ignorable=True, fixits=[fixit])
 
         return check
 
@@ -191,7 +174,7 @@ def register_rules(driver: LintDriver):
         Warn for boolean literals like 'true' in a conditional statement.
         """
 
-        lines = get_lines(context, node)
+        lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
         assert isinstance(cond, BoolLiteral)
@@ -208,7 +191,7 @@ def register_rules(driver: LintDriver):
         # should be set in all branches
         assert text is not None
 
-        return BasicRuleResult(Fixit.build(Edit.build(node.location(), text)))
+        return BasicRuleResult(node, fixits=Fixit.build(Edit.build(node.location(), text)))
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
@@ -231,9 +214,7 @@ def register_rules(driver: LintDriver):
         method_seen = False
         for child in node:
             if isinstance(child, VarLikeDecl) and method_seen:
-                lines = get_lines(context, node)
-                ignore = build_ignore_fixit(node, lines, MethodsAfterFields.__name__)
-                return BasicRuleResult(ignore)
+                return BasicRuleResult(node, ignorable=True)
             if isinstance(child, Function):
                 method_seen = True
         return True
@@ -393,13 +374,9 @@ def register_rules(driver: LintDriver):
             if refersto:
                 uses.add(refersto.unique_id())
 
-        lines = get_lines(context, root)
         for unused in formals.keys() - uses:
             anchor = formals[unused].parent()
-            ignore = build_ignore_fixit(anchor, lines, UnusedFormal.__name__)
-            yield AdvancedRuleResult(
-                formals[unused], anchor, fixit=[ignore]
-            )
+            yield AdvancedRuleResult(formals[unused], anchor)
 
     @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
@@ -433,7 +410,7 @@ def register_rules(driver: LintDriver):
             if refersto:
                 uses.add(refersto.unique_id())
 
-        lines = get_lines(context, root)
+        lines = chapel.get_file_lines(context, root)
         for unused in indices.keys() - uses:
             node, loop = indices[unused]
             fixit = None
@@ -449,9 +426,8 @@ def register_rules(driver: LintDriver):
 
                 fixit = Fixit.build(Edit.build(loc, before_lines + after_lines))
 
-            ignore = build_ignore_fixit(loop, lines, UnusedLoopIndex.__name__)
-            fixits = [fixit, ignore] if fixit else [ignore]
-            yield AdvancedRuleResult(node, loop, fixits)
+            fixits = [fixit] if fixit else []
+            yield AdvancedRuleResult(node, loop, fixits=fixits)
 
     @driver.advanced_rule
     def SimpleDomainAsRange(context: Context, root: AstNode):
@@ -461,7 +437,7 @@ def register_rules(driver: LintDriver):
         # dyno fault if we try to query .location on a Comment
         if isinstance(root, Comment):
             return
-        lines = get_lines(context, root)
+        lines = chapel.get_file_lines(context, root)
 
         def is_range_like(node: AstNode):
             """
@@ -501,11 +477,7 @@ def register_rules(driver: LintDriver):
             s = range_to_text(exprs[0].location(), lines)
 
             fixit = Fixit.build(Edit.build(iterand.location(), s))
-            ignore = build_ignore_fixit(loop, lines, SimpleDomainAsRange.__name__)
-
-            yield AdvancedRuleResult(
-                iterand, anchor=loop, fixit=[fixit, ignore]
-            )
+            yield AdvancedRuleResult(iterand, anchor=loop, fixits=[fixit])
 
     @driver.advanced_rule
     def IncorrectIndentation(context: Context, root: AstNode):
