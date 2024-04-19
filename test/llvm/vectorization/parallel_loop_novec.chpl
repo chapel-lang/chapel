@@ -2,11 +2,12 @@
 //metadata was added. For more details look into parallel_loop.chpl
 config const N = 512;
 proc loop (ref A, B, n) {
-  // CHECK-NOT: load <4 x i32>
+  // CHECK-NOT: !llvm.access.group
   foreach i in 0..<n {
     A[A[i]] = B[i];
     A[i] = B[i+1];
   }
+  // CHECK-NOT: llvm.loop.parallel_accesses
 }
 
 var A : [0..<N] int(32);
