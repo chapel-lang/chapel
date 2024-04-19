@@ -589,6 +589,10 @@ public:
 
   const std::vector<CallExpr*>& pidGets() const { return pidGets_; }
 
+  inline void reportNotGpuizable(BaseAST* ast, const char* msg) {
+    assertionReporter_.reportNotGpuizable(loop_, ast, msg);
+  }
+
 private:
   CallExpr* findCompileTimeGpuAssertions();
   void printNonGpuizableError(CallExpr* assertion, Expr* loc);
@@ -1062,7 +1066,7 @@ static bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call);
 //    - Passes in any variables that are declared outside of the loop as
 //      parameters to this new function.
 class GpuKernel {
-  const GpuizableLoop &gpuLoop;
+  GpuizableLoop &gpuLoop;
   FnSymbol* fn_;
   std::vector<Symbol*> kernelIndices_;
   std::vector<KernelArg> kernelActuals_;
@@ -1079,7 +1083,7 @@ class GpuKernel {
   BlockStmt* postBody_; // executed by all GPU threads (even if oob) at the end
 
   public:
-  GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
+  GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
 
   FnSymbol* fn() const { return fn_; }
   std::string name();
@@ -1108,7 +1112,7 @@ class GpuKernel {
   void incReductionBufs() { nReductionBufs_ += 1; }
 };
 
-GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
+GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
   , lateGpuizationFailure_(false)
   , blockSizeCall_(nullptr)
@@ -1404,6 +1408,8 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   KernelArg arg(symInLoop, this);
 
   if (!arg.isEligible()) {
+    this->gpuLoop.reportNotGpuizable(symInLoop, "unsupported reduction");
+    //std::cout << "reduction variable is not eligible\n";
     this->lateGpuizationFailure_ = true;
     return nullptr;
   }
