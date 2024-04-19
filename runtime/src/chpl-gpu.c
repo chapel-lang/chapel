@@ -675,15 +675,23 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
 }
 
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
+  if (chpl_gpu_can_reduce()) {
+    for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
+      CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n",
+                     cfg->reduce_vars[i].buffer,
+                     cfg->reduce_vars[i].outer_var,
+                     cfg->reduce_vars[i].wrapper);
 
-  for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
-    CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n", cfg->reduce_vars[i].buffer,
-                  cfg->reduce_vars[i].outer_var, cfg->reduce_vars[i].wrapper);
-
-    cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
-                                cfg->grd_dim_x,
-                                cfg->reduce_vars[i].outer_var,
-                                NULL); // no minloc/maxloc, yet
+      cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
+                                  cfg->grd_dim_x,
+                                  cfg->reduce_vars[i].outer_var,
+                                  NULL); // no minloc/maxloc, yet
+    }
+  }
+  else {
+    // we can hit this only with cpu-as-device today, where this function will
+    // be called, but the reduction is actually handled by the loop as normal
+    // so, we don't do anything
   }
 }
 
