@@ -1006,7 +1006,7 @@ struct ReductionInfo {
                       // pointing at the reduction buffer
   FnSymbol* wrapper;  // function that wraps around the "fake-generic" runtime
                       // function and casts the void* buffer to the correct data
-                      // type 
+                      // type
   ReductionKind kind;  // we don't support user-defined reductions, yet. So we
                        // have to determine the reduction kind in order to call
                        // the correct CUB function
@@ -1233,7 +1233,7 @@ bool KernelArg::isEligible() const {
  * https://github.com/Cray/chapel-private/issues/5312#issuecomment-1928811564).
  * So we create a wrapper function which we can actually pass as a function
  * pointer to the runtime.
- * 
+ *
  * void reduce_0_chpl_gpu_kernel_Foo_line_5(void* in_data, int32_t, num_elems,
  *                                          void* out_data, void* out_idx) {
  *
