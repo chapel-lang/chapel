@@ -1409,7 +1409,6 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
 
   if (!arg.isEligible()) {
     this->gpuLoop.reportNotGpuizable(symInLoop, "unsupported reduction");
-    //std::cout << "reduction variable is not eligible\n";
     this->lateGpuizationFailure_ = true;
     return nullptr;
   }
