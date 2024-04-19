@@ -319,10 +319,13 @@ def register_rules(driver: LintDriver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(context, root):
+    def MisleadingIndentation(context: Context, root: AstNode):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
+        if isinstance(root, Comment):
+            return
+        lines = chapel.get_file_lines(context, root)
 
         prev, prevloop = None, None
         for child in root:
@@ -331,8 +334,14 @@ def register_rules(driver: LintDriver):
             yield from MisleadingIndentation(context, child)
 
             if prev is not None:
-                if child.location().start()[1] == prev.location().start()[1]:
-                    yield AdvancedRuleResult(child, prevloop)
+                loc = child.location()
+                prev_loc = prev.location()
+                if loc.start()[1] == prev_loc.start()[1]:
+                    dedent = prev_loc.start()[1] - prevloop.location().start()[1]
+                    start = (loc.start()[0], loc.start()[1] - dedent)
+                    text = range_to_text(loc, lines)
+                    fixit = Fixit.build(Edit(loc.path(), start, loc.end(), text))
+                    yield AdvancedRuleResult(child, prevloop, fixits=[fixit])
 
             prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":

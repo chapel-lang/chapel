@@ -1,8 +1,7 @@
 module Indentation {
-  @chplcheck.ignore("MisleadingIndentation")
   for i in 1..10 do
     writeln(i);
-    writeln("second thing");
+  writeln("second thing");
 
   @chplcheck.ignore("MisleadingIndentation")
   for i in 1..10 do
