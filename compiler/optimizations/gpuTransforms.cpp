@@ -1249,7 +1249,7 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   const int nCurId = KernelArg::wrapperDisambigMap[loopName];
   KernelArg::wrapperDisambigMap[loopName] = nCurId+1;
 
-  std::string fnName = "reduce_" + std::to_string(nCurId) + "_" + loopName;
+  std::string fnName = "chpl_reduce_" + std::to_string(nCurId) + "_" + loopName;
 
   FnSymbol* ret = new FnSymbol(fnName.c_str());
   ret->addFlag(FLAG_RESOLVED);
