@@ -1198,6 +1198,13 @@ void KernelArg::findReduceKind() {
         reduceType = getValue->get(1)->typeInfo();
       }
 
+      // this is an additional layer of protection to limit to "our" reductions
+      // for the time being and make sure that we don't do wrong pattern
+      // matching
+      if (reduceType && reduceType->getModule()->modTag != MOD_INTERNAL) {
+        reduceType = nullptr;
+      }
+
       if (reduceType) {
         const char* reduceTypeName = reduceType->symbol->name;
 
