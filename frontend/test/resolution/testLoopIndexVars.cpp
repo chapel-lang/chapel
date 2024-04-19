@@ -676,6 +676,50 @@ static void testForallStandaloneRedirect() {
   assert(!guard.realizeErrors());
 }
 
+static void testForallLeaderFollower() {
+  printf("testForallLeaderFollower\n");
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+  ErrorGuard guard(context);
+
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+
+  const Module* m = parseModule(context, program);
+  auto iterLeader = m->stmt(0)->toFunction();
+  auto iterFollower = m->stmt(1)->toFunction();
+  auto loop = m->stmt(2)->toForall();
+  assert(iterLeader && iterFollower && loop->iterand() &&
+         loop->iterand()->isCall() &&
+         loop->index());
+  auto call = loop->iterand()->toCall();
+  auto index = loop->index();
+
+  auto& rr = resolveModule(context, m->id());
+  auto& reCall = rr.byAst(call);
+
+  assert(reCall.associatedActions().size() == 2);
+  auto& aa1 = reCall.associatedActions()[0];
+  assert(aa1.action() == AssociatedAction::ITERATE);
+  auto fn1 = aa1.fn();
+  assert(fn1->untyped()->kind() == Function::ITER &&
+         fn1->untyped()->numFormals() == 1 &&
+         fn1->formalType(0) == getIterKindConstant(context, "leader"));
+  auto& aa2 = reCall.associatedActions()[1];
+  assert(aa2.action() == AssociatedAction::ITERATE);
+  auto fn2 = aa2.fn();
+  assert(fn2->untyped()->kind() == Function::ITER &&
+         fn2->untyped()->numFormals() == 2 &&
+         fn2->formalType(0) == getIterKindConstant(context, "follower"));
+
+  auto& reIndex = rr.byAst(index);
+  assert(reIndex.type().type() == IntType::get(context, 0));
+  assert(!guard.realizeErrors());
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -696,6 +740,7 @@ int main() {
   testParallelZip();
   testForallStandaloneThese();
   testForallStandaloneRedirect();
+  testForallLeaderFollower();
 
   return 0;
 }

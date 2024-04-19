@@ -4259,11 +4259,21 @@ resolveIterTypeConsideringTag(Resolver& rv,
   CHPL_ASSERT(needSerial || iterKindFormal.type() == iterKindType &&
                             iterKindFormal.hasParamPtr());
 
-  auto traversalErrors = context->runAndTrackErrors([&](Context* context) {
+  // Speculatively resolve the iterand to avoid dumping call resolution
+  // errors onto the user right away. Try to avoid speculative resolution
+  // if the iterand is not call-like.
+  std::vector<owned<ErrorBase>> traversalErrors;
+  if (!iterand->isCall()) {
     iterand->traverse(rv);
-    return nullptr;
-  });
+  } else {
+    auto runResult = context->runAndTrackErrors([&](Context* context) {
+      iterand->traverse(rv);
+      return true;
+    });
+    std::swap(runResult.errors(), traversalErrors);
+  }
 
+  // Inspect the resolution result to determine what should be done next.
   ResolvedExpression& iterandRE = rv.byPostorder.byAst(iterand);
   auto& MSC = iterandRE.mostSpecific();
   auto fn = !MSC.isEmpty() && MSC.numBest() == 1 ? MSC.only().fn() : nullptr;
@@ -4271,9 +4281,8 @@ resolveIterTypeConsideringTag(Resolver& rv,
   bool wasIterandTypeResolved = !iterandRE.type().isUnknownOrErroneous();
 
   // Publish all errors except a 'NoMatchingCandidates' for the iterand.
-  // We may publish it later.
   owned<ErrorBase> noCandidatesError = nullptr;
-  for (auto& e : traversalErrors.errors()) {
+  for (auto& e : traversalErrors) {
     if (!isIter && e->type() == NoMatchingCandidates) {
       auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
       if (std::get<0>(nmc->info()) == iterand) {
@@ -4300,6 +4309,8 @@ resolveIterTypeConsideringTag(Resolver& rv,
   }
 
   const bool isForwardedIterTag = !forwardedTag.isUnknownOrErroneous();
+
+  // We need to determine the primary element type yielded by the iterator.
   QualifiedType idxType = error;
 
   // In this common case, we need a serial iterator, and that is exactly
@@ -4394,7 +4405,7 @@ resolveIterTypeConsideringTag(Resolver& rv,
     }
   }
 
-  if (idxType.isUnknownOrErroneous() && noCandidatesError) {
+  if (emitErrors && idxType.isUnknownOrErroneous() && noCandidatesError) {
     context->report(std::move(noCandidatesError));
   }
 
