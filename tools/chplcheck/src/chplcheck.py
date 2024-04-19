@@ -66,6 +66,10 @@ def load_module(driver: LintDriver, file_path: str):
     rule_func(driver)
 
 
+def int_to_nth(n: int) -> str:
+    d = {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth"}
+    return d.get(n, f"{n}th")
+
 def apply_fixits(
     violations: List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]],
     suffix: Optional[str],
@@ -88,11 +92,12 @@ def apply_fixits(
             continue
 
         options = ["Skip"]
-        for fixit in fixits:
+        for idx, fixit in enumerate(fixits, start=1):
             if fixit.description is not None:
                 options.append(f"{fixit.description}")
             else:
-                options.append("Fix")
+                s = int_to_nth(idx)
+                options.append(f"Apply {s} Fix")
         print_violation(node, rule)
         for i, opt in enumerate(options):
             print(f"  {i}. {opt}")
