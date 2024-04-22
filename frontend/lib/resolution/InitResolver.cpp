@@ -585,11 +585,7 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
     initialCompType = initialCompType->instantiatedFromCompositeType();
   }
 
-  if (receiverCompType != initialCompType) {
-    ctx_->error(node, "TODO");
-    return false;
-  }
-
+  CHPL_ASSERT(receiverCompType == initialCompType);
   if (setupFromType(receiverType)) {
     updateResolverVisibleReceiverType();
   }
