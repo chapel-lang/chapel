@@ -197,7 +197,8 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
       assert(stateA->isInitialized && stateB->isInitialized);
       state->isInitialized = true;
 
-      assert(stateA->qt.type() == stateB->qt.type());
+      // Below, we issue an error if the resulting types do not compute to
+      // be the same, so picking one is fine.
       state->qt = stateA->qt;
 
       // TODO: need to keep track of these in a different way so we can
