@@ -336,12 +336,23 @@ def register_rules(driver: LintDriver):
             if prev is not None:
                 loc = child.location()
                 prev_loc = prev.location()
+                prevloop_loc = prevloop.location()
                 if loc.start()[1] == prev_loc.start()[1]:
-                    dedent = prev_loc.start()[1] - prevloop.location().start()[1]
-                    start = (loc.start()[0], loc.start()[1] - dedent)
-                    text = range_to_text(loc, lines)
-                    fixit = Fixit.build(Edit(loc.path(), start, loc.end(), text))
-                    yield AdvancedRuleResult(child, prevloop, fixits=[fixit])
+                    fixit = None
+                    # only apply the fixit when the fix is to indent `child`
+                    # and `child ` is a single line
+                    if (
+                        loc.start()[1] != prevloop_loc.start()[1]
+                        and loc.start()[0] == loc.end()[0]
+                    ):
+                        line_start = (loc.start()[0], 1)
+                        parent_indent = max(prevloop_loc.start()[1] - 1, 0)
+                        text = " " * parent_indent + range_to_text(loc, lines)
+                        fixit = Fixit.build(
+                            Edit(loc.path(), line_start, loc.end(), text)
+                        )
+                    fixits = [fixit] if fixit else []
+                    yield AdvancedRuleResult(child, prevloop, fixits=fixits)
 
             prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
