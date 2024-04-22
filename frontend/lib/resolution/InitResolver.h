@@ -76,7 +76,7 @@ class InitResolver {
   }
 
   bool isCallToSuperInitRequired(void);
-  void setupFromType(const types::Type* type);
+  bool setupFromType(const types::Type* type);
   void doSetupInitialState(void);
   void markComplete();
 

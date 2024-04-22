@@ -87,21 +87,32 @@ bool InitResolver::isCallToSuperInitRequired(void) {
   return false;
 }
 
-void InitResolver::setupFromType(const Type* type) {
+bool InitResolver::setupFromType(const Type* type) {
   fieldToInitState_.clear();
   fieldIdsByOrdinal_.clear();
 
   auto ct = typeToCompType(type);
   auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
 
+  // If any of the newly-set fields are type or params, setting them
+  // effectively means the receiver is a different type.
+  bool anyAffectsResultingType = false;
+
   // Populate the fields with values from the type.
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);
     FieldInitState state;
-    state = { i, ID(), rf.fieldType(i), rf.fieldName(i), false };
+    auto fieldQt = rf.fieldType(i);
+    state = { i, ID(), fieldQt, rf.fieldName(i), false };
     fieldToInitState_.insert({id, std::move(state)});
     fieldIdsByOrdinal_.push_back(id);
+
+    if (fieldQt.isType() || fieldQt.isParam()) {
+      anyAffectsResultingType = true;
+    }
   }
+
+  return anyAffectsResultingType;
 }
 
 void InitResolver::doSetupInitialState(void) {
@@ -109,7 +120,7 @@ void InitResolver::doSetupInitialState(void) {
   phase_ = isCallToSuperInitRequired() ? PHASE_NEED_SUPER_INIT
                                        : PHASE_NEED_COMPLETE;
 
-  setupFromType(initialRecvType_);
+  std::ignore = setupFromType(initialRecvType_);
 }
 
 void InitResolver::markComplete() {
@@ -583,7 +594,10 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
     ctx_->error(node, "TODO: fields were initialized before calling 'this.init()'");
   }
 
-  setupFromType(receiverType);
+  if (setupFromType(receiverType)) {
+    updateResolverVisibleReceiverType();
+  }
+
   markComplete();
   return true;
 }
