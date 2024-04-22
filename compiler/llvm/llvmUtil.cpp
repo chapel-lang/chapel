@@ -585,6 +585,12 @@ void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
   b.addAttribute(llvm::Attribute::StructRet);
   std::ignore = returnTy;
   #endif
+
+  #if HAVE_LLVM_VER >= 180
+  // matches attributes added by clang with sret
+  b.addAttribute(llvm::Attribute::Writable);
+  b.addAttribute(llvm::Attribute::DeadOnUnwind);
+  #endif
 }
 
 bool isOpaquePointer(llvm::Type* ty) {
