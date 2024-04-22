@@ -590,21 +590,6 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
     return false;
   }
 
-  // Doesn't matter if errors occurred at this time.
-  if (currentFieldIndex_ != 0) {
-    std::vector<std::pair<const VarLikeDecl*, ID>> initializationPoints;
-    for (auto& fieldPair : fieldToInitState_) {
-      auto& state = fieldPair.second;
-      if (!state.isInitialized || state.initPointId.isEmpty()) continue;
-
-      auto variable = parsing::idToAst(ctx_, fieldPair.first)->toVarLikeDecl();
-      CHPL_ASSERT(variable != nullptr);
-
-      initializationPoints.emplace_back(variable, state.initPointId);
-    }
-    CHPL_REPORT(ctx_, AssignFieldBeforeInit, node, initializationPoints);
-  }
-
   if (setupFromType(receiverType)) {
     updateResolverVisibleReceiverType();
   }
@@ -629,6 +614,22 @@ bool InitResolver::handleCallToInit(const FnCall* node,
         receiver->toIdentifier()->name() != USTR("this")) {
       return false;
     }
+  }
+
+  // It's a call to 'this.init', which means any initialized fields are
+  // initialized erroneously.
+  if (currentFieldIndex_ != 0) {
+    std::vector<std::pair<const VarLikeDecl*, ID>> initializationPoints;
+    for (auto& fieldPair : fieldToInitState_) {
+      auto& state = fieldPair.second;
+      if (!state.isInitialized || state.initPointId.isEmpty()) continue;
+
+      auto variable = parsing::idToAst(ctx_, fieldPair.first)->toVarLikeDecl();
+      CHPL_ASSERT(variable != nullptr);
+
+      initializationPoints.emplace_back(variable, state.initPointId);
+    }
+    CHPL_REPORT(ctx_, AssignFieldBeforeInit, node, initializationPoints);
   }
 
   if (applyResolvedInitCallToState(node, c)) return true;
