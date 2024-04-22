@@ -87,24 +87,32 @@ bool InitResolver::isCallToSuperInitRequired(void) {
   return false;
 }
 
-void InitResolver::doSetupInitialState(void) {
+bool InitResolver::setupFromType(const Type* type, bool markInitialized) {
   fieldToInitState_.clear();
+  fieldIdsByOrdinal_.clear();
 
+  auto ct = typeToCompType(type);
+  auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
+
+  // Populate the fields with values from the type.
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto id = rf.fieldDeclId(i);
+    FieldInitState state;
+    bool initialized = markInitialized;
+    state = { i, ID(), rf.fieldType(i), rf.fieldName(i), initialized };
+    fieldToInitState_.insert({id, std::move(state)});
+    fieldIdsByOrdinal_.push_back(id);
+  }
+
+  return true;
+}
+
+void InitResolver::doSetupInitialState(void) {
   // Determine the initial phase.
   phase_ = isCallToSuperInitRequired() ? PHASE_NEED_SUPER_INIT
                                        : PHASE_NEED_COMPLETE;
 
-  auto ct = typeToCompType(initialRecvType_);
-  auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
-
-  // Populate the fields with initial values.
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto id = rf.fieldDeclId(i);
-    FieldInitState state;
-    state = { i, ID(), rf.fieldType(i), rf.fieldName(i), false };
-    fieldToInitState_.insert({id, std::move(state)});
-    fieldIdsByOrdinal_.push_back(id);
-  }
+  setupFromType(initialRecvType_, /* markInitialized */ false);
 }
 
 void InitResolver::copyState(InitResolver& other) {
@@ -535,12 +543,75 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
 }
 
 // TODO: Detect calls to super.
-bool InitResolver::handleCallToSuperInit(const FnCall* node) {
+bool InitResolver::handleCallToSuperInit(const FnCall* node,
+                                         const CallResolutionResult* c) {
   return false;
 }
 
+bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
+                                                const CallResolutionResult* c) {
+  if (!c || !c->mostSpecific().only()) return false;
+
+  auto& only = c->mostSpecific().only();
+  auto fn = only.fn();
+
+  CHPL_ASSERT(fn->formalName(0) == USTR("this"));
+  auto receiverType = fn->formalType(0).type();
+  auto receiverCompType = typeToCompType(receiverType);
+  if (receiverCompType->instantiatedFromCompositeType()) {
+    receiverCompType = receiverCompType->instantiatedFromCompositeType();
+  }
+
+  auto initialCompType = typeToCompType(initialRecvType_);
+  if (initialCompType->instantiatedFromCompositeType()) {
+    initialCompType = initialCompType->instantiatedFromCompositeType();
+  }
+
+  if (receiverCompType != initialCompType) {
+    ctx_->error(node, "TODO");
+    return false;
+  }
+
+  // Doesn't matter if errors occurred at this time.
+  std::ignore = setupFromType(receiverType, /* markInitialized */ true);
+  phase_ = PHASE_COMPLETE;
+  return true;
+}
+
 // TODO: Detect calls to init.
-bool InitResolver::handleCallToInit(const FnCall* node) {
+bool InitResolver::handleCallToInit(const FnCall* node,
+                                    const CallResolutionResult* c) {
+  debuggerBreakHere();
+
+  auto calledExpr = node->calledExpression();
+  if (!calledExpr) return false;
+
+  if (auto calledIdent = calledExpr->toIdentifier()) {
+    if (calledIdent->name() != USTR("init")) return false;
+  } else if (auto calledDot = calledExpr->toDot()) {
+    if (calledDot->field() != USTR("init")) return false;
+
+    auto receiver = calledDot->receiver();
+    if (!receiver->isIdentifier() ||
+        receiver->toIdentifier()->name() != USTR("this")) {
+      return false;
+    }
+  }
+
+  if (applyResolvedInitCallToState(node, c)) return true;
+
+  // Something went wrong when resolving the 'init' call: we didn't
+  // try to resolve it, or we tried and failed, or we found a nonsensical
+  // candidate.
+  //
+  // By the rules of initializers, after this point variables will
+  // have been initialized, so mark them as such.
+  for (auto& field : fieldToInitState_) {
+    auto& state = field.second;
+    state.isInitialized = true;
+  }
+  phase_ = PHASE_COMPLETE;
+
   return false;
 }
 
@@ -622,12 +693,22 @@ bool InitResolver::handleResolvingCall(const Call* node) {
 
   if (auto fnCall = node->toFnCall()) {
     ret |= handleCallToThisComplete(fnCall);
-    ret |= handleCallToSuperInit(fnCall);
-    ret |= handleCallToInit(fnCall);
   }
 
   if (auto opCall = node->toOpCall()) {
     ret |= handleAssignmentToField(opCall);
+  }
+
+  return ret;
+}
+
+bool InitResolver::handleResolvedCall(const Call* node,
+                                      const CallResolutionResult* c) {
+  auto ret = false;
+
+  if (auto fnCall = node->toFnCall()) {
+    ret |= handleCallToInit(fnCall, c);
+    ret |= handleCallToSuperInit(fnCall, c);
   }
 
   return ret;
@@ -725,7 +806,7 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
         auto& re = initResolver_.byPostorder.byAst(node);
         re.setToId(id);
         re.setType(qt);
-        return false;
+        return true;
       }
     } else {
       // Otherwise, proceed normally.
@@ -733,7 +814,7 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
     }
   }
 
-  return true;
+  return false;
 }
 
 void InitResolver::checkEarlyReturn(const Return* ret) {
