@@ -18,19 +18,47 @@
 #
 
 import typing
-from dataclasses import dataclass
 
 import chapel
-from fixits import Fixit
+from fixits import Fixit, Edit
 
+def _build_ignore_fixit(anchor: chapel.AstNode, lines: typing.List[str], rule_name: str) -> Fixit:
+    # TODO: how should this handle multiple ignores?
+    loc = anchor.location()
+    text = chapel.range_to_text(loc, lines)
+    indent_amount = max(loc.start()[1] - 1, 0)
+    indent = " "* indent_amount
+    text = f'@chplcheck.ignore("{rule_name}")\n' + indent + text
+    ignore = Fixit.build(Edit.build(loc, text))
+    ignore.description = "Ignore this warning"
+    return ignore
 
-@dataclass
 class BasicRuleResult:
     """
     Result type for basic rules. Rules can also return a plain boolean to
     represent a simple pass/fail result, with no fixit.
     """
-    fixit: typing.Union[Fixit, typing.List[Fixit]]
+    def __init__(self, node: chapel.AstNode, ignorable: bool = False, fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None):
+        self.node = node
+        self.ignorable = ignorable
+        if fixits is None:
+            self._fixits = []
+        elif isinstance(fixits, Fixit):
+            self._fixits = [fixits]
+        else:
+            self._fixits = fixits
+
+    def fixits(self, context: chapel.Context, name: str) -> typing.List[Fixit]:
+        """
+        Get the fixits associated with this result. Also builds an ignore fixit, if necessary.
+        """
+        to_return = self._fixits
+        if self.ignorable:
+            lines = chapel.get_file_lines(context, self.node)
+            ignore = _build_ignore_fixit(self.node, lines, name)
+            to_return.append(ignore)
+        return to_return
+
 
 
 _BasicRuleResult = typing.Union[bool, BasicRuleResult]
@@ -39,17 +67,31 @@ BasicRule = typing.Callable[[chapel.Context, chapel.AstNode], _BasicRuleResult]
 """Function type for basic rules"""
 
 
-@dataclass
 class AdvancedRuleResult:
     """
     Result type for advanced rules. Advanced rules can also return a plain
-    boolean to represent a simple pass/fail result, with no fixit.
+    boolean to represent a simple pass/fail result, with no fixit. Having an anchor implies that it is ignorable
     """
-    node: chapel.AstNode
-    anchor: typing.Optional[chapel.AstNode] = None
-    fixit: typing.Optional[
-        typing.Union[Fixit, typing.List[Fixit]]
-    ] = None
+    def __init__(self, node: chapel.AstNode, anchor: typing.Optional[chapel.AstNode] = None, fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None):
+        self.node = node
+        self.anchor = anchor
+        if fixits is None:
+            self._fixits = []
+        elif isinstance(fixits, Fixit):
+            self._fixits = [fixits]
+        else:
+            self._fixits = fixits
+
+    def fixits(self, context: chapel.Context, name: str) -> typing.List[Fixit]:
+        """
+        Get the fixits associated with this result. Also builds an ignore fixit, if necessary.
+        """
+        to_return = self._fixits
+        if self.anchor is not None:
+            lines = chapel.get_file_lines(context, self.anchor)
+            ignore = _build_ignore_fixit(self.anchor, lines, name)
+            to_return.append(ignore)
+        return to_return
 
 
 _AdvancedRuleResult = typing.Iterator[

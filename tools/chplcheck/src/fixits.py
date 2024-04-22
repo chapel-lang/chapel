@@ -23,7 +23,7 @@ import typing
 
 
 @dataclass
-class Fixit:
+class Edit:
     """
     Represents a fixit for a Chapel diagnostic.
     """
@@ -34,13 +34,13 @@ class Fixit:
     text: str
 
     @classmethod
-    def build(cls, location: chapel.Location, text: str) -> "Fixit":
-        return Fixit(
+    def build(cls, location: chapel.Location, text: str) -> "Edit":
+        return Edit(
             location.path(), location.start(), location.end(), text
         )
 
     @classmethod
-    def to_dict(cls, fixit: "Fixit") -> typing.Dict:
+    def to_dict(cls, fixit: "Edit") -> typing.Dict:
         return {
             "location": {
                 "path": fixit.path,
@@ -51,7 +51,7 @@ class Fixit:
         }
 
     @classmethod
-    def from_dict(cls, data: typing.Dict) -> typing.Optional["Fixit"]:
+    def from_dict(cls, data: typing.Dict) -> typing.Optional["Edit"]:
 
         if "location" not in data or "text" not in data:
             return None
@@ -64,6 +64,37 @@ class Fixit:
         ):
             return None
 
-        return Fixit(
+        return Edit(
             location["path"], location["start"], location["end"], data["text"]
         )
+
+
+@dataclass
+class Fixit:
+    edits: typing.List[Edit]
+    description: typing.Optional[str] = None
+
+    @classmethod
+    def build(cls, *edits: Edit) -> "Fixit":
+        return Fixit(list(edits))
+
+    @classmethod
+    def to_dict(cls, fixit: "Fixit") -> typing.Dict:
+        return {
+            "edits": [Edit.to_dict(e) for e in fixit.edits],
+            "description": fixit.description if fixit.description else "",
+        }
+
+    @classmethod
+    def from_dict(cls, data: typing.Dict) -> typing.Optional["Fixit"]:
+        if "edits" not in data:
+            return None
+
+        edits = []
+        for edit in data["edits"]:
+            e = Edit.from_dict(edit)
+            if e is not None:
+                edits.append(e)
+        desc = data.get("description", None)
+
+        return Fixit(edits, desc)
