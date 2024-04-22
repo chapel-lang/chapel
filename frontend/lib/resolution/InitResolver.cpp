@@ -594,7 +594,6 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
   return true;
 }
 
-// TODO: Detect calls to init.
 bool InitResolver::handleCallToInit(const FnCall* node,
                                     const CallResolutionResult* c) {
   auto calledExpr = node->calledExpression();
