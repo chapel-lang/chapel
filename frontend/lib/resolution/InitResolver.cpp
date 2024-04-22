@@ -592,7 +592,17 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
 
   // Doesn't matter if errors occurred at this time.
   if (currentFieldIndex_ != 0) {
-    ctx_->error(node, "TODO: fields were initialized before calling 'this.init()'");
+    std::vector<std::pair<const VarLikeDecl*, ID>> initializationPoints;
+    for (auto& fieldPair : fieldToInitState_) {
+      auto& state = fieldPair.second;
+      if (!state.isInitialized || state.initPointId.isEmpty()) continue;
+
+      auto variable = parsing::idToAst(ctx_, fieldPair.first)->toVarLikeDecl();
+      CHPL_ASSERT(variable != nullptr);
+
+      initializationPoints.emplace_back(variable, state.initPointId);
+    }
+    CHPL_REPORT(ctx_, AssignFieldBeforeInit, node, initializationPoints);
   }
 
   if (setupFromType(receiverType)) {
