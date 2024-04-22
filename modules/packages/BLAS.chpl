@@ -1774,10 +1774,10 @@ module BLAS {
     require header;
     select eltType {
       when real(32) do{
-        cblas_srotg (a, b, c, s);
+        cblas_srotg (c_ptrTo(a), c_ptrTo(b), c_ptrTo(c), c_ptrTo(s));
       }
       when real(64) do{
-        cblas_drotg (a, b, c, s);
+        cblas_drotg (c_ptrTo(a), c_ptrTo(b), c_ptrTo(c), c_ptrTo(s));
       }
       otherwise {
           compilerError("Unknown type in rotg: ", eltType:string);
@@ -1837,10 +1837,10 @@ module BLAS {
 
     select eltType {
       when real(32) do{
-        cblas_srotmg(d1,d2,b1,b2,P);
+        cblas_srotmg(c_ptrTo(d1),c_ptrTo(d2),c_ptrTo(b1),b2,P);
       }
       when real(64) do{
-        cblas_drotmg(d1,d2,b1,b2,P);
+        cblas_drotmg(c_ptrTo(d1),c_ptrTo(d2),c_ptrTo(b1),b2,P);
       }
       otherwise {
           compilerError("Unknown type in rotmg: ", eltType:string);
@@ -2195,10 +2195,10 @@ module BLAS {
 
     select eltType {
       when complex(64) do{
-        cblas_cdotu_sub (N, X, incX, Y, incY, res);
+        cblas_cdotu_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       when complex(128) do{
-        cblas_zdotu_sub (N, X, incX, Y, incY, res);
+        cblas_zdotu_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       otherwise {
           compilerError("Unknown type in dotu_sub: ", eltType:string);
@@ -2234,10 +2234,10 @@ module BLAS {
 
     select eltType {
       when complex(64) do{
-        cblas_cdotc_sub (N, X, incX, Y, incY, res);
+        cblas_cdotc_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       when complex(128) do{
-        cblas_zdotc_sub (N, X, incX, Y, incY, res);
+        cblas_zdotc_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       otherwise {
           compilerError("Unknown type in dotc_sub: ", eltType:string);
@@ -2490,10 +2490,10 @@ module BLAS {
     extern proc cblas_dsdot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_double;
     extern proc cblas_sdot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_float;
     extern proc cblas_ddot (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int): c_double;
-    extern proc cblas_cdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotu);
-    extern proc cblas_cdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotc);
-    extern proc cblas_zdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotu);
-    extern proc cblas_zdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotc);
+    extern proc cblas_cdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotu: c_ptr(void));
+    extern proc cblas_cdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotc: c_ptr(void));
+    extern proc cblas_zdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotu: c_ptr(void));
+    extern proc cblas_zdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotc: c_ptr(void));
     extern proc cblas_snrm2 (N: c_int, X: []c_float, incX: c_int): c_float;
     extern proc cblas_sasum (N: c_int, X: []c_float, incX: c_int): c_float;
     extern proc cblas_dnrm2 (N: c_int, X: []c_double, incX: c_int): c_double;
@@ -2518,12 +2518,12 @@ module BLAS {
     extern proc cblas_zswap (N: c_int, ref X: [], incX: c_int, ref Y: [], incY: c_int);
     extern proc cblas_zcopy (N: c_int, X: [], incX: c_int, ref Y: [], incY: c_int);
     extern proc cblas_zaxpy (N: c_int, alpha: c_ptr(void), X: [], incX: c_int, ref Y: [], incY: c_int);
-    extern proc cblas_srotg (ref a: c_float, ref b: c_float, ref c: c_float, ref s: c_float);
-    extern proc cblas_srotmg (ref d1: c_float, ref d2: c_float, ref b1: c_float, b2: c_float, ref P: []c_float);
+    extern proc cblas_srotg (a: c_ptr(c_float), b: c_ptr(c_float), c: c_ptr(c_float), s: c_ptr(c_float));
+    extern proc cblas_srotmg (d1: c_ptr(c_float), d2: c_ptr(c_float), b1: c_ptr(c_float), b2: c_float, ref P: []c_float);
     extern proc cblas_srot (N: c_int, ref X : []c_float, incX: c_int, ref Y : []c_float, incY: c_int, c: c_float, s: c_float);
     extern proc cblas_srotm (N: c_int, ref X : []c_float, incX: c_int, ref Y : []c_float, incY: c_int, ref P : []c_float);
-    extern proc cblas_drotg (ref a: c_double, ref b: c_double, ref c: c_double, ref s: c_double);
-    extern proc cblas_drotmg (ref d1: c_double, ref d2: c_double, ref b1: c_double, b2: c_double, ref P : []c_double);
+    extern proc cblas_drotg (a: c_ptr(c_double), b: c_ptr(c_double), c: c_ptr(c_double), s: c_ptr(c_double));
+    extern proc cblas_drotmg (d1: c_ptr(c_double), d2: c_ptr(c_double), b1: c_ptr(c_double), b2: c_double, ref P : []c_double);
     extern proc cblas_drot (N: c_int, ref X : []c_double, incX: c_int, ref Y : []c_double, incY: c_int, c: c_double, s: c_double);
     extern proc cblas_drotm (N: c_int, ref X : []c_double, incX: c_int, ref Y : []c_double, incY: c_int, ref P : []c_double);
     extern proc cblas_sscal (N: c_int, alpha: c_float, ref X : []c_float, incX: c_int);
