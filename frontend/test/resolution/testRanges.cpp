@@ -28,7 +28,8 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-static QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
+static std::tuple<QualifiedType, std::string, std::string>
+getRangeInfo(Context* context, const RecordType* r) {
   assert(r->name() == "_range");
   auto fields = fieldsForTypeDecl(context, r, DefaultsPolicy::IGNORE_DEFAULTS);
 
@@ -44,7 +45,7 @@ static QualifiedType getRangeIndexType(Context* context, const RecordType* r, co
   auto id = boundedValue->value();
   auto astNode = idToAst(context, id)->toNamedDecl();
   assert(astNode != nullptr);
-  assert(astNode->name().str() == ensureBoundedType);
+  std::string boundTypeStr = astNode->name().str();
 
   auto stridable = fields.fieldType(2);
   assert(stridable.kind() == QualifiedType::PARAM);
@@ -54,9 +55,16 @@ static QualifiedType getRangeIndexType(Context* context, const RecordType* r, co
   auto idS = stridableValue->value();
   auto astNodeS = idToAst(context, idS)->toNamedDecl();
   assert(astNodeS != nullptr);
-  assert(astNodeS->name().str() == "one");
+  std::string stridesStr = astNodeS->name().str();
 
-  return fields.fieldType(0);
+  return std::make_tuple(fields.fieldType(0), boundTypeStr, stridesStr);
+}
+
+static QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
+  auto info = getRangeInfo(context, r);
+  assert(std::get<1>(info) == ensureBoundedType);
+  assert(std::get<2>(info) == "one");
+  return std::get<0>(info);
 }
 
 static void test1() {
