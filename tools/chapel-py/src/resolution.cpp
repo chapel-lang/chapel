@@ -32,11 +32,47 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
     auto useParent = parsing::parentAst(context, visibilityStmt);
     auto scope = resolution::scopeForId(context, useParent->id());
     auto reScope = resolution::resolveVisibilityStmts(context, scope);
+
+    // Iterate and re-assign the ID if there are multiple visibility clauses.
+    // The reason is that the first 'visibility clause ID' might be too broad
+    // and contain the others.
+    ID toReturn;
     for (auto visCla: reScope->visibilityClauses()) {
       if(visCla.visibilityClauseId().contains(node->id())) {
-        return visCla.scope()->id();
+        auto visClaKind = visCla.kind();
+
+        if (visClaKind == resolution::VisibilitySymbols::SYMBOL_ONLY ||
+            visClaKind == resolution::VisibilitySymbols::ALL_CONTENTS) {
+          // the cursor is over 'A' or 'B' in 'import A' or 'import A as B'.
+          // The 'definition' is for the scope.
+          toReturn = visCla.scope()->id();
+        } else if (visClaKind == resolution::VisibilitySymbols::ONLY_CONTENTS ||
+                   visClaKind == resolution::VisibilitySymbols::CONTENTS_EXCEPT) {
+          // the cursor is over 'a' or 'b' in 'import A.{a as b}'. In this
+          // case, the definition is the thing-being-imported.
+
+          const Identifier* identToLookUp = nullptr;
+          auto nodeParent = parsing::parentAst(context, node);
+          if (auto parentAs = nodeParent->toAs()) {
+            identToLookUp = parentAs->symbol()->toIdentifier();
+          } else if (nodeParent == visibilityStmt) {
+            identToLookUp = node->toIdentifier();
+          }
+
+          if (identToLookUp) {
+            auto ids =
+              resolution::lookupNameInScope(context, visCla.scope(),
+                                            /* receiverScopes */ {},
+                                            identToLookUp->name(),
+                                            chpl::resolution::IDENTIFIER_LOOKUP_CONFIG);
+
+            if (ids.empty()) return ID();
+            toReturn = ids[0].firstId();
+          }
+        }
       }
     }
+    return toReturn;
   }
   return ID();
 }
