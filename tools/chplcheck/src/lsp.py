@@ -152,7 +152,9 @@ def run_lsp(driver: LintDriver):
                     start = e.start
                     end = e.end
                     rng = Range(
-                        start=Position(max(start[0] - 1, 0), max(start[1] - 1, 0)),
+                        start=Position(
+                            max(start[0] - 1, 0), max(start[1] - 1, 0)
+                        ),
                         end=Position(max(end[0] - 1, 0), max(end[1] - 1, 0)),
                     )
                     edit = TextEdit(range=rng, new_text=e.text)

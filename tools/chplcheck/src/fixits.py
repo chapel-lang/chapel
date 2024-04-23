@@ -35,9 +35,7 @@ class Edit:
 
     @classmethod
     def build(cls, location: chapel.Location, text: str) -> "Edit":
-        return Edit(
-            location.path(), location.start(), location.end(), text
-        )
+        return Edit(location.path(), location.start(), location.end(), text)
 
     @classmethod
     def to_dict(cls, fixit: "Edit") -> typing.Dict:
