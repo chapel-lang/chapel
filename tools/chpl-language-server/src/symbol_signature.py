@@ -305,6 +305,7 @@ def _intent_to_string(intent: Optional[str]) -> str:
     # use 'intent' as the default, so if no remap no work done
     return remap.get(intent, intent) if intent else ""
 
+
 def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
     """
     Convert a call to a string
@@ -312,7 +313,8 @@ def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
     comps = []
 
     comps.extend(_node_to_string(call.called_expression()))
-    comps.append(_wrap_str("[" if call.used_square_brackets() else "("))
+    openbr, closebr = ("[", "]") if call.used_square_brackets() else ("(", ")")
+    comps.append(_wrap_str(openbr))
     sep = ""
     for a in call.actuals():
         comps.append(_wrap_str(sep))
@@ -322,8 +324,8 @@ def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
             comps.append(_wrap_str(" = "))
             comps.extend(_node_to_string(a[1]))
         else:
-            assert(isinstance(a, chapel.AstNode))
+            assert isinstance(a, chapel.AstNode)
             comps.extend(_node_to_string(a))
-    comps.append(_wrap_str("]" if call.used_square_brackets() else ")"))
+    comps.append(_wrap_str(closebr))
 
     return comps
