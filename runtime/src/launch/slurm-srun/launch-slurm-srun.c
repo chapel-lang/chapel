@@ -220,6 +220,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  char* gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   char* memEnv = getenv("CHPL_LAUNCHER_MEM");
   const char* nodeAccessStr = NULL;
   const char* memStr = NULL;
@@ -402,6 +403,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
 
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
+    }
+
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
@@ -544,6 +550,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
+    }
+
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
     }
 
     // add the (possibly wrapped) binary name
