@@ -16,5 +16,5 @@ jobs:
       - uses: psf/black@stable
         with:
           options: "--check --verbose"
-          src: "tools/{chapel-py,chplcheck,chpl-language-server}/**/*.py"
+          src: "./tools/{chapel-py,chplcheck,chpl-language-server}/**/*.py"
           version: "24.4.0"
