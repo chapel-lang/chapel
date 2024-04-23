@@ -1551,6 +1551,9 @@ static void test25() {
     auto t = resolveTypeOfXInit(context, prog);
     assert(t.type());
     assert(t.type()->isNothingType());
+    assert(t.isParam());
+    assert(t.param());
+    assert(t.param()->isNoneParam());
     assert(guard.realizeErrors() == 0);
   }
 }
