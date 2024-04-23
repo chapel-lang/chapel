@@ -72,3 +72,8 @@ cpp:identifier VIS_USE
 cpp:identifier T
 cpp:identifier Deserializer
 cpp:identifier Serializer
+# For some reason, 'LOOKUP_' symbols in headers are not found.
+cpp:identifier LOOKUP_DECLS
+cpp:identifier LOOKUP_IMPORT_AND_USE
+cpp:identifier LOOKUP_PARENTS
+cpp:identifier LOOKUP_EXTERN_BLOCKS
