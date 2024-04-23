@@ -797,20 +797,20 @@ module BLAS {
 
     select eltType {
       when real(32) {
-        C_BLAS.cblas_sgbmv(order, trans, m, n, _kl, _ku, c_ptrToConst(alpha),
+        C_BLAS.cblas_sgbmv(order, trans, m, n, _kl, _ku, alpha,
             A, _ldA, X, incx, beta, Y, incy);
       }
       when real(64) {
-        C_BLAS.cblas_dgbmv(order, trans, m, n, _kl, _ku, c_ptrToConst(alpha),
+        C_BLAS.cblas_dgbmv(order, trans, m, n, _kl, _ku, alpha,
             A, _ldA, X, incx, beta, Y, incy);
       }
       when complex(64) {
         C_BLAS.cblas_cgbmv(order, trans, m, n, _kl, _ku, c_ptrToConst(alpha),
-            A, _ldA, X, incx, beta, Y, incy);
+            A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       when complex(128) {
         C_BLAS.cblas_zgbmv(order, trans, m, n, _kl, _ku, c_ptrToConst(alpha),
-            A, _ldA, X, incx, beta, Y, incy);
+            A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       otherwise {
         compilerError("Unknown type in gbmv: ", eltType:string);
