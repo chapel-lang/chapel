@@ -140,13 +140,11 @@ def apply_edits(edits: List[Edit], suffix: Optional[str]):
 
         prev_start = None
         for edit in edits:
-            start = edit.start
             line_start, char_start = edit.start
-            end = edit.end
             line_end, char_end = edit.end
 
             # Skip overlapping fixits
-            if prev_start is not None and end > prev_start:
+            if prev_start is not None and edit.end > prev_start:
                 continue
 
             lines[line_start - 1] = (
@@ -157,7 +155,7 @@ def apply_edits(edits: List[Edit], suffix: Optional[str]):
             if line_start != line_end:
                 lines[line_start:line_end] = [""] * (line_end - line_start)
 
-            prev_start = start
+            prev_start = edit.start
 
         outfile = file if suffix is None else file + suffix
         with open(outfile, "w") as f:
