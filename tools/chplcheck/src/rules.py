@@ -263,7 +263,7 @@ def register_rules(driver: LintDriver):
             # dont warn if the EmptyStmt is the only statement in a block
             return True
 
-        return BasicRuleResult(Fixit.build(Edit.build(node.location(), "")))
+        return BasicRuleResult(node, fixits=Fixit.build(Edit.build(node.location(), "")))
 
     @driver.basic_rule(TupleDecl)
     def UnusedTupleUnpack(context: Context, node: TupleDecl):
@@ -275,7 +275,7 @@ def register_rules(driver: LintDriver):
         if len(varset) == 0:
             fixit = fixit_remove_unused_node(node, context = context)
             if fixit is not None:
-                return BasicRuleResult(fixit)
+                return BasicRuleResult(node, fixits=fixit)
             return False
         return True
 
