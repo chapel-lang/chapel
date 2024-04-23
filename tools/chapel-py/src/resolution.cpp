@@ -60,11 +60,13 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
           }
 
           if (identToLookUp) {
+            auto config = chpl::resolution::IDENTIFIER_LOOKUP_CONFIG |
+                          resolution::LOOKUP_SKIP_PRIVATE_VIS;
             auto ids =
               resolution::lookupNameInScope(context, visCla.scope(),
                                             /* receiverScopes */ {},
                                             identToLookUp->name(),
-                                            chpl::resolution::IDENTIFIER_LOOKUP_CONFIG);
+                                            config);
 
             if (ids.empty()) return ID();
             toReturn = ids[0].firstId();
