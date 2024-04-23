@@ -44,6 +44,15 @@ namespace resolution {
   const Scope* scopeForModule(Context* context, ID moduleId);
 
   /**
+    The configuration used to look up a plain identifier in a scope
+    when resolving expressions.
+   */
+  const LookupConfig IDENTIFIER_LOOKUP_CONFIG = LOOKUP_DECLS |
+                                                LOOKUP_IMPORT_AND_USE |
+                                                LOOKUP_PARENTS |
+                                                LOOKUP_EXTERN_BLOCKS;
+
+  /**
     Find what a name might refer to.
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)

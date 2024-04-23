@@ -2591,12 +2591,6 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
   return false;
 }
 
-static const LookupConfig identifierLookupConfig = LOOKUP_DECLS |
-                                                   LOOKUP_IMPORT_AND_USE |
-                                                   LOOKUP_PARENTS |
-                                                   LOOKUP_EXTERN_BLOCKS;
-
-
 void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
                                            const Scope* scope,
                                            llvm::ArrayRef<const Scope*> receiverScopes,
@@ -2627,7 +2621,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
-  LookupConfig config = identifierLookupConfig;
+  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
@@ -2877,7 +2871,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
 
-      LookupConfig config = identifierLookupConfig;
+      LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
       if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
