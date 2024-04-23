@@ -50,10 +50,6 @@
 #include "llvm/IR/AttributeMask.h"
 #endif
 
-#if HAVE_LLVM_VER < 90
-#include "llvm/IR/CallSite.h"
-#endif
-
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicInst.h"
@@ -722,21 +718,13 @@ namespace {
                                              oldLoad->getSyncScopeID()
                                              );
 
-#if HAVE_LLVM_VER >= 90
             Value* call = CallInst::Create(getFnType, getFn, args, "", oldLoad);
-#else
-            Value* call = CallInst::Create(getFn, args, "", oldLoad);
-#endif
             if (call == nullptr) assert(false && "failure creating call");
 
             // Now load from the alloc'd area.
             Instruction* loadedWide = new LoadInst(wLoadedTy, alloc, "",
                                        oldLoad->isVolatile(),
-#if HAVE_LLVM_VER >= 100
                                        oldLoad->getAlign(),
-#else
-                                       oldLoad->getAlignment(),
-#endif
                                        oldLoad->getOrdering(),
                                        oldLoad->getSyncScopeID(),
                                        oldLoad);
@@ -772,11 +760,7 @@ namespace {
             // Now store to the alloc'd area
             Instruction* st = new StoreInst(wValueOp, alloc,
                                             oldStore->isVolatile(),
-#if HAVE_LLVM_VER >= 100
                                             oldStore->getAlign(),
-#else
-                                            oldStore->getAlignment(),
-#endif
                                             oldStore->getOrdering(),
                                             oldStore->getSyncScopeID(),
                                             oldStore);
@@ -802,11 +786,7 @@ namespace {
                                              oldStore->getSyncScopeID()
                                              );
 
-#if HAVE_LLVM_VER >= 90
             Instruction* put = CallInst::Create(putFnType, putFn, args, "", oldStore);
-#else
-            Instruction* put = CallInst::Create(putFn, args, "", oldStore);
-#endif
             myReplaceInstWithInst(oldStore, put);
           }
           break; }
@@ -958,11 +938,7 @@ namespace {
                 args[3] = n;
                 args[4] = ctl;
 
-#if HAVE_LLVM_VER >= 90
                 putget = CallInst::Create(putFnType, putFn, args, "", call);
-#else
-                putget = CallInst::Create(putFn, args, "", call);
-#endif
               } else if( srcSpace == info->globalSpace &&
                          dstSpace != info->globalSpace ) {
                 // It's a GET
@@ -973,11 +949,7 @@ namespace {
                 args[3] = n;
                 args[4] = ctl;
 
-#if HAVE_LLVM_VER >= 90
                 putget = CallInst::Create(getFnType, getFn, args, "", call);
-#else
-                putget = CallInst::Create(getFn, args, "", call);
-#endif
               } else {
                 Value* args[5];
                 args[0] = createRnode(info, wDst, call);
@@ -987,11 +959,7 @@ namespace {
                 args[4] = n;
 
                 assert(getPutFn && "Missing get-put-function for global-to-global memcpy");
-#if HAVE_LLVM_VER >= 90
                 putget = CallInst::Create(getPutFnType, getPutFn, args, "", call);
-#else
-                putget = CallInst::Create(getPutFn, args, "", call);
-#endif
               }
 
               myReplaceInstWithInst(call, putget);
@@ -1016,11 +984,7 @@ namespace {
               args[2] = c;
               args[3] = n;
               assert(memsetFn && "Missing memset-function for global memset");
-#if HAVE_LLVM_VER >= 90
               mset = CallInst::Create(memsetFnType, memsetFn, args, "", call);
-#else
-              mset = CallInst::Create(memsetFn, args, "", call);
-#endif
               myReplaceInstWithInst(call, mset);
             } else {
               assert(false && "Unknown intrinsic call with global pointer");
@@ -1408,12 +1372,10 @@ bool GlobalToWide::run(Module &M) {
       assert(info->putFn);
       assert(info->getPutFn);
       assert(info->memsetFn);
-#if HAVE_LLVM_VER >= 90
       assert(info->getFnType);
       assert(info->putFnType);
       assert(info->getPutFnType);
       assert(info->memsetFnType);
-#endif
 
       assert(info->globalSpace > 0);
       assert(info->localeIdType);
@@ -1580,28 +1542,16 @@ bool GlobalToWide::run(Module &M) {
           Use &U = *UI;
           User *Old = U.getUser();
           ++UI;
-#if HAVE_LLVM_VER >= 90
           if (auto *CB = dyn_cast<CallBase>(Old)) {
             assert(CB->getCalledFunction() == F);
             Instruction *Call = CB;
-#else
-          CallSite CS(Old);
-          if (CS.getInstruction()) {
-            assert(CS.getCalledFunction() == F);
-            Instruction *Call = CS.getInstruction();
-#endif
 
             // Loop over the operands, inserting globalToWide function calls in
             // the caller as appropriate.
             unsigned ArgIndex = 1;
 
-#if HAVE_LLVM_VER >= 90
             for(User::op_iterator AE = CB->arg_end(), AI = CB->arg_begin();
                 AI != AE; ++AI, ++ArgIndex) {
-#else
-            for(CallSite::arg_iterator AE = CS.arg_end(), AI = CS.arg_begin();
-                AI != AE; ++AI, ++ArgIndex) {
-#endif
 
               if(!containsGlobalPointers(info, AI->get()->getType())) {
                 // unmodified argument
@@ -1620,22 +1570,12 @@ bool GlobalToWide::run(Module &M) {
             if (InvokeInst *II = dyn_cast<InvokeInst>(Call)) {
               New = InvokeInst::Create(NF, II->getNormalDest(), II->getUnwindDest(),
                                        Args, "", Call);
-#if HAVE_LLVM_VER >= 90
               cast<InvokeInst>(New)->setCallingConv(CB->getCallingConv());
               cast<InvokeInst>(New)->setAttributes(CB->getAttributes());
-#else
-              cast<InvokeInst>(New)->setCallingConv(CS.getCallingConv());
-              cast<InvokeInst>(New)->setAttributes(CS.getAttributes());
-#endif
             } else {
               New = CallInst::Create(NF, Args, "", Call);
-#if HAVE_LLVM_VER >= 90
               cast<CallInst>(New)->setCallingConv(CB->getCallingConv());
               cast<CallInst>(New)->setAttributes(CB->getAttributes());
-#else
-              cast<CallInst>(New)->setCallingConv(CS.getCallingConv());
-              cast<CallInst>(New)->setAttributes(CS.getAttributes());
-#endif
               if (cast<CallInst>(Call)->isTailCall())
                 cast<CallInst>(New)->setTailCall();
             }

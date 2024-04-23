@@ -413,6 +413,26 @@ static void test41() {
   assert(guard.realizeErrors() == 1);
 }
 
+// param values should be turned into non-param values if target type is
+// not param-enabled.
+static void test42() {
+  printf("test42\n");
+  Context ctx;
+  ErrorGuard guard(&ctx);
+  std::string program =
+    R"""(
+    record myRec {}
+    operator :(lhs: int, type rhs: myRec) do return new myRec();
+    var x = 42 : myRec;
+    )""";
+
+  auto xInit = resolveTypeOfXInit(&ctx, program);
+
+  assert(xInit.type());
+  assert(xInit.type()->isRecordType());
+  assert(xInit.type()->toRecordType()->name() == "myRec");
+}
+
 int main() {
   test1();
   test2();
@@ -455,6 +475,7 @@ int main() {
   test39();
   test40();
   test41();
+  test42();
 
   return 0;
 }

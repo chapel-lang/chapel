@@ -53,15 +53,9 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   ValueToValueMapTy VMap;
   // Create a new module containing only the definition of the function
   // and using external declarations for everything else
-#if HAVE_LLVM_VER < 70
-  auto ownedM = CloneModule(fromModule, VMap,
-                            [&](const GlobalValue *GV) {
-                                       return gvs.count(GV) > 0; });
-#else
   auto ownedM = CloneModule(*fromModule, VMap,
                             [&](const GlobalValue *GV) {
                                        return gvs.count(GV) > 0; });
-#endif
   Module& M = *ownedM.get();
 
   // collect names for the next step

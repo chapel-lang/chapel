@@ -236,7 +236,7 @@ module BLAS {
       C := alpha * op(A) * op(B) + beta * C
 
   */
-  proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+  proc gemm(A : [?Adom], B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     opA : Op = Op.N, opB : Op = Op.N,
     order : Order = Order.Row)
@@ -301,7 +301,7 @@ module BLAS {
 
     where ``A`` is a symmetric matrix.
   */
-  proc symm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+  proc symm(A : [?Adom], B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
     order : Order = Order.Row)
@@ -363,7 +363,7 @@ module BLAS {
 
     where ``A`` is an hermitian matrix.
   */
-  proc hemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+  proc hemm(A : [?Adom], B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
     order : Order = Order.Row)
@@ -416,7 +416,7 @@ module BLAS {
 
     where ``C`` is a symmetric matrix, and ``A**T`` is the transpose of ``A``.
   */
-  proc syrk(A : [?Adom],  C : [?Cdom],
+  proc syrk(A : [?Adom],  ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -480,7 +480,7 @@ module BLAS {
     where ``C`` is an hermitian matrix, and ``A**H`` is the conjugate transpose
     of ``A``.
   */
-  proc herk(A : [?Adom],  C : [?Cdom],
+  proc herk(A : [?Adom],  ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -535,7 +535,7 @@ module BLAS {
     where ``C`` is a symmetric matrix, and ``A**T`` and ``B**T`` are the
     transpose of ``A`` and ``B`` , respectively.
   */
-  proc syr2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
+  proc syr2k(A : [?Adom],  B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -600,7 +600,7 @@ module BLAS {
     where ``C`` is an hermitian matrix, ``B**H`` is the conjugate transpose of
     ``B`` , ``conjg(alpha)`` is the complex conjugate of ``alpha``.
   */
-  proc her2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
+  proc her2k(A : [?Adom],  B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -654,7 +654,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `B` is a non-square array.
   */
-  proc trmm(A : [?Adom] ?eltType,  B : [?Bdom] eltType,
+  proc trmm(A : [?Adom] ?eltType,  ref B : [?Bdom] eltType,
     alpha,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     side : Side = Side.Left, diag : Diag = Diag.NonUnit,
@@ -714,7 +714,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `B` is a non-square array.
   */
-  proc trsm(A : [?Adom],  B : [?Bdom],
+  proc trsm(A : [?Adom],  ref B : [?Bdom],
     alpha,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     side : Side = Side.Left, diag : Diag = Diag.NonUnit,
@@ -777,7 +777,7 @@ module BLAS {
     TODO -- Get banded array routines working
    */
   proc gbmv(A : [?Adom] ?eltType,
-            X : [?Xdom] eltType, Y : [?Ydom] eltType,
+            X : [?Xdom] eltType, ref Y : [?Ydom] eltType,
             ref alpha: eltType, ref beta: eltType,
             kl : int = 0, ku : int = 0,
             trans : Op =  Op.N,
@@ -825,7 +825,7 @@ module BLAS {
 
     where ``A`` is an ``m``x``n`` matrix.
   */
-  proc gemv(A : [?Adom] ?eltType, x : [?xdom] eltType, y : [?ydom] eltType,
+  proc gemv(A : [?Adom] ?eltType, x : [?xdom] eltType, ref y : [?ydom] eltType,
             alpha, beta,
             opA : Op = Op.N,
             order : Order = Order.Row,
@@ -873,7 +873,7 @@ module BLAS {
       A := alpha*x*y'+ A
 
   */
-  proc ger(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType, alpha,
+  proc ger(ref A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType, alpha,
            order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
            where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
@@ -897,7 +897,6 @@ module BLAS {
         compilerError("Unknown type in ger: ", eltType:string);
       }
     }
-
   }
 
   /*
@@ -906,7 +905,7 @@ module BLAS {
       A := alpha*x*conjg(y') + A
 
   */
-  proc gerc(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
+  proc gerc(ref A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
             ref alpha: eltType,
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
@@ -938,7 +937,7 @@ module BLAS {
       A := alpha*x*y' + A
 
   */
-  proc geru(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
+  proc geru(ref A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
             ref alpha: eltType,
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
@@ -973,7 +972,7 @@ module BLAS {
 
     TODO -- Get banded array routines working
   */
-  proc hbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc hbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
             k: int = 0,
             order : Order = Order.Row,
@@ -1009,7 +1008,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
@@ -1045,7 +1044,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
+  proc her(ref A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
@@ -1081,7 +1080,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc her2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc her2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
@@ -1121,7 +1120,7 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             ref alpha: eltType, ref beta: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1155,7 +1154,7 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc hpr(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
+  proc hpr(ref A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             incx : c_int = 1)
@@ -1190,7 +1189,7 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc hpr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc hpr2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             ref alpha: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1224,7 +1223,7 @@ module BLAS {
     TODO -- Get banded array routines working
 
   */
-  proc sbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc sbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             alpha, beta,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1263,7 +1262,7 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc spmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc spmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             alpha, beta,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1295,7 +1294,7 @@ module BLAS {
 
     TODO -- Get packed array routines working
   */
-  proc spr(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc spr(ref A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
            order : Order = Order.Row,
            uplo : Uplo = Uplo.Upper,
@@ -1328,7 +1327,7 @@ module BLAS {
 
     TODO -- Get packed array routines working
   */
-  proc spr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc spr2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1359,7 +1358,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             alpha, beta,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1395,7 +1394,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc syr(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc syr(ref A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
            order : Order = Order.Row,
            uplo : Uplo = Uplo.Upper,
@@ -1432,7 +1431,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc syr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc syr2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1473,7 +1472,7 @@ module BLAS {
     TODO -- Get banded array routines working
 
   */
-  proc tbmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tbmv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             k: c_int,
             trans : Op = Op.N,
             order : Order = Order.Row,
@@ -1520,7 +1519,7 @@ module BLAS {
    TODO -- Get banded array routines working
 
   */
-  proc tbsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tbsv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1571,7 +1570,7 @@ module BLAS {
    TODO -- Get banded array routines working
 
   */
-  proc tpmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tpmv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1612,7 +1611,7 @@ module BLAS {
 
     TODO -- Get packed array routines working
   */
-  proc tpsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tpsv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1653,7 +1652,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc trmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc trmv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1699,7 +1698,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc trsv(A: [?Adom] ?eltType, B: [?vDom] eltType,
+  proc trsv(A: [?Adom] ?eltType, ref B: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1830,7 +1829,7 @@ module BLAS {
       :throws IllegalArgumentError: When `P` does not consist of exactly five
         elements.
   */
-  proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) throws {
+  proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, ref P: []eltType) throws {
     require header;
 
     if P.size != 5 then
@@ -1873,7 +1872,7 @@ module BLAS {
 
 
   */
-  proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
+  proc rot(ref X: [?D] ?eltType, ref Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -1934,7 +1933,7 @@ module BLAS {
       :throws IllegalArgumentError: When `P` does not consist of exactly five
         elements.
   */
-  proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1) throws
+  proc rotm(ref X: [?D]?eltType,  ref Y: [D]eltType,  ref P: []eltType, incY: c_int = 1, incX: c_int = 1) throws
     where D.rank == 1
   {
     require header;
@@ -1976,7 +1975,7 @@ module BLAS {
       - ``Y``: Contains input ``X`` elements
 
   */
-  proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+  proc swap(ref X: [?D]?eltType, ref Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -2019,7 +2018,7 @@ module BLAS {
       - ``X``: Vector updated by the equation: ``X[i] = alpha*X[i]``
 
   */
-  proc scal(X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
+  proc scal(ref X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -2064,7 +2063,7 @@ module BLAS {
       ``Y``: Contains the values copied from ``X`` vector
 
    */
-  proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+  proc copy(X: [?D]?eltType, ref Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -2111,7 +2110,7 @@ module BLAS {
 
   */
 
-  proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
+  proc axpy(X: [?D]?eltType, ref Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -2507,128 +2506,128 @@ module BLAS {
     extern proc cblas_idamax (N: c_int, X: []c_double, incX: c_int): CBLAS_INDEX;
     extern proc cblas_icamax (N: c_int, X: [], incX: c_int): CBLAS_INDEX;
     extern proc cblas_izamax (N: c_int, X: [], incX: c_int): CBLAS_INDEX;
-    extern proc cblas_sswap (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int);
-    extern proc cblas_scopy (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int);
-    extern proc cblas_saxpy (N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int);
-    extern proc cblas_dswap (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int);
-    extern proc cblas_dcopy (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int);
-    extern proc cblas_daxpy (N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int);
-    extern proc cblas_cswap (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_ccopy (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_caxpy (N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_zswap (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_zcopy (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_zaxpy (N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int);
+    extern proc cblas_sswap (N: c_int, ref X: []c_float, incX: c_int, ref Y: []c_float, incY: c_int);
+    extern proc cblas_scopy (N: c_int, X: []c_float, incX: c_int, ref Y: []c_float, incY: c_int);
+    extern proc cblas_saxpy (N: c_int, alpha: c_float, X: []c_float, incX: c_int, ref Y: []c_float, incY: c_int);
+    extern proc cblas_dswap (N: c_int, ref X: []c_double, incX: c_int, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dcopy (N: c_int, X: []c_double, incX: c_int, ref Y: []c_double, incY: c_int);
+    extern proc cblas_daxpy (N: c_int, alpha: c_double, X: []c_double, incX: c_int, ref Y: []c_double, incY: c_int);
+    extern proc cblas_cswap (N: c_int, ref X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_ccopy (N: c_int, X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_caxpy (N: c_int, ref alpha, X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_zswap (N: c_int, ref X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_zcopy (N: c_int, X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_zaxpy (N: c_int, ref alpha, X: [], incX: c_int, ref Y: [], incY: c_int);
     extern proc cblas_srotg (ref a: c_float, ref b: c_float, ref c: c_float, ref s: c_float);
-    extern proc cblas_srotmg (ref d1: c_float, ref d2: c_float, ref b1: c_float, b2: c_float, P: []c_float);
-    extern proc cblas_srot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, c: c_float, s: c_float);
-    extern proc cblas_srotm (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, P: []c_float);
+    extern proc cblas_srotmg (ref d1: c_float, ref d2: c_float, ref b1: c_float, b2: c_float, ref P: []c_float);
+    extern proc cblas_srot (N: c_int, ref X : []c_float, incX: c_int, ref Y : []c_float, incY: c_int, c: c_float, s: c_float);
+    extern proc cblas_srotm (N: c_int, ref X : []c_float, incX: c_int, ref Y : []c_float, incY: c_int, ref P : []c_float);
     extern proc cblas_drotg (ref a: c_double, ref b: c_double, ref c: c_double, ref s: c_double);
-    extern proc cblas_drotmg (ref d1: c_double, ref d2: c_double, ref b1: c_double, b2: c_double, P: []c_double);
-    extern proc cblas_drot (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, c: c_double, s: c_double);
-    extern proc cblas_drotm (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, P: []c_double);
-    extern proc cblas_sscal (N: c_int, alpha: c_float, X: []c_float, incX: c_int);
-    extern proc cblas_dscal (N: c_int, alpha: c_double, X: []c_double, incX: c_int);
-    extern proc cblas_cscal (N: c_int, ref alpha, X: [], incX: c_int);
-    extern proc cblas_zscal (N: c_int, ref alpha, X: [], incX: c_int);
-    extern proc cblas_csscal (N: c_int, alpha: c_float, X: [], incX: c_int);
-    extern proc cblas_zdscal (N: c_int, alpha: c_double, X: [], incX: c_int);
-    extern proc cblas_sgemv (order, TransA, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_sgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_strmv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, X: []c_float, incX: c_int);
-    extern proc cblas_strsv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, X: []c_float, incX: c_int);
-    extern proc cblas_dgemv (order, TransA, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dtrmv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, X: []c_double, incX: c_int);
-    extern proc cblas_dtrsv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, X: []c_double, incX: c_int);
-    extern proc cblas_cgemv (order, TransA, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_cgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_ctrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_ctrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_zgemv (order, TransA, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_ztrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_ztrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_ssymv (order, Uplo, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_ssbmv (order, Uplo, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_sspmv (order, Uplo, N: c_int, alpha: c_float, Ap: []c_float, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_sger (order, M: c_int, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, A: []c_float, lda: c_int);
-    extern proc cblas_ssyr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, A: []c_float, lda: c_int);
-    extern proc cblas_sspr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Ap: []c_float);
-    extern proc cblas_ssyr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, A: []c_float, lda: c_int);
-    extern proc cblas_sspr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, A: []c_float);
-    extern proc cblas_dsymv (order, Uplo, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dsbmv (order, Uplo, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dspmv (order, Uplo, N: c_int, alpha: c_double, Ap: []c_double, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dger (order, M: c_int, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, A: []c_double, lda: c_int);
-    extern proc cblas_dsyr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, A: []c_double, lda: c_int);
-    extern proc cblas_dspr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Ap: []c_double);
-    extern proc cblas_dsyr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, A: []c_double, lda: c_int);
-    extern proc cblas_dspr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, A: []c_double);
-    extern proc cblas_chemv (order, Uplo, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_chbmv (order, Uplo, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_chpmv (order, Uplo, N: c_int, ref alpha, Ap: [], X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_cgeru (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_cgerc (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_cher (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, A: [], lda: c_int);
-    extern proc cblas_chpr (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, A: []);
-    extern proc cblas_cher2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_chpr2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, Ap: []);
-    extern proc cblas_zhemv (order, Uplo, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zhbmv (order, Uplo, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zhpmv (order, Uplo, N: c_int, ref alpha, Ap: [], X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zgeru (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_zgerc (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_zher (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, A: [], lda: c_int);
-    extern proc cblas_zhpr (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, A: []);
-    extern proc cblas_zher2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_zhpr2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, Ap: []);
-    extern proc cblas_sgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_ssymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_ssyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_ssyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_strmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int);
-    extern proc cblas_strsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int);
-    extern proc cblas_dgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dsymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dsyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dtrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int);
-    extern proc cblas_dtrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int);
-    extern proc cblas_cgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_csymm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_csyrk (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_csyr2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_ctrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_ctrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_zgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zsymm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zsyrk (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_ztrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_ztrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_chemm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_cherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: [], lda: c_int, beta: c_float, C: [], ldc: c_int);
-    extern proc cblas_cher2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, beta: c_float, C: [], ldc: c_int);
-    extern proc cblas_zhemm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: [], lda: c_int, beta: c_double, C: [], ldc: c_int);
-    extern proc cblas_zher2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, beta: c_double, C: [], ldc: c_int);
+    extern proc cblas_drotmg (ref d1: c_double, ref d2: c_double, ref b1: c_double, b2: c_double, ref P : []c_double);
+    extern proc cblas_drot (N: c_int, ref X : []c_double, incX: c_int, ref Y : []c_double, incY: c_int, c: c_double, s: c_double);
+    extern proc cblas_drotm (N: c_int, ref X : []c_double, incX: c_int, ref Y : []c_double, incY: c_int, ref P : []c_double);
+    extern proc cblas_sscal (N: c_int, alpha: c_float, ref X : []c_float, incX: c_int);
+    extern proc cblas_dscal (N: c_int, alpha: c_double, ref X : []c_double, incX: c_int);
+    extern proc cblas_cscal (N: c_int, ref alpha, ref X : [], incX: c_int);
+    extern proc cblas_zscal (N: c_int, ref alpha, ref X : [], incX: c_int);
+    extern proc cblas_csscal (N: c_int, alpha: c_float, ref X : [], incX: c_int);
+    extern proc cblas_zdscal (N: c_int, alpha: c_double, ref X : [], incX: c_int);
+    extern proc cblas_sgemv (order, TransA, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_sgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_strmv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, ref X: []c_float, incX: c_int);
+    extern proc cblas_strsv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, ref X: []c_float, incX: c_int);
+    extern proc cblas_dgemv (order, TransA, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y : []c_double, incY: c_int);
+    extern proc cblas_dgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y : []c_double, incY: c_int);
+    extern proc cblas_dtrmv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtrsv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, ref X: []c_double, incX: c_int);
+    extern proc cblas_cgemv (order, TransA, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y : [], incY: c_int);
+    extern proc cblas_cgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y : [], incY: c_int);
+    extern proc cblas_ctrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_ctrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_zgemv (order, TransA, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y : [], incY: c_int);
+    extern proc cblas_zgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y : [], incY: c_int);
+    extern proc cblas_ztrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_ztrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_ssymv (order, Uplo, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_ssbmv (order, Uplo, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_sspmv (order, Uplo, N: c_int, alpha: c_float, Ap: []c_float, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_sger (order, M: c_int, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, ref A: []c_float, lda: c_int);
+    extern proc cblas_ssyr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, ref A: []c_float, lda: c_int);
+    extern proc cblas_sspr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, ref Ap: []c_float);
+    extern proc cblas_ssyr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, ref A: []c_float, lda: c_int);
+    extern proc cblas_sspr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, ref A: []c_float);
+    extern proc cblas_dsymv (order, Uplo, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dsbmv (order, Uplo, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dspmv (order, Uplo, N: c_int, alpha: c_double, Ap: []c_double, X: []c_double, incX: c_int, beta: c_double, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dger (order, M: c_int, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, ref A: []c_double, lda: c_int);
+    extern proc cblas_dsyr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, ref A: []c_double, lda: c_int);
+    extern proc cblas_dspr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, ref Ap: []c_double);
+    extern proc cblas_dsyr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, ref A: []c_double, lda: c_int);
+    extern proc cblas_dspr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, ref A: []c_double);
+    extern proc cblas_chemv (order, Uplo, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y: [], incY: c_int);
+    extern proc cblas_chbmv (order, Uplo, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y: [], incY: c_int);
+    extern proc cblas_chpmv (order, Uplo, N: c_int, ref alpha, Ap: [], X: [], incX: c_int, ref beta, ref Y: [], incY: c_int);
+    extern proc cblas_cgeru (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_cgerc (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_cher (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, ref A: [], lda: c_int);
+    extern proc cblas_chpr (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, ref A: []);
+    extern proc cblas_cher2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_chpr2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref Ap: []);
+    extern proc cblas_zhemv (order, Uplo, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y: [], incY: c_int);
+    extern proc cblas_zhbmv (order, Uplo, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, ref Y: [], incY: c_int);
+    extern proc cblas_zhpmv (order, Uplo, N: c_int, ref alpha, Ap: [], X: [], incX: c_int, ref beta, ref Y: [], incY: c_int);
+    extern proc cblas_zgeru (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zgerc (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zher (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zhpr (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, ref A: []);
+    extern proc cblas_zher2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zhpr2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, ref Ap: []);
+    extern proc cblas_sgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_ssymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_ssyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_ssyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_strmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, ref B: []c_float, ldb: c_int);
+    extern proc cblas_strsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, ref B: []c_float, ldb: c_int);
+    extern proc cblas_dgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dsymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dsyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dtrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, ref B: []c_double, ldb: c_int);
+    extern proc cblas_dtrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, ref B: []c_double, ldb: c_int);
+    extern proc cblas_cgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_csymm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_csyrk (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_csyr2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_ctrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_ctrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_zgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_zsymm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_zsyrk (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_zsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_ztrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_ztrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_chemm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_cherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: [], lda: c_int, beta: c_float, ref C: [], ldc: c_int);
+    extern proc cblas_cher2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, beta: c_float, ref C: [], ldc: c_int);
+    extern proc cblas_zhemm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, ref C: [], ldc: c_int);
+    extern proc cblas_zherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: [], lda: c_int, beta: c_double, ref C: [], ldc: c_int);
+    extern proc cblas_zher2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, beta: c_double, ref C: [], ldc: c_int);
 
   }
 

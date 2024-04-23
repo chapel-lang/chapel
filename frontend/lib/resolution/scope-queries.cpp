@@ -379,6 +379,10 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
     scope->addBuiltin(pair.first);
   }
 
+  // TODO: maybe we can represent these as 'NilLiteral' and 'NoneLiteral' nodes?
+  scope->addBuiltin(USTR("nil"));
+  scope->addBuiltin(USTR("none"));
+
   populateScopeWithBuiltinKeywords(context, scope);
 }
 
@@ -2657,7 +2661,7 @@ const Scope* scopeForModule(Context* context, ID id) {
 
 
 const
-std::vector<ID> findUsedImportedModules(Context* context,
+std::vector<ID> findUsedImportedIds(Context* context,
                                         const Scope* scope) {
   auto result = resolveVisibilityStmts(context, scope);
   std::vector<ID> ids;

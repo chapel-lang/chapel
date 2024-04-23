@@ -2,3 +2,4 @@ MethodsAfterFields.chpl:4: node violates rule MethodsAfterFields
 MethodsAfterFields.chpl:11: node violates rule MethodsAfterFields
 MethodsAfterFields.chpl:31: node violates rule MethodsAfterFields
 MethodsAfterFields.chpl:38: node violates rule MethodsAfterFields
+[Success matching fixit for MethodsAfterFields]

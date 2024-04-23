@@ -100,7 +100,7 @@ def check_man_page(bin_name, additional_args=None):
     for mline in [l.strip() for l in manpage if len(l.strip()) > 2]:
 
         # Line is flag
-        if (mline[0:5] == "**\--" or mline[4:5] == "," or mline[0:3] == "**-") and mline[-2:] == '**' and currentsection:
+        if (mline[0:5] == "**\\--" or mline[4:5] == "," or mline[0:3] == "**-") and mline[-2:] == '**' and currentsection:
 
             mflags = _get_flags(mline)
 

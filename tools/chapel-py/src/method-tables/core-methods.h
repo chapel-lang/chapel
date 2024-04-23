@@ -86,7 +86,7 @@ CLASS_BEGIN(Scope)
   PLAIN_GETTER(Scope, used_imported_modules, "Get the modules that were used or imported in this scope",
                std::vector<const chpl::uast::Module*>,
 
-               auto& moduleIds = resolution::findUsedImportedModules(context, node);
+               auto& moduleIds = resolution::findUsedImportedIds(context, node);
                std::set<ID> reportedIds;
                std::vector<const chpl::uast::Module*> toReturn;
                for (size_t i = 0; i < moduleIds.size(); i++) {

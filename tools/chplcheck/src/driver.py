@@ -164,11 +164,10 @@ class LintDriver:
                 continue
 
             val = func(context, node)
-            check, fixit = None, None
+            check, fixit = None, []
             if isinstance(val, rule_types.BasicRuleResult):
-                check, fixit = False, val.fixit
-                if fixit is not None and not isinstance(fixit, list):
-                    fixit = [fixit]
+                check = False
+                fixit = val.fixits(context, name)
             else:
                 check = val
             if not check:
@@ -189,16 +188,15 @@ class LintDriver:
 
         for result in func(context, root):
             if isinstance(result, rule_types.AdvancedRuleResult):
-                node, anchor, fixit = result.node, result.anchor, result.fixit
+                node, anchor = result.node, result.anchor
+                fixits = result.fixits(context, name)
                 if anchor is not None and not self._should_check_rule(
                     name, anchor
                 ):
                     continue
-                if fixit is not None and not isinstance(fixit, list):
-                    fixit = [fixit]
             else:
                 node = result
-                fixit = None
+                fixits = None
 
             # For advanced rules, the traversal of the AST is out of our hands,
             # so we can't stop it from going into unstable modules. Instead,
@@ -207,7 +205,7 @@ class LintDriver:
             if self.skip_unstable and LintDriver._in_unstable_module(node):
                 continue
 
-            yield (node, name, fixit)
+            yield (node, name, fixits)
 
     def basic_rule(self, pat, default=True):
         """

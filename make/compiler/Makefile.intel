@@ -128,7 +128,7 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 #  174  : warns about expressions that have no effect
 #  177  : warns about unused variable declarations
 #  556  : warns about type X being assigned to entity of type Y
-#  2332 : warns about discarded const qualifier
+#  2332 : warns about discarded const qualifier (https://github.com/chapel-lang/chapel/issues/24894)
 
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr279,304,593,810,869,981,1572,1599 -diag-warning 1292,3924
 WARN_CFLAGS = $(WARN_CXXFLAGS)

@@ -401,3 +401,10 @@ def range_to_text(rng: Location, lines: List[str]) -> str:
     Convert a Chapel location to a single string
     """
     return "\n".join(range_to_lines(rng, lines))
+
+def get_file_lines(context: Context, node: AstNode) -> typing.List[str]:
+    """
+    Get the lines of the file containing the given node
+    """
+    path = node.location().path()
+    return context.get_file_text(path).splitlines()

@@ -24,14 +24,14 @@ from collections import defaultdict
 import importlib.util
 import os
 import sys
-from typing import List, Optional
+from typing import List, Tuple, Optional
 
 import chapel
 import chapel.replace
 from driver import LintDriver
 from lsp import run_lsp
 from rules import register_rules
-from fixits import Fixit
+from fixits import Fixit, Edit
 
 
 def print_violation(node: chapel.AstNode, name: str):
@@ -66,27 +66,84 @@ def load_module(driver: LintDriver, file_path: str):
     rule_func(driver)
 
 
-def apply_fixits(fixits: List[Fixit], suffix: Optional[str]=None):
+def int_to_nth(n: int) -> str:
+    d = {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth"}
+    return d.get(n, f"{n}th")
+
+def apply_fixits(
+    violations: List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]],
+    suffix: Optional[str],
+    interactive: bool,
+) -> List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
+    """
+    Apply fixits to the Chapel source code based on user input
+    Any violations not applied are returned
+    """
+    not_applied = []
+    edits_to_apply = []
+    for node, rule, fixits in violations:
+        if fixits is None or len(fixits) == 0:
+            # no fixits to apply, skip
+            not_applied.append((node, rule, None))
+            continue
+        if not interactive:
+            # apply the first fixit
+            edits_to_apply.extend(fixits[0].edits)
+            continue
+
+        options = ["Skip"]
+        for idx, fixit in enumerate(fixits, start=1):
+            if fixit.description is not None:
+                options.append(f"{fixit.description}")
+            else:
+                s = int_to_nth(idx)
+                options.append(f"Apply {s} Fix")
+        print_violation(node, rule)
+        for i, opt in enumerate(options):
+            print(f"  {i}. {opt}")
+        done = False
+        while not done:
+            try:
+                choice = input("Choose an option: ")
+                if choice == "0":
+                    not_applied.append((node, rule, fixits))
+                    done = True
+                else:
+                    try:
+                        fixit = fixits[int(choice) - 1]
+                        edits_to_apply.extend(fixit.edits)
+                        done = True
+                    except (ValueError, IndexError):
+                        print("Please enter a number corresponding to an option")
+            except KeyboardInterrupt:
+                # apply no edits, return the original violations
+                return violations
+
+    apply_edits(edits_to_apply, suffix)
+    return not_applied
+
+
+def apply_edits(edits: List[Edit], suffix: Optional[str]):
     """
     Apply a list of fixits
     """
-    fixit_per_file = defaultdict(lambda: [])
-    for fixit in fixits:
-        fixit_per_file[fixit.path].append(fixit)
+    edits_per_file = defaultdict(lambda: [])
+    for edit in edits:
+        edits_per_file[edit.path].append(edit)
 
-    # Apply fixits in reverse order to avoid invalidating the locations of
-    # subsequent fixits
-    for file, fixits in fixit_per_file.items():
-        fixits.sort(key=lambda f: f.start, reverse=True)
+    # Apply edits in reverse order to avoid invalidating the locations of
+    # subsequent edits
+    for file, edits in edits_per_file.items():
+        edits.sort(key=lambda f: f.start, reverse=True)
         with open(file, "r") as f:
             lines = f.readlines()
 
         prev_start = None
-        for fixit in fixits:
-            start = fixit.start
-            line_start, char_start = start
-            end = fixit.end
-            line_end, char_end = end
+        for edit in edits:
+            start = edit.start
+            line_start, char_start = edit.start
+            end = edit.end
+            line_end, char_end = edit.end
 
             # Skip overlapping fixits
             if prev_start is not None and end > prev_start:
@@ -94,7 +151,7 @@ def apply_fixits(fixits: List[Fixit], suffix: Optional[str]=None):
 
             lines[line_start - 1] = (
                 lines[line_start - 1][: char_start - 1]
-                + fixit.text
+                + edit.text
                 + lines[line_end - 1][char_end - 1 :]
             )
             if line_start != line_end:
@@ -140,6 +197,7 @@ def main():
     parser.add_argument("--list-active-rules", action="store_true", default=False,  help="List all currently enabled rules")
     parser.add_argument("--fixit", action="store_true", default=False, help="Apply fixits for the relevant rules")
     parser.add_argument("--fixit-suffix", default=None, help="Suffix to append to the original file name when applying fixits. If not set (the default), the original file will be overwritten.")
+    parser.add_argument("--interactive", "-i", action="store_true", default=False, help="Apply fixits interactively, requires --fixit")
     args = parser.parse_args()
 
     driver = LintDriver(
@@ -174,24 +232,16 @@ def main():
         context.set_module_paths([], [])
 
         # Silence errors, warnings etc. -- we're just linting.
-        with context.track_errors() as errors:
+        with context.track_errors() as _:
             asts = context.parse(filename)
             violations = list(driver.run_checks(context, asts))
 
-            if args.fixit:
-                # apply fixits, if any, then print remaining violations
-                fixits = [fixits for (_, _, fixits) in violations if fixits]
-                # flatten the list of fixits
-                fixits = [f for sublist in fixits for f in sublist]
-                apply_fixits(fixits, suffix=args.fixit_suffix)
-                violations = [
-                    (node, rule, fixit)
-                    for (node, rule, fixit) in violations
-                    if not fixit
-                ]
-
             # sort the failures in order of appearance
             violations.sort(key=lambda f: f[0].location().start()[0])
+
+            if args.fixit:
+                violations = apply_fixits(violations, args.fixit_suffix, args.interactive)
+
             for node, rule, _ in violations:
                 print_violation(node, rule)
                 printed_warning = True

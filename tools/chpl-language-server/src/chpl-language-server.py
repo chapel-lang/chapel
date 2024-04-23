@@ -404,6 +404,8 @@ class EndMarkerPattern:
                         chapel.Sync,
                         chapel.Local,
                         chapel.Manage,
+                        chapel.Select,
+                        chapel.When,
                     ]
                 ),
                 header_location=lambda node: (
@@ -1216,7 +1218,7 @@ class ChapelLanguageServer(LanguageServer):
             )
             if dead_branch:
                 loc = dead_branch.location()
-                return range_to_tokens(loc, lines)
+                return chapel.range_to_tokens(loc, lines)
 
         return []
 
