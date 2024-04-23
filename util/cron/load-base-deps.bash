@@ -6,12 +6,7 @@
 if [ -f /data/cf/chapel/chpl-deps/setup_chpl_deps.bash ] ; then
   # for chapcs/chapvm, just load all dependencies via spack
   source /data/cf/chapel/chpl-deps/setup_chpl_deps.bash
-elif [ "$(hostname -s)" == "osprey" ]; then
-  # ditto for osprey
-  if [ -f /lus/scratch/chapelu/chpl-deps/osprey/load_chpl_deps.bash ] ; then
-    source /lus/scratch/chapelu/chpl-deps/osprey/load_chpl_deps.bash
-  fi
-elif [ "$(hostname -s)" == "atlas" ]; then
+elif [ "$(hostname -s)" == "osprey" || "$(hostname -s)" == "atlas" ]; then
   if [ -f /lus/scratch/chapelu/chpl-deps/$(hostname -s)/load_chpl_deps.bash ] ; then
     source /lus/scratch/chapelu/chpl-deps/$(hostname -s)/load_chpl_deps.bash
   fi
