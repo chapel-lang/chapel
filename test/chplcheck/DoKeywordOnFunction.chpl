@@ -1,1 +1,3 @@
-proc foo() do {}
+module DoKeywordOnFunction {
+  proc foo() do {}
+}
