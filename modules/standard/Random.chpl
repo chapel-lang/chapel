@@ -234,15 +234,13 @@ module Random {
     rs.fill(arr, min, max);
   }
 
-  pragma "last resort"
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], min, max, seed: int) {
+  proc fillRandom(ref arr: [] ?t, min: t, max: t, seed: int) {
     compilerError("'fillRandom' does not support non-rectangular arrays");
   }
 
-  pragma "last resort"
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], min, max) {
+  proc fillRandom(ref arr: [] ?t, min: t, max: t) {
     compilerError("'fillRandom' does not support non-rectangular arrays");
   }
 
