@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - 'tools/chapel-py/**/*.py'
+      - 'tools/chplcheck/**/*.py'
+      - 'tools/chpl-language-server/**/*.py'
+  workflow_dispatch:
+
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable
+        with:
+          options: "--check --verbose"
+          src: "tools/{chapel-py,chplcheck,chpl-language-server}/**/*.py"
