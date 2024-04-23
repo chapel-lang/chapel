@@ -472,8 +472,123 @@ static void testIndexScope() {
   assert(!guard.realizeErrors());
 }
 
+static QualifiedType getIterKindConstant(Context* context, const char* str) {
+  QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
+  if (str == nullptr) return unknown;
+  auto ik = EnumType::getIterKindType(context);
+  if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
+    auto ustr = UniqueString::get(context, str);
+    auto it = m->find(ustr);
+    if (it != m->end()) return it->second;
+  }
+  return unknown;
+}
+
+static void
+unpackIterKindStrToBool(const char* str,
+                        bool* needSerial=nullptr,
+                        bool* needStandalone=nullptr,
+                        bool* needLeader=nullptr,
+                        bool* needFollower=nullptr) {
+  bool* p = nullptr;
+  if (str == nullptr) {
+    p = needSerial;
+  } else if (!strcmp(str, "standalone")) {
+    p = needStandalone;
+  } else if (!strcmp(str, "leader")) {
+    p = needLeader;
+  } else if (!strcmp(str, "follower")) {
+    p = needFollower;
+  } else {
+    assert(false && "Invalid 'iterKind' string!");
+  }
+  if (p) *p = true;
+}
+
+static void
+assertIterIsCorrect(Context* context, const AssociatedAction& aa,
+                    const char* iterKindStr) {
+  bool needSerial = false;
+  bool needFollower = false;
+  unpackIterKindStrToBool(iterKindStr, &needSerial, nullptr, nullptr,
+                          &needFollower);
+
+  assert(aa.action() == AssociatedAction::ITERATE);
+  assert(aa.fn() && aa.fn()->untyped());
+
+  auto fn = aa.fn();
+  auto fnShape = fn->untyped();
+  assert(fnShape->kind() == Function::ITER);
+  assert(needSerial || fn->numFormals() >= 1);
+  assert(!needFollower || fn->numFormals() >= 2);
+
+  auto iterKind = getIterKindConstant(context, iterKindStr);
+  int idxTag = needFollower ? fn->numFormals() - 2 : fn->numFormals() - 1;
+  int idxFollow = fn->numFormals() - 1;
+
+  assert(!needFollower || fnShape->formalName(idxFollow) == "followThis");
+  assert(needSerial || fn->formalType(idxTag) == iterKind);
+}
+
+static void
+assertLoopMatches(Context* context, const std::string& program,
+                  const char* iterKindStr,
+                  int idxLoopAst,
+                  int idxIterAst,
+                  int idxFollowerIterAst=-1) {
+  bool needSerial = false;
+  bool needStandalone = false;
+  bool needLeader = false;
+  bool needFollower = false;
+  unpackIterKindStrToBool(iterKindStr, &needSerial, &needStandalone,
+                          &needLeader,
+                          &needFollower);
+  needFollower = needFollower || needLeader;
+
+  // Unpack needed ASTs and properties about them.
+  const Module* m = parseModule(context, program);
+  auto loop = m->stmt(idxLoopAst)->toIndexableLoop();
+  auto iter = m->stmt(idxIterAst)->toFunction();
+  auto iterFollower = idxFollowerIterAst > 0
+      ? m->stmt(idxFollowerIterAst)->toFunction()
+      : nullptr;
+  assert(loop && iter && loop->iterand() && loop->index());
+  auto iterand = loop->iterand();
+  auto index = loop->index();
+  bool isIterMethod = parsing::idIsMethod(context, iter->id());
+  // bool isBracketLoop = loop->isBracketLoop();
+  // bool isForall = loop->isForall();
+
+
+  // Resolve the module.
+  auto& rr = resolveModule(context, m->id());
+  auto& reIterand = rr.byAst(iterand);
+
+  if (auto zip = iterand->toZip()) {
+    assert(false && "Zip iterands not handled in this test yet!");
+    return;
+  } else {
+    int numExpectedActions = (needLeader || needFollower) ? 2 : 1;
+    assert(reIterand.associatedActions().size() == numExpectedActions);
+
+    auto& aa1 = reIterand.associatedActions()[0];
+    assertIterIsCorrect(context, aa1, iterKindStr);
+
+    if (needFollower) {
+      assert(iterFollower);
+      auto& aa2 = reIterand.associatedActions()[1];
+      assertIterIsCorrect(context, aa2, "follower");
+      bool isFollowerMethod = parsing::idIsMethod(context, iterFollower->id());
+      assert(isFollowerMethod == isIterMethod);
+    }
+
+    auto& reIndex = rr.byAst(index);
+    assert(reIndex.type().type() == IntType::get(context, 0));
+  }
+}
+
 static void testSerialZip() {
-  printf("testSerialZip\n");
+  printf("%s\n", __FUNCTION__);
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -520,18 +635,8 @@ static void testSerialZip() {
   assert(!guard.realizeErrors());
 }
 
-static QualifiedType getIterKindConstant(Context* context, const char* str) {
-  auto ik = EnumType::getIterKindType(context);
-  if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
-    auto ustr = UniqueString::get(context, str);
-    auto it = m->find(ustr);
-    if (it != m->end()) return it->second;
-  }
-  return { QualifiedType::UNKNOWN, UnknownType::get(context) };
-}
-
 static void testParallelZip() {
-  printf("testParallelZip\n");
+  printf("%s\n", __FUNCTION__);
   auto ctx = buildStdContext();
   auto context = ctx.get();
   ErrorGuard guard(context);
@@ -572,24 +677,14 @@ static void testParallelZip() {
     if (isLeaderActual) {
       assert(re.associatedActions().size() == 2);
       auto& aa = re.associatedActions()[0];
-      assert(aa.action() == AssociatedAction::ITERATE);
-      auto fn = aa.fn();
-      assert(fn->untyped()->kind() == Function::ITER &&
-             fn->untyped()->numFormals() == 2 &&
-             fn->formalType(1) == getIterKindConstant(context, "leader"));
+      assertIterIsCorrect(context, aa, "leader");
     } else {
       assert(re.associatedActions().size() == 1);
     }
 
     // Check all actuals for the follower iterator.
-    auto idxFollower = isLeaderActual ? 1 : 0;
-    auto& aa = re.associatedActions()[idxFollower];
-    assert(aa.action() == AssociatedAction::ITERATE);
-    auto fn = aa.fn();
-    assert(fn->untyped()->kind() == Function::ITER &&
-           fn->untyped()->numFormals() == 3 &&
-           fn->formalType(1) == getIterKindConstant(context, "follower") &&
-           fn->untyped()->formalName(2) == "followThis");
+    auto& aa = re.associatedActions()[(isLeaderActual ? 1 : 0)];
+    assertIterIsCorrect(context, aa, "follower");
   }
 
   auto t = reZip.type().type()->toTupleType();
@@ -603,7 +698,7 @@ static void testParallelZip() {
 }
 
 static void testForallStandaloneThese() {
-  printf("testForallStandaloneThese\n");
+  printf("%s\n", __FUNCTION__);
   auto ctx = buildStdContext();
   auto context = ctx.get();
   ErrorGuard guard(context);
@@ -614,34 +709,12 @@ static void testForallStandaloneThese() {
                   var r1 = new r();
                   forall i in r1 do i;
                   )"""";
-
-  const Module* m = parseModule(context, program);
-  auto iterStandalone = m->stmt(1)->toFunction();
-  auto loop = m->stmt(3)->toForall();
-  assert(iterStandalone && loop->iterand() &&
-         loop->iterand()->isIdentifier() &&
-         loop->index());
-  auto ident = loop->iterand()->toIdentifier();
-  auto index = loop->index();
-
-  auto& rr = resolveModule(context, m->id());
-  auto& reIdent = rr.byAst(ident);
-
-  assert(reIdent.associatedActions().size() == 1);
-  auto& aa = reIdent.associatedActions().back();
-  assert(aa.action() == AssociatedAction::ITERATE);
-  auto fn = aa.fn();
-  assert(fn->untyped()->kind() == Function::ITER &&
-         fn->untyped()->numFormals() == 2 &&
-         fn->formalType(1) == getIterKindConstant(context, "standalone"));
-
-  auto& reIndex = rr.byAst(index);
-  assert(reIndex.type().type() == IntType::get(context, 0));
+  assertLoopMatches(context, program, "standalone", 3, 1);
   assert(!guard.realizeErrors());
 }
 
 static void testForallStandaloneRedirect() {
-  printf("testForallStandaloneRedirect\n");
+  printf("%s\n", __FUNCTION__);
   auto ctx = buildStdContext();
   auto context = ctx.get();
   ErrorGuard guard(context);
@@ -650,34 +723,30 @@ static void testForallStandaloneRedirect() {
                   iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
                   forall i in foo() do i;
                   )"""";
-
-  const Module* m = parseModule(context, program);
-  auto iterStandalone = m->stmt(0)->toFunction();
-  auto loop = m->stmt(1)->toForall();
-  assert(iterStandalone && loop->iterand() &&
-         loop->iterand()->isCall() &&
-         loop->index());
-  auto call = loop->iterand()->toCall();
-  auto index = loop->index();
-
-  auto& rr = resolveModule(context, m->id());
-  auto& reCall = rr.byAst(call);
-
-  assert(reCall.associatedActions().size() == 1);
-  auto& aa = reCall.associatedActions().back();
-  assert(aa.action() == AssociatedAction::ITERATE);
-  auto fn = aa.fn();
-  assert(fn->untyped()->kind() == Function::ITER &&
-         fn->untyped()->numFormals() == 1 &&
-         fn->formalType(0) == getIterKindConstant(context, "standalone"));
-
-  auto& reIndex = rr.byAst(index);
-  assert(reIndex.type().type() == IntType::get(context, 0));
+  assertLoopMatches(context, program, "standalone", 1, 0);
   assert(!guard.realizeErrors());
 }
 
-static void testForallLeaderFollower() {
-  printf("testForallLeaderFollower\n");
+static void testForallLeaderFollowerThese() {
+  printf("%s\n", __FUNCTION__);
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+  ErrorGuard guard(context);
+
+  auto program = R""""(
+                  record r {}
+                  iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter r.these(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
+                  var r1 = new r();
+                  forall i in r1 do i;
+                  )"""";
+
+  assertLoopMatches(context, program, "leader", 4, 1, 2);
+  assert(!guard.realizeErrors());
+}
+
+static void testForallLeaderFollowerRedirect() {
+  printf("%s\n", __FUNCTION__);
   auto ctx = buildStdContext();
   auto context = ctx.get();
   ErrorGuard guard(context);
@@ -687,36 +756,7 @@ static void testForallLeaderFollower() {
                   iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
                   forall i in foo() do i;
                   )"""";
-
-  const Module* m = parseModule(context, program);
-  auto iterLeader = m->stmt(0)->toFunction();
-  auto iterFollower = m->stmt(1)->toFunction();
-  auto loop = m->stmt(2)->toForall();
-  assert(iterLeader && iterFollower && loop->iterand() &&
-         loop->iterand()->isCall() &&
-         loop->index());
-  auto call = loop->iterand()->toCall();
-  auto index = loop->index();
-
-  auto& rr = resolveModule(context, m->id());
-  auto& reCall = rr.byAst(call);
-
-  assert(reCall.associatedActions().size() == 2);
-  auto& aa1 = reCall.associatedActions()[0];
-  assert(aa1.action() == AssociatedAction::ITERATE);
-  auto fn1 = aa1.fn();
-  assert(fn1->untyped()->kind() == Function::ITER &&
-         fn1->untyped()->numFormals() == 1 &&
-         fn1->formalType(0) == getIterKindConstant(context, "leader"));
-  auto& aa2 = reCall.associatedActions()[1];
-  assert(aa2.action() == AssociatedAction::ITERATE);
-  auto fn2 = aa2.fn();
-  assert(fn2->untyped()->kind() == Function::ITER &&
-         fn2->untyped()->numFormals() == 2 &&
-         fn2->formalType(0) == getIterKindConstant(context, "follower"));
-
-  auto& reIndex = rr.byAst(index);
-  assert(reIndex.type().type() == IntType::get(context, 0));
+  assertLoopMatches(context, program, "leader", 2, 0, 1);
   assert(!guard.realizeErrors());
 }
 
@@ -736,11 +776,13 @@ int main() {
   testParamFor();
   testNestedParamFor();
   testIndexScope();
+
   testSerialZip();
   testParallelZip();
   testForallStandaloneThese();
   testForallStandaloneRedirect();
-  testForallLeaderFollower();
+  testForallLeaderFollowerThese();
+  testForallLeaderFollowerRedirect();
 
   return 0;
 }

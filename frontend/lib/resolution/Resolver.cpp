@@ -52,33 +52,6 @@ using namespace types;
 static QualifiedType
 getIterKindConstantOrUnknown(Resolver& rv, const char* constant);
 
-// Attempts to resolve any iterator type considering the formal's 'iterKind'
-// tag. For a serial iterator, this formal is not present, and the
-// 'iterKindStr' should be set to the empty string. For a parallel
-// iterator, this should be set to one of three param enum constants,
-// "leader", "follower", or "standalone", taken from the 'iterKind' type in
-// the 'ChapelBase' module. This function implements the family of iterator
-// resolving functions below.
-//
-// The 'followThisFormal' type is only required if resolving a parallel
-// 'follower' iterator. Normally, this is computed as the yield type of
-// the leader. Any followers in e.g., a zippered loop (including the follower
-// for the leader as well!), must have their 'followThis' formals dispatch
-// to this type or fail with an error.
-//
-// Consider the code: `forall tup in zip(foo(), foo())`.
-//
-// It may be the case that 'foo()' resolves to a _serial_ iterator via the
-// normal resolver traversal. However, since the loop is a 'forall', we
-// actually need to resolve the leader/follower iterators. The compiler is
-// supposed to inject the 'iterKind' as the first call actual, and it
-// need not (and usually should not) appear as an explicit actual argument.
-// This function will take these things into account and will try to resolve
-// e.g., 'foo(tag=iterKind.leader)' _even_ if 'foo()' naively resolved to
-// a serial iterator, or did _not resolve at all_.
-//
-// TODO: The only time the 'tag' and 'followThis' arguments explicitly appear
-// is for iterator forwarding that occurs in the internal modules.
 static QualifiedType
 resolveIterTypeConsideringTag(Resolver& rv,
                               const AstNode* astForErr,
@@ -4263,14 +4236,14 @@ resolveIterTypeConsideringTag(Resolver& rv,
   // errors onto the user right away. Try to avoid speculative resolution
   // if the iterand is not call-like.
   std::vector<owned<ErrorBase>> traversalErrors;
-  if (!iterand->isCall()) {
-    iterand->traverse(rv);
-  } else {
+  if (iterand->isCall()) {
     auto runResult = context->runAndTrackErrors([&](Context* context) {
       iterand->traverse(rv);
       return true;
     });
     std::swap(runResult.errors(), traversalErrors);
+  } else {
+    iterand->traverse(rv);
   }
 
   // Inspect the resolution result to determine what should be done next.
@@ -4323,19 +4296,10 @@ resolveIterTypeConsideringTag(Resolver& rv,
     CHPL_UNIMPL("Forwarded iterator invocations");
     return unknown;
 
-  // Resolve e.g., "(iterand).type.these(param tag: iterKind, followThis)",
-  // where the 'tag' and 'followThis' arguments do not appear if we are
-  // trying to resolve a serial iterator method. The 'followThis' argument
-  // only appears if we are trying to resolve a follower iterator.
-  //
-  // In many cases we are resolving an iterator method on the iterand type.
-  //
-  // In the case that the originating iterand expression was not resolved
-  // and we need a parallel iterator, we should add the 'tag', 'followThis',
-  // followed by any existing arguments and then try to resolve again.
-  //
-  // This is because the 'tag' and 'followThis' actuals are injected by us
-  // and do not appear in the source code.
+  // In this branch we need to prepare an iterator call. It could be a call
+  // to the 'these()' method for the iterand type, or it could be a redirect
+  // of the existing call with 'iterKind' and (optionally) 'followThis'
+  // arguments tacked onto the end.
   } else if (wasIterandTypeResolved || (!needSerial && iterand->isCall())) {
     bool shouldCreateTheseCall = wasIterandTypeResolved && !isIter;
 
