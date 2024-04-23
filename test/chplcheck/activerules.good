@@ -13,3 +13,4 @@ Active rules:
   PascalCaseModules            Warn for modules that are not 'PascalCase'.
   SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
   UnusedLoopIndex              Warn for unused index variables in loops.
+  UnusedTupleUnpack            Warn for unused tuple unpacking, such as '(_, _)'.

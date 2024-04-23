@@ -137,9 +137,16 @@ def apply_edits(edits: List[Edit], suffix: Optional[str]):
         edits.sort(key=lambda f: f.start, reverse=True)
         with open(file, "r") as f:
             lines = f.readlines()
+
+        prev_start = None
         for edit in edits:
-            (line_start, char_start) = edit.start
-            (line_end, char_end) = edit.end
+            line_start, char_start = edit.start
+            line_end, char_end = edit.end
+
+            # Skip overlapping fixits
+            if prev_start is not None and edit.end > prev_start:
+                continue
+
             lines[line_start - 1] = (
                 lines[line_start - 1][: char_start - 1]
                 + edit.text
@@ -147,6 +154,8 @@ def apply_edits(edits: List[Edit], suffix: Optional[str]):
             )
             if line_start != line_end:
                 lines[line_start:line_end] = [""] * (line_end - line_start)
+
+            prev_start = edit.start
 
         outfile = file if suffix is None else file + suffix
         with open(outfile, "w") as f:
