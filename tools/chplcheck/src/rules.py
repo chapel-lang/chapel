@@ -34,19 +34,26 @@ def variables(node: AstNode):
         for child in node:
             yield from variables(child)
 
-def file_lines_for_node(context: Context, node: AstNode):
-     return context.get_file_text(node.location().path()).split("\n")
+def fixit_remove_unused_node(node: AstNode, lines: Optional[List[str]] = None, context: Optional[Context] = None) -> Optional[Fixit]:
+    """
+    Given an unused variable that's either a child of a TupleDecl or an
+    iterand in a loop, construct a Fixit that removes it or replaces it
+    with '_' as appropriate.
 
-def fixit_remove_unused_node(node: AstNode, lines: Optional[List[str]] = None, context: Optional[Context] = None):
+    Expects either a lines list (containing the lines in the file where
+    the node is being fixed up) or a context object that will be used to
+    determine these lines. Raises if neither is provided.
+    """
+
     parent = node.parent()
     if parent is None:
-        return
+        return None
 
     if lines is None:
         if context is None:
             raise ValueError("Either 'lines' or 'context' must be provided")
         else:
-            lines = file_lines_for_node(context, parent)
+            lines = chapel.get_file_lines(context, parent)
 
     if parent and isinstance(parent, TupleDecl):
         return Fixit.build(Edit.build(node.location(), "_"))
