@@ -17,3 +17,4 @@ jobs:
         with:
           options: "--check --verbose"
           src: "tools/{chapel-py,chplcheck,chpl-language-server}/**/*.py"
+          version: "24.4.0"
