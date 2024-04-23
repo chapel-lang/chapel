@@ -15,6 +15,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: psf/black@stable
         with:
-          options: "--check --verbose"
+          options: "--check --verbose --line-length 80"
           src: "./tools/{chapel-py,chplcheck,chpl-language-server}/**/*.py"
           version: "24.4.0"
