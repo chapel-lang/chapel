@@ -317,7 +317,13 @@ def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
     for a in call.actuals():
         comps.append(_wrap_str(sep))
         sep = ", "
-        comps.extend(_node_to_string(a))
+        if isinstance(a, tuple):
+            comps.append(_wrap_str(a[0]))
+            comps.append(_wrap_str(" = "))
+            comps.extend(_node_to_string(a[1]))
+        else:
+            assert(isinstance(a, chapel.AstNode))
+            comps.extend(_node_to_string(a))
     comps.append(_wrap_str("]" if call.used_square_brackets() else ")"))
 
     return comps
