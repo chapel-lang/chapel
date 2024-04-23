@@ -26,6 +26,7 @@ from driver import LintDriver
 from fixits import Fixit, Edit
 from rule_types import BasicRuleResult, AdvancedRuleResult
 
+
 def variables(node: AstNode):
     if isinstance(node, Variable):
         if node.name() != "_":
@@ -34,7 +35,12 @@ def variables(node: AstNode):
         for child in node:
             yield from variables(child)
 
-def fixit_remove_unused_node(node: AstNode, lines: Optional[List[str]] = None, context: Optional[Context] = None) -> Optional[Fixit]:
+
+def fixit_remove_unused_node(
+    node: AstNode,
+    lines: Optional[List[str]] = None,
+    context: Optional[Context] = None,
+) -> Optional[Fixit]:
     """
     Given an unused variable that's either a child of a TupleDecl or an
     iterand in a loop, construct a Fixit that removes it or replaces it
@@ -67,6 +73,7 @@ def fixit_remove_unused_node(node: AstNode, lines: Optional[List[str]] = None, c
         return Fixit.build(Edit.build(loc, before_lines + after_lines))
     return None
 
+
 def name_for_linting(context: Context, node: NamedDecl) -> str:
     name = node.name()
 
@@ -88,6 +95,7 @@ def check_pascal_case(context: Context, node: NamedDecl):
     return re.fullmatch(
         r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?", name_for_linting(context, node)
     )
+
 
 def register_rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -232,7 +240,9 @@ def register_rules(driver: LintDriver):
         # should be set in all branches
         assert text is not None
 
-        return BasicRuleResult(node, fixits=Fixit.build(Edit.build(node.location(), text)))
+        return BasicRuleResult(
+            node, fixits=Fixit.build(Edit.build(node.location(), text))
+        )
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
@@ -270,7 +280,9 @@ def register_rules(driver: LintDriver):
             # dont warn if the EmptyStmt is the only statement in a block
             return True
 
-        return BasicRuleResult(node, fixits=Fixit.build(Edit.build(node.location(), "")))
+        return BasicRuleResult(
+            node, fixits=Fixit.build(Edit.build(node.location(), ""))
+        )
 
     @driver.basic_rule(TupleDecl)
     def UnusedTupleUnpack(context: Context, node: TupleDecl):
@@ -280,7 +292,7 @@ def register_rules(driver: LintDriver):
 
         varset = set(variables(node))
         if len(varset) == 0:
-            fixit = fixit_remove_unused_node(node, context = context)
+            fixit = fixit_remove_unused_node(node, context=context)
             if fixit is not None:
                 return BasicRuleResult(node, fixits=fixit)
             return False
@@ -563,7 +575,7 @@ def register_rules(driver: LintDriver):
                 Interface,
                 Union,
                 Enum,
-                Cobegin
+                Cobegin,
             )
             return isinstance(node, classes)
 
@@ -603,7 +615,10 @@ def register_rules(driver: LintDriver):
         # For implicit modules, proper code will technically be on the same
         # line as the module's body. But we don't want to warn about that,
         # since we don't want to ask all code to be indented one level deeper.
-        elif not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
+        elif not (
+            isinstance(parent_for_indentation, Module)
+            and parent_for_indentation.kind() == "implicit"
+        ):
             parent_depth = parent_for_indentation.location().start()[1]
 
         prev = None
@@ -619,7 +634,8 @@ def register_rules(driver: LintDriver):
             iterable = root.stmts()
 
         for child in iterable:
-            if isinstance(child, Comment): continue
+            if isinstance(child, Comment):
+                continue
 
             # some NamedDecl nodes currently use the name as the location, which
             # does not indicate their actual indentation.
@@ -653,7 +669,11 @@ def register_rules(driver: LintDriver):
             elif prev_depth and depth != prev_depth:
                 # Special case, slightly coarse: avoid double-warning with
                 # MisleadingIndentation
-                if not(prev and isinstance(prev, Loop) and prev.block_style() == "implicit"):
+                if not (
+                    prev
+                    and isinstance(prev, Loop)
+                    and prev.block_style() == "implicit"
+                ):
                     yield child
 
                 # Do not update 'prev_depth'; use original prev_depth as

@@ -22,23 +22,33 @@ import typing
 import chapel
 from fixits import Fixit, Edit
 
-def _build_ignore_fixit(anchor: chapel.AstNode, lines: typing.List[str], rule_name: str) -> Fixit:
+
+def _build_ignore_fixit(
+    anchor: chapel.AstNode, lines: typing.List[str], rule_name: str
+) -> Fixit:
     # TODO: how should this handle multiple ignores?
     loc = anchor.location()
     text = chapel.range_to_text(loc, lines)
     indent_amount = max(loc.start()[1] - 1, 0)
-    indent = " "* indent_amount
+    indent = " " * indent_amount
     text = f'@chplcheck.ignore("{rule_name}")\n' + indent + text
     ignore = Fixit.build(Edit.build(loc, text))
     ignore.description = "Ignore this warning"
     return ignore
+
 
 class BasicRuleResult:
     """
     Result type for basic rules. Rules can also return a plain boolean to
     represent a simple pass/fail result, with no fixit.
     """
-    def __init__(self, node: chapel.AstNode, ignorable: bool = False, fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None):
+
+    def __init__(
+        self,
+        node: chapel.AstNode,
+        ignorable: bool = False,
+        fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None,
+    ):
         self.node = node
         self.ignorable = ignorable
         if fixits is None:
@@ -60,7 +70,6 @@ class BasicRuleResult:
         return to_return
 
 
-
 _BasicRuleResult = typing.Union[bool, BasicRuleResult]
 """Internal type for basic rule results"""
 BasicRule = typing.Callable[[chapel.Context, chapel.AstNode], _BasicRuleResult]
@@ -72,7 +81,13 @@ class AdvancedRuleResult:
     Result type for advanced rules. Advanced rules can also return a plain
     boolean to represent a simple pass/fail result, with no fixit. Having an anchor implies that it is ignorable
     """
-    def __init__(self, node: chapel.AstNode, anchor: typing.Optional[chapel.AstNode] = None, fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None):
+
+    def __init__(
+        self,
+        node: chapel.AstNode,
+        anchor: typing.Optional[chapel.AstNode] = None,
+        fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None,
+    ):
         self.node = node
         self.anchor = anchor
         if fixits is None:

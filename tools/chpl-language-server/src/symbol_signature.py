@@ -256,11 +256,12 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
     if node.is_inline():
         comps.append(_wrap_str("inline "))
 
-
     comps.append(_wrap_str(f"{node.kind()} "))
     # if it has a this-formal, check for this intent
     if node.this_formal() and _intent_to_string(node.this_formal().intent()):
-        comps.append(_wrap_str(f"{_intent_to_string(node.this_formal().intent())} "))
+        comps.append(
+            _wrap_str(f"{_intent_to_string(node.this_formal().intent())} ")
+        )
     comps.append(_wrap_str(node.name()))
 
     if not node.is_parenless():

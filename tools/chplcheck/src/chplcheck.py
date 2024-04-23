@@ -67,8 +67,20 @@ def load_module(driver: LintDriver, file_path: str):
 
 
 def int_to_nth(n: int) -> str:
-    d = {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth"}
+    d = {
+        1: "first",
+        2: "second",
+        3: "third",
+        4: "fourth",
+        5: "fifth",
+        6: "sixth",
+        7: "seventh",
+        8: "eighth",
+        9: "ninth",
+        10: "tenth",
+    }
     return d.get(n, f"{n}th")
+
 
 def apply_fixits(
     violations: List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]],
@@ -114,7 +126,9 @@ def apply_fixits(
                         edits_to_apply.extend(fixit.edits)
                         done = True
                     except (ValueError, IndexError):
-                        print("Please enter a number corresponding to an option")
+                        print(
+                            "Please enter a number corresponding to an option"
+                        )
             except KeyboardInterrupt:
                 # apply no edits, return the original violations
                 return violations
@@ -183,19 +197,60 @@ def print_rules(driver: LintDriver, show_all=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="chplcheck", description="A linter for the Chapel language")
+    parser = argparse.ArgumentParser(
+        prog="chplcheck", description="A linter for the Chapel language"
+    )
     parser.add_argument("filenames", nargs="*")
-    parser.add_argument("--disable-rule", action="append", dest="disabled_rules", default=[])
-    parser.add_argument("--enable-rule", action="append", dest="enabled_rules", default=[])
+    parser.add_argument(
+        "--disable-rule", action="append", dest="disabled_rules", default=[]
+    )
+    parser.add_argument(
+        "--enable-rule", action="append", dest="enabled_rules", default=[]
+    )
     parser.add_argument("--lsp", action="store_true", default=False)
     parser.add_argument("--skip-unstable", action="store_true", default=False)
-    parser.add_argument("--internal-prefix", action="append", dest="internal_prefixes", default=[])
-    parser.add_argument("--add-rules", action="append", default=[], help="Add a custom rule file")
-    parser.add_argument("--list-rules", action="store_true", default=False, help="List all available rules")
-    parser.add_argument("--list-active-rules", action="store_true", default=False,  help="List all currently enabled rules")
-    parser.add_argument("--fixit", action="store_true", default=False, help="Apply fixits for the relevant rules")
-    parser.add_argument("--fixit-suffix", default=None, help="Suffix to append to the original file name when applying fixits. If not set (the default), the original file will be overwritten.")
-    parser.add_argument("--interactive", "-i", action="store_true", default=False, help="Apply fixits interactively, requires --fixit")
+    parser.add_argument(
+        "--internal-prefix",
+        action="append",
+        dest="internal_prefixes",
+        default=[],
+    )
+    parser.add_argument(
+        "--add-rules",
+        action="append",
+        default=[],
+        help="Add a custom rule file",
+    )
+    parser.add_argument(
+        "--list-rules",
+        action="store_true",
+        default=False,
+        help="List all available rules",
+    )
+    parser.add_argument(
+        "--list-active-rules",
+        action="store_true",
+        default=False,
+        help="List all currently enabled rules",
+    )
+    parser.add_argument(
+        "--fixit",
+        action="store_true",
+        default=False,
+        help="Apply fixits for the relevant rules",
+    )
+    parser.add_argument(
+        "--fixit-suffix",
+        default=None,
+        help="Suffix to append to the original file name when applying fixits. If not set (the default), the original file will be overwritten.",
+    )
+    parser.add_argument(
+        "--interactive",
+        "-i",
+        action="store_true",
+        default=False,
+        help="Apply fixits interactively, requires --fixit",
+    )
     args = parser.parse_args()
 
     driver = LintDriver(
@@ -238,7 +293,9 @@ def main():
             violations.sort(key=lambda f: f[0].location().start()[0])
 
             if args.fixit:
-                violations = apply_fixits(violations, args.fixit_suffix, args.interactive)
+                violations = apply_fixits(
+                    violations, args.fixit_suffix, args.interactive
+                )
 
             for node, rule, _ in violations:
                 print_violation(node, rule)

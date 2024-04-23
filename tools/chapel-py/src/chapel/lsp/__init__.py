@@ -33,6 +33,7 @@ def location_to_range(location) -> Range:
         end=Position(max(0, end[0] - 1), max(end[1] - 1, 0)),
     )
 
+
 def error_to_diagnostic(error) -> Diagnostic:
     """
     Convert a Chapel error into a lsprotocol.types Diagnostic
