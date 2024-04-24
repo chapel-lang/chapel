@@ -129,6 +129,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
+	packages/Image.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/LinkedLists.chpl \
