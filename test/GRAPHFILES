@@ -82,6 +82,7 @@ studies/1brc/1brc.graph
 studies/sinLUT/sinlut.graph
 performance/vectorization/unrolling/dotProduct-real64.graph
 performance/vectorization/unrolling/dotProduct-int32.graph
+performance/vectorization/unrolling/dotProduct-real64-big.graph
 # suite: HPC Challenge
 studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
