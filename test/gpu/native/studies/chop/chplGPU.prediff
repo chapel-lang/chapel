@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-# filter number of gpus run on from output
-cat $2 | sed 's/Number of GPUs to use: [0-9]\{1,\}/Number of GPUs to use: NN/' > $2.prediff.tmp
-mv $2.prediff.tmp $2
