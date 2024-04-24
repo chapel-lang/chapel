@@ -682,8 +682,10 @@ inline void chpl_gpu_launch_kernel_flat(const char* name,
     CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
   }
 
-  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n", cfg->dev, name);
+  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d, %p)\n"
+                 "\tKernel: %s\n",
+                 chpl_task_getRequestedSubloc(), cfg->stream,
+                 name);
 }
 
 extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,

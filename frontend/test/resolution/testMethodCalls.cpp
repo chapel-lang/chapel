@@ -500,6 +500,76 @@ static void test8() {
   }
 }
 
+static void test9() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+
+    // Case 1: correctly call 'helper' in a where-clause when declared as a
+    // secondary method on a generic record.
+    proc R.helper() param do return field.type == int;
+    proc R.foo() where helper() do return 5;
+    proc R.foo() where !helper() do return "hello";
+
+    // Case 2: correctly resolve the identifier 'T' implicitly referenced
+    // within a where-clause of an instantiated method
+    proc R.wrapper() param where T == int do return helper();
+    proc R.baz() where wrapper() do return 5;
+    proc R.baz() where !wrapper() do return "hello";
+
+    var r : R(int);
+
+    var x = r.foo();
+
+    var y = r.baz();
+    )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(results["x"].type()->isIntType());
+  assert(results["y"].type()->isIntType());
+  assert(guard.numErrors() == 0);
+}
+
+static void test10() {
+  // Ensure that secondary methods like 'proc x.myMethod()' are generic
+  // even if 'x' is generic-with-defaults.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T = int;
+      var field : T;
+    }
+
+    proc R.myMethod(): T do return this.field;
+
+    var r1: R(int);
+    var r2: R(bool);
+
+    var x1 = r1.myMethod();
+    var x2 = r2.myMethod();
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "x1", "x2" });
+
+  auto t1 = vars.at("x1");
+  assert(t1.type());
+  assert(t1.type()->isIntType());
+  assert(t1.type()->toIntType()->isDefaultWidth());
+
+  auto t2 = vars.at("x2");
+  assert(t2.type());
+  assert(t2.type()->isBoolType());
+}
+
 
 int main() {
   test1();
@@ -510,6 +580,8 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
 
   return 0;
 }

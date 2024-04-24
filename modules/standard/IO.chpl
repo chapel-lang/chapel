@@ -511,6 +511,25 @@ operating system streams standard input, standard output, and standard error.
 
 All three are safe to use concurrently.
 
+Unicode Support
+---------------
+
+Most I/O operations default to working with textual data in the UTF-8 encoding.
+This choice of UTF-8 matches the encoding used by the ``string`` type (see
+:ref:`Chapter-Strings`).
+
+To work with non-UTF-8 data, it's necessary to use binary I/O routines (e.g.
+:proc:`fileReader.readByte`, :proc:`fileReader.readBytes`,
+:proc:`fileReader.readBinary` :proc:`fileReader.readBits`) or do I/O with a
+serializer or deserializer that uses a binary format, such as
+:record:`~IO.binaryDeserializer`.
+
+Generally speaking, if invalid UTF-8 is encountered when reading textual data, a
+``SystemError`` will be throw with ``EILSEQ`` and the channel position will be
+left just after the first byte of UTF-8 that was determined to be invalid. Some
+routines have other error handling behavior as described in their documentation
+(for example, see :proc:`fileReader.readThrough`).
+
 .. _about-io-error-handling:
 
 Error Handling
@@ -820,6 +839,7 @@ use CTypes;
 public use OS;
 private use Reflection;
 public use ChapelIO only write, writeln, writef;
+use ByteBufferHelpers;
 
 /*
 The :type:`ioMode` type is an enum. When used as arguments when opening files, its
@@ -1310,6 +1330,7 @@ private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleIntern
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):errorCode;
+private extern proc qio_file_length_guess(f:qio_file_ptr_t):int(64);
 
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal, bufIoMax:int(64)):errorCode;
 
@@ -1447,10 +1468,13 @@ private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_p
 
 
 private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):errorCode;
+private extern proc qio_channel_read_chars(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, maxBytes:c_ssize_t, maxCodepoints:c_ssize_t, ref readBytes: c_ssize_t, ref readCodepoints: c_ssize_t):errorCode;
 
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
 private extern proc qio_encode_to_string(chr:int(32)):c_ptrConst(c_char);
 private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_ptrConst(c_char), buflen:c_ssize_t):errorCode;
+private extern proc qio_encode_char_buf(dst: c_ptr(void), chr: int(32)): errorCode;
+private extern proc chpl_enc_utf8_decode(ref state: uint(32), ref codep:uint(32), byte: uint(32)): uint(32);
 
 private extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):errorCode;
 private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):errorCode;
@@ -5036,6 +5060,8 @@ proc fileWriter.advance(amount:int(64)) throws {
    :throws UnexpectedEofError: If the requested ``separator`` could not
                                be found.
    :throws SystemError: If data could not be read from the ``file``.
+                        In that event, the fileReader's offset will be
+                        left near the position where the error occurred.
 */
 proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes {
   on this._home {
@@ -5086,6 +5112,8 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
    :throws EofError: If the ``fileReader`` offset is already at EOF.
    :throws UnexpectedEofError: If the requested ``separator`` could not be found.
    :throws SystemError: If data could not be read from the ``fileReader``.
+                        In that event, the fileReader's offset will be
+                        left near the position where the error occurred.
 */
 proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   on this._home {
@@ -7119,7 +7147,7 @@ inline proc fileReader.read(ref args ...?k):bool throws {
   The array's size is not changed to accommodate bytes. If a newline is not
   found before the array is filled, or ``maxSize`` bytes are read, a
   :class:`~OS.BadFormatError` is thrown and the ``fileReader`` offset is
-  returned to its original position.
+  returned to the position it had when this routine was called.
 
   :arg a: A 1D DefaultRectangular non-strided array storing ``int(8)`` or
           ``uint(8)``. Values are overwritten.
@@ -7132,10 +7160,12 @@ inline proc fileReader.read(ref args ...?k):bool throws {
             (i.e., the ``fileReader`` was already at EOF).
 
   :throws IllegalArgumentError: If ``maxSize > a.size``
-  :throws BadFormatError: If the line is longer than ``maxSize``. File
-                          offset is not moved.
+  :throws BadFormatError: If the line is longer than ``maxSize``. The
+                          fileReader's offset is not moved in that case.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
  */
 proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
@@ -7216,12 +7246,13 @@ inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
 // Assumes we are already on the locale with the fileReader and that
 // it is already locked.
 // Passing -1 to 'nCodepoints' tells this function to compute the number
-// of codepoints itself, and store the result in 'cachedNumCodepoints'.
+// of codepoints itself, and store the result in 'cachedNumCodepoints';
+// additionally, it will check that the string is valid UTF-8.
 @chpldoc.nodoc
 proc readStringBytesData(ref s: ?t /*: string or bytes*/,
-                                 _channel_internal:qio_channel_ptr_t,
-                                 nBytes: int,
-                                 nCodepoints: int): errorCode {
+                         _channel_internal:qio_channel_ptr_t,
+                         nBytes: int,
+                         nCodepoints: int): errorCode {
   import BytesStringCommon;
   var sLoc: t;
   ref sLocal = if s.locale == here then s else sLoc;
@@ -7239,12 +7270,29 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
     sLocal.buffLen = nBytes;
     if nBytes != 0 then sLocal.buff[nBytes] = 0; // include null-byte
     if t == string {
-      if nCodepoints == -1
-        then sLocal.cachedNumCodepoints = BytesStringCommon.countNumCodepoints(sLocal);
-        else sLocal.cachedNumCodepoints = nCodepoints;
+      if nCodepoints == -1 {
+        // validate the string
+        var byteI: c_ssize_t = 0;
+        var codepointI: c_ssize_t = 0;
+        while byteI < nBytes {
+          var codepoint: int(32);
+          var gotbytes: c_int;
+          err = qio_decode_char_buf(codepoint, gotbytes,
+                                    (sLocal.buff + byteI):c_ptrConst(c_char),
+                                    len - byteI);
+          if err then break;
+          codepointI += 1;
+          byteI += gotbytes;
+        }
+        sLocal.cachedNumCodepoints = codepointI;
+      } else {
+        sLocal.cachedNumCodepoints = nCodepoints;
+      }
       sLocal.hasEscapes = false;
     }
-  } else {
+  }
+
+  if err {
     sLocal.buffLen = 0;
     if t == string {
       sLocal.cachedNumCodepoints = 0;
@@ -7269,6 +7317,8 @@ proc readStringBytesData(ref s: ?t /*: string or bytes*/,
                           :record:`fileReader` offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readLine(ref s: string,
                          maxSize=-1,
@@ -7356,6 +7406,8 @@ proc fileReader.readLine(ref s: string,
                           offset is not moved.
   :throws SystemError: If data could not be read from the :record:`fileReader`
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readLine(ref b: bytes,
                          maxSize=-1,
@@ -7449,6 +7501,8 @@ proc fileReader.readLine(ref b: bytes,
                           offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readLine(type t=string, maxSize=-1,
                          stripNewline=false): t throws where t==string || t==bytes {
@@ -7490,6 +7544,8 @@ proc fileReader.readLine(type t=string, maxSize=-1,
                           `maxSize` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
   where t==string || t==bytes
@@ -7520,6 +7576,8 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
                           `maxSize` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -7538,16 +7596,16 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 
     // read the given number of bytes into 's', advancing the pointer that many bytes
     // then, ensure the number of codepoints does not exceed the specified maxSize
-    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    qio_channel_mark(false, this._channel_internal);
     const err = readStringBytesData(s, this._channel_internal, bytesToRead, -1);
     if err {
-      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      qio_channel_revert_unlocked(this._channel_internal);
       try this._ch_ioerror(err, "in readThrough(string)");
     } else {
       if maxSize >= 0 && s.numCodepoints > maxSize {
         qio_channel_revert_unlocked(this._channel_internal);
         try this._ch_ioerror(EFORMAT:errorCode, "in readThrough(string)");
-      } else if maxSize > 0 {
+      } else {
         qio_channel_commit_unlocked(this._channel_internal);
       }
     }
@@ -7579,6 +7637,8 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
                           ``maxSize`` bytes. The fileReader offset is not moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -7631,6 +7691,8 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
                           moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   where t==string || t==bytes
@@ -7661,6 +7723,8 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
                           moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
   var atEof = false;
@@ -7676,16 +7740,16 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
 
     // read the given number of bytes into 's', advancing the pointer that many bytes
     // then, ensure the number of codepoints does not exceed the specified maxSize
-    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    qio_channel_mark(false, this._channel_internal);
     const err = readStringBytesData(s, this._channel_internal, bytesOffset, -1);
     if err {
-      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      qio_channel_revert_unlocked(this._channel_internal);
       try this._ch_ioerror(err, "in fileReader.readTo(string)");
     } else {
       if maxSize >= 0 && s.numCodepoints >= maxSize {
         qio_channel_revert_unlocked(this._channel_internal);
         try this._ch_ioerror(EFORMAT:errorCode, "in fileReader.readTo(string)");
-      } else if maxSize > 0  {
+      } else {
         qio_channel_commit_unlocked(this._channel_internal);
       }
     }
@@ -7712,6 +7776,8 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
                           moved.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset is not moved
+                       by this routine.
 */
 proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
   var atEof = false;
@@ -7838,6 +7904,8 @@ private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode
                     was already at EOF.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readAll(type t=bytes): t throws
   where t==string || t==bytes
@@ -7869,9 +7937,11 @@ proc fileReader.readAll(type t=bytes): t throws
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readAll(ref s: string): int throws {
-  const (err, lenread) = readBytesOrString(this, s, -1);
+  const (err, lenread) = readStringImpl(this, s, -1);
 
   if err != 0 && err != EEOF {
     try this._ch_ioerror(err, "in fileReader.readAll(ref s: string)");
@@ -7892,9 +7962,11 @@ proc fileReader.readAll(ref s: string): int throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readAll(ref b: bytes): int throws {
-  const (err, lenread) = readBytesOrString(this, b, -1);
+  const (err, lenread) = readBytesImpl(this, b, -1);
 
   if err != 0 && err != EEOF {
     try this._ch_ioerror(err, "in fileReader.readAll(ref b: bytes)");
@@ -7923,6 +7995,8 @@ proc fileReader.readAll(ref b: bytes): int throws {
                                      fit into ``a``.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readAll(ref a: [?d] ?t): int throws
   where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
@@ -7988,10 +8062,12 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
   :throws EofError: If the ``fileReader`` offset was already at EOF.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readString(maxSize: int): string throws {
   var ret: string = "";
-  var (e, numRead) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readStringImpl(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
   else if e == EEOF && numRead == 0 then
@@ -8015,9 +8091,11 @@ proc fileReader.readString(maxSize: int): string throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readString(ref s: string, maxSize: int): bool throws {
-  var (e, lenRead) = readBytesOrString(this, s, maxSize);
+  var (e, lenRead) = readStringImpl(this, s, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
 
@@ -8038,10 +8116,12 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
   :throws EofError: If the ``fileReader`` offset was already at EOF.
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readBytes(maxSize: int): bytes throws {
   var ret: bytes = b"";
-  var (e, numRead) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readBytesImpl(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
   else if e == EEOF && numRead == 0 then
@@ -8065,69 +8145,255 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
-  var (e, lenRead) = readBytesOrString(this, b, maxSize);
+  var (e, lenRead) = readBytesImpl(this, b, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
 
   return lenRead > 0;
 }
 
-private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+// helper function to compute the length to read (in bytes)
+// assumes that the fileReader is already locked
+private proc computeMaxBytesToRead(ch: fileReader,
+                                   len: int,
+                                   pos: int,
+                                   type t): c_ssize_t {
+  var uselen: c_ssize_t;
+
+  if len < 0 {
+    uselen = max(c_ssize_t);
+  } else {
+    uselen = len:c_ssize_t;
+    if c_ssize_t != int(64) {
+      assert( len == uselen );
+    }
+    if t == string {
+      // len is in codepoints, but each codepoint could be 4 bytes
+      uselen = 4*uselen;
+    }
+  }
+
+  // adjust uselen according to the channel's region,
+  // which cannot change during this read
+  var end = qio_channel_end_offset_unlocked(ch._channel_internal);
+  if end != max(int(64)) {
+    // if the channel had an end position set, compute distance to it
+    var channelLen = (end - pos):c_ssize_t;
+    if channelLen < uselen {
+      uselen = channelLen + 1; // +1 to get an EOF back even if already there
+    }
+  }
+
+  assert(uselen >= 0);
+
+  return uselen;
+}
+
+// helper function to compute the initial buffer size when reading
+// to a string/bytes
+private
+proc computeGuessReadSize(ch: fileReader, maxChars: c_ssize_t, pos: int): c_ssize_t {
+  var guessReadSize:c_ssize_t = 0;
+  var fp: qio_file_ptr_t = nil;
+  qio_channel_get_file_ptr(ch._channel_internal, fp);
+  var fileLen:int(64) = -1;
+  if fp {
+    if maxChars == max(c_ssize_t) {
+      // try to find the file size with stat etc when doing readAll
+      var err:errorCode = qio_file_length(fp, fileLen);
+      // if there was an error, ignore it, but don't use the file length
+      if err then fileLen = 0;
+    } else {
+      // use the file length from when it was opened to avoid overhead
+      fileLen = qio_file_length_guess(fp);
+    }
+  }
+  if pos >= 0 && fileLen >= 1 && fileLen > pos {
+    guessReadSize = (fileLen - pos):c_ssize_t;
+  }
+
+  // limit the size to read by maxBytes
+  if guessReadSize > maxChars {
+    guessReadSize = maxChars;
+  }
+
+  assert(guessReadSize >= 0);
+
+  return guessReadSize;
+}
+
+private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (errorCode, int(64))
   throws
 {
-
   var err:errorCode = 0;
   var lenread:int(64);
 
   on ch._home {
-    var tx:c_ptrConst(c_char);
-    var lentmp:int(64);
-    var actlen:int(64);
-    var uselen:c_ssize_t;
-
-    if len == -1 then uselen = max(c_ssize_t);
-    else {
-      uselen = len:c_ssize_t;
-      if c_ssize_t != int(64) then assert( len == uselen );
-    }
-
     try ch.lock(); defer { ch.unlock(); }
 
-    var binary:uint(8) = qio_channel_binary(ch._channel_internal);
-    var byteorder:uint(8) = qio_channel_byteorder(ch._channel_internal);
+    // note the current channel position
+    var pos = qio_channel_offset_unlocked(ch._channel_internal);
 
-    if binary {
-      err = qio_channel_read_string(false, byteorder,
-                                    iostringstyleInternal.data_toeof:int(64),
-                                    ch._channel_internal, tx,
-                                    lenread, uselen);
-    } else {
-      var save_style: iostyleInternal = ch._styleInternal();
-      var style: iostyleInternal = ch._styleInternal();
-      style.string_format = QIO_STRING_FORMAT_TOEOF;
-      ch._set_styleInternal(style);
+    // Compute the maximum amount we could read as a 'c_ssize_t'
+    // based upon 'len' and the channel's region.
+    // This handles len==-1 as well as a channel with a bounded region.
+    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, bytes);
 
-      if t == string {
-        err = qio_channel_scan_string(false,
-                                      ch._channel_internal, tx,
-                                      lenread, uselen);
+    // Compute a guess as to the size to read based on the file length.
+    // This is only a guess & it's possible it will be out of date
+    // by the time we actually read.
+    // We'll use this guess to decide how much to allocate up-front.
+    // We don't want to allocate all of 'len' up front if it's bigger
+    // than the observed channel size or the initial file size.
+    const guessReadSize:c_ssize_t =
+      computeGuessReadSize(ch, maxBytes, pos)+1; // +1 for trailing \0
+
+    // proactively allocate 'guessReadSize'
+    var buff: bufferType = nil;
+    var buffSz = 0;
+    var n:c_ssize_t = 0; // how many bytes have we read into buff?
+    (buff, buffSz) = bufferAlloc(guessReadSize); // room for trailing \0
+
+    // then try to read repeatedly until we have read 'maxBytes' or reach EOF
+    while n < maxBytes {
+      var locErr:errorCode = 0;
+      var amtRead:c_ssize_t = 0;
+      if n >= buffSz {
+        // if we need more room in the buffer, grow it
+        // this will happen if we have not read all of 'maxBytes' yet
+        // but there is more data in the file (as when guessReadSize
+        // was innacurate for one reason or another)
+        var requestSz = 2*buffSz;
+        // make sure to at least request 16 bytes
+        if requestSz < n + 16 then requestSz = n + 16;
+        // but don't ever ask for more bytes than maxBytes + 1
+        if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 1 then
+           requestSz = maxBytes + 1;
+        (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
+        assert(n < buffSz);
       }
-      else {
-        err = qio_channel_scan_bytes(false,
-                                     ch._channel_internal, tx,
-                                     lenread, uselen);
+      const readN = min(maxBytes - n,           // Don't exceed max byte count
+                        buffSz:c_ssize_t - n);  // Or allocated buffer space
+
+      locErr = qio_channel_read(false, ch._channel_internal,
+                                buff[n], // read starting with data here
+                                readN, amtRead);
+
+      n += amtRead;
+
+      if locErr {
+        // reached EOF or other error so we need to stop
+        err = locErr;
+        break;
       }
-      ch._set_styleInternal(save_style);
     }
 
-    var tmp = t.createAdoptingBuffer(tx, length=lenread);
+    // add the trailing \0
+    (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
+    buff[n] = 0;
+
+    var tmp: bytes = bytes.createAdoptingBuffer(buff, length=n, size=buffSz);
     out_var <=> tmp;
+    lenread = n;
   }
 
   return (err, lenread);
+}
 
+// read up to 'len' codepoints of string data (less if we reach EOF)
+// if 'len' is negative, read until EOF
+// stores the result in 'out_var'.
+private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) : (errorCode, int(64))
+  throws
+{
+  var err:errorCode = 0;
+  var lenread:int(64);
+
+  on ch._home {
+    try ch.lock(); defer { ch.unlock(); }
+
+    // note the current channel position
+    var pos = qio_channel_offset_unlocked(ch._channel_internal);
+
+    // Compute the maximum amount we could read as a 'c_ssize_t'
+    // based upon 'len' and the channel's region.
+    // This is an amount in bytes.
+    const maxBytes:c_ssize_t = computeMaxBytesToRead(ch, len, pos, string);
+    // Compute the maximum number of codepoints we could read
+    const maxChars:c_ssize_t = if len < 0 then max(c_ssize_t) else len:c_ssize_t;
+
+    // Compute a guess as to the size to read based on the file length,
+    // assuming 1-byte-per-codepoint.
+    const guessReadSize:c_ssize_t = computeGuessReadSize(ch, maxChars, pos)+5;
+          // +5 -- room for 4 bytes per codepoint + 1 byte for trailing \0
+
+    // proactively allocate 'guessReadSize'
+    var buff: bufferType = nil;
+    var buffSz = 0;
+    var n:c_ssize_t = 0; // how many bytes have we read into buff?
+    var nChars:c_ssize_t = 0; // how many codepoints have we read?
+    (buff, buffSz) = bufferAlloc(guessReadSize);
+
+    // then try to read repeatedly until we have read 'maxChars' or reach EOF
+    while nChars < maxChars {
+      var locErr:errorCode = 0;
+
+      if n + 5 > buffSz {
+        var requestSz = 2*buffSz;
+        // make sure to at least request 16 bytes
+        if requestSz < n + 16 then requestSz = n + 16;
+        // but don't ever ask for more bytes than maxBytes + 5
+        if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 5 then
+          requestSz = maxBytes + 5;
+        (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
+        assert(n + 5 < buffSz);
+      }
+
+      const bytesRemaining = buffSz:c_ssize_t - n;
+      const charsRemaining = if maxChars < max(c_ssize_t)
+                             then maxChars - nChars
+                             else max(c_ssize_t);
+      var readCodepoints:c_ssize_t = 0;
+      var readBytes:c_ssize_t = 0;
+      locErr = qio_channel_read_chars(false, ch._channel_internal,
+                                      buff[n], // store starting here
+                                      bytesRemaining,
+                                      charsRemaining,
+                                      readBytes,
+                                      readCodepoints);
+
+      nChars += readCodepoints;
+      n += readBytes;
+
+      if locErr {
+        // reached EOF or other error so we need to stop
+        err = locErr;
+        break;
+      }
+
+      // should have read something if there was no error
+      assert(readBytes > 0);
+    }
+
+    // add the trailing \0
+    (buff, buffSz) = bufferEnsureSize(buff, buffSz, n+1);
+    buff[n] = 0;
+
+    var tmp: string =
+      NVStringFactory.chpl_createStringWithOwnedBufferNV(buff,
+                                                         length=n,
+                                                         size=buffSz,
+                                                         numCodepoints=nChars);
+
+    out_var <=> tmp;
+    lenread = n;
+  }
+
+  return (err, lenread);
 }
 
 /*
@@ -8799,29 +9065,15 @@ proc fileReader.readBinary(ref arg:numeric, endian: endianness):bool throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
-  var e:errorCode = 0,
-      didRead = false;
+  var (e, lenRead) = readStringImpl(this, s, maxSize);
 
-  on this._home {
-    var len: int(64),
-        tx: c_ptrConst(c_char);
+  if e != 0 && e != EEOF then throw createSystemError(e);
 
-    e = qio_channel_read_string(false, endianness.native: c_int,
-                                qio_channel_str_style(this._channel_internal),
-                                this._channel_internal, tx, len, maxSize:c_ssize_t);
-
-    if len > 0 then didRead = true;
-    s = try! string.createAdoptingBuffer(tx, length=len);
-  }
-
-  if e == EEOF {
-    return didRead;
-  } else if e != 0 {
-    throw createSystemOrChplError(e);
-  }
-  return true;
+  return lenRead > 0;
 }
 
 /*
@@ -8838,31 +9090,16 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
-  var e:errorCode = 0,
-      didRead = false;
+  var (e, lenRead) = readBytesImpl(this, b, maxSize);
 
-  on this._home {
-    var len: int(64),
-        tx: c_ptrConst(c_char);
+  if e != 0 && e != EEOF then throw createSystemError(e);
 
-    e = qio_channel_read_string(false, endianness.native: c_int,
-                                qio_channel_str_style(this._channel_internal),
-                                this._channel_internal, tx, len, maxSize:c_ssize_t);
-
-    if len > 0 then didRead = true;
-    b = try! bytes.createAdoptingBuffer(tx, length=len);
-  }
-
-  if e == EEOF {
-    return didRead;
-  } else if e != 0 {
-    throw createSystemOrChplError(e);
-  }
-  return true;
+  return lenRead > 0;
 }
-
 
 @chpldoc.nodoc
 @deprecated("'ReadBinaryArrayReturnInt' is deprecated — 'readBinary' now returns an int by default when reading an array")
@@ -8886,6 +9123,8 @@ config param ReadBinaryArrayReturnInt = true;
 
   :throws SystemError: If data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native): int throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
@@ -8954,6 +9193,8 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
 
    :throws SystemError: If data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
+                        In that event, the fileReader's offset will be
+                        left near the position where the error occurred.
 */
 proc fileReader.readBinary(ref data: [] ?t, endian: endianness):int throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
@@ -9009,6 +9250,8 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = endianness.native): b
 
    :throws SystemError: If data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
+                        In that event, the fileReader's offset will be
+                        left near the position where the error occurred.
 */
 proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
   var e: errorCode = 0,
@@ -9037,6 +9280,8 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 
    :throws SystemError: If data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
+                        In that event, the fileReader's offset will be
+                        left near the position where the error occurred.
 */
 proc fileReader.readBinary(ptr: c_ptr(void), maxBytes: int): int throws {
   var e: errorCode = 0,

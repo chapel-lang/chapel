@@ -125,6 +125,7 @@ def get_arch():
         # on nvidia.
         if len(arch.split(",")) > 1 and gpu_type != "nvidia":
             error("Multi-target builds are only supported for the 'nvidia' GPU type.")
+            arch = 'error'
 
         return arch
 
@@ -137,6 +138,7 @@ def get_arch():
               "Please check the GPU programming technote "
               "<https://chapel-lang.org/docs/technotes/gpu.html> "
               "for more information.".format(gpu_type))
+        return 'error'
 
 @memoize
 def get_sdk_path(for_gpu):
@@ -174,6 +176,7 @@ def get_sdk_path(for_gpu):
         return chpl_sdk_path
     elif gpu_type == for_gpu:
         _reportMissingGpuReq("Can't find {} toolkit.".format(get()))
+        return 'error'
     else:
         return ''
 
@@ -183,7 +186,7 @@ def get_gpu_mem_strategy():
         valid_options = ["array_on_device", "unified_memory"]
         if memtype not in valid_options:
             error("CHPL_GPU_MEM_STRATEGY must be set to one of: %s" %
-                 ", ".join(valid_options));
+                 ", ".join(valid_options))
         return memtype
     return "array_on_device"
 
@@ -201,6 +204,7 @@ def get_cuda_libdevice_path():
         if len(libdevices) == 0:
             _reportMissingGpuReq("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is "
                   "set such that CHPL_CUDA_PATH/nvmm/libdevice/libdevice*.bc exists.")
+            return 'error'
         else:
             return libdevices[0]
 
@@ -234,7 +238,7 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
     if chpl_llvm.get() == 'bundled':
         error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
-    if not validateLlvmBuiltForTgt(gpu.llvm_target):
+    elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
         )
@@ -361,9 +365,10 @@ def validate(chplLocaleModel):
     # (e.g. CUDA or ROCm)
     gpu.validate_sdk_version()
 
+    if chpl_tasks.get() == 'fifo':
+        error("The 'fifo' tasking model is not supported with GPU support")
+
     if get() == 'cpu':
-        if chpl_tasks.get() == 'fifo':
-            error("The 'fifo' tasking model is not supported with CPU-as-device mode")
         return True
 
     if chpl_compiler.get('target') != 'llvm':

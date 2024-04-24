@@ -497,7 +497,8 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         /* isParenless */ false,
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+    auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+    auto c = resolveGeneratedCall(context, ast, ci, inScopes);
     ResolvedExpression& opR = rv.byAst(ast);
     resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
                                           AssociatedAction::DEFAULT_INIT,
@@ -514,6 +515,14 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     return;
   }
 
+  if (auto call = ast->toOpCall()) {
+    if (call->op() == "=" && call->child(0)->isTuple()) {
+      // Tuple unpacking assignment, handled directly by Resolver
+      // (a, b, c) = foo();
+      return;
+    }
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -524,7 +533,8 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
@@ -560,7 +570,8 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
 
   std::vector<const AstNode*> actualAsts;
   actualAsts.push_back(ast);
@@ -616,7 +627,13 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
   if (isTypeParam(lhsType.kind())) {
     // OK, nothing else to do
   } else if (isValue(lhsType.kind()) && isValueOrParam(rhsType.kind())) {
-    if (lhsType.type() == rhsType.type()) {
+    // Accept if we can pass with only a subtype conversion
+    // (for passing non-nilable to nilable).
+    auto canPassResult = canPass(context, rhsType, lhsType);
+    if (canPassResult.passes() &&
+        (!canPassResult.converts() ||
+         canPassResult.conversionKind() ==
+             CanPassResult::ConversionKind::SUBTYPE)) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).
@@ -724,16 +741,29 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
     return;
   }
 
+  QualifiedType deinitType = type;
+
+  // Deinit nilable class types as the corresponding non-nilable type, since we
+  // will have a runtime check to not call deinit on nil.
+  if (auto ct = type.type()->toClassType()) {
+    auto decorator = ct->decorator();
+    if (decorator.isNilable()) {
+      deinitType = QualifiedType(
+          type.kind(), ct->withDecorator(context, decorator.addNonNil()));
+    }
+  }
+
   std::vector<CallInfoActual> actuals;
-  actuals.push_back(CallInfoActual(type, USTR("this")));
+  actuals.push_back(CallInfoActual(deinitType, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("deinit"),
-                      /* calledType */ type,
+                      /* calledType */ deinitType,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
 
   // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();
@@ -920,7 +950,9 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   QualifiedType actualType = rv.byAst(actual).type();
 
   // is the copy for 'in' elided?
-  if (elidedCopyFromIds.count(actual->id()) > 0 && isValue(actualType.kind())) {
+  if (elidedCopyFromIds.count(actual->id()) > 0 &&
+      isValue(actualType.kind()) &&
+      typeNeedsInitDeinitCall(actualType.type())) {
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
 

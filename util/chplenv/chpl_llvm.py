@@ -396,12 +396,34 @@ def validate_llvm_config():
             error("Could not find clang++ with the same version as "
                   "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CXX.".format(llvm_config))
 
+        def print_clang_version_error(clang, name="clang"):
+            clang_version = get_clang_version(clang)
+            llvm_version = str(get_llvm_config_version(llvm_config)).strip()
+            if clang_version is None:
+                error(
+                    "Could not determine version of {} at '{}'".format(
+                        name, clang
+                    )
+                )
+            elif llvm_version not in clang_version:
+                error(
+                    "Version of {} at '{}' does not".format(name, clang) +
+                    " match version of LLVM at '{}'\n".format(llvm_config) +
+                    "LLVM version: {}\n".format(llvm_version) +
+                    "{} version: {}".format(name, clang_version)
+                )
+            else:
+                error(
+                    "Missing or wrong version for {} at '{}'".format(
+                        name, clang
+                    )
+                    + " (using LLVM at {})".format(llvm_config)
+                )
+
         if not is_system_clang_version_ok(clang_c):
-            error("Missing or wrong version for clang at {0}".format(
-                  clang_c))
+            print_clang_version_error(clang_c)
         if not is_system_clang_version_ok(clang_cxx):
-            error("Missing or wrong version for clang++ at {0}".format(
-                  clang_cxx))
+            print_clang_version_error(clang_cxx, name="clang++")
 
 
 @memoize

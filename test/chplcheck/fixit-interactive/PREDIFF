@@ -1,0 +1,16 @@
+#!/bin/bash
+
+$CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
+  --enable-rule BoolLitInCondStatement \
+  --enable-rule UseExplicitModules \
+  --enable-rule UnusedFormal \
+  --enable-rule CamelOrPascalCaseVariables \
+  --enable-rule NestedCoforalls \
+  --internal-prefix "myprefix_" --internal-prefix "_" \
+  --skip-unstable \
+  --fixit --fixit-suffix .fixed --interactive \
+  $1.chpl <$1.input >/dev/null
+
+# move the fixed file to the output
+mv $1.chpl.fixed $2
+

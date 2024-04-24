@@ -112,7 +112,7 @@ proc testsize(size:int) {
 
   var array = generateArray(size);
 
-  var nBytes = size*8;
+  var nBytes = size*numBytes(eltType);
   var kibibytes = nBytes/1024.0;
   var mibibytes = kibibytes/1024.0;
   var sizestr = nBytes:string + " bytes";

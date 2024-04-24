@@ -20,8 +20,14 @@
 #
 
 if [ -z "$CHPL_HOME" ]; then
-  echo "Error: CHPL_HOME is not set"
-  exit 1
+  # We need CHPL_HOME to find run-in-venv.bash. Try falling back to a
+  # compiler in PATH.
+  if output=$(chpl --print-bootstrap-commands); then
+    eval "$output"
+  else
+    echo "Error: CHPL_HOME is not set" 1>&2
+    exit 1
+  fi
 fi
 
 exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash \

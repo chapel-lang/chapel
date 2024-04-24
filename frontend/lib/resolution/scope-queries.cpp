@@ -160,6 +160,15 @@ struct GatherDecls {
       // since dyno handles tuple types directly rather
       // than through a record.
       skip = true;
+    } else if (d->name() == "eltType" &&
+               atFieldLevel && tagParent == asttags::Class &&
+               (d->id().symbolPath().startsWith("CTypes.c_ptr") ||
+                d->id().symbolPath().startsWith("Ctypes.c_ptrConst"))) {
+      // skip gathering the 'eltType' field of the dummy c_ptr[Const] classes,
+      // since we're representing those types entirely within the frontend.
+      //
+      // TODO: Remove this once we have replaced those classes.
+      skip = true;
     }
 
     if (skip == false) {
@@ -369,6 +378,10 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   for (const auto& pair : globalMap) {
     scope->addBuiltin(pair.first);
   }
+
+  // TODO: maybe we can represent these as 'NilLiteral' and 'NoneLiteral' nodes?
+  scope->addBuiltin(USTR("nil"));
+  scope->addBuiltin(USTR("none"));
 
   populateScopeWithBuiltinKeywords(context, scope);
 }
@@ -1623,6 +1636,97 @@ lookupNameInScopeWithSet(Context* context,
   return vec;
 }
 
+static std::map<UniqueString, BorrowedIdsWithName> const&
+getSymbolsAvailableInScopeQuery(Context* context,
+                                const Scope* scope,
+                                const VisibilitySymbols* inVisibilitySymbols) {
+  QUERY_BEGIN(getSymbolsAvailableInScopeQuery, context, scope, inVisibilitySymbols);
+
+  std::map<UniqueString, BorrowedIdsWithName> toReturn;
+
+  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name, UniqueString& renameTo) {
+    renameTo = name;
+
+    if (!inVisibilitySymbols) return true;
+    auto kind = inVisibilitySymbols->kind();
+
+    if (kind == VisibilitySymbols::ALL_CONTENTS) {
+      return true;
+    }
+
+    if (kind == VisibilitySymbols::ONLY_CONTENTS ||
+        kind == VisibilitySymbols::CONTENTS_EXCEPT) {
+      auto& namePairs = inVisibilitySymbols->names();
+
+      bool anyMatches = false;
+      for (auto& namePair : namePairs) {
+        if (namePair.first == name) {
+          anyMatches = true;
+          renameTo = namePair.second;
+          break;
+        }
+      }
+
+      return kind == VisibilitySymbols::CONTENTS_EXCEPT ? !anyMatches : anyMatches;
+    }
+
+    return false;
+  };
+
+  for (auto& decl : scope->declared()) {
+    UniqueString renameTo;
+    if (!allowedByVisibility(decl.first, renameTo)) continue;
+
+    auto flags = 0;
+    if (inVisibilitySymbols) flags |= IdAndFlags::PUBLIC;
+
+    auto exclude = IdAndFlags::FlagSet::empty();
+    if (auto borrowed = decl.second.borrow(flags, exclude)) {
+      toReturn.try_emplace(renameTo, *borrowed);
+    }
+  }
+
+  auto resolvedVisStmts = resolveVisibilityStmts(context, scope);
+  if (!resolvedVisStmts) return QUERY_END(toReturn);
+
+  for (auto& vis : resolvedVisStmts->visibilityClauses()) {
+    if (vis.isPrivate() && inVisibilitySymbols != nullptr) continue;
+
+    if (context->isQueryRunning(getSymbolsAvailableInScopeQuery,
+                                std::make_tuple(vis.scope(), &vis))) {
+      continue;
+    }
+
+    auto visStmtSymbols =
+      getSymbolsAvailableInScopeQuery(context, vis.scope(), &vis);
+    for (auto& pair : visStmtSymbols) {
+      UniqueString renameTo;
+      if (!allowedByVisibility(pair.first, renameTo)) continue;
+      toReturn.try_emplace(renameTo, pair.second);
+    }
+  }
+
+  return QUERY_END(toReturn);
+}
+
+
+std::map<UniqueString, BorrowedIdsWithName>
+getSymbolsAvailableInScope(Context* context,
+                           const Scope* scope) {
+  auto inScope = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
+
+  if (scope->autoUsesModules()) {
+    auto scope = scopeForAutoModule(context);
+    auto inAuto = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
+
+    for (auto& pair : inAuto) {
+      inScope.try_emplace(pair.first, pair.second);
+    }
+  }
+
+  return inScope;
+}
+
 static
 bool doIsWholeScopeVisibleFromScope(Context* context,
                                    const Scope* checkScope,
@@ -2557,7 +2661,7 @@ const Scope* scopeForModule(Context* context, ID id) {
 
 
 const
-std::vector<ID> findUsedImportedModules(Context* context,
+std::vector<ID> findUsedImportedIds(Context* context,
                                         const Scope* scope) {
   auto result = resolveVisibilityStmts(context, scope);
   std::vector<ID> ids;

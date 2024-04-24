@@ -51,6 +51,7 @@ from lsprotocol.types import (
     Location,
     MessageType,
     Diagnostic,
+    DiagnosticRelatedInformation,
     Range,
     Position,
 )
@@ -197,17 +198,23 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
 
 
 def completion_item_for_decl(
-    decl: chapel.NamedDecl,
+    decl: chapel.NamedDecl, override_name: Optional[str] = None
 ) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
         return None
 
+    # For now, we show completion for global symbols (not x.<complete>),
+    # so it seems like we ought to rule out methods.
+    if kind == SymbolKind.Method:
+        return None
+
+    name_to_use = override_name if override_name else decl.name()
     return CompletionItem(
-        label=decl.name(),
+        label=name_to_use,
         kind=decl_kind_to_completion_kind(kind),
-        insert_text=decl.name(),
-        sort_text=decl.name(),
+        insert_text=name_to_use,
+        sort_text=name_to_use,
     )
 
 
@@ -234,48 +241,6 @@ def get_symbol_information(
             loc, str(signature), kind, deprecated=is_deprecated
         )
     return None
-
-
-def range_to_tokens(
-    rng: chapel.Location, lines: List[str]
-) -> List[Tuple[int, int, int]]:
-    """
-    Convert a Chapel location to a list of token-compatible ranges. If a location
-    spans multiple lines, it gets split into multiple tokens. The lines
-    and columns are zero-indexed.
-
-    Returns a list of (line, column, length).
-    """
-
-    (line_start, char_start) = rng.start()
-    (line_end, char_end) = rng.end()
-
-    if line_start == line_end:
-        return [(line_start - 1, char_start - 1, char_end - char_start)]
-
-    tokens = [
-        (
-            line_start - 1,
-            char_start - 1,
-            len(lines[line_start - 1]) - char_start,
-        )
-    ]
-    for line in range(line_start + 1, line_end):
-        tokens.append((line - 1, 0, len(lines[line - 1])))
-    tokens.append((line_end - 1, 0, char_end - 1))
-
-    return tokens
-
-
-def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
-    """
-    Convert a Chapel location to a string. If the location spans multiple
-    lines, it gets truncated into 1 line.
-    """
-    text = []
-    for line, column, length in range_to_tokens(rng, lines):
-        text.append(lines[line][column : column + length + 1])
-    return " ".join([t.strip() for t in text])
 
 
 def encode_deltas(
@@ -438,6 +403,8 @@ class EndMarkerPattern:
                         chapel.Sync,
                         chapel.Local,
                         chapel.Manage,
+                        chapel.Select,
+                        chapel.When,
                     ]
                 ),
                 header_location=lambda node: (
@@ -522,7 +489,7 @@ class FileInfo:
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.Module] = field(init=False)
-    possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
+    visible_decls: List[Tuple[str, chapel.AstNode]] = field(init=False)
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
@@ -590,17 +557,31 @@ class FileInfo:
             if scope:
                 self.used_modules.extend(scope.used_imported_modules())
 
-    def _collect_possibly_visible_decls(self):
-        self.possibly_visible_decls = []
-        for mod in self.used_modules:
-            for child in mod:
-                if not isinstance(child, chapel.NamedDecl):
-                    continue
+    def _collect_possibly_visible_decls(self, asts: List[chapel.AstNode]):
+        self.visible_decls = []
+        for ast in asts:
+            if isinstance(ast, chapel.Comment):
+                continue
 
-                if child.visibility() == "private":
-                    continue
+            scope = ast.scope()
+            if not scope:
+                continue
 
-                self.possibly_visible_decls.append(child)
+            file = ast.location().path()
+            in_bundled_module = self.context.context.is_bundled_path(file)
+
+            for name, nodes in scope.visible_nodes():
+                # Don't show internal symbols to the user, even if they
+                # are technically in scope. The exception is if we're currently
+                # editing a standard file.
+                skip_prefixes = ["chpl_", "chpldev_", "_"]
+                if any(name.startswith(prefix) for prefix in skip_prefixes):
+                    if not in_bundled_module:
+                        continue
+
+                # Just take the first value to avoid showing N entries for
+                # overloaded functions.
+                self.visible_decls.append((name, nodes[0]))
 
     def _search_instantiations(
         self,
@@ -658,7 +639,7 @@ class FileInfo:
 
         self.siblings = chapel.SiblingMap(asts)
         self._collect_used_modules(asts)
-        self._collect_possibly_visible_decls()
+        self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
             with self.context.context.track_errors() as _:
@@ -864,6 +845,7 @@ class CLSConfig:
         add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
         add_bool_flag("dead-code", "dead_code", True)
         add_bool_flag("evaluate-expressions", "eval_expressions", True)
+        add_bool_flag("show-instantiations", "show_instantiations", True)
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
@@ -881,7 +863,6 @@ class CLSConfig:
                 )
         n_markers = len(self.args["end_markers"])
         if n_markers != len(set(self.args["end_markers"])):
-
             raise argparse.ArgumentError(
                 None, "Cannot specify the same end marker multiple times"
             )
@@ -917,6 +898,7 @@ class ChapelLanguageServer(LanguageServer):
         self.param_inlays: bool = config.get("param_inlays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
+        self.show_instantiations: bool = config.get("show_instantiations")
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
@@ -1032,7 +1014,17 @@ class ChapelLanguageServer(LanguageServer):
 
         _, errors = self.get_file_info(uri, do_update=True)
 
-        diagnostics = [error_to_diagnostic(e) for e in errors]
+        diagnostics = []
+        for e in errors:
+            diag = error_to_diagnostic(e)
+            diag.related_information = [
+                DiagnosticRelatedInformation(
+                    location_to_location(note_loc), note_msg
+                )
+                for (note_loc, note_msg) in e.notes()
+            ]
+            diagnostics.append(diag)
+
         return diagnostics
 
     def get_text(self, text_doc: TextDocument, rng: Range) -> str:
@@ -1225,7 +1217,7 @@ class ChapelLanguageServer(LanguageServer):
             )
             if dead_branch:
                 loc = dead_branch.location()
-                return range_to_tokens(loc, lines)
+                return chapel.range_to_tokens(loc, lines)
 
         return []
 
@@ -1331,7 +1323,6 @@ class ChapelLanguageServer(LanguageServer):
 
         for pattern in self.end_marker_patterns.values():
             for node, _ in chapel.each_matching(ast, pattern.pattern):
-
                 end_loc = location_to_range(node.location()).end
                 header_loc = pattern.header_location(node)
                 goto_loc = pattern.goto_location(node)
@@ -1347,7 +1338,8 @@ class ChapelLanguageServer(LanguageServer):
                 if re.search(self._curly_bracket_with_comment, curly_line):
                     continue
 
-                text = range_to_text(header_loc, file_lines)
+                text = chapel.range_to_lines(header_loc, file_lines)
+                text = " ".join([t.strip() for t in text])
                 loc = location_to_location(goto_loc) if goto_loc else None
                 to_insert = " // " + text
                 edit = TextEdit(
@@ -1517,9 +1509,9 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
-        items.extend(
-            completion_item_for_decl(decl) for decl in fi.possibly_visible_decls
-        )
+        for name, decl in fi.visible_decls:
+            if isinstance(decl, chapel.NamedDecl):
+                items.append(completion_item_for_decl(decl, override_name=name))
         items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
 
         items = [item for item in items if item]
@@ -1610,7 +1602,7 @@ def run_lsp():
         # the time being all hints are resolver-based, so we may
         # as well save ourselves the work of finding declarations and
         # calls to feed to those methods.
-        if ls.use_resolver:
+        if not ls.use_resolver:
             return inlays
 
         decls = fi.def_segments.range(params.range)
@@ -1635,7 +1627,8 @@ def run_lsp():
     async def document_highlight(
         ls: ChapelLanguageServer, params: DocumentHighlightParams
     ):
-        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        text_doc_uri = params.text_document.uri
+        text_doc = ls.workspace.get_text_document(text_doc_uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
@@ -1644,18 +1637,29 @@ def run_lsp():
             return None
 
         # todo: it would be nice if this differentiated between read and write
-        highlights = [
-            DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+        highlights = []
+        # only highlight the declaration if it is in the current document
+        if node_and_loc.get_uri() == text_doc_uri:
+            dh = DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+            highlights.append(dh)
+        uses = fi.uses_here.get(node_and_loc.node.unique_id(), [])
+        highlights += [
+            DocumentHighlight(use.rng, DocumentHighlightKind.Text)
+            for use in uses
         ]
-        for use in fi.uses_here.get(node_and_loc.node.unique_id(), []):
-            highlights.append(
-                DocumentHighlight(use.rng, DocumentHighlightKind.Text)
-            )
 
         return highlights
 
     @server.feature(TEXT_DOCUMENT_CODE_LENS)
     async def code_lens(ls: ChapelLanguageServer, params: CodeLensParams):
+
+        # return early if the resolver is not being used or the feature is disabled
+        if not ls.use_resolver:
+            return None
+
+        if not ls.show_instantiations:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)

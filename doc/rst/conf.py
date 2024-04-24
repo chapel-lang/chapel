@@ -33,6 +33,7 @@ needs_sphinx = '1.3'
 # ones.
 extensions = [
     'sphinx.ext.todo',
+    'sphinxcontrib.jquery',
     'sphinxcontrib.chapeldomain',
     'sphinx.ext.mathjax',
     'util.disguise',
@@ -40,6 +41,9 @@ extensions = [
 ]
 
 breathe_default_project = "dyno"
+# don't generate #include suggestions in docs because
+# it tries to link to the source code which we're not setup for
+breathe_show_include = False
 
 nitpick_ignore_regex = [('cpp:identifier', r'llvm(:.*)?')]
 nitpick_ignore = []
@@ -76,7 +80,7 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '2.0'                  # TODO -- parse from `chpl --version`
+chplversion = '2.1'                  # TODO -- parse from `chpl --version`
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 

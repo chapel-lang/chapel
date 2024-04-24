@@ -1625,6 +1625,12 @@ nbody:
     - Refactor PRIM_NEW resolution to enable promotion (#10919)
   05/03/19:
     - Govern slice expressions by slicing domain (#12931)
+  12/18/23:
+    - Always use -fno-math-errno to configure the LLVM optimizer (#24066)
+  02/21/24:
+    - Codegen sqrt and fabs directly to llvm intrinsics when possible (#24455)
+  04/03/24:
+    - Change param-based nbody to foreach-based (#24745)
 
 no-op:
   02/24/17:
@@ -1782,6 +1788,8 @@ regexdna: &regexdna-base
     - Add a field to the string record to store a cached size (#15758)
   02/24/21:
     - Upgrade to re2 2021-02-02 (#17230)
+  04/08/24:
+    - Avoid string copies by implementing replace with match (#24757)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -2430,7 +2438,11 @@ arkouda: &arkouda-base
     - Closes 2873 Short strings optimization for multicol groupby (Bears-R-Us/arkouda#2877)
   01/07/24:
     - Array API infrastructure and partial implementation (Bears-R-Us/arkouda#2865)
-
+  02/07/24:
+    - Update Arkouda release testing from 1.32 to 1.33 (#24355)
+  03/28/24:
+    - Update Arkouda release testing from 1.33 to 2.0 (#24704)
+ 
 
 arkouda-string:
   <<: *arkouda-base
@@ -2469,6 +2481,11 @@ arkouda-comp:
     - Yield tuples by value when appropriate (#21789)
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
+
+arkouda-array_create:
+  <<: *arkouda-base
+  04/05/24:
+    - Closes 3071 Add permutation to our generators (Bears-R-Us/arkouda#3078)
 
 shoc-triad-all-lg:
   11/10/22:

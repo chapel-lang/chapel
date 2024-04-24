@@ -142,6 +142,8 @@ def _get_symbol_signature(node: chapel.AstNode) -> List[Component]:
         return _var_to_string(node)
     elif isinstance(node, chapel.Function):
         return _proc_to_string(node)
+    elif isinstance(node, chapel.TypeQuery):
+        return [_wrap_str(f"?{node.name()}")]
 
     return [_wrap_str(node.name())]
 
@@ -156,7 +158,7 @@ def _node_to_string(node: chapel.AstNode) -> List[Component]:
     elif isinstance(node, chapel.Identifier):
         return [_wrap_str(node.name())]
     elif isinstance(node, chapel.BoolLiteral):
-        return [_wrap_str(node.value())]
+        return [_wrap_str("true" if node.value() else "false")]
     elif isinstance(
         node,
         (
@@ -171,6 +173,8 @@ def _node_to_string(node: chapel.AstNode) -> List[Component]:
         return [_wrap_str('"' + node.value() + '"')]
     elif isinstance(node, chapel.CStringLiteral):
         return [_wrap_str('c"' + node.value() + '"')]
+    elif isinstance(node, chapel.FnCall):
+        return _fncall_to_string(node)
     return [Component(ComponentTag.PLACEHOLDER, None)]
 
 
@@ -256,11 +260,12 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
     if node.is_inline():
         comps.append(_wrap_str("inline "))
 
-
     comps.append(_wrap_str(f"{node.kind()} "))
     # if it has a this-formal, check for this intent
     if node.this_formal() and _intent_to_string(node.this_formal().intent()):
-        comps.append(_wrap_str(f"{_intent_to_string(node.this_formal().intent())} "))
+        comps.append(
+            _wrap_str(f"{_intent_to_string(node.this_formal().intent())} ")
+        )
     comps.append(_wrap_str(node.name()))
 
     if not node.is_parenless():
@@ -299,3 +304,28 @@ def _intent_to_string(intent: Optional[str]) -> str:
     }
     # use 'intent' as the default, so if no remap no work done
     return remap.get(intent, intent) if intent else ""
+
+
+def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
+    """
+    Convert a call to a string
+    """
+    comps = []
+
+    comps.extend(_node_to_string(call.called_expression()))
+    openbr, closebr = ("[", "]") if call.used_square_brackets() else ("(", ")")
+    comps.append(_wrap_str(openbr))
+    sep = ""
+    for a in call.actuals():
+        comps.append(_wrap_str(sep))
+        sep = ", "
+        if isinstance(a, tuple):
+            comps.append(_wrap_str(a[0]))
+            comps.append(_wrap_str(" = "))
+            comps.extend(_node_to_string(a[1]))
+        else:
+            assert isinstance(a, chapel.AstNode)
+            comps.extend(_node_to_string(a))
+    comps.append(_wrap_str(closebr))
+
+    return comps

@@ -698,6 +698,10 @@ stmt_base:
     auto node = Defer::build(BUILDER, LOC(@$), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
@@ -770,6 +774,10 @@ tryable_stmt:
     auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2),
                                std::move(taskBodies));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
@@ -791,6 +799,10 @@ tryable_stmt:
     auto node = Local::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                              std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -803,6 +815,10 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Local::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -816,6 +832,10 @@ tryable_stmt:
     auto node = On::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                           std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -829,6 +849,10 @@ tryable_stmt:
     auto node = Serial::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
                               std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -841,6 +865,10 @@ tryable_stmt:
     auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
     auto node = Serial::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -855,6 +883,10 @@ tryable_stmt:
     auto node = Sync::build(BUILDER, LOC(@$), blockStyle,
                             std::move(stmts));
     BUILDER->noteBlockHeaderLocation(node.get(), LOC(@1));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
@@ -1056,14 +1088,17 @@ include_module_stmt:
 block_stmt_body:
   TLCBR TRCBR
   {
+    context->noteCurlyBraces(@1, @2);
     $$ = context->blockToParserExprList(@1, @2, nullptr);
   }
 | TLCBR stmt_ls TRCBR
   {
+    context->noteCurlyBraces(@1, @3);
     $$ = context->blockToParserExprList(@1, @3, $2);
   }
 | TLCBR error TRCBR
   {
+    context->noteCurlyBraces(@1, @3);
     context->clearComments();
     // create a list of stmts that just has an ErroneousExpr
     auto errorExpr = ErroneousExpression::build(BUILDER, LOC(@2));
@@ -1624,6 +1659,10 @@ loop_stmt_base:
                                std::move(body),
                                toOwned($4),
                                context->popLoopAttributeGroup());
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1639,6 +1678,10 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1654,6 +1697,10 @@ loop_stmt_base:
                              std::move(body),
                              context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @2));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1689,6 +1736,10 @@ loop_stmt_base:
                            /*isParam*/ true,
                            context->popLoopAttributeGroup());
     BUILDER->noteLoopHeaderLocation(node.get(), LOC2(@1, @5));
+    if (context->hasCurlyBracesLoc()) {
+      BUILDER->noteCurlyBracesLocation(node.get(), LOC(context->curlyBracesLoc()));
+      context->resetCurlyBracesLoc();
+    }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);
@@ -1789,55 +1840,55 @@ zippered_iterator:
 if_stmt:
   TIF expr TTHEN stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, $2, $4);
   }
 | TIF expr block_stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, $2, $3);
   }
 | TIF expr TTHEN stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, @5, @6, $2, $4, $6);
   }
 | TIF expr block_stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, @4, @5, $2, $3, $5);
   }
 | TIF ifvar TTHEN stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, $2, $4);
   }
 | TIF ifvar block_stmt %prec TNOELSE
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, $2, $3);
   }
 | TIF ifvar TTHEN stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
+    $$ = context->buildConditionalStmt(true, @$, @3, @4, @5, @6, $2, $4, $6);
   }
 | TIF ifvar block_stmt TELSE stmt
   {
-    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
+    $$ = context->buildConditionalStmt(false, @$, @3, @3, @4, @5, $2, $3, $5);
   }
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(true, @1, @5, op, $6);
+    $$ = context->buildConditionalStmt(true, @$, @5, @6, op, $6);
   }
 | TIF expr assignop_ident expr block_stmt %prec TNOELSE
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(false, @1, @5, op, $5);
+    $$ = context->buildConditionalStmt(false, @$, @5, @5, op, $5);
   }
 | TIF expr assignop_ident expr TTHEN stmt TELSE stmt
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(true, @1, @5, @7, op, $6, $8);
+    $$ = context->buildConditionalStmt(true, @$, @5, @6, @7, @8, op, $6, $8);
   }
 | TIF expr assignop_ident expr block_stmt TELSE stmt
   {
     auto op = context->buildBinOp(@3, $2, $3, $4);
-    $$ = context->buildConditionalStmt(false, @1, @5, @6, op, $5, $7);
+    $$ = context->buildConditionalStmt(false, @$, @5, @5, @6, @7, op, $5, $7);
   }
 ;
 
@@ -2043,13 +2094,15 @@ throw_stmt:
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
   {
-    $$ = context->buildSelectStmt(@$, toOwned($2), $4);
+    $$ = context->buildSelectStmt(@$, context->makeSpannedLocation(@1, @2), toOwned($2), $4);
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@3, @5));
   }
 | TSELECT expr TLCBR error TRCBR
   {
     auto comments = context->gatherComments(@$);
     auto node = ErroneousExpression::build(BUILDER, LOC(@4));
     $$ = { .comments=comments, .stmt=node.release() };
+    BUILDER->noteCurlyBracesLocation($$.stmt, LOC2(@3, @5));
   }
 ;
 
@@ -2061,17 +2114,17 @@ when_stmt_ls:
 when_stmt:
   TWHEN expr_ls do_stmt
   {
-    $$ = context->buildWhenStmt(@$, $2, $3);
+    $$ = context->buildWhenStmt(@$, context->makeSpannedLocation(@1, @2), $2, $3);
   }
 | TOTHERWISE stmt
   {
     BlockOrDo blockOrDo = { .cs=$2, .usesDo=false };
-    $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
+    $$ = context->buildWhenStmt(@$, @1, nullptr, blockOrDo);
   }
 | TOTHERWISE no_loop_attributes TDO stmt
   {
     BlockOrDo blockOrDo = { .cs=$4, .usesDo=true };
-    $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
+    $$ = context->buildWhenStmt(@$, @1, nullptr, blockOrDo);
     context->popLoopAttributeGroup();
   }
 ;

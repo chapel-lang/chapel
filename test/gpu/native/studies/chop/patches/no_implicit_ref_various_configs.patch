@@ -1,0 +1,65 @@
+diff --git a/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl b/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl
+index 108dab1..185674d 100644
+--- a/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl
++++ b/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl
+@@ -9,11 +9,12 @@ module queens_GPU_call_device_search{
+         use GpuDiagnostics;
+ 
+         config const CPUGPUVerbose: bool = false;
++        config const verboseGpu = false;
+ 
+         proc queens_GPU_call_device_search(const num_gpus: c_int, const size: uint(16), const depthPreFixos: c_int,
+                         ref local_active_set: [] queens_node, const initial_num_prefixes: uint(64)): (uint(64), uint(64)) {
+ 
+-                startVerboseGpu();
++                if verboseGpu then startVerboseGpu();
+ 
+             	
+                 //calculating the CPU load in terms of nodes
+@@ -110,7 +111,7 @@ module queens_GPU_call_device_search{
+                 		reduce_num_sols[gpu_id]  =  +reduce sols_h;
+                 }//end of gpu search
+ 
+-                stopVerboseGpu();
++                if verboseGpu then stopVerboseGpu();
+ 
+                 var redTree = (+ reduce reduce_tree_size):uint(64);
+                 var redSol  = (+ reduce reduce_num_sols):uint(64);
+diff --git a/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl b/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl
+index c7022db..ca1318e 100644
+--- a/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl
++++ b/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl
+@@ -13,6 +13,8 @@ module queens_GPU_single_locale{
+ 
+ 	use CTypes;
+ 
++  config const printElapsedTime = true;
++
+ 	proc GPU_queens_call_search(const size: uint(16), const num_gpus: c_int, const initial_depth: c_int){
+ 
+ 
+@@ -69,7 +71,8 @@ module queens_GPU_single_locale{
+ 		writeln("\tGPU tree size: ", metrics[1]);
+ 
+     	writeln("Number of solutions: ", metrics[0]*2);
+-		writeln("Elapsed time: ", final.elapsed()+initial.elapsed(),"\n\n");
++ 		if printElapsedTime then
++ 			writeln("Elapsed time: ", final.elapsed()+initial.elapsed(),"\n\n");
+ 		writeln("\tInitial search el. time: ", initial.elapsed());
+ 		writeln("\tFinal search el. time: ",  final.elapsed());
+ 
+ 	}//single-locale-single-GPU search
+ 
+diff --git a/other_codes/chplGPU/modules/queens_prefix_generation.chpl b/other_codes/chplGPU/modules/queens_prefix_generation.chpl
+index ab4142c..9f1e02a 100644
+--- a/other_codes/chplGPU/modules/queens_prefix_generation.chpl
++++ b/other_codes/chplGPU/modules/queens_prefix_generation.chpl
+@@ -24,7 +24,7 @@ module queens_prefix_generation{
+ 
+ 
+ 	proc queens_node_generate_initial_prefixes(const size: uint(16), const initial_depth: int(32),
+-		set_of_nodes: [] queens_node): (uint(64),uint(64)){
++		ref set_of_nodes: [] queens_node): (uint(64),uint(64)){
+ 
+ 
+ 		var bit_test : uint(32) = 0;

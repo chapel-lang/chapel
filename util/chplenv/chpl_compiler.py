@@ -164,10 +164,8 @@ def get(flag='host'):
 
     if flag == 'host':
         compiler_val = overrides.get('CHPL_HOST_COMPILER', '')
-
     elif flag == 'target':
         compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
-
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
@@ -376,7 +374,8 @@ def get_compiler_command(flag, lang):
         llvm_val = chpl_llvm.get()
         if llvm_val == 'none' and compiler_val == 'llvm':
             error("Cannot use CHPL_TARGET_COMPILER=llvm when CHPL_LLVM=none")
-        if llvm_val == 'bundled' or compiler_val == 'llvm':
+            command = ['unknown']
+        elif llvm_val == 'bundled' or compiler_val == 'llvm':
             if (flag == 'host' and
                 llvm_val == 'bundled' and
                 compiler_val == 'clang'):

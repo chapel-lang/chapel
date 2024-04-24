@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: ranges
 .. _Chapter-Ranges:
 
 Ranges
@@ -29,6 +31,26 @@ Ranges are presented as follows:
 -  predefined functions on ranges
    :ref:`Predefined_Range_Functions`
 
+.. index::
+   single: ranges; concepts
+   single: ranges; represented sequence
+   single: ranges; sequence
+   single: ranges; low bound
+   single: ranges; high bound
+   single: ranges; stride
+   single: ranges; alignment
+   single: ranges; ambiguous alignment
+   single: ranges; represented sequence increasing
+   single: ranges; represented sequence decreasing
+   single: ranges; empty
+   single: ranges; aligned integer
+   single: ranges; ambiguous alignment
+   single: ranges; first index
+   single: ranges; last index
+   single: ranges; aligned low bound
+   single: ranges; aligned high bound
+   single: ranges; natural alignment
+   single: ranges; iterable
 .. _Range_Concepts:
 
 Range Concepts
@@ -135,6 +157,13 @@ Ranges have the following additional properties.
 -  The range is *iterable*, that is, it is legal to iterate over it, if
    it has a first index.
 
+.. index::
+   pair: ranges; types
+   single: ranges; idxType
+   single: ranges; bounds
+   single: ranges; boundKind
+   single: ranges; strides
+   single: ranges; strideKind
 .. _Range_Types:
 
 Range Types
@@ -255,6 +284,8 @@ its parameters, i.e., ``range(int, boundKind.both, strideKind.one)``.
       1..0
       3..13 by 3 align 1
 
+.. index::
+   single: ranges; values
 .. _Range_Values:
 
 Range Values
@@ -264,6 +295,8 @@ A range value consists of the range’s four primary properties
 (:ref:`Range_Concepts`): low bound, high bound, stride and
 alignment.
 
+.. index::
+   single: ranges; literals
 .. _Range_Literals:
 
 Range Literals
@@ -335,6 +368,8 @@ The value of a range literal is as follows:
 
 -  The alignment is 0.
 
+.. index::
+   single: ranges; default values
 .. _Range_Default_Values:
 
 Default Values
@@ -379,6 +414,8 @@ querying the high bound to determine whether or not it is valid.
    ``boundKind.high`` is unstable w.r.t. the value of their
    finite bound.
 
+.. index::
+   single: ranges; operations
 .. _Ranges_Common_Operations:
 
 Common Operations
@@ -401,6 +438,8 @@ existing one. This supports a coding style in which all range values are
    These are the same arguments as were used to justify making strings
    immutable in Java and C#.
 
+.. index::
+   single: ranges; assignment
 .. _Range_Assignment:
 
 Range Assignment
@@ -424,6 +463,8 @@ Range assignment is legal when:
    The ability to assign between two unbounded ranges with
    incompatible idxTypes is deprecated.
 
+.. index::
+   single: ranges; comparisons
 .. _Range_Comparisons:
 
 Range Comparisons
@@ -447,6 +488,9 @@ Ranges can be compared using equality and inequality.
    Returns ``false`` if the two ranges have the same represented sequence or
    the same four primary properties, and ``true`` otherwise.
 
+.. index::
+   pair: ranges; iteration
+   pair: ranges; zippered iteration
 .. _Iterating_over_Ranges:
 
 Iterating over Ranges
@@ -523,6 +567,8 @@ loop context, it is equivalent to a bounded range where the omitted
 low/high bound is taken to be the ``false``/``true`` for a ``bool``
 range or the type's initial/final value for an ``enum`` range.
 
+.. index::
+   pair: ranges;promotion
 .. _Range_Promotion_of_Scalar_Functions:
 
 Range Promotion of Scalar Functions
@@ -562,6 +608,8 @@ scalar function as described in :ref:`Promotion`.
       forall (a, i) in zip(A, 1..10) do
         a = addOne(i);
 
+.. index::
+   single: ranges; operators
 .. _Range_Operators:
 
 Range Operators
@@ -582,6 +630,11 @@ of functions that operate on ranges. They are described in
      aligned-range-expression
      sliced-range-expression
 
+.. index::
+   single: ranges; strided
+   single: by; on ranges
+   single: operators; by (range)
+   single: ranges; by operator
 .. _By_Operator_For_Ranges:
 
 By Operator
@@ -681,6 +734,11 @@ following primary properties:
    and high bounds can be clearer when using ranges to slice
    arrays.
 
+.. index::
+   single: ranges; align
+   single: align; on ranges
+   single: operators; align (range)
+   single: ranges; align operator
 .. _Align_Operator_For_Ranges:
 
 Align Operator
@@ -763,6 +821,10 @@ When the stride is negative, the same indices are printed in reverse:
 To set the alignment relative to the range's ``first`` index,
 use the method :proc:`~ChapelRange.range.offset`.
 
+.. index::
+   single: ranges; count operator
+   single: ranges; #
+   single: operators; # (range)
 .. _Count_Operator:
 
 Count Operator
@@ -862,6 +924,9 @@ It is an error if the count is greater than the ``size`` of the range.
    as bounded on both ends regardless of their ``bounds`` parameters.
    This behavior is unstable and might change in the future.
 
+.. index::
+   single: ranges; arithmetic operators
+   single: operators; arithmetic range operators
 .. _Range_Arithmetic:
 
 Arithmetic Operators
@@ -917,6 +982,8 @@ resulting range is also unaligned.
    These operators are unstable.
    They may be removed or change behavior in the future.
 
+.. index::
+   pair: ranges; slicing
 .. _Range_Slicing:
 
 Range Slicing
@@ -984,11 +1051,18 @@ If the resulting sequence is empty and both operands are unbounded
 in the same direction, it is an error.
 
 
+.. index::
+   pair: ranges; predefined functions
 .. _Predefined_Range_Functions:
 
 Predefined Routines on Ranges
 -----------------------------
 
+.. index::
+   single: ranges; type accessors
+   single: ranges; idxType
+   single: ranges; bounds
+   single: ranges; strides
 .. _Range_Type_Accessors:
 
 Range Type Queries

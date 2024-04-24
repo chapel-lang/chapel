@@ -620,6 +620,14 @@ def runSkipIf(skipifName):
     if stderr or status:
         raise RuntimeError(errmsg)
 
+    # Print stdout up to the last line and consider only the last line
+    lines = stdout.splitlines()
+    if len(lines) == 0:
+      return stdout
+    elif len(lines) > 1:
+      print("\n".join(lines[:-1]))
+    stdout = lines[-1]
+
     return stdout
 
 # Translate some known failures into more easily understood forms
@@ -669,7 +677,7 @@ def filter_compiler_errors(compiler_output):
     Return message to emit when error found."""
 
     error_msg = ''
-    err_strings = ['could not checkout FLEXlm license']
+    err_strings = [r'could not checkout FLEXlm license']
     for s in err_strings:
         if re.search(s, compiler_output, re.IGNORECASE) != None:
             error_msg = '(private issue #398)'
@@ -682,11 +690,11 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
     Return message to emit when error found."""
 
     extra_msg = ''
-    err_strings = ['got exn while reading exit code: connection closed',
-                   'slave got an unknown command on coord socket:',
-                   'Slave got an xSocket: connection closed on recv',
-                   'recursive failure in AMUDP_SPMDShutdown',
-                   'AM_ERR_RESOURCE \(Problem with requested resource\)']
+    err_strings = [r'got exn while reading exit code: connection closed',
+                   r'slave got an unknown command on coord socket:',
+                   r'Slave got an xSocket: connection closed on recv',
+                   r'recursive failure in AMUDP_SPMDShutdown',
+                   r'AM_ERR_RESOURCE \(Problem with requested resource\)']
 
     output = output_in
     if isinstance(output, bytes):
@@ -698,21 +706,21 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
             DiffBinaryFiles(execgoodfile, execlog)
             break
 
-    err_strings = ['Clock skew detected']
+    err_strings = [r'Clock skew detected']
     for s in err_strings:
         # NOTE: checking pre_exec (compiler) output
         if re.search(s, pre_exec_output, re.IGNORECASE) != None:
             extra_msg = '(private issue #482) '
             break
 
-    err_strings = ['could not checkout FLEXlm license']
+    err_strings = [r'could not checkout FLEXlm license']
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None or
             re.search(s, pre_exec_output, re.IGNORECASE) != None):
             extra_msg = '(private issue #398)'
             break
 
-    err_strings = ['=* Memory Leaks =*']
+    err_strings = [r'=* Memory Leaks =*']
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None):
             extra_msg = '(memory leak) '
@@ -720,7 +728,7 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
 
     # detect cases of 'GASNet timer calibration on %s detected non-linear
     # timer behavior:' messages which we can't do much about
-    err_strings = ['GASNet timer calibration on']
+    err_strings = [r'GASNet timer calibration on']
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None):
             extra_msg = '(private issue #480) '

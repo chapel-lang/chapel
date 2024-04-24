@@ -82,7 +82,7 @@ New Standard Library Features
 -----------------------------
 * added new routines for reading from a `string`/`bytes` like it was a file  
   (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#IO.openStringReader)
-* added a new `getFile()` method to 'IO's `fileReeader`/`fileWriter` types  
+* added a new `getFile()` method to 'IO's `fileReader`/`fileWriter` types  
   (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#IO.fileReader.getFile)
 * added support for initializing a `list` of `list`s from an array of arrays
 * `abs()` and `sqrt()` taking `param`s now return a `param` in more cases  

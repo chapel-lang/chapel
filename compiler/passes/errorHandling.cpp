@@ -572,8 +572,8 @@ void ErrorHandlingVisitor::exitForallLoop(Stmt* node)
   TryInfo& info = tryStack.top();
   if (info.throwingForall == NULL)
     return;
-  else
-    INT_ASSERT(info.throwingForall == node);
+  else if (info.throwingForall != node)
+    return;
 
   tryStack.pop();
 

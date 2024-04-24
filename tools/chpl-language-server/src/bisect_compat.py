@@ -19,8 +19,9 @@
 
 from typing import Callable, Sequence, Optional
 
+
 # reimplement bisect with a key, since the parameter wasn't added until python 3.10+
-def bisect_right(a: Sequence, x, key: Optional[Callable]=None):
+def bisect_right(a: Sequence, x, key: Optional[Callable] = None):
     lo = 0
     hi = len(a)
 
@@ -35,7 +36,8 @@ def bisect_right(a: Sequence, x, key: Optional[Callable]=None):
             lo = mid + 1
     return lo
 
-def bisect_left(a: Sequence, x, key: Optional[Callable]=None):
+
+def bisect_left(a: Sequence, x, key: Optional[Callable] = None):
     lo = 0
     hi = len(a)
 

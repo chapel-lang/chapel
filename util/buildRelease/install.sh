@@ -386,13 +386,16 @@ CHPL_LANGUAGE_SERVER="bin/$CHPL_BIN_SUBDIR"/chpl-language-server
 if [ -f "$CHPL_LANGUAGE_SERVER" ]
 then
   myinstallfile "tools/chpl-language-server/chpl-language-server" "$DEST_CHPL_HOME/tools/chpl-language-server"
+  myinstallfile "tools/chpl-language-server/chpl-shim" "$DEST_CHPL_HOME/tools/chpl-language-server"
   myinstalldir "tools/chpl-language-server/src" "$DEST_CHPL_HOME/tools/chpl-language-server/src"
 
   if [ ! -z "$PREFIX" ]
   then
     ln -s "$DEST_CHPL_HOME/tools/chpl-language-server/chpl-language-server" "$PREFIX/bin"/chpl-language-server
+    ln -s "$DEST_CHPL_HOME/tools/chpl-language-server/chpl-shim" "$PREFIX/bin"/chpl-shim
   else
     ln -s "$DEST_CHPL_HOME/tools/chpl-language-server/chpl-language-server" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/chpl-language-server
+    ln -s "$DEST_CHPL_HOME/tools/chpl-language-server/chpl-shim" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/chpl-shim
   fi
 fi
 

@@ -78,7 +78,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: make test-dyno-with-asserts
+      # 'make modules' so the ChapelSysCTypes module is available
       run: |
+        CHPL_HOME=$PWD make modules
         CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
     - name: run dyno linters
       run: |

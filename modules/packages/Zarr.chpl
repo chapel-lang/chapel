@@ -19,9 +19,9 @@
 
 /*
   Support for distributed reading and writing of Zarr stores. Support is
-  limited to v2 Zarr arrays stored on local filesystems. The module uses
-  c-blosc to compress and decompress chunks. Zarr specification:
-  https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+  limited to v2 Zarr arrays stored on local filesystems. NFS is not supported.
+  The module uses c-blosc to compress and decompress chunks. Zarr
+  specification: https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
 */
 module Zarr {
   use IO;
@@ -37,7 +37,7 @@ module Zarr {
   require "blosc.h";
   require "-lblosc";
 
-  module Blosc {
+  private module Blosc {
     use CTypes;
     extern proc blosc_init();
     extern proc blosc_compress(clevel: c_int, doshuffle: c_int, typesize: c_size_t,
@@ -50,23 +50,42 @@ module Zarr {
   }
   private use Blosc;
 
+  /* Turns on/off profiling of Zarr IO */
+  config param zarrProfiling = false;
+
+  private var timerDomain: domain(string,parSafe=false) = {"Compression",
+    "Decompression", "Opening File, Read", "Opening File, Write",
+    "Creating Reader", "Reading File", "Creating Writer", "Writing File",
+    "Reading to Update", "Copying In", "Creating Compressed Buffer"};
+  private var times: [timerDomain] atomic real;
+
+  /*
+    Returns a map of profiling results for Zarr IO operations. The keys are
+    the names of the operations and the values are the total time spent in
+    each operation across all threads. Requires that zarrProfiling be set to
+    true.
+  */
+  iter zarrProfilingResults() throws {
+    for key in times.keys() do yield (key, times[key].read());
+  }
+
   record zarrMetadataV2 {
     var zarr_format: int;
     var chunks: list(int);
     var dtype: string;
     var shape: list(int);
-  };
+  }
 
-  // Unused until support is added for v3.0 stores
+  /* Unused until support is added for v3.0 stores */
   record zarrMetadataV3 {
     var zarr_format: int;
     var node_type: string;
     var shape: list(int);
     var data_type: string;
     var dimension_names: list(string);
-  };
+  }
 
-  proc dtypeString(type dtype) throws {
+  private proc dtypeString(type dtype) throws {
     select dtype {
       when real(32) do return "f4";
       when real(64) do return "f8";
@@ -76,7 +95,7 @@ module Zarr {
     throw Error("Unexpected data type, only real and int types are supported.");
   }
 
-  proc getMetadata(directoryPath: string) throws {
+  private proc getMetadata(directoryPath: string) throws {
     var metadataPath = joinPath(directoryPath, ".zarray");
     var r = openReader(metadataPath, deserializer = new jsonDeserializer(), locking=false);
     var md: zarrMetadataV2;
@@ -84,7 +103,7 @@ module Zarr {
     return md;
   }
 
-  proc validateMetadata(metadata: zarrMetadataV2, type dtype, param dimCount) throws {
+  private proc validateMetadata(metadata: zarrMetadataV2, type dtype, param dimCount) throws {
     //dimensionality matches
     if dimCount != metadata.shape.size then
       throw new Error("Expected metadata shape field to have %i dimensions: %?".format(dimCount, metadata.shape));
@@ -114,16 +133,16 @@ module Zarr {
   }
 
 
-
-  proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndices: ?dimCount * int) {
+  private proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndices: ?dimCount * int) {
     var indexStrings: dimCount*string;
     for i in 0..<dimCount do indexStrings[i] = chunkIndices[i] : string;
     return joinPath(directoryPath, delimiter.join(indexStrings));
   }
-  proc buildChunkPath(directoryPath: string, delimiter: string, chunkIndex: int) {
+  private proc buildChunkPath(directoryPath: string, delimiter: string, chunkIndex: int) {
     return joinPath(directoryPath, chunkIndex:string);
   }
 
+  /* Returns the domain of chunks that the calling locale is responsible for */
   proc getLocalChunks(D: domain(?), localD: domain(?), chunkShape: ?dimCount*int): domain(dimCount) {
 
     const totalShape = D.shape;
@@ -137,8 +156,8 @@ module Zarr {
       var l = if dimCount != 1 then localD.low[i] else localD.low;
       var h = if dimCount != 1 then localD.high[i] else localD.high;
       var low = floor(l:real / chunkShape[i]:real):int;
-      var high = ceil(h / chunkShape[i]:real):int;
-      localChunks[i] = max(low,0)..<min(high,chunkCounts[i]);
+      var high = floor(h / chunkShape[i]:real):int;
+      localChunks[i] = max(low,0)..min(high,chunkCounts[i]-1);
     }
     const localChunkDomain: domain(dimCount) = localChunks;
     return localChunkDomain;
@@ -146,7 +165,7 @@ module Zarr {
 
 
   /* Returns the domain of the `chunkIndices`-th chunk for chunks of size `chunkShape` */
-  proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: dimCount*int) {
+  private proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: dimCount*int) {
     var thisChunkRange: dimCount*range(int);
     for i in 0..<dimCount {
       const start = chunkIndices[i] * chunkShape[i];
@@ -155,7 +174,7 @@ module Zarr {
     const thisChunkDomain: domain(dimCount) = thisChunkRange;
     return thisChunkDomain;
   }
-  proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: int) {
+  private proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndices: int) {
     return getChunkDomain(chunkShape, (chunkIndices,));
   }
 
@@ -175,26 +194,37 @@ module Zarr {
     :throws Error: If the decompression fails
   */
   proc readChunk(param dimCount: int, chunkPath: string, chunkDomain: domain(dimCount), ref arraySlice: [] ?t) throws {
+    var s: stopwatch;
     const f: file;
     // if the file does not exist, the chunk is empty
+    if zarrProfiling then s.restart();
     try {
       f = open(chunkPath, ioMode.r);
     } catch {
-      arraySlice[arraySlice.domain] = 0;
+      arraySlice = 0;
       return;
     }
+    if zarrProfiling then times["Opening File, Read"].add(s.elapsed());
 
-    const r = f.reader(deserializer = new binaryDeserializer(), locking=true);
-    var compressedChunk = r.readAll(bytes); // TODO: stream straight through to blosc
+    if zarrProfiling then s.restart();
+    const r = f.reader(deserializer = new binaryDeserializer(), locking=false);
+    if zarrProfiling then times["Creating Reader"].add(s.elapsed());
+
+    if zarrProfiling then s.restart();
+    const compressedChunk = r.readAll(bytes); // TODO: stream straight through to blosc
     var readBytes = compressedChunk.size;
-
+    if zarrProfiling then times["Reading File"].add(s.elapsed());
+    if zarrProfiling then s.restart();
     var copyIn: [chunkDomain] t;
     var numRead = blosc_decompress(compressedChunk.c_str(), c_ptrTo(copyIn), copyIn.size*c_sizeof(t));
     if numRead <= 0 {
       throw new Error("Failed to decompress data from %?. Blosc error code: %?".format(chunkPath, numRead));
     }
+    if zarrProfiling then times["Decompression"].add(s.elapsed());
 
-    arraySlice[arraySlice.domain] = copyIn[arraySlice.domain];
+    if zarrProfiling then s.restart();
+    arraySlice = copyIn[arraySlice.domain];
+    if zarrProfiling then times["Copying In"].add(s.elapsed());
   }
 
   /*
@@ -221,30 +251,46 @@ module Zarr {
     :throws Error: If the compression fails
   */
   proc writeChunk(param dimCount, chunkPath: string, chunkDomain: domain(dimCount), ref arraySlice: [] ?t, bloscLevel: int(32) = 9) throws {
+    var s: stopwatch;
+
     //bloscLevel must be between 0 and 9
     var _bloscLevel = min(9,max(0,bloscLevel));
 
     // If this chunk is entirely contained in the array slice, we can write
     // it out immediately. Otherwise, we need to read in the chunk and update
     // it with the partial data before writing
+    if zarrProfiling then s.restart();
     var copyOut: [chunkDomain] t;
     if (chunkDomain != arraySlice.domain) {
       readChunk(dimCount, chunkPath, chunkDomain, copyOut);
     }
-    copyOut[arraySlice.domain] = arraySlice[arraySlice.domain];
+    copyOut[arraySlice.domain] = arraySlice;
+    if zarrProfiling then times["Reading to Update"].add(s.elapsed());
+
 
     // Create buffer for compressed bytes
+    if zarrProfiling then s.restart();
     var compressedBuffer = allocate(t, copyOut.size + 16);
+    if zarrProfiling then times["Creating Compressed Buffer"].add(s.elapsed());
 
     // Compress the chunk's data
+    if zarrProfiling then s.restart();
     var bytesCompressed = blosc_compress(_bloscLevel, 0, c_sizeof(t), copyOut.size*c_sizeof(t), c_ptrTo(copyOut), compressedBuffer, (copyOut.size + 16) * c_sizeof(t));
     if bytesCompressed == 0 then
       throw new Error("Failed to compress bytes");
+    if zarrProfiling then times["Compression"].add(s.elapsed());
 
     // Write it to storage
+    if zarrProfiling then s.restart();
     const f = open(chunkPath, ioMode.cw);
-    const w = f.writer(serializer = new binarySerializer(),locking=true);
+    if zarrProfiling then times["Opening File, Write"].add(s.elapsed());
+    if zarrProfiling then s.restart();
+    const w = f.writer(serializer = new binarySerializer(),locking=false);
+    if zarrProfiling then times["Creating Writer"].add(s.elapsed());
+
+    if zarrProfiling then s.restart();
     w.writeBinary(compressedBuffer: c_ptr(void),bytesCompressed);
+    if zarrProfiling then times["Writing File"].add(s.elapsed());
   }
 
   /*
@@ -293,7 +339,7 @@ module Zarr {
       ref hereA = A[hereD];
 
       const localChunks = getLocalChunks(D, hereD, chunkShape);
-      forall chunkIndices in localChunks do {
+      forall chunkIndices in localChunks {
 
         const chunkPath = buildChunkPath(directoryPath, ".", chunkIndices);
 
@@ -379,7 +425,7 @@ module Zarr {
         ref thisChunkSlice = hereA.localSlice(thisChunkHere);
         const chunkPath = buildChunkPath(directoryPath, ".", chunkIndices);
         locks[chunkIndices].writeEF(true);
-        writeChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
+        writeChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice, bloscLevel=bloscLevel);
         locks[chunkIndices].readFE();
       }
     }

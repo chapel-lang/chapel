@@ -202,6 +202,10 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LAST
 };
 
+static
+std::string runCommand(std::string& command);
+static
+std::string getChplDepsApp();
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
@@ -210,6 +214,16 @@ static void printStuff(const char* argv0, void* mainAddr) {
   if (fPrintVersion) {
     std::string version = chpl::getVersion();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
+
+    std::string getVersion = "python3 " + getChplDepsApp() + " version";
+
+    std::string getVersionSphinx = getVersion + " Sphinx";
+    std::string sphinxVersion = runCommand(getVersionSphinx);
+    fprintf(stdout, "\tSphinx version %s", sphinxVersion.c_str());
+
+    std::string getVersionChplDomain = getVersion + " sphinxcontrib-chapeldomain";
+    std::string chplDomainVersion = runCommand(getVersionChplDomain);
+    fprintf(stdout, "\tsphinxcontrib-chapeldomain version %s", chplDomainVersion.c_str());
 
     fPrintCopyright  = true;
     printedSomething = true;
@@ -1853,7 +1867,7 @@ struct GatherModulesVisitor {
   void handleUseOrImport(const AstNode* node) {
     if (processUsedModules_) {
       auto scope = resolution::scopeForId(context_, node->id());
-      auto used = resolution::findUsedImportedModules(context_, scope);
+      auto used = resolution::findUsedImportedIds(context_, scope);
       for (auto id: used) {
         if (idIsInBundledModule(context_, id)) {
           continue;

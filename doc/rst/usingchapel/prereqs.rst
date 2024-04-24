@@ -16,7 +16,7 @@ for using Chapel:
   * You have a Bourne shell available at ``/bin/sh`` and ``env`` available at
     ``/usr/bin/env``.
 
-  * You have Python 2.7 or newer available as either ``python3`` or
+  * You have Python 3.5 or newer available as either ``python3`` or
     ``python`` and that ``env`` can locate it.
 
   * You have access to ``gmake`` or a GNU-compatible version of ``make``.
@@ -46,7 +46,7 @@ for using Chapel:
 
 In addition, several optional components have additional requirements:
 
-  * Python 3.7 or newer is required if you want to use chpldoc, c2chapel,
+  * Python 3.9 or newer is required if you want to use chpldoc, c2chapel,
     or Chapel's test system. These additionally require ``python3-devel``
     or the equivalent package; ``python3`` and ``pip3`` commands; and the
     ``venv`` Python package.
@@ -94,7 +94,7 @@ We have used the following commands to install the above prerequisites:
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
 
 
-  * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM!=system incompatibility`)::
+  * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM!=system incompatibility`_)::
 
       sudo yum install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk python3 which
       sudo yum install wget tar openssl-devel

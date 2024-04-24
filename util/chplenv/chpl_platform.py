@@ -18,7 +18,7 @@ def get(flag='host'):
         if not platform_val:
             platform_val = get('host')
     else:
-        raise error("Invalid flag: '{0}'".format(flag), ValueError)
+        error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
         # Check for cray platform. It is a cray platform if there is a

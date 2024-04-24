@@ -24,9 +24,16 @@ import os
 import sys
 import glob
 
-chpl_home = str(os.getenv('CHPL_HOME'))
+chpl_home = str(os.getenv("CHPL_HOME"))
 chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
-chpl_variables_lines = subprocess.check_output([chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]).decode(sys.stdout.encoding).strip().splitlines()
+chpl_variables_lines = (
+    subprocess.check_output(
+        [chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]
+    )
+    .decode(sys.stdout.encoding)
+    .strip()
+    .splitlines()
+)
 chpl_variables = dict()
 for line in chpl_variables_lines:
     elms = line.split("=", maxsplit=1)
@@ -44,15 +51,34 @@ if have_llvm:
     CXXFLAGS += ["-DHAVE_LLVM"]
 
 CXXFLAGS += ["-Wno-c99-designator"]
-CXXFLAGS += subprocess.check_output([llvm_config, "--cxxflags"]).decode(sys.stdout.encoding).strip().split()
+CXXFLAGS += (
+    subprocess.check_output([llvm_config, "--cxxflags"])
+    .decode(sys.stdout.encoding)
+    .strip()
+    .split()
+)
 CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 
 LDFLAGS = []
-LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontendShared", "-Wl,-rpath", chpl_lib_path]
+LDFLAGS += [
+    "-L{}".format(chpl_lib_path),
+    "-lChplFrontendShared",
+    "-Wl,-rpath",
+    chpl_lib_path,
+]
 
-setup(name = "chapel",
-      version = "0.1",
-      package_dir = {'': 'src'},
-      packages = ['chapel', 'chapel.replace', 'chapel.visitor', 'chapel.lsp'],
-      ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
-      )
+setup(
+    name="chapel",
+    version="0.1",
+    package_dir={"": "src"},
+    packages=["chapel", "chapel.replace", "chapel.visitor", "chapel.lsp"],
+    ext_modules=[
+        Extension(
+            "chapel.core",
+            glob.glob("src/*.cpp"),
+            depends=glob.glob("src/**/*.h", recursive=True),
+            extra_compile_args=CXXFLAGS,
+            extra_link_args=LDFLAGS,
+        )
+    ],
+)

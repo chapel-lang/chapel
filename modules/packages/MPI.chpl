@@ -665,7 +665,7 @@ module MPI {
   extern proc MPI_Request_free (ref request: MPI_Request): c_int;
   extern proc MPI_Waitany (count: c_int, array_of_requests: []MPI_Request, ref iindex : c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Testany (count: c_int, array_of_requests: []MPI_Request, ref iindex : c_int, ref flag: c_int, ref status: MPI_Status): c_int;
-  extern proc MPI_Waitall (count: c_int, array_of_requests: []MPI_Request, array_of_statuses: []MPI_Status): c_int;
+  extern proc MPI_Waitall (count: c_int, ref array_of_requests: []MPI_Request, ref array_of_statuses: []MPI_Status): c_int;
   extern proc MPI_Testall (count: c_int, array_of_requests: []MPI_Request, ref flag: c_int, array_of_statuses: []MPI_Status): c_int;
   extern proc MPI_Waitsome (incount: c_int, array_of_requests: []MPI_Request,
       ref outcount: c_int, array_of_indices: []c_int, array_of_statuses: []MPI_Status): c_int;
@@ -693,8 +693,8 @@ module MPI {
       array_of_displacements: []c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Type_hindexed (count: c_int, array_of_blocklengths: []c_int,
       array_of_displacements: []MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_struct (count: c_int, array_of_blocklengths: []c_int,
-      array_of_displacements: []MPI_Aint, array_of_types: []MPI_Datatype, ref newtype: MPI_Datatype): c_int;
+  extern proc MPI_Type_struct (count: c_int, ref array_of_blocklengths: []c_int,
+      ref array_of_displacements: []MPI_Aint, ref array_of_types: []MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Address (ref location, ref address: MPI_Aint): c_int;
   extern proc MPI_Type_extent (datatype: MPI_Datatype, ref extent: MPI_Aint): c_int;
   extern proc MPI_Type_size (datatype: MPI_Datatype, ref size: c_int): c_int;

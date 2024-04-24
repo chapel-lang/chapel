@@ -20,6 +20,7 @@ source $CWD/common-native-gpu-perf.bash
 # make sure this comes after setting SUBDIR (set by native-gpu-perf) and
 # CONFIG_NAME
 source $CWD/common-perf.bash
+export CHPL_TARGET_CPU=native
 
 
 nightly_args="${nightly_args} -startdate 07/15/22"

@@ -3,62 +3,64 @@ use Time;
 use BlockDist;
 use FileSystem;
 use IO;
-proc throughputTest(type dtype, param dimCount: int, arrayShape: dimCount*int, chunkShape: dimCount*int, bloscThreads: int(32)) {
-  var ranges: dimCount*range(int);
-  for i in 0..<dimCount do
-    ranges[i] = 0..<arrayShape[i];
-  const undistD : domain(dimCount) = ranges;
-  const Dist = new blockDist(boundingBox=undistD);
-  const D = Dist.createDomain(undistD);
-  var A: [D] dtype;
+use Random;
 
-  coforall loc in Locales do on loc {
-    forall i in A.localSubdomain() do
-      A[i] = if isTuple(i) then i[0]:dtype else i:dtype;
-  }
+config const scaling = "strong"; // testing strong or weak scaling
 
-  if exists("PerfStore") then rmTree("PerfStore");
-  var s: stopwatch;
-  s.start();
-  writeZarrArray("PerfStore", A, chunkShape, bloscThreads=bloscThreads);
-  const writeTime = s.elapsed();
+config const arrayGBs: real = 0.3; // default size of array in GBs (per locale)
+config const chunkGBs: real = 0.1; // default size of chunks in GBs
 
-  s.restart();
-  var B = readZarrArray("PerfStore", dtype, dimCount);
-  const readTime = s.elapsed();
+config const compressionLevel: int(32) = 9; // default compression level
 
-  assert(A.domain == B.domain);
-  coforall loc in Locales do on loc {
-    forall i in A.localSubdomain() do
-      assert(A[i] == B[i]);
-  }
+config const bloscThreads: int(32) = 4; // default number of threads for Blosc
 
-  const arrayBytes = A.size:real * numBits(dtype) / 8;
-  const arrayGBs = arrayBytes:real / (1000 ** 3);
 
-  const chunkBytes = (* reduce chunkShape) * numBits(dtype):real / 8;
-  const chunkMBs = chunkBytes:real / (1000 ** 2);
-  writeln("%?GB %?D array of %?, %?MB chunks. %n locales, %n bloscThreads".format(arrayGBs, dimCount, dtype:string, chunkMBs, Locales.size, bloscThreads));
-  writeln("%n GB/s writing".format(arrayGBs / writeTime));
-  writeln("%n GB/s reading".format(arrayGBs / readTime));
+
+var arraySize = 0;
+if scaling.toLower() == "strong" then
+  arraySize = (arrayGBs * Locales.size * 1000 ** 3):int;
+else if scaling.toLower() == "weak" then
+  arraySize = (arrayGBs * 1000 ** 3):int;
+else
+  writeln("Invalid scaling: %s. Valid options are 'strong' and 'weak'".format(scaling));
+
+var chunkSize = chunkGBs * 1000 ** 3;
+
+const numFloats = arraySize / 4;
+const sideLength = (numFloats:real ** (1/3:real)):int;
+const chunkLength = ((chunkSize / 4) ** (1/3:real)):int;
+
+var ranges: 3*range(int);
+for i in 0..<3 do
+  ranges[i] = 0..<sideLength;
+const undistD : domain(3) = ranges;
+const Dist = new blockDist(boundingBox=undistD);
+const D = Dist.createDomain(undistD);
+
+var s: stopwatch;
+var writeTime = -1.0;
+var readTime = -1.0;
+
+var A: [D] real(32);
+fillRandom(A);
+
+if exists("PerfStore") then rmTree("PerfStore");
+
+s.restart();
+writeZarrArray("PerfStore", A, (chunkLength,chunkLength,chunkLength), bloscThreads=bloscThreads, bloscLevel=compressionLevel);
+writeTime = s.elapsed();
+
+s.restart();
+var B = readZarrArray("PerfStore", real(32), 3, bloscThreads=bloscThreads);
+readTime = s.elapsed();
+
+
+assert(A.domain == B.domain);
+coforall loc in Locales do on loc {
+  forall i in A.localSubdomain() do
+    assert(A[i] == B[i], i, " ", A[i], " ", B[i]);
 }
 
-
-throughputTest(real(32), 1, (1000**3,), (1000**2,),1);
-throughputTest(real(32), 1, (1000**3,), (1000**2,),2);
-throughputTest(real(32), 1, (1000**3,), (1000**2,),4);
-throughputTest(real(32), 2, (30000,30000), (1000,1000),1);
-throughputTest(real(32), 2, (30000,30000), (1000,1000),2);
-throughputTest(real(32), 2, (30000,30000), (1000,1000),4);
-throughputTest(real(32), 3, (1000,1000,1000), (100,100,100),1);
-throughputTest(real(32), 3, (1000,1000,1000), (100,100,100),2);
-throughputTest(real(32), 3, (1000,1000,1000), (100,100,100),4);
-throughputTest(int(32), 1, (1000**3,), (1000**2,),1);
-throughputTest(int(32), 1, (1000**3,), (1000**2,),2);
-throughputTest(int(32), 1, (1000**3,), (1000**2,),4);
-throughputTest(int(32), 2, (30000,30000), (1000,1000),1);
-throughputTest(int(32), 2, (30000,30000), (1000,1000),2);
-throughputTest(int(32), 2, (30000,30000), (1000,1000),4);
-throughputTest(int(32), 3, (1000,1000,1000), (100,100,100),1);
-throughputTest(int(32), 3, (1000,1000,1000), (100,100,100),2);
-throughputTest(int(32), 3, (1000,1000,1000), (100,100,100),4);
+var writeThroughput: real(64) = (arraySize:real / writeTime) / 1000 ** 3;
+var readThroughput: real(64) = (arraySize:real / readTime) / 1000 ** 3;
+writeln("%s,%n,%n,%n,%n,%n,%7.4r,%7.4r".format(scaling, Locales.size, compressionLevel, bloscThreads, arrayGBs, chunkGBs, writeThroughput, readThroughput));

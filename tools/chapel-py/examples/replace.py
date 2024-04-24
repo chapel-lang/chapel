@@ -26,51 +26,67 @@ from collections import defaultdict
 # Application-Specific Code
 # -------------------------
 
+
 def find_this_complete(rc, root):
     # pattern for x._()
-    methodcall = [FnCall, ["?dot",  Dot, ["?ident", Identifier]], chapel.rest]
+    methodcall = [FnCall, ["?dot", Dot, ["?ident", Identifier]], chapel.rest]
 
-    for (node, variables) in chapel.each_matching(root, methodcall):
-        if variables["dot"].field() == "complete" and variables["ident"].name() == "this":
-            yield (node, 'init this')
+    for node, variables in chapel.each_matching(root, methodcall):
+        if (
+            variables["dot"].field() == "complete"
+            and variables["ident"].name() == "this"
+        ):
+            yield (node, "init this")
+
 
 def rename_x_y_to_a_b(rc, root):
-    for (fn, _) in chapel.each_matching(root, Function):
-        if fn.name() != "changeMe": continue
+    for fn, _ in chapel.each_matching(root, Function):
+        if fn.name() != "changeMe":
+            continue
 
-        yield from rename_formals(rc, fn, { "x": "a", "y": "b" })
+        yield from rename_formals(rc, fn, {"x": "a", "y": "b"})
 
     # pattern for x(...)
     fncall = [FnCall, ["?ident", Identifier], chapel.rest]
-    for (call, variables) in chapel.each_matching(root, fncall):
-        if variables["ident"].name() != "changeMe": continue
+    for call, variables in chapel.each_matching(root, fncall):
+        if variables["ident"].name() != "changeMe":
+            continue
 
-        yield from rename_named_actuals(rc, call, { "x": "a", "y": "b" })
+        yield from rename_named_actuals(rc, call, {"x": "a", "y": "b"})
+
 
 def tag_all_nodes_assert_on_gpu(rc, root):
     # pattern for x()
     noargcall = [FnCall, ["?ident", Identifier]]
 
-    for (foreach, _) in chapel.each_matching(root, Foreach):
+    for foreach, _ in chapel.each_matching(root, Foreach):
         has_assert_on_gpu = False
 
-        loop_body = list(foreach)[-1];
+        loop_body = list(foreach)[-1]
         for child in loop_body:
             variables = chapel.match_pattern(child, noargcall)
-            if variables is not None and variables["ident"].name() == "assertOnGpu":
+            if (
+                variables is not None
+                and variables["ident"].name() == "assertOnGpu"
+            ):
                 has_assert_on_gpu = True
-                yield (child, '')
+                yield (child, "")
 
         indent = rc.node_indent(foreach)
         if has_assert_on_gpu:
-            yield (foreach, lambda text, i = indent: "@assertOnGpu\n" + (" " * i) + text)
+            yield (
+                foreach,
+                lambda text, i=indent: "@assertOnGpu\n" + (" " * i) + text,
+            )
+
 
 def tag_aggregates_with_io_interfaces(rc, root):
     aggrs_to_change = defaultdict(lambda: set())
     names_to_tag = defaultdict(lambda: set())
 
-    for (fn, _) in chapel.each_matching(root, Function):
-        if not fn.is_method(): continue
+    for fn, _ in chapel.each_matching(root, Function):
+        if not fn.is_method():
+            continue
         name = fn.name()
 
         if name == "serialize":
@@ -80,11 +96,17 @@ def tag_aggregates_with_io_interfaces(rc, root):
         elif name == "init":
             formal_names = []
             for child in fn:
-                if not isinstance(child, Formal): continue
-                if child.name() == "this": continue
+                if not isinstance(child, Formal):
+                    continue
+                if child.name() == "this":
+                    continue
                 formal_names.append(child.name())
 
-            if len(formal_names) >=2 and formal_names[-1] == "deserializer" and formal_names[-2] == "reader":
+            if (
+                len(formal_names) >= 2
+                and formal_names[-1] == "deserializer"
+                and formal_names[-2] == "reader"
+            ):
                 tag = "initDeserializable"
             else:
                 continue
@@ -99,20 +121,26 @@ def tag_aggregates_with_io_interfaces(rc, root):
         names_to_tag[rc.node_exact_string(this_receiver)].add(tag)
 
     def build_tag_str(tags):
-        if len(tags) == 3: return "serializable"
+        if len(tags) == 3:
+            return "serializable"
 
         # tags have a preferred order, so just use an if-else chain to make that work
-        the_order = ["writeSerializable", "readDeserializable", "initDeserializable"]
+        the_order = [
+            "writeSerializable",
+            "readDeserializable",
+            "initDeserializable",
+        ]
         return ", ".join(t for t in the_order if t in tags)
 
-    for (record, _) in chapel.each_matching(root, AggregateDecl):
+    for record, _ in chapel.each_matching(root, AggregateDecl):
         tags = set()
         if record.unique_id() in aggrs_to_change:
             tags |= aggrs_to_change[record.unique_id()]
         if record.name() in names_to_tag:
             tags |= names_to_tag[record.name()]
 
-        if len(tags) == 0: continue
+        if len(tags) == 0:
+            continue
 
         tag_str = build_tag_str(tags)
         record_text = rc.node_exact_string(record)
@@ -120,10 +148,13 @@ def tag_aggregates_with_io_interfaces(rc, root):
         colonpos = record_text.find(":")
 
         if colonpos >= 0 and colonpos < curlypos:
-            new_text = record_text.replace(" {" , ", " + tag_str + " {" , 1)
+            new_text = record_text.replace(" {", ", " + tag_str + " {", 1)
         else:
-            new_text = record_text.replace(record.name(), record.name() + " : " + tag_str, 1)
+            new_text = record_text.replace(
+                record.name(), record.name() + " : " + tag_str, 1
+            )
 
         yield (record, new_text)
+
 
 run(fuse(find_this_complete, rename_x_y_to_a_b, tag_all_nodes_assert_on_gpu))

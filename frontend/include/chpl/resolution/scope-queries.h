@@ -44,6 +44,15 @@ namespace resolution {
   const Scope* scopeForModule(Context* context, ID moduleId);
 
   /**
+    The configuration used to look up a plain identifier in a scope
+    when resolving expressions.
+   */
+  const LookupConfig IDENTIFIER_LOOKUP_CONFIG = LOOKUP_DECLS |
+                                                LOOKUP_IMPORT_AND_USE |
+                                                LOOKUP_PARENTS |
+                                                LOOKUP_EXTERN_BLOCKS;
+
+  /**
     Find what a name might refer to.
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)
@@ -104,6 +113,19 @@ namespace resolution {
                            CheckedScopes& visited);
 
   /**
+    Collect all symbols that are available in this scope, including ones
+    brought in through visibility statements. This function follows the
+    same rules as lookupNameInScope, except it collects all symbols instead
+    of one with a specific name.
+
+    Currently, this is only intended for tool support; the resolver itself
+    should rely on lookupNameInScope.
+   */
+  std::map<UniqueString, BorrowedIdsWithName>
+  getSymbolsAvailableInScope(Context* context,
+                            const Scope* scope);
+
+  /**
     Returns true if all of checkScope is visible from fromScope
     due to scope containment or whole-module use statements.
    */
@@ -131,12 +153,12 @@ namespace resolution {
 
 
   /**
-   * Given a scope, returns a list of IDs for all the modules that were either
-   * used or imported in that scope. May return an empty vector if no modules
-   * were used or imported in the scope.
+   * Given a scope, returns a list of IDs for all the modules and enums that
+   * were either used or imported in that scope. May return an empty vector if
+   * no modules were used or imported in the scope.
    */
-  const std::vector<ID> findUsedImportedModules(Context* context,
-                                                const Scope* scope);
+  const std::vector<ID> findUsedImportedIds(Context* context,
+                                            const Scope* scope);
 
   /**
     Resolve the uses and imports in a given scope.
