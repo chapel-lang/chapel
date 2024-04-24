@@ -973,7 +973,7 @@ module BLAS {
     TODO -- Get banded array routines working
   */
   proc hbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
-            alpha: eltType, const ref beta: eltType,
+            alpha: eltType, beta: eltType,
             k: int = 0,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
@@ -1009,7 +1009,7 @@ module BLAS {
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
   proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
-            alpha: eltType, const ref beta: eltType,
+            alpha: eltType, beta: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
@@ -1121,7 +1121,7 @@ module BLAS {
 
   */
   proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
-            alpha: eltType, const ref beta: eltType,
+            alpha: eltType, beta: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             incx : c_int = 1, incy : c_int = 1)
