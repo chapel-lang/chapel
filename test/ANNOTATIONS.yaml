@@ -2495,7 +2495,7 @@ shoc-sort:
   02/24/23:
     - Improve SHOC-Sort implementation (#21610)
 
-chplGPU:
+chop:
   03/25/23:
     - Upstream changes
   09/18/23:
