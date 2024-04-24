@@ -1,6 +1,13 @@
 Release Changes List
 ====================
 
+version 2.0.1
+=============
+
+This version is an update to the 2.0 release to address a portability
+bug when using GASNet on InfiniBand systems with LLVM 16 or 17.
+
+
 version 2.0
 ===========
 
