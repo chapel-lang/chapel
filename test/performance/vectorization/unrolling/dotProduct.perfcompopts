@@ -1,0 +1,2 @@
+-sunrollFactor=4 -selementType='real(64)' # dotProduct-unroll4-r64
+-sunrollFactor=8 -selementType='int(32)' # dotProduct-unroll8-i32
