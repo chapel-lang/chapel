@@ -428,6 +428,11 @@ module List {
                      then this.type.parSafe
                      else false;
 
+      if (this.parSafe != other.parSafe) {
+        compilerWarning("not using the parSafe settings of the other list.\n" +
+                        "If this was not intentional, consider explicitly " +
+                        "declaring the list's parSafe setting.");
+      }
       init this;
       _commonInitFromIterable(other);
     }
