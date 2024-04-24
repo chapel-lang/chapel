@@ -648,7 +648,11 @@ const ResolvedFields& resolveFieldDecl(Context* context,
     CHPL_ASSERT(typeAst && typeAst->isAggregateDecl());
     auto ad = typeAst->toAggregateDecl();
 
-    auto fieldAst = parsing::idToAst(context, fieldId);
+    // normalize ids in the case they are contained within another decl
+    // this is so we don't try to resolve the type of an individual element without
+    // the context of its container
+    auto stmtId = parsing::idToContainingMultiDeclId(context, fieldId);
+    auto fieldAst = parsing::idToAst(context, stmtId);
     CHPL_ASSERT(fieldAst);
 
     if (ct->instantiatedFromCompositeType() == nullptr) {
