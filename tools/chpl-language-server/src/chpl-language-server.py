@@ -209,6 +209,11 @@ def completion_item_for_decl(
     if kind == SymbolKind.Method:
         return None
 
+    # We don't want to show operators in completion lists, as they're
+    # not really useful to the user in this context.
+    if kind == SymbolKind.Operator:
+        return None
+
     name_to_use = override_name if override_name else decl.name()
     return CompletionItem(
         label=name_to_use,
