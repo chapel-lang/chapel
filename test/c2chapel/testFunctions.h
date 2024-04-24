@@ -13,3 +13,7 @@ void test_pointer(int64_t* a);
 void test_array(int64_t* arr, int64_t len);
 
 int64_t test_return(int64_t a);
+
+FILE* test_open(const char* path, const char* mode);
+
+int test_close(FILE* file);
