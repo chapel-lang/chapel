@@ -636,7 +636,6 @@ def register_rules(driver: LintDriver):
             # attribute group is the first child, skip it
             iterable = list(root)[1:]
 
-
         for child in iterable:
             if isinstance(child, Comment):
                 continue
