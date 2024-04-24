@@ -39,7 +39,11 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
     ID toReturn;
     for (auto visCla: reScope->visibilityClauses()) {
       if(visCla.visibilityClauseId().contains(node->id())) {
+        // A visibility cluse includes the symbol-to-be-imported and the
+        // 'limitations' (x as y etc.). We'll need to get them from the AST.
         auto visClaKind = visCla.kind();
+        auto visClaAst =
+          parsing::idToAst(context, visCla.visibilityClauseId())->toVisibilityClause();
 
         if (visClaKind == resolution::VisibilitySymbols::SYMBOL_ONLY ||
             visClaKind == resolution::VisibilitySymbols::ALL_CONTENTS) {
@@ -48,15 +52,33 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
           toReturn = visCla.scope()->id();
         } else if (visClaKind == resolution::VisibilitySymbols::ONLY_CONTENTS ||
                    visClaKind == resolution::VisibilitySymbols::CONTENTS_EXCEPT) {
-          // the cursor is over 'a' or 'b' in 'import A.{a as b}'. In this
-          // case, the definition is the thing-being-imported.
+          if (visClaAst->symbol()->contains(node)) {
+            // The cursor is over the symbol, like 'IO' in 'use IO only ioMode'.
+            // Just return the scope ID.
+            toReturn = visCla.scope()->id();
+            continue;
+          }
 
+          // The cursor is over a limitation such as 'ioMode' in 'use IO only ioMode'.
+          // Find which limitation.
+          const AstNode* limitation = nullptr;
+          for (auto l : visClaAst->limitations()) {
+            if (l->contains(node)) {
+              limitation = l;
+              break;
+            }
+          }
+
+          // Couldn't find one; give up.
+          if (!limitation) return ID();
+
+          // Pattern match on the limitation to see what to look up in the scope.
+          // E.g., if it's 'IO only x as y', we want to look up 'x'.
           const Identifier* identToLookUp = nullptr;
-          auto nodeParent = parsing::parentAst(context, node);
-          if (auto parentAs = nodeParent->toAs()) {
-            identToLookUp = parentAs->symbol()->toIdentifier();
-          } else if (nodeParent == visibilityStmt) {
-            identToLookUp = node->toIdentifier();
+          if (auto limAs = limitation->toAs()) {
+            identToLookUp = limAs->symbol()->toIdentifier();
+          } else if (auto limIdent = limitation->toIdentifier()) {
+            identToLookUp = limIdent;
           }
 
           if (identToLookUp) {
