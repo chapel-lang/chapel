@@ -12253,6 +12253,16 @@ proc fileReader._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
   }
 }
 
+// helper for _searchHelp
+private proc advanceToEof(fr: fileReader): errorCode {
+  var error:errorCode = 0;
+  // advance max(int(64)) bytes to reach EOF for sure
+  error = qio_channel_advance(false, fr._channel_internal, max(int(64)));
+  // don't worry about EOF since that is expected
+  if error == EEOF then error = 0;
+  return error;
+}
+
 // Private implementation helper for fileReader.search(re:regex(?))
 @chpldoc.nodoc
 private inline proc _searchHelp(ref fr: fileReader,
@@ -12296,10 +12306,7 @@ private inline proc _searchHelp(ref fr: fileReader,
       } else {
         // If we didn't match... advance the fileReader position to EOF
         qio_channel_commit_unlocked(fr._channel_internal);
-        // TODO: is there a better way to get to the end?
-        // seeking on an unbounded reader doesn't work
-        error = qio_channel_advance_past_byte(false, fr._channel_internal, 0, max(int(64)), /* consume */ false);
-        if error == EEOF then error = 0;
+        error = advanceToEof(fr);
       }
     }
     _ddata_free(matches, nm);
@@ -12438,10 +12445,7 @@ iter fileReader.matches(re:regex(?), param captures=0,
   commit();
   if i < maxmatches {
     // we stopped because eof, move to end
-    // TODO: is there a better way to get to the end?
-    // seeking on an unbounded reader doesn't work
-    error = qio_channel_advance_past_byte(false, _channel_internal, 0, max(int(64)), /* consume */ false);
-    if error == EEOF then error = 0;
+    error = advanceToEof(this);
   }
   unlock();
   // Don't report didn't find or end-of-file errors.
