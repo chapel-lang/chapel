@@ -546,8 +546,10 @@ record regex : serializable {
      :arg multiLine: (optional) set to true in order to activate multiline mode
                      (meaning that ``^`` and ``$`` match the beginning and end
                      of a line instead of just the beginning and end of the
-                     text.  Note that this can be set inside a regular
-                     expression with ``(?m)``.
+                     text).  Note that this can be set inside a regular
+                     expression with ``(?m)``. The default is ``false`` for
+                     non-``posix`` regular expressions; and ``true`` for
+                     ``posix`` regular expressions.
      :arg dotAll: (optional) set to true in order to allow ``.``
                  to match a newline. Note that this can be set inside the
                  regular expression with ``(?s)``.
@@ -564,7 +566,7 @@ record regex : serializable {
                             for more details about error codes.
    */
   proc init(pattern: ?t, posix=false, literal=false, noCapture=false,
-            /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
+            /*i*/ ignoreCase=false, /*m*/ multiLine=posix, /*s*/ dotAll=false,
             /*U*/ nonGreedy=false) throws where t==string || t==bytes {
     use ChplConfig;
 

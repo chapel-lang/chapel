@@ -85,7 +85,6 @@ void qio_re_options_to_re2_options(const qio_regex_options_t* options, RE2::Opti
   opts->set_case_sensitive(!options->ignorecase);
   opts->set_one_line(!options->multiline);
   opts->set_dot_nl(options->dotnl);
-  opts->set_longest_match(!options->nongreedy);
   opts->set_log_errors(false);
 }
 
@@ -101,7 +100,6 @@ void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regex_options_t
   options->ignorecase = !opts->case_sensitive();
   options->multiline = !opts->one_line();
   options->dotnl = opts->dot_nl();
-  options->nongreedy = ! opts->longest_match();
 }
 
 static
@@ -115,8 +113,7 @@ bool equal_options(const RE2::Options *opts, const qio_regex_options_t* options)
           options->nocapture == opts->never_capture() &&
           options->ignorecase == !opts->case_sensitive() &&
           options->multiline == !opts->one_line() &&
-          options->dotnl == opts->dot_nl() &&
-          options->nongreedy == ! opts->longest_match();
+          options->dotnl == opts->dot_nl();
 }
 
 static
@@ -200,7 +197,20 @@ void qio_regex_init_default_options(qio_regex_options_t* opt)
 // The returned re_t (passed back through "compiled") must be released by the caller.
 void qio_regex_create_compile(const char* str, int64_t str_len, const qio_regex_options_t* options, qio_regex_t* compiled)
 {
-  re_t* regex = local_cache_get(str, str_len, options);
+  re_t* regex = nullptr;
+
+  if (!options->posix && (options->multiline || options->nongreedy)) {
+    // if it's not POSIX mode, need to add a prefix for multiline/nongreedy
+    std::string s;
+    if (options->multiline) s += "(?m)";
+    if (options->nongreedy) s += "(?U)";
+    s.append(str, str_len);
+
+    regex = local_cache_get(s.data(), s.size(), options);
+  } else {
+    // otherwise, use the pattern as-is, no need to add a prefix
+    regex = local_cache_get(str, str_len, options);
+  }
   compiled->regex = (void*) regex;
   // We bump the reference count, because caller "owns" its copy of the cached
   // regex.  This way, a regex can be removed from the cache without causing a
