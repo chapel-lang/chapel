@@ -3564,7 +3564,11 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           skip = UNKNOWN_PARAM;
         } else if (qt.isUnknown()) {
           skip = UNKNOWN_ACT;
-        } else if (t != nullptr) {
+        } else if (t != nullptr && !(ci.name() == USTR("init") && actualIdx == 0)) {
+          // For initializer calls, allow generic formals using the above
+          // condition; this way, 'this.init(..)' while 'this' is generic
+          // should be fine.
+
           auto g = getTypeGenericity(context, t);
           bool isBuiltinGeneric = (g == Type::GENERIC &&
                                    (t->isAnyType() || t->isBuiltinType()));
@@ -3603,11 +3607,19 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+
+    if (initResolver) {
+      initResolver->handleResolvedCall(call, &c);
+    }
   } else {
     // We're skipping the call, but explicitly store the 'unknown type'
     // in the map.
     ResolvedExpression& r = byPostorder.byAst(call);
     r.setType(QualifiedType());
+
+    if (initResolver) {
+      initResolver->handleResolvedCall(call, /* call resolution result */ nullptr);
+    }
   }
 }
 
