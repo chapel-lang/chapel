@@ -4229,8 +4229,8 @@ resolveIterTypeConsideringTag(Resolver& rv,
   if (!needSerial && iterKindFormal.isUnknown()) return error;
 
   auto iterKindType = EnumType::getIterKindType(context);
-  CHPL_ASSERT(needSerial || iterKindFormal.type() == iterKindType &&
-                            iterKindFormal.hasParamPtr());
+  CHPL_ASSERT(needSerial || (iterKindFormal.type() == iterKindType &&
+                             iterKindFormal.hasParamPtr()));
 
   // Speculatively resolve the iterand to avoid dumping call resolution
   // errors onto the user right away. Try to avoid speculative resolution
@@ -4334,9 +4334,7 @@ resolveIterTypeConsideringTag(Resolver& rv,
       callCalledType = tmp.calledType();
       callIsMethodCall = tmp.isMethodCall();
       callIsParenless = tmp.isParenless();
-      for (int i = 0; i < tmp.numActuals(); i++) {
-        callActuals.push_back(tmp.actual(i));
-      }
+      for (auto& a : tmp.actuals()) callActuals.push_back(a);
     }
 
     if (!needSerial) {

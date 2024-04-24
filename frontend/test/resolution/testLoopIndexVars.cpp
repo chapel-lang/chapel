@@ -116,9 +116,6 @@ R"""( i in myiter() {
 
 //
 // Testing resolution of loop index variables
-// TODO:
-// - zippered iteration
-// - forall loops
 // - error messages
 //
 
