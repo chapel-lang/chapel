@@ -459,8 +459,8 @@ module GPU
                       else if t==uint(16) then "uint16_t"
                       else if t==uint(32) then "uint32_t"
                       else if t==uint(64) then "uint64_t"
-                      else if t==real(32) then "float"
-                      else if t==real(64) then "double"
+                      else if t==real(32) then "_real32"
+                      else if t==real(64) then "_real64"
                       else                     "unknown";
 
     if cTypeName == "unknown" {
