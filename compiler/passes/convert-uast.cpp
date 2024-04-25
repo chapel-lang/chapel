@@ -5001,7 +5001,8 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
     FnSymbol* fn = findConvertedFn(target, /* trace */ false);
     if (fn == nullptr) {
-      context->error(inAst, "could not find target function for call fixup %s within %s",
+      auto idForErr = inAst ? inAst->id() : target->id();
+      context->error(idForErr, "could not find target function for call fixup %s within %s",
                  target->untyped()->name().c_str(),
                  inSymbolId.str().c_str());
     }
