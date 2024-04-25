@@ -7626,14 +7626,14 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
     //  (this would be a single pass and would not require retroactive codepoint checking)
 
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
-    const (searchErr, found, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
+    const (searchErr, found, bytesRead) = _findSeparator(separator, 4*maxSize, this._channel_internal);
     // handle system error & not found within maxSize
     if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
       try this._ch_ioerror(searchErr, "in readThrough(string)");
     }
 
     // compute the number of bytes to read into 's'
-    const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
+    const bytesToRead = if found then bytesRead + separator.numBytes else bytesRead;
 
     // read the given number of bytes into 's', advancing the pointer that many bytes
     // then, ensure the number of codepoints does not exceed the specified maxSize
@@ -7691,13 +7691,13 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
     }
 
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
-    const (searchErr, found, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
+    const (searchErr, found, bytesRead) = _findSeparator(separator, maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
       try this._ch_ioerror(searchErr, "in readThrough(bytes)");
     }
 
     // compute the number of bytes to read into 'b'
-    const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
+    const bytesToRead = if found then bytesRead + separator.numBytes else bytesRead;
 
     // read the given number of bytes into 'b'
     const err = readStringBytesData(b, this._channel_internal, bytesToRead, 0);
@@ -7789,16 +7789,16 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
     // performance TODO: investigate using qio_channel_read_string as a fast path for single-byte separators
     //  (this would be a single pass and would not require retroactive codepoint checking)
 
-    const (searchErr, _, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
+    const (searchErr, _, bytesRead) = _findSeparator(separator, 4*maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
       try this._ch_ioerror(searchErr, "in fileReader.readTo(string)");
     }
-    atEof = searchErr == EEOF && bytesOffset == 0;
+    atEof = searchErr == EEOF && bytesRead == 0;
 
     // read the given number of bytes into 's', advancing the pointer that many bytes
     // then, ensure the number of codepoints does not exceed the specified maxSize
     qio_channel_mark(false, this._channel_internal);
-    const err = readStringBytesData(s, this._channel_internal, bytesOffset, -1);
+    const err = readStringBytesData(s, this._channel_internal, bytesRead, -1);
     if err {
       qio_channel_revert_unlocked(this._channel_internal);
       try this._ch_ioerror(err, "in fileReader.readTo(string)");
@@ -7846,13 +7846,13 @@ proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws 
       throw new IllegalArgumentError("readTo(bytes) called with empty separator");
     }
 
-    const (searchErr, _, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
+    const (searchErr, _, bytesRead) = _findSeparator(separator, maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF && searchErr != ESHORT {
       try this._ch_ioerror(searchErr, "in fileReader.readTo(bytes)");
     }
-    atEof = searchErr == EEOF && bytesOffset == 0;
+    atEof = searchErr == EEOF && bytesRead == 0;
 
-    const err = readStringBytesData(b, this._channel_internal, bytesOffset, 0);
+    const err = readStringBytesData(b, this._channel_internal, bytesRead, 0);
     if err then try this._ch_ioerror(err, "in fileReader.readTo(bytes)");
   }
   return !atEof;
