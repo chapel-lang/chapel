@@ -607,7 +607,9 @@ class FileInfo:
                         # we will not show them if they're @chpldoc.nodoc,
                         # since they're not special.
                         decl_file = node.location().path()
-                        is_standard_decl = self.context.context.is_bundled_path(decl_file)
+                        is_standard_decl = self.context.context.is_bundled_path(
+                            decl_file
+                        )
                         show = is_standard_decl
 
                     if show:
