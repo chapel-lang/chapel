@@ -476,6 +476,10 @@ CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
 CallsInTypeContext = List[CallInTypeContext]
 
 
+# We should show these variables in autocompletion even though they are 'nodoc'.
+_ALLOWED_NODOC_DECLS = ["boundKind", "here", "strideKind"]
+
+
 @dataclass
 @visitor
 class FileInfo:
@@ -584,9 +588,39 @@ class FileInfo:
                     if not in_bundled_module:
                         continue
 
+                # Only show nodes without @chpldoc.nodoc. The exception
+                # about standard files applies here too.
+                documented_nodes = []
+                for node in nodes:
+                    # apply aforementioned exception
+                    if in_bundled_module:
+                        documented_nodes.append(node)
+                        continue
+
+                    # avoid nodes with nodoc attribute.
+                    ag = node.attribute_group()
+                    show = False
+                    if not ag or not ag.get_attribute_named("chpldoc.nodoc"):
+                        show = True
+                    elif name in _ALLOWED_NODOC_DECLS:
+                        # If users declare variables like 'here' themselves,
+                        # we will not show them if they're @chpldoc.nodoc,
+                        # since they're not special.
+                        decl_file = node.location().path()
+                        is_standard_decl = self.context.context.is_bundled_path(
+                            decl_file
+                        )
+                        show = is_standard_decl
+
+                    if show:
+                        documented_nodes.append(node)
+
+                if len(documented_nodes) == 0:
+                    continue
+
                 # Just take the first value to avoid showing N entries for
                 # overloaded functions.
-                self.visible_decls.append((name, nodes[0]))
+                self.visible_decls.append((name, documented_nodes[0]))
 
     def _search_instantiations(
         self,
