@@ -50,39 +50,48 @@ using namespace uast;
 using namespace types;
 
 static QualifiedType
-getIterKindConstantOrUnknown(Resolver& rv, const char* constant);
+getIterKindConstantOrUnknown(Resolver& rv, const std::string& constant);
 
+// If 'speculative' is 'true', then resolution errors for the _iterand_ (not
+// children of the iterand) will be suppressed and the 'ITERATE' associated
+// action will not be set if an error occurred.
 static QualifiedType
 resolveIterTypeConsideringTag(Resolver& rv,
+                              const TypedFnSignature*& outIterSig,
                               const AstNode* astForErr,
                               const AstNode* iterand,
-                              const char* iterKindStr,
+                              const std::string& iterKindStr,
                               const QualifiedType& followThisFormal,
-                              bool emitErrors=true);
+                              bool speculative=false);
 
 static QualifiedType
 resolveParallelStandaloneIterType(Resolver& rv,
+                                  const TypedFnSignature*& outIterSig,
                                   const AstNode* astForErr,
                                   const AstNode* iterand,
-                                  bool emitErrors=true);
+                                  bool speculative=false);
 
 static QualifiedType
 resolveParallelLeaderIterType(Resolver& rv,
+                              const TypedFnSignature*& outIterSig,
                               const AstNode* astForErr,
                               const AstNode* iterand,
-                              bool emitErrors=true);
+                              bool speculative=false);
 
 static QualifiedType
 resolveParallelFollowerIterType(Resolver& rv,
+                                const TypedFnSignature*& outIterSig,
                                 const AstNode* astForErr,
                                 const AstNode* iterand,
                                 const QualifiedType& followThisFormal,
-                                bool emitErrors=true);
+                                bool speculative=false);
 
-static QualifiedType resolveSerialIterType(Resolver& rv,
-                                           const AstNode* astForErr,
-                                           const AstNode* iterand,
-                                           bool emitErrors=true);
+static QualifiedType
+resolveSerialIterType(Resolver& rv,
+                      const TypedFnSignature*& outIterSig,
+                      const AstNode* astForErr,
+                      const AstNode* iterand,
+                      bool speculative=false);
 
 static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
   if (parsing::idIsParenlessFunction(context, id))
@@ -3758,45 +3767,54 @@ bool Resolver::enter(const Zip* zip) {
   const bool requiresParallel = p && p->isForall();
   const bool prefersParallel = requiresParallel || (p && p->isBracketLoop());
 
-  CHPL_ASSERT(p);
-
-  if (!p || !p->isIndexableLoop()) {
-    context->error(zip, "zip expressions may only appear as a loop's iterand");
-  }
+  // Only possibilities, by the grammar.
+  CHPL_ASSERT(p && p->isIndexableLoop());
 
   std::vector<QualifiedType> eltTypes;
-  QualifiedType leaderType;
+  const TypedFnSignature* leaderSig = nullptr;
+  QualifiedType leaderYieldType;
 
   for (int i = 0; i < zip->numActuals(); i++) {
     const bool isFirstActual = (0 == i);
     auto actual = zip->actual(i);
+    const TypedFnSignature* followerSig = nullptr;
 
-    if (actual->isZip()) {
-      context->error(actual, "nested 'zip' expressions are not supported");
-      auto& re = byPostorder.byAst(actual);
-      eltTypes.push_back(re.type());
-      continue;
-    }
+    // Not possible, by the grammar.
+    CHPL_ASSERT(!actual->isZip());
 
-    // Try to resolve the parallel leader using the first actual.
     if (isFirstActual && prefersParallel) {
-      const bool emitErrors = requiresParallel;
-      leaderType = resolveParallelLeaderIterType(*this, actual, actual,
-                                                 emitErrors);
+      const bool speculative = !requiresParallel;
+      leaderYieldType = resolveParallelLeaderIterType(*this, leaderSig,
+                                                      actual, actual,
+                                                      speculative);
     }
 
-    const bool emitErrors = true;
-    if (!leaderType.isUnknownOrErroneous()) {
-      auto qt = resolveParallelFollowerIterType(*this, actual, actual,
-                                                leaderType,
-                                                emitErrors);
+    if (!leaderYieldType.isUnknownOrErroneous()) {
+      CHPL_ASSERT(leaderSig->isParallelLeaderIterator(context));
+      const bool speculative = false;
+      auto qt = resolveParallelFollowerIterType(*this, followerSig, actual,
+                                                actual, leaderYieldType,
+                                                speculative);
       eltTypes.push_back(std::move(qt));
+
+    // We have a leader signature but its return type failed to resolve. In
+    // this case, we should not bother falling back to a serial iterator.
+    } else if (leaderSig != nullptr) {
+      auto qt = QualifiedType(QualifiedType::VAR, UnknownType::get(context));
+      eltTypes.push_back(std::move(qt));
+
+    // We failed to resolve a signature for the leader, so we are free to
+    // try and resolve a serial iterator for each actual.
     } else {
-      auto qt = resolveSerialIterType(*this, actual, actual, emitErrors);
+      const bool speculative = false;
+      const TypedFnSignature* serialSig = nullptr;
+      auto qt = resolveSerialIterType(*this, serialSig, actual, actual,
+                                      speculative);
       eltTypes.push_back(std::move(qt));
     }
   }
 
+  // NOTE: This TupleType builder preserves references for index types!
   auto idxType = TupleType::getQualifiedTuple(context, std::move(eltTypes));
   auto& reZip = byPostorder.byAst(zip);
   reZip.setType(QualifiedType(QualifiedType::VAR, idxType));
@@ -4196,22 +4214,25 @@ void Resolver::exit(const New* node) {
 }
 
 static QualifiedType
-getIterKindConstantOrUnknown(Resolver& rv, const char* constant) {
-  auto t = EnumType::getIterKindType(rv.context);
-  if (auto m = EnumType::getParamConstantsMapOrNull(rv.context, t)) {
-    auto it = m->find(UniqueString::get(rv.context, constant));
-    if (it != m->end()) return it->second;
+getIterKindConstantOrUnknown(Resolver& rv, const std::string& constant) {
+  if (!constant.empty()) {
+    auto ik = EnumType::getIterKindType(rv.context);
+    if (auto m = EnumType::getParamConstantsMapOrNull(rv.context, ik)) {
+      auto it = m->find(constant);
+      if (it != m->end()) return it->second;
+    }
   }
   return QualifiedType(QualifiedType::VAR, UnknownType::get(rv.context));
 }
 
 static QualifiedType
 resolveIterTypeConsideringTag(Resolver& rv,
+                              const TypedFnSignature*& outIterSig,
                               const AstNode* astForErr,
                               const AstNode* iterand,
-                              const char* iterKindStr,
+                              const std::string& iterKindStr,
                               const QualifiedType& followThisFormal,
-                              bool emitErrors) {
+                              bool speculative) {
   Context* context = rv.context;
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
@@ -4222,8 +4243,8 @@ resolveIterTypeConsideringTag(Resolver& rv,
   }
 
   auto iterKindFormal = getIterKindConstantOrUnknown(rv, iterKindStr);
-  bool needFollower = iterKindStr ? !strcmp(iterKindStr, "follower") : false;
-  bool needSerial = iterKindStr == nullptr;
+  bool needFollower = iterKindStr == "follower";
+  bool needSerial = iterKindStr.empty();
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindFormal.isUnknown()) return error;
@@ -4234,7 +4255,9 @@ resolveIterTypeConsideringTag(Resolver& rv,
 
   // Speculatively resolve the iterand to avoid dumping call resolution
   // errors onto the user right away. Try to avoid speculative resolution
-  // if the iterand is not call-like.
+  // if the iterand is not call-like. (Imagine that we failed to resolve
+  // an iterator that is a parenless method - in that case there would be
+  // no followup action for us anyway).
   std::vector<owned<ErrorBase>> traversalErrors;
   if (iterand->isCall()) {
     auto runResult = context->runAndTrackErrors([&](Context* context) {
@@ -4247,14 +4270,14 @@ resolveIterTypeConsideringTag(Resolver& rv,
   }
 
   // Inspect the resolution result to determine what should be done next.
-  ResolvedExpression& iterandRE = rv.byPostorder.byAst(iterand);
+  auto& iterandRE = rv.byPostorder.byAst(iterand);
   auto& MSC = iterandRE.mostSpecific();
-  auto fn = !MSC.isEmpty() && MSC.numBest() == 1 ? MSC.only().fn() : nullptr;
-  bool isIter = fn && fn->untyped()->kind() == uast::Function::Kind::ITER;
+  auto fn = MSC.only() ? MSC.only().fn() : nullptr;
+  bool isIter = fn && fn->isIterator();
   bool wasIterandTypeResolved = !iterandRE.type().isUnknownOrErroneous();
 
-  // Publish all errors except a 'NoMatchingCandidates' for the iterand.
   owned<ErrorBase> noCandidatesError = nullptr;
+  // Publish all errors except a 'NoMatchingCandidates' for the iterand.
   for (auto& e : traversalErrors) {
     if (!isIter && e->type() == NoMatchingCandidates) {
       auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
@@ -4266,35 +4289,18 @@ resolveIterTypeConsideringTag(Resolver& rv,
     context->report(std::move(e));
   }
 
-  // Attempt to detect if this is a forwarded leader iterator.
-  QualifiedType forwardedTag = unknown;
-  if (isIter) {
-    const QualifiedType* pqt = nullptr;
-    if (fn->untyped()->isMethod() && fn->untyped()->numFormals() >= 2) {
-      pqt = &fn->formalType(1);
-    } else if (fn->untyped()->numFormals() >= 1) {
-      pqt = &fn->formalType(0);
-    }
-
-    if (pqt && pqt->type() == iterKindType) {
-      forwardedTag = *pqt;
-    }
-  }
-
-  const bool isForwardedIterTag = !forwardedTag.isUnknownOrErroneous();
-
   // We need to determine the primary element type yielded by the iterator.
   QualifiedType idxType = error;
 
   // In this common case, we need a serial iterator, and that is exactly
   // what we happened to resolve in the first place.
-  if (isIter && needSerial && !isForwardedIterTag) {
+  if (isIter && needSerial && fn->isSerialIterator(context)) {
     idxType = iterandRE.type();
 
   // In this case, we need to propagate a forwarded iterator.
-  } else if (isIter && isForwardedIterTag) {
-    CHPL_UNIMPL("Forwarded iterator invocations");
-    return unknown;
+  } else if (isIter && !fn->isSerialIterator(context)) {
+    CHPL_UNIMPL("Forwarded iterator invocation");
+    return error;
 
   // In this branch we need to prepare an iterator call. It could be a call
   // to the 'these()' method for the iterand type, or it could be a redirect
@@ -4302,8 +4308,6 @@ resolveIterTypeConsideringTag(Resolver& rv,
   // arguments tacked onto the end.
   } else if (wasIterandTypeResolved || (!needSerial && iterand->isCall())) {
     bool shouldCreateTheseCall = wasIterandTypeResolved && !isIter;
-
-    CHPL_ASSERT(!isForwardedIterTag);
 
     // Pieces of the iterator call we need to prepare.
     UniqueString callName;
@@ -4354,71 +4358,77 @@ resolveIterTypeConsideringTag(Resolver& rv,
                        std::move(callActuals));
     auto inScope = rv.scopeStack.back();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
-
     auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
 
     if (c.mostSpecific().only()) {
       idxType = c.exprType();
-      rv.handleResolvedCall(iterandRE, astForErr, ci, c,
-                            { { AssociatedAction::ITERATE, iterand->id() } });
-    } else if (wasIterandTypeResolved) {
-      if (emitErrors) CHPL_REPORT(context, NonIterable, astForErr, iterand,
-                                  iterandRE.type());
+      outIterSig = c.mostSpecific().only().fn();
+      if (!speculative || !idxType.isUnknownOrErroneous()) {
+        rv.handleResolvedCall(iterandRE, astForErr, ci, c,
+                              { { AssociatedAction::ITERATE, iterand->id() } });
+      }
+    } else if (wasIterandTypeResolved && !speculative) {
+      CHPL_REPORT(context, NonIterable, astForErr, iterand, iterandRE.type());
     }
   }
 
-  if (emitErrors && idxType.isUnknownOrErroneous() && noCandidatesError) {
+  // TODO: Need to stop considering parallel iterators as candidates.
+  if (!speculative && idxType.isUnknownOrErroneous() && noCandidatesError) {
     context->report(std::move(noCandidatesError));
   }
 
   return idxType;
 }
 
-static QualifiedType resolveSerialIterType(Resolver& rv,
-                                           const AstNode* astForErr,
-                                           const AstNode* iterand,
-                                           bool emitErrors) {
-  QualifiedType uqt(QualifiedType::VAR, UnknownType::get(rv.context));
-  return resolveIterTypeConsideringTag(rv, astForErr, iterand,
-                                       nullptr,
-                                       uqt,
-                                       emitErrors);
+static QualifiedType
+resolveSerialIterType(Resolver& rv,
+                      const TypedFnSignature*& outIterSig,
+                      const AstNode* astForErr,
+                      const AstNode* iterand,
+                      bool speculative) {
+  QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(rv.context));
+  return resolveIterTypeConsideringTag(rv, outIterSig, astForErr, iterand, {},
+                                       unknown,
+                                       speculative);
 }
 
 static QualifiedType
 resolveParallelStandaloneIterType(Resolver& rv,
+                                  const TypedFnSignature*& outIterSig,
                                   const AstNode* astForErr,
                                   const AstNode* iterand,
-                                  bool emitErrors) {
-  QualifiedType uqt(QualifiedType::VAR, UnknownType::get(rv.context));
-  return resolveIterTypeConsideringTag(rv, astForErr, iterand,
+                                  bool speculative) {
+  QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(rv.context));
+  return resolveIterTypeConsideringTag(rv, outIterSig, astForErr, iterand,
                                        "standalone",
-                                       uqt,
-                                       emitErrors);
+                                       unknown,
+                                       speculative);
 }
 
 static QualifiedType
 resolveParallelLeaderIterType(Resolver& rv,
+                              const TypedFnSignature*& outIterSig,
                               const AstNode* astForErr,
                               const AstNode* iterand,
-                              bool emitErrors) {
-  QualifiedType uqt(QualifiedType::VAR, UnknownType::get(rv.context));
-  return resolveIterTypeConsideringTag(rv, astForErr, iterand,
+                              bool speculative) {
+  QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(rv.context));
+  return resolveIterTypeConsideringTag(rv, outIterSig, astForErr, iterand,
                                        "leader",
-                                       uqt,
-                                       emitErrors);
+                                       unknown,
+                                       speculative);
 }
 
 static QualifiedType
 resolveParallelFollowerIterType(Resolver& rv,
+                                const TypedFnSignature*& outIterSig,
                                 const AstNode* astForErr,
                                 const AstNode* iterand,
                                 const QualifiedType& followThisFormal,
-                                bool emitErrors) {
-  return resolveIterTypeConsideringTag(rv, astForErr, iterand,
+                                bool speculative) {
+  return resolveIterTypeConsideringTag(rv, outIterSig, astForErr, iterand,
                                        "follower",
                                        followThisFormal,
-                                       emitErrors);
+                                       speculative);
 }
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
@@ -4500,20 +4510,27 @@ bool Resolver::enter(const IndexableLoop* loop) {
       idxType = byPostorder.byAst(iterand).type();
 
     } else {
+      const TypedFnSignature* primaryIterSig = nullptr;
+      const TypedFnSignature* followerIterSig = nullptr;
+
       // For parallel loops, try to resolve a standalone iterator, and then
       // a leader/follower combo if resolving the standalone failed.
       if (loop->isBracketLoop() || loop->isForall()) {
-        idxType = resolveParallelStandaloneIterType(*this, loop, iterand,
-                                                    false);
+        const bool speculative = true;
+        idxType = resolveParallelStandaloneIterType(*this, primaryIterSig,
+                                                    loop, iterand,
+                                                    speculative);
         if (idxType.isUnknownOrErroneous()) {
-          const bool emitErrors = loop->isForall();
-          auto leaderType = resolveParallelLeaderIterType(*this, loop,
-                                                          iterand,
-                                                          emitErrors);
-          if (!leaderType.isUnknownOrErroneous()) {
-            idxType = resolveParallelFollowerIterType(*this, loop, iterand,
-                                                      leaderType,
-                                                      emitErrors);
+          const bool speculative = !loop->isForall();
+          auto leaderYieldType = resolveParallelLeaderIterType(*this,
+                                                               primaryIterSig,
+                                                               loop, iterand,
+                                                               speculative);
+          if (!leaderYieldType.isUnknownOrErroneous()) {
+            idxType = resolveParallelFollowerIterType(*this, followerIterSig,
+                                                      loop, iterand,
+                                                      leaderYieldType,
+                                                      speculative);
           }
         }
       }
@@ -4521,7 +4538,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
       // For all loops except forall, it is OK to fall back to serial.
       // Errors will be emitted if we could not resolve an iterator.
       if (!loop->isForall() && idxType.isUnknownOrErroneous()) {
-        idxType = resolveSerialIterType(*this, loop, iterand);
+        idxType = resolveSerialIterType(*this, primaryIterSig, loop, iterand);
       }
     }
 
@@ -4777,7 +4794,9 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
                                          const AstNode* reduceOrScan,
                                          const AstNode* op,
                                          const AstNode* iterand) {
-  auto iterType = resolveSerialIterType(resolver, reduceOrScan, iterand);
+  const TypedFnSignature* serialIterSig = nullptr;
+  auto iterType = resolveSerialIterType(resolver, serialIterSig, reduceOrScan,
+                                        iterand);
   if (iterType.isUnknown()) return QualifiedType();
   auto opClass = determineReduceScanOp(resolver, reduceOrScan, op, iterType);
   if (opClass == nullptr) return QualifiedType();

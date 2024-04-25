@@ -26,6 +26,7 @@
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/EnumType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -843,6 +844,33 @@ void TypedFnSignature::stringify(std::ostream& ss,
     formalType(i).stringify(ss, stringKind);
   }
   ss << ")";
+}
+
+bool TypedFnSignature::
+isIterWithIterKind(Context* context, const std::string& iterKindStr) const {
+  if (!isIterator()) return false;
+
+  auto ik = types::EnumType::getIterKindType(context);
+  if (auto m = types::EnumType::getParamConstantsMapOrNull(context, ik)) {
+
+    auto it = m->find(iterKindStr);
+    if (it != m->end()) {
+      bool isFollowerIterKind = iterKindStr == "follower";
+      bool hasFollowThis = false;
+      bool hasTag = false;
+
+      // Loop over the formals since they could be in any position.
+      for (int i = 0; i < numFormals(); i++) {
+        hasFollowThis = hasFollowThis ||
+            untyped()->formalName(i) == USTR("followThis");
+        hasTag = hasTag ||
+            (untyped()->formalName(i) == USTR("tag") &&
+             formalType(i) == it->second);
+        if (hasTag && (!isFollowerIterKind || hasFollowThis)) return true;
+      }
+    }
+  }
+  return false;
 }
 
 void CandidatesAndForwardingInfo::stringify(

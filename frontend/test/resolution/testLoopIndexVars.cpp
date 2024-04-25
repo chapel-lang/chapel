@@ -34,6 +34,12 @@
 
 #include <map>
 
+#define ADVANCE_PRESERVING_SEARCH_PATHS_(ctx__) \
+  do { \
+    ctx__->advanceToNextRevision(false); \
+    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
+  } while (0)
+
 static auto myiter = std::string(R""""(
 iter myiter() {
   yield 1;
@@ -469,32 +475,20 @@ static void testIndexScope() {
   assert(!guard.realizeErrors());
 }
 
-static QualifiedType getIterKindConstant(Context* context, const char* str) {
-  QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
-  if (str == nullptr) return unknown;
-  auto ik = EnumType::getIterKindType(context);
-  if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
-    auto ustr = UniqueString::get(context, str);
-    auto it = m->find(ustr);
-    if (it != m->end()) return it->second;
-  }
-  return unknown;
-}
-
 static void
-unpackIterKindStrToBool(const char* str,
+unpackIterKindStrToBool(const std::string& str,
                         bool* needSerial=nullptr,
                         bool* needStandalone=nullptr,
                         bool* needLeader=nullptr,
                         bool* needFollower=nullptr) {
   bool* p = nullptr;
-  if (str == nullptr) {
+  if (str.empty()) {
     p = needSerial;
-  } else if (!strcmp(str, "standalone")) {
+  } else if (str == "standalone") {
     p = needStandalone;
-  } else if (!strcmp(str, "leader")) {
+  } else if (str == "leader") {
     p = needLeader;
-  } else if (!strcmp(str, "follower")) {
+  } else if (str == "follower") {
     p = needFollower;
   } else {
     assert(false && "Invalid 'iterKind' string!");
@@ -504,27 +498,30 @@ unpackIterKindStrToBool(const char* str,
 
 static void
 assertIterIsCorrect(Context* context, const AssociatedAction& aa,
-                    const char* iterKindStr) {
+                    const std::string& iterKindStr) {
   bool needSerial = false;
+  bool needStandalone = false;
+  bool needLeader = false;
   bool needFollower = false;
-  unpackIterKindStrToBool(iterKindStr, &needSerial, nullptr, nullptr,
+  unpackIterKindStrToBool(iterKindStr, &needSerial, &needStandalone,
+                          &needLeader,
                           &needFollower);
 
   assert(aa.action() == AssociatedAction::ITERATE);
-  assert(aa.fn() && aa.fn()->untyped());
+  assert(aa.fn());
 
   auto fn = aa.fn();
-  auto fnShape = fn->untyped();
-  assert(fnShape->kind() == Function::ITER);
-  assert(needSerial || fn->numFormals() >= 1);
-  assert(!needFollower || fn->numFormals() >= 2);
-
-  auto iterKind = getIterKindConstant(context, iterKindStr);
-  int idxTag = needFollower ? fn->numFormals() - 2 : fn->numFormals() - 1;
-  int idxFollow = fn->numFormals() - 1;
-
-  assert(!needFollower || fnShape->formalName(idxFollow) == "followThis");
-  assert(needSerial || fn->formalType(idxTag) == iterKind);
+  if (needSerial) {
+    assert(fn->isSerialIterator(context));
+  } else if (needStandalone) {
+    assert(fn->isParallelStandaloneIterator(context));
+  } else if (needLeader) {
+    assert(fn->isParallelLeaderIterator(context));
+  } else if (needFollower) {
+    assert(fn->isParallelFollowerIterator(context));
+  } else {
+    assert(false && "Should not reach here!");
+  }
 }
 
 static void
@@ -584,12 +581,11 @@ assertLoopMatches(Context* context, const std::string& program,
   }
 }
 
-static void testSerialZip() {
+static void testSerialZip(Context* context) {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  Context* context = &ctx;
   ErrorGuard guard(context);
 
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
   auto program = R""""(
                   record r {}
                   iter r.these() do yield 0;
@@ -632,12 +628,11 @@ static void testSerialZip() {
   assert(!guard.realizeErrors());
 }
 
-static void testParallelZip() {
+static void testParallelZip(Context* context) {
   printf("%s\n", __FUNCTION__);
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
   ErrorGuard guard(context);
 
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
@@ -660,6 +655,10 @@ static void testParallelZip() {
 
   auto& rr = resolveModule(context, m->id());
   auto& reZip = rr.byAst(zip);
+
+  for (auto& e : guard.errors()) {
+    std::cout << e->message() << std::endl;
+  }
 
   assert(reZip.associatedActions().empty());
 
@@ -694,12 +693,11 @@ static void testParallelZip() {
   assert(!guard.realizeErrors());
 }
 
-static void testForallStandaloneThese() {
+static void testForallStandaloneThese(Context* context) {
   printf("%s\n", __FUNCTION__);
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
   ErrorGuard guard(context);
 
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.standalone do yield 0;
@@ -710,12 +708,11 @@ static void testForallStandaloneThese() {
   assert(!guard.realizeErrors());
 }
 
-static void testForallStandaloneRedirect() {
+static void testForallStandaloneRedirect(Context* context) {
   printf("%s\n", __FUNCTION__);
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
   ErrorGuard guard(context);
 
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
   auto program = R""""(
                   iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
                   forall i in foo() do i;
@@ -724,12 +721,11 @@ static void testForallStandaloneRedirect() {
   assert(!guard.realizeErrors());
 }
 
-static void testForallLeaderFollowerThese() {
+static void testForallLeaderFollowerThese(Context* context) {
   printf("%s\n", __FUNCTION__);
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
   ErrorGuard guard(context);
 
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
@@ -742,12 +738,11 @@ static void testForallLeaderFollowerThese() {
   assert(!guard.realizeErrors());
 }
 
-static void testForallLeaderFollowerRedirect() {
+static void testForallLeaderFollowerRedirect(Context* context) {
   printf("%s\n", __FUNCTION__);
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
   ErrorGuard guard(context);
 
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
   auto program = R""""(
                   iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
                   iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
@@ -774,12 +769,15 @@ int main() {
   testNestedParamFor();
   testIndexScope();
 
-  testSerialZip();
-  testParallelZip();
-  testForallStandaloneThese();
-  testForallStandaloneRedirect();
-  testForallLeaderFollowerThese();
-  testForallLeaderFollowerRedirect();
+  // Use a single context instance to avoid re-resolving internal modules.
+  auto ctx = buildStdContext();
+  Context* context = ctx.get();
+  testSerialZip(context);
+  testParallelZip(context);
+  testForallStandaloneThese(context);
+  testForallStandaloneRedirect(context);
+  testForallLeaderFollowerThese(context);
+  testForallLeaderFollowerRedirect(context);
 
   return 0;
 }

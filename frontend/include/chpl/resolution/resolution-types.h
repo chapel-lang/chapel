@@ -23,6 +23,7 @@
 #include "chpl/framework/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/CompositeType.h"
+#include "chpl/types/EnumType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/AstNode.h"
@@ -307,6 +308,11 @@ class UntypedFnSignature {
   /** Returns true if this is a method */
   bool isMethod() const {
     return isMethod_;
+  }
+
+  /** Returns true if this is an iterator */
+  bool isIterator() const {
+    return kind_ == uast::Function::ITER;
   }
 
   /** Returns true if this function throws */
@@ -949,6 +955,9 @@ class TypedFnSignature {
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated);
 
+  bool
+  isIterWithIterKind(Context* context, const std::string& iterKindStr) const;
+
  public:
   /** Get the unique TypedFnSignature containing these components */
   static
@@ -1092,6 +1101,36 @@ class TypedFnSignature {
   const types::QualifiedType& formalType(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
+  }
+
+  bool isMethod() const {
+    return untypedSignature_->isMethod();
+  }
+
+  bool isIterator() const {
+    return untypedSignature_->isIterator();
+  }
+
+  /** Returns 'true' if this signature is for a standalone parallel iterator. */
+  bool isParallelStandaloneIterator(Context* context) const {
+    return isIterWithIterKind(context, "standalone");
+  }
+
+  /** Returns 'true' if this signature is for a parallel leader iterator. */
+  bool isParallelLeaderIterator(Context* context) const {
+    return isIterWithIterKind(context, "leader");
+  }
+
+  /** Returns 'true' if this signature is for a parallel follower iterator. */
+  bool isParallelFollowerIterator(Context* context) const {
+    return isIterWithIterKind(context, "follower");
+  }
+
+  /** Returns 'true' if this signature is for a serial iterator. */
+  bool isSerialIterator(Context* context) const {
+    return isIterator() && !isParallelStandaloneIterator(context) &&
+                           !isParallelLeaderIterator(context) &&
+                           !isParallelFollowerIterator(context);
   }
 
   /// \cond DO_NOT_DOCUMENT
