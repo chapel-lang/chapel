@@ -693,10 +693,18 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       state->initPointId = node->id();
       state->isInitialized = true;
 
-      // How often do we need to recompute this? More often?
-      if (state->qt.isType() || state->qt.isParam()) {
-        updateResolverVisibleReceiverType();
+      // We could probably get away with running this less, but it's easier
+      // to just attempt updating the receiver type for each field even if the
+      // field doesn't contribute to the receiver type.
+      updateResolverVisibleReceiverType();
+
+      auto lhsKind = state->qt.kind();
+      if (lhsKind != QualifiedType::TYPE && lhsKind != QualifiedType::PARAM) {
+        // Regardless of the field's intent, it is mutable in this expression.
+        lhsKind = QualifiedType::REF;
       }
+      auto lhsType = QualifiedType(lhsKind, state->qt.type(), state->qt.param());
+      initResolver_.byPostorder.byAst(lhs).setType(lhsType);
 
     } else {
       CHPL_ASSERT(0 == "Not handled yet!");
