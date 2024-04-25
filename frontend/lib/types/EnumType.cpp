@@ -76,26 +76,27 @@ const EnumType* EnumType::getIterKindType(Context* context) {
   return EnumType::get(context, id, name);
 }
 
-static const std::map<UniqueString, QualifiedType>&
+static const std::map<std::string, QualifiedType>&
 getParamConstantsMapQuery(Context* context, const EnumType* et) {
   QUERY_BEGIN(getParamConstantsMapQuery, context, et);
-  std::map<UniqueString, QualifiedType> ret;
+  std::map<std::string, QualifiedType> ret;
 
   auto ast = parsing::idToAst(context, et->id());
   if (auto e = ast->toEnum()) {
     for (auto elem : e->enumElements()) {
       auto param = EnumParam::get(context, elem->id());
       QualifiedType qt(QualifiedType::PARAM, et, param);
-      auto it = ret.find(elem->name());
+      auto k = elem->name().str();
+      auto it = ret.find(k);
       if (it != ret.end()) continue;
-      ret.emplace_hint(it, elem->name(), std::move(qt));
+      ret.emplace_hint(it, k, std::move(qt));
     }
   }
 
   return QUERY_END(ret);
 }
 
-const std::map<UniqueString, QualifiedType>*
+const std::map<std::string, QualifiedType>*
 EnumType::getParamConstantsMapOrNull(Context* context, const EnumType* et) {
   if (!et || !et->id()) return nullptr;
   auto ast = parsing::idToAst(context, et->id());

@@ -73,7 +73,7 @@ class EnumType final : public Type {
       If there are multiple enum constants with the same name (which
       means the AST is semantically incorrect), then only the first
       constant is added to the map. */
-  static const std::map<UniqueString, QualifiedType>*
+  static const std::map<std::string, QualifiedType>*
   getParamConstantsMapOrNull(Context* context, const EnumType* et);
 
   ~EnumType() = default;
