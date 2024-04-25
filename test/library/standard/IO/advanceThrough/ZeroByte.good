@@ -1,0 +1,4 @@
+IllegalArgumentError: advanceThrough(string) called with empty separator
+after advanceThrough, offset is 0
+IllegalArgumentError: advanceThrough(bytes) called with empty separator
+after advanceThrough, offset is 0
