@@ -582,7 +582,7 @@ module Random {
 
     :arg arr: The 1D rectangular array to sample from
     :arg n: The number of elements to sample
-    :arg weights: An array of weights corresponding to the elements in ``arr``
+    :arg weights: An array of real-valued weights corresponding to the elements in ``arr``
     :arg withReplacement: Whether or not to sample with replacement
 
     :return: A zero-based array of ``n`` random elements sampled from the array
@@ -595,15 +595,15 @@ module Random {
   proc sample(
     const ref arr: [?d] ?t,
     n: int,
-    const ref weights: [?dw] real,
+    const ref weights: [?dw] ?wt,
     withReplacement=false
   ): [] t throws
-    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
   {
     if weights.size != arr.size then
       throw new IllegalArgumentError("weights array must have the same size as the array");
 
-    var rs = new randomStream(real);
+    var rs = new randomStream(wt);
     return rs.sample(arr, n, weights, withReplacement);
   }
 
@@ -615,7 +615,7 @@ module Random {
 
     :arg arr: The 1D rectangular array to sample from
     :arg n: The number of elements to sample
-    :arg weights: An array of weights corresponding to the elements in ``arr``
+    :arg weights: An array of real-valued weights corresponding to the elements in ``arr``
     :arg withReplacement: Whether or not to sample with replacement
     :arg seed: The seed to use when creating the ``randomStream``
 
@@ -629,16 +629,16 @@ module Random {
   proc sample(
     const ref arr: [?d] ?t,
     n: int,
-    const ref weights: [?dw] real,
+    const ref weights: [?dw] ?wt,
     withReplacement=false,
     seed: int
   ): [] t throws
-    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
   {
     if weights.size != arr.size then
       throw new IllegalArgumentError("weights array must have the same size as the array");
 
-    var rs = new randomStream(real, seed);
+    var rs = new randomStream(wt, seed);
     return rs.sample(arr, n, weights, withReplacement);
   }
 
@@ -691,7 +691,7 @@ module Random {
 
     :arg d: The 1D rectangular domain to sample from
     :arg n: The number of indices to sample
-    :arg weights: An array of weights corresponding to the indices in ``d``
+    :arg weights: An array of real-valued weights corresponding to the indices in ``d``
     :arg withReplacement: Whether or not to sample with replacement
 
     :return: A zero-based array of ``n`` random indices sampled from the domain
@@ -704,15 +704,15 @@ module Random {
   proc sample(
     d: domain(?),
     n: int,
-    const ref weights: [?dw] real,
+    const ref weights: [?dw] ?wt,
     withReplacement=false
   ): [] d.idxType throws
-    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
   {
     if weights.size != d.size then
       throw new IllegalArgumentError("weights array must have the same size as the domain");
 
-    var rs = new randomStream(real);
+    var rs = new randomStream(wt);
     return rs.sample(d, n, weights, withReplacement);
   }
 
@@ -724,7 +724,7 @@ module Random {
 
     :arg d: The 1D rectangular domain to sample from
     :arg n: The number of elements to sample
-    :arg weights: An array of weights corresponding to the elements in ``d``
+    :arg weights: An array of real-valued weights corresponding to the elements in ``d``
     :arg withReplacement: Whether or not to sample with replacement
     :arg seed: The seed to use when creating the ``randomStream``
 
@@ -738,16 +738,16 @@ module Random {
   proc sample(
     d: domain(?),
     n: int,
-    const ref weights: [?dw] real,
+    const ref weights: [?dw] ?wt,
     withReplacement=false,
     seed: int
   ): [] d.idxType throws
-    where is1DRectangularDomain(d) && is1DRectangularDomain(dw)
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
   {
     if weights.size != d.size then
       throw new IllegalArgumentError("weights array must have the same size as the domain");
 
-    var rs = new randomStream(real, seed);
+    var rs = new randomStream(wt, seed);
     return rs.sample(d, n, weights, withReplacement);
   }
 
@@ -796,7 +796,7 @@ module Random {
 
     :arg r: A fully bounded range to sample from
     :arg n: The number of values to sample
-    :arg weights: An array of weights corresponding to the values in ``r``
+    :arg weights: An array of real-valued weights corresponding to the values in ``r``
     :arg withReplacement: Whether or not to sample with replacement
 
     :return: A zero-based array of ``n`` random values sampled from the range
@@ -809,15 +809,15 @@ module Random {
   proc sample(
     r: range(bounds=boundKind.both, ?),
     n: int,
-    const ref weights: [?dw] real,
+    const ref weights: [?dw] ?wt,
     withReplacement=false
   ): [] r.idxType throws
-    where is1DRectangularDomain(dw)
+    where is1DRectangularDomain(dw) && isRealType(wt)
   {
     if weights.size != r.size then
       throw new IllegalArgumentError("weights array must have the same size as the range");
 
-    var rs = new randomStream(real);
+    var rs = new randomStream(wt);
     return rs.sample(r, n, weights, withReplacement);
   }
 
@@ -829,7 +829,7 @@ module Random {
 
     :arg r: A fully bounded range to sample from
     :arg n: The number of values to sample
-    :arg weights: An array of weights corresponding to the values in ``r``
+    :arg weights: An array of real-valued weights corresponding to the values in ``r``
     :arg withReplacement: Whether or not to sample with replacement
     :arg seed: The seed to use when creating the ``randomStream``
 
@@ -843,16 +843,16 @@ module Random {
   proc sample(
     r: range(bounds=boundKind.both, ?),
     n: int,
-    const ref weights: [?dw] real,
+    const ref weights: [?dw] ?wt,
     withReplacement=false,
     seed: int
   ): [] r.idxType throws
-    where is1DRectangularDomain(dw)
+    where is1DRectangularDomain(dw) && isRealType(wt)
   {
     if weights.size != r.size then
       throw new IllegalArgumentError("weights array must have the same size as the range");
 
-    var rs = new randomStream(real, seed);
+    var rs = new randomStream(wt, seed);
     return rs.sample(r, n, weights, withReplacement);
   }
 
@@ -1334,37 +1334,25 @@ module Random {
       if d.size != dw.size then
         throw new IllegalArgumentError("'weights' must have the same size as 'd'");
 
-      var weightsCopy: [0..<d.size] wt = weights;
-
-      proc normalizedWeights(): ([0..<d.size] wt, eltType, eltType)
-        where isIntegralType(wt) || isBoolType(wt)
-      {
-        const cwn = + scan weightsCopy;
-        return (cwn, 0:eltType, cwn[d.size-1]:eltType);
-      }
-
-      proc normalizedWeights(): ([0..<d.size] wt, eltType, eltType)
-        where isRealType(wt)
-      {
-        const cw = + scan weightsCopy,
-              cwn = cw / cw[d.size-1];
-        return (cwn, 0.0:eltType, 1.0:eltType);
-      }
-
-      var (cwn, sampleLow, sampleHigh) = normalizedWeights();
+      // compute cumulative weights
+      var cwn = + scan weights;
 
       if !Sort.isSorted(cwn) then
         throw new IllegalArgumentError("'weights' cannot contain negative values");
 
-      if cwn[d.size-1] <= 1e-15 then
+      if abs(cwn[d.size-1]) <= 1e-15 then
         throw new IllegalArgumentError("'weights' must contain at least one non-zero value");
 
+      // normalize for real weights
+      if isRealType(wt) then cwn /= cwn[d.size-1];
+
       const dOut = {0..<n};
-      var samples: [dOut] d.idxType;
+      var samples: [dOut] d.idxType,
+          sampleHi = if isRealType(wt) then 1.0:eltType else cwn[d.size-1]:eltType;
 
       if withReplacement {
         for i in dOut {
-          const r = this.next(sampleLow, sampleHigh);
+          const r = this.next(0, sampleHi);
           var ii = 0;
             if isRealType(wt)
               then (_, ii) = Search.binarySearch(cwn, r);
@@ -1372,24 +1360,29 @@ module Random {
           samples[i] = d.orderToIndex(ii);
         }
       } else {
-        var indices: domain(int, parSafe=false),
+        var weightsCopy = weights,
+            indices: domain(int, parSafe=false),
             i = 0,
             ii = 0;
 
         while i < n {
-          (cwn, sampleLow, sampleHigh) = normalizedWeights();
-
+          // sample an index that hasn't been sampled yet
           do {
-            const r = this.next(sampleLow, sampleHigh);
+            const r = this.next(0, sampleHi);
             if isRealType(wt)
               then (_, ii) = Search.binarySearch(cwn, r);
               else ii = binarySearchFirst(cwn, r);
           } while indices.contains(ii);
 
+          weightsCopy[ii] = 0;
           indices += ii;
           samples[i] = d.orderToIndex(ii);
           i += 1;
-          weightsCopy[ii] = 0;
+
+          // recompute cumulative weights
+          cwn = + scan weightsCopy;
+          if isRealType(wt) then cwn /= cwn[d.size-1];
+          sampleHi = if isRealType(wt) then 1.0:eltType else cwn[d.size-1]:eltType;
         }
       }
 
