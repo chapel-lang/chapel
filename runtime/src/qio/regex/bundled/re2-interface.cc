@@ -65,7 +65,7 @@ typedef uint8_t optionPrefixLen_t;
 static RE2::Options flags_to_re2_opts(optionFlags_t flags);
 
 struct re_t {
-  RE2 re;
+  RE2 re2;
   qbytes_refcnt_t ref_cnt;
   // which options?
   optionFlags_t optionFlags;
@@ -77,7 +77,7 @@ struct re_t {
   re_t(StringPiece& pattern,
        optionFlags_t optionFlags,
        optionPrefixLen_t optionPrefixBytes)
-    : re(pattern, flags_to_re2_opts(optionFlags)),
+    : re2(pattern, flags_to_re2_opts(optionFlags)),
       optionFlags(optionFlags),
       optionPrefixBytes(optionPrefixBytes)
   {
@@ -190,7 +190,7 @@ re_t* local_cache_get(const char* str, int64_t str_len,
     }
     re_t* re = elem->re;
     if (!re) continue;
-    const std::string& pat = re->re.pattern();
+    const std::string& pat = re->re2.pattern();
     if ((uint64_t) pat.length() == (uint64_t) str_len &&
         re->optionFlags == optionFlags &&
         0 == memcmp(pat.data(), str, str_len)) {
@@ -305,20 +305,26 @@ void qio_regex_release(qio_regex_t* compiled)
   compiled->regex = NULL;
 }
 
-void qio_regex_get_options(const qio_regex_t* regex, qio_regex_options_t* options)
+void qio_regex_get_options(const qio_regex_t* regex,
+                           qio_regex_options_t* options)
 {
-  if (RE2* re2 = (RE2*) regex->regex) {
-    const RE2::Options& opts = re2->options();
-    re2_options_to_qio_re_options(&opts, options);
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    flags_to_qio_re_options(re->optionFlags, options);
+  } else {
+    qio_regex_init_default_options(options);
   }
 }
 
-void qio_regex_borrow_pattern(const qio_regex_t* regex, const char** pattern, int64_t* len_out)
+void qio_regex_borrow_pattern(const qio_regex_t* regex,
+                              const char** pattern, int64_t* len_out)
 {
-  if (RE2* re2 = (RE2*) regex->regex) {
-    const std::string &s = re2->pattern();
-    *pattern = s.c_str();
-    *len_out = s.length();
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    const std::string &s = re->re2.pattern();
+    ssize_t prefixBytes = re->optionPrefixBytes;
+    *pattern = s.c_str() + prefixBytes;
+    *len_out = s.length() - prefixBytes;
   } else {
     *len_out = 0;
   }
@@ -326,20 +332,31 @@ void qio_regex_borrow_pattern(const qio_regex_t* regex, const char** pattern, in
 
 int64_t qio_regex_get_ncaptures(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  return re2 ? re2->NumberOfCapturingGroups() : 0;
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    return re->re2.NumberOfCapturingGroups();
+  }
+  return 0;
 }
 
 qio_bool qio_regex_ok(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  return re2 && re2->ok();
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    return re->re2.ok();
+  }
+
+  return false;
 }
 
 const char* qio_regex_error(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  return qio_strdup(re2 ? re2->error().c_str() : "");
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    return qio_strdup(re->re2.error().c_str());
+  } else {
+    return "";
+  }
 }
 
 qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regex_string_piece_t* submatch, int64_t nsubmatch)
@@ -349,8 +366,9 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   RE2::Anchor ranchor = RE2::UNANCHORED;
   MAYBE_STACK_SPACE(StringPiece, onstack);
   StringPiece* spPtr;
-  RE2* re = (RE2*) regex->regex;
+  re_t* re = (re_t*) regex->regex;
   if (!re) return false;
+  RE2* re2 = &re->re2;
 
   // RE2 uses int for ncaptures
   if( nsubmatch > INT_MAX || nsubmatch < 0 )
@@ -363,7 +381,7 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   MAYBE_STACK_ALLOC(StringPiece, nsubmatch, spPtr, onstack);
   memset((void*)spPtr, 0, sizeof(StringPiece)*nsubmatch);
 
-  ret = re->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
+  ret = re2->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
   // Now set submatch based on StringPieces
   for( int64_t i = 0; i < nsubmatch; i++ ) {
     if( !ret ) {
@@ -621,7 +639,8 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 
 qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
 {
-  RE2* re = (RE2*) regex->regex;
+  re_t* re = (re_t*) regex->regex;
+  RE2* re2 = &re->re2;
   qioerr err = NULL;
   void* bufstart = NULL;
   void* bufend = NULL;
@@ -666,7 +685,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   ci.file = ch;
   ci.read_byte_fn = (read_byte_fn_t) &qio_regex_channel_read_byte;
   ci.discard_fn = (discard_fn_t) &qio_regex_channel_discard;
-  ci.re = re;
+  ci.re = re2;
   if( ncaptures <= 0 ) ci.nmatch = 0;
   else if( ncaptures == 1 ) ci.nmatch = 1;
   else if( ncaptures < INT_MAX ) ci.nmatch = (int) ncaptures;
@@ -700,7 +719,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   }
 
   // Require at least 1 byte and at most 1024 bytes.
-  need = re->min_match_length_bytes();
+  need = re2->min_match_length_bytes();
   if( need <= 0 ) need = 1;
   if( need > 1024) need = 1024;
   err = qio_channel_require_read(false, ch, need);
@@ -733,7 +752,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   // remove the unneeded buffer setup code
   old_gFileStringAllowBufferSearch = gFileStringAllowBufferSearch;
   gFileStringAllowBufferSearch = 0;
-  found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
+  found = re2->MatchFile(text, buffer, ranchor, locs, ncaptures);
   gFileStringAllowBufferSearch = old_gFileStringAllowBufferSearch;
 
   // Copy capture groups if we found something
