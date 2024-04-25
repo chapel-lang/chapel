@@ -669,7 +669,7 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
     if (fn->name() == "chpl__delete") return;
   }
 
-  error(node, "direct calls to deinit() are not allowed.");
+  error(node, "explicit calls to deinit() are not allowed.");
 }
 
 void Visitor::checkNewBorrowed(const FnCall* node) {
