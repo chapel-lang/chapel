@@ -114,6 +114,7 @@ struct Visitor {
   bool handleNestedDecoratorsInNew(const FnCall* node);
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
+  void reportErrorForNonThisSuperCall(const FnCall* node, UniqueString method);
   void checkExplicitInitCalls(const FnCall* node);
   void checkExplicitPostinitCalls(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
@@ -633,13 +634,15 @@ static const AstNode* isCallToMethodOrFnWithName(const FnCall* call,
   return nullptr;
 }
 
-void Visitor::checkExplicitInitCalls(const FnCall* node) {
-  auto calledExpr = isCallToMethodOrFnWithName(node, USTR("init"));
+void Visitor::reportErrorForNonThisSuperCall(const FnCall* node, UniqueString method) {
+  auto calledExpr = isCallToMethodOrFnWithName(node, method);
   if (!calledExpr) return;
 
   if (auto dot = calledExpr->toDot()) {
     if (auto receiverIdent = dot->receiver()->toIdentifier()) {
-      // this.init(..) and super.init(..) are allowed.
+      // this.f(..) and super.f(..) are allowed, by definition of this method.
+      // That is because this method is used for 'init' and 'postinit' checking,
+      // where such code is valid.
       if (receiverIdent->name() == USTR("this") ||
           receiverIdent->name() == USTR("super"))
         return;
@@ -648,15 +651,16 @@ void Visitor::checkExplicitInitCalls(const FnCall* node) {
     // Standalone call; this is implicitly applied to 'this', so no problem.
     return;
   }
-  error(node, "explicit calls to init() on anything other than"
-              " 'this' or 'super' are not allowed.");
+  error(node, "explicit calls to %s() on anything other than"
+              " 'this' or 'super' are not allowed.", method.c_str());
+}
+
+void Visitor::checkExplicitInitCalls(const FnCall* node) {
+  reportErrorForNonThisSuperCall(node, USTR("init"));
 }
 
 void Visitor::checkExplicitPostinitCalls(const FnCall* node) {
-  auto calledExpr = isCallToMethodOrFnWithName(node, USTR("postinit"));
-  if (!calledExpr) return;
-
-  error(node, "explicit calls to postinit() are not allowed.");
+  reportErrorForNonThisSuperCall(node, USTR("postinit"));
 }
 
 void Visitor::checkExplicitDeinitCalls(const FnCall* node) {

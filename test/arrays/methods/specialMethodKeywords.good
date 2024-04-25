@@ -1,5 +1,5 @@
 specialMethodKeywords.chpl:29: error: explicit calls to init() on anything other than 'this' or 'super' are not allowed
-specialMethodKeywords.chpl:30: error: explicit calls to postinit() are not allowed
+specialMethodKeywords.chpl:30: error: explicit calls to postinit() on anything other than 'this' or 'super' are not allowed
 specialMethodKeywords.chpl:31: error: explicit calls to deinit() are not allowed
 specialMethodKeywords.chpl:34: error: attempt to redefine reserved word 'init'
 specialMethodKeywords.chpl:35: error: attempt to redefine reserved word 'deinit'
