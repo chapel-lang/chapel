@@ -5147,7 +5147,7 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
       err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, max(int(64)), false);
       if err {
         if err == ESHORT || err == EFORMAT {
-          throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+          throw new UnexpectedEofError("separator not found in advanceTo(" + t:string + ")");
         } else {
           try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
         }
