@@ -114,6 +114,7 @@ static RE2::Options flags_to_re2_opts(optionFlags_t flags) {
 
   opts.set_encoding(utf8 ? utf8E : byteE);
   opts.set_posix_syntax(posix);
+  if (posix) opts.set_longest_match(true); // posix defaults to longest match
   opts.set_literal(literal);
   opts.set_never_capture(nocapture);
   opts.set_case_sensitive(!ignorecase);

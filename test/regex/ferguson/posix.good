@@ -1,6 +1,21 @@
-1
+checking 0f+?, default
 matched '0f'
-2
+checking 0f+?, posix=false
 matched '0f'
-3
+checking 0f+?, posix=true
 matched '0fff'
+
+checking multiline mode, default
+matched '<not found>'
+checking multiline mode, posix=false
+matched '<not found>'
+checking multiline mode, posix=true
+matched 'a'
+
+replace bb with |b->a, default
+ababa
+replace bb with |b->a, posix=false
+ababa
+replace bb with |b->a, posix=true
+aa
+
