@@ -1,4 +1,6 @@
-specialMethodKeywords.chpl:33: error: direct calls to deinit() are not allowed
+specialMethodKeywords.chpl:29: error: explicit calls to init() on anything other than 'this' or 'super' are not allowed
+specialMethodKeywords.chpl:30: error: explicit calls to postinit() are not allowed
+specialMethodKeywords.chpl:33: error: explicit calls to deinit() are not allowed
 specialMethodKeywords.chpl:36: error: attempt to redefine reserved word 'init'
 specialMethodKeywords.chpl:37: error: attempt to redefine reserved word 'deinit'
 specialMethodKeywords.chpl:38: error: attempt to redefine reserved word 'postinit'
