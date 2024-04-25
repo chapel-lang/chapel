@@ -115,6 +115,7 @@ struct Visitor {
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitInitCalls(const FnCall* node);
+  void checkExplicitPostinitCalls(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
   void checkNewBorrowed(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
@@ -649,6 +650,13 @@ void Visitor::checkExplicitInitCalls(const FnCall* node) {
   }
   error(node, "explicit calls to init() on anything other than"
               " 'this' or 'super' are not allowed.");
+}
+
+void Visitor::checkExplicitPostinitCalls(const FnCall* node) {
+  auto calledExpr = isCallToMethodOrFnWithName(node, USTR("postinit"));
+  if (!calledExpr) return;
+
+  error(node, "explicit calls to postinit() are not allowed.");
 }
 
 void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
@@ -1517,6 +1525,7 @@ void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
   checkExplicitInitCalls(node);
+  checkExplicitPostinitCalls(node);
   checkExplicitDeinitCalls(node);
   checkNewBorrowed(node);
   checkBorrowFromNew(node);
