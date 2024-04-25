@@ -1,0 +1,7 @@
+checking dotall mode, default
+matched '<not found>'
+checking dotall mode, dotAll=false
+matched '<not found>'
+checking dotall mode, dotAll=true
+matched 'c
+a'
