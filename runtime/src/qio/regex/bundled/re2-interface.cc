@@ -46,13 +46,40 @@ using namespace re2;
 
 struct re_cache;
 
+enum {
+  // these ones are handled by RE2
+  OPTION_FLAG_UTF8 = 1,
+  OPTION_FLAG_POSIX = 2,
+  OPTION_FLAG_LITERAL = 4,
+  OPTION_FLAG_NOCAPTURE = 8,
+  OPTION_FLAG_IGNORECASE = 16,
+  OPTION_FLAG_DOTNL = 32,
+  // these ones are supported by a prefix
+  OPTION_FLAG_MULTILINE = 64, // (?m)
+  OPTION_FLAG_NONGREEDY = 128, // (?U)
+  // note: if any more are added, 'optionFlags' will need > 1 byte.
+};
+typedef uint8_t optionFlags_t;
+typedef uint8_t optionPrefixLen_t;
+
+static RE2::Options flags_to_re2_opts(optionFlags_t flags);
+
 struct re_t {
   RE2 re;
   qbytes_refcnt_t ref_cnt;
+  // which options?
+  optionFlags_t optionFlags;
+  // how many bytes of the pattern were automatically added to support options?
+  optionPrefixLen_t optionPrefixBytes;
+
   // RE2 implementations are shared and ref-counted.
   // We free the internal RE2 once ref_cnt==0.
-  re_t(StringPiece& pattern, const RE2::Options& option, re_cache* home)
-    : re(pattern, option)
+  re_t(StringPiece& pattern,
+       optionFlags_t optionFlags,
+       optionPrefixLen_t optionPrefixBytes)
+    : re(pattern, flags_to_re2_opts(optionFlags)),
+      optionFlags(optionFlags),
+      optionPrefixBytes(optionPrefixBytes)
   {
     // Initialize the reference count to 1.
     // This represents the reference held by the cache.
@@ -73,58 +100,79 @@ struct re_cache {
   ~re_cache();
 };
 
-static
-void qio_re_options_to_re2_options(const qio_regex_options_t* options, RE2::Options *opts)
-{
+static RE2::Options flags_to_re2_opts(optionFlags_t flags) {
+  RE2::Options opts;
   RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
   RE2::Options::Encoding byteE = RE2::Options::Encoding::EncodingLatin1;
-  opts->set_encoding(options->utf8 ? utf8E : byteE);
-  opts->set_posix_syntax(options->posix);
-  opts->set_literal(options->literal);
-  opts->set_never_capture(options->nocapture);
-  opts->set_case_sensitive(!options->ignorecase);
-  opts->set_one_line(!options->multiline);
-  opts->set_dot_nl(options->dotnl);
-  opts->set_log_errors(false);
+  bool utf8 = (flags & OPTION_FLAG_UTF8) != 0;
+  bool posix = (flags & OPTION_FLAG_POSIX) != 0;
+  bool literal = (flags & OPTION_FLAG_LITERAL) != 0;
+  bool nocapture = (flags & OPTION_FLAG_NOCAPTURE) != 0;
+  bool ignorecase = (flags & OPTION_FLAG_IGNORECASE) != 0;
+  bool dotnl = (flags & OPTION_FLAG_DOTNL) != 0;
+  bool multiline = (flags & OPTION_FLAG_MULTILINE) != 0;
+
+  opts.set_encoding(utf8 ? utf8E : byteE);
+  opts.set_posix_syntax(posix);
+  opts.set_literal(literal);
+  opts.set_never_capture(nocapture);
+  opts.set_case_sensitive(!ignorecase);
+  opts.set_one_line(!multiline); // note: only consulted with posix==true
+  opts.set_dot_nl(dotnl);
+
+  opts.set_log_errors(false);
+
+  return opts;
 }
 
 static
-void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regex_options_t* options)
-{
-  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
-  RE2::Options::Encoding e = opts->encoding();
-  options->utf8 = (e == utf8E);
-  options->posix = opts->posix_syntax();
-  options->literal = opts->literal();
-  options->nocapture = opts->never_capture();
-  options->ignorecase = !opts->case_sensitive();
-  options->multiline = !opts->one_line();
-  options->dotnl = opts->dot_nl();
+optionFlags_t qio_re_options_to_flags(const qio_regex_options_t* options) {
+  optionFlags_t ret = 0;
+  if (options->utf8)       ret |= OPTION_FLAG_UTF8;
+  if (options->posix)      ret |= OPTION_FLAG_POSIX;
+  if (options->literal)    ret |= OPTION_FLAG_LITERAL;
+  if (options->nocapture)  ret |= OPTION_FLAG_NOCAPTURE;
+  if (options->ignorecase) ret |= OPTION_FLAG_IGNORECASE;
+  if (options->multiline)  ret |= OPTION_FLAG_MULTILINE;
+  if (options->dotnl)      ret |= OPTION_FLAG_DOTNL;
+  if (options->nongreedy)  ret |= OPTION_FLAG_NONGREEDY;
+  return ret;
 }
 
 static
-bool equal_options(const RE2::Options *opts, const qio_regex_options_t* options)
-{
-  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
-  bool optsUtf8 = (opts->encoding() == utf8E);
-  return  options->utf8 == optsUtf8 &&
-          options->posix == opts->posix_syntax() &&
-          options->literal == opts->literal() &&
-          options->nocapture == opts->never_capture() &&
-          options->ignorecase == !opts->case_sensitive() &&
-          options->multiline == !opts->one_line() &&
-          options->dotnl == opts->dot_nl();
+void flags_to_qio_re_options(optionFlags_t flags, qio_regex_options_t* opts) {
+  bool utf8 = (flags & OPTION_FLAG_UTF8) != 0;
+  bool posix = (flags & OPTION_FLAG_POSIX) != 0;
+  bool literal = (flags & OPTION_FLAG_LITERAL) != 0;
+  bool nocapture = (flags & OPTION_FLAG_NOCAPTURE) != 0;
+  bool ignorecase = (flags & OPTION_FLAG_IGNORECASE) != 0;
+  bool dotnl = (flags & OPTION_FLAG_DOTNL) != 0;
+  bool multiline = (flags & OPTION_FLAG_MULTILINE) != 0;
+  bool nongreedy = (flags & OPTION_FLAG_NONGREEDY) != 0;
+
+  qio_regex_init_default_options(opts);
+
+  opts->utf8 = utf8;
+  opts->posix = posix;
+  opts->literal = literal;
+  opts->nocapture = nocapture;
+  opts->ignorecase = ignorecase;
+  opts->multiline = multiline;
+  opts->dotnl = dotnl;
+  opts->nongreedy = nongreedy;
 }
+
 
 static
 void re_free(re_t* re)
 {
-  //fprintf(stdout, "free %p\n", re);
   delete re;
 }
 
 static
-re_t* local_cache_get(const char* str, int64_t str_len, const qio_regex_options_t* options) {
+re_t* local_cache_get(const char* str, int64_t str_len,
+                      optionFlags_t optionFlags,
+                      optionPrefixLen_t optionPrefixBytes) {
   thread_local re_cache cache;
   re_cache* c = &cache;
   int oldest;
@@ -134,21 +182,21 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regex_options_
   // or a matching element
   oldest = 0;
   oldest_date = c->elems[0].date;
-  for( int i = 0; i < REGEX_CACHE_SIZE; i++ ) {
-    if( c->elems[i].date < oldest_date ) {
+  for (int i = 0; i < REGEX_CACHE_SIZE; i++) {
+    cache_elem* elem = &c->elems[i];
+    if( elem->date < oldest_date ) {
       oldest = i;
-      oldest_date = c->elems[i].date;
+      oldest_date = elem->date;
     }
-    if( ! c->elems[i].re ) continue;
-    const std::string& pat = c->elems[i].re->re.pattern();
-    const RE2::Options& opt = c->elems[i].re->re.options();
-    if( (uint64_t) pat.length() == (uint64_t) str_len &&
-        0 == memcmp(pat.data(), str, str_len ) &&
-        equal_options(&opt, options) ) {
+    re_t* re = elem->re;
+    if (!re) continue;
+    const std::string& pat = re->re.pattern();
+    if ((uint64_t) pat.length() == (uint64_t) str_len &&
+        re->optionFlags == optionFlags &&
+        0 == memcmp(pat.data(), str, str_len)) {
       // Make the date current.
-      c->elems[i].date = c->date;
+      elem->date = c->date;
       // Return this element.
-      re_t* re = c->elems[i].re;
       // We increment the reference count before returning a copy to the
       // caller.  It is up to the caller to release the re_t handle when done.
       DO_RETAIN(re);
@@ -157,15 +205,14 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regex_options_
   }
 
   // If we found no match, replace oldest.
-  if( c->elems[oldest].re) DO_RELEASE(c->elems[oldest].re, re_free);
+  cache_elem* elem = &c->elems[oldest];
+  if (elem->re) DO_RELEASE(elem->re, re_free);
 
   // Put a new RE in that slot.
-  RE2::Options opts;
-  qio_re_options_to_re2_options(options, &opts);
   StringPiece strp(str, str_len);
-  re_t* re = new re_t(strp, opts, c);
-  c->elems[oldest].date = c->date;
-  c->elems[oldest].re = re;
+  re_t* re = new re_t(strp, optionFlags, optionPrefixBytes);
+  elem->date = c->date;
+  elem->re = re;
   // We increment the reference count before returning a copy to the
   // caller.  It is up to the caller to release the re_t handle when done.
   DO_RETAIN(re);
@@ -194,22 +241,32 @@ void qio_regex_init_default_options(qio_regex_options_t* opt)
   opt->nongreedy = false;
 }
 
-// The returned re_t (passed back through "compiled") must be released by the caller.
-void qio_regex_create_compile(const char* str, int64_t str_len, const qio_regex_options_t* options, qio_regex_t* compiled)
+// The returned re_t (passed back through "compiled")
+// must be released by the caller.
+void qio_regex_create_compile(const char* str, int64_t str_len,
+                              const qio_regex_options_t* options,
+                              qio_regex_t* compiled)
 {
   re_t* regex = nullptr;
+  optionFlags_t optionFlags = qio_re_options_to_flags(options);
 
   if (!options->posix && (options->multiline || options->nongreedy)) {
     // if it's not POSIX mode, need to add a prefix for multiline/nongreedy
     std::string s;
-    if (options->multiline) s += "(?m)";
-    if (options->nongreedy) s += "(?U)";
+    if (options->multiline) {
+      s += "(?m)";
+    }
+    if (options->nongreedy) {
+      s += "(?U)";
+    }
+    uint8_t optionPrefixBytes = s.size();
     s.append(str, str_len);
 
-    regex = local_cache_get(s.data(), s.size(), options);
+    regex = local_cache_get(s.data(), s.size(),
+                            optionFlags, optionPrefixBytes);
   } else {
     // otherwise, use the pattern as-is, no need to add a prefix
-    regex = local_cache_get(str, str_len, options);
+    regex = local_cache_get(str, str_len, optionFlags, 0);
   }
   compiled->regex = (void*) regex;
   // We bump the reference count, because caller "owns" its copy of the cached
