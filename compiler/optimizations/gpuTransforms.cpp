@@ -1015,17 +1015,11 @@ struct ReductionInfo {
 class GpuKernel;
 
 class KernelArg {
-  // we generate wrappers as export functions so that we can easily pass them
-  // around as function pointers. Export functions are not subject to codegen
-  // uniquefying their names. So, we do it ourselves. "For a given kernel name,
-  // what's the ID we should "assign" to this wrapper" is what this map stores.
-  static std::map<std::string, int> wrapperDisambigMap;
-
   private:
     Symbol* actual_;
     GpuKernel* kernel_;
     ArgSymbol* formal_;
-    int8_t kind_;
+    int8_t kind_; // formed by |'ing values of GpuArgKind
     ReductionInfo redInfo_;
 
   public:
@@ -1047,8 +1041,6 @@ class KernelArg {
     FnSymbol* generateFinalReductionWrapper();
     void findReduceKind();
 };
-
-std::map<std::string, int> KernelArg::wrapperDisambigMap;
 
 // ----------------------------------------------------------------------------
 // GpuKernel
@@ -1253,12 +1245,13 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   // here, we need to create an unambiguous name for the wrapper. This is
   // because we are marking it an `export`. export-ed functions don't get unique
   // names during codegen, so wires get crossed.
+  static std::map<std::string, int> wrapperDisambigMap;
   std::string loopName = this->kernel_->name();
-  if (KernelArg::wrapperDisambigMap.count(loopName) == 0) {
-    KernelArg::wrapperDisambigMap[loopName] = 0;
+  if (wrapperDisambigMap.count(loopName) == 0) {
+    wrapperDisambigMap[loopName] = 0;
   }
-  const int nCurId = KernelArg::wrapperDisambigMap[loopName];
-  KernelArg::wrapperDisambigMap[loopName] = nCurId+1;
+  const int nCurId = wrapperDisambigMap[loopName];
+  wrapperDisambigMap[loopName] = nCurId+1;
 
   std::string fnName = "chpl_reduce_" + std::to_string(nCurId) + "_" + loopName;
 
