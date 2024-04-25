@@ -534,7 +534,9 @@ record regex : serializable {
                    not require escaping backslashes. For example ``"""\s"""`` or
                    ``b"""\s"""`` can be used.
      :arg posix: (optional) set to true to disable non-POSIX regular expression
-                 syntax
+                 syntax and to prefer the left-most longest match, instead of
+                 the first match in the pattern. This mode is intended to match
+                 egrep regular expression syntax.
      :arg literal: (optional) set to true to treat the regular expression as a
                    literal (ie, create a regex matching ``pattern`` as a string
                    rather than as a regular expression).
@@ -1060,6 +1062,10 @@ proc bytes.find(pattern: regex(bytes)):byteIndex
 /* Search the receiving string for the pattern. Returns a new string where the
    match(es) to the pattern is replaced with a replacement.
 
+   The replacement string can include the sequences \1 to \9 to include text
+   matching the corresponding parenthesized capture group from the pattern, and
+   \0 to refer to the entire matching text.
+
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
    :arg count: number of maximum replacements to make, values less than zero
@@ -1073,6 +1079,10 @@ proc string.replace(pattern: regex(string), replacement:string,
 
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
    match(es) to the pattern is replaced with a replacement.
+
+   The replacement bytes can include the sequences \1 to \9 to include text
+   matching the corresponding parenthesized capture group from the pattern, and
+   \0 to refer to the entire matching text.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with
@@ -1088,6 +1098,10 @@ proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
    match(es) to the pattern is replaced with a replacement and number of
    replacements.
 
+   The replacement string can include the sequences \1 to \9 to include text
+   matching the corresponding parenthesized capture group from the pattern, and
+   \0 to refer to the entire matching text.
+
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
    :arg count: number of maximum replacements to make, values less than zero
@@ -1101,6 +1115,10 @@ proc string.replaceAndCount(pattern: regex(string), replacement:string,
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
    match(es) to the pattern is replaced with a replacement and number of
    replacements.
+
+   The replacement bytes can include the sequences \1 to \9 to include text
+   matching the corresponding parenthesized capture group from the pattern, and
+   \0 to refer to the entire matching text.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with
