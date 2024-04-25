@@ -1,3 +1,1 @@
-C.init
-C.postinit
-C.postinit
+callPostInit.chpl:15: error: explicit calls to postinit() on anything other than 'this' or 'super' are not allowed
