@@ -1226,7 +1226,12 @@ module Random {
                                     empty. If ``weights`` does not have the same
                                     size as ``arr``.
     */
-    proc ref sample(const ref arr: [?d] ?t, n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] t throws
+    proc ref sample(
+      const ref arr: [?d] ?t,
+      n: int,
+      const ref weights: [?dw] ?wt,
+      withReplacement=false
+    ): [] t throws
       where is1DRectangularDomain(d) && isCoercible(this.eltType, wt)
     {
       if d.size < 1 then
@@ -1708,6 +1713,7 @@ module Random {
   // Do a binary search of 'a' for the first occurrence of 'x'
   // returns the index of the first occurrence of 'x' in 'a' between 'start' and 'stop'
   // or the index where 'x' should be inserted to maintain sorted order
+  // TODO: consider adding this functionality to the Search module
   private proc binarySearchFirst(
     const ref a: [?d] ?t,
     x: t,
