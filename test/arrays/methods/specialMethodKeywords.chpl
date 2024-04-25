@@ -24,13 +24,11 @@ proc C2.postinit() { }
 // deinit can also be used to deinitialize the module
 proc deinit() { }
 
-// Init and postinit can be explicitly called:
+// init, postinit, and deinit cannot be explicitly called:
 var obj = new C();
-obj.init();
-obj.postinit();
-
-// Not so much for deinit:
-obj.deinit();   // [error: Direct calls are disallowed]
+obj.init();         // [error: explicit calls to init() on anything other than 'this' or 'super' are not allowed]
+obj.postinit();     // [error: explicit calls to postinit() are not allowed]
+obj.deinit();       // [error: explicit calls to deinit() are not allowed]
 
 // Using these reserved words as variables names is not OK:
 var init = 42;      // [error: attempt to redefine reserved word 'init']
