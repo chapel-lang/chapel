@@ -2258,6 +2258,10 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return typeForModuleLevelSymbol(context, id, isCurrentModule);
   }
 
+  if (asttags::isEnum(parentTag) && asttags::isEnumElement(tag)) {
+    return typeForScopeResolvedEnumElement(parentId, id, /* ambiguous */ false);
+  }
+
   // If the id is contained within a class/record/union that we are resolving,
   // get the resolved field.
   const CompositeType* ct = nullptr;
@@ -2587,12 +2591,6 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
   return false;
 }
 
-static const LookupConfig identifierLookupConfig = LOOKUP_DECLS |
-                                                   LOOKUP_IMPORT_AND_USE |
-                                                   LOOKUP_PARENTS |
-                                                   LOOKUP_EXTERN_BLOCKS;
-
-
 void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
                                            const Scope* scope,
                                            llvm::ArrayRef<const Scope*> receiverScopes,
@@ -2623,7 +2621,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
-  LookupConfig config = identifierLookupConfig;
+  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
@@ -2873,7 +2871,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
 
-      LookupConfig config = identifierLookupConfig;
+      LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
       if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
@@ -2903,12 +2901,6 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
 void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
-
-  if (ident->name() == USTR("nil")) {
-    result.setType(QualifiedType(QualifiedType::CONST_VAR,
-                                 NilType::get(context)));
-    return;
-  }
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
   CHPL_ASSERT(declStack.size() > 0);
@@ -2986,9 +2978,27 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       bool computeDefaults = true;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
+      // For calls like
+      //
+      //   type myType = anotherType(int)
+      //
+      // Use the generic version of anotherType to feed as receiver.
       if (resolvingCalledIdent) {
         computeDefaults = false;
       }
+
+      // Other special exceptions like 'r' in:
+      //
+      //  proc r.init() { ... }
+      //
+      if (!genericReceiverOverrideStack.empty()) {
+        auto& topEntry = genericReceiverOverrideStack.back();
+        if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
+            topEntry.second == parsing::parentAst(context, ident)) {
+          computeDefaults = false;
+        }
+      }
+
       if (computeDefaults) {
         type = computeTypeDefaults(*this, type);
       }
@@ -3101,6 +3111,21 @@ bool Resolver::enter(const TypeQuery* tq) {
 void Resolver::exit(const TypeQuery* tq) {
 }
 
+// Treat receiver types specially in terms of generic resolution. That is,
+// when resolving the following initializer when r is generic with defaults,
+//
+//   proc r.init() {}
+//
+// Make sure r's defaults aren't used so that the most general receiver is
+// constructed. On the other hand, defaults _should_ be used for more
+// complicated expressions:
+//
+//   proc (someTypeFn(r)).init() {}
+//
+static bool shouldUseGenericTypeForTypeExpr(const NamedDecl* decl) {
+ return decl->isFormal() && decl->name() == USTR("this");
+}
+
 bool Resolver::enter(const NamedDecl* decl) {
 
   if (decl->id().postOrderId() < 0) {
@@ -3116,6 +3141,13 @@ bool Resolver::enter(const NamedDecl* decl) {
   emitMultipleDefinedSymbolErrors(context, scope);
 
   enterScope(decl);
+
+  if (shouldUseGenericTypeForTypeExpr(decl)) {
+    // Empty string indicates that all identifiers should be treated as
+    // non-defaulted. Using 'decl' means that only the top-level identifiers
+    // will be resolved this way.
+    genericReceiverOverrideStack.emplace_back(UniqueString(), decl);
+  }
 
   // This logic exists to prioritize the field's type expression when
   // resolving a field's type. If the type expression is concrete, then we
@@ -3146,6 +3178,10 @@ bool Resolver::enter(const NamedDecl* decl) {
 }
 
 void Resolver::exit(const NamedDecl* decl) {
+  if (shouldUseGenericTypeForTypeExpr(decl)) {
+    genericReceiverOverrideStack.pop_back();
+  }
+
   // We are resolving a symbol with a different path (e.g., a Function or
   // a CompositeType declaration). In most cases we do not try to resolve
   // in this traversal. However, if we are a nested function and the child
@@ -3307,15 +3343,8 @@ void Resolver::exit(const Range* range) {
     return;
   }
 
-  // For the time being, we're resolving ranges by manually finding the record
-  // and instantiating it appropriately. However, long-term, range literals
-  // should be equivalent to a call to chpl_build_bounded_range. The resolver
-  // cannot handle this right now, but in the future, the below implementation
-  // should be replaced with one that resolves the call.
-
   const RecordType* rangeType = CompositeType::getRangeType(context);
-  auto rangeAst = parsing::idToAst(context, rangeType->id());
-  if (!rangeAst) {
+  if (CompositeType::isMissingBundledRecordType(context, rangeType->id())) {
     // The range record is part of the standard library, but
     // it's possible to invoke the resolver without the stdlib.
     // In this case, mark ranges as UnknownType, but do not error.
@@ -3535,7 +3564,11 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           skip = UNKNOWN_PARAM;
         } else if (qt.isUnknown()) {
           skip = UNKNOWN_ACT;
-        } else if (t != nullptr) {
+        } else if (t != nullptr && !(ci.name() == USTR("init") && actualIdx == 0)) {
+          // For initializer calls, allow generic formals using the above
+          // condition; this way, 'this.init(..)' while 'this' is generic
+          // should be fine.
+
           auto g = getTypeGenericity(context, t);
           bool isBuiltinGeneric = (g == Type::GENERIC &&
                                    (t->isAnyType() || t->isBuiltinType()));
@@ -3574,11 +3607,19 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+
+    if (initResolver) {
+      initResolver->handleResolvedCall(call, &c);
+    }
   } else {
     // We're skipping the call, but explicitly store the 'unknown type'
     // in the map.
     ResolvedExpression& r = byPostorder.byAst(call);
     r.setType(QualifiedType());
+
+    if (initResolver) {
+      initResolver->handleResolvedCall(call, /* call resolution result */ nullptr);
+    }
   }
 }
 
@@ -3641,6 +3682,15 @@ Resolver::typeForScopeResolvedEnumElement(const EnumType* enumType,
   }
 }
 
+QualifiedType
+Resolver::typeForScopeResolvedEnumElement(const ID& enumTypeId,
+                                          const ID& refersToId,
+                                          bool ambiguous) {
+  auto type = initialTypeForTypeDecl(context, enumTypeId);
+  CHPL_ASSERT(type && type->isEnumType());
+  return typeForScopeResolvedEnumElement(type->toEnumType(), refersToId,
+                                         ambiguous);
+}
 
 QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
                                            UniqueString elementName,
@@ -3831,6 +3881,10 @@ void Resolver::exit(const Dot* dot) {
 }
 
 bool Resolver::enter(const New* node) {
+  if (auto ident = node->typeExpression()->toIdentifier()) {
+    genericReceiverOverrideStack.emplace_back(ident->name(), node);
+  }
+
   return true;
 }
 
@@ -3912,6 +3966,10 @@ static void resolveNewForUnion(Resolver& rv, const New* node,
 }
 
 void Resolver::exit(const New* node) {
+  if (node->typeExpression()->isIdentifier()) {
+    genericReceiverOverrideStack.pop_back();
+  }
+
   if (scopeResolveOnly)
     return;
 

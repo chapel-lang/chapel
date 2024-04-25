@@ -76,7 +76,9 @@ class InitResolver {
   }
 
   bool isCallToSuperInitRequired(void);
+  bool setupFromType(const types::Type* type);
   void doSetupInitialState(void);
+  void markComplete();
 
   bool isFinalReceiverStateValid(void);
   const types::Type* computeReceiverTypeConsideringState(void);
@@ -90,6 +92,9 @@ class InitResolver {
   void updateResolverVisibleReceiverType(void);
   bool implicitlyResolveFieldType(ID id);
 
+  bool applyResolvedInitCallToState(const uast::FnCall* node,
+                                    const CallResolutionResult* c);
+
   const uast::AstNode* parentOf(const uast::AstNode* node);
   FieldInitState* fieldStateFromId(ID id);
   FieldInitState* fieldStateFromIndex(int idx);
@@ -101,8 +106,8 @@ class InitResolver {
   // handle a call to this.complete() or init this.
   void handleInitMarker(const uast::AstNode* node);
   bool handleCallToThisComplete(const uast::FnCall* node);
-  bool handleCallToSuperInit(const uast::FnCall* node);
-  bool handleCallToInit(const uast::FnCall* node);
+  bool handleCallToSuperInit(const uast::FnCall* node, const CallResolutionResult* c);
+  bool handleCallToInit(const uast::FnCall* node, const CallResolutionResult* c);
   bool handleAssignmentToField(const uast::OpCall* node);
   ID solveNameConflictByIgnoringField(const NameVec& vec);
 
@@ -121,8 +126,11 @@ public:
   // Called on entry for calls.
   void doDetectPossibleAssignmentToField(const uast::OpCall* node);
 
-  // Called on exit for calls.
+  // Called on exit for calls. The first function is for cases in which we
+  // want to circumvent "regular" call resolution; the second is for when
+  // we want to use the results of resolving a call normally.
   bool handleResolvingCall(const uast::Call* node);
+  bool handleResolvedCall(const uast::Call* node, const CallResolutionResult* c);
 
   // Call on exit for 'init this'
   bool handleInitStatement(const uast::Init* node);

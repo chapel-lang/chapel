@@ -1788,6 +1788,8 @@ regexdna: &regexdna-base
     - Add a field to the string record to store a cached size (#15758)
   02/24/21:
     - Upgrade to re2 2021-02-02 (#17230)
+  04/08/24:
+    - Avoid string copies by implementing replace with match (#24757)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -2480,6 +2482,11 @@ arkouda-comp:
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
 
+arkouda-array_create:
+  <<: *arkouda-base
+  04/05/24:
+    - Closes 3071 Add permutation to our generators (Bears-R-Us/arkouda#3078)
+
 shoc-triad-all-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
@@ -2488,7 +2495,7 @@ shoc-sort:
   02/24/23:
     - Improve SHOC-Sort implementation (#21610)
 
-chplGPU:
+chop:
   03/25/23:
     - Upstream changes
   09/18/23:

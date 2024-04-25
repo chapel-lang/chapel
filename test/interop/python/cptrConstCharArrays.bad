@@ -1,0 +1,1 @@
+cptrConstCharArrays.chpl:10: error: Array return types must include an explicit element type for Python compilation

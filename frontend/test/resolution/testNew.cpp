@@ -582,6 +582,56 @@ static void testGenericRecordUserSecondaryInitDependentField() {
   assert(f3.param()->toIntParam()->value() == 42);
 }
 
+static void testNewGenericWithDefaults() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    record r {
+      type f1 = int;
+    }
+
+    proc r.init(type f1) {
+      this.f1 = f1;
+    }
+
+    var x1 = new r(int);
+    var x2 = new r(bool);
+    )""", { "x1", "x2" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isType());
+    assert(f1.type()->isIntType());
+    assert(f1.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isType());
+    assert(f1.type()->isBoolType());
+  }
+}
+
 int main() {
   testEmptyRecordUserInit();
   testEmptyRecordCompilerGenInit();
@@ -590,6 +640,7 @@ int main() {
   testGenericRecordUserInitDependentField();
   testRecordNewSegfault();
   testGenericRecordUserSecondaryInitDependentField();
+  testNewGenericWithDefaults();
 
   return 0;
 }

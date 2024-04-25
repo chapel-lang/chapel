@@ -328,6 +328,13 @@ const QualifiedType& typeForBuiltin(Context* context,
     result = QualifiedType(QualifiedType::TYPE, t);
   } else if (searchGlobals != globalMap.end()) {
     result = searchGlobals->second;
+  } else if (name == USTR("nil")) {
+    result = QualifiedType(QualifiedType::CONST_VAR,
+                           NilType::get(context));
+  } else if (name == USTR("none")) {
+    result = QualifiedType(QualifiedType::PARAM,
+                           NothingType::get(context),
+                           NoneParam::get(context, /* NoneValue */ {}));
   } else {
     // Could be a non-type builtin like 'index'
     result = QualifiedType();
@@ -3232,6 +3239,13 @@ static bool resolveFnCallSpecial(Context* context,
   if (ci.isOpCall() && ci.name() == USTR(":")) {
     auto src = ci.actual(0).type();
     auto dst = ci.actual(1).type();
+
+    auto targetParamGuess = Param::tryGuessParamTagFromType(dst.type());
+    if (!targetParamGuess) {
+      // We're casting a param value, but the destination type can't be
+      // a param. This should be treated as a non-special cast.
+      return false;
+    }
 
     bool isDstType = dst.kind() == QualifiedType::TYPE;
     bool isParamTypeCast = src.kind() == QualifiedType::PARAM && isDstType;

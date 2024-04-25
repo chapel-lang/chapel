@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+grep "Initial Tree size" $2 > $2.tmp
+grep "Final Tree size" $2 >> $2.tmp
+grep "TOTAL Tree size" $2 >> $2.tmp
+grep "Elapsed time" $2 >> $2.tmp
+
+mv $2.tmp $2

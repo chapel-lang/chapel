@@ -56,4 +56,25 @@ module SimpleDomainAsRange {
   for {1..#10 align 2} {}
 
   for {1..#10 by 2 align 2} {}
+
+  var A: [1..10] int;
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  forall i in {1..#10 by 2 align 2} with (ref A) {
+
+  }
+
+  forall {1..10} with (ref A) {
+
+  }
+
+  forall {1..<10} with (ref A) {
+
+  }
+
+  foreach {1..#10 by 2 align 2} with (ref A) {
+
+  }
+
+  foreach {1..10, 1..10 by 2} {}
 }

@@ -235,12 +235,12 @@ module Random {
   }
 
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], min, max, seed: int) {
+  proc fillRandom(ref arr: [] ?t, min: t, max: t, seed: int) {
     compilerError("'fillRandom' does not support non-rectangular arrays");
   }
 
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], min, max) {
+  proc fillRandom(ref arr: [] ?t, min: t, max: t) {
     compilerError("'fillRandom' does not support non-rectangular arrays");
   }
 

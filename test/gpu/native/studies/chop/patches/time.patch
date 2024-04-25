@@ -1,0 +1,24 @@
+diff --git a/modules/queens_GPU_single_locale.chpl b/modules/queens_GPU_single_locale.chpl
+index 78bd4ec..83cbe6f 100644
+--- a/modules/queens_GPU_single_locale.chpl
++++ b/modules/queens_GPU_single_locale.chpl
+@@ -9,6 +9,8 @@ module queens_GPU_single_locale{
+ 	use queens_CHPL_call_device_search;
+ 	use queens_constants;
+ 
++        config const printElapsedTime = true;
++
+ 
+ 	use CTypes;
+ 
+@@ -84,7 +86,9 @@ module queens_GPU_single_locale{
+     	else{
+     		writeln("Number of solutions: ", metrics[0]);
+     	}
+-		writeln("Elapsed time: ", final.elapsed()+initial.elapsed(),"\n\n");
++
++                if printElapsedTime then
++                  writeln("Elapsed time: ", final.elapsed()+initial.elapsed(),"\n\n");
+ 		writeln("\tInitial search el. time: ", initial.elapsed());
+ 		writeln("\tFinal search el. time: ",  final.elapsed());
+ 

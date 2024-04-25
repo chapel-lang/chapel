@@ -18,6 +18,12 @@
  * limitations under the License.
  */
 
+#ifdef __STRICT_ANSI__
+// For builds with NVIDIA we define this, but this source is not compatible with
+// it. So, undefine if it was defined
+#undef __STRICT_ANSI__
+#endif
+
 //
 // GNI-based implementation of Chapel communication interface.
 //
@@ -3899,7 +3905,7 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
 }
 
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   //
   // Gather the global variables' wide pointers on node 0 into a
   // buffer, and broadcast the address of that buffer to the other

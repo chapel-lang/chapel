@@ -32,11 +32,71 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
     auto useParent = parsing::parentAst(context, visibilityStmt);
     auto scope = resolution::scopeForId(context, useParent->id());
     auto reScope = resolution::resolveVisibilityStmts(context, scope);
+
+    // Iterate and re-assign the ID if there are multiple visibility clauses.
+    // The reason is that the first 'visibility clause ID' might be too broad
+    // and contain the others.
+    ID toReturn;
     for (auto visCla: reScope->visibilityClauses()) {
       if(visCla.visibilityClauseId().contains(node->id())) {
-        return visCla.scope()->id();
+        // A visibility cluse includes the symbol-to-be-imported and the
+        // 'limitations' (x as y etc.). We'll need to get them from the AST.
+        auto visClaKind = visCla.kind();
+        auto visClaAst =
+          parsing::idToAst(context, visCla.visibilityClauseId())->toVisibilityClause();
+
+        if (visClaKind == resolution::VisibilitySymbols::SYMBOL_ONLY ||
+            visClaKind == resolution::VisibilitySymbols::ALL_CONTENTS) {
+          // the cursor is over 'A' or 'B' in 'import A' or 'import A as B'.
+          // The 'definition' is for the scope.
+          toReturn = visCla.scope()->id();
+        } else if (visClaKind == resolution::VisibilitySymbols::ONLY_CONTENTS ||
+                   visClaKind == resolution::VisibilitySymbols::CONTENTS_EXCEPT) {
+          if (visClaAst->symbol()->contains(node)) {
+            // The cursor is over the symbol, like 'IO' in 'use IO only ioMode'.
+            // Just return the scope ID.
+            toReturn = visCla.scope()->id();
+            continue;
+          }
+
+          // The cursor is over a limitation such as 'ioMode' in 'use IO only ioMode'.
+          // Find which limitation.
+          const AstNode* limitation = nullptr;
+          for (auto l : visClaAst->limitations()) {
+            if (l->contains(node)) {
+              limitation = l;
+              break;
+            }
+          }
+
+          // Couldn't find one; give up.
+          if (!limitation) return ID();
+
+          // Pattern match on the limitation to see what to look up in the scope.
+          // E.g., if it's 'IO only x as y', we want to look up 'x'.
+          const Identifier* identToLookUp = nullptr;
+          if (auto limAs = limitation->toAs()) {
+            identToLookUp = limAs->symbol()->toIdentifier();
+          } else if (auto limIdent = limitation->toIdentifier()) {
+            identToLookUp = limIdent;
+          }
+
+          if (identToLookUp) {
+            auto config = chpl::resolution::IDENTIFIER_LOOKUP_CONFIG |
+                          resolution::LOOKUP_SKIP_PRIVATE_VIS;
+            auto ids =
+              resolution::lookupNameInScope(context, visCla.scope(),
+                                            /* receiverScopes */ {},
+                                            identToLookUp->name(),
+                                            config);
+
+            if (ids.empty()) return ID();
+            toReturn = ids[0].firstId();
+          }
+        }
       }
     }
+    return toReturn;
   }
   return ID();
 }

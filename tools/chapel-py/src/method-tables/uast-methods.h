@@ -87,11 +87,17 @@ CLASS_BEGIN(AstNode)
 
          auto sigObj = std::get<0>(args);
          auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
+         if (!resolvedFn) return {};
+
          auto r = resolvedFn->byAstOrNull(node);
          return ResolvedExpressionObject::tryCreate(contextObject, r))
   PLAIN_GETTER(AstNode, block_header, "Get the header Location of this block-like AstNode node",
                std::optional<chpl::Location>,
                auto loc = chpl::parsing::locateBlockHeaderWithAst(context, node);
+               return getValidLocation(loc))
+  PLAIN_GETTER(AstNode, curly_braces_location, "Get the Location of the curly braces of this AstNode node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateCurlyBracesWithAst(context, node);
                return getValidLocation(loc))
 CLASS_END(AstNode)
 
@@ -383,7 +389,7 @@ CLASS_BEGIN(Loop)
                const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(Loop, body, "Get the body of this Loop node",
                const chpl::uast::AstNode*, return node->body())
-  PLAIN_GETTER(IndexableLoop, header_location, "Get the Location of this Loop node's header",
+  PLAIN_GETTER(Loop, header_location, "Get the Location of this Loop node's header",
                std::optional<chpl::Location>,
                auto loc = chpl::parsing::locateLoopHeaderWithAst(context, node);
                return getValidLocation(loc))
@@ -422,7 +428,7 @@ CLASS_END(For)
 
 CLASS_BEGIN(BoolLiteral)
   PLAIN_GETTER(BoolLiteral, value, "Get the value of this BoolLiteral node",
-               const char*, return (node->value() ? "true" : "false"))
+               bool, return node->value())
 CLASS_END(BoolLiteral)
 
 CLASS_BEGIN(ImagLiteral)

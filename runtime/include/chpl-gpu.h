@@ -42,17 +42,12 @@ extern bool chpl_gpu_use_stream_per_task;
 
 #ifdef HAS_GPU_LOCALE
 
-extern int chpl_nodeID;
-
 __attribute__ ((format (printf, 1, 2)))
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
   if (chpl_gpu_debug) {
     va_list args;
     va_start(args, str);
-    const char* base_fmt = "(%3d:%3d) %s";
-    char fmt[128];
-    snprintf(fmt, 128, base_fmt, chpl_nodeID, chpl_task_getRequestedSubloc(), str);
-    vfprintf(stdout, fmt, args);
+    vfprintf(stdout, str, args);
     va_end(args);
     fflush(stdout);
   }

@@ -1694,9 +1694,11 @@ struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
   //
   // Note: we don't ask for FI_ORDER_ATOMIC_RAW because the some providers
   // doesn't support it.  FI_ORDER_ATOMIC_WAR ordering is enforced by the
-  // MCM.
+  // MCM. We need FI_ORDER_RMA_WAW to ensure sequential consistency of
+  // writes.
   //
   uint64_t need_msg_orders =   FI_ORDER_ATOMIC_WAW
+                             | FI_ORDER_RMA_WAW
                              | FI_ORDER_SAS;
   if (set) {
     // Only use this mode if the tasking layer has a fixed number of threads.
@@ -3889,7 +3891,8 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
   DBG_PRINTF(DBG_ORDER,
              "dummy GET from %d for %s ordering",
              (int) node, dbgOrderStr);
-  uint64_t flags = (mcmMode == mcmm_msgOrdFence) ? FI_FENCE : 0;
+  uint64_t flags = (mcmMode == mcmm_msgOrdFence) ?
+                      (FI_FENCE | FI_DELIVERY_COMPLETE) : 0;
   atomic_bool txnDone;
   void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
   ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
@@ -4575,12 +4578,12 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
         && reqSize <= ofi_info->tx_attr->inject_size
         && envInjectAM) {
       void* ctx = txnTrkEncodeId(__LINE__);
-      uint64_t flags = FI_FENCE | FI_INJECT;
+      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE | FI_INJECT;
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
     } else {
       atomic_bool txnDone;
       void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
-      uint64_t flags = FI_FENCE;
+      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE;
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
       waitForTxnComplete(tcip, ctx);
       txCtxCleanup(ctx);
@@ -5995,7 +5998,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
       // PUT to force the AMO to complete before this PUT.  We may still
       // be able to inject the PUT, though.
       //
-      uint64_t flags = FI_FENCE;
+      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE;
       if (size <= ofi_info->tx_attr->inject_size
           && envInjectRMA) {
         flags |= FI_INJECT;
@@ -6435,7 +6438,7 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
     // that visibility.
     //
     (void) wrap_fi_readmsg(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx,
-                           FI_FENCE, tcip);
+                           FI_FENCE | FI_DELIVERY_COMPLETE, tcip);
     if (havePutsOut) {
       bitmapClear(tcip->putVisBitmap, node);
     }
@@ -6848,7 +6851,7 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
     if (havePutsOut ||
        (famo && haveAmosOut &&
           !(ofi_info->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW))) {
-      flags |= FI_FENCE;
+      flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
     }
     if (havePutsOut) {
       bitmapClear(tcip->putVisBitmap, ab->node);

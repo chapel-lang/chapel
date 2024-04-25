@@ -63,7 +63,9 @@ comprt: FORCE
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
 	@$(MAKE) always-build-chpldoc
+	@$(MAKE) always-build-chapel-py
 	@$(MAKE) always-build-chplcheck
+	@$(MAKE) always-build-cls
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -159,9 +161,19 @@ always-build-chpldoc: FORCE
 	$(MAKE) chpldoc; \
 	fi
 
+always-build-chapel-py: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHAPEL_PY" ]; then \
+	$(MAKE) chapel-py-venv; \
+	fi
+
 always-build-chplcheck: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLCHECK" ]; then \
 	$(MAKE) chplcheck; \
+	fi
+
+always-build-cls: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPL_LANGUAGE_SERVER" ]; then \
+	$(MAKE) chpl-language-server; \
 	fi
 
 chplvis: compiler third-party-fltk FORCE

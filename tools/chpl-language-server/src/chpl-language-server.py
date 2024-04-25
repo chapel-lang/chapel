@@ -198,8 +198,7 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
 
 
 def completion_item_for_decl(
-    decl: chapel.NamedDecl,
-    override_name: Optional[str] = None
+    decl: chapel.NamedDecl, override_name: Optional[str] = None
 ) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
@@ -208,6 +207,11 @@ def completion_item_for_decl(
     # For now, we show completion for global symbols (not x.<complete>),
     # so it seems like we ought to rule out methods.
     if kind == SymbolKind.Method:
+        return None
+
+    # We don't want to show operators in completion lists, as they're
+    # not really useful to the user in this context.
+    if kind == SymbolKind.Operator:
         return None
 
     name_to_use = override_name if override_name else decl.name()
@@ -242,48 +246,6 @@ def get_symbol_information(
             loc, str(signature), kind, deprecated=is_deprecated
         )
     return None
-
-
-def range_to_tokens(
-    rng: chapel.Location, lines: List[str]
-) -> List[Tuple[int, int, int]]:
-    """
-    Convert a Chapel location to a list of token-compatible ranges. If a location
-    spans multiple lines, it gets split into multiple tokens. The lines
-    and columns are zero-indexed.
-
-    Returns a list of (line, column, length).
-    """
-
-    (line_start, char_start) = rng.start()
-    (line_end, char_end) = rng.end()
-
-    if line_start == line_end:
-        return [(line_start - 1, char_start - 1, char_end - char_start)]
-
-    tokens = [
-        (
-            line_start - 1,
-            char_start - 1,
-            len(lines[line_start - 1]) - char_start,
-        )
-    ]
-    for line in range(line_start + 1, line_end):
-        tokens.append((line - 1, 0, len(lines[line - 1])))
-    tokens.append((line_end - 1, 0, char_end - 1))
-
-    return tokens
-
-
-def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
-    """
-    Convert a Chapel location to a string. If the location spans multiple
-    lines, it gets truncated into 1 line.
-    """
-    text = []
-    for line, column, length in range_to_tokens(rng, lines):
-        text.append(lines[line][column : column + length + 1])
-    return " ".join([t.strip() for t in text])
 
 
 def encode_deltas(
@@ -446,6 +408,8 @@ class EndMarkerPattern:
                         chapel.Sync,
                         chapel.Local,
                         chapel.Manage,
+                        chapel.Select,
+                        chapel.When,
                     ]
                 ),
                 header_location=lambda node: (
@@ -1258,7 +1222,7 @@ class ChapelLanguageServer(LanguageServer):
             )
             if dead_branch:
                 loc = dead_branch.location()
-                return range_to_tokens(loc, lines)
+                return chapel.range_to_tokens(loc, lines)
 
         return []
 
@@ -1379,7 +1343,8 @@ class ChapelLanguageServer(LanguageServer):
                 if re.search(self._curly_bracket_with_comment, curly_line):
                     continue
 
-                text = range_to_text(header_loc, file_lines)
+                text = chapel.range_to_lines(header_loc, file_lines)
+                text = " ".join([t.strip() for t in text])
                 loc = location_to_location(goto_loc) if goto_loc else None
                 to_insert = " // " + text
                 edit = TextEdit(
@@ -1549,7 +1514,7 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
-        for (name, decl) in fi.visible_decls:
+        for name, decl in fi.visible_decls:
             if isinstance(decl, chapel.NamedDecl):
                 items.append(completion_item_for_decl(decl, override_name=name))
         items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
@@ -1667,7 +1632,8 @@ def run_lsp():
     async def document_highlight(
         ls: ChapelLanguageServer, params: DocumentHighlightParams
     ):
-        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        text_doc_uri = params.text_document.uri
+        text_doc = ls.workspace.get_text_document(text_doc_uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
@@ -1676,13 +1642,16 @@ def run_lsp():
             return None
 
         # todo: it would be nice if this differentiated between read and write
-        highlights = [
-            DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+        highlights = []
+        # only highlight the declaration if it is in the current document
+        if node_and_loc.get_uri() == text_doc_uri:
+            dh = DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+            highlights.append(dh)
+        uses = fi.uses_here.get(node_and_loc.node.unique_id(), [])
+        highlights += [
+            DocumentHighlight(use.rng, DocumentHighlightKind.Text)
+            for use in uses
         ]
-        for use in fi.uses_here.get(node_and_loc.node.unique_id(), []):
-            highlights.append(
-                DocumentHighlight(use.rng, DocumentHighlightKind.Text)
-            )
 
         return highlights
 

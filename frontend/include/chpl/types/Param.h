@@ -128,6 +128,8 @@ class Param {
  public:
   virtual ~Param() = 0; // this is an abstract base class
 
+  static optional<ParamTag> tryGuessParamTagFromType(const Type* type);
+
   /**
     Returns the tag indicating which Param subclass this is.
    */
