@@ -1,3 +1,9 @@
+list-init-eq-many.chpl:31: In function 'initCopyFromList':
+list-init-eq-many.chpl:41: warning: initializing between two lists with different parSafe settings
+list-init-eq-many.chpl:50: warning: initializing between two lists with different parSafe settings
+list-init-eq-many.chpl:58: warning: initializing between two lists with different parSafe settings
+list-init-eq-many.chpl:60: warning: initializing between two lists with different parSafe settings
+list-init-eq-many.chpl:71: warning: initializing between two lists with different parSafe settings
 newCopyFromList
 x:list(int(64),false) = [1, 2]
 a:list(int(64),false) = [1, 2]

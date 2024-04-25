@@ -1,3 +1,2 @@
 parsafeMismatch.chpl:18: In initializer:
-parsafeMismatch.chpl:19: warning: not using the parSafe settings of the other list.
-If this was not intentional, consider explicitly declaring the list's parSafe setting.
+parsafeMismatch.chpl:19: warning: initializing between two lists with different parSafe settings
