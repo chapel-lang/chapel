@@ -129,9 +129,12 @@ static RE2::Options flags_to_re2_opts(optionFlags_t flags) {
 static
 optionFlags_t qio_re_options_to_flags(const qio_regex_options_t* options) {
   optionFlags_t ret = 0;
+
+  // ignore all other flags if literal is used
+  if (options->literal) return OPTION_FLAG_LITERAL;
+
   if (options->utf8)       ret |= OPTION_FLAG_UTF8;
   if (options->posix)      ret |= OPTION_FLAG_POSIX;
-  if (options->literal)    ret |= OPTION_FLAG_LITERAL;
   if (options->nocapture)  ret |= OPTION_FLAG_NOCAPTURE;
   if (options->ignorecase) ret |= OPTION_FLAG_IGNORECASE;
   if (options->multiline)  ret |= OPTION_FLAG_MULTILINE;
@@ -251,7 +254,8 @@ void qio_regex_create_compile(const char* str, int64_t str_len,
   re_t* regex = nullptr;
   optionFlags_t optionFlags = qio_re_options_to_flags(options);
 
-  if (!options->posix && (options->multiline || options->nongreedy)) {
+  if (!options->posix && !options->literal &&
+      (options->multiline || options->nongreedy)) {
     // if it's not POSIX mode, need to add a prefix for multiline/nongreedy
     std::string s;
     if (options->multiline) {

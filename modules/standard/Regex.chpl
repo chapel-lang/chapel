@@ -539,7 +539,8 @@ record regex : serializable {
                  egrep regular expression syntax.
      :arg literal: (optional) set to true to treat the regular expression as a
                    literal (ie, create a regex matching ``pattern`` as a string
-                   rather than as a regular expression).
+                   rather than as a regular expression). If ``literal=true``,
+                   all other optional flags are ignored.
      :arg noCapture: (optional) set to true in order to disable all capture
                      groups in the regular expression
      :arg ignoreCase: (optional) set to true in order to ignore case when

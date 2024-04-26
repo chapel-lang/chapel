@@ -23,3 +23,8 @@ extractMatch(new regex("0f+", literal=false), "0fff1", "0fff");
 writeln("checking 0f+, literal=true");
 extractMatch(new regex("0f+", literal=true), "0fff1", "<not found>");
 extractMatch(new regex("0f+", literal=true), "00f++", "0f+");
+
+// check that the various flags are ignored for literal mode
+writeln("checking 0f+, literal=true + other flags");
+extractMatch(new regex("0f+", literal=true, multiLine=true, nonGreedy=true), "00f++", "0f+");
+extractMatch(new regex("0f+", literal=true, posix=true), "00f++", "0f+");
