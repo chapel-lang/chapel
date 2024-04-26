@@ -558,7 +558,7 @@ void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
   cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars, ln, fn);
   cfg_init_dims_1d((kernel_cfg*)ret, num_threads, blk_dim);
 
-  CHPL_GPU_DEBUG("Initialized kernel config for %s. num_threads=%ld blk_dim=%d"
+  CHPL_GPU_DEBUG("Initialized kernel config for %s. num_threads=%"PRId64" blk_dim=%d"
                  " %d params, %d pids and %d reduction buffers\n", fn_name,
                  num_threads, blk_dim, n_params, n_pids, n_reduce_vars);
   CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
