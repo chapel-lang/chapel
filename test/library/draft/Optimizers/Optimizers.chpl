@@ -48,6 +48,11 @@ module Optimizers {
       ser.writeField(this.name, this.intValue);
       ser.endRecord();
     }
+
+    proc getValue() {
+      // TODO: update when support multiple argument types
+      return intValue;
+    }
   }
 
   /* Optimize using random sampling, returning the combination that leads to the
@@ -126,7 +131,7 @@ module Optimizers {
       // TODO: bundle up the arguments in a way that's understandable
       // David thinks we can't use named arguments in FCPs yet, so need to be
       // careful about argument ordering
-      i.fom = func(i.parameters[0].intValue);
+      i.fom = func(i.parameters[0].getValue());
       i.status = Status.completed;
     }
   }
