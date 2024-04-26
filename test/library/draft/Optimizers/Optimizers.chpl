@@ -53,6 +53,18 @@ module Optimizers {
       // TODO: update when support multiple argument types
       return intValue;
     }
+
+    proc getLowerBound() {
+      // TODO: update when support multiple argument types
+      // TODO: update when support bound sets instead of just ranges
+      return intBounds(0);
+    }
+
+    proc getUpperBound() {
+      // TODO: update when support multiple argument types
+      // TODO: update when support bound sets instead of just ranges
+      return intBounds(1);
+    }
   }
 
   /* Optimize using random sampling, returning the combination that leads to the
@@ -115,8 +127,9 @@ module Optimizers {
     // TODO: generalize for more value types than just ints
     // TODO: handle not actually having bounds set
     for arg in basePoint.parameters {
-      var newArg = new optimizableArg(arg.name, rngInt.next(arg.intBounds(0),
-                                                            arg.intBounds(1)));
+      var newArg = new optimizableArg(arg.name,
+                                      rngInt.next(arg.getLowerBound(),
+                                                  arg.getUpperBound()));
       point.parameters.pushBack(newArg);
     }
 
