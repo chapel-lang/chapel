@@ -11,7 +11,6 @@ module load cudatoolkit
 export CHPL_TARGET_COMPILER=llvm
 export CHPL_LLVM=bundled
 export CHPL_TARGET_CPU=native
-# export CHPL_COMM=none # UGNI is picked up automatically based on the config
 export CHPL_LAUNCHER_CONSTRAINT=BW18
 export CHPL_LAUNCHER="slurm-srun"
 
