@@ -560,8 +560,9 @@ record regex : serializable {
                      many x characters as possible and x*? will match as few as
                      possible.  This flag swaps the two, so that x* will match
                      as few as possible and x*? will match as many as possible.
-                     Note that this flag can be set inside the regular
-                     expression with ``(?U)``.
+                     Note that this flag has no effect when ``posix=true``.
+                     For non-posix regular expressions, it can alternatively
+                     be activated within a regular expression with ``(?U)``.
 
      :throws BadRegexError: If the argument 'pattern' has syntactical errors.
                             Refer to https://github.com/google/re2/blob/master/re2/re2.h
