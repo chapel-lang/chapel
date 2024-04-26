@@ -754,7 +754,14 @@ static void polling(void* x) {
 static void setup_polling(void) {
   atomic_init_spinlock_t(&pollingLock);
 #if defined(GASNET_CONDUIT_IBV)
-  pollingRequired = false;
+  // The GASNET_RCV_THREAD blocks for incoming AMs on the IB channel,
+  // but does not progress AMs arriving via the shared-memory PSHM channel
+  // that might be active when running with co-locales.
+  // Therefore we ask GASNet whether this PSHM domain contains any co-locales,
+  // and conditionally enable our polling thread to ensure progress of PSHM AMs.
+  gex_Rank_t nbrhd_size;
+  gex_System_QueryNbrhdInfo(NULL, &nbrhd_size, NULL);
+  pollingRequired = (nbrhd_size > 1);
   chpl_env_set("GASNET_RCV_THREAD", "1", 1);
 #else
   pollingRequired = true;
