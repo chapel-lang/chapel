@@ -4254,20 +4254,16 @@ resolveIterTypeConsideringTag(Resolver& rv,
                              iterKindFormal.hasParamPtr()));
 
   // Speculatively resolve the iterand to avoid dumping call resolution
-  // errors onto the user right away. Try to avoid speculative resolution
-  // if the iterand is not call-like. (Imagine that we failed to resolve
-  // an iterator that is a parenless method - in that case there would be
-  // no followup action for us anyway).
-  std::vector<owned<ErrorBase>> traversalErrors;
-  if (iterand->isCall()) {
-    auto runResult = context->runAndTrackErrors([&](Context* context) {
-      iterand->traverse(rv);
-      return true;
-    });
-    std::swap(runResult.errors(), traversalErrors);
-  } else {
+  // errors onto the user right away. For example, if the iterand is a
+  // call 'foo()' that maps to a parallel standalone iterator, then 'foo()'
+  // itself will not resolve (missing the 'tag' argument, but that
+  // is supposed to be injected by the compiler)!
+  // TODO: Let's move from speculative resolution here to making the call
+  // handler be aware that it's resolving an iterand.
+  auto runResult = context->runAndTrackErrors([&](Context* context) {
     iterand->traverse(rv);
-  }
+    return true;
+  });
 
   // Inspect the resolution result to determine what should be done next.
   auto& iterandRE = rv.byPostorder.byAst(iterand);
@@ -4278,7 +4274,7 @@ resolveIterTypeConsideringTag(Resolver& rv,
 
   owned<ErrorBase> noCandidatesError = nullptr;
   // Publish all errors except a 'NoMatchingCandidates' for the iterand.
-  for (auto& e : traversalErrors) {
+  for (auto& e : runResult.errors()) {
     if (!isIter && e->type() == NoMatchingCandidates) {
       auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
       if (std::get<0>(nmc->info()) == iterand) {
