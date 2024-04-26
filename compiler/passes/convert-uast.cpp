@@ -86,6 +86,7 @@ struct ConvertedSymbolsMap {
   std::vector<std::pair<ModuleSymbol*, ID>> moduleFixups;
   std::vector<std::pair<SymExpr*,
                         const resolution::TypedFnSignature*>> callFixups;
+  std::vector<std::pair<Symbol*, chpl::types::QualifiedType>> typeFixups;
 
   ConvertedSymbolsMap() { }
   ConvertedSymbolsMap(ID id, ConvertedSymbolsMap* parentMap)
@@ -105,6 +106,11 @@ struct ConvertedSymbolsMap {
                              bool trace);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig,
+                           ConvertedSymbolsMap* cur,
+                           bool trace);
+  void noteTypeFixupNeeded(Symbol* sym,
+                           ID id, // ID of the type we need to wait for
+                           types::QualifiedType qt,
                            ConvertedSymbolsMap* cur,
                            bool trace);
 
@@ -368,6 +374,8 @@ struct Converter {
   void noteModuleFixupNeeded(ModuleSymbol* m, ID id);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig);
+  void noteTypeFixupNeeded(Symbol* sym, ID id, types::QualifiedType qt);
+
   void noteAllContainedFixups(BaseAST* ast, int depth);
 
   // symStack helpers
@@ -4455,8 +4463,6 @@ void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
     if (rr != nullptr) {
       types::QualifiedType qt = rr->type();
       if (!qt.isUnknown()) {
-        printf("SETTING VARIABLE TYPE!!\n");
-
         // Set a type for the variable
         sym->type = convertType(qt);
 
@@ -4551,27 +4557,27 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyUnionType:                 return dtUnknown; // a lie
 
     // declared types
-    case typetags::ClassType:   return convertClassType(qt);
-    case typetags::EnumType:   return convertEnumType(qt);
-    case typetags::ExternType:   return convertExternType(qt);
-    case typetags::FunctionType:   return convertFunctionType(qt);
+    case typetags::ClassType:     return convertClassType(qt);
+    case typetags::EnumType:      return convertEnumType(qt);
+    case typetags::ExternType:    return convertExternType(qt);
+    case typetags::FunctionType:  return convertFunctionType(qt);
 
-    case typetags::ArrayType: return dtUnknown;
-    case typetags::BasicClassType:   return convertBasicClassType(qt);
-    case typetags::AnyClassType: return dtAnyManagementNonNilable;
-    case typetags::DomainType:   return dtUnknown;
-    case typetags::RecordType:   return convertRecordType(qt);
-    case typetags::TupleType:   return convertTupleType(qt);
-    case typetags::UnionType:   return convertUnionType(qt);
+    case typetags::ArrayType:      return dtUnknown;
+    case typetags::BasicClassType: return convertBasicClassType(qt);
+    case typetags::AnyClassType:   return dtAnyManagementNonNilable;
+    case typetags::DomainType:     return dtUnknown;
+    case typetags::RecordType:     return convertRecordType(qt);
+    case typetags::TupleType:      return convertTupleType(qt);
+    case typetags::UnionType:      return convertUnionType(qt);
 
     // primitive types
-    case typetags::BoolType:   return convertBoolType(qt);
-    case typetags::ComplexType:   return convertComplexType(qt);
-    case typetags::ImagType:   return convertImagType(qt);
-    case typetags::IntType:   return convertIntType(qt);
-    case typetags::RealType:   return convertRealType(qt);
-    case typetags::UintType:   return convertUintType(qt);
-    case typetags::CPtrType:   return convertCPtrType(qt);
+    case typetags::BoolType:       return convertBoolType(qt);
+    case typetags::ComplexType:    return convertComplexType(qt);
+    case typetags::ImagType:       return convertImagType(qt);
+    case typetags::IntType:        return convertIntType(qt);
+    case typetags::RealType:       return convertRealType(qt);
+    case typetags::UintType:       return convertUintType(qt);
+    case typetags::CPtrType:       return convertCPtrType(qt);
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -4596,8 +4602,40 @@ Type* Converter::convertType(const types::QualifiedType qt) {
 }
 
 Type* Converter::convertCPtrType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
-  return nullptr;
+  const types::CPtrType* t = qt.type()->toCPtrType();
+  INT_ASSERT(t);
+
+  // find the C pointer type to instantiate
+  AggregateType* base = t->isConst() ? dtCPointerConst : dtCPointer;
+
+  // handle 'c_ptr' and 'c_ptrConst' without an element type
+  if (t->eltType() == nullptr) {
+    return base;
+  }
+
+  // otherwise, we will need the c_ptr class
+  if (base->numFields() == 0) {
+    // the proper AST for CPointer hasn't been created yet, so return
+    // a temporary conversion symbol.
+    auto p = chpl::UniqueString::getConcat(context, "CTypes.", base->name());
+    auto id = ID(p, 0, 0);
+    Type* t = new TemporaryConversionType(id, qt);
+    return t;
+  }
+
+  // otherwise, convert the element type
+  auto eltQt = types::QualifiedType(types::QualifiedType::TYPE, t->eltType());
+  Type* convertedEltT = Converter::convertType(eltQt);
+
+
+  // and instantiate it with the element type
+  // note: getInstantiation should re-use existing instantiations
+  int index = 1;
+  Expr* insnPoint = nullptr; // TODO: set this to something?
+  AggregateType* ret =
+    base->getInstantiation(convertedEltT->symbol, index, insnPoint);
+
+  return ret;
 }
 
 Type* Converter::convertClassType(const types::QualifiedType qt) {
@@ -4901,6 +4939,16 @@ void Converter::noteCallFixupNeeded(SymExpr* se,
   m->noteCallFixupNeeded(se, sig, cur, trace);
 }
 
+void Converter::noteTypeFixupNeeded(Symbol* sym, ID id, types::QualifiedType qt)
+{
+  if (!canScopeResolve) return;
+
+  ConvertedSymbolsMap* cur;
+  ConvertedSymbolsMap* m = findSymbolMapForId(id, cur);
+
+  m->noteTypeFixupNeeded(sym, id, qt, cur, trace);
+}
+
 static std::string computeMapName(ID inSymbolId) {
   if (inSymbolId.isEmpty())
     return "global";
@@ -4954,6 +5002,12 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
       } else {
         noteIdentFixupNeeded(se, tcs->symId);
       }
+    }
+  }
+
+  if (Symbol* sym = toSymbol(ast)) {
+    if (TemporaryConversionType* tct = toTemporaryConversionType(sym->type)) {
+      noteTypeFixupNeeded(sym, tct->uastId, tct->qt);
     }
   }
 }
@@ -5094,6 +5148,26 @@ void ConvertedSymbolsMap::noteCallFixupNeeded(SymExpr* se,
   callFixups.emplace_back(se, sig);
 }
 
+void ConvertedSymbolsMap::noteTypeFixupNeeded(Symbol* sym,
+                                              ID id,
+                                              types::QualifiedType qt,
+                                              ConvertedSymbolsMap* cur,
+                                              bool trace) {
+  if (trace) {
+    std::ostringstream ss;
+    qt.stringify(ss, StringifyKind::DEBUG_SUMMARY);
+    std::string str = ss.str();
+    printf("Noting fixup needed [%i] for mention of type %s within %s in map for %s\n",
+           sym->id,
+           str.c_str(),
+           computeMapName(cur->inSymbolId).c_str(),
+           computeMapName(this->inSymbolId).c_str());
+  }
+
+  typeFixups.emplace_back(sym, qt);
+}
+
+
 Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
   for (ConvertedSymbolsMap* cur = this;
        cur != nullptr;
@@ -5224,7 +5298,6 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
       fixedUp.insert(se);
     }
   }
-  // clear gIdentFixups since these have now been processed
   identFixups.clear();
 
   for (const auto& p : moduleFixups) {
@@ -5258,8 +5331,24 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     }
     se->setSymbol(fn);
   }
-  // clear gFnCallFixups since these have now been processed
   callFixups.clear();
+
+  // Fix up any Type* that need to be computed based on other information
+  for (const auto& p : typeFixups) {
+    Symbol* sym = p.first;
+    //QualifiedType qt = p.second;
+
+    INT_ASSERT(sym && sym->type && isTemporaryConversionType(sym->type));
+
+    Type* t = nullptr;//convertType(qt);
+    if (t == nullptr) {
+      context->error(inAst, "could not find target type for fixup within %s",
+                     inSymbolId.str().c_str());
+      t = dtUnknown;
+    }
+    sym->type = t;
+  }
+  typeFixups.clear();
 
   // copy the syms and fns maps to the parent map if the symbols
   // within could be visible elsewhere

@@ -90,6 +90,11 @@ class QualifiedType final {
     CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
   }
 
+  /*
+  QualifiedType(const QualifiedType& qt)
+    : kind_(qt.kind_), type_(qt.type_), param_(qt.param_) {
+  }*/
+
   /** Returns the kind of the expression this QualifiedType represents */
   Kind kind() const { return kind_; }
   /**

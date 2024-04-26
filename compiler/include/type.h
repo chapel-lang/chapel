@@ -65,6 +65,7 @@ class Symbol;
 class TypeSymbol;
 class VarSymbol;
 class IteratorInfo;
+class TemporaryConversionSymbol;
 
 class Type : public BaseAST {
 public:
@@ -516,6 +517,30 @@ class FunctionType final : public Type {
   static const char* typeToStringMangled(Type* t);
   static const char* retTagMnemonicMangled(RetTag tag);
 };
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+// Similar to TemporaryConversionSymbol and works with it for
+// temporarily representing a Type. The symbol field should store
+// the TemporaryConversionSymbol which contains additional details.
+class TemporaryConversionType final : public Type {
+ public:
+  chpl::ID uastId;
+  chpl::types::QualifiedType qt;
+  TemporaryConversionType(chpl::ID id, chpl::types::QualifiedType qt);
+  void verify()                                         override;
+  void accept(AstVisitor* visitor)                      override;
+  DECLARE_COPY(TemporaryConversionType);
+  TemporaryConversionType* copyInner(SymbolMap* map)    override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+};
+
+
 
 /************************************* | **************************************
 *                                                                             *

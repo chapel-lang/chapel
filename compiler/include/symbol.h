@@ -673,6 +673,7 @@ public:
 
   TemporaryConversionSymbol(chpl::ID symId);
   TemporaryConversionSymbol(const chpl::resolution::TypedFnSignature* sig);
+  TemporaryConversionSymbol(chpl::types::QualifiedType qt);
 
   void  verify()                                          override;
   void  accept(AstVisitor* visitor)                       override;

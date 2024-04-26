@@ -544,6 +544,12 @@ DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
   return retval;
 }
 
+void AggregateType::addTypeVariable(const char* name) {
+  VarSymbol* eltType = new VarSymbol(name, dtUnknown);
+  eltType->addFlag(FLAG_TYPE_VARIABLE);
+  this->addDeclaration(new DefExpr(eltType));
+}
+
 void AggregateType::addDeclarations(Expr* expr) {
   if (DefExpr* defExpr = toDefExpr(expr)) {
     addDeclaration(defExpr);
@@ -1683,6 +1689,9 @@ void AggregateType::renameInstantiation() {
 // argument and will return that.
 AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* insnPoint) {
   AggregateType* retval = NULL;
+
+  if (sym->name == astr("eltType") && this->symbol->name == astr("c_ptr"))
+    gdbShouldBreakHere();
 
   Type* symType = sym->typeInfo();
   // Normalize `_owned(anymanaged-MyClass)` to `_owned(borrowed MyClass)`

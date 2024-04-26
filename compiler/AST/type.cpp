@@ -48,6 +48,7 @@
 #include "global-ast-vecs.h"
 
 #include "chpl/framework/compiler-configuration.h"
+#include "chpl/types/QualifiedType.h"
 
 #include <cmath>
 
@@ -1009,6 +1010,42 @@ bool FunctionType::isGeneric() const {
 
   return false;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+TemporaryConversionType::TemporaryConversionType(chpl::ID id,
+                                                 chpl::types::QualifiedType qt)
+  : Type(E_TemporaryConversionType, nullptr), uastId(id), qt(qt)
+{
+  this->symbol = dtUnknown->symbol;
+  gTemporaryConversionTypes.add(this);
+}
+
+TemporaryConversionType*
+TemporaryConversionType::copyInner(SymbolMap* map) {
+  INT_FATAL(this, "unexpected call to TemporaryConversionType::copyInner");
+  return nullptr;
+}
+
+void TemporaryConversionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in TemporaryConversionType::replaceChild");
+}
+
+void TemporaryConversionType::verify() {
+  Type::verify();
+  if (astTag != E_TemporaryConversionType) {
+    INT_FATAL(this, "Bad PrimitiveType::astTag");
+  }
+}
+
+void TemporaryConversionType::accept(AstVisitor* visitor) {
+  INT_FATAL(this, "Unexpected case in TemporaryConversionType::accept");
+}
+
 
 /************************************* | **************************************
 *                                                                             *

@@ -52,6 +52,10 @@ AggregateType* dtString;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
 
+// these are only used when the dyno resolver is active
+AggregateType* dtCPointer;
+AggregateType* dtCPointerConst;
+
 Type* dt_c_int;
 Type* dt_c_uint;
 Type* dt_c_long;
@@ -186,17 +190,18 @@ struct WellKnownAggregateTypeNeededEarly
 // These types are a required part of the compiler/module interface.
 static WellKnownAggregateTypeNeededEarly sWellKnownAggregateTypesNeededEarly[]=
 {
-  // name        userFacingName  global       isClass
-  { "_bytes",    "bytes",        &dtBytes,    false },
-  { "_locale",   "locale",       &dtLocale,   false },
-  { "_object",   "RootClass",    &dtObject,   true  },
-  { "_owned",    nullptr,        &dtOwned,    false },
-  { "_range",    "range",        &dtRange,    false },
-  { "_shared",   nullptr,        &dtShared,   false },
-  { "_string",   "string",       &dtString,   false },
-  { "_tuple",    nullptr,        &dtTuple,    false },
+  // name         userFacingName  global            isClass
+  { "_bytes",     "bytes",        &dtBytes,         false },
+  { "_locale",    "locale",       &dtLocale,        false },
+  { "_object",    "RootClass",    &dtObject,        true  },
+  { "_owned",     nullptr,        &dtOwned,         false },
+  { "_range",     "range",        &dtRange,         false },
+  { "_shared",    nullptr,        &dtShared,        false },
+  { "_string",    "string",       &dtString,        false },
+  { "_tuple",     nullptr,        &dtTuple,         false },
+  { "c_ptr",      "c_ptr",        &dtCPointer,      true },
+  { "c_ptrConst", "c_ptrConst",   &dtCPointerConst, true },
 };
-
 
 struct WellKnownType
 {

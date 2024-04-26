@@ -100,6 +100,10 @@ public:
   // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
   QualifiedType               getFieldType(Expr* e);
 
+  // add a type variable declaration with no default and with 'name'
+  // (for use when creating types not based upon parsing)
+  void                        addTypeVariable(const char* name);
+
   void                        addDeclarations(Expr* expr);
 
   bool                        hasInitializers()                          const;
