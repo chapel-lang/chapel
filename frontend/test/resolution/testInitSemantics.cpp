@@ -1060,6 +1060,46 @@ static void testAssignThenInit(void) {
   assert(guard.realizeErrors() == 2);
 }
 
+static void testInitEqOther(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  std::string program = R"""(
+    operator =(ref lhs: numeric, const in rhs: numeric) {
+      __primitive("=", lhs, rhs);
+    }
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init(type T, field = 0) {
+      this.T = T;
+      this.field = field;
+    }
+    proc R.init=(other: ?) {
+      this.T = other.type;
+      this.field = other;
+    }
+    var x:R(?) = 4;
+    var y:R(?) = 42.0;
+  )""";
+
+  auto results = resolveTypesOfVariables(ctx, program, {"x", "y"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(int(64))");
+
+  ss.str(""); ss.clear();
+
+  auto yt = results["y"];
+  assert(yt.type()->isRecordType());
+  yt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(real(64))");
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1095,6 +1135,8 @@ int main() {
   testInitInBranchFromInit();
   testBadInitInBranchFromInit();
   testAssignThenInit();
+
+  testInitEqOther();
 
   return 0;
 }

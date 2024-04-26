@@ -1136,17 +1136,19 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
           // For a record/union, check for an init= from the provided type
         const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
                                       declaredType.type()->isUnionType());
-        if (!(isRecordOrUnion &&
-              tryResolveInitEq(context, declForErr, declaredType.type(),
-                               initExprType.type(), poiScope))) {
+        const TypedFnSignature* initEq = nullptr;
+        if (isRecordOrUnion) {
+          // Note: This code assumes that this init= will be added as an
+          // associated action by ``CallInitDeinit::resolveCopyInit``
+          initEq = tryResolveInitEq(context, declForErr, declaredType.type(),
+                                    initExprType.type(), poiScope);
+        }
+        if (initEq == nullptr) {
           CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
                       initForErr, declaredType.type(), initExprType.type());
           typePtr = ErroneousType::get(context);
         } else {
-          // TODO: this might need to be an instantiation
-          // when we init= to create a type on a generic declared type, we want
-          // the type produced by the init= call
-          typePtr = declaredType.type();
+          typePtr = initEq->formalType(0).type();
         }
       }
     } else if (!got.instantiates()) {
