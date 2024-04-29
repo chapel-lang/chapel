@@ -209,7 +209,7 @@ module Optimizers {
         init this;
 
         for arg in l {
-          this.parameters.pushBack(l);
+          this.parameters.pushBack(arg);
         }
       }
 
