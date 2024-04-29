@@ -651,6 +651,11 @@ const ResolvedFields& resolveFieldDecl(Context* context,
     // normalize ids in the case they are contained within another decl
     // this is so we don't try to resolve the type of an individual element without
     // the context of its container
+    // TODO: This could become a performance concern as it gets called for each
+    // element of a multiDecl and the way multiDecl elements are resolved involves
+    // resolving all of the elements of the multiDecl each time, resulting in
+    // quadratic time complexity.  We should consider a more efficient way to
+    // resolve elements of a multiDecl
     auto stmtId = parsing::idToContainingMultiDeclId(context, fieldId);
     auto fieldAst = parsing::idToAst(context, stmtId);
     CHPL_ASSERT(fieldAst);
