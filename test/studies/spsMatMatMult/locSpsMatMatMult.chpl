@@ -1,17 +1,18 @@
-use LayoutCS, Random;
+use LayoutCS, LayoutCSUtil, Random;
 
 enum layout { csr, csc };
 
 config const n = 10,
              density = 0.05,
              seed = 0,
+             printSeed = seed == 0,
              skipDense = false;
 
 var rands = if seed == 0 then new randomStream(real)
                          else new randomStream(real, seed);
 
 // print library-selected seed, for reproducibility
-if seed == 0 then
+if printSeed then
   writeln("Using seed: ", rands.seed);
 
 
@@ -26,13 +27,13 @@ var A: [AD] int = 1,
 writeSparseMatrix("A is:", A);
 writeSparseMatrix("B is:", B);
 
-const CS = SparseMatMatMult(A, B);
+const CSps = SparseMatMatMult(A, B);
 
-writeSparseMatrix("C (sparsely computed) is:", CS);
+writeSparseMatrix("C (sparsely computed) is:", CSps);
 
 if !skipDense {
-  const CD = DenseMatMatMult(A, B);
-  writeSparseMatrix("C (densely computed) is: ", CD);
+  const CDns = DenseMatMatMult(A, B);
+  writeSparseMatrix("C (densely computed) is: ", CDns);
 }
 
 
@@ -42,11 +43,11 @@ proc SparseMatMatMult(A: [?AD], B: [?BD]) {
   var nnzs: list(2*int),
       vals: list(int);
 
-  for ac_br in AD.colRange {
-    for ai in AD.startIdx[ac_br]..<AD.startIdx[ac_br+1] {
+  for ac_br in AD.cols() {
+    for ai in AD.rowUidsInCol(ac_br) {
       const ar = AD.idx[ai];
 
-      for bi in BD.startIdx[ac_br]..<BD.startIdx[ac_br+1] {
+      for bi in BD.colUidsInRow(ac_br) {
         const bc = BD.idx[bi];
 
         nnzs.pushBack((ar,bc));
@@ -77,9 +78,7 @@ proc DenseMatMatMult(A, B) {
     }
   }
 
-  var C = makeSparseMat(nnzs, vals);
-  
-  writeSparseMatrix("C is:", C);
+  return makeSparseMat(nnzs, vals);
 }
 
 
