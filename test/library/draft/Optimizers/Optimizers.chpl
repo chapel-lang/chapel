@@ -49,18 +49,21 @@ module Optimizers {
       ser.endRecord();
     }
 
-    proc getValue() {
+    /* The current value the argument is using */
+    proc value {
       // TODO: update when support multiple argument types
       return intValue;
     }
 
-    proc getLowerBound() {
+    /* The lowest possible value the argument could be */
+    proc lowerBound {
       // TODO: update when support multiple argument types
       // TODO: update when support bound sets instead of just ranges
       return intBounds(0);
     }
 
-    proc getUpperBound() {
+    /* The highest possible value the argument could be */
+    proc upperBound {
       // TODO: update when support multiple argument types
       // TODO: update when support bound sets instead of just ranges
       return intBounds(1);
@@ -70,11 +73,19 @@ module Optimizers {
   /* Optimize using random sampling, returning the combination that leads to the
      best result.
 
+     .. note::
+       Assumes the order of arguments in optimizableArgs is correct.  Cannot use
+       the name of the argument in the call (yet).
+
+       Assumes all `optimizableArgs` are used before all `args`.  Cannot
+       intermingle the two categories of arguments.
+
      :arg func: The function to optimize.  This function is assumed to return a
                 result that is greater than or equal to zero.  Closer to zero
                 is assumed to be better.
      :arg optimizableArgs: list of each optimizable aspect
-     :arg args: additional arguments for the function to use
+     :arg args: additional arguments for the function to use.  Expected to be
+                provided in a tuple
 
      :returns: a map of the name of each optimizable aspect to the value found
                for it that leads to the best result for the optimized function.
@@ -128,8 +139,8 @@ module Optimizers {
     // TODO: handle not actually having bounds set
     for arg in basePoint.parameters {
       var newArg = new optimizableArg(arg.name,
-                                      rngInt.next(arg.getLowerBound(),
-                                                  arg.getUpperBound()));
+                                      rngInt.next(arg.lowerBound,
+                                                  arg.upperBound));
       point.parameters.pushBack(newArg);
     }
 
@@ -144,7 +155,7 @@ module Optimizers {
       // TODO: bundle up the arguments in a way that's understandable
       // David thinks we can't use named arguments in FCPs yet, so need to be
       // careful about argument ordering
-      i.fom = func(i.parameters[0].getValue());
+      i.fom = func(i.parameters[0].value);
       i.status = Status.completed;
     }
   }

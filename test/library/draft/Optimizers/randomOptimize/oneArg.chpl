@@ -17,6 +17,6 @@ proc main() {
   // Ensure the value is in range and is not the highest/lowest possible value.
   // The "best" option should be 0, but since we're randomly testing values,
   // there's no guarantee we'll see 0 as one of the options tried.
-  assert(bestX.getValue() < 30);
-  assert(bestX.getValue() > -30);
+  assert(bestX.value < 30);
+  assert(bestX.value > -30);
 }
