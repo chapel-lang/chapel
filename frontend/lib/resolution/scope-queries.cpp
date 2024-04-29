@@ -251,6 +251,14 @@ struct GatherDecls {
   }
   void exit(const ExternBlock* externBlock) { }
 
+  // do not delve into submodules
+  bool enter(const Module* d) {
+    gather(declared, d->name(), d, d->visibility(), atFieldLevel);
+
+    return false;
+  }
+  void exit(const Module* m) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;
