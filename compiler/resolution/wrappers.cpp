@@ -165,6 +165,10 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   FnSymbol* retval     = fn;
   bool      anyDefault = false;
 
+  // Promotion wrappers that are affected by GPU attributes might accept
+  // additional formals, but for the purposes of using defaults etc. we only
+  // care about the original formals.
+  int numFormals = fn->numFormals();
   if (isPromotionRequired(retval, info, actualIdxToFormal) == true) {
     // Note: promotionWrap will handle default args in the inner call
     // to the original function, and it will create a different promotion
@@ -172,13 +176,13 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
     retval = promotionWrap(retval, info, actualIdxToFormal, fastFollowerChecks);
   }
 
-  if (numActuals < retval->numFormals()) {
+  if (numActuals < numFormals) {
     // If we don't have the right number of arguments, add placeholders
     // for defaulted arguments and for skipped operator arguments.
     adjustForOperatorMethod(retval, info, actualIdxToFormal);
     addDefaultTokensAndReorder(retval, info, actualIdxToFormal);
     anyDefault = true;
-  } else if (numActuals > retval->numFormals() && fn->hasFlag(FLAG_OPERATOR)) {
+  } else if (numActuals > numFormals && fn->hasFlag(FLAG_OPERATOR)) {
     // If we don't have the right number of arguments, remove unnecessary
     // actuals for operator calls
     adjustForOperatorMethod(retval, info, actualIdxToFormal);
@@ -2205,7 +2209,8 @@ static void       buildFollowerIterator(PromotionInfo& promotion,
                                         BlockStmt* instantiationPt,
                                         Expr*     indices,
                                         Expr*     iterator,
-                                        CallExpr* wrapCall);
+                                        CallExpr* wrapCall,
+                                        SymbolMap outerToFormals);
 
 static CondStmt*  selectFollower(ArgSymbol* fastFollower,
                                  Expr*      iterator,
@@ -2416,6 +2421,20 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
                                    info,
                                    fastFollowerChecks);
 
+    // Something about the promoted call (currently, GPU attributes that
+    // configure the loop inside the promoted fn) required adding new actuals.
+    // Update actualIdxToFormal to reflect the new actuals.
+    if (promotion.fn->numFormals() != promotion.wrapperFn->numFormals()) {
+      CHPL_ASSERT(promotion.gpuAttributeBlock);
+      CHPL_ASSERT(promotion.fn->numFormals() < promotion.wrapperFn->numFormals());
+
+      int newActuals = promotion.wrapperFn->numFormals() - promotion.fn->numFormals();
+      for (int i = 1; i <= newActuals; i++) {
+        actualIdxToFormal.push_back(
+            promotion.wrapperFn->getFormal(promotion.fn->numFormals() + i));
+      }
+    }
+
     resolveSignature(retval);
 
     if (!promotion.gpuAttributeBlock) {
@@ -2575,6 +2594,36 @@ static void insertAndSaveWrapCall(PromotionInfo& promotion, BlockStmt* block,
 // The info needed to call buildFastFollowerChecksIfNeeded() later.
 static std::map<FnSymbol*, std::set<ArgSymbol*> > promotionFormalsMap;
 
+static std::vector<Symbol*>
+addFormalsForGpuOuterVarsToPromotionWrapper(PromotionInfo& promotion,
+                                                        CallInfo& info,
+                                                        SymbolMap& outMap) {
+  auto primBlock = promotion.gpuAttributeBlock->getPrimitivesBlock();
+  std::vector<SymExpr*> symExprs;
+  std::vector<Symbol*> symbolsToCapture;
+  collectSymExprs(primBlock, symExprs);
+
+  for (auto symExpr : symExprs) {
+    auto sym = symExpr->symbol();
+
+    // Ignore temporaries created within the primitive block.
+    if (sym->defPoint->parentExpr == primBlock) continue;
+
+    // Already added a formal for this symbol.
+    if (outMap.get(sym)) continue;
+
+    // Skip global variables etc.
+    if (!considerForOuter(sym)) continue;
+
+    auto newFormal = new ArgSymbol(INTENT_BLANK, astr("_outer_", sym->name), sym->type);
+    outMap.put(sym, newFormal);
+    promotion.wrapperFn->insertFormalAtTail(newFormal);
+    symbolsToCapture.push_back(sym);
+  }
+
+  return symbolsToCapture;
+}
+
 static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
                                      BlockStmt* instantiationPt,
                                      CallInfo&  info,
@@ -2593,7 +2642,13 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
- // TODO: detecting and lifting outer variables has to happen here
+ // If GPU attributes require inserting some code that relies on outer variables,
+ // need to detect those outer variables and add them to the promoted fn's
+ // body. Don't add the actuals yet because the leader-follower checks
+ // care about only the "real" actuals.
+ SymbolMap outerToFormals;
+ auto actualsFromCapture =
+   addFormalsForGpuOuterVarsToPromotionWrapper(promotion, info, outerToFormals);
 
  if (haveLeaderAndFollowers(promotion, info.call))
  {
@@ -2601,7 +2656,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   buildLeaderIterator(promotion, instantiationPt, iterator, zippered);
 
-  buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall);
+  buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall, outerToFormals);
 
   if (fNoFastFollowers == false && fastFollowerChecks == true) {
     std::set<ArgSymbol*> requiresPromotion;
@@ -2617,6 +2672,11 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   }
  }
 
+  for (auto actualFromCapture : actualsFromCapture) {
+   info.call->insertAtTail(new SymExpr(actualFromCapture));
+   info.actuals.push_back(actualFromCapture);
+  }
+
   insertAndSaveWrapCall(promotion, yieldBlock, yieldTmp, wrapCall);
 
   BlockStmt* loop = ForLoop::buildForLoop(indices, iterator, yieldBlock,
@@ -2624,7 +2684,8 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
                                           /* isForExpr */ true);
 
   if (promotion.gpuAttributeBlock) {
-    yieldBlock->insertBefore(promotion.gpuAttributeBlock->getPrimitivesBlock()->copy());
+    yieldBlock->insertBefore(
+        promotion.gpuAttributeBlock->getPrimitivesBlock()->copy(&outerToFormals));
   }
 
   return loop;
@@ -2707,10 +2768,13 @@ static void buildFollowerIterator(PromotionInfo& promotion,
                                   BlockStmt* instantiationPt,
                                   Expr*     indices,
                                   Expr*     iterator,
-                                  CallExpr* wrapCall) {
-  SymbolMap  followerMap;
-  FnSymbol*  fn         = promotion.fn;
-  FnSymbol*  wrapFn     = promotion.wrapperFn;
+                                  CallExpr* wrapCall,
+                                  SymbolMap outerToFormals) {
+  // Pre-populate the follower map with the outer variable remappings for GPU
+  // attributes.
+  SymbolMap  followerMap = std::move(outerToFormals);
+  FnSymbol*  fn          = promotion.fn;
+  FnSymbol*  wrapFn      = promotion.wrapperFn;
 
   SymExpr*   symFalse         = new SymExpr(gFalse);
 
@@ -2820,7 +2884,8 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
                                           promotion.zippered,
                                           /* isForExpr */ true);
   if (promotion.gpuAttributeBlock) {
-    block->insertBefore(promotion.gpuAttributeBlock->getPrimitivesBlock()->copy());
+    block->insertBefore(
+        promotion.gpuAttributeBlock->getPrimitivesBlock()->copy(&followerMap));
   }
 
   return loop;
