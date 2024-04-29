@@ -45,13 +45,7 @@ proc SparseMatMatMult(A: [?AD], B: [?BD]) {
 
   for ac_br in AD.cols() {
     for (ar, a) in A.rowsAndVals(ac_br) {
-      //    for ai in AD.rowUidsInCol(ac_br) {
-      //      const ar = AD.idx[ai];
-
       for (bc, b) in B.colsAndVals(ac_br) {
-        //      for bi in BD.colUidsInRow(ac_br) {
-        //        const bc = BD.idx[bi];
-
         nnzs.pushBack((ar,bc));
         vals.pushBack(a*b);
       }
