@@ -2152,11 +2152,12 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
 
 namespace {
   struct PromotionInfo {
-    FnSymbol* fn;
-    FnSymbol* wrapperFn;
-    bool      zippered;
-    bool      hasLeaderFollowers;
-    bool      resultIsUsed;
+    FnSymbol*  fn;
+    FnSymbol*  wrapperFn;
+    BlockStmt* gpuAttributeBlock;
+    bool       zippered;
+    bool       hasLeaderFollowers;
+    bool       resultIsUsed;
 
     // The following vectors are indexed by the i'th formal to fn (0-based).
 
@@ -2398,7 +2399,14 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
   PromotionInfo promotion(fn, info, actualIdxToFormal);
 
-  retval = checkCache(promotionsCache, promotion.fn, &promotion.subs);
+  // When inheriting GPU attributes from a variable declaration, bypass the
+  // promotion cache, since the attributes are call-site-specific. For this
+  // reason, later, do not save the generated call to the cache.
+  if (auto gpuAttrs = findEnclosingGpuAttributeBlock(info.call)) {
+    promotion.gpuAttributeBlock = gpuAttrs;
+  } else {
+    retval = checkCache(promotionsCache, promotion.fn, &promotion.subs);
+  }
 
   if (retval == NULL) {
     SET_LINENO(info.call);
@@ -2410,7 +2418,9 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
     resolveSignature(retval);
 
-    addCache(promotionsCache, promotion.fn, promotion.wrapperFn, &promotion.subs);
+    if (!promotion.gpuAttributeBlock) {
+      addCache(promotionsCache, promotion.fn, promotion.wrapperFn, &promotion.subs);
+    }
   } else {
     // Because we have to generate the deprecation/unstable warnings when the
     // promotion wrapper is created to avoid duplicate warnings, we want to also
