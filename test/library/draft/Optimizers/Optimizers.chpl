@@ -151,12 +151,43 @@ module Optimizers {
   // Run the function with each of the possible combinations to try, updating
   // to indicate the status of running with that combination and the result
   private proc evaluate(func, ref points: [] Point) {
+    param numOptArgs = func.argTypes.size;
     forall i in points {
       // TODO: bundle up the arguments in a way that's understandable
       // David thinks we can't use named arguments in FCPs yet, so need to be
       // careful about argument ordering
-      i.fom = func(i.parameters[0].value);
-      i.status = Status.completed;
+      select numOptArgs {
+          when 1 {
+            i.fom = func(i.parameters[0].value);
+            i.status = Status.completed;
+          }
+          when 2 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value);
+            i.status = Status.completed;
+          }
+          when 3 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value,
+                         i.parameters[2].value);
+            i.status = Status.completed;
+          }
+          when 4 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value,
+                         i.parameters[2].value, i.parameters[3].value);
+            i.status = Status.completed;
+          }
+          when 5 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value,
+                         i.parameters[2].value, i.parameters[3].value,
+                         i.parameters[4].value);
+            i.status = Status.completed;
+          }
+          when 0 {
+            // Error condition
+          }
+          otherwise {
+            // Error condition
+          }
+      }
     }
   }
 
