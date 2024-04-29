@@ -1136,17 +1136,19 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
           // For a record/union, check for an init= from the provided type
         const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
                                       declaredType.type()->isUnionType());
-        if (!(isRecordOrUnion &&
-              tryResolveInitEq(context, declForErr, declaredType.type(),
-                               initExprType.type(), poiScope))) {
+        const TypedFnSignature* initEq = nullptr;
+        if (isRecordOrUnion) {
+          // Note: This code assumes that this init= will be added as an
+          // associated action by ``CallInitDeinit::resolveCopyInit``
+          initEq = tryResolveInitEq(context, declForErr, declaredType.type(),
+                                    initExprType.type(), poiScope);
+        }
+        if (initEq == nullptr) {
           CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
                       initForErr, declaredType.type(), initExprType.type());
           typePtr = ErroneousType::get(context);
         } else {
-          // TODO: this might need to be an instantiation
-          // when we init= to create a type on a generic declared type, we want
-          // the type produced by the init= call
-          typePtr = declaredType.type();
+          typePtr = initEq->formalType(0).type();
         }
       }
     } else if (!got.instantiates()) {
@@ -2591,12 +2593,6 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
   return false;
 }
 
-static const LookupConfig identifierLookupConfig = LOOKUP_DECLS |
-                                                   LOOKUP_IMPORT_AND_USE |
-                                                   LOOKUP_PARENTS |
-                                                   LOOKUP_EXTERN_BLOCKS;
-
-
 void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
                                            const Scope* scope,
                                            llvm::ArrayRef<const Scope*> receiverScopes,
@@ -2627,7 +2623,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
-  LookupConfig config = identifierLookupConfig;
+  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
@@ -2877,7 +2873,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
 
-      LookupConfig config = identifierLookupConfig;
+      LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
       if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
@@ -3570,7 +3566,11 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           skip = UNKNOWN_PARAM;
         } else if (qt.isUnknown()) {
           skip = UNKNOWN_ACT;
-        } else if (t != nullptr) {
+        } else if (t != nullptr && !(ci.name() == USTR("init") && actualIdx == 0)) {
+          // For initializer calls, allow generic formals using the above
+          // condition; this way, 'this.init(..)' while 'this' is generic
+          // should be fine.
+
           auto g = getTypeGenericity(context, t);
           bool isBuiltinGeneric = (g == Type::GENERIC &&
                                    (t->isAnyType() || t->isBuiltinType()));
@@ -3609,11 +3609,19 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+
+    if (initResolver) {
+      initResolver->handleResolvedCall(call, &c);
+    }
   } else {
     // We're skipping the call, but explicitly store the 'unknown type'
     // in the map.
     ResolvedExpression& r = byPostorder.byAst(call);
     r.setType(QualifiedType());
+
+    if (initResolver) {
+      initResolver->handleResolvedCall(call, /* call resolution result */ nullptr);
+    }
   }
 }
 

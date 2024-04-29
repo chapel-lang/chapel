@@ -321,6 +321,9 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: plb2 benchmarks
+studies/plb2/matmul/matmul.graph
+studies/plb2/nqueen/nqueen.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
 Samples/Performance/cleanCopy/foobar.graph

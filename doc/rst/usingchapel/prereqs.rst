@@ -16,7 +16,7 @@ for using Chapel:
   * You have a Bourne shell available at ``/bin/sh`` and ``env`` available at
     ``/usr/bin/env``.
 
-  * You have Python 2.7 or newer available as either ``python3`` or
+  * You have Python 3.5 or newer available as either ``python3`` or
     ``python`` and that ``env`` can locate it.
 
   * You have access to ``gmake`` or a GNU-compatible version of ``make``.

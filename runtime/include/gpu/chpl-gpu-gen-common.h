@@ -27,6 +27,9 @@
 #include "chpl-comm.h"
 #include <string.h>
 
+// device code for reduction support
+#include "chpl-gpu-dev-reduce.h"
+
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
   // TODO

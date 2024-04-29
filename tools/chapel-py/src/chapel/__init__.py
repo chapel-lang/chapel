@@ -27,6 +27,7 @@ from . import visitor
 
 QualifiedType = typing.Tuple[str, Optional[ChapelType], Optional[Param]]
 
+
 def preorder(node):
     """
     Recursively visit the given AST node, going in pre-order (parent-then-children)
@@ -356,6 +357,7 @@ def files_with_contexts(files):
         for filename in to_yield:
             yield (filename, ctx)
 
+
 def range_to_tokens(
     rng: Location, lines: List[str]
 ) -> List[typing.Tuple[int, int, int]]:
@@ -396,11 +398,13 @@ def range_to_lines(rng: Location, lines: List[str]) -> List[str]:
         text.append(lines[line][column : column + length])
     return text
 
+
 def range_to_text(rng: Location, lines: List[str]) -> str:
     """
     Convert a Chapel location to a single string
     """
     return "\n".join(range_to_lines(rng, lines))
+
 
 def get_file_lines(context: Context, node: AstNode) -> typing.List[str]:
     """

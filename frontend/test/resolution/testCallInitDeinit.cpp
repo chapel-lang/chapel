@@ -546,6 +546,38 @@ static void test5c() {
     });
 }
 
+static void test5d() {
+  testActions("test5d",
+    R""""(
+      module M {
+        operator =(ref lhs: numeric, const in rhs: numeric) {
+          __primitive("=", lhs, rhs);
+        }
+        record R { type T; var field : T; }
+        proc R.init(type T, field = 0) {
+          this.T = T;
+          this.field = field;
+        }
+        proc R.init=(other: ?) {
+          this.T = other.type;
+          this.field = other;
+        }
+        proc R.deinit() { }
+        proc test() {
+          var i = 4;
+          var x:R(?) = i;
+          var y:R(?) = 42.0;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::INIT_OTHER,   "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@12", "y"},
+      {AssociatedAction::DEINIT,       "M.test@12", "x"},
+    });
+}
+
 
 // test cross-type variable init from another record
 static void test6a() {
@@ -1662,6 +1694,7 @@ int main() {
   test5a();
   test5b();
   test5c();
+  test5d();
 
   test6a();
   test6b();

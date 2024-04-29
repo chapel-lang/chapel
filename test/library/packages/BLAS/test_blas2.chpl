@@ -218,8 +218,8 @@ proc test_gbmv_helper(type t){
 
     var rng = new randomStream(t);
 
-    var alpha = 1: t, //rng.getNext();
-        beta = 2: t;//rng.getNext();
+    const alpha = 1: t, //rng.getNext();
+          beta = 2: t;//rng.getNext();
     //var rngint = new randomStream(eltType=int);
     //var kl = rng.getNext(0, min(m, n)) ,
     //    ku = rng.getNext(0, min(m, n)) ;
@@ -473,7 +473,7 @@ proc test_gerc_helper(type t){
     rng.fill(A);
     rng.fill(X);
     rng.fill(Y);
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     // Precompute result
     for (i,j) in R.domain do R[i, j] = alpha*X[i]*conj(Y[j]) + A[i, j];
@@ -505,7 +505,7 @@ proc test_gerc_helper(type t){
     rng.fill(X);
     rng.fill(Y);
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     // Precompute result
     for (i,j) in R.domain do R[i, j] = alpha*X[i]*conj(Y[j]) + A[i, j];
@@ -543,7 +543,7 @@ proc test_geru_helper(type t){
     rng.fill(A);
     rng.fill(X);
     rng.fill(Y);
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     // Precompute result
     for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
@@ -574,7 +574,7 @@ proc test_geru_helper(type t){
     rng.fill(X);
     rng.fill(Y);
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     // Precompute result
     for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[i, j];
@@ -627,8 +627,8 @@ proc test_hemv_helper(type t){
     rng.fill(X);
     rng.fill(Y);
 
-    var alpha = rng.next(),
-        beta = rng.next();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     makeHerm(A);
 
@@ -660,8 +660,8 @@ proc test_hemv_helper(type t){
     rng.fill(X);
     rng.fill(Y);
 
-    var alpha = rng.next(),
-        beta = rng.next();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     makeHerm(A);
 
@@ -693,8 +693,8 @@ proc test_hemv_helper(type t){
     rng.fill(X);
     rng.fill(Y);
 
-    var alpha = rng.next(),
-        beta = rng.next();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     makeHerm(A[.., 0..#m]);
 
@@ -728,8 +728,8 @@ proc test_her_helper(type t){
         X : [{0.. #m}]t,
         R : [{0.. #m, 0..#m}] t; // Result
 
-    var alphacomplex = rng.next(),
-        alpha = alphacomplex.re;
+    const alphacomplex = rng.next(),
+          alpha = alphacomplex.re;
     rng.fill(A);
     rng.fill(X);
 
@@ -759,8 +759,8 @@ proc test_her_helper(type t){
         X : [{0.. #m}]t,
         R : [{0.. #m, 0..#m}] t; // Result
 
-    var alphacomplex = rng.next(),
-        alpha = alphacomplex.re;
+    const alphacomplex = rng.next(),
+          alpha = alphacomplex.re;
     rng.fill(A);
     rng.fill(X);
 
@@ -791,8 +791,8 @@ proc test_her_helper(type t){
         X : [{0.. #m}]t,
         R : [{0.. #m, 0..#m}] t; // Result
 
-    var alphacomplex = rng.next(),
-        alpha = alphacomplex.re;
+    const alphacomplex = rng.next(),
+          alpha = alphacomplex.re;
     rng.fill(A);
     rng.fill(X);
 
@@ -832,7 +832,7 @@ proc test_her2_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0.. #m, 0..#m}] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
     rng.fill(A);
     rng.fill(X);
 
@@ -864,7 +864,7 @@ proc test_her2_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0.. #m, 0..#m}] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
     rng.fill(A);
     rng.fill(X);
 
@@ -897,7 +897,7 @@ proc test_her2_helper(type t){
         Y : [{0..#m}] t,
         R : [{0..#m, 0..#m}] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
     rng.fill(A);
     rng.fill(X);
 
@@ -1036,8 +1036,8 @@ proc test_symv_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0.. #m}] t; // Result
 
-    var alpha = rng.next(),
-        beta = rng.next();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1071,8 +1071,8 @@ proc test_symv_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0.. #m}] t; // Result
 
-    var alpha = rng.next(),
-        beta = rng.next();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1105,8 +1105,8 @@ proc test_symv_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0.. #m}] t; // Result
 
-    var alpha = rng.next(),
-        beta = rng.next();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1146,7 +1146,7 @@ proc test_syr_helper(type t){
         X : [{0.. #m}] t,
         R : [A.domain] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1176,7 +1176,7 @@ proc test_syr_helper(type t){
         X : [{0.. #m}] t,
         R : [A.domain] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1207,7 +1207,7 @@ proc test_syr_helper(type t){
         X : [{0.. #m}] t,
         R : [0..#m, 0..#m] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1247,7 +1247,7 @@ proc test_syr2_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0..#m, 0..#m}] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1280,7 +1280,7 @@ proc test_syr2_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0..#m, 0..#m}] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     rng.fill(A);
     rng.fill(X);
@@ -1314,7 +1314,7 @@ proc test_syr2_helper(type t){
         Y : [{0.. #m}] t,
         R : [{0..#m, 0..#m}] t; // Result
 
-    var alpha = rng.next();
+    const alpha = rng.next();
 
     rng.fill(A);
     rng.fill(X);

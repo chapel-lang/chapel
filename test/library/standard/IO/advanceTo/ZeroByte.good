@@ -1,0 +1,4 @@
+IllegalArgumentError: advanceTo(string) called with empty separator
+after advanceTo, offset is 0
+IllegalArgumentError: advanceTo(bytes) called with empty separator
+after advanceTo, offset is 0

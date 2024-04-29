@@ -332,8 +332,9 @@ const QualifiedType& typeForBuiltin(Context* context,
     result = QualifiedType(QualifiedType::CONST_VAR,
                            NilType::get(context));
   } else if (name == USTR("none")) {
-    result = QualifiedType(QualifiedType::CONST_VAR,
-                           NothingType::get(context));
+    result = QualifiedType(QualifiedType::PARAM,
+                           NothingType::get(context),
+                           NoneParam::get(context, /* NoneValue */ {}));
   } else {
     // Could be a non-type builtin like 'index'
     result = QualifiedType();

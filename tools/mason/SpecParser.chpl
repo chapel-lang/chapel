@@ -86,7 +86,7 @@ private proc readSpec(spec: string): list(string) {
         compilerVersion = "(\\%[A-Za-z0-9\\_\\@\\.\\-]+)",
         variantInclude = "(\\+[A-Za-z0-9\\-\\_]+)",
         variantExclude = "(\\~[A-Za-z0-9\\-\\_]+)",
-        dependency = "(\\^[a-zA-Z]*?[0-9]*?)",
+        dependency = "(\\^[a-zA-Z]*[0-9]*)",
         arch = "([A-Za-z0-9\\-\\_]+\\=[A-Za-z0-9\\-\\_]+)",
         emptyArch = "([A-Za-z0-9\\-\\_]+\\=)";
 
@@ -97,7 +97,9 @@ private proc readSpec(spec: string): list(string) {
                                      variantExclude,
                                      dependency,
                                      emptyArch,
-                                     arch));
+                                     arch), posix=true);
+    // note: using posix mode to get longest match behavior
+    // TODO: update this so that posix mode is not necessary
 
 
   if debugSpecParser then writeln(spec);

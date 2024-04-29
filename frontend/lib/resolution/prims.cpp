@@ -1523,7 +1523,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_CREATE_FN_TYPE:
     case PRIM_GPU_KERNEL_LAUNCH:
-    case PRIM_GPU_KERNEL_LAUNCH_FLAT:
     case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_DEINIT_KERNEL_CFG:
@@ -1531,6 +1530,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_PID_OFFLOAD:
     case PRIM_GPU_ATTRIBUTE_BLOCK:
     case PRIM_GPU_PRIMITIVE_BLOCK:
+    case PRIM_GPU_BLOCK_REDUCE:
+    case PRIM_GPU_REDUCE_WRAPPER:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
@@ -1608,6 +1609,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_GPU_INIT_KERNEL_CFG:
+    case PRIM_GPU_INIT_KERNEL_CFG_3D:
       type = QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));
       break;
 

@@ -46,13 +46,40 @@ using namespace re2;
 
 struct re_cache;
 
+enum {
+  // these ones are handled by RE2
+  OPTION_FLAG_UTF8 = 1,
+  OPTION_FLAG_POSIX = 2,
+  OPTION_FLAG_LITERAL = 4,
+  OPTION_FLAG_NOCAPTURE = 8,
+  OPTION_FLAG_IGNORECASE = 16,
+  OPTION_FLAG_DOTNL = 32,
+  // these ones are supported by a prefix
+  OPTION_FLAG_MULTILINE = 64, // (?m)
+  OPTION_FLAG_NONGREEDY = 128, // (?U)
+  // note: if any more are added, 'optionFlags' will need > 1 byte.
+};
+typedef uint8_t optionFlags_t;
+typedef uint8_t optionPrefixLen_t;
+
+static RE2::Options flags_to_re2_opts(optionFlags_t flags);
+
 struct re_t {
-  RE2 re;
+  RE2 re2;
   qbytes_refcnt_t ref_cnt;
+  // which options?
+  optionFlags_t optionFlags;
+  // how many bytes of the pattern were automatically added to support options?
+  optionPrefixLen_t optionPrefixBytes;
+
   // RE2 implementations are shared and ref-counted.
   // We free the internal RE2 once ref_cnt==0.
-  re_t(StringPiece& pattern, const RE2::Options& option, re_cache* home)
-    : re(pattern, option)
+  re_t(StringPiece& pattern,
+       optionFlags_t optionFlags,
+       optionPrefixLen_t optionPrefixBytes)
+    : re2(pattern, flags_to_re2_opts(optionFlags)),
+      optionFlags(optionFlags),
+      optionPrefixBytes(optionPrefixBytes)
   {
     // Initialize the reference count to 1.
     // This represents the reference held by the cache.
@@ -73,61 +100,83 @@ struct re_cache {
   ~re_cache();
 };
 
-static
-void qio_re_options_to_re2_options(const qio_regex_options_t* options, RE2::Options *opts)
-{
+static RE2::Options flags_to_re2_opts(optionFlags_t flags) {
+  RE2::Options opts;
   RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
   RE2::Options::Encoding byteE = RE2::Options::Encoding::EncodingLatin1;
-  opts->set_encoding(options->utf8 ? utf8E : byteE);
-  opts->set_posix_syntax(options->posix);
-  opts->set_literal(options->literal);
-  opts->set_never_capture(options->nocapture);
-  opts->set_case_sensitive(!options->ignorecase);
-  opts->set_one_line(!options->multiline);
-  opts->set_dot_nl(options->dotnl);
-  opts->set_longest_match(!options->nongreedy);
-  opts->set_log_errors(false);
+  bool utf8 = (flags & OPTION_FLAG_UTF8) != 0;
+  bool posix = (flags & OPTION_FLAG_POSIX) != 0;
+  bool literal = (flags & OPTION_FLAG_LITERAL) != 0;
+  bool nocapture = (flags & OPTION_FLAG_NOCAPTURE) != 0;
+  bool ignorecase = (flags & OPTION_FLAG_IGNORECASE) != 0;
+  bool dotnl = (flags & OPTION_FLAG_DOTNL) != 0;
+  bool multiline = (flags & OPTION_FLAG_MULTILINE) != 0;
+
+  opts.set_encoding(utf8 ? utf8E : byteE);
+  opts.set_posix_syntax(posix);
+  if (posix) opts.set_longest_match(true); // posix defaults to longest match
+  opts.set_literal(literal);
+  opts.set_never_capture(nocapture);
+  opts.set_case_sensitive(!ignorecase);
+  opts.set_one_line(!multiline); // note: only consulted with posix==true
+  opts.set_dot_nl(dotnl);
+
+  opts.set_log_errors(false);
+
+  return opts;
 }
 
 static
-void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regex_options_t* options)
-{
-  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
-  RE2::Options::Encoding e = opts->encoding();
-  options->utf8 = (e == utf8E);
-  options->posix = opts->posix_syntax();
-  options->literal = opts->literal();
-  options->nocapture = opts->never_capture();
-  options->ignorecase = !opts->case_sensitive();
-  options->multiline = !opts->one_line();
-  options->dotnl = opts->dot_nl();
-  options->nongreedy = ! opts->longest_match();
+optionFlags_t qio_re_options_to_flags(const qio_regex_options_t* options) {
+  optionFlags_t ret = 0;
+
+  // ignore all other flags if literal is used
+  if (options->literal) return OPTION_FLAG_LITERAL;
+
+  if (options->utf8)       ret |= OPTION_FLAG_UTF8;
+  if (options->posix)      ret |= OPTION_FLAG_POSIX;
+  if (options->nocapture)  ret |= OPTION_FLAG_NOCAPTURE;
+  if (options->ignorecase) ret |= OPTION_FLAG_IGNORECASE;
+  if (options->multiline)  ret |= OPTION_FLAG_MULTILINE;
+  if (options->dotnl)      ret |= OPTION_FLAG_DOTNL;
+  if (options->nongreedy)  ret |= OPTION_FLAG_NONGREEDY;
+  return ret;
 }
 
 static
-bool equal_options(const RE2::Options *opts, const qio_regex_options_t* options)
-{
-  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
-  bool optsUtf8 = (opts->encoding() == utf8E);
-  return  options->utf8 == optsUtf8 &&
-          options->posix == opts->posix_syntax() &&
-          options->literal == opts->literal() &&
-          options->nocapture == opts->never_capture() &&
-          options->ignorecase == !opts->case_sensitive() &&
-          options->multiline == !opts->one_line() &&
-          options->dotnl == opts->dot_nl() &&
-          options->nongreedy == ! opts->longest_match();
+void flags_to_qio_re_options(optionFlags_t flags, qio_regex_options_t* opts) {
+  bool utf8 = (flags & OPTION_FLAG_UTF8) != 0;
+  bool posix = (flags & OPTION_FLAG_POSIX) != 0;
+  bool literal = (flags & OPTION_FLAG_LITERAL) != 0;
+  bool nocapture = (flags & OPTION_FLAG_NOCAPTURE) != 0;
+  bool ignorecase = (flags & OPTION_FLAG_IGNORECASE) != 0;
+  bool dotnl = (flags & OPTION_FLAG_DOTNL) != 0;
+  bool multiline = (flags & OPTION_FLAG_MULTILINE) != 0;
+  bool nongreedy = (flags & OPTION_FLAG_NONGREEDY) != 0;
+
+  qio_regex_init_default_options(opts);
+
+  opts->utf8 = utf8;
+  opts->posix = posix;
+  opts->literal = literal;
+  opts->nocapture = nocapture;
+  opts->ignorecase = ignorecase;
+  opts->multiline = multiline;
+  opts->dotnl = dotnl;
+  opts->nongreedy = nongreedy;
 }
+
 
 static
 void re_free(re_t* re)
 {
-  //fprintf(stdout, "free %p\n", re);
   delete re;
 }
 
 static
-re_t* local_cache_get(const char* str, int64_t str_len, const qio_regex_options_t* options) {
+re_t* local_cache_get(const char* str, int64_t str_len,
+                      optionFlags_t optionFlags,
+                      optionPrefixLen_t optionPrefixBytes) {
   thread_local re_cache cache;
   re_cache* c = &cache;
   int oldest;
@@ -137,21 +186,21 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regex_options_
   // or a matching element
   oldest = 0;
   oldest_date = c->elems[0].date;
-  for( int i = 0; i < REGEX_CACHE_SIZE; i++ ) {
-    if( c->elems[i].date < oldest_date ) {
+  for (int i = 0; i < REGEX_CACHE_SIZE; i++) {
+    cache_elem* elem = &c->elems[i];
+    if( elem->date < oldest_date ) {
       oldest = i;
-      oldest_date = c->elems[i].date;
+      oldest_date = elem->date;
     }
-    if( ! c->elems[i].re ) continue;
-    const std::string& pat = c->elems[i].re->re.pattern();
-    const RE2::Options& opt = c->elems[i].re->re.options();
-    if( (uint64_t) pat.length() == (uint64_t) str_len &&
-        0 == memcmp(pat.data(), str, str_len ) &&
-        equal_options(&opt, options) ) {
+    re_t* re = elem->re;
+    if (!re) continue;
+    const std::string& pat = re->re2.pattern();
+    if ((uint64_t) pat.length() == (uint64_t) str_len &&
+        re->optionFlags == optionFlags &&
+        0 == memcmp(pat.data(), str, str_len)) {
       // Make the date current.
-      c->elems[i].date = c->date;
+      elem->date = c->date;
       // Return this element.
-      re_t* re = c->elems[i].re;
       // We increment the reference count before returning a copy to the
       // caller.  It is up to the caller to release the re_t handle when done.
       DO_RETAIN(re);
@@ -160,15 +209,14 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regex_options_
   }
 
   // If we found no match, replace oldest.
-  if( c->elems[oldest].re) DO_RELEASE(c->elems[oldest].re, re_free);
+  cache_elem* elem = &c->elems[oldest];
+  if (elem->re) DO_RELEASE(elem->re, re_free);
 
   // Put a new RE in that slot.
-  RE2::Options opts;
-  qio_re_options_to_re2_options(options, &opts);
   StringPiece strp(str, str_len);
-  re_t* re = new re_t(strp, opts, c);
-  c->elems[oldest].date = c->date;
-  c->elems[oldest].re = re;
+  re_t* re = new re_t(strp, optionFlags, optionPrefixBytes);
+  elem->date = c->date;
+  elem->re = re;
   // We increment the reference count before returning a copy to the
   // caller.  It is up to the caller to release the re_t handle when done.
   DO_RETAIN(re);
@@ -197,10 +245,34 @@ void qio_regex_init_default_options(qio_regex_options_t* opt)
   opt->nongreedy = false;
 }
 
-// The returned re_t (passed back through "compiled") must be released by the caller.
-void qio_regex_create_compile(const char* str, int64_t str_len, const qio_regex_options_t* options, qio_regex_t* compiled)
+// The returned re_t (passed back through "compiled")
+// must be released by the caller.
+void qio_regex_create_compile(const char* str, int64_t str_len,
+                              const qio_regex_options_t* options,
+                              qio_regex_t* compiled)
 {
-  re_t* regex = local_cache_get(str, str_len, options);
+  re_t* regex = nullptr;
+  optionFlags_t optionFlags = qio_re_options_to_flags(options);
+
+  if (!options->posix && !options->literal &&
+      (options->multiline || options->nongreedy)) {
+    // if it's not POSIX mode, need to add a prefix for multiline/nongreedy
+    std::string s;
+    if (options->multiline) {
+      s += "(?m)";
+    }
+    if (options->nongreedy) {
+      s += "(?U)";
+    }
+    uint8_t optionPrefixBytes = s.size();
+    s.append(str, str_len);
+
+    regex = local_cache_get(s.data(), s.size(),
+                            optionFlags, optionPrefixBytes);
+  } else {
+    // otherwise, use the pattern as-is, no need to add a prefix
+    regex = local_cache_get(str, str_len, optionFlags, 0);
+  }
   compiled->regex = (void*) regex;
   // We bump the reference count, because caller "owns" its copy of the cached
   // regex.  This way, a regex can be removed from the cache without causing a
@@ -238,20 +310,26 @@ void qio_regex_release(qio_regex_t* compiled)
   compiled->regex = NULL;
 }
 
-void qio_regex_get_options(const qio_regex_t* regex, qio_regex_options_t* options)
+void qio_regex_get_options(const qio_regex_t* regex,
+                           qio_regex_options_t* options)
 {
-  if (RE2* re2 = (RE2*) regex->regex) {
-    const RE2::Options& opts = re2->options();
-    re2_options_to_qio_re_options(&opts, options);
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    flags_to_qio_re_options(re->optionFlags, options);
+  } else {
+    qio_regex_init_default_options(options);
   }
 }
 
-void qio_regex_borrow_pattern(const qio_regex_t* regex, const char** pattern, int64_t* len_out)
+void qio_regex_borrow_pattern(const qio_regex_t* regex,
+                              const char** pattern, int64_t* len_out)
 {
-  if (RE2* re2 = (RE2*) regex->regex) {
-    const std::string &s = re2->pattern();
-    *pattern = s.c_str();
-    *len_out = s.length();
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    const std::string &s = re->re2.pattern();
+    ssize_t prefixBytes = re->optionPrefixBytes;
+    *pattern = s.c_str() + prefixBytes;
+    *len_out = s.length() - prefixBytes;
   } else {
     *len_out = 0;
   }
@@ -259,20 +337,31 @@ void qio_regex_borrow_pattern(const qio_regex_t* regex, const char** pattern, in
 
 int64_t qio_regex_get_ncaptures(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  return re2 ? re2->NumberOfCapturingGroups() : 0;
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    return re->re2.NumberOfCapturingGroups();
+  }
+  return 0;
 }
 
 qio_bool qio_regex_ok(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  return re2 && re2->ok();
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    return re->re2.ok();
+  }
+
+  return false;
 }
 
 const char* qio_regex_error(const qio_regex_t* regex)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  return qio_strdup(re2 ? re2->error().c_str() : "");
+  if (regex && regex->regex) {
+    re_t* re = (re_t*) regex->regex;
+    return qio_strdup(re->re2.error().c_str());
+  } else {
+    return "";
+  }
 }
 
 qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regex_string_piece_t* submatch, int64_t nsubmatch)
@@ -282,8 +371,9 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   RE2::Anchor ranchor = RE2::UNANCHORED;
   MAYBE_STACK_SPACE(StringPiece, onstack);
   StringPiece* spPtr;
-  RE2* re = (RE2*) regex->regex;
+  re_t* re = (re_t*) regex->regex;
   if (!re) return false;
+  RE2* re2 = &re->re2;
 
   // RE2 uses int for ncaptures
   if( nsubmatch > INT_MAX || nsubmatch < 0 )
@@ -296,7 +386,7 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   MAYBE_STACK_ALLOC(StringPiece, nsubmatch, spPtr, onstack);
   memset((void*)spPtr, 0, sizeof(StringPiece)*nsubmatch);
 
-  ret = re->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
+  ret = re2->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
   // Now set submatch based on StringPieces
   for( int64_t i = 0; i < nsubmatch; i++ ) {
     if( !ret ) {
@@ -554,7 +644,8 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 
 qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
 {
-  RE2* re = (RE2*) regex->regex;
+  re_t* re = (re_t*) regex->regex;
+  RE2* re2 = &re->re2;
   qioerr err = NULL;
   void* bufstart = NULL;
   void* bufend = NULL;
@@ -599,7 +690,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   ci.file = ch;
   ci.read_byte_fn = (read_byte_fn_t) &qio_regex_channel_read_byte;
   ci.discard_fn = (discard_fn_t) &qio_regex_channel_discard;
-  ci.re = re;
+  ci.re = re2;
   if( ncaptures <= 0 ) ci.nmatch = 0;
   else if( ncaptures == 1 ) ci.nmatch = 1;
   else if( ncaptures < INT_MAX ) ci.nmatch = (int) ncaptures;
@@ -633,7 +724,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   }
 
   // Require at least 1 byte and at most 1024 bytes.
-  need = re->min_match_length_bytes();
+  need = re2->min_match_length_bytes();
   if( need <= 0 ) need = 1;
   if( need > 1024) need = 1024;
   err = qio_channel_require_read(false, ch, need);
@@ -666,7 +757,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   // remove the unneeded buffer setup code
   old_gFileStringAllowBufferSearch = gFileStringAllowBufferSearch;
   gFileStringAllowBufferSearch = 0;
-  found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
+  found = re2->MatchFile(text, buffer, ranchor, locs, ncaptures);
   gFileStringAllowBufferSearch = old_gFileStringAllowBufferSearch;
 
   // Copy capture groups if we found something

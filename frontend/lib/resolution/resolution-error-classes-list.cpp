@@ -274,6 +274,21 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   wr.code(use, { as });
 }
 
+void ErrorAssignFieldBeforeInit::write(ErrorWriterBase& wr) const {
+  auto initCall = std::get<const uast::FnCall*>(info_);
+  auto& initializations = std::get<1>(info_);
+
+  wr.heading(kind_, type_, initCall,
+             "field initialization not allowed before 'super.init()' or 'this.init()'");
+
+  for (auto& initPair : initializations) {
+    auto decl = initPair.first;
+    auto id = initPair.second;
+    wr.note(id, "field '", decl->name(), "' is initialized before the 'init' call here:");
+    wr.code<ID, ID>(id, { id });
+  }
+}
+
 void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
   auto ast = std::get<const uast::AstNode*>(info_);
   auto& c = std::get<resolution::MostSpecificCandidate>(info_);

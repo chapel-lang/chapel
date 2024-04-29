@@ -26,6 +26,54 @@ from driver import LintDriver
 from fixits import Fixit, Edit
 from rule_types import BasicRuleResult, AdvancedRuleResult
 
+
+def variables(node: AstNode):
+    if isinstance(node, Variable):
+        if node.name() != "_":
+            yield node
+    elif isinstance(node, TupleDecl):
+        for child in node:
+            yield from variables(child)
+
+
+def fixit_remove_unused_node(
+    node: AstNode,
+    lines: Optional[List[str]] = None,
+    context: Optional[Context] = None,
+) -> Optional[Fixit]:
+    """
+    Given an unused variable that's either a child of a TupleDecl or an
+    iterand in a loop, construct a Fixit that removes it or replaces it
+    with '_' as appropriate.
+
+    Expects either a lines list (containing the lines in the file where
+    the node is being fixed up) or a context object that will be used to
+    determine these lines. Raises if neither is provided.
+    """
+
+    parent = node.parent()
+    if parent is None:
+        return None
+
+    if lines is None:
+        if context is None:
+            raise ValueError("Either 'lines' or 'context' must be provided")
+        else:
+            lines = chapel.get_file_lines(context, parent)
+
+    if parent and isinstance(parent, TupleDecl):
+        return Fixit.build(Edit.build(node.location(), "_"))
+    elif parent and isinstance(parent, IndexableLoop):
+        loc = parent.header_location() or parent.location()
+        before_loc = loc - node.location()
+        after_loc = loc.clamp_left(parent.iterand().location())
+        before_lines = range_to_text(before_loc, lines)
+        after_lines = range_to_text(after_loc, lines)
+
+        return Fixit.build(Edit.build(loc, before_lines + after_lines))
+    return None
+
+
 def name_for_linting(context: Context, node: NamedDecl) -> str:
     name = node.name()
 
@@ -47,6 +95,7 @@ def check_pascal_case(context: Context, node: NamedDecl):
     return re.fullmatch(
         r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?", name_for_linting(context, node)
     )
+
 
 def register_rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -191,7 +240,9 @@ def register_rules(driver: LintDriver):
         # should be set in all branches
         assert text is not None
 
-        return BasicRuleResult(node, fixits=Fixit.build(Edit.build(node.location(), text)))
+        return BasicRuleResult(
+            node, fixits=Fixit.build(Edit.build(node.location(), text))
+        )
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
@@ -220,11 +271,32 @@ def register_rules(driver: LintDriver):
         return True
 
     @driver.basic_rule(EmptyStmt)
-    def EmptyStmts(context, node):
+    def EmptyStmts(_, node: EmptyStmt):
         """
         Warn for empty statements (i.e., unnecessary semicolons).
         """
-        return False
+        p = node.parent()
+        if p and isinstance(p, SimpleBlockLike) and len(list(p.stmts())) == 1:
+            # dont warn if the EmptyStmt is the only statement in a block
+            return True
+
+        return BasicRuleResult(
+            node, fixits=Fixit.build(Edit.build(node.location(), ""))
+        )
+
+    @driver.basic_rule(TupleDecl)
+    def UnusedTupleUnpack(context: Context, node: TupleDecl):
+        """
+        Warn for unused tuple unpacking, such as '(_, _)'.
+        """
+
+        varset = set(variables(node))
+        if len(varset) == 0:
+            fixit = fixit_remove_unused_node(node, context=context)
+            if fixit is not None:
+                return BasicRuleResult(node, fixits=fixit)
+            return False
+        return True
 
     # Five things have to match between consecutive decls for this to warn:
     # 1. same type
@@ -319,10 +391,13 @@ def register_rules(driver: LintDriver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(context, root):
+    def MisleadingIndentation(context: Context, root: AstNode):
         """
         Warn for single-statement blocks that look like they might be multi-statement blocks.
         """
+        if isinstance(root, Comment):
+            return
+        lines = chapel.get_file_lines(context, root)
 
         prev, prevloop = None, None
         for child in root:
@@ -331,8 +406,25 @@ def register_rules(driver: LintDriver):
             yield from MisleadingIndentation(context, child)
 
             if prev is not None:
-                if child.location().start()[1] == prev.location().start()[1]:
-                    yield AdvancedRuleResult(child, prevloop)
+                loc = child.location()
+                prev_loc = prev.location()
+                prevloop_loc = prevloop.location()
+                if loc.start()[1] == prev_loc.start()[1]:
+                    fixit = None
+                    # only apply the fixit when the fix is to indent `child`
+                    # and `child ` is a single line
+                    if (
+                        loc.start()[1] != prevloop_loc.start()[1]
+                        and loc.start()[0] == loc.end()[0]
+                    ):
+                        line_start = (loc.start()[0], 1)
+                        parent_indent = max(prevloop_loc.start()[1] - 1, 0)
+                        text = " " * parent_indent + range_to_text(loc, lines)
+                        fixit = Fixit.build(
+                            Edit(loc.path(), line_start, loc.end(), text)
+                        )
+                    fixits = [fixit] if fixit else []
+                    yield AdvancedRuleResult(child, prevloop, fixits=fixits)
 
             prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
@@ -389,14 +481,6 @@ def register_rules(driver: LintDriver):
         indices = dict()
         uses = set()
 
-        def variables(node):
-            if isinstance(node, Variable):
-                if node.name() != "_":
-                    yield node
-            elif isinstance(node, TupleDecl):
-                for child in node:
-                    yield from variables(child)
-
         for loop, _ in chapel.each_matching(root, IndexableLoop):
             node = loop.index()
             if node is None:
@@ -414,18 +498,7 @@ def register_rules(driver: LintDriver):
         for unused in indices.keys() - uses:
             node, loop = indices[unused]
             fixit = None
-            parent = node.parent()
-            if parent and isinstance(parent, TupleDecl):
-                fixit = Fixit.build(Edit.build(node.location(), "_"))
-            elif parent and isinstance(parent, IndexableLoop):
-                loc = parent.header_location() or parent.location()
-                before_loc = loc - node.location()
-                after_loc = loc.clamp_left(parent.iterand().location())
-                before_lines = range_to_text(before_loc, lines)
-                after_lines = range_to_text(after_loc, lines)
-
-                fixit = Fixit.build(Edit.build(loc, before_lines + after_lines))
-
+            fixit = fixit_remove_unused_node(node, lines)
             fixits = [fixit] if fixit else []
             yield AdvancedRuleResult(node, loop, fixits=fixits)
 
@@ -502,7 +575,7 @@ def register_rules(driver: LintDriver):
                 Interface,
                 Union,
                 Enum,
-                Cobegin
+                Cobegin,
             )
             return isinstance(node, classes)
 
@@ -542,7 +615,10 @@ def register_rules(driver: LintDriver):
         # For implicit modules, proper code will technically be on the same
         # line as the module's body. But we don't want to warn about that,
         # since we don't want to ask all code to be indented one level deeper.
-        elif not (isinstance(parent_for_indentation, Module) and parent_for_indentation.kind() == "implicit"):
+        elif not (
+            isinstance(parent_for_indentation, Module)
+            and parent_for_indentation.kind() == "implicit"
+        ):
             parent_depth = parent_for_indentation.location().start()[1]
 
         prev = None
@@ -556,9 +632,13 @@ def register_rules(driver: LintDriver):
             iterable = root.decls_or_comments()
         elif isinstance(root, SimpleBlockLike):
             iterable = root.stmts()
+        elif isinstance(root, Module) and root.attribute_group() is not None:
+            # attribute group is the first child, skip it
+            iterable = list(root)[1:]
 
         for child in iterable:
-            if isinstance(child, Comment): continue
+            if isinstance(child, Comment):
+                continue
 
             # some NamedDecl nodes currently use the name as the location, which
             # does not indicate their actual indentation.
@@ -592,7 +672,11 @@ def register_rules(driver: LintDriver):
             elif prev_depth and depth != prev_depth:
                 # Special case, slightly coarse: avoid double-warning with
                 # MisleadingIndentation
-                if not(prev and isinstance(prev, Loop) and prev.block_style() == "implicit"):
+                if not (
+                    prev
+                    and isinstance(prev, Loop)
+                    and prev.block_style() == "implicit"
+                ):
                     yield child
 
                 # Do not update 'prev_depth'; use original prev_depth as

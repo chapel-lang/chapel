@@ -198,8 +198,7 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
 
 
 def completion_item_for_decl(
-    decl: chapel.NamedDecl,
-    override_name: Optional[str] = None
+    decl: chapel.NamedDecl, override_name: Optional[str] = None
 ) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
@@ -208,6 +207,11 @@ def completion_item_for_decl(
     # For now, we show completion for global symbols (not x.<complete>),
     # so it seems like we ought to rule out methods.
     if kind == SymbolKind.Method:
+        return None
+
+    # We don't want to show operators in completion lists, as they're
+    # not really useful to the user in this context.
+    if kind == SymbolKind.Operator:
         return None
 
     name_to_use = override_name if override_name else decl.name()
@@ -404,6 +408,8 @@ class EndMarkerPattern:
                         chapel.Sync,
                         chapel.Local,
                         chapel.Manage,
+                        chapel.Select,
+                        chapel.When,
                     ]
                 ),
                 header_location=lambda node: (
@@ -468,6 +474,10 @@ class ContextContainer:
 
 CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
 CallsInTypeContext = List[CallInTypeContext]
+
+
+# We should show these variables in autocompletion even though they are 'nodoc'.
+_ALLOWED_NODOC_DECLS = ["boundKind", "here", "strideKind"]
 
 
 @dataclass
@@ -578,9 +588,39 @@ class FileInfo:
                     if not in_bundled_module:
                         continue
 
+                # Only show nodes without @chpldoc.nodoc. The exception
+                # about standard files applies here too.
+                documented_nodes = []
+                for node in nodes:
+                    # apply aforementioned exception
+                    if in_bundled_module:
+                        documented_nodes.append(node)
+                        continue
+
+                    # avoid nodes with nodoc attribute.
+                    ag = node.attribute_group()
+                    show = False
+                    if not ag or not ag.get_attribute_named("chpldoc.nodoc"):
+                        show = True
+                    elif name in _ALLOWED_NODOC_DECLS:
+                        # If users declare variables like 'here' themselves,
+                        # we will not show them if they're @chpldoc.nodoc,
+                        # since they're not special.
+                        decl_file = node.location().path()
+                        is_standard_decl = self.context.context.is_bundled_path(
+                            decl_file
+                        )
+                        show = is_standard_decl
+
+                    if show:
+                        documented_nodes.append(node)
+
+                if len(documented_nodes) == 0:
+                    continue
+
                 # Just take the first value to avoid showing N entries for
                 # overloaded functions.
-                self.visible_decls.append((name, nodes[0]))
+                self.visible_decls.append((name, documented_nodes[0]))
 
     def _search_instantiations(
         self,
@@ -1508,7 +1548,7 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
-        for (name, decl) in fi.visible_decls:
+        for name, decl in fi.visible_decls:
             if isinstance(decl, chapel.NamedDecl):
                 items.append(completion_item_for_decl(decl, override_name=name))
         items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)

@@ -114,6 +114,8 @@ struct Visitor {
   bool handleNestedDecoratorsInNew(const FnCall* node);
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
+  void reportErrorForNonThisSuperCall(const FnCall* node, UniqueString method);
+  void checkExplicitInitCalls(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
   void checkNewBorrowed(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
@@ -617,29 +619,56 @@ void Visitor::checkForNestedClassDecorators(const FnCall* node) {
   }
 }
 
-void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
-  auto calledExpr = node->calledExpression();
-  if (!calledExpr) return;
-
-  bool doEmitError = false;
+static const AstNode* isCallToMethodOrFnWithName(const FnCall* call,
+                                                 UniqueString checkName) {
+  auto calledExpr = call->calledExpression();
+  if (!calledExpr) return nullptr;
 
   if (auto ident = calledExpr->toIdentifier()) {
-    doEmitError = ident->name() == USTR("deinit");
+    if (ident->name() == checkName) return ident;
   } else if (auto dot = calledExpr->toDot()) {
-    doEmitError = dot->field() == USTR("deinit");
+    if (dot->field() == checkName) return dot;
   }
+
+  return nullptr;
+}
+
+void Visitor::reportErrorForNonThisSuperCall(const FnCall* node, UniqueString method) {
+  auto calledExpr = isCallToMethodOrFnWithName(node, method);
+  if (!calledExpr) return;
+
+  if (auto dot = calledExpr->toDot()) {
+    if (auto receiverIdent = dot->receiver()->toIdentifier()) {
+      // this.f(..) and super.f(..) are allowed, by definition of this method.
+      // That is because this method is used for 'init' checking,
+      // where such code is valid.
+      if (receiverIdent->name() == USTR("this") ||
+          receiverIdent->name() == USTR("super"))
+        return;
+    }
+  } else {
+    // Standalone call; this is implicitly applied to 'this', so no problem.
+    return;
+  }
+  error(node, "explicit calls to %s() on anything other than"
+              " 'this' or 'super' are not allowed.", method.c_str());
+}
+
+void Visitor::checkExplicitInitCalls(const FnCall* node) {
+  reportErrorForNonThisSuperCall(node, USTR("init"));
+}
+
+void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
+  auto calledExpr = isCallToMethodOrFnWithName(node, USTR("deinit"));
+  if (!calledExpr) return;
 
   // Check if we are being called from the delete implementation.
-  if (doEmitError) {
-    if (auto foundFn = searchParents(asttags::Function, nullptr)) {
-      auto fn = foundFn->toFunction();
-      if (fn->name() == "chpl__delete") doEmitError = false;
-    }
+  if (auto foundFn = searchParents(asttags::Function, nullptr)) {
+    auto fn = foundFn->toFunction();
+    if (fn->name() == "chpl__delete") return;
   }
 
-  if (doEmitError) {
-    error(node, "direct calls to deinit() are not allowed.");
-  }
+  error(node, "explicit calls to deinit() are not allowed.");
 }
 
 void Visitor::checkNewBorrowed(const FnCall* node) {
@@ -1494,6 +1523,7 @@ void Visitor::visit(const AttributeGroup* node) {
 void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
+  checkExplicitInitCalls(node);
   checkExplicitDeinitCalls(node);
   checkNewBorrowed(node);
   checkBorrowFromNew(node);

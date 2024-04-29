@@ -28,6 +28,7 @@ from collections import defaultdict
 from chapel import *
 from chapel.core import *
 
+
 def list_parsed_files(files, module_paths):
     ctx = Context()
     ctx.set_module_paths(module_paths, files)
@@ -56,7 +57,11 @@ def run_toplevel():
     os.symlink(__file__, wrapper)
 
     # Modify path to include the wrapper script at the front
-    chpl = subprocess.check_output(["which", "chpl"]).decode(sys.stdout.encoding).strip()
+    chpl = (
+        subprocess.check_output(["which", "chpl"])
+        .decode(sys.stdout.encoding)
+        .strip()
+    )
     newpath = os.pathsep.join([tempdir.name, os.environ["PATH"]])
 
     newenv = os.environ.copy()
@@ -89,8 +94,10 @@ def run_chpl_shim():
     tmpfile_path = os.environ["CHPL_SHIM_TARGET_PATH"]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', nargs='*')
-    parser.add_argument('-M', '--module-dir', action='append', dest="module_dirs", default=[])
+    parser.add_argument("filename", nargs="*")
+    parser.add_argument(
+        "-M", "--module-dir", action="append", dest="module_dirs", default=[]
+    )
 
     args, _ = parser.parse_known_args()
     files = args.filename
@@ -109,12 +116,16 @@ def run_chpl_shim():
     for file in files:
         invocation = " ".join(sys.argv).replace(__file__, real_compiler)
         commands[file] = {
-        #   "invocation": invocation,
-            "module_dirs": [os.path.abspath(mod_dir) for mod_dir in args.module_dirs],
+            #   "invocation": invocation,
+            "module_dirs": [
+                os.path.abspath(mod_dir) for mod_dir in args.module_dirs
+            ],
             "files": files,
         }
 
-    tmpfile = tempfile.NamedTemporaryFile(mode="w", delete=False, dir=tmpfile_path, suffix=".json")
+    tmpfile = tempfile.NamedTemporaryFile(
+        mode="w", delete=False, dir=tmpfile_path, suffix=".json"
+    )
 
     # Convert to json
     with tmpfile as f:
