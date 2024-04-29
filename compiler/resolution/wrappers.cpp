@@ -2219,6 +2219,7 @@ static CondStmt*  selectFollower(ArgSymbol* fastFollower,
                                  ArgSymbol* fiFnFollower);
 
 static BlockStmt* followerForLoop(PromotionInfo& promotion,
+                                  FnSymbol*  followerFn,
                                   Expr*      indices,
                                   Expr*      iterator,
                                   VarSymbol* followerIterator,
@@ -2688,6 +2689,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   if (promotion.gpuAttributeBlock) {
     yieldBlock->insertBefore(
         promotion.gpuAttributeBlock->getPrimitivesBlock()->copy(&outerToFormals));
+    promotion.gpuAttributeBlock->noteUseOfGpuAttributeBlock(wrapFn);
   }
 
   return loop;
@@ -2820,6 +2822,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
                                     fiFnFollower));
 
   fiFn->insertAtTail(followerForLoop(promotion,
+                                     fiFn,
                                      indices,
                                      iterator,
                                      followerIterator,
@@ -2866,6 +2869,7 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
 }
 
 static BlockStmt* followerForLoop(PromotionInfo& promotion,
+                                  FnSymbol*  followerFn,
                                   Expr*      indices,
                                   Expr*      iterator,
                                   VarSymbol* followerIterator,
@@ -2888,6 +2892,7 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
   if (promotion.gpuAttributeBlock) {
     block->insertBefore(
         promotion.gpuAttributeBlock->getPrimitivesBlock()->copy(&followerMap));
+    promotion.gpuAttributeBlock->noteUseOfGpuAttributeBlock(followerFn);
   }
 
   return loop;
