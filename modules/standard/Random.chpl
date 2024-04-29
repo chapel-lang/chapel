@@ -575,6 +575,74 @@ module Random {
   }
 
   /*
+    Randomly sample ``n`` elements from an array, where each array element has
+    a corresponding weight.
+
+    Elements with relatively larger weights are more likely to be sampled.
+
+    :arg arr: The 1D rectangular array to sample from
+    :arg n: The number of elements to sample
+    :arg weights: An array of real-valued weights corresponding to the elements in ``arr``
+    :arg withReplacement: Whether or not to sample with replacement
+
+    :return: A zero-based array of ``n`` random elements sampled from the array
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``arr`` is
+                                  empty. If ``weights`` does not have the same
+                                  size as ``arr``.
+  */
+  proc sample(
+    const ref arr: [?d] ?t,
+    n: int,
+    const ref weights: [?dw] ?wt,
+    withReplacement=false
+  ): [] t throws
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
+  {
+    if weights.size != arr.size then
+      throw new IllegalArgumentError("weights array must have the same size as the array");
+
+    var rs = new randomStream(wt);
+    return rs.sample(arr, n, weights, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` elements from an array, where each array element has
+    a corresponding weight.
+
+    Elements with relatively larger weights are more likely to be sampled.
+
+    :arg arr: The 1D rectangular array to sample from
+    :arg n: The number of elements to sample
+    :arg weights: An array of real-valued weights corresponding to the elements in ``arr``
+    :arg withReplacement: Whether or not to sample with replacement
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A zero-based array of ``n`` random elements sampled from the array
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                  ``withReplacement=false``. If ``arr`` is
+                                  empty. If ``weights`` does not have the same
+                                  size as ``arr``.
+  */
+  proc sample(
+    const ref arr: [?d] ?t,
+    n: int,
+    const ref weights: [?dw] ?wt,
+    withReplacement=false,
+    seed: int
+  ): [] t throws
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
+  {
+    if weights.size != arr.size then
+      throw new IllegalArgumentError("weights array must have the same size as the array");
+
+    var rs = new randomStream(wt, seed);
+    return rs.sample(arr, n, weights, withReplacement);
+  }
+
+  /*
     Randomly sample ``n`` indices from a domain.
 
     :arg d: The 1D rectangular domain to sample from
@@ -616,6 +684,74 @@ module Random {
   }
 
   /*
+    Randomly sample ``n`` indices from a domain, where each index has a
+    corresponding weight.
+
+    Indices with relatively larger weights are more likely to be sampled.
+
+    :arg d: The 1D rectangular domain to sample from
+    :arg n: The number of indices to sample
+    :arg weights: An array of real-valued weights corresponding to the indices in ``d``
+    :arg withReplacement: Whether or not to sample with replacement
+
+    :return: A zero-based array of ``n`` random indices sampled from the domain
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > d.size`` and
+                                  ``withReplacement=false``. If ``d`` is
+                                  empty. If ``weights`` does not have the same
+                                  size as ``d``.
+  */
+  proc sample(
+    d: domain(?),
+    n: int,
+    const ref weights: [?dw] ?wt,
+    withReplacement=false
+  ): [] d.idxType throws
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
+  {
+    if weights.size != d.size then
+      throw new IllegalArgumentError("weights array must have the same size as the domain");
+
+    var rs = new randomStream(wt);
+    return rs.sample(d, n, weights, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` indices from a domain, where each index has a
+    corresponding weight.
+
+    Indices with relatively larger weights are more likely to be sampled.
+
+    :arg d: The 1D rectangular domain to sample from
+    :arg n: The number of elements to sample
+    :arg weights: An array of real-valued weights corresponding to the elements in ``d``
+    :arg withReplacement: Whether or not to sample with replacement
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A zero-based array of ``n`` random indices sampled from the domain
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > d.size`` and
+                                  ``withReplacement=false``. If ``d`` is
+                                  empty. If ``weights`` does not have the same
+                                  size as ``d``.
+  */
+  proc sample(
+    d: domain(?),
+    n: int,
+    const ref weights: [?dw] ?wt,
+    withReplacement=false,
+    seed: int
+  ): [] d.idxType throws
+    where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isRealType(wt)
+  {
+    if weights.size != d.size then
+      throw new IllegalArgumentError("weights array must have the same size as the domain");
+
+    var rs = new randomStream(wt, seed);
+    return rs.sample(d, n, weights, withReplacement);
+  }
+
+  /*
     Randomly sample ``n`` values from a range.
 
     :arg r: A fully bounded range to sample from
@@ -624,7 +760,7 @@ module Random {
 
     :return: A zero-based array of ``n`` random values sampled from the range
 
-    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > r.size`` and
                                   ``withReplacement=false``. If ``r`` is
                                   empty.
   */
@@ -643,13 +779,81 @@ module Random {
 
     :return: A zero-based array of ``n`` random values sampled from the range
 
-    :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > r.size`` and
                                   ``withReplacement=false``. If ``r`` is
                                   empty.
   */
   proc sample(r: range(bounds=boundKind.both, ?), n: int, withReplacement=false, seed: int): [] r.idxType throws {
     var rs = new randomStream(r.idxType, seed);
     return rs.sample(r, n, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` values from a range, where each value has a
+    corresponding weight.
+
+    Values with relatively larger weights are more likely to be sampled.
+
+    :arg r: A fully bounded range to sample from
+    :arg n: The number of values to sample
+    :arg weights: An array of real-valued weights corresponding to the values in ``r``
+    :arg withReplacement: Whether or not to sample with replacement
+
+    :return: A zero-based array of ``n`` random values sampled from the range
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > r.size`` and
+                                  ``withReplacement=false``. If ``r`` is
+                                  empty. If ``weights`` does not have the same
+                                  size as ``r``.
+  */
+  proc sample(
+    r: range(bounds=boundKind.both, ?),
+    n: int,
+    const ref weights: [?dw] ?wt,
+    withReplacement=false
+  ): [] r.idxType throws
+    where is1DRectangularDomain(dw) && isRealType(wt)
+  {
+    if weights.size != r.size then
+      throw new IllegalArgumentError("weights array must have the same size as the range");
+
+    var rs = new randomStream(wt);
+    return rs.sample(r, n, weights, withReplacement);
+  }
+
+  /*
+    Randomly sample ``n`` values from a range, where each value has a
+    corresponding weight.
+
+    Values with relatively larger weights are more likely to be sampled.
+
+    :arg r: A fully bounded range to sample from
+    :arg n: The number of values to sample
+    :arg weights: An array of real-valued weights corresponding to the values in ``r``
+    :arg withReplacement: Whether or not to sample with replacement
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A zero-based array of ``n`` random values sampled from the range
+
+    :throws IllegalArgumentError: If ``n < 1`` or if ``n > r.size`` and
+                                  ``withReplacement=false``. If ``r`` is
+                                  empty. If ``weights`` does not have the same
+                                  size as ``r``.
+  */
+  proc sample(
+    r: range(bounds=boundKind.both, ?),
+    n: int,
+    const ref weights: [?dw] ?wt,
+    withReplacement=false,
+    seed: int
+  ): [] r.idxType throws
+    where is1DRectangularDomain(dw) && isRealType(wt)
+  {
+    if weights.size != r.size then
+      throw new IllegalArgumentError("weights array must have the same size as the range");
+
+    var rs = new randomStream(wt, seed);
+    return rs.sample(r, n, weights, withReplacement);
   }
 
   /*
@@ -1004,6 +1208,48 @@ module Random {
     }
 
     /*
+      Sample ``n`` random elements from an array, where each array element has
+      a corresponding weight.
+
+      Elements with relatively larger weights are more likely to be sampled.
+
+      :arg arr: The 1D rectangular array to sample from. Its domain's ``idxType``
+                should be coercible from this stream's ``eltType``.
+      :arg n: The number of elements to sample
+      :arg weights: An array of weights corresponding to the elements in ``arr``
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random elements sampled from the array
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > arr.size`` and
+                                    ``withReplacement=false``. If ``arr`` is
+                                    empty. If ``weights`` does not have the same
+                                    size as ``arr``.
+    */
+    proc ref sample(
+      const ref arr: [?d] ?t,
+      n: int,
+      const ref weights: [?dw] ?wt,
+      withReplacement=false
+    ): [] t throws
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, wt)
+    {
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty array");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= arr.size when withReplacement=false");
+
+      if d.size != dw.size then
+        throw new IllegalArgumentError("'weights' must have the same size as 'arr'");
+
+      const ds = this.sample(d, n, weights, withReplacement);
+      var res: [0..<n] t;
+      forall (i, di) in zip(res.domain, ds) do res[i] = arr[di];
+      return res;
+    }
+
+    /*
       Sample ``n`` random indices from a domain.
 
       :arg d: The 1D rectangular domain to sample from. Its ``idxType`` should
@@ -1060,6 +1306,95 @@ module Random {
     }
 
     /*
+      Sample ``n`` random indices from a domain, where each index has a
+      corresponding weight.
+
+      Indices with relatively larger weights are more likely to be sampled.
+
+      :arg d: The 1D rectangular domain to sample from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+      :arg n: The number of indices to sample
+      :arg weights: An array of weights corresponding to the indices in ``d``
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random indices sampled from the domain
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > d.size`` and
+                                    ``withReplacement=false``. If ``d`` is
+                                    empty. If ``weights`` does not have the same
+                                    size as ``d``.
+    */
+    proc ref sample(d: domain, n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] d.idxType throws
+      where is1DRectangularDomain(d) && is1DRectangularDomain(dw) && isCoercible(this.eltType, wt)
+    {
+      import Sort;
+      import Search;
+
+      if d.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty domain");
+
+      if n < 1 || (n > d.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= d.size when withReplacement=false");
+
+      if d.size != dw.size then
+        throw new IllegalArgumentError("'weights' must have the same size as 'd'");
+
+      // compute cumulative weights
+      var cwn = + scan weights;
+
+      if !Sort.isSorted(cwn) then
+        throw new IllegalArgumentError("'weights' cannot contain negative values");
+
+      if abs(cwn[d.size-1]) <= 1e-15 then
+        throw new IllegalArgumentError("'weights' must contain at least one non-zero value");
+
+      // normalize for real weights
+      if isRealType(wt) then cwn /= cwn[d.size-1];
+
+      const dOut = {0..<n};
+      var samples: [dOut] d.idxType,
+          sampleHi = if isRealType(wt) then 1.0:eltType else cwn[d.size-1]:eltType;
+
+      if withReplacement {
+        for i in dOut {
+          const r = this.next(0, sampleHi);
+          var ii = 0;
+            if isRealType(wt)
+              then (_, ii) = Search.binarySearch(cwn, r);
+              else ii = binarySearchFirst(cwn, r);
+          samples[i] = d.orderToIndex(ii);
+        }
+      } else {
+        var weightsCopy = weights,
+            indices: domain(int, parSafe=false),
+            i = 0,
+            ii = 0;
+
+        while i < n {
+          // sample an index that hasn't been sampled yet
+          do {
+            const r = this.next(0, sampleHi);
+            if isRealType(wt)
+              then (_, ii) = Search.binarySearch(cwn, r);
+              else ii = binarySearchFirst(cwn, r);
+          } while indices.contains(ii);
+
+          weightsCopy[ii] = 0;
+          indices += ii;
+          samples[i] = d.orderToIndex(ii);
+          i += 1;
+
+          // recompute cumulative weights
+          cwn = + scan weightsCopy;
+          if isRealType(wt) then cwn /= cwn[d.size-1];
+          sampleHi = if isRealType(wt) then 1.0:eltType else cwn[d.size-1]:eltType;
+        }
+      }
+
+      return samples;
+    }
+
+    /*
       Sample ``n`` random values from a range.
 
       :arg r: The fully bounded range to sample from. Its ``idxType`` should
@@ -1083,6 +1418,40 @@ module Random {
         throw new IllegalArgumentError("Number of samples must be >= 1 and <= r.size when withReplacement=false");
 
       return this.sample({r}, n, withReplacement);
+    }
+
+    /*
+      Sample ``n`` random values from a range where each value has a
+      corresponding weight.
+
+      Values with relatively larger weights are more likely to be sampled.
+
+      :arg r: The fully bounded range to sample from. Its ``idxType`` should
+              be coercible from this stream's ``eltType``.
+      :arg n: The number of values to sample
+      :arg weights: An array of weights corresponding to the values in ``r``
+      :arg withReplacement: Whether or not to sample with replacement
+
+      :return: A zero-based array of ``n`` random values sampled from the range
+
+      :throws IllegalArgumentError: If ``n < 1`` or if ``n > r.size`` and
+                                    ``withReplacement=false``. If ``r`` is
+                                    empty. If ``weights`` does not have the same
+                                    size as ``r``.
+    */
+    proc ref sample(r: range(bounds=boundKind.both, ?), n: int, const ref weights: [?dw] ?wt, withReplacement=false): [] r.idxType throws
+      where is1DRectangularDomain(dw) && isCoercible(this.eltType, wt)
+    {
+      if r.size < 1 then
+        throw new IllegalArgumentError("Cannot sample from an empty range");
+
+      if n < 1 || (n > r.size && !withReplacement) then
+        throw new IllegalArgumentError("Number of samples must be >= 1 and <= r.size when withReplacement=false");
+
+      if r.size != dw.size then
+        throw new IllegalArgumentError("'weights' must have the same size as 'r'");
+
+      return this.sample({r}, n, weights, withReplacement);
     }
 
     /*
@@ -1339,6 +1708,32 @@ module Random {
       ser.writeField("seed", this.seed);
       ser.endRecord();
     }
+  }
+
+  // Do a binary search of 'a' for the first occurrence of 'x'
+  // returns the index of the first occurrence of 'x' in 'a' between 'start' and 'stop'
+  // or the index where 'x' should be inserted to maintain sorted order
+  // TODO: consider adding this functionality to the Search module
+  private proc binarySearchFirst(
+    const ref a: [?d] ?t,
+    x: t,
+    start: d.idxType = d.low,
+    stop: d.idxType = d.high
+  ): d.idxType
+    where isIntegralType(t)
+  {
+    if start >= stop then return stop;
+    const mid = (start + stop) / 2;
+
+    if a[mid] == x then return linSearchLeft(a, x, mid);
+    if a[mid] < x then return binarySearchFirst(a, x, mid + 1, stop);
+                  else return binarySearchFirst(a, x, start, mid - 1);
+  }
+
+  private proc linSearchLeft(const ref a: [?d] ?t, x: t, start: d.idxType): d.idxType {
+    var i = start;
+    while i > d.low && a[i-1] == x do i -= 1;
+    return i;
   }
 
   /*
