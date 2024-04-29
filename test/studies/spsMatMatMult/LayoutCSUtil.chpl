@@ -12,18 +12,43 @@ module LayoutCSUtil {
     return this.colRange;
   }
 
+  @chpldoc.nodoc
+  iter CSDom.uidsInRowCol(rc) {
+    for uid in startIdx[rc]..<startIdx[rc+1] do
+      yield uid;
+  }
+  
   iter CSDom.colUidsInRow(r) {
     if this.compressRows == false then
-      compilerError("Can't (efficiently) iterate over columns using a CSC layout");
-    for uid in startIdx[r]..<startIdx[r+1] do
+      compilerError("Can't (efficiently) iterate over rows using a CSC layout");
+    for uid in uidsInRowCol(r) do
       yield uid;
   }
 
   iter CSDom.rowUidsInCol(c) {
     if this.compressRows == true then
       compilerError("Can't (efficiently) iterate over columns using a CSR layout");
-    for uid in startIdx[c]..<startIdx[c+1] do
+    for uid in uidsInRowCol(c) do
       yield uid;
   }
 
+  iter CSArr.indsAndVals(rc) {
+    ref dom = this.dom;
+    for uid in dom.uidsInRowCol(rc) do
+      yield (dom.idx[uid], this.data[uid]);
+  }
+  
+  iter CSArr.colsAndVals(r) {
+    if this.dom.compressRows == false then
+      compilerError("Can't (efficiently) iterate over rows using a CSC layout");
+    for colVal in indsAndVals(r) do
+      yield colVal;
+  }
+
+  iter CSArr.rowsAndVals(c) {
+    if this.dom.compressRows == true then
+      compilerError("Can't (efficiently) iterate over columns using a CSR layout");
+    for rowVal in indsAndVals(c) do
+      yield rowVal;
+  }
 }
