@@ -114,7 +114,7 @@ static void test0(void) {
   auto m1 = br.topLevelExpression(0)->toModule();
   assert(m1);
 
-  // First check to make sure the initialization order is correct.
+  // check to make sure the initialization order is correct.
   checkModuleInitOrder(ctx, m1->id(), "M4", "M2", "M3", "M1");
 
 
@@ -170,7 +170,7 @@ static void test1(void) {
   auto m1 = br.topLevelExpression(0)->toModule();
   assert(m1);
 
-  // First check to make sure the initialization order is correct.
+  // check to make sure the initialization order is correct.
   checkModuleInitOrder(ctx, m1->id(), "M3", "M2", "M1");
 
   std::cout << "---" << std::endl;
@@ -179,7 +179,60 @@ static void test1(void) {
   std::cout << std::endl;
 }
 
-static void test2(void) {
+static void testDeadModule(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  // Do NOT set the module search paths for this test. Do not want to
+  // compute the standard/internal modules in this ordering.
+  /** setupModuleSearchPaths(ctx, false, false, {}, {}); */
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  // test that dead modules / submodules do not contribute
+  // to the initialization ordering.
+  std::string contents =
+    R""""(
+    module Main {
+      module UnusedSubmodule { }
+      proc main() { a(); }
+    }
+
+    module UnusedToplevel {
+      module UnusedTwo {
+        use UnusedToplevel;
+      }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 2);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check to make sure the initialization order is correct.
+  checkModuleInitOrder(ctx, m1->id(), "Main");
+
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testBundled(void) {
+  // this test just prints out the module init order for
+  // the bundled/internal module. As a test, it makes
+  // sure that this completes without error; however it might
+  // have use in manual testing.
+
   Context::Configuration config;
   config.chplHome = chplHome();
   Context context(config);
@@ -199,27 +252,8 @@ static void test2(void) {
   // modules.
   std::string contents =
     R""""(
-    module M1 {
-      use M2.M3;
-      use M2;
-      proc a() {}
-      proc main() { a(); }
-    }
-
-    module M2 {
-      use M4;
-      proc b() {}
-      b();
-
-      module M3 {
-        proc c() {}
-        c();
-      }
-    }
-
-    module M4 {
-      proc d() {}
-      d();
+    module Main {
+      proc main() { }
     }
     )"""";
 
@@ -227,7 +261,7 @@ static void test2(void) {
 
   // Get the module.
   auto& br = parseAndReportErrors(ctx, path);
-  assert(br.numTopLevelExpressions() == 3);
+  assert(br.numTopLevelExpressions() == 1);
   auto m1 = br.topLevelExpression(0)->toModule();
   assert(m1);
 
@@ -246,6 +280,7 @@ static void test2(void) {
 int main() {
   test0();
   test1();
-  test2();
+  testDeadModule();
+  testBundled();
   return 0;
 }
