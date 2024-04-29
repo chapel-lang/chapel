@@ -41,8 +41,7 @@ log_info "Building tarball with version: ${version}"
 # run home-brew scripts to install chapel.
 
 mkdir -p $HOME/test
-reference_repo=/cray/css/users/chapelu/cached_repos/homebrew-core.git
-git clone --reference-if-able $reference_repo git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd $HOME/test/homebrew-core; git pull)
+git clone --reference-if-able $REPO_CACHE_PATH/homebrew-core.git git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd $HOME/test/homebrew-core; git pull)
 #cp $HOME/test/homebrew-core/Formula/c/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 # fix to make the home-brew working. After 1.32 release uncomment the above line
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb

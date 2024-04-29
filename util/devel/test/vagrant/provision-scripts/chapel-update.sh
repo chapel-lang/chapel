@@ -9,8 +9,7 @@ do
     cd chapel && git checkout main && git pull --ff-only && cd .. && echo UPDATED
   else
     echo cloning chapel
-    reference_repo=/cray/css/users/chapelu/cached_repos/chapel.git
-    git clone --reference-if-able $reference_repo --depth 1 https://github.com/chapel-lang/chapel && echo CLONED
+    git clone --reference-if-able $REPO_CACHE_PATH/chapel.git --depth 1 https://github.com/chapel-lang/chapel && echo CLONED
   fi
 
   if [ $? -eq 0 ]
