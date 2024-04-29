@@ -1076,7 +1076,12 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  CHPL_ASSERT(isVariable(idToTag(context, id)));
+  AstTag tagForId = idToTag(context, id);
+  // TODO: do we really need this assert? In which cases do we arrive here unexpectedly?
+  CHPL_ASSERT(isVariable(tagForId)  ||
+              isMultiDecl(tagForId) ||
+              isTupleDecl(tagForId) ||
+              isForwardingDecl(tagForId));
 
   while (true) {
     ID parent = idToParentId(context, cur);
