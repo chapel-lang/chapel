@@ -2593,6 +2593,8 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
+ // TODO: detecting and lifting outer variables has to happen here
+
  if (haveLeaderAndFollowers(promotion, info.call))
  {
   promotion.hasLeaderFollowers = true;
@@ -2617,9 +2619,15 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   insertAndSaveWrapCall(promotion, yieldBlock, yieldTmp, wrapCall);
 
-  return ForLoop::buildForLoop(indices, iterator, yieldBlock,
-                               zippered,
-                               /* isForExpr */ true);
+  BlockStmt* loop = ForLoop::buildForLoop(indices, iterator, yieldBlock,
+                                          zippered,
+                                          /* isForExpr */ true);
+
+  if (promotion.gpuAttributeBlock) {
+    yieldBlock->insertBefore(promotion.gpuAttributeBlock->getPrimitivesBlock()->copy());
+  }
+
+  return loop;
 }
 
 static void buildLeaderIterator(PromotionInfo& promotion,
@@ -2806,11 +2814,16 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 
   insertAndSaveWrapCall(promotion, block, yieldTmp, wrapCallCopy);
 
-  return ForLoop::buildForLoop(indices->copy(&followerMap),
-                               new SymExpr(followerIterator),
-                               block,
-                               promotion.zippered,
-                               /* isForExpr */ true);
+  BlockStmt* loop = ForLoop::buildForLoop(indices->copy(&followerMap),
+                                          new SymExpr(followerIterator),
+                                          block,
+                                          promotion.zippered,
+                                          /* isForExpr */ true);
+  if (promotion.gpuAttributeBlock) {
+    block->insertBefore(promotion.gpuAttributeBlock->getPrimitivesBlock()->copy());
+  }
+
+  return loop;
 }
 
 // The returned string is canonical ie from astr().
