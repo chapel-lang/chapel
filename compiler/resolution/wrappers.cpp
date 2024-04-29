@@ -2158,7 +2158,7 @@ namespace {
   struct PromotionInfo {
     FnSymbol*  fn;
     FnSymbol*  wrapperFn;
-    BlockStmt* gpuAttributeBlock;
+    BlockStmt* gpuAttributeBlock = nullptr;
     bool       zippered;
     bool       hasLeaderFollowers;
     bool       resultIsUsed;
@@ -2598,6 +2598,8 @@ static std::vector<Symbol*>
 addFormalsForGpuOuterVarsToPromotionWrapper(PromotionInfo& promotion,
                                                         CallInfo& info,
                                                         SymbolMap& outMap) {
+  if (!promotion.gpuAttributeBlock) return {};
+
   auto primBlock = promotion.gpuAttributeBlock->getPrimitivesBlock();
   std::vector<SymExpr*> symExprs;
   std::vector<Symbol*> symbolsToCapture;
