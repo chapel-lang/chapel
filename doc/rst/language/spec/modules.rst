@@ -1340,7 +1340,7 @@ Module Initialization Order
 
 Module initialization is performed at program start-up and initializes
 modules in an order determined by the ``use`` and ``import`` statements.
-Not all modules need to be initialized (see :ref:`Module Initialization`
+Not all modules need to be initialized (see :ref:`Module_Initialization`
 for details).
 
 The following describes the module initialization order.
