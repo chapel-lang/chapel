@@ -40,19 +40,18 @@ static std::string chplHome() {
   return ret;
 }
 
-static void 
-checkModuleInitOrder(Context* ctx, bool isCheckForOrigin, ID idMod, ...) {
-  auto& v = moduleInitializationOrder(ctx, idMod);
+static void
+checkModuleInitOrder(Context* ctx, ID idMod, ...) {
+  auto& v = moduleInitializationOrder(ctx, idMod, {});
   va_list args;
   va_start(args, idMod);
 
-  for (auto& p : v) {
-    auto id = isCheckForOrigin ? p.second : p.first;
-    assert(isCheckForOrigin || !id.isEmpty());
+  for (const auto& id : v) {
+    assert(!id.isEmpty());
 
     auto ast = !id.isEmpty() ? parsing::idToAst(ctx, id) : nullptr;
     auto mod = ast ? ast->toModule() : nullptr;
-    assert(isCheckForOrigin || (ast && mod));
+    assert(ast && mod);
 
     std::string expect = va_arg(args, const char*);
     std::string got = id.isEmpty() ? "<>" : mod->name().c_str();
@@ -81,7 +80,7 @@ static void test0(void) {
   // are needed regardless to ensure that each module is considered
   // "non-trivial". Future iterations of the algorithm may elide trivial
   // modules.
-  std::string contents = 
+  std::string contents =
     R""""(
     module M1 {
       use M2.M3;
@@ -115,15 +114,9 @@ static void test0(void) {
   auto m1 = br.topLevelExpression(0)->toModule();
   assert(m1);
 
-  const bool CHECK_FOR_ORIGIN = true;
-
   // First check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, !CHECK_FOR_ORIGIN, m1->id(),
-                       "M4", "M2", "M3", "M1");
+  checkModuleInitOrder(ctx, m1->id(), "M4", "M2", "M3", "M1");
 
-  // Now check to make sure the trigger order is correct.
-  checkModuleInitOrder(ctx, CHECK_FOR_ORIGIN, m1->id(),
-                       "M2", "M3", "M1", "<>");
 
   std::cout << "---" << std::endl;
 
@@ -146,7 +139,7 @@ static void test1(void) {
   auto path = TEST_NAME(ctx);
   std::cout << path.c_str() << std::endl;
 
-  std::string contents = 
+  std::string contents =
     R""""(
     module M1 {
       use M2;
@@ -177,15 +170,8 @@ static void test1(void) {
   auto m1 = br.topLevelExpression(0)->toModule();
   assert(m1);
 
-  const bool CHECK_FOR_ORIGIN = true;
-
   // First check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, !CHECK_FOR_ORIGIN, m1->id(),
-                       "M3", "M2", "M1");
-
-  // Now check to make sure the trigger order is correct.
-  checkModuleInitOrder(ctx, CHECK_FOR_ORIGIN, m1->id(),
-                       "M2", "M1", "<>");
+  checkModuleInitOrder(ctx, m1->id(), "M3", "M2", "M1");
 
   std::cout << "---" << std::endl;
 
@@ -193,8 +179,73 @@ static void test1(void) {
   std::cout << std::endl;
 }
 
+static void test2(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  setupModuleSearchPaths(ctx, false, false, {}, {});
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  // Remove the functions, and replace their invocations with 'writeln',
+  // and this test is pretty much identical to the one given in the spec
+  // section on module initialization order. Note that the function calls
+  // are needed regardless to ensure that each module is considered
+  // "non-trivial". Future iterations of the algorithm may elide trivial
+  // modules.
+  std::string contents =
+    R""""(
+    module M1 {
+      use M2.M3;
+      use M2;
+      proc a() {}
+      proc main() { a(); }
+    }
+
+    module M2 {
+      use M4;
+      proc b() {}
+      b();
+
+      module M3 {
+        proc c() {}
+        c();
+      }
+    }
+
+    module M4 {
+      proc d() {}
+      d();
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 3);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  auto& v = moduleInitializationOrder(ctx, m1->id(), {});
+
+  printf("Module initialization order:\n");
+  for (const auto& id : v) {
+    printf(" %s\n", id.str().c_str());
+  }
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+
 int main() {
   test0();
   test1();
+  test2();
   return 0;
 }
