@@ -132,6 +132,15 @@ module List {
 
   private use IO;
 
+  /* Impacts whether the copy initializer that takes a list will generate a
+     warning when the other list has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForListParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForListParsafeMismatch = true;
+
   /*
     A list is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. Unlike a stack, the
@@ -428,7 +437,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      if (this.parSafe != other.parSafe) {
+      if (this.parSafe != other.parSafe && warnForListParsafeMismatch) {
         compilerWarning("initializing between two lists with different " +
                         "parSafe settings");
       }
