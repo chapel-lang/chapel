@@ -348,6 +348,11 @@ const uast::AstNode* idToAst(Context* context, ID id);
 uast::AstTag idToTag(Context* context, ID id);
 
 /**
+  Returns true if the ID is a module.
+ */
+bool idIsModule(Context* context, ID id);
+
+/**
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
