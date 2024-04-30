@@ -437,7 +437,8 @@ module List {
 
       if (this.parSafe != other.parSafe && warnForListParsafeMismatch) {
         compilerWarning("initializing between two lists with different " +
-                        "parSafe settings");
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForListParsafeMismatch=false'");
       }
       init this;
       _commonInitFromIterable(other);
