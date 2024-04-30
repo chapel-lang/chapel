@@ -355,7 +355,7 @@ module Math {
   */
   proc asin(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return asinh(x:real(64)) : imag(64);
-  @deprecated("The overload of 'asin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'asin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc asin(x: imag): complex where !useNewImaginaryTrig do
     return asin(x:complex);
 
@@ -489,7 +489,7 @@ module Math {
   */
   proc atanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return atan(x:real(64)) : imag(64);
-  @deprecated("The overload of 'atanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'atanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc atanh(x: imag): complex where !useNewImaginaryTrig do
     return atanh(x:complex);
 
@@ -534,7 +534,7 @@ module Math {
   */
   inline proc cos(x: imag(64)): real(64) where useNewImaginaryTrig do
     return cosh(x:real(64));
-  @deprecated("The overload of 'cos' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'cos' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc cos(x: imag): complex where !useNewImaginaryTrig do
     return cos(x:complex);
 
@@ -579,7 +579,7 @@ module Math {
   */
   inline proc cosh(x: imag(64)): real(64) where useNewImaginaryTrig do
     return cos(x:real(64));
-  @deprecated("The overload of 'cosh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'cosh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc cosh(x: imag): complex where !useNewImaginaryTrig do
     return cosh(x:complex);
 
@@ -1237,7 +1237,7 @@ module Math {
   */
   proc sin(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return sinh(x:real(64)) : imag(64);
-  @deprecated("The overload of 'sin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'sin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc sin(x: imag): complex where !useNewImaginaryTrig do
     return sin(x:complex);
 
@@ -1283,7 +1283,7 @@ module Math {
   */
   proc sinh(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return sin(x:real(64)) : imag(64);
-  @deprecated("The overload of 'sinh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'sinh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc sinh(x: imag): complex where !useNewImaginaryTrig do
     return sinh(x:complex);
 
@@ -1329,7 +1329,7 @@ module Math {
   */
   proc tan(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return tanh(x:real(64)) : imag(64);
-  @deprecated("The overload of 'tan' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'tan' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc tan(x: imag): complex where !useNewImaginaryTrig do
     return tan(x:complex);
 
@@ -1375,7 +1375,7 @@ module Math {
   */
   proc tanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return tan(x:real(64)) : imag(64);
-  @deprecated("The overload of 'tanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
+  @deprecated("The overload of 'tanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
   inline proc tanh(x: imag): complex where !useNewImaginaryTrig do
     return tanh(x:complex);
 
