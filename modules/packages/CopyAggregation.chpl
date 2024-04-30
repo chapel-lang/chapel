@@ -50,7 +50,7 @@
 
      const size = 10000;
      const space = {0..size};
-     const D = space dmapped blockDist(space);
+     const D = space dmapped new blockDist(space);
      var A, reversedA: [D] int = D;
 
      forall (rA, i) in zip(reversedA, D) with (var agg = new SrcAggregator(int)) do

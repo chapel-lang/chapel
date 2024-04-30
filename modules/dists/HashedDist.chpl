@@ -91,7 +91,7 @@ mapper computes the target locale based upon a hash of the index.
 
 .. code-block:: chapel
 
-  var D: domain(string) dmapped Hashed(idxType=string);
+  var D: domain(string) dmapped new Hashed(idxType=string);
   // Now D is a distributed associative domain (set) of strings
   D += "one";
   D += "two";

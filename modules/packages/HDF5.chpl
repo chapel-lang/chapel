@@ -3557,7 +3557,7 @@ module HDF5 {
     use BlockDist;
 
     const Space = filenames.domain;
-    const BlockSpace = Space dmapped blockDist(Space, locs,
+    const BlockSpace = Space dmapped new blockDist(Space, locs,
                                            dataParTasksPerLocale=1);
     var files: [BlockSpace] ArrayWrapper(eltType, rank);
     forall (f, name) in zip(files, filenames) {

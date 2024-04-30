@@ -42,7 +42,7 @@
 
      const size = 10000;
      const space = {0..size};
-     const D = space dmapped blockDist(space);
+     const D = space dmapped new blockDist(space);
      var A, reversedA: [D] int = D;
 
      forall i in D do

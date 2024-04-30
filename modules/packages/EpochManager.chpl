@@ -108,7 +108,7 @@
 
   .. code-block:: chpl
 
-    var dom = {1..N} dmapped cyclicDist(startIdx=1);
+    var dom = {1..N} dmapped new cyclicDist(startIdx=1);
     var manager = new EpochManager();
     forall i in dom with (var token = manager.register(), var numOps : int) {
       token.pin();
