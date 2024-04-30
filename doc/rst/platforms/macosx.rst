@@ -67,11 +67,15 @@ install a few development tools in order build Chapel. The instructions
 below show one way of getting a working development environment.
 
 First, install XCode_ or the developer Command Line Tools. XCode can be
-installed from the App store.
+installed from the App store. Or, you can install the developer Command
+Line Tools by opening a Terminal window and running::
 
-Once this is done, open up a new Terminal window to verify that ``clang``
-and ``python3`` programs can be found and have a suitable version (see
-also :ref:`readme-prereqs`) by running the following commands::
+    xcode-select --install
+
+Once this is done, open up a new Terminal window to verify that the
+``clang`` and ``python3`` programs can be found and have a suitable
+version (see also :ref:`readme-prereqs`) by running the following
+commands::
 
     clang --version
     python3 --version
