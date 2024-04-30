@@ -32,7 +32,7 @@ proc buildSpace(Dom) {
     return Dom dmapped new cyclicDist(startIdx=1);
   }
   else if distType == DistType.replicated {
-    return Dom dmapped replicatedDist();
+    return Dom dmapped new replicatedDist();
   }
   else if distType == DistType.stencil {
     return Dom dmapped new stencilDist(boundingBox={1..3});

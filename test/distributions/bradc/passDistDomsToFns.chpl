@@ -27,7 +27,7 @@ proc fooBC(X:[BlkCycSpace] int) {
 }
 
 
-const ReplicatedSpace = Space dmapped replicatedDist();
+const ReplicatedSpace = Space dmapped new replicatedDist();
 var RA: [ReplicatedSpace] int;
 fooR(RA);
 proc fooR(X:[ReplicatedSpace] int) {

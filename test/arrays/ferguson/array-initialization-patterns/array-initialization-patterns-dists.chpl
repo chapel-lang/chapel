@@ -69,7 +69,7 @@ proc makeInitialArray() {
     var ret: [D] int;
     return ret;
   } else if distType == DistType.replicated {
-    var D = {1..1} dmapped replicatedDist();
+    var D = {1..1} dmapped new replicatedDist();
     var ret: [D] int;
     return ret;
   } else if distType == DistType.stencil {

@@ -87,8 +87,8 @@ writeln();
 
 const OneLocOnly1D: [0..0] locale = Locales[0];
 
-const R1 = Space dmapped replicatedDist();
-const R2 = Space dmapped replicatedDist(targetLocales=OneLocOnly1D);
+const R1 = Space dmapped new replicatedDist();
+const R2 = Space dmapped new replicatedDist(targetLocales=OneLocOnly1D);
 
 writeln("Replicated comparisons:");
 
@@ -97,4 +97,4 @@ writeln(R1.distribution == R2.distribution);
 
 writeln(R2.distribution == R2.distribution);
 
-writeln(R2.distribution == (Space dmapped replicatedDist(targetLocales=OneLocOnly1D)).distribution);
+writeln(R2.distribution == (Space dmapped new replicatedDist(targetLocales=OneLocOnly1D)).distribution);

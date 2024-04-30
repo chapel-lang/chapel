@@ -6,7 +6,7 @@ var A: [D] real;
 
 use ReplicatedDist;
 
-var DR = {1..10, 1..10} dmapped replicatedDist();
+var DR = {1..10, 1..10} dmapped new replicatedDist();
 var AR: [DR] int;
 
 coforall loc in Locales with (ref AR) do
