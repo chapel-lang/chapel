@@ -2746,13 +2746,13 @@ findAllModulesUsedImportedInTreeQuery(Context* context, ID modId) {
   std::vector<ID> ret;
 
   auto ast = parsing::idToAst(context, modId);
-  if (ast) {
-    if (auto mod = ast->toModule()) {
-      GatherUsedImportedIds gatherModules(context, mod);
-      ast->traverse(gatherModules);
-      // swap the gathered vector in to place
-      ret.swap(gatherModules.idVec);
-    }
+  CHPL_ASSERT(ast && ast->isModule());
+  if (ast && ast->isModule()) {
+    auto mod = ast->toModule();
+    GatherUsedImportedIds gatherModules(context, mod);
+    ast->traverse(gatherModules);
+    // swap the gathered vector in to place
+    ret.swap(gatherModules.idVec);
   }
 
   return QUERY_END(ret);
@@ -2763,11 +2763,12 @@ static void moduleInitVisitModules(Context* context, ID modId,
                                    std::vector<ID>& out) {
   CHPL_ASSERT(!modId.isEmpty() && parsing::idIsModule(context, modId));
 
-  // Avoid a cycle walking modules we've seen before.
-  if (seen.find(modId) != seen.end()) return;
-
-  // We are at least visiting ourselves.
-  seen.insert(modId);
+  // avoid cycles with modules already visited
+  auto p = seen.insert(modId);
+  if (!p.second) {
+    // Insertion did not occur -- the module was already visited.
+    return;
+  }
 
   // consider ChapelStandard if the scope indicates that should happen
   if (const Scope* scope = scopeForId(context, modId)) {
