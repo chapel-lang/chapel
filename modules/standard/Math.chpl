@@ -357,7 +357,7 @@ module Math {
     return asinh(x:real(64)) : imag(64);
   @deprecated("The overload of 'asin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
   inline proc asin(x: imag): complex where !useNewImaginaryTrig do
-    return asinh(x:complex);
+    return asin(x:complex);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
@@ -491,7 +491,7 @@ module Math {
     return atan(x:real(64)) : imag(64);
   @deprecated("The overload of 'atanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future")
   inline proc atanh(x: imag): complex where !useNewImaginaryTrig do
-    return atan(x:complex);
+    return atanh(x:complex);
 
   /* Returns the cosine of the argument `x`. */
   pragma "fn synchronization free"
