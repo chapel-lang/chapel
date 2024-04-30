@@ -4409,7 +4409,9 @@ Type* Converter::convertRecordType(const types::QualifiedType qt) {
     return dtBytes;
   }
 
-  CHPL_UNIMPL("unhandled record type");
+  std::string msg = "unhandled record type: ";
+  msg += t == nullptr ? "(null)" : t->name().str();
+  CHPL_UNIMPL(msg.c_str());
   return nullptr;
 }
 
