@@ -897,7 +897,7 @@ proc type stencilDist.createDomain(
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
-  return dom dmapped stencilDist(dom, targetLocales, fluff=fluff, periodic=periodic);
+  return dom dmapped new stencilDist(dom, targetLocales, fluff=fluff, periodic=periodic);
 }
 
 // create a domain over a Stencil Distribution constructed from a series of ranges
