@@ -96,17 +96,18 @@ rebuild Chapel from source in a different configuration:
   option; LLVM is the default back-end, which needs to be available for
   full functionality.  There are a few options for using LLVM:
 
-  - Ensure that you have a compatible version of LLVM installed on
-    your system and set ``CHPL_LLVM=system``. Once you have it working,
-    you can leave ``CHPL_LLVM`` unset and Chapel should detect it if it
-    is in your path. See :ref:`readme-prereqs` for details on the
-    currently supported LLVM versions.
+  - Ensure that you have a compatible version of LLVM installed on your
+    system and enable it with ``export CHPL_LLVM=system``.  Once you have
+    it working, you can leave ``CHPL_LLVM`` unset and Chapel should
+    detect it if it is in your path. See :ref:`readme-prereqs` for
+    details on the currently supported LLVM versions.
 
-  - Or, set ``CHPL_LLVM=bundled`` to have Chapel build and use the bundled
-    version of LLVM. Note that building the bundled version of LLVM
-    can take a long time and requires CMake version 3.13.4 or higher.
+  - Or, use ``export CHPL_LLVM=bundled`` to have Chapel build and use the
+    bundled version of LLVM. Note that building the bundled version of
+    LLVM can take a long time and requires CMake version 3.13.4 or
+    higher.
 
-  - set ``CHPL_LLVM=none`` to continue using the C back-end rather
+  - Use ``export CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM
 
 * If you are interested in building Chapel to support multiple compute
