@@ -1,3 +1,6 @@
+// this test checks module initialization order with
+// a doubly-nested module
+
 module Grandparent {
   writeln("initializing Grandparent");
   import A;

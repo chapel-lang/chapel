@@ -1,3 +1,7 @@
+// this test checks module initialization order
+// including the order of a parent module vs used
+// modules
+
 module Parent {
   writeln("initializing Parent");
   import A;

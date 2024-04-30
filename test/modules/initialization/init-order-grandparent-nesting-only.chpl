@@ -1,3 +1,7 @@
+// this test checks module initialization order
+// when the main module is doubly-nested inside of
+// other modules that are never used/imported.
+
 module Grandparent {
   writeln("initializing Grandparent");
   import A;
