@@ -111,6 +111,16 @@ module Set {
     return canResolveMethod(x, "chpl__serialize");
   }
 
+  /* Impacts whether the copy initializer that takes a set will generate a
+     warning when the other set has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForSetParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForSetParsafeMismatch = true;
+
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -284,6 +294,13 @@ module Set {
       this.resizeThreshold = other.resizeThreshold;
       this._htb = new chpl__hashtable(eltType, nothing,
                                       resizeThreshold);
+
+      if (this.parSafe != other.parSafe && warnForSetParsafeMismatch) {
+        compilerWarning("initializing between two sets with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForSetParsafeMismatch=false'");
+      }
+
       init this;
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
