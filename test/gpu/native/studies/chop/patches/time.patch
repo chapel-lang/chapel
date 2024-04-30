@@ -23,7 +23,7 @@ index 55d2e57..a30e77e 100644
 +          writef("\n\tElapsed Initial Search: %.3dr", initial.elapsed());
 +          writef("\n\tElapsed PGAS Data Distribution: %.3dr", distribution.elapsed());
 +          writef("\n\tElapsed Final Search: %.3dr",     final.elapsed());
-+          writef("\n\tElapsed TOTAL: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
++          writef("\n\tElapsed time: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
 +          writef("\n\tPGAS proportion: %.3dr\n", (distribution.elapsed())/(total_time)*100);
 +        }
  
