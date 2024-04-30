@@ -835,6 +835,11 @@ AstTag idToTag(Context* context, ID id) {
   return idToTagQuery(context, id);
 }
 
+bool idIsModule(Context* context, ID id) {
+  AstTag tag = idToTag(context, id);
+  return asttags::isModule(tag);
+}
+
 static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsParenlessFunctionQuery, context, id);
 

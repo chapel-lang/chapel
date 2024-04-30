@@ -173,18 +173,16 @@ namespace resolution {
   const Scope* scopeForAutoModule(Context* context);
 
   /**
-    Given the ID for a module 'entrypoint', compute the order in which
-    modules should be initialized. Note that this ordering does not consider
-    liveliness, and modules that are never used or have no module level
-    statements will currently still be listed in the result.
+    Given the ID for the main module, compute the order in which
+    modules should be initialized. 'commandLineModules' can be provided
+    with the list of modules that are named on the command line.
 
-    The result is list of ID pairs. The first ID in a pair is the module
-    to be initialized, and the second ID is the module that first triggered
-    initialization. The second ID may be empty if the first ID is the
-    entrypoint module or if initialization was triggered implicitly.
+    The result is vector of IDs indicating the order in which
+    modules with those IDs should be initialized.
   */
-  const std::vector<std::pair<ID, ID>>&
-  moduleInitializationOrder(Context* context, ID entrypoint);
+  const std::vector<ID>&
+  moduleInitializationOrder(Context* context, ID mainModule,
+                            std::vector<ID> commandLineModules);
 
   /**
     Check for symbol names with multiple definitions within a scope.
