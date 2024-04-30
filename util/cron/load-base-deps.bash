@@ -12,6 +12,10 @@ elif [[ "$(hostname -s)" == "osprey" || "$(hostname -s)" == "atlas" ||
   if [ -f /lus/scratch/chapelu/chpl-deps/$(hostname -s)/load_chpl_deps.bash ] ; then
     source /lus/scratch/chapelu/chpl-deps/$(hostname -s)/load_chpl_deps.bash
   fi
+elif [[ "$(hostname -s)" == "richter-login" ]]; then
+  if [ -f /hpelustre/chapelu/chpl-deps/richter-login/load_chpl_deps.bash ] ; then
+    source /hpelustre/chapelu/chpl-deps/richter-login/load_chpl_deps.bash
+  fi
 else
   # For our internal testing, this is necessary to get the latest version of gcc
   # on the system.
