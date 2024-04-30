@@ -97,7 +97,7 @@ config var reproducible = false, verbose = false;
   // We use 'AbD' instead of 'MatVectSpace' throughout.
   //
   const AbD: domain(2, indexType)
-          dmapped dimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
+          dmapped new dimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
           = {1..n, 1..n+1},
         MatrixSpace = AbD[.., ..n];
 
@@ -109,9 +109,9 @@ config var reproducible = false, verbose = false;
   //
   const
     replAD = {1..n, 1..blkSize}
-      dmapped dimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
+      dmapped new dimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
     replBD = {1..blkSize, 1..n+1}
-      dmapped dimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
+      dmapped new dimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
 
   var replA: [replAD] elemType,
       replB: [replBD] elemType;

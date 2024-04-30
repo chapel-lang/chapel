@@ -70,9 +70,9 @@ var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms
 // the domains for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    dimensionalDist2D(tla, bdim1, rdim2, "distBR"),
+    new dimensionalDist2D(tla, bdim1, rdim2, "distBR"),
   replBD = {1..blkSize, 1..n+1} dmapped
-    dimensionalDist2D(tla, rdim1, bdim2, "distRB");
+    new dimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 // the arrays for replication
 var replA: [replAD] elemType,

@@ -40,7 +40,7 @@ var MyLocaleView = {0..#nl1, 0..#nl2};
 var MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
 
 const DimReplicatedBlockcyclicSpace = Space
-  dmapped dimensionalDist2D(MyLocales,
+  dmapped new dimensionalDist2D(MyLocales,
                             new ReplicatedDim(numLocales = nl1),
                             new BlockCyclicDim(numLocales = nl2,
                                                lowIdx = 1, blockSize = 2));

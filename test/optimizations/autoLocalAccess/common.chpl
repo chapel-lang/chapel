@@ -34,7 +34,7 @@ proc createDom(space) {
     }
   }
   else if distType == hashedDist {
-    var D: domain(int) dmapped hashedDist(idxType=int);
+    var D: domain(int) dmapped new hashedDist(idxType=int);
     for i in space {
       D += i;
     }
@@ -50,4 +50,3 @@ proc createArr(space, type t) {
   var A: [D] t;
   return A;
 }
-

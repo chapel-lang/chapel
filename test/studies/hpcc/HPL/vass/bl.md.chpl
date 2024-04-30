@@ -80,9 +80,9 @@ var refsuccess = true;
 // the domains for the arrays used for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    dimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
+    new dimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
   replBD = {1..blkSize, 1..n+1} dmapped
-    dimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
+    new dimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;
