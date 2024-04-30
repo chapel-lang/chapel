@@ -31,7 +31,7 @@
 
 #if TRACK_LLVM_VALUES
 #include "llvm/IR/AssemblyAnnotationWriter.h"
-#include <map>
+#include <unordered_map>
 #endif
 
 bool isArrayVecOrStruct(llvm::Type* t)
@@ -616,7 +616,7 @@ int breakOnLLVMID = 0;
 
 #if TRACK_LLVM_VALUES
 
-static std::map<const llvm::Value*, int> trackValIds;
+static std::unordered_map<const llvm::Value*, int> trackValIds;
 static int nextTrackId = 1;
 
 static void printLlvmId(const llvm::Value* val) {

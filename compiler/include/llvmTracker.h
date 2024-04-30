@@ -24,7 +24,9 @@
 extern int breakOnLLVMID;
 
 ///*** set it to 1 to activate trackLLVMValue() ***///
+#ifndef TRACK_LLVM_VALUES
 #define TRACK_LLVM_VALUES 0
+#endif
 
 #ifdef HAVE_LLVM
 namespace llvm {
