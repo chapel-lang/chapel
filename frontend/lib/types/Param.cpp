@@ -147,7 +147,7 @@ optional<ParamTag> Param::tryGuessParamTagFromType(const Type* t) {
   } else if (t->isNothingType()) {
     return paramtags::NoneParam;
   }
-  return {};
+  return optional<ParamTag>({});
 }
 
 static paramtags::ParamTag guessParamTagFromType(const Type* t) {
