@@ -1,24 +1,31 @@
-diff --git a/modules/queens_GPU_single_locale.chpl b/modules/queens_GPU_single_locale.chpl
-index 78bd4ec..83cbe6f 100644
---- a/modules/queens_GPU_single_locale.chpl
-+++ b/modules/queens_GPU_single_locale.chpl
-@@ -9,6 +9,8 @@ module queens_GPU_single_locale{
- 	use queens_CHPL_call_device_search;
- 	use queens_constants;
+diff --git a/modules/queens_aux.chpl b/modules/queens_aux.chpl
+index 55d2e57..a30e77e 100644
+--- a/modules/queens_aux.chpl
++++ b/modules/queens_aux.chpl
+@@ -105,6 +105,7 @@ module queens_aux{
  
-+        config const printElapsedTime = true;
-+
+     }//initial information
  
- 	use CTypes;
++    config const printElapsedTime = false;
  
-@@ -84,7 +86,9 @@ module queens_GPU_single_locale{
-     	else{
-     		writeln("Number of solutions: ", metrics[0]);
-     	}
--		writeln("Elapsed time: ", final.elapsed()+initial.elapsed(),"\n\n");
-+
-+                if printElapsedTime then
-+                  writeln("Elapsed time: ", final.elapsed()+initial.elapsed(),"\n\n");
- 		writeln("\tInitial search el. time: ", initial.elapsed());
- 		writeln("\tFinal search el. time: ",  final.elapsed());
  
+ 	proc queens_mlocale_print_metrics(size: uint(16), ref metrics: (uint(64),uint(64)),
+@@ -135,11 +136,13 @@ module queens_aux{
+             writef("\n\tNumber of solutions found: %u", metrics[0]);
+         }
+ 
+-        writef("\n\tElapsed Initial Search: %.3dr", initial.elapsed());
+-        writef("\n\tElapsed PGAS Data Distribution: %.3dr", distribution.elapsed());
+-        writef("\n\tElapsed Final Search: %.3dr",     final.elapsed());
+-        writef("\n\tElapsed TOTAL: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
+-        writef("\n\tPGAS proportion: %.3dr\n", (distribution.elapsed())/(total_time)*100);
++        if printElapsedTime {
++          writef("\n\tElapsed Initial Search: %.3dr", initial.elapsed());
++          writef("\n\tElapsed PGAS Data Distribution: %.3dr", distribution.elapsed());
++          writef("\n\tElapsed Final Search: %.3dr",     final.elapsed());
++          writef("\n\tElapsed TOTAL: %.3dr\n",  final.elapsed()+initial.elapsed()+distribution.elapsed());
++          writef("\n\tPGAS proportion: %.3dr\n", (distribution.elapsed())/(total_time)*100);
++        }
+ 
+ 
+         writef("\n\tInitial Tree size: %u",initial_tree_size);
