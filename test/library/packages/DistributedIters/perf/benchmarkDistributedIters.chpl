@@ -212,7 +212,7 @@ private proc testControlWorkload():real
 {
   var timer:stopwatch;
 
-  const D:domain(1) dmapped blockDist(boundingBox=controlDomain) = controlDomain;
+  const D:domain(1) dmapped new blockDist(boundingBox=controlDomain) = controlDomain;
   var array:[D]real;
 
   fillArray(array);

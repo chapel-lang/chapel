@@ -65,7 +65,7 @@ proc makeInitialArray() {
   } else if distType == DistType.cyclic {
     return cyclicDist.createArray(1..1, int);
   } else if distType == DistType.blockcyclic {
-    var D = {1..1} dmapped blockCycDist(startIdx=(1,), (3,));
+    var D = {1..1} dmapped new blockCycDist(startIdx=(1,), (3,));
     var ret: [D] int;
     return ret;
   } else if distType == DistType.replicated {
@@ -73,7 +73,7 @@ proc makeInitialArray() {
     var ret: [D] int;
     return ret;
   } else if distType == DistType.stencil {
-    var D = {1..1} dmapped stencilDist(rank=1, boundingBox={1..1});
+    var D = {1..1} dmapped new stencilDist(rank=1, boundingBox={1..1});
     var ret: [D] int;
     return ret;
   } else {

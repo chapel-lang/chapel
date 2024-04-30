@@ -4,7 +4,7 @@ config const n = 36;
 config const dptpl = 3;
 
 const D = {1..n};
-const BD = D dmapped blockDist(D,
+const BD = D dmapped new blockDist(D,
                            dataParTasksPerLocale = dptpl);
 var A: [BD] int = 1..n;
 

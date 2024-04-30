@@ -65,7 +65,7 @@ proc main() {
   // distributed using a blockCycDist(blkSize) distribution.
   //
   const MatVectSpace: domain(2, indexType) 
-                      dmapped blockCycDist(startIdx=(1,1), (blkSize,blkSize)) 
+                      dmapped new blockCycDist(startIdx=(1,1), (blkSize,blkSize)) 
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 

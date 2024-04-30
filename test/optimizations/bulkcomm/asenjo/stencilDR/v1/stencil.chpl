@@ -29,7 +29,7 @@ record localInfo {
 }
 
 // set up the data arrays
-const gridDist = gridDom dmapped blockDist(gridDom, gridLocales);
+const gridDist = gridDom dmapped new blockDist(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 var delta: elType;
 config const epsilon = 0.1;

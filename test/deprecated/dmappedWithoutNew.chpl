@@ -10,4 +10,4 @@ var bd = new blockDist(d);
 var d2 = d dmapped bd;
 
 // deprecated:
-var d3 = d dmapped blockDist(d);
+var d3 = d dmapped new blockDist(d);

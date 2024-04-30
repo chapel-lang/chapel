@@ -48,7 +48,7 @@ proc sin_calc(size: uint(32), iterations : int(32)): real(32) {
 proc fillTable(size: uint(32))
 {
     const Space = {0..<numLocales};
-    const D: domain(1) dmapped blockDist(boundingBox=Space) = Space;
+    const D: domain(1) dmapped new blockDist(boundingBox=Space) = Space;
     var RA: [D] [0..<size] real(32);
 
     coforall loc in Locales {

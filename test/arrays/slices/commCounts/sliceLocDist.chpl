@@ -5,7 +5,7 @@ config const printArray = true;
 
 proc main() {
   {
-    const D = {1..10, 1..10} dmapped blockDist({1..10, 1..10});
+    const D = {1..10, 1..10} dmapped new blockDist({1..10, 1..10});
     var A: [D] real;
     const DInner = D[3..8, 3..8];
 
@@ -14,7 +14,7 @@ proc main() {
     testit(A, DInner);
   }
   {
-    const D = {1..10, 1..10} dmapped blockDist({1..10, 1..10});
+    const D = {1..10, 1..10} dmapped new blockDist({1..10, 1..10});
     var A: [D] real;
     const DInner = {3..8, 3..8};
 
@@ -24,7 +24,7 @@ proc main() {
   }
   {
     const DLoc = {1..10, 1..10};
-    const D = DLoc dmapped blockDist({1..10, 1..10});
+    const D = DLoc dmapped new blockDist({1..10, 1..10});
     var A: [DLoc] real;
     const DInner = D[3..8, 3..8];
 

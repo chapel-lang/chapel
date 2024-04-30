@@ -488,7 +488,7 @@ proc BlockDom.dsiPartialDomain(param exceptDim) {
 
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
-  var ret = space dmapped blockDist(space, targetLocales =
+  var ret = space dmapped new blockDist(space, targetLocales =
       dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;
@@ -738,7 +738,7 @@ proc SparseBlockDom.dsiPartialDomain(param exceptDim) {
 
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
-  var ret = space dmapped blockDist(space, targetLocales =
+  var ret = space dmapped new blockDist(space, targetLocales =
       dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;

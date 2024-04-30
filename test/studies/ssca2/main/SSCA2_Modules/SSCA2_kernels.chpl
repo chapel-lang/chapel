@@ -169,7 +169,7 @@ module SSCA2_kernels
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PrivateDist, but aliasing is not supported (yet)
-  const PrivateSpace = LocaleSpace dmapped blockDist(boundingBox=LocaleSpace);
+  const PrivateSpace = LocaleSpace dmapped new blockDist(boundingBox=LocaleSpace);
 
   // ==================================================================
   //                              KERNEL 4
@@ -239,7 +239,7 @@ module SSCA2_kernels
           else
             Locales[((t-1)/numTPVs)/numLocales];
 
-      const TPVLocaleSpace = TPVSpace dmapped blockDist(boundingBox=TPVSpace,
+      const TPVLocaleSpace = TPVSpace dmapped new blockDist(boundingBox=TPVSpace,
                                                     targetLocales=TPVLocales);
 
       // There will be numTPVs copies of the temps, thus throttling the

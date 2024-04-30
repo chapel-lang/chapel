@@ -14,7 +14,7 @@ proc main() {
   // Create manager instance
   var manager = new EpochManager();
   const numObjects = 16;
-  var objsDom = {0..#numObjects} dmapped cyclicDist(startIdx=0);
+  var objsDom = {0..#numObjects} dmapped new cyclicDist(startIdx=0);
   var objs : [objsDom] unmanaged C()?;
 
   // Scattering objects around the locales

@@ -18,8 +18,8 @@ config const printLocaleData = false,
 // such logic so many times in your life before it gets really old.
 //
 const LocDom = {1..n  , 1..n  },
-         Dom = LocDom dmapped blockDist(LocDom),
-      BigDom = {0..n+1, 0..n+1} dmapped blockDist(LocDom);
+         Dom = LocDom dmapped new blockDist(LocDom),
+      BigDom = {0..n+1, 0..n+1} dmapped new blockDist(LocDom);
 
 //
 // query out the domain and array of the locales we're targeting

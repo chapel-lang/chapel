@@ -100,7 +100,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
 
   const FilesSpace = {1..todo.size};
   const BlockSpace = if distributed then
-                       FilesSpace dmapped blockDist(boundingBox=FilesSpace)
+                       FilesSpace dmapped new blockDist(boundingBox=FilesSpace)
                      else
                        FilesSpace;
   var allfiles:[BlockSpace] string;

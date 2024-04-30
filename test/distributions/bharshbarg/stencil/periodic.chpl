@@ -16,7 +16,7 @@ proc test(dom : domain(?), halo : dom.rank * int) {
   param rank = dom.rank;
 
   if debug then writeln("Testing domain ", dom, " with halo ", halo);
-  var Space = dom dmapped stencilDist(dom, fluff=halo, periodic=true);
+  var Space = dom dmapped new stencilDist(dom, fluff=halo, periodic=true);
 
   var A : [Space] int;
   const n = dom.dim(0).size;

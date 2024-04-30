@@ -2,7 +2,7 @@ use BlockDist;
 
 proc test(space) {
   type idxType = if space.rank==1 then int else space.rank*int;
-  const dom = space dmapped blockDist(boundingBox=space);
+  const dom = space dmapped new blockDist(boundingBox=space);
   var spsdom: sparse subdomain(dom);
 
   coforall l in Locales with(ref spsdom) do on l {

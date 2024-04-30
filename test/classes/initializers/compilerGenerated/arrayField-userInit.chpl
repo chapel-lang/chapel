@@ -8,7 +8,7 @@ class C {
   }
 }
 
-const D = {1..3} dmapped blockDist({1..3});
+const D = {1..3} dmapped new blockDist({1..3});
 var A: [D] real;
 
 var ownMyC = new owned C(A);

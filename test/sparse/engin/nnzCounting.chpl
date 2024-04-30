@@ -4,7 +4,7 @@ use BlockDist;
 config const N = 8;
 const Space = {0..#N, 0..#N};
 
-var distParent = Space dmapped blockDist(boundingBox=Space);
+var distParent = Space dmapped new blockDist(boundingBox=Space);
 var nonDistParent = Space;
 
 var defSps: sparse subdomain(nonDistParent);

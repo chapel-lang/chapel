@@ -5,9 +5,9 @@ const Space = {1..8, 1..8};
 
 const OneLocOnly: [0..0, 0..0] locale = Locales[0];
 
-const B1 = Space dmapped blockDist(boundingBox=Space);
-const B2 = Space dmapped blockDist(boundingBox={1..4, 1..4});
-const B3 = Space dmapped blockDist(boundingBox=Space, targetLocales=OneLocOnly);
+const B1 = Space dmapped new blockDist(boundingBox=Space);
+const B2 = Space dmapped new blockDist(boundingBox={1..4, 1..4});
+const B3 = Space dmapped new blockDist(boundingBox=Space, targetLocales=OneLocOnly);
 
 writeln("Block comparisons:");
 
@@ -20,15 +20,15 @@ writeln(B2.distribution == B3.distribution);
 
 writeln(B3.distribution == B3.distribution);
 
-writeln(B1.distribution == (Space dmapped blockDist(boundingBox=Space)).distribution);
+writeln(B1.distribution == (Space dmapped new blockDist(boundingBox=Space)).distribution);
 
 writeln();
 
 
-const C1 = Space dmapped cyclicDist(startIdx=Space.low);
-const C2 = Space dmapped cyclicDist(startIdx=(3,3));
-const C3 = Space dmapped cyclicDist(startIdx=(4,4));
-const C4 = Space dmapped cyclicDist(startIdx=Space.low, targetLocales=OneLocOnly);
+const C1 = Space dmapped new cyclicDist(startIdx=Space.low);
+const C2 = Space dmapped new cyclicDist(startIdx=(3,3));
+const C3 = Space dmapped new cyclicDist(startIdx=(4,4));
+const C4 = Space dmapped new cyclicDist(startIdx=Space.low, targetLocales=OneLocOnly);
 
 writeln("Cyclic comparisons:");
 
@@ -47,19 +47,19 @@ writeln(C3.distribution == C4.distribution);
 
 writeln(C4.distribution == C4.distribution);
 
-writeln(C1.distribution == (Space dmapped cyclicDist(startIdx=Space.low)).distribution);
+writeln(C1.distribution == (Space dmapped new cyclicDist(startIdx=Space.low)).distribution);
 
 writeln();
 
 
 
-const BC1 = Space dmapped blockCycDist(startIdx=Space.low, 
+const BC1 = Space dmapped new blockCycDist(startIdx=Space.low, 
                                       blocksize=(2, 3));
-const BC2 = Space dmapped blockCycDist(startIdx=(-1,-1),
+const BC2 = Space dmapped new blockCycDist(startIdx=(-1,-1),
                                       blocksize=(2,3));
-const BC3 = Space dmapped blockCycDist(startIdx=Space.low,
+const BC3 = Space dmapped new blockCycDist(startIdx=Space.low,
                                       blocksize=(3,2));
-const BC4 = Space dmapped blockCycDist(startIdx=Space.low,
+const BC4 = Space dmapped new blockCycDist(startIdx=Space.low,
                                       blocksize=(2,3),
                                       targetLocales=OneLocOnly);
 
@@ -79,7 +79,7 @@ writeln(BC3.distribution == BC4.distribution);
 
 writeln(BC4.distribution == BC4.distribution);
 
-writeln(BC1.distribution == (Space dmapped blockCycDist(startIdx=Space.low,
+writeln(BC1.distribution == (Space dmapped new blockCycDist(startIdx=Space.low,
                                           blocksize=(2,3))).distribution);
 
 writeln();

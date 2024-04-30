@@ -3,13 +3,13 @@ use CyclicDist;
 config const n=10;
 const S = {1..n};
 const R = {1..n,1..n};
-const BDom: domain(1) dmapped cyclicDist(startIdx=S.low)=S;
-const CDom: domain(2) dmapped cyclicDist(startIdx=R.low)=R;
+const BDom: domain(1) dmapped new cyclicDist(startIdx=S.low)=S;
+const CDom: domain(2) dmapped new cyclicDist(startIdx=R.low)=R;
 //const BDist = new blockDist(boundingBox=S);
 //const RDist = new blockDist(boundingBox=R);
 //const BDom : domain(1) dmapped BDist=S;
 
-//var A : [[1..n] dmapped blockDist(rank=1,boundingBox=[1..n])] int;
+//var A : [[1..n] dmapped new blockDist(rank=1,boundingBox=[1..n])] int;
 var A : [BDom] int;
 
 for (i) in A.domain {
@@ -17,7 +17,7 @@ for (i) in A.domain {
 }
 writeln("A is:",A);
 
-//var B : [[1..n] dmapped blockDist(rank=1,boundingBox=[1..n])] int; 
+//var B : [[1..n] dmapped new blockDist(rank=1,boundingBox=[1..n])] int; 
 var B : [BDom] int;                                              
 for (i) in B.domain {
        B(i)=2*i;

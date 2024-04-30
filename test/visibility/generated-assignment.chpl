@@ -12,7 +12,7 @@ proc main() {
   m['a'] = new I();
 
   const space = {1..m.size};
-  const dom: domain(1) dmapped cyclicDist(startIdx=1) = space;
+  const dom: domain(1) dmapped new cyclicDist(startIdx=1) = space;
 
   var arr: [dom] I = for v in m.values() do v;
 }

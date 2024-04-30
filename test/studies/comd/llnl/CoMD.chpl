@@ -35,7 +35,7 @@ proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
           for l in Locales[0..#locDom.size] do l;
 
   const boxSpace = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
-  const distSpace = boxSpace dmapped blockDist(boundingBox=boxSpace, targetLocales=targetLocales);
+  const distSpace = boxSpace dmapped new blockDist(boundingBox=boxSpace, targetLocales=targetLocales);
   // assert(locDom == distSpace._value.dist.targetLocDom);
 
   locGrid = distSpace.targetLocales();

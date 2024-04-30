@@ -56,8 +56,8 @@ const
   rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
-   dmapped blockCycDist(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
-// dmapped blockDist(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
+   dmapped new blockCycDist(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
+// dmapped new blockDist(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
 // dmapped dimensionalDist2D(tla, bdim1, bdim2, "dim") //DIM
   = MatVectSpace;
 

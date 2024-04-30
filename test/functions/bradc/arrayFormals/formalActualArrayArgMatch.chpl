@@ -4,13 +4,13 @@ config param testErrorCase = 0;
 
 const D = {1..10};
 const D2 = {0..9};
-const D3 = D dmapped blockDist({1..10});
+const D3 = D dmapped new blockDist({1..10});
 
 var A: [D] real;
 var A2: [D2] real;
 var A3: [D3] real;
-var A4: [D dmapped blockDist({1..10})] real;
-var A5: [D dmapped blockDist({1..3})] real;  // same type, different dist value
+var A4: [D dmapped new blockDist({1..10})] real;
+var A5: [D dmapped new blockDist({1..3})] real;  // same type, different dist value
 
 proc foo(X: [D] real) {
   writeln("In foo!");
