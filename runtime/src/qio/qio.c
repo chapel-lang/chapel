@@ -3974,7 +3974,8 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   if( nbytes < 0 ) nbytes = 0;
 
   // Fast path: all data is available in the cached area.
-  if( qio_space_in_ptr_diff(nbytes, ch->cached_end, ch->cached_cur) ) {
+  if( nbytes < INTPTR_MAX &&
+      qio_space_in_ptr_diff(nbytes, ch->cached_end, ch->cached_cur) ) {
     ch->cached_cur = qio_ptr_add(ch->cached_cur, nbytes);
     return 0;
   }
