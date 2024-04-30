@@ -847,7 +847,8 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
   if (untyped->name() == USTR("init") ||
       untyped->name() == USTR("init=") ||
       untyped->name() == USTR("deinit") ||
-      untyped->name() == USTR("=")) {
+      untyped->name() == USTR("=") ||
+      untyped->name() == USTR("serialize")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
       return true;
