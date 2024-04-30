@@ -419,8 +419,6 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
 
-      ``this.parSafe`` will default to ``false`` if it is not yet set.
-
       :arg other: The list to initialize from.
     */
     proc init=(other: list) {
@@ -432,10 +430,10 @@ module List {
       this.eltType = if this.type.eltType != ?
                      then this.type.eltType
                      else other.eltType;
-      // set parSafe to false if it was not already provided in lhs type
+      // set parSafe to other.parSafe if it was not already provided in lhs type
       this.parSafe = if this.type.parSafe != ?
                      then this.type.parSafe
-                     else false;
+                     else other.parSafe;
 
       if (this.parSafe != other.parSafe && warnForListParsafeMismatch) {
         compilerWarning("initializing between two lists with different " +
