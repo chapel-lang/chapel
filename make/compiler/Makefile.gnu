@@ -355,6 +355,14 @@ ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 12; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-deprecated-declarations
 endif
 
+#
+# Don't error for -Wnonnull in llvm 17+ due to false positives in llvm headers
+#
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 17; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=nonnull
+endif
+
+
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
 else
