@@ -430,14 +430,6 @@ module Time {
     return (y, 1+delta.days/7, weekday(): int);
   }
 
-  /* Return the ISO week date as a tuple containing the ISO week-numbering year,
-     ISO week number, and ISO weekday number.
-   */
-  @deprecated(notes="`date.isoCalendar` is deprecated; use :proc:`date.isoWeekDate` instead")
-  proc date.isoCalendar() : (int, int, int) {
-    return this.isoWeekDate();
-  }
-
   /* Get a `string` representation of this `date` in ISO format
      ``YYYY-MM-DD``.
   */
