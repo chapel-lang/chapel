@@ -247,16 +247,15 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   for (int i = 0; i < rf.numFields(); i++) {
     auto fieldQt = rf.fieldType(i);
     auto formalName = rf.fieldName(i);
-    bool formalHasDefault = rf.fieldHasDefaultValue(i);
     const uast::Decl* formalAst = nullptr;
+    bool typeHasDefault = isTypeWithDefaultValue(context, fieldQt.type());
+    bool formalHasDefault = rf.fieldHasDefaultValue(i) || typeHasDefault;
 
     // A field may not have a default value. If it is default-initializable
     // then the formal should still take a default value (in this case the
     // default value is for the type, e.g., '0' for 'int'.
     // TODO: If this isn't granular enough, we can introduce a 'DefaultValue'
     // type that can be used as a sentinel.
-    formalHasDefault |= isTypeDefaultInitializable(context, fieldQt.type());
-
     auto fd = UntypedFnSignature::FormalDetail(formalName, formalHasDefault,
                                                formalAst);
     ufsFormals.push_back(std::move(fd));
@@ -282,19 +281,14 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  bool needsInstantiation = rf.isGeneric();
-
   auto ret = TypedFnSignature::get(context,
                                    ufs,
                                    std::move(formalTypes),
                                    TypedFnSignature::WHERE_NONE,
-                                   needsInstantiation,
+                                   /* needsInstantiation */ rf.isGeneric(),
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap());
-
   return ret;
 }
 
@@ -316,8 +310,10 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
   ufsFormals.push_back(std::move(fd));
 
   CHPL_ASSERT(formalTypes.size() == 1);
-  auto otherType = QualifiedType(QualifiedType::CONST_REF,
-                                 formalTypes[0].type());
+  auto otherKind = !Type::isMutatedOnCopy(context, formalTypes[0].type())
+      ? QualifiedType::CONST_REF
+      : QualifiedType::REF;
+  auto otherType = QualifiedType(otherKind, formalTypes[0].type());
   formalTypes.push_back(std::move(otherType));
 
   // build the untyped signature
@@ -672,10 +668,13 @@ generateRecordBinaryOperator(Context* context, UniqueString op,
 
 static const TypedFnSignature*
 generateRecordAssignment(Context* context, const CompositeType* lhsType) {
+  auto rhsKind = !Type::isMutatedOnAssignment(context, lhsType)
+    ? QualifiedType::CONST_REF
+    : QualifiedType::REF;
   return generateRecordBinaryOperator(context, USTR("="), lhsType,
                                       /*this*/ QualifiedType::CONST_REF,
-                                      /*lhs*/  QualifiedType::CONST_REF,
-                                      /*rhs*/  QualifiedType::CONST_REF);
+                                      /*lhs*/  QualifiedType::REF,
+                                      /*rhs*/  rhsKind);
 }
 
 static const TypedFnSignature*

@@ -315,6 +315,20 @@ class Type {
   */
   static bool isPod(Context* context, const Type* t);
 
+  /*
+    Determine if a type is mutated when it is copied. For example, any record
+    containing an 'owned' class field is mutated when copied using a
+    default copy-initializer. Any type attributed with 'PRAGMA_COPY_MUTATES'
+    is considered to be mutated on copy.
+  */
+  static bool isMutatedOnCopy(Context* context, const Type* t);
+
+  /*
+    Determine if a type is mutated when it is assigned. Right now this is
+    the same as 'isMutatedOnCopy'.
+  */
+  static bool isMutatedOnAssignment(Context* context, const Type* t);
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT

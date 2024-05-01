@@ -207,8 +207,7 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
   }
 
   if (fnReturnsRegularValue) {
-    ID toId = re.toId(); // what variable was returned/yielded?
-    if (!toId.isEmpty()) {
+    if (ID toId = re.toId()) { // what variable was returned/yielded?
       if (resolver.symbol->id().contains(toId)) { // is it a local variable?
         if (isValue(re.type().kind())) {
           if (returnOrYield->isYield()) {
@@ -781,11 +780,11 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
 
   // check for use of deinited variables in type or init exprs
-  if (auto init = ast->initExpression()) {
-    processMentions(init, rv);
+  if (auto typeExpr = ast->typeExpression()) {
+    processMentions(typeExpr, rv);
   }
-  if (auto init = ast->initExpression()) {
-    processMentions(init, rv);
+  if (auto initExpr = ast->initExpression()) {
+    processMentions(initExpr, rv);
   }
 
   bool inited = processDeclarationInit(ast, rv);

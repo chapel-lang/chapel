@@ -432,12 +432,19 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const types::Type* t,
                                          const PoiScope* poiScope = nullptr);
 
+// tries to resolve an (unambiguous) default-init
+const TypedFnSignature*
+tryResolveDefaultInit(Context* context,
+                      const uast::AstNode* astForScopeOrErr,
+                      const types::Type* t,
+                      const PoiScope* poiScope = nullptr);
+
 /**
-  Given a type 't', compute whether or not 't' is default initializable.
-  If 't' is a generic type, it is considered non-default-initializable.
-  Considers the fields and substitutions of composite types.
+  Given a type 't', compute whether or not 't' has a default value. If 't'
+  is a generic type, it is considered to not have a default value. Considers
+  the fields and substitutions of record types.
 */
-bool isTypeDefaultInitializable(Context* context, const types::Type* t);
+bool isTypeWithDefaultValue(Context* context, const types::Type* t);
 
 /**
   Determine whether type 't' is copyable/assignable from const or/and from ref.

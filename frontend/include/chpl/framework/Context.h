@@ -495,6 +495,9 @@ class Context {
     */
   Context(Configuration config);
 
+  /** Move constructor which consumes the RHS context. */
+  Context(Context&& rhs) = default;
+
   /**
     Create a new Context by consuming the contents of another Context
     context while changing Configuration. The passed Context will no

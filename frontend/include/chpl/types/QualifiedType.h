@@ -197,6 +197,7 @@ class QualifiedType final {
   bool isRef() const {
     return uast::isRefQualifier(kind_);
   }
+
   /**
     Returns true if the value is an in-intent formal, whether constant or
     mutable.

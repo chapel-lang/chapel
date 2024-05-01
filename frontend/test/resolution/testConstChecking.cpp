@@ -338,8 +338,88 @@ static void test6c() {
     {8});
 }
 
-// TODO: test const checking for associated functions
+static void test7a() {
+  testConstChecking("test7a",
+    R""""(
+      module M {
+        class C {}
+        record r { var x: owned C?; }
+        proc test() {
+          const r1 = new r();
+          const r2 = r1;
+          r1;
+        }
+      }
+    )"""",
+    {7});
+}
 
+static void test7b() {
+  testConstChecking("test7b",
+    R""""(
+      module M {
+        record r { var x: int; var y: int; }
+        proc r.init=(ref other: r) {}
+        proc test() {
+          const r1 = new r();
+          const r2 = r1;
+          r1;
+        }
+      }
+    )"""",
+    {7});
+}
+
+static void test7c() {
+  testConstChecking("test7c",
+    R""""(
+      module M {
+        class C {}
+        record r { var x: owned C?; }
+        const r1 = new r();
+        proc foo() const ref: r { return r1; }
+        proc bar(in r2: r) {}
+        proc test() {
+          bar(foo());
+        }
+      }
+    )"""",
+    {9});
+}
+
+static void test7d() {
+  testConstChecking("test7d",
+    R""""(
+      module M {
+        class C {}
+        record r { var x: owned C?; }
+        const r1 = new r();
+        proc foo() const ref: r { return r1; }
+        proc bar(inout r2: r) {}
+        proc test() {
+          bar(foo());
+        }
+      }
+    )"""",
+    {9});
+}
+
+static void test7e() {
+  testConstChecking("test7e",
+    R""""(
+      module M {
+        class C {}
+        record r { var x: owned C?; }
+        proc test() {
+          const r1 = new r();
+          const r2 = new r();
+          r1 = r2;
+          r1; r2;
+        }
+      }
+    )"""",
+    {8});
+}
 
 int main() {
   test1a();
@@ -364,6 +444,12 @@ int main() {
   test6a();
   test6b();
   test6c();
+
+  test7a();
+  test7b();
+  test7c();
+  test7d();
+  test7e();
 
   return 0;
 }
