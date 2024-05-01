@@ -1148,12 +1148,6 @@ module Time {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
-  /* Form a `dateTime` value from a given `date` and `time` */
-  @deprecated(notes="`dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead")
-  proc type dateTime.combine(d: date, t: time) : dateTime {
-    return new dateTime(d, t);
-  }
-
   /* Methods on dateTime values */
 
   /* Get the `date` portion of the `dateTime` value */
