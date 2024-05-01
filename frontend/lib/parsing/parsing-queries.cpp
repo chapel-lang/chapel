@@ -317,6 +317,151 @@ const ModuleVec& parseToplevel(Context* context, UniqueString path) {
   return parse(context, path, emptyParentSymbolPath);
 }
 
+const std::vector<ID>& toplevelModulesInFile(Context* context,
+                                             UniqueString path) {
+  QUERY_BEGIN(toplevelModulesInFile, context, path);
+
+  std::vector<ID> result;
+  const ModuleVec& modules = parseToplevel(context, path);
+  for (const Module* mod : modules) {
+    result.push_back(mod->id());
+  }
+
+  return QUERY_END(result);
+}
+
+struct FindMain {
+  std::vector<const Function*> mainProcsFound;
+  std::vector<const Module*> modulesFound;
+  UniqueString main;
+
+  FindMain(Context* context) {
+    main = UniqueString::get(context, "main");
+  }
+
+  bool enter(const Function* fn) {
+    if (fn->name() == main) {
+      mainProcsFound.push_back(fn);
+    }
+    return true;
+  }
+  void exit(const Function* fn) { }
+
+  bool enter(const Module* mod) {
+    modulesFound.push_back(mod);
+    return true;
+  }
+  void exit(const Module* mod) { }
+
+  // traverse through anything else
+  bool enter(const AstNode* ast) {
+    return true;
+  }
+  void exit(const AstNode* ast) { }
+};
+
+
+static const ID& findMainModuleImpl(Context* context,
+                                    std::vector<ID> commandLineModules,
+                                    UniqueString requestedMainModuleName) {
+  QUERY_BEGIN(findMainModuleImpl, context,
+              commandLineModules, requestedMainModuleName);
+
+  ID result;
+  auto findMain = FindMain(context);
+
+  // traverse to find modules (to check name) and main functions
+  for (const auto& id : commandLineModules) {
+    if (const AstNode* ast = idToAst(context, id)) {
+      ast->traverse(findMain);
+    }
+  }
+
+  if (!requestedMainModuleName.isEmpty()) {
+    // use requestedMainModuleName to get the main module name
+    const Module* matchingModule = nullptr;
+    for (const Module* mod : findMain.modulesFound) {
+      if (mod->name() == requestedMainModuleName) {
+        matchingModule = mod;
+      }
+    }
+    if (matchingModule) {
+      result = matchingModule->id();
+    } else {
+      context->error(Location(),
+                     "could not find module named '%s' for --main-module",
+                     requestedMainModuleName.c_str());
+    }
+  }
+
+  if (result.isEmpty() && findMain.mainProcsFound.size() > 0) {
+    ID mainProc = findMain.mainProcsFound[0]->id();
+    result = idToParentModule(context, mainProc);
+
+    if (findMain.mainProcsFound.size() > 1) {
+      // emit an error if there were multiple 'main' procs
+      // TODO: make this error nice, list which modules, etc
+      context->error(Location(),
+                     "ambiguous main functions, use --main-module");
+    }
+  }
+
+  if (result.isEmpty()) {
+    if (commandLineModules.size() == 1) {
+      result = commandLineModules[0];
+    } else if (commandLineModules.size() == 0) {
+      // AFAIK this won't be possible to reach
+      context->error(Location(),
+                     "could not find main module: no command-line modules");
+    } else {
+      // TODO: make this error nice
+      context->error(Location(),
+                     "a program with multiple user modules "
+                     "requires a main function\n"
+                     "alternatively, specify a main module with "
+                     "--main-module");
+    }
+  }
+
+  if (result.isEmpty() && findMain.modulesFound.size() > 0) {
+    // we should have emitted an error above. use the first
+    // module encountered as the main module so compilation can continue.
+    result = findMain.modulesFound[0]->id();
+  }
+
+  return QUERY_END(result);
+}
+
+ID findMainModule(Context* context,
+                  std::vector<ID> commandLineModules,
+                  UniqueString requestedMainModuleName) {
+  return findMainModuleImpl(context,
+                            std::move(commandLineModules),
+                            requestedMainModuleName);
+}
+
+std::vector<ID>
+findMainAndCommandLineModules(Context* context,
+                              std::vector<UniqueString> paths,
+                              UniqueString requestedMainModuleName,
+                              ID& mainModule) {
+  std::vector<chpl::ID> commandLineModules;
+
+  for (auto path : paths) {
+    auto ids = chpl::parsing::toplevelModulesInFile(context, path);
+    // append ids to commandLineModules
+    commandLineModules.insert(commandLineModules.end(),
+                              ids.begin(), ids.end());
+  }
+
+  mainModule = findMainModule(context,
+                              commandLineModules,
+                              requestedMainModuleName);
+
+  return commandLineModules;
+}
+
+
 static const std::vector<UniqueString>&
 moduleSearchPathQuery(Context* context) {
   QUERY_BEGIN_INPUT(moduleSearchPathQuery, context);
