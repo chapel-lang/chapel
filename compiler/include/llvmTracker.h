@@ -29,17 +29,19 @@ extern int breakOnLLVMID;
 #endif
 
 #ifdef HAVE_LLVM
-namespace llvm {
-  class Value; class Function; class BasicBlock; class Instruction;
-}
+
+namespace llvm { class Value; }
 
 #if TRACK_LLVM_VALUES ///*** trackLLVMValue is active ***///
+
+#include "llvm/Transforms/Utils/ValueMapper.h"
+void trackClonedLLVMValues(llvm::ValueToValueMapTy& VMap);
 
 // these are defined in llvmUtil.cpp; they return their argument
 const llvm::Value* trackLLVMValue(const llvm::Value* val);
 llvm::Value* trackLLVMValue(llvm::Value* val);
 
-#else //TRACK_LLVM_VALUES ///*** trackLLVMValue is no-op ***///
+#else ///*** trackLLVMValue is no-op ***///
 
 static inline const llvm::Value* trackLLVMValue(const llvm::Value* val)
 { return val; }

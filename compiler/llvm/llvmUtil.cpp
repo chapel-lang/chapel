@@ -654,6 +654,14 @@ llvm::Value* trackLLVMValue(llvm::Value* val) {
   return val;
 }
 
+void trackClonedLLVMValues(llvm::ValueToValueMapTy& VMap) {
+  for (auto Entry : VMap) {
+    auto it = trackValIds.find(Entry.first); // look up the clone's original
+    if (it != trackValIds.end())
+      trackValIds[Entry.second] = it->second; // map clone to original's ID
+  }
+}
+
 class LLVMValueTracker : public llvm::AssemblyAnnotationWriter {
 public:
    /// emit a string right before the start of a function
