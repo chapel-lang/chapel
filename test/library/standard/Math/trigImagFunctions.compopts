@@ -1,0 +1,3 @@
+# test both with and without deprecation config, so that users have correct behavior with either
+-suseNewImaginaryTrig=true
+-suseNewImaginaryTrig=false
