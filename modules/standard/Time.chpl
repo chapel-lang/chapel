@@ -94,13 +94,9 @@ module Time {
   }
 
   /* The minimum year allowed in `date` objects */
-  @deprecated("'MINYEAR' is deprecated; use `date.min.year` instead")
-  param MINYEAR = 1;
-  /* The maximum year allowed in `date` objects */
-  @deprecated("'MAXYEAR' is deprecated; use `date.max.year` instead")
-  param MAXYEAR = 9999;
   @chpldoc.nodoc
   param _MINYEAR = 1;
+  /* The maximum year allowed in `date` objects */
   @chpldoc.nodoc
   param _MAXYEAR = 9999;
 
