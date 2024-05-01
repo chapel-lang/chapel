@@ -453,12 +453,6 @@ module Time {
     return yearstr + "-" + monthstr + "-" + daystr;
   }
 
-  /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
-  @deprecated(notes="`date.isoFormat` is deprecated; use cast to string instead")
-  proc date.isoFormat() : string {
-    return this:string;
-  }
-
   /* Return a `string` representing the date */
   @unstable("'date.ctime' is unstable")
   proc date.ctime() : string {
@@ -750,11 +744,6 @@ module Time {
                          makeNDigits(2, offset.seconds % (60*60) / 60);
     }
     return ret;
-  }
-
-  @deprecated(notes="`time.isoFormat` is deprecated; use cast to string instead")
-  proc time.isoFormat() : string {
-    return this:string;
   }
 
   /* Return the offset from UTC */
@@ -1343,41 +1332,6 @@ module Time {
     // characters on its own, so do it manually.
     var year = zeroPad(4, try! x.strftime("%Y"):int);
     return x.strftime(year + "-%m-%d" + "T" + "%H:%M:%S" + micro + offset);
-  }
-
-  /* Return the `dateTime` as a `string` in ISO format */
-  @deprecated(notes="`dateTime.isoFormat` is deprecated; use cast to string instead")
-  proc dateTime.isoFormat(sep="T") : string {
-    proc zeroPad(nDigits: int, i: int) {
-      var numStr = i: string;
-      for i in 1..nDigits-numStr.size {
-        numStr = "0" + numStr;
-      }
-      return numStr;
-    }
-    var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
-    var offset: string;
-    if timezone.borrow() != nil {
-      var utcoff = utcOffset();
-      var sign: string;
-      if utcoff < new timeDelta(0) {
-        sign = '-';
-        utcoff = utcoff.abs();
-      } else {
-        sign = '+';
-      }
-      var hours = utcoff.seconds / (60*60);
-      var minutes = (utcoff.seconds % (60*60)) / 60;
-      offset = sign +
-               (if hours < 10 then "0" + hours: string else hours: string) +
-               ":" +
-               (if minutes < 10 then "0" + minutes: string else minutes: string);
-    }
-
-    // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
-    // characters on its own, so do it manually.
-    var year = zeroPad(4, try! strftime("%Y"):int);
-    return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
   /* Create a `dateTime` as described by the `date_string` and
