@@ -1831,14 +1831,6 @@ module Time {
       return this;
   }
 
-  /* Return the absolute value of `t`.  If `t` is negative, then returns `-t`,
-     else returns `t`.
-   */
-  @deprecated(notes="`abs` as a free function is deprecated; use :proc:`timeDelta.abs` instead")
-  proc abs(t: timeDelta) : timeDelta {
-    return t.abs();
-  }
-
   @chpldoc.nodoc
   operator :(t: timeDelta, type s:string) : string {
     import Math;

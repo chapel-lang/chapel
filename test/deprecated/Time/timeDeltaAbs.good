@@ -1,2 +1,0 @@
-timeDeltaAbs.chpl:6: warning: `abs` as a free function is deprecated; use timeDelta.abs instead
-timeDeltaAbs.chpl:7: warning: `abs` as a free function is deprecated; use timeDelta.abs instead
