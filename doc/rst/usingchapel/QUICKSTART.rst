@@ -110,6 +110,9 @@ rebuild Chapel from source in a different configuration:
   - Use ``export CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM
 
+  Please see :ref:`readme-chplenv.CHPL_LLVM` for more information about
+  ``CHPL_LLVM`` and related configuration.
+
 * If you are interested in building Chapel to support multiple compute
   nodes (locales), refer to :ref:`readme-multilocale` for other
   settings to enable that.
