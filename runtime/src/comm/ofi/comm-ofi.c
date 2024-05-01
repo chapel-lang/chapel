@@ -3331,24 +3331,13 @@ static void exit_any(int status) {
 }
 
 
-//
-// FIXME: this is a workaround for hangs when the provider is EFA:
-//        we skip fi_close and don't properly shutdown libfabric
-//
-static inline
-int chpl_fi_close_wrapper(struct fid* fid) {
-  chpl_bool using_efa = providerInUse(provType_efa);
-  if (!using_efa) return fi_close(fid);
-  else            return FI_SUCCESS;
-}
-
 static
 void fini_ofi(void) {
   if (chpl_numNodes <= 1)
     return;
 
   for (int i = 0; i < memTabCount; i++) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofiMrTab[i]->fid));
+    OFI_CHK(fi_close(&ofiMrTab[i]->fid));
   }
 
   if (memTabMap != NULL) {
@@ -3363,35 +3352,35 @@ void fini_ofi(void) {
     }
   }
 
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_rxEp->fid));
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_rxCQ->fid));
+  OFI_CHK(fi_close(&ofi_rxEp->fid));
+  OFI_CHK(fi_close(&ofi_rxCQ->fid));
   if (ofi_rxCntr != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_rxCntr->fid));
+    OFI_CHK(fi_close(&ofi_rxCntr->fid));
   }
 
   for (int i = 0; i < tciTabLen; i++) {
-    OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCtx->fid));
+    OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
     if (tciTab[i].txCntr != NULL) {
-      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCntr->fid));
+      OFI_CHK(fi_close(&tciTab[i].txCntr->fid));
     }
     if (tciTab[i].txCQ != NULL) {
-      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCQ->fid));
+      OFI_CHK(fi_close(&tciTab[i].txCQ->fid));
     }
   }
 
   if (ofi_txEpScal != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_txEpScal->fid));
+    OFI_CHK(fi_close(&ofi_txEpScal->fid));
   }
 
   for (int i = 0; i < tciTabLen; i++) {
     if (tciTab[i].av != ofi_av) {
-      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].av->fid));
+      OFI_CHK(fi_close(&tciTab[i].av->fid));
       CHPL_FREE(tciTab[i].addrs);
     }
   }
 
   if (ofi_rxAv != ofi_av) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_rxAv->fid));
+    OFI_CHK(fi_close(&ofi_rxAv->fid));
   }
 
   if (ofi_rxAddrs != NULL) {
@@ -3399,18 +3388,18 @@ void fini_ofi(void) {
   }
 
   if (ofi_av != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_av->fid));
+    OFI_CHK(fi_close(&ofi_av->fid));
   }
   if (ofi_addrs != NULL) {
     CHPL_FREE(ofi_addrs);
   }
   if (ofi_amhPollSet != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_amhWaitSet->fid));
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_amhPollSet->fid));
+    OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
+    OFI_CHK(fi_close(&ofi_amhPollSet->fid));
   }
 
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_domain->fid));
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_fabric->fid));
+  OFI_CHK(fi_close(&ofi_domain->fid));
+  OFI_CHK(fi_close(&ofi_fabric->fid));
 
   fi_freeinfo(ofi_info);
 
