@@ -1148,17 +1148,6 @@ module Time {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
-  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
-  proc type dateTime.fromOrdinal(ordinal) : dateTime {
-    return dateTime.createFromOrdinal(ordinal);
-  }
-
-  /* The `dateTime` that is `ordinal` days from 1-1-0001 */
-  @deprecated(notes="'dateTime.createFromOrdinal' is deprecated; use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
-  proc type dateTime.createFromOrdinal(ordinal: int) : dateTime {
-    return new dateTime(date.createFromOrdinal(ordinal));
-  }
-
   /* Form a `dateTime` value from a given `date` and `time` */
   @deprecated(notes="`dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead")
   proc type dateTime.combine(d: date, t: time) : dateTime {
@@ -1289,12 +1278,6 @@ module Time {
       ret.tm_isdst = 0;
       return ret;
     }
-  }
-
-  /* Return the number of days since 1-1-0001 this `dateTime` represents */
-  @deprecated(notes="`dateTime.toOrdinal` is deprecated; use `dateTime.getDate().toOrdinal()` instead")
-  proc dateTime.toOrdinal() : int {
-    return getDate().toOrdinal();
   }
 
   /* Get a `string` representation of this `dateTime` in ISO format
