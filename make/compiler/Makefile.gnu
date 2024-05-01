@@ -289,8 +289,9 @@ endif
 # (should be fixed in LLVM 15 though).
 # We would like to know when this occurs, though, so don't turn off
 # the warning; just don't let it abort the build.
+# Observed in GCC 13 as well as of May 2024.
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=uninitialized
 endif
 
