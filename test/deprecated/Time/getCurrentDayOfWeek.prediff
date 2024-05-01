@@ -1,6 +1,0 @@
-#!/bin/sh
-
-# deprecation warnings
-cat getCurrentDayOfWeek.good.base > getCurrentDayOfWeek.good
-# whatever the current day of week is
-date +%A >> getCurrentDayOfWeek.good

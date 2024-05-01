@@ -72,90 +72,26 @@ module Time {
                                            out yday:    int(32),
                                            out isdst:   int(32));
 
-  /* Begin day-of-week enums */
-
-  /* Controls whether :type:`dayOfWeek` starts with `Monday = 0` or
-  `Monday = 1`.
-
-    - If true, :type:`dayOfWeek` represents Monday as day 1.
-    - If false, :type:`dayOfWeek` represents Monday as day 0. This behavior is
-      deprecated and will be removed in an upcoming release.
-
-    The deprecated behavior is on by default. To opt-in to the new behavior,
-    recompile your program with ``-scIsoDayOfWeek=true``.
-
-  */
-  config param cIsoDayOfWeek = false;
-  @chpldoc.nodoc
-  param firstDayOfWeekNum = (if cIsoDayOfWeek then 1 else 0);
-  // This enum has a compiler-implemented deprecation warning for change-of-behavior
-  // controlled by `-scIsoDayOfWeek`, due to implementation issues with a
-  // @deprecated conditional on a config value.
   /*
      Days in the week, starting with Monday.
-     Monday is represented as 0 when :var:`cIsoDayOfWeek` is false (deprecated),
-     or 1 otherwise (future default).
-
-    .. warning::
-
-      In an upcoming release 'dayOfWeek' will represent Monday as 1 instead of
-      0 by default. During the deprecation period this behavior can be
-      controlled with :var:`cIsoDayOfWeek`.
+     Monday is represented as 1.
    */
   enum dayOfWeek {
     /**/
-    Monday = firstDayOfWeekNum,
-    /**/
-    Tuesday,
-    /**/
-    Wednesday,
-    /**/
-    Thursday,
-    /**/
-    Friday,
-    /**/
-    Saturday,
-    /**/
-    Sunday
-  }
-  @chpldoc.nodoc
-  enum _old_dayOfWeek {
-    Monday = 0,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday
-  }
-  @chpldoc.nodoc
-  enum _iso_dayOfWeek {
     Monday = 1,
+    /**/
     Tuesday,
+    /**/
     Wednesday,
+    /**/
     Thursday,
+    /**/
     Friday,
+    /**/
     Saturday,
+    /**/
     Sunday
   }
-
-  /* Specifies the day of the week */
-  @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
-  enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-
-  /* Days in the week, starting with `Monday` = 1 */
-  @deprecated(notes="enum 'isoDayOfWeek' is deprecated. Please use :enum:`dayOfWeek` instead")
-  enum isoDayOfWeek {
-    Monday =    1,
-    Tuesday =   2,
-    Wednesday = 3,
-    Thursday =  4,
-    Friday =    5,
-    Saturday =  6,
-    Sunday =    7
-  }
-
-  /* End day-of-week enums */
 
   /* The minimum year allowed in `date` objects */
   @deprecated("'MINYEAR' is deprecated; use `date.min.year` instead")
@@ -451,7 +387,7 @@ module Time {
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
-    timeStruct.tm_wday = this._old_weekday(): int(32);
+    timeStruct.tm_wday = this.weekday(): int(32) - 1;
     timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
     timeStruct.tm_isdst = (-1): int(32);
     return timeStruct;
@@ -464,26 +400,9 @@ module Time {
 
   /* Return the day of the week.
    */
-  proc date.weekday() : dayOfWeek where cIsoDayOfWeek {
+  proc date.weekday() : dayOfWeek {
     // January 1 0001 is a Monday
     return try! (((toOrdinal() + 6) % 7) + 1): dayOfWeek;
-  }
-  @deprecated(notes="The version of 'date.weekday' returning a :enum:`dayOfWeek` starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`")
-  proc date.weekday() : dayOfWeek where !cIsoDayOfWeek {
-    return try! this._old_weekday():int:dayOfWeek;
-  }
-  @chpldoc.nodoc
-  proc date._old_weekday() : _old_dayOfWeek {
-    // January 1 0001 is a Monday
-    return try! (((toOrdinal() + 6) % 7)):_old_dayOfWeek;
-  }
-
-  /* Return the day of the week as an `isoDayOfWeek`.
-     `Monday` == 1, `Sunday` == 7 */
-  @deprecated(notes="'date.isoWeekday' is deprecated; use :proc:`date.weekday` instead")
-  proc date.isoWeekday() : isoDayOfWeek {
-    var offsetForIso = (if cIsoDayOfWeek then 0 else 1);
-    return try! (weekday(): int + offsetForIso): isoDayOfWeek;
   }
 
   /* Return the ISO week date as a tuple containing the ISO week-numbering year,
@@ -491,8 +410,8 @@ module Time {
    */
   proc date.isoWeekDate() : (int, int, int) {
     proc findThursday(d: date) {
-      var wd = d._old_weekday();
-      return d + new timeDelta(days = (_old_dayOfWeek.Thursday:int - wd:int));
+      var wd = d.weekday();
+      return d + new timeDelta(days = (dayOfWeek.Thursday:int - wd:int));
     }
 
     proc findyear(d: date) {
@@ -512,7 +431,7 @@ module Time {
     const firstDay = findFirstDayOfYear(y);
     const delta = this - firstDay;
 
-    return (y, 1+delta.days/7, (_old_weekday(): int) + 1);
+    return (y, 1+delta.days/7, weekday(): int);
   }
 
   /* Return the ISO week date as a tuple containing the ISO week-numbering year,
@@ -581,7 +500,7 @@ module Time {
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (_old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (weekday(): int(32)) % 7;
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
@@ -894,7 +813,7 @@ module Time {
     timeStruct.tm_mday = 1;
     timeStruct.tm_mon = 1;
 
-    timeStruct.tm_wday = ((new date(1900, 1, 1))._old_weekday():int(32) + 1) % 7;
+    timeStruct.tm_wday = ((new date(1900, 1, 1)).weekday():int(32)) % 7;
     timeStruct.tm_yday = 0;
 
     if timezone.borrow() != nil {
@@ -1363,7 +1282,7 @@ module Time {
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
-    timeStruct.tm_wday = getDate()._old_weekday(): int(32);
+    timeStruct.tm_wday = getDate().weekday(): int(32) - 1;
     timeStruct.tm_yday = (getDate().toOrdinal() -
         (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
@@ -1399,33 +1318,6 @@ module Time {
   @deprecated(notes="`dateTime.toOrdinal` is deprecated; use `dateTime.getDate().toOrdinal()` instead")
   proc dateTime.toOrdinal() : int {
     return getDate().toOrdinal();
-  }
-
-  /* Return the day of the week.
-   */
-  @deprecated(notes="`dateTime.weekday` is deprecated; use `dateTime.getDate().weekday()` instead")
-  proc dateTime.weekday() : dayOfWeek where cIsoDayOfWeek {
-    return getDate().weekday();
-  }
-  @deprecated(notes="The version of 'dateTime.weekday' returning a :type:`dayOfWeek` starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`")
-  proc dateTime.weekday() : dayOfWeek where !cIsoDayOfWeek {
-    return getDate().weekday();
-  }
-
-  /* Return the day of the week as an `isoDayOfWeek`.
-     `Monday` == 1, `Sunday` == 7
-   */
-  @deprecated(notes="`dateTime.isoWeekday` is deprecated; use `dateTime.getDate().weekday()` instead")
-  proc dateTime.isoWeekday() : isoDayOfWeek {
-    return getDate().isoWeekday();
-  }
-
-  /* Return the ISO date as a tuple containing the ISO year, ISO week number,
-     and ISO day of the week
-   */
-  @deprecated(notes="`dateTime.isoCalendar` is deprecated; use `dateTime.getDate().isoWeekDate()` instead")
-  proc dateTime.isoCalendar() : (int, int, int) {
-    return getDate().isoCalendar();
   }
 
   /* Get a `string` representation of this `dateTime` in ISO format
@@ -1542,7 +1434,7 @@ module Time {
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (this.getDate()._old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (this.getDate().weekday(): int(32)) % 7;
     timeStruct.tm_yday = (this.replace(tz=nil) - new dateTime(year, 1, 1)).days: int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
@@ -2091,33 +1983,6 @@ module Time {
   }
 
   // TODO: Add a timezone class implementation
-
-/*
-   :returns:  (year, month, day) as a tuple of 3 ints
-
-   The month is in the range 1 to 12.
-   The day   is in the range 1 to 31
-*/
-@deprecated(notes="'getCurrentDate' is deprecated; access the individual fields of 'date.utcToday()' as needed instead, or use 'date.today()' for local wall time")
-proc getCurrentDate() : (int, int, int) {
-  var today = date.utcToday();
-  return (today.year, today.month, today.day);
-}
-
-/*
-   :returns: The current day of the week, calculated from UTC time.
-   :rtype:   :type:`day`
- */
-@deprecated("'getCurrentDayOfWeek' is deprecated; please use 'date.utcToday().weekday()' instead, or 'date.today().weekday()' for local wall time")
-proc getCurrentDayOfWeek() : day {
-  var now = chpl_now_timevalue();
-
-  var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
-
-  chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
-
-  return try! wday : day;
-}
 
 /*
    Delay a task for a duration specified in seconds. This function
