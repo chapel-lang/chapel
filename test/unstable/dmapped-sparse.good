@@ -1,5 +1,6 @@
 dmapped-sparse.chpl:4: warning: sparse domains are unstable, their behavior is likely to change in the future
 dmapped-sparse.chpl:7: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
+dmapped-sparse.chpl:7: warning: the type 'dmap' is unstable, instead please use distribution factory functions when available
 dmapped-sparse.chpl:7: warning: DefaultDist is unstable and may change in the future
 dmapped-sparse.chpl:10: warning: the type 'dmap' is unstable, instead please use distribution factory functions when available
 dmapped-sparse.chpl:10: warning: DefaultDist is unstable and may change in the future

@@ -123,7 +123,7 @@ proc ones(Dom: domain(2), type eltType=real) {
   var D34 = {0..2,0..3};
   var D43 = {0..3,0..2};
 
-  var BDom: sparse subdomain(BparentDom) dmapped new dmap(new (compressRows=true,sortedIndices=true));
+  var BDom: sparse subdomain(BparentDom) dmapped new dmap(new CS(compressRows=true,sortedIndices=true));
   var B: [BDom] real;
   var B_complex: [BDom] complex;
   BDom += [(0,0),(0,1),(1,1),(2,2)];

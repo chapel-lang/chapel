@@ -65,6 +65,12 @@ defaults to ``true`` if omitted. For example:
     var CSR_Domain: sparse subdomain(D) dmapped new dmap(new CS(compressRows=true)); // Default argument
     var CSC_Domain : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
 
+
+.. note::
+
+    In an upcoming release, it will be possible to declare CS domains without
+    using the unstable ``new dmap`` syntax.
+
 To declare a CSR or CSC array, use a CSR or CSC domain, respectively.
 For example:
 
