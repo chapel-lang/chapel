@@ -12,7 +12,7 @@ var locSparseDom: sparse subdomain(locArr.domain);
 var locSparseArr: [locSparseDom] int;
 
 var space2D = {1..10, 1..10};
-var locSparseDomCSR: sparse subdomain(space2D) dmapped new CS();
+var locSparseDomCSR: sparse subdomain(space2D) dmapped new dmap(new CS());
 var locSparseArrCSR: [locSparseDomCSR] int;
 
 var distSparseDom: sparse subdomain(distArr.domain);

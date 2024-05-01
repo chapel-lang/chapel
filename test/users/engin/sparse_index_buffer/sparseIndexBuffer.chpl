@@ -48,9 +48,9 @@ test(cooDom1D);
 // test local 2D domains
 var cooDom2D: sparse subdomain(parentDom2D);
 test(cooDom2D);
-var csrDom: sparse subdomain(parentDom2D) dmapped new CS(compressRows=true);
+var csrDom: sparse subdomain(parentDom2D) dmapped new dmap(new CS(compressRows=true));
 test(csrDom);
-var cscDom: sparse subdomain(parentDom2D) dmapped new CS(compressRows=false);
+var cscDom: sparse subdomain(parentDom2D) dmapped new dmap(new CS(compressRows=false));
 test(cscDom);
 
 // test distributed 1D domains

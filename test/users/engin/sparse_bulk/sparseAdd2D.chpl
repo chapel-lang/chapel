@@ -7,8 +7,8 @@ const FullDom = {0..#N, 0..#N};
 enum layoutTypes {coo, csr, csc};
 config param layoutType = layoutTypes.coo;
 
-var csrDom: sparse subdomain(FullDom) dmapped new CS(compressRows=true);
-var cscDom: sparse subdomain(FullDom) dmapped new CS(compressRows=false);
+var csrDom: sparse subdomain(FullDom) dmapped new dmap(new CS(compressRows=true));
+var cscDom: sparse subdomain(FullDom) dmapped new dmap(new CS(compressRows=false));
 var cooDom: sparse subdomain(FullDom);
 
 var FullSparseDom = if layoutType == layoutTypes.csr then 
@@ -65,4 +65,3 @@ for i in FullDom.dim(0) {
   }
   writeln();
 }
-
