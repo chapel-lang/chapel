@@ -72,6 +72,10 @@ class Chapel < Formula
         system "make", "chpldoc"
       end
       system "make", "mason"
+      with_env(CHPL_PIP_FROM_SOURCE: "1") do
+        system "make", "chplcheck"
+        system "make", "chpl-language-server"
+      end
       system "make", "cleanall"
 
       rm_rf("third-party/llvm/llvm-src/")
