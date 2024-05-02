@@ -29,6 +29,8 @@ module Optimizers {
       this.name = name;
       this.intValue = val;
 
+      this.intBounds = (min(int), max(int));
+
       init this;
     }
 
