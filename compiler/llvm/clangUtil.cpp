@@ -126,6 +126,7 @@ using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
 #include "build.h"
 
 #include "llvmDebug.h"
+#include "llvmTracker.h"
 #include "llvmVer.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
@@ -3191,8 +3192,10 @@ void runClang(const char* just_parse_filename) {
       Function * F =
         Function::Create(FT, Function::InternalLinkage,
                          "chplDummyFunction", info->module);
+      trackLLVMValue(F);
       llvm::BasicBlock *block =
         llvm::BasicBlock::Create(info->module->getContext(), "entry", F);
+      trackLLVMValue(block);
       info->irBuilder->SetInsertPoint(block);
     }
     // read macros. May call IRBuilder methods to codegen a string,
@@ -3200,7 +3203,8 @@ void runClang(const char* just_parse_filename) {
     readMacrosClang();
 
     if( ! parseOnly ) {
-      info->irBuilder->CreateRetVoid();
+      llvm::ReturnInst* ret = info->irBuilder->CreateRetVoid();
+      trackLLVMValue(ret);
     }
   }
 }
@@ -4555,6 +4559,7 @@ void setupForGlobalToWide(void) {
 
   llvm::BasicBlock* block =
      llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
+  trackLLVMValue(block);
   ginfo->irBuilder->SetInsertPoint(block);
 
   llvm::Value* fns[] = {info->getFn, info->putFn,
@@ -4569,11 +4574,15 @@ void setupForGlobalToWide(void) {
   for( int i = 0; fns[i]; i++ ) {
     llvm::Value* f = fns[i];
     llvm::Value* ptr = ginfo->irBuilder->CreatePointerCast(f, retType);
+    trackLLVMValue(ptr);
     llvm::Value* id = llvm::ConstantInt::get(argType, i);
     llvm::Value* eq = ginfo->irBuilder->CreateICmpEQ(arg, id);
+    trackLLVMValue(eq);
     ret = ginfo->irBuilder->CreateSelect(eq, ptr, ret);
+    trackLLVMValue(ret);
   }
-  ginfo->irBuilder->CreateRet(ret);
+  llvm::ReturnInst* retret = ginfo->irBuilder->CreateRet(ret);
+  trackLLVMValue(retret);
 
   if (developer || fVerify) {
     llvm::verifyFunction(*fn, &errs());
