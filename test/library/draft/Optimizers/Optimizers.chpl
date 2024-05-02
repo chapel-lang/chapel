@@ -85,13 +85,13 @@ module Optimizers {
                 is assumed to be better.
      :arg optimizableArgs: list of each optimizable aspect
      :arg args: additional arguments for the function to use.  Expected to be
-                provided in a tuple
+                provided in a tuple, if provided
 
      :returns: a map of the name of each optimizable aspect to the value found
                for it that leads to the best result for the optimized function.
    */
   proc randomOptimize(func, optimizableArgs: list(optimizableArg),
-                      args=none)
+                      args:?t =none)
     : list(optimizableArg) throws {
 
     var basePoint = new Point(optimizableArgs);
@@ -102,8 +102,11 @@ module Optimizers {
     }
 
     // Call the provided function with each possible set of values
-    // TODO: pass in the additional args as well
-    evaluate(func, points);
+    if (args.type != nothing) {
+      evaluate(func, points, args);
+    } else {
+      evaluate(func, points);
+    }
 
     var bestVal = max(real);
     var bestIndex = -1;
@@ -179,6 +182,51 @@ module Optimizers {
             i.fom = func(i.parameters[0].value, i.parameters[1].value,
                          i.parameters[2].value, i.parameters[3].value,
                          i.parameters[4].value);
+            i.status = Status.completed;
+          }
+          when 0 {
+            // Error condition
+          }
+          otherwise {
+            // Error condition
+          }
+      }
+    }
+  }
+
+  // Same as above, but for when additional, non-optimizable args are provided
+  private proc evaluate(func, ref points: [] Point, args) {
+    param numOptArgs = func.argTypes.size - args.size;
+
+    forall i in points {
+      // TODO: bundle up the arguments in a way that's understandable
+      // David thinks we can't use named arguments in FCPs yet, so need to be
+      // careful about argument ordering
+      select numOptArgs {
+          when 1 {
+            i.fom = func(i.parameters[0].value, (...args));
+            i.status = Status.completed;
+          }
+          when 2 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value,
+                         (...args));
+            i.status = Status.completed;
+          }
+          when 3 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value,
+                         i.parameters[2].value, (...args));
+            i.status = Status.completed;
+          }
+          when 4 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value,
+                         i.parameters[2].value, i.parameters[3].value,
+                         (...args));
+            i.status = Status.completed;
+          }
+          when 5 {
+            i.fom = func(i.parameters[0].value, i.parameters[1].value,
+                         i.parameters[2].value, i.parameters[3].value,
+                         i.parameters[4].value, (...args));
             i.status = Status.completed;
           }
           when 0 {
