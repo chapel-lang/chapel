@@ -3540,26 +3540,24 @@ void init_fixedHeap(void) {
   }
   if (createHeap) {
 
+    //
+    // Either use MAX_HEAP_SIZE, or 85% of total memory
+    //
+    uint64_t max_heap_memory;
+    if (envMaxHeapSize > 0) {
+      // use user-specified envMaxHeapSize
+      max_heap_memory = envMaxHeapSize;
+    } else {
+      uint64_t total_memory = chpl_sys_physicalMemoryBytes();
+      max_heap_memory = (size_t) (0.85 * total_memory);
+    }
 
     //
-    // Don't use more than 85% of the total memory for heaps.
+    // Split up the heap among all the colocales
     //
-    uint64_t total_memory = chpl_sys_physicalMemoryBytes();
-    uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
-
     int num_locales_on_node = chpl_get_num_locales_on_node();
     size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
-
-
-    //
-    // If the maximum heap size is not specified or it's greater than the maximum heap per
-    // locale, set it to the maximum heap per locale.
-    //
-    ssize_t size = envMaxHeapSize;
-    CHK_TRUE(size != 0);
-    if ((size < 0) || (size > max_heap_per_locale)) {
-      size = max_heap_per_locale;
-    }
+    ssize_t size = max_heap_per_locale;
 
     //
     // Check for hugepages.  On certain systems you really ought to use
