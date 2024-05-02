@@ -2710,8 +2710,11 @@ void FnSymbol::codegenDef() {
     if (fNoInline)
       func->addFnAttr(llvm::Attribute::NoInline);
 
+#if HAVE_LLVM_VER < 160
+    // in newer LLVM versions, this is a only parameter attribute
     if (this->hasFlag(FLAG_LLVM_READNONE))
       func->addFnAttr(llvm::Attribute::ReadNone);
+#endif
 
     if (this->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       func->addFnAttr(llvm::Attribute::NoReturn);
@@ -2764,11 +2767,14 @@ void FnSymbol::codegenDef() {
 
     if (CGI) {
       const clang::CodeGen::ABIArgInfo &returnInfo = CGI->getReturnInfo();
+#if HAVE_LLVM_VER < 160
+      // in newer LLVM versions, this is a only parameter attribute
       // Adjust attributes based on return ABI info
       if (returnInfo.isInAlloca() || returnInfo.isIndirect()) {
         func->removeFnAttr(llvm::Attribute::ReadOnly);
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
+#endif
 
       // Skip the first LLVM formal if it is used for a struct return.
       // Note that we only consume the first _LLVM_ formal. The Clang
@@ -2812,10 +2818,19 @@ void FnSymbol::codegenDef() {
           INT_FATAL("TODO");
       }
 
-      if (argInfo && (argInfo->isIndirect() || argInfo->isInAlloca())) {
+      bool noReadNone = argInfo && (argInfo->isIndirect() || argInfo->isInAlloca());
+#if HAVE_LLVM_VER < 160
+      // in newer LLVM versions, this is a only parameter attribute
+      if (noReadNone) {
         func->removeFnAttr(llvm::Attribute::ReadOnly);
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
+#else
+      if (this->hasFlag(FLAG_LLVM_READNONE) &&
+          llvmArg.getType()->isPointerTy() &&
+          !noReadNone)
+        llvmArg.addAttr(llvm::Attribute::ReadNone);
+#endif
 
       Type* argType = arg->typeInfo();
       llvm::Type* chapelArgTy = argType->codegen().type;
