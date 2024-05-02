@@ -709,8 +709,7 @@ proc toNilableIfClassType(type arg) type {
 // joint documentation, for user convenience
 /*
 Returns the number of bits used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
 pragma "no where doc"
 proc numBits(type t) param where t == bool {
@@ -754,8 +753,7 @@ param bitsPerByte = 8;
 
 /*
 Returns the number of bytes used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
 proc numBytes(type t) param do return numBits(t)/8;
 
