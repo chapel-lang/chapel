@@ -1,25 +1,25 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/2.0.0/chapel-2.0.0.tar.gz"
-  sha256 "b5387e9d37b214328f422961e2249f2687453c2702b2633b7d6a678e544b9a02"
+  url "<url-placeholder-value-injected-during-testing>"
+  sha256 "<sha256-placeholder-value-injected-during-testing>"
   license "Apache-2.0"
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    sha256 arm64_sonoma:   "e7ea9cadf5ba880d79b9aee5e82756faae156717bf4fcbf08edf2a6730beef78"
-    sha256 arm64_ventura:  "e7f3fa3355572f34be363ba6ad9832770e88326f598dd017e8b270e79499a5b1"
-    sha256 arm64_monterey: "96f19eb98b6323aa5405722ff4460ef41a287ae579656cacfebad903bf596413"
-    sha256 sonoma:         "49cfd27778bdf6d3e994a1ec7e343ef8893feb4b7c13043437f44f534b819e60"
-    sha256 ventura:        "1dc143ee5c62f2df2a62eaf4b0664489860790f68bec53b145ed35d0e14b7d31"
-    sha256 monterey:       "a5d7b507a654b3b40ffe22254e7c925a6aab5f740b9b66ab6dcc51d4d41f8daa"
-    sha256 x86_64_linux:   "eca86d0e17808b7e346ea8edbb5d95ec917b347e25f67bdf8fe27037b6b21914"
+    sha256 arm64_sonoma:   "e75b261ff8378a1a86db49794ca9cc4419d8eadc7e7a4ce9a17430a5757bb778"
+    sha256 arm64_ventura:  "7ff7abdf3c8301727e52d65b15837b8974d7d3be52bcac72601b181bf426e444"
+    sha256 arm64_monterey: "a11ed899b3ccf9d8eac11910226d1f86a39f19a7d07c5e8d3f35d5785089eebc"
+    sha256 sonoma:         "e5edf9340b6bfb94bcf39f930406db9db9b2801dd378da85e489a6bd78a676b2"
+    sha256 ventura:        "ad9c9e354207c9926d25f513c1a3b7b6db0936dc1e27998f5859dd4d9cc7155b"
+    sha256 monterey:       "cbc79ae37aa099e744ff21b5654d7fdb364c012a02eb27a0e5d73e0783c2a999"
+    sha256 x86_64_linux:   "961ad1d420eeeac018098fba19f05ff207edcd279b8c98d5439838d9928f61de"
   end
 
   depends_on "cmake"
   depends_on "gmp"
-  depends_on "llvm"
-  depends_on "python@3.11"
+  depends_on "llvm@17"
+  depends_on "python@3.12"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
@@ -28,12 +28,25 @@ class Chapel < Formula
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
   end
 
+  # Fixes: SyntaxWarning: invalid escape sequence '\d'
+  # Remove when merged: https://github.com/chapel-lang/chapel/pull/24643
+  patch :DATA
+
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
-    python = "python3.11"
-    # It should be noted that this will expand to: 'for cmd in python3.11 python3 python python2; do'
+    python = "python3.12"
+    # It should be noted that this will expand to: 'for cmd in python3.12 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
+
+    # TEMPORARY adds clean-cmakecache target to prevent issues where only
+    #           the first make target gets written to the proper CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    #           cmake detects a change in compilers (although the values are the same?) and
+    #           reruns configure, losing the output directory we set at configure time
+    inreplace "compiler/Makefile",
+              "all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)\n",
+              "all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)\n\n
+              clean-cmakecache: FORCE\n\trm -f $(COMPILER_BUILD)/CMakeCache.txt\n\n"
 
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
@@ -54,18 +67,19 @@ class Chapel < Formula
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
       system "./util/printchplenv", "--all"
-      with_env(CHPL_PIP_FROM_SOURCE: "1") do
-        system "make", "test-venv"
-      end
       with_env(CHPL_LLVM: "none") do
         system "make"
       end
       with_env(CHPL_LLVM: "system") do
+        cd "compiler" do
+          system "make", "clean-cmakecache"
+        end
         system "make"
       end
-      # TODO: a bug (in the formula?) is causing chpldoc to not be installed
-      # see https://github.com/chapel-lang/chapel/issues/24639
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
+        cd "compiler" do
+          system "make", "clean-cmakecache"
+        end
         system "make", "chpldoc"
       end
       system "make", "mason"
@@ -99,16 +113,30 @@ class Chapel < Formula
     cd libexec do
       with_env(CHPL_LLVM: "system") do
         system "util/test/checkChplInstall"
-        # TODO: enable when bug affecting chpldoc install is resolved
-        # system "util/test/checkChplDoc"
+        system "util/test/checkChplDoc"
       end
       with_env(CHPL_LLVM: "none") do
         system "util/test/checkChplInstall"
-        # TODO: enable when bug affecting chpldoc install is resolved
-        # system "util/test/checkChplDoc"
+        system "util/test/checkChplDoc"
       end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    system bin/"chpldoc", "--version"
     system bin/"mason", "--version"
   end
 end
+
+__END__
+diff --git a/util/chplenv/compiler_utils.py b/util/chplenv/compiler_utils.py
+index c4d683830f4c..1d1be1d55521 100644
+--- a/util/chplenv/compiler_utils.py
++++ b/util/chplenv/compiler_utils.py
+@@ -32,7 +32,7 @@ def CompVersion(version_string):
+     are not specified, 0 will be used for their value(s)
+     """
+     CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
+-    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
++    match = re.search(u"(\\d+)(\\.(\\d+))?(\\.(\\d+))?(\\.(\\d+))?", version_string)
+     if match:
+         major    = int(match.group(1))
+         minor    = int(match.group(3) or 0)
