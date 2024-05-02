@@ -712,6 +712,7 @@ Returns the number of bits used to store the values of type ``t``.
 This is available for all numeric types and fixed-width ``bool`` types.
 It is not available for default-width ``bool``.
 */
+pragma "no where doc"
 proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
@@ -767,6 +768,7 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc min(type t) param  where isBool(t) do      return false: t;
 
 @chpldoc.nodoc
@@ -805,6 +807,7 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc max(type t) param  where isBool(t) do      return true: t;
 
 @chpldoc.nodoc
