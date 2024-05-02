@@ -572,7 +572,10 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
       if (Symbol* y = map->get(sym_expr->symbol())) {
         // If the symbol is re-maped again (e.g., x was y and y was z),
         // we need to keep looking until we find the final symbol.
-        while (Symbol* z = map->get(y)) y = z;
+        while (Symbol* z = map->get(y)) {
+          if (z == y) break;
+          y = z;
+        }
 
         bool skip = false;
 
