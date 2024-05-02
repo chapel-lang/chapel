@@ -747,7 +747,7 @@ class VisibilitySymbols {
     /**
       all the contents of the scope, e.g.:
 
-          import Foo;
+          use Foo;
 
       The names field will be empty.
 

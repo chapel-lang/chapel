@@ -1181,6 +1181,16 @@ ID idToParentModule(Context* context, ID id) {
   return getModuleForId(context, parentSymId);
 }
 
+bool idIsToplevelModule(Context* context, ID id) {
+  if (idIsModule(context, id)) {
+    ID parentSymId = id.parentSymbolId(context);
+    if (parentSymId.isEmpty())
+      return true;
+  }
+
+  return false;
+}
+
 static const Function::ReturnIntent&
 idToFnReturnIntentQuery(Context* context, ID id) {
   QUERY_BEGIN(idToFnReturnIntentQuery, context, id);

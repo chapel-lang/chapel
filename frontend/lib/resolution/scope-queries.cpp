@@ -2683,11 +2683,50 @@ const
 std::vector<ID> findUsedImportedIds(Context* context, const Scope* scope) {
   auto result = resolveVisibilityStmts(context, scope);
   std::vector<ID> ids;
+  std::set<ID> idsSet;
 
   if (result == nullptr) return ids;
 
-  for (const auto& r : result->visibilityClauses()) {
-    ids.push_back(r.scope()->id());
+  // TODO: should this run the scope resolver?
+  // doing so would be necessary to find a submodule that is "used"
+  // through qualified access e.g.
+  // module Main {
+  //   module SubModule { proc foo() { } }
+  //   SubModule.foo();
+  // }
+
+  for (const VisibilitySymbols& vs : result->visibilityClauses()) {
+    if (vs.kind() == VisibilitySymbols::SYMBOL_ONLY ||
+        vs.kind() == VisibilitySymbols::ALL_CONTENTS ||
+        vs.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
+      // in these cases, the module/enum being used is scope()->id()
+      ID id = vs.scope()->id();
+      auto p = idsSet.insert(id);
+      if (p.second) { ids.push_back(id); }
+    } else if (vs.kind() == VisibilitySymbols::ONLY_CONTENTS) {
+      // could be
+      //  import Module.Submodule
+      // or
+      //  import Module.function
+      // or
+      //  use Module only function
+      // Here, we are only interested in the first case.
+      for (const auto& pair : vs.names()) {
+        UniqueString declName = pair.first;
+        IdAndFlags::Flags filter = 0; // match everything
+        IdAndFlags::FlagSet excludeFilter;
+        std::vector<BorrowedIdsWithName> matches;
+        vs.scope()->lookupInScope(declName, matches, filter, excludeFilter);
+        for (const auto& bid : matches) {
+          for (const auto& id : bid) {
+            if (parsing::idIsModule(context, id)) {
+              auto p = idsSet.insert(id);
+              if (p.second) { ids.push_back(id); }
+            }
+          }
+        }
+      }
+    }
   }
   return ids;
 }

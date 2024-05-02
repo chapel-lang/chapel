@@ -445,6 +445,11 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
 ID idToParentModule(Context* context, ID id);
 
 /**
+  Returns 'true' if ID refers to a toplevel module.
+ */
+bool idIsToplevelModule(Context* context, ID id);
+
+/**
  Given an ID that represents a Function, get the declared return
  intent for that function.
  */
