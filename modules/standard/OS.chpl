@@ -808,7 +808,7 @@ module OS {
     extern const FD_SETSIZE:c_int;
 
     /* Contains a fixed amount of file descriptors. */
-    extern record fd_set {};
+    extern record fd_set {}
 
     /* Clears the bit for the file descriptor ``fd`` in ``fdset``. */
     proc FD_CLR(fd:c_int, fdset:c_ptr(fd_set)) {
@@ -998,7 +998,7 @@ module OS {
       var tz_minuteswest:c_int;
       /* Type of DST correction */
       var tz_dsttime:c_int;
-    };
+    }
 
     /*
       Get the date and time, based on the timezone in ``tzp``.
@@ -1030,7 +1030,7 @@ module OS {
       var tm_yday:c_int;
       /* Daylight Savings flag */
       var tm_isdst:c_int;
-    };
+    }
 
     /* Get the date and time as a string. */
     extern proc asctime(timeptr:c_ptr(struct_tm)):c_ptr(c_char);

@@ -1286,7 +1286,7 @@ module Time {
   operator dateTime.:(x: dateTime, type t: string) {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
-      for i in 1..nDigits-numStr.size {
+      for 1..nDigits-numStr.size {
         numStr = "0" + numStr;
       }
       return numStr;
@@ -1861,7 +1861,7 @@ module Time {
     if microseconds != 0 {
       str += ".";
       const usLog10 = Math.log10(microseconds): int;
-      for i in 1..(5-usLog10) {
+      for 1..(5-usLog10) {
         str += "0";
       }
 

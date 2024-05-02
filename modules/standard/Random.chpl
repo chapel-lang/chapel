@@ -1992,7 +1992,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] = X.dim(0).orderToIndex(indexChosen);;
+              samples[i] = X.dim(0).orderToIndex(indexChosen);
               i += 1;
             }
             P[indexChosen] = 0;
@@ -3277,7 +3277,7 @@ module Random {
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                   start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
-      for i in D do
+      for D do
         yield randlc(resultType, cursor);
     }
 
@@ -3306,7 +3306,7 @@ module Random {
           myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if innerRange.hasUnitStride() {
           var cursor = randlc_skipto(resultType, seed, myStart);
-          for i in innerRange do
+          for innerRange do
             yield randlc(resultType, cursor);
         } else {
           myStart -= innerRange.lowBound.safeCast(int(64));
@@ -3324,7 +3324,7 @@ module Random {
                                           min: resultType, max: resultType) {
       var cursor = randlc_skipto(resultType, seed, start);
       var count = start;
-      for i in D {
+      for D {
         yield randlc_bounded(resultType, cursor, seed, count, min, max);
         count += 1;
       }
@@ -3360,7 +3360,7 @@ module Random {
         if innerRange.hasUnitStride() {
           var cursor = randlc_skipto(resultType, seed, myStart);
           var count = myStart;
-          for i in innerRange {
+          for innerRange {
             yield randlc_bounded(resultType, cursor, seed, count, min, max);
             count += 1;
           }

@@ -664,12 +664,12 @@ proc Matrix(const Arrays ...?n, type eltType) {
   var M: [{dim1, dim2}] eltType;
 
   if (isHomogeneousTuple(Arrays)) {
-    forall i in dim1 with (ref Arrays) do {
+    forall i in dim1 with (ref Arrays) {
       if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
       M[i, ..] = Arrays(i): eltType;
     }
   } else {
-    for param i in 0..<n do {
+    for param i in 0..<n {
       if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
       M[i, ..] = Arrays(i): eltType;
     }
@@ -1750,7 +1750,7 @@ enum normType {
     Frobenius norm
   */
   normFrob
-};
+}
 
 /*
   Compute the norm indicated by `p` on the 1D array `x`.
@@ -2497,7 +2497,7 @@ proc expm(A: [], param useExactOneNorm=true) throws {
   var V = mat[1];
   var X = solvePQ(U, V);
   // According to the paper X = r_13(A)^(2^s): achieved by repeated squaring.
-  for i in 1..s {
+  for 1..s {
     X = dot(X, X);
   }
   return X;
@@ -3450,7 +3450,7 @@ module Sparse {
         end = D.shape(0);
       }
       var indices : [start..end] (D.idxType, D.idxType);
-      forall ind in {start..end} with (ref indices) {
+      forall ind in start..end with (ref indices) {
         indices[ind] = (ind, ind+k);
       }
       D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);

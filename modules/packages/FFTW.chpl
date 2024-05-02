@@ -651,7 +651,7 @@ module FFTW {
   */
   proc init_FFTW_MT() {
     coforall loc in Locales {
-      on loc do {
+      on loc {
         if (C_FFTW.fftw_init_threads() == 0) then
           halt("Failed to properly initialize FFTW threads on locale ",
                here.id);
@@ -676,7 +676,7 @@ module FFTW {
   */
   proc plan_with_nthreads(nthreads: int = 0) {
     coforall loc in Locales {
-      on loc do {
+      on loc {
         const myNThreads = if nthreads < 1 then here.maxTaskPar else nthreads;
         C_FFTW.fftw_plan_with_nthreads(myNThreads.safeCast(c_int));
       }
@@ -689,7 +689,7 @@ module FFTW {
   */
   proc cleanup_threads() {
     coforall loc in Locales {
-      on loc do {
+      on loc {
         C_FFTW.fftw_cleanup_threads();
       }
     }

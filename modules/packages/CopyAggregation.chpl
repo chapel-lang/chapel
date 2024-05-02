@@ -392,7 +392,7 @@ module AggregationPrimitives {
     proc ref cachedAlloc(): c_ptr(elemType) {
       if data == nil {
         const rvf_size = size.safeCast(c_size_t);
-        on Locales[loc] do {
+        on Locales[loc] {
           data = allocate(elemType, rvf_size);
         }
       }
