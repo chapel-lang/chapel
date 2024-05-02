@@ -291,7 +291,6 @@ PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not r
 PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", ncm)
 PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "this function will never be called from a gpu")
 PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
-PRAGMA(GPU_ATTRIBUTE_FORMAL, npr, "gpu attribute formal", "denotes formals added to promotion wrappers to support GPU attributes")
 
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
