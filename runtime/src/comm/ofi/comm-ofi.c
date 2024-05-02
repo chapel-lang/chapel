@@ -1018,9 +1018,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
 
-  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", true);
-  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", true);
-  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", true);
+  // TODO: default to false to workaround non-blocking ofi issue
+  // these should be changed back to true when that is fixed
+  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", false);
+  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", false);
+  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", false);
+
   envUseDedicatedAmhCores = chpl_env_rt_get_bool(
                                   "COMM_OFI_DEDICATED_AMH_CORES", false);
   envExpectedProvider = chpl_env_rt_get("COMM_OFI_EXPECTED_PROVIDER", NULL);
