@@ -165,15 +165,30 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   FnSymbol* retval     = fn;
   bool      anyDefault = false;
 
-  // Promotion wrappers that are affected by GPU attributes might accept
-  // additional formals, but for the purposes of using defaults etc. we only
-  // care about the original formals.
-  int numFormals = fn->numFormals();
   if (isPromotionRequired(retval, info, actualIdxToFormal) == true) {
     // Note: promotionWrap will handle default args in the inner call
     // to the original function, and it will create a different promotion
     // wrapper for each set of default arguments needed.
     retval = promotionWrap(retval, info, actualIdxToFormal, fastFollowerChecks);
+  }
+
+  // Promotion wrappers that are affected by GPU attributes might accept
+  // additional formals, but for the purposes of using defaults etc. we only
+  // care about the original formals.
+  //
+  // The retval != fn check helps avoid iteration of formals when we couldn't
+  // have inserted new formals. It also happens to rule out the case of
+  // resolving a follower iterator for a promoted function, which should not
+  // be treated specially.
+  int numFormals = retval->numFormals();
+  if (retval != fn) {
+    for_alist(fml, retval->formals) {
+      auto def = toDefExpr(fml);
+      auto argSym = toArgSymbol(def->sym);
+      if (argSym->hasFlag(FLAG_GPU_ATTRIBUTE_FORMAL)) {
+        numFormals--;
+      }
+    }
   }
 
   if (numActuals < numFormals) {
@@ -2619,6 +2634,7 @@ addFormalsForGpuOuterVarsToPromotionWrapper(PromotionInfo& promotion,
     if (!considerForOuter(sym)) continue;
 
     auto newFormal = new ArgSymbol(INTENT_BLANK, astr("_outer_", sym->name), sym->type);
+    newFormal->addFlag(FLAG_GPU_ATTRIBUTE_FORMAL);
     outMap.put(sym, newFormal);
     promotion.wrapperFn->insertFormalAtTail(newFormal);
     symbolsToCapture.push_back(sym);
