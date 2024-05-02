@@ -1430,28 +1430,8 @@ static std::string hardcodedDeprecationForId(Context* context, ID idMention,
     ID idTarget) {
   std::string deprecationMsg;
 
-  // Time.dayOfWeek behavior change
-  {
-    if (idIsInStandardModule(context, idTarget) &&
-        idTarget.parentSymbolId(context).symbolName(context) == "Time" &&
-        idTarget.symbolName(context) == "dayOfWeek") {
-      // skip warning if -scIsoDayOfWeek=true
-      bool newBehaviorOptIn = false;
-      const ConfigSettingsList& configs = parsing::configSettings(context);
-      for (const auto& config : configs) {
-        if (config.first == "cIsoDayOfWeek" && config.second == "true") {
-          newBehaviorOptIn = true;
-          break;
-        }
-      }
-      if (!newBehaviorOptIn) {
-        deprecationMsg =
-            "in an upcoming release 'dayOfWeek' will represent "
-            "Monday as 1 instead of 0. Recompile with '-scIsoDayOfWeek=true' "
-            "to opt-in to the new behavior";
-      }
-    }
-  }
+  // If this is empty, there are no compiler-implemented deprecation warnings at
+  // the moment. Yay!
 
   return deprecationMsg;
 }

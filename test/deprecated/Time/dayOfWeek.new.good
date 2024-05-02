@@ -1,9 +1,0 @@
-dayOfWeek.chpl:5: warning: enum 'isoDayOfWeek' is deprecated. Please use dayOfWeek instead
-dayOfWeek.chpl:5: warning: enum 'isoDayOfWeek' is deprecated. Please use dayOfWeek instead
-dayOfWeek.chpl:11: warning: 'date.isoWeekday' is deprecated; use date.weekday instead
-dayOfWeek.chpl:15: warning: `dateTime.weekday` is deprecated; use `dateTime.getDate().weekday()` instead
-dayOfWeek.chpl:16: warning: `dateTime.isoWeekday` is deprecated; use `dateTime.getDate().weekday()` instead
-1
-1
-true
-true
