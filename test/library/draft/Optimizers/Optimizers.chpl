@@ -20,8 +20,12 @@ module Optimizers {
     var intValue: int;
     @chpldoc.nodoc
     var intBounds: 2*int;
-    // TODO: allow more than just (low, high) bounds - allow defined sets of
-    // values
+    @chpldoc.nodoc
+    var intDom = {0..#0};
+    @chpldoc.nodoc
+    var intIndex: int;
+    @chpldoc.nodoc
+    var intSet: [intDom] int;
     // TODO: allow conditions
 
     /* Initialize the argument with its name and starting value */
@@ -44,6 +48,16 @@ module Optimizers {
       init this;
     }
 
+    proc init(name: string, val: int, valSet: [?valDom] int) {
+      this.name = name;
+      this.intValue = val;
+      this.intDom = valDom;
+      this.intIndex = valSet.find(val);
+      this.intSet = valSet;
+
+      init this;
+    }
+
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       // TODO: generalize for more argument types
       var ser = serializer.startRecord(writer, "optimizableArg", 1);
@@ -60,15 +74,26 @@ module Optimizers {
     /* The lowest possible value the argument could be */
     proc lowerBound {
       // TODO: update when support multiple argument types
-      // TODO: update when support bound sets instead of just ranges
       return intBounds(0);
     }
 
     /* The highest possible value the argument could be */
     proc upperBound {
       // TODO: update when support multiple argument types
-      // TODO: update when support bound sets instead of just ranges
       return intBounds(1);
+    }
+
+    /* The number of possible values, when a discrete set of values was
+       specified */
+    proc setSize: int {
+      return this.setDom.size;
+    }
+
+    /* The domain of the set of possible values, when a discrete set of values
+       was specified */
+    proc setDom: domain(1) {
+      // TODO: update when support multiple argument types
+      return this.intDom;
     }
   }
 
@@ -141,12 +166,19 @@ module Optimizers {
     var point = new Point();
 
     // TODO: generalize for more value types than just ints
-    // TODO: handle not actually having bounds set
     for arg in basePoint.parameters {
-      var newArg = new optimizableArg(arg.name,
-                                      rngInt.next(arg.lowerBound,
-                                                  arg.upperBound));
-      point.parameters.pushBack(newArg);
+      if arg.setSize > 0 {
+        const idx: int = rngInt.next(arg.setDom.low, arg.setDom.high);
+
+        var newArg = new optimizableArg(arg.name, arg.intSet[idx], arg.intSet);
+        point.parameters.pushBack(newArg);
+
+      } else {
+        var newArg = new optimizableArg(arg.name,
+                                        rngInt.next(arg.lowerBound,
+                                                    arg.upperBound));
+        point.parameters.pushBack(newArg);
+      }
     }
 
     return point;
