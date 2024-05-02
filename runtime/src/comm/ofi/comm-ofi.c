@@ -3628,13 +3628,9 @@ void init_fixedHeap(void) {
       if (!useTHP) {
         CHK_SYS_MEMALIGN(start, page_size, size);
       } else {
-        start = mmap(NULL, size,
-                     PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB,
-                     -1, 0);
-        if (start == MAP_FAILED) {
-          INTERNAL_ERROR_V("mmap failed: %s", strerror(errno));
-        }
+        CHK_SYS_MMAP(start, size, PROT_READ | PROT_WRITE,
+                                  MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB,
+                                  -1, 0);
       }
       } while (start == NULL && size > decrement);
 
