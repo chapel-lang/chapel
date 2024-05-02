@@ -2770,7 +2770,7 @@ void FnSymbol::codegenDef() {
 #if HAVE_LLVM_VER < 160
       // in newer LLVM versions, this is a only parameter attribute
       // Adjust attributes based on return ABI info
-      if (noReadNone = returnInfo.isInAlloca() || returnInfo.isIndirect()) {
+      if (returnInfo.isInAlloca() || returnInfo.isIndirect()) {
         func->removeFnAttr(llvm::Attribute::ReadOnly);
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
