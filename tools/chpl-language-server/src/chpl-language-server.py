@@ -1043,6 +1043,9 @@ class ChapelLanguageServer(LanguageServer):
             )
             self.file_infos[uri] = file_info
 
+        # filter out errors that are not related to the file
+        errors = [e for e in errors if e.location().path() == uri[len("file://") :]]
+
         return (file_info, errors)
 
     def build_diagnostics(self, uri: str) -> List[Diagnostic]:
