@@ -191,7 +191,7 @@ module Image {
         oldMax = max reduce arr;
 
     var outArr: [d] int =
-      ((newMax - newMin) * ((arr - oldMin) / oldMax - oldMin) + newMin):int;
+      ((newMax - newMin) * ((arr - oldMin) / (oldMax - oldMin)) + newMin):int;
 
     return outArr;
   }
