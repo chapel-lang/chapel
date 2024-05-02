@@ -567,6 +567,9 @@ all:
   01/11/24:
     - text: Remove the old slicing rule (#24154)
       config: chapcs
+  05/01/24:
+    - text: upgrade default LLVM to LLVM 17
+      config: chapcs
 
 # End all
 
