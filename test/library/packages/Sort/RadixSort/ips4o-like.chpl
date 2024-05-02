@@ -694,7 +694,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   const blocksPerTask = divceil(blocksPerLocale, nTasksPerLocale);
   const nTasks = nLocales*nTasksPerLocale; // aka 't' in the paper
   const DistributedTasks = {0..#nTasks};
-//                             dmapped blockDist(boundingBox={0..#nTasks},
+//                             dmapped new blockDist(boundingBox={0..#nTasks},
 //                                           targetLocales=A.targetLocales());
 
   if debug {

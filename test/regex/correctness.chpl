@@ -126,7 +126,7 @@ forall s in xs do
 coforall taskId in 1..#xs.size do
   assert(r6.match(xs[taskId]).matched);
 
-var d = {1..10} dmapped cyclicDist(startIdx=1);
+var d = {1..10} dmapped new cyclicDist(startIdx=1);
 var ys: [d] t = xs;
 /* Today, this explicit with brings the regex local to each locale */
 forall s in ys with (var r = r6) do {
@@ -284,7 +284,7 @@ proc inafunction() {
   coforall taskId in 1..#xs.size do
     assert(r6.match(xs[taskId]).matched);
 
-  var d = {1..10} dmapped cyclicDist(startIdx=1);
+  var d = {1..10} dmapped new cyclicDist(startIdx=1);
   var ys: [d] t = xs;
   /* Today, this explicit with brings the regex local to each locale */
   forall s in ys with (var r = r6) do {

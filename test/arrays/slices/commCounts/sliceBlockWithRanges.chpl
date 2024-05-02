@@ -4,7 +4,7 @@ use CommDiagnostics;
 config const printArray = true;
 
 proc main() {
-  const D = {1..10, 1..10} dmapped blockDist({1..10, 1..10});
+  const D = {1..10, 1..10} dmapped new blockDist({1..10, 1..10});
   var A: [D] real;
 
   forall a in A do

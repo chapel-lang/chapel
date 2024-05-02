@@ -6,7 +6,7 @@ config const N = 16;
 
 config type sparseLayoutType = DefaultDist;
 
-const FullDom = {0..#N, 0..#N} dmapped blockDist({0..#N, 0..#N},
+const FullDom = {0..#N, 0..#N} dmapped new blockDist({0..#N, 0..#N},
     sparseLayoutType=sparseLayoutType);
 
 var FullSparseDom: sparse subdomain(FullDom);
@@ -27,7 +27,7 @@ SparseSQ += diagIndArr1;
 
 //define a hardcoded CSR subdomain for second quadrant
 const FourthQuadrant = {N/2..N-1, N/2..N-1};
-var SparseFQ: sparse subdomain(FourthQuadrant) dmapped CS();
+var SparseFQ: sparse subdomain(FourthQuadrant) dmapped new dmap(new CS());
 
 //create diagonal indices
 var diagIndArr2 : [{0..#N}] 2*int;

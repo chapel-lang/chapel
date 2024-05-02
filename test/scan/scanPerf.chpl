@@ -12,7 +12,7 @@ config const n = defaultN,
              printArray = true;
 
 var D = if CHPL_COMM=='none' then {1..n}
-                             else {1..n} dmapped blockDist({1..n});
+                             else {1..n} dmapped new blockDist({1..n});
 
 var A: [D] int = 1;
 

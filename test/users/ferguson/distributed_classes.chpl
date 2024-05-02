@@ -4,7 +4,7 @@ class MyClass {
   var x: int;
 }
 
-const D = {1..10} dmapped cyclicDist(startIdx=1);
+const D = {1..10} dmapped new cyclicDist(startIdx=1);
 var   A:[D] unmanaged MyClass?;
 
 for i in 1..10 {

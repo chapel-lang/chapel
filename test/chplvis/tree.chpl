@@ -42,7 +42,7 @@ const space = { 0..#numLocales };
 
 tagVdebug ("decl 1");
 
-const Bspace = space dmapped blockDist(boundingBox=space);
+const Bspace = space dmapped new blockDist(boundingBox=space);
 
 tagVdebug ("decl 2");
 

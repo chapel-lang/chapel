@@ -11,8 +11,8 @@ var Dom2: domain(3,int) dmapped Dist2 = {1..2*n,1..2*n,1..2*n};
 */
 const Space = {1..n,1..n,1..n};
 const Space2={1..2*n,1..2*n,1..2*n};
-const Dom1: domain(3) dmapped cyclicDist(startIdx=Space.low)=Space;
-const Dom2: domain(3) dmapped cyclicDist(startIdx=Space2.low)=Space2;
+const Dom1: domain(3) dmapped new cyclicDist(startIdx=Space.low)=Space;
+const Dom2: domain(3) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
 //writeln("TasksPerLocale: ",dataParTasksPerLocale);
 //Block Dist. Examples 3D
 var A:[Dom1] int(64)=1;
@@ -373,8 +373,8 @@ if elem==1
 
 const Space3 = {1..n,1..n,1..n,1..n};
 const Space4={1..2*n,1..2*n,1..2*n,1..2*n};
-const Dom3: domain(4) dmapped cyclicDist(startIdx=Space3.low)=Space3;
-const Dom4: domain(4) dmapped cyclicDist(startIdx=Space4.low)=Space4;
+const Dom3: domain(4) dmapped new cyclicDist(startIdx=Space3.low)=Space3;
+const Dom4: domain(4) dmapped new cyclicDist(startIdx=Space4.low)=Space4;
 /*
 var Dist3 = new blockDist({1..n,1..n,1..n,1..n});
 var Dist4 = new blockDist({1..2*n,1..2*n,1..2*n,1..2*n});

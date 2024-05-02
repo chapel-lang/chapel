@@ -1208,6 +1208,10 @@ static void processSyntacticDistributions(CallExpr* call) {
     if (CallExpr* distCall = toCallExpr(call->get(1))) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
+          USR_WARN(
+            distCall,
+            "omitting 'new' in a dmapped initialization expression is deprecated; please use '<domain> dmapped new <DistName>(<args>)'"
+          );
           if (isDistClass(canonicalClassType(ts->type)) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW,
                 new NamedExpr(astr_chpl_manager,

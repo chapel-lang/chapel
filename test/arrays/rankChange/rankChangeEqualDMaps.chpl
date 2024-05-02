@@ -7,8 +7,8 @@ proc test(a, b) {
 var space = {0..9, 0..9};
 var offsetSpace = {10..19, 10..19};
 
-var dom = space dmapped blockDist(space);
-var offsetDom = space dmapped blockDist(offsetSpace);
+var dom = space dmapped new blockDist(space);
+var offsetDom = space dmapped new blockDist(offsetSpace);
 
 var arr: [dom] int;
 var offsetArr: [offsetDom] int;

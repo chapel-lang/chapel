@@ -14,7 +14,7 @@ var myMapper = proc(ind:real, targetLocs: Locales.type) {
                         return indAsInt % numlocs;
                      };
 
-var D: domain(real) dmapped hashedDist(idxType=real, mapper=new MyMapper());
+var D: domain(real) dmapped new hashedDist(idxType=real, mapper=new MyMapper());
 
 D += 1.3;
 D += 22.0;

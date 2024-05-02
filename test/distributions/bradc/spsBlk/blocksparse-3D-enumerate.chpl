@@ -2,7 +2,7 @@ use BlockDist;
 
 config const n = 2;
 
-const Elems = {0..#n, 0..#n, 0..#n} dmapped blockDist({0..#n, 0..#n, 0..#n});
+const Elems = {0..#n, 0..#n, 0..#n} dmapped new blockDist({0..#n, 0..#n, 0..#n});
 
 var MatElems: sparse subdomain(Elems);
 

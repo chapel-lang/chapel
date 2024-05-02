@@ -195,12 +195,12 @@ proc main() {
         var user_dist_linear = dom_linear dmapped CyclicZipOpt(startIdx=dom_linear.low);
         kernel_covariance(user_dist_square, user_dist_linear, M, N);   */
     } else if dist == "C" {
-        var user_dist_square = dom_square dmapped cyclicDist(startIdx=dom_square.low);
-        var user_dist_linear = dom_linear dmapped cyclicDist(startIdx=dom_linear.low);
+        var user_dist_square = dom_square dmapped new cyclicDist(startIdx=dom_square.low);
+        var user_dist_linear = dom_linear dmapped new cyclicDist(startIdx=dom_linear.low);
         kernel_covariance(user_dist_square, user_dist_linear, M, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped blockDist(boundingBox=dom_square);
-        var user_dist_linear = dom_linear dmapped blockDist(boundingBox=dom_linear);
+        var user_dist_square = dom_square dmapped new blockDist(boundingBox=dom_square);
+        var user_dist_linear = dom_linear dmapped new blockDist(boundingBox=dom_linear);
         kernel_covariance(user_dist_square, user_dist_linear, M, N);  
     } 
 }

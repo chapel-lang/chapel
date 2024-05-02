@@ -2,7 +2,7 @@ use CyclicDist, CommDiagnostics;
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dom = {1..10} dmapped cyclicDist(1);
+var dom = {1..10} dmapped new cyclicDist(1);
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 

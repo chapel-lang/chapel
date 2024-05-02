@@ -5,7 +5,7 @@ const mygridlocs: [mygriddom] locale = Locales(0);
 use BlockDist;
 config const n=500;
 var DA = {1..n,1..n};
-var Dom1 = DA dmapped blockDist(DA);
+var Dom1 = DA dmapped new blockDist(DA);
 var C:[Dom1] real(64);
 var D5 = {1..10, 1..10 by 2};
 var D6 = {1..10, 1..5};

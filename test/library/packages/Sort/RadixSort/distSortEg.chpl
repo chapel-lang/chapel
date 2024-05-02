@@ -7,7 +7,7 @@ config const n = 10;
  
 proc main() {
   const Space = {1..n};
-  const BlockSpace = Space dmapped blockDist(boundingBox=Space);
+  const BlockSpace = Space dmapped new blockDist(boundingBox=Space);
 
   var BA: [BlockSpace] int ;
   var indicesArr: [1..0] int;

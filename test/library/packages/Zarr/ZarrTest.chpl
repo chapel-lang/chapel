@@ -5,7 +5,7 @@ use BlockDist;
 use Random;
 
 proc testGetLocalChunks() {
-  var D: domain(1) dmapped blockDist({0..20}) = {0..20};
+  var D: domain(1) dmapped new blockDist({0..20}) = {0..20};
   var local1 = {0..10};
   var local2 = {11..20};
   var chunks1 = getLocalChunks(D, local1, (7,));
@@ -42,7 +42,7 @@ proc testUndistributedArray() {
 proc smallTest(type dtype) {
   {
     const N1 = 100;
-    const D1: domain(1) dmapped blockDist({0..<N1}) = {0..<N1};
+    const D1: domain(1) dmapped new blockDist({0..<N1}) = {0..<N1};
     var A1: [D1] dtype;
     for i in D1 do A1[i] = (i + 3):dtype;
     if (isDir("Test1D")) then rmTree("Test1D");
@@ -58,7 +58,7 @@ proc smallTest(type dtype) {
 
   {
     const N2 = 100;
-    const D2: domain(2) dmapped blockDist({0..<N2,0..<N2}) = {0..<N2,0..<N2};
+    const D2: domain(2) dmapped new blockDist({0..<N2,0..<N2}) = {0..<N2,0..<N2};
     var A2: [D2] dtype;
     for (i,j) in D2 do A2[i,j] = (i:real(32) / (j+1)) : dtype;
     if (exists("Test2D")) then rmTree("Test2D");
@@ -74,7 +74,7 @@ proc smallTest(type dtype) {
 
   {
     const N3 = 30;
-    const D3: domain(3) dmapped blockDist({0..<N3,0..<N3,0..<N3}) = {0..<N3,0..<N3,0..<N3};
+    const D3: domain(3) dmapped new blockDist({0..<N3,0..<N3,0..<N3}) = {0..<N3,0..<N3,0..<N3};
     var A3: [D3] dtype;
     for (i,j,k) in D3 do A3[i,j,k] = (i:real(32) / ((j+1) + (k+1))) : dtype;
     if (exists("Test3D")) then rmTree("Test3D");

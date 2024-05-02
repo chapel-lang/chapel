@@ -4,7 +4,7 @@ config const numCols: integer = 16;
 
 
 // a domain to describe the matrix index space
-const MatDom: domain(2) = [1..numRows, 1..numCols] dmapped cyclicDist(2);
+const MatDom: domain(2) = [1..numRows, 1..numCols] dmapped new cyclicDist(2);
 
 
 // the matrix itself (a Chapel array)

@@ -25,7 +25,7 @@ proc main(args:[] string)
   }
 
   var n:int = paths.size;
-  var BlockN = {0..#n} dmapped blockDist({0..#n});
+  var BlockN = {0..#n} dmapped new blockDist({0..#n});
   var distributedPaths:[BlockN] string;
   distributedPaths = paths.toArray();
  

@@ -2,7 +2,7 @@ use CyclicDist;
 
 config const n=3;   //Indicating the range of the domain
 
-var A = {1..n} dmapped cyclicDist(startIdx=1);
+var A = {1..n} dmapped new cyclicDist(startIdx=1);
 var B = {1..n};
 
 var arrA : [A] int;

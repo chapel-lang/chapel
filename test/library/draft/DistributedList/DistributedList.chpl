@@ -58,7 +58,7 @@ module DistributedList {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
+            dmapped new cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
         var locks: [locDom] ChapelLocks.chpl_LocalSpinlock =
@@ -496,7 +496,7 @@ module DistributedList {
         proc ref toArray(): [] eltType {
             this.lockAll();
             const dom = {0..<this.numEntries.read()} dmapped
-                blockCycDist(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
+                new blockCycDist(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
 
             var a : [dom] this.eltType;
             coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) with (ref a) do on loc {

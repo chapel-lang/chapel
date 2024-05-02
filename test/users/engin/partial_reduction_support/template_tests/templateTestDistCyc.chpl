@@ -7,7 +7,7 @@ use CyclicDist;
 config const N = 4;
 
 const space = {0..#N, 0..#N, 0..#N};
-const ParentDom = space dmapped cyclicDist(space.low);
+const ParentDom = space dmapped new cyclicDist(space.low);
 var arr: [ParentDom] int;
 
 for (i,j,k) in ParentDom {

@@ -21,13 +21,13 @@ var baseDom2D = {1..10, 1..10};
 }
 
 {
-  var csrDom: sparse subdomain(baseDom2D) dmapped CS();
+  var csrDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS());
   csrDom += [(1,1),(2,2)];
   test(csrDom, "CSR");
 }
 
 {
-  var cscDom: sparse subdomain(baseDom2D) dmapped CS(compressRows=false);
+  var cscDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS(compressRows=false));
   cscDom += [(1,1),(2,2)];
   test(cscDom, "CSC");
 }

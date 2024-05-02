@@ -7,7 +7,7 @@ config const n = here.maxTaskPar*2;
 startGpuDiagnostics();
 
 var space = {1..n};
-var dom = space dmapped blockDist(space, targetLocales=[here.gpus[0],]);
+var dom = space dmapped new blockDist(space, targetLocales=[here.gpus[0],]);
 var arr: [dom] int;
 
 @assertOnGpu

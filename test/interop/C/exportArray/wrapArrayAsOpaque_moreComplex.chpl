@@ -1,5 +1,5 @@
 use BlockDist;
-const D = {1..5} dmapped blockDist({1..5});
+const D = {1..5} dmapped new blockDist({1..5});
 
 // returns getExternalArrayType(makeBlockArray_chpl.ret)
 export proc makeBlockArray(): chpl_opaque_array {

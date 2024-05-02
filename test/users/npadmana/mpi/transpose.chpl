@@ -21,7 +21,7 @@ proc main() {
   var Dom = {0.. #N, 0.. #N};
   var target : [0.. #numLocales, 0..0] locale;
   target[..,0] = Locales;
-  var Space = Dom dmapped blockDist(Dom, targetLocales=target);
+  var Space = Dom dmapped new blockDist(Dom, targetLocales=target);
 
   // Debug
   if debug then coforall loc in Locales do on loc {

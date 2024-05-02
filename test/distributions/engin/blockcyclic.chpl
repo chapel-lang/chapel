@@ -4,8 +4,8 @@ use BlockCycDist;
 config const N = 4;
 
 const space = {0..#N, 0..#N, 0..#N};
-const ParentDom = space dmapped blockCycDist(space.low, blocksize=(1,2,3));
-// const ParentDom = space dmapped blockDist(space);
+const ParentDom = space dmapped new blockCycDist(space.low, blocksize=(1,2,3));
+// const ParentDom = space dmapped new blockDist(space);
 var arr: [ParentDom] int;
 
 for (i,j,k) in ParentDom {

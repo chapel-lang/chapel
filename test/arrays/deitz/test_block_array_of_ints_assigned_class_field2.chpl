@@ -1,6 +1,6 @@
 use BlockDist;
 
-const D = {1..4} dmapped blockDist({1..4});
+const D = {1..4} dmapped new blockDist({1..4});
 
 class C {
   var i: int = -1;

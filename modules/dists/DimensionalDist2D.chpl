@@ -124,7 +124,7 @@ and distributes using block-cyclic distribution in the second dimension.
     var MyLocales = reshape(Locales[0..N_1*N_2-1], MyLocaleView);
 
     const D = Space
-      dmapped DimensionalDist2D(MyLocales,
+      dmapped new DimensionalDist2D(MyLocales,
                                 new ReplicatedDim(numLocales = N_1),
                                 new BlockCyclicDim(numLocales = N_2,
                                                    lowIdx     = 1,

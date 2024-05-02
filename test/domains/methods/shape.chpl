@@ -47,7 +47,7 @@ assertEqual(enumArray.shape, (10,), msg='enumArray:');
 //
 
 // Block-distributed
-var blockDom = rectDom dmapped blockDist(boundingBox=rectDom);
+var blockDom = rectDom dmapped new blockDist(boundingBox=rectDom);
 assertEqual(blockDom.shape, (10, 10), msg='blockDom');
 
 var blockArray: [blockDom] int;
