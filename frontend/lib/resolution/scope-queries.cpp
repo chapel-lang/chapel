@@ -1680,7 +1680,6 @@ getSymbolsAvailableInScopeQuery(Context* context,
       return !isSymbolItself;
     }
 
-    // Should we even bother checking the names?
     bool allowedByType =
       (kind == VisibilitySymbols::SYMBOL_ONLY && isSymbolItself) ||
       (kind == VisibilitySymbols::ONLY_CONTENTS && !isSymbolItself) ||
