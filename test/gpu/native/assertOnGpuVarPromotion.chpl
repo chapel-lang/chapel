@@ -31,8 +31,11 @@ on here.gpus[0] {
 
     var SourceRec = [i in Source] new myRec(i);
 
-    @assertOnGpu
-    @gpu.blockSize(64);
-    var E = SourceRec.foo();
-    writeln(E);
+    // Disabled due to an unrelated bug:
+    //     https://github.com/chapel-lang/chapel/issues/24989
+    //
+    // @assertOnGpu
+    // @gpu.blockSize(64);
+    // var E = SourceRec.foo();
+    // writeln(E);
 }
