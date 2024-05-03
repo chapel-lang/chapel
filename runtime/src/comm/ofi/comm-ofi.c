@@ -5715,6 +5715,22 @@ void chpl_comm_getput_unordered_task_fence(void) {
   task_local_buff_flush(get_buff | put_buff);
 }
 
+/*
+ * Routine for ensuring the current thread's send endpoint is progressed. This
+ * should be called when waiting outside the communication layer and there
+ * may be outstanding non-blocking operations that are not yet transmitted. 
+ */
+void chpl_comm_ensure_progress(void) {
+  struct perTxCtxInfo_t* tcip;
+  if (chpl_numNodes > 1) {
+    // This only makes sense if the endpoint is bound to the thread. TODO:
+    // figure out what to do in non-bound cases. Probably just disallow
+    // non-blocking operations in that case as performance will be pretty bad
+    // to begin with.
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
+    (*tcip->ensureProgressFn)(tcip);
+  }
+}
 
 ////////////////////////////////////////
 //
@@ -5867,7 +5883,6 @@ void waitForCQSpace(struct perTxCtxInfo_t* tcip, size_t len) {
     }
   }
 }
-
 
 typedef chpl_comm_nb_handle_t (rmaPutFn_t)(void* myAddr, void* mrDesc,
                                            c_nodeid_t node,
