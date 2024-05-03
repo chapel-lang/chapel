@@ -616,6 +616,27 @@ getKindForVisibilityClauseId(Context* context, ID visibilityClauseId) {
   return VIS_USE;
 }
 
+// Creates a BorrowedIdsWithName for the symbol that defines a scope.
+// Used for capturing 'IO' when a visibility statement is 'use IO'.
+static optional<BorrowedIdsWithName>
+borrowedIdsForScopeSymbol(Context* context,
+                          IdAndFlags::Flags filterFlags,
+                          const IdAndFlags::FlagSet& excludeFilter,
+                          const Scope* scope) {
+  auto scopeAst = parsing::idToAst(context, scope->id());
+  auto visibility = scopeAst->toDecl()->visibility();
+  bool isField = false; // target must be module/enum, not field
+  bool isMethod = false; // target must be module/enum, not method
+  bool isParenfulFunction = false;
+  return BorrowedIdsWithName::createWithSingleId(scope->id(),
+                                                 visibility,
+                                                 isField,
+                                                 isMethod,
+                                                 isParenfulFunction,
+                                                 filterFlags,
+                                                 excludeFilter);
+}
+
 // config has settings for this part of the search
 // filterFlags has the filter used when considering the module name itself
 bool LookupHelper::doLookupInImportsAndUses(
@@ -739,19 +760,10 @@ bool LookupHelper::doLookupInImportsAndUses(
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
         // Make sure the module / enum being renamed isn't private.
-        auto scopeAst = parsing::idToAst(context, is.scope()->id());
-        auto visibility = scopeAst->toDecl()->visibility();
-        bool isField = false; // target must be module/enum, not field
-        bool isMethod = false; // target must be module/enum, not method
-        bool isParenfulFunction = false;
-        auto foundIds =
-          BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
-                                                  visibility,
-                                                  isField,
-                                                  isMethod,
-                                                  isParenfulFunction,
+        auto foundIds = borrowedIdsForScopeSymbol(context,
                                                   filterFlags,
-                                                  excludeFilter);
+                                                  excludeFilter,
+                                                  is.scope());
         if (foundIds) {
           if (trace) {
             ResultVisibilityTrace t;
