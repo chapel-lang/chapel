@@ -38,7 +38,7 @@ namespace resolution {
   const Scope* scopeForId(Context* context, ID id);
 
   /**
-    Given an ID for a Module, returns a Scope that represents
+   Given an ID for a Module, returns a Scope that represents
     the Module scope (and what symbols are defined in it).
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
