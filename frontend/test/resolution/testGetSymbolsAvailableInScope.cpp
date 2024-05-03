@@ -143,7 +143,53 @@ static void test1() {
   for (auto mod : vec) checkScopeContentsViaLookup(context, mod, finder.names);
 }
 
+static void test2() {
+  printf("test2\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        var x: int;
+
+        private proc f1() {}
+        proc f2() {}
+      }
+      module N {
+        var y: int;
+
+        private proc f3() {}
+        proc f4() {}
+      }
+      module O {
+        var z: int;
+
+        private proc f5() {}
+        proc f6() {}
+      }
+      module P {
+        public use M only x;
+        use N only y as yy;
+        import O.{z, f6 as ff6};
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  checkScopeContents(context, vec[0], {"x", "f1", "f2"});
+  checkScopeContents(context, vec[1], {"y", "f3", "f4"});
+  checkScopeContents(context, vec[2], {"z", "f5", "f6"});
+  checkScopeContents(context, vec[3], {"x", "yy", "z", "ff6", "N"});
+
+  NameFinder finder;
+  for (auto mod : vec) mod->traverse(finder);
+  for (auto mod : vec) checkScopeContentsViaLookup(context, mod, finder.names);
+}
+
 int main() {
   test1();
+  test2();
   return 0;
 }
