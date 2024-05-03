@@ -398,6 +398,7 @@ module Atomics {
       this.write(false, order);
     }
 
+    extern proc chpl_comm_ensure_progress(): void;
     /*
        Waits until the stored value is equal to `val`. The implementation may
        yield the running task while waiting.
@@ -405,6 +406,7 @@ module Atomics {
     inline proc const waitFor(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {
+          chpl_comm_ensure_progress();
           currentTask.yieldExecution();
         }
         chpl_atomic_thread_fence(c_memory_order(order));
