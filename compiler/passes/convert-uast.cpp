@@ -68,6 +68,10 @@
 
 using namespace chpl;
 
+// TODO: replace this global by adjusting things to convert one module
+// at a time
+std::set<chpl::ID> gConvertFilterModuleIds;
+
 namespace {
 
 struct ConvertedSymbolsMap {
@@ -289,6 +293,7 @@ struct Converter {
   int delegateCounter = 0;
 
   ModTag topLevelModTag;
+
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
@@ -310,9 +315,11 @@ struct Converter {
   std::vector<BlockStmt*> blockStack;
 
 
-  Converter(chpl::Context* context, ModTag topLevelModTag)
+  Converter(chpl::Context* context,
+            ModTag topLevelModTag)
     : context(context),
-      topLevelModTag(topLevelModTag) { }
+      topLevelModTag(topLevelModTag)
+  { }
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
@@ -1131,6 +1138,11 @@ struct Converter {
     const uast::Module* umod =
       parsing::getIncludedSubmodule(context, node->id());
     if (umod == nullptr) {
+      return nullptr;
+    }
+
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(umod->id()) == 0) {
       return nullptr;
     }
 
@@ -3517,6 +3529,11 @@ struct Converter {
     return mod;
   }
   DefExpr* visit(const uast::Module* node) {
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(node->id()) == 0) {
+      return nullptr;
+    }
+
     ModuleSymbol* mod = convertModule(node);
     return new DefExpr(mod);
   }

@@ -353,6 +353,8 @@ extern std::string gDynoGenLibOutput;
 extern std::vector<UniqueString> gDynoGenLibSourcePaths;
 extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
+extern std::string gMainModuleName;
+
 extern bool fForeachIntents;
 
 #endif

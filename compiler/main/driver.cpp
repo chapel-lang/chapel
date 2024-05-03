@@ -419,6 +419,8 @@ std::vector<UniqueString> gDynoGenLibSourcePaths;
 // what top-level module names as astrs were requested to be stored in the lib?
 std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
+std::string gMainModuleName;
+
 static void setChplHomeDerivedVars() {
   int rc;
   rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
@@ -1181,6 +1183,12 @@ void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
   fResolveConcreteFns = true;
 }
 
+static
+void setMainModuleName(const ArgumentDescription* desc, const char* arg) {
+  gMainModuleName = arg;
+  ModuleSymbol::mainModuleNameSet(desc, arg);
+}
+
 /*
 Flag types:
 
@@ -1209,7 +1217,7 @@ Record components:
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
- {"main-module", ' ', "<module>", "Specify entry point module", "S256", NULL, NULL, ModuleSymbol::mainModuleNameSet },
+ {"main-module", ' ', "<module>", "Specify entry point module", "S256", NULL, NULL, setMainModuleName },
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "[Don't] print code size of main modules", "N", &printTokens, "CHPL_PRINT_TOKENS", NULL},
  {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},

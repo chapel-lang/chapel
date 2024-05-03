@@ -3655,6 +3655,7 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
       } else {
         Expr* where = arg->defPoint;
         if (arg->typeExpr) where = arg->typeExpr;
+        gdbShouldBreakHere();
         USR_WARN(where,
                  "need '(?)' on the type '%s' of the formal '%s' "
                  "because this type is generic",
