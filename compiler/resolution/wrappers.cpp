@@ -2595,8 +2595,8 @@ static std::map<FnSymbol*, std::set<ArgSymbol*> > promotionFormalsMap;
 
 static std::vector<Symbol*>
 addFormalsForGpuOuterVarsToPromotionWrapper(PromotionInfo& promotion,
-                                                        CallInfo& info,
-                                                        SymbolMap& outMap) {
+                                            CallInfo& info,
+                                            SymbolMap& outMap) {
   if (!promotion.gpuAttributeBlock) return {};
 
   auto primBlock = promotion.gpuAttributeBlock->getPrimitivesBlock();

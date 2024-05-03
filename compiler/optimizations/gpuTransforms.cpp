@@ -1544,7 +1544,9 @@ void GpuKernel::findGpuPrimitives() {
     if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
       if (blockSizeCall_ != nullptr) {
         // Check if the blockSize calls are clones of each other by comparing
-        // their unique identifier actuals.
+        // their unique identifier actuals. blockSize calls created for
+        // attributes get unique number as a second actual, and for clones,
+        // that number should match.
         if (blockSizeCall_->numActuals() == 2 &&
             callExpr->numActuals() == 2) {
           auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
