@@ -981,6 +981,11 @@ AstTag idToTag(Context* context, ID id) {
 }
 
 bool idIsModule(Context* context, ID id) {
+  if (id.postOrderId() >= 0) {
+    // it can't possibly be a module if it's got a positive post-order ID
+    // since all modules have post-order ID -1
+    return false;
+  }
   AstTag tag = idToTag(context, id);
   return asttags::isModule(tag);
 }
