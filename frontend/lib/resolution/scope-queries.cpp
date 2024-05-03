@@ -1664,7 +1664,9 @@ getSymbolsAvailableInScopeQuery(Context* context,
 
   std::map<UniqueString, BorrowedIdsWithName> toReturn;
 
-  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name, UniqueString& renameTo) {
+  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name,
+                                                   UniqueString& renameTo,
+                                                   bool isSymbolItself) {
     renameTo = name;
 
     if (!inVisibilitySymbols) return true;
@@ -1674,8 +1676,12 @@ getSymbolsAvailableInScopeQuery(Context* context,
       return true;
     }
 
-    if (kind == VisibilitySymbols::ONLY_CONTENTS ||
-        kind == VisibilitySymbols::CONTENTS_EXCEPT) {
+    bool allowedByType =
+      (kind == VisibilitySymbols::SYMBOL_ONLY && isSymbolItself) ||
+      (kind == VisibilitySymbols::ONLY_CONTENTS && !isSymbolItself) ||
+      (kind == VisibilitySymbols::CONTENTS_EXCEPT && !isSymbolItself);
+
+    if (allowedByType) {
       auto& namePairs = inVisibilitySymbols->names();
 
       bool anyMatches = false;
@@ -1700,7 +1706,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
 
   for (auto& decl : scope->declared()) {
     UniqueString renameTo;
-    if (!allowedByVisibility(decl.first, renameTo)) continue;
+    if (!allowedByVisibility(decl.first, renameTo, false)) continue;
 
     auto exclude = IdAndFlags::FlagSet::empty();
     if (auto borrowed = decl.second.borrow(flags, exclude)) {
@@ -1711,7 +1717,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
   // Handle introducing the 'IO' in 'use IO'
   if (!scope->name().isEmpty()) {
     UniqueString renameTo;
-    if (allowedByVisibility(scope->name(), renameTo)) {
+    if (allowedByVisibility(scope->name(), renameTo, true)) {
       auto symbolItself =
         borrowedIdsForScopeSymbol(context, flags, excludeFilter, scope);
       if (symbolItself) {
@@ -1735,7 +1741,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
       getSymbolsAvailableInScopeQuery(context, vis.scope(), &vis);
     for (auto& pair : visStmtSymbols) {
       UniqueString renameTo;
-      if (!allowedByVisibility(pair.first, renameTo)) continue;
+      if (!allowedByVisibility(pair.first, renameTo, false)) continue;
       toReturn.try_emplace(renameTo, pair.second);
     }
   }
