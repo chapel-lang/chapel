@@ -17,7 +17,7 @@ record myRec {
 on here.gpus[0] {
     var Records = [i in 0..0] new myRec(i);
 
-    for bs in 1..128 {
+    for bs in 32..128 by 32 {
         @gpu.blockSize(bs)
         var A = foreach i in 0..0 do i;
 
