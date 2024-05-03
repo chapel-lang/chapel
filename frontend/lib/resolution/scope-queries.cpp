@@ -2731,41 +2731,25 @@ std::vector<ID> findUsedImportedIds(Context* context, const Scope* scope) {
   return ids;
 }
 
-struct GatherUsedImportedIds {
+struct GatherMentionedModules {
   Context* context;
   const Module* inMod = nullptr;
   std::set<const Scope*> scopes;
   std::set<ID> idSet;
   std::vector<ID> idVec;
 
-  GatherUsedImportedIds(Context* context, const Module* inMod)
+  using VecBorrowedIds = std::vector<BorrowedIdsWithName>;
+
+  GatherMentionedModules(Context* context, const Module* inMod)
     : context(context), inMod(inMod)
   { }
 
-  void processUseImport(const AstNode* ast) {
-    const Scope* scope = scopeForId(context, ast->id());
-    if (scope) {
-      auto p = scopes.insert(scope);
-      if (p.second) {
-        // Insertion occured, so this is the first time visiting this scope.
-        // Gather the IDs of the used/imported modules
-        auto vec = findUsedImportedIds(context, scope);
-        for (const auto& id: vec) {
-          // filter out enums since they are not interesting here
-          if (parsing::idIsModule(context, id)) {
-            // save the module used/imported to ids
-            auto p2 = idSet.insert(id);
-            if (p2.second) {
-              // insertion occured, so add it also to the vector
-              idVec.push_back(id);
-            }
-          }
-        }
-      }
-    }
-  }
+  void gatherModuleId(const ID& id);
+  const Scope* gatherIdsAndFindScope(const VecBorrowedIds& v);
+  const Scope* gatherAndFindScope(const Scope* scope, const AstNode* ast);
+  void processDot(const Dot* d);
+  void processUseImport(const AstNode* ast);
 
-  // gather information about what use and import statements refer to
   bool enter(const Use* d) {
     processUseImport(d);
     return false;
@@ -2776,6 +2760,15 @@ struct GatherUsedImportedIds {
     return false;
   }
   void exit(const Import* d) { }
+
+  // gather mentions of modules due to qualified access
+  //   Mod.foo() -> gather Mod
+  //   Mod.Submod.bar() -> gather Mod and Submod
+  bool enter(const Dot* d) {
+    processDot(d);
+    return false;
+  }
+  void exit(const Dot* d) { }
 
   // do not delve into submodules
   bool enter(const Module* m) {
@@ -2790,16 +2783,115 @@ struct GatherUsedImportedIds {
   void exit(const AstNode* ast) { }
 };
 
-static const std::vector<ID>&
-findAllModulesUsedImportedInTreeQuery(Context* context, ID modId) {
-  QUERY_BEGIN(findAllModulesUsedImportedInTreeQuery, context, modId);
+// save the module used/imported to idSet / idVec
+void GatherMentionedModules::gatherModuleId(const ID& id) {
+  // filter out enums, other stuff, since they are not of interest here
+  if (parsing::idIsModule(context, id)) {
+    auto p = idSet.insert(id);
+    if (p.second) {
+      // insertion occured, so add it also to the vector
+      idVec.push_back(id);
+    }
+  }
+}
+
+// Gather any modules in vec
+// Return the first Scope* for a module in vec
+// Ambiguity should be reported elsewhere so is ignored here.
+const Scope*
+GatherMentionedModules::gatherIdsAndFindScope(const VecBorrowedIds& v) {
+  const Scope* scope = nullptr;
+  for (const auto& bids : v) {
+    for (const auto& id : bids) {
+      if (scope == nullptr && parsing::idIsModule(context, id)) {
+        scope = scopeForModule(context, id);
+      }
+      gatherModuleId(id);
+    }
+  }
+
+  return scope;
+}
+
+// gather any modules mentioned in a Dot sequence or Identifier
+// and also return the Scope for that Dot sequence or Identifier.
+const Scope*
+GatherMentionedModules::gatherAndFindScope(const Scope* scope,
+                                           const AstNode* ast) {
+  const LookupConfig config = LOOKUP_DECLS |
+                              LOOKUP_IMPORT_AND_USE |
+                              LOOKUP_PARENTS |
+                              LOOKUP_INNERMOST;
+
+  if (auto ident = ast->toIdentifier()) {
+
+    // handle super/this just in case this processes import Dot exprs
+    if (ident->name() == USTR("super")) {
+      return nullptr;
+    } else if (ident->name() == USTR("this")) {
+      return scope->moduleScope();
+    }
+
+    auto r = lookupNameInScope(context, scope, /* receiver scopes */ {},
+                               ident->name(), config);
+
+    return gatherIdsAndFindScope(r);
+  }
+
+  if (auto dot = ast->toDot()) {
+    const Scope* innerScope = gatherAndFindScope(scope, dot->receiver());
+
+    // handle super/this just in case this processes import Dot exprs
+    if (dot->field() == USTR("super")) {
+      return scope;
+    } else if (dot->field() == USTR("this")) {
+      return innerScope;
+    }
+
+    if (innerScope != nullptr) {
+      auto r = lookupNameInScope(context, innerScope, /* receiver scopes */ {},
+                                 dot->field(), config);
+      return gatherIdsAndFindScope(r);
+    }
+  }
+
+  return nullptr;
+}
+
+// gather mentions of modules due to qualified access
+//   Mod.foo() -> gather Mod
+//   Mod.Submod.bar() -> gather Mod and Submod
+void GatherMentionedModules::processDot(const Dot* d) {
+  const Scope* scope = scopeForId(context, d->id());
+  gatherAndFindScope(scope, d);
+}
+
+void GatherMentionedModules::processUseImport(const AstNode* ast) {
+  const Scope* scope = scopeForId(context, ast->id());
+  if (scope) {
+    auto p = scopes.insert(scope);
+    if (p.second) {
+      // Insertion occured, so this is the first time visiting this scope.
+      // Gather the IDs of the used/imported modules
+      auto vec = findUsedImportedIds(context, scope);
+      for (const auto& id: vec) {
+        // save the module used/imported
+        gatherModuleId(id);
+      }
+    }
+  }
+}
+
+
+const std::vector<ID>& findMentionedModules(Context* context, ID modId) {
+  QUERY_BEGIN(findMentionedModules, context, modId);
   std::vector<ID> ret;
 
   auto ast = parsing::idToAst(context, modId);
   CHPL_ASSERT(ast && ast->isModule());
   if (ast && ast->isModule()) {
     auto mod = ast->toModule();
-    GatherUsedImportedIds gatherModules(context, mod);
+    GatherMentionedModules gatherModules(context, mod);
     ast->traverse(gatherModules);
     // swap the gathered vector in to place
     ret.swap(gatherModules.idVec);
@@ -2837,8 +2929,8 @@ static void moduleInitVisitModules(Context* context, ID modId,
     moduleInitVisitModules(context, cur, seen, out);
   }
 
-  // consider all use/import
-  auto& v = findAllModulesUsedImportedInTreeQuery(context, modId);
+  // consider all use/import/mention that are not submodules of this module
+  auto& v = findMentionedModules(context, modId);
   for (const auto& id : v) {
     moduleInitVisitModules(context, id, seen, out);
   }
