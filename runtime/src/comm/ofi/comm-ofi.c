@@ -1022,6 +1022,14 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envUseAmTxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_TX_COUNTER", false);
   envUseAmRxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_RX_COUNTER", false);
 
+  // Temporarily disable completion counters until non-blocking operations
+  // are implemented correctly.
+
+  if (envUseTxCntr || envUseAmTxCntr || envUseAmRxCntr) {
+    chpl_warning("OFI completion counters are currently disabled.", 0, 0);
+    envUseTxCntr = envUseAmTxCntr = envUseAmRxCntr = false;
+  }
+
   envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
 
   // TODO: default to false to workaround non-blocking ofi issue
