@@ -1693,16 +1693,30 @@ getSymbolsAvailableInScopeQuery(Context* context,
     return false;
   };
 
+
+  auto flags = 0;
+  if (inVisibilitySymbols) flags |= IdAndFlags::PUBLIC;
+  IdAndFlags::FlagSet excludeFilter;
+
   for (auto& decl : scope->declared()) {
     UniqueString renameTo;
     if (!allowedByVisibility(decl.first, renameTo)) continue;
 
-    auto flags = 0;
-    if (inVisibilitySymbols) flags |= IdAndFlags::PUBLIC;
-
     auto exclude = IdAndFlags::FlagSet::empty();
     if (auto borrowed = decl.second.borrow(flags, exclude)) {
       toReturn.try_emplace(renameTo, *borrowed);
+    }
+  }
+
+  // Handle introducing the 'IO' in 'use IO'
+  if (!scope->name().isEmpty()) {
+    UniqueString renameTo;
+    if (allowedByVisibility(scope->name(), renameTo)) {
+      auto symbolItself =
+        borrowedIdsForScopeSymbol(context, flags, excludeFilter, scope);
+      if (symbolItself) {
+        toReturn.try_emplace(renameTo, *symbolItself);
+      }
     }
   }
 
