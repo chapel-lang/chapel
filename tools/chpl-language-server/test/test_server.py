@@ -64,7 +64,7 @@ async def client(lsp_client: LanguageClient):
 
 @pytest.mark.asyncio
 async def test_global_completion(client: LanguageClient):
-    # All completion is based entirely on globla symbols right now; thus,
+    # All completion is based entirely on global symbols right now; thus,
     # anywhere you hover, you should get the same results.
 
     positions = [ (n, 0) for n in range(1, 5) ]
