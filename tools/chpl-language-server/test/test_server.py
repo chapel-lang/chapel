@@ -21,7 +21,10 @@ from pytest_lsp import LanguageClient
 
 CHPL_HOME = os.environ.get("CHPL_HOME")
 if not CHPL_HOME:
-    raise ValueError("The Language Server tests require the CHPL_HOME environment variable to be set.")
+    raise ValueError(
+        "The Language Server tests require the CHPL_HOME environment variable to be set."
+    )
+
 
 def strip_leading_whitespace(text: str) -> str:
     lines = text.split("\n")
@@ -30,23 +33,31 @@ def strip_leading_whitespace(text: str) -> str:
     while lines and not lines[0].strip():
         lines.pop(0)
 
-    min_indent = min(len(line) - len(line.lstrip()) for line in lines if line.strip())
+    min_indent = min(
+        len(line) - len(line.lstrip()) for line in lines if line.strip()
+    )
     return "\n".join(line[min_indent:] for line in lines)
+
 
 class SourceFilesContext:
     def __init__(self, **files: str):
         self.tempdir = tempfile.TemporaryDirectory()
-        for (name, contents) in files.items():
-            with open(os.path.join(self.tempdir.name, name + ".chpl"), "w") as f:
+        for name, contents in files.items():
+            with open(
+                os.path.join(self.tempdir.name, name + ".chpl"), "w"
+            ) as f:
                 f.write(strip_leading_whitespace(contents))
 
     def __enter__(self):
-        return lambda name: TextDocumentIdentifier(uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}")
+        return lambda name: TextDocumentIdentifier(
+            uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}"
+        )
 
     def __exit__(self, *exc):
         return False
 
-class SourceFileContext():
+
+class SourceFileContext:
     def __init__(self, main_file: str, **files: str):
         self.main_file = main_file
         self.source_files_context = SourceFilesContext(**files)
@@ -57,21 +68,39 @@ class SourceFileContext():
     def __exit__(self, *exc):
         return self.source_files_context.__exit__(*exc)
 
+
 def source_files(**files: str):
     return SourceFilesContext(**files)
 
+
 def source_file(contents: str):
     return SourceFileContext("main", main=contents)
+
 
 def pos(coord: typing.Tuple[int, int]):
     line, column = coord
     return Position(line=line, character=column)
 
+
 def standard_module(name: str):
-    return TextDocumentIdentifier(f"file://{os.path.join(CHPL_HOME, "modules", name)}")
+    return TextDocumentIdentifier(
+        f"file://{os.path.join(CHPL_HOME, 'modules', name)}"
+    )
+
 
 @pytest_lsp.fixture(
-    config=ClientServerConfig(server_command=[sys.executable, os.path.join(CHPL_HOME, "tools", "chpl-language-server", "src", "chpl-language-server.py")]),
+    config=ClientServerConfig(
+        server_command=[
+            sys.executable,
+            os.path.join(
+                CHPL_HOME,
+                "tools",
+                "chpl-language-server",
+                "src",
+                "chpl-language-server.py",
+            ),
+        ]
+    ),
 )
 async def client(lsp_client: LanguageClient):
     # Setup
@@ -83,12 +112,13 @@ async def client(lsp_client: LanguageClient):
     # Teardown
     await lsp_client.shutdown_session()
 
+
 @pytest.mark.asyncio
 async def test_global_completion(client: LanguageClient):
     # All completion is based entirely on global symbols right now; thus,
     # anywhere you hover, you should get the same results.
 
-    positions = [ pos((n, 0)) for n in range(1, 5) ]
+    positions = [pos((n, 0)) for n in range(1, 5)]
     file = """
            for i in 1..10 {
              for j in 1..10 {
@@ -110,17 +140,36 @@ async def test_global_completion(client: LanguageClient):
             assert results is not None
             if isinstance(results, CompletionList):
                 results = results.items
-            result_names = [ r.label for r in results ]
+            result_names = [r.label for r in results]
 
             for symbol in global_symbols:
                 assert symbol in result_names
 
         assert len(client.diagnostics) == 0
 
-async def check_goto_decl_def(client: LanguageClient, doc: TextDocumentIdentifier, src: Position, dst: typing.Union[None, Position, TextDocumentIdentifier, typing.Tuple[TextDocumentIdentifier, Position]]):
-    def validate(results: typing.Optional[typing.Union[Location, typing.List[Location], typing.List[LocationLink]]]):
+
+async def check_goto_decl_def(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    src: Position,
+    dst: typing.Union[
+        None,
+        Position,
+        TextDocumentIdentifier,
+        typing.Tuple[TextDocumentIdentifier, Position],
+    ],
+):
+    def validate(
+        results: typing.Optional[
+            typing.Union[
+                Location, typing.List[Location], typing.List[LocationLink]
+            ]
+        ]
+    ):
         if dst is None:
-            assert results is None or (isinstance(results, list) and len(results) == 0)
+            assert results is None or (
+                isinstance(results, list) and len(results) == 0
+            )
             return
 
         assert results is not None
@@ -156,6 +205,7 @@ async def check_goto_decl_def(client: LanguageClient, doc: TextDocumentIdentifie
         params=DeclarationParams(text_document=doc, position=src)
     )
     validate(results)
+
 
 @pytest.mark.asyncio
 async def test_go_to_definition_simple(client: LanguageClient):
@@ -196,6 +246,7 @@ async def test_go_to_definition_simple(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((4, 10)), None)
 
         assert len(client.diagnostics) == 0
+
 
 @pytest.mark.asyncio
 async def test_go_to_definition_use_standard(client: LanguageClient):
