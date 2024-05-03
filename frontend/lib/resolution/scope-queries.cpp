@@ -1703,7 +1703,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
 
   auto flags = 0;
   if (inVisibilitySymbols) flags |= IdAndFlags::PUBLIC;
-  IdAndFlags::FlagSet excludeFilter;
+  IdAndFlags::FlagSet excludeNothing;
 
   for (auto& decl : scope->declared()) {
     UniqueString renameTo;
@@ -1720,7 +1720,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
     UniqueString renameTo;
     if (allowedByVisibility(scope->name(), renameTo, true)) {
       auto symbolItself =
-        borrowedIdsForScopeSymbol(context, flags, excludeFilter, scope);
+        borrowedIdsForScopeSymbol(context, /* flags */ 0, excludeNothing, scope);
       if (symbolItself) {
         toReturn.try_emplace(renameTo, *symbolItself);
       }
@@ -1741,9 +1741,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
     auto visStmtSymbols =
       getSymbolsAvailableInScopeQuery(context, vis.scope(), &vis);
     for (auto& pair : visStmtSymbols) {
-      UniqueString renameTo;
-      if (!allowedByVisibility(pair.first, renameTo, false)) continue;
-      toReturn.try_emplace(renameTo, pair.second);
+      toReturn.try_emplace(pair.first, pair.second);
     }
   }
 
@@ -1758,10 +1756,14 @@ getSymbolsAvailableInScope(Context* context,
 
   if (scope->autoUsesModules()) {
     auto scope = scopeForAutoModule(context);
-    auto inAuto = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
 
-    for (auto& pair : inAuto) {
-      inScope.try_emplace(pair.first, pair.second);
+    if (scope) {
+      // Auto modules might not be loaded in a 'minimal' config.
+      auto inAuto = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
+
+      for (auto& pair : inAuto) {
+        inScope.try_emplace(pair.first, pair.second);
+      }
     }
   }
 
