@@ -158,6 +158,7 @@ async def check_goto_decl_def(
         TextDocumentIdentifier,
         typing.Tuple[TextDocumentIdentifier, Position],
     ],
+    expect_str: typing.Optional[str] = None
 ):
     def validate(
         results: typing.Optional[
@@ -195,6 +196,11 @@ async def check_goto_decl_def(
         else:
             assert got_dst_pos == dst
             assert got_dst_uri == doc.uri
+
+        if expect_str is not None:
+            assert got_dst_uri.startswith("file://")
+            file_content = open(got_dst_uri[len("file://"):]).read()
+            assert expect_str in file_content.split("\n")[got_dst_pos.line]
 
     results = await client.text_document_definition_async(
         params=DefinitionParams(text_document=doc, position=src)
@@ -266,5 +272,27 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((1, 4)), mod_List)
         await check_goto_decl_def(client, doc, pos((1, 10)), mod_Map)
         await check_goto_decl_def(client, doc, pos((2, 8)), mod_Time)
+
+        assert len(client.diagnostics) == 0
+
+@pytest.mark.asyncio
+async def test_go_to_definition_standard_rename(client: LanguageClient):
+    file = """
+           use IO as OI;
+           import IO.{ioMode as im};
+           use List only list;
+           """
+
+    mod_IO = standard_module("standard/IO.chpl")
+    mod_List = standard_module("standard/List.chpl")
+
+    with source_file(file) as doc:
+        await check_goto_decl_def(client, doc, pos((0, 4)), mod_IO, expect_str="module IO")
+        await check_goto_decl_def(client, doc, pos((0, 10)), mod_IO, expect_str="module IO")
+        await check_goto_decl_def(client, doc, pos((1, 7)), mod_IO, expect_str="module IO")
+        await check_goto_decl_def(client, doc, pos((1, 11)), mod_IO, expect_str="enum ioMode")
+        await check_goto_decl_def(client, doc, pos((1, 21)), mod_IO, expect_str="enum ioMode")
+        await check_goto_decl_def(client, doc, pos((2, 4)), mod_List, expect_str="module List")
+        await check_goto_decl_def(client, doc, pos((2, 14)), mod_List, expect_str="record list")
 
         assert len(client.diagnostics) == 0
