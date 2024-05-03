@@ -1669,34 +1669,33 @@ getSymbolsAvailableInScopeQuery(Context* context,
                                                    bool isSymbolItself) {
     renameTo = name;
 
-    if (!inVisibilitySymbols) return true;
+    if (!inVisibilitySymbols) return !isSymbolItself;
     auto kind = inVisibilitySymbols->kind();
 
     if (kind == VisibilitySymbols::ALL_CONTENTS) {
-      return true;
+      // ALL_CONTENTS brings in the contents, but not the symbol itself.
+      return !isSymbolItself;
     }
 
+    // Should we even bother checking the names?
     bool allowedByType =
       (kind == VisibilitySymbols::SYMBOL_ONLY && isSymbolItself) ||
       (kind == VisibilitySymbols::ONLY_CONTENTS && !isSymbolItself) ||
       (kind == VisibilitySymbols::CONTENTS_EXCEPT && !isSymbolItself);
 
-    if (allowedByType) {
-      auto& namePairs = inVisibilitySymbols->names();
+    if (!allowedByType) return false;
 
-      bool anyMatches = false;
-      for (auto& namePair : namePairs) {
-        if (namePair.first == name) {
-          anyMatches = true;
-          renameTo = namePair.second;
-          break;
-        }
+    auto& namePairs = inVisibilitySymbols->names();
+    bool anyMatches = false;
+    for (auto& namePair : namePairs) {
+      if (namePair.first == name) {
+        anyMatches = true;
+        renameTo = namePair.second;
+        break;
       }
-
-      return kind == VisibilitySymbols::CONTENTS_EXCEPT ? !anyMatches : anyMatches;
     }
 
-    return false;
+    return kind == VisibilitySymbols::CONTENTS_EXCEPT ? !anyMatches : anyMatches;
   };
 
 
