@@ -296,3 +296,18 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((2, 14)), mod_List, expect_str="record list")
 
         assert len(client.diagnostics) == 0
+
+@pytest.mark.asyncio
+async def test_go_to_record_def(client: LanguageClient):
+    file = """
+           record myRec {}
+           var x: myRec;
+           var y = new myRec();
+           """
+
+    with source_file(file) as doc:
+        await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
+        await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
+        await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
+
+        assert len(client.diagnostics) == 0
