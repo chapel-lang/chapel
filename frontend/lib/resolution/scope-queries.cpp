@@ -623,8 +623,11 @@ borrowedIdsForScopeSymbol(Context* context,
                           IdAndFlags::Flags filterFlags,
                           const IdAndFlags::FlagSet& excludeFilter,
                           const Scope* scope) {
-  auto scopeAst = parsing::idToAst(context, scope->id());
-  auto visibility = scopeAst->toDecl()->visibility();
+  // Note: for the purposes of scope resolution, there shouldn't be a need
+  // to distinguish between public and default visibility, so the below
+  // ternary is sufficient.
+  auto visibility =
+    parsing::idIsPrivateDecl(context, scope->id()) ? Decl::PRIVATE : Decl::PUBLIC;
   bool isField = false; // target must be module/enum, not field
   bool isMethod = false; // target must be module/enum, not method
   bool isParenfulFunction = false;
