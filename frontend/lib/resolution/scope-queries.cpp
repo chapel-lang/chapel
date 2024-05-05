@@ -2112,30 +2112,6 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
 
-  // Added to help deprecate BoundedRangeType in 1.31.
-  // Pattern match the case `use ABC` where ABC is a parenless type function
-  // with a single statement `return XYZ`. If so, treat it as `use XYZ`,
-  // resolving `XYZ` in the scope where the function is defined.
-  if (isFunction(tag)) {
-    auto function = parsing::idToAst(context, foundId)->toFunction();
-    if (function->isParenless() && !function->isMethod() &&
-        function->returnIntent() == Function::ReturnIntent::TYPE) {
-      if (auto block = function->body()->toBlock()) {
-        if (block->numStmts() == 1) {
-          if (auto return_ = block->child(0)->toReturn()) {
-            if (auto ident = return_->value()->toIdentifier()) {
-              auto functionScope = scopeForId(context, foundId);
-              maybeEmitWarningsForId(context, idForErrs, functionScope->id());
-              return findScopeViz(context, functionScope, ident->name(),
-                  resolving, idForErrs, useOrImport, isFirstPart,
-                  previousPartName);
-            }
-          }
-        }
-      }
-    }
-  }
-
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {
     auto ret = scopeForModule(context, foundId);
