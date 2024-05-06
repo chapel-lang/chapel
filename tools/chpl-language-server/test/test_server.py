@@ -8,6 +8,8 @@ from lsprotocol.types import CompletionList
 from lsprotocol.types import CompletionParams
 from lsprotocol.types import DefinitionParams
 from lsprotocol.types import DeclarationParams
+from lsprotocol.types import ReferenceParams
+from lsprotocol.types import ReferenceContext
 from lsprotocol.types import InitializeParams
 from lsprotocol.types import LocationLink
 from lsprotocol.types import Location
@@ -148,16 +150,50 @@ async def test_global_completion(client: LanguageClient):
         assert len(client.diagnostics) == 0
 
 
-async def check_goto_decl_def(
-    client: LanguageClient,
-    doc: TextDocumentIdentifier,
-    src: Position,
-    dst: typing.Union[
+DestinationTestType = typing.Union[
         None,
         Position,
         TextDocumentIdentifier,
         typing.Tuple[TextDocumentIdentifier, Position],
-    ],
+    ]
+
+def check_dst(
+    doc: TextDocumentIdentifier,
+    dst_actual: typing.Union[Location, LocationLink],
+    dst_expected: DestinationTestType,
+    expect_str: typing.Optional[str] = None,
+) -> bool:
+    if isinstance(dst_actual, LocationLink):
+        got_dst_pos = dst_actual.target_range.start
+        got_dst_uri = dst_actual.target_uri
+    else:
+        got_dst_pos = dst_actual.range.start
+        got_dst_uri = dst_actual.uri
+
+    if isinstance(dst_expected, tuple):
+        if got_dst_uri != dst_expected[0].uri:
+            return False
+        got_dst_pos = dst_expected[1]
+    elif isinstance(dst_expected, TextDocumentIdentifier):
+        if got_dst_uri != dst_expected.uri:
+            return False
+    else:
+        if got_dst_pos != dst_expected or got_dst_uri != doc.uri:
+            return False
+
+    if expect_str is not None:
+        assert got_dst_uri.startswith("file://")
+        file_content = open(got_dst_uri[len("file://"):]).read()
+        return expect_str in file_content.split("\n")[got_dst_pos.line]
+
+    return True
+
+
+async def check_goto_decl_def(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    src: Position,
+    dst: DestinationTestType,
     expect_str: typing.Optional[str] = None
 ):
     def validate(
@@ -181,26 +217,7 @@ async def check_goto_decl_def(
         else:
             result = results
 
-        if isinstance(result, LocationLink):
-            got_dst_pos = result.target_range.start
-            got_dst_uri = result.target_uri
-        else:
-            got_dst_pos = result.range.start
-            got_dst_uri = result.uri
-
-        if isinstance(dst, tuple):
-            assert got_dst_uri == dst[0].uri
-            got_dst_pos = dst[1]
-        elif isinstance(dst, TextDocumentIdentifier):
-            assert got_dst_uri == dst.uri
-        else:
-            assert got_dst_pos == dst
-            assert got_dst_uri == doc.uri
-
-        if expect_str is not None:
-            assert got_dst_uri.startswith("file://")
-            file_content = open(got_dst_uri[len("file://"):]).read()
-            assert expect_str in file_content.split("\n")[got_dst_pos.line]
+        assert check_dst(doc, result, dst, expect_str)
 
     results = await client.text_document_definition_async(
         params=DefinitionParams(text_document=doc, position=src)
@@ -211,6 +228,39 @@ async def check_goto_decl_def(
         params=DeclarationParams(text_document=doc, position=src)
     )
     validate(results)
+
+
+async def check_references(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    src: Position,
+    dsts: typing.List[DestinationTestType]
+) -> typing.List[Position]:
+    references = await client.text_document_references_async(
+        params=ReferenceParams(text_document=doc, position=src, context=ReferenceContext(include_declaration=True))
+    )
+    assert references is not None
+
+    # Two-way check: make sure that all references are expected, and
+    # all expected references are found.
+
+    for ref in references:
+        assert any(check_dst(doc, ref, dst) for dst in dsts)
+
+    for dst in dsts:
+        assert any(check_dst(doc, ref, dst) for ref in references)
+
+    return [ref.range.start for ref in references]
+
+async def check_references_and_cross_check(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    src: Position,
+    dsts: typing.List[DestinationTestType]
+):
+    references = await check_references(client, doc, src, dsts)
+    for ref in references:
+        await check_references(client, doc, ref, references)
 
 
 @pytest.mark.asyncio
@@ -311,3 +361,30 @@ async def test_go_to_record_def(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
 
         assert len(client.diagnostics) == 0
+
+@pytest.mark.asyncio
+async def test_list_references(client: LanguageClient):
+    file = """
+           var x = 42;
+           var y = x;
+           for i in 1..10 {
+                var z = x;
+                var x = 42 + i;
+
+                while true {
+                    var i = 0;
+                    var j = i + 1;
+                }
+           }
+           """
+
+    with source_file(file) as doc:
+        # 'find references' on definitions;
+        # the cross checking will also validate the references.
+        await check_references_and_cross_check(client, doc, pos((0, 4)), [pos((0, 4)), pos((1, 8))])
+        await check_references_and_cross_check(client, doc, pos((1, 4)), [pos((1, 4))])
+        await check_references_and_cross_check(client, doc, pos((2, 4)), [pos((2, 4)), pos((4, 18))])
+        await check_references_and_cross_check(client, doc, pos((3, 9)), [pos((3, 9))])
+        await check_references_and_cross_check(client, doc, pos((4, 9)), [pos((3, 13)), pos((4, 9))])
+        await check_references_and_cross_check(client, doc, pos((7, 13)), [pos((7, 13)), pos((8, 17))])
+        await check_references_and_cross_check(client, doc, pos((8, 13)), [pos((8, 13))])
