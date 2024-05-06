@@ -738,11 +738,26 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
     if (filePath.startsWith(path)) return true;
   }
 
-  UniqueString prefix1 = bundledModulePath(context);
-  if (prefix1.isEmpty()) return false;
-  auto concat = prefix1.endsWith("/") ? "standard" : "/standard";
-  auto prefix2 = UniqueString::getConcat(context, prefix1.c_str(), concat);
-  return filePath.startsWith(prefix2);
+  UniqueString bundled = bundledModulePath(context);
+  if (bundled.isEmpty() || !filePath.startsWith(bundled)) {
+    // not a bundled module & not in --prepend-standard-module-dir paths
+    return false;
+  }
+
+  // make sure that bundled ends with a /
+  if (!bundled.endsWith("/")) {
+    bundled = UniqueString::getConcat(context, bundled.c_str(), "/");
+  }
+
+  // everything in modules/ other than modules/internal and modules/packages
+  // is a standard module
+  auto internal = UniqueString::getConcat(context, bundled.c_str(), "internal");
+  auto packages = UniqueString::getConcat(context, bundled.c_str(), "packages");
+  if (filePath.startsWith(internal) || filePath.startsWith(packages)) {
+    return false;
+  }
+
+  return true;
 }
 
 bool idIsInInternalModule(Context* context, ID id) {

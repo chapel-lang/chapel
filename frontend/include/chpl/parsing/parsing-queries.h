@@ -362,7 +362,8 @@ filePathIsInInternalModule(Context* context, UniqueString filePath);
  constraints as standard modules) and not an internal module.
  (So, in other words, it would typically be a standard module if
  it begins with $CHPL_HOME/modules/ but doesn't begin with
- $CHPL_HOME/modules/internal or $CHPL_HOME/modules/packages).
+ $CHPL_HOME/modules/internal or $CHPL_HOME/modules/packages;
+ this will include $CHPL_HOME/modules/standard and $CHPL_HOME/modules/dists).
 
  If the bundled module path is empty, this function returns false.
 
