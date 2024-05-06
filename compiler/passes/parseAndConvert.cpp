@@ -461,6 +461,7 @@ static void loadAndConvertModules() {
       } else if (chpl::parsing::filePathIsInBundledModule(gContext, path)) {
         // TODO: this considers code in modules/packages as MOD_STANDARD but
         // we would like this to be MOD_USER.
+        // See also issue #24998.
         modTag = MOD_STANDARD;
       }
       bool namedOnCommandLine = commandLineModulesSet.count(id) > 0;
