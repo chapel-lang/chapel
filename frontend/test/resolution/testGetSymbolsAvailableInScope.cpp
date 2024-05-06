@@ -132,6 +132,13 @@ static void test1() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
+  // Note: the function under test does not include the name of the module itself,
+  // and nor does it include builtin names such as 'int'. The former is
+  // because the intention of 'getSymbolsAvailableInScope' is to match the set
+  // of identifiers that can be found using 'lookupNameInScope' -- and
+  // 'lookupNameInScope' does not report the module's own name. The latter is
+  // an implementation decision, and might need to be updated in the future.
+
   checkScopeContents(context, vec[0], {"x", "f1", "f2"});
   checkScopeContents(context, vec[1], {"y", "f3", "f4"});
   checkScopeContents(context, vec[2], {"z", "f5", "f6"});
