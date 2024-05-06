@@ -74,6 +74,12 @@
 #include <rdma/fi_errno.h>
 #include <rdma/fi_rma.h>
 
+#include <sys/mman.h>
+#ifndef MAP_HUGETLB
+// MAP_HUGETLB is not defined on all systems (e.g. MacOS)
+#define MAP_HUGETLB 0
+#endif
+
 #ifdef __has_include
 #if __has_include(<rdma/fi_cxi_ext.h>)
 #include <rdma/fi_cxi_ext.h>
@@ -3439,6 +3445,22 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
   }
 }
 
+static chpl_bool get_ofiUseTHP(struct fi_info* info) {
+  // set based on `CHPL_RT_COMM_OFI_THP_HINT`
+  // if not set by user, the default is based on FI_PROVIDER.
+  // by default use if the provider is efa
+
+  const char* thpHint = chpl_env_rt_get("COMM_OFI_THP_HINT", NULL);
+  chpl_bool useTHP;
+  if (thpHint == NULL && info != NULL) {
+    chpl_bool using_efa = isInProvName("efa", info->fabric_attr->prov_name);
+    useTHP = using_efa;
+  } else {
+    useTHP = chpl_env_str_to_bool("COMM_OFI_THP_HINT", thpHint, false);
+  }
+  DBG_PRINTF(DBG_HEAP, "using transparent huge pages: %s", useTHP ? "YES" : "NO");
+  return useTHP;
+}
 
 static
 void init_fixedHeap(void) {
@@ -3457,6 +3479,7 @@ void init_fixedHeap(void) {
   // Create a fixed heap if the user needs one.
   //
   createHeap = chpl_env_rt_get_bool("COMM_OFI_NEED_FIXED_HEAP", false);
+  chpl_bool useTHP = get_ofiUseTHP(NULL);
 
   if (!createHeap && (chpl_numNodes > 1)) {
     //
@@ -3525,6 +3548,7 @@ void init_fixedHeap(void) {
                          info->fabric_attr->prov_name);
         createHeap = true;
       }
+      useTHP = get_ofiUseTHP(info);
     }
   }
   if (createHeap) {
@@ -3588,7 +3612,13 @@ void init_fixedHeap(void) {
                      chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
         }
 #endif
+      if (!useTHP) {
         CHK_SYS_MEMALIGN(start, page_size, size);
+      } else {
+        CHK_SYS_MMAP(start, size, PROT_READ | PROT_WRITE,
+                                  MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB,
+                                  -1, 0);
+      }
       } while (start == NULL && size > decrement);
 
       if (start == NULL)
