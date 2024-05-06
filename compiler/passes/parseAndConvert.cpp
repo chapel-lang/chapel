@@ -449,22 +449,24 @@ static void loadAndConvertModules() {
 
   // Now convert these modules and the dependent modules
   for (const auto& id : modulesToConvert) {
-    //printf("module %s\n", id.str().c_str());
     if (chpl::parsing::idIsToplevelModule(gContext, id)) {
       UniqueString path;
       bool found = gContext->filePathForId(id, path);
       INT_ASSERT(found);
-      //printf("toplevel %s\n", path.c_str());
       ModTag modTag = MOD_USER;
       if (chpl::parsing::filePathIsInInternalModule(gContext, path)) {
         modTag = MOD_INTERNAL;
       } else if (chpl::parsing::filePathIsInStandardModule(gContext, path)) {
         modTag = MOD_STANDARD;
+      } else if (chpl::parsing::filePathIsInBundledModule(gContext, path)) {
+        // TODO: this considers code in modules/packages as MOD_STANDARD but
+        // we would like this to be MOD_USER.
+        modTag = MOD_STANDARD;
       }
       bool namedOnCommandLine = commandLineModulesSet.count(id) > 0;
       dynoConvertFile(path.c_str(), modTag, namedOnCommandLine);
     } else {
-      //printf("sub\n");
+      // ignore a submodule
     }
   }
 
