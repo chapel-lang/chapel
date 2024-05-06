@@ -16,9 +16,9 @@ if printSeed then
   writeln("Using seed: ", rands.seed);
 
 
-const locsPerDim = sqrt(numLocales:real): int;
-const grid = {1..locsPerDim, 1..locsPerDim};
-const localeGrid = reshape(Locales[0..<grid.size], grid);
+const locsPerDim = sqrt(numLocales:real): int,
+      grid = {0..<locsPerDim, 0..<locsPerDim},
+      localeGrid = reshape(Locales[0..<grid.size], grid);
 
 
 if grid.size != numLocales then
@@ -40,6 +40,8 @@ var A: [AD] int = 1,
 writeSparseMatrix("A is:", A);
 writeSparseMatrix("B is:", B);
 
+SummaSparseMatMatMult(A, B);
+
 /*
 const CSps = SparseMatMatMult(A, B);
 
@@ -50,6 +52,44 @@ if !skipDense {
   writeSparseMatrix("C (densely computed) is: ", CDns);
 }
 */
+
+
+proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
+  use List;
+  var turnToken: atomic int;
+
+  coforall (locRow, locCol) in grid do
+    on localeGrid[locRow, locCol] {
+      var nnzs: list(2*int),
+          vals: list(int);
+
+      //      writeln("On ", here.id, " ", (locRow, locCol));
+      for srcloc in 0..<locsPerDim {
+        //        writeln("[", (locRow, locCol), "] getting A[",(locRow,srcloc),"] and B[",(srcloc, locCol),"]");
+        const AremoteCSC = AD.locDoms[locRow, srcloc]!.mySparseBlock,
+              BremoteCSR = BD.locDoms[srcloc, locCol]!.mySparseBlock;
+
+        for ac_br in AremoteCSC.colRange {
+          for ai in AremoteCSC.startIdx[ac_br]..<AremoteCSC.startIdx[ac_br+1] {
+            const ar = AremoteCSC.idx[ai];
+
+            for bi in BremoteCSR.startIdx[ac_br]..<BremoteCSR.startIdx[ac_br+1] {
+              const bc = BremoteCSR.idx[bi];
+              //              writeln("[", (locRow, locCol), "] found ", (ar, ac_br), " and ", (ac_br, bc));
+              nnzs.pushBack((ar,bc));
+              vals.pushBack(A[ar,ac_br]*B[ac_br,bc]);
+              //              vals.pushBack(A.data[ai]*B.data[bi]);
+            }
+          }
+        }
+      }
+
+      turnToken.waitFor(here.id);
+      writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:",
+                        makeSparseMat(nnzs, vals));
+      turnToken.write(here.id+1);
+    }
+}
 
 
 proc SparseMatMatMult(A: [?AD], B: [?BD]) {
