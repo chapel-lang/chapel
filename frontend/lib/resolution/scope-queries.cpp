@@ -616,6 +616,30 @@ getKindForVisibilityClauseId(Context* context, ID visibilityClauseId) {
   return VIS_USE;
 }
 
+// Creates a BorrowedIdsWithName for the symbol that defines a scope.
+// Used for capturing 'IO' when a visibility statement is 'use IO'.
+static optional<BorrowedIdsWithName>
+borrowedIdsForScopeSymbol(Context* context,
+                          IdAndFlags::Flags filterFlags,
+                          const IdAndFlags::FlagSet& excludeFilter,
+                          const Scope* scope) {
+  // Note: for the purposes of scope resolution, there shouldn't be a need
+  // to distinguish between public and default visibility, so the below
+  // ternary is sufficient.
+  auto visibility =
+    parsing::idIsPrivateDecl(context, scope->id()) ? Decl::PRIVATE : Decl::PUBLIC;
+  bool isField = false; // target must be module/enum, not field
+  bool isMethod = false; // target must be module/enum, not method
+  bool isParenfulFunction = false;
+  return BorrowedIdsWithName::createWithSingleId(scope->id(),
+                                                 visibility,
+                                                 isField,
+                                                 isMethod,
+                                                 isParenfulFunction,
+                                                 filterFlags,
+                                                 excludeFilter);
+}
+
 // config has settings for this part of the search
 // filterFlags has the filter used when considering the module name itself
 bool LookupHelper::doLookupInImportsAndUses(
@@ -739,19 +763,10 @@ bool LookupHelper::doLookupInImportsAndUses(
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
         // Make sure the module / enum being renamed isn't private.
-        auto scopeAst = parsing::idToAst(context, is.scope()->id());
-        auto visibility = scopeAst->toDecl()->visibility();
-        bool isField = false; // target must be module/enum, not field
-        bool isMethod = false; // target must be module/enum, not method
-        bool isParenfulFunction = false;
-        auto foundIds =
-          BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
-                                                  visibility,
-                                                  isField,
-                                                  isMethod,
-                                                  isParenfulFunction,
+        auto foundIds = borrowedIdsForScopeSymbol(context,
                                                   filterFlags,
-                                                  excludeFilter);
+                                                  excludeFilter,
+                                                  is.scope());
         if (foundIds) {
           if (trace) {
             ResultVisibilityTrace t;
@@ -1652,45 +1667,63 @@ getSymbolsAvailableInScopeQuery(Context* context,
 
   std::map<UniqueString, BorrowedIdsWithName> toReturn;
 
-  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name, UniqueString& renameTo) {
+  auto allowedByVisibility = [inVisibilitySymbols](UniqueString name,
+                                                   UniqueString& renameTo,
+                                                   bool isSymbolItself) {
     renameTo = name;
 
-    if (!inVisibilitySymbols) return true;
+    if (!inVisibilitySymbols) return !isSymbolItself;
     auto kind = inVisibilitySymbols->kind();
 
     if (kind == VisibilitySymbols::ALL_CONTENTS) {
-      return true;
+      // ALL_CONTENTS brings in the contents, but not the symbol itself.
+      return !isSymbolItself;
     }
 
-    if (kind == VisibilitySymbols::ONLY_CONTENTS ||
-        kind == VisibilitySymbols::CONTENTS_EXCEPT) {
-      auto& namePairs = inVisibilitySymbols->names();
+    bool allowedByType =
+      (kind == VisibilitySymbols::SYMBOL_ONLY && isSymbolItself) ||
+      (kind == VisibilitySymbols::ONLY_CONTENTS && !isSymbolItself) ||
+      (kind == VisibilitySymbols::CONTENTS_EXCEPT && !isSymbolItself);
 
-      bool anyMatches = false;
-      for (auto& namePair : namePairs) {
-        if (namePair.first == name) {
-          anyMatches = true;
-          renameTo = namePair.second;
-          break;
-        }
+    if (!allowedByType) return false;
+
+    auto& namePairs = inVisibilitySymbols->names();
+    bool anyMatches = false;
+    for (auto& namePair : namePairs) {
+      if (namePair.first == name) {
+        anyMatches = true;
+        renameTo = namePair.second;
+        break;
       }
-
-      return kind == VisibilitySymbols::CONTENTS_EXCEPT ? !anyMatches : anyMatches;
     }
 
-    return false;
+    return kind == VisibilitySymbols::CONTENTS_EXCEPT ? !anyMatches : anyMatches;
   };
+
+
+  auto flags = 0;
+  if (inVisibilitySymbols) flags |= IdAndFlags::PUBLIC;
+  IdAndFlags::FlagSet excludeNothing;
 
   for (auto& decl : scope->declared()) {
     UniqueString renameTo;
-    if (!allowedByVisibility(decl.first, renameTo)) continue;
-
-    auto flags = 0;
-    if (inVisibilitySymbols) flags |= IdAndFlags::PUBLIC;
+    if (!allowedByVisibility(decl.first, renameTo, false)) continue;
 
     auto exclude = IdAndFlags::FlagSet::empty();
     if (auto borrowed = decl.second.borrow(flags, exclude)) {
       toReturn.try_emplace(renameTo, *borrowed);
+    }
+  }
+
+  // Handle introducing the 'IO' in 'use IO'
+  if (!scope->name().isEmpty()) {
+    UniqueString renameTo;
+    if (allowedByVisibility(scope->name(), renameTo, true)) {
+      auto symbolItself =
+        borrowedIdsForScopeSymbol(context, /* flags */ 0, excludeNothing, scope);
+      if (symbolItself) {
+        toReturn.try_emplace(renameTo, *symbolItself);
+      }
     }
   }
 
@@ -1708,9 +1741,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
     auto visStmtSymbols =
       getSymbolsAvailableInScopeQuery(context, vis.scope(), &vis);
     for (auto& pair : visStmtSymbols) {
-      UniqueString renameTo;
-      if (!allowedByVisibility(pair.first, renameTo)) continue;
-      toReturn.try_emplace(renameTo, pair.second);
+      toReturn.try_emplace(pair.first, pair.second);
     }
   }
 
@@ -1725,10 +1756,14 @@ getSymbolsAvailableInScope(Context* context,
 
   if (scope->autoUsesModules()) {
     auto scope = scopeForAutoModule(context);
-    auto inAuto = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
 
-    for (auto& pair : inAuto) {
-      inScope.try_emplace(pair.first, pair.second);
+    if (scope) {
+      // Auto modules might not be loaded in a 'minimal' config.
+      auto inAuto = getSymbolsAvailableInScopeQuery(context, scope, nullptr);
+
+      for (auto& pair : inAuto) {
+        inScope.try_emplace(pair.first, pair.second);
+      }
     }
   }
 

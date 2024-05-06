@@ -497,7 +497,6 @@ class FileInfo:
         Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
-    used_modules: List[chapel.Module] = field(init=False)
     visible_decls: List[Tuple[str, chapel.AstNode]] = field(init=False)
 
     def __post_init__(self):
@@ -558,13 +557,6 @@ class FileInfo:
     @enter
     def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
-
-    def _collect_used_modules(self, asts: List[chapel.AstNode]):
-        self.used_modules = []
-        for ast in asts:
-            scope = ast.scope()
-            if scope:
-                self.used_modules.extend(scope.used_imported_modules())
 
     def _collect_possibly_visible_decls(self, asts: List[chapel.AstNode]):
         self.visible_decls = []
@@ -677,7 +669,6 @@ class FileInfo:
         self.def_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
-        self._collect_used_modules(asts)
         self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
@@ -1555,7 +1546,6 @@ def run_lsp():
         for name, decl in fi.visible_decls:
             if isinstance(decl, chapel.NamedDecl):
                 items.append(completion_item_for_decl(decl, override_name=name))
-        items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
 
         items = [item for item in items if item]
 
