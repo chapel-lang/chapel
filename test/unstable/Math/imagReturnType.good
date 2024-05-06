@@ -1,4 +1,0 @@
-imagReturnType.chpl:6: warning: The return type of 'asinh' when called with an 'imag' argument is unstable and may change in the future.
-imagReturnType.chpl:7: warning: The return type of 'atan' when called with an 'imag' argument is unstable and may change in the future.
-imagReturnType.chpl:19: warning: The return type of 'asinh' when called with an 'imag' argument is unstable and may change in the future.
-imagReturnType.chpl:20: warning: The return type of 'atan' when called with an 'imag' argument is unstable and may change in the future.

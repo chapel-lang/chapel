@@ -1,10 +1,10 @@
 use Math;
-// commented out versions are still unstable
+
 {
   var x: imag(32) = 1i;
   asin(x);
-  // asinh(x);
-  // atan(x);
+  asinh(x); // should not warn
+  atan(x); // should not warn
   atanh(x);
   cos(x);
   cosh(x);
@@ -16,8 +16,8 @@ use Math;
 {
   var x: imag(64) = 1i;
   asin(x);
-  // asinh(x);
-  // atan(x);
+  asinh(x); // should not warn
+  atan(x); // should not warn
   atanh(x);
   cos(x);
   cosh(x);
@@ -30,8 +30,8 @@ use Math;
   // this case should not warn
   var x: complex = 1i;
   asin(x);
-  // asinh(x);
-  // atan(x);
+  asinh(x); // should not warn
+  atan(x); // should not warn
   atanh(x);
   cos(x);
   cosh(x);
