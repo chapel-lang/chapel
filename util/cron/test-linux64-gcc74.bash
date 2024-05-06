@@ -11,20 +11,20 @@ export CHPL_LLVM=none
 export CHPL_LLVM_SUPPORT=bundled
 unset CHPL_LLVM_CONFIG
 
-source /data/cf/chapel/setup_gcc73.bash     # host-specific setup for target compiler
+source /data/cf/chapel/setup_gcc74.bash     # host-specific setup for target compiler
 
-# Set environment variables to nudge cmake towards GCC 7.3
+# Set environment variables to nudge cmake towards GCC 7.4
 export CHPL_CMAKE_USE_CC_CXX=1
 export CC=$(which gcc)
 export CXX=$(which g++)
 
 gcc_version=$(gcc -dumpversion)
-if [ "$gcc_version" != "7.3.0" ]; then
+if [ "$gcc_version" != "7.4.0" ]; then
   echo "Wrong gcc version"
-  echo "Expected Version: 7.3.0 Actual Version: $gcc_version"
+  echo "Expected Version: 7.4.0 Actual Version: $gcc_version"
   exit 2
 fi
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc73"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc74"
 
 $CWD/nightly -cron -examples ${nightly_args}
