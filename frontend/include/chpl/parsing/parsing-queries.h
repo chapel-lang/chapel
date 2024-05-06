@@ -336,7 +336,7 @@ bool idIsInBundledModule(Context* context, ID id);
  Returns true if the ID corresponds to something in a standard module.
  A standard module is a bundled module, but it is not a package module
  (which may be contributed by users and are not subject to the same
- constraints as standard modules).
+ constraints as standard modules) and not an internal module.
 
  If the bundled module path is empty, this function returns false.
 
@@ -345,12 +345,40 @@ bool idIsInBundledModule(Context* context, ID id);
 bool idIsInStandardModule(Context* context, ID id);
 
 
+/**
+ Returns true if the file path refers to the internal modules.
+ (Typically, that would be if it begins with $CHPL_HOME/modules/internal).
+ If the internal module path is empty, this function returns false.
+
+ Also considers paths from --prepend-internal-module-dir, if any.
+ */
 bool
 filePathIsInInternalModule(Context* context, UniqueString filePath);
 
+/**
+ Returns true if the file path corresponds to the standard modules.
+ A standard module is a bundled module, but it is not a package module
+ (which may be contributed by users and are not subject to the same
+ constraints as standard modules) and not an internal module.
+ (So, in other words, it would typically be a standard module if
+ it begins with $CHPL_HOME/modules/ but doesn't begin with
+ $CHPL_HOME/modules/internal or $CHPL_HOME/modules/packages).
+
+ If the bundled module path is empty, this function returns false.
+
+ Also considers paths from --prepend-standard-module-dir, if any.
+ */
 bool
 filePathIsInStandardModule(Context* context, UniqueString filePath);
 
+/**
+ Returns true if the file path corresponds to the bundled modules.
+ (Typically, that would be if it begins with $CHPL_HOME/modules/).
+ If the bundled module path is empty, this function returns false.
+
+ Also considers paths, if any, from --prepend-internal-module-dir
+ and --prepend-standard-module-dir.
+ */
 bool
 filePathIsInBundledModule(Context* context, UniqueString filePath);
 
