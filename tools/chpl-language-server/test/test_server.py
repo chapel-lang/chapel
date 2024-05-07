@@ -250,7 +250,7 @@ async def check_references(
     doc: TextDocumentIdentifier,
     src: Position,
     dsts: typing.List[DestinationTestType],
-) -> typing.List[Position]:
+) -> typing.List[Location]:
     references = await client.text_document_references_async(
         params=ReferenceParams(
             text_document=doc,
@@ -269,7 +269,7 @@ async def check_references(
     for dst in dsts:
         assert any(check_dst(doc, ref, dst) for ref in references)
 
-    return [ref.range.start for ref in references]
+    return references
 
 
 async def check_references_and_cross_check(
@@ -279,8 +279,13 @@ async def check_references_and_cross_check(
     dsts: typing.List[DestinationTestType],
 ):
     references = await check_references(client, doc, src, dsts)
+    locations = [
+        (TextDocumentIdentifier(uri=ref.uri), ref.range.start)
+        for ref in references
+    ]
     for ref in references:
-        await check_references(client, doc, ref, references)
+        new_doc = TextDocumentIdentifier(uri=ref.uri)
+        await check_references(client, new_doc, ref.range.start, locations)
 
 
 @pytest.mark.asyncio
