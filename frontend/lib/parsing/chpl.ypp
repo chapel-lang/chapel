@@ -3558,7 +3558,7 @@ dot_expr:
  * ( <tuple_expr_ls> ) -- Two-tuples and up.  A tuple_expr_ls contains at least 2 elements.
  */
 parenthesized_expr:
-  TLP tuple_component TRP
+  TLP opt_try_expr TRP
   {
     // Use 'tryNote' here in case an expression like ((x)) comes along.
     BUILDER->tryNoteExprParenthLocation($2, LOC(@$));
