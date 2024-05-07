@@ -53,8 +53,9 @@ checkMentionedModules(Context* ctx, ID idMod, std::vector<const char*> expect) {
     assert(!id.isEmpty());
 
     auto ast = parsing::idToAst(ctx, id);
-    auto mod = ast ? ast->toModule() : nullptr;
-    assert(ast && mod);
+    assert(ast);
+    auto mod = ast->toModule();
+    assert(mod);
 
     assert(i < expect.size());
     std::string exp = expect[i];
@@ -286,9 +287,10 @@ checkModuleInitOrder(Context* ctx, ID idMod, std::vector<const char*> expect) {
   for (const auto& id : v) {
     assert(!id.isEmpty());
 
-    auto ast = !id.isEmpty() ? parsing::idToAst(ctx, id) : nullptr;
-    auto mod = ast ? ast->toModule() : nullptr;
-    assert(ast && mod);
+    auto ast = parsing::idToAst(ctx, id);
+    assert(ast);
+    auto mod = ast->toModule();
+    assert(mod);
 
     assert(i < expect.size());
     std::string exp = expect[i];
