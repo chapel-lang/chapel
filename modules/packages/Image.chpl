@@ -268,7 +268,7 @@ module Image {
     @chpldoc.nodoc
     var process: sp.subprocess(true);
 
-    proc init(image: string, imgType: imageType, framerate = 30) throws {
+    proc init(image: string, imgType: imageType, framerate: int = 30, rateFactor: int = 1) throws {
       this.imageName = image;
       this.imgType = imgType;
       init this;
@@ -287,7 +287,7 @@ module Image {
       }
       const ffmpegEnd = ["-i", "-",
                          "-c:v", "libx264",
-                         "-crf", "25",
+                         "-crf", rateFactor:string,
                          "-pix_fmt", "yuv420p",
                          this.imageName];
       const nArgs = ffmpegStart.domain.size + pixelFmtArgs.domain.size + ffmpegEnd.domain.size;
