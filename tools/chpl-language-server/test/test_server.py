@@ -100,19 +100,40 @@ class SourceFileContext:
 
 
 def source_files(client: LanguageClient, **files: str):
+    """
+    Context manager that creates a temporary directory and populates
+    it with the given files. The names of the keyword arguments are
+    used as the names of the files. Yields a function that can be used to
+    get the URI of a file by name.
+
+    Also creates a .cls-commands.json file that can be used by the
+    language server to connect the files together in the workspace.
+    """
     return SourceFilesContext(client, **files)
 
 
 def source_file(client: LanguageClient, contents: str):
+    """
+    Context manager that creates a temporary directory and populates
+    it with the given file. Yields the path to the file.
+    """
     return SourceFileContext("main", client, main=contents)
 
 
 def pos(coord: typing.Tuple[int, int]):
+    """
+    Shorthand for writing position literals.
+    """
+
     line, column = coord
     return Position(line=line, character=column)
 
 
 def standard_module(name: str):
+    """
+    Retrieves the path of a standard module with the given name.
+    """
+
     return TextDocumentIdentifier(
         f"file://{os.path.join(CHPL_HOME, 'modules', name)}"
     )
@@ -143,41 +164,10 @@ async def client(lsp_client: LanguageClient):
     await lsp_client.shutdown_session()
 
 
-@pytest.mark.asyncio
-async def test_global_completion(client: LanguageClient):
-    # All completion is based entirely on global symbols right now; thus,
-    # anywhere you hover, you should get the same results.
-
-    positions = [pos((n, 0)) for n in range(1, 5)]
-    file = """
-           for i in 1..10 {
-             for j in 1..10 {
-               writeln("Hello, world!", (i, j));
-             }
-           }
-           """
-
-    global_symbols = ["here", "strideKind", "boundKind", "Locales"]
-
-    with source_file(client, file) as doc:
-        for position in positions:
-            results = await client.text_document_completion_async(
-                params=CompletionParams(position=position, text_document=doc)
-            )
-
-            # spec: it could be a completion item list, or a CompletionList,
-            # or null. We care about the list of items.
-            assert results is not None
-            if isinstance(results, CompletionList):
-                results = results.items
-            result_names = [r.label for r in results]
-
-            for symbol in global_symbols:
-                assert symbol in result_names
-
-        assert len(client.diagnostics) == 0
-
-
+"""
+The type of 'expected destinations' to be used with the various checking
+functions below.
+"""
 DestinationTestType = typing.Union[
     None,
     Position,
@@ -192,6 +182,21 @@ def check_dst(
     dst_expected: DestinationTestType,
     expect_str: typing.Optional[str] = None,
 ) -> bool:
+    """
+    Matches a location against what it is expected to be.
+
+    * If the expected destination is a position, matches the position
+      and expects the same file as the source document.
+    * If the expected destination is a document, only ensures that the
+      actual location is in that document, and ignores the line etc.
+    * If the expected destination is a document-position tuple, ensures
+      that both the file and line number are as specified by the tuple.
+
+    If expect_str is provided, also ensures that the first line of the location
+    contains the given string. This is useful to help validate against module
+    code, whose line numbers might change as the module is updated.
+    """
+
     if isinstance(dst_actual, LocationLink):
         got_dst_pos = dst_actual.target_range.start
         got_dst_uri = dst_actual.target_uri
@@ -200,9 +205,8 @@ def check_dst(
         got_dst_uri = dst_actual.uri
 
     if isinstance(dst_expected, tuple):
-        if got_dst_uri != dst_expected[0].uri:
+        if got_dst_uri != dst_expected[0].uri or got_dst_pos != dst_expected[1]:
             return False
-        got_dst_pos = dst_expected[1]
     elif isinstance(dst_expected, TextDocumentIdentifier):
         if got_dst_uri != dst_expected.uri:
             return False
@@ -225,6 +229,13 @@ async def check_goto_decl_def(
     dst: DestinationTestType,
     expect_str: typing.Optional[str] = None,
 ):
+    """
+    Ensures that go-to-definition and go-to-declaration on a symbol
+    work, taking a source cursor position to an expected destination position.
+    In Chapel, declaration and definition are the same, so the same check
+    is used for both.
+    """
+
     def validate(
         results: typing.Optional[
             typing.Union[
@@ -265,6 +276,11 @@ async def check_references(
     src: Position,
     dsts: typing.List[DestinationTestType],
 ) -> typing.List[Location]:
+    """
+    Given a document, a 'hover' position and a list of expected results,
+    validates that the language server finds the given references.
+    """
+
     references = await client.text_document_references_async(
         params=ReferenceParams(
             text_document=doc,
@@ -292,6 +308,16 @@ async def check_references_and_cross_check(
     src: Position,
     dsts: typing.List[DestinationTestType],
 ):
+    """
+    Does two things:
+        1. Performs the usual references list, ensuring that the references
+           found by the language server match the expected ones.
+        2. For each reference point found, repeats that check. Thus,
+           if hovering over A finds B and C, then hovering over B should
+           find A and C.
+    This way, we can test a lot more cases automatically.
+    """
+
     references = await check_references(client, doc, src, dsts)
     locations = [
         (TextDocumentIdentifier(uri=ref.uri), ref.range.start)
@@ -303,7 +329,50 @@ async def check_references_and_cross_check(
 
 
 @pytest.mark.asyncio
+async def test_global_completion(client: LanguageClient):
+    """
+    Test top-level autocompletion.
+
+    All completion is based entirely on global symbols right now; thus,
+    anywhere you try, you should get the same results.
+    """
+
+    positions = [pos((n, 0)) for n in range(1, 5)]
+    file = """
+           for i in 1..10 {
+             for j in 1..10 {
+               writeln("Hello, world!", (i, j));
+             }
+           }
+           """
+
+    global_symbols = ["here", "strideKind", "boundKind", "Locales"]
+
+    with source_file(client, file) as doc:
+        for position in positions:
+            results = await client.text_document_completion_async(
+                params=CompletionParams(position=position, text_document=doc)
+            )
+
+            # spec: it could be a completion item list, or a CompletionList,
+            # or null. We care about the list of items.
+            assert results is not None
+            if isinstance(results, CompletionList):
+                results = results.items
+            result_names = [r.label for r in results]
+
+            for symbol in global_symbols:
+                assert symbol in result_names
+
+        assert len(client.diagnostics) == 0
+
+
+@pytest.mark.asyncio
 async def test_go_to_definition_simple(client: LanguageClient):
+    """
+    Basic test cases for go-to-definition.
+    """
+
     file = """
 
            var x: int = 5;
@@ -345,6 +414,11 @@ async def test_go_to_definition_simple(client: LanguageClient):
 
 @pytest.mark.asyncio
 async def test_go_to_definition_use_standard(client: LanguageClient):
+    """
+    Ensure that go-to-definition works on standard module symbols
+    that are used or imported.
+    """
+
     file = """
            use IO;
            use List, Map;
@@ -367,6 +441,11 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
 
 @pytest.mark.asyncio
 async def test_go_to_definition_standard_rename(client: LanguageClient):
+    """
+    Ensure that go-to-definition works with using/importing symbols,
+    even if renaking is in use.
+    """
+
     file = """
            use IO as OI;
            import IO.{ioMode as im};
@@ -404,6 +483,10 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
 
 @pytest.mark.asyncio
 async def test_go_to_record_def(client: LanguageClient):
+    """
+    Ensure that 'go to definition' on a type actually works.
+    """
+
     file = """
            record myRec {}
            var x: myRec;
@@ -420,6 +503,10 @@ async def test_go_to_record_def(client: LanguageClient):
 
 @pytest.mark.asyncio
 async def test_list_references(client: LanguageClient):
+    """
+    Basic 'list references' test with shadowing and scopes.
+    """
+
     file = """
            var x = 42;
            var y = x;
@@ -459,8 +546,14 @@ async def test_list_references(client: LanguageClient):
             client, doc, pos((8, 13)), [pos((8, 13))]
         )
 
+        assert len(client.diagnostics) == 0
+
 @pytest.mark.asyncio
 async def test_list_references_across_files(client: LanguageClient):
+    """
+    Ensure that list-references works across multiple user-defined files.
+    """
+
     fileA = """
             module A {
               var x = 42;
@@ -490,3 +583,5 @@ async def test_list_references_across_files(client: LanguageClient):
         await check_references_and_cross_check(
             client, docs("A"), pos((1, 6)), all_refs
         )
+        assert len(client.diagnostics) == 0
+
