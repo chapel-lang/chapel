@@ -5328,35 +5328,32 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
   }
 
   //
-  // Send the 'done' indicator.  If necessary, first make sure the
-  // memory effects of all communication ops done by this AM are
-  // visible.  We and the AM's initiator are the same Chapel task,
-  // for purposes of MCM conformance, and the memory effects of the
-  // AM must be visible to that initiator by the time it sees the
-  // 'done' indicator.  In the delivery-complete mode everything is
-  // already visible.  In the message-order mode we don't have to
-  // force PUT visibility because this 'done' is also a PUT and we
-  // use write-after-write message ordering, but we do have to force
-  // AMO visibility.  In message-order-fence mode we have to force
-  // both PUT and AMO visibility.
+  // Send the 'done' indicator.  If necessary, first make sure the memory
+  // effects of all communication ops to all nodes done by this AM are
+  // visible.  We and the AM's initiator are the same Chapel task, for
+  // purposes of MCM conformance, and the memory effects of the AM must be
+  // visible to that initiator by the time it sees the'done' indicator.  In
+  // the delivery-complete mode everything is already visible.  In the
+  // message-order and message-order-fence modes we have to force PUT and AMO
+  // visibility.
   //
   if (mcmMode != mcmm_dlvrCmplt) {
-    forceMemFxVisAllNodes(mcmMode == mcmm_msgOrdFence /*checkPuts*/,
-                          true /*checkAmos*/,
+    forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
                           -1 /*skipNode*/, tcip);
   }
 
   uint64_t mrKey = 0;
   uint64_t mrRaddr = 0;
   uint64_t flags = 0;
+  atomic_bool txnDone;
+  void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
 
-  if (envInjectRMA) {
-    flags = FI_INJECT;
-  }
+
   CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, pAmDone, sizeof(*pAmDone)));
   ofi_put_lowLevel(amDone, mrDesc, node, mrRaddr, mrKey, sizeof(*pAmDone),
-                   txnTrkEncodeId(__LINE__), flags, tcip);
-
+                   ctx, flags, tcip);
+  waitForTxnComplete(tcip, ctx);
+  txCtxCleanup(ctx);
   if (amTcip == NULL) {
     tciFree(tcip);
   }
