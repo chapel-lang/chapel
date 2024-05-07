@@ -51,12 +51,13 @@ class SourceFilesContext:
                 f.write(strip_leading_whitespace(contents))
 
     def __enter__(self):
+        self.tempdir.__enter__()
         return lambda name: TextDocumentIdentifier(
             uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}"
         )
 
     def __exit__(self, *exc):
-        return False
+        return self.tempdir.__exit__(*exc)
 
 
 class SourceFileContext:
