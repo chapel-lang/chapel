@@ -220,4 +220,68 @@ module Image {
     return outArr;
   }
 
+
+  private import Subprocess as sp;
+  /*
+  Represents a ffmpeg stream that frame data can be written to to produce a mp4.
+  */
+  record mediaPipe {
+    @chpldoc.nodoc
+    var imageName: string;
+    @chpldoc.nodoc
+    var imgType: imageType;
+    @chpldoc.nodoc
+    var finished = false;
+    @chpldoc.nodoc
+    var process: sp.subprocess(true);
+
+    proc init(image: string, imgType: imageType, framerate = 30) throws {
+      this.imageName = image;
+      this.imgType = imgType;
+      init this;
+
+      const ffmpegStart = ["ffmpeg", "-y",
+                           "-f", "image2pipe",
+                           "-r", framerate:string];
+      const pixelFmtArgs;
+      select imgType {
+        when imageType.bmp do
+          pixelFmtArgs = ["-pix_fmt", "bgr24", "-c:v", "bmp"];
+        otherwise {
+          halt("Don't know how to write images of type: ", imgType);
+          pixelFmtArgs = [""]; // dummy value for split init
+        }
+      }
+      const ffmpegEnd = ["-i", "-",
+                         "-c:v", "libx264",
+                         "-crf", "25",
+                         "-pix_fmt", "yuv420p",
+                         this.imageName];
+      const nArgs = ffmpegStart.domain.size + pixelFmtArgs.domain.size + ffmpegEnd.domain.size;
+      var args: [0..#nArgs] string;
+      args[0..#ffmpegStart.domain.size] = ffmpegStart;
+      args[ffmpegStart.domain.size..#pixelFmtArgs.domain.size] = pixelFmtArgs;
+      args[(ffmpegStart.domain.size + pixelFmtArgs.domain.size)..#ffmpegEnd.size] = ffmpegEnd;
+
+      this.process = sp.spawn(args, stdin=sp.pipeStyle.pipe);
+    }
+    proc ref deinit() {
+      try! finish();
+    }
+
+    /*
+    Write a frame into the media pipe.
+    */
+    proc writeFrame(pixelData: [] pixelType) throws {
+      writeImage(process.stdin, imageType.bmp, pixelData);
+      process.stdin.flush();
+    }
+    proc ref finish() throws {
+      if !finished {
+        process.wait();
+        finished = true;
+      }
+    }
+  }
+
 }
