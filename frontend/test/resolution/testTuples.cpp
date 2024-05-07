@@ -676,6 +676,40 @@ static void test18() {
   assert(rr.byAst(z).type().type()->isRealType());
 }
 
+static void test19() {
+  printf("test19\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto program = R""""(
+                  var t = (1, 2, 3);
+                  var x = t(0);
+                  var y = t(1);
+                  var z = t(2);
+
+                  param a = __primitive("get svec member", t, 0).type == int;
+                  param b = __primitive("get svec member", t, 1).type == int;
+                )"""";
+
+  auto m = parseModule(context, std::move(program));
+
+  auto x = findVariable(m, "x");
+  auto y = findVariable(m ,"y");
+  auto z = findVariable(m ,"z");
+
+  auto a = findVariable(m ,"a");
+  auto b = findVariable(m ,"b");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  assert(rr.byAst(x).type().type()->isIntType());
+  assert(rr.byAst(y).type().type()->isIntType());
+  assert(rr.byAst(z).type().type()->isIntType());
+
+  ensureParamBool(rr.byAst(a).type(), true);
+  ensureParamBool(rr.byAst(b).type(), true);
+}
+
 int main() {
   test1();
   test2();
@@ -697,6 +731,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   testTupleGeneric();
 
