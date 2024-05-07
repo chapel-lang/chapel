@@ -307,7 +307,6 @@ module Image {
     */
     proc writeFrame(pixelData: [] pixelType) throws {
       writeImage(process.stdin, imageType.bmp, pixelData);
-      process.stdin.flush();
     }
     proc ref finish() throws {
       if !finished {
