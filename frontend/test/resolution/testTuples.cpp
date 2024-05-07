@@ -617,40 +617,6 @@ static void argHelper(std::string formal, std::string actual,
   }
 }
 
-static void testTupleGeneric() {
-  printf("testTupleGeneric\n");
-
-  // Basic all-generic cases
-  argHelper("(?,)", "(5,)", true);
-  argHelper("(?,)", "('hello',)", true);
-  argHelper("(?,?)", "(5, 1.0)", true);
-  argHelper("(?,?)", "(5, 'hello')", true);
-  argHelper("(?,?,?)", "(5, 1.0,'hello')", true);
-
-  // Mixed concrete and generic, still expecting to pass
-  argHelper("(int, ?)", "(5, 1.0)", true);
-  argHelper("(int, ?)", "(5, 'hello')", true);
-  argHelper("(int, ?)", "('hello', 5)", false);
-
-  argHelper("(int, ?, string)", "(5, 42.0, 'hello')", true);
-  argHelper("(int, ?, string)", "(5, 5, 'hello')", true);
-  argHelper("(int, ?, string)", "(5, 'hi', 'hello')", true);
-  argHelper("(int, ?, string)", "('hi', 42.0, 'hello')", false);
-  argHelper("(int, ?, string)", "(5, 42.0, 5)", false);
-
-  // Passing a tuples of incorrect size
-  argHelper("(int, ?)", "(5,5,5)", false);
-  argHelper("(int, ?, ?)", "(5,5)", false);
-
-  // Some 'integral' and 'numeric' tests
-  argHelper("(integral, integral)", "(5, 5)", true);
-  argHelper("(integral, integral)", "(5, 'hello')", false);
-
-  argHelper("(numeric, numeric)", "(5, 5)", true);
-  argHelper("(numeric, numeric)", "(5, 42.0)", true);
-  argHelper("(numeric, numeric)", "(5, 'hi')", false);
-}
-
 static void test18() {
   printf("test18\n");
   Context ctx;
@@ -708,6 +674,41 @@ static void test19() {
 
   ensureParamBool(rr.byAst(a).type(), true);
   ensureParamBool(rr.byAst(b).type(), true);
+}
+
+
+static void testTupleGeneric() {
+  printf("testTupleGeneric\n");
+
+  // Basic all-generic cases
+  argHelper("(?,)", "(5,)", true);
+  argHelper("(?,)", "('hello',)", true);
+  argHelper("(?,?)", "(5, 1.0)", true);
+  argHelper("(?,?)", "(5, 'hello')", true);
+  argHelper("(?,?,?)", "(5, 1.0,'hello')", true);
+
+  // Mixed concrete and generic, still expecting to pass
+  argHelper("(int, ?)", "(5, 1.0)", true);
+  argHelper("(int, ?)", "(5, 'hello')", true);
+  argHelper("(int, ?)", "('hello', 5)", false);
+
+  argHelper("(int, ?, string)", "(5, 42.0, 'hello')", true);
+  argHelper("(int, ?, string)", "(5, 5, 'hello')", true);
+  argHelper("(int, ?, string)", "(5, 'hi', 'hello')", true);
+  argHelper("(int, ?, string)", "('hi', 42.0, 'hello')", false);
+  argHelper("(int, ?, string)", "(5, 42.0, 5)", false);
+
+  // Passing a tuples of incorrect size
+  argHelper("(int, ?)", "(5,5,5)", false);
+  argHelper("(int, ?, ?)", "(5,5)", false);
+
+  // Some 'integral' and 'numeric' tests
+  argHelper("(integral, integral)", "(5, 5)", true);
+  argHelper("(integral, integral)", "(5, 'hello')", false);
+
+  argHelper("(numeric, numeric)", "(5, 5)", true);
+  argHelper("(numeric, numeric)", "(5, 42.0)", true);
+  argHelper("(numeric, numeric)", "(5, 'hi')", false);
 }
 
 int main() {
