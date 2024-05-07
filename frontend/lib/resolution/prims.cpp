@@ -384,8 +384,8 @@ static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
     if (index.hasTypePtr() && index.type()->isIntegralType()) {
       auto act = ci.actual(0).type();
       if (auto tup = act.type()->toTupleType()) {
-        auto eltType = tup->elementType(0);
         if (tup->isStarTuple()) {
+          auto eltType = tup->starType();
           QualifiedType::Kind retKind = eltType.kind();
           if (prim == PRIM_GET_SVEC_MEMBER_VALUE) {
             // Must return as value for _VALUE variant, but still maintain
