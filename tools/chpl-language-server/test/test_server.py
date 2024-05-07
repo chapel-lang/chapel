@@ -9,6 +9,7 @@ from lsprotocol.types import CompletionList
 from lsprotocol.types import CompletionParams
 from lsprotocol.types import DefinitionParams
 from lsprotocol.types import DeclarationParams
+from lsprotocol.types import DidChangeWorkspaceFoldersParams
 from lsprotocol.types import ReferenceParams
 from lsprotocol.types import ReferenceContext
 from lsprotocol.types import InitializeParams
@@ -16,6 +17,8 @@ from lsprotocol.types import LocationLink
 from lsprotocol.types import Location
 from lsprotocol.types import Position
 from lsprotocol.types import TextDocumentIdentifier
+from lsprotocol.types import WorkspaceFoldersChangeEvent
+from lsprotocol.types import WorkspaceFolder
 
 import pytest
 import pytest_lsp
@@ -43,8 +46,9 @@ def strip_leading_whitespace(text: str) -> str:
 
 
 class SourceFilesContext:
-    def __init__(self, **files: str):
-        self.tempdir = tempfile.TemporaryDirectory()
+    def __init__(self, client: LanguageClient, **files: str):
+        self.tempdir = tempfile.TemporaryDirectory(delete=False)
+        self.client = client
 
         commands = {}
         allfiles = []
@@ -54,10 +58,12 @@ class SourceFilesContext:
                 f.write(strip_leading_whitespace(contents))
 
             allfiles.append(filepath)
-            commands[filepath] = {
-                "module_dirs": [],
-                "files": allfiles
-            }
+            commands[filepath] = [
+                {
+                    "module_dirs": [],
+                    "files": allfiles
+                }
+            ]
 
         commandspath = os.path.join(self.tempdir.name, ".cls-commands.json")
         with open(commandspath, "w") as f:
@@ -65,6 +71,14 @@ class SourceFilesContext:
 
     def __enter__(self):
         self.tempdir.__enter__()
+
+        # Let the client know we added a new workspace folder.
+        uri = "file://" + self.tempdir.name
+        added = [WorkspaceFolder(uri=uri, name="Temp Workspace")]
+        event = WorkspaceFoldersChangeEvent(added=added, removed=[])
+        params = DidChangeWorkspaceFoldersParams(event=event)
+        self.client.workspace_did_change_workspace_folders(params)
+
         return lambda name: TextDocumentIdentifier(
             uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}"
         )
@@ -74,9 +88,9 @@ class SourceFilesContext:
 
 
 class SourceFileContext:
-    def __init__(self, main_file: str, **files: str):
+    def __init__(self, main_file: str, client: LanguageClient, **files: str):
         self.main_file = main_file
-        self.source_files_context = SourceFilesContext(**files)
+        self.source_files_context = SourceFilesContext(client, **files)
 
     def __enter__(self):
         return self.source_files_context.__enter__()(self.main_file)
@@ -85,12 +99,12 @@ class SourceFileContext:
         return self.source_files_context.__exit__(*exc)
 
 
-def source_files(**files: str):
-    return SourceFilesContext(**files)
+def source_files(client: LanguageClient, **files: str):
+    return SourceFilesContext(client, **files)
 
 
-def source_file(contents: str):
-    return SourceFileContext("main", main=contents)
+def source_file(client: LanguageClient, contents: str):
+    return SourceFileContext("main", client, main=contents)
 
 
 def pos(coord: typing.Tuple[int, int]):
@@ -145,7 +159,7 @@ async def test_global_completion(client: LanguageClient):
 
     global_symbols = ["here", "strideKind", "boundKind", "Locales"]
 
-    with source_file(file) as doc:
+    with source_file(client, file) as doc:
         for position in positions:
             results = await client.text_document_completion_async(
                 params=CompletionParams(position=position, text_document=doc)
@@ -301,7 +315,7 @@ async def test_go_to_definition_simple(client: LanguageClient):
            }
            """
 
-    with source_file(file) as doc:
+    with source_file(client, file) as doc:
         # Definitions link to themselves
         await check_goto_decl_def(client, doc, pos((0, 4)), pos((0, 4)))
         await check_goto_decl_def(client, doc, pos((1, 4)), pos((1, 4)))
@@ -342,7 +356,7 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
     mod_Map = standard_module("standard/Map.chpl")
     mod_Time = standard_module("standard/Time.chpl")
 
-    with source_file(file) as doc:
+    with source_file(client, file) as doc:
         await check_goto_decl_def(client, doc, pos((0, 4)), mod_IO)
         await check_goto_decl_def(client, doc, pos((1, 4)), mod_List)
         await check_goto_decl_def(client, doc, pos((1, 10)), mod_Map)
@@ -362,7 +376,7 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
     mod_IO = standard_module("standard/IO.chpl")
     mod_List = standard_module("standard/List.chpl")
 
-    with source_file(file) as doc:
+    with source_file(client, file) as doc:
         await check_goto_decl_def(
             client, doc, pos((0, 4)), mod_IO, expect_str="module IO"
         )
@@ -396,7 +410,7 @@ async def test_go_to_record_def(client: LanguageClient):
            var y = new myRec();
            """
 
-    with source_file(file) as doc:
+    with source_file(client, file) as doc:
         await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
@@ -420,7 +434,7 @@ async def test_list_references(client: LanguageClient):
            }
            """
 
-    with source_file(file) as doc:
+    with source_file(client, file) as doc:
         # 'find references' on definitions;
         # the cross checking will also validate the references.
         await check_references_and_cross_check(
