@@ -41,16 +41,14 @@ static std::string chplHome() {
 }
 
 static void
-checkMentionedModules(Context* ctx, ID idMod, ...) {
+checkMentionedModules(Context* ctx, ID idMod, std::vector<const char*> expect) {
   auto& v = findMentionedModules(ctx, idMod);
 
   for (const auto& id : v) {
     std::cout << "  " << id.str() << "\n";
   }
 
-  va_list args;
-  va_start(args, idMod);
-
+  size_t i = 0;
   for (const auto& id : v) {
     assert(!id.isEmpty());
 
@@ -58,10 +56,13 @@ checkMentionedModules(Context* ctx, ID idMod, ...) {
     auto mod = ast ? ast->toModule() : nullptr;
     assert(ast && mod);
 
-    std::string expect = va_arg(args, const char*);
+    assert(i < expect.size());
+    std::string exp = expect[i];
     std::string got = id.isEmpty() ? "<>" : mod->name().c_str();
-    std::cout << got << " == " << expect << std::endl;
-    assert(got == expect);
+    std::cout << got << " == " << exp << std::endl;
+    assert(got == exp);
+
+    i++;
   }
 }
 
@@ -93,7 +94,7 @@ static void testFindSimple(void) {
   assert(m1);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id(), "M2");
+  checkMentionedModules(ctx, m1->id(), {"M2"});
 
   std::cout << "---" << std::endl;
 
@@ -130,7 +131,7 @@ static void testFindImport(void) {
   assert(m1);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id(), "Sub");
+  checkMentionedModules(ctx, m1->id(), {"Sub"});
 
   std::cout << "---" << std::endl;
 
@@ -169,7 +170,7 @@ static void testFindMention(void) {
   assert(m1);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id(), "Sub1", "Sub2");
+  checkMentionedModules(ctx, m1->id(), {"Sub1", "Sub2"});
 
   std::cout << "---" << std::endl;
 
@@ -217,7 +218,7 @@ static void testFindMentionFields(void) {
   assert(m1);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id());
+  checkMentionedModules(ctx, m1->id(), { });
 
   std::cout << "---" << std::endl;
 
@@ -265,7 +266,7 @@ static void testFindMentionNotFields(void) {
   assert(m1);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id(), "M");
+  checkMentionedModules(ctx, m1->id(), {"M"});
 
   std::cout << "---" << std::endl;
 
@@ -274,16 +275,14 @@ static void testFindMentionNotFields(void) {
 }
 
 static void
-checkModuleInitOrder(Context* ctx, ID idMod, ...) {
+checkModuleInitOrder(Context* ctx, ID idMod, std::vector<const char*> expect) {
   auto& v = moduleInitializationOrder(ctx, idMod, {});
 
   for (const auto& id : v) {
     std::cout << "  " << id.str() << "\n";
   }
 
-  va_list args;
-  va_start(args, idMod);
-
+  size_t i = 0;
   for (const auto& id : v) {
     assert(!id.isEmpty());
 
@@ -291,10 +290,13 @@ checkModuleInitOrder(Context* ctx, ID idMod, ...) {
     auto mod = ast ? ast->toModule() : nullptr;
     assert(ast && mod);
 
-    std::string expect = va_arg(args, const char*);
+    assert(i < expect.size());
+    std::string exp = expect[i];
     std::string got = id.isEmpty() ? "<>" : mod->name().c_str();
-    std::cout << got << " == " << expect << std::endl;
-    assert(got == expect);
+    std::cout << got << " == " << exp << std::endl;
+    assert(got == exp);
+
+    i++;
   }
 }
 
@@ -353,7 +355,7 @@ static void testSpec(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "M4", "M2", "M3", "M1");
+  checkModuleInitOrder(ctx, m1->id(), {"M4", "M2", "M3", "M1"});
 
 
   std::cout << "---" << std::endl;
@@ -409,7 +411,7 @@ static void testCircular(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "M3", "M2", "M1");
+  checkModuleInitOrder(ctx, m1->id(), {"M3", "M2", "M1"});
 
   std::cout << "---" << std::endl;
 
@@ -453,7 +455,7 @@ static void testImportSub(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "Library", "Submodule", "Main");
+  checkModuleInitOrder(ctx, m1->id(), {"Library", "Submodule", "Main"});
 
   std::cout << "---" << std::endl;
 
@@ -499,7 +501,7 @@ static void testMentionedSubmodule(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "Submodule", "Main");
+  checkModuleInitOrder(ctx, m1->id(), {"Submodule", "Main"});
 
   std::cout << "---" << std::endl;
 
@@ -547,7 +549,7 @@ static void testMentionedLibrarySub(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "Library", "Submodule", "Main");
+  checkModuleInitOrder(ctx, m1->id(), {"Library", "Submodule", "Main"});
 
   std::cout << "---" << std::endl;
 
@@ -595,7 +597,7 @@ static void testDeadModule(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "Main");
+  checkModuleInitOrder(ctx, m1->id(), {"Main"});
 
 
   std::cout << "---" << std::endl;
