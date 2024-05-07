@@ -2,6 +2,7 @@ import sys
 import os
 import tempfile
 import typing
+import json
 
 from lsprotocol.types import ClientCapabilities
 from lsprotocol.types import CompletionList
@@ -44,11 +45,23 @@ def strip_leading_whitespace(text: str) -> str:
 class SourceFilesContext:
     def __init__(self, **files: str):
         self.tempdir = tempfile.TemporaryDirectory()
+
+        commands = {}
+        allfiles = []
         for name, contents in files.items():
-            with open(
-                os.path.join(self.tempdir.name, name + ".chpl"), "w"
-            ) as f:
+            filepath = os.path.join(self.tempdir.name, name + ".chpl")
+            with open(filepath, "w") as f:
                 f.write(strip_leading_whitespace(contents))
+
+            allfiles.append(filepath)
+            commands[filepath] = {
+                "module_dirs": [],
+                "files": allfiles
+            }
+
+        commandspath = os.path.join(self.tempdir.name, ".cls-commands.json")
+        with open(commandspath, "w") as f:
+            json.dump(commands, f)
 
     def __enter__(self):
         self.tempdir.__enter__()
