@@ -585,3 +585,27 @@ async def test_list_references_across_files(client: LanguageClient):
         )
         assert len(client.diagnostics) == 0
 
+@pytest.mark.asyncio
+@pytest.mark.xfail
+async def test_list_references_standard(client: LanguageClient):
+    """
+    Doesn't seem to work now; would require loading and processing entire
+    standard library to find all references to a standard symbol.
+    """
+
+    file = """
+           use IO;
+           type myType = ioMode;
+           """
+
+    with source_file(client, file) as doc:
+        references = await client.text_document_references_async(
+            params=ReferenceParams(
+                text_document=doc,
+                position=pos((1, 14)),
+                context=ReferenceContext(include_declaration=True),
+            )
+        )
+
+        assert references is not None
+        assert len(references) > 10
