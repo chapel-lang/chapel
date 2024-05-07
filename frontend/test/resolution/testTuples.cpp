@@ -653,8 +653,8 @@ static void test19() {
                   var y = t(1);
                   var z = t(2);
 
-                  param a = __primitive("get svec member", t, 0).type == int;
-                  param b = __primitive("get svec member", t, 1).type == int;
+                  var a = __primitive("get svec member", t, 0);
+                  var b = __primitive("get svec member value", t, 0);
                 )"""";
 
   auto m = parseModule(context, std::move(program));
@@ -672,8 +672,13 @@ static void test19() {
   assert(rr.byAst(y).type().type()->isIntType());
   assert(rr.byAst(z).type().type()->isIntType());
 
-  ensureParamBool(rr.byAst(a).type(), true);
-  ensureParamBool(rr.byAst(b).type(), true);
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(aQt.type()->isIntType());
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(bQt.type()->isIntType());
 }
 
 
