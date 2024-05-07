@@ -199,9 +199,12 @@ module Image {
   /*
   Linearly interpolates between two colors to create an array of pixels.
   */
-  proc interpolateColor(arr: [?d], colorA: pixelType, colorB: pixelType): [d] pixelType {
-    const low = min reduce arr;
-    const spread = ((max reduce arr) - low):real;
+  proc interpolateColor(arr: [?d],
+                        colorA: pixelType,
+                        colorB: pixelType,
+                        colorRange = (min reduce arr, max reduce arr)): [d] pixelType {
+    const (low, high) = colorRange;
+    const spread = (high - low):real;
 
     proc colorComponent(color: pixelType, param offset: int) do
       return (color >> colorOffset(offset)) & colorMask;
