@@ -84,6 +84,9 @@ class Chapel < Formula
       end
       system "make", "mason"
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
+        cd "compiler" do
+          system "make", "clean-cmakecache"
+        end
         system "make", "chplcheck"
         system "make", "chpl-language-server"
       end
@@ -127,6 +130,11 @@ class Chapel < Formula
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
     system bin/"chpldoc", "--version"
     system bin/"mason", "--version"
+
+    # Test chplcheck, if it works CLS probably does too.
+    # chpl-language-server will hang indefinitely waiting for a LSP client
+    system bin/"chplcheck", "--list-rules"
+    system bin/"chplcheck", libexec/"examples/hello.chpl"
   end
 end
 
