@@ -333,14 +333,11 @@ const std::vector<ID>& toplevelModulesInFile(Context* context,
 struct FindMain {
   std::vector<const Function*> mainProcsFound;
   std::vector<const Module*> modulesFound;
-  UniqueString main;
 
-  FindMain(Context* context) {
-    main = UniqueString::get(context, "main");
-  }
+  FindMain(Context* context) { }
 
   bool enter(const Function* fn) {
-    if (fn->name() == main) {
+    if (fn->name() == USTR("main")) {
       mainProcsFound.push_back(fn);
     }
     return true;
