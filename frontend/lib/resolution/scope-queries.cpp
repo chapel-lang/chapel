@@ -2925,6 +2925,9 @@ GatherMentionedModules::gatherAndFindScope(const Scope* scope,
 //   Mod.foo() -> gather Mod
 //   Mod.Submod.bar() -> gather Mod and Submod
 void GatherMentionedModules::processDot(const Dot* d) {
+  // TODO: ideally this would use the result of scope resolution.
+  // It does not yet because running the scope resolver in all
+  // these cases would currently lead to compilation slowdowns
   const Scope* scope = scopeForId(context, d->id());
   gatherAndFindScope(scope, d);
 }
