@@ -6231,11 +6231,12 @@ void ofi_put_lowLevel(const void* addr, void* mrDesc, c_nodeid_t node,
                       uint64_t mrRaddr, uint64_t mrKey, size_t size,
                       void* ctx, uint64_t flags,
                       struct perTxCtxInfo_t* tcip) {
-  if (flags == FI_INJECT
-      && size <= ofi_info->tx_attr->inject_size
-      && envInjectRMA) {
-    (void) wrap_fi_inject_write(addr, node, mrRaddr, mrKey, size, tcip);
-  } else if (flags == 0) {
+
+  // Can't inject a buffer that is too large 
+  if ((flags & FI_INJECT) && (size > ofi_info->tx_attr->inject_size)) {
+    flags &= ~FI_INJECT;
+  }
+  if (flags == 0) {
     (void) wrap_fi_write(addr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
   } else {
     (void) wrap_fi_writemsg(addr, mrDesc, node, mrRaddr, mrKey, size, ctx,
