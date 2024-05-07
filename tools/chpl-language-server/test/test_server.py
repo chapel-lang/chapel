@@ -458,3 +458,35 @@ async def test_list_references(client: LanguageClient):
         await check_references_and_cross_check(
             client, doc, pos((8, 13)), [pos((8, 13))]
         )
+
+@pytest.mark.asyncio
+async def test_list_references_across_files(client: LanguageClient):
+    fileA = """
+            module A {
+              var x = 42;
+            }
+            """
+    fileB = """
+            module B {
+              use A;
+
+              var y = x;
+            }
+            """
+    fileC = """
+            module C {
+              import A.x;
+
+              var z = x;
+            }
+            """
+    with source_files(client, A=fileA, B=fileB, C=fileC) as docs:
+        all_refs = [
+            (docs("A"), pos((1, 6))),
+            (docs("B"), pos((3, 10))),
+            (docs("C"), pos((3, 10))),
+        ]
+
+        await check_references_and_cross_check(
+            client, docs("A"), pos((1, 6)), all_refs
+        )
