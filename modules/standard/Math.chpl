@@ -388,9 +388,6 @@ module Math {
     return casinh(x);
   }
 
-  @unstable("The return type of 'asinh' when called with an 'imag' argument is unstable and may change in the future.")
-  inline proc asinh(x: imag): complex do return asinh(x:complex);
-
   /* Returns the arc tangent of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -419,9 +416,6 @@ module Math {
     extern proc catan(z: complex(128)): complex(128);
     return catan(x);
   }
-
-  @unstable("The return type of 'atan' when called with an 'imag' argument is unstable and may change in the future.")
-  inline proc atan(x: imag): complex do return atan(x:complex);
 
   /* Returns the arc tangent of the ratio of the two arguments.
 
