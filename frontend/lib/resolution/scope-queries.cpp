@@ -2745,7 +2745,8 @@ struct GatherMentionedModules {
   { }
 
   void gatherModuleId(const ID& id);
-  const Scope* gatherIdsAndFindScope(const VecBorrowedIds& v);
+  const Scope* lookupAndGather(const Scope* scope, const AstNode* ast,
+                               UniqueString name);
   const Scope* gatherAndFindScope(const Scope* scope, const AstNode* ast);
   void processDot(const Dot* d);
   void processUseImport(const AstNode* ast);
@@ -2795,22 +2796,94 @@ void GatherMentionedModules::gatherModuleId(const ID& id) {
   }
 }
 
-// Gather any modules in vec
+// Lookup 'name' in 'scope' for 'ast'. Gather any modules it could refer to.
 // Return the first Scope* for a module in vec
 // Ambiguity should be reported elsewhere so is ignored here.
 const Scope*
-GatherMentionedModules::gatherIdsAndFindScope(const VecBorrowedIds& v) {
-  const Scope* scope = nullptr;
+GatherMentionedModules::lookupAndGather(const Scope* scope,
+                                        const AstNode* ast,
+                                        UniqueString name) {
+  const LookupConfig config = LOOKUP_DECLS |
+                              LOOKUP_IMPORT_AND_USE |
+                              LOOKUP_PARENTS |
+                              LOOKUP_INNERMOST;
+
+  auto v = lookupNameInScope(context, scope, /* receiver scopes */ {},
+                             name, config);
+
+  bool foundModule = false;
   for (const auto& bids : v) {
     for (const auto& id : bids) {
-      if (scope == nullptr && parsing::idIsModule(context, id)) {
-        scope = scopeForModule(context, id);
+      if (parsing::idIsModule(context, id)) {
+        foundModule = true;
       }
-      gatherModuleId(id);
     }
   }
 
-  return scope;
+  // exit if we didn't find a module
+  if (!foundModule) return nullptr;
+
+  // are we in a method scope where we found a module?
+  bool inMethod = false;
+  for (const Scope* cur = scope; cur != nullptr; cur = cur->parentScope()) {
+    if (cur->isMethodScope()) {
+      inMethod = true;
+      break;
+    }
+  }
+
+  // if we aren't in a method, use a faster strategy to find the module
+  if (!inMethod) {
+    const Scope* resultScope = nullptr;
+    for (const auto& bids : v) {
+      for (const auto& id : bids) {
+        if (resultScope == nullptr && parsing::idIsModule(context, id)) {
+          resultScope = scopeForModule(context, id);
+        }
+        gatherModuleId(id);
+      }
+    }
+    return resultScope;
+  }
+
+  // otherwise, use the scope resolver to to disambiguate between fields and
+  // modules with the same name.
+
+  // compute a resolution result for whatever we are working with
+  const ResolutionResultByPostorderID* rr = nullptr;
+  for (const Scope* cur = scope; cur != nullptr; cur = cur->parentScope()) {
+    auto tag = cur->tag();
+    const auto& id = cur->id();
+    if (asttags::isModule(tag)) {
+      const auto& tmp = scopeResolveModule(context, id);
+      rr = &tmp;
+      break;
+    } else if (asttags::isFunction(tag)) {
+      const ResolvedFunction* rf = scopeResolveFunction(context, id);
+      if (rf != nullptr) {
+        rr = & rf->resolutionById();
+        break;
+      }
+    } else if (asttags::isAggregateDecl(tag)) {
+      const auto& tmp = scopeResolveAggregate(context, id);
+      rr = &tmp;
+      break;
+    }
+  }
+
+  if (rr) {
+    const Scope* resultScope = nullptr;
+    if (const ResolvedExpression* re = rr->byAstOrNull(ast)) {
+      ID id = re->toId();
+      if (!id.isEmpty() && parsing::idIsModule(context, id)) {
+        gatherModuleId(id);
+        resultScope = scopeForModule(context, id);
+      }
+    }
+    return resultScope;
+  }
+
+  return nullptr;
 }
 
 // gather any modules mentioned in a Dot sequence or Identifier
@@ -2818,11 +2891,6 @@ GatherMentionedModules::gatherIdsAndFindScope(const VecBorrowedIds& v) {
 const Scope*
 GatherMentionedModules::gatherAndFindScope(const Scope* scope,
                                            const AstNode* ast) {
-  const LookupConfig config = LOOKUP_DECLS |
-                              LOOKUP_IMPORT_AND_USE |
-                              LOOKUP_PARENTS |
-                              LOOKUP_INNERMOST;
-
   if (auto ident = ast->toIdentifier()) {
 
     // handle super/this just in case this processes import Dot exprs
@@ -2832,10 +2900,7 @@ GatherMentionedModules::gatherAndFindScope(const Scope* scope,
       return scope->moduleScope();
     }
 
-    auto r = lookupNameInScope(context, scope, /* receiver scopes */ {},
-                               ident->name(), config);
-
-    return gatherIdsAndFindScope(r);
+    return lookupAndGather(scope, ident, ident->name());
   }
 
   if (auto dot = ast->toDot()) {
@@ -2849,9 +2914,7 @@ GatherMentionedModules::gatherAndFindScope(const Scope* scope,
     }
 
     if (innerScope != nullptr) {
-      auto r = lookupNameInScope(context, innerScope, /* receiver scopes */ {},
-                                 dot->field(), config);
-      return gatherIdsAndFindScope(r);
+      return lookupAndGather(innerScope, dot, dot->field());
     }
   }
 

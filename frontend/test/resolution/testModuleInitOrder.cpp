@@ -177,6 +177,102 @@ static void testFindMention(void) {
   std::cout << std::endl;
 }
 
+static void testFindMentionFields(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+      module Program {
+        module M {
+          var M: real;
+        }
+
+        record r1 { var M: int; }
+        record r2 { var M: r1; }
+
+        proc r2.foo() {
+          return M.M;
+        }
+
+        proc main() {
+          var x: r2;
+          var y = x.foo();
+        }
+      }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id());
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindMentionNotFields(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+      module Program {
+        module M {
+          var M: real;
+        }
+
+        record r1 { var N: int; }
+        record r2 { var N: r1; }
+
+        proc r2.foo() {
+          return M.M;
+        }
+
+        proc main() {
+          var x: r2;
+          var y = x.foo();
+        }
+      }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), "M");
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
 static void
 checkModuleInitOrder(Context* ctx, ID idMod, ...) {
   auto& v = moduleInitializationOrder(ctx, idMod, {});
@@ -563,6 +659,8 @@ int main() {
   testFindSimple();
   testFindImport();
   testFindMention();
+  testFindMentionFields();
+  testFindMentionNotFields();
 
   // tests of moduleInitializationOrder
   testSpec();
