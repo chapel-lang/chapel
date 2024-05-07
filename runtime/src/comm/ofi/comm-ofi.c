@@ -6028,43 +6028,39 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
                                            size_t size,
                                            chpl_bool blocking,
                                            struct perTxCtxInfo_t* tcip) {
+  uint64_t    flags = 0;
+  atomic_bool txnDone;
+  void        *ctx;
+
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
-      && (!bitmapTest(tcip->amoVisBitmap, node))
       && !blocking && envInjectRMA) {
     //
-    // Special case: write injection has the least latency.  We can use
-    // that if this PUT doesn't need a fence, its size doesn't exceed
-    // the injection size limit, and we have a bound tx context so we
-    // can delay forcing the memory visibility until later.
+    // Special case: write injection has the least latency.  We can use that
+    // if this PUT is non-blocking, its size doesn't exceed the injection
+    // size limit, and we have a bound tx context so we can delay forcing the
+    // memory visibility until later.
     //
-    (void) wrap_fi_inject_write(myAddr, node, mrRaddr, mrKey, size, tcip);
+    flags = FI_INJECT;
+  }
+  if (tcip->bound && bitmapTest(tcip->amoVisBitmap, node)) {
+    //
+    // Special case: If our last operation was an AMO (which can only
+    // be true with a bound tx context) then we need to do a fenced
+    // PUT to force the AMO to complete before this PUT.  We may still
+    // be able to inject the PUT, though.
+    //
+    flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
+  }
+  if (blocking) {
+    ctx = txCtxInit(tcip, __LINE__, &txnDone);
   } else {
-    atomic_bool txnDone;
-    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
+    ctx = txnTrkEncodeId(__LINE__);
+  }
 
-    if (tcip->bound && bitmapTest(tcip->amoVisBitmap, node)) {
-      //
-      // Special case: If our last operation was an AMO (which can only
-      // be true with a bound tx context) then we need to do a fenced
-      // PUT to force the AMO to complete before this PUT.  We may still
-      // be able to inject the PUT, though.
-      //
-      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE;
-      if (size <= ofi_info->tx_attr->inject_size
-          && !blocking && envInjectRMA) {
-        flags |= FI_INJECT;
-      }
-      (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
+  (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
                               ctx, flags, tcip);
-    } else {
-      //
-      // General case.
-      //
-      (void) wrap_fi_write(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                           ctx, tcip);
-    }
-
+  if (blocking) {
     waitForTxnComplete(tcip, ctx);
     txCtxCleanup(ctx);
   }
