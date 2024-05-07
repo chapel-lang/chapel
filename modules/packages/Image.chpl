@@ -196,6 +196,39 @@ module Image {
     return outArr;
   }
 
+  /*
+  Linearly interpolates between two colors to create an array of pixels.
+  */
+  proc interpolateColor(arr: [?d], colorA: pixelType, colorB: pixelType): [d] pixelType {
+    const low = min reduce arr;
+    const spread = ((max reduce arr) - low):real;
+
+    proc colorComponent(color: pixelType, param offset: int) do
+      return (color >> colorOffset(offset)) & colorMask;
+    proc linInterp(t:real, l, h) do return (l * (1 - t) + h * t):int;
+
+    var outPixels: [d] pixelType;
+    forall (a, outPixel) in zip(arr, outPixels) {
+
+      const t = (a - low):real / spread;
+      const redv = linInterp(t,
+                             colorComponent(colorA, red),
+                             colorComponent(colorB, red)) & colorMask;
+      const greenv = linInterp(t,
+                               colorComponent(colorA, green),
+                               colorComponent(colorB, green)) & colorMask;
+      const bluev = linInterp(t,
+                              colorComponent(colorA, blue),
+                              colorComponent(colorB, blue)) & colorMask;
+
+      outPixel = (redv << colorOffset(red)) |
+                 (greenv << colorOffset(green)) |
+                 (bluev << colorOffset(blue));
+    }
+
+    return outPixels;
+  }
+
 
   /*
     Scale a 2D array of pixels by a given factor
