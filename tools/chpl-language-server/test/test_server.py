@@ -151,11 +151,12 @@ async def test_global_completion(client: LanguageClient):
 
 
 DestinationTestType = typing.Union[
-        None,
-        Position,
-        TextDocumentIdentifier,
-        typing.Tuple[TextDocumentIdentifier, Position],
-    ]
+    None,
+    Position,
+    TextDocumentIdentifier,
+    typing.Tuple[TextDocumentIdentifier, Position],
+]
+
 
 def check_dst(
     doc: TextDocumentIdentifier,
@@ -183,7 +184,7 @@ def check_dst(
 
     if expect_str is not None:
         assert got_dst_uri.startswith("file://")
-        file_content = open(got_dst_uri[len("file://"):]).read()
+        file_content = open(got_dst_uri[len("file://") :]).read()
         return expect_str in file_content.split("\n")[got_dst_pos.line]
 
     return True
@@ -194,7 +195,7 @@ async def check_goto_decl_def(
     doc: TextDocumentIdentifier,
     src: Position,
     dst: DestinationTestType,
-    expect_str: typing.Optional[str] = None
+    expect_str: typing.Optional[str] = None,
 ):
     def validate(
         results: typing.Optional[
@@ -234,10 +235,14 @@ async def check_references(
     client: LanguageClient,
     doc: TextDocumentIdentifier,
     src: Position,
-    dsts: typing.List[DestinationTestType]
+    dsts: typing.List[DestinationTestType],
 ) -> typing.List[Position]:
     references = await client.text_document_references_async(
-        params=ReferenceParams(text_document=doc, position=src, context=ReferenceContext(include_declaration=True))
+        params=ReferenceParams(
+            text_document=doc,
+            position=src,
+            context=ReferenceContext(include_declaration=True),
+        )
     )
     assert references is not None
 
@@ -252,11 +257,12 @@ async def check_references(
 
     return [ref.range.start for ref in references]
 
+
 async def check_references_and_cross_check(
     client: LanguageClient,
     doc: TextDocumentIdentifier,
     src: Position,
-    dsts: typing.List[DestinationTestType]
+    dsts: typing.List[DestinationTestType],
 ):
     references = await check_references(client, doc, src, dsts)
     for ref in references:
@@ -325,6 +331,7 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
 
         assert len(client.diagnostics) == 0
 
+
 @pytest.mark.asyncio
 async def test_go_to_definition_standard_rename(client: LanguageClient):
     file = """
@@ -337,15 +344,30 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
     mod_List = standard_module("standard/List.chpl")
 
     with source_file(file) as doc:
-        await check_goto_decl_def(client, doc, pos((0, 4)), mod_IO, expect_str="module IO")
-        await check_goto_decl_def(client, doc, pos((0, 10)), mod_IO, expect_str="module IO")
-        await check_goto_decl_def(client, doc, pos((1, 7)), mod_IO, expect_str="module IO")
-        await check_goto_decl_def(client, doc, pos((1, 11)), mod_IO, expect_str="enum ioMode")
-        await check_goto_decl_def(client, doc, pos((1, 21)), mod_IO, expect_str="enum ioMode")
-        await check_goto_decl_def(client, doc, pos((2, 4)), mod_List, expect_str="module List")
-        await check_goto_decl_def(client, doc, pos((2, 14)), mod_List, expect_str="record list")
+        await check_goto_decl_def(
+            client, doc, pos((0, 4)), mod_IO, expect_str="module IO"
+        )
+        await check_goto_decl_def(
+            client, doc, pos((0, 10)), mod_IO, expect_str="module IO"
+        )
+        await check_goto_decl_def(
+            client, doc, pos((1, 7)), mod_IO, expect_str="module IO"
+        )
+        await check_goto_decl_def(
+            client, doc, pos((1, 11)), mod_IO, expect_str="enum ioMode"
+        )
+        await check_goto_decl_def(
+            client, doc, pos((1, 21)), mod_IO, expect_str="enum ioMode"
+        )
+        await check_goto_decl_def(
+            client, doc, pos((2, 4)), mod_List, expect_str="module List"
+        )
+        await check_goto_decl_def(
+            client, doc, pos((2, 14)), mod_List, expect_str="record list"
+        )
 
         assert len(client.diagnostics) == 0
+
 
 @pytest.mark.asyncio
 async def test_go_to_record_def(client: LanguageClient):
@@ -361,6 +383,7 @@ async def test_go_to_record_def(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
 
         assert len(client.diagnostics) == 0
+
 
 @pytest.mark.asyncio
 async def test_list_references(client: LanguageClient):
@@ -381,10 +404,24 @@ async def test_list_references(client: LanguageClient):
     with source_file(file) as doc:
         # 'find references' on definitions;
         # the cross checking will also validate the references.
-        await check_references_and_cross_check(client, doc, pos((0, 4)), [pos((0, 4)), pos((1, 8))])
-        await check_references_and_cross_check(client, doc, pos((1, 4)), [pos((1, 4))])
-        await check_references_and_cross_check(client, doc, pos((2, 4)), [pos((2, 4)), pos((4, 18))])
-        await check_references_and_cross_check(client, doc, pos((3, 9)), [pos((3, 9))])
-        await check_references_and_cross_check(client, doc, pos((4, 9)), [pos((3, 13)), pos((4, 9))])
-        await check_references_and_cross_check(client, doc, pos((7, 13)), [pos((7, 13)), pos((8, 17))])
-        await check_references_and_cross_check(client, doc, pos((8, 13)), [pos((8, 13))])
+        await check_references_and_cross_check(
+            client, doc, pos((0, 4)), [pos((0, 4)), pos((1, 8))]
+        )
+        await check_references_and_cross_check(
+            client, doc, pos((1, 4)), [pos((1, 4))]
+        )
+        await check_references_and_cross_check(
+            client, doc, pos((2, 4)), [pos((2, 4)), pos((4, 18))]
+        )
+        await check_references_and_cross_check(
+            client, doc, pos((3, 9)), [pos((3, 9))]
+        )
+        await check_references_and_cross_check(
+            client, doc, pos((4, 9)), [pos((3, 13)), pos((4, 9))]
+        )
+        await check_references_and_cross_check(
+            client, doc, pos((7, 13)), [pos((7, 13)), pos((8, 17))]
+        )
+        await check_references_and_cross_check(
+            client, doc, pos((8, 13)), [pos((8, 13))]
+        )
