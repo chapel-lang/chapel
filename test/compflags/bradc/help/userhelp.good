@@ -152,7 +152,6 @@ C Code Compilation Options:
       --static                        Generate a statically linked binary
 
 LLVM Code Generation Options:
-      --[no-]llvm                     [Don't] use the LLVM code generator
       --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
                                       optimizations
       --mllvm <flags>                 LLVM flags (can be specified multiple
