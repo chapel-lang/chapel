@@ -14,7 +14,7 @@ from lsprotocol.types import TextDocumentIdentifier
 from lsprotocol.types import (
     DidChangeWorkspaceFoldersParams,
     WorkspaceFoldersChangeEvent,
-    WorkspaceFolder
+    WorkspaceFolder,
 )
 
 import pytest
