@@ -20,6 +20,9 @@
 
 // checkUast.cpp
 
+// this file contains AST checks that occur after converting
+// from uAST to AST.
+
 #include "passes.h"
 
 #include "astutil.h"

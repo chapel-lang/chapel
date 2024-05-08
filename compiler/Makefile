@@ -62,7 +62,6 @@ include codegen/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
 include optimizations/Makefile.include
-include parser/Makefile.include
 include passes/Makefile.include
 include resolution/Makefile.include
 include util/Makefile.include

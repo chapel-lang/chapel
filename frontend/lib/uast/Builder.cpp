@@ -459,6 +459,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
 
   } else {
     // not a new scope
+    CHPL_ASSERT(!ast->isModule()); // modules should be a new scope
 
     // visit the children now to get integer part of ids in postorder
     for (auto & child : ast->children_) {

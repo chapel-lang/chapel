@@ -41,26 +41,341 @@ static std::string chplHome() {
 }
 
 static void
-checkModuleInitOrder(Context* ctx, ID idMod, ...) {
-  auto& v = moduleInitializationOrder(ctx, idMod, {});
-  va_list args;
-  va_start(args, idMod);
+checkMentionedModules(Context* ctx, ID idMod, std::vector<const char*> expect) {
+  auto& v = findMentionedModules(ctx, idMod);
 
+  std::cout << "got mentioned modules:\n";
+  for (const auto& id : v) {
+    std::cout << "  " << id.str() << "\n";
+  }
+
+  assert(expect.size() == v.size());
+
+  size_t i = 0;
   for (const auto& id : v) {
     assert(!id.isEmpty());
 
-    auto ast = !id.isEmpty() ? parsing::idToAst(ctx, id) : nullptr;
-    auto mod = ast ? ast->toModule() : nullptr;
-    assert(ast && mod);
+    auto ast = parsing::idToAst(ctx, id);
+    assert(ast);
+    auto mod = ast->toModule();
+    assert(mod);
 
-    std::string expect = va_arg(args, const char*);
+    assert(i < expect.size());
+    std::string exp = expect[i];
     std::string got = id.isEmpty() ? "<>" : mod->name().c_str();
-    std::cout << got << " == " << expect << std::endl;
-    assert(got == expect);
+    std::cout << got << " == " << exp << std::endl;
+    assert(got == exp);
+
+    i++;
   }
 }
 
-static void test0(void) {
+
+static void testFindUse(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    module M0 {
+      use Lib;
+    }
+    module M1 {
+      use Lib as Foo;
+    }
+    module M2 {
+      use Lib only Submodule;
+    }
+    module M3 {
+      use Lib only Submodule as Bar;
+    }
+    module M4 {
+      use Lib except Submodule;
+    }
+    module M5 {
+      use Lib.Submodule;
+    }
+
+    module Lib {
+      module Submodule { }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 7);
+  auto m0 = br.topLevelExpression(0)->toModule();
+  assert(m0);
+  auto m1 = br.topLevelExpression(1)->toModule();
+  assert(m1);
+  auto m2 = br.topLevelExpression(2)->toModule();
+  assert(m2);
+  auto m3 = br.topLevelExpression(3)->toModule();
+  assert(m3);
+  auto m4 = br.topLevelExpression(4)->toModule();
+  assert(m4);
+  auto m5 = br.topLevelExpression(5)->toModule();
+  assert(m5);
+
+  // check that we find the correct list of mentioned modules
+  std::cout << "M0" << std::endl;
+  checkMentionedModules(ctx, m0->id(), {"Lib"});
+  std::cout << "M1" << std::endl;
+  checkMentionedModules(ctx, m1->id(), {"Lib"});
+  std::cout << "M2" << std::endl;
+  checkMentionedModules(ctx, m2->id(), {"Lib", "Submodule"});
+  std::cout << "M3" << std::endl;
+  checkMentionedModules(ctx, m3->id(), {"Lib", "Submodule"});
+  std::cout << "M4" << std::endl;
+  checkMentionedModules(ctx, m4->id(), {"Lib"});
+  std::cout << "M5" << std::endl;
+  checkMentionedModules(ctx, m5->id(), {"Lib", "Submodule"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindImport(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    module M0 {
+      import Lib;
+    }
+    module M1 {
+      import Lib.Submodule;
+    }
+    module M2 {
+      import Lib.{x, Submodule};
+    }
+    module M3 {
+      import this.SubTwo.SubThree;
+      module SubTwo {
+        module SubThree { }
+      }
+    }
+
+    module Lib {
+      module Submodule { }
+      var x: int;
+    }
+
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 5);
+  auto m0 = br.topLevelExpression(0)->toModule();
+  assert(m0);
+  auto m1 = br.topLevelExpression(1)->toModule();
+  assert(m1);
+  auto m2 = br.topLevelExpression(2)->toModule();
+  assert(m2);
+  auto m3 = br.topLevelExpression(3)->toModule();
+  assert(m3);
+
+  // check that we find the correct list of mentioned modules
+  std::cout << "M0" << std::endl;
+  checkMentionedModules(ctx, m0->id(), {"Lib"});
+  std::cout << "M1" << std::endl;
+  checkMentionedModules(ctx, m1->id(), {"Lib", "Submodule"});
+  std::cout << "M2" << std::endl;
+  checkMentionedModules(ctx, m2->id(), {"Lib", "Submodule"});
+  std::cout << "M3" << std::endl;
+  checkMentionedModules(ctx, m3->id(), {"SubTwo", "SubThree"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindMention(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    module M1 {
+      Sub1.Sub2.foo();
+      module Sub1 {
+        module Sub2 {
+          proc foo() { }
+        }
+      }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), {"Sub1", "Sub2"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindMentionFields(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+      module Program {
+        module M {
+          var M: real;
+        }
+
+        record r1 { var M: int; }
+        record r2 { var M: r1; }
+
+        proc r2.foo() {
+          return M.M;
+        }
+
+        proc main() {
+          var x: r2;
+          var y = x.foo();
+        }
+      }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), { });
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindMentionNotFields(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+      module Program {
+        module M {
+          var M: real;
+        }
+
+        record r1 { var N: int; }
+        record r2 { var N: r1; }
+
+        proc r2.foo() {
+          return M.M;
+        }
+
+        proc main() {
+          var x: r2;
+          var y = x.foo();
+        }
+      }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), {"M"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void
+checkModuleInitOrder(Context* ctx, ID idMod, std::vector<const char*> expect) {
+  auto& v = moduleInitializationOrder(ctx, idMod, {});
+
+  std::cout << "got module init order:\n";
+  for (const auto& id : v) {
+    std::cout << "  " << id.str() << "\n";
+  }
+
+  assert(expect.size() == v.size());
+
+  size_t i = 0;
+  for (const auto& id : v) {
+    assert(!id.isEmpty());
+
+    auto ast = parsing::idToAst(ctx, id);
+    assert(ast);
+    auto mod = ast->toModule();
+    assert(mod);
+
+    assert(i < expect.size());
+    std::string exp = expect[i];
+    std::string got = id.isEmpty() ? "<>" : mod->name().c_str();
+    std::cout << got << " == " << exp << std::endl;
+    assert(got == exp);
+
+    i++;
+  }
+}
+
+static void testSpec(void) {
   Context::Configuration config;
   config.chplHome = chplHome();
   Context context(config);
@@ -115,7 +430,7 @@ static void test0(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "M4", "M2", "M3", "M1");
+  checkModuleInitOrder(ctx, m1->id(), {"M4", "M2", "M3", "M1"});
 
 
   std::cout << "---" << std::endl;
@@ -125,7 +440,7 @@ static void test0(void) {
 }
 
 // Make sure module initialization order can handle circular dependencies.
-static void test1(void) {
+static void testCircular(void) {
   Context::Configuration config;
   config.chplHome = chplHome();
   Context context(config);
@@ -171,13 +486,152 @@ static void test1(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "M3", "M2", "M1");
+  checkModuleInitOrder(ctx, m1->id(), {"M3", "M2", "M1"});
 
   std::cout << "---" << std::endl;
 
   assert(!guard.realizeErrors());
   std::cout << std::endl;
 }
+
+static void testImportSub(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  // Do NOT set the module search paths for this test. Do not want to
+  // compute the standard/internal modules in this ordering.
+  /** setupModuleSearchPaths(ctx, false, false, {}, {}); */
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  // test that dead modules / submodules do not contribute
+  // to the initialization ordering.
+  std::string contents =
+    R""""(
+    module Main {
+      import this.Library.Submodule;
+      proc main() { }
+      module Library {
+        module Submodule { }
+      }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check to make sure the initialization order is correct.
+  checkModuleInitOrder(ctx, m1->id(), {"Library", "Submodule", "Main"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testMentionedSubmodule(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  // Do NOT set the module search paths for this test. Do not want to
+  // compute the standard/internal modules in this ordering.
+  /** setupModuleSearchPaths(ctx, false, false, {}, {}); */
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  // test that dead modules / submodules do not contribute
+  // to the initialization ordering.
+  std::string contents =
+    R""""(
+    module Main {
+      module Submodule {
+        proc foo() { }
+      }
+
+      proc main() {
+        Submodule.foo();
+      }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check to make sure the initialization order is correct.
+  checkModuleInitOrder(ctx, m1->id(), {"Submodule", "Main"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testMentionedLibrarySub(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  // Do NOT set the module search paths for this test. Do not want to
+  // compute the standard/internal modules in this ordering.
+  /** setupModuleSearchPaths(ctx, false, false, {}, {}); */
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  // test that dead modules / submodules do not contribute
+  // to the initialization ordering.
+  std::string contents =
+    R""""(
+    module Main {
+      import Library;
+      proc main() {
+        Library.Submodule.foo();
+      }
+    }
+    module Library {
+      module Submodule {
+        proc foo() { }
+      }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 2);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check to make sure the initialization order is correct.
+  checkModuleInitOrder(ctx, m1->id(), {"Library", "Submodule", "Main"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
 
 static void testDeadModule(void) {
   Context::Configuration config;
@@ -218,7 +672,7 @@ static void testDeadModule(void) {
   assert(m1);
 
   // check to make sure the initialization order is correct.
-  checkModuleInitOrder(ctx, m1->id(), "Main");
+  checkModuleInitOrder(ctx, m1->id(), {"Main"});
 
 
   std::cout << "---" << std::endl;
@@ -278,8 +732,19 @@ static void testBundled(void) {
 
 
 int main() {
-  test0();
-  test1();
+  // tests of findMentionedModules
+  testFindUse();
+  testFindImport();
+  testFindMention();
+  testFindMentionFields();
+  testFindMentionNotFields();
+
+  // tests of moduleInitializationOrder
+  testSpec();
+  testCircular();
+  testImportSub();
+  testMentionedSubmodule();
+  testMentionedLibrarySub();
   testDeadModule();
   testBundled();
   return 0;

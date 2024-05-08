@@ -83,17 +83,19 @@ CLASS_BEGIN(Location)
 CLASS_END(Location)
 
 CLASS_BEGIN(Scope)
-  PLAIN_GETTER(Scope, used_imported_modules, "Get the modules that were used or imported in this scope",
+  PLAIN_GETTER(Scope, modules_named_in_use_or_import, "Get the modules that were named in use or import statements directly within this scope",
                std::vector<const chpl::uast::Module*>,
 
-               auto& moduleIds = resolution::findUsedImportedIds(context, node);
                std::set<ID> reportedIds;
                std::vector<const chpl::uast::Module*> toReturn;
-               for (size_t i = 0; i < moduleIds.size(); i++) {
-                 auto& id = moduleIds[i];
-                 if (!reportedIds.insert(id).second) continue;
-                 auto ast = parsing::idToAst(context, id);
-                 if (auto mod = ast->toModule()) toReturn.push_back(mod);
+               if (node != nullptr && node->containsUseImport()) {
+                 if (auto r = resolveVisibilityStmts(context, node)) {
+                   for (const auto& id: r->modulesNamedInUseOrImport()) {
+                     if (!reportedIds.insert(id).second) continue;
+                     auto ast = parsing::idToAst(context, id);
+                     if (auto mod = ast->toModule()) toReturn.push_back(mod);
+                   }
+                 }
                }
                return toReturn)
   PLAIN_GETTER(Scope, parent_scope, "Get the parent (outer) scope of this scope",

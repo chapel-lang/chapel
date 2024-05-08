@@ -1867,16 +1867,19 @@ struct GatherModulesVisitor {
   void handleUseOrImport(const AstNode* node) {
     if (processUsedModules_) {
       auto scope = resolution::scopeForId(context_, node->id());
-      auto used = resolution::findUsedImportedIds(context_, scope);
-      for (auto id: used) {
-        if (idIsInBundledModule(context_, id)) {
-          continue;
-        }
-        // only add it and visit its children if we haven't seen it already
-        if (modules.find(id) == modules.end()) {
-          modules.insert(id);
-          auto ast = idToAst(context_, id);
-          ast->traverse(*this);
+      if (scope != nullptr && scope->containsUseImport()) {
+        if (auto r = resolveVisibilityStmts(context_, scope)) {
+          for (auto id: r->modulesNamedInUseOrImport()) {
+            if (idIsInBundledModule(context_, id)) {
+              continue;
+            }
+            // only add it and visit its children if we haven't seen it already
+            if (modules.find(id) == modules.end()) {
+              modules.insert(id);
+              auto ast = idToAst(context_, id);
+              ast->traverse(*this);
+            }
+          }
         }
       }
     }

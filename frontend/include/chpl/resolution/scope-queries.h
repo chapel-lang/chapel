@@ -38,7 +38,7 @@ namespace resolution {
   const Scope* scopeForId(Context* context, ID id);
 
   /**
-    Given an ID for a Module, returns a Scope that represents
+   Given an ID for a Module, returns a Scope that represents
     the Module scope (and what symbols are defined in it).
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
@@ -153,12 +153,18 @@ namespace resolution {
 
 
   /**
-   * Given a scope, returns a list of IDs for all the modules and enums that
-   * were either used or imported in that scope. May return an empty vector if
-   * no modules were used or imported in the scope.
+   Given a scope, returns a vector of IDs for all the modules and enums that
+   were either used or imported in that scope. May return an empty vector if
+   no modules were used or imported in the scope.
    */
   const std::vector<ID> findUsedImportedIds(Context* context,
                                             const Scope* scope);
+
+  /**
+   Given a ID for a module, returns a vector of IDs for all the modules
+   that are used, imported, or mentioned in that module.
+   */
+  const std::vector<ID>& findMentionedModules(Context* context, ID modId);
 
   /**
     Resolve the uses and imports in a given scope.
