@@ -189,9 +189,10 @@ generateInitParts(Context* context,
   }
 
   // start by adding a formal for the receiver
-  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
-                                                      false,
-                                                      nullptr);
+  auto ufsReceiver =
+    UntypedFnSignature::FormalDetail(USTR("this"),
+                                     UntypedFnSignature::DK_NO_DEFAULT,
+                                     nullptr);
   ufsFormals.push_back(std::move(ufsReceiver));
 
   // Determine the receiver type and intent.
@@ -261,7 +262,16 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
     // type that can be used as a sentinel.
     formalHasDefault |= isTypeDefaultInitializable(context, fieldQt.type());
 
-    auto fd = UntypedFnSignature::FormalDetail(formalName, formalHasDefault,
+    UntypedFnSignature::DefaultKind defaultKind;
+    if (formalHasDefault) {
+      defaultKind = UntypedFnSignature::DK_DEFAULT;
+    } else if (rf.isGeneric()) {
+      defaultKind = UntypedFnSignature::DK_MAYBE_DEFAULT;
+    } else {
+      defaultKind = UntypedFnSignature::DK_NO_DEFAULT;
+    }
+
+    auto fd = UntypedFnSignature::FormalDetail(formalName, defaultKind,
                                                formalAst);
     ufsFormals.push_back(std::move(fd));
 
@@ -313,10 +323,10 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
 
   // add a formal for the 'other' argument
   auto name = UniqueString::get(context, "other");
-  bool hasDefault = false;
+  auto defaultKind = UntypedFnSignature::DK_NO_DEFAULT;
   const uast::Decl* node = nullptr;
 
-  auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
+  auto fd = UntypedFnSignature::FormalDetail(name, defaultKind, node);
   ufsFormals.push_back(std::move(fd));
 
   CHPL_ASSERT(formalTypes.size() == 1);
@@ -392,14 +402,23 @@ generateDeSerialize(Context* context, const CompositeType* compType,
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
 
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, compType));
 
   // TODO: Add constraints to these arguments
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, channel), false, nullptr));
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, channel),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, AnyType::get(context)));
 
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, deSerializer), false, nullptr));
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, deSerializer),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::REF, AnyType::get(context)));
 
   // build the untyped signature
@@ -439,7 +458,10 @@ generateDomainMethod(Context* context,
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
 
-  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, dt));
 
   auto ufs = UntypedFnSignature::get(context,
@@ -475,7 +497,10 @@ generateArrayMethod(Context* context,
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
 
-  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, at));
 
   auto ufs = UntypedFnSignature::get(context,
@@ -510,7 +535,10 @@ generateTupleMethod(Context* context,
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
 
-  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, at));
 
   auto ufs = UntypedFnSignature::get(context,
@@ -547,9 +575,10 @@ fieldAccessorQuery(Context* context,
   std::vector<QualifiedType> formalTypes;
 
   // start by adding a formal for the receiver
-  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
-                                                      false,
-                                                      nullptr);
+  auto ufsReceiver =
+    UntypedFnSignature::FormalDetail(USTR("this"),
+                                     UntypedFnSignature::DK_NO_DEFAULT,
+                                     nullptr);
   ufsFormals.push_back(std::move(ufsReceiver));
 
   const Type* thisType = compType;
@@ -607,7 +636,10 @@ generateOperatorFormalDetail(const UniqueString name,
                              QualifiedType::Kind qtKind,
                              bool hasDefault = false,
                              const uast::Decl* decl = nullptr) {
-  auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, decl);
+  auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                : UntypedFnSignature::DK_NO_DEFAULT;
+
+  auto fd = UntypedFnSignature::FormalDetail(name, defaultKind, decl);
   ufsFormals.push_back(std::move(fd));
 
   auto qtFd = QualifiedType(qtKind, compType);
@@ -743,7 +775,10 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
 
-  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
 
   // Allow calling 'eltType' on either a type or value
   auto qual = receiverType.isType() ? QualifiedType::TYPE : QualifiedType::CONST_REF;
@@ -843,11 +878,11 @@ setupGeneratedEnumCastFormals(Context* context,
 
   auto ufsFrom =
       UntypedFnSignature::FormalDetail(UniqueString::get(context, "from"),
-                                       false, nullptr);
+                                       UntypedFnSignature::DK_NO_DEFAULT, nullptr);
   ufsFormals.push_back(std::move(ufsFrom));
   auto ufsTo =
       UntypedFnSignature::FormalDetail(UniqueString::get(context, "to"),
-                                       false, nullptr);
+                                       UntypedFnSignature::DK_NO_DEFAULT, nullptr);
   ufsFormals.push_back(std::move(ufsTo));
 
   formalTypes.push_back(fromQt);

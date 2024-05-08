@@ -131,7 +131,9 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
         CHPL_ASSERT(varargs->initExpression() == nullptr);
       }
 
-      auto fd = UntypedFnSignature::FormalDetail(name, hasDefault,
+      auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                    : UntypedFnSignature::DK_NO_DEFAULT;
+      auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
                                                  decl, decl->isVarArgFormal());
       formals.push_back(fd);
     }
@@ -545,7 +547,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       entry.actualIdx_ = -1;
       entry.formalType_ = formalQT;
       entry.formalInstantiated_ = formalInstantiated;
-      entry.hasDefault_ = untyped->formalHasDefault(i);
+      entry.hasDefault_ = untyped->formalMightHaveDefault(i);
 
       entryIdx++;
     } else {
@@ -598,7 +600,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         entry.actualIdx_ = -1;
         entry.formalType_ = qt;
         entry.formalInstantiated_ = formalInstantiated;
-        entry.hasDefault_ = untyped->formalHasDefault(i);
+        entry.hasDefault_ = untyped->formalMightHaveDefault(i);
         entry.isVarArgEntry_ = true;
 
         entryIdx++;

@@ -1275,8 +1275,11 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       if (shouldIncludeFieldInTypeConstructor(context, fieldDecl, fieldType,
                                               formalType)) {
 
+        auto defaultKind = f.fieldHasDefaultValue(i) ?
+                           UntypedFnSignature::DK_DEFAULT :
+                           UntypedFnSignature::DK_NO_DEFAULT;
         auto d = UntypedFnSignature::FormalDetail(f.fieldName(i),
-                                                  f.fieldHasDefaultValue(i),
+                                                  defaultKind,
                                                   fieldDecl,
                                                   fieldDecl->isVarArgFormal());
         formals.push_back(d);
