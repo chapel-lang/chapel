@@ -970,7 +970,8 @@ class ResolvedVisibilityScope {
 
   bool operator==(const ResolvedVisibilityScope& other) const {
     return scope_ == other.scope_ &&
-           visibilityClauses_ == other.visibilityClauses_;
+           visibilityClauses_ == other.visibilityClauses_ &&
+           modulesNamedInUseOrImport_ == other.modulesNamedInUseOrImport_;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
@@ -983,6 +984,9 @@ class ResolvedVisibilityScope {
     context->markPointer(scope_);
     for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
+    }
+    for (const auto& id: modulesNamedInUseOrImport_) {
+      id.mark(context);
     }
   }
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
