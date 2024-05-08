@@ -44,5 +44,9 @@ e.g. [`test/path/to/foo.chpl`](
 
 - Output of `chpldoc --version`:
 - Output of `$CHPL_HOME/util/printchplenv --anonymize`:
+  <!--
+  When `$CHPL_HOME` is not set, you can use `chpl --print-chpl-settings`
+  instead, though be aware that this does not anonymize the output
+  -->
 - Back-end compiler and version, e.g. `gcc --version` or `clang --version`:
 - (For Cray systems only) Output of `module list`:
