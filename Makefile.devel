@@ -72,7 +72,7 @@ frontend-tests:
 
 test-dyno: FORCE test-frontend
 
-test-chpl-language-server: FORCE
+test-cls test-chpl-language-server: FORCE
 	@cd tools/chpl-language-server && $(MAKE) test-chpl-language-server
 
 run-frontend-linters: FORCE
