@@ -156,16 +156,16 @@ async def client(lsp_client: LanguageClient):
     await lsp_client.shutdown_session()
 
 
-"""
-The type of 'expected destinations' to be used with the various checking
-functions below.
-"""
 DestinationTestType = typing.Union[
     None,
     Position,
     TextDocumentIdentifier,
     typing.Tuple[TextDocumentIdentifier, Position],
 ]
+"""
+The type of 'expected destinations' to be used with the various checking
+functions below.
+"""
 
 
 def check_dst(
