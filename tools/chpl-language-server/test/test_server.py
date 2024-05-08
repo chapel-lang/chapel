@@ -126,7 +126,7 @@ def standard_module(name: str):
     Retrieves the path of a standard module with the given name.
     """
 
-    fullname = name + '.chpl'
+    fullname = name + ".chpl"
     return TextDocumentIdentifier(
         f"file://{os.path.join(CHPL_HOME, 'modules', 'standard', fullname)}"
     )
@@ -137,7 +137,7 @@ def internal_module(name: str):
     Retrieves the path of an internal module with the given name.
     """
 
-    fullname = name + '.chpl'
+    fullname = name + ".chpl"
     return TextDocumentIdentifier(
         f"file://{os.path.join(CHPL_HOME, 'modules', 'internal', fullname)}"
     )
@@ -522,7 +522,9 @@ async def test_go_to_string_type(client: LanguageClient):
     mod_String = internal_module("String")
 
     with source_file(client, file) as doc:
-        await check_goto_decl_def(client, doc, pos((0, 7)), mod_String, expect_str="record _string")
+        await check_goto_decl_def(
+            client, doc, pos((0, 7)), mod_String, expect_str="record _string"
+        )
 
         assert len(client.diagnostics) == 0
 
