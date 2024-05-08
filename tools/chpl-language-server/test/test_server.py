@@ -448,7 +448,7 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
 async def test_go_to_definition_standard_rename(client: LanguageClient):
     """
     Ensure that go-to-definition works with using/importing symbols,
-    even if renaking is in use.
+    even if renaming is in use.
     """
 
     file = """
