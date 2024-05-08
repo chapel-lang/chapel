@@ -688,13 +688,6 @@ OPTIONS
 
 *LLVM Code Generation Options*
 
-.. _man-llvm:
-
-**\--[no-]llvm**
-
-    Use LLVM as the code generation target rather than C. See
-    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
-
 .. _man-llvm-wide-opt:
 
 **\--[no-]llvm-wide-opt**
