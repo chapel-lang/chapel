@@ -4,3 +4,5 @@ lsprotocol==2023.0.1
 pygls==1.3.0
 typeguard==3.0.2
 ConfigArgParse==1.7
+pytest==8.2.0
+pytest-lsp==0.4.1

@@ -37,6 +37,10 @@ chpl-language-server-venv:
 
 chpl-language-server: chpl-language-server-venv
 
+test-chpl-language-server: chpl-language-server
+	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
+		python3 -m pytest test
+
 clean: clean-link clean-link-shim
 
 cleanall: clean
