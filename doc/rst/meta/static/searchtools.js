@@ -132,7 +132,7 @@ const _displayItem = (item, searchTerms, highlightTerms) => {
       .then((data) => {
         if (data)
           listItem.appendChild(
-            Search.makeSearchSummary(data, searchTerms)
+            Search.makeSearchSummary(data, searchTerms, anchor)
           );
         // highlight search terms in the summary
         if (SPHINX_HIGHLIGHT_ENABLED)  // set in sphinx_highlight.js
@@ -697,18 +697,46 @@ const Search = {
    * search summary for a given text. keywords is a list
    * of stemmed words.
    */
-  makeSearchSummary: (htmlText, keywords) => {
+  makeSearchSummary: (htmlText, keywords, anchor) => {
+    let anchor_key = "";
+
+    if (anchor === "#forall-loops") {
+      anchor_key = "";
+    }
+
+    if (anchor.startsWith('#')) {
+      anchor = anchor.slice(1);
+      const span = '<span id="' + anchor + '">';
+      const section = '<section id="' + anchor + '">';
+      const re = new RegExp(_escapeRegExp(span) + "\|" + _escapeRegExp(section));
+      let idx = htmlText.search(re);
+      if (idx != -1) {
+        anchor_key = 'ANCHOR_SEARCH_' + anchor;
+        let replaced = htmlText.substring(0, idx);
+        replaced += anchor_key;
+        replaced += htmlText.substring(idx);
+        htmlText = replaced;
+      }
+    }
+
     const text = Search.htmlToText(htmlText);
     if (text === "") return null;
 
-    const textLower = text.toLowerCase();
-    const actualStartPosition = [...keywords]
-      .map((k) => textLower.indexOf(k.toLowerCase()))
-      .filter((i) => i > -1)
-      .slice(-1)[0];
-    const startWithContext = Math.max(actualStartPosition - 120, 0);
+    let startWithContext = 0;
+    let top = "";
 
-    const top = startWithContext === 0 ? "" : "...";
+    if (anchor_key !== "") {
+      startWithContext = text.indexOf(anchor_key) + anchor_key.length;
+    } else {
+      const textLower = text.toLowerCase();
+      const actualStartPosition = [...keywords]
+        .map((k) => textLower.indexOf(k.toLowerCase()))
+        .filter((i) => i > -1)
+        .slice(-1)[0];
+      startWithContext = Math.max(actualStartPosition - 120, 0);
+      top = startWithContext === 0 ? "" : "...";
+    }
+
     const tail = startWithContext + 240 < text.length ? "..." : "";
 
     let summary = document.createElement("p");
