@@ -4,6 +4,12 @@
  *
  * Sphinx JavaScript utilities for the full-text search.
  *
+ * This version has been modified from the Sphinx version in order
+ * to address problems with the search box in the Chapel documentation:
+ *   * work with non-stemmed index entry list so we can search for 'for'
+ *   * summary shows the start of the section when linking to an anchor
+ *   * show the category of different results
+ *
  * :copyright: Copyright 2007-2023 by the Sphinx team, see AUTHORS.
  * :license: BSD, see LICENSE for details.
  *
