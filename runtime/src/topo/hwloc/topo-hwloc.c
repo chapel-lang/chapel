@@ -701,6 +701,13 @@ static void partitionResources(void) {
     // so just set our own.
     logAccSets[0] = hwloc_bitmap_dup(logAccSet);
   }
+  if (debug) {
+    for (int i = 0; i < numLocalesOnNode; i++) {
+      char buf[1024];
+      hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSets[i]);
+      _DBG_P("logAccSets[%d]: %s", i, buf);
+    }
+  }
 
   // CHPL_RT_OVERSUBSCRIBED overrides oversubscription determination
 
@@ -1272,6 +1279,50 @@ static int comparePCIObjs(const void *a, const void *b)
   return result;
 }
 
+static void fillDistanceMatrix(int numObjs, hwloc_obj_t *objs,
+                               int distances[][numObjs]) {
+
+  // Build a distance matrix between locales and objects.
+
+  int numLocales = chpl_get_num_locales_on_node();
+  _DBG_P("numLocales = %d numObjs = %d", numLocales, numObjs);
+
+  hwloc_obj_t locales[numLocales];
+
+  for (int i = 0; i < numLocales; i++) {
+    if (logAccSets[i] != NULL) {
+      CHK_ERR(locales[i] =  hwloc_get_obj_covering_cpuset(topology,
+                                                        logAccSets[i]));
+      char buf[1024];
+      hwloc_obj_attr_snprintf(buf, sizeof(buf), locales[i], ",", 1);
+      _DBG_P("locales[%d]: %s", i, buf);
+    } else {
+      locales[i] = NULL;
+    }
+  }
+
+  for (int i = 0; i < numObjs; i++) {
+    char buf[1024];
+    hwloc_obj_attr_snprintf(buf, sizeof(buf), objs[i], ",", 1);
+    _DBG_P("objs[%d]: %s", i, buf);
+  }
+
+  // Compute the distances between locales and objects. If locales[j]
+  // is NULL then we don't know which PUs that locale is using, so
+  // we ignore it by setting its distances to infinite.
+
+  for (int i = 0; i < numLocales; i++) {
+    for (int j = 0; j < numObjs; j++) {
+      if (locales[i] != NULL) {
+        distances[i][j] = distance(topology, objs[j], locales[i]);
+      } else {
+        distances[i][j] = INT32_MAX;
+      }
+    }
+  }
+}
+
+
 //
 // Given a NIC with the specified PCI address, determines which NIC of the
 // same type (same PCI Vendor ID and PCI Device ID) is the best to use under
@@ -1331,50 +1382,24 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
         //
         qsort(nics, numNics, sizeof(*nics), comparePCIObjs);
 
-        //
-        // Build a distance matrix between locales and NICs. Then search the
-        // matrix for the shortest distance and assign the NIC to the locale.
-        // Repeat for all unassigned NICs and locales until either all
-        // locales have a NIC or there are no more unassigned NICs. In the
-        // latter situation locales will have to share NICs, so mark all NICs
-        // as unassigned and repeat the process.
-        //
+        int distances[numLocales][numNics];
+        fillDistanceMatrix(numNics, nics, distances);
+
+
+        // Search the distance matrix for the shortest distance and assign the
+        // NIC to the locale. Repeat for all unassigned NICs and locales
+        // until either all locales have a NIC or there are no more
+        // unassigned NICs. In the latter situation locales will have to
+        // share NICs, so mark all NICs as unassigned and repeat the
+        // process.
+
         hwloc_obj_t locales[numLocales];
         hwloc_obj_t assigned[numLocales]; // NIC assigned to the locale
         int numAssigned = 0;
-        int distances[numNics][numLocales];
 
-        for (int j = 0; j < numLocales; j++) {
-          if (logAccSets[j] != NULL) {
-            CHK_ERR(locales[j] =  hwloc_get_obj_covering_cpuset(topology,
-                                                              logAccSets[j]));
-          } else {
-            locales[j] = NULL;
-          }
-          assigned[j] = NULL;
-        }
-
-        // Compute the distances between locales and NICs. If locales[j]
-        // is NULL then we don't know which PUs that locale is using, so
-        // we ignore it by setting its distances to infinite.
-
-        for (int i = 0; i < numNics; i++) {
-          for (int j = 0; j < numLocales; j++) {
-            if (locales[j] != NULL) {
-              distances[i][j] = distance(topology, nics[i], locales[j]);
-            } else {
-              distances[i][j] = INT32_MAX;
-            }
-          }
-        }
-        if (debug) {
-          fprintf(stderr, "distances:\n");
-          for (int i = 0; i < numNics; i++) {
-            for (int j = 0; j < numLocales; j++) {
-              fprintf(stderr, "%02d ", distances[i][j]);
-            }
-            fprintf(stderr, "\n");
-          }
+        for (int i = 0; i < numLocales; i++) {
+          locales[i] = NULL;
+          assigned[i] = NULL;
         }
 
         chpl_bool finished = false;
@@ -1392,17 +1417,22 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
           // iteration ("used") and assign that NIC to that locale.
           int numAvail = numNics;
           while((numAvail > 0) && (numAssigned < numLocales)) {
+            _DBG_P("inner loop: numAssigned %d numAvail %d", numAssigned, numAvail);
               int minimum = INT32_MAX;
               int minNic = -1;
               int minLoc = -1;
-              for (int i = 0; i < numNics; i++) {
-                if (!used[i]) {
-                  for (int j = 0; j < numLocales; j++) {
-                      if ((!assigned[j]) && (distances[i][j] < minimum)) {
-                          minimum = distances[i][j];
-                          minNic = i;
-                          minLoc = j;
-                      }
+              for (int i = 0; i < numLocales; i++) {
+                _DBG_P("assigned[%d] = %p", i, assigned[i]);
+                _DBG_P("minimum = %d", minimum);
+                if (!assigned[i]) {
+                  for (int j = 0; j < numNics; j++) {
+                    _DBG_P("used[%d] = %d, distances[%d][%d] = %d",
+                           j, used[j], i, j, distances[i][j]);
+                    if ((!used[j]) && (distances[i][j] < minimum)) {
+                      minimum = distances[i][j];
+                      minLoc = i;
+                      minNic = j;
+                    }
                   }
                 }
               }
@@ -1436,6 +1466,123 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
       result = outAddr;
     }
   }
+  return result;
+}
+
+// Given the PCI bus addresses of a set of devices, determine which of those
+// devices the calling locale should use. Each co-locale is assigned the same
+// number of devices and each device is assigned to at most one locale. This
+// function uses a greedy algorithm to assign devices to locales. The
+// distance matrix records the distance between each device and the locale's
+// CPU set. The device/locale pair with the minimum distance are assigned to
+// each other and the device is removed from consideration. The process then
+// repeats until all co-locales have been assigned the proper number of
+// devices.
+//
+// Note that cores are assigned to co-llocales during initialization of the
+// topology layer before this function is called. As a result, the assignment
+// of cores and devices to co-locales may not be optimal, especially if the
+// machine topology is asymmetric. For example, if there are two co-locales
+// on a machine with four NUMA domains, one co-locale will be assigned cores
+// in the first two NUMA domains and the other the second two domains. If
+// there are two devices each connected to one of the first two domains then
+// the second co-locale will use a device that is relatively far from it.
+
+int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
+                              chpl_topo_pci_addr_t *outAddrs,
+                              int *count)
+{
+  int result = 0;
+  int numLocales = chpl_get_num_locales_on_node();
+  _DBG_P("count = %d", *count);
+  _DBG_P("numLocales = %d", numLocales);
+  if (numLocales > 1) {
+    int numDevs = *count;
+    int owners[numDevs]; // locale that owns each device
+    hwloc_obj_t objs[numDevs]; // the device objects
+    int devsPerLocale = numDevs / numLocales;
+    int owned[numLocales]; // number of devices each locale owns
+
+    for (int i = 0; i < numDevs; i++) {
+      owners[i] = -1;
+      objs[i] = NULL;
+    }
+
+    for (int i = 0; i < numLocales; i++) {
+      owned[i] = 0;
+    }
+
+    int rank = chpl_get_local_rank();
+    if (rank >= 0) {
+      for (int i = 0; i < numDevs; i++) {
+        hwloc_obj_t obj;
+        // find the PCI object corresponding to the specified bus address
+        obj = hwloc_get_pcidev_by_busid(topology,
+                                        (unsigned) inAddrs[i].domain,
+                                        (unsigned) inAddrs[i].bus,
+                                        (unsigned) inAddrs[i].device,
+                                        (unsigned) inAddrs[i].function);
+        if (obj == NULL) {
+          _DBG_P("Could not find PCI %04x:%02x:%02x.%x", inAddrs[i].domain,
+                 inAddrs[i].bus, inAddrs[i].device, inAddrs[i].function);
+          if (debug) {
+            _DBG_P("PCI devices:");
+            for (hwloc_obj_t obj = hwloc_get_next_pcidev(topology, NULL);
+                 obj != NULL;
+                 obj = hwloc_get_next_pcidev(topology, obj)) {
+              _DBG_P("%04x:%02x:%02x.%x", obj->attr->pcidev.domain,
+                 obj->attr->pcidev.bus, obj->attr->pcidev.dev,
+                 obj->attr->pcidev.func);
+            }
+          }
+          result = 1;
+          goto done;
+        }
+        objs[i] = obj;
+      }
+      int distances[numLocales][numDevs];
+      fillDistanceMatrix(numDevs, objs, distances);
+      while (owned[rank] < devsPerLocale) {
+
+        // Find the minimum distance between a locale that needs more devices
+        // and a device that doesn't have an owner and assign that device to
+        // that locale.
+
+        int minimum = INT32_MAX;
+        int minDev = -1;
+        int minLoc = -1;
+        for (int i = 0; i < numLocales; i++) {
+          if (owned[i] < devsPerLocale) {
+            for (int j = 0; j < numDevs; j++) {
+              if ((owners[j] == -1) && (distances[i][j] < minimum)) {
+                minimum = distances[i][j];
+                minLoc = i;
+                minDev = j;
+              }
+            }
+          }
+        }
+        assert((minDev >= 0) && (minLoc >= 0));
+        owners[minDev] = minLoc;
+        owned[minLoc]++;
+      }
+    }
+    // Return the addresses of our devices
+    int j = 0;
+    for (int i = 0; i < numDevs; i++) {
+      if (owners[i] == rank) {
+          outAddrs[j++] = inAddrs[i];
+      }
+    }
+    assert(j == devsPerLocale);
+    *count = devsPerLocale;
+  } else {
+    for (int i = 0; i < *count; i++) {
+      outAddrs[i] = inAddrs[i];
+    }
+  }
+done:
+  _DBG_P("returning %d, count = %d", result, *count);
   return result;
 }
 

@@ -165,8 +165,17 @@ typedef struct chpl_topo_pci_addr {
     uint8_t function;
 } chpl_topo_pci_addr_t;
 
+#define CHPL_TOPO_PCI_ADDR_EQUAL(a, b) \
+    (((a)->domain == (b)->domain) && \
+     ((a)->bus == (b)->bus) && \
+     ((a)->device == (b)->device) && \
+     ((a)->function == (b)->function))
+
 chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
                                                 chpl_topo_pci_addr_t *outAddr);
+
+int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
+                              chpl_topo_pci_addr_t *outAddrs, int *count);
 //
 // Returns True if the node is oversubscribed (locales are sharing
 // cores).
