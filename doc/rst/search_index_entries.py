@@ -23,8 +23,18 @@ if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
 logger = logging.getLogger(__name__)
-JSON = 'search-index-entries.js'
+JSON = 'searchindex.js'
 
+# For Python 3.9 and later, just use removeprefix / removesuffix
+def remove_prefix(text, prefix):
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    return text
+
+def remove_suffix(text, suffix):
+    if text.endswith(suffix):
+        return text[:-len(suffix)]
+    return text
 
 def process_index_nodes(app: Sphinx, doctree: nodes.document, docname: str):
     if app.builder.format != 'html':
@@ -38,7 +48,7 @@ def process_index_nodes(app: Sphinx, doctree: nodes.document, docname: str):
             # ignore C++ entries
             if not entryname.startswith('chpl::'):
                 #print (entryname, " -> ", uri)
-                terms[entryname] = target
+                terms[entryname.lower()] = target
 
     if hasattr(app.env, 'search_index_docname_to_terms'):
         app.env.search_index_docname_to_terms.update({docname: terms})
@@ -71,15 +81,27 @@ def on_build_finish(app, exc):
     if not app.env.search_index_docname_to_terms:
         return
 
+    dest_dir = app.outdir
+    fname = os.path.join(dest_dir, JSON)
+
     logger.info(f'Preparing {JSON}', color='green')
 
-    idx_to_doc = [ ] # from idx to docuri
+    # load up the searchindex.js file
+    searchindex = ""
+    with open(fname, 'r') as f:
+        searchindex = f.read()
+
+    # remove 'Search.setIndex(' as well as the trailing )
+    searchindex = remove_prefix(searchindex, 'Search.setIndex(')
+    searchindex = remove_suffix(searchindex, ')');
+
+    # parse the result as a json object
+    index = json.loads(searchindex)
+
+    # compute a map from docname to idx
     doc_to_idx = { } # from docname to idx
-    for docname in sorted(app.env.search_index_docname_to_terms):
-        docuri = app.builder.get_target_uri(docname)
-        doc_to_idx[docname] = len(idx_to_doc)
-        idx_to_doc.append(docuri)
-        assert idx_to_doc[doc_to_idx[docname]] == docuri
+    for idx, docname in enumerate(index['docnames']):
+        doc_to_idx[docname] = idx
 
     forward = { }
     for docname, terms in app.env.search_index_docname_to_terms.items():
@@ -89,17 +111,19 @@ def on_build_finish(app, exc):
                 forward[entryname] = [ ]
             forward[entryname].append(str(doc_idx) + "#" + target)
 
-    print ("forward", forward)
+    # print ("forward", forward)
 
-    logger.info(f'Writing {JSON}', color='green')
+    # save the map in the searchindex
+    index['index_entries_to_locations'] = forward
 
-    dest_dir = app.outdir
+    nkeys = len(forward)
+    logger.info(f'Writing {nkeys} new entries to {JSON}', color='green')
+
     os.makedirs(dest_dir, exist_ok=True)
 
-    with open(os.path.join(dest_dir, JSON), 'w') as f:
-        f.write("Search.setManualIndex(")
-        json.dump({'docuris': idx_to_doc,
-                   'index_entries_to_locations': forward}, f)
+    with open(fname, 'w') as f:
+        f.write("Search.setIndex(")
+        json.dump(index, f)
         f.write(")")
 
 
