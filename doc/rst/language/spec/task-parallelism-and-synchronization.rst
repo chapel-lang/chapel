@@ -154,7 +154,9 @@ continue statements may not be used to exit a begin block.
 
 .. index::
    single: sync
+   single: sync variables
    single: single
+   single: single variables
    single: synchronization variables; sync
    single: synchronization types; formal arguments
    single: synchronization types; actual arguments
