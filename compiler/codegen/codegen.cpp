@@ -24,7 +24,10 @@
 #include "baseAST.h"
 #include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/util/filesystem.h"
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+// this is not needed in newer LLVM versions
 #include "clangBuiltinsWrappedSet.h"
+#endif
 #include "clangUtil.h"
 #include "config.h"
 #include "driver.h"
@@ -2357,7 +2360,8 @@ debug_data *debug_info=NULL;
 
 
 
-#ifdef HAVE_LLVM
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+// this is not needed in newer LLVM versions
 
 // handle e.g. chpl_clang_builtin_wrapper_cabs
 
@@ -2587,17 +2591,18 @@ static void codegenPartOne() {
 
   convertToRefTypes();
 
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+  // this is not needed in newer LLVM versions
   // Wrap calls to chosen functions from c library
   if (fLlvmCodegen) {
-#ifdef HAVE_LLVM
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXTERN)) {
         if(hasWrapper(fn->cname))
           fn->cname = getClangBuiltinWrappedName(fn->cname);
       }
     }
-#endif
   }
+#endif
 
   // Vectors to store different symbol names to be used while uniquifying
   std::set<const char*> cnames;
