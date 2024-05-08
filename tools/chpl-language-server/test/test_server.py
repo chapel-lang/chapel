@@ -132,6 +132,17 @@ def standard_module(name: str):
     )
 
 
+def internal_module(name: str):
+    """
+    Retrieves the path of an internal module with the given name.
+    """
+
+    fullname = name + '.chpl'
+    return TextDocumentIdentifier(
+        f"file://{os.path.join(CHPL_HOME, 'modules', 'internal', fullname)}"
+    )
+
+
 @pytest_lsp.fixture(
     config=ClientServerConfig(
         server_command=[
@@ -494,6 +505,24 @@ async def test_go_to_record_def(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
+
+        assert len(client.diagnostics) == 0
+
+
+@pytest.mark.asyncio
+async def test_go_to_string_type(client: LanguageClient):
+    """
+    Ensure that 'go to definition' on a type actually works.
+    """
+
+    file = """
+           var z: string;
+           """
+
+    mod_String = internal_module("String")
+
+    with source_file(client, file) as doc:
+        await check_goto_decl_def(client, doc, pos((0, 7)), mod_String, expect_str="record _string")
 
         assert len(client.diagnostics) == 0
 
