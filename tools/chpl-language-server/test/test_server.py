@@ -126,8 +126,9 @@ def standard_module(name: str):
     Retrieves the path of a standard module with the given name.
     """
 
+    fullname = name + '.chpl'
     return TextDocumentIdentifier(
-        f"file://{os.path.join(CHPL_HOME, 'modules', name)}"
+        f"file://{os.path.join(CHPL_HOME, 'modules', 'standard', fullname)}"
     )
 
 
@@ -428,10 +429,10 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
            import Time;
            """
 
-    mod_IO = standard_module("standard/IO.chpl")
-    mod_List = standard_module("standard/List.chpl")
-    mod_Map = standard_module("standard/Map.chpl")
-    mod_Time = standard_module("standard/Time.chpl")
+    mod_IO = standard_module("IO")
+    mod_List = standard_module("List")
+    mod_Map = standard_module("Map")
+    mod_Time = standard_module("Time")
 
     with source_file(client, file) as doc:
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
@@ -456,8 +457,8 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
            use List only list;
            """
 
-    mod_IO = standard_module("standard/IO.chpl")
-    mod_List = standard_module("standard/List.chpl")
+    mod_IO = standard_module("IO")
+    mod_List = standard_module("List")
 
     with source_file(client, file) as doc:
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
