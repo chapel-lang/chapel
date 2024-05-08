@@ -48,7 +48,7 @@ def process_index_nodes(app: Sphinx, doctree: nodes.document, docname: str):
             # ignore C++ entries
             if not entryname.startswith('chpl::'):
                 #print (entryname, " -> ", uri)
-                terms[entryname.lower()] = target
+                terms[entryname] = target
 
     if hasattr(app.env, 'search_index_docname_to_terms'):
         app.env.search_index_docname_to_terms.update({docname: terms})

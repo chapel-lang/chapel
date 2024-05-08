@@ -423,7 +423,7 @@ const Search = {
     function saveResult(entry, locations, score) {
       // swap around the semicolon for nested index entries
       let displayEntry = ""
-      const rev = entry.split(';').reverse();
+      /*const rev = entry.split(';').reverse();
       for (var i = 0; i < rev.length; i++) {
         if (i == 0) {
           displayEntry = rev[i];
@@ -432,7 +432,8 @@ const Search = {
           displayEntry += stemmer.stemWord(rev[i]);
           displayEntry += ")";
         }
-      }
+      }*/
+      displayEntry = entry.replace(';', ' > ');
 
       locations.forEach((loc) => {
         const [docIdxStr, anchor] = loc.split('#', 2);
@@ -452,29 +453,45 @@ const Search = {
 
     if (typeof termToLocation !== 'undefined') {
       for (const [entry, locations] of Object.entries(termToLocation)) {
-        if (entry.includes(queryLower)) {
-          let score = Math.round(10000 * queryLower.length / entry.length);
-          saveResult(entry, locations, score);
-        } else {
-          // check for separate stemmed words
-          let nTermsMatched = 0;
-          let nCharsMatched = 0;
-          searchTerms.forEach((word) => {
-            if (word.length > 2 && entry.includes(word)) {
-              nCharsMatched += word.length;
-              nTermsMatched += 1;
-            }
-          });
-          if (nCharsMatched > 2 && nTermsMatched >= 1) {
-            if (nCharsMatched > entry.length) {
-              nCharsMatched = entry.length;
-            }
-            let score1 = nCharsMatched / entry.length;
-            let score2 = nTermsMatched / searchTerms.size;
-            let score = Math.round(10000 * (score1 + score2)/2);
+        // compute a score by considering how it matches
+        let nVerbatimMatched = 0;
+        let nTermsMatched = 0;
+        let nCharsSubtermMatched = 0;
 
-            saveResult(entry, locations, score);
+        const entryLower = entry.toLowerCase();
+        if (entryLower.includes(queryLower)) {
+          nVerbatimMatched = queryLower.length;
+        }
+        // consider how different words match
+        let entryWords = []
+        splitQuery(entryLower.trim()).forEach((entryTerm) => {
+          // stem the word
+          let word = stemmer.stemWord(entryTerm);
+          entryWords.push(word);
+        });
+        searchTerms.forEach((queryWord) => {
+          if (queryWord.length > 2) {
+            entryWords.forEach((entryWord) => {
+              if (entryWord === queryWord) {
+                nTermsMatched += 1;
+              } else if (entryWord.includes(queryWord)) {
+                nCharsSubtermMatched += queryWord.length;
+              }
+            });
           }
+        });
+        // combine the information to compute a score
+        if (nVerbatimMatched > 0 ||
+            nTermsMatched > 0 ||
+            nCharsSubtermMatched > 0) {
+          if (nCharsSubtermMatched > entry.length) {
+            nCharsSubtermMatched = entry.length;
+          }
+          let score1 = nVerbatimMatched / entry.length;
+          let score2 = nTermsMatched / entryWords.length;
+          let score3 = nCharsSubtermMatched / entry.length;
+          let score = Math.round(100 * (score1 + score2 + score3)/3);
+          saveResult(entry, locations, score);
         }
       }
     } else {
