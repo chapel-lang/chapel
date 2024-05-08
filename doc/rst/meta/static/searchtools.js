@@ -69,7 +69,7 @@ const _displayItem = (item, searchTerms, highlightTerms) => {
   let listItem = document.createElement("li");
   let typestr = "";
   if (docName.startsWith("language/spec/"))
-    typestr = "Language Specification";
+    typestr = "spec";
   else if (docName.startsWith("primers/"))
     typestr = "primer";
   else if (docName.startsWith("examples/"))
