@@ -44,9 +44,12 @@ static void
 checkMentionedModules(Context* ctx, ID idMod, std::vector<const char*> expect) {
   auto& v = findMentionedModules(ctx, idMod);
 
+  std::cout << "got mentioned modules:\n";
   for (const auto& id : v) {
     std::cout << "  " << id.str() << "\n";
   }
+
+  assert(expect.size() == v.size());
 
   size_t i = 0;
   for (const auto& id : v) {
@@ -68,7 +71,7 @@ checkMentionedModules(Context* ctx, ID idMod, std::vector<const char*> expect) {
 }
 
 
-static void testFindSimple(void) {
+static void testFindUse(void) {
   Context::Configuration config;
   config.chplHome = chplHome();
   Context context(config);
@@ -80,22 +83,61 @@ static void testFindSimple(void) {
 
   std::string contents =
     R""""(
-    module M1 {
-      use M2;
+    module M0 {
+      use Lib;
     }
-    module M2 { }
+    module M1 {
+      use Lib as Foo;
+    }
+    module M2 {
+      use Lib only Submodule;
+    }
+    module M3 {
+      use Lib only Submodule as Bar;
+    }
+    module M4 {
+      use Lib except Submodule;
+    }
+    module M5 {
+      use Lib.Submodule;
+    }
+
+    module Lib {
+      module Submodule { }
+    }
     )"""";
 
   setFileText(ctx, path, contents);
 
   // Get the module.
   auto& br = parseAndReportErrors(ctx, path);
-  assert(br.numTopLevelExpressions() == 2);
-  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(br.numTopLevelExpressions() == 7);
+  auto m0 = br.topLevelExpression(0)->toModule();
+  assert(m0);
+  auto m1 = br.topLevelExpression(1)->toModule();
   assert(m1);
+  auto m2 = br.topLevelExpression(2)->toModule();
+  assert(m2);
+  auto m3 = br.topLevelExpression(3)->toModule();
+  assert(m3);
+  auto m4 = br.topLevelExpression(4)->toModule();
+  assert(m4);
+  auto m5 = br.topLevelExpression(5)->toModule();
+  assert(m5);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id(), {"M2"});
+  std::cout << "M0" << std::endl;
+  checkMentionedModules(ctx, m0->id(), {"Lib"});
+  std::cout << "M1" << std::endl;
+  checkMentionedModules(ctx, m1->id(), {"Lib"});
+  std::cout << "M2" << std::endl;
+  checkMentionedModules(ctx, m2->id(), {"Lib", "Submodule"});
+  std::cout << "M3" << std::endl;
+  checkMentionedModules(ctx, m3->id(), {"Lib", "Submodule"});
+  std::cout << "M4" << std::endl;
+  checkMentionedModules(ctx, m4->id(), {"Lib"});
+  std::cout << "M5" << std::endl;
+  checkMentionedModules(ctx, m5->id(), {"Lib", "Submodule"});
 
   std::cout << "---" << std::endl;
 
@@ -115,24 +157,52 @@ static void testFindImport(void) {
 
   std::string contents =
     R""""(
+    module M0 {
+      import Lib;
+    }
     module M1 {
-      import M2.Sub;
+      import Lib.Submodule;
     }
     module M2 {
-      module Sub { }
+      import Lib.{x, Submodule};
     }
+    module M3 {
+      import this.SubTwo.SubThree;
+      module SubTwo {
+        module SubThree { }
+      }
+    }
+
+    module Lib {
+      module Submodule { }
+      var x: int;
+    }
+
     )"""";
 
   setFileText(ctx, path, contents);
 
   // Get the module.
   auto& br = parseAndReportErrors(ctx, path);
-  assert(br.numTopLevelExpressions() == 2);
-  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(br.numTopLevelExpressions() == 5);
+  auto m0 = br.topLevelExpression(0)->toModule();
+  assert(m0);
+  auto m1 = br.topLevelExpression(1)->toModule();
   assert(m1);
+  auto m2 = br.topLevelExpression(2)->toModule();
+  assert(m2);
+  auto m3 = br.topLevelExpression(3)->toModule();
+  assert(m3);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id(), {"Sub"});
+  std::cout << "M0" << std::endl;
+  checkMentionedModules(ctx, m0->id(), {"Lib"});
+  std::cout << "M1" << std::endl;
+  checkMentionedModules(ctx, m1->id(), {"Lib", "Submodule"});
+  std::cout << "M2" << std::endl;
+  checkMentionedModules(ctx, m2->id(), {"Lib", "Submodule"});
+  std::cout << "M3" << std::endl;
+  checkMentionedModules(ctx, m3->id(), {"SubTwo", "SubThree"});
 
   std::cout << "---" << std::endl;
 
@@ -279,9 +349,12 @@ static void
 checkModuleInitOrder(Context* ctx, ID idMod, std::vector<const char*> expect) {
   auto& v = moduleInitializationOrder(ctx, idMod, {});
 
+  std::cout << "got module init order:\n";
   for (const auto& id : v) {
     std::cout << "  " << id.str() << "\n";
   }
+
+  assert(expect.size() == v.size());
 
   size_t i = 0;
   for (const auto& id : v) {
@@ -660,7 +733,7 @@ static void testBundled(void) {
 
 int main() {
   // tests of findMentionedModules
-  testFindSimple();
+  testFindUse();
   testFindImport();
   testFindMention();
   testFindMentionFields();
