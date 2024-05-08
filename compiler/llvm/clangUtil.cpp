@@ -3061,9 +3061,12 @@ void runClang(const char* just_parse_filename) {
       }
     }
 
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+// this is not needed in newer LLVM versions
     // Include header containing libc wrappers
     clangOtherArgs.push_back("-include");
     clangOtherArgs.push_back("llvm/chapel_libc_wrapper.h");
+#endif
 
     // Include extern C blocks
     if( fAllowExternC && gAllExternCode.filename ) {
