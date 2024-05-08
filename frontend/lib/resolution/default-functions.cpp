@@ -233,12 +233,6 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   auto& rf = fieldsForTypeDecl(context, compType, defaultsPolicy);
 
-  // TODO: generic types
-  if (rf.isGeneric()) {
-    CHPL_UNIMPL("generating 'init' signatures for generic types is not yet supported");
-    return nullptr;
-  }
-
   // TODO: super fields and invoking super
   if (auto basic = compType->toBasicClassType()) {
     if (auto parent = basic->parentClassType()) {
@@ -253,7 +247,9 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
     auto fieldQt = rf.fieldType(i);
     auto formalName = rf.fieldName(i);
     bool formalHasDefault = rf.fieldHasDefaultValue(i);
-    const uast::Decl* formalAst = nullptr;
+
+    const uast::Decl* formalAst =
+      parsing::idToAst(context, rf.fieldDeclId(i))->toDecl();
 
     // A field may not have a default value. If it is default-initializable
     // then the formal should still take a default value (in this case the
