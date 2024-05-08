@@ -337,7 +337,9 @@ struct FindMain {
   FindMain(Context* context) { }
 
   bool enter(const Function* fn) {
-    if (fn->name() == USTR("main")) {
+    if (fn->name() == USTR("main") &&
+        fn->kind() == Function::PROC &&
+        !fn->isMethod()) {
       mainProcsFound.push_back(fn);
     }
     return true;
@@ -375,11 +377,12 @@ static const ID& findMainModuleImpl(Context* context,
   }
 
   if (!requestedMainModuleName.isEmpty()) {
-    // use requestedMainModuleName to get the main module name
+    // the main module is provided by a command-line option, so use that
     const Module* matchingModule = nullptr;
     for (const Module* mod : findMain.modulesFound) {
       if (mod->name() == requestedMainModuleName) {
         matchingModule = mod;
+        break;
       }
     }
     if (matchingModule) {
@@ -389,9 +392,8 @@ static const ID& findMainModuleImpl(Context* context,
                      "could not find module named '%s' for --main-module",
                      requestedMainModuleName.c_str());
     }
-  }
-
-  if (result.isEmpty() && findMain.mainProcsFound.size() > 0) {
+  } else if (findMain.mainProcsFound.size() > 0) {
+    // the main module is the single command-line module containing a 'main'
     ID mainProc = findMain.mainProcsFound[0]->id();
     result = idToParentModule(context, mainProc);
 
@@ -401,12 +403,12 @@ static const ID& findMainModuleImpl(Context* context,
       context->error(Location(),
                      "ambiguous main functions, use --main-module");
     }
-  }
-
-  if (result.isEmpty()) {
-    if (commandLineModules.size() == 1) {
-      result = commandLineModules[0];
-    } else if (commandLineModules.size() == 0) {
+  } else if (commandLineModules.size() == 1) {
+    // the main module is the single command-line module
+    result = commandLineModules[0];
+  } else {
+    // emit an error
+    if (commandLineModules.size() == 0) {
       // AFAIK this won't be possible to reach
       context->error(Location(),
                      "could not find main module: no command-line modules");
