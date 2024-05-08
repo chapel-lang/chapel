@@ -2311,10 +2311,6 @@ doResolveUseStmt(Context* context, const Use* use,
                                                   expr, VIS_USE, oldName,
                                                   namedModulesSet);
     if (foundScope != nullptr) {
-
-      // note that this module is named in 'use'
-      addNamedModule(r, namedModulesSet, foundScope->id());
-
       maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
       // 'private use' brings the module name into a shadow scope
