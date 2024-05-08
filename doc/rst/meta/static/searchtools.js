@@ -341,25 +341,7 @@ const Search = {
     }
 
     // search for explicit entries in index directives
-    results.push(...Search.queryManualIndex(queryLower));
-
-    /*
-    for (const [entry, foundEntries] of Object.entries(indexEntries)) {
-      if (entry.includes(queryLower) && (queryLower.length >= entry.length/2)) {
-        for (const [file, id] of foundEntries) {
-          let score = Math.round(100 * queryLower.length / entry.length)
-          results.push([
-            docNames[file],
-            entry,
-            id ? "#" + id : "",
-            null,
-            score,
-            filenames[file],
-            "<b>" + entry + "</b> in " + titles[file],
-          ]);
-        }
-      }
-    }*/
+    results.push(...Search.queryManualIndex(query));
 
     // lookup as object
     objectTerms.forEach((term) =>
@@ -410,47 +392,89 @@ const Search = {
     _displayNextItem(results, results.length, searchTerms, highlightTerms);
   },
 
-  queryManualIndex: (queryLower) => {
+  queryManualIndex: (query) => {
     const filenames = Search._index.filenames;
     const docNames = Search._index.docnames;
     const titles = Search._index.titles;
     const termToLocation = Search._index.index_entries_to_locations;
     const indexEntries = Search._index.indexentries;
     const stemmer = new Stemmer()
+    const searchTerms = new Set();
+    const excludedTerms = new Set();
+    const queryLower = query.trim().toLowerCase();
+
+    splitQuery(query.trim()).forEach((queryTerm) => {
+      const queryTermLower = queryTerm.toLowerCase();
+
+      // do not use stopwords here
+
+      // stem the word
+      let word = stemmer.stemWord(queryTermLower);
+      // select the correct list
+      if (word[0] === "-") excludedTerms.add(word.substr(1));
+      else {
+        searchTerms.add(word);
+      }
+    });
 
     // array of [docname, title, anchor, descr, score, filename]
     let results = [];
+
+    function saveResult(entry, locations, score) {
+      // swap around the semicolon for nested index entries
+      let displayEntry = ""
+      const rev = entry.split(';').reverse();
+      for (var i = 0; i < rev.length; i++) {
+        if (i == 0) {
+          displayEntry = rev[i];
+        } else {
+          displayEntry += " (";
+          displayEntry += stemmer.stemWord(rev[i]);
+          displayEntry += ")";
+        }
+      }
+
+      locations.forEach((loc) => {
+        const [docIdxStr, anchor] = loc.split('#', 2);
+        const file = parseInt(docIdxStr, 10);
+        if (0 <= file && file < docNames.length) {
+          results.push([docNames[file],
+                        displayEntry,
+                        '#' + anchor,
+                        null,
+                        score,
+                        filenames[file],
+                        "<b>" + displayEntry + "</b> in " + titles[file]
+                       ]);
+        }
+      });
+    }
+
     if (typeof termToLocation !== 'undefined') {
       for (const [entry, locations] of Object.entries(termToLocation)) {
         if (entry.includes(queryLower)) {
-          // swap around the semicolon for nested index entries
-          let displayEntry = ""
-          const rev = entry.split(';').reverse();
-          for (var i = 0; i < rev.length; i++) {
-            if (i == 0) {
-              displayEntry = rev[i];
-            } else {
-              displayEntry += " (";
-              displayEntry += stemmer.stemWord(rev[i]);
-              displayEntry += ")";
-            }
-          }
-
-          let score = Math.round(10000 * queryLower.length / entry.length)
-          locations.forEach((loc) => {
-            const [docIdxStr, anchor] = loc.split('#', 2);
-            const file = parseInt(docIdxStr, 10);
-            if (0 <= file && file < docNames.length) {
-              results.push([docNames[file],
-                            displayEntry,
-                            '#' + anchor,
-                            null,
-                            score,
-                            filenames[file],
-                            "<b>" + displayEntry + "</b> in " + titles[file]
-                           ]);
+          let score = Math.round(10000 * queryLower.length / entry.length);
+          saveResult(entry, locations, score);
+        } else {
+          // check for separate stemmed words
+          let nTermsMatched = 0;
+          let nCharsMatched = 0;
+          searchTerms.forEach((word) => {
+            if (word.length > 2 && entry.includes(word)) {
+              nCharsMatched += word.length;
+              nTermsMatched += 1;
             }
           });
+          if (nCharsMatched > 2 && nTermsMatched >= 1) {
+            if (nCharsMatched > entry.length) {
+              nCharsMatched = entry.length;
+            }
+            let score1 = nCharsMatched / entry.length;
+            let score2 = nTermsMatched / searchTerms.size;
+            let score = Math.round(10000 * (score1 + score2)/2);
+
+            saveResult(entry, locations, score);
+          }
         }
       }
     } else {
