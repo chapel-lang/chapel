@@ -5,20 +5,17 @@ import typing
 import json
 
 from lsprotocol.types import ClientCapabilities
-from lsprotocol.types import CompletionList
-from lsprotocol.types import CompletionParams
-from lsprotocol.types import DefinitionParams
-from lsprotocol.types import DeclarationParams
-from lsprotocol.types import DidChangeWorkspaceFoldersParams
-from lsprotocol.types import ReferenceParams
-from lsprotocol.types import ReferenceContext
+from lsprotocol.types import CompletionList, CompletionParams
+from lsprotocol.types import DefinitionParams, DeclarationParams
+from lsprotocol.types import ReferenceParams, ReferenceContext
 from lsprotocol.types import InitializeParams
-from lsprotocol.types import LocationLink
-from lsprotocol.types import Location
-from lsprotocol.types import Position
+from lsprotocol.types import LocationLink, Location, Position
 from lsprotocol.types import TextDocumentIdentifier
-from lsprotocol.types import WorkspaceFoldersChangeEvent
-from lsprotocol.types import WorkspaceFolder
+from lsprotocol.types import (
+    DidChangeWorkspaceFoldersParams,
+    WorkspaceFoldersChangeEvent,
+    WorkspaceFolder
+)
 
 import pytest
 import pytest_lsp
