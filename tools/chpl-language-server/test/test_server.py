@@ -262,6 +262,17 @@ async def check_goto_decl_def(
     validate(results)
 
 
+async def check_goto_decl_def_module(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    src: Position,
+    mod: TextDocumentIdentifier,
+):
+    pieces = os.path.split(mod.uri)
+    mod_name = pieces[-1][: -len(".chpl")]
+    await check_goto_decl_def(client, doc, src, mod, f"module {mod_name} ")
+
+
 async def check_references(
     client: LanguageClient,
     doc: TextDocumentIdentifier,
@@ -423,10 +434,11 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
     mod_Time = standard_module("standard/Time.chpl")
 
     with source_file(client, file) as doc:
-        await check_goto_decl_def(client, doc, pos((0, 4)), mod_IO)
-        await check_goto_decl_def(client, doc, pos((1, 4)), mod_List)
-        await check_goto_decl_def(client, doc, pos((1, 10)), mod_Map)
-        await check_goto_decl_def(client, doc, pos((2, 8)), mod_Time)
+        await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
+        await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
+        await check_goto_decl_def_module(client, doc, pos((1, 4)), mod_List)
+        await check_goto_decl_def_module(client, doc, pos((1, 10)), mod_Map)
+        await check_goto_decl_def_module(client, doc, pos((2, 8)), mod_Time)
 
         assert len(client.diagnostics) == 0
 
@@ -448,24 +460,16 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
     mod_List = standard_module("standard/List.chpl")
 
     with source_file(client, file) as doc:
-        await check_goto_decl_def(
-            client, doc, pos((0, 4)), mod_IO, expect_str="module IO"
-        )
-        await check_goto_decl_def(
-            client, doc, pos((0, 10)), mod_IO, expect_str="module IO"
-        )
-        await check_goto_decl_def(
-            client, doc, pos((1, 7)), mod_IO, expect_str="module IO"
-        )
+        await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
+        await check_goto_decl_def_module(client, doc, pos((0, 10)), mod_IO)
+        await check_goto_decl_def_module(client, doc, pos((1, 7)), mod_IO)
         await check_goto_decl_def(
             client, doc, pos((1, 11)), mod_IO, expect_str="enum ioMode"
         )
         await check_goto_decl_def(
             client, doc, pos((1, 21)), mod_IO, expect_str="enum ioMode"
         )
-        await check_goto_decl_def(
-            client, doc, pos((2, 4)), mod_List, expect_str="module List"
-        )
+        await check_goto_decl_def_module(client, doc, pos((2, 4)), mod_List)
         await check_goto_decl_def(
             client, doc, pos((2, 14)), mod_List, expect_str="record list"
         )
