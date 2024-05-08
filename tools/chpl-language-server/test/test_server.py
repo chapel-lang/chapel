@@ -58,12 +58,7 @@ class SourceFilesContext:
                 f.write(strip_leading_whitespace(contents))
 
             allfiles.append(filepath)
-            commands[filepath] = [
-                {
-                    "module_dirs": [],
-                    "files": allfiles
-                }
-            ]
+            commands[filepath] = [{"module_dirs": [], "files": allfiles}]
 
         commandspath = os.path.join(self.tempdir.name, ".cls-commands.json")
         with open(commandspath, "w") as f:
@@ -548,6 +543,7 @@ async def test_list_references(client: LanguageClient):
 
         assert len(client.diagnostics) == 0
 
+
 @pytest.mark.asyncio
 async def test_list_references_across_files(client: LanguageClient):
     """
@@ -584,6 +580,7 @@ async def test_list_references_across_files(client: LanguageClient):
             client, docs("A"), pos((1, 6)), all_refs
         )
         assert len(client.diagnostics) == 0
+
 
 @pytest.mark.asyncio
 @pytest.mark.xfail
