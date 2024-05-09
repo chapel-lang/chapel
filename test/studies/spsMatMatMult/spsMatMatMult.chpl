@@ -1,6 +1,7 @@
 use BlockDist, LayoutCS, LayoutCSUtil, Random;
 
-enum layout { csr, csc };
+enum layout { CSR, CSC };
+use layout;
 
 config const n = 10,
              density = 0.05,
@@ -31,8 +32,8 @@ const Dom = {1..n, 1..n};
 
 
 
-const AD = randSparseMatrix(Dom, density, layout.csc, localeGrid),
-      BD = randSparseMatrix(Dom, density, layout.csr, localeGrid);
+const AD = randSparseMatrix(Dom, density, CSC, localeGrid),
+      BD = randSparseMatrix(Dom, density, CSR, localeGrid);
 
 var A: [AD] int = 1,
     B: [BD] int = 1;
@@ -134,7 +135,7 @@ proc DenseMatMatMult(A, B) {
 
 
 proc randSparseMatrix(Dom, density, param lay, locGrid) {
-  type layoutType = CS(compressRows=(lay==layout.csr));
+  type layoutType = CS(compressRows=(lay==CSR));
   const DenseBlockDom = Dom dmapped new blockDist(boundingBox=Dom,
                                                   targetLocales=locGrid,
                                                   sparseLayoutType=layoutType);
