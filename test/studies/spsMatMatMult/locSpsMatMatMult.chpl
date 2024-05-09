@@ -1,6 +1,7 @@
 use LayoutCS, LayoutCSUtil, Random;
 
-enum layout { csr, csc };
+enum layout { CSR, CSC };
+use layout;
 
 config const n = 10,
              density = 0.05,
@@ -12,31 +13,54 @@ var rands = if seed == 0 then new randomStream(real)
                          else new randomStream(real, seed);
 
 // print library-selected seed, for reproducibility
+//
 if printSeed then
   writeln("Using seed: ", rands.seed);
 
 
+// dense bounding box of the matrices
+//
 const Dom = {1..n, 1..n};
 
-const AD = randSparseMatrix(Dom, density, layout.csc),
-      BD = randSparseMatrix(Dom, density, layout.csr);
+// sparse index patterns for the matrices
+//
+const AD = randSparseMatrix(Dom, density, CSC),
+      BD = randSparseMatrix(Dom, density, CSR);
 
+// the sparse matrices themselves
+//
 var A: [AD] int = 1,
     B: [BD] int = 1;
 
 writeSparseMatrix("A is:", A);
 writeSparseMatrix("B is:", B);
 
-const CSps = SparseMatMatMult(A, B);
 
-writeSparseMatrix("C (sparsely computed) is:", CSps);
+// compute and print the product using the sparse matrix-matrix algorithm
+//
+const Csps = SparseMatMatMult(A, B);
+writeSparseMatrix("C (sparsely computed) is:", Csps);
 
+
+// optionally compute and print the product using dense matrix-matrix
+// multiplication as a check
+//
 if !skipDense {
-  const CDns = DenseMatMatMult(A, B);
-  writeSparseMatrix("C (densely computed) is: ", CDns);
+  const Cdns = DenseMatMatMult(A, B);
+  writeSparseMatrix("C (densely computed) is: ", Cdns);
+
+  forall (i,j) in Cdns.domain do
+    if Cdns[i,j] != Csps[i,j] then
+      halt("Mismatch between dense and sparse algorithms at ", (i,j), ": ",
+           Cdns[i,j], Csps[i,j]);
 }
 
 
+// sparse, outer, matrix-matrix multiplication algorithm; A is assumed
+// CSC and B CSR
+//
+// TODO: parallelize algorithm
+//
 proc SparseMatMatMult(A: [?AD], B: [?BD]) {
   use List;
 
@@ -56,6 +80,11 @@ proc SparseMatMatMult(A: [?AD], B: [?BD]) {
 }
 
 
+// dense, simple matrix-matrix multiplication algorithm; this is
+// wildly inefficient, both because it ignores the sparsity and
+// because it uses random access of the sparse arrays which tends to
+// be expensive.
+//
 proc DenseMatMatMult(A, B) {
   use List;
 
@@ -78,8 +107,11 @@ proc DenseMatMatMult(A, B) {
 }
 
 
-proc randSparseMatrix(Dom, density, param lay) {
-  var SD: sparse subdomain(Dom) dmapped CS(compressRows=(lay==layout.csr));
+// create a random sparse matrix within the space of 'Dom' of the
+// given density and layout
+//
+proc randSparseMatrix(Dom, density, param layout) {
+  var SD: sparse subdomain(Dom) dmapped CS(compressRows=(layout==CSR));
 
   for (i,j) in Dom do
     if rands.next() <= density then
@@ -89,6 +121,8 @@ proc randSparseMatrix(Dom, density, param lay) {
 }
 
 
+// print out a sparse matrix (in a dense format)
+//
 proc writeSparseMatrix(msg, Arr) {
   const ref SparseDom = Arr.domain,
             DenseDom = SparseDom.parentDom;
@@ -105,8 +139,9 @@ proc writeSparseMatrix(msg, Arr) {
 }
 
 
-
-
+// create a new sparse matrix from a collection of nonzero indices
+// (nnzs) and values (vals)
+//
 proc makeSparseMat(nnzs, vals) {
   var CDom: sparse subdomain(A.domain.parentDom);
   for ij in nnzs do
