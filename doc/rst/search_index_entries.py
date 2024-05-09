@@ -43,8 +43,8 @@ def process_index_nodes(app: Sphinx, doctree: nodes.document, docname: str):
     terms = { }
 
     for node in doctree.traverse(index):
-        for i, entry in enumerate(node['entries']):
-            (entrytype, entryname, target, _, _) = node['entries'][i]
+        for entry in node['entries']:
+            (_, entryname, target, _, _) = entry
             # ignore C++ entries
             if not entryname.startswith('chpl::'):
                 #print (entryname, " -> ", uri)

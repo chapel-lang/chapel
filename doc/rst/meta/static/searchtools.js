@@ -91,17 +91,17 @@ const _displayItem = (item, searchTerms, highlightTerms) => {
   else if (docName.startsWith("modules/"))
     typestr = "standard library";
 
-  let useTitle = title;
-  if (showTitle) useTitle = showTitle;
-  let mydescr;
+  const useTitle = showTitle || title;
+  let mydescr = "";
   if (typestr || descr) {
-    mydescr = " (";
-    if (typestr != "") mydescr += typestr;
-    if (descr) {
-      if (typestr != "") mydescr += " ";
-      mydescr += descr;
+    let typeDescription =  "";
+    if (typestr) {
+      typeDescription += typestr;
+      if (descr) {
+        typeDescription += ' ';
+      }
     }
-    mydescr += ")";
+    mydescr = ` (${typeDescription}${descr||''})`;
   }
 
   let requestUrl;
@@ -429,16 +429,6 @@ const Search = {
     function saveResult(entry, locations, score) {
       // swap around the semicolon for nested index entries
       let displayEntry = ""
-      /*const rev = entry.split(';').reverse();
-      for (var i = 0; i < rev.length; i++) {
-        if (i == 0) {
-          displayEntry = rev[i];
-        } else {
-          displayEntry += " (";
-          displayEntry += stemmer.stemWord(rev[i]);
-          displayEntry += ")";
-        }
-      }*/
       displayEntry = entry.replace(';', ' > ');
 
       locations.forEach((loc) => {
@@ -457,7 +447,7 @@ const Search = {
       });
     }
 
-    if (typeof termToLocation !== 'undefined') {
+    if (termToLocation) {
       for (const [entry, locations] of Object.entries(termToLocation)) {
         // compute a score by considering how it matches
         let nVerbatimMatched = 0;
@@ -705,11 +695,6 @@ const Search = {
    */
   makeSearchSummary: (htmlText, keywords, anchor) => {
     let anchor_key = "";
-
-    if (anchor === "#forall-loops") {
-      anchor_key = "";
-    }
-
     if (anchor.startsWith('#')) {
       anchor = anchor.slice(1);
       const span = '<span id="' + anchor + '">';
