@@ -78,7 +78,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   // nothing found
   if (vec.size() == 0) return false;
 
-  auto haveQt = QualifiedType(QualifiedType::VAR, type);
+  auto haveQt = QualifiedType(QualifiedType::INIT_RECEIVER, type);
 
   // loop through IDs and see if any are methods or operators (method or
   // standalone) on the same type

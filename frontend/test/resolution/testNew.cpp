@@ -71,13 +71,16 @@ static void testEmptyRecordUserInit() {
   // Remember that 'new r' is the base expression of the call.
   auto& reNewExpr = rr.byAst(newExpr);
   auto& qtNewExpr = reNewExpr.type();
-  assert(qtNewExpr.kind() == QualifiedType::VAR);
+  assert(qtNewExpr.kind() == QualifiedType::INIT_RECEIVER);
   assert(qtNewExpr.type() == qtR.type());
 
   // The 'new' call should have the same type as the 'new' expr.
+  // However, the 'new' expr has the special INIT_RECEIVER intent,
+  // so don't compare that.
   auto& reNewCall = rr.byAst(newCall);
   auto& qtNewCall = reNewCall.type();
-  assert(qtNewExpr == qtNewCall);
+  assert(qtNewExpr.type() == qtNewCall.type());
+  assert(qtNewExpr.param() == qtNewCall.param());
 
   // The 'new' call should have 'init' as an associated function.
   auto& associatedActions = reNewCall.associatedActions();
@@ -131,13 +134,14 @@ static void testEmptyRecordCompilerGenInit() {
   // Remember that 'new r' is the base expression of the call.
   auto& reNewExpr = rr.byAst(newExpr);
   auto& qtNewExpr = reNewExpr.type();
-  assert(qtNewExpr.kind() == QualifiedType::VAR);
+  assert(qtNewExpr.kind() == QualifiedType::INIT_RECEIVER);
   assert(qtNewExpr.type() == qtR.type());
 
   // The 'new' call should have the same type as the 'new' expr.
   auto& reNewCall = rr.byAst(newCall);
   auto& qtNewCall = reNewCall.type();
-  assert(qtNewExpr == qtNewCall);
+  assert(qtNewExpr.type() == qtNewCall.type());
+  assert(qtNewExpr.param() == qtNewCall.param());
 
   // The 'new' call should have 'init' as an associated function.
   // This 'init' is compiler generated.
@@ -229,7 +233,8 @@ static void testTertMethodCallCrossModule() {
   auto& reInitExpr = rr.byAst(initExpr);
   assert(reInitExpr.type() == reX.type());
   auto& reNewExpr = rr.byAst(newExpr);
-  assert(reNewExpr.type() == reInitExpr.type());
+  assert(reNewExpr.type().type() == reInitExpr.type().type());
+  assert(reNewExpr.type().param() == reInitExpr.type().param());
 
   assert(reInitExpr.associatedActions().size() == 1);
   auto tfsInit = reInitExpr.associatedActions()[0].fn();

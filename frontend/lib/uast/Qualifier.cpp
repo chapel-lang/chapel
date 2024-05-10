@@ -43,6 +43,7 @@ bool isGenericQualifier(Qualifier kind) {
     case Qualifier::FUNCTION:           return false;
     case Qualifier::PARENLESS_FUNCTION: return false;
     case Qualifier::MODULE:             return false;
+    case Qualifier::INIT_RECEIVER:      return false;
   }
   return false;
 }
@@ -68,6 +69,7 @@ bool isConstQualifier(Qualifier kind) {
     case Qualifier::FUNCTION:           return true;
     case Qualifier::PARENLESS_FUNCTION: return true;
     case Qualifier::MODULE:             return true;
+    case Qualifier::INIT_RECEIVER:      return false;
   }
   return false;
 }
@@ -93,6 +95,7 @@ bool isImmutableQualifier(Qualifier kind) {
     case Qualifier::FUNCTION:           return true;
     case Qualifier::PARENLESS_FUNCTION: return true;
     case Qualifier::MODULE:             return true;
+    case Qualifier::INIT_RECEIVER:      return false;
   }
   return false;
 }
@@ -118,6 +121,7 @@ bool isRefQualifier(Qualifier kind) {
     case Qualifier::FUNCTION:           return false;
     case Qualifier::PARENLESS_FUNCTION: return false;
     case Qualifier::MODULE:             return false;
+    case Qualifier::INIT_RECEIVER:      return false;
   }
   return false;
 }
@@ -143,6 +147,7 @@ bool isInQualifier(Qualifier kind) {
     case Qualifier::FUNCTION:           return false;
     case Qualifier::PARENLESS_FUNCTION: return false;
     case Qualifier::MODULE:             return false;
+    case Qualifier::INIT_RECEIVER:      return false;
   }
   return false;
 }
@@ -168,6 +173,7 @@ const char* qualifierToString(Qualifier intent) {
     case Qualifier::FUNCTION:           return "<function>";
     case Qualifier::PARENLESS_FUNCTION: return "<parenless-function>";
     case Qualifier::MODULE:             return "<module>";
+    case Qualifier::INIT_RECEIVER:      return "<init-receiver>";
   }
   return "<unknown>";
 }

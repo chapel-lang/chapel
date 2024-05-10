@@ -3979,7 +3979,7 @@ static void resolveNewForClass(Resolver& rv, const New* node,
                                const ClassType* classType) {
   ResolvedExpression& re = rv.byPostorder.byAst(node);
   auto cls = getDecoratedClassForNew(rv.context, node, classType);
-  auto qt = QualifiedType(QualifiedType::VAR, cls);
+  auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, cls);
   re.setType(qt);
 }
 
@@ -3990,7 +3990,7 @@ static void resolveNewForRecord(Resolver& rv, const New* node,
   if (node->management() != New::DEFAULT_MANAGEMENT) {
     CHPL_REPORT(rv.context, MemManagementNonClass, node, recordType);
   } else {
-    auto qt = QualifiedType(QualifiedType::VAR, recordType);
+    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, recordType);
     re.setType(qt);
   }
 }
@@ -4002,7 +4002,7 @@ static void resolveNewForUnion(Resolver& rv, const New* node,
   if (node->management() != New::DEFAULT_MANAGEMENT) {
     CHPL_REPORT(rv.context, MemManagementNonClass, node, unionType);
   } else {
-    auto qt = QualifiedType(QualifiedType::VAR, unionType);
+    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, unionType);
     re.setType(qt);
   }
 }
