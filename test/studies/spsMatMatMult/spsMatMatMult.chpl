@@ -8,7 +8,7 @@ config const n = 10,
              seed = 0,
              printSeed = seed == 0,
              skipDense = false,
-             doCommDiags = true;
+             doCommDiags = false;
 
 var rands = if seed == 0 then new randomStream(real)
                          else new randomStream(real, seed);
@@ -74,11 +74,11 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
         const AremoteCSC = AD.locDoms[locRow, srcloc]!.mySparseBlock,
               BremoteCSR = BD.locDoms[srcloc, locCol]!.mySparseBlock;
         
-        for ac_br in AremoteCSC.colRange {
-          for ai in AremoteCSC.startIdx[ac_br]..<AremoteCSC.startIdx[ac_br+1] {
+        for ac_br in AremoteCSC.cols() {
+          for ai in AremoteCSC.rowUidsInCol(ac_br) {
             const ar = AremoteCSC.idx[ai];
 
-            for bi in BremoteCSR.startIdx[ac_br]..<BremoteCSR.startIdx[ac_br+1] {
+            for bi in BremoteCSR.colUidsInRow(ac_br) {
               const bc = BremoteCSR.idx[bi];
               //              writeln("[", (locRow, locCol), "] found ", (ar, ac_br), " and ", (ac_br, bc));
               nnzs.pushBack((ar,bc));
