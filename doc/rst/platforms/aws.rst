@@ -263,15 +263,17 @@ Once connected to the instance via ssh, do the following:
       . ~/chapel/util/setchplenv.bash
 
       export CHPL_COMM=ofi
+      export CHPL_LAUNCHER=slurm-srun
+      export CHPL_COMM_OFI_OOB=pmi2
+      export SLURM_MPI_TYPE=pmi2
+
       # if using a cluster without EFA, use FI_PROVIDER=tcp instead
       export FI_PROVIDER=efa
 
-      export CHPL_LAUNCHER=slurm-srun
       export CHPL_LIBFABRIC=system
       export PKG_CONFIG_PATH=/opt/amazon/efa/lib64/pkgconfig/
-      export CHPL_COMM_OFI_OOB=pmi2
-      PMI2_DIR=/opt/slurm/lib/
-      export CHPL_LD_FLAGS="-L$PMI2_DIR -Wl,-rpath,$PMI2_DIR"
+      export CHPL_LD_FLAGS="-L/opt/slurm/lib/ -Wl,-rpath,/opt/slurm/lib/"
+
       export CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
       export CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true
 
@@ -283,8 +285,8 @@ Once connected to the instance via ssh, do the following:
 
       NUM_NODES=<max number of nodes in your cluster>
       NUM_PAGES=<number of pages to use>
-      srun --nodes $NUM_NODES echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null
-      srun --nodes $NUM_NODES echo $NUM_PAGES | sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages >/dev/null
+      echo always | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null
+      echo $NUM_PAGES | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages >/dev/null
 
    .. note::
 

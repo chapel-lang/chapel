@@ -123,7 +123,7 @@ ___________________
 Libfabric defines an abstract network and operations on it, and
 so-called *providers* within libfabric define the concrete instances of
 the network and operations.  The provider used by a program is selected
-at execution time.  The ofi communication layer has been tested with 3
+at execution time.  The ofi communication layer has been tested with 4
 different providers:
 
   gni
@@ -143,6 +143,11 @@ different providers:
     functional, indeed to the extent libfabric has a reference provider
     the tcp provider is it, but its emphasis is definitely
     functionality rather than performance.
+
+  efa
+    The ``efa`` provider works on AWS EC2 instances with Elastic Fabric
+    Adapter (EFA) support. This is the default provider on AWS EC2 instances
+    with EFA support.
 
   verbs
     The ``verbs`` provider works on any system with verbs-based network
