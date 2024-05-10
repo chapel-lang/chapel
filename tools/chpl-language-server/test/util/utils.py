@@ -3,7 +3,11 @@ import os
 import tempfile
 import typing
 
-from lsprotocol.types import DefinitionParams, DeclarationParams
+from lsprotocol.types import (
+    DefinitionParams,
+    DeclarationParams,
+    TypeDefinitionParams,
+)
 from lsprotocol.types import ReferenceParams, ReferenceContext
 from lsprotocol.types import LocationLink, Location, Position
 from lsprotocol.types import TextDocumentIdentifier
@@ -259,6 +263,46 @@ async def check_goto_decl_def(
 
     results = await client.text_document_declaration_async(
         params=DeclarationParams(text_document=doc, position=src)
+    )
+    validate(results)
+
+
+async def check_goto_type_def(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    src: Position,
+    dst: DestinationTestType,
+    expect_str: typing.Optional[str] = None,
+):
+    """
+    Ensures that go-to-type-definition works, taking a source cursor position for a variable to an expected destination position.
+    """
+
+    def validate(
+        results: typing.Optional[
+            typing.Union[
+                Location, typing.List[Location], typing.List[LocationLink]
+            ]
+        ]
+    ):
+        if dst is None:
+            assert results is None or (
+                isinstance(results, list) and len(results) == 0
+            )
+            return
+
+        assert results is not None
+        result = None
+        if isinstance(results, list):
+            assert len(results) == 1
+            result = results[0]
+        else:
+            result = results
+
+        assert check_dst(doc, result, dst, expect_str)
+
+    results = await client.text_document_type_definition_async(
+        params=TypeDefinitionParams(text_document=doc, position=src)
     )
     validate(results)
 
