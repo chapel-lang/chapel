@@ -1187,7 +1187,6 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
 
 // Returns true if the field should be included in the type constructor.
 // In that event, also sets formalType to the type the formal should use.
-static
 bool shouldIncludeFieldInTypeConstructor(Context* context,
                                          const Decl* fieldDecl,
                                          const QualifiedType& fieldType,
@@ -2145,7 +2144,9 @@ ApplicabilityResult instantiateSignature(Context* context,
                                           fieldType.type(),
                                           fieldType.param()));
 
-      if (substitutions.find(fieldDecl->id()) != substitutions.end()) {
+      QualifiedType ignoredOutFormalType;
+      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl,
+                                              sigType, ignoredOutFormalType)) {
         newSubstitutions.insert({fieldDecl->id(), fieldType});
       }
     }

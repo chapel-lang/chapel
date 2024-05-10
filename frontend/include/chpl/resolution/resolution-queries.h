@@ -216,6 +216,19 @@ types::Type::Genericity getTypeGenericity(Context* context,
 types::Type::Genericity getTypeGenericity(Context* context,
                                           types::QualifiedType qt);
 
+
+/**
+  Returns true if the field should be included in the type constructor.
+  In that event, also sets formalType to the type the formal should use.
+
+  This is also used to decide if a field needs to be include in a type's
+  substitutions.
+ */
+bool shouldIncludeFieldInTypeConstructor(Context* context,
+                                         const uast::Decl* fieldDecl,
+                                         const types::QualifiedType& fieldType,
+                                         types::QualifiedType& formalType);
+
 /**
   Compute an initial TypedFnSignature for a type constructor for a
   particular type. If some fields of `t` are still generic,
