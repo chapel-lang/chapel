@@ -7,8 +7,6 @@ Note: when this becomes the default, these tests should be folded into `basic.py
 import sys
 
 from lsprotocol.types import ClientCapabilities
-from lsprotocol.types import CompletionList, CompletionParams
-from lsprotocol.types import ReferenceParams, ReferenceContext
 from lsprotocol.types import InitializeParams
 import pytest
 import pytest_lsp
