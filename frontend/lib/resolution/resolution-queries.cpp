@@ -3771,7 +3771,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     const CallScopeInfo& inScopes,
                                     CandidatesAndForwardingInfo& nonPoiCandidates,
                                     CandidatesAndForwardingInfo& poiCandidates,
-                                    LastResortCandidateGroups& lrcGroups) {
+                                    LastResortCandidateGroups& lrcGroups,
+                                    std::vector<ApplicabilityResult>* rejected) {
 
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -3868,7 +3869,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
       considerCompilerGeneratedCandidates(context, fci,
                                           inScopes.callScope(), inScopes.poiScope(),
                                           nonPoiCandidates,
-                                          nullptr);
+                                          rejected);
       // update forwardingTo
       nonPoiCandidates.helpComputeForwardingTo(fci, start);
 
@@ -3967,7 +3968,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                                 inScopes,
                                                 nonPoiCandidates,
                                                 poiCandidates,
-                                                thisForwardingLrcGroups);
+                                                thisForwardingLrcGroups,
+                                                rejected);
           }
         }
         lrcGroups.getForwardingGroups().mergeWithGroups(
@@ -4146,7 +4148,8 @@ gatherAndFilterCandidates(Context* context,
 
       gatherAndFilterCandidatesForwarding(
           context, call, ci, inScopes, nonPoiCandidates,
-          poiCandidates, lrcGroups.getForwardingGroups());
+          poiCandidates, lrcGroups.getForwardingGroups(),
+          rejected);
 
       // append candidates from forwarding
       candidates.takeFromOther(nonPoiCandidates);
