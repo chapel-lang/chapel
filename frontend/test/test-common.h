@@ -44,6 +44,9 @@
 const chpl::uast::BuilderResult&
 parseAndReportErrors(chpl::Context* context, chpl::UniqueString path);
 
+const chpl::uast::BuilderResult&
+parseAndReportErrors(chpl::Context* context, const char* path);
+
 chpl::uast::BuilderResult
 parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
                            const char* content);

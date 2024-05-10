@@ -345,6 +345,93 @@ static void testFindMentionNotFields(void) {
   std::cout << std::endl;
 }
 
+static void testFindImportSubmoduleIncluded(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  std::cout << "testFindImportSubmoduleIncluded\n";
+
+  setFileText(ctx, "TestMultipleModules.chpl",
+    R""""(
+      module TestMultipleModules {
+        import MultipleModules;
+        import MultipleModules.SubModule;
+      }
+    )"""");;
+
+  setFileText(ctx, "MultipleModules.chpl",
+    R""""(
+      module MultipleModules {
+        include module SubModule;
+      }
+    )"""");;
+
+  setFileText(ctx, "MultipleModules/SubModule.chpl",
+    R""""(
+      module SubModule { }
+    )"""");
+
+  setModuleSearchPath(ctx, {UniqueString::get(ctx, ".")});
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, UniqueString::get(ctx, "TestMultipleModules.chpl"));
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), {"MultipleModules", "SubModule"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindMentionSubmoduleIncluded(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  std::cout << "testFindMentionSubmoduleIncluded\n";
+
+  setFileText(ctx, "OuterModule.chpl",
+    R""""(
+      module OuterModule {
+        include module SubModule;
+        SubModule.foo();
+      }
+    )"""");;
+
+  setFileText(ctx, "OuterModule/SubModule.chpl",
+    R""""(
+      module SubModule{
+        proc foo() { }
+      }
+    )"""");
+
+  setModuleSearchPath(ctx, {UniqueString::get(ctx, ".")});
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, UniqueString::get(ctx, "OuterModule.chpl"));
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), {"SubModule"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
 static void
 checkModuleInitOrder(Context* ctx, ID idMod, std::vector<const char*> expect) {
   auto& v = moduleInitializationOrder(ctx, idMod, {});
@@ -738,6 +825,8 @@ int main() {
   testFindMention();
   testFindMentionFields();
   testFindMentionNotFields();
+  testFindImportSubmoduleIncluded();
+  testFindMentionSubmoduleIncluded();
 
   // tests of moduleInitializationOrder
   testSpec();
