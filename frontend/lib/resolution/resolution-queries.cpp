@@ -418,7 +418,7 @@ anyFormalNeedsInstantiation(Context* context,
     bool considerGenericity = true;
     if (substitutions != nullptr) {
       auto formalDecl = untypedSig->formalDecl(i);
-      if (substitutions->count(formalDecl->id())) {
+      if (formalDecl && substitutions->count(formalDecl->id())) {
         // don't consider it needing a substitution - e.g. when passing
         // a generic type into a type argument.
         considerGenericity = false;
@@ -2119,21 +2119,75 @@ ApplicabilityResult instantiateSignature(Context* context,
     // now pull out the field types
     CHPL_ASSERT(formalTypes.empty());
     int nFormals = sig->numFormals();
-    for (int i = 0; i < nFormals; i++) {
-      const Decl* fieldDecl = untypedSignature->formalDecl(i);
+    int formalIdx = 0;
+
+    // The "default value" hints are set in substitutions, but at this
+    // point, we want to use the actual type that was computed. So,
+    // rebuild the substitutions.
+    SubstitutionsMap newSubstitutions;
+
+    if (!sig->untyped()->isTypeConstructor()) {
+      // Compiler-generated initializer has an initial 'this' formal,
+      // skip it for now and insert a placeholder.
+      formalIdx++;
+      formalTypes.push_back(QualifiedType());
+    }
+
+    for (; formalIdx < nFormals; formalIdx++) {
+      const Decl* fieldDecl = untypedSignature->formalDecl(formalIdx);
       const ResolvedExpression& e = r.byAst(fieldDecl);
       QualifiedType fieldType = e.type();
-      QualifiedType sigType = sig->formalType(i);
+      QualifiedType sigType = sig->formalType(formalIdx);
 
       // use the same kind as the old formal type but update the type, param
       // to reflect how instantiation occurred.
       formalTypes.push_back(QualifiedType(sigType.kind(),
                                           fieldType.type(),
                                           fieldType.param()));
+
+      if (substitutions.find(fieldDecl->id()) != substitutions.end()) {
+        newSubstitutions.insert({fieldDecl->id(), fieldType});
+      }
     }
+
+    if (!sig->untyped()->isTypeConstructor()) {
+      // We've visited the rest of the formals and figured out their types.
+      // Time to backfill the 'this' formal.
+
+      // Begin garbage
+      auto receiverType = sig->formalType(0).type()->toCompositeType();
+      auto root = receiverType->instantiatedFromCompositeType() ?
+                  receiverType->instantiatedFromCompositeType() :
+                  receiverType;
+
+      const Type* ret = nullptr;
+      if (auto rec = receiverType->toRecordType()) {
+        ret = RecordType::get(context, rec->id(), rec->name(),
+                              root->toRecordType(),
+                              newSubstitutions);
+      } else if (auto cls = receiverType->toClassType()) {
+        auto oldBasic = cls->basicClassType();
+        CHPL_ASSERT(oldBasic && "Not handled!");
+
+        auto basic = BasicClassType::get(context, oldBasic->id(),
+                                         oldBasic->name(),
+                                         oldBasic->parentClassType(),
+                                         root->toBasicClassType(),
+                                         newSubstitutions);
+        auto manager = AnyOwnedType::get(context);
+        auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+        ret = ClassType::get(context, basic, manager, dec);
+      } else {
+        CHPL_ASSERT(false && "Not handled!");
+      }
+      // End garbage
+
+      formalTypes[0] = QualifiedType(sig->formalType(0).kind(), ret);
+    }
+
     needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                      untypedSignature,
-                                                     &substitutions);
+                                                     &newSubstitutions);
   } else if (ed) {
     // Fine; formal types were stored into formalTypes earlier since we're
     // considering a compiler-generated candidate on an enum.
