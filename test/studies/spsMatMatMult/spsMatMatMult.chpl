@@ -1,4 +1,4 @@
-use BlockDist, LayoutCS, LayoutCSUtil, Random;
+use BlockDist, CommDiagnostics, LayoutCS, LayoutCSUtil, Random;
 
 enum layout { CSR, CSC };
 use layout;
@@ -7,7 +7,8 @@ config const n = 10,
              density = 0.05,
              seed = 0,
              printSeed = seed == 0,
-             skipDense = false;
+             skipDense = false,
+             doCommDiags = true;
 
 var rands = if seed == 0 then new randomStream(real)
                          else new randomStream(real, seed);
@@ -59,17 +60,20 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
   use List;
   var turnToken: atomic int;
 
-  coforall (locRow, locCol) in grid do
+  coforall (locRow, locCol) in grid {
     on localeGrid[locRow, locCol] {
       var nnzs: list(2*int),
           vals: list(int);
 
+      if doCommDiags then startCommDiagnosticsHere();
+      
       //      writeln("On ", here.id, " ", (locRow, locCol));
       for srcloc in 0..<locsPerDim {
         //        writeln("[", (locRow, locCol), "] getting A[",(locRow,srcloc),"] and B[",(srcloc, locCol),"]");
+        
         const AremoteCSC = AD.locDoms[locRow, srcloc]!.mySparseBlock,
               BremoteCSR = BD.locDoms[srcloc, locCol]!.mySparseBlock;
-
+        
         for ac_br in AremoteCSC.colRange {
           for ai in AremoteCSC.startIdx[ac_br]..<AremoteCSC.startIdx[ac_br+1] {
             const ar = AremoteCSC.idx[ai];
@@ -85,11 +89,15 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
         }
       }
 
+      if doCommDiags then stopCommDiagnosticsHere();
+
       turnToken.waitFor(here.id);
       writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:",
                         makeSparseMat(nnzs, vals));
       turnToken.write(here.id+1);
     }
+  }
+  if doCommDiags then printCommDiagnosticsTable();
 }
 
 
