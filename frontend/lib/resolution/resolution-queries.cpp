@@ -2153,36 +2153,10 @@ ApplicabilityResult instantiateSignature(Context* context,
     if (!sig->untyped()->isTypeConstructor()) {
       // We've visited the rest of the formals and figured out their types.
       // Time to backfill the 'this' formal.
+      auto newType = helpGetTypeForDecl(context, ad, newSubstitutions,
+                                        poiScope, sig->formalType(0).type());
 
-      // Begin garbage
-      auto receiverType = sig->formalType(0).type()->toCompositeType();
-      auto root = receiverType->instantiatedFromCompositeType() ?
-                  receiverType->instantiatedFromCompositeType() :
-                  receiverType;
-
-      const Type* ret = nullptr;
-      if (auto rec = receiverType->toRecordType()) {
-        ret = RecordType::get(context, rec->id(), rec->name(),
-                              root->toRecordType(),
-                              newSubstitutions);
-      } else if (auto cls = receiverType->toClassType()) {
-        auto oldBasic = cls->basicClassType();
-        CHPL_ASSERT(oldBasic && "Not handled!");
-
-        auto basic = BasicClassType::get(context, oldBasic->id(),
-                                         oldBasic->name(),
-                                         oldBasic->parentClassType(),
-                                         root->toBasicClassType(),
-                                         newSubstitutions);
-        auto manager = AnyOwnedType::get(context);
-        auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-        ret = ClassType::get(context, basic, manager, dec);
-      } else {
-        CHPL_ASSERT(false && "Not handled!");
-      }
-      // End garbage
-
-      formalTypes[0] = QualifiedType(sig->formalType(0).kind(), ret);
+      formalTypes[0] = QualifiedType(sig->formalType(0).kind(), newType);
     }
 
     needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
