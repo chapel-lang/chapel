@@ -241,7 +241,9 @@ struct GatherDecls {
     // parse the included module and use that instead of the include
     // statement itself
     const uast::Module* mod = parsing::getIncludedSubmodule(context, d->id());
-    gather(declared, mod->name(), mod, d->visibility(), atFieldLevel);
+    if (mod != nullptr) {
+      gather(declared, mod->name(), mod, d->visibility(), atFieldLevel);
+    }
     return false;
   }
   void exit(const Include* d) { }
