@@ -897,6 +897,8 @@ Identifier* ParserContext::buildAttributeIdent(YYLTYPE location,
   if (n.startsWith("@")) {
     // remove the @ sign
     n = UniqueString::get(context(), n.c_str()+1);
+  } else {
+    CHPL_ASSERT(false && "expect attributes to start with @");
   }
   return Identifier::build(builder, convertLocation(location), n).release();
 }
