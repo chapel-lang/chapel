@@ -161,7 +161,8 @@ static bool isValue(QualifiedType::Kind kind) {
           kind == QualifiedType::IN ||
           kind == QualifiedType::CONST_IN ||
           kind == QualifiedType::OUT ||
-          kind == QualifiedType::INOUT);
+          kind == QualifiedType::INOUT ||
+          kind == QualifiedType::INIT_RECEIVER);
 }
 static bool isValueOrParam(QualifiedType::Kind kind) {
   return isValue(kind) || kind == QualifiedType::PARAM;
