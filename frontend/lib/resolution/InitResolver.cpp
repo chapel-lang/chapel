@@ -299,7 +299,6 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
 
   auto isValidQtForSubstitutions = [this](const QualifiedType qt) {
     if (qt.isUnknown()) return false;
-    if (!qt.isType() && !qt.isParam()) return false;
     return getTypeGenericity(this->ctx_, qt.type()) == Type::CONCRETE;
   };
 
@@ -310,6 +309,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     bool isInitiallyConcrete = qtInitial.genericity() == Type::CONCRETE;
 
     if (isInitiallyConcrete) continue;
+
+    if (!shouldIncludeFieldInTypeConstructor(ctx_, id, qtInitial)) continue;
 
     // TODO: Will need to relax this as we go.
     if (isValidQtForSubstitutions(state->qt)) {
