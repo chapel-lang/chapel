@@ -890,6 +890,17 @@ Identifier* ParserContext::buildEmptyIdent(YYLTYPE location) {
 Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
   return Identifier::build(builder, convertLocation(location), name).release();
 }
+Identifier* ParserContext::buildAttributeIdent(YYLTYPE location,
+                                               PODUniqueString name) {
+  // remove the leading '@' from the name
+  UniqueString n = name;
+  if (n.startsWith("@")) {
+    // remove the @ sign
+    n = UniqueString::get(context(), n.c_str()+1);
+  }
+  return Identifier::build(builder, convertLocation(location), n).release();
+}
+
 
 WithClause*
 ParserContext::buildWithClause(YYLTYPE location, YYLTYPE locWith,

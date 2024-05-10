@@ -366,6 +366,7 @@
 //
 %token <uniqueStr> TIDENT
 %token <uniqueStr> TQUERIEDIDENT
+%token <uniqueStr> TATTRIBUTEIDENT
 %token <uniqueStr> INTLITERAL
 %token <uniqueStr> REALLITERAL
 %token <uniqueStr> IMAGLITERAL
@@ -929,9 +930,9 @@ attribute_decl_stmt:
 ;
 
 attribute_decl_begin:
-  TATMARK TIDENT
+  TATTRIBUTEIDENT
   {
-    auto ident = context->buildIdent(@2, $2);
+    auto ident = context->buildAttributeIdent(@1, $1);
     $$ = ident;
   }
 ;
