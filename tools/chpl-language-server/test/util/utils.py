@@ -9,7 +9,8 @@ from lsprotocol.types import (
     TypeDefinitionParams,
 )
 from lsprotocol.types import ReferenceParams, ReferenceContext
-from lsprotocol.types import LocationLink, Location, Position
+from lsprotocol.types import InlayHintParams, InlayHintKind
+from lsprotocol.types import LocationLink, Location, Position, Range
 from lsprotocol.types import TextDocumentIdentifier
 from lsprotocol.types import (
     DidChangeWorkspaceFoldersParams,
@@ -374,3 +375,37 @@ async def check_references_and_cross_check(
     for ref in references:
         new_doc = TextDocumentIdentifier(uri=ref.uri)
         await check_references(client, new_doc, ref.range.start, locations)
+
+async def check_inlay_hints(client: LanguageClient, doc: TextDocumentIdentifier, rng: Range, expected_inlays: typing.List[typing.Tuple[Position, str, typing.Optional[InlayHintKind]]]):
+    """
+    Check that the inlay hints in the document match the expected inlays. The
+    expected inlays list should be sorted in the order that the inlays appear
+    in the document.
+
+    Each tuple in the expected inlays list should be a tuple of the position of
+    the inlay hint, the text of the inlay hint, and kind of inlay. If the kind
+    is None, it is ignored.
+    """
+    results = await client.text_document_inlay_hint_async(
+        params=InlayHintParams(text_document=doc, range=rng)
+    )
+
+    if len(expected_inlays) == 0:
+        assert results is None or len(results) == 0
+        return
+
+    assert results is not None
+    assert len(expected_inlays) == len(results)
+
+    sorted_results = sorted(results, key=lambda x: x.position)
+    print(sorted_results)
+
+    for expected, actual in zip(expected_inlays, sorted_results):
+        assert expected[0] == actual.position
+
+        actual_label = actual.label
+        if isinstance(actual_label, list):
+            actual_label = "".join([l.value for l in actual_label])
+
+        assert expected[1] == actual_label
+        assert expected[2] == actual.kind
