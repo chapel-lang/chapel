@@ -1663,14 +1663,14 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
   }
 }
 
-void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
-                                            const uast::AstNode* astForErr,
-                                            const CallInfo& ci,
-                                            const CallResolutionResult& c,
-                                            AssociatedAction::Action action,
-                                            ID id) {
+bool Resolver::handleResolvedAssociatedCallWithoutError(ResolvedExpression& r,
+                                                        const uast::AstNode* astForErr,
+                                                        const CallInfo& ci,
+                                                        const CallResolutionResult& c,
+                                                        AssociatedAction::Action action,
+                                                        ID id) {
   if (!c.exprType().hasTypePtr() && !c.speciallyHandled()) {
-    issueErrorForFailedCallResolution(astForErr, ci, c);
+    return true;
   } else {
     // save candidates as associated functions
     for (auto& sig : c.mostSpecific()) {
@@ -1680,6 +1680,49 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
     }
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
+  }
+  return false;
+}
+
+void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
+                                            const uast::AstNode* astForErr,
+                                            const CallInfo& ci,
+                                            const CallResolutionResult& c,
+                                            AssociatedAction::Action action,
+                                            ID id) {
+  if (handleResolvedAssociatedCallWithoutError(r, astForErr, ci, c, action, id)) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+  }
+}
+
+void Resolver::handleResolvedAssociatedCallPrintCandidates(ResolvedExpression& r,
+                                                           const uast::Call* call,
+                                                           const CallInfo& ci,
+                                                           const CallScopeInfo& inScopes,
+                                                           const CallResolutionResult& c,
+                                                           AssociatedAction::Action action,
+                                                           ID id) {
+  if (handleResolvedAssociatedCallWithoutError(r, call, ci, c, action, id)) {
+    if (c.mostSpecific().isEmpty() &&
+        !c.mostSpecific().isAmbiguous()) {
+      // The call isn't ambiguous; it might be that we rejected all the candidates
+      // that we encountered. Re-run resolution, providing a 'rejected' vector
+      // this time to preserve the list of rejected candidates.
+
+      std::vector<ApplicabilityResult> rejected;
+
+      std::ignore = resolveGeneratedCall(context, call, ci, inScopes, &rejected);
+
+      if (!rejected.empty()) {
+        // There were candidates but we threw them out. We can issue a nicer
+        // error explaining why each candidate was rejected.
+        CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected);
+        return;
+      }
+    }
+
+    // Fall through to the more general error handling.
+    issueErrorForFailedCallResolution(call, ci, c);
   }
 }
 
@@ -1988,15 +2031,15 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // note: the resolution machinery will get compiler generated candidates
   auto crr = resolveGeneratedCall(context, call, ci, inScopes);
+  handleResolvedAssociatedCallPrintCandidates(re, call, ci, inScopes, crr,
+                                              AssociatedAction::NEW_INIT,
+                                              call->id());
 
-  CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
+  CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
   if (auto initMsc = crr.mostSpecific().only()) {
     auto initTfs = initMsc.fn();
-    handleResolvedAssociatedCall(re, call, ci, crr,
-                                 AssociatedAction::NEW_INIT,
-                                 call->id());
 
     // Set the final output type based on the result of the 'new' call.
     auto qtInitReceiver = initTfs->formalType(0);
@@ -2016,9 +2059,6 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
     auto qt = QualifiedType(QualifiedType::VAR, type);
     re.setType(qt);
-
-  } else {
-    issueErrorForFailedCallResolution(call, ci, crr);
   }
 
   return true;

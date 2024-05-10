@@ -413,6 +413,14 @@ struct Resolver {
                                          const CallScopeInfo& inScopes,
                                          const types::QualifiedType& receiverType,
                                          const CallResolutionResult& c);
+  // This call is to handleResolvedAssociatedCall as
+  // handleResolvedCallWithoutError is to handleResolvedCall.
+  bool handleResolvedAssociatedCallWithoutError(ResolvedExpression& r,
+                                                const uast::AstNode* astForErr,
+                                                const CallInfo& ci,
+                                                const CallResolutionResult& c,
+                                                AssociatedAction::Action action,
+                                                ID id);
   // like handleResolvedCall saves the call in associatedFns.
   void handleResolvedAssociatedCall(ResolvedExpression& r,
                                     const uast::AstNode* astForErr,
@@ -420,6 +428,13 @@ struct Resolver {
                                     const CallResolutionResult& c,
                                     AssociatedAction::Action action,
                                     ID id);
+  void handleResolvedAssociatedCallPrintCandidates(ResolvedExpression& r,
+                                                   const uast::Call* call,
+                                                   const CallInfo& ci,
+                                                   const CallScopeInfo& inScopes,
+                                                   const CallResolutionResult& c,
+                                                   AssociatedAction::Action action,
+                                                   ID id);
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
