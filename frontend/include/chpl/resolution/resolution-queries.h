@@ -225,9 +225,9 @@ types::Type::Genericity getTypeGenericity(Context* context,
   substitutions.
  */
 bool shouldIncludeFieldInTypeConstructor(Context* context,
-                                         const uast::Decl* fieldDecl,
+                                         const ID& fieldId,
                                          const types::QualifiedType& fieldType,
-                                         types::QualifiedType& formalType);
+                                         types::QualifiedType* formalType = nullptr);
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a

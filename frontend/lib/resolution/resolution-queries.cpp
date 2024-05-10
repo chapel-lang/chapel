@@ -1188,9 +1188,9 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
 // Returns true if the field should be included in the type constructor.
 // In that event, also sets formalType to the type the formal should use.
 bool shouldIncludeFieldInTypeConstructor(Context* context,
-                                         const Decl* fieldDecl,
+                                         const ID& fieldId,
                                          const QualifiedType& fieldType,
-                                         QualifiedType& formalType) {
+                                         QualifiedType* formalType) {
   // compare with AggregateType::fieldIsGeneric
 
   // fields with concrete types don't need to be in type constructor
@@ -1202,11 +1202,13 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
   // and we can use the same type/param intent for the type constructor
   if ((fieldType.isParam() && !fieldType.hasParamPtr()) ||
       fieldType.isType()) {
-    formalType = fieldType;
+    if (formalType) *formalType = fieldType;
     return true;
   }
 
-  if (const VarLikeDecl* var = fieldDecl->toVarLikeDecl()) {
+  if (asttags::isVarLikeDecl(parsing::idToTag(context, fieldId))) {
+    auto var = parsing::idToAst(context, fieldId)->toVarLikeDecl();
+
     // non-type/param fields with an init expression aren't generic
     if (var->initExpression())
       return false;
@@ -1214,7 +1216,8 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     // non-type/param fields that have no declared type and no initializer
     // are generic and these need a type variable for the argument with AnyType.
     if (var->typeExpression() == nullptr) {
-      formalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      if (formalType)
+        *formalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
       return true;
     }
 
@@ -1228,7 +1231,7 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     if (t && !t->isUnknownType()) {
       Type::Genericity g = getTypeGenericity(context, t);
       if (g == Type::GENERIC) { // and not GENERIC_WITH_DEFAULTS
-        formalType = QualifiedType(QualifiedType::TYPE, t);
+        if (formalType) *formalType = QualifiedType(QualifiedType::TYPE, t);
         return true;
       }
     }
@@ -1271,8 +1274,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       CHPL_ASSERT(fieldDecl);
       QualifiedType fieldType = f.fieldType(i);
       QualifiedType formalType;
-      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl, fieldType,
-                                              formalType)) {
+      if (shouldIncludeFieldInTypeConstructor(context, declId, fieldType,
+                                              &formalType)) {
 
         auto defaultKind = f.fieldHasDefaultValue(i) ?
                            UntypedFnSignature::DK_DEFAULT :
@@ -2144,9 +2147,7 @@ ApplicabilityResult instantiateSignature(Context* context,
                                           fieldType.type(),
                                           fieldType.param()));
 
-      QualifiedType ignoredOutFormalType;
-      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl,
-                                              sigType, ignoredOutFormalType)) {
+      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl->id(), sigType)){
         newSubstitutions.insert({fieldDecl->id(), fieldType});
       }
     }
