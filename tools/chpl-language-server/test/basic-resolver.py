@@ -51,7 +51,27 @@ async def test_go_to_record_def(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
-        await check_goto_type_def(client, doc, pos((2,4)), pos((0,7)))
-        await check_goto_type_def(client, doc, pos((3,9)), pos((0,7)))
+        await check_goto_type_def(client, doc, pos((2, 4)), pos((0, 7)))
+        await check_goto_type_def(client, doc, pos((3, 9)), pos((0, 7)))
+
+        assert len(client.diagnostics) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.xfail
+async def test_string(client: LanguageClient):
+    """
+    Ensure that goto-type works on a string.
+    This should work, but currently crashes dyno.
+    """
+
+    file = """
+           var x = "hello";
+           """
+
+    with source_file(client, file) as doc:
+        string_loc = (internal_module("String"), pos((741, 9)))
+        await check_goto_type_def(client, doc, pos((0, 4)), string_loc)
+        await check_goto_type_def(client, doc, pos((0, 12)), string_loc)
 
         assert len(client.diagnostics) == 0
