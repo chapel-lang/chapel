@@ -1228,7 +1228,11 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     //  * unknown type means it depends on a previous generic field
     //    (and when previous generic fields are set, they will be concrete)
     const Type* t = fieldType.type();
-    if (t && !t->isUnknownType()) {
+    // a 'var' field of 'AnyType' isn't itself generic, it just depends on
+    // another field that's 'AnyType'. In that case, treat it as unknown.
+    bool isVarOfAnyType = fieldType.kind() != QualifiedType::TYPE &&
+                          t && t->isAnyType();
+    if (t && !isVarOfAnyType && !t->isUnknownType()) {
       Type::Genericity g = getTypeGenericity(context, t);
       if (g == Type::GENERIC) { // and not GENERIC_WITH_DEFAULTS
         if (formalType) *formalType = QualifiedType(QualifiedType::TYPE, t);
