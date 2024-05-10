@@ -137,6 +137,7 @@ struct GatherQueryDecls {
 };
 
 struct GatherDecls {
+  Context* context = nullptr;
   DeclMap declared;
   bool containsUseImport = false;
   bool containsFunctionDecls = false;
@@ -144,7 +145,9 @@ struct GatherDecls {
   bool atFieldLevel = false;
   uast::AstTag tagParent;
 
-  GatherDecls(const AstNode* parentAst) {
+  GatherDecls(Context* context, const AstNode* parentAst)
+    : context(context)
+  {
     if (parentAst) {
       atFieldLevel = parentAst->isAggregateDecl() || parentAst->isInterface();
       tagParent = parentAst->tag();
@@ -235,7 +238,10 @@ struct GatherDecls {
 
   // consider 'include module' something that defines a name
   bool enter(const Include* d) {
-    gather(declared, d->name(), d, d->visibility(), atFieldLevel);
+    // parse the included module and use that instead of the include
+    // statement itself
+    const uast::Module* mod = parsing::getIncludedSubmodule(context, d->id());
+    gather(declared, mod->name(), mod, d->visibility(), atFieldLevel);
     return false;
   }
   void exit(const Include* d) { }
@@ -266,12 +272,13 @@ struct GatherDecls {
   void exit(const AstNode* ast) { }
 };
 
-void gatherDeclsWithin(const uast::AstNode* ast,
+void gatherDeclsWithin(Context* context,
+                       const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls,
                        bool& containsExternBlock) {
-  auto visitor = GatherDecls(ast);
+  auto visitor = GatherDecls(context, ast);
 
   // Visit child nodes to e.g. look inside a Function
   // rather than collecting it as a NamedDecl
@@ -422,7 +429,7 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
         }
       }
 
-      result = new Scope(ast, parentScope, autoUsesModules);
+      result = new Scope(context, ast, parentScope, autoUsesModules);
     }
   }
 
@@ -444,6 +451,7 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     bool newScope = false;
 
     ID id = idIn;
+    // TODO: would it be beneficial to use idToTag in most cases here?
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
       if (CompositeType::isMissingBundledType(context, id)) {
@@ -457,8 +465,8 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
 
     } else {
       // found ast
-
       if (ast->isInclude()) {
+        CHPL_ASSERT(false && "include statements should already be handled");
         // parse 'module include' and use the result of parsing instead
         // of the 'module include' itself.
         ast = parsing::getIncludedSubmodule(context, id);
@@ -474,7 +482,7 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
           bool containsUseImport = false;
           bool containsFns = false;
           bool containsExternBlock = false;
-          gatherDeclsWithin(ast, declared,
+          gatherDeclsWithin(context, ast, declared,
                             containsUseImport,
                             containsFns,
                             containsExternBlock);
@@ -1877,7 +1885,7 @@ static void addNamedModule(ResolvedVisibilityScope* r,
   auto p = namedModulesSet.insert(moduleId);
   if (p.second) {
     // insertion took place, so also add it to the vector
-    r->addModulesNamedInUseOrImport(moduleId);
+    r->addModuleNamedInUseOrImport(moduleId);
   }
 }
 

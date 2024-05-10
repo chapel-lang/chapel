@@ -29,7 +29,8 @@ namespace uast {
 namespace resolution {
 
 
-void gatherDeclsWithin(const uast::AstNode* ast,
+void gatherDeclsWithin(Context* context,
+                       const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls,

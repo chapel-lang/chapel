@@ -245,7 +245,8 @@ void BorrowedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
+Scope::Scope(Context* context,
+             const uast::AstNode* ast, const Scope* parentScope,
              bool autoUsesModules) {
   bool containsUseImport = false;
   bool containsFunctionDecls = false;
@@ -261,7 +262,7 @@ Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
   if (auto fn = ast->toFunction()) {
     isMethodScope = fn->isMethod();
   }
-  gatherDeclsWithin(ast, declared_,
+  gatherDeclsWithin(context, ast, declared_,
                     containsUseImport,
                     containsFunctionDecls,
                     containsExternBlock);

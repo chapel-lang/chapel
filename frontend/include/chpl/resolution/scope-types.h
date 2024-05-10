@@ -610,7 +610,7 @@ class Scope {
 
   /** Construct a Scope for a particular AST node
       and with a particular parent. */
-  Scope(const uast::AstNode* ast, const Scope* parentScope,
+  Scope(Context* context, const uast::AstNode* ast, const Scope* parentScope,
         bool autoUsesModules);
 
   /** Add a builtin type with the provided name. This needs to
@@ -964,7 +964,7 @@ class ResolvedVisibilityScope {
   }
 
   /** Add a module ID for a module named in use/import */
-  void addModulesNamedInUseOrImport(ID id) {
+  void addModuleNamedInUseOrImport(ID id) {
     modulesNamedInUseOrImport_.push_back(std::move(id));
   }
 

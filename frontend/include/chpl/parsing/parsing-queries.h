@@ -401,6 +401,7 @@ ID getSymbolFromTopLevelModule(Context* context,
 
 /**
  This query parses a submodule for 'include submodule'.
+ The ID passed should be the ID of an Include statement.
  Returns nullptr if no such file can be found.
  */
 const uast::Module* getIncludedSubmodule(Context* context,

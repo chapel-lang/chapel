@@ -104,18 +104,15 @@ static Parser helpMakeParser(Context* context,
   }
 }
 
-static UniqueString cleanLocalPath(Context* context, UniqueString path) {
-  if (path.startsWith("/") ||
-      path.startsWith("./") == false) {
-    return path;
+static std::string cleanLocalPath(Context* context, std::string path) {
+  if (path[0] == '.' && path[1] == '/') {
+    // string starts with ./
+    while (path.find("./") == 0) {
+      path = path.substr(2);
+    }
   }
 
-  auto str = path.str();
-  while (str.find("./") == 0) {
-    str = str.substr(2);
-  }
-
-  return chpl::UniqueString::get(context, str);
+  return path;
 }
 
 static const BuilderResult&
@@ -822,11 +819,13 @@ static const Module* const& getToplevelModuleQuery(Context* context,
         continue;
 
       check += "/";
-      check += name.c_str();
+      check += name.str();
       check += ".chpl";
 
+      check = cleanLocalPath(context, std::move(check));
+
       if (hasFileText(context, check) || fileExistsQuery(context, check)) {
-        auto filePath = cleanLocalPath(context, UniqueString::get(context, check));
+        auto filePath = UniqueString::get(context, check);
         UniqueString emptyParentSymbolPath;
         const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
         for (auto mod: v) {
