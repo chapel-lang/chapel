@@ -5,5 +5,5 @@ writeln(D1);
 
 var D2 = D1 @ n;
 writeln(D2);
-var D3 = D2 @ n;
+var D3 = D2@n;
 writeln(D3);
