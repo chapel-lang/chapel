@@ -1493,7 +1493,12 @@ def run_lsp():
         if not decl:
             return None
 
-        return location_to_location(decl.location())
+        loc = (
+            decl.name_location()
+            if isinstance(decl, chapel.NamedDecl)
+            else decl.location()
+        )
+        return location_to_location(loc)
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
