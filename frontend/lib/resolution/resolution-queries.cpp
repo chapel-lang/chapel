@@ -3556,7 +3556,8 @@ considerCompilerGeneratedCandidates(Context* context,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
-                                   CandidatesAndForwardingInfo& candidates) {
+                                   CandidatesAndForwardingInfo& candidates,
+                                   std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
   tfs = considerCompilerGeneratedMethods(context, ci, inScope, inPoiScope, candidates);
@@ -3584,9 +3585,15 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            tfs,
                                                            ci,
                                                            poi);
-  if (!instantiated.success() ||
-      instantiated.candidate()->needsInstantiation()) {
+  if (!instantiated.success()) {
+    // failed when instantiating, likely due to dependent types.
+    if (rejected) rejected->push_back(instantiated);
+    return;
+  }
+
+  if (instantiated.candidate()->needsInstantiation()) {
     context->error(tfs->id(), "invalid instantiation of compiler-generated method");
+    return; // do not push invalid candidate into list
   }
 
   candidates.addCandidate(instantiated.candidate());
@@ -3860,7 +3867,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
       // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, fci,
                                           inScopes.callScope(), inScopes.poiScope(),
-                                          nonPoiCandidates);
+                                          nonPoiCandidates,
+                                          nullptr);
       // update forwardingTo
       nonPoiCandidates.helpComputeForwardingTo(fci, start);
 
@@ -4026,7 +4034,8 @@ gatherAndFilterCandidates(Context* context,
   considerCompilerGeneratedCandidates(context, ci,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
-                                      candidates);
+                                      candidates,
+                                      rejected);
 
   // don't worry about last resort for compiler generated candidates
 
