@@ -637,7 +637,7 @@ static void testNewGenericWithDefaults() {
   }
 }
 
-static void testCompilerGeneratedNewWithDefaultInit() {
+static void testCompilerGeneratedGenericNewWithDefaultInit() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -691,7 +691,7 @@ static void testCompilerGeneratedNewWithDefaultInit() {
   }
 }
 
-static void testCompilerGeneratedNew() {
+static void testCompilerGeneratedGenericNew() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -772,7 +772,7 @@ static void testCompilerGeneratedNew() {
   assert(guard.realizeErrors() == 1);
 }
 
-static void testCompilerGeneratedNewWithDefaultInitClass() {
+static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -826,7 +826,7 @@ static void testCompilerGeneratedNewWithDefaultInitClass() {
   }
 }
 
-static void testCompilerGeneratedNewClass() {
+static void testCompilerGeneratedGenericNewClass() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -907,6 +907,98 @@ static void testCompilerGeneratedNewClass() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void testUserGenericNew() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    // Need an operator= for non-compile-time values to be assigned.
+    operator =(ref lhs: numeric, rhs: numeric) {
+      __primitive("=", lhs, rhs);
+    }
+
+    record r {
+      param flag : bool;
+      var x : if flag then int else real;
+
+      proc init(param flag: bool, x: if flag then int else real) {
+        this.flag = flag;
+        this.x = x;
+      }
+    }
+
+    var x1 = new r(true, 1);
+    var x2 = new r(false, 1.0);
+    var x3 = new r(true, 1.0);
+    var x4 = new r(false, 1);
+    )""", { "x1", "x2", "x3", "x4" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamTrue());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isIntType());
+    assert(f2.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  {
+    auto qt = vars.at("x3");
+    assert(qt.isUnknown());
+  }
+
+  {
+    auto ct = vars.at("x4").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  assert(guard.realizeErrors() == 1);
+}
+
+
 int main() {
   testEmptyRecordUserInit();
   testEmptyRecordCompilerGenInit();
@@ -916,10 +1008,11 @@ int main() {
   testRecordNewSegfault();
   testGenericRecordUserSecondaryInitDependentField();
   testNewGenericWithDefaults();
-  testCompilerGeneratedNewWithDefaultInit();
-  testCompilerGeneratedNew();
-  testCompilerGeneratedNewWithDefaultInitClass();
-  testCompilerGeneratedNewClass();
+  testCompilerGeneratedGenericNewWithDefaultInit();
+  testCompilerGeneratedGenericNew();
+  testCompilerGeneratedGenericNewWithDefaultInitClass();
+  testCompilerGeneratedGenericNewClass();
+  testUserGenericNew();
 
   return 0;
 }
