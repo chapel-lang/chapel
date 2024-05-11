@@ -219,25 +219,31 @@ generateInitParts(Context* context,
   formalTypes.push_back(std::move(qtReceiver));
 }
 
-
-static const TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* inCompType) {
-  const CompositeType* compType = nullptr;
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
-
-  generateInitParts(context, inCompType, compType,
-                    ufsFormals, formalTypes, /*useGeneric*/ true);
-
-  // consult the fields to build up the remaining untyped formals
-  const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  auto& rf = fieldsForTypeDecl(context, compType, defaultsPolicy);
+static void buildInitArgs(Context* context,
+                          const CompositeType* compType,
+                          const ResolvedFields& rf,
+                          std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
+                          std::vector<QualifiedType>& formalTypes) {
 
   // TODO: super fields and invoking super
   if (auto basic = compType->toBasicClassType()) {
     if (auto parent = basic->parentClassType()) {
       if (!parent->isObjectType()) {
-        CHPL_UNIMPL("initializers on inheriting classes");
+        const Type* manager = nullptr;
+        auto borrowedNonnilDecor =
+            ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+        auto parentReceiver =
+          ClassType::get(context, parent, manager, borrowedNonnilDecor);
+
+        // Do not add args if the parent has a user-defined initializer
+        // TODO: It would be nice to be able to generate a nice error message
+        //   for the user if they try and pass arguments for the parent in
+        //   this case.
+        if (!areOverloadsPresentInDefiningScope(context, parentReceiver, USTR("init"))) {
+          const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+          auto& rf = fieldsForTypeDecl(context, parent, defaultsPolicy);
+          buildInitArgs(context, parent, rf, ufsFormals, formalTypes);
+        }
       }
     }
   }
@@ -279,6 +285,24 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
       formalTypes.push_back(std::move(qt));
     }
   }
+}
+
+static const TypedFnSignature*
+generateInitSignature(Context* context, const CompositeType* inCompType) {
+  const CompositeType* compType = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  generateInitParts(context, inCompType, compType,
+                    ufsFormals, formalTypes, /*useGeneric*/ true);
+
+  // consult the fields to build up the remaining untyped formals
+  const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  auto& rf = fieldsForTypeDecl(context, compType, defaultsPolicy);
+
+  // Add field-based arguments to initializer, including those of parent class
+  // if present.
+  buildInitArgs(context, compType, rf, ufsFormals, formalTypes);
 
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
