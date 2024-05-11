@@ -907,6 +907,64 @@ static void testCompilerGeneratedGenericNewClass() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void testSimpleUserGenericNew() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    // Need an operator= for non-compile-time values to be assigned.
+    operator =(ref lhs: numeric, rhs: numeric) {
+      __primitive("=", lhs, rhs);
+    }
+
+    class C {
+      var x;
+
+      proc init(value) {
+        this.x = value;
+      }
+    }
+
+    var x1 = new C(42);
+    var x2 = new C(1.0);
+    )""", { "x1", "x2" });
+
+
+  {
+    auto ct = vars.at("x1").type()->getCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.kind() == QualifiedType::VAR);
+    assert(f1.type());
+    assert(f1.type()->isIntType());
+    assert(f1.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->getCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.kind() == QualifiedType::VAR);
+    assert(f1.type());
+    assert(f1.type()->isRealType());
+    assert(f1.type()->toRealType()->isDefaultWidth());
+  }
+}
+
 static void testUserGenericNew() {
   Context ctx;
   Context* context = &ctx;
@@ -1012,6 +1070,7 @@ int main() {
   testCompilerGeneratedGenericNew();
   testCompilerGeneratedGenericNewWithDefaultInitClass();
   testCompilerGeneratedGenericNewClass();
+  testSimpleUserGenericNew();
   testUserGenericNew();
 
   return 0;
