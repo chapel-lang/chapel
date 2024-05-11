@@ -767,13 +767,40 @@ static void testOwnedUserInit(void) {
   std::ignore = resolveModule(ctx, mod->id());
 }
 
-static void testInitFromInit(void) {
-  // test calling 'this.init' from another initializer.
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
+// To test combinations of programs with 'this.init' and 'init', both of which
+// are legal, go through and replace occurrences of INIT with variations.
+// Tries all combinations (e.g., if two INIT are present, returns 4 combinations).
+static std::vector<std::string> getVersionsWithInitTypes(const std::string& prog) {
+  std::vector<std::vector<std::string>> variants;
+  static const std::vector<std::string> initTypes = { "this.init" };
 
-  auto qt = resolveTypeOfXInit(context,
+  std::vector<size_t> occurrences;
+  size_t start = 0;
+  while ((start = prog.find("INIT", start)) != std::string::npos) {
+    occurrences.push_back(start);
+    start += 4;
+  }
+
+  std::reverse(occurrences.begin(), occurrences.end());
+  std::vector<std::string> programs = { prog };
+  std::vector<std::string> programsNext;
+
+  for (auto occurrence : occurrences) {
+    for (auto& program : programs) {
+      for (auto& initType : initTypes) {
+        std::string newProg = program;
+        newProg.replace(occurrence, 4, initType);
+        programsNext.push_back(newProg);
+      }
+    }
+    programs = std::move(programsNext);
+  }
+
+  return programs;
+}
+
+static void testInitFromInit(void) {
+  std::string prog =
       R"""(
       record pair {
         type fst;
@@ -785,47 +812,50 @@ static void testInitFromInit(void) {
         }
 
         proc init(type both) {
-          this.init(both, (both, both));
+          INIT(both, (both, both));
         }
       }
 
       var x = new pair(int);
-      )""");
+      )""";
 
-  assert(qt.type());
-  auto recType = qt.type()->toCompositeType();
-  assert(recType);
-  assert(recType->name() == "pair");
+  for (auto version : getVersionsWithInitTypes(prog)) {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, version);
 
-  auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(qt.type());
+    auto recType = qt.type()->toCompositeType();
+    assert(recType);
+    assert(recType->name() == "pair");
 
-  assert(fields.fieldName(0) == "fst");
-  assert(fields.fieldName(1) == "snd");
+    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
-  auto fstType = fields.fieldType(0);
-  assert(fstType.type());
-  assert(fstType.type()->isIntType());
+    assert(fields.fieldName(0) == "fst");
+    assert(fields.fieldName(1) == "snd");
 
-  auto sndType = fields.fieldType(1);
-  assert(sndType.type());
-  auto sndTypeTup = sndType.type()->toTupleType();
-  assert(sndTypeTup);
+    auto fstType = fields.fieldType(0);
+    assert(fstType.type());
+    assert(fstType.type()->isIntType());
 
-  auto fstTupEltType = sndTypeTup->elementType(0);
-  assert(fstTupEltType.type());
-  assert(fstTupEltType.type()->isIntType());
-  auto sndTupEltType = sndTypeTup->elementType(1);
-  assert(sndTupEltType.type());
-  assert(sndTupEltType.type()->isIntType());
+    auto sndType = fields.fieldType(1);
+    assert(sndType.type());
+    auto sndTypeTup = sndType.type()->toTupleType();
+    assert(sndTypeTup);
+
+    auto fstTupEltType = sndTypeTup->elementType(0);
+    assert(fstTupEltType.type());
+    assert(fstTupEltType.type()->isIntType());
+    auto sndTupEltType = sndTypeTup->elementType(1);
+    assert(sndTupEltType.type());
+    assert(sndTupEltType.type()->isIntType());
+  }
 }
 
 static void testInitInParamBranchFromInit(void) {
   // test calling 'this.init' from another initializer.
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
-  auto qts = resolveTypesOfVariables(context,
+  std::string prog =
       R"""(
       record pair {
         type fst;
@@ -838,7 +868,7 @@ static void testInitInParamBranchFromInit(void) {
 
         proc init(param cond) {
           if cond {
-            this.init(int, (int, int));
+            INIT(int, (int, int));
           } else {
             this.fst = bool;
             this.snd = bool;
@@ -848,65 +878,69 @@ static void testInitInParamBranchFromInit(void) {
 
       var x = new pair(true);
       var y = new pair(false);
-      )""", {"x", "y"});
+      )""";
 
 
-  {
-    auto qt = qts.at("x");
-    assert(qt.type());
-    auto recType = qt.type()->toCompositeType();
-    assert(recType);
-    assert(recType->name() == "pair");
+  for (auto version : getVersionsWithInitTypes(prog)) {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
 
-    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
 
-    assert(fields.fieldName(0) == "fst");
-    assert(fields.fieldName(1) == "snd");
 
-    auto fstType = fields.fieldType(0);
-    assert(fstType.type());
-    assert(fstType.type()->isIntType());
+    {
+      auto qt = qts.at("x");
+      assert(qt.type());
+      auto recType = qt.type()->toCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
 
-    auto sndType = fields.fieldType(1);
-    assert(sndType.type());
-    auto sndTypeTup = sndType.type()->toTupleType();
-    assert(sndTypeTup);
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
-    auto fstTupEltType = sndTypeTup->elementType(0);
-    assert(fstTupEltType.type());
-    assert(fstTupEltType.type()->isIntType());
-    auto sndTupEltType = sndTypeTup->elementType(1);
-    assert(sndTupEltType.type());
-    assert(sndTupEltType.type()->isIntType());
-  }
-  {
-    auto qt = qts.at("y");
-    assert(qt.type());
-    auto recType = qt.type()->toCompositeType();
-    assert(recType);
-    assert(recType->name() == "pair");
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
 
-    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isIntType());
 
-    assert(fields.fieldName(0) == "fst");
-    assert(fields.fieldName(1) == "snd");
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      auto sndTypeTup = sndType.type()->toTupleType();
+      assert(sndTypeTup);
 
-    auto fstType = fields.fieldType(0);
-    assert(fstType.type());
-    assert(fstType.type()->isBoolType());
-    auto sndType = fields.fieldType(1);
-    assert(sndType.type());
-    assert(sndType.type()->isBoolType());
+      auto fstTupEltType = sndTypeTup->elementType(0);
+      assert(fstTupEltType.type());
+      assert(fstTupEltType.type()->isIntType());
+      auto sndTupEltType = sndTypeTup->elementType(1);
+      assert(sndTupEltType.type());
+      assert(sndTupEltType.type()->isIntType());
+    }
+    {
+      auto qt = qts.at("y");
+      assert(qt.type());
+      auto recType = qt.type()->toCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
+
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
+
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isBoolType());
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      assert(sndType.type()->isBoolType());
+    }
   }
 }
 
 static void testInitInBranchFromInit(void) {
-  // test calling 'this.init' from another initializer.
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
-  auto qts = resolveTypesOfVariables(context,
+  std::string prog =
       R"""(
       record pair {
         type fst;
@@ -919,7 +953,7 @@ static void testInitInBranchFromInit(void) {
 
         proc init(cond: bool) {
           if cond {
-            this.init(int, (int, int));
+            INIT(int, (int, int));
           } else {
             this.fst = int;
             this.snd = (int, int);
@@ -929,74 +963,78 @@ static void testInitInBranchFromInit(void) {
 
       var x = new pair(true);
       var y = new pair(false);
-      )""", {"x", "y"});
+      )""";
+
+  for (auto version : getVersionsWithInitTypes(prog)) {
+    // test calling 'this.init' from another initializer.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
 
 
-  {
-    auto qt = qts.at("x");
-    assert(qt.type());
-    auto recType = qt.type()->toCompositeType();
-    assert(recType);
-    assert(recType->name() == "pair");
+    {
+      auto qt = qts.at("x");
+      assert(qt.type());
+      auto recType = qt.type()->toCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
 
-    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
-    assert(fields.fieldName(0) == "fst");
-    assert(fields.fieldName(1) == "snd");
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
 
-    auto fstType = fields.fieldType(0);
-    assert(fstType.type());
-    assert(fstType.type()->isIntType());
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isIntType());
 
-    auto sndType = fields.fieldType(1);
-    assert(sndType.type());
-    auto sndTypeTup = sndType.type()->toTupleType();
-    assert(sndTypeTup);
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      auto sndTypeTup = sndType.type()->toTupleType();
+      assert(sndTypeTup);
 
-    auto fstTupEltType = sndTypeTup->elementType(0);
-    assert(fstTupEltType.type());
-    assert(fstTupEltType.type()->isIntType());
-    auto sndTupEltType = sndTypeTup->elementType(1);
-    assert(sndTupEltType.type());
-    assert(sndTupEltType.type()->isIntType());
-  }
-  {
-    auto qt = qts.at("y");
-    assert(qt.type());
-    auto recType = qt.type()->toCompositeType();
-    assert(recType);
-    assert(recType->name() == "pair");
+      auto fstTupEltType = sndTypeTup->elementType(0);
+      assert(fstTupEltType.type());
+      assert(fstTupEltType.type()->isIntType());
+      auto sndTupEltType = sndTypeTup->elementType(1);
+      assert(sndTupEltType.type());
+      assert(sndTupEltType.type()->isIntType());
+    }
+    {
+      auto qt = qts.at("y");
+      assert(qt.type());
+      auto recType = qt.type()->toCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
 
-    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
-    assert(fields.fieldName(0) == "fst");
-    assert(fields.fieldName(1) == "snd");
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
 
-    auto fstType = fields.fieldType(0);
-    assert(fstType.type());
-    assert(fstType.type()->isIntType());
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isIntType());
 
-    auto sndType = fields.fieldType(1);
-    assert(sndType.type());
-    auto sndTypeTup = sndType.type()->toTupleType();
-    assert(sndTypeTup);
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      auto sndTypeTup = sndType.type()->toTupleType();
+      assert(sndTypeTup);
 
-    auto fstTupEltType = sndTypeTup->elementType(0);
-    assert(fstTupEltType.type());
-    assert(fstTupEltType.type()->isIntType());
-    auto sndTupEltType = sndTypeTup->elementType(1);
-    assert(sndTupEltType.type());
-    assert(sndTupEltType.type()->isIntType());
+      auto fstTupEltType = sndTypeTup->elementType(0);
+      assert(fstTupEltType.type());
+      assert(fstTupEltType.type()->isIntType());
+      auto sndTupEltType = sndTypeTup->elementType(1);
+      assert(sndTupEltType.type());
+      assert(sndTupEltType.type()->isIntType());
+    }
   }
 }
 
 static void testBadInitInBranchFromInit(void) {
-  // test calling 'this.init' from another initializer.
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
-  std::ignore = resolveTypeOfXInit(context,
+  std::string prog =
       R"""(
       record pair {
         type fst;
@@ -1009,7 +1047,7 @@ static void testBadInitInBranchFromInit(void) {
 
         proc init(cond: bool) {
           if cond {
-            this.init(bool, (bool, bool));
+            INIT(bool, (bool, bool));
           } else {
             this.fst = int;
             this.snd = (int, int);
@@ -1018,20 +1056,23 @@ static void testBadInitInBranchFromInit(void) {
       }
 
       var x = new pair(true);
-      )""");
+      )""";
 
+  for (auto version : getVersionsWithInitTypes(prog)) {
+    // test calling 'this.init' from another initializer.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
 
-  // The above is invalid, since the two branches result in a different type.
-  assert(guard.realizeErrors() == 1);
+    std::ignore = resolveTypeOfXInit(context, version);
+
+    // The above is invalid, since the two branches result in a different type.
+    assert(guard.realizeErrors() == 1);
+  }
 }
 
 static void testAssignThenInit(void) {
-  // test calling 'this.init' from another initializer.
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
-  std::ignore = resolveTypeOfXInit(context,
+  std::string prog =
       R"""(
       record pair {
         type fst;
@@ -1044,20 +1085,29 @@ static void testAssignThenInit(void) {
 
         proc init(type both) {
           this.fst = both;
-          this.init(both, (both, both));
+          INIT(both, (both, both));
         }
       }
 
       var x = new pair(int);
-      )""");
+      )""";
+
+  for (auto version : getVersionsWithInitTypes(prog)) {
+    // test calling 'this.init' from another initializer.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::ignore = resolveTypeOfXInit(context, version);
 
 
-  // Can't initialize 'fst' then call initializer. Due to
-  //
-  //  https://github.com/chapel-lang/chapel/issues/24900
-  //
-  // The errors are currently issued twice.
-  assert(guard.realizeErrors() == 2);
+    // Can't initialize 'fst' then call initializer. Due to
+    //
+    //  https://github.com/chapel-lang/chapel/issues/24900
+    //
+    // The errors are currently issued twice.
+    assert(guard.realizeErrors() == 2);
+  }
 }
 
 static void testInitEqOther(void) {
