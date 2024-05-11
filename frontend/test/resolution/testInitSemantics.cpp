@@ -806,7 +806,7 @@ static std::vector<std::string> getAllVersions(const std::string& prog) {
 
   std::vector<std::string> allProgs;
   for (auto initProg : initProgs) {
-    auto versions = getVersionsWithTypes(initProg, "AGGREGATE", { "record" });
+    auto versions = getVersionsWithTypes(initProg, "AGGREGATE", { "record", "class" });
     allProgs.insert(allProgs.end(), versions.begin(), versions.end());
   }
 
