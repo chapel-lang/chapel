@@ -3606,7 +3606,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           skip = UNKNOWN_PARAM;
         } else if (qt.isUnknown()) {
           skip = UNKNOWN_ACT;
-        } else if (t != nullptr && !(ci.name() == USTR("init") && actualIdx == 0)) {
+        } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
           // For initializer calls, allow generic formals using the above
           // condition; this way, 'this.init(..)' while 'this' is generic
           // should be fine.

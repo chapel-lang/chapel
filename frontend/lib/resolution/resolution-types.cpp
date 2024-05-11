@@ -364,6 +364,14 @@ tryGetType(const AstNode* node, const ResolutionResultByPostorderID& byPostorder
   return {};
 }
 
+static QualifiedType convertToInitReceiverType(const QualifiedType original) {
+  if (original.kind() != QualifiedType::TYPE &&
+      original.kind() != QualifiedType::PARAM) {
+    return QualifiedType(QualifiedType::INIT_RECEIVER, original.type());
+  }
+  return original;
+}
+
 CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
@@ -420,11 +428,19 @@ CallInfo CallInfo::create(Context* context,
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
-      actuals.push_back(CallInfoActual(*dotReceiverType, USTR("this")));
+
+      // If this is a receiver to 'init', adjust the receiver type to
+      // use the INIT_RECEIVER intent.
+      auto dotReceiverQt = *dotReceiverType;
+      if (name == USTR("init")) {
+        dotReceiverQt = convertToInitReceiverType(dotReceiverQt);
+      }
+
+      actuals.push_back(CallInfoActual(dotReceiverQt, USTR("this")));
       if (actualAsts != nullptr) {
         actualAsts->push_back(dotReceiver);
       }
-      calledType = *dotReceiverType;
+      calledType = dotReceiverQt;
       isMethodCall = true;
     }
   }
@@ -458,6 +474,12 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
+
+  if (ci.name() == USTR("init")) {
+    // For calls to 'init', tag the receiver with a special intent to
+    // relax some checks on its genericity.
+    receiverType = convertToInitReceiverType(receiverType);
+  }
 
   auto name = rename.isEmpty() ? ci.name_ : rename;
   return CallInfo(name, receiverType,
