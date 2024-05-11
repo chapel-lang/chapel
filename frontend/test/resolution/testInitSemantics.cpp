@@ -767,18 +767,18 @@ static void testOwnedUserInit(void) {
   std::ignore = resolveModule(ctx, mod->id());
 }
 
-// To test combinations of programs with 'this.init' and 'init', both of which
-// are legal, go through and replace occurrences of INIT with variations.
-// Tries all combinations (e.g., if two INIT are present, returns 4 combinations).
-static std::vector<std::string> getVersionsWithInitTypes(const std::string& prog) {
+// Replaces a placeholder with possible values to help test more programs.
+// If multuple placeholders are present, tests all combinations.
+static std::vector<std::string> getVersionsWithTypes(const std::string& prog,
+                                                     const std::string& placeholder,
+                                                     const std::vector<std::string> types) {
   std::vector<std::vector<std::string>> variants;
-  static const std::vector<std::string> initTypes = { "this.init" };
 
   std::vector<size_t> occurrences;
   size_t start = 0;
-  while ((start = prog.find("INIT", start)) != std::string::npos) {
+  while ((start = prog.find(placeholder, start)) != std::string::npos) {
     occurrences.push_back(start);
-    start += 4;
+    start += placeholder.length();
   }
 
   std::reverse(occurrences.begin(), occurrences.end());
@@ -787,9 +787,9 @@ static std::vector<std::string> getVersionsWithInitTypes(const std::string& prog
 
   for (auto occurrence : occurrences) {
     for (auto& program : programs) {
-      for (auto& initType : initTypes) {
+      for (auto& type : types) {
         std::string newProg = program;
-        newProg.replace(occurrence, 4, initType);
+        newProg.replace(occurrence, placeholder.length(), type);
         programsNext.push_back(newProg);
       }
     }
@@ -799,10 +799,24 @@ static std::vector<std::string> getVersionsWithInitTypes(const std::string& prog
   return programs;
 }
 
+static std::vector<std::string> getAllVersions(const std::string& prog) {
+  // Note, const checker currently balks at non-'this' calls to 'init'.
+  std::vector<std::string> initProgs =
+    getVersionsWithTypes(prog, "INIT", { "this.init" });
+
+  std::vector<std::string> allProgs;
+  for (auto initProg : initProgs) {
+    auto versions = getVersionsWithTypes(initProg, "AGGREGATE", { "record" });
+    allProgs.insert(allProgs.end(), versions.begin(), versions.end());
+  }
+
+  return allProgs;
+}
+
 static void testInitFromInit(void) {
   std::string prog =
       R"""(
-      record pair {
+      AGGREGATE pair {
         type fst;
         type snd;
 
@@ -819,14 +833,14 @@ static void testInitFromInit(void) {
       var x = new pair(int);
       )""";
 
-  for (auto version : getVersionsWithInitTypes(prog)) {
+  for (auto version : getAllVersions(prog)) {
     Context ctx;
     Context* context = &ctx;
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, version);
 
     assert(qt.type());
-    auto recType = qt.type()->toCompositeType();
+    auto recType = qt.type()->getCompositeType();
     assert(recType);
     assert(recType->name() == "pair");
 
@@ -857,7 +871,7 @@ static void testInitInParamBranchFromInit(void) {
   // test calling 'this.init' from another initializer.
   std::string prog =
       R"""(
-      record pair {
+      AGGREGATE pair {
         type fst;
         type snd;
 
@@ -881,7 +895,7 @@ static void testInitInParamBranchFromInit(void) {
       )""";
 
 
-  for (auto version : getVersionsWithInitTypes(prog)) {
+  for (auto version : getAllVersions(prog)) {
     Context ctx;
     Context* context = &ctx;
     ErrorGuard guard(context);
@@ -892,7 +906,7 @@ static void testInitInParamBranchFromInit(void) {
     {
       auto qt = qts.at("x");
       assert(qt.type());
-      auto recType = qt.type()->toCompositeType();
+      auto recType = qt.type()->getCompositeType();
       assert(recType);
       assert(recType->name() == "pair");
 
@@ -920,7 +934,7 @@ static void testInitInParamBranchFromInit(void) {
     {
       auto qt = qts.at("y");
       assert(qt.type());
-      auto recType = qt.type()->toCompositeType();
+      auto recType = qt.type()->getCompositeType();
       assert(recType);
       assert(recType->name() == "pair");
 
@@ -942,7 +956,7 @@ static void testInitInParamBranchFromInit(void) {
 static void testInitInBranchFromInit(void) {
   std::string prog =
       R"""(
-      record pair {
+      AGGREGATE pair {
         type fst;
         type snd;
 
@@ -965,7 +979,7 @@ static void testInitInBranchFromInit(void) {
       var y = new pair(false);
       )""";
 
-  for (auto version : getVersionsWithInitTypes(prog)) {
+  for (auto version : getAllVersions(prog)) {
     // test calling 'this.init' from another initializer.
     Context ctx;
     Context* context = &ctx;
@@ -977,7 +991,7 @@ static void testInitInBranchFromInit(void) {
     {
       auto qt = qts.at("x");
       assert(qt.type());
-      auto recType = qt.type()->toCompositeType();
+      auto recType = qt.type()->getCompositeType();
       assert(recType);
       assert(recType->name() == "pair");
 
@@ -1005,7 +1019,7 @@ static void testInitInBranchFromInit(void) {
     {
       auto qt = qts.at("y");
       assert(qt.type());
-      auto recType = qt.type()->toCompositeType();
+      auto recType = qt.type()->getCompositeType();
       assert(recType);
       assert(recType->name() == "pair");
 
@@ -1036,7 +1050,7 @@ static void testInitInBranchFromInit(void) {
 static void testBadInitInBranchFromInit(void) {
   std::string prog =
       R"""(
-      record pair {
+      AGGREGATE pair {
         type fst;
         type snd;
 
@@ -1058,7 +1072,7 @@ static void testBadInitInBranchFromInit(void) {
       var x = new pair(true);
       )""";
 
-  for (auto version : getVersionsWithInitTypes(prog)) {
+  for (auto version : getAllVersions(prog)) {
     // test calling 'this.init' from another initializer.
     Context ctx;
     Context* context = &ctx;
@@ -1074,7 +1088,7 @@ static void testBadInitInBranchFromInit(void) {
 static void testAssignThenInit(void) {
   std::string prog =
       R"""(
-      record pair {
+      AGGREGATE pair {
         type fst;
         type snd;
 
@@ -1092,7 +1106,7 @@ static void testAssignThenInit(void) {
       var x = new pair(int);
       )""";
 
-  for (auto version : getVersionsWithInitTypes(prog)) {
+  for (auto version : getAllVersions(prog)) {
     // test calling 'this.init' from another initializer.
     Context ctx;
     Context* context = &ctx;
