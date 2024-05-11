@@ -5,8 +5,6 @@ Tests that cls-commands.json works as expected, allowing nested directories to b
 import sys
 
 from lsprotocol.types import ClientCapabilities
-from lsprotocol.types import CompletionList, CompletionParams
-from lsprotocol.types import ReferenceParams, ReferenceContext
 from lsprotocol.types import InitializeParams
 import pytest
 import pytest_lsp
@@ -17,7 +15,10 @@ from util.config import CLS_PATH
 
 
 @pytest_lsp.fixture(
-    config=ClientServerConfig(server_command=[sys.executable, CLS_PATH()])
+    config=ClientServerConfig(
+        server_command=[sys.executable, CLS_PATH()],
+        client_factory=get_base_client,
+    ),
 )
 async def client(lsp_client: LanguageClient):
     # Setup
@@ -102,4 +103,8 @@ async def test_list_references_across_dirs(client: LanguageClient):
             client, z_refs[0][0], z_refs[0][1], z_refs
         )
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, docs("Main"), docs("subdir/A"), docs("subdir/B"), docs("subdir2/nested/C"))
+        assert len(client.diagnostics[docs("Main").uri]) == 0
+        assert len(client.diagnostics[docs("subdir/A").uri]) == 0
+        assert len(client.diagnostics[docs("subdir/B").uri]) == 0
+        assert len(client.diagnostics[docs("subdir2/nested/C").uri]) == 0

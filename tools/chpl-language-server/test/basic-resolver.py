@@ -18,7 +18,8 @@ from util.config import CLS_PATH
 
 @pytest_lsp.fixture(
     config=ClientServerConfig(
-        server_command=[sys.executable, CLS_PATH(), "--resolver"]
+        server_command=[sys.executable, CLS_PATH(), "--resolver"],
+        client_factory=get_base_client,
     )
 )
 async def client(lsp_client: LanguageClient):
@@ -52,7 +53,8 @@ async def test_go_to_record_def(client: LanguageClient):
         await check_goto_type_def(client, doc, pos((2, 4)), pos((0, 7)))
         await check_goto_type_def(client, doc, pos((3, 9)), pos((0, 7)))
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -72,4 +74,5 @@ async def test_string(client: LanguageClient):
         await check_goto_type_def(client, doc, pos((0, 4)), string_loc)
         await check_goto_type_def(client, doc, pos((0, 12)), string_loc)
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0

@@ -26,7 +26,8 @@ from util.config import CLS_PATH
             "--no-type-inlays",
             "--no-param-inlays",
             "--end-markers=none",
-        ]
+        ],
+        client_factory=get_base_client,
     )
 )
 async def client(lsp_client: LanguageClient):
@@ -75,7 +76,8 @@ async def test_call_inlays(client: LanguageClient):
     rng = Range(pos((0, 0)), pos((0, 0)))
     with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng, inlays)
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -104,7 +106,8 @@ async def test_nested_call_inlays(client: LanguageClient):
     rng = Range(pos((0, 0)), pos((0, 0)))
     with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng, inlays)
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -137,4 +140,5 @@ async def test_call_inlays_generic(client: LanguageClient):
 
     with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng, inlays)
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0

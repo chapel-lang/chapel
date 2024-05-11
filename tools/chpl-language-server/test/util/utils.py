@@ -13,11 +13,17 @@ from lsprotocol.types import InlayHintParams, InlayHintKind
 from lsprotocol.types import LocationLink, Location, Position, Range
 from lsprotocol.types import TextDocumentIdentifier
 from lsprotocol.types import (
+    DidSaveTextDocumentParams,
+    TEXT_DOCUMENT_PUBLISH_DIAGNOSTICS,
+    WORKSPACE_INLAY_HINT_REFRESH,
+    WORKSPACE_SEMANTIC_TOKENS_REFRESH,
+)
+from lsprotocol.types import (
     DidChangeWorkspaceFoldersParams,
     WorkspaceFoldersChangeEvent,
     WorkspaceFolder,
 )
-from pytest_lsp import LanguageClient
+from pytest_lsp import LanguageClient, make_test_lsp_client
 
 from .config import CHPL_HOME
 
@@ -33,6 +39,22 @@ def strip_leading_whitespace(text: str) -> str:
         len(line) - len(line.lstrip()) for line in lines if line.strip()
     )
     return "\n".join(line[min_indent:] for line in lines)
+
+
+def get_base_client() -> LanguageClient:
+    client = make_test_lsp_client()
+
+    @client.feature(WORKSPACE_INLAY_HINT_REFRESH)
+    def on_inlay_hint_refresh(params):
+        """stub method for inlay hint refresh notifications"""
+        pass
+
+    @client.feature(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
+    def on_semantic_token_refresh(params):
+        """stub method for semantic token refresh notifications"""
+        pass
+
+    return client
 
 
 class SourceFilesContext:
@@ -130,6 +152,16 @@ def source_files_dict(client: LanguageClient, files: typing.Dict[str, str]):
     """
     return SourceFilesContext(client, files)
 
+
+async def save_file(client: LanguageClient, *docs: TextDocumentIdentifier):
+    """
+    Saves the given document.
+    """
+    for doc in docs:
+        client.text_document_did_save(
+            params=DidSaveTextDocumentParams(text_document=doc)
+        )
+        await client.wait_for_notification(TEXT_DOCUMENT_PUBLISH_DIAGNOSTICS)
 
 def pos(coord: typing.Tuple[int, int]):
     """
@@ -376,7 +408,15 @@ async def check_references_and_cross_check(
         new_doc = TextDocumentIdentifier(uri=ref.uri)
         await check_references(client, new_doc, ref.range.start, locations)
 
-async def check_inlay_hints(client: LanguageClient, doc: TextDocumentIdentifier, rng: Range, expected_inlays: typing.List[typing.Tuple[Position, str, typing.Optional[InlayHintKind]]]):
+
+async def check_inlay_hints(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    rng: Range,
+    expected_inlays: typing.List[
+        typing.Tuple[Position, str, typing.Optional[InlayHintKind]]
+    ],
+):
     """
     Check that the inlay hints in the document match the expected inlays. The
     expected inlays list should be sorted in the order that the inlays appear
@@ -398,7 +438,6 @@ async def check_inlay_hints(client: LanguageClient, doc: TextDocumentIdentifier,
     assert len(expected_inlays) == len(results)
 
     sorted_results = sorted(results, key=lambda x: x.position)
-    print(sorted_results)
 
     for expected, actual in zip(expected_inlays, sorted_results):
         assert expected[0] == actual.position

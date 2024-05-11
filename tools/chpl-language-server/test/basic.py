@@ -18,7 +18,10 @@ from util.config import CLS_PATH
 
 
 @pytest_lsp.fixture(
-    config=ClientServerConfig(server_command=[sys.executable, CLS_PATH()])
+    config=ClientServerConfig(
+        server_command=[sys.executable, CLS_PATH()],
+        client_factory=get_base_client,
+    )
 )
 async def client(lsp_client: LanguageClient):
     # Setup
@@ -67,7 +70,8 @@ async def test_global_completion(client: LanguageClient):
             for symbol in global_symbols:
                 assert symbol in result_names
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -112,7 +116,8 @@ async def test_go_to_definition_simple(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((0, 13)), None)
         await check_goto_decl_def(client, doc, pos((4, 10)), None)
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -140,7 +145,8 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
         await check_goto_decl_def_module(client, doc, pos((1, 10)), mod_Map)
         await check_goto_decl_def_module(client, doc, pos((2, 8)), mod_Time)
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -174,7 +180,8 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
             client, doc, pos((2, 14)), mod_List, expect_str="record list"
         )
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -194,7 +201,8 @@ async def test_go_to_record_def(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -214,7 +222,8 @@ async def test_go_to_string_type(client: LanguageClient):
             client, doc, pos((0, 7)), mod_String, expect_str="record _string"
         )
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -262,7 +271,8 @@ async def test_list_references(client: LanguageClient):
             client, doc, pos((8, 13)), [pos((8, 13))]
         )
 
-        assert len(client.diagnostics) == 0
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -300,7 +310,11 @@ async def test_list_references_across_files(client: LanguageClient):
         await check_references_and_cross_check(
             client, docs("A"), pos((1, 6)), all_refs
         )
-        assert len(client.diagnostics) == 0
+
+        await save_file(client, docs("A"),  docs("B"), docs("C"))
+        assert len(client.diagnostics[docs("A").uri]) == 0
+        assert len(client.diagnostics[docs("B").uri]) == 0
+        assert len(client.diagnostics[docs("C").uri]) == 0
 
 
 @pytest.mark.asyncio
