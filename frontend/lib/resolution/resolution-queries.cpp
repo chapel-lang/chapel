@@ -343,6 +343,25 @@ const QualifiedType& typeForBuiltin(Context* context,
   return QUERY_END(result);
 }
 
+const QualifiedType& typeForSysCType(Context* context, UniqueString name) {
+  QUERY_BEGIN(typeForSysCType, context, name);
+
+  QualifiedType result;
+
+  UniqueString modName = UniqueString::get(context, "ChapelSysCTypes");
+  if (auto mod = parsing::getToplevelModule(context, modName)) {
+    for (auto stmt : mod->children()) {
+      auto decl = stmt->toNamedDecl();
+      if (decl && decl->name() == name) {
+        auto res = resolveModuleStmt(context, stmt->id());
+        result = res.byId(stmt->id()).type();
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 QualifiedType typeForLiteral(Context* context, const Literal* literal) {
   const Type* typePtr = nullptr;
   const Param* paramPtr = nullptr;

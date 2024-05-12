@@ -710,6 +710,14 @@ CanPassResult CanPassResult::canConvert(Context* context,
     return convert(OTHER);
   }
 
+  if (actualQT.isParam() && actualT->isStringType() && formalT->isCPtrType()) {
+    auto ptr = formalT->toCPtrType();
+    auto charType = typeForSysCType(context, USTR("c_char"));
+    if (ptr->isConst() && ptr->eltType() == charType.type()) {
+      return convert(OTHER);
+    }
+  }
+
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     auto aT = actualQT.type()->toTupleType();
