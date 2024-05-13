@@ -2191,11 +2191,13 @@ namespace {
 static FnSymbol*  buildPromotionWrapper(PromotionInfo& promotion,
                                         BlockStmt* instantiationPt,
                                         CallInfo&  info,
+                                        llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                         bool       fastFollowerChecks);
 
 static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
                                      BlockStmt* instantiationPt,
                                      CallInfo&  info,
+                                     llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                      bool       fastFollowerChecks);
 
 static void       buildLeaderIterator(PromotionInfo& promotion,
@@ -2418,21 +2420,8 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
     retval = buildPromotionWrapper(promotion,
                                    instantiationPt,
                                    info,
+                                   actualIdxToFormal,
                                    fastFollowerChecks);
-
-    // Something about the promoted call (currently, GPU attributes that
-    // configure the loop inside the promoted fn) required adding new actuals.
-    // Update actualIdxToFormal to reflect the new actuals.
-    if (promotion.fn->numFormals() != promotion.wrapperFn->numFormals()) {
-      CHPL_ASSERT(promotion.gpuAttributeBlock);
-      CHPL_ASSERT(promotion.fn->numFormals() < promotion.wrapperFn->numFormals());
-
-      int newActuals = promotion.wrapperFn->numFormals() - promotion.fn->numFormals();
-      for (int i = 1; i <= newActuals; i++) {
-        actualIdxToFormal.push_back(
-            promotion.wrapperFn->getFormal(promotion.fn->numFormals() + i));
-      }
-    }
 
     resolveSignature(retval);
 
@@ -2542,6 +2531,7 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
 static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
                                        BlockStmt* instantiationPt,
                                        CallInfo&  info,
+                                       llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                        bool       fastFollowerChecks) {
 
   initPromotionWrapper(promotion, instantiationPt);
@@ -2560,7 +2550,7 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   }
 
   BlockStmt* loop = buildPromotionLoop(promotion, instantiationPt, info,
-                                       fastFollowerChecks);
+                                       actualIdxToFormal, fastFollowerChecks);
   retval->insertAtTail(loop);
   loop->flattenAndRemove();
 
@@ -2596,6 +2586,7 @@ static std::map<FnSymbol*, std::set<ArgSymbol*> > promotionFormalsMap;
 static std::vector<Symbol*>
 addFormalsForGpuOuterVarsToPromotionWrapper(PromotionInfo& promotion,
                                             CallInfo& info,
+                                            llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                             SymbolMap& outMap) {
   if (!promotion.gpuAttributeBlock) return {};
 
@@ -2628,6 +2619,7 @@ addFormalsForGpuOuterVarsToPromotionWrapper(PromotionInfo& promotion,
 static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
                                      BlockStmt* instantiationPt,
                                      CallInfo&  info,
+                                     llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                      bool       fastFollowerChecks) {
   FnSymbol*  wrapFn     = promotion.wrapperFn;
 
@@ -2648,8 +2640,10 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
  // body. Don't add the actuals yet because the leader-follower checks
  // care about only the "real" actuals.
  SymbolMap outerToFormals;
+ int lastOriginalFormal = promotion.wrapperFn->numFormals();
  auto actualsFromCapture =
-   addFormalsForGpuOuterVarsToPromotionWrapper(promotion, info, outerToFormals);
+   addFormalsForGpuOuterVarsToPromotionWrapper(promotion, info,
+                                               actualIdxToFormal, outerToFormals);
 
  if (haveLeaderAndFollowers(promotion, info.call))
  {
@@ -2673,9 +2667,12 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   }
  }
 
+  int index = lastOriginalFormal + 1;
   for (auto actualFromCapture : actualsFromCapture) {
-   info.call->insertAtTail(new SymExpr(actualFromCapture));
-   info.actuals.push_back(actualFromCapture);
+    info.call->insertAtTail(new SymExpr(actualFromCapture));
+    info.actuals.push_back(actualFromCapture);
+    actualIdxToFormal.push_back(
+        promotion.wrapperFn->getFormal(index++));
   }
 
   insertAndSaveWrapCall(promotion, yieldBlock, yieldTmp, wrapCall);
