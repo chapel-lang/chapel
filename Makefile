@@ -248,6 +248,9 @@ cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
 	cd runtime && $(MAKE) cleandeps
 
+clean-cmakecache: FORCE
+	cd compiler && $(MAKE) clean-cmakecache
+
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd modules && $(MAKE) clobber
