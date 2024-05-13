@@ -642,6 +642,7 @@ static void test18() {
   assert(rr.byAst(z).type().type()->isRealType());
 }
 
+// Test "get svec member[ value]" primitives
 static void test19() {
   printf("test19\n");
   Context ctx;
@@ -653,8 +654,14 @@ static void test19() {
                   var y = t(1);
                   var z = t(2);
 
+                  class Foo {
+                    proc init() {}
+                  }
+
                   var a = __primitive("get svec member", t, 0);
                   var b = __primitive("get svec member value", t, 0);
+                  var c = __primitive("get svec member", (new Foo(), new Foo()), 1);
+                  var d = __primitive("get svec member value", (new Foo(), new Foo()), 1);
                 )"""";
 
   auto m = parseModule(context, std::move(program));
@@ -665,6 +672,8 @@ static void test19() {
 
   auto a = findVariable(m ,"a");
   auto b = findVariable(m ,"b");
+  auto c = findVariable(m ,"c");
+  auto d = findVariable(m ,"d");
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -674,11 +683,20 @@ static void test19() {
 
   auto aQt = rr.byAst(a).type();
   auto bQt = rr.byAst(b).type();
+  auto cQt = rr.byAst(c).type();
+  auto dQt = rr.byAst(d).type();
 
   assert(aQt.kind() == QualifiedType::VAR);
   assert(aQt.type()->isIntType());
-  assert(aQt.kind() == QualifiedType::VAR);
+
+  assert(bQt.kind() == QualifiedType::VAR);
   assert(bQt.type()->isIntType());
+
+  assert(cQt.kind() == QualifiedType::REF);
+  assert(cQt.type()->isClassType());
+
+  assert(dQt.kind() == QualifiedType::VAR);
+  assert(dQt.type()->isClassType());
 }
 
 
