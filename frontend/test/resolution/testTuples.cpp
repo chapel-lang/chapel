@@ -657,11 +657,12 @@ static void test19() {
                   class Foo {
                     proc init() {}
                   }
+                  var myFoo = new owned Foo();
 
                   var a = __primitive("get svec member", t, 0);
                   var b = __primitive("get svec member value", t, 0);
-                  var c = __primitive("get svec member", (new Foo(), new Foo()), 1);
-                  var d = __primitive("get svec member value", (new Foo(), new Foo()), 1);
+                  var c = __primitive("get svec member", (myFoo, myFoo), 1);
+                  var d = __primitive("get svec member value", (myFoo, myFoo), 1);
                 )"""";
 
   auto m = parseModule(context, std::move(program));
@@ -670,10 +671,10 @@ static void test19() {
   auto y = findVariable(m ,"y");
   auto z = findVariable(m ,"z");
 
-  auto a = findVariable(m ,"a");
-  auto b = findVariable(m ,"b");
-  auto c = findVariable(m ,"c");
-  auto d = findVariable(m ,"d");
+  auto aInit = findVariable(m ,"a")->initExpression();
+  auto bInit = findVariable(m ,"b")->initExpression();
+  auto cInit = findVariable(m ,"c")->initExpression();
+  auto dInit = findVariable(m ,"d")->initExpression();
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -681,22 +682,22 @@ static void test19() {
   assert(rr.byAst(y).type().type()->isIntType());
   assert(rr.byAst(z).type().type()->isIntType());
 
-  auto aQt = rr.byAst(a).type();
-  auto bQt = rr.byAst(b).type();
-  auto cQt = rr.byAst(c).type();
-  auto dQt = rr.byAst(d).type();
+  auto aInitQt = rr.byAst(aInit).type();
+  auto bInitQt = rr.byAst(bInit).type();
+  auto cInitQt = rr.byAst(cInit).type();
+  auto dInitQt = rr.byAst(dInit).type();
 
-  assert(aQt.kind() == QualifiedType::VAR);
-  assert(aQt.type()->isIntType());
+  assert(aInitQt.kind() == QualifiedType::VAR);
+  assert(aInitQt.type()->isIntType());
 
-  assert(bQt.kind() == QualifiedType::VAR);
-  assert(bQt.type()->isIntType());
+  assert(bInitQt.kind() == QualifiedType::VAR);
+  assert(bInitQt.type()->isIntType());
 
-  assert(cQt.kind() == QualifiedType::REF);
-  assert(cQt.type()->isClassType());
+  assert(cInitQt.kind() == QualifiedType::REF);
+  assert(cInitQt.type()->isClassType());
 
-  assert(dQt.kind() == QualifiedType::VAR);
-  assert(dQt.type()->isClassType());
+  assert(dInitQt.kind() == QualifiedType::VAR);
+  assert(dInitQt.type()->isClassType());
 }
 
 
