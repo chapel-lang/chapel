@@ -764,6 +764,12 @@ void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
   b.addAttribute(llvm::Attribute::StructRet);
   std::ignore = returnTy;
   #endif
+
+  #if HAVE_LLVM_VER >= 180
+  // matches attributes added by clang with sret
+  b.addAttribute(llvm::Attribute::Writable);
+  b.addAttribute(llvm::Attribute::DeadOnUnwind);
+  #endif
 }
 
 bool isOpaquePointer(llvm::Type* ty) {
@@ -786,6 +792,21 @@ llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
   }
 
   return eltType;
+}
+
+llvm::Type* getPointerType(llvm::LLVMContext& ctx, unsigned AS) {
+#if HAVE_LLVM_VER >= 180
+  return llvm::PointerType::get(ctx, AS);
+#else
+  return llvm::Type::getInt8PtrTy(ctx, AS);
+#endif
+}
+llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS) {
+#if HAVE_LLVM_VER >= 180
+  return irBuilder->getPtrTy(AS);
+#else
+  return irBuilder->getInt8PtrTy(AS);
+#endif
 }
 
 #endif

@@ -16,7 +16,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('17','16','15','14','13','12','11',)
+    return ('18','17','16','15','14','13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -705,7 +705,7 @@ def get_sysroot_resource_dir_args():
     args = [ ]
     target_platform = chpl_platform.get('target')
     llvm_val = get()
-    if (target_platform == "darwin" and llvm_val == "bundled"):
+    if target_platform == "darwin" and llvm_val == "bundled":
         # Add -isysroot and -resourcedir based upon what 'clang' uses
         cfile = os.path.join(get_chpl_home(),
                              "runtime", "include", "sys_basic.h")
@@ -1037,6 +1037,12 @@ def compute_host_link_settings():
         # Starting with clang 16, clang needs additional libraries
         if llvm_version not in ('11', '12', '13', '14', '15'):
             llvm_components.append('frontendhlsl')
+        # Starting with clang 18, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14', '15', '16', '17'):
+            llvm_components.append('frontenddriver')
+            # clangAPINotes must go immediately after clangSema
+            idx = clang_static_libs.index('-lclangSema') + 1
+            clang_static_libs.insert(idx, '-lclangAPINotes')
 
     # quit early if the llvm value is unset
     if llvm_val == 'unset':

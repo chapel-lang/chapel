@@ -146,6 +146,15 @@ namespace {
   }
 #endif
 
+  bool starts_with(StringRef a, StringRef b)
+  {
+#if HAVE_LLVM_VER >= 180
+    return a.starts_with(b);
+#else
+    return a.startswith(b);
+#endif
+  }
+
   // Like the version in BasicBlockUtils but assumes New is already
   // in the block.
   void myReplaceInstWithInst(Instruction* Old, Instruction* New)
@@ -362,9 +371,8 @@ namespace {
 
       nodeTy = info->nodeIdType;
       voidTy = llvm::Type::getVoidTy(M.getContext());
-      voidPtrTy = llvm::Type::getInt8PtrTy(M.getContext(), 0);
-      glVoidPtrTy = llvm::Type::getInt8PtrTy(M.getContext(),
-                                             info->globalSpace);
+      voidPtrTy = getPointerType(M.getContext(), 0);
+      glVoidPtrTy = getPointerType(M.getContext(), info->globalSpace);
       wideVoidPtrTy = convertTypeGlobalToWide(&M, info, glVoidPtrTy);
       ptrLocTy = info->localeIdType->getPointerTo(0);
       i64Ty = llvm::Type::getInt64Ty(M.getContext());
@@ -432,11 +440,11 @@ namespace {
 
           Function* calledFn = call->getCalledFunction(); // null if indirect
           // handle wide2global, global2wide
-          if ( calledFn && calledFn->getName().startswith(GLOBAL_FN) ) {
+          if ( calledFn && starts_with(calledFn->getName(), GLOBAL_FN) ) {
             // Distinguish among the various special functions by the
             // function signature.
-            if( calledFn->getName().startswith(GLOBAL_FN_WIDE_TO_GLOBAL) ||
-                calledFn->getName().startswith(GLOBAL_FN_GLOBAL_TO_WIDE) )
+            if( starts_with(calledFn->getName(), GLOBAL_FN_WIDE_TO_GLOBAL) ||
+                starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_TO_WIDE) )
             {
               // GLOBAL_FN_WIDE_TO_GLOBAL wide2global(wide)->*100 --- remove
               // GLOBAL_FN_GLOBAL_TO_WIDE global2wide(*100)->wide --- remove
@@ -855,17 +863,17 @@ namespace {
           CallInst *call = cast<CallInst>(insn);
           Function* calledFn = call->getCalledFunction(); // null if indirect
 
-          if ( calledFn && calledFn->getName().startswith(GLOBAL_FN)) {
+          if ( calledFn && starts_with(calledFn->getName(), GLOBAL_FN)) {
             // Distinguish among the various special functions by name.
-            if( calledFn->getName().startswith(GLOBAL_FN_WIDE_TO_GLOBAL))
+            if( starts_with(calledFn->getName(), GLOBAL_FN_WIDE_TO_GLOBAL))
             {
               // GLOBAL_FN_WIDE_TO_GLOBAL wide2global(wide)->*100 --- remove
               // Do nothing - replace these later.
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_TO_WIDE) )
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_TO_WIDE) )
             {
               // GLOBAL_FN_GLOBAL_TO_WIDE global2wide(*100)->wide --- remove
               // Do nothing - replace these later
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_ADDR) )
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_ADDR) )
             {
               // GLOBAL_FN_GLOBAL_ADDR .gf.addr(*100)->*   --- extract addr
               // w2g( extract-addr( g2w(addr) ) )
@@ -888,7 +896,7 @@ namespace {
               }
               assert(glbl->getType()->isPointerTy());
               myReplaceInstWithInst(call, glbl);
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_LOCID)){
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_LOCID)){
               // GLOBAL_FN_GLOBAL_LOCID .gf.loc(*100),locale - extract .locale
               // extract-loc(g2w(addr))
 
@@ -900,7 +908,7 @@ namespace {
 
               assert(!loc->getType()->isPointerTy());
               myReplaceInstWithInst(call, loc);
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_NODEID)){
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_NODEID)){
               // GLOBAL_FN_GLOBAL_NODEID .gf.node(*100)->node - extract .node
               // extract-node(g2w(addr))
 
@@ -911,7 +919,7 @@ namespace {
               Instruction* node = createRnode(info, wAddr, call);
               assert(!node->getType()->isPointerTy());
               myReplaceInstWithInst(call, node);
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_MAKE) ){
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_MAKE) ){
               // GLOBAL_FN_GLOBAL_MAKE .gf.make(loc,*)->*100 --- make wide
               // w2g( make(g2w(addr), loc) )
 
@@ -1271,7 +1279,7 @@ bool GlobalToWide::run(Module &M) {
       // that tests can be created and bugpoint can be run.
       if( !info ) {
         Type* voidTy = llvm::Type::getVoidTy(M.getContext());
-        Type* voidPtrTy = llvm::Type::getInt8PtrTy(M.getContext(), 0);
+        Type* voidPtrTy = getPointerType(M.getContext(), 0);
         Type* i64Ty = llvm::Type::getInt64Ty(M.getContext());
         Type* i8Ty = llvm::Type::getInt8Ty(M.getContext());
         const DataLayout& DL = M.getDataLayout();
@@ -1348,7 +1356,7 @@ bool GlobalToWide::run(Module &M) {
           // need to do it in order to have bugpoint work with this
           // optimization, since it will basically try different ways
           // of corrupting the input.
-          if( F->getName().startswith(GLOBAL_FN_GLOBAL_ADDR) &&
+          if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_ADDR) &&
               FT->getNumParams() == 1 &&
               FT->getReturnType()->isPointerTy() &&
               FT->getReturnType()->getPointerAddressSpace() == 0 &&
@@ -1358,7 +1366,7 @@ bool GlobalToWide::run(Module &M) {
             r.addrFn = F;
             //printf("Adding %s\n", F->getName().str().c_str());
             info->specialFunctions.push_back(F);
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_LOCID) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_LOCID) &&
                      FT->getNumParams() == 1 &&
                      FT->getReturnType() == info->localeIdType &&
                      containsGlobalPointers(info, FT->getParamType(0)) ) {
@@ -1367,7 +1375,7 @@ bool GlobalToWide::run(Module &M) {
             r.locFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_NODEID) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_NODEID) &&
                      FT->getNumParams() == 1 &&
                      FT->getReturnType() == info->nodeIdType &&
                      containsGlobalPointers(info, FT->getParamType(0)) ) {
@@ -1376,7 +1384,7 @@ bool GlobalToWide::run(Module &M) {
             r.nodeFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_MAKE) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_MAKE) &&
                      FT->getNumParams() == 2 &&
                      FT->getParamType(0) == info->localeIdType &&
                      FT->getParamType(1)->isPointerTy() &&
@@ -1387,7 +1395,7 @@ bool GlobalToWide::run(Module &M) {
             r.makeFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_TO_WIDE) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_TO_WIDE) &&
                      FT->getNumParams() == 1 &&
                      containsGlobalPointers(info, FT->getParamType(0)) ) {
             Type* gType = FT->getParamType(0);
@@ -1395,7 +1403,7 @@ bool GlobalToWide::run(Module &M) {
             r.globalToWideFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_WIDE_TO_GLOBAL) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_WIDE_TO_GLOBAL) &&
                      FT->getNumParams() == 1 &&
                      containsGlobalPointers(info, FT->getReturnType()) ) {
             Type* gType = FT->getReturnType();
@@ -1430,10 +1438,8 @@ bool GlobalToWide::run(Module &M) {
       // Check that a pointer in the global address space has the correct size.
       {
         const llvm::DataLayout& dl = M.getDataLayout();
-        llvm::Type* testGlobalTy = llvm::Type::getInt8PtrTy(M.getContext(),
-                                                            info->globalSpace);
-        llvm::Type* testWideTy = llvm::Type::getInt8PtrTy(M.getContext(),
-                                                          info->wideSpace);
+        llvm::Type* testGlobalTy = getPointerType(M.getContext(), info->globalSpace);
+        llvm::Type* testWideTy = getPointerType(M.getContext(), info->wideSpace);
 
         bool ok = (dl.getTypeSizeInBits(testGlobalTy) == info->globalPtrBits) &&
                   (dl.getTypeSizeInBits(testWideTy) == info->globalPtrBits);
@@ -1479,7 +1485,7 @@ bool GlobalToWide::run(Module &M) {
         }
 
         // skip the special functions like wideToGlobal
-        if (F->getName().startswith(GLOBAL_FN)) {
+        if (starts_with(F->getName(), GLOBAL_FN)) {
           continue;
         }
 

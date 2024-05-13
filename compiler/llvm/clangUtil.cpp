@@ -2125,8 +2125,12 @@ static void setupModule()
   // Choose the code model
   chpl::optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
 
-  llvm::CodeGenOpt::Level optLevel =
+  auto optLevel =
+#if HAVE_LLVM_VER >= 180
+    fFastFlag ? llvm::CodeGenOptLevel::Aggressive : llvm::CodeGenOptLevel::None;
+#else
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
+#endif
 
   // Create the target machine.
   info->targetMachine = Target->createTargetMachine(Triple.str(),
@@ -2936,6 +2940,8 @@ static void helpComputeClangArgs(std::string& clangCC,
   // of cabs but it appears to slow down simple complex multiplication.
   if (ffloatOpt > 0) { // --no-ieee-float
     clangCCArgs.push_back("-ffast-math");
+    // turn off inf warnings
+    clangCCArgs.push_back("-Wno-nan-infinity-disabled");
   } else {
     if (ffloatOpt < 0) { // --ieee-float
       clangCCArgs.push_back("-fno-fast-math"); // -fno-fast-math
@@ -4551,7 +4557,7 @@ void setupForGlobalToWide(void) {
   const char* dummy = "chpl_wide_opt_dummy";
   if( getFunctionLLVM(dummy) ) INT_FATAL("dummy function already exists");
 
-  llvm::Type* retType = llvm::Type::getInt8PtrTy(ginfo->module->getContext());
+  llvm::Type* retType = getPointerType(ginfo->module->getContext());
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
                         dummy, retType, argType).getCallee();
@@ -4646,8 +4652,7 @@ void checkAdjustedDataLayout() {
 
   // Check that the data layout setting worked
   const llvm::DataLayout& dl = info->module->getDataLayout();
-  llvm::Type* testTy = llvm::Type::getInt8PtrTy(info->module->getContext(),
-                                                GLOBAL_PTR_SPACE);
+  llvm::Type* testTy = getPointerType(info->module->getContext(), GLOBAL_PTR_SPACE);
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
@@ -4685,7 +4690,11 @@ static llvm::CodeGenFileType getCodeGenFileType() {
     case GpuCodegenType::GPU_CG_AMD_HIP:
     case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
     default:
+#if HAVE_LLVM_VER >= 180
+      return llvm::CodeGenFileType::AssemblyFile;
+#else
       return llvm::CodeGenFileType::CGFT_AssemblyFile;
+#endif
   }
 }
 
@@ -5227,7 +5236,11 @@ static void llvmEmitObjectFile(void) {
       if (error || outputOfile.has_error())
         USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
 
+#if HAVE_LLVM_VER >= 180
+      llvm::CodeGenFileType FileType = llvm::CodeGenFileType::ObjectFile;
+#else
       llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
+#endif
 
       {
         llvm::legacy::PassManager emitPM;

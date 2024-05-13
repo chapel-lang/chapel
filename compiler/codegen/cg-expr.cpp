@@ -3083,7 +3083,7 @@ static GenRet codegenCallExprInner(GenRet function,
 
                 llvm::Value* ptr = tmp.val;
                 llvm::Type* sTyPtrTy = llvm::PointerType::get(sTy, stackSpace);
-                llvm::Type* i8PtrTy = irBuilder->getInt8PtrTy();
+                llvm::Type* i8PtrTy = getPointerType(irBuilder);
 
                 // handle offset
                 if (unsigned offset = argInfo->getDirectOffset()) {
@@ -3560,7 +3560,8 @@ GenRet codegenNullPointer()
     ret.c = "NULL";
   } else {
 #ifdef HAVE_LLVM
-    ret.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
+    llvm::Type* ptrType = getPointerType(info->irBuilder);
+    ret.val = llvm::Constant::getNullValue(ptrType);
 #endif
   }
   return ret;
@@ -3875,7 +3876,7 @@ GenRet codegenCastToVoidStar(GenRet value)
     ret.c += "))";
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* castType = info->irBuilder->getInt8PtrTy();
+    llvm::Type* castType = getPointerType(info->irBuilder);
     ret.val = convertValueToType(value.val, castType, !value.isUnsigned);
     INT_ASSERT(ret.val);
 #endif
@@ -5638,7 +5639,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
   trackLLVMValue(sharedArray);
 
   // Get a void* pointer to the shared array.
-  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(gContext->llvmContext(), 3);
+  llvm::Type* voidPtrType = getPointerType(gContext->llvmContext(), 3);
   llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
   trackLLVMValue(sharedArrayPtr);
 
