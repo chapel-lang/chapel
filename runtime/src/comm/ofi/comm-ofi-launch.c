@@ -59,12 +59,6 @@ void chpl_comm_preLaunch(int32_t numLocales) {
       chpl_env_set(evName, buf, 1);
     }
   }
-
-  // when using PMI and SLURM_MPI_TYPE is not set, set it to pmi2
-  // this isn't strictly required on all systems, but it is on some (AWS)
-  // and is it much easier to just set it than to figure out if its required
-  chpl_env_set("SLURM_MPI_TYPE", "pmi2", 0);
-
 #endif
 
   if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
