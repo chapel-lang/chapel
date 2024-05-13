@@ -1120,6 +1120,15 @@ class ChapelLanguageServer(LanguageServer):
             or isinstance(type_, chapel.ErroneousType)
         ):
             return []
+        # skip implicit this formals
+        if (
+            isinstance(decl.node, chapel.Formal)
+            and isinstance(decl.node.parent(), chapel.Function)
+            and decl.node.parent().this_formal() is not None
+            and decl.node.unique_id()
+            == decl.node.parent().this_formal().unique_id()
+        ):
+            return []
 
         name_rng = location_to_range(decl.node.name_location())
         type_str = ": " + str(type_)
