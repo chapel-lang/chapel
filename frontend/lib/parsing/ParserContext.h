@@ -314,6 +314,7 @@ struct ParserContext {
 
   Identifier* buildEmptyIdent(YYLTYPE location);
   Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
+  Identifier* buildAttributeIdent(YYLTYPE location, PODUniqueString name);
 
   AstNode* buildPrimCall(YYLTYPE location, MaybeNamedActualList* lst);
 
