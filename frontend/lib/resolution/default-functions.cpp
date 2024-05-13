@@ -386,7 +386,9 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
 }
 
 static const TypedFnSignature*
-generateSerialize(Context* context, const CompositeType* compType) {
+generateDeSerialize(Context* context, const CompositeType* compType,
+                    UniqueString name, std::string channel,
+                    std::string DeSerializer) {
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
 
@@ -394,57 +396,16 @@ generateSerialize(Context* context, const CompositeType* compType) {
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, compType));
 
   // TODO: Add constraints to these arguments
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, "writer"), false, nullptr));
+  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, channel), false, nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, AnyType::get(context)));
 
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, "serializer"), false, nullptr));
+  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, DeSerializer), false, nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::REF, AnyType::get(context)));
 
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
                         /*id*/ compType->id(),
-                        /*name*/ USTR("serialize"),
-                        /*isMethod*/ true,
-                        /*isTypeConstructor*/ false,
-                        /*isCompilerGenerated*/ true,
-                        /*throws*/ true,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /*needsInstantiation*/ false,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
-
-  return ret;
-}
-
-static const TypedFnSignature*
-generateDeserialize(Context* context, const CompositeType* compType) {
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
-
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, compType));
-
-  // TODO: Add constraints to these arguments
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, "reader"), false, nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, AnyType::get(context)));
-
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, "deserializer"), false, nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::REF, AnyType::get(context)));
-
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ USTR("deserialize"),
+                        /*name*/ name,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
@@ -831,9 +792,9 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
     } else if (name == USTR("deinit")) {
       result = generateDeinitSignature(context, compType);
     } else if (name == USTR("serialize")) {
-      result = generateSerialize(context, compType);
+      result = generateDeSerialize(context, compType, name, "writer", "serializer");
     } else if (name == USTR("deserialize")) {
-      result = generateDeserialize(context, compType);
+      result = generateDeSerialize(context, compType, name, "reader", "deserializer");
     } else if (auto domainType = type->toDomainType()) {
       result = generateDomainMethod(context, domainType, name);
     } else if (auto arrayType = type->toArrayType()) {
