@@ -1018,7 +1018,7 @@ class ChapelLanguageServer(LanguageServer):
 
         This method retrieves the FileInfo object for a particular URI,
         creating one if it doesn't exist. If do_update is set to True,
-        then the FileInfo's index is reuilt even if it has already been
+        then the FileInfo's index is rebuilt even if it has already been
         computed. This is useful if the underlying file has changed.
         """
 
