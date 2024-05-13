@@ -665,39 +665,24 @@ static void test19() {
                   var d = __primitive("get svec member value", (myFoo, myFoo), 1);
                 )"""";
 
-  auto m = parseModule(context, std::move(program));
+  auto variables = resolveTypesOfVariablesInit(
+      context, program, {"x", "y", "z", "a", "b", "c", "d"});
 
-  auto x = findVariable(m, "x");
-  auto y = findVariable(m ,"y");
-  auto z = findVariable(m ,"z");
+  assert(variables.at("x").type()->isIntType());
+  assert(variables.at("y").type()->isIntType());
+  assert(variables.at("z").type()->isIntType());
 
-  auto aInit = findVariable(m ,"a")->initExpression();
-  auto bInit = findVariable(m ,"b")->initExpression();
-  auto cInit = findVariable(m ,"c")->initExpression();
-  auto dInit = findVariable(m ,"d")->initExpression();
+  assert(variables.at("a").kind() == QualifiedType::VAR);
+  assert(variables.at("a").type()->isIntType());
 
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  assert(variables.at("b").kind() == QualifiedType::VAR);
+  assert(variables.at("b").type()->isIntType());
 
-  assert(rr.byAst(x).type().type()->isIntType());
-  assert(rr.byAst(y).type().type()->isIntType());
-  assert(rr.byAst(z).type().type()->isIntType());
+  assert(variables.at("c").kind() == QualifiedType::REF);
+  assert(variables.at("c").type()->isClassType());
 
-  auto aInitQt = rr.byAst(aInit).type();
-  auto bInitQt = rr.byAst(bInit).type();
-  auto cInitQt = rr.byAst(cInit).type();
-  auto dInitQt = rr.byAst(dInit).type();
-
-  assert(aInitQt.kind() == QualifiedType::VAR);
-  assert(aInitQt.type()->isIntType());
-
-  assert(bInitQt.kind() == QualifiedType::VAR);
-  assert(bInitQt.type()->isIntType());
-
-  assert(cInitQt.kind() == QualifiedType::REF);
-  assert(cInitQt.type()->isClassType());
-
-  assert(dInitQt.kind() == QualifiedType::VAR);
-  assert(dInitQt.type()->isClassType());
+  assert(variables.at("d").kind() == QualifiedType::VAR);
+  assert(variables.at("d").type()->isClassType());
 }
 
 
