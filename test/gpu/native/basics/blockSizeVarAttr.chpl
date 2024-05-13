@@ -6,6 +6,10 @@ proc f(x: int) {
     return x + 4;
 }
 
+proc g(a: int = 10, b: int, c: int = 20) {
+    return a + b + c;
+}
+
 record myRec {
     var x : int;
 
@@ -35,5 +39,11 @@ on here.gpus[0] {
 
         @gpu.blockSize(bs)
         var F = Records.foo();
+
+        @gpu.blockSize(bs)
+        var G = g(1, A, 2);
+
+        @gpu.blockSize(bs)
+        var H = g(1, A);
     }
 }
