@@ -1,2 +1,0 @@
-warning: --llvm is deprecated -- please use --target-compiler=llvm
-hello
