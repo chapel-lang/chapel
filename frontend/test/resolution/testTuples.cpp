@@ -617,6 +617,75 @@ static void argHelper(std::string formal, std::string actual,
   }
 }
 
+static void test18() {
+  printf("test18\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto program = R""""(
+                  var t = (1, "hello", 3.0);
+                  var x = t(0);
+                  var y = t(1);
+                  var z = t(2);
+                )"""";
+
+  auto m = parseModule(context, std::move(program));
+
+  auto x = findVariable(m, "x");
+  auto y = findVariable(m ,"y");
+  auto z = findVariable(m ,"z");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  assert(rr.byAst(x).type().type()->isIntType());
+  assert(rr.byAst(y).type().type()->isStringType());
+  assert(rr.byAst(z).type().type()->isRealType());
+}
+
+// Test "get svec member[ value]" primitives
+static void test19() {
+  printf("test19\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto program = R""""(
+                  var t = (1, 2, 3);
+                  var x = t(0);
+                  var y = t(1);
+                  var z = t(2);
+
+                  class Foo {
+                    proc init() {}
+                  }
+                  var myFoo = new owned Foo();
+
+                  var a = __primitive("get svec member", t, 0);
+                  var b = __primitive("get svec member value", t, 0);
+                  var c = __primitive("get svec member", (myFoo, myFoo), 1);
+                  var d = __primitive("get svec member value", (myFoo, myFoo), 1);
+                )"""";
+
+  auto variables = resolveTypesOfVariablesInit(
+      context, program, {"x", "y", "z", "a", "b", "c", "d"});
+
+  assert(variables.at("x").type()->isIntType());
+  assert(variables.at("y").type()->isIntType());
+  assert(variables.at("z").type()->isIntType());
+
+  assert(variables.at("a").kind() == QualifiedType::VAR);
+  assert(variables.at("a").type()->isIntType());
+
+  assert(variables.at("b").kind() == QualifiedType::VAR);
+  assert(variables.at("b").type()->isIntType());
+
+  assert(variables.at("c").kind() == QualifiedType::REF);
+  assert(variables.at("c").type()->isClassType());
+
+  assert(variables.at("d").kind() == QualifiedType::VAR);
+  assert(variables.at("d").type()->isClassType());
+}
+
+
 static void testTupleGeneric() {
   printf("testTupleGeneric\n");
 
@@ -651,31 +720,6 @@ static void testTupleGeneric() {
   argHelper("(numeric, numeric)", "(5, 'hi')", false);
 }
 
-static void test18() {
-  printf("test18\n");
-  Context ctx;
-  Context* context = &ctx;
-
-  auto program = R""""(
-                  var t = (1, "hello", 3.0);
-                  var x = t(0);
-                  var y = t(1);
-                  var z = t(2);
-                )"""";
-
-  auto m = parseModule(context, std::move(program));
-
-  auto x = findVariable(m, "x");
-  auto y = findVariable(m ,"y");
-  auto z = findVariable(m ,"z");
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  assert(rr.byAst(x).type().type()->isIntType());
-  assert(rr.byAst(y).type().type()->isStringType());
-  assert(rr.byAst(z).type().type()->isRealType());
-}
-
 int main() {
   test1();
   test2();
@@ -697,6 +741,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   testTupleGeneric();
 
