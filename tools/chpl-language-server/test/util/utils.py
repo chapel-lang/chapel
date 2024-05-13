@@ -172,6 +172,13 @@ def pos(coord: typing.Tuple[int, int]):
     return Position(line=line, character=column)
 
 
+def rng(start: typing.Tuple[int, int], end: typing.Tuple[int, int]):
+    """
+    Shorthand for writing range literals.
+    """
+
+    return Range(start=pos(start), end=pos(end))
+
 def standard_module(name: str):
     """
     Retrieves the path of a standard module with the given name.
