@@ -3831,14 +3831,19 @@ struct Converter {
     astlocMarker markAstLoc(node->id());
 
     bool isStatic = false;
+    Expr* staticSharingKind = nullptr;
     if (auto ag = node->attributeGroup()) {
-      if (ag->getAttributeNamed(USTR("functionStatic"))) {
+      if (auto attr = ag->getAttributeNamed(USTR("functionStatic"))) {
         if (!node->initExpression()) {
           USR_FATAL(node->id(), "function-static variables must have an initializer.");
         }
         // post-parse checks rule this out.
         CHPL_ASSERT(!node->destination());
         isStatic = true;
+
+        if (attr->numActuals() > 0) {
+          staticSharingKind = convertAST(attr->actual(0));
+        }
       }
     }
 
@@ -3944,7 +3949,12 @@ struct Converter {
       }
 
       if (isStatic) {
-        initExpr = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
+        auto initExprCall = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
+        initExpr = initExprCall;
+
+        if (staticSharingKind) {
+          initExprCall->insertAtTail(staticSharingKind);
+        }
       }
     } else {
       initExpr = convertExprOrNull(node->initExpression());
