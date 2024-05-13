@@ -388,12 +388,9 @@ static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
           auto eltType = tup->starType();
           QualifiedType::Kind retKind = eltType.kind();
           if (prim == PRIM_GET_SVEC_MEMBER_VALUE) {
-            // Must return as value for _VALUE variant, but still maintain
-            // constness and param-ness as applicable.
-            if (!eltType.isParam()) {
-              retKind = (eltType.isConst() ? QualifiedType::CONST_VAR
-                                           : QualifiedType::VAR);
-            }
+            // Return as value for _VALUE variant, maintaining constness.
+            // TODO: also maintain param-ness if we later support param tuples
+            retKind = KindProperties::combineKinds(retKind, QualifiedType::VAR);
           }
           return QualifiedType(retKind, eltType.type());
         }

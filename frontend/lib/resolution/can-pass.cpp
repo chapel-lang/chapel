@@ -1118,6 +1118,14 @@ void KindProperties::strictCombineWith(const KindProperties& other) {
   // We could do some checking now, but that might be a bit premature.
 }
 
+types::QualifiedType::Kind KindProperties::combineKinds(
+    types::QualifiedType::Kind kind1, types::QualifiedType::Kind kind2) {
+  auto kp1 = KindProperties::fromKind(kind1);
+  auto kp2 = KindProperties::fromKind(kind2);
+  kp1.combineWith(kp2);
+  return kp1.toKind();
+}
+
 QualifiedType::Kind KindProperties::toKind() const {
   if (!isValid) return QualifiedType::UNKNOWN;
   if (isType) return QualifiedType::TYPE;

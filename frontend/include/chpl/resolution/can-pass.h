@@ -244,6 +244,11 @@ class KindProperties {
      checking is a separate pass. */
   void strictCombineWith(const KindProperties& other);
 
+  /* Combine the properties of two kinds, returning the result as a kind. */
+  static types::QualifiedType::Kind combineKinds(
+      types::QualifiedType::Kind kind1,
+      types::QualifiedType::Kind kind2);
+
   /* Convert the set of kind properties back into a kind. */
   types::QualifiedType::Kind toKind() const;
 
