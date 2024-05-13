@@ -308,7 +308,7 @@ static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
   // Combine the properties of the argument's kind with those of the 'REF'
   // kind. This should inherit const-ness, throw off param-ness, and result in
   // errors if the argument is a TYPE.
-  kp.combineWith(KindProperties::fromKind(QualifiedType::REF));
+  kp.combineWithJoin(KindProperties::fromKind(QualifiedType::REF));
   if (!kp.valid()) return QualifiedType();
 
   // 'combineWith' actually disables ref-ness if either argument is non-ref.
@@ -389,8 +389,8 @@ static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
           QualifiedType::Kind retKind = eltType.kind();
           if (prim == PRIM_GET_SVEC_MEMBER_VALUE) {
             // Return as value for _VALUE variant, maintaining constness.
-            // TODO: also maintain param-ness if we later support param tuples
-            retKind = KindProperties::combineKinds(retKind, QualifiedType::VAR);
+            retKind =
+                KindProperties::combineKindsMeet(retKind, QualifiedType::PARAM);
           }
           return QualifiedType(retKind, eltType.type());
         }

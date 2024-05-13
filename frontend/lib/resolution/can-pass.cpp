@@ -1088,25 +1088,41 @@ void KindProperties::setParam(bool isParam) {
   this->isParam = isParam;
 }
 
-void KindProperties::combineWith(const KindProperties& other) {
-  if (!isValid) return;
-  if (!other.isValid || isType != other.isType) {
+bool KindProperties::checkValidCombine(const KindProperties& other) const {
+  if (!isValid || !other.isValid) {
+    return false;
+  }
+  if (isType != other.isType) {
     // Can't mix types and non-types.
+    return false;
+  }
+
+  return true;
+}
+
+void KindProperties::combineWithJoin(const KindProperties& other) {
+  if (!checkValidCombine(other)) {
     invalidate();
     return;
   }
+
   isConst = isConst || other.isConst;
   isRef = isRef && other.isRef;
   isParam = isParam && other.isParam;
 }
 
+void KindProperties::combineWithMeet(const KindProperties& other) {
+  bool bothConst = isConst && other.isConst;
+  combineWithJoin(other);
+  isConst = bothConst;
+}
+
 void KindProperties::strictCombineWith(const KindProperties& other) {
-  if (!isValid) return;
-  if (!other.isValid || isType != other.isType) {
-    // Can't mix types and non-types.
+  if (!checkValidCombine(other)) {
     invalidate();
     return;
   }
+
   if (isParam && !other.isParam) {
     // If a param is required, can't return a non-param.
     invalidate();
@@ -1118,11 +1134,11 @@ void KindProperties::strictCombineWith(const KindProperties& other) {
   // We could do some checking now, but that might be a bit premature.
 }
 
-types::QualifiedType::Kind KindProperties::combineKinds(
+types::QualifiedType::Kind KindProperties::combineKindsMeet(
     types::QualifiedType::Kind kind1, types::QualifiedType::Kind kind2) {
   auto kp1 = KindProperties::fromKind(kind1);
   auto kp2 = KindProperties::fromKind(kind2);
-  kp1.combineWith(kp2);
+  kp1.combineWithMeet(kp2);
   return kp1.toKind();
 }
 
@@ -1171,7 +1187,7 @@ commonType(Context* context,
     }
     auto kind = type.kind();
     auto typeProperties = KindProperties::fromKind(kind);
-    properties.combineWith(typeProperties);
+    properties.combineWithJoin(typeProperties);
   }
 
   if (requiredKind) {
