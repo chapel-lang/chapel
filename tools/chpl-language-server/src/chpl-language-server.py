@@ -157,21 +157,21 @@ def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     elif isinstance(decl, chapel.EnumElement):
         return SymbolKind.EnumMember
     elif isinstance(decl, chapel.Function):
-        if decl.is_method():
-            return SymbolKind.Method
-        elif decl.name() in ("init", "init="):
+        if decl.name() in ("init", "init="):
             return SymbolKind.Constructor
         elif decl.kind() == "operator":
             return SymbolKind.Operator
+        elif decl.is_method():
+            return SymbolKind.Method
         else:
             return SymbolKind.Function
     elif isinstance(decl, chapel.Variable):
-        if decl.is_field():
+        if decl.intent() == "type":
+            return SymbolKind.TypeParameter
+        elif decl.is_field():
             return SymbolKind.Field
         elif decl.intent() == "<const-var>":
             return SymbolKind.Constant
-        elif decl.intent() == "type":
-            return SymbolKind.TypeParameter
         else:
             return SymbolKind.Variable
     return None
