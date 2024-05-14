@@ -2843,9 +2843,10 @@ type_alias_decl_stmt_inner:
                                 context->currentScopeIsAggregate(),
                                 /*typeExpression*/ nullptr,
                                 toOwned($2));
-      // Gather the comments like a statement does.
-      $$ = STMT(@1, node.release());
-      context->clearComments();
+    BUILDER->noteDeclNameLocation(node.get(), LOC(@1));
+    // Gather the comments like a statement does.
+    $$ = STMT(@1, node.release());
+    context->clearComments();
   }
 ;
 
