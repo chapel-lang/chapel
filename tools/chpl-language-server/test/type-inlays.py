@@ -146,12 +146,15 @@ async def test_type_inlays_tuple(client: LanguageClient):
             var a = (10, 20);
             var b = ((10:uint(8), ""), new R());
             var c = b;
+            var (a, b) = (1, (2.0, ""));
            """
 
     inlays = [
         (pos((1, 5)), "(int(64), int(64))"),
         (pos((2, 5)), "((uint(8), string), R)"),
         (pos((3, 5)), "((uint(8), string), R)"),
+        (pos((4, 6)), "int(64)"),
+        (pos((4, 9)), "(real(64), string)"),
     ]
 
     with source_file(client, file) as doc:
@@ -460,6 +463,26 @@ async def test_split_init_type_inlays(client: LanguageClient):
            """
 
     y_inlay = (pos((10, 5)), "Generic(int)")
+    with source_file(client, file) as doc:
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), [y_inlay]
+        )
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
+
+@pytest.mark.asyncio
+@pytest.mark.xfail
+async def test_type_inlay_type_variable(client: LanguageClient):
+    """
+    Ensure that type inlays are shown properly for type variables
+    """
+
+    file = """
+            proc bar(type t) type do return t;
+            type t = bar(int);
+           """
+
+    y_inlay = (pos((1, 6)), "int")
     with source_file(client, file) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [y_inlay]
