@@ -215,8 +215,8 @@ module Image {
 
     proc computeColor(t:real, param rgb: rgbColor) {
       const v = linInterp(t,
-                       colorComponent(colorA, rgb),
-                       colorComponent(colorB, rgb)) & colorMask;
+                          colorComponent(colorA, rgb),
+                          colorComponent(colorB, rgb)) & colorMask;
       return v << colorOffset(rgb);
     }
 
