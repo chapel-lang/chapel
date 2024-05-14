@@ -505,3 +505,21 @@ async def check_type_inlay_hints(
         assert actual.text_edits[0].new_text == expected[1]
 
     return actual_inlays
+
+
+async def check_param_inlay_hints(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    rng: Range,
+    expected_inlays: Sequence[typing.Tuple[Position, str]],
+) -> typing.List[InlayHint]:
+    """
+    Helper method for `check_inlay_hints`. Adds the `param value is ` prefix.
+    """
+    # we current do not make use of InlayHintKind.Type for type inlays in CLS
+    inlays = [
+        (pos, f"param value is {text}", None) for pos, text in expected_inlays
+    ]
+    actual_inlays = await check_inlay_hints(client, doc, rng, inlays)
+
+    return actual_inlays
