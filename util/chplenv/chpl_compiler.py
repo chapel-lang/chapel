@@ -256,7 +256,7 @@ COMPILERS = [('gnu', 'gcc', 'g++'),
              ('clang', 'clang', 'clang++'),
              ('ibm', 'xlc', 'xlC'),
              ('intel', 'icc', 'icpc'),
-             ('pgi', 'pgicc', 'pgc++')]
+             ('pgi', 'pgcc', 'pgc++')]
 
 # given a compiler command string, (e.g. "gcc" or "/path/to/clang++"),
 # figure out the compiler family (e.g. gnu or clang),
