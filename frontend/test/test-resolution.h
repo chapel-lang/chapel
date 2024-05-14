@@ -77,4 +77,6 @@ void ensureErroneousType(const QualifiedType& type);
 
 QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
 
+Context::Configuration getConfigWithHome();
+
 #endif

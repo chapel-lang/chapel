@@ -58,6 +58,12 @@ const types::QualifiedType& typeForModuleLevelSymbol(
 const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
 /**
+  Get the QualifiedType for the well-known types in ChapelSysCTypes
+ */
+const types::QualifiedType& typeForSysCType(Context* context,
+                                            UniqueString name);
+
+/**
   Compute the type for a literal
  */
 types::QualifiedType typeForLiteral(Context* context,
