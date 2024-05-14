@@ -67,16 +67,17 @@ module Image {
   // set helper params for colors
   //
   @chpldoc.nodoc
-  param red = 0,        // names for referring to colors
-        green = 1,
-        blue = 2,
-        numColors = 3;
+  enum rgbColor {
+    red=0,
+    green=1,
+    blue=2,
+  }
 
   //
   // Verify that config-specified pixelType is appropriate for storing colors
   //
   if isIntegral(pixelType) {
-    if numColors*bitsPerColor > numBits(pixelType) then
+    if (rgbColor.size)*bitsPerColor > numBits(pixelType) then
       compilerError("pixelType '" + pixelType:string +
                     "' isn't big enough to store " +
                     bitsPerColor:string + " bits per color");
@@ -88,7 +89,7 @@ module Image {
   // how far to shift a color component when packing into a pixelType
   //
   private inline proc colorOffset(param color) param {
-    return color * bitsPerColor;
+    return color:int * bitsPerColor;
   }
 
   /* Defines what kind of image to output */
@@ -116,6 +117,7 @@ module Image {
     }
   }
 
+  pragma "last resort"
   private proc writeImageBMP(outfile, pixels) do
     compilerError("pixels must be a 2D array of colors");
 
@@ -125,7 +127,7 @@ module Image {
           cols = d.dim(1).size,
           headerSize = 14,
           dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
-          bitsPerPixel = numColors*bitsPerColor,
+          bitsPerPixel = (rgbColor.size)*bitsPerColor,
           // row size in bytes. Pad each row out to 4 bytes.
           rowQuads = divCeil(bitsPerPixel * cols, 32),
           rowSize = 4 * rowQuads,
@@ -155,22 +157,21 @@ module Image {
     outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
 
     for i in d.dim(0) {
-      var nbits = 0;
       for j in d.dim(1) {
         var p = pixels[i,j];
-        var redv = (p >> colorOffset(red)) & colorMask;
-        var greenv = (p >> colorOffset(green)) & colorMask;
-        var bluev = (p >> colorOffset(blue)) & colorMask;
+        var redv = (p >> colorOffset(rgbColor.red)) & colorMask;
+        var greenv = (p >> colorOffset(rgbColor.green)) & colorMask;
+        var bluev = (p >> colorOffset(rgbColor.blue)) & colorMask;
 
         // write 24-bit color value
         outfile.writeBits(bluev, bitsPerColor);
         outfile.writeBits(greenv, bitsPerColor);
         outfile.writeBits(redv, bitsPerColor);
-        nbits += numColors * bitsPerColor;
       }
       // write the padding.
       // The padding is only rounding up to 4 bytes so
       // can be written in a single writeBits call.
+      const nbits = bitsPerColor * (rgbColor.size) * cols;
       outfile.writeBits(0:uint, (rowSizeBits-nbits):int(8));
     }
   }
@@ -187,8 +188,7 @@ module Image {
   */
   proc downSample(arr: [?d], newMin:int = 0, newMax:int = 0xFFFFFF): [d] int
     where d.isRectangular() && d.rank == 2 {
-    var oldMin = min reduce arr,
-        oldMax = max reduce arr;
+    const (oldMin, oldMax) = minmax reduce arr;
 
     var outArr: [d] int =
       ((newMax - newMin) * ((arr - oldMin) / (oldMax - oldMin)) + newMin):int;
@@ -196,37 +196,36 @@ module Image {
     return outArr;
   }
 
+  // workaround https://github.com/chapel-lang/chapel/issues/25045
+  private proc interpolateColorDefaultColorRange(arr: []) do return minmax reduce arr;
+
   /*
   Linearly interpolates between two colors to create an array of pixels.
   */
   proc interpolateColor(arr: [?d],
                         colorA: pixelType,
                         colorB: pixelType,
-                        colorRange = (min reduce arr, max reduce arr)): [d] pixelType {
+                        colorRange = interpolateColorDefaultColorRange(arr)): [d] pixelType {
     const (low, high) = colorRange;
     const spread = (high - low):real;
 
-    proc colorComponent(color: pixelType, param offset: int) do
+    proc colorComponent(color: pixelType, param offset: rgbColor) do
       return (color >> colorOffset(offset)) & colorMask;
     proc linInterp(t:real, l, h) do return (l * (1 - t) + h * t):int;
 
+    proc computeColor(t:real, param rgb: rgbColor) {
+      const v = linInterp(t,
+                       colorComponent(colorA, rgb),
+                       colorComponent(colorB, rgb)) & colorMask;
+      return v << colorOffset(rgb);
+    }
+
     var outPixels: [d] pixelType;
     forall (a, outPixel) in zip(arr, outPixels) {
-
       const t = (a - low):real / spread;
-      const redv = linInterp(t,
-                             colorComponent(colorA, red),
-                             colorComponent(colorB, red)) & colorMask;
-      const greenv = linInterp(t,
-                               colorComponent(colorA, green),
-                               colorComponent(colorB, green)) & colorMask;
-      const bluev = linInterp(t,
-                              colorComponent(colorA, blue),
-                              colorComponent(colorB, blue)) & colorMask;
-
-      outPixel = (redv << colorOffset(red)) |
-                 (greenv << colorOffset(green)) |
-                 (bluev << colorOffset(blue));
+      outPixel = computeColor(t, rgbColor.red) |
+                 computeColor(t, rgbColor.green) |
+                 computeColor(t, rgbColor.blue);
     }
 
     return outPixels;
