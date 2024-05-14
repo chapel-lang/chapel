@@ -3,7 +3,7 @@
 # Sources base dependencies required for all tests.
 
 # For most systems, load all dependencies via spack
-if [[ "$(hostname -s)" == "chapcs*" || "$(hostname -s)" == "chapvm*" ]]; then
+if [[ "${HOSTNAME:0:6}" == "chapcs" || "${HOSTNAME:0:6}" == "chapvm" ]]; then
   if [ -f /data/cf/chapel/chpl-deps/chapcs11/load_chpl_deps.bash ] ; then
     source /data/cf/chapel/chpl-deps/chapcs11/load_chpl_deps.bash
   fi
