@@ -268,6 +268,7 @@ async def test_type_inlays_loops(client: LanguageClient):
             forall i in 1..10 { }
             coforall i in 1..10 { }
             foreach i in 1..10 { }
+            [i in 1..10] { ; }
            """
 
     inlays = [
@@ -275,6 +276,7 @@ async def test_type_inlays_loops(client: LanguageClient):
         (pos((1, 8)), "int(64)"),
         (pos((2, 10)), "int(64)"),
         (pos((3, 9)), "int(64)"),
+        (pos((4, 2)), "int(64)"),
     ]
 
     with source_file(client, file) as doc:
@@ -283,33 +285,6 @@ async def test_type_inlays_loops(client: LanguageClient):
         )
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 0
-
-
-@pytest.mark.asyncio
-async def test_type_inlays_loops_bracket(client: LanguageClient):
-    """
-    Ensure that type inlays are shown for loops.
-
-    This should be folded into the other loops cases when bracket loops don't
-    throw type errors anymore.
-    """
-
-    file = """
-            [i in 1..10] { }
-           """
-
-    inlays = [(pos((0, 2)), "int(64)")]
-
-    with source_file(client, file) as doc:
-        await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), inlays
-        )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 1
-        assert (
-            "generic array types are unsupported"
-            in client.diagnostics[doc.uri][0].message
-        )
 
 
 @pytest.mark.asyncio
