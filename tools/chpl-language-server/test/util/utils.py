@@ -522,10 +522,24 @@ async def check_param_inlay_hints(
     """
     Helper method for `check_inlay_hints`. Adds the `param value is ` prefix.
     """
-    # we current do not make use of InlayHintKind.Type for type inlays in CLS
     inlays = [
         (pos, f"param value is {text}", None) for pos, text in expected_inlays
     ]
+    actual_inlays = await check_inlay_hints(client, doc, rng, inlays)
+
+    return actual_inlays
+
+
+async def check_end_marker_inlay_hints(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    rng: Range,
+    expected_inlays: Sequence[typing.Tuple[Position, str]],
+) -> typing.List[InlayHint]:
+    """
+    Helper method for `check_inlay_hints`.
+    """
+    inlays = [(pos, text, None) for pos, text in expected_inlays]
     actual_inlays = await check_inlay_hints(client, doc, rng, inlays)
 
     return actual_inlays
