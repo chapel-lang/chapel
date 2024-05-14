@@ -103,7 +103,13 @@ async def test_list_references_across_dirs(client: LanguageClient):
             client, z_refs[0][0], z_refs[0][1], z_refs
         )
 
-        await save_file(client, docs("Main"), docs("subdir/A"), docs("subdir/B"), docs("subdir2/nested/C"))
+        await save_file(
+            client,
+            docs("Main"),
+            docs("subdir/A"),
+            docs("subdir/B"),
+            docs("subdir2/nested/C"),
+        )
         assert len(client.diagnostics[docs("Main").uri]) == 0
         assert len(client.diagnostics[docs("subdir/A").uri]) == 0
         assert len(client.diagnostics[docs("subdir/B").uri]) == 0

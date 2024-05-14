@@ -311,7 +311,7 @@ async def test_list_references_across_files(client: LanguageClient):
             client, docs("A"), pos((1, 6)), all_refs
         )
 
-        await save_file(client, docs("A"),  docs("B"), docs("C"))
+        await save_file(client, docs("A"), docs("B"), docs("C"))
         assert len(client.diagnostics[docs("A").uri]) == 0
         assert len(client.diagnostics[docs("B").uri]) == 0
         assert len(client.diagnostics[docs("C").uri]) == 0
