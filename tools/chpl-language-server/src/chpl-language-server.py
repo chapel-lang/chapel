@@ -947,8 +947,6 @@ class ChapelLanguageServer(LanguageServer):
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
 
-        self._curly_bracket_with_comment = re.compile(r"\}.*//")
-
     def get_deprecation_replacement(
         self, text: str
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -1376,9 +1374,10 @@ class ChapelLanguageServer(LanguageServer):
                 block_size = end_loc.line - header_loc.end()[0]
                 if block_size < self.end_marker_threshold:
                     continue
-                # skip blocks where the comment is already added
-                curly_line = file_lines[end_loc.line]
-                if re.search(self._curly_bracket_with_comment, curly_line):
+                # skip blocks where other text already exists
+                curly_line = file_lines[end_loc.line].rstrip()
+                assert len(curly_line) > 0
+                if curly_line[-1] != "}":
                     continue
 
                 text = chapel.range_to_lines(header_loc, file_lines)
