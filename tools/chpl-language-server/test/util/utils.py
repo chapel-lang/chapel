@@ -20,6 +20,12 @@ from lsprotocol.types import (
     WORKSPACE_SEMANTIC_TOKENS_REFRESH,
 )
 from lsprotocol.types import (
+    DocumentSymbolParams,
+    SymbolKind,
+    DocumentSymbol,
+    SymbolInformation,
+)
+from lsprotocol.types import (
     DidChangeWorkspaceFoldersParams,
     WorkspaceFoldersChangeEvent,
     WorkspaceFolder,
@@ -523,3 +529,36 @@ async def check_param_inlay_hints(
     actual_inlays = await check_inlay_hints(client, doc, rng, inlays)
 
     return actual_inlays
+
+
+async def check_symbol_information(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    expected_symbols: Sequence[typing.Tuple[Range, str, SymbolKind]],
+) -> Sequence[typing.Union[SymbolInformation, DocumentSymbol]]:
+    """
+    Check that the document symbols match the expected symbols.
+    """
+    actual_symbols = await client.text_document_document_symbol_async(
+        params=DocumentSymbolParams(doc)
+    )
+    assert actual_symbols is not None
+    assert len(actual_symbols) == len(expected_symbols)
+
+    actual_symbols = sorted(
+        actual_symbols,
+        key=lambda x: (
+            x.location.range.start
+            if isinstance(x, SymbolInformation)
+            else x.range.start
+        ),
+    )
+    for expected, actual in zip(expected_symbols, actual_symbols):
+        assert actual.name == expected[1]
+        assert actual.kind == expected[2]
+        if isinstance(actual, DocumentSymbol):
+            assert actual.range == expected[0]
+        else:
+            assert actual.location.range == expected[0]
+            assert actual.location.uri == doc.uri
+    return actual_symbols
