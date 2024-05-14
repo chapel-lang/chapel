@@ -388,7 +388,7 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
 static const TypedFnSignature*
 generateDeSerialize(Context* context, const CompositeType* compType,
                     UniqueString name, std::string channel,
-                    std::string DeSerializer) {
+                    std::string deSerializer) {
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
 
@@ -399,7 +399,7 @@ generateDeSerialize(Context* context, const CompositeType* compType,
   ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, channel), false, nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, AnyType::get(context)));
 
-  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, DeSerializer), false, nullptr));
+  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, deSerializer), false, nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::REF, AnyType::get(context)));
 
   // build the untyped signature
