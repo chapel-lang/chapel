@@ -1185,8 +1185,6 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
   return getTypeGenericityIgnoring(context, qt, ignore);
 }
 
-// Returns true if the field should be included in the type constructor.
-// In that event, also sets formalType to the type the formal should use.
 bool shouldIncludeFieldInTypeConstructor(Context* context,
                                          const ID& fieldId,
                                          const QualifiedType& fieldType,
@@ -3903,7 +3901,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
                                       candidatesWithInstantiations,
-                                      /* rejected */ nullptr);
+                                      rejected);
 
         // filter out last resort candidates
         filterCandidatesLastResort(context, candidatesWithInstantiations,
@@ -3948,7 +3946,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
                                       candidatesWithInstantiations,
-                                      /* rejected */ nullptr);
+                                      rejected);
 
         // filter out last resort candidates
         filterCandidatesLastResort(context, candidatesWithInstantiations,

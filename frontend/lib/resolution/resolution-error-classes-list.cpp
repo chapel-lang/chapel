@@ -888,7 +888,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       }
 
       if (badPass.formalType().isUnknown()) {
-        // The formal type cna be unknown in an initial instantiation if it
+        // The formal type can be unknown in an initial instantiation if it
         // depends on the previous formals' types. In that case, don't print it
         // and say something nicer.
         wr.message("The instantiated type of formal ", formalName,
