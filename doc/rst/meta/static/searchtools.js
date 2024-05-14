@@ -132,7 +132,7 @@ const _displayItem = (item, searchTerms, highlightTerms) => {
 
   if (descr) {
     // highlight search terms in the description
-    if (localHighlight)  // set in sphinx_highlight.js
+    if (localHighlight)
       highlightTerms.forEach((term) => _highlightText(listItem, term, "highlighted"));
   }
   else if (showSearchSummary)
@@ -144,7 +144,7 @@ const _displayItem = (item, searchTerms, highlightTerms) => {
             Search.makeSearchSummary(data, searchTerms, anchor)
           );
         // highlight search terms in the summary
-        if (localHighlight)  // set in sphinx_highlight.js
+        if (localHighlight)
           highlightTerms.forEach((term) => _highlightText(listItem, term, "highlighted"));
       });
   Search.output.appendChild(listItem);
