@@ -471,7 +471,6 @@ async def test_split_init_type_inlays(client: LanguageClient):
         assert len(client.diagnostics[doc.uri]) == 0
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_type_inlay_type_variable(client: LanguageClient):
     """
     Ensure that type inlays are shown properly for type variables
@@ -482,7 +481,7 @@ async def test_type_inlay_type_variable(client: LanguageClient):
             type t = bar(int);
            """
 
-    y_inlay = (pos((1, 6)), "int")
+    y_inlay = (pos((1, 6)), "int(64)")
     with source_file(client, file) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [y_inlay]
