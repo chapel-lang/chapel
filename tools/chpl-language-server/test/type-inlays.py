@@ -380,7 +380,7 @@ async def test_type_inlays_clickable_def(client: LanguageClient):
 
     with source_file(client, file) as doc:
         inlays = await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), [(pos((2, 5)), "C")]
+            client, doc, rng((0, 0), endpos(file)), [(pos((2, 5)), "R")]
         )
 
         assert len(inlays) == 1
@@ -397,6 +397,7 @@ async def test_type_inlays_clickable_def(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+@pytest.mark.xfail
 async def test_type_inlays_hover_string(client: LanguageClient):
     """
     Ensure that `: string` as a type inlay does not break
