@@ -7538,7 +7538,7 @@ yyreduce:
   case 229: /* loop_stmt_base: for_loop_kw expr TIN expr forall_intent_clause do_stmt  */
 #line 1754 "chpl.ypp"
   {
-    auto locHeader = context->makeSpannedLocation((yylsp[-5]), (yylsp[-3]));
+    auto locHeader = context->makeSpannedLocation((yylsp[-5]), (yylsp[-2]));
     (yyval.commentsAndStmt) = context->buildGeneralLoopStmt((yyloc), (yylsp[-4]), locHeader, (yylsp[0]), (yyvsp[-5].uniqueStr), (yyvsp[-4].expr), (yyvsp[-2].expr), (yyvsp[-1].withClause), (yyvsp[0].blockOrDo));
   }
 #line 7545 "bison-chpl-lib.cpp"
