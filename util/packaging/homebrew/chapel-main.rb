@@ -28,25 +28,12 @@ class Chapel < Formula
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
   end
 
-  # Fixes: SyntaxWarning: invalid escape sequence '\d'
-  # Remove when merged: https://github.com/chapel-lang/chapel/pull/24643
-  patch :DATA
-
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
     python = "python3.12"
     # It should be noted that this will expand to: 'for cmd in python3.12 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
-
-    # TEMPORARY adds clean-cmakecache target to prevent issues where only
-    #           the first make target gets written to the proper CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    #           cmake detects a change in compilers (although the values are the same?) and
-    #           reruns configure, losing the output directory we set at configure time
-    inreplace "compiler/Makefile",
-              "all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)\n",
-              "all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)\n\n
-              clean-cmakecache: FORCE\n\trm -f $(COMPILER_BUILD)/CMakeCache.txt\n\n"
 
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
@@ -129,18 +116,3 @@ class Chapel < Formula
     system bin/"mason", "--version"
   end
 end
-
-__END__
-diff --git a/util/chplenv/compiler_utils.py b/util/chplenv/compiler_utils.py
-index c4d683830f4c..1d1be1d55521 100644
---- a/util/chplenv/compiler_utils.py
-+++ b/util/chplenv/compiler_utils.py
-@@ -32,7 +32,7 @@ def CompVersion(version_string):
-     are not specified, 0 will be used for their value(s)
-     """
-     CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
--    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
-+    match = re.search(u"(\\d+)(\\.(\\d+))?(\\.(\\d+))?(\\.(\\d+))?", version_string)
-     if match:
-         major    = int(match.group(1))
-         minor    = int(match.group(3) or 0)
