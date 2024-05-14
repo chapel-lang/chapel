@@ -174,7 +174,10 @@ def pos(coord: typing.Tuple[int, int]) -> Position:
     return Position(line=line, character=column)
 
 
-def rng(start: typing.Union[typing.Tuple[int, int], Position], end: typing.Union[typing.Tuple[int, int], Position]) -> Range:
+def rng(
+    start: typing.Union[typing.Tuple[int, int], Position],
+    end: typing.Union[typing.Tuple[int, int], Position],
+) -> Range:
     """
     Shorthand for writing range literals.
     """
@@ -183,6 +186,7 @@ def rng(start: typing.Union[typing.Tuple[int, int], Position], end: typing.Union
     if isinstance(end, tuple):
         end = pos(end)
     return Range(start=start, end=end)
+
 
 def endpos(text: str) -> Position:
     """
@@ -194,6 +198,7 @@ def endpos(text: str) -> Position:
     if len(lines) == 0:
         return pos((0, 0))
     return pos((len(lines) - 1, len(lines[-1])))
+
 
 def standard_module(name: str):
     """
@@ -487,13 +492,11 @@ async def check_type_inlay_hints(
     Also checks that inlays are insertable
     """
     # we current do not make use of InlayHintKind.Type for type inlays in CLS
-    inlays = [
-        (pos, f": {text}", None) for pos, text in expected_inlays
-    ]
+    inlays = [(pos, f": {text}", None) for pos, text in expected_inlays]
     actual_inlays = await check_inlay_hints(client, doc, rng, inlays)
 
     # Check that the inlays are insertable
-    for (expected, actual) in zip(inlays, actual_inlays):
+    for expected, actual in zip(inlays, actual_inlays):
         # the list of inlay text edits should have one element and have the
         # same text/range as the inlay
         assert actual.text_edits is not None
@@ -502,4 +505,3 @@ async def check_type_inlay_hints(
         assert actual.text_edits[0].new_text == expected[1]
 
     return actual_inlays
-
