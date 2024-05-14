@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import typing
+from collections.abc import Sequence
 
 from lsprotocol.types import (
     DefinitionParams,
@@ -9,7 +10,7 @@ from lsprotocol.types import (
     TypeDefinitionParams,
 )
 from lsprotocol.types import ReferenceParams, ReferenceContext
-from lsprotocol.types import InlayHintParams, InlayHintKind
+from lsprotocol.types import InlayHintParams, InlayHintKind, InlayHint
 from lsprotocol.types import LocationLink, Location, Position, Range
 from lsprotocol.types import TextDocumentIdentifier
 from lsprotocol.types import (
@@ -163,7 +164,8 @@ async def save_file(client: LanguageClient, *docs: TextDocumentIdentifier):
         )
         await client.wait_for_notification(TEXT_DOCUMENT_PUBLISH_DIAGNOSTICS)
 
-def pos(coord: typing.Tuple[int, int]):
+
+def pos(coord: typing.Tuple[int, int]) -> Position:
     """
     Shorthand for writing position literals.
     """
@@ -172,12 +174,26 @@ def pos(coord: typing.Tuple[int, int]):
     return Position(line=line, character=column)
 
 
-def rng(start: typing.Tuple[int, int], end: typing.Tuple[int, int]):
+def rng(start: typing.Union[typing.Tuple[int, int], Position], end: typing.Union[typing.Tuple[int, int], Position]) -> Range:
     """
     Shorthand for writing range literals.
     """
+    if isinstance(start, tuple):
+        start = pos(start)
+    if isinstance(end, tuple):
+        end = pos(end)
+    return Range(start=start, end=end)
 
-    return Range(start=pos(start), end=pos(end))
+def endpos(text: str) -> Position:
+    """
+    Returns the position at the end of the given text.
+    """
+
+    text = strip_leading_whitespace(text)
+    lines = text.splitlines()
+    if len(lines) == 0:
+        return pos((0, 0))
+    return pos((len(lines) - 1, len(lines[-1])))
 
 def standard_module(name: str):
     """
@@ -420,10 +436,10 @@ async def check_inlay_hints(
     client: LanguageClient,
     doc: TextDocumentIdentifier,
     rng: Range,
-    expected_inlays: typing.List[
+    expected_inlays: Sequence[
         typing.Tuple[Position, str, typing.Optional[InlayHintKind]]
     ],
-):
+) -> typing.List[InlayHint]:
     """
     Check that the inlay hints in the document match the expected inlays. The
     expected inlays list should be sorted in the order that the inlays appear
@@ -439,7 +455,7 @@ async def check_inlay_hints(
 
     if len(expected_inlays) == 0:
         assert results is None or len(results) == 0
-        return
+        return []
 
     assert results is not None
     assert len(expected_inlays) == len(results)
@@ -455,3 +471,35 @@ async def check_inlay_hints(
 
         assert expected[1] == actual_label
         assert expected[2] == actual.kind
+
+    return results
+
+
+async def check_type_inlay_hints(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    rng: Range,
+    expected_inlays: Sequence[typing.Tuple[Position, str]],
+) -> typing.List[InlayHint]:
+    """
+    Helper method for `check_inlay_hints`. Adds the `: ` prefix.
+
+    Also checks that inlays are insertable
+    """
+    # we current do not make use of InlayHintKind.Type for type inlays in CLS
+    inlays = [
+        (pos, f": {text}", None) for pos, text in expected_inlays
+    ]
+    actual_inlays = await check_inlay_hints(client, doc, rng, inlays)
+
+    # Check that the inlays are insertable
+    for (expected, actual) in zip(inlays, actual_inlays):
+        # the list of inlay text edits should have one element and have the
+        # same text/range as the inlay
+        assert actual.text_edits is not None
+        assert len(actual.text_edits) == 1
+        assert actual.text_edits[0].range.start == expected[0]
+        assert actual.text_edits[0].new_text == expected[1]
+
+    return actual_inlays
+

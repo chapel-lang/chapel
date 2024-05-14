@@ -5,9 +5,7 @@ Test call inlays for literals in call expressions. Requires `--resolver`.
 import sys
 
 from lsprotocol.types import ClientCapabilities
-from lsprotocol.types import InlayHintParams
 from lsprotocol.types import InitializeParams
-from lsprotocol.types import Range
 import pytest
 import pytest_lsp
 from pytest_lsp import ClientServerConfig, LanguageClient
@@ -72,10 +70,8 @@ async def test_call_inlays(client: LanguageClient):
         (pos((11, 4)), "a = ", None),
     ]
 
-    # cls current does not respect range, so it doesn't matter what range we pass in
-    rng = Range(pos((0, 0)), pos((0, 0)))
     with source_file(client, file) as doc:
-        await check_inlay_hints(client, doc, rng, inlays)
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 0
 
@@ -102,10 +98,8 @@ async def test_nested_call_inlays(client: LanguageClient):
         (pos((5, 16)), "a = ", None),
     ]
 
-    # cls current does not respect range, so it doesn't matter what range we pass in
-    rng = Range(pos((0, 0)), pos((0, 0)))
     with source_file(client, file) as doc:
-        await check_inlay_hints(client, doc, rng, inlays)
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 0
 
@@ -135,10 +129,40 @@ async def test_call_inlays_generic(client: LanguageClient):
         (pos((5, 15)), "a = ", None),
     ]
 
-    # cls current does not respect range, so it doesn't matter what range we pass in
-    rng = Range(pos((0, 0)), pos((0, 0)))
+    with source_file(client, file) as doc:
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.xfail
+async def test_call_inlays_in_range(client: LanguageClient):
+    """
+    Call inlays should only be generated in the requested range
+    """
+
+    file = """
+           proc foo(a) {}
+
+           foo(1);
+           foo(2);
+           """
+
+    inlays = [(pos((2, 4)), "a = ", None), (pos((3, 4)), "a = ", None)]
 
     with source_file(client, file) as doc:
-        await check_inlay_hints(client, doc, rng, inlays)
+        # check all inlays
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        # check only the first inlay
+        await check_inlay_hints(
+            client, doc, rng((2, 0), pos((2, 5))), inlays[:1]
+        )
+        # check only the second inlay
+        await check_inlay_hints(
+            client, doc, rng((3, 0), pos((3, 5))), inlays[1:]
+        )
+        # check no inlays
+        await check_inlay_hints(client, doc, rng((0, 0), pos((1, 0))), [])
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 0
