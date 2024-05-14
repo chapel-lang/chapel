@@ -30,7 +30,7 @@
  * SOFTWARE.
  */
 
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 
 static inline int vrb_dgram_av_is_addr_valid(struct vrb_dgram_av *av,
 						const void *addr)

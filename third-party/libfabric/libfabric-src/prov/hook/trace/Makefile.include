@@ -1,0 +1,23 @@
+if HAVE_TRACE
+
+_tracehook_files = prov/hook/trace/src/hook_trace.c
+
+
+if HAVE_TRACE_DL
+
+pkglib_LTLIBRARIES += libtrace-fi.la
+libtrace_fi_la_SOURCES = $(_tracehook_files) $(common_hook_srcs) $(common_srcs)
+libtrace_fi_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/prov/hook/include
+libtrace_fi_la_LIBADD = $(linkback) $(tracehook_shm_LIBS)
+libtrace_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libtrace_fi_la_DEPENDENCIES = $(linkback)
+
+else !HAVE_TRACE_DL
+
+src_libfabric_la_SOURCES += $(_tracehook_files)
+src_libfabric_la_LIBADD	 += $(tracehook_shm_LIBS)
+
+endif !HAVE_TRACE_DL
+
+
+endif HAVE_TRACE

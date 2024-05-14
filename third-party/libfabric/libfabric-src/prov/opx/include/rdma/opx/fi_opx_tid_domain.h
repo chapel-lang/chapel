@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Cornelis Networks.
+ * Copyright (C) 2022-2023 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,7 +32,6 @@
 #ifndef _FI_PROV_OPX_TID_DOMAIN_H_
 #define _FI_PROV_OPX_TID_DOMAIN_H_
 
-
 #include "rdma/fi_domain.h"
 
 #include "ofi_util.h"
@@ -42,32 +41,25 @@
 extern "C" {
 #endif
 
-struct fi_opx_tid_fabric {
-	struct util_fabric	util_fabric;
-//	int64_t		ref_cnt;
+struct opx_tid_fabric {
+	struct util_fabric util_fabric;
 };
 
-struct fi_opx_tid_mr ;
-struct fi_opx_tid_domain {
-	struct util_domain	      util_domain;
-	struct fi_opx_tid_fabric      *fabric;
-	struct ofi_mr_cache	      *tid_cache;
-//	struct _hfi_ctrl              *ctrl;
-//	enum fi_mr_mode		      mr_mode;
-	uint64_t		      key;
-//	uint64_t		      num_mr_keys;
-//	struct fi_opx_tid_mr          *mr_hashmap;
-//	struct fi_opx_tid_reuse_cache *tid_reuse_cache;
-//	int64_t		              ref_cnt;
+struct opx_tid_domain {
+	struct util_domain util_domain;
+	struct opx_tid_fabric *fabric;
+	struct ofi_mr_cache *tid_cache;
+	uint64_t key;
+	struct dlist_entry list_entry; /* linked to tid_domain_list */
 };
 
+int opx_close_tid_domain(struct opx_tid_domain *tid_domain);
+int opx_open_tid_domain(struct opx_tid_fabric *tid_fabric,
+		      struct fi_info *info,
+		      struct opx_tid_domain **opx_tid_domain);
 
-int fi_opx_close_tid_domain(struct fi_opx_tid_domain *tid_domain);
-int fi_opx_tid_domain(struct fi_opx_tid_fabric *tid_fabric, struct fi_info *info, struct fi_opx_tid_domain **opx_tid_domain);
-
-int fi_opx_close_tid_fabric(struct fi_opx_tid_fabric *opx_tid_fabric);
-int fi_opx_tid_fabric(struct fi_opx_tid_fabric ** opx_tid_fabric);
-
+int opx_close_tid_fabric(struct opx_tid_fabric *opx_tid_fabric);
+int opx_open_tid_fabric(struct opx_tid_fabric **opx_tid_fabric);
 
 #ifdef __cplusplus
 }

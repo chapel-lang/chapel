@@ -37,35 +37,23 @@
 #include "ofi_iov.h"
 #include "smr.h"
 
-static int smr_tx_comp(struct smr_ep *ep, void *context, uint32_t op)
-{
-	struct smr_cq *smr_cq;
-
-	smr_cq = container_of(ep->util_ep.tx_cq, struct smr_cq, util_cq);
-
-	return smr_cq->peer_cq->owner_ops->write(smr_cq->peer_cq, context,
-					     ofi_tx_cq_flags(op),
-					     0, NULL, 0, 0, FI_ADDR_NOTAVAIL);
-}
-
 int smr_complete_tx(struct smr_ep *ep, void *context, uint32_t op,
 		    uint64_t flags)
 {
-	ofi_ep_tx_cntr_inc_func(&ep->util_ep, op);
+	ofi_ep_peer_tx_cntr_inc(&ep->util_ep, op);
 
 	if (!(flags & FI_COMPLETION))
 		return 0;
 
-	return smr_tx_comp(ep, context, op);
+	return ofi_peer_cq_write(ep->util_ep.tx_cq, context,
+				 ofi_tx_cq_flags(op), 0, NULL, 0, 0,
+				 FI_ADDR_NOTAVAIL);
 }
 
 int smr_write_err_comp(struct util_cq *cq, void *context,
 		       uint64_t flags, uint64_t tag, uint64_t err)
 {
 	struct fi_cq_err_entry err_entry;
-	struct smr_cq *smr_cq;
-
-	smr_cq = container_of(cq, struct smr_cq, util_cq);
 
 	memset(&err_entry, 0, sizeof err_entry);
 	err_entry.op_context = context;
@@ -73,50 +61,20 @@ int smr_write_err_comp(struct util_cq *cq, void *context,
 	err_entry.tag = tag;
 	err_entry.err = err;
 	err_entry.prov_errno = -err;
-	return smr_cq->peer_cq->owner_ops->writeerr(smr_cq->peer_cq, &err_entry);
-}
-
-int smr_tx_comp_signal(struct smr_ep *ep, void *context, uint32_t op)
-{
-	int ret;
-
-	ret = smr_tx_comp(ep, context, op);
-	if (ret)
-		return ret;
-
-	ep->util_ep.tx_cq->wait->signal(ep->util_ep.tx_cq->wait);
-	return 0;
+	return ofi_peer_cq_write_error(cq, &err_entry);
 }
 
 int smr_complete_rx(struct smr_ep *ep, void *context, uint32_t op,
 		    uint64_t flags, size_t len, void *buf, int64_t id,
 		    uint64_t tag, uint64_t data)
 {
-	struct smr_cq *cq;
-
-	ofi_ep_rx_cntr_inc_func(&ep->util_ep, op);
+	ofi_ep_peer_rx_cntr_inc(&ep->util_ep, op);
 
 	if (!(flags & (FI_REMOTE_CQ_DATA | FI_COMPLETION)))
 		return 0;
 
 	flags &= ~FI_COMPLETION;
 
-	cq = container_of(ep->util_ep.rx_cq, struct smr_cq, util_cq);
-	return ep->rx_comp(cq, context, flags, len, buf,
-			   ep->region->map->peers[id].fiaddr, tag, data);
-}
-
-int smr_rx_comp(struct smr_cq *cq, void *context, uint64_t flags, size_t len,
-		void *buf, fi_addr_t fi_addr, uint64_t tag, uint64_t data)
-{
-	return cq->peer_cq->owner_ops->write(cq->peer_cq, context,
-				flags, len, buf, data,
-				tag, FI_ADDR_NOTAVAIL);
-}
-
-int smr_rx_src_comp(struct smr_cq *cq, void *context, uint64_t flags, size_t len,
-		    void *buf, fi_addr_t fi_addr, uint64_t tag, uint64_t data)
-{
-	return cq->peer_cq->owner_ops->write(cq->peer_cq, context,
-				flags, len, buf, data, tag, fi_addr);
+	return ofi_peer_cq_write(ep->util_ep.rx_cq, context, flags, len, buf,
+				 data, tag, ep->region->map->peers[id].fiaddr);
 }

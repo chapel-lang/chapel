@@ -63,18 +63,24 @@ struct psmi_stats_type {
 
 	int num_entries;
 	const char *heading;
+	const char *help;
 	uint32_t statstype;
 	char *id;	// identifier to include in output, typically epid
 	void *context;
 	char *info;
 	pid_t tid;	// thread id, useful for multi-ep
+	int help_shown;
 };
 
 static STAILQ_HEAD(, psmi_stats_type) psmi_stats =
 STAILQ_HEAD_INITIALIZER(psmi_stats);
 
 pthread_spinlock_t psm3_stats_lock;	// protects psmi_stats list
+static int perf_stats_initialized;
 // stats output
+static int print_stats_help;
+static char perf_help_file_name[PATH_MAX];
+static FILE *perf_help_fd;
 static int print_statsmask;
 static time_t stats_start;
 static char perf_file_name[PATH_MAX];
@@ -83,6 +89,17 @@ static FILE *perf_stats_fd;
 static int print_stats_freq;
 static int print_stats_running;
 static pthread_t perf_print_thread;
+
+// any psm3 env variables parsed prior to psm3_stats_initialize get stashed here
+#define MAX_SAVED_ENV 40	// only a handful parsed early, more than enough
+static char perf_stats_env[MAX_SAVED_ENV][80];
+static int perf_stats_env_num = 0;
+
+// initialize early so available to handle env print calls
+static void __attribute__ ((constructor)) __psm3_stats_lock_constructor(void)
+{
+	pthread_spin_init(&psm3_stats_lock, PTHREAD_PROCESS_PRIVATE);
+}
 
 // we attempt open only once and only output error once
 // this prevents multiple failures and also prevents reopen during finalize
@@ -93,20 +110,139 @@ static void psmi_open_stats_fd()
 	if (! attempted_open && ! perf_stats_fd) {
 		perf_stats_fd = fopen(perf_file_name, "w+");
 		if (!perf_stats_fd)
-			_HFI_ERROR("Failed to create fd for performance logging\n");
+			_HFI_ERROR("Failed to create fd for performance logging: %s: %s\n",
+				perf_file_name, strerror(errno));
 		attempted_open = 1;
+	}
+}
+
+#define PSM3_LINE_LEN 80
+// output help and as needed wrap at PSM3_LINE_LEN with ident before
+// each subsequent line.  Wrap occurs at a space.
+// Automatic wrap when hit a newline in help.  A single trailing newline
+// is ignored.  Do not use tabs, they are treated like normal characters
+// and may result in output lines too long.
+// assumes when called indent characters already output on current line
+// returns number of lines output
+static int
+psm3_print_wrapped_help(int indent, const char *help)
+{
+	int len = strlen(help);
+	int i = 0;
+	int per_line = PSM3_LINE_LEN-indent;
+	int next_len;
+	int lines = 0;
+
+	// each loop outputs a section of help up to a '\n' in help[]
+	// next_len is length before '\n', so we output help[i to next_len-1]
+	for (i=0; i < len; i = next_len+1) {
+		const char *p = strchr(&help[i], '\n');
+		if (p)
+			next_len = p - help;	// newline in help[]
+		else
+			next_len = len;			// no more newlines, output the rest
+		if (i == next_len) {
+			// empty line
+			fprintf(perf_help_fd, "\n");
+			lines++;
+			continue;
+		}
+		// output help[i to next_len-1], wrapping as needed to fit in per_line
+		for (; i<next_len;) {
+			int j;
+			if (i)	// indent each subsequent line of output
+				fprintf(perf_help_fd, "%*s", indent, " ");
+			if (next_len-i <= per_line) {
+				// next section of output fits on line
+				fprintf(perf_help_fd, "%-.*s\n", next_len-i, &help[i]);
+				lines++;
+				break;
+			}
+			// output up to a space limiting to fit in per_line
+			for (j=i+per_line-1; j > i; j--) {
+				if (help[j] == ' ') {
+					// space closest to end of line
+					fprintf(perf_help_fd, "%-.*s\n", j-i, &help[i]);
+					lines++;
+					i=j+1;	// skip space
+					break;
+				}
+			}
+			if (j == i) {
+				// unexpected, no spaces within per_line characters, just print
+				// rest of this help line
+				fprintf(perf_help_fd, "%-.*s\n", next_len-i, &help[i]);
+				lines++;
+				break;
+			}
+		}
+	}
+	return lines;
+}
+
+//  if *type is on the list, caller must hold psm3_stats_lock
+static void
+psm3_stats_print_help(struct psmi_stats_type *type)
+{
+	static int had_first_type = 0;
+
+	if (! perf_help_fd)
+		return;
+	if (! type->help_shown) {
+		int i;
+		struct psmi_stats_entry *entry;
+		int need_dashes = 0;
+		int had_first_entry = 0;
+		int need_dots = 0;
+
+		if (had_first_type)
+			fprintf(perf_help_fd, "================================================================================\n");
+
+		fprintf(perf_help_fd, "%s, Mask 0x%x:\n",
+				type->heading, type->statstype);
+		if (type->help) {
+			fprintf(perf_help_fd, "  ");
+			need_dashes = (psm3_print_wrapped_help(2, type->help) > 1);
+		}
+		for (i=0, entry=&type->entries[0]; i<type->num_entries; i++, entry++) {
+			if (entry->desc
+			    && ((need_dashes && ! had_first_entry) || need_dots)) {
+					fprintf(perf_help_fd, "    ............................................................................\n");
+					need_dots = 0;
+			}
+			if (entry->desc && entry->help) {
+				fprintf(perf_help_fd, "    %s: ", entry->desc);
+				(void)psm3_print_wrapped_help(strlen(entry->desc)+6,
+						entry->help);
+			} else if (entry->desc) {
+				fprintf(perf_help_fd, "    %s\n", entry->desc);
+			} else if (entry->help) { // pure help, describes a group of entries
+				if(need_dashes)
+					fprintf(perf_help_fd, "   -----------------------------------------------------------------------------\n");
+				fprintf(perf_help_fd, "   ");
+				need_dots = (psm3_print_wrapped_help(3, entry->help) > 1);
+				need_dashes = 1;
+			}
+			had_first_entry = 1;
+		}
+		type->help_shown = 1;
+		had_first_type = 1;
 	}
 }
 
 // caller must get psm3_stats_lock
 static psm2_error_t
 psm3_stats_deregister_type_internal(uint32_t statstype,
-					 void *context)
+					 void *context, int show_help)
 {
 	struct psmi_stats_type *type;
 
 	STAILQ_FOREACH(type, &psmi_stats, next) {
 		if (type->statstype == statstype && type->context == context) {
+			// for statistics groups using reregister (fault inj)
+			// just output on final deregister
+			if (show_help && ! type->help_shown)
+				psm3_stats_print_help(type);
 			STAILQ_REMOVE(&psmi_stats, type, psmi_stats_type, next);
 			psmi_free(type->entries);
 			if (type->info)
@@ -120,8 +256,31 @@ psm3_stats_deregister_type_internal(uint32_t statstype,
 	return PSM2_INTERNAL_ERR;	// not found
 }
 
+// caller must hold psm3_stats_lock
+static void
+psm3_stats_show_help(struct psmi_stats_type *new_type)
+{
+	struct psmi_stats_type *type;
+
+	if (! perf_help_fd)
+		return;
+	// see if help already shown for this type, we compare based on heading
+	STAILQ_FOREACH(type, &psmi_stats, next) {
+		// we could compare actual string pointers
+		//if (type->heading != new_type->heading)
+		if (0 != strcmp(type->heading, new_type->heading))
+			continue;
+		if (type->help_shown) {
+			new_type->help_shown = 1;
+			break;
+		}
+	}
+	if (! new_type->help_shown)
+		psm3_stats_print_help(new_type);
+}
+
 static psm2_error_t
-psm3_stats_register_type_internal(const char *heading,
+psm3_stats_register_type_internal(const char *heading, const char *help,
 			 uint32_t statstype,
 			 const struct psmi_stats_entry *entries_i,
 			 int num_entries, const char *id, void *context,
@@ -150,6 +309,7 @@ psm3_stats_register_type_internal(const char *heading,
 		type->id = psmi_strdup(NULL, id);
 	type->context = context;
 	type->heading = heading;
+	type->help = help;
 	if (info)
 		type->info = psmi_strdup(NULL, info);
 #ifdef SYS_gettid
@@ -157,17 +317,29 @@ psm3_stats_register_type_internal(const char *heading,
 #else
 	type->tid = 0;
 #endif
+	type->help_shown = 0;
 
 	for (i = 0; i < num_entries; i++) {
 		type->entries[i].desc = entries_i[i].desc;
+		type->entries[i].help = entries_i[i].help;
 		type->entries[i].flags = entries_i[i].flags;
 		type->entries[i].getfn = entries_i[i].getfn;
 		type->entries[i].u.val = entries_i[i].u.val;
 	}
 
 	pthread_spin_lock(&psm3_stats_lock);
+	// for statistics groups which repeatedly reregister (fault inj is the
+	// only one and does this to grow it's statistics as injectors are
+	// encountered), we only output help once on file deregister
+	// If needed we could have it re-output the help on each reregistration
+	// or just identify how num_entries grew and output the heading
+	// and new entry.  We take this approach now a a small job with
+	// PSM3_FI=2 and no faults can quickly produce help text for a
+	// potentially slower running job with some faults enabled.
 	if (rereg)
-		(void) psm3_stats_deregister_type_internal(statstype, context);
+		(void) psm3_stats_deregister_type_internal(statstype, context, 0);
+	else
+		psm3_stats_show_help(type);
 	STAILQ_INSERT_TAIL(&psmi_stats, type, next);
 	pthread_spin_unlock(&psm3_stats_lock);
 	return err;
@@ -186,25 +358,81 @@ fail:
 }
 
 psm2_error_t
-psm3_stats_register_type(const char *heading,
+psm3_stats_register_type(const char *heading, const char *help,
 			 uint32_t statstype,
 			 const struct psmi_stats_entry *entries_i,
 			 int num_entries, const char *id, void *context,
 			 const char* info)
 {
-	return psm3_stats_register_type_internal(heading, statstype, entries_i,
-			 num_entries, id, context, info, 0);
+	return psm3_stats_register_type_internal(heading, help, statstype,
+			entries_i, num_entries, id, context, info, 0);
 }
 
 psm2_error_t
-psm3_stats_reregister_type(const char *heading,
+psm3_stats_reregister_type(const char *heading, const char *help,
 			 uint32_t statstype,
 			 const struct psmi_stats_entry *entries_i,
 			 int num_entries, const char *id, void *context,
 			 const char *info)
 {
-	return psm3_stats_register_type_internal(heading, statstype, entries_i,
-			 num_entries, id, context, info, 1);
+	return psm3_stats_register_type_internal(heading, help, statstype,
+			entries_i, num_entries, id, context, info, 1);
+}
+
+void psm3_stats_print_env(const char *name, const char *value)
+{
+	if (! perf_stats_initialized) {
+		// stash for possible output when psm3_stats_initialize()
+		pthread_spin_lock(&psm3_stats_lock);
+		if (perf_stats_env_num < MAX_SAVED_ENV) {
+			if (snprintf(perf_stats_env[perf_stats_env_num],
+						sizeof(perf_stats_env[0]), "%s=%s\n", name, value))
+				perf_stats_env_num++;
+		}
+		pthread_spin_unlock(&psm3_stats_lock);
+	} else if (print_stats_freq && (print_statsmask & PSMI_STATSTYPE_ENV)) {
+		pthread_spin_lock(&psm3_stats_lock);
+		psmi_open_stats_fd();
+		if (perf_stats_fd)
+			fprintf(perf_stats_fd, "%s=%s\n", name, value);
+		fflush(perf_stats_fd);
+		pthread_spin_unlock(&psm3_stats_lock);
+	}
+}
+
+void psm3_stats_print_env_val(const char *name, int type,
+								const union psmi_envvar_val val)
+{
+	if (! perf_stats_initialized) {
+		// stash for possible output when psm3_stats_initialize()
+		pthread_spin_lock(&psm3_stats_lock);
+		if (perf_stats_env_num < MAX_SAVED_ENV) {
+			if (psm3_env_snprint_val(perf_stats_env[perf_stats_env_num],
+									sizeof(perf_stats_env[0]), name, type, val))
+				perf_stats_env_num++;
+		}
+		pthread_spin_unlock(&psm3_stats_lock);
+	} else if (print_stats_freq && (print_statsmask & PSMI_STATSTYPE_ENV)) {
+		pthread_spin_lock(&psm3_stats_lock);
+		psmi_open_stats_fd();
+		if (perf_stats_fd)
+			psm3_env_print_val(perf_stats_fd, name, type, val);
+		fflush(perf_stats_fd);
+		pthread_spin_unlock(&psm3_stats_lock);
+	}
+}
+
+void psm3_stats_print_msg(const char *msg)
+{
+	psmi_assert(perf_stats_initialized);
+	if (print_stats_freq && (print_statsmask & PSMI_STATSTYPE_ENV)) {
+		pthread_spin_lock(&psm3_stats_lock);
+		psmi_open_stats_fd();
+		if (perf_stats_fd)
+			fputs(msg, perf_stats_fd);
+		fflush(perf_stats_fd);
+		pthread_spin_unlock(&psm3_stats_lock);
+	}
 }
 
 void psm3_stats_show(uint32_t statsmask)
@@ -220,7 +448,7 @@ void psm3_stats_show(uint32_t statsmask)
 
 	now = time(NULL);
 
-	fprintf(perf_stats_fd, "Time Delta %u seconds %s",
+	fprintf(perf_stats_fd, "\nTime Delta %u seconds %s",
 		(unsigned)(now - stats_start), ctime_r(&now, buf));
 
 	STAILQ_FOREACH(type, &psmi_stats, next) {
@@ -242,6 +470,8 @@ void psm3_stats_show(uint32_t statsmask)
 				type->info?type->info:"");
 		for (i=0, entry=&type->entries[0]; i<type->num_entries; i++, entry++) {
 			uint64_t value;
+			if (! entry->desc)	// help text only
+				continue;
 			value = (entry->getfn != NULL)? entry->getfn(type->context)
 										: *entry->u.val;
 			if (value || ! (entry->flags & MPSPAWN_STATS_SKIP_IF_ZERO)
@@ -251,7 +481,6 @@ void psm3_stats_show(uint32_t statsmask)
 			entry->old_value = value;
 		}
 	}
-	fprintf(perf_stats_fd, "\n");
 	fflush(perf_stats_fd);
 unlock:
 	pthread_spin_unlock(&psm3_stats_lock);
@@ -262,7 +491,7 @@ psm2_error_t psm3_stats_deregister_type(uint32_t statstype, void *context)
 	psm2_error_t err;
 
 	pthread_spin_lock(&psm3_stats_lock);
-	err = psm3_stats_deregister_type_internal(statstype, context);
+	err = psm3_stats_deregister_type_internal(statstype, context, 1);
 	pthread_spin_unlock(&psm3_stats_lock);
 	return err;
 }
@@ -275,6 +504,10 @@ psm2_error_t psm3_stats_deregister_all(void)
 	 * yet */
 	pthread_spin_lock(&psm3_stats_lock);
 	while ((type = STAILQ_FIRST(&psmi_stats)) != NULL) {
+		// for statistics groups using reregister (fault inj)
+		// just output on final deregister
+		if (! type->help_shown)
+			psm3_stats_print_help(type);
 		STAILQ_REMOVE_HEAD(&psmi_stats, next);
 		psmi_free(type->entries);
 		if (type->info)
@@ -321,20 +554,141 @@ psm3_print_stats_init_thread(void)
 	}
 }
 
+static void print_job_info_help(void)
+{
+	if (! perf_help_fd)
+		return;
+	if (! (print_statsmask & PSMI_STATSTYPE_ENV))
+		return;
+
+	fprintf(perf_help_fd, "Job_information, Mask 0x%x:\n",
+			PSMI_STATSTYPE_ENV);
+	fprintf(perf_help_fd, "  ");
+	psm3_print_wrapped_help(2, "The command line, complete environment, PSM3 parameters and the IDENTIFY information will be output once at job start.  PSM3 parameters are output when parsed, and if multiple EPs are opened may be shown repeatedly as each EP parses them (and may receive different settings from the middeware).");
+	fprintf(perf_help_fd, "    ............................................................................\n");
+	fprintf(perf_help_fd, "    cmdline: ");
+	(void)psm3_print_wrapped_help(strlen("cmdline")+6,
+					"The command line for the process");
+	fprintf(perf_help_fd, "    environ: ");
+	(void)psm3_print_wrapped_help(strlen("environ")+6,
+					"The complete environment for the process");
+	fprintf(perf_help_fd, "    PSM3 settings: ");
+	(void)psm3_print_wrapped_help(strlen("PSM3 settings")+6,
+					"Each PSM3_ or FI_PSM3_ setting as parsed from the environment or /etc/psm3.conf is shown");
+	fprintf(perf_help_fd, "    PSM3_IDENTIFY: ");
+	(void)psm3_print_wrapped_help(strlen("PSM3_IDENTIFY")+6,
+					"The PSM3_IDENTIFY information for each process is output to its psm3-perf-stat output file, even if the PSM3_IDENTIFY setting is not specified");
+	fprintf(perf_help_fd, "================================================================================\n");
+}
+
+// output information about our process as found in
+// /proc/PID/name
+// any NUL characters found in the file are replaced with "replace"
+static void print_proc_info(FILE* out, char *name, char replace)
+{
+	char filename[80];
+	FILE *in;
+
+	snprintf(filename, sizeof(filename), "/proc/%d/%s", getpid(), name);
+	in = fopen(filename, "r");
+	if (in) {
+			int c;
+			while ((c = fgetc(in)) != EOF) {
+				if (c == 0)
+					fputc(replace, out);
+				else
+					fputc(c, out);
+			}
+			fclose(in);
+	} else {
+		_HFI_ERROR("Failed to open fd for process info: %s: %s\n",
+			filename, strerror(errno));
+	}
+}
+
+static void print_basic_job_info(void)
+{
+	int i;
+
+	if (! print_stats_freq)
+		return;
+	if (! (print_statsmask & PSMI_STATSTYPE_ENV))
+		return;
+
+	pthread_spin_lock(&psm3_stats_lock);
+	psmi_open_stats_fd();
+	if (perf_stats_fd) {
+
+		// OS puts NUL in cmdline in place of spaces
+		fprintf(perf_stats_fd, "cmdline: ");
+		print_proc_info(perf_stats_fd, "cmdline", ' ');
+		fprintf(perf_stats_fd, "\n");
+
+		// OS puts NUL between env variables
+		fprintf(perf_stats_fd, "environ:\n");
+		print_proc_info(perf_stats_fd, "environ", '\n');
+		fprintf(perf_stats_fd, "-------------------------------------------------------------------------------\n");
+
+		// show stashed env information prior to this function being called
+		for (i=0; i< perf_stats_env_num; i++)
+			fprintf(perf_stats_fd, "%s", perf_stats_env[i]);
+		fflush(perf_stats_fd);
+	}
+	pthread_spin_unlock(&psm3_stats_lock);
+}
+
 psm2_error_t
 psm3_stats_initialize(void)
 {
-	union psmi_envvar_val env_stats;
+	union psmi_envvar_val env_stats_freq;
+	union psmi_envvar_val env_stats_prefix;
+	union psmi_envvar_val env_stats_help;
+	union psmi_envvar_val env_statsmask;
+	int noenv_stats_freq;	// env var not specified, used default
+	int noenv_stats_prefix;	// env var not specified, used default
+	int noenv_stats_help;	// env var not specified, used default
+	int noenv_statsmask;	// env var not specified, used default
 
-	psm3_getenv("PSM3_PRINT_STATS",
-			"Prints performance stats every n seconds to file "
-			"./psm3-perf-stat-[hostname]-pid-[pid] when set to -1 stats are "
-			"printed only once on 1st ep close",
+	psmi_assert(! perf_stats_initialized);
+
+	noenv_stats_freq = (0 < psm3_getenv_range("PSM3_PRINT_STATS",
+			"Prints performance stats every n seconds",
+			"  0 - disable output\n"
+			"  -1 - only output once at end of job on 1st ep close\n"
+			"  >=1 - output every n seconds\n"
+			"  val: - limit output to rank 0 (for val of -1 or >=1)\n"
+			"  val:pattern - limit output to processes whose label matches\n    "
+#ifdef FNM_EXTMATCH
+                                "extended "
+#endif
+                                "glob pattern (for val of -1 or >=1)\n"
+			"Output goes to file ${PSM3_PRNT_STATS_PREFIX}psm3-perf-stat-[hostname]-pid-[pid]",
+			PSMI_ENVVAR_LEVEL_USER|PSMI_ENVVAR_FLAG_NOABBREV,
+			PSMI_ENVVAR_TYPE_STR_VAL_PAT_INT,
+			(union psmi_envvar_val)"0",
+			(union psmi_envvar_val)-1, (union psmi_envvar_val)INT_MAX,
+                        NULL, NULL, &env_stats_freq));
+	(void)psm3_parse_val_pattern_int(env_stats_freq.e_str, 0,
+			&print_stats_freq,
+			PSMI_ENVVAR_FLAG_NOABBREV, -1, INT_MAX);
+
+	noenv_stats_prefix = (0 < psm3_getenv_range("PSM3_PRINT_STATS_PREFIX",
+			"Prefix for filename for performance stats output",
+			"May be used to add a prefix possibly including directory for output",
+			PSMI_ENVVAR_LEVEL_USER|PSMI_ENVVAR_FLAG_NOABBREV,
+			PSMI_ENVVAR_TYPE_STR,
+			(union psmi_envvar_val)"./",
+			(union psmi_envvar_val)NULL, (union psmi_envvar_val)NULL,
+                        NULL, NULL, &env_stats_prefix));
+
+	noenv_stats_help = (0 < psm3_getenv("PSM3_PRINT_STATS_HELP",
+			"Prints performance stats help text on rank 0 to file "
+			"${PSM3_PRINT_STATS_PREFIX}psm3-perf-stat-help-[hostname]-pid-[pid]",
 			PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
-			(union psmi_envvar_val) 0, &env_stats);
-	print_stats_freq = env_stats.e_uint;
+			(union psmi_envvar_val) 0, &env_stats_help));
+	print_stats_help = env_stats_help.e_uint && (psm3_get_myrank() == 0);
 
-	psm3_getenv("PSM3_PRINT_STATSMASK",
+	noenv_statsmask = (0 < psm3_getenv("PSM3_PRINT_STATSMASK",
 			"Mask of statistic types to print: "
 			"MQ=1, RCVTHREAD=0x100, IPS=0x200"
 #if   defined(PSM_HAVE_REG_MR)
@@ -351,15 +705,46 @@ psm3_stats_initialize(void)
 #endif
 			".  0x100000 causes zero values to also be shown",
 			PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT_FLAGS,
-			(union psmi_envvar_val) PSMI_STATSTYPE_ALL, &env_stats);
-	print_statsmask = env_stats.e_uint;
+			(union psmi_envvar_val) PSMI_STATSTYPE_ALL, &env_statsmask));
+	print_statsmask = env_statsmask.e_uint;
 
-	pthread_spin_init(&psm3_stats_lock, PTHREAD_PROCESS_PRIVATE);
 	stats_start = time(NULL);
 
 	snprintf(perf_file_name, sizeof(perf_file_name),
-			"./psm3-perf-stat-%s-pid-%d",
-			psm3_gethostname(), getpid());
+			"%spsm3-perf-stat-%s-pid-%d",
+			env_stats_prefix.e_str, psm3_gethostname(), getpid());
+
+	if (print_stats_help) {
+		// a few optons, such as CUDA, ONEAPI_ZE, RDMA affect what is
+		// included in help, so use a unique filename per job
+		snprintf(perf_help_file_name, sizeof(perf_help_file_name),
+				"%spsm3-perf-stat-help-%s-pid-%d",
+				env_stats_prefix.e_str, psm3_gethostname(), getpid());
+		perf_help_fd = fopen(perf_help_file_name, "w");
+		if (!perf_help_fd)
+			_HFI_ERROR("Failed to create fd for performance logging help: %s: %s\n",
+				perf_help_file_name, strerror(errno));
+	}
+	perf_stats_initialized = 1;
+
+	print_job_info_help();
+	print_basic_job_info();
+
+	// if got a valid value or an invalid value, psm3_getenv will have
+	// stashed it and print_basic_job_info will have put in stats file
+	// otherwise we want to always report the STATS variable settings
+	if (noenv_stats_freq)
+		psm3_stats_print_env_val("PSM3_PRINT_STATS",
+								PSMI_ENVVAR_TYPE_UINT, env_stats_freq);
+	if (noenv_stats_prefix)
+		psm3_stats_print_env_val("PSM3_PRINT_STATS_PREFIX",
+								PSMI_ENVVAR_TYPE_STR, env_stats_prefix);
+	if (noenv_stats_help)
+		psm3_stats_print_env_val("PSM3_PRINT_STATS_HELP",
+								PSMI_ENVVAR_TYPE_UINT, env_stats_help);
+	if (noenv_statsmask)
+		psm3_stats_print_env_val("PSM3_PRINT_STATSMASK",
+								PSMI_ENVVAR_TYPE_UINT_FLAGS, env_statsmask);
 
 	if (print_stats_freq > 0)
 		psm3_print_stats_init_thread();
@@ -379,7 +764,13 @@ psm3_stats_finalize(void)
 		fclose(perf_stats_fd);
 		perf_stats_fd = NULL;
 	}
+	if (perf_help_fd) {
+		fclose(perf_help_fd);
+		perf_help_fd = NULL;
+	}
 	psm3_stats_deregister_all();
+	perf_stats_env_num = 0;
+	perf_stats_initialized = 0;
 }
 
 // called at start of ep_close so we can output 1 shot as needed while
@@ -389,8 +780,11 @@ psm3_stats_finalize(void)
 void
 psm3_stats_ep_close(void)
 {
-	if (print_stats_freq == -1 && ! perf_stats_fd)
+	static int last_stats_printed = 0;
+	if (print_stats_freq != 0 && !last_stats_printed) {
 		psm3_stats_show(print_statsmask);
+		last_stats_printed = 1;
+	}
 }
 
 #if 0   // unused code, specific to QLogic MPI
@@ -463,6 +857,7 @@ void psmi_stats_mpspawn_callback(struct mpspawn_stats_req_args *args)
 	 if (type->statstype == PSMI_STATSTYPE_MEMORY) {
 		for (i = 0; i < num; i++) {
 			entry = &type->entries[i];
+			psmi_assert(entry->desc);	// dead code, broken if pure help entry
 			stats[i] =
 			    *(uint64_t *) ((uintptr_t) &psm3_stats_memory +
 					   (uintptr_t) entry->u.off);
@@ -470,6 +865,7 @@ void psmi_stats_mpspawn_callback(struct mpspawn_stats_req_args *args)
 	} else {
 		for (i = 0; i < num; i++) {
 			entry = &type->entries[i];
+			psmi_assert(entry->desc);	// dead code, broken if pure help entry
 			if (entry->getfn != NULL)
 				stats[i] = entry->getfn(type->context);
 			else
@@ -765,6 +1161,7 @@ clean:
 #undef _SDECL
 #define _SDECL(_desc, _param) {					\
 	    .desc  = _desc,					\
+	    .help  = NULL,					\
 	    .flags = MPSPAWN_STATS_REDUCTION_ALL		\
 		     | MPSPAWN_STATS_SKIP_IF_ZERO,		\
 	    .getfn = NULL,					\
@@ -795,7 +1192,7 @@ void stats_register_mem_stats(psm2_ep_t ep)
 
 	// TBD - these are global, should only call once and not provide
 	// ep nor device name
-	psm3_stats_register_type("PSM_memory_allocation_statistics",
+	psm3_stats_register_type("PSM_memory_allocation_statistics", NULL,
 				 PSMI_STATSTYPE_MEMORY,
 				 entries, PSMI_HOWMANY(entries), ep,
 				 ep->dev_name);

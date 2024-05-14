@@ -60,7 +60,7 @@ static int rxd_cntr_wait(struct fid_cntr *cntr_fid, uint64_t threshold, int time
 			return -FI_ETIMEDOUT;
 
 		ep_retry = -1;
-		ofi_mutex_lock(&cntr->ep_list_lock);
+		ofi_genlock_lock(&cntr->ep_list_lock);
 		dlist_foreach_container(&cntr->ep_list, struct fid_list_entry,
 					fid_entry, entry) {
 			ep = container_of(fid_entry->fid, struct rxd_ep,
@@ -70,7 +70,7 @@ static int rxd_cntr_wait(struct fid_cntr *cntr_fid, uint64_t threshold, int time
 			ep_retry = ep_retry == -1 ? ep->next_retry :
 					MIN(ep_retry, ep->next_retry);
 		}
-		ofi_mutex_unlock(&cntr->ep_list_lock);
+		ofi_genlock_unlock(&cntr->ep_list_lock);
 
 		ret = fi_wait(&cntr->wait->wait_fid, ep_retry == -1 ?
 			      timeout : rxd_get_timeout(ep_retry));
@@ -109,11 +109,11 @@ void rxd_cntr_report_error(struct rxd_ep *ep, struct fi_cq_err_entry *err)
 {
         struct util_cntr *cntr;
 
-	cntr = RXD_FLAG(err->flags, (FI_WRITE)) ? ep->util_ep.wr_cntr :
-	       RXD_FLAG(err->flags, (FI_ATOMIC)) ? ep->util_ep.wr_cntr :
-	       RXD_FLAG(err->flags, (FI_READ)) ? ep->util_ep.rd_cntr :
-	       RXD_FLAG(err->flags, (FI_SEND)) ? ep->util_ep.tx_cntr :
-	       RXD_FLAG(err->flags, (FI_RECV)) ? ep->util_ep.rx_cntr :
+	cntr = RXD_FLAG(err->flags, (FI_WRITE)) ? ep->util_ep.cntrs[CNTR_WR] :
+	       RXD_FLAG(err->flags, (FI_ATOMIC)) ? ep->util_ep.cntrs[CNTR_WR] :
+	       RXD_FLAG(err->flags, (FI_READ)) ? ep->util_ep.cntrs[CNTR_RD] :
+	       RXD_FLAG(err->flags, (FI_SEND)) ? ep->util_ep.cntrs[CNTR_TX] :
+	       RXD_FLAG(err->flags, (FI_RECV)) ? ep->util_ep.cntrs[CNTR_RX] :
 	       NULL;
 
 	if (cntr)

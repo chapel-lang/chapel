@@ -151,7 +151,7 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		return -FI_ENOMEM;
 
 	ofi_mr_update_attr(dom->fab->fab_fid.api_version, dom->info.caps,
-			   attr, &cur_abi_attr);
+			   attr, &cur_abi_attr, flags);
 	ofi_mutex_lock(&dom->lock);
 
 	_mr->mr_fid.fid.fclass = FI_CLASS_MR;
@@ -161,7 +161,7 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	_mr->domain = dom;
 	_mr->flags = flags;
 
-	ret = ofi_mr_map_insert(&dom->mr_map, &cur_abi_attr, &key, _mr);
+	ret = ofi_mr_map_insert(&dom->mr_map, &cur_abi_attr, &key, _mr, flags);
 	if (ret != 0)
 		goto err;
 

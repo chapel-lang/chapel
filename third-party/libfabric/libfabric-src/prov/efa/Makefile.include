@@ -36,37 +36,48 @@ _efa_files = \
 	prov/efa/src/efa_shm.c \
 	prov/efa/src/efa_av.c \
 	prov/efa/src/efa_domain.c \
-	prov/efa/src/efa_cm.c \
-	prov/efa/src/efa_cq.c \
-	prov/efa/src/efa_ep.c \
 	prov/efa/src/efa_fabric.c \
-	prov/efa/src/efa_msg.c \
 	prov/efa/src/efa_mr.c \
-	prov/efa/src/efa_rma.c \
 	prov/efa/src/efa_strerror.c \
 	prov/efa/src/efa_user_info.c \
 	prov/efa/src/efa_prov_info.c \
 	prov/efa/src/efa_fork_support.c \
-	prov/efa/src/rxr/rxr_prov.c	\
-	prov/efa/src/rxr/rxr_env.c	\
-	prov/efa/src/rxr/rxr_cq.c	\
-	prov/efa/src/rxr/rxr_ep.c	\
-	prov/efa/src/rxr/rxr_cntr.c	\
-	prov/efa/src/rxr/rxr_rma.c	\
-	prov/efa/src/rxr/rxr_msg.c	\
-	prov/efa/src/rxr/rxr_pkt_entry.c \
-	prov/efa/src/rxr/rxr_pkt_type_req.c \
-	prov/efa/src/rxr/rxr_pkt_type_base.c \
-	prov/efa/src/rxr/rxr_pkt_type_data.c \
-	prov/efa/src/rxr/rxr_pkt_type_misc.c \
-	prov/efa/src/rxr/rxr_pkt_cmd.c \
-	prov/efa/src/rxr/rxr_read.c \
-	prov/efa/src/rxr/rxr_op_entry.c \
-	prov/efa/src/rxr/rxr_atomic.c \
-	prov/efa/src/rxr/rxr_tp_def.c
+	prov/efa/src/efa_tp_def.c \
+	prov/efa/src/efa_base_ep.c \
+	prov/efa/src/efa_prov.c	\
+	prov/efa/src/efa_env.c	\
+	prov/efa/src/efa_cntr.c	\
+	prov/efa/src/dgram/efa_dgram_ep.c \
+	prov/efa/src/dgram/efa_dgram_cq.c \
+	prov/efa/src/dgram/efa_dgram_msg.c \
+	prov/efa/src/dgram/efa_dgram_rma.c \
+	prov/efa/src/rdm/efa_rdm_peer.c	\
+	prov/efa/src/rdm/efa_rdm_cq.c \
+	prov/efa/src/rdm/efa_rdm_ep_utils.c \
+	prov/efa/src/rdm/efa_rdm_ep_fiops.c \
+	prov/efa/src/rdm/efa_rdm_ep_progress.c \
+	prov/efa/src/rdm/efa_rdm_rma.c	\
+	prov/efa/src/rdm/efa_rdm_msg.c	\
+	prov/efa/src/rdm/efa_rdm_pke.c \
+	prov/efa/src/rdm/efa_rdm_pke_utils.c \
+	prov/efa/src/rdm/efa_rdm_pke_rtm.c \
+	prov/efa/src/rdm/efa_rdm_pke_rtr.c \
+	prov/efa/src/rdm/efa_rdm_pke_rtw.c \
+	prov/efa/src/rdm/efa_rdm_pke_rta.c \
+	prov/efa/src/rdm/efa_rdm_pke_req.c \
+	prov/efa/src/rdm/efa_rdm_pke_nonreq.c \
+	prov/efa/src/rdm/efa_rdm_pke_cmd.c \
+	prov/efa/src/rdm/efa_rdm_pkt_type.c \
+	prov/efa/src/rdm/efa_rdm_ope.c \
+	prov/efa/src/rdm/efa_rdm_rxe_map.c \
+	prov/efa/src/rdm/efa_rdm_atomic.c \
+	prov/efa/src/rdm/efa_rdm_tracepoint_def.c \
+	prov/efa/src/rdm/efa_rdm_srx.c \
+	prov/efa/src/rdm/efa_rdm_util.c
 
 _efa_headers = \
 	prov/efa/src/efa.h \
+	prov/efa/src/efa_av.h \
 	prov/efa/src/efa_mr.h \
 	prov/efa/src/efa_shm.h \
 	prov/efa/src/efa_hmem.h \
@@ -77,23 +88,38 @@ _efa_headers = \
 	prov/efa/src/efa_prov_info.h \
 	prov/efa/src/efa_fork_support.h \
 	prov/efa/src/efa_cq.h \
-	prov/efa/src/rxr/rxr.h \
-	prov/efa/src/rxr/rxr_env.h \
-	prov/efa/src/rxr/rxr_cntr.h \
-	prov/efa/src/rxr/rxr_rma.h \
-	prov/efa/src/rxr/rxr_msg.h \
-	prov/efa/src/rxr/rxr_pkt_hdr.h \
-	prov/efa/src/rxr/rxr_pkt_entry.h \
-	prov/efa/src/rxr/rxr_pkt_type.h \
-	prov/efa/src/rxr/rxr_pkt_type_req.h \
-	prov/efa/src/rxr/rxr_pkt_type_base.h \
-	prov/efa/src/rxr/rxr_pkt_cmd.h \
-	prov/efa/src/rxr/rxr_read.h \
-	prov/efa/src/rxr/rxr_atomic.h \
-	prov/efa/src/rxr/rxr_op_entry.h \
-	prov/efa/src/rxr/rdm_proto_v4.h \
-	prov/efa/src/rxr/rxr_tp_def.h \
-	prov/efa/src/rxr/rxr_tp.h
+	prov/efa/src/efa_cntr.h \
+	prov/efa/src/efa_base_ep.h \
+	prov/efa/src/efa_tp_def.h \
+	prov/efa/src/efa_tp.h \
+	prov/efa/src/efa_prov.h \
+	prov/efa/src/efa_env.h \
+	prov/efa/src/fi_ext_efa.h \
+	prov/efa/src/dgram/efa_dgram_ep.h \
+	prov/efa/src/dgram/efa_dgram_cq.h \
+	prov/efa/src/rdm/efa_rdm_peer.h	\
+	prov/efa/src/rdm/efa_rdm_cq.h \
+	prov/efa/src/rdm/efa_rdm_ep.h \
+	prov/efa/src/rdm/efa_rdm_rma.h \
+	prov/efa/src/rdm/efa_rdm_msg.h \
+	prov/efa/src/rdm/efa_rdm_pke.h \
+	prov/efa/src/rdm/efa_rdm_pke_utils.h \
+	prov/efa/src/rdm/efa_rdm_pke_req.h \
+	prov/efa/src/rdm/efa_rdm_pke_rtm.h \
+	prov/efa/src/rdm/efa_rdm_pke_rtr.h \
+	prov/efa/src/rdm/efa_rdm_pke_rtw.h \
+	prov/efa/src/rdm/efa_rdm_pke_rta.h \
+	prov/efa/src/rdm/efa_rdm_pke_nonreq.h \
+	prov/efa/src/rdm/efa_rdm_pke_cmd.h \
+	prov/efa/src/rdm/efa_rdm_pkt_type.h \
+	prov/efa/src/rdm/efa_rdm_atomic.h \
+	prov/efa/src/rdm/efa_rdm_ope.h \
+	prov/efa/src/rdm/efa_rdm_rxe_map.h \
+	prov/efa/src/rdm/efa_rdm_protocol.h \
+	prov/efa/src/rdm/efa_rdm_tracepoint_def.h \
+	prov/efa/src/rdm/efa_rdm_tracepoint.h \
+	prov/efa/src/rdm/efa_rdm_srx.h \
+	prov/efa/src/rdm/efa_rdm_util.h
 
 if HAVE_LTTNG
 efa_LDFLAGS += -llttng-ust
@@ -107,12 +133,21 @@ nodist_prov_efa_test_efa_unit_test_SOURCES = \
 	prov/efa/test/efa_unit_tests.c \
 	prov/efa/test/efa_unit_test_mocks.c \
 	prov/efa/test/efa_unit_test_common.c \
+	prov/efa/test/efa_unit_test_domain.c \
 	prov/efa/test/efa_unit_test_ep.c \
 	prov/efa/test/efa_unit_test_av.c \
 	prov/efa/test/efa_unit_test_cq.c \
+	prov/efa/test/efa_unit_test_cntr.c \
 	prov/efa/test/efa_unit_test_device.c \
 	prov/efa/test/efa_unit_test_info.c \
-	prov/efa/test/efa_unit_test_hmem.c
+	prov/efa/test/efa_unit_test_hmem.c \
+	prov/efa/test/efa_unit_test_srx.c \
+	prov/efa/test/efa_unit_test_rnr.c \
+	prov/efa/test/efa_unit_test_ope.c \
+	prov/efa/test/efa_unit_test_send.c \
+	prov/efa/test/efa_unit_test_fork_support.c \
+	prov/efa/test/efa_unit_test_runt.c
+
 
 efa_CPPFLAGS += -I$(top_srcdir)/include -I$(top_srcdir)/prov/efa/test $(cmocka_CPPFLAGS)
 
@@ -120,6 +155,7 @@ prov_efa_test_efa_unit_test_CPPFLAGS = $(efa_CPPFLAGS)
 prov_efa_test_efa_unit_test_LDADD = $(cmocka_LIBS) $(linkback)
 prov_efa_test_efa_unit_test_LDFLAGS = $(cmocka_rpath) $(efa_LDFLAGS) $(cmocka_LDFLAGS) \
 					-Wl,--wrap=ibv_create_ah \
+					-Wl,--wrap=ibv_is_fork_initialized \
 					-Wl,--wrap=efadv_query_device \
 					-Wl,--wrap=ofi_copy_from_hmem_iov
 
@@ -131,13 +167,25 @@ if HAVE_NEURON
 prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=neuron_alloc
 endif HAVE_NEURON
 
+if HAVE_EFADV_QUERY_MR
+prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=efadv_query_mr
+endif HAVE_EFADV_QUERY_MR
+
+if HAVE_EFA_DATA_IN_ORDER_ALIGNED_128_BYTES
+prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=ibv_query_qp_data_in_order
+endif
+
 prov_efa_test_efa_unit_test_LIBS = $(efa_LIBS) $(linkback)
 
 endif ENABLE_EFA_UNIT_TEST
 
 efa_CPPFLAGS += \
 	-I$(top_srcdir)/prov/efa/src/ \
-	-I$(top_srcdir)/prov/efa/src/rxr/
+	-I$(top_srcdir)/prov/efa/src/dgram/ \
+	-I$(top_srcdir)/prov/efa/src/rdm/
+
+rdmainclude_HEADERS += \
+	prov/efa/src/fi_ext_efa.h
 
 if HAVE_EFA_DL
 pkglib_LTLIBRARIES += libefa-fi.la
@@ -156,6 +204,10 @@ endif !HAVE_EFA_DL
 
 prov_install_man_pages += man/man7/fi_efa.7
 
+
 endif HAVE_EFA
+
+efa-doxygen:
+	doxygen prov/efa/docs/Doxyfile
 
 prov_dist_man_pages += man/man7/fi_efa.7

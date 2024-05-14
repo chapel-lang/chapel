@@ -171,6 +171,7 @@ int ofi_bufpool_grow(struct ofi_bufpool *pool)
 		buf_hdr = ofi_buf_hdr(buf);
 		buf_hdr->region = buf_region;
 		buf_hdr->index = pool->entry_cnt + i;
+		OFI_DBG_SET(buf_hdr->allocated, false);
 		OFI_DBG_SET(buf_hdr->magic, OFI_MAGIC_SIZE_T);
 		OFI_DBG_SET(buf_hdr->ftr,
 			    (struct ofi_bufpool_ftr *) ((char *) buf +

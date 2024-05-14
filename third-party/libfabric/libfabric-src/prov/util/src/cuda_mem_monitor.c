@@ -40,6 +40,7 @@ static int cuda_mm_subscribe(struct ofi_mem_monitor *monitor, const void *addr,
 			     size_t len, union ofi_mr_hmem_info *hmem_info)
 {
 	CUresult ret;
+	const char *errname, *errstr;
 
 	ret = ofi_cuPointerGetAttribute(&hmem_info->cuda_id,
 					CU_POINTER_ATTRIBUTE_BUFFER_ID,
@@ -51,10 +52,12 @@ static int cuda_mm_subscribe(struct ofi_mem_monitor *monitor, const void *addr,
 		return FI_SUCCESS;
 	}
 
+	ofi_cuGetErrorName(ret, &errname);
+	ofi_cuGetErrorString(ret, &errstr);
 	FI_WARN(&core_prov, FI_LOG_MR,
 		"Failed to get CUDA buffer ID for buffer %p len %lu\n"
 		"cuPointerGetAttribute() failed: %s:%s\n", addr, len,
-		ofi_cudaGetErrorName(ret), ofi_cudaGetErrorString(ret));
+		errname, errstr);
 
 	return -FI_EFAULT;
 }
@@ -72,6 +75,7 @@ static bool cuda_mm_valid(struct ofi_mem_monitor *monitor,
 {
 	uint64_t id;
 	CUresult ret;
+	const char *errname, *errstr;
 
 	/* CUDA buffer IDs are associated for each CUDA monitor entry. If the
 	 * device pages backing the device virtual address change, a different
@@ -89,11 +93,13 @@ static bool cuda_mm_valid(struct ofi_mem_monitor *monitor,
 		       "CUDA buffer ID %lu invalid for buffer %p\n",
 		       entry->hmem_info.cuda_id, entry->info.iov.iov_base);
 	} else {
+		ofi_cuGetErrorName(ret, &errname);
+		ofi_cuGetErrorString(ret, &errstr);
 		FI_WARN(&core_prov, FI_LOG_MR,
 			"Failed to get CUDA buffer ID for buffer %p len %lu\n"
 			"cuPointerGetAttribute() failed: %s:%s\n",
 			entry->info.iov.iov_base, entry->info.iov.iov_len,
-			ofi_cudaGetErrorName(ret), ofi_cudaGetErrorString(ret));
+			errname, errstr);
 	}
 
 	return false;
@@ -147,6 +153,7 @@ static struct ofi_mem_monitor cuda_mm = {
 	.subscribe = cuda_mm_subscribe,
 	.unsubscribe = cuda_mm_unsubscribe,
 	.valid = cuda_mm_valid,
+	.name = "cuda",
 };
 
 struct ofi_mem_monitor *cuda_monitor = &cuda_mm;

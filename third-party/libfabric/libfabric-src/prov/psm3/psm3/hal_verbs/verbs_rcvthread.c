@@ -124,8 +124,8 @@ static void psm3_verbs_rearm_cq_event(psm2_ep_t ep)
 	// we only use solicited, so just reenable it
 	// TBD - during shutdown events get disabled and we could check
 	// psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_INTR_ENABLED)
-	// to make sure we still want enabled.  But given verbs events
-	// are one-shots, that seems like overkill
+	// to make sure we still want enabled.  But given these are only
+	// for PSM urgent protocol packets, that seems like overkill
 	if (ibv_req_notify_cq(ep->verbs_ep.recv_cq, 1)) {
 		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 			  "Receive thread ibv_req_notify_cq() error on %s port %u: %s",
@@ -173,83 +173,6 @@ static void psm3_verbs_poll_async_events(psm2_ep_t ep)
 	}
 }
 
-#if defined(UMR_CACHE)
-// poll userfaultfd events within a given end user opened EP
-static void psm3_verbs_poll_uffd_events(psm2_ep_t ep)
-{
-	struct pollfd puffd[PSMI_MAX_QPS];
-	psm2_ep_t pep[PSMI_MAX_QPS];
-	int num_ep;
-	psm2_ep_t first;
-	int ret;
-	int i;
-
-	num_ep = 0;
-	first = ep;
-	do {
-		puffd[num_ep].fd = ep->verbs_ep.umrc.fd;
-		puffd[num_ep].events = POLLIN;
-		puffd[num_ep].revents = 0;
-		pep[num_ep++] = ep;
-		ep = ep->mctxt_next;
-	} while (ep != first);
-
-	ret = poll(puffd, num_ep, 0);
-	if_pf (ret < 0) {
-		if (errno == EINTR)
-			_HFI_DBG("got signal, keep polling\n");
-		else
-			psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-					"Receive thread poll() error: %s", strerror(errno));
-	} else if_pf (ret > 0) {
-		for (i=0; i < num_ep; i++) {
-			if (puffd[i].revents & POLLIN)
-				psm3_verbs_uffd_event(pep[i]);
-		}
-	}
-}
-
-// poll & read unhandled uffd messages
-static void psm3_verbs_poll_uffd_fini(psm2_ep_t ep)
-{
-	struct pollfd puffd[PSMI_MAX_QPS];
-	//psm2_ep_t pep[PSMI_MAX_QPS];
-	struct uffd_msg msg;
-	int num_ep = 0;
-	psm2_ep_t first = ep;
-	int ret;
-	int i;
-
-	do {
-		puffd[num_ep].fd = ep->verbs_ep.umrc.fd;
-		puffd[num_ep].events = POLLIN;
-		puffd[num_ep].revents = 0;
-		//pep[num_ep++] = ep;
-		ep = ep->mctxt_next;
-	} while (ep != first);
-
-	do {
-		ret = poll(puffd, num_ep, UFFD_POLL_TIMEOUT_MS);
-	} while (ret < 0 && errno == EINTR);
-	if (ret > 0) {
-		for (i=0; i < num_ep; i++) {
-			if (puffd[i].revents & POLLIN) {
-				do {
-					ret = read(puffd[i].fd, &msg, sizeof(msg));
-					if (ret != sizeof(msg)) {
-						if (errno != EAGAIN)
-							break;
-						continue;
-					}
-				} while (ret > 0);
-			}
-		}
-	}
-	for (i=0; i < num_ep; i++)
-		close(puffd[i].fd);
-}
-#endif // UMR_CACHE
-
 /*
  * Receiver thread support.
  *
@@ -266,20 +189,23 @@ static void psm3_verbs_poll_uffd_fini(psm2_ep_t ep)
  * 	PSM2_NO_PROGRESS - got an EINTR, need to be called again with same
  * 			next_timeout value
  * 	PSM2_TIMEOUT - poll waited full timeout, no events
+ * 			caller will check *pollok to determine if work was found to do
  * 	PSM2_OK - poll found an event and processed it
  * 	PSM2_INTERNAL_ERR - unexpected error attempting poll()
  * updates counters: pollok (poll's which made progress), pollcyc (time spent
- * 	polling without finding any events)
+ * 	polling without finding any events), pollintr (polls woken before timeout)
  */
 psm2_error_t psm3_verbs_ips_ptl_pollintr(psm2_ep_t ep,
 		struct ips_recvhdrq *recvq, int fd_pipe, int next_timeout,
-		uint64_t *pollok, uint64_t *pollcyc)
+		uint64_t *pollok, uint64_t *pollcyc, uint64_t *pollintr)
 {
 	struct pollfd pfd[3];
 	int ret;
 	uint64_t t_cyc;
 	psm2_error_t err;
+	uint64_t save_pollok = *pollok;
 
+again:
 	// pfd[0] is for urgent inbound packets (NAK, urgent ACK, etc)
 	// pfd[1] is for rcvthread termination
 	// pfd[2] is for verbs async events
@@ -312,12 +238,9 @@ psm2_error_t psm3_verbs_ips_ptl_pollintr(psm2_ep_t ep,
 		/* Any type of event on this fd means exit, should be POLLHUP */
 		_HFI_DBG("close thread: revents=0x%x\n", pfd[1].revents);
 		close(fd_pipe);
-#ifdef UMR_CACHE
-		if(!ep->verbs_ep.umrc.thread)
-			psm3_verbs_poll_uffd_fini(ep);
-#endif
 		return PSM2_IS_FINALIZED;
 	} else {
+		(*pollintr) += ret;
 		// we got an async event
 		if (pfd[2].revents & POLLIN)
 			psm3_verbs_process_async_event(ep);
@@ -326,7 +249,25 @@ psm2_error_t psm3_verbs_ips_ptl_pollintr(psm2_ep_t ep,
 		// consume the event and rearm, we'll poll cq below
 		if (pfd[0].revents & POLLIN)
 			psm3_verbs_rearm_cq_event(ep);
-		if (!PSMI_LOCK_TRY(psm3_creation_lock)) {
+		// The LOCK_TRY avoids a deadlock when ep destruction has
+		// creation_lock, writes fd_pipe and needs to wait for this
+		// thread to exit.  For psm3_wait() we must process the event
+		// while here and re-establish the poll_type so get future interrupts.
+		// So if can't get creation_lock, poll() again with short timeout
+		// to catch EP and progress thread destruction so we can do the
+		// progress polling and restablish poll_type if not being shutdown.
+		// when competing with psm3_wait creation_lock this can add some delay
+		// but hopeflly that is rare.
+		if (PSMI_LOCK_TRY(psm3_creation_lock)) {
+			next_timeout = 1;
+			goto again;
+		}
+		// must have creation_lock before check WAITING and must reestablish
+		// poll_type before we drain the CQ so we don't miss any CQ events
+		if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_WAITING))
+			psm3_verbs_poll_type(PSMI_HAL_POLL_TYPE_ANYRCV, ep);
+
+		{
 			if (ret == 0 || pfd[0].revents & (POLLIN | POLLERR)) {
 				if (PSMI_LOCK_DISABLED) {
 					// this path is not supported.  having rcvthread
@@ -364,12 +305,6 @@ psm2_error_t psm3_verbs_ips_ptl_pollintr(psm2_ep_t ep,
 							*/
 							err = psm3_poll_internal(ep,
 										 ret == 0 ? PSMI_TRUE : PSMI_FALSE, 0);
-#ifdef PSM_HAVE_REG_MR
-#ifdef UMR_CACHE
-							if (ep->mr_cache_mode == MR_CACHE_MODE_USER && !ep->verbs_ep.umrc.thread)
-								psm3_verbs_poll_uffd_events(ep);
-#endif
-#endif
 							if (err == PSM2_OK)
 								(*pollok)++;
 							else
@@ -383,6 +318,9 @@ psm2_error_t psm3_verbs_ips_ptl_pollintr(psm2_ep_t ep,
 					} while(NULL != ep);
 				}
 			}
+			if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_WAITING)
+				&& save_pollok != *pollok)
+				psm3_wake(psm3_opened_endpoint);	// made some progress
 			PSMI_UNLOCK(psm3_creation_lock);
 		}
 		if (ret == 0)

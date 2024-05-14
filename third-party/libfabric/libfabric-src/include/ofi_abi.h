@@ -111,7 +111,7 @@ extern "C" {
  * name appended with the ABI version that it is compatible with.
  */
 
-#define CURRENT_ABI "FABRIC_1.6"
+#define CURRENT_ABI "FABRIC_1.7"
 
 #if  HAVE_ALIAS_ATTRIBUTE == 1
 #define DEFAULT_SYMVER_PRE(a) a##_
@@ -164,6 +164,20 @@ struct fi_cq_err_entry_1_0 {
 	void			*err_data;
 };
 
+struct fi_cq_err_entry_1_1 {
+	void			*op_context;
+	uint64_t		flags;
+	size_t			len;
+	void			*buf;
+	uint64_t		data;
+	uint64_t		tag;
+	size_t			olen;
+	int			err;
+	int			prov_errno;
+	/* err_data is available until the next time the CQ is read */
+	void			*err_data;
+	size_t			err_data_size;
+};
 
 #ifdef __cplusplus
 }

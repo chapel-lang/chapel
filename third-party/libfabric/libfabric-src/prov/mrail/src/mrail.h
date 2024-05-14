@@ -315,19 +315,19 @@ static inline struct mrail_recv *
 mrail_pop_recv(struct mrail_ep *mrail_ep)
 {
 	struct mrail_recv *recv;
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	recv = ofi_freestack_isempty(mrail_ep->recv_fs) ? NULL :
 		ofi_freestack_pop(mrail_ep->recv_fs);
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 	return recv;
 }
 
 static inline void
 mrail_push_recv(struct mrail_recv *recv)
 {
-	ofi_ep_lock_acquire(&recv->ep->util_ep);
+	ofi_genlock_lock(&recv->ep->util_ep.lock);
 	ofi_freestack_push(recv->ep->recv_fs, recv);
-	ofi_ep_lock_release(&recv->ep->util_ep);
+	ofi_genlock_unlock(&recv->ep->util_ep.lock);
 }
 
 static inline struct fi_info *mrail_get_info_cached(char *name)
@@ -413,9 +413,9 @@ struct mrail_req *mrail_alloc_req(struct mrail_ep *mrail_ep)
 {
 	struct mrail_req *req;
 
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	req = ofi_buf_alloc(mrail_ep->req_pool);
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 
 	return req;
 }
@@ -423,9 +423,9 @@ struct mrail_req *mrail_alloc_req(struct mrail_ep *mrail_ep)
 static inline
 void mrail_free_req(struct mrail_ep *mrail_ep, struct mrail_req *req)
 {
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	ofi_buf_free(req);
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 }
 
 void mrail_progress_deferred_reqs(struct mrail_ep *mrail_ep);

@@ -1,43 +1,19 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #ifndef EFA_DOMAIN_H
-#define EFA_DOAMIN_H
+#define EFA_DOMAIN_H
 
 #include <infiniband/verbs.h>
+#include "efa_device.h"
 #include "efa_hmem.h"
+#include "efa_env.h"
+#include "ofi_hmem.h"
+#include "ofi_util.h"
 
 struct efa_domain {
 	struct util_domain	util_domain;
+	struct fi_info		*shm_info;
 	struct fid_domain	*shm_domain;
 	struct efa_device	*device;
 	struct ibv_pd		*ibv_pd;
@@ -53,6 +29,7 @@ struct efa_domain {
 	uint64_t		rdm_mode;
 	size_t			rdm_cq_size;
 	struct dlist_entry	list_entry; /* linked to g_efa_domain_list */
+	struct ofi_genlock	srx_lock; /* shared among peer providers */
 };
 
 extern struct dlist_entry g_efa_domain_list;
@@ -96,5 +73,18 @@ struct fi_info *efa_domain_get_prov_info(struct efa_domain *efa_domain, enum fi_
 	assert(ep_type == FI_EP_RDM || ep_type == FI_EP_DGRAM);
 	return (ep_type == FI_EP_RDM) ? efa_domain->device->rdm_info : efa_domain->device->dgram_info;
 }
+
+static inline
+bool efa_domain_support_rnr_retry_modify(struct efa_domain *domain)
+{
+#if HAVE_CAPS_RNR_RETRY
+	return domain->device->device_caps & EFADV_DEVICE_ATTR_CAPS_RNR_RETRY;
+#else
+	return false;
+#endif
+}
+
+int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
+		    struct fid_domain **domain_fid, void *context);
 
 #endif

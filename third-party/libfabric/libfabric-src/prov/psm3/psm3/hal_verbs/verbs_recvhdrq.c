@@ -278,7 +278,7 @@ psm2_error_t psm3_verbs_recvhdrq_progress(struct ips_recvhdrq *recvq)
 				// wc.byte_len is len of inbound rdma write not including immed
 				// wc.qp_num - local QP
 				ips_protoexp_handle_immed_data(rcv_ev.proto,
-						(uint64_t)(rbuf_qp(ep, buf)->qp_context),
+						(uint64_t)(rbuf_qp_context(ep, buf)),
 						RDMA_IMMED_USER_RC, WC(imm_data), WC(byte_len));
 				goto repost;
 				break;
@@ -310,7 +310,7 @@ psm2_error_t psm3_verbs_recvhdrq_progress(struct ips_recvhdrq *recvq)
 		}
 		rcv_ev.p_hdr = (struct ips_message_header *)(rbuf_to_buffer(buf)+rbuf_addition(buf));
 		rcv_ev.payload = (rbuf_to_buffer(buf) + rbuf_addition(buf) + sizeof(struct ips_message_header));
-		_HFI_VDBG("%s receive - opcode %x\n", qp_type_str(rbuf_qp(ep, buf)),
+		_HFI_VDBG("%s receive - opcode %x\n", rbuf_qp_type_str(ep, buf),
 			_get_proto_hfi_opcode(rcv_ev.p_hdr));
 
 		PSM2_LOG_PKT_STRM(PSM2_LOG_RX,rcv_ev.p_hdr,"PKT_STRM:");

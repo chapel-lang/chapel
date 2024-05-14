@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021 Cornelis Networks.
+ * Copyright (C) 2021-2023 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -114,43 +114,6 @@ static inline size_t sizeofdt(const enum fi_datatype datatype)
 	};
 
 	return sizeofdt[datatype];
-}
-
-static inline size_t maxcount(const enum fi_datatype datatype, const unsigned is_compare,
-			      const unsigned is_fetch)
-{
-#define INIT_MAXCOUNT_ARRAY(maxbytes)                                                              \
-	maxbytes / sizeof(int8_t), /* FI_INT8 */                                                   \
-		maxbytes / sizeof(uint8_t), /* FI_UINT8 */                                         \
-		maxbytes / sizeof(int16_t), /* FI_INT16 */                                         \
-		maxbytes / sizeof(uint16_t), /* FI_UINT16 */                                       \
-		maxbytes / sizeof(int32_t), /* FI_INT32 */                                         \
-		maxbytes / sizeof(uint32_t), /* FI_UINT32 */                                       \
-		maxbytes / sizeof(int64_t), /* FI_INT64 */                                         \
-		maxbytes / sizeof(uint64_t), /* FI_UINT64 */                                       \
-		maxbytes / sizeof(float), /* FI_FLOAT */                                           \
-		maxbytes / sizeof(double), /* FI_DOUBLE */                                         \
-		maxbytes / sizeof(complex float), /* FI_FLOAT_COMPLEX */                           \
-		maxbytes / sizeof(complex double), /* FI_DOUBLE_COMPLEX */                         \
-		maxbytes / sizeof(long double), /* FI_LONG_DOUBLE */                               \
-		maxbytes / sizeof(complex long double) /* FI_LONG_DOUBLE_COMPLEX */
-
-	static const size_t maxcount[2][2][FI_DATATYPE_LAST] = {
-		{ { /* !compare, !fetch */
-		    INIT_MAXCOUNT_ARRAY(FI_OPX_HFI1_PACKET_MTU) },
-		  { /* !compare, fetch */
-		    INIT_MAXCOUNT_ARRAY((FI_OPX_HFI1_PACKET_MTU -
-					 sizeof(struct fi_opx_hfi1_fetch_metadata))) } },
-		{ { /* compare, !fetch */
-		    INIT_MAXCOUNT_ARRAY(FI_OPX_HFI1_PACKET_MTU >> 1) },
-		  { /* compare, fetch */
-		    INIT_MAXCOUNT_ARRAY(((FI_OPX_HFI1_PACKET_MTU >> 1) -
-					 sizeof(struct fi_opx_hfi1_fetch_metadata))) } }
-	};
-
-#undef INIT_MAXCOUNT_ARRAY
-
-	return maxcount[is_compare][is_fetch][datatype];
 }
 
 ssize_t fi_opx_fetch_atomic_generic(struct fid_ep *ep, const void *buf, size_t count, void *desc,

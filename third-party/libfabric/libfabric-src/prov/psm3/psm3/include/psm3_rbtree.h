@@ -56,6 +56,9 @@
 #define __RBTREE_H__
 
 #include <stdint.h>
+#ifdef RBTREE_ITERATOR
+#include "utils_queue.h"
+#endif
 
 #ifndef RBTREE_MAP_PL
 #error "You must define RBTREE_MAP_PL before including rbtree.h"
@@ -65,6 +68,15 @@
 #error "You must define RBTREE_MI_PL before including rbtree.h"
 #endif
 
+// RBTREE_ITERATOR allows first, successor and predecessor to
+// perform in O(1) time at the cost of 16 bytes per cl_map_item
+// When not enabled, they will perform in O(log N) time
+//
+// RBTREE_AUGMENT provides an augmented rbtree which can ips_cl_qmap_search()
+// for an interval even if the tree contains overlapping items.
+// If the tree will not store any overlapping items, this capability is
+// unnecessary.  For simplicty in updating max_endp1, nil_item->max_endp1==0
+
 /*
  * Red-Black tid cache definition.
  */
@@ -72,7 +84,13 @@ typedef struct _cl_map_item {
 	struct _cl_map_item	*p_left;	/* left pointer */
 	struct _cl_map_item	*p_right;	/* right pointer */
 	struct _cl_map_item	*p_up;		/* up pointer */
+#ifdef RBTREE_AUGMENT
+	unsigned long max_endp1;		/* largest endp1 (RIGHTMOST) in subtree */
+#endif
 	uint16_t		color;		/* red-black color */
+#ifdef RBTREE_ITERATOR
+	TAILQ_ENTRY(_cl_map_item) list_entry;	/* for list of items in qmap */
+#endif
 
 	RBTREE_MI_PL            payload;
 } cl_map_item_t;
@@ -80,6 +98,13 @@ typedef struct _cl_map_item {
 typedef struct _cl_qmap {
 	cl_map_item_t		*root;		/* root node pointer */
 	cl_map_item_t		*nil_item;	/* terminator node pointer */
+#ifdef RBTREE_ITERATOR
+	TAILQ_HEAD(list, _cl_map_item) list;	/* sorted list of items in qmap */
+#endif
+#ifdef RBTREE_VALIDATE
+	uint32_t			depth;		// current depth
+	uint32_t			max_depth;	// max observed depth
+#endif
 
 	RBTREE_MAP_PL            payload;
 } cl_qmap_t;

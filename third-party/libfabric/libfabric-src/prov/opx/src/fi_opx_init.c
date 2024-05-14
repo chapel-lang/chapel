@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021-2023 Cornelis Networks.
+ * Copyright (C) 2021-2024 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -37,6 +37,7 @@
 #include "rdma/opx/fi_opx_internal.h"
 #include "rdma/opx/fi_opx_hfi1.h"
 #include "rdma/opx/fi_opx_domain.h"
+#include "rdma/opx/fi_opx_hmem.h"
 #include "ofi_prov.h"
 #include "opa_service.h"
 
@@ -46,6 +47,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "fi_opx_tid_cache.h"
 
 union fi_opx_addr opx_default_addr = {
 	.hfi1_rx = 0,
@@ -64,7 +67,7 @@ int fi_opx_check_info(const struct fi_info *info)
 	/* TODO: check caps, mode */
 
 	if ((info->tx_attr) && ((info->tx_attr->caps | info->caps) != info->caps)) {
-FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "info->tx_attr->caps = 0x%016lx, info->caps = 0x%016lx\n", info->tx_attr->caps, info->caps);
+		FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "info->tx_attr->caps = 0x%016lx, info->caps = 0x%016lx\n", info->tx_attr->caps, info->caps);
 		FI_LOG(fi_opx_global.prov, FI_LOG_DEBUG, FI_LOG_FABRIC,
 				"The tx_attr capabilities (0x%016lx) must be a subset of those requested of the associated endpoint (0x%016lx)",
 				info->tx_attr->caps, info->caps);
@@ -72,7 +75,7 @@ FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "info->tx_attr->caps = 0x%016lx
 	}
 
 	if ((info->rx_attr) && ((info->rx_attr->caps | info->caps) != info->caps)) {
-FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "info->rx_attr->caps = 0x%016lx, info->caps = 0x%016lx, (info->rx_attr->caps | info->caps) = 0x%016lx, ((info->rx_attr->caps | info->caps) ^ info->caps) = 0x%016lx\n", info->rx_attr->caps, info->caps, (info->rx_attr->caps | info->caps), ((info->rx_attr->caps | info->caps) ^ info->caps));
+		FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_EP_DATA, "info->rx_attr->caps = 0x%016lx, info->caps = 0x%016lx, (info->rx_attr->caps | info->caps) = 0x%016lx, ((info->rx_attr->caps | info->caps) ^ info->caps) = 0x%016lx\n", info->rx_attr->caps, info->caps, (info->rx_attr->caps | info->caps), ((info->rx_attr->caps | info->caps) ^ info->caps));
 		FI_LOG(fi_opx_global.prov, FI_LOG_DEBUG, FI_LOG_FABRIC,
 				"The rx_attr capabilities (0x%016lx) must be a subset of those requested of the associated endpoint (0x%016lx)",
 				info->rx_attr->caps, info->caps);
@@ -544,10 +547,35 @@ static int fi_opx_getinfo(uint32_t version, const char *node,
 	return 0;
 }
 
+
 static void fi_opx_fini()
 {
 	always_assert(fi_opx_init == 1,
 		"OPX provider finalize called before initialize\n");
+
+	/* If we abnormally exited holding the memory monitor lock, we
+	 * want to unlock if we can so we don't hang in flush.
+	 * If it's still locked in another thread we can't flush/cleanup,
+	 * so do our best and free storage */
+	pthread_mutex_trylock(&mm_lock);
+	int locked = pthread_mutex_unlock(&mm_lock); /* rc 0 is unlocked */
+	
+	struct dlist_entry *tmp;
+	struct opx_tid_domain *tid_domain;
+
+	dlist_foreach_container_safe(&(fi_opx_global.tid_domain_list),
+				     struct opx_tid_domain,
+				     tid_domain, list_entry, tmp) {
+
+		if (tid_domain->tid_cache) {
+			if(!locked) opx_tid_cache_cleanup(tid_domain->tid_cache);
+			free(tid_domain->tid_cache);
+			tid_domain->tid_cache = NULL;
+		}
+		free(tid_domain);
+		tid_domain = NULL;
+	}
+
 	fi_freeinfo(fi_opx_global.info);
 
 	if (fi_opx_global.daos_hfi_rank_hashmap) {
@@ -562,6 +590,18 @@ static void fi_opx_fini()
 			}
 		}
 	}
+
+	if (fi_opx_global.hfi_local_info.hfi_local_lookup_hashmap) {
+		struct fi_opx_hfi_local_lookup *cur_hfi_lookup = NULL;
+		struct fi_opx_hfi_local_lookup *tmp_hfi_lookup = NULL;
+
+		HASH_ITER(hh, fi_opx_global.hfi_local_info.hfi_local_lookup_hashmap, cur_hfi_lookup, tmp_hfi_lookup) {
+			if (cur_hfi_lookup) {
+				HASH_DEL(fi_opx_global.hfi_local_info.hfi_local_lookup_hashmap, cur_hfi_lookup);
+				free(cur_hfi_lookup);
+			}
+		}
+	}
 }
 
 struct fi_provider fi_opx_provider = {
@@ -573,7 +613,8 @@ struct fi_provider fi_opx_provider = {
 	.cleanup	= fi_opx_fini
 };
 
-#pragma GCC diagnostic ignored "=Wunused-function"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 /*
  * Use this dummy function to do any compile-time validation of data
  * structure sizes needed to ensure performance.
@@ -596,6 +637,16 @@ static void do_static_assert_tests()
 
 	OPX_COMPILE_TIME_ASSERT(sizeof(*payload) == sizeof(payload->rendezvous.noncontiguous),
 							"Non-contiguous rendezvous payload size error");
+
+	OPX_COMPILE_TIME_ASSERT(sizeof(struct fi_context2) == sizeof(union fi_opx_context),
+							"fi_opx_context size error");
+
+	OPX_COMPILE_TIME_ASSERT((sizeof(struct fi_opx_context_ext) & 0x1F) == 0,
+				"sizeof(fi_opx_context_ext) should be a multiple of 32") ;
+	OPX_COMPILE_TIME_ASSERT((sizeof(struct fi_opx_hmem_info) >> 3) == OPX_HMEM_SIZE_QWS,
+				"sizeof(fi_opx_hmem_info) >> 3 != OPX_HMEM_SIZE_QWS") ;
+	OPX_COMPILE_TIME_ASSERT(OPX_HFI1_TID_PAGESIZE == 4096,
+				"OPX_HFI1_TID_PAGESIZE must be 4K!");
 }
 #pragma GCC diagnostic pop
 
@@ -616,6 +667,9 @@ OPX_INI
 
 	fi_opx_global.prov = &fi_opx_provider;
 	fi_opx_global.daos_hfi_rank_hashmap = NULL;
+	fi_opx_global.hfi_local_info.lid = 0;
+	fi_opx_global.hfi_local_info.hfi_unit = 0;
+	fi_opx_global.hfi_local_info.hfi_local_lookup_hashmap = NULL;
 
 	fi_opx_init = 1;
 
@@ -626,11 +680,10 @@ OPX_INI
 	fi_param_define(&fi_opx_provider, "reliability_service_pre_ack_rate", FI_PARAM_INT, "The number of packets to receive from a particular sender before preemptively acknowledging them without waiting for a ping. Valid values are powers of 2 in the range of 0-32,768, where 0 indicates no preemptive acking. Defaults to 64.");
 	fi_param_define(&fi_opx_provider, "selinux", FI_PARAM_BOOL, "Set to true if you're running a security-enhanced Linux. This enables updating the Jkey used based on system settings. Defaults to \"No\"");
 	fi_param_define(&fi_opx_provider, "hfi_select", FI_PARAM_STRING, "Overrides the normal algorithm used to choose which HFI a process will use. See the documentation for more information.");
-	fi_param_define(&fi_opx_provider, "delivery_completion_threshold", FI_PARAM_INT, "The minimum message length in bytes to force delivery completion.  Value must be between %d and %d. Defaults to %d.", OPX_MIN_DCOMP_THRESHOLD, OPX_MAX_DCOMP_THRESHOLD, OPX_DEFAULT_DCOMP_THRESHOLD);
+	fi_param_define(&fi_opx_provider, "delivery_completion_threshold", FI_PARAM_INT, "Will be deprecated. Please use FI_OPX_SDMA_BOUNCE_BUF_THRESHOLD");
+	fi_param_define(&fi_opx_provider, "sdma_bounce_buf_threshold", FI_PARAM_INT, "The maximum message length in bytes that will be copied to the SDMA bounce buffer. For messages larger than this threshold, the send will not be completed until receiver has ACKed. Value must be between %d and %d. Defaults to %d.", OPX_SDMA_BOUNCE_BUF_MIN, OPX_SDMA_BOUNCE_BUF_MAX, OPX_SDMA_BOUNCE_BUF_THRESHOLD);
  	fi_param_define(&fi_opx_provider, "sdma_disable", FI_PARAM_INT, "Disables SDMA offload hardware. Default is 0");
- 	fi_param_define(&fi_opx_provider, "reliability_service_nack_threshold", FI_PARAM_INT, "The number of NACKs needed to be seen before a replay is initiated. Valid values are 1-32767. Default is 1");
-	fi_param_define(&fi_opx_provider, "expected_receive_enable", FI_PARAM_BOOL, "Enables expected receive rendezvous using Token ID (TID). Defaults to \"No\"");
-	fi_param_define(&fi_opx_provider, "tid_reuse_enable", FI_PARAM_BOOL, "Enables the reuse cache for Token ID (TID) and pinned rendezvous receive buffers. Defaults to \"No\"");
+	fi_param_define(&fi_opx_provider, "expected_receive_enable", FI_PARAM_BOOL, "Enables expected receive rendezvous using Token ID (TID). Defaults to \"No\". This feature is not currently supported.");
 	fi_param_define(&fi_opx_provider, "prog_affinity", FI_PARAM_STRING,
                         "When set, specify the set of CPU cores to set the progress "
                         "thread affinity to. The format is "
@@ -638,6 +691,12 @@ OPX_INI
                         "where each triplet <start>:<end>:<stride> defines a block "
                         "Both <start> and <end> is a core_id.");
 	fi_param_define(&fi_opx_provider, "auto_progress_interval_usec", FI_PARAM_INT, "Number of usec that the progress thread waits between polling, the value of 0 is default where the interval is 1 if progress affinity is set, or 1000 otherwise.");
+	fi_param_define(&fi_opx_provider, "pkey", FI_PARAM_INT, "Partition key.  Should be a 2 byte positive integer.  Default is 0x%x\n", FI_OPX_HFI1_DEFAULT_P_KEY);
+	fi_param_define(&fi_opx_provider, "sl", FI_PARAM_INT, "Service Level.  This will also determine Service Class and Virtual Lane.  Default is %d\n", FI_OPX_HFI1_SL_DEFAULT);
 	// fi_param_define(&fi_opx_provider, "varname", FI_PARAM_*, "help");
+
+	/* Track TID domains so cache can be cleared on exit */
+	dlist_init(&fi_opx_global.tid_domain_list);
+
 	return (&fi_opx_provider);
 }

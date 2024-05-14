@@ -225,7 +225,7 @@ ssize_t psmx3_send_generic(struct fid_ep *ep, const void *buf, size_t len,
 			return -FI_EMSGSIZE;
 
 		err = psm3_mq_send2(ep_priv->tx->psm2_mq, psm2_epaddr,
-				    send_flag, &psm2_tag, buf, len);
+				    send_flag|PSM2_MQ_FLAG_INJECT, &psm2_tag, buf, len);
 
 		if (err != PSM2_OK)
 			return psmx3_errno(err);
@@ -374,7 +374,7 @@ ssize_t psmx3_sendv_generic(struct fid_ep *ep, const struct iovec *iov,
 		}
 
 		err = psm3_mq_send2(ep_priv->tx->psm2_mq, psm2_epaddr,
-				    send_flag, &psm2_tag, req->buf, len);
+				    send_flag|PSM2_MQ_FLAG_INJECT, &psm2_tag, req->buf, len);
 
 		free(req);
 

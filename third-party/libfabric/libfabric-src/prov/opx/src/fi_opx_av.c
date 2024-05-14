@@ -484,8 +484,16 @@ int fi_opx_av_open(struct fid_domain *dom,
 			errno = FI_ENOMEM;
 			goto err;
 		}
-
-	} else {
+	} else if (attr->type == FI_AV_UNSPEC) {
+		/* Depending on configure options, chose FI_AV_MAP or FI_AV_TABLE */
+		attr->type = (OPX_AV == FI_AV_TABLE) ? FI_AV_TABLE : FI_AV_MAP;
+		opx_av = calloc(1, sizeof(*opx_av));
+		if (!opx_av) {
+			errno = FI_ENOMEM;
+			goto err;
+		}
+	}
+	else {
 		FI_DBG(fi_opx_global.prov, FI_LOG_AV,
 				"Unsupported AV type requested\n");
 		errno = FI_EINVAL;

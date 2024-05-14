@@ -56,7 +56,7 @@ static int psmx3_progress_set_affinity(char *affinity)
 	int set_count = 0;
 
 	if (!affinity) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"progress thread affinity not set\n");
 		return 0;
 	}
@@ -86,7 +86,7 @@ static int psmx3_progress_set_affinity(char *affinity)
 			set_count++;
 		}
 
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"core set [%d:%d:%d] added to progress thread affinity set\n",
 			start, end, stride);
 	}
@@ -94,7 +94,7 @@ static int psmx3_progress_set_affinity(char *affinity)
 	if (set_count)
 		pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
 	else
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"progress thread affinity not set due to invalid format\n");
 
 	return set_count;
@@ -107,7 +107,7 @@ static void *psmx3_progress_func(void *args)
 	int sleep_usec;
 	struct timespec ts;
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE, "\n");
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "\n");
 
 	affinity_set = psmx3_progress_set_affinity(psmx3_env.prog_affinity);
 
@@ -142,10 +142,10 @@ static void psmx3_domain_start_progress(struct psmx3_fid_domain *domain)
 			     psmx3_progress_func, (void *)domain);
 	if (err) {
 		domain->progress_thread = pthread_self();
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"pthread_create returns %d\n", err);
 	} else {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE, "progress thread started\n");
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "progress thread started\n");
 	}
 }
 
@@ -157,15 +157,15 @@ static void psmx3_domain_stop_progress(struct psmx3_fid_domain *domain)
 	if (!pthread_equal(domain->progress_thread, pthread_self())) {
 		err = pthread_cancel(domain->progress_thread);
 		if (err) {
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 				"pthread_cancel returns %d\n", err);
 		}
 		err = pthread_join(domain->progress_thread, &exit_code);
 		if (err) {
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 				"pthread_join returns %d\n", err);
 		} else {
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 				"progress thread exited with code %ld (%s)\n",
 				(uintptr_t)exit_code,
 				(exit_code == PTHREAD_CANCELED) ?
@@ -181,7 +181,7 @@ static int psmx3_domain_close(fid_t fid)
 	domain = container_of(fid, struct psmx3_fid_domain,
 			      util_domain.domain_fid.fid);
 
-	FI_INFO(&psmx3_prov, FI_LOG_DOMAIN, "refcnt=%d\n",
+	PSMX3_INFO(&psmx3_prov, FI_LOG_DOMAIN, "refcnt=%d\n",
 		ofi_atomic_get32(&domain->util_domain.ref));
 
 	if (ofi_domain_close(&domain->util_domain))
@@ -261,14 +261,14 @@ static int psmx3_domain_init(struct psmx3_fid_domain *domain,
 
 	err = ofi_spin_init(&domain->mr_lock);
 	if (err) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"ofi_spin_init(mr_lock) returns %d\n", err);
 		goto err_out;
 	}
 
 	domain->mr_map = rbtNew(&psmx3_key_compare);
 	if (!domain->mr_map) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"rbtNew failed\n");
 		goto err_out_destroy_mr_lock;
 	}
@@ -302,9 +302,9 @@ int psmx3_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	struct psmx3_fid_domain *domain_priv;
 	struct psmx3_ep_name *src_addr = info->src_addr;
 	int mr_mode = (info->domain_attr->mr_mode & FI_MR_BASIC) ? FI_MR_BASIC : 0;
-	int err, tmp;
+	int err;
 
-	FI_INFO(&psmx3_prov, FI_LOG_DOMAIN, "\n");
+	PSMX3_INFO(&psmx3_prov, FI_LOG_DOMAIN, "\n");
 
 	fabric_priv = container_of(fabric, struct psmx3_fid_fabric,
 				   util_fabric.fabric_fid);
@@ -363,8 +363,8 @@ int psmx3_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	domain_priv->poll_unlock_fn = psmx3_unlock;
 
 	/* If lock_level env is unset, then set locks based off threading model*/
-	err = fi_param_get_bool(&psmx3_prov, "lock_level", &tmp);
-	if (err < 0) {
+	//err = fi_param_get_int(&psmx3_prov, "lock_level", &tmp);
+	if (! psmx3_check_lock_level()) {
 		switch (info->domain_attr->threading) {
 		case FI_THREAD_DOMAIN:
 			/* Disable locks not required when serializing access to a domain */
@@ -499,11 +499,11 @@ static int psmx3_domain_check_features(struct psmx3_fid_domain *domain,
 	ep_caps &= ~PSMX3_SUB_CAPS;
 
 	if ((domain_caps & ep_caps) != ep_caps) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"caps mismatch: domain_caps=%s;\n",
 			fi_tostr(&domain_caps, FI_TYPE_CAPS));
 
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"caps mismatch: ep_caps=%s.\n",
 			fi_tostr(&ep_caps, FI_TYPE_CAPS));
 

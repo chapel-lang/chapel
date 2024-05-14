@@ -139,6 +139,10 @@ usd_ib_get_devlist(
             ibdev_buf[n - 1] = '\0';       /* newline -> EOF */
         }
 
+#pragma GCC diagnostic push
+#if defined(__GNUC__) && (__GNUC__ >= 8)
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
         /* If USNIC device, remember this one */
         if (strncmp(ibdev_buf, "usnic", 5) == 0) {
             idp = calloc(sizeof(*idp), 1);
@@ -163,6 +167,8 @@ usd_ib_get_devlist(
             idp->id_next = NULL;
             last_idp = idp;
         }
+#pragma GCC diagnostic pop
+
         free(dev_path);
         dev_path = NULL;
         free(ibdev_path);

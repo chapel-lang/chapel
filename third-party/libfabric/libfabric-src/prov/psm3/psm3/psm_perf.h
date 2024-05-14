@@ -84,10 +84,10 @@ extern u64 global_rdpmc_number[RDPMC_PERF_MAX_SLOT_NUMBER];
 
 extern char global_rdpmc_slot_name[RDPMC_PERF_MAX_SLOT_NUMBER][RDPMC_PERF_MAX_SLOT_NAME];
 
-extern __thread unsigned int global_rdpmc_type;
-extern __thread unsigned int global_rdpmc_config;
+extern unsigned int global_rdpmc_type;
+extern unsigned int global_rdpmc_config;
 
-extern unsigned long long rdpmc_read(struct rdpmc_ctx *ctx);
+extern unsigned long long psm3_rdpmc_read(struct rdpmc_ctx *ctx);
 
 #define RDPMC_PERF_INIT() \
 {                         \
@@ -111,12 +111,12 @@ extern unsigned long long rdpmc_read(struct rdpmc_ctx *ctx);
 
 #define RDPMC_PERF_BEGIN(slot_number) \
 {                                     \
-    global_rdpmc_begin[(slot_number)] = rdpmc_read(&global_rdpmc_ctx); \
+    global_rdpmc_begin[(slot_number)] = psm3_rdpmc_read(&global_rdpmc_ctx); \
 }
 
 #define RDPMC_PERF_END(slot_number) \
 {                        \
-    global_rdpmc_summ[(slot_number)] += (rdpmc_read(&global_rdpmc_ctx) - global_rdpmc_begin[(slot_number)]); \
+    global_rdpmc_summ[(slot_number)] += (psm3_rdpmc_read(&global_rdpmc_ctx) - global_rdpmc_begin[(slot_number)]); \
     global_rdpmc_number[(slot_number)]++;                                                                    \
 }
 
@@ -127,8 +127,8 @@ extern unsigned long long rdpmc_read(struct rdpmc_ctx *ctx);
     {                                                \
         if (global_rdpmc_slot_name[i][0])                  \
         {                                            \
-            fprintf((stream), "RDPMC [%s] (%x, %04x) avg = %g (%llu times)\n", \
-                    global_rdpmc_slot_name[i], global_rdpmc_type, global_rdpmc_config, \
+            fprintf((stream), "%s: RDPMC [%s] (%x, %04x) avg = %g (%llu times)\n", \
+                    psm3_get_mylabel(), global_rdpmc_slot_name[i], global_rdpmc_type, global_rdpmc_config, \
                     (double)global_rdpmc_summ[i] / global_rdpmc_number[i], global_rdpmc_number[i]); \
             fflush((stream));                                                 \
         } \
