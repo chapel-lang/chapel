@@ -976,14 +976,15 @@ CanPassResult CanPassResult::canPass(Context* context,
     // Further checking will occur after the instantiation occurs,
     // so checking here just rules out predictable situations.
 
-    if (formalQT.kind() != QualifiedType::TYPE &&
-        actualQT.kind() != QualifiedType::INIT_RECEIVER &&
-        isTypeGeneric(context, actualQT))
+    bool canAcceptGenericActuals =
+      formalQT.kind() == QualifiedType::TYPE ||
+      actualQT.kind() == QualifiedType::INIT_RECEIVER;
+
+    if (isTypeGeneric(context, actualQT) && !canAcceptGenericActuals)
       return fail(FAIL_GENERIC_TO_NONTYPE); // generic types can only be passed to type actuals
 
     auto got = canInstantiate(context, actualQT, formalQT);
-    if (!got.passes() && (formalQT.kind() == QualifiedType::TYPE ||
-                          actualQT.kind() == QualifiedType::INIT_RECEIVER)) {
+    if (!got.passes() && canAcceptGenericActuals) {
       // Instantiation may not be necessary for generic type formals: we
       // could be passing a (subtype) generic type actual.
       // Fall through to the checks below.

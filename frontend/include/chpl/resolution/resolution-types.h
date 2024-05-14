@@ -322,7 +322,7 @@ class UntypedFnSignature {
     return formals_[i].name;
   }
 
-  /** Return whether the i'th formal has a default value. */
+  /** Return whether the i'th formal might have a default value. */
   bool formalMightHaveDefault(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
     return formals_[i].defaultKind != DK_NO_DEFAULT;
