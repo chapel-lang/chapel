@@ -323,10 +323,13 @@ variable, the resulting array has a 0-based one-dimensional domain.
       {0..4}
 
 .. index::
+   single: keywords; with (forall intent)
+   single: with; forall intent
    single: forall intents
    single: shadow variables
    single: data parallelism; forall intents
    single: data parallelism; shadow variables
+
 .. _Forall_Intents:
 
 Forall Intents

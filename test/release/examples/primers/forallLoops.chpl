@@ -29,6 +29,9 @@ As with for-loops, the body of a forall statement is a statement
 or a block statement, whereas the body of a forall expression is
 an expression. Both kinds are shown in the following sections.
 
+.. index::
+   single: forall (statement)
+
 "Must-parallel" forall statement
 --------------------------------
 
@@ -52,6 +55,9 @@ If ``A`` were a distributed array (:ref:`primers-distributions`),
 each loop iteration would typically be executed on the locale where
 the corresponding array element resides.
 
+.. index::
+   single: forall (expression)
+
 "Must-parallel" forall expression
 ---------------------------------
 
@@ -66,6 +72,10 @@ writeln(B);
 writeln();
 
 /*
+
+.. index::
+    single: forall; zip
+
 .. _primers-forallLoops-must-parallel-zippered:
 
 Zippered "must-parallel" forall statement
@@ -95,6 +105,10 @@ writeln();
 /*
 The leader iterable in this example is ``A``. Since this array is not
 distributed, all loop iterations will be executed on the current locale.
+
+.. index::
+    single: [] loop
+    single: bracket loop
 
 .. _primers-forallLoops-may-parallel:
 
@@ -128,6 +142,11 @@ if onlySerial() does not have any parallel overloads:
       forall i in onlySerial(n) { // error: a parallel iterator is not found
         writeln("in iteration #", i);
       }
+
+
+.. index::
+    single: [] loop expression
+    single: bracket loop expression
 
 "May-parallel" forall expression
 --------------------------------
@@ -226,6 +245,11 @@ writeln("outerAtomicVariable is: ", outerAtomicVariable.read());
 writeln();
 
 /*
+
+.. index::
+    single: forall; with
+.. _primers-forallLoops-with:
+
 The task intents ``in``, ``const in``, ``ref``, ``const ref``,
 and ``reduce`` can be specified explicitly using a ``with`` clause.
 
@@ -253,6 +277,11 @@ writeln("outerRealVariable is: ", outerRealVariable);
 writeln();
 
 /*
+
+.. index::
+    single: forall; reduce
+.. _primers-forallLoops-reduce:
+
 A reduce intent can be used to compute reductions.
 The value of each reduce-intent shadow variable at the end of its task
 is combined into its outer variable according to the specified reduction

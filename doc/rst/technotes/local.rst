@@ -1,3 +1,7 @@
+.. index::
+    single: local
+    pair: keywords; local
+
 .. _readme-local:
 
 ===================
