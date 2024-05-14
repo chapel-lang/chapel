@@ -9,6 +9,7 @@
  *   * work with non-stemmed index entry list so we can search for 'for'
  *   * summary shows the start of the section when linking to an anchor
  *   * show the category of different results
+ *   * avoid yellow highlighting on pages opened from the search page
  *
  * :copyright: Copyright 2007-2023 by the Sphinx team, see AUTHORS.
  * :license: BSD, see LICENSE for details.
@@ -127,9 +128,11 @@ const _displayItem = (item, searchTerms, highlightTerms) => {
   if (mydescr)
     listItem.appendChild(document.createElement("span")).innerHTML = mydescr;
 
+  const localHighlight = true;
+
   if (descr) {
     // highlight search terms in the description
-    if (SPHINX_HIGHLIGHT_ENABLED)  // set in sphinx_highlight.js
+    if (localHighlight)
       highlightTerms.forEach((term) => _highlightText(listItem, term, "highlighted"));
   }
   else if (showSearchSummary)
@@ -141,7 +144,7 @@ const _displayItem = (item, searchTerms, highlightTerms) => {
             Search.makeSearchSummary(data, searchTerms, anchor)
           );
         // highlight search terms in the summary
-        if (SPHINX_HIGHLIGHT_ENABLED)  // set in sphinx_highlight.js
+        if (localHighlight)
           highlightTerms.forEach((term) => _highlightText(listItem, term, "highlighted"));
       });
   Search.output.appendChild(listItem);
@@ -316,9 +319,12 @@ const Search = {
       }
     });
 
-    if (SPHINX_HIGHLIGHT_ENABLED) {  // set in sphinx_highlight.js
+    // don't set the highlight terms in the local storage
+    // because we don't like the docs opened by clicking on search
+    // results to show the highlighting
+    /*if (SPHINX_HIGHLIGHT_ENABLED) {  // set in sphinx_highlight.js
       localStorage.setItem("sphinx_highlight_terms", [...highlightTerms].join(" "))
-    }
+    }*/
 
     // console.debug("SEARCH: searching for:");
     // console.info("required: ", [...searchTerms]);
