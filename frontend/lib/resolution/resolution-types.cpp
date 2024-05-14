@@ -182,6 +182,25 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForIdQuery(context, functionId);
 }
 
+static UniqueString getCallName(const uast::Call* call) {
+  UniqueString name;
+  // Get the name of the called expression.
+  if (auto op = call->toOpCall()) {
+    name = op->op();
+  } else if (auto called = call->calledExpression()) {
+    if (auto calledIdent = called->toIdentifier()) {
+      name = calledIdent->name();
+    } else if (auto calledDot = called->toDot()) {
+      name = calledDot->field();
+    } else if (auto op = called->toOpCall()) {
+      name = op->op();
+    } else {
+      CHPL_UNIMPL("CallInfo without a name");
+    }
+  }
+  return name;
+}
+
 CallInfo CallInfo::createSimple(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -191,13 +210,7 @@ CallInfo CallInfo::createSimple(const uast::FnCall* call) {
   std::vector<CallInfoActual> actuals;
 
   // set the name (simple cases only)
-  if (auto called = call->calledExpression()) {
-    if (auto id = called->toIdentifier()) {
-      name = id->name();
-    }
-  }
-
-  CHPL_ASSERT(!name.isEmpty());
+  name = getCallName(call);
 
   int i = 0;
   for (auto actual : call->actuals()) {
@@ -368,20 +381,7 @@ CallInfo CallInfo::create(Context* context,
     actualAsts->clear();
   }
 
-  // Get the name of the called expression.
-  if (auto op = call->toOpCall()) {
-    name = op->op();
-  } else if (auto called = call->calledExpression()) {
-    if (auto calledIdent = called->toIdentifier()) {
-      name = calledIdent->name();
-    } else if (auto calledDot = called->toDot()) {
-      name = calledDot->field();
-    } else if (auto op = called->toOpCall()) {
-      name = op->op();
-    } else {
-      CHPL_UNIMPL("CallInfo without a name");
-    }
-  }
+  name = getCallName(call);
 
   // Set up a method call if relevant.
   if (auto calledExpr = call->calledExpression()) {

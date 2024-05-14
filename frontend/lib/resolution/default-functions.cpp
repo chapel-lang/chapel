@@ -49,6 +49,10 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
     return true;
   }
 
+  if (name == USTR("serialize") || name == USTR("deserialize")) {
+    return true;
+  }
+
   return false;
 }
 
@@ -363,6 +367,49 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /*needsInstantiation*/ false,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return ret;
+}
+
+static const TypedFnSignature*
+generateDeSerialize(Context* context, const CompositeType* compType,
+                    UniqueString name, std::string channel,
+                    std::string deSerializer) {
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  ufsFormals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, compType));
+
+  // TODO: Add constraints to these arguments
+  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, channel), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, AnyType::get(context)));
+
+  ufsFormals.push_back(UntypedFnSignature::FormalDetail(UniqueString::get(context, deSerializer), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::REF, AnyType::get(context)));
+
+  // build the untyped signature
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ compType->id(),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ true,
                         /*idTag*/ parsing::idToTag(context, compType->id()),
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(ufsFormals),
@@ -744,6 +791,10 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
       result = generateInitCopySignature(context, compType);
     } else if (name == USTR("deinit")) {
       result = generateDeinitSignature(context, compType);
+    } else if (name == USTR("serialize")) {
+      result = generateDeSerialize(context, compType, name, "writer", "serializer");
+    } else if (name == USTR("deserialize")) {
+      result = generateDeSerialize(context, compType, name, "reader", "deserializer");
     } else if (auto domainType = type->toDomainType()) {
       result = generateDomainMethod(context, domainType, name);
     } else if (auto arrayType = type->toArrayType()) {
