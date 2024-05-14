@@ -1,0 +1,2 @@
+bug: type functions should not segfault when return generic types
+#25039
