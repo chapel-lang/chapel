@@ -10,28 +10,28 @@ ARG TARGETARCH
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-  apt-get upgrade -y && \
-  apt-get install -y \
-  curl wget vim sudo gcc g++ m4 perl chrpath \
-  python3 python3-dev python3-venv bash make mawk git pkg-config cmake \
-  llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
+    apt-get upgrade -y && \
+    apt-get install -y \
+      curl wget vim sudo gcc g++ m4 perl chrpath \
+      python3 python3-dev python3-venv bash make mawk git pkg-config cmake \
+      llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 RUN useradd -ms /bin/bash user && \
-  usermod -aG sudo user && \
-  echo "user:password" | chpasswd
+    usermod -aG sudo user && \
+    echo "user:password" | chpasswd
 
 USER user
 WORKDIR /home/user
 
 # download chapel
 RUN wget https://github.com/chapel-lang/chapel/releases/download/$CHAPEL_VERSION/chapel-$CHAPEL_VERSION.tar.gz && \
-  tar xf chapel-$CHAPEL_VERSION.tar.gz
+    tar xf chapel-$CHAPEL_VERSION.tar.gz
 
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
-  ./configure --prefix=/usr && \
-  nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \
-  unset CHPL_HOME
+    ./configure --prefix=/usr && \
+    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \
+    unset CHPL_HOME
 
 USER root
 RUN make install
