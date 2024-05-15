@@ -1001,7 +1001,7 @@ CanPassResult CanPassResult::canPass(Context* context,
       // the formal. This suggests a generic actual being passed to the
       // formal; this is typically not allowed, but in this case
       // (canAcceptGenericActuals) it is. So, it's not an error.
-      got.failReason_ = {};
+      got.failReason_ = chpl::optional<PassingFailureReason>();
       return got;
     }
     if (!got.passes() && formalQT.isParam()) {
