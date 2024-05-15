@@ -12,6 +12,14 @@ module LayoutCSUtil {
     return this.colRange;
   }
 
+  proc CSArr.rows() {
+    return this.dom.rows();
+  }
+
+  proc CSArr.cols() {
+    return this.dom.cols();
+  }
+
   @chpldoc.nodoc
   iter CSDom.uidsInRowCol(rc) {
     for uid in startIdx[rc]..<startIdx[rc+1] do

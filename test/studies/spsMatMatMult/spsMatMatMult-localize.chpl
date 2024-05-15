@@ -9,7 +9,7 @@ config const n = 10,
              seed = 0,
              printSeed = seed == 0,
              skipDense = false,
-             doCommDiags = true;
+             countComms = false;
 
 var rands = if seed == 0 then new randomStream(real)
                          else new randomStream(real, seed);
@@ -61,7 +61,7 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
   use List;
   var turnToken: atomic int;
 
-  if doCommDiags then startCommDiagnostics();
+  if countComms then startCommDiagnostics();
   coforall (locRow, locCol) in grid {
     on localeGrid[locRow, locCol] {
       var nnzs: list(2*int),
@@ -71,24 +71,19 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
         // Make a local copy of the remote blocks of A and B; on my branch
         // this will also make a local copy of the remote indices, so long
         // as these are 'const'/read-only
-        const AremoteVals = A.locArr[locRow, srcloc]!.myElems,
-              BremoteVals = B.locArr[srcloc, locCol]!.myElems;
+        const Ablk = A.locArr[locRow, srcloc]!.myElems,
+              Bblk = B.locArr[srcloc, locCol]!.myElems;
         
         local {
-        for ac_br in AremoteVals.domain.colRange {
-          for ai in AremoteVals.domain.startIdx[ac_br]..<AremoteVals.domain.startIdx[ac_br+1] {
-            const ar = AremoteVals.domain.idx[ai];
-
-            for bi in BremoteVals.domain.startIdx[ac_br]..<BremoteVals.domain.startIdx[ac_br+1] {
-              const bc = BremoteVals.domain.idx[bi];
-              //              writeln("[", (locRow, locCol), "] found ", (ar, ac_br), " and ", (ac_br, bc));
-              nnzs.pushBack((ar,bc));
-              vals.pushBack(AremoteVals[ar,ac_br]*BremoteVals[ac_br,bc]);
-              //              vals.pushBack(A.data[ai]*B.data[bi]);
+          for ac_br in Ablk.cols() {
+            for (ar, a) in Ablk.rowsAndVals(ac_br) {
+              for (bc, b) in Bblk.colsAndVals(ac_br) {
+                nnzs.pushBack((ar,bc));
+                vals.pushBack(a*b);
+              }
             }
           }
         }
-      }
       }
 
 
@@ -98,8 +93,10 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
       turnToken.write(here.id+1);
     }
   }
-  if doCommDiags then stopCommDiagnostics();
-  if doCommDiags then printCommDiagnosticsTable();
+  if countComms {
+    stopCommDiagnostics();
+    printCommDiagnosticsTable();
+  }
 }
 
 

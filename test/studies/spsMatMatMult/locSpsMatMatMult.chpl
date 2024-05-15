@@ -61,13 +61,13 @@ if !skipDense {
 //
 // TODO: parallelize algorithm
 //
-proc SparseMatMatMult(A: [?AD], B: [?BD]) {
+proc SparseMatMatMult(A, B) {
   use List;
 
   var nnzs: list(2*int),
       vals: list(int);
 
-  for ac_br in AD.cols() {
+  for ac_br in A.cols() {
     for (ar, a) in A.rowsAndVals(ac_br) {
       for (bc, b) in B.colsAndVals(ac_br) {
         nnzs.pushBack((ar,bc));
