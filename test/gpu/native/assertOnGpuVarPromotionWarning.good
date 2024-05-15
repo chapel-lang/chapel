@@ -1,5 +1,0 @@
-assertOnGpuVarPromotionWarning.chpl:5: warning: GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers
-assertOnGpuVarPromotionWarning.chpl:5: note: consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime
-assertOnGpuVarPromotionWarning.chpl:8: warning: GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers
-assertOnGpuVarPromotionWarning.chpl:8: note: consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime
-assertOnGpuVarPromotionWarning.chpl:11: warning: GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers
