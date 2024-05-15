@@ -93,14 +93,16 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
             BremoteCSR = BremoteCSRClass.mySparseBlock;
         */
 
-        var AremoteVals = A.locArr[locRow, srcloc]!.myElems,
-            BremoteVals = B.locArr[srcloc, locCol]!.myElems;
-
+        const AremoteVals = A.locArr[locRow, srcloc]!.myElems,
+              BremoteVals = B.locArr[srcloc, locCol]!.myElems;
+        /*
         const AremoteCSC = AD.locDoms[locRow, srcloc]!.mySparseBlock,
               BremoteCSR = BD.locDoms[srcloc, locCol]!.mySparseBlock;
-
+        */
+        /*
         AremoteVals._value.dom = AremoteCSC._value;
         BremoteVals._value.dom = BremoteCSR._value;
+        */
 
         /*
         writeln("[", here.id, "] A: ", (AremoteVals.locale, AremoteVals._value.locale, AremoteCSC.locale, AremoteCSC._value.locale));
@@ -108,12 +110,12 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
         */
         
         local {
-        for ac_br in AremoteCSC.colRange {
-          for ai in AremoteCSC.startIdx[ac_br]..<AremoteCSC.startIdx[ac_br+1] {
-            const ar = AremoteCSC.idx[ai];
+        for ac_br in AremoteVals.domain.colRange {
+          for ai in AremoteVals.domain.startIdx[ac_br]..<AremoteVals.domain.startIdx[ac_br+1] {
+            const ar = AremoteVals.domain.idx[ai];
 
-            for bi in BremoteCSR.startIdx[ac_br]..<BremoteCSR.startIdx[ac_br+1] {
-              const bc = BremoteCSR.idx[bi];
+            for bi in BremoteVals.domain.startIdx[ac_br]..<BremoteVals.domain.startIdx[ac_br+1] {
+              const bc = BremoteVals.domain.idx[bi];
               //              writeln("[", (locRow, locCol), "] found ", (ar, ac_br), " and ", (ac_br, bc));
               nnzs.pushBack((ar,bc));
               vals.pushBack(AremoteVals[ar,ac_br]*BremoteVals[ac_br,bc]);

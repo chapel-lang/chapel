@@ -36,6 +36,8 @@ module ChapelArray {
   use ChplConfig only compiledForSingleLocale, CHPL_LOCALE_MODEL;
   public use ChapelDomain;
 
+  var debugging = 1;
+  
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
   @chpldoc.nodoc
@@ -1952,6 +1954,7 @@ module ChapelArray {
   operator :(param arg, type t:_array) {
     var result: t;
     // The would-be param version of proc =, inlined.
+    if debugging then writeln("calling from cast");
     chpl__transferArray(result, arg);
     return result;
   }
@@ -2190,6 +2193,7 @@ module ChapelArray {
     if boundsChecking then
       checkArrayShapesUponAssignment(a, b);
 
+    if debugging then writeln("calling unchecked from operator =");
     chpl__uncheckedArrayTransfer(a, b, kind=_tElt.assign);
   }
 
@@ -2322,6 +2326,7 @@ module ChapelArray {
       }
     }
     if !done {
+      if debugging then writeln("calling from unchecked transfer");
       chpl__transferArray(a, b, kind);
     }
   }
@@ -2499,7 +2504,10 @@ module ChapelArray {
           }
         }
       } else if kind==_tElt.initCopy {
+        use Reflection;
+        if debugging then writeln("*** In initCopy case");
         if needsInitWorkaround(a.eltType) {
+          if debugging then writeln("**** In needsInitWorkaround case");
           [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
             pragma "no auto destroy"
@@ -2507,7 +2515,11 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
+        } else if canResolveMethod(a._value, "doiCopyInit", b._value) {
+          if debugging then writeln("**** In MY NEW case");
+          a._value.doiCopyInit(b._value);
         } else {
+          if debugging then writeln("**** In zip case");
           [ (aa,bb) in zip(a,b) ] {
             if isSyncType(bb.type) {
               pragma "no auto destroy"
@@ -2549,20 +2561,23 @@ module ChapelArray {
       compilerError("rank mismatch in array assignment");
     if b.isAssociative() && a.isRectangular() then
       compilerError("cannot assign to rectangular arrays from associative domains");
+    if debugging then writeln("calling from operator=");
     chpl__transferArray(a, b);
   }
 
   @chpldoc.nodoc
   inline operator =(ref a: [], b: range(?)) {
-    if a.rank == 1 then
+    if a.rank == 1 then {
+      if debugging then writeln("calling from operator= (2)");
       chpl__transferArray(a, b);
-    else
+    } else
       compilerError("cannot assign from ranges to multidimensional arrays");
   }
 
   @chpldoc.nodoc
   inline operator =(ref a: [], b: _iteratorRecord) {
     // e.g. b might be a list
+    if debugging then writeln("calling from operator= (3)");
     chpl__transferArray(a, b);
   }
 
@@ -2572,6 +2587,7 @@ module ChapelArray {
   inline operator =(ref a: [], b: ?t)
   where !(isTupleType(t) || isCoercible(t, _desync(a.eltType))) {
     // e.g. b might be a list
+    if debugging then writeln("calling from operator= (4)");
     chpl__transferArray(a, b);
   }
 
@@ -3012,9 +3028,24 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
-    pragma "no copy"
-    var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
-    return lhs;
+    writeln("In initCopy(definedConst=", definedConst, ")", "domain definedConst: ", rhs.domain.definedConst);
+    if (definedConst || rhs.domain.definedConst) &&
+       rhs.domain._value.locale != here {
+      writeln("Localize path");
+      debugging = 1;
+      // localize domain for efficiency since it's 'const'
+      const lhsDom = rhs.domain;
+      writeln("** Past domain copy");
+      pragma "no copy"
+      var lhs: [lhsDom] rhs.eltType = rhs;
+      writeln("*** Past array copy");
+      return lhs;
+    } else {
+      writeln("Normal path");
+      pragma "no copy"
+      var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
+      return lhs;
+    }
   }
 
   // TODO: why is the compiler calling chpl__autoCopy on an array at all?
@@ -3083,6 +3114,7 @@ module ChapelArray {
       if boundsChecking then
         checkArrayShapesUponAssignment(lhs, rhs);
 
+      if debugging then writeln("calling unchecked from coerce copy");
       chpl__uncheckedArrayTransfer(lhs, rhs, kind=_tElt.initCopy);
     }
 
@@ -3132,6 +3164,7 @@ module ChapelArray {
         checkArrayShapesUponAssignment(lhs, rhs);
 
       param kind = if moveElts then _tElt.move else _tElt.initCopy;
+      if debugging then writeln("calling unchecked from coerce move");
       chpl__uncheckedArrayTransfer(lhs, rhs, kind=kind);
     }
 
@@ -3161,6 +3194,7 @@ module ChapelArray {
     if !isPODType(eltType) then
       compilerError("cannot assign to array from domain of non-POD indices");
 
+    if debugging then writeln("calling from coerce copy");
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     lhs._value.dsiElementInitializationComplete();
@@ -3183,6 +3217,7 @@ module ChapelArray {
     if !isPODType(eltType) then
       compilerError("cannot assign to array from domain of non-POD indices");
 
+    if debugging then writeln("calling from coerce move");
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     lhs._value.dsiElementInitializationComplete();
@@ -3202,6 +3237,7 @@ module ChapelArray {
     if lhs.rank != 1 then
       compilerError("cannot assign from ranges to multidimensional arrays");
 
+    if debugging then writeln("calling from coerce copy (2)");
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     lhs._value.dsiElementInitializationComplete();
@@ -3220,6 +3256,7 @@ module ChapelArray {
     if lhs.rank != 1 then
       compilerError("cannot assign from ranges to multidimensional arrays");
 
+    if debugging then writeln("calling from coerce move (2)");
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     lhs._value.dsiElementInitializationComplete();
@@ -3327,6 +3364,7 @@ module ChapelArray {
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
+    if debugging then writeln("calling from coerce copy (3)");
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     lhs._value.dsiElementInitializationComplete();
@@ -3345,6 +3383,7 @@ module ChapelArray {
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
+    if debugging then writeln("calling from coerce move (2)");
     chpl__transferArray(lhs, rhs, kind=_tElt.move);
 
     lhs._value.dsiElementInitializationComplete();
@@ -3365,6 +3404,7 @@ module ChapelArray {
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
+    if debugging then writeln("calling from coerce copy (4)");
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     lhs._value.dsiElementInitializationComplete();
@@ -3384,6 +3424,7 @@ module ChapelArray {
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
+    if debugging then writeln("calling from coerce move (4)");
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     lhs._value.dsiElementInitializationComplete();
