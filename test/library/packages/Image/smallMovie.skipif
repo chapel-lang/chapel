@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ ! command -v ffmpeg &> /dev/null ]; then
+if ! command -v ffmpeg &> /dev/null; then
   echo True;
 else
   echo False;

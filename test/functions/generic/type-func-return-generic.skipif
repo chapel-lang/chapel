@@ -1,0 +1,2 @@
+# this works fine on linux64
+CHPL_TARGET_PLATFORM==linux64
