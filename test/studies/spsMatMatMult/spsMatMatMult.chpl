@@ -1,4 +1,5 @@
-use BlockDist, CommDiagnostics, LayoutCS, LayoutCSUtil, Random;
+use BlockDist, CommDiagnostics, LayoutCS, LayoutCSUtil, Random,
+    SparseBlockDistUtil;
 
 enum layout { CSR, CSC };
 use layout;
@@ -8,7 +9,7 @@ config const n = 10,
              seed = 0,
              printSeed = seed == 0,
              skipDense = false,
-             doCommDiags = false;
+             countComms = false;
 
 var rands = if seed == 0 then new randomStream(real)
                          else new randomStream(real, seed);
@@ -60,36 +61,31 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
   use List;
   var turnToken: atomic int;
 
+  if countComms then startCommDiagnostics();
   coforall (locRow, locCol) in grid {
     on localeGrid[locRow, locCol] {
       var nnzs: list(2*int),
           vals: list(int);
 
-      if doCommDiags then startCommDiagnosticsHere();
-      
-      //      writeln("On ", here.id, " ", (locRow, locCol));
       for srcloc in 0..<locsPerDim {
-        //        writeln("[", (locRow, locCol), "] getting A[",(locRow,srcloc),"] and B[",(srcloc, locCol),"]");
+        // Make a local copy of the remote blocks of A and B; on my branch
+        // this will also make a local copy of the remote indices, so long
+        // as these are 'const'/read-only
+        const Ablk = A.locArr[locRow, srcloc]!.myElems,
+              Bblk = B.locArr[srcloc, locCol]!.myElems;
         
-        const AremoteCSC = AD.locDoms[locRow, srcloc]!.mySparseBlock,
-              BremoteCSR = BD.locDoms[srcloc, locCol]!.mySparseBlock;
-        
-        for ac_br in AremoteCSC.cols() {
-          for ai in AremoteCSC.rowUidsInCol(ac_br) {
-            const ar = AremoteCSC.idx[ai];
-
-            for bi in BremoteCSR.colUidsInRow(ac_br) {
-              const bc = BremoteCSR.idx[bi];
-              //              writeln("[", (locRow, locCol), "] found ", (ar, ac_br), " and ", (ac_br, bc));
-              nnzs.pushBack((ar,bc));
-              vals.pushBack(A[ar,ac_br]*B[ac_br,bc]);
-              //              vals.pushBack(A.data[ai]*B.data[bi]);
+        local {
+          for ac_br in Ablk.cols() {
+            for (ar, a) in Ablk.rowsAndVals(ac_br) {
+              for (bc, b) in Bblk.colsAndVals(ac_br) {
+                nnzs.pushBack((ar,bc));
+                vals.pushBack(a*b);
+              }
             }
           }
         }
       }
 
-      if doCommDiags then stopCommDiagnosticsHere();
 
       turnToken.waitFor(here.id);
       writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:",
@@ -97,7 +93,10 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
       turnToken.write(here.id+1);
     }
   }
-  if doCommDiags then printCommDiagnosticsTable();
+  if countComms {
+    stopCommDiagnostics();
+    printCommDiagnosticsTable();
+  }
 }
 
 

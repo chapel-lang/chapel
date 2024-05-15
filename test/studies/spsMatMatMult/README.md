@@ -23,20 +23,14 @@ Main Modules
 * spsMatMatMult.chpl: This is my start at a Block-distributed
   SUMMA-style sparse matrix-matrix multiplication algorithm.
   TODOs:
-  - [ ] work on reducing communication costs / maximizing locality
+  - [x] work on reducing communication costs / maximizing locality
   - [ ] make better use of local algorithm above rather than
         replicating logic
   - [ ] stitch per-node results back together into a global sparse
         array
   - [ ] relax requirement to only the first perfect square number
         of locales
-
-* spsMatMatMult-localize.chpl: This is a variant on the previous that
-  makes progress on the first TODO, but didn't quite land it before I
-  timed out, and represents where I'm currently working.  When it
-  works, it seems to be communication-free after the initial
-  broadcast, but on many runs, it seems to trip an assertion failure
-  that I haven't diagnosed yet.
+  - [ ] look into further reducing comm counts; are any O(nnz)?
 
 
 Helper Modules
@@ -55,7 +49,7 @@ Helper Modules
 Other Files
 -----------
 
-* *.good, *.compopts, *.execeopts *.numlocales: Files supporting the
-  Chapel test system so that I can easily validate that things are
-  still working as I make changes.
+* *.good, *.compopts, *.execeopts *.numlocales *.notest: Files
+  supporting the Chapel test system so that I can easily validate that
+  things are still working as I make changes.
   
