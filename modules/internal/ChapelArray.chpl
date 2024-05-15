@@ -3019,10 +3019,8 @@ module ChapelArray {
        rhs.domain._value.locale != here {
       // localize domain for efficiency since it's 'const'
       const lhsDom = rhs.domain;
-      writeln("** Past domain copy");
       pragma "no copy"
       var lhs: [lhsDom] rhs.eltType = rhs;
-      writeln("*** Past array copy");
       return lhs;
     } else {
       pragma "no copy"
