@@ -116,7 +116,8 @@ __get_apt_package_native() {
 
   pushd ${apt_dir}
 
-  local name=`python3 common/package_name.py $package_name $chapel_version $package_version $os amd64`
+  local arch=`uname -m`
+  local name=`python3 common/package_name.py $package_name $chapel_version $package_version $os $arch`
   docker create --name image-builder $__docker_tag && \
     docker cp image-builder:/home/user/$name.deb $out_dir && \
     docker rm image-builder
