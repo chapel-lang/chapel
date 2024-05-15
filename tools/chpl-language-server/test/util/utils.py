@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 import os
 import tempfile
@@ -11,6 +12,12 @@ from lsprotocol.types import (
 )
 from lsprotocol.types import ReferenceParams, ReferenceContext
 from lsprotocol.types import InlayHintParams, InlayHintKind, InlayHint
+from lsprotocol.types import (
+    CodeLensParams,
+    CodeLens,
+    Command,
+    ExecuteCommandParams,
+)
 from lsprotocol.types import LocationLink, Location, Position, Range
 from lsprotocol.types import TextDocumentIdentifier
 from lsprotocol.types import (
@@ -178,6 +185,14 @@ def pos(coord: typing.Tuple[int, int]) -> Position:
 
     line, column = coord
     return Position(line=line, character=column)
+
+
+def depos(coord: Position) -> typing.Tuple[int, int]:
+    """
+    Shorthand for deconstructing position literals.
+    """
+
+    return coord.line, coord.character
 
 
 def rng(
@@ -576,3 +591,52 @@ async def check_symbol_information(
             assert actual.location.range == expected[0]
             assert actual.location.uri == doc.uri
     return actual_symbols
+
+
+async def check_generic_code_lenses(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    expected_lenses: Sequence[typing.Tuple[Position, int]],
+) -> defaultdict[typing.Tuple[int, int], typing.List[CodeLens]]:
+    """
+    Check that code lenses for the document match the expected ones. This only checks the lenses for "Show Generic" and "Show Instantiation" for now.
+
+    `expected_lenses` is a list of tuples, where each tuple is a position and
+    an integer. The integer is the expected number of lenses at that position.
+    The positions should be the start of the name of the decl for the lenses.
+
+    Returns the actual lenses grouped by position.
+    """
+    actual_lenses = await client.text_document_code_lens_async(
+        params=CodeLensParams(doc)
+    )
+    assert actual_lenses is not None
+
+    # group the actual lenses by position
+    actual_lens_by_pos: defaultdict[
+        typing.Tuple[int, int], typing.List[CodeLens]
+    ] = defaultdict(list)
+    for lens in actual_lenses:
+        actual_lens_by_pos[depos(lens.range.start)].append(lens)
+
+    assert len(actual_lens_by_pos.keys()) == len(expected_lenses)
+
+    # check that the number of lenses at each position is as expected
+    for pos, expected_count in expected_lenses:
+        key = depos(pos)
+        assert key in actual_lens_by_pos
+        actual_count = len(actual_lens_by_pos.get(key, []))
+        assert actual_count == expected_count
+
+    return actual_lens_by_pos
+
+
+async def execute_command(client: LanguageClient, command: Command):
+    """
+    Executes the given command.
+    """
+    await client.workspace_execute_command_async(
+        params=ExecuteCommandParams(
+            command=command.command, arguments=command.arguments
+        )
+    )

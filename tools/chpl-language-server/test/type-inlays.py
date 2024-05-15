@@ -470,6 +470,7 @@ async def test_split_init_type_inlays(client: LanguageClient):
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 0
 
+
 @pytest.mark.asyncio
 async def test_type_inlay_type_variable(client: LanguageClient):
     """
