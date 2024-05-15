@@ -2572,9 +2572,10 @@ doResolveVisibilityStmt(Context* context,
 static
 const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
                                                       Context* context,
-                                                      const Scope* scope)
+                                                      const Scope* scope,
+                                                      bool skipPrivate)
 {
-  QUERY_BEGIN(resolveVisibilityStmtsQuery, context, scope);
+  QUERY_BEGIN(resolveVisibilityStmtsQuery, context, scope, skipPrivate);
 
   owned<ResolvedVisibilityScope> result;
   const AstNode* ast = parsing::idToAst(context, scope->id());
@@ -2587,8 +2588,14 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
     std::vector<const AstNode*> usesAndImports;
     std::vector<const Require*> requireNodes;
     for (const AstNode* child : ast->children()) {
-      if (child->isUse() || child->isImport()) {
-        usesAndImports.push_back(child);
+      if (auto useNode = child->toUse()) {
+        if (!skipPrivate || useNode->visibility() == Decl::PUBLIC) {
+          usesAndImports.push_back(useNode);
+        }
+      } else if (auto importNode = child->toImport()) {
+        if (!skipPrivate || importNode->visibility() == Decl::PUBLIC) {
+          usesAndImports.push_back(importNode);
+        }
       } else if (auto req = child->toRequire()) {
         requireNodes.push_back(req);
       }
@@ -2621,21 +2628,21 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
 }
 
 const ResolvedVisibilityScope*
-resolveVisibilityStmts(Context* context, const Scope* scope) {
+resolveVisibilityStmts(Context* context, const Scope* scope, bool skipPrivate) {
   if (!scope->containsUseImport()) {
     // stop early if this scope has no use/import statements
     return nullptr;
   }
 
   if (context->isQueryRunning(resolveVisibilityStmtsQuery,
-                              std::make_tuple(scope))) {
+                              std::make_tuple(scope, skipPrivate))) {
     // ignore use/imports if we are currently resolving uses/imports
     // for this scope
     return nullptr;
   }
 
   const owned<ResolvedVisibilityScope>& o =
-    resolveVisibilityStmtsQuery(context, scope);
+    resolveVisibilityStmtsQuery(context, scope, skipPrivate);
   const ResolvedVisibilityScope* r = o.get();
 
   return r;
