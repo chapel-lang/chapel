@@ -84,25 +84,40 @@ enum struct DefaultsPolicy {
  */
 class UntypedFnSignature {
  public:
+  enum DefaultKind {
+    /** Formals that have default values, like `in x = 10` */
+    DK_DEFAULT,
+    /** Formals that do not have default values, like `ref x` */
+    DK_NO_DEFAULT,
+    /** Formals that might have a default value. This comes up when working
+        with generic initializers; whether an initializer's formal has
+        a default depends on if its type has a default value. But if
+        the type is unknown -- as in a generic initializer's type signature --
+        then we don't know if the formal has a default. */
+    DK_MAYBE_DEFAULT,
+  };
+
   struct FormalDetail {
     UniqueString name;
-    bool hasDefaultValue = false;
+    DefaultKind defaultKind = DK_NO_DEFAULT;
     const uast::Decl* decl = nullptr;
     bool isVarArgs = false;
 
     FormalDetail(UniqueString name,
-                 bool hasDefaultValue,
+                 DefaultKind defaultKind,
                  const uast::Decl* decl,
                  bool isVarArgs = false)
       : name(name),
-        hasDefaultValue(hasDefaultValue),
+        defaultKind(defaultKind),
         decl(decl),
         isVarArgs(isVarArgs)
-    { }
+    {
+      CHPL_ASSERT(name != USTR("this") || defaultKind == DK_NO_DEFAULT);
+    }
 
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
-             hasDefaultValue == other.hasDefaultValue &&
+             defaultKind == other.defaultKind &&
              decl == other.decl &&
              isVarArgs == other.isVarArgs;
     }
@@ -111,7 +126,7 @@ class UntypedFnSignature {
     }
 
     size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, decl, isVarArgs);
+      return chpl::hash(name, defaultKind, decl, isVarArgs);
     }
 
     void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -309,10 +324,10 @@ class UntypedFnSignature {
     return formals_[i].name;
   }
 
-  /** Return whether the i'th formal has a default value. */
-  bool formalHasDefault(int i) const {
+  /** Return whether the i'th formal might have a default value. */
+  bool formalMightHaveDefault(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
-    return formals_[i].hasDefaultValue;
+    return formals_[i].defaultKind != DK_NO_DEFAULT;
   }
 
   /** Returns the Decl for the i'th formal / field.
@@ -1210,6 +1225,9 @@ enum PassingFailureReason {
   FAIL_CANNOT_CONVERT,
   /* An instantiation was needed but is not possible. */
   FAIL_CANNOT_INSTANTIATE,
+  /* We had a generic formal, but the actual did not instantiate it; actual
+     might be generic. */
+  FAIL_DID_NOT_INSTANTIATE,
   /* A type was used as an argument to a value, or the other way around. */
   FAIL_TYPE_VS_NONTYPE,
   /* A param value was expected, but a non-param value was given. */

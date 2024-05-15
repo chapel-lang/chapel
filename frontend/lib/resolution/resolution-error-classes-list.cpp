@@ -886,7 +886,18 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       } else if (formalDecl->isTupleDecl()) {
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
-      wr.message("The formal ", formalName, " expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+
+      if (badPass.formalType().isUnknown()) {
+        // The formal type can be unknown in an initial instantiation if it
+        // depends on the previous formals' types. In that case, don't print it
+        // and say something nicer.
+        wr.message("The instantiated type of formal ", formalName,
+                   " does not allow actuals of type '", badPass.actualType().type(), "'.");
+      } else {
+        wr.message("The formal ", formalName, " expects ", badPass.formalType(),
+                   ", but the actual was ", badPass.actualType(), ".");
+      }
+
       if (actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }

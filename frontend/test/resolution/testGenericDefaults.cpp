@@ -249,7 +249,7 @@ static void test5() {
     auto aType = r.byAst(a).type();
     assert(aType.type()->isCompositeType());
     auto subs = aType.type()->toCompositeType()->substitutions();
-    assert(subs.size() == 2);
+    assert(subs.size() == 1);
     for (auto pair : subs) {
       assert(pair.second.type()->isStringType());
     }
