@@ -42,9 +42,10 @@ COPY --chown=user ./common/make_spec.py /home/user/make_spec.py
 COPY --chown=user ./common/package_name.py /home/user/package_name.py
 RUN python3 make_spec.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
 
+COPY --chown=user ./common/rpmlintrc /home/user/.rpmlintrc
 RUN rpmdev-setuptree && \
     cp chapel-$CHAPEL_VERSION.tar.gz $(rpm --eval '%{_sourcedir}') && \
-    rpmlint $BASENAME.spec && \
+    rpmlint -f .rpmlintrc $BASENAME.spec && \
     spectool -g -R $BASENAME.spec
 
 COPY --chown=user ./common/fixpaths.py /home/user/fixpaths.py
