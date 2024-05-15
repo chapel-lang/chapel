@@ -838,7 +838,18 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult got = canPassSubtypeOrBorrowing(context, actualCt, formalCt);
-      if (got.passes() && got.instantiates()) {
+      if (got.passes()) {
+        if (got.instantiates()) {
+          return got;
+        }
+
+        // The type passed, but didn't actually instantiate. This is odd
+        // since we are trying to instantiate a generic formal. This suggests
+        // the actual is generic, too, which typically doesn't make sense.
+        // Explicitly set the fail reason but keep the rest of the properties
+        // intact, so that that the caller can dismiss this error if
+        // generic actuals are allowed.
+        got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
         return got;
       }
     }
@@ -984,11 +995,16 @@ CanPassResult CanPassResult::canPass(Context* context,
       return fail(FAIL_GENERIC_TO_NONTYPE); // generic types can only be passed to type actuals
 
     auto got = canInstantiate(context, actualQT, formalQT);
-    if (!got.passes() && canAcceptGenericActuals) {
-      // Instantiation may not be necessary for generic type formals: we
-      // could be passing a (subtype) generic type actual.
-      // Fall through to the checks below.
-    } else if (!got.passes() && formalQT.isParam()) {
+    if (!got.passes() &&
+         got.reason() == FAIL_DID_NOT_INSTANTIATE && canAcceptGenericActuals) {
+      // No instantiation occurred, but the actual isn't incompatible with
+      // the formal. This suggests a generic actual being passed to the
+      // formal; this is typically not allowed, but in this case
+      // (canAcceptGenericActuals) it is. So, it's not an error.
+      got.failReason_ = {};
+      return got;
+    }
+    if (!got.passes() && formalQT.isParam()) {
       // 'isTypeGeneric' will return 'true' if there is not a param value
       // for the given QualifiedType, which is usually the case for a param
       // formal despite the presence of a type expression.

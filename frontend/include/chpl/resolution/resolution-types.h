@@ -1223,6 +1223,9 @@ enum PassingFailureReason {
   FAIL_CANNOT_CONVERT,
   /* An instantiation was needed but is not possible. */
   FAIL_CANNOT_INSTANTIATE,
+  /* We had a generic formal, but the actual did not instantiate it; actual
+     might be generic. */
+  FAIL_DID_NOT_INSTANTIATE,
   /* A type was used as an argument to a value, or the other way around. */
   FAIL_TYPE_VS_NONTYPE,
   /* A param value was expected, but a non-param value was given. */
