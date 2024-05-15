@@ -27,7 +27,7 @@
 #include "chpl/framework/stringify-functions.h"
 
 #ifndef CHPL_QUERY_TIMING_AND_TRACE_ENABLED
-#define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 1
+#define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 0
 #endif
 
 /**
@@ -617,7 +617,7 @@ Context::querySetterUpdateResult(
 
 #else
 
-#define QUERY_BEGIN_TIMING()
+#define QUERY_BEGIN_TIMING(context__)
 
 #endif
 
