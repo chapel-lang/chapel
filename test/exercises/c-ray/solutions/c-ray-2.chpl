@@ -24,7 +24,7 @@
  * ----------------------------------------------------------------------------
  */
 
-use Image;    // use helper module related to writing out images
+use CRayImage;    // use helper module related to writing out images
 use List;
 use IO;       // allow use of stderr, stdin, ioMode
 import Math.pi;
