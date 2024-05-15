@@ -501,9 +501,8 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
     auto c = resolveGeneratedCall(context, ast, ci, inScopes);
     ResolvedExpression& opR = rv.byAst(ast);
-    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                          AssociatedAction::DEFAULT_INIT,
-                                          ast->id());
+    resolver.handleResolvedCall(opR, ast, ci, c,
+                                { { AssociatedAction::DEFAULT_INIT, ast->id() } });
   }
 }
 
@@ -544,9 +543,8 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     resolver.handleResolvedCall(opR, ast, ci, c);
   } else {
     // otherwise, add an associated action
-    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                          AssociatedAction::ASSIGN,
-                                          ast->id());
+    resolver.handleResolvedCall(opR, ast, ci, c,
+                                { { AssociatedAction::ASSIGN, ast->id() } });
   }
 }
 
@@ -610,7 +608,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   if (lhsType.type() != rhsType.type()) {
     action = AssociatedAction::INIT_OTHER;
   }
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c, action, ast->id());
+  resolver.handleResolvedCall(opR, ast, ci, c, { { action, ast->id() } });
 
   // If we were trying to move, but had to run an init= to change types,
   // and that init= did not accept its argument by 'in' intent, we need
@@ -773,9 +771,8 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   }
 
   ResolvedExpression& opR = rv.byAst(assocAst);
-  resolver.handleResolvedAssociatedCall(opR, assocAst, ci, c,
-                                        AssociatedAction::DEINIT,
-                                        deinitedId);
+  resolver.handleResolvedCall(opR, assocAst, ci, c,
+                              { { AssociatedAction::DEINIT, deinitedId } });
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
