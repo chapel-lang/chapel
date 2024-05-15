@@ -62,21 +62,26 @@ if !skipDense {
 // TODO: parallelize algorithm
 //
 proc SparseMatMatMult(A, B) {
-  use List;
+  use Map;
 
-  var nnzs: list(2*int),
-      vals: list(int);
+  var spsData: map(2*int, int);
 
   for ac_br in A.cols() {
     for (ar, a) in A.rowsAndVals(ac_br) {
       for (bc, b) in B.colsAndVals(ac_br) {
-        nnzs.pushBack((ar,bc));
-        vals.pushBack(a*b);
+        const prod = a * b;
+        if prod != 0 {
+          if spsData.contains((ar,bc)) {
+            spsData[(ar, bc)] += prod;
+          } else {
+            spsData.add((ar, bc), prod);
+          }
+        }
       }
     }
   }
 
-  return makeSparseMat(nnzs, vals);
+  return makeSparseMat(Dom, spsData);
 }
 
 
@@ -86,24 +91,23 @@ proc SparseMatMatMult(A, B) {
 // be expensive.
 //
 proc DenseMatMatMult(A, B) {
-  use List;
+  use Map;
 
-  var nnzs: list(2*int),
-      vals: list(int);
-
+  var spsData: map(2*int, int);
+  
   for i in 1..n {
-    for k in 1..n {
-      for j in 1..n {
-        var prod = A[i,k] * B[k,j];
-        if prod != 0 {
-          nnzs.pushBack((i,j));
-          vals.pushBack(prod);
-        }
-      }
+    for j in 1..n {
+      var prod = 0;
+
+      for k in 1..n do
+        prod += A[i,k] * B[k,j];
+
+      if prod != 0 then
+        spsData.add((i,j), prod);
     }
   }
 
-  return makeSparseMat(nnzs, vals);
+  return makeSparseMat(Dom, spsData);
 }
 
 
@@ -139,11 +143,34 @@ proc writeSparseMatrix(msg, Arr) {
 }
 
 
+// create a new sparse matrix from a map from sparse indices to values
+//
+proc makeSparseMat(parentDom, spsData) {
+  use Sort;
+
+  var CDom: sparse subdomain(parentDom) dmapped CS();
+  var inds: [0..<spsData.size] 2*int;
+  for (idx, i) in zip(spsData.keys(), 0..) do
+    inds[i] = idx;
+
+  sort(inds);
+  
+  for ij in inds do
+    CDom += ij;
+
+  var C: [CDom] int;
+  for ij in inds do
+    C[ij] += spsData[ij];
+
+  return C;
+}
+
+
 // create a new sparse matrix from a collection of nonzero indices
 // (nnzs) and values (vals)
 //
-proc makeSparseMat(nnzs, vals) {
-  var CDom: sparse subdomain(A.domain.parentDom);
+proc makeSparseMat(parentDom, nnzs, vals) {
+  var CDom: sparse subdomain(parentDom);
   for ij in nnzs do
     CDom += ij;
 
