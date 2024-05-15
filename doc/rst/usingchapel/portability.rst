@@ -32,8 +32,8 @@ Networks
 --------
 
 * HPE Cray Slingshot
-* Cray Aries
 * InfiniBand (IB)
+* Cray Aries
 * Amazon Elastic Fabric Adapter (EFA)
 * Ethernet
 
