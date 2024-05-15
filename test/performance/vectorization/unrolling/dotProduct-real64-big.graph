@@ -1,0 +1,6 @@
+perfkeys: dotProdFor time:, dotProdForeach time:, dotProdChapeltastic time:, dotProdParamFor time:, dotProdParamForCArray time:, dotProdMetadataUnrollFor time:, dotProdMetadataUnrollForeach time:
+files: dotProduct-unroll4-r64-big.dat, dotProduct-unroll4-r64-big.dat, dotProduct-unroll4-r64-big.dat, dotProduct-unroll4-r64-big.dat, dotProduct-unroll4-r64-big.dat, dotProduct-unroll4-r64-big.dat, dotProduct-unroll4-r64-big.dat
+graphkeys: For Loop, Foreach Loop, Chapeltastic, Unrolled 4x Param For, Unrolled 4x Param For (with c_array), Unrolled 4x LLVM Metadata For Loop, Unrolled 4x LLVM Metadata Foreach Loop
+ylabel: Time (seconds)
+graphtitle: Dot Product Vectorization with real(64) with large arrays
+
