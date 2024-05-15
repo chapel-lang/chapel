@@ -11,6 +11,10 @@ Main Modules
 * locSpsMatMatMult.chpl: This is my start at a purely local sparse
   matrix-matrix multiplication.
 
+* SpsMatMatUtil.chpl: This is a utility module used by the above,
+  which contains most of the key code; going forward, the intent is to
+  have spsMatMatMult.chpl will use it as well.
+
   TODOs:
   - [ ] use multicore parallelism
   - [ ] consider alternative approaches to accumulating nonzeroes:
