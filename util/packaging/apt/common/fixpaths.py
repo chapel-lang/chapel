@@ -12,6 +12,7 @@ short_chapel_version = short_version(chapel_version)
 get_path_pat = re.compile(r"(?:RUNPATH|RPATH)=(.*)")
 version_path_pat = re.compile(f"^/home/user/chapel-{chapel_version}/(.*)$")
 
+
 def get_path(s: str) -> typing.List[str]:
     m = re.search(get_path_pat, s)
     if m:
@@ -20,18 +21,23 @@ def get_path(s: str) -> typing.List[str]:
         return paths
     return []
 
+
 files = ["chpl", "chpldoc", "mason"]
 files = [os.path.join("/usr/bin", f) for f in files]
 files = [f for f in files if os.path.exists(f)]
 
 # find all .so in the old lib path
-for f in glob.glob(f"/usr/lib/chapel/{short_chapel_version}/**/*.so", recursive=True):
+for f in glob.glob(
+    f"/usr/lib/chapel/{short_chapel_version}/**/*.so", recursive=True
+):
     files.append(f)
 
 new_prefix = f"/usr/lib/chapel/{short_chapel_version}"
 for f in files:
     # check if the file has a runpath
-    cp = sp.run(["chrpath", "-l", f], encoding="utf-8", stdout=sp.PIPE, stderr=sp.STDOUT)
+    cp = sp.run(
+        ["chrpath", "-l", f], encoding="utf-8", stdout=sp.PIPE, stderr=sp.STDOUT
+    )
     if cp.returncode != 0:
         if "no rpath or runpath tag found" in cp.stdout:
             print(f"No rpath or runpath tag found in {f}")
@@ -63,7 +69,7 @@ for f in files:
 
         path = ":".join(new_path)
         sp.check_call(["chrpath", "-r", path, f])
-    print("="*80)
+    print("=" * 80)
 
 # remove uses of /home/user/chapel-VERSION from chpl-deps
 # sudo find /usr/lib/chapel -type f -exec bash -c "grep -i -a -o -l /home/user/chapel-VERSION/third-party/chpl-venv/build/build-venv/bin/python3 \"{}\"" \;
@@ -77,7 +83,10 @@ if os.path.exists(folder):
             lines = fd.readlines()
         with open(f, "w") as fd:
             for line in lines:
-                line = line.replace(f"/home/user/chapel-{chapel_version}/third-party/chpl-venv/build/build-venv/bin/python3", "/usr/bin/python3")
+                line = line.replace(
+                    f"/home/user/chapel-{chapel_version}/third-party/chpl-venv/build/build-venv/bin/python3",
+                    "/usr/bin/python3",
+                )
                 fd.write(line)
         print(f"Fixed {f}")
-        print("="*80)
+        print("=" * 80)
