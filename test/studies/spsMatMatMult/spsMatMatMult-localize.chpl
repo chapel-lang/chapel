@@ -61,12 +61,13 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
   use List;
   var turnToken: atomic int;
 
+  if doCommDiags then startCommDiagnostics();
   coforall (locRow, locCol) in grid {
     on localeGrid[locRow, locCol] {
       var nnzs: list(2*int),
           vals: list(int);
 
-      if doCommDiags then startCommDiagnosticsHere();
+      //      if doCommDiags then startCommDiagnosticsHere();
       
       //      writeln("On ", here.id, " ", (locRow, locCol));
       for srcloc in 0..<locsPerDim {
@@ -126,7 +127,6 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
       }
       }
 
-      if doCommDiags then stopCommDiagnosticsHere();
 
       turnToken.waitFor(here.id);
       writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:",
@@ -134,6 +134,7 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
       turnToken.write(here.id+1);
     }
   }
+  if doCommDiags then stopCommDiagnostics();
   if doCommDiags then printCommDiagnosticsTable();
 }
 
