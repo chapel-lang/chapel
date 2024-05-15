@@ -1,8 +1,8 @@
 
 
-===========
-Portability
-===========
+=======================
+Where can I use Chapel?
+=======================
 
 Chapel is a portable language that is designed to run on a wide variety of hardware and distributed network configurations.
 
@@ -18,9 +18,9 @@ Compute Architectures
 
 * CPU
 
-  * x86
+  * x86 (Intel, AMD)
 
-  * ARM
+  * ARM (Apple M1/M2, Amazon Graviton, A64FX, Raspberry Pi, etc...)
 
 * GPU
 
@@ -31,10 +31,10 @@ Compute Architectures
 Networks
 --------
 
-* Slingshot
-* Aries
-* InfiniBand
-* Elastic Fabric Adapter (EFA)
+* HPE Cray Slingshot
+* InfiniBand (IB)
+* Cray Aries
+* Amazon Elastic Fabric Adapter (EFA)
 * Ethernet
 
 Where does Chapel run?

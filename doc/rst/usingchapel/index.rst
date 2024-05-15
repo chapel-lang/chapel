@@ -9,6 +9,7 @@ Contents:
    :maxdepth: 1
    :glob:
 
+   portability
    prereqs
    chplenv
    building
@@ -20,4 +21,3 @@ Contents:
    tasks
    debugging
    bugs
-   portability

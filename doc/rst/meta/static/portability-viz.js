@@ -40,7 +40,7 @@
           },
           {
             name: "HPE Apollo",
-            classification: ["GPU", "InfiniBand", "Slingshot"],
+            classification: ["GPU", "InfiniBand"],
           },
           {
             name: "HPE Superdome Flex",
