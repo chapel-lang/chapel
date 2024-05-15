@@ -73,7 +73,7 @@ def get_base_client() -> LanguageClient:
 
 class SourceFilesContext:
     def __init__(self, client: LanguageClient, files: typing.Dict[str, str]):
-        self.tempdir = tempfile.TemporaryDirectory(delete=False)
+        self.tempdir = tempfile.TemporaryDirectory()
         self.client = client
 
         commands = {}
