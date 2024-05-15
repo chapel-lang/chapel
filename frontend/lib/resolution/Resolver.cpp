@@ -2799,19 +2799,6 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
   r.setMostSpecific(mostSpecific);
 }
 
-static bool isCalledExpression(Resolver* rv, const AstNode* ast) {
-  if (!ast) return false;
-
-  auto p = parsing::parentAst(rv->context, ast);
-  if (!p) return false;
-
-  if (auto call = p->toCall())
-    if (auto ce = call->calledExpression())
-      return ce == ast;
-
-  return false;
-}
-
 static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
                                    const AstNode* astMention,
                                    ID idTarget) {
@@ -2833,7 +2820,11 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   if (qt.kind() == QualifiedType::PARENLESS_FUNCTION) return;
 
   bool emitUnstableAndDeprecationWarnings = true;
-  if (isCalledExpression(rv, astMention)) {
+  if (rv->nearestCalledExpression() == astMention) {
+    // Note: the above conditional assumes that the astMention is
+    // currently the thing being traversed (which is what makes
+    // nearestCalledExpression() sufficient).
+    //
     // For functions, do not warn, since call resolution will take
     // care of that.  However, if we're referring to other symbol
     // kinds, we know right now that a deprecation warning should be
