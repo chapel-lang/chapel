@@ -58,11 +58,15 @@ proc masonPublish(ref args: list(string)) throws {
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var registryArg = parser.addArgument(name="registry", numArgs=0..1);
 
+  var refreshLicenseFlag = parser.addFlag(name="refresh-licenses",
+                                          defaultValue=false);
+
   parser.parseArgs(args.toArray());
 
   try! {
     var dry = dryFlag.valueAsBool();
     var checkFlag = checkArg.valueAsBool();
+    var refreshLicenses = refreshLicenseFlag.valueAsBool();
     var registryPath = "";
     if registryArg.hasValue() then registryPath = registryArg.value();
     var username = getUsername();
@@ -78,7 +82,14 @@ proc masonPublish(ref args: list(string)) throws {
     }
     var createReg = createFlag.valueAsBool();
 
-    const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
+    const badSyntaxMessage = 'Arguments do not follow "mason publish [options] <registry>" syntax';
+
+    if refreshLicenses {
+      writeln("Force updating list of valid license names from SPDX repo...");
+      refreshLicenseList(true);
+      writeln("done updating license list");
+      exit(0);
+    }
 
     if createReg {
       var pathReg = registryPath;
@@ -661,6 +672,34 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   exit(0);
 }
 
+/*
+  update the list of valid licenses or pulls a new copy of the list if one
+  does not already exist. If overwrite is true, delete the list and pull a new
+  copy of the repo.
+*/
+proc refreshLicenseList(overwrite=false) throws {
+  const dest = MASON_HOME + '/spdx';
+  const branch = '--branch main ';
+  const depth = '--depth 1 ';
+  const url = 'https://github.com/spdx/license-list-data.git ';
+  const command = 'git clone -q ' + branch + depth + url + dest;
+  if !isDir(dest) {
+    runCommand(command);
+  } else if overwrite {
+    rmTree(dest);
+    runCommand(command);
+  }
+
+  if !isDir(dest + "/text") {
+    throw new owned MasonError("Expected to find license list data at " + dest +
+                               "/text, but location does not exist. Try running\
+                               'mason publish --refresh-licenses' to update the\
+                               license list.");
+  }
+  const licenseList = listDir(dest + "/text");
+  return licenseList;
+}
+
 /* Validate license with that of SPDX list */
 private proc checkLicense(projectHome: string) throws {
   var foundValidLicense = false;
@@ -671,14 +710,8 @@ private proc checkLicense(projectHome: string) throws {
     if tomlFile.pathExists("brick.license") {
       defaultLicense = tomlFile["brick"]!["license"]!.s;
     }
-    // git clone the SPDX repo and validate license identifier
-    const dest = MASON_HOME + '/spdx';
-    const branch = '--branch master ';
-    const depth = '--depth 1 ';
-    const url = 'https://github.com/spdx/license-list.git ';
-    const command = 'git clone -q ' + branch + depth + url + dest;
-    if !isDir(dest) then runCommand(command);
-    var licenseList = listDir(MASON_HOME + "/spdx");
+    // get the license list and validate license identifier
+    const licenseList = refreshLicenseList();
     for licenses in licenseList {
       const licenseName: string = licenses.strip('.txt', trailing=true);
       if licenseName == defaultLicense || defaultLicense == 'None' {
@@ -697,7 +730,7 @@ private proc attemptToBuild() throws {
   var sub = spawn(['mason','build','--force'], stdout=pipeStyle.pipe);
   sub.wait();
   if sub.exitCode == 1 {
-  writeln('(FAILED) Please make sure your package builds');
+    writeln('(FAILED) Please make sure your package builds');
   }
   else {
     writeln('(PASSED) Package builds successfully.');
@@ -811,7 +844,7 @@ private proc returnMasonEnv() {
 
 private proc falseIfRemotePath() {
   var registryInEnv = MASON_REGISTRY;
-  for (name, registry) in registryInEnv {
+  for (_, registry) in registryInEnv {
     if registry.find(':') != -1 {
       return false;
     }
