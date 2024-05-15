@@ -67,48 +67,12 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
       var nnzs: list(2*int),
           vals: list(int);
 
-      //      if doCommDiags then startCommDiagnosticsHere();
-      
-      //      writeln("On ", here.id, " ", (locRow, locCol));
       for srcloc in 0..<locsPerDim {
-        //        writeln("[", (locRow, locCol), "] getting A[",(locRow,srcloc),"] and B[",(srcloc, locCol),"]");
-        /* This localizes and supports local sps mat-mat mult, but doesn't
-           support indexing into sparse array
-        
-        const AremoteCSC = AD.locDoms[locRow, srcloc]!.mySparseBlock,
-              BremoteCSR = BD.locDoms[srcloc, locCol]!.mySparseBlock;
-        */
-        /*
-          This doesn't quite avoid comm, and is potentially overkill,
-          as it copies the entire per-locale class, and maybe we just
-          need the local array?  Local array refers to remote domain
-          still?
-          
-        const AremoteCSCClass = AD.locDoms[locRow, srcloc]!.localize(),
-              BremoteCSRClass = BD.locDoms[srcloc, locCol]!.localize();
-
-        const AremoteData = A.locArr[locRow, srcloc]!.localize(AremoteCSCClass),
-              BremoteData = B.locArr[srcloc, locCol]!.localize(BremoteCSRClass);
-
-        ref AremoteCSC = AremoteCSCClass.mySparseBlock,
-            BremoteCSR = BremoteCSRClass.mySparseBlock;
-        */
-
+        // Make a local copy of the remote blocks of A and B; on my branch
+        // this will also make a local copy of the remote indices, so long
+        // as these are 'const'/read-only
         const AremoteVals = A.locArr[locRow, srcloc]!.myElems,
               BremoteVals = B.locArr[srcloc, locCol]!.myElems;
-        /*
-        const AremoteCSC = AD.locDoms[locRow, srcloc]!.mySparseBlock,
-              BremoteCSR = BD.locDoms[srcloc, locCol]!.mySparseBlock;
-        */
-        /*
-        AremoteVals._value.dom = AremoteCSC._value;
-        BremoteVals._value.dom = BremoteCSR._value;
-        */
-
-        /*
-        writeln("[", here.id, "] A: ", (AremoteVals.locale, AremoteVals._value.locale, AremoteCSC.locale, AremoteCSC._value.locale));
-        writeln("[", here.id, "] B: ", (BremoteVals.locale, BremoteVals._value.locale, BremoteCSR.locale, BremoteCSR._value.locale));
-        */
         
         local {
         for ac_br in AremoteVals.domain.colRange {
