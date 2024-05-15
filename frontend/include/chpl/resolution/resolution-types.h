@@ -111,7 +111,9 @@ class UntypedFnSignature {
         defaultKind(defaultKind),
         decl(decl),
         isVarArgs(isVarArgs)
-    { }
+    {
+      CHPL_ASSERT(name != USTR("this") || defaultKind == DK_NO_DEFAULT);
+    }
 
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
