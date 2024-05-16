@@ -46,6 +46,8 @@ async def test_document_symbols(client: LanguageClient):
               proc foo(const a) { }
               record myRecord {
                 type t = int;
+                param p = 17;
+                const c: t = 18;
                 var x: t;
                 proc init() { }
                 proc foo() { }
@@ -62,28 +64,30 @@ async def test_document_symbols(client: LanguageClient):
             """
 
     symbols = [
-        (rng((0, 0), (21, 1)), "module M", SymbolKind.Module),
+        (rng((0, 0), (23, 1)), "module M", SymbolKind.Module),
         (rng((1, 8), (1, 14)), "const a = 10", SymbolKind.Constant),
         (rng((2, 6), (2, 12)), "var b = 11", SymbolKind.Variable),
-        (rng((3, 8), (3, 14)), "param c = 12", SymbolKind.Variable),
+        (rng((3, 8), (3, 14)), "param c = 12", SymbolKind.Constant),
         (rng((4, 13), (4, 19)), "config var d = 13", SymbolKind.Variable),
         (rng((5, 7), (5, 17)), "type T = string", SymbolKind.TypeParameter),
         (rng((6, 2), (6, 23)), "proc foo(const a)", SymbolKind.Function),
-        (rng((7, 2), (13, 3)), "record myRecord", SymbolKind.Struct),
+        (rng((7, 2), (15, 3)), "record myRecord", SymbolKind.Struct),
         (rng((8, 9), (8, 16)), "type t = int", SymbolKind.TypeParameter),
-        (rng((9, 8), (9, 13)), "var x: t", SymbolKind.Field),
-        (rng((10, 4), (10, 19)), "proc init()", SymbolKind.Constructor),
-        (rng((11, 4), (11, 18)), "proc foo()", SymbolKind.Method),
+        (rng((9, 10), (9, 16)), "param p = 17", SymbolKind.Constant),
+        (rng((10, 10), (10, 19)), "const c: t = 18", SymbolKind.Field),
+        (rng((11, 8), (11, 13)), "var x: t", SymbolKind.Field),
+        (rng((12, 4), (12, 19)), "proc init()", SymbolKind.Constructor),
+        (rng((13, 4), (13, 18)), "proc foo()", SymbolKind.Method),
         (
-            rng((12, 4), (12, 64)),
+            rng((14, 4), (14, 64)),
             "operator +(a: myRecord, b: myRecord): myRecord",
             SymbolKind.Operator,
         ),
-        (rng((14, 2), (14, 25)), "proc bar()", SymbolKind.Method),
-        (rng((15, 2), (15, 19)), "class MyClass", SymbolKind.Class),
-        (rng((17, 2), (20, 3)), "enum myEnum", SymbolKind.Enum),
-        (rng((18, 4), (18, 5)), "a", SymbolKind.EnumMember),
-        (rng((19, 4), (19, 5)), "b", SymbolKind.EnumMember),
+        (rng((16, 2), (16, 25)), "proc bar()", SymbolKind.Method),
+        (rng((17, 2), (17, 19)), "class MyClass", SymbolKind.Class),
+        (rng((19, 2), (22, 3)), "enum myEnum", SymbolKind.Enum),
+        (rng((20, 4), (20, 5)), "a", SymbolKind.EnumMember),
+        (rng((21, 4), (21, 5)), "b", SymbolKind.EnumMember),
     ]
 
     with source_file(client, file) as doc:
