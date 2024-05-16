@@ -28,10 +28,6 @@ class Chapel < Formula
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
   end
 
-  # Fixes: SyntaxWarning: invalid escape sequence '\d'
-  # Remove when merged: https://github.com/chapel-lang/chapel/pull/24643
-  patch :DATA
-
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
     python = "python3.12"
@@ -39,19 +35,13 @@ class Chapel < Formula
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
 
-    # TEMPORARY adds clean-cmakecache target to prevent issues where only
-    #           the first make target gets written to the proper CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    #           cmake detects a change in compilers (although the values are the same?) and
-    #           reruns configure, losing the output directory we set at configure time
-    inreplace "compiler/Makefile",
-              "all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)\n",
-              "all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)\n\n
-              clean-cmakecache: FORCE\n\trm -f $(COMPILER_BUILD)/CMakeCache.txt\n\n"
-
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
+    # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
+    ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
+
     # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
     # package should be configured to use a reasonable GCC
     (libexec/"chplconfig").write <<~EOS
@@ -71,22 +61,14 @@ class Chapel < Formula
         system "make"
       end
       with_env(CHPL_LLVM: "system") do
-        cd "compiler" do
-          system "make", "clean-cmakecache"
-        end
         system "make"
       end
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
-        cd "compiler" do
-          system "make", "clean-cmakecache"
-        end
         system "make", "chpldoc"
-      end
-      system "make", "mason"
-      with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "chplcheck"
         system "make", "chpl-language-server"
       end
+      system "make", "mason"
       system "make", "cleanall"
 
       rm_rf("third-party/llvm/llvm-src/")
@@ -127,20 +109,10 @@ class Chapel < Formula
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
     system bin/"chpldoc", "--version"
     system bin/"mason", "--version"
+
+    # Test chplcheck, if it works CLS probably does too.
+    # chpl-language-server will hang indefinitely waiting for a LSP client
+    system bin/"chplcheck", "--list-rules"
+    system bin/"chplcheck", libexec/"examples/hello.chpl"
   end
 end
-
-__END__
-diff --git a/util/chplenv/compiler_utils.py b/util/chplenv/compiler_utils.py
-index c4d683830f4c..1d1be1d55521 100644
---- a/util/chplenv/compiler_utils.py
-+++ b/util/chplenv/compiler_utils.py
-@@ -32,7 +32,7 @@ def CompVersion(version_string):
-     are not specified, 0 will be used for their value(s)
-     """
-     CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
--    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
-+    match = re.search(u"(\\d+)(\\.(\\d+))?(\\.(\\d+))?(\\.(\\d+))?", version_string)
-     if match:
-         major    = int(match.group(1))
-         minor    = int(match.group(3) or 0)
