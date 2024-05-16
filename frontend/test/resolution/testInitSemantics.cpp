@@ -1164,6 +1164,141 @@ static void testInitEqOther(void) {
   assert(ss.str() == "R(real(64))");
 }
 
+static void testInheritance() {
+  // TODO: generics
+
+  std::string parentChild = R"""(
+    class Parent {
+      var x : int;
+    }
+
+    class Child : Parent {
+      var y : string;
+    }
+  )""";
+
+  std::string grandparent = R"""(
+    class A {
+      var x : int;
+    }
+    class B : A {
+      var y : real;
+    }
+    class C : B {
+      var z : string;
+    }
+  )""";
+
+  // basic usage
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = parentChild + grandparent + R"""(
+      var a = new Child(1, "hello");
+      var b = new Child(1);
+      var c = new Child();
+
+      var d = new C(1, 42.0, "hello");
+      var e = new C(1, 42.0);
+      var f = new C(1);
+      var g = new C();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+  // named arguments
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = parentChild + grandparent + R"""(
+      var a = new Child("hello", x=1);
+      var b = new Child(x=1);
+
+      var c = new C("hello", x=1, y=42.0);
+      var d = new C(z="hello", x=1);
+      var e = new C(z="hello", y=42.0);
+      var f = new C(x=1);
+      var g = new C(y=42.0);
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+  // user-defined parent initializer
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = parentChild + R"""(
+    proc Parent.init() { this.x = 1; }
+
+    var a = new Child("hello");
+    var b = new Child();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = grandparent + R"""(
+    proc A.init() { this.x = 1; }
+
+    var a = new C(42.0, "hello");
+    var b = new C(42.0);
+    var c = new C();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = grandparent + R"""(
+    proc B.init() { this.y = 42.0; }
+
+    var a = new C("hello");
+    var b = new C();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+  // super.init example
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = grandparent + R"""(
+      proc C.init(x: int = 0, y: real = 0.0, z: string = "") {
+        super.init(x, y);
+        this.z = z;
+      }
+      var a = new C(5, 42.0, "test");
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1201,6 +1336,8 @@ int main() {
   testAssignThenInit();
 
   testInitEqOther();
+
+  testInheritance();
 
   return 0;
 }
