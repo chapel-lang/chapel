@@ -33,7 +33,7 @@ __build_apt_package() {
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
-    -f Dockerfile ..
+    -f Dockerfile ../..
   popd
 }
 
@@ -94,7 +94,7 @@ __build_apt_package_native() {
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
-    -f Dockerfile ..
+    -f Dockerfile ../..
   popd
 }
 

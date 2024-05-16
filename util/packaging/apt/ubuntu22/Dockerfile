@@ -39,8 +39,8 @@ USER user
 
 WORKDIR /home/user
 
-COPY --chown=user ./$OS_NAME/control.template /home/user/control.template
-COPY --chown=user ./common/make_dirs.py /home/user/make_dirs.py
+COPY --chown=user ./apt/$OS_NAME/control.template /home/user/control.template
+COPY --chown=user ./apt/common/make_dirs.py /home/user/make_dirs.py
 COPY --chown=user ./common/package_name.py /home/user/package_name.py
 RUN python3 make_dirs.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
 
@@ -50,7 +50,7 @@ RUN python3 fixpaths.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TAR
 USER user
 
 # copy installed files
-COPY --chown=user ./common/copy_files.py /home/user/copy_files.py
+COPY --chown=user ./apt/common/copy_files.py /home/user/copy_files.py
 RUN python3 copy_files.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
 
 WORKDIR /home/user
