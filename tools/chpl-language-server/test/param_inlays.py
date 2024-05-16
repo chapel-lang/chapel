@@ -40,9 +40,9 @@ async def client(lsp_client: LanguageClient):
 
 
 @pytest.mark.asyncio
-async def test_type_inlays_prim(client: LanguageClient):
+async def test_param_inlays_prim(client: LanguageClient):
     """
-    Ensure that type inlays are shown for primitive types.
+    Ensure that param inlays are shown.
     """
 
     file = """
@@ -78,5 +78,28 @@ async def test_type_inlays_prim(client: LanguageClient):
             client, doc, rng((0, 0), (1, 0)), [inlays[0]]
         )
 
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
+
+
+@pytest.mark.asyncio
+async def test_param_inlays_split_init(client: LanguageClient):
+    """
+    Ensure that param inlays are shown properly for split init
+    """
+
+    file = """
+            param a;
+            if false then
+              a = 10;
+            else
+              a = 20;
+           """
+
+    inlays = [(pos((0, 7)), "20")]
+    with source_file(client, file) as doc:
+        await check_param_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 0
