@@ -1,5 +1,4 @@
-use CommDiagnostics, LayoutCS, LayoutCSUtil, Random,
-    SparseBlockDistUtil, SpsMatMatUtil;
+use CommDiagnostics, Map, Random, SparseBlockDistUtil, SpsMatMatUtil;
 
 config const n = 10,
              density = 0.05,
@@ -51,8 +50,7 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
   if countComms then startCommDiagnostics();
   coforall (locRow, locCol) in grid {
     on localeGrid[locRow, locCol] {
-      var nnzs: list(2*int),
-          vals: list(int);
+      var spsData: map(2*int, int);
 
       for srcloc in 0..<locsPerDim {
         // Make a local copy of the remote blocks of A and B; on my branch
@@ -60,23 +58,17 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
         // as these are 'const'/read-only
         const Ablk = A.locArr[locRow, srcloc]!.myElems,
               Bblk = B.locArr[srcloc, locCol]!.myElems;
-        
+
         local {
-          for ac_br in Ablk.cols() {
-            for (ar, a) in Ablk.rowsAndVals(ac_br) {
-              for (bc, b) in Bblk.colsAndVals(ac_br) {
-                nnzs.pushBack((ar,bc));
-                vals.pushBack(a*b);
-              }
-            }
-          }
+          sparseMatMatMult(Ablk, Bblk, spsData);
         }
       }
 
+      var CBlk = makeSparseMat(A.domain.parentDom, spsData);
+
 
       turnToken.waitFor(here.id);
-      writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:",
-                        makeSparseMat(A.domain.parentDom, nnzs, vals));
+      writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:", CBlk);
       turnToken.write(here.id+1);
     }
   }

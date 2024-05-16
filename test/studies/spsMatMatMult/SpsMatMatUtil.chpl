@@ -1,5 +1,5 @@
 module SpsMatMatUtil {
-  use BlockDist, LayoutCS, Random;
+  use BlockDist, LayoutCS, LayoutCSUtil, Random;
 
   enum layout { CSR, CSC };
   public use layout;
@@ -19,29 +19,35 @@ module SpsMatMatUtil {
   // sparse, outer, matrix-matrix multiplication algorithm; A is assumed
   // CSC and B CSR
   //
-  // TODO: parallelize algorithm
-  //
   proc sparseMatMatMult(A, B) {
     use Map;
 
     var spsData: map(2*int, int);
+
+    sparseMatMatMult(A, B, spsData);
+
+    return makeSparseMat(A.domain.parentDom, spsData);
+  }
+
+  // TODO: parallelize algorithm
+  //
+  proc sparseMatMatMult(A, B, ref spsDataMap) {
+    use Map;
 
     for ac_br in A.cols() {
       for (ar, a) in A.rowsAndVals(ac_br) {
         for (bc, b) in B.colsAndVals(ac_br) {
           const prod = a * b;
           if prod != 0 {
-            if spsData.contains((ar,bc)) {
-              spsData[(ar, bc)] += prod;
+            if spsDataMap.contains((ar,bc)) {
+              spsDataMap[(ar, bc)] += prod;
             } else {
-              spsData.add((ar, bc), prod);
+              spsDataMap.add((ar, bc), prod);
             }
           }
         }
       }
     }
-
-    return makeSparseMat(A.domain.parentDom, spsData);
   }
 
 

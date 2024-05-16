@@ -28,7 +28,7 @@ Main Modules
   SUMMA-style sparse matrix-matrix multiplication algorithm.
   TODOs:
   - [x] work on reducing communication costs / maximizing locality
-  - [ ] make better use of local algorithm above rather than
+  - [x] make better use of local algorithm above rather than
         replicating logic
   - [ ] stitch per-node results back together into a global sparse
         array
