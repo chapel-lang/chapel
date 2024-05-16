@@ -168,6 +168,8 @@ def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     elif isinstance(decl, chapel.Variable):
         if decl.intent() == "type":
             return SymbolKind.TypeParameter
+        elif decl.intent() == "param":
+            return SymbolKind.Constant
         elif decl.is_field():
             return SymbolKind.Field
         elif decl.intent() == "<const-var>":
