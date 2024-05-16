@@ -58,7 +58,7 @@ async def test_lenses_show(client: LanguageClient):
             proc baz() { } // concrete, no lenses
             baz();
             """
-
+    # the number of lenses is the number of instances + 1 (for "show generic")
     lenses = [(pos((0, 5)), 2), (pos((3, 5)), 3)]
 
     with source_file(client, file) as doc:
