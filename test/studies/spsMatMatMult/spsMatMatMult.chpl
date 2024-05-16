@@ -1,4 +1,4 @@
-use CommDiagnostics, Map, Random, SparseBlockDistUtil, SpsMatMatUtil;
+use CommDiagnostics, SpsMatUtil;
 
 config const n = 10,
              density = 0.05,
@@ -44,13 +44,12 @@ if !skipDense {
 
 
 proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
-  use List;
   var turnToken: atomic int;
 
   if countComms then startCommDiagnostics();
   coforall (locRow, locCol) in grid {
     on localeGrid[locRow, locCol] {
-      var spsData: map(2*int, int);
+      var spsData: sparseMatDat;
 
       for srcloc in 0..<locsPerDim {
         // Make a local copy of the remote blocks of A and B; on my branch

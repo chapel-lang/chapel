@@ -8,21 +8,9 @@ feedback.
 Main Modules
 ------------
 
-* locSpsMatMatMult.chpl: This is my start at a purely local sparse
-  matrix-matrix multiplication.
-
-* SpsMatMatUtil.chpl: This is a utility module used by the above,
-  which contains most of the key code; going forward, the intent is to
-  have spsMatMatMult.chpl will use it as well.
-
-  TODOs:
-  - [ ] use multicore parallelism
-  - [ ] consider alternative approaches to accumulating nonzeroes:
-        * Engin's createIndexBuffer() helper
-        * index -> value map?
-        * task-private accumulators
-  - [ ] look at tuning operations not on critical path (e.g., matrix
-        output, setup, ...)
+* locSpsMatMatMult.chpl: This is a driver for my purely local sparse
+  matrix-matrix multiplication routine, defined in SpsMatMatUtil.chpl
+  below.
 
 * spsMatMatMult.chpl: This is my start at a Block-distributed
   SUMMA-style sparse matrix-matrix multiplication algorithm.
@@ -40,14 +28,25 @@ Main Modules
 Helper Modules
 --------------
 
+* SpsMatMatUtil.chpl: This is a utility module used by the above,
+  which contains routines to generate sparse matrices, print them, as
+  well as purely local/trivial sparse and dense matrix multiplication
+  routines.
+
+  TODOs:
+  - [ ] use multicore parallelism for sparse mat-mat mult
+  - [ ] consider alternative approaches to accumulating nonzeroes:
+        * Engin's createIndexBuffer() helper
+        * index -> value map?
+        * task-private accumulators
+  - [ ] look at tuning operations not on critical path (e.g., matrix
+        output, setup, ...)
+
 * LayoutCSUtil.chpl: In working on this, I found myself wanting
   2D-specific / CSR-/CSC-specific helper routines from the CSC/R
   layout, so started implementing them in this helper module; we
   could/should consider merging these back into the main LayoutCS.chpl
   file.
-
-* SparseBlockDistUtil.chpl: Similar, but for the sparse Block
-  distribution.
 
 
 Other Files

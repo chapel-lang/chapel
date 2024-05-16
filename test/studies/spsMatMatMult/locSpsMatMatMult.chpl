@@ -1,4 +1,4 @@
-use LayoutCSUtil, SpsMatMatUtil;
+use SpsMatUtil;
 
 config const n = 10,
              density = 0.05,

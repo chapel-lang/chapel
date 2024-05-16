@@ -1,5 +1,5 @@
-module SpsMatMatUtil {
-  use BlockDist, LayoutCS, LayoutCSUtil, Random;
+module SpsMatUtil {
+  use BlockDist, LayoutCS, LayoutCSUtil, Map, Random;
 
   enum layout { CSR, CSC };
   public use layout;
@@ -15,14 +15,15 @@ module SpsMatMatUtil {
   if printSeed then
     writeln("Using seed: ", rands.seed);
 
+  record sparseMatDat {
+    forwarding var m: map(2*int, int);
+  }
 
   // sparse, outer, matrix-matrix multiplication algorithm; A is assumed
   // CSC and B CSR
   //
   proc sparseMatMatMult(A, B) {
-    use Map;
-
-    var spsData: map(2*int, int);
+    var spsData: sparseMatDat;
 
     sparseMatMatMult(A, B, spsData);
 
@@ -32,8 +33,6 @@ module SpsMatMatUtil {
   // TODO: parallelize algorithm
   //
   proc sparseMatMatMult(A, B, ref spsDataMap) {
-    use Map;
-
     for ac_br in A.cols() {
       for (ar, a) in A.rowsAndVals(ac_br) {
         for (bc, b) in B.colsAndVals(ac_br) {
@@ -57,11 +56,9 @@ module SpsMatMatUtil {
   // be expensive.
   //
   proc denseMatMatMult(A, B) {
-    use Map;
-
     const n = A.dim(0).size;
     
-    var spsData: map(2*int, int);
+    var spsData: sparseMatDat;
   
     for i in 1..n {
       for j in 1..n {
