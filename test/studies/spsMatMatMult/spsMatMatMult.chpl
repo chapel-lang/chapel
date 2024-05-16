@@ -1,23 +1,10 @@
-use BlockDist, CommDiagnostics, LayoutCS, LayoutCSUtil, Random,
-    SparseBlockDistUtil;
-
-enum layout { CSR, CSC };
-use layout;
+use CommDiagnostics, LayoutCS, LayoutCSUtil, Random,
+    SparseBlockDistUtil, SpsMatMatUtil;
 
 config const n = 10,
              density = 0.05,
-             seed = 0,
-             printSeed = seed == 0,
              skipDense = false,
              countComms = false;
-
-var rands = if seed == 0 then new randomStream(real)
-                         else new randomStream(real, seed);
-
-// print library-selected seed, for reproducibility
-if printSeed then
-  writeln("Using seed: ", rands.seed);
-
 
 const locsPerDim = sqrt(numLocales:real): int,
       grid = {0..<locsPerDim, 0..<locsPerDim},
@@ -89,7 +76,7 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
 
       turnToken.waitFor(here.id);
       writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:",
-                        makeSparseMat(nnzs, vals));
+                        makeSparseMat(A.domain.parentDom, nnzs, vals));
       turnToken.write(here.id+1);
     }
   }
@@ -97,90 +84,4 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
     stopCommDiagnostics();
     printCommDiagnosticsTable();
   }
-}
-
-
-proc SparseMatMatMult(A: [?AD], B: [?BD]) {
-  use List;
-
-  var nnzs: list(2*int),
-      vals: list(int);
-
-  for ac_br in AD.cols() {
-    for (ar, a) in A.rowsAndVals(ac_br) {
-      for (bc, b) in B.colsAndVals(ac_br) {
-        nnzs.pushBack((ar,bc));
-        vals.pushBack(a*b);
-      }
-    }
-  }
-
-  return makeSparseMat(nnzs, vals);
-}
-
-
-proc DenseMatMatMult(A, B) {
-  use List;
-
-  var nnzs: list(2*int),
-      vals: list(int);
-
-  for i in 1..n {
-    for k in 1..n {
-      for j in 1..n {
-        var prod = A[i,k] * B[k,j];
-        if prod != 0 {
-          nnzs.pushBack((i,j));
-          vals.pushBack(prod);
-        }
-      }
-    }
-  }
-
-  return makeSparseMat(nnzs, vals);
-}
-
-
-proc randSparseMatrix(Dom, density, param lay, locGrid) {
-  type layoutType = CS(compressRows=(lay==CSR));
-  const DenseBlockDom = Dom dmapped new blockDist(boundingBox=Dom,
-                                                  targetLocales=locGrid,
-                                                  sparseLayoutType=layoutType);
-  var SD: sparse subdomain(DenseBlockDom);
-
-  for (i,j) in Dom do
-    if rands.next() <= density then
-      SD += (i,j);
-
-  return SD;
-}
-
-
-proc writeSparseMatrix(msg, Arr) {
-  const ref SparseDom = Arr.domain,
-            DenseDom = SparseDom.parentDom;
-
-  writeln(msg);
-
-  for r in DenseDom.dim(0) {
-    for c in DenseDom.dim(1) {
-      write(Arr[r,c], " ");
-    }
-    writeln();
-  }
-  writeln();    
-}
-
-
-
-
-proc makeSparseMat(nnzs, vals) {
-  var CDom: sparse subdomain(A.domain.parentDom);
-  for ij in nnzs do
-    CDom += ij;
-
-  var C: [CDom] int;
-  for (ij, c) in zip(nnzs, vals) do
-    C[ij] += c;
-  return C;
 }

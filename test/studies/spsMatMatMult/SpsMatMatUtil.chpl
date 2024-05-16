@@ -1,5 +1,5 @@
 module SpsMatMatUtil {
-  use LayoutCS, Random;
+  use BlockDist, LayoutCS, Random;
 
   enum layout { CSR, CSC };
   public use layout;
@@ -73,11 +73,30 @@ module SpsMatMatUtil {
   }
 
 
-  // create a random sparse matrix within the space of 'Dom' of the
-  // given density and layout
+  // create a local random sparse matrix within the space of 'Dom' of
+  // the given density and layout
   //
   proc randSparseMatrix(Dom, density, param layout) {
     var SD: sparse subdomain(Dom) dmapped CS(compressRows=(layout==CSR));
+
+    for (i,j) in Dom do
+      if rands.next() <= density then
+        SD += (i,j);
+
+    return SD;
+  }
+
+
+  // create a block-distributed random sparse matrix within the space
+  // of 'Dom' of the given density and layout
+  //
+  proc randSparseMatrix(Dom, density, param layout, targetLocales) {
+    type layoutType = CS(compressRows=(layout==CSR));
+    const DenseBlkDom = Dom dmapped new blockDist(boundingBox=Dom,
+                                                  targetLocales=targetLocales,
+                                                  sparseLayoutType=layoutType);
+
+    var SD: sparse subdomain(DenseBlkDom);
 
     for (i,j) in Dom do
       if rands.next() <= density then
