@@ -70,7 +70,7 @@ async def test_deprecations(client: LanguageClient):
            var a = 10;
            var b = a;
            """
-    async with source_file(client, file) as doc:
+    async with source_file(client, file, None) as doc:
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 1
         assert "deprecated" in client.diagnostics[doc.uri][0].message
@@ -85,7 +85,7 @@ async def test_syntax_errors(client: LanguageClient):
            var a = 10
            var b = a;
            """
-    async with source_file(client, file) as doc:
+    async with source_file(client, file, None) as doc:
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 1
         assert "Syntax: " in client.diagnostics[doc.uri][0].message

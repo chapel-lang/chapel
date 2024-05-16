@@ -46,7 +46,7 @@ async def test_go_to_record_def(client: LanguageClient):
            var z = y;
            """
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
@@ -66,7 +66,7 @@ async def test_string(client: LanguageClient):
            var x = "hello";
            """
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         string_loc = internal_module("String")
         await check_goto_type_def(
             client, doc, pos((0, 4)), string_loc, "record _string"

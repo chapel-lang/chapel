@@ -90,7 +90,7 @@ async def test_document_symbols(client: LanguageClient):
         (rng((21, 4), (21, 5)), "b", SymbolKind.EnumMember),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_symbol_information(client, doc, symbols)
 
 
@@ -108,7 +108,7 @@ async def test_document_symbols_var(client: LanguageClient):
         (rng((0, 0), (0, 10)), "var x = 10", SymbolKind.Variable),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_symbol_information(client, doc, symbols)
 
 
@@ -124,7 +124,7 @@ async def test_document_symbols_deprecated(client: LanguageClient):
 
     symbols = [(rng((1, 4), (1, 10)), "var x = 10", SymbolKind.Variable)]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         symbols = await check_symbol_information(client, doc, symbols)
         assert len(symbols) == 1
         assert symbols[0].deprecated
@@ -144,5 +144,5 @@ async def test_document_symbols_nested(client: LanguageClient):
 
     symbols = [(rng((0, 0), (3, 1)), "proc foo()", SymbolKind.Function)]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_symbol_information(client, doc, symbols)

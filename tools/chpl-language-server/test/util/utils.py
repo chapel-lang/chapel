@@ -126,7 +126,7 @@ class SourceFileContext:
         main_file: str,
         client: LanguageClient,
         files: typing.Dict[str, str],
-        num_errors: typing.Optional[int] = None,
+        num_errors: typing.Optional[int],
     ):
         self.main_file = main_file
         self.source_files_context = SourceFilesContext(client, files)
@@ -162,15 +162,13 @@ def source_files(client: LanguageClient, **files: str):
 def source_file(
     client: LanguageClient,
     contents: str,
-    num_errors: typing.Optional[int] = None,
+    num_errors: typing.Optional[int] = 0,
 ):
     """
     Context manager that creates a temporary directory and populates
     it with the given file. Yields the path to the file.
     """
-    return SourceFileContext(
-        "main", client, {"main": contents}, num_errors=num_errors
-    )
+    return SourceFileContext("main", client, {"main": contents}, num_errors)
 
 
 def source_files_dict(client: LanguageClient, files: typing.Dict[str, str]):

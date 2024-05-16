@@ -61,7 +61,7 @@ async def test_lenses_show(client: LanguageClient):
     # the number of lenses is the number of instances + 1 (for "show generic")
     lenses = [(pos((0, 5)), 2), (pos((3, 5)), 3)]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_generic_code_lenses(client, doc, lenses)
 
 
@@ -119,7 +119,7 @@ async def test_lenses_switch(client: LanguageClient):
         int_inlays,
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         actual_lenses = await check_generic_code_lenses(
             client, doc, [expected_lens]
         )

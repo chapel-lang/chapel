@@ -65,7 +65,7 @@ async def test_symbol_highlight(client: LanguageClient):
             foo(symbol);
             """
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         expected = [
             rng((0, 4), (0, 10)),
             rng((1, 13), (1, 19)),

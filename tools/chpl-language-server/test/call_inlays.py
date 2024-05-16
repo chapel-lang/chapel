@@ -70,7 +70,7 @@ async def test_call_inlays(client: LanguageClient):
         (pos((11, 4)), "a = ", None),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
 
 
@@ -88,7 +88,7 @@ async def test_call_inlays_complex(client: LanguageClient):
 
     inlays = [(pos((1, 4)), "a = ", None)]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
 
 
@@ -114,7 +114,7 @@ async def test_nested_call_inlays(client: LanguageClient):
         (pos((5, 16)), "a = ", None),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
 
 
@@ -143,7 +143,7 @@ async def test_call_inlays_generic(client: LanguageClient):
         (pos((5, 15)), "a = ", None),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
 
 
@@ -163,7 +163,7 @@ async def test_call_inlays_in_range(client: LanguageClient):
 
     inlays = [(pos((2, 4)), "a = ", None), (pos((3, 4)), "a = ", None)]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         # check all inlays
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
         # check only the first inlay

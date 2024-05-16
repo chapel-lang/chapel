@@ -54,7 +54,7 @@ async def test_global_completion(client: LanguageClient):
 
     global_symbols = ["here", "strideKind", "boundKind", "Locales"]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         for position in positions:
             results = await client.text_document_completion_async(
                 params=CompletionParams(position=position, text_document=doc)
@@ -88,7 +88,7 @@ async def test_go_to_definition_simple(client: LanguageClient):
            }
            """
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         # Definitions link to themselves
         await check_goto_decl_def(client, doc, pos((0, 4)), pos((0, 4)))
         await check_goto_decl_def(client, doc, pos((1, 4)), pos((1, 4)))
@@ -132,7 +132,7 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
     mod_Map = standard_module("Map")
     mod_Time = standard_module("Time")
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((1, 4)), mod_List)
@@ -156,7 +156,7 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
     mod_IO = standard_module("IO")
     mod_List = standard_module("List")
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((0, 10)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((1, 7)), mod_IO)
@@ -184,7 +184,7 @@ async def test_go_to_record_def(client: LanguageClient):
            var y = new myRec();
            """
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
@@ -202,7 +202,7 @@ async def test_go_to_string_type(client: LanguageClient):
 
     mod_String = internal_module("String")
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_goto_decl_def(
             client, doc, pos((0, 7)), mod_String, expect_str="record _string"
         )
@@ -228,7 +228,7 @@ async def test_list_references(client: LanguageClient):
            }
            """
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         # 'find references' on definitions;
         # the cross checking will also validate the references.
         await check_references_and_cross_check(
@@ -309,7 +309,7 @@ async def test_list_references_standard(client: LanguageClient):
            type myType = ioMode;
            """
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         references = await client.text_document_references_async(
             params=ReferenceParams(
                 text_document=doc,

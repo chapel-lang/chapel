@@ -68,7 +68,7 @@ async def test_param_inlays_prim(client: LanguageClient):
         (pos((10, 7)), '"hello"'),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_param_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
@@ -94,7 +94,7 @@ async def test_param_inlays_split_init(client: LanguageClient):
            """
 
     inlays = [(pos((0, 7)), "20")]
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_param_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )

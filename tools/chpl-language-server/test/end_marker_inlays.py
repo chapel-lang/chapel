@@ -63,7 +63,7 @@ async def test_end_markers_functions(client: LanguageClient):
         (pos((8, 3)), "proc nested()"),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
@@ -103,7 +103,7 @@ async def test_end_markers_named_decl(client: LanguageClient):
         (pos((17, 1)), "module M"),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
@@ -129,7 +129,7 @@ async def test_end_markers_select(client: LanguageClient):
 
     inlays = [(pos((8, 3)), "when 20"), (pos((9, 1)), "select x")]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
@@ -168,7 +168,7 @@ async def test_end_markers_loops(client: LanguageClient):
         (pos((17, 1)), "forall i in 1..10"),
     ]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
@@ -188,7 +188,7 @@ async def test_end_markers_blocks(client: LanguageClient):
 
     inlays = [(pos((3, 1)), "on Locale[0]")]
 
-    async with source_file(client, file, 0) as doc:
+    async with source_file(client, file) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
