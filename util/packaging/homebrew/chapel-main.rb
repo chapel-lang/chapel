@@ -39,6 +39,9 @@ class Chapel < Formula
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
+    # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
+    ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
+
     # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
     # package should be configured to use a reasonable GCC
     (libexec/"chplconfig").write <<~EOS
@@ -58,19 +61,10 @@ class Chapel < Formula
         system "make"
       end
       with_env(CHPL_LLVM: "system") do
-        cd "compiler" do
-          system "make", "clean-cmakecache"
-        end
         system "make"
       end
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
-        cd "compiler" do
-          system "make", "clean-cmakecache"
-        end
         system "make", "chpldoc"
-        cd "compiler" do
-          system "make", "clean-cmakecache"
-        end
         system "make", "chplcheck"
         system "make", "chpl-language-server"
       end
