@@ -68,7 +68,7 @@ async def test_param_inlays_prim(client: LanguageClient):
         (pos((10, 7)), '"hello"'),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_param_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
@@ -77,9 +77,6 @@ async def test_param_inlays_prim(client: LanguageClient):
         await check_param_inlay_hints(
             client, doc, rng((0, 0), (1, 0)), [inlays[0]]
         )
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -97,9 +94,7 @@ async def test_param_inlays_split_init(client: LanguageClient):
            """
 
     inlays = [(pos((0, 7)), "20")]
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_param_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0

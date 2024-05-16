@@ -4,6 +4,7 @@ import os
 import tempfile
 import typing
 from collections.abc import Sequence
+import functools
 
 from lsprotocol.types import (
     DefinitionParams,
@@ -98,7 +99,12 @@ class SourceFilesContext:
         with open(commandspath, "w") as f:
             json.dump(commands, f)
 
-    def __enter__(self):
+    def _get_doc(self, name: str) -> TextDocumentIdentifier:
+        return TextDocumentIdentifier(
+            uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}"
+        )
+
+    async def __aenter__(self):
         self.tempdir.__enter__()
 
         # Let the client know we added a new workspace folder.
@@ -108,11 +114,9 @@ class SourceFilesContext:
         params = DidChangeWorkspaceFoldersParams(event=event)
         self.client.workspace_did_change_workspace_folders(params)
 
-        return lambda name: TextDocumentIdentifier(
-            uri=f"file://{os.path.join(self.tempdir.name, name + '.chpl')}"
-        )
+        return functools.partial(self._get_doc)
 
-    def __exit__(self, *exc):
+    async def __aexit__(self, *exc):
         return self.tempdir.__exit__(*exc)
 
 
@@ -122,15 +126,24 @@ class SourceFileContext:
         main_file: str,
         client: LanguageClient,
         files: typing.Dict[str, str],
+        num_errors: typing.Optional[int] = None,
     ):
         self.main_file = main_file
         self.source_files_context = SourceFilesContext(client, files)
+        self.num_errors = num_errors
 
-    def __enter__(self):
-        return self.source_files_context.__enter__()(self.main_file)
+    async def __aenter__(self):
+        doc = await self.source_files_context.__aenter__()
+        return doc(self.main_file)
 
-    def __exit__(self, *exc):
-        return self.source_files_context.__exit__(*exc)
+    async def __aexit__(self, *exc):
+        if self.num_errors is not None:
+            client = self.source_files_context.client
+            doc = self.source_files_context._get_doc(self.main_file)
+            await save_file(client, doc)
+            assert len(client.diagnostics[doc.uri]) == 0
+
+        return await self.source_files_context.__aexit__(*exc)
 
 
 def source_files(client: LanguageClient, **files: str):
@@ -146,12 +159,18 @@ def source_files(client: LanguageClient, **files: str):
     return SourceFilesContext(client, files)
 
 
-def source_file(client: LanguageClient, contents: str):
+def source_file(
+    client: LanguageClient,
+    contents: str,
+    num_errors: typing.Optional[int] = None,
+):
     """
     Context manager that creates a temporary directory and populates
     it with the given file. Yields the path to the file.
     """
-    return SourceFileContext("main", client, {"main": contents})
+    return SourceFileContext(
+        "main", client, {"main": contents}, num_errors=num_errors
+    )
 
 
 def source_files_dict(client: LanguageClient, files: typing.Dict[str, str]):
@@ -436,7 +455,7 @@ async def check_references_and_cross_check(
     client: LanguageClient,
     doc: TextDocumentIdentifier,
     src: Position,
-    dsts: typing.List[DestinationTestType],
+    dsts: Sequence[DestinationTestType],
 ):
     """
     Does two things:

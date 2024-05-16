@@ -50,7 +50,7 @@ async def test_incorrect_cross_file_diagnostics(client: LanguageClient):
             writeln(x);
             """
 
-    with source_files(client, A=fileA, B=fileB) as docs:
+    async with source_files(client, A=fileA, B=fileB) as docs:
         await save_file(client, docs("B"), docs("A"))
         assert len(client.diagnostics[docs("A").uri]) == 0
         assert len(client.diagnostics[docs("B").uri]) == 1
@@ -70,7 +70,7 @@ async def test_deprecations(client: LanguageClient):
            var a = 10;
            var b = a;
            """
-    with source_file(client, file) as doc:
+    async with source_file(client, file) as doc:
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 1
         assert "deprecated" in client.diagnostics[doc.uri][0].message
@@ -85,7 +85,7 @@ async def test_syntax_errors(client: LanguageClient):
            var a = 10
            var b = a;
            """
-    with source_file(client, file) as doc:
+    async with source_file(client, file) as doc:
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 1
         assert "Syntax: " in client.diagnostics[doc.uri][0].message

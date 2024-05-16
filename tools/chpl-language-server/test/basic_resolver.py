@@ -46,15 +46,12 @@ async def test_go_to_record_def(client: LanguageClient):
            var z = y;
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
         await check_goto_type_def(client, doc, pos((2, 4)), pos((0, 7)))
         await check_goto_type_def(client, doc, pos((3, 9)), pos((0, 7)))
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -69,7 +66,7 @@ async def test_string(client: LanguageClient):
            var x = "hello";
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         string_loc = internal_module("String")
         await check_goto_type_def(
             client, doc, pos((0, 4)), string_loc, "record _string"
@@ -77,6 +74,3 @@ async def test_string(client: LanguageClient):
         await check_goto_type_def(
             client, doc, pos((0, 12)), string_loc, "record _string"
         )
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0

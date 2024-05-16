@@ -70,10 +70,8 @@ async def test_call_inlays(client: LanguageClient):
         (pos((11, 4)), "a = ", None),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -90,10 +88,8 @@ async def test_call_inlays_complex(client: LanguageClient):
 
     inlays = [(pos((1, 4)), "a = ", None)]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -118,10 +114,8 @@ async def test_nested_call_inlays(client: LanguageClient):
         (pos((5, 16)), "a = ", None),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -149,10 +143,8 @@ async def test_call_inlays_generic(client: LanguageClient):
         (pos((5, 15)), "a = ", None),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -171,7 +163,7 @@ async def test_call_inlays_in_range(client: LanguageClient):
 
     inlays = [(pos((2, 4)), "a = ", None), (pos((3, 4)), "a = ", None)]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         # check all inlays
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
         # check only the first inlay
@@ -184,5 +176,3 @@ async def test_call_inlays_in_range(client: LanguageClient):
         )
         # check no inlays
         await check_inlay_hints(client, doc, rng((0, 0), pos((1, 0))), [])
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0

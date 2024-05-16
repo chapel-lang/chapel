@@ -54,7 +54,7 @@ async def test_global_completion(client: LanguageClient):
 
     global_symbols = ["here", "strideKind", "boundKind", "Locales"]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         for position in positions:
             results = await client.text_document_completion_async(
                 params=CompletionParams(position=position, text_document=doc)
@@ -69,9 +69,6 @@ async def test_global_completion(client: LanguageClient):
 
             for symbol in global_symbols:
                 assert symbol in result_names
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -91,7 +88,7 @@ async def test_go_to_definition_simple(client: LanguageClient):
            }
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         # Definitions link to themselves
         await check_goto_decl_def(client, doc, pos((0, 4)), pos((0, 4)))
         await check_goto_decl_def(client, doc, pos((1, 4)), pos((1, 4)))
@@ -116,9 +113,6 @@ async def test_go_to_definition_simple(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((0, 13)), None)
         await check_goto_decl_def(client, doc, pos((4, 10)), None)
 
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
-
 
 @pytest.mark.asyncio
 async def test_go_to_definition_use_standard(client: LanguageClient):
@@ -138,15 +132,12 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
     mod_Map = standard_module("Map")
     mod_Time = standard_module("Time")
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((1, 4)), mod_List)
         await check_goto_decl_def_module(client, doc, pos((1, 10)), mod_Map)
         await check_goto_decl_def_module(client, doc, pos((2, 8)), mod_Time)
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -165,7 +156,7 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
     mod_IO = standard_module("IO")
     mod_List = standard_module("List")
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_goto_decl_def_module(client, doc, pos((0, 4)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((0, 10)), mod_IO)
         await check_goto_decl_def_module(client, doc, pos((1, 7)), mod_IO)
@@ -180,9 +171,6 @@ async def test_go_to_definition_standard_rename(client: LanguageClient):
             client, doc, pos((2, 14)), mod_List, expect_str="record list"
         )
 
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
-
 
 @pytest.mark.asyncio
 async def test_go_to_record_def(client: LanguageClient):
@@ -196,13 +184,10 @@ async def test_go_to_record_def(client: LanguageClient):
            var y = new myRec();
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((1, 7)), pos((0, 7)))
         await check_goto_decl_def(client, doc, pos((2, 12)), pos((0, 7)))
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -217,13 +202,10 @@ async def test_go_to_string_type(client: LanguageClient):
 
     mod_String = internal_module("String")
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_goto_decl_def(
             client, doc, pos((0, 7)), mod_String, expect_str="record _string"
         )
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -246,7 +228,7 @@ async def test_list_references(client: LanguageClient):
            }
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         # 'find references' on definitions;
         # the cross checking will also validate the references.
         await check_references_and_cross_check(
@@ -270,9 +252,6 @@ async def test_list_references(client: LanguageClient):
         await check_references_and_cross_check(
             client, doc, pos((8, 13)), [pos((8, 13))]
         )
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -300,7 +279,7 @@ async def test_list_references_across_files(client: LanguageClient):
               var z = x;
             }
             """
-    with source_files(client, A=fileA, B=fileB, C=fileC) as docs:
+    async with source_files(client, A=fileA, B=fileB, C=fileC) as docs:
         all_refs = [
             (docs("A"), pos((1, 6))),
             (docs("B"), pos((3, 10))),
@@ -330,7 +309,7 @@ async def test_list_references_standard(client: LanguageClient):
            type myType = ioMode;
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         references = await client.text_document_references_async(
             params=ReferenceParams(
                 text_document=doc,

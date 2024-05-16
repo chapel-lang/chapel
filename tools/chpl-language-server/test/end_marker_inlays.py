@@ -63,12 +63,10 @@ async def test_end_markers_functions(client: LanguageClient):
         (pos((8, 3)), "proc nested()"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -105,12 +103,10 @@ async def test_end_markers_named_decl(client: LanguageClient):
         (pos((17, 1)), "module M"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -133,12 +129,10 @@ async def test_end_markers_select(client: LanguageClient):
 
     inlays = [(pos((8, 3)), "when 20"), (pos((9, 1)), "select x")]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -174,12 +168,10 @@ async def test_end_markers_loops(client: LanguageClient):
         (pos((17, 1)), "forall i in 1..10"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -196,9 +188,7 @@ async def test_end_markers_blocks(client: LanguageClient):
 
     inlays = [(pos((3, 1)), "on Locale[0]")]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_end_marker_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0

@@ -61,10 +61,8 @@ async def test_lenses_show(client: LanguageClient):
     # the number of lenses is the number of instances + 1 (for "show generic")
     lenses = [(pos((0, 5)), 2), (pos((3, 5)), 3)]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_generic_code_lenses(client, doc, lenses)
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -121,7 +119,7 @@ async def test_lenses_switch(client: LanguageClient):
         int_inlays,
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         actual_lenses = await check_generic_code_lenses(
             client, doc, [expected_lens]
         )
@@ -156,6 +154,3 @@ async def test_lenses_switch(client: LanguageClient):
                 await check_inlay_hints(
                     client, doc, rng((0, 0), endpos(file)), inlays
                 )
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0

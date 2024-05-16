@@ -65,8 +65,7 @@ async def test_symbol_highlight(client: LanguageClient):
             foo(symbol);
             """
 
-    with source_file(client, file) as doc:
-
+    async with source_file(client, file, 0) as doc:
         expected = [
             rng((0, 4), (0, 10)),
             rng((1, 13), (1, 19)),
@@ -77,6 +76,3 @@ async def test_symbol_highlight(client: LanguageClient):
         await check_symbol_highlight(client, doc, pos((0, 4)), expected)
         await check_symbol_highlight(client, doc, pos((0, 7)), expected)
         await check_symbol_highlight(client, doc, pos((0, 10)), expected)
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0

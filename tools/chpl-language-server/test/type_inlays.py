@@ -72,7 +72,7 @@ async def test_type_inlays_prim(client: LanguageClient):
         (pos((8, 5)), "real(64)"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
@@ -81,9 +81,6 @@ async def test_type_inlays_prim(client: LanguageClient):
         await check_type_inlay_hints(
             client, doc, rng((0, 0), (3, 0)), inlays[:2]
         )
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -130,7 +127,7 @@ async def test_type_inlays_user_defined_types(client: LanguageClient):
     variants = [("record", ""), ("class", "owned ")]
 
     for at, management in variants:
-        with source_file(client, file.format(at=at)) as doc:
+        async with source_file(client, file.format(at=at)) as doc:
             inlays = [
                 (pos, typename.format(m=management))
                 for pos, typename in inlay_pos
@@ -168,12 +165,10 @@ async def test_type_inlays_tuple(client: LanguageClient):
         (pos((5, 13)), "(int(64), int(64))"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -211,12 +206,10 @@ async def test_type_inlays_range(client: LanguageClient):
         (pos((10, 7)), "range(int(32), boundKind.both, strideKind.one)"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -237,12 +230,10 @@ async def test_type_inlays_arrays(client: LanguageClient):
         (pos((2, 5)), "[1..10] real(64)"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -263,12 +254,10 @@ async def test_type_inlays_domains(client: LanguageClient):
         (pos((2, 5)), "domain(1, int(64), strideKind.one)"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -293,12 +282,10 @@ async def test_type_inlays_loops(client: LanguageClient):
         (pos((4, 2)), "int(64)"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -321,12 +308,10 @@ async def test_type_inlays_return(client: LanguageClient):
         (pos((5, 5)), "int(64)"),
     ]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -347,12 +332,10 @@ async def test_type_inlays_yield(client: LanguageClient):
 
     inlays = [(pos((5, 5)), "[domain(1, int(64), strideKind.one)] int(64)")]
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), inlays
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -367,7 +350,7 @@ async def test_type_inlays_clickable_def(client: LanguageClient):
             var x = new R();
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         inlays = await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [(pos((2, 5)), "R")]
         )
@@ -381,9 +364,6 @@ async def test_type_inlays_clickable_def(client: LanguageClient):
         assert loc.uri == doc.uri
         assert loc.range == rng((0, 7), (0, 8))
 
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
-
 
 @pytest.mark.asyncio
 @pytest.mark.xfail
@@ -396,7 +376,7 @@ async def test_type_inlays_hover_string(client: LanguageClient):
             var s = "hello";
            """
 
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         inlays = await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [(pos((0, 5)), "string")]
         )
@@ -414,9 +394,6 @@ async def test_type_inlays_hover_string(client: LanguageClient):
             params=HoverParams(internal_module("String"), loc.range.start)
         )
         assert hover is not None
-
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -441,7 +418,7 @@ async def test_type_implicit_this(client: LanguageClient):
     variants = [("record", "C"), ("class", "borrowed C")]
 
     for at, typename in variants:
-        with source_file(client, file.format(at)) as doc:
+        async with source_file(client, file.format(at)) as doc:
             await check_type_inlay_hints(
                 client,
                 doc,
@@ -474,12 +451,10 @@ async def test_split_init_type_inlays(client: LanguageClient):
            """
 
     y_inlay = (pos((10, 5)), "Generic(int)")
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [y_inlay]
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0
 
 
 @pytest.mark.asyncio
@@ -494,9 +469,7 @@ async def test_type_inlay_type_variable(client: LanguageClient):
            """
 
     y_inlay = (pos((1, 6)), "int(64)")
-    with source_file(client, file) as doc:
+    async with source_file(client, file, 0) as doc:
         await check_type_inlay_hints(
             client, doc, rng((0, 0), endpos(file)), [y_inlay]
         )
-        await save_file(client, doc)
-        assert len(client.diagnostics[doc.uri]) == 0

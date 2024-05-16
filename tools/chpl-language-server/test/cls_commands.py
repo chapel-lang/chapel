@@ -68,7 +68,7 @@ async def test_list_references_across_dirs(client: LanguageClient):
               var z = x;
             }
             """
-    with source_files_dict(
+    async with source_files_dict(
         client,
         {
             "Main": fileMain,
