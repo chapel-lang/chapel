@@ -154,6 +154,7 @@ async def test_type_inlays_tuple(client: LanguageClient):
             var b = ((10:uint(8), ""), new R());
             var c = b;
             var (d, f) = (1, (2.0, new R()));
+            var (e, (g, h)) = (false, (new R(), a));
            """
 
     inlays = [
@@ -162,6 +163,9 @@ async def test_type_inlays_tuple(client: LanguageClient):
         (pos((3, 5)), "((uint(8), string), R)"),
         (pos((4, 6)), "int(64)"),
         (pos((4, 9)), "(real(64), R)"),
+        (pos((5, 6)), "bool"),
+        (pos((5, 10)), "R"),
+        (pos((5, 13)), "(int(64), int(64))"),
     ]
 
     with source_file(client, file) as doc:
