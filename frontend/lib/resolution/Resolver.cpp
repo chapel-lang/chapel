@@ -2722,13 +2722,13 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
 void Resolver::validateAndSetToId(ResolvedExpression& r,
                                   const AstNode* node,
-                                  const ID& id) {
-  r.setToId(id);
-  if (id.isEmpty()) return;
-  if (id.isFabricatedId()) return;
+                                  const ID& toId) {
+  r.setToId(toId);
+  if (toId.isEmpty()) return;
+  if (toId.isFabricatedId()) return;
 
   // Validate the newly set to ID.
-  auto idTag = parsing::idToTag(context, id);
+  auto idTag = parsing::idToTag(context, toId);
 
   // It shouldn't refer to a module unless the node is an identifier in one of
   // the places where module references are allowed (e.g. imports).
@@ -2741,7 +2741,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
           asttags::isDot(parentTag)) {
         // OK
       } else {
-        auto toAst = parsing::idToAst(context, id);
+        auto toAst = parsing::idToAst(context, toId);
         auto mod = toAst->toModule();
         auto parentAst = parsing::idToAst(context, parentId);
         CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
@@ -2750,33 +2750,32 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   }
 
   // If we're in a nested class, it shouldn't refer to an outer class' field.
-  auto scope = scopeForId(context, id);
-  auto parentId = scope->id();
+  auto parentId =
+    Builder::astTagIndicatesNewIdScope(idTag) ? toId : toId.parentSymbolId(context);
   auto parentTag = parsing::idToTag(context, parentId);
   if (asttags::isAggregateDecl(parentTag) &&
       parentId.contains(node->id()) &&
-      parentId != id /* It's okay to refer to the record itself */) {
+      parentId != toId /* It's okay to refer to the record itself */) {
     // Referring to a field of a class that's surrounding the current node.
     // Loop upwards looking for a composite type.
-    auto searchId = parsing::idToParentId(context, node->id());
+    auto searchId = node->id().parentSymbolId(context);
     while (!searchId.isEmpty()) {
-      auto searchTag = parsing::idToTag(context, searchId);
       if (searchId == parentId) {
         // We found the aggregate type in which the to-ID is declared,
         // so there's no nested class issues.
         break;
-      } else if (asttags::isAggregateDecl(searchTag)) {
+      } else if (asttags::isAggregateDecl(parsing::idToTag(context, searchId))) {
         auto parentAst = parsing::idToAst(context, parentId);
         auto searchAst = parsing::idToAst(context, searchId);
         auto searchAD = searchAst->toAggregateDecl();
         // It's an error!
         CHPL_REPORT(context, NestedClassFieldRef, parentAst->toAggregateDecl(),
-                    searchAD, node, id);
+                    searchAD, node, toId);
         break;
       }
 
       // Move on to the surrounding ID.
-      searchId = parsing::idToParentId(context, searchId);
+      searchId = searchId.parentSymbolId(context);
     }
   }
 }
