@@ -268,11 +268,9 @@ proc gitInit(dirName: string, show: bool) throws {
   if show then initialize = "git init " + dirName;
   try {
     runCommand(initialize);
-  }
-  catch e: MasonError {
+  } catch e: MasonError {
     throw new owned MasonError("Error initializing git repository");
-  }
-  catch e {
+  } catch e {
     throw e;
   }
 }
