@@ -55,6 +55,12 @@ async def test_type_inlays_prim(client: LanguageClient):
 
             var e = "hello";
             var f = true;
+
+            var g;
+            if false then
+              g = 10;
+            else
+              g = 20.0;
            """
 
     inlays = [
@@ -63,6 +69,7 @@ async def test_type_inlays_prim(client: LanguageClient):
         (pos((3, 5)), "real(64)"),
         (pos((5, 5)), "string"),
         (pos((6, 5)), "bool"),
+        (pos((8, 5)), "real(64)"),
     ]
 
     with source_file(client, file) as doc:
