@@ -263,10 +263,18 @@ proc validatePackageName(dirName) throws {
 }
 
 /* Runs the git init command */
-proc gitInit(dirName: string, show: bool) {
+proc gitInit(dirName: string, show: bool) throws {
   var initialize = "git init -q " + dirName;
   if show then initialize = "git init " + dirName;
-  runCommand(initialize);
+  try {
+    runCommand(initialize);
+  }
+  catch e: MasonError {
+    throw new owned MasonError("Error initializing git repository");
+  }
+  catch e {
+    throw e;
+  }
 }
 
 /* Adds .gitignore to library project */

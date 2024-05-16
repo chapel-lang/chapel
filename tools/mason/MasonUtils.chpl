@@ -389,9 +389,14 @@ proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
   const oldDir = here.cwd();
   here.chdir(newDir);
-  ret = runCommand(command, quiet);
-
-  here.chdir(oldDir);
+  defer here.chdir(oldDir);
+  try {
+    ret = runCommand(command, quiet);
+  } catch e : MasonError {
+    throw new owned MasonError("Failed to run git command: " + command);
+  } catch e {
+    throw e;
+  }
 
   return ret;
 }
