@@ -17,8 +17,8 @@ RUN dnf install -y ./@@{PACKAGE_NAME}
 USER user
 WORKDIR /home/user
 
-RUN mkdir MyPackage
+RUN mason new MyPackage
 WORKDIR /home/user/MyPackage
-RUN mason init
 RUN chplcheck src/*.chpl
 RUN mason build
+RUN mason run
