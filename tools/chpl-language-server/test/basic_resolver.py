@@ -70,9 +70,13 @@ async def test_string(client: LanguageClient):
            """
 
     with source_file(client, file) as doc:
-        string_loc = (internal_module("String"), pos((741, 9)))
-        await check_goto_type_def(client, doc, pos((0, 4)), string_loc)
-        await check_goto_type_def(client, doc, pos((0, 12)), string_loc)
+        string_loc = internal_module("String")
+        await check_goto_type_def(
+            client, doc, pos((0, 4)), string_loc, "record _string"
+        )
+        await check_goto_type_def(
+            client, doc, pos((0, 12)), string_loc, "record _string"
+        )
 
         await save_file(client, doc)
         assert len(client.diagnostics[doc.uri]) == 0
