@@ -1439,9 +1439,15 @@ const uast::AttributeGroup*
 astToAttributeGroup(Context* context, const uast::AstNode* ast) {
   const uast::AttributeGroup* ret = nullptr;
   if (ast) {
+    // If we find an attribute group on the AST, return it.
+    if (auto ag = ast->attributeGroup()) return ag;
+
+    // Multi-decls aren't nested, so no need to check parents for a group.
+    if (ast->isMultiDecl()) return nullptr;
+
+    // handle nesting: what if we're a Variable inside a MultiDecl?
     auto parent = parentAst(context, ast);
-    bool done = ast->isMultiDecl() || !parent ||
-                (!parent->isTupleDecl() && !parent->isMultiDecl());
+    bool done = !parent || (!parent->isTupleDecl() && !parent->isMultiDecl());
     // recurse if not done
     return done
            ? ast->attributeGroup()
