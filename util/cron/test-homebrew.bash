@@ -63,7 +63,7 @@ $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$s
 brew upgrade
 brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
-rm /Users/chapelu/Library/Caches/Homebrew/downloads/*.tar.gz
+rm $HOME/Library/Caches/Homebrew/downloads/*--chapel-${version}.tar.gz
 HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source chapel.rb
 INSTALL_STATUS=$?
     if [ $INSTALL_STATUS -ne 0 ]
@@ -102,7 +102,7 @@ chpl pidigits.chpl
      log_info "./pidigits succeeded"
    fi
 
-#To mimic home-bre CI. Run home-brew chpl install inside a container.
+#To mimic home-brew CI. Run home-brew chpl install inside a container.
 # check if docker desktop is installed in mac if not fail the test.
 source ${CHPL_HOME}/util/cron/docker.bash
 start_docker
@@ -116,7 +116,7 @@ $sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${version}.tar.gz\"#
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
 
-#This will start a docker container that is similar to the one used by homebrew-ci snd tests homebrew installation inside it.
+#This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
 source ${CHPL_HOME}/util/packaging/docker/test/homebrew_ci.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew"
