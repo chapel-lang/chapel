@@ -55,6 +55,7 @@ static const char* blockStyleToString(BlockStyle blockStyle) {
     case BlockStyle::EXPLICIT: return "explicit";
     case BlockStyle::IMPLICIT: return "implicit";
     case BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK: return "unnecessary";
+    default: return "";
   }
 }
 
