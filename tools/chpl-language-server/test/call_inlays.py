@@ -77,6 +77,26 @@ async def test_call_inlays(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+@pytest.mark.xfail
+async def test_call_inlays_complex(client: LanguageClient):
+    """
+    Ensure that call inlays are shown for complex literals in call expressions.
+    """
+
+    file = """
+           proc foo(a) {}
+           foo(3i+10);
+           """
+
+    inlays = [(pos((1, 4)), "a = ", None)]
+
+    with source_file(client, file) as doc:
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 0
+
+
+@pytest.mark.asyncio
 async def test_nested_call_inlays(client: LanguageClient):
     """
     Ensure that call inlays are shown for literals in nested call expressions.
@@ -114,7 +134,7 @@ async def test_call_inlays_generic(client: LanguageClient):
            proc foo(a, b, c) {}
 
            foo(1, 2.0, true);
-           foo(1_00, c=2, 3i+10); // complex literals are not supported
+           foo(1_00, c=2, 3+2);
            foo(10i, a=0.5, false);
            foo(b="hello", " ", c="world");
            """
