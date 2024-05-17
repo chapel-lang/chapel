@@ -9,10 +9,25 @@ Main Modules
 ------------
 
 * driver.chpl: This is a driver for my matrix-matrix multiplication
-  routines to test that they work.
+  routines to test that they work.  It's controlled by:
+
+  - -sdistributed=true/false (at compile-time) to say whether to use
+    Block-distributed arrays vs. local ones
+
+  - --n to say the per-dimension problem size (square matrices only,
+    currently)
+
+  - --printMatrices : to say whether or not matrices should be printed
+
+  - --skipDense : to say whether or not to skip the (expensive)
+    computation of the dense multiplication
+
 
 * MatMatMult.chpl: This is where the matrix-matrix multiplication
-  routines themselves are implemented.
+  routines themselves are implemented.  It can be used with
+
+  - --countComms : to count communications for the SUMMA-style mat-mat
+    mult algorithm
 
   TODOs:
   - [x] work on reducing communication costs / maximizing locality
