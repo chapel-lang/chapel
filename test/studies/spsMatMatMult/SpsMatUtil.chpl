@@ -113,6 +113,13 @@ module SpsMatUtil {
   }
 
 
+  proc emptySparseDomLike(Mat) {
+    var ResDom: sparse subdomain(Mat.domain.parentDom);
+    var ResMat: [ResDom] int;
+    return (ResDom, ResMat);
+  }
+
+
   // print out a sparse matrix (in a dense format)
   //
   proc writeSparseMatrix(msg, Arr) {
