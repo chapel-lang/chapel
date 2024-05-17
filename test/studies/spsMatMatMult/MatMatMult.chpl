@@ -28,7 +28,8 @@ module MatMatMult {
           spsDataMap.add((ar, bc), a * b);
   }
 
-  proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
+  proc sparseMatMatMult(A, B) where (!A.chpl_isNonDistributedArray() &&
+                                     !B.chpl_isNonDistributedArray()) {
     var CD = emptySparseDomLike(B);  // For now, hard-code C to use CSR, like B
     var C: [CD] int;
 

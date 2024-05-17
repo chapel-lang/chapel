@@ -28,8 +28,7 @@ if printMatrices {
 
 // compute and print the product using the sparse matrix-matrix algorithm
 //
-const CSps = if distributed then SummaSparseMatMatMult(A, B)
-                            else sparseMatMatMult(A, B);
+const CSps = sparseMatMatMult(A, B);
 
 if printMatrices then
   writeSparseMatrix("C (sparsely computed) is:", CSps);
