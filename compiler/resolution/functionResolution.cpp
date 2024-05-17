@@ -4115,6 +4115,21 @@ static void reportHijackingError(CallExpr* call,
   USR_STOP();
 }
 
+static void explainOne(ResolutionCandidate* best, ResolutionCandidate* cur,
+                       const char* kind) {
+  if (cur != nullptr && cur != best)
+      USR_PRINT(cur->fn,   "%10s overload: %s", kind, toString(cur->fn));
+}
+static void explainCallCandidates(ResolutionCandidate* best,
+                                  ResolutionCandidate* bestRef,
+                                  ResolutionCandidate* bestValue,
+                                  ResolutionCandidate* bestConstRef) {
+    USR_PRINT(best->fn, "best candidates are: %s", toString(best->fn));
+    explainOne(best, bestRef,      "ref");
+    explainOne(best, bestValue,    "value");
+    explainOne(best, bestConstRef, "const ref");
+}
+
 static bool overloadSetsOK(CallExpr* call,
                            BlockStmt* searchScope,
                            check_state_t checkState,
@@ -4396,7 +4411,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   }
 
   if (explainCallLine != 0 && explainCallMatch(call) == true) {
-    USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
+    explainCallCandidates(best, bestRef, bestValue, bestConstRef);
   }
 
   if (call->partialTag                  == true &&
