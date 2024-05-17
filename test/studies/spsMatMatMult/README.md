@@ -26,8 +26,9 @@ Main Modules
 * MatMatMult.chpl: This is where the matrix-matrix multiplication
   routines themselves are implemented.  It can be used with
 
-  - --countComms : to count communications for the SUMMA-style mat-mat
-    mult algorithm
+  - --countComms : to count communications for the algorithms
+
+  - --printTimings : to print timings for the algorithms
 
   TODOs:
   - [x] work on reducing communication costs / maximizing locality

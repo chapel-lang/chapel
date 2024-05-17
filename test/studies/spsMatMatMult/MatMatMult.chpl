@@ -10,22 +10,38 @@ module MatMatMult {
   // CSC and B CSR
   //
   proc sparseMatMatMult(A, B) {
+    if countComms then startCommDiagnostics();
+    var time: stopwatch;
+    time.start();
+
     var spsData: sparseMatDat;
 
     sparseMatMatMult(A, B, spsData);
 
-    return makeSparseMat(A.domain.parentDom, spsData);
+    var C = makeSparseMat(A.domain.parentDom, spsData);
+    
+    const elapsed = time.elapsed();
+
+    if countComms {
+      stopCommDiagnostics();
+      printCommDiagnosticsTable();
+      writeln();
+    }
+
+    if printTimings then writeln("Elapsed time = ", elapsed, "\n");
+
+    return C;
   }
 
   // This version forms the guts of the above and permits a running set
   // of nonzeroes to be passed in and updated rather than assuming that
   // the multiplication is the first/only step.
   //
-  proc sparseMatMatMult(A, B, ref spsDataMap) {
-    forall ac_br in A.cols() with (merge reduce spsDataMap) do
+  proc sparseMatMatMult(A, B, ref spsData) {
+    forall ac_br in A.cols() with (merge reduce spsData) do
       for (ar, a) in A.rowsAndVals(ac_br) do
         for (bc, b) in B.colsAndVals(ac_br) do
-          spsDataMap.add((ar, bc), a * b);
+          spsData.add((ar, bc), a * b);
   }
 
   proc sparseMatMatMult(A, B) where (!A.chpl_isNonDistributedArray() &&
@@ -36,6 +52,8 @@ module MatMatMult {
     ref targLocs = A.targetLocales();
   
     if countComms then startCommDiagnostics();
+    var time: stopwatch;
+    time.start();
 
     coforall (locRow, locCol) in targLocs.domain {
       on targLocs[locRow, locCol] {
@@ -68,10 +86,15 @@ module MatMatMult {
       }
     }
 
+    const elapsed = time.elapsed();
+    
     if countComms {
       stopCommDiagnostics();
       printCommDiagnosticsTable();
+      writeln();
     }
+
+    if printTimings then writeln("Elapsed time = ", elapsed, "\n");
 
     return C;
   }
@@ -83,6 +106,10 @@ module MatMatMult {
   // be expensive.
   //
   proc denseMatMatMult(A, B) {
+    if countComms then startCommDiagnostics();
+    var time: stopwatch;
+    time.start();
+
     const n = A.dim(0).size;
     
     var spsData: sparseMatDat;
@@ -91,7 +118,7 @@ module MatMatMult {
       for j in 1..n {
         var prod = 0;
 
-        for k in 1..n do
+        forall k in 1..n with (+ reduce prod) do
           prod += A[i,k] * B[k,j];
 
         if prod != 0 then
@@ -99,6 +126,18 @@ module MatMatMult {
       }
     }
 
-    return makeSparseMat(A.domain.parentDom, spsData);
+    var C = makeSparseMat(A.domain.parentDom, spsData);
+
+    const elapsed = time.elapsed();
+
+    if countComms {
+      stopCommDiagnostics();
+      printCommDiagnosticsTable();
+      writeln();
+    }
+
+    if printTimings then writeln("Elapsed time = ", elapsed, "\n");
+
+    return C;
   }
 }
