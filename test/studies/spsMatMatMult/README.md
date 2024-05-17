@@ -34,7 +34,7 @@ Helper Modules
   routines.
 
   TODOs:
-  - [ ] use multicore parallelism for sparse mat-mat mult
+  - [x] use multicore parallelism for sparse mat-mat mult
   - [ ] consider alternative approaches to accumulating nonzeroes:
         * Engin's createIndexBuffer() helper
         * index -> value map?

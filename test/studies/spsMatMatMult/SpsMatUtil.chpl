@@ -30,10 +30,14 @@ module SpsMatUtil {
     return makeSparseMat(A.domain.parentDom, spsData);
   }
 
+  // This version forms the guts of the above and permits a running set
+  // of nonzeroes to be passed in and updated rather than assuming that
+  // the multiplication is the first/only step.
+  //
   // TODO: parallelize algorithm
   //
   proc sparseMatMatMult(A, B, ref spsDataMap) {
-    for ac_br in A.cols() {
+    forall ac_br in A.cols() with (merge reduce spsDataMap)  {
       for (ar, a) in A.rowsAndVals(ac_br) {
         for (bc, b) in B.colsAndVals(ac_br) {
           const prod = a * b;
@@ -162,5 +166,51 @@ module SpsMatUtil {
     for (ij, c) in zip(nnzs, vals) do
       C[ij] += c;
     return C;
+  }
+
+
+  // This is a custom reduction, and a good case study for why our custom
+  // reduction interface needs a refresh
+  //
+  class merge: ReduceScanOp {
+    type eltType = sparseMatDat;
+    var value: eltType;  // TODO: lots of deep copying here to avoid
+
+    proc identity {
+      var ident: eltType;
+      return ident;
+    }
+
+    proc initialAccumulate(x) {
+      if x.size != 0 then
+        halt("Error shouldn't call merge.initialAccumulate() with a non-empty table");
+    }
+
+    proc accumulate(x) {
+      // Why is this ever called with a sparseMatDat as the argument?!?
+      for (k,v) in zip(x.keys(), x.values()) {
+        if value.contains(k) {
+          value[k] += v;
+        } else {
+          value.add(k, v);
+        }
+      }
+    }
+    
+    proc accumulateOntoState(ref state, x) {
+      halt("Error, shouldn't call merge.accumulateOntoState()");
+    }
+
+    proc combine(x) {
+      accumulate(x.value);
+    }
+
+    proc generate() {
+      return value;
+    }
+    
+    inline proc clone() {
+      return new unmanaged merge(eltType=eltType);
+    }
   }
 }
