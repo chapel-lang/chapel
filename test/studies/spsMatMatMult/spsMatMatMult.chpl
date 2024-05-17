@@ -55,19 +55,21 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
         // Make a local copy of the remote blocks of A and B; on my branch
         // this will also make a local copy of the remote indices, so long
         // as these are 'const'/read-only
-        const Ablk = A.locArr[locRow, srcloc]!.myElems,
-              Bblk = B.locArr[srcloc, locCol]!.myElems;
+        const aBlk = A.locArr[locRow, srcloc]!.myElems,
+              bBlk = B.locArr[srcloc, locCol]!.myElems;
 
         local {
-          sparseMatMatMult(Ablk, Bblk, spsData);
+          sparseMatMatMult(aBlk, bBlk, spsData);
         }
       }
 
-      var CBlk = makeSparseMat(A.domain.parentDom, spsData);
+      const myInds = A.domain.parentDom.localSubdomain();
+      var cBlk = makeSparseMat(myInds, spsData);
 
 
       turnToken.waitFor(here.id);
-      writeSparseMatrix("[" + here.id:string + "]'s local chunk of C:", CBlk);
+      writeSparseMatrix("[" + here.id:string + "]'s local chunk of C["
+                        + myInds:string + "]:", cBlk);
       turnToken.write(here.id+1);
     }
   }
