@@ -17,6 +17,16 @@ module SpsMatUtil {
 
   record sparseMatDat {
     forwarding var m: map(2*int, int);
+
+    proc ref add(idx: 2*int, val: int) {
+      if val != 0 {
+        if m.contains(idx) {
+          m[idx] += val;
+        } else {
+          m.add(idx, val);
+        }
+      }
+    }
   }
 
   // sparse, outer, matrix-matrix multiplication algorithm; A is assumed
@@ -34,23 +44,11 @@ module SpsMatUtil {
   // of nonzeroes to be passed in and updated rather than assuming that
   // the multiplication is the first/only step.
   //
-  // TODO: parallelize algorithm
-  //
   proc sparseMatMatMult(A, B, ref spsDataMap) {
-    forall ac_br in A.cols() with (merge reduce spsDataMap)  {
-      for (ar, a) in A.rowsAndVals(ac_br) {
-        for (bc, b) in B.colsAndVals(ac_br) {
-          const prod = a * b;
-          if prod != 0 {
-            if spsDataMap.contains((ar,bc)) {
-              spsDataMap[(ar, bc)] += prod;
-            } else {
-              spsDataMap.add((ar, bc), prod);
-            }
-          }
-        }
-      }
-    }
+    forall ac_br in A.cols() with (merge reduce spsDataMap) do
+      for (ar, a) in A.rowsAndVals(ac_br) do
+        for (bc, b) in B.colsAndVals(ac_br) do
+          spsDataMap.add((ar, bc), a * b);
   }
 
 
