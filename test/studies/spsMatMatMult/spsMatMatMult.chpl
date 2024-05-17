@@ -46,7 +46,8 @@ if !skipDense {
 proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
   //  var turnToken: atomic int;
 
-  var CD = emptySparseDomLike(A);
+  // For now, hard-code C to use CSR, like B
+  var CD = emptySparseDomLike(B);
   var C: [CD] int;
   
   if countComms then startCommDiagnostics();
@@ -88,7 +89,7 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
   for loc in grid do
     writeln("CD[",loc,"] is: ", CD.locDoms[loc]);
   */
-  writeSparseMatrix("C is: ", C);
+  writeSparseMatrix("C is:", C);
 
   if countComms {
     stopCommDiagnostics();

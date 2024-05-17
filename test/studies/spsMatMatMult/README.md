@@ -18,7 +18,7 @@ Main Modules
   - [x] work on reducing communication costs / maximizing locality
   - [x] make better use of local algorithm above rather than
         replicating logic
-  - [ ] stitch per-node results back together into a global sparse
+  - [x] stitch per-node results back together into a global sparse
         array
   - [ ] relax requirement to only the first perfect square number
         of locales
@@ -36,9 +36,9 @@ Helper Modules
   TODOs:
   - [x] use multicore parallelism for sparse mat-mat mult
   - [ ] consider alternative approaches to accumulating nonzeroes:
-        * Engin's createIndexBuffer() helper
-        * index -> value map?
-        * task-private accumulators
+        - [ ] Engin's createIndexBuffer() helper
+        - [x] index -> value map?
+        - [ ] task-private accumulators
   - [ ] look at tuning operations not on critical path (e.g., matrix
         output, setup, ...)
   - [ ] look at alternatives to reduction in order to reduce deep
@@ -57,4 +57,16 @@ Other Files
 * *.good, *.compopts, *.execeopts *.numlocales *.notest: Files
   supporting the Chapel test system so that I can easily validate that
   things are still working as I make changes.
-  
+
+
+General TODOs
+-------------
+
+- [ ] currently I make a lot of assumptions that I should check in the
+      code, like:
+      - [ ] which matrices are CSC vs. CSR
+      - [ ] that matrices are square
+      - [ ] that target locale grids are the same
+      - [ ] parent domains are always dense
+      - etc.
+
