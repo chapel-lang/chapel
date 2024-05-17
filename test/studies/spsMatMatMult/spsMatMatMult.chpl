@@ -33,12 +33,15 @@ const CSps = SummaSparseMatMatMult(A, B);
 
 writeSparseMatrix("C (sparsely computed) is:", CSps);
 
-/*
 if !skipDense {
-  const CDns = DenseMatMatMult(A, B);
+  const CDns = denseMatMatMult(A, B);
   writeSparseMatrix("C (densely computed) is: ", CDns);
+
+  forall (i,j) in CDns.domain do
+    if CDns[i,j] != CSps[i,j] then
+      halt("Mismatch between dense and sparse algorithms at ", (i,j), ": ",
+           CDns[i,j], CSps[i,j]);
 }
-*/
 
 
 proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {

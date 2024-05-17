@@ -24,21 +24,21 @@ writeSparseMatrix("B is:", B);
 
 // compute and print the product using the sparse matrix-matrix algorithm
 //
-const Csps = sparseMatMatMult(A, B);
-writeSparseMatrix("C (sparsely computed) is:", Csps);
+const CSps = sparseMatMatMult(A, B);
+writeSparseMatrix("C (sparsely computed) is:", CSps);
 
 
 // optionally compute and print the product using dense matrix-matrix
 // multiplication as a check
 //
 if !skipDense {
-  const Cdns = denseMatMatMult(A, B);
-  writeSparseMatrix("C (densely computed) is: ", Cdns);
+  const CDns = denseMatMatMult(A, B);
+  writeSparseMatrix("C (densely computed) is: ", CDns);
 
-  forall (i,j) in Cdns.domain do
-    if Cdns[i,j] != Csps[i,j] then
+  forall (i,j) in CDns.domain do
+    if CDns[i,j] != CSps[i,j] then
       halt("Mismatch between dense and sparse algorithms at ", (i,j), ": ",
-           Cdns[i,j], Csps[i,j]);
+           CDns[i,j], CSps[i,j]);
 }
 
 
