@@ -115,8 +115,7 @@ module SpsMatUtil {
 
   proc emptySparseDomLike(Mat) {
     var ResDom: sparse subdomain(Mat.domain.parentDom);
-    var ResMat: [ResDom] int;
-    return (ResDom, ResMat);
+    return ResDom;
   }
 
 

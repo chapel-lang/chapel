@@ -44,9 +44,10 @@ if !skipDense {
 
 
 proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
-  var turnToken: atomic int;
+  //  var turnToken: atomic int;
 
-  var (CD, C) = emptySparseDomLike(A);
+  var CD = emptySparseDomLike(A);
+  var C: [CD] int;
   
   if countComms then startCommDiagnostics();
 
@@ -69,17 +70,24 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
       const myInds = A.domain.parentDom.localSubdomain();
       var cBlk = makeSparseMat(myInds, spsData);
       CD.myLocDom!.mySparseBlock = cBlk.domain;
-      //      C.myLocArr!.myElems._value.data = cBlk.data;
+      //      writeln(CD.myLocDom!.mySparseBlock._value.nnzDom);
+      //      writeln("domain check: ", C.myLocArr!.myElems.domain, "=?=", CD.myLocDom!.mySparseBlock);
+      //      writeln("class check: ", C.myLocArr!.myElems.domain._value == CD.myLocDom!.mySparseBlock._value);
+      C.myLocArr!.myElems._value.data = cBlk.data;
 
+      /*
       turnToken.waitFor(here.id);
       writeSparseMatrix("[" + here.id:string + "]'s local chunk of C["
                         + myInds:string + "]:", cBlk);
       turnToken.write(here.id+1);
+      */
     }
   }
 
+  /*
   for loc in grid do
     writeln("CD[",loc,"] is: ", CD.locDoms[loc]);
+  */
   writeSparseMatrix("C is: ", C);
 
   if countComms {
