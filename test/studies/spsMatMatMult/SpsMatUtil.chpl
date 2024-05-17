@@ -1,5 +1,10 @@
 module SpsMatUtil {
-  use BlockDist, LayoutCS, LayoutCSUtil, Map, Random;
+  // The following are routines that should arguably be supported directly
+  // by the LayoutCS and SparseBlockDist modules themselves
+  //
+  public use LayoutCSUtil, SparseBlockDistUtil;
+
+  use BlockDist, LayoutCS, Map, Random;
 
   enum layout { CSR, CSC };
   public use layout;
@@ -79,9 +84,12 @@ module SpsMatUtil {
 
 
   // create a local random sparse matrix within the space of 'Dom' of
-  // the given density and layout
+  // the given density and layout.  If distributed is true, this will
+  // be a block-distributed sparse matrix, otherwise it'll be local.
   //
-  proc randSparseMatrix(Dom, density, param layout) {
+  proc randSparseMatrix(Dom, density, param layout, param distributed)
+   where distributed == false {
+
     var SD: sparse subdomain(Dom) dmapped CS(compressRows=(layout==CSR));
 
     for (i,j) in Dom do
@@ -91,14 +99,22 @@ module SpsMatUtil {
     return SD;
   }
 
+  proc randSparseMatrix(Dom, density, param layout, param distributed)
+   where distributed == true {
+    const locsPerDim = sqrt(numLocales:real): int,
+          grid = {0..<locsPerDim, 0..<locsPerDim},
+          localeGrid = reshape(Locales[0..<grid.size], grid);
 
-  // create a block-distributed random sparse matrix within the space
-  // of 'Dom' of the given density and layout
-  //
-  proc randSparseMatrix(Dom, density, param layout, targetLocales) {
+
+    if grid.size != numLocales then
+      writeln("Warning: Only using ", grid.size, " of ", numLocales,
+              " locales");
+
+    // writeln(grid);
+
     type layoutType = CS(compressRows=(layout==CSR));
     const DenseBlkDom = Dom dmapped new blockDist(boundingBox=Dom,
-                                                  targetLocales=targetLocales,
+                                                  targetLocales=localeGrid,
                                                   sparseLayoutType=layoutType);
 
     var SD: sparse subdomain(DenseBlkDom);

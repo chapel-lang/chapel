@@ -8,12 +8,12 @@ feedback.
 Main Modules
 ------------
 
-* locSpsMatMatMult.chpl: This is a driver for my purely local sparse
-  matrix-matrix multiplication routine, defined in SpsMatMatUtil.chpl
-  below.
+* driver.chpl: This is a driver for my matrix-matrix multiplication
+  routines to test that they work.
 
-* spsMatMatMult.chpl: This is my start at a Block-distributed
-  SUMMA-style sparse matrix-matrix multiplication algorithm.
+* MatMatMult.chpl: This is where the matrix-matrix multiplication
+  routines themselves are implemented.
+
   TODOs:
   - [x] work on reducing communication costs / maximizing locality
   - [x] make better use of local algorithm above rather than
@@ -28,7 +28,7 @@ Main Modules
 Helper Modules
 --------------
 
-* SpsMatMatUtil.chpl: This is a utility module used by the above,
+* SpsMatUtil.chpl: This is a utility module used by the above,
   which contains routines to generate sparse matrices, print them, as
   well as purely local/trivial sparse and dense matrix multiplication
   routines.
@@ -49,6 +49,8 @@ Helper Modules
   layout, so started implementing them in this helper module; we
   could/should consider merging these back into the main LayoutCS.chpl
   file.
+
+* SparseBlockDistUtil.chpl: Similar, but for SparseBlockDist routines
 
 
 Other Files
