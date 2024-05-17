@@ -29,13 +29,11 @@ var A: [AD] int = 1,
 writeSparseMatrix("A is:", A);
 writeSparseMatrix("B is:", B);
 
-SummaSparseMatMatMult(A, B);
-
-/*
-const CSps = SparseMatMatMult(A, B);
+const CSps = SummaSparseMatMatMult(A, B);
 
 writeSparseMatrix("C (sparsely computed) is:", CSps);
 
+/*
 if !skipDense {
   const CDns = DenseMatMatMult(A, B);
   writeSparseMatrix("C (densely computed) is: ", CDns);
@@ -44,10 +42,7 @@ if !skipDense {
 
 
 proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
-  //  var turnToken: atomic int;
-
-  // For now, hard-code C to use CSR, like B
-  var CD = emptySparseDomLike(B);
+  var CD = emptySparseDomLike(B);  // For now, hard-code C to use CSR, like B
   var C: [CD] int;
   
   if countComms then startCommDiagnostics();
@@ -70,29 +65,18 @@ proc SummaSparseMatMatMult(A: [?AD], B: [?BD]) {
 
       const myInds = A.domain.parentDom.localSubdomain();
       var cBlk = makeSparseMat(myInds, spsData);
-      CD.myLocDom!.mySparseBlock = cBlk.domain;
-      //      writeln(CD.myLocDom!.mySparseBlock._value.nnzDom);
-      //      writeln("domain check: ", C.myLocArr!.myElems.domain, "=?=", CD.myLocDom!.mySparseBlock);
-      //      writeln("class check: ", C.myLocArr!.myElems.domain._value == CD.myLocDom!.mySparseBlock._value);
-      C.myLocArr!.myElems._value.data = cBlk.data;
 
-      /*
-      turnToken.waitFor(here.id);
-      writeSparseMatrix("[" + here.id:string + "]'s local chunk of C["
-                        + myInds:string + "]:", cBlk);
-      turnToken.write(here.id+1);
-      */
+      // Stitch the local portions back together into the global-view;
+      // TODO: Clean this up
+      CD.myLocDom!.mySparseBlock = cBlk.domain;
+      C.myLocArr!.myElems._value.data = cBlk.data;
     }
   }
-
-  /*
-  for loc in grid do
-    writeln("CD[",loc,"] is: ", CD.locDoms[loc]);
-  */
-  writeSparseMatrix("C is:", C);
 
   if countComms {
     stopCommDiagnostics();
     printCommDiagnosticsTable();
   }
+
+  return C;
 }
