@@ -1,11 +1,16 @@
-use SparseBlockDist;
+// This module defines routines that should arguably be defined in
+// SparseBlockDist.chpl, but aren't currently.
+//
+module SparseBlockDistUtil {
+  use SparseBlockDist;
 
-proc SparseBlockDom.dsiTargetLocales() const ref {
-  return dist.targetLocales;
-}
+  proc SparseBlockDom.dsiTargetLocales() const ref {
+    return dist.targetLocales;
+  }
 
-proc SparseBlockArr.dsiTargetLocales() const ref {
-  return dom.dsiTargetLocales();
+  proc SparseBlockArr.dsiTargetLocales() const ref {
+    return dom.dsiTargetLocales();
+  }
 }
 
 /*

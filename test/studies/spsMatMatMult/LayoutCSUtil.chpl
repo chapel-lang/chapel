@@ -1,6 +1,6 @@
-/* This is a utility module of convenience features that arguably
-   should be reviewed and added to LayoutCS proper. */
-   
+// This module defines convenience features that arguably should be
+// reviewed and added to LayoutCS proper
+//
 module LayoutCSUtil {
   use LayoutCS;
 

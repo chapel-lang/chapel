@@ -2,7 +2,7 @@ module SpsMatUtil {
   // The following are routines that should arguably be supported directly
   // by the LayoutCS and SparseBlockDist modules themselves
   //
-  public use LayoutCSUtil, SparseBlockDistUtil;
+  //  public use LayoutCSUtil, SparseBlockDistUtil;
 
   use BlockDist, LayoutCS, Map, Random;
 
@@ -34,53 +34,6 @@ module SpsMatUtil {
     }
   }
 
-  // sparse, outer, matrix-matrix multiplication algorithm; A is assumed
-  // CSC and B CSR
-  //
-  proc sparseMatMatMult(A, B) {
-    var spsData: sparseMatDat;
-
-    sparseMatMatMult(A, B, spsData);
-
-    return makeSparseMat(A.domain.parentDom, spsData);
-  }
-
-  // This version forms the guts of the above and permits a running set
-  // of nonzeroes to be passed in and updated rather than assuming that
-  // the multiplication is the first/only step.
-  //
-  proc sparseMatMatMult(A, B, ref spsDataMap) {
-    forall ac_br in A.cols() with (merge reduce spsDataMap) do
-      for (ar, a) in A.rowsAndVals(ac_br) do
-        for (bc, b) in B.colsAndVals(ac_br) do
-          spsDataMap.add((ar, bc), a * b);
-  }
-
-
-  // dense, simple matrix-matrix multiplication algorithm; this is
-  // wildly inefficient, both because it ignores the sparsity and
-  // because it uses random access of the sparse arrays which tends to
-  // be expensive.
-  //
-  proc denseMatMatMult(A, B) {
-    const n = A.dim(0).size;
-    
-    var spsData: sparseMatDat;
-  
-    for i in 1..n {
-      for j in 1..n {
-        var prod = 0;
-
-        for k in 1..n do
-          prod += A[i,k] * B[k,j];
-
-        if prod != 0 then
-          spsData.add((i,j), prod);
-      }
-    }
-
-    return makeSparseMat(A.domain.parentDom, spsData);
-  }
 
 
   // create a local random sparse matrix within the space of 'Dom' of

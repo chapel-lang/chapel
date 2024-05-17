@@ -2,10 +2,10 @@ use ChplConfig, MatMatMult, SpsMatUtil;
 
 config param distributed = !compiledForSingleLocale();
 
-config const n = 10,
-             density = 0.05,
-             printMatrices = true,
-             skipDense = false;
+config const n = 10,                 // create nxn sparse arrays
+             density = 0.05,         // density of the nonzeroes, randomly
+             printMatrices = true,   // print the input and output matrices?
+             skipDense = false;      // skip the dense multiplication (slow)
 
 // dense bounding box of the matrices
 //
