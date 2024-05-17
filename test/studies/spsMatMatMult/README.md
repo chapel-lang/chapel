@@ -41,6 +41,8 @@ Helper Modules
         * task-private accumulators
   - [ ] look at tuning operations not on critical path (e.g., matrix
         output, setup, ...)
+  - [ ] look at alternatives to reduction in order to reduce deep
+        copies of maps and to support tree-based combining
 
 * LayoutCSUtil.chpl: In working on this, I found myself wanting
   2D-specific / CSR-/CSC-specific helper routines from the CSC/R

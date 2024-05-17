@@ -181,10 +181,12 @@ module SpsMatUtil {
       return ident;
     }
 
+    /*
     proc initialAccumulate(x) {
       if x.size != 0 then
         halt("Error shouldn't call merge.initialAccumulate() with a non-empty table");
     }
+    */
 
     proc accumulate(x) {
       // Why is this ever called with a sparseMatDat as the argument?!?
