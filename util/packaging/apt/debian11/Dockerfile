@@ -21,9 +21,8 @@ RUN useradd -ms /bin/bash user && \
 USER user
 WORKDIR /home/user
 
-# download chapel
-RUN wget https://github.com/chapel-lang/chapel/releases/download/$CHAPEL_VERSION/chapel-$CHAPEL_VERSION.tar.gz && \
-    tar xf chapel-$CHAPEL_VERSION.tar.gz
+COPY --chown=user ./tarballs/chapel-$CHAPEL_VERSION.tar.gz /home/user/chapel-$CHAPEL_VERSION.tar.gz
+RUN tar xf chapel-$CHAPEL_VERSION.tar.gz
 
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
