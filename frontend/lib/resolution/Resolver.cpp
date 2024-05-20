@@ -512,60 +512,60 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
 
   std::vector<const Scope*> result;
 
-  ID curId = classDeclId;
-
   bool encounteredError = false;
-  while (!curId.isEmpty() && !encounteredError) {
-    auto ast = parsing::idToAst(context, curId);
-    if (!ast) break;
+  auto ast = parsing::idToAst(context, classDeclId);
+  if (!ast) return QUERY_END(result);
 
-    auto c = ast->toClass();
-    if (!c || c->numInheritExprs() == 0) break;
+  auto c = ast->toClass();
+  if (!c || c->numInheritExprs() == 0) return QUERY_END(result);
 
-    const uast::AstNode* lastParentClass = nullptr;
-    for (auto inheritExpr : c->inheritExprs()) {
-      // Resolve the parent class type expression
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForParentClassScopeResolve(context, c, r);
-      // Parsing excludes non-identifiers as parent class expressions.
-      //
-      // Intended to avoid calling methodReceiverScopes() recursively.
-      // Uses the empty 'savecReceiverScopes' because the class expression
-      // can't be a method anyways.
-      bool ignoredMarkedGeneric = false;
-      auto ident = Class::getInheritExprIdent(inheritExpr,
-                                              ignoredMarkedGeneric);
-      visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
+  const uast::AstNode* lastParentClass = nullptr;
+  ID parentClassDeclId;
+  for (auto inheritExpr : c->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClassScopeResolve(context, c, r);
+    // Parsing excludes non-identifiers as parent class expressions.
+    //
+    // Intended to avoid calling methodReceiverScopes() recursively.
+    // Uses the empty 'savecReceiverScopes' because the class expression
+    // can't be a method anyways.
+    bool ignoredMarkedGeneric = false;
+    auto ident = Class::getInheritExprIdent(inheritExpr,
+                                            ignoredMarkedGeneric);
+    visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
 
 
-      ResolvedExpression& re = r.byAst(ident);
-      if (re.toId().isEmpty()) {
-        context->error(inheritExpr, "invalid parent class expression");
+    ResolvedExpression& re = r.byAst(ident);
+    if (re.toId().isEmpty()) {
+      context->error(inheritExpr, "invalid parent class expression");
+      encounteredError = true;
+      break;
+    } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
+      // this is an interface; ignore it for the purposes of parent scopes.
+    } else {
+      if (lastParentClass) {
+        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
         encounteredError = true;
         break;
-      } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
-        // this is an interface; ignore it for the purposes of parent scopes.
-      } else {
-        if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
-          encounteredError = true;
-          break;
-        }
-        lastParentClass = inheritExpr;
-
-        result.push_back(scopeForId(context, re.toId()));
-        curId = re.toId();
-        // keep going through the list of parent expressions. hitting
-        // another parent expression that's a class after this point
-        // will result in an error. When we're done with other parent
-        // expressions, the loop will continue to searching for the
-        // parent classes of this parent class.
       }
-    }
+      lastParentClass = inheritExpr;
 
-    // only interfaces found, no need to look for more parents.
-    if (!lastParentClass) break;
+      result.push_back(scopeForId(context, re.toId()));
+      parentClassDeclId = re.toId();
+      // keep going through the list of parent expressions. hitting
+      // another parent expression that's a class after this point
+      // will result in an error. When we're done with other parent
+      // expressions, the loop will continue to searching for the
+      // parent classes of this parent class.
+    }
+  }
+
+  if (!encounteredError && !parentClassDeclId.isEmpty()) {
+    const auto& parentScopes =
+      gatherParentClassScopesForScopeResolving(context, parentClassDeclId);
+    result.insert(result.end(), parentScopes.begin(), parentScopes.end());
   }
 
   return QUERY_END(result);
