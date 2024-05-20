@@ -504,10 +504,10 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Main Module Check:');
     if moduleCheck(projectCheckHome) {
-      writeln('   Your package has only one main module, can be published to a registry. (PASSED)');
+      writeln('   Your package has a main module whose name matches the package name. (PASSED)');
     }
     else {
-      writeln('   Packages with more than one modules cannot be published. (FAILED)');
+      writeln('   Packages must have a main module whose name matches the package name. (FAILED)');
       moduleTest = false;
     }
     writeln(spacer);
@@ -766,12 +766,26 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
   return ensureMasonProject(dirname, tomlName);
 }
 
-/* Checks to make sure the package only has one main module
+/*Checks to make sure the package has a main module
+
+  The source file for the main module should have the same name as the package.
+  For example, `foo.chpl` is a valid main module for the following package:
+
+    foo/
+      Mason.toml
+      src/
+        foo.chpl  # module foo { include module bar; use bar; proc main() { ... } }
+        foo/
+          bar.chpl
+      ...
+
  */
 private proc moduleCheck(projectHome : string) throws {
-  const subModules = listDir(projectHome + '/src');
-  if subModules.size > 1 then return false;
-  else return true;
+  const mainModuleName = getPackageName() + '.chpl';
+  for fileName in listDir(projectHome + '/src', dirs=false) {
+    if fileName == mainModuleName then return true;
+  }
+  return false;
 }
 
 /* Checks package for examples */
