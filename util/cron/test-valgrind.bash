@@ -8,7 +8,7 @@ source $CWD/common-valgrind.bash
 source $CWD/common-localnode-paratest.bash
 
 # Use LLVM-13 to work around https://github.com/Cray/chapel-private/issues/3373
-source /cray/css/users/chapelu/setup_system_llvm.bash 13
+source /data/cf/chapel/setup_system_llvm.bash 13
 
 # valgrind serializes execution, so don't limit to one executable at a time
 unset CHPL_TEST_LIMIT_RUNNING_EXECUTABLES
