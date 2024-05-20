@@ -2666,6 +2666,13 @@ Resolver::lookupIdentifier(const Identifier* ident,
   const Scope* scope = scopeStack.back();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
 
+  if (ident->name() == USTR("super")) {
+    // Super is a keyword, and should't be looked up in scopes. Return
+    // an empty ID to indicate that this identifier points to something,
+    // but that something has a special meaning.
+    return { BorrowedIdsWithName::createWithBuiltinId() };
+  }
+
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
@@ -2696,13 +2703,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
   // and probably a few other features.
   if (!scopeResolveOnly) {
     if (notFound) {
-      // If this identifier is 'super' and we couldn't find something it refers
-      // to, it could stand for 'this.super'. But in that case, no need to
-      // issue an error.
-      if (isPotentialSuper(ident)) {
-        // We found a single ID, and it's just 'super'.
-        return { BorrowedIdsWithName::createWithBuiltinId() };
-      } else if (!resolvingCalledIdent) {
+      if (!resolvingCalledIdent) {
         auto pair = namesWithErrorsEmitted.insert(ident->name());
         if (pair.second) {
           // insertion took place so emit the error
