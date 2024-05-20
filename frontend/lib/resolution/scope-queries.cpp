@@ -1049,6 +1049,25 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
   return scope->parentScope();
 }
 
+// As a quick optimization to avoid looking up names in scopes where they
+// can't possibly be (because they're reserved), skip names like 'int' which
+// can't be redefined.
+//
+// Performance: ideally this could be a SmallPtrSet, but we're getting
+// different .c_str() pointers for USTR("int") and strings we get from the
+// parser. Seems fixable.
+static bool isReservedIdentifier(UniqueString name) {
+  static std::unordered_set<UniqueString> reserved = {
+    USTR("bool"),
+    USTR("complex"),
+    USTR("domain"),
+    USTR("int"),
+    USTR("uint"),
+    USTR("real"),
+  };
+  return reserved.count(name);
+}
+
 // appends to result
 //
 // traceCurPath and traceResult support gathering additional information
@@ -1078,6 +1097,13 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
   bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
+
+  // reserved (non-redefinable) identifiers will be found in the toplevel
+  // scope only.
+  if (checkParents && !onlyMethodsFields && isReservedIdentifier(name)) {
+    result.push_back(BorrowedIdsWithName::createWithBuiltinId());
+    return true;
+  }
 
   IdAndFlags::Flags curFilter = 0;
   IdAndFlags::FlagSet excludeFilter;
