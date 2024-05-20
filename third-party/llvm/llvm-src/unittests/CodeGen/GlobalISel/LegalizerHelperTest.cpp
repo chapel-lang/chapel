@@ -1556,12 +1556,12 @@ TEST_F(AArch64GISelMITest, FewerElementsPhi) {
   CHECK: [[PHI0:%[0-9]+]]:_(<2 x s32>) = G_PHI [[INITVAL_E01]]:_(<2 x s32>), %bb.0, [[MIDVAL_E01]]:_(<2 x s32>), %bb.1
   CHECK: [[PHI1:%[0-9]+]]:_(<2 x s32>) = G_PHI [[INITVAL_E23]]:_(<2 x s32>), %bb.0, [[MIDVAL_E23]]:_(<2 x s32>), %bb.1
   CHECK: [[PHI2:%[0-9]+]]:_(s32) = G_PHI [[INITVAL_E4]]:_(s32), %bb.0, [[MIDVAL_E4]]:_(s32), %bb.1
-  CHECK: [[UNMERGE0:%[0-9]+]]:_(s32), [[UNMERGE1:%[0-9]+]]:_(s32) = G_UNMERGE_VALUES [[PHI0]]:_(<2 x s32>)
-  CHECK: [[UNMERGE2:%[0-9]+]]:_(s32), [[UNMERGE3:%[0-9]+]]:_(s32) = G_UNMERGE_VALUES [[PHI1]]:_(<2 x s32>)
-  CHECK: [[BV:%[0-9]+]]:_(<5 x s32>) = G_BUILD_VECTOR [[UNMERGE0]]:_(s32), [[UNMERGE1]]:_(s32), [[UNMERGE2]]:_(s32), [[UNMERGE3]]:_(s32), [[PHI2]]:_(s32)
 
   CHECK: [[OTHER_PHI:%[0-9]+]]:_(s64) = G_PHI
 
+  CHECK: [[UNMERGE0:%[0-9]+]]:_(s32), [[UNMERGE1:%[0-9]+]]:_(s32) = G_UNMERGE_VALUES [[PHI0]]:_(<2 x s32>)
+  CHECK: [[UNMERGE2:%[0-9]+]]:_(s32), [[UNMERGE3:%[0-9]+]]:_(s32) = G_UNMERGE_VALUES [[PHI1]]:_(<2 x s32>)
+  CHECK: [[BV:%[0-9]+]]:_(<5 x s32>) = G_BUILD_VECTOR [[UNMERGE0]]:_(s32), [[UNMERGE1]]:_(s32), [[UNMERGE2]]:_(s32), [[UNMERGE3]]:_(s32), [[PHI2]]:_(s32)
   CHECK: [[USE_OP:%[0-9]+]]:_(<5 x s32>) = G_AND [[BV]]:_, [[BV]]:_
   )";
 
@@ -3656,12 +3656,14 @@ TEST_F(AArch64GISelMITest, CreateLibcall) {
 
   AInfo Info(MF->getSubtarget());
   DummyGISelObserver Observer;
+  LostDebugLocObserver DummyLocObserver("");
 
   LLVMContext &Ctx = MF->getFunction().getContext();
   auto *RetTy = Type::getVoidTy(Ctx);
 
   EXPECT_EQ(LegalizerHelper::LegalizeResult::Legalized,
-            createLibcall(B, "abort", {{}, RetTy, 0}, {}, CallingConv::C));
+            createLibcall(B, "abort", {{}, RetTy, 0}, {}, CallingConv::C,
+                          DummyLocObserver, nullptr));
 
   auto CheckStr = R"(
   CHECK: ADJCALLSTACKDOWN 0, 0, implicit-def $sp, implicit $sp
