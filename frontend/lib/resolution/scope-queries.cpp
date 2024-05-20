@@ -1062,9 +1062,11 @@ static bool isReservedIdentifier(UniqueString name) {
     USTR("complex"),
     USTR("domain"),
     USTR("int"),
+    USTR("nil"),
     USTR("uint"),
     USTR("real"),
     USTR("string"),
+    USTR("void"),
   };
   return reserved.count(name);
 }
