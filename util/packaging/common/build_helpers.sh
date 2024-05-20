@@ -45,6 +45,7 @@ __build_packages() {
   pushd ${package_dir}
   docker buildx build \
     --platform linux/amd64,linux/arm64 \
+    --output=type=docker \
     --build-arg "CHAPEL_VERSION=$chapel_version" \
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "PARALLEL=$para" \
@@ -127,6 +128,7 @@ __build_package_native() {
 
   pushd ${package_dir}
   docker buildx build \
+    --output=type=docker \
     --build-arg "CHAPEL_VERSION=$chapel_version" \
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "PARALLEL=$para" \
