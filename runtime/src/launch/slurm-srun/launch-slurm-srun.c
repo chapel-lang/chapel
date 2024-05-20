@@ -100,6 +100,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   int threadsPerCore = -1;
   const int buflen = 1024;
   char buf[buflen];
+  char orig[buflen];
   char partition_arg[128];
   char* argv[7];
   char reservationBuf[128];
@@ -155,6 +156,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
 
   char *cursor = buf;
   char *line;
+  strcpy(orig, buf);
   chpl_bool found = false;
   while ((line = strsep(&cursor, "\n")) != NULL) {
     if (*line != '\0') {
@@ -178,7 +180,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     snprintf(msg, sizeof(msg),
             "unable to determine number of cores per locale; "
              "please set CHPL_LAUNCHER_CORES_PER_LOCALE\n"
-             "Output of \"sinfo\" was: %s", buf);
+             "Output of \"sinfo\" was:\n%s", orig);
     chpl_error(msg, 0, 0);
   }
 
