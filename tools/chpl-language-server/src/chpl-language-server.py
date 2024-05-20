@@ -157,21 +157,23 @@ def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     elif isinstance(decl, chapel.EnumElement):
         return SymbolKind.EnumMember
     elif isinstance(decl, chapel.Function):
-        if decl.is_method():
-            return SymbolKind.Method
-        elif decl.name() in ("init", "init="):
+        if decl.name() in ("init", "init="):
             return SymbolKind.Constructor
         elif decl.kind() == "operator":
             return SymbolKind.Operator
+        elif decl.is_method():
+            return SymbolKind.Method
         else:
             return SymbolKind.Function
     elif isinstance(decl, chapel.Variable):
-        if decl.is_field():
+        if decl.intent() == "type":
+            return SymbolKind.TypeParameter
+        elif decl.intent() == "param":
+            return SymbolKind.Constant
+        elif decl.is_field():
             return SymbolKind.Field
         elif decl.intent() == "<const-var>":
             return SymbolKind.Constant
-        elif decl.intent() == "type":
-            return SymbolKind.TypeParameter
         else:
             return SymbolKind.Variable
     return None
@@ -947,8 +949,6 @@ class ChapelLanguageServer(LanguageServer):
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
 
-        self._curly_bracket_with_comment = re.compile(r"\}.*//")
-
     def get_deprecation_replacement(
         self, text: str
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -1018,7 +1018,7 @@ class ChapelLanguageServer(LanguageServer):
 
         This method retrieves the FileInfo object for a particular URI,
         creating one if it doesn't exist. If do_update is set to True,
-        then the FileInfo's index is reuilt even if it has already been
+        then the FileInfo's index is rebuilt even if it has already been
         computed. This is useful if the underlying file has changed.
         """
 
@@ -1118,6 +1118,15 @@ class ChapelLanguageServer(LanguageServer):
             not isinstance(decl.node, (chapel.Variable, chapel.Formal))
             or decl.node.type_expression() is not None
             or isinstance(type_, chapel.ErroneousType)
+        ):
+            return []
+        # skip implicit this formals
+        if (
+            isinstance(decl.node, chapel.Formal)
+            and isinstance(decl.node.parent(), chapel.Function)
+            and decl.node.parent().this_formal() is not None
+            and decl.node.unique_id()
+            == decl.node.parent().this_formal().unique_id()
         ):
             return []
 
@@ -1367,9 +1376,10 @@ class ChapelLanguageServer(LanguageServer):
                 block_size = end_loc.line - header_loc.end()[0]
                 if block_size < self.end_marker_threshold:
                     continue
-                # skip blocks where the comment is already added
-                curly_line = file_lines[end_loc.line]
-                if re.search(self._curly_bracket_with_comment, curly_line):
+                # skip blocks where other text already exists
+                curly_line = file_lines[end_loc.line].rstrip()
+                assert len(curly_line) > 0
+                if curly_line[-1] != "}":
                     continue
 
                 text = chapel.range_to_lines(header_loc, file_lines)
@@ -1493,7 +1503,12 @@ def run_lsp():
         if not decl:
             return None
 
-        return location_to_location(decl.location())
+        loc = (
+            decl.name_location()
+            if isinstance(decl, chapel.NamedDecl)
+            else decl.location()
+        )
+        return location_to_location(loc)
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
