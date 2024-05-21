@@ -115,8 +115,9 @@ proc runCommand(cmd, quiet=false) : string throws {
       while process.stderr.readLine(line) do write(line);
     }
     process.wait();
-  }
-  catch {
+  } catch e: FileNotFoundError {
+    throw new owned MasonError("Command not found: '" + cmd + "'");
+  } catch {
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -389,14 +390,9 @@ proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
   const oldDir = here.cwd();
   here.chdir(newDir);
-  defer here.chdir(oldDir);
-  try {
-    ret = runCommand(command, quiet);
-  } catch e : MasonError {
-    throw new owned MasonError("Failed to run git command: " + command);
-  } catch e {
-    throw e;
-  }
+  ret = runCommand(command, quiet);
+
+  here.chdir(oldDir);
 
   return ret;
 }
