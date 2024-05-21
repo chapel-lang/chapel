@@ -564,6 +564,13 @@ class FileInfo:
         self.def_segments.append(NodeAndRange(node))
 
     @enter
+    def _enter_Function(self, node: chapel.Function):
+        # Trigger scope resolution to error duplicate variable warnings.
+        _ = node.scope_resolve()
+
+        self.def_segments.append(NodeAndRange(node))
+
+    @enter
     def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
 
