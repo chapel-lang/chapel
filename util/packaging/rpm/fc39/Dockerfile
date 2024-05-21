@@ -60,4 +60,10 @@ RUN short_version=$(python3 package_name.py --short-version $BASENAME $CHAPEL_VE
     unset short_version
 USER user
 
-RUN rpmbuild -ba $BASENAME.spec
+RUN rpmbuild -ba $BASENAME.spec && \
+    cp $(rpm --eval '%{_rpmdir}')/$(rpm --eval '%{_arch}')/*.rpm .
+
+FROM scratch as artifact
+COPY --from=build /home/user/*.rpm /
+
+FROM build as release

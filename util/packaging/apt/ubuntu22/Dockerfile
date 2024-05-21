@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 as build
 
 ARG BASENAME=chapel
 ARG CHAPEL_VERSION=2.0.0
@@ -55,3 +55,8 @@ RUN python3 copy_files.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $T
 WORKDIR /home/user
 # build the deb package
 RUN dpkg-deb --build $(python3 package_name.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH)
+
+FROM scratch as artifact
+COPY --from=build /home/user/*.deb /
+
+FROM build as release
