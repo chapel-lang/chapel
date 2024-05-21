@@ -141,7 +141,7 @@ class SourceFileContext:
             client = self.source_files_context.client
             doc = self.source_files_context._get_doc(self.main_file)
             await save_file(client, doc)
-            assert len(client.diagnostics[doc.uri]) == 0
+            assert len(client.diagnostics[doc.uri]) == self.num_errors
 
         return await self.source_files_context.__aexit__(*exc)
 
