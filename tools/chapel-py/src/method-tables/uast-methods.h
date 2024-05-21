@@ -82,6 +82,11 @@ CLASS_BEGIN(AstNode)
 
                auto r = resolveResultsForNode(context, node);
                return ResolvedExpressionObject::tryCreate(contextObject, r))
+  PLAIN_GETTER(AstNode, scope_resolve, "Perform scope resolution on code surrounding this node to retrieve its to-ID and collect errors.",
+               std::optional<ResolvedExpressionObject*>,
+
+               auto r = scopeResolveResultsForNode(context, node);
+               return ResolvedExpressionObject::tryCreate(contextObject, r))
   METHOD(AstNode, resolve_via, "Use a given function's type information to determine the information of this node.",
          std::optional<ResolvedExpressionObject*>(TypedSignatureObject*),
 
