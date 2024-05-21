@@ -114,8 +114,9 @@ module Optimizers {
      :arg args: additional arguments for the function to use.  Expected to be
                 provided in a tuple, if provided
 
-     :returns: a map of the name of each optimizable aspect to the value found
-               for it that leads to the best result for the optimized function.
+     :returns: a list containing pairs of the name of each optimizable aspect
+               and the value found for it that leads to the best result for the
+               optimized function.
    */
   proc randomOptimize(func, optimizableArgs: list(optimizableArg),
                       args:?t =none)
