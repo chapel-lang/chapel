@@ -557,6 +557,13 @@ class FileInfo:
         self._note_reference(node)
 
     @enter
+    def _enter_Module(self, node: chapel.Module):
+        # Trigger scope resolution to error duplicate variable warnings.
+        _ = node.scope_resolve()
+
+        self.def_segments.append(NodeAndRange(node))
+
+    @enter
     def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
 
