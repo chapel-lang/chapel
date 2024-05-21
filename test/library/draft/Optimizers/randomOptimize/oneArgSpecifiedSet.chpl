@@ -31,6 +31,7 @@ proc main() {
   // we'll see 2 as one of the options tried, even though we have a limited
   // number of options to check.
   // It at least shouldn't be "24", given that there is a 1e-7% chance of only
-  // selecting that option for all ten tries.
+  // selecting that option for all ten tries (and we've set the seed via the
+  // COMPOPTS file)
   assert(bestX.value != 24);
 }

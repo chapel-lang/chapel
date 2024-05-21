@@ -25,6 +25,6 @@ proc main() {
   // It's a roughly 12% odds of getting an x where x <= y
   // The odds of it happening for every x is 1.28e-9, assuming
   // we stick with 10 tries.  If there's more, it should be even lower
-  // So theoretically, this shouldn't fail
+  // We've set the seed via the COMPOPTS file, though, so this won't fail
   assert(bestX.value > 3);
 }

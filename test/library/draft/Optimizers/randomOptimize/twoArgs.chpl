@@ -28,6 +28,6 @@ proc main() {
   // It's a roughly 3% odds of getting one x,y combination where x < y
   // The odds of it happening for every x,y combination is 2.76e-9, assuming
   // we stick with 10 tries.  If there's more, it should be even lower
-  // So theoretically, this shouldn't fail
+  // We've set the seed explicitly via the COMPOPTS, though, so it won't fail
   assert(bestX.value > bestY.value);
 }

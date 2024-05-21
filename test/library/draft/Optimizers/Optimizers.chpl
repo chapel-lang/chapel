@@ -159,7 +159,8 @@ module Optimizers {
     return best;
   }
 
-  private var rngInt = new randomStream(int);
+  config param randomSeed = 0;
+  private var rngInt = new randomStream(int, randomSeed);
 
   // Figures out a set of values to use
   private proc generateRandom(basePoint: Point): Point {
