@@ -308,7 +308,7 @@ static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
   // Combine the properties of the argument's kind with those of the 'REF'
   // kind. This should inherit const-ness, throw off param-ness, and result in
   // errors if the argument is a TYPE.
-  kp.combineWith(KindProperties::fromKind(QualifiedType::REF));
+  kp.combineWithJoin(KindProperties::fromKind(QualifiedType::REF));
   if (!kp.valid()) return QualifiedType();
 
   // 'combineWith' actually disables ref-ness if either argument is non-ref.
@@ -372,6 +372,33 @@ static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallI
   }
 
   return QualifiedType(QualifiedType::TYPE, typePtr);
+}
+
+static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
+                                       const CallInfo& ci) {
+  CHPL_ASSERT(prim == PRIM_GET_SVEC_MEMBER ||
+              prim == PRIM_GET_SVEC_MEMBER_VALUE);
+
+  if (ci.numActuals() == 2 && ci.actual(0).type().hasTypePtr()) {
+    auto index = ci.actual(1).type();
+    if (index.hasTypePtr() && index.type()->isIntegralType()) {
+      auto act = ci.actual(0).type();
+      if (auto tup = act.type()->toTupleType()) {
+        if (tup->isStarTuple()) {
+          auto eltType = tup->starType();
+          QualifiedType::Kind retKind = eltType.kind();
+          if (prim == PRIM_GET_SVEC_MEMBER_VALUE) {
+            // Return as value for _VALUE variant, maintaining constness.
+            retKind =
+                KindProperties::combineKindsMeet(retKind, QualifiedType::PARAM);
+          }
+          return QualifiedType(retKind, eltType.type());
+        }
+      }
+    }
+  }
+
+  return QualifiedType();
 }
 
 static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
@@ -1658,6 +1685,11 @@ CallResolutionResult resolvePrimCall(Context* context,
       }
       break;
 
+    case PRIM_GET_SVEC_MEMBER:
+    case PRIM_GET_SVEC_MEMBER_VALUE:
+        return primGetSvecMember(context, prim, ci);
+        break;
+
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
     case PRIM_TUPLE_EXPAND:
@@ -1688,8 +1720,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_CAPTURE_FN_TO_CLASS:
     case PRIM_RESOLUTION_POINT:
     case PRIM_FTABLE_CALL:
-    case PRIM_GET_SVEC_MEMBER:
-    case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_VIRTUAL_METHOD_CALL:
     case PRIM_END_OF_STATEMENT:
     case PRIM_CURRENT_ERROR:

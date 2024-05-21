@@ -125,7 +125,7 @@ We anticipate the following additions:
 module LAPACK {
 
   /* Available LAPACK implementations for ``lapackImpl`` */
-  enum LapackImpl {lapack, mkl, off};
+  enum LapackImpl {lapack, mkl, off}
   use LapackImpl;
   use CTypes;
 
@@ -208,7 +208,7 @@ extern const LAPACK_TRANSPOSE_MEMORY_ERROR : c_int ;
 
 The enum values values are the same as the const value such that ``lapack_memory_order.row_major == LAPACK_ROW_MAJOR`` and ``lapack_memory_order.column_major == LAPACK_COL_MAJOR``, allowing the enum to be used with pure LAPACK procedures.
  */
-enum lapack_memory_order{row_major = 101 : c_int, column_major = 102 : c_int};
+enum lapack_memory_order{row_major = 101 : c_int, column_major = 102 : c_int}
 
 
 @chpldoc.nodoc

@@ -1,6 +1,6 @@
 use CyclicDist;
 
-const D = {1..20} dmapped cyclicDist(1);
+const D = {1..20} dmapped new cyclicDist(1);
 
 var A: [D] real = 1..20;
 writeln(A);

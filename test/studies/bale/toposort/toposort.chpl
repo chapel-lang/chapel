@@ -1166,7 +1166,7 @@ proc main(){
     when ToposortImplementation.Serial {
        if !silentMode then writeln("Converting to CSC domain");
 
-      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
@@ -1175,7 +1175,7 @@ proc main(){
     when ToposortImplementation.Parallel {
        if !silentMode then writeln("Converting to CSC domain");
 
-      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");
@@ -1183,7 +1183,7 @@ proc main(){
     }
     when ToposortImplementation.Distributed {
        if !silentMode then writeln("Converting to Sparse Block domain");
-      var distributedD : D.type dmapped blockDist(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
+      var distributedD : D.type dmapped new blockDist(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
       distributedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );

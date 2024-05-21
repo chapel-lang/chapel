@@ -31,7 +31,7 @@ record localInfo {
 }
 
 // set up the data arrays
-const gridDist = gridDom dmapped blockDist(gridDom, gridLocales);
+const gridDist = gridDom dmapped new blockDist(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 
 // make sure we got it right

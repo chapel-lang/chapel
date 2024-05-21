@@ -108,7 +108,7 @@
 
   .. code-block:: chpl
 
-    var dom = {1..N} dmapped cyclicDist(startIdx=1);
+    var dom = {1..N} dmapped new cyclicDist(startIdx=1);
     var manager = new EpochManager();
     forall i in dom with (var token = manager.register(), var numOps : int) {
       token.pin();
@@ -575,12 +575,12 @@ module EpochManager {
     proc init() {
       allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
-      limbo_list = for i in 1..EBR_EPOCHS do new unmanaged LimboList();
+      limbo_list = for 1..EBR_EPOCHS do new unmanaged LimboList();
       init this;
 
       // Initialise the free list pool with here.maxTaskPar tokens
       // Do we want this to be a 'coforall' ?
-      forall i in 0..#here.maxTaskPar {
+      forall 0..#here.maxTaskPar {
         var tok = new unmanaged _token();
         allocated_list.append(tok);
         free_list.enqueue(tok);
@@ -894,7 +894,7 @@ module EpochManager {
     // Initialise the free list pool with here.maxTaskPar tokens and other members
     @chpldoc.nodoc
     proc initializeMembers() {
-      forall i in 0..#here.maxTaskPar {
+      forall 0..#here.maxTaskPar {
         var tok = new unmanaged _token();
         this.allocated_list.append(tok);
         this.free_list.enqueue(tok);
@@ -981,7 +981,7 @@ module EpochManager {
       if (global_epoch.is_setting_epoch.testAndSet()) {
         is_setting_epoch.clear();
         return;
-      };
+      }
 
       // TODO: Right now we do not utilize all 3 epochs; in the future,
       // I need to check how crossbeam does it and go from there.

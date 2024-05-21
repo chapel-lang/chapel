@@ -48,7 +48,7 @@ proc sin_calc(size: uint(32), iterations : int(32)): real(32) {
 proc fillTable(size: uint(32))
 {
     const Space = {0..<size};
-    const ReplicatedSpace = Space dmapped replicatedDist();
+    const ReplicatedSpace = Space dmapped new replicatedDist();
     var RA: [ReplicatedSpace] real(32);
 
     coforall loc in Locales {

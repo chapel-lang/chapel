@@ -13,7 +13,7 @@ proc main() {
 
 proc testType(type T) {
   var D = {1..n};
-  var S = D dmapped blockDist(D);
+  var S = D dmapped new blockDist(D);
 
   var DR : [D] T;
   fillRandom(DR);

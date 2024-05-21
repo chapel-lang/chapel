@@ -16,7 +16,7 @@ module SSCA2_main
 
     const vertex_domain = { Torus_Base_Index..#d1,
 			    Torus_Base_Index..#d2 }
-      dmapped blockDist ( { Torus_Base_Index..#d1,
+      dmapped new blockDist ( { Torus_Base_Index..#d1,
 			Torus_Base_Index..#d2 } );
 
     type  vertex = index (vertex_domain);

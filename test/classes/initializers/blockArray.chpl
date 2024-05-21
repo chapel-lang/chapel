@@ -10,7 +10,7 @@ proc main() {
 
 class Foo {
   var dom   : domain(2);
-  var space = dom dmapped blockDist(dom);
+  var space = dom dmapped new blockDist(dom);
   var A     : [space] int;
 
   proc init(n1 : int, n2 : int) {

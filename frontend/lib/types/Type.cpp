@@ -230,7 +230,7 @@ const CompositeType* Type::getCompositeType() const {
     return at;
 
   if (auto ct = toClassType())
-    return ct->basicClassType();
+    return ct->manageableType();
 
   return nullptr;
 }

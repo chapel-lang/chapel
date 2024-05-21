@@ -1472,7 +1472,7 @@ proc cyclicDist.createDomain(rng: range(?)...) {
 // create a domain over a Cyclic Distribution
 proc type cyclicDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales)
 {
-  return dom dmapped CyclicImpl(startIdx=dom.lowBound, targetLocales);
+  return dom dmapped new cyclicDist(startIdx=dom.lowBound, targetLocales);
 }
 
 // create a domain over a Cyclic Distribution constructed from a series of ranges

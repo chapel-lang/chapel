@@ -11701,39 +11701,9 @@ static void applyGpuAttributesToIterableExprs() {
 
     int numUsers = primCall->numActuals();
 
-    // Currently, we can't apply attributes from attribute blocks to promoted
-    // expressions directly. So, for the time being, warn about it if we
-    // see any promotions.
-    int numPromotions = 0;
-
-    std::vector<CallExpr*> calls;
-    collectCallExprs(block, calls);
-    for (auto call : calls) {
-      if (call->resolvedFunction() && call->resolvedFunction()->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-        numPromotions++;
-      }
-    }
-
-    // Check if any of the attributes were 'assertOnGpu', in order to give
-    // a helpful note about 'GpuDiagnostics'.
-    bool hasGpuAssertions = false;
-    for_alist(node, primitivesBlock->body) {
-      if (auto call = toCallExpr(node)) {
-        if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-          hasGpuAssertions = true;
-          break;
-        }
-      }
-    }
-
-    if (numPromotions > 0) {
-      USR_WARN(block, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
-      if (hasGpuAssertions) {
-        USR_PRINT(block, "consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime");
-      }
-    } else if (numUsers == 0 && numPromotions == 0) {
+    if (numUsers == 0) {
       USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
-      USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
+      USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions and promoted function calls in the variable's initializer");
       USR_STOP();
     }
 

@@ -1,3 +1,0 @@
-isoCalendar.chpl:6: warning: `date.isoCalendar` is deprecated; use date.isoWeekDate instead
-(1976, 53, 6)
-true

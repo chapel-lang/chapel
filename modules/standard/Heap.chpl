@@ -298,7 +298,7 @@ module Heap {
     */
     proc push(const ref x: list(eltType)) {
       _enter();
-      for e in x do
+      for x do
         _push(x);
       _leave();
     }

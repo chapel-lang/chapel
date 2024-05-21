@@ -23,7 +23,7 @@ proc main() {
   output.writeln([1,2,3]);
 
   var myMapper = new MyMapper();
-  var D: domain(string) dmapped hashedDist(idxType=string, mapper=myMapper);
+  var D: domain(string) dmapped new hashedDist(idxType=string, mapper=myMapper);
   var A:[D] real;
 
   D += "zero";

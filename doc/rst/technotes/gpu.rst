@@ -237,7 +237,7 @@ architecture to compile for. The default value is ``sm_60`` for
 ``CHPL_GPU=nvidia``. You may also use the ``--gpu-arch`` compiler flag to
 set GPU architecture.  If using AMD, this variable must be set. `This table in
 the ROCm documentation
-<https://rocm.docs.amd.com/en/latest/reference/gpu-arch/gpu-arch-spec-overview.html>`_
+<https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html>`_
 has possible architecture values (see the "LLVM target name" column). For NVIDIA, see
 the `CUDA Compute Capability <https://developer.nvidia.com/cuda-gpus>`_ table.
 

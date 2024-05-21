@@ -55,7 +55,7 @@ forall l in localePrivate do l = new localePrivateData(taskPrivateData);
 // an example use
 config param nPerLocale = 113;
 config const printTemps = false;
-const D = {0..#nPerLocale*numLocales} dmapped blockDist(boundingBox={0..#nPerLocale*numLocales});
+const D = {0..#nPerLocale*numLocales} dmapped new blockDist(boundingBox={0..#nPerLocale*numLocales});
 forall d in D {
   // my copy of the task private vars
   var lp = localePrivate[here.id];

@@ -160,7 +160,7 @@ module List {
     type eltType;
 
     /*If `true`, this list will perform parallel safe operations.*/
-    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future");
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     param parSafe = false;
 
     @chpldoc.nodoc

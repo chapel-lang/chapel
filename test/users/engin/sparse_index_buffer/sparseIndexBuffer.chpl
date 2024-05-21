@@ -4,11 +4,11 @@ use List;
 
 var parentDom1D = {1..100};
 var parentDom2D = {1..100, 1..100};
-var distParentDom1D = {1..100} dmapped blockDist({1..100});
-var distParentDom2DCOO = {1..100, 1..100} dmapped blockDist({1..100, 1..100});
-var distParentDom2DCSR = {1..100, 1..100} dmapped blockDist({1..100, 1..100},
+var distParentDom1D = {1..100} dmapped new blockDist({1..100});
+var distParentDom2DCOO = {1..100, 1..100} dmapped new blockDist({1..100, 1..100});
+var distParentDom2DCSR = {1..100, 1..100} dmapped new blockDist({1..100, 1..100},
     sparseLayoutType=CS(compressRows=true));
-var distParentDom2DCSC = {1..100, 1..100} dmapped blockDist({1..100, 1..100},
+var distParentDom2DCSC = {1..100, 1..100} dmapped new blockDist({1..100, 1..100},
     sparseLayoutType=CS(compressRows=false));
 
 const indexRange = 10..90 by 20;
@@ -48,9 +48,9 @@ test(cooDom1D);
 // test local 2D domains
 var cooDom2D: sparse subdomain(parentDom2D);
 test(cooDom2D);
-var csrDom: sparse subdomain(parentDom2D) dmapped CS(compressRows=true);
+var csrDom: sparse subdomain(parentDom2D) dmapped new dmap(new CS(compressRows=true));
 test(csrDom);
-var cscDom: sparse subdomain(parentDom2D) dmapped CS(compressRows=false);
+var cscDom: sparse subdomain(parentDom2D) dmapped new dmap(new CS(compressRows=false));
 test(cscDom);
 
 // test distributed 1D domains

@@ -7,7 +7,7 @@ use CyclicDist;
 config const N = 10;
 
 const Space = {10..#N, 20..#N, 30..#N};
-const Dom = Space dmapped cyclicDist(Space.low);
+const Dom = Space dmapped new cyclicDist(Space.low);
 
 const pDom1 = Dom._value.dsiPartialDomain(0);
 const pDom2 = Dom._value.dsiPartialDomain(1);

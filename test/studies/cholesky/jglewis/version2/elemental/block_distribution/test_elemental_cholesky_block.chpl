@@ -30,7 +30,7 @@ module cholesky_test_elemental_symmetric_ranges {
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
-    const mat_dom : domain (2) dmapped blockDist ( boundingBox = MatIdx )
+    const mat_dom : domain (2) dmapped new blockDist ( boundingBox = MatIdx )
       = MatIdx;   // BLOCK Version
     const distribution_type = "block";
 

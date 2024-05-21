@@ -12,7 +12,7 @@ forall i in slice.domain with (ref slice) {        // I expect this to be a dist
 writeln(localArr);
 
 
-var blockDom2 = {3..8 by 2} dmapped blockDist({3..8});
+var blockDom2 = {3..8 by 2} dmapped new blockDist({3..8});
 ref slice2 = localArr[blockDom2];
 
 forall i in slice2.domain with (ref slice2) {

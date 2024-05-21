@@ -35,7 +35,14 @@ all: chpl-language-server install
 chpl-language-server-venv:
 	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chpl-language-server-venv
 
+chpl-language-server-test-venv:
+	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) cls-test-venv
+
 chpl-language-server: chpl-language-server-venv
+
+test-chpl-language-server: chpl-language-server chpl-language-server-test-venv
+	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
+		python3 -m pytest test/*.py
 
 clean: clean-link clean-link-shim
 

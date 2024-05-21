@@ -140,7 +140,6 @@ _chpl ()
 --lifetime-checking \
 --live-analysis \
 --lldb \
---llvm \
 --llvm-print-ir \
 --llvm-print-ir-stage \
 --llvm-print-passes \
@@ -233,7 +232,6 @@ _chpl ()
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
---no-llvm \
 --no-llvm-wide-opt \
 --no-local \
 --no-local-checks \
@@ -478,7 +476,6 @@ _chpl ()
 --lib-search-path \
 --license \
 --live-analysis \
---llvm \
 --llvm-wide-opt \
 --local \
 --local-checks \
@@ -519,7 +516,6 @@ _chpl ()
 --no-inline \
 --no-inline-iterators \
 --no-live-analysis \
---no-llvm \
 --no-llvm-wide-opt \
 --no-local \
 --no-local-checks \

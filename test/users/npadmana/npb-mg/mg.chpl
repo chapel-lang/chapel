@@ -39,7 +39,7 @@ type coeff = 4*real;
 // Initialize levels
 class MGLevel {
   var n1 : int;
-  var dom = {0.. #n1, 0.. #n1, 0.. #n1} dmapped stencilDist({0.. #n1, 0.. #n1, 0.. #n1},
+  var dom = {0.. #n1, 0.. #n1, 0.. #n1} dmapped new stencilDist({0.. #n1, 0.. #n1, 0.. #n1},
                             fluff=HaloSize,
                             periodic=true);
   var Z, R : [dom] real;

@@ -4147,6 +4147,14 @@ bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
 }
 
 bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  // In cases like compound promotion (A + 1 + 1), we might end up inserting
+  // the GPU blockSize attribute several times, even though there's only
+  // one place in the code where the attribute was created. To work around this,
+  // add a unique identifier integer to each blockSize call. If blockSizes
+  // are included twice, but they have a unique identifier that matches,
+  // we can safely ignore the second one.
+  static int counter = 0;
+
   if (blockSizeAttr) {
     if (blockSizeAttr->numActuals() != 1) {
       USR_FATAL(blockSizeAttr->id(),
@@ -4155,7 +4163,9 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
     }
 
     Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE,
+                                    blockSize,
+                                    new_IntSymbol(counter++)));
     return true;
   }
   return false;
@@ -4409,7 +4419,9 @@ Type* Converter::convertRecordType(const types::QualifiedType qt) {
     return dtBytes;
   }
 
-  CHPL_UNIMPL("unhandled record type");
+  std::string msg = "unhandled record type: ";
+  msg += t == nullptr ? "(null)" : t->name().str();
+  CHPL_UNIMPL(msg.c_str());
   return nullptr;
 }
 

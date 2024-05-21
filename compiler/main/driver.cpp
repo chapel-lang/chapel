@@ -325,8 +325,6 @@ int instantiation_limit = 512;
 bool printSearchDirs = false;
 bool printModuleFiles = false;
 bool fLlvmCodegen = false;
-static bool fYesLlvmCodegen = false;
-static bool fNoLlvmCodegen = false;
 #ifdef HAVE_LLVM
 bool fAllowExternC = true;
 #else
@@ -948,20 +946,6 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
   setLibmode(desc, unused);
 }
 
-static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
-{
-  if (fYesLlvmCodegen) {
-    fNoLlvmCodegen = false;
-    envMap["CHPL_TARGET_COMPILER"] = "llvm";
-    // set the environment variable for follow-on processes including
-    // any printchplenv invocation
-    int rc = setenv("CHPL_TARGET_COMPILER", "llvm", 1);
-    if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
-  } else {
-    fNoLlvmCodegen = true;
-  }
-}
-
 static void setVectorize(const ArgumentDescription* desc, const char* unused)
 {
   // fNoVectorize is set by the flag processing
@@ -1337,7 +1321,6 @@ static ArgumentDescription arg_desc[] = {
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
- {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &fYesLlvmCodegen, "CHPL_LLVM_CODEGEN", setLlvmCodegen},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
  {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
 
@@ -1688,13 +1671,6 @@ static void printStuff(const char* argv0) {
 static void setupLLVMCodeGen() {
   // Use LLVM code generation if CHPL_TARGET_COMPILER=llvm.
   fLlvmCodegen = (0 == strcmp(CHPL_TARGET_COMPILER, "llvm"));
-
-  // These are deprecated and shouldn't be set, but try to
-  // use them.
-  if (fYesLlvmCodegen)
-    fLlvmCodegen = true;
-  else if (fNoLlvmCodegen)
-    fLlvmCodegen = false;
 }
 
 bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
@@ -2006,17 +1982,6 @@ static void setGPUFlags() {
 
 }
 
-// Warn for use of deprecated flags
-static void warnDeprecatedFlags() {
-  if (fYesLlvmCodegen) {
-    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
-  }
-  if (fNoLlvmCodegen) {
-    USR_WARN(
-        "--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
-  }
-}
-
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
   // Force monolithic mode for AMD GPUs due to inconsistencies in ROCm 5's
@@ -2280,8 +2245,6 @@ static void postprocess_args() {
 // chplconfig-style environment variables checks could/should be done in the
 // chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
-  warnDeprecatedFlags();
-
   checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();

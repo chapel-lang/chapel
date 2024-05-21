@@ -91,8 +91,8 @@ c2chapel["signed int"]         = "c_int"
 c2chapel["signed long long"]   = "c_longlong"
 c2chapel["signed long"]        = "c_long"
 
-# Note: this mapping is defined by the compiler, not the ChapelSysCTypes file
-c2chapel["FILE"] = "_file"
+# Note: this mapping is defined by CTypes, not the ChapelSysCTypes file
+c2chapel["FILE"] = "c_FILE"
 
 __temp = [k for k in c2chapel.keys()]
 for key in __temp:
@@ -511,7 +511,7 @@ def genTypeAlias(node):
             print("extern type " + alias + ";")
         else:
             print("extern type " + alias + " = " + typeName + ";")
-        foundTypes.add(alias);
+        foundTypes.add(alias)
         print()
 
 def isPointerToStruct(node):
@@ -590,7 +590,7 @@ def handleTypedefs(defs, ignores):
 # - bitshift constants (e.g. 1<<3)
 def emit_defines(fname):
     with open(fname, "r") as f:
-        pat = re.compile("^\s*#define\s+([_a-zA-Z0-9]+)\s+[0-9]+$")
+        pat = re.compile("^\\s*#define\\s+([_a-zA-Z0-9]+)\\s+[0-9]+$")
         first = True
         for line in f:
             res = pat.match(line)

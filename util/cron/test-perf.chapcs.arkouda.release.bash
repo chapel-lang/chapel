@@ -27,5 +27,7 @@ else
   exit 1
 fi
 
+nightly_args="${nightly_args} -no-warnings"
+
 test_release
 sync_graphs

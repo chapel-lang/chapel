@@ -665,6 +665,7 @@ support iteration over a 2D `m` x `n` space as well.
 
 .. index::
    single: statements; param for
+   single: for param
    single: for loops; param
    pair: for; param
 .. _Parameter_For_Loops:

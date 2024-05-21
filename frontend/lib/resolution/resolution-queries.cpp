@@ -343,6 +343,25 @@ const QualifiedType& typeForBuiltin(Context* context,
   return QUERY_END(result);
 }
 
+const QualifiedType& typeForSysCType(Context* context, UniqueString name) {
+  QUERY_BEGIN(typeForSysCType, context, name);
+
+  QualifiedType result;
+
+  UniqueString modName = UniqueString::get(context, "ChapelSysCTypes");
+  if (auto mod = parsing::getToplevelModule(context, modName)) {
+    for (auto stmt : mod->children()) {
+      auto decl = stmt->toNamedDecl();
+      if (decl && decl->name() == name) {
+        auto res = resolveModuleStmt(context, stmt->id());
+        result = res.byId(stmt->id()).type();
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 QualifiedType typeForLiteral(Context* context, const Literal* literal) {
   const Type* typePtr = nullptr;
   const Param* paramPtr = nullptr;
@@ -399,7 +418,7 @@ anyFormalNeedsInstantiation(Context* context,
     bool considerGenericity = true;
     if (substitutions != nullptr) {
       auto formalDecl = untypedSig->formalDecl(i);
-      if (substitutions->count(formalDecl->id())) {
+      if (formalDecl && substitutions->count(formalDecl->id())) {
         // don't consider it needing a substitution - e.g. when passing
         // a generic type into a type argument.
         considerGenericity = false;
@@ -1166,13 +1185,10 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
   return getTypeGenericityIgnoring(context, qt, ignore);
 }
 
-// Returns true if the field should be included in the type constructor.
-// In that event, also sets formalType to the type the formal should use.
-static
 bool shouldIncludeFieldInTypeConstructor(Context* context,
-                                         const Decl* fieldDecl,
+                                         const ID& fieldId,
                                          const QualifiedType& fieldType,
-                                         QualifiedType& formalType) {
+                                         QualifiedType* formalType) {
   // compare with AggregateType::fieldIsGeneric
 
   // fields with concrete types don't need to be in type constructor
@@ -1184,11 +1200,13 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
   // and we can use the same type/param intent for the type constructor
   if ((fieldType.isParam() && !fieldType.hasParamPtr()) ||
       fieldType.isType()) {
-    formalType = fieldType;
+    if (formalType) *formalType = fieldType;
     return true;
   }
 
-  if (const VarLikeDecl* var = fieldDecl->toVarLikeDecl()) {
+  if (asttags::isVarLikeDecl(parsing::idToTag(context, fieldId))) {
+    auto var = parsing::idToAst(context, fieldId)->toVarLikeDecl();
+
     // non-type/param fields with an init expression aren't generic
     if (var->initExpression())
       return false;
@@ -1196,7 +1214,8 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     // non-type/param fields that have no declared type and no initializer
     // are generic and these need a type variable for the argument with AnyType.
     if (var->typeExpression() == nullptr) {
-      formalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      if (formalType)
+        *formalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
       return true;
     }
 
@@ -1207,10 +1226,14 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     //  * unknown type means it depends on a previous generic field
     //    (and when previous generic fields are set, they will be concrete)
     const Type* t = fieldType.type();
-    if (t && !t->isUnknownType()) {
+    // a 'var' field of 'AnyType' isn't itself generic, it just depends on
+    // another field that's 'AnyType'. In that case, treat it as unknown.
+    bool isVarOfAnyType = fieldType.kind() != QualifiedType::TYPE &&
+                          t && t->isAnyType();
+    if (t && !isVarOfAnyType && !t->isUnknownType()) {
       Type::Genericity g = getTypeGenericity(context, t);
       if (g == Type::GENERIC) { // and not GENERIC_WITH_DEFAULTS
-        formalType = QualifiedType(QualifiedType::TYPE, t);
+        if (formalType) *formalType = QualifiedType(QualifiedType::TYPE, t);
         return true;
       }
     }
@@ -1253,11 +1276,14 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       CHPL_ASSERT(fieldDecl);
       QualifiedType fieldType = f.fieldType(i);
       QualifiedType formalType;
-      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl, fieldType,
-                                              formalType)) {
+      if (shouldIncludeFieldInTypeConstructor(context, declId, fieldType,
+                                              &formalType)) {
 
+        auto defaultKind = f.fieldHasDefaultValue(i) ?
+                           UntypedFnSignature::DK_DEFAULT :
+                           UntypedFnSignature::DK_NO_DEFAULT;
         auto d = UntypedFnSignature::FormalDetail(f.fieldName(i),
-                                                  f.fieldHasDefaultValue(i),
+                                                  defaultKind,
                                                   fieldDecl,
                                                   fieldDecl->isVarArgFormal());
         formals.push_back(d);
@@ -2097,21 +2123,49 @@ ApplicabilityResult instantiateSignature(Context* context,
     // now pull out the field types
     CHPL_ASSERT(formalTypes.empty());
     int nFormals = sig->numFormals();
-    for (int i = 0; i < nFormals; i++) {
-      const Decl* fieldDecl = untypedSignature->formalDecl(i);
+    int formalIdx = 0;
+
+    // The "default value" hints are set in substitutions, but at this
+    // point, we want to use the actual type that was computed. So,
+    // rebuild the substitutions.
+    SubstitutionsMap newSubstitutions;
+
+    if (!sig->untyped()->isTypeConstructor()) {
+      // Compiler-generated initializer has an initial 'this' formal,
+      // skip it for now and insert a placeholder.
+      formalIdx++;
+      formalTypes.push_back(QualifiedType());
+    }
+
+    for (; formalIdx < nFormals; formalIdx++) {
+      const Decl* fieldDecl = untypedSignature->formalDecl(formalIdx);
       const ResolvedExpression& e = r.byAst(fieldDecl);
       QualifiedType fieldType = e.type();
-      QualifiedType sigType = sig->formalType(i);
+      QualifiedType sigType = sig->formalType(formalIdx);
 
       // use the same kind as the old formal type but update the type, param
       // to reflect how instantiation occurred.
       formalTypes.push_back(QualifiedType(sigType.kind(),
                                           fieldType.type(),
                                           fieldType.param()));
+
+      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl->id(), sigType)){
+        newSubstitutions.insert({fieldDecl->id(), fieldType});
+      }
     }
+
+    if (!sig->untyped()->isTypeConstructor()) {
+      // We've visited the rest of the formals and figured out their types.
+      // Time to backfill the 'this' formal.
+      auto newType = helpGetTypeForDecl(context, ad, newSubstitutions,
+                                        poiScope, sig->formalType(0).type());
+
+      formalTypes[0] = QualifiedType(sig->formalType(0).kind(), newType);
+    }
+
     needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
                                                      untypedSignature,
-                                                     &substitutions);
+                                                     &newSubstitutions);
   } else if (ed) {
     // Fine; formal types were stored into formalTypes earlier since we're
     // considering a compiler-generated candidate on an enum.
@@ -3506,7 +3560,8 @@ considerCompilerGeneratedCandidates(Context* context,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
-                                   CandidatesAndForwardingInfo& candidates) {
+                                   CandidatesAndForwardingInfo& candidates,
+                                   std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
   tfs = considerCompilerGeneratedMethods(context, ci, inScope, inPoiScope, candidates);
@@ -3534,9 +3589,15 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            tfs,
                                                            ci,
                                                            poi);
-  if (!instantiated.success() ||
-      instantiated.candidate()->needsInstantiation()) {
+  if (!instantiated.success()) {
+    // failed when instantiating, likely due to dependent types.
+    if (rejected) rejected->push_back(instantiated);
+    return;
+  }
+
+  if (instantiated.candidate()->needsInstantiation()) {
     context->error(tfs->id(), "invalid instantiation of compiler-generated method");
+    return; // do not push invalid candidate into list
   }
 
   candidates.addCandidate(instantiated.candidate());
@@ -3714,7 +3775,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     const CallScopeInfo& inScopes,
                                     CandidatesAndForwardingInfo& nonPoiCandidates,
                                     CandidatesAndForwardingInfo& poiCandidates,
-                                    LastResortCandidateGroups& lrcGroups) {
+                                    LastResortCandidateGroups& lrcGroups,
+                                    std::vector<ApplicabilityResult>* rejected) {
 
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -3810,7 +3872,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
       // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, fci,
                                           inScopes.callScope(), inScopes.poiScope(),
-                                          nonPoiCandidates);
+                                          nonPoiCandidates,
+                                          rejected);
       // update forwardingTo
       nonPoiCandidates.helpComputeForwardingTo(fci, start);
 
@@ -3838,7 +3901,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
                                       candidatesWithInstantiations,
-                                      /* rejected */ nullptr);
+                                      rejected);
 
         // filter out last resort candidates
         filterCandidatesLastResort(context, candidatesWithInstantiations,
@@ -3883,7 +3946,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
                                       candidatesWithInstantiations,
-                                      /* rejected */ nullptr);
+                                      rejected);
 
         // filter out last resort candidates
         filterCandidatesLastResort(context, candidatesWithInstantiations,
@@ -3909,7 +3972,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                                 inScopes,
                                                 nonPoiCandidates,
                                                 poiCandidates,
-                                                thisForwardingLrcGroups);
+                                                thisForwardingLrcGroups,
+                                                rejected);
           }
         }
         lrcGroups.getForwardingGroups().mergeWithGroups(
@@ -3976,7 +4040,8 @@ gatherAndFilterCandidates(Context* context,
   considerCompilerGeneratedCandidates(context, ci,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
-                                      candidates);
+                                      candidates,
+                                      rejected);
 
   // don't worry about last resort for compiler generated candidates
 
@@ -4087,7 +4152,8 @@ gatherAndFilterCandidates(Context* context,
 
       gatherAndFilterCandidatesForwarding(
           context, call, ci, inScopes, nonPoiCandidates,
-          poiCandidates, lrcGroups.getForwardingGroups());
+          poiCandidates, lrcGroups.getForwardingGroups(),
+          rejected);
 
       // append candidates from forwarding
       candidates.takeFromOther(nonPoiCandidates);

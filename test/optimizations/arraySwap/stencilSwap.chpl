@@ -23,8 +23,8 @@ proc test(d1, d2) {
 writeln("*** Stencil ***");
 {
   writeln("simple case: everything should be optimized");
-  var d1 = {1..10} dmapped stencilDist({1..10});
-  var d2 = {1..10} dmapped stencilDist({1..10});
+  var d1 = {1..10} dmapped new stencilDist({1..10});
+  var d2 = {1..10} dmapped new stencilDist({1..10});
 
   test(d1, d2);
   
@@ -33,8 +33,8 @@ writeln("*** Stencil ***");
 
 {
   writeln("shapes match and domains are aligned with their distribions but are different. We decided not to optimized this for now");
-  var d1 = {1..10} dmapped stencilDist({1..10});
-  var d2 = {0..9} dmapped stencilDist({0..9});
+  var d1 = {1..10} dmapped new stencilDist({1..10});
+  var d2 = {0..9} dmapped new stencilDist({0..9});
 
   test(d1, d2);
   
@@ -44,8 +44,8 @@ writeln("*** Stencil ***");
 
 {
   writeln("one array is unevenly distributed. shouldn't optimize");
-  var d1 = {0..9} dmapped stencilDist({1..10});
-  var d2 = {1..10} dmapped stencilDist({1..10});
+  var d1 = {0..9} dmapped new stencilDist({1..10});
+  var d2 = {1..10} dmapped new stencilDist({1..10});
 
   test(d1, d2);
 
@@ -54,8 +54,8 @@ writeln("*** Stencil ***");
 
 {
   writeln("both are unevenly distributed, but they align with each other");
-  var d1 = {0..9} dmapped stencilDist({1..10});
-  var d2 = {0..9} dmapped stencilDist({1..10});
+  var d1 = {0..9} dmapped new stencilDist({1..10});
+  var d2 = {0..9} dmapped new stencilDist({1..10});
 
   test(d1, d2);
 
@@ -66,8 +66,8 @@ writeln("*** Stencil ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("One of the domains is strided");
-  var d1 = {0..9 by 2} dmapped stencilDist({1..10});
-  var d2 = {0..4} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2} dmapped new stencilDist({1..10});
+  var d2 = {0..4} dmapped new stencilDist({1..10});
 
   test(d1, d2);
 
@@ -76,8 +76,8 @@ writeln("*** Stencil ***");
 
 {
   writeln("both are strided and aligned");
-  var d1 = {0..9 by 2} dmapped stencilDist({1..10});
-  var d2 = {0..9 by 2} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2} dmapped new stencilDist({1..10});
+  var d2 = {0..9 by 2} dmapped new stencilDist({1..10});
 
   test(d1, d2);
 
@@ -86,8 +86,8 @@ writeln("*** Stencil ***");
 
 {
   writeln("both are strided, have same number of elements but not aligned, shouldn't optimize");
-  var d1 = {0..9 by 2} dmapped stencilDist({1..10});
-  var d2 = {1..10 by 2} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2} dmapped new stencilDist({1..10});
+  var d2 = {1..10 by 2} dmapped new stencilDist({1..10});
 
   test(d1, d2);
 
@@ -98,8 +98,8 @@ writeln("*** Stencil ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("both are strided and misaligned");
-  var d1 = {0..9 by 2 align 0} dmapped stencilDist({1..10});
-  var d2 = {0..9 by 2 align 1} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2 align 0} dmapped new stencilDist({1..10});
+  var d2 = {0..9 by 2 align 1} dmapped new stencilDist({1..10});
 
   test(d1, d2);
 
@@ -110,7 +110,7 @@ writeln();
 writeln("*** Cross type ***");
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {1..10} dmapped stencilDist({1..10});
+  var d1 = {1..10} dmapped new stencilDist({1..10});
   var d2 = {1..10};
 
   test(d1, d2);
@@ -121,7 +121,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9} dmapped stencilDist({1..10});
+  var d1 = {0..9} dmapped new stencilDist({1..10});
   var d2 = {1..10};
 
   test(d1, d2);
@@ -131,7 +131,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9} dmapped stencilDist({1..10});
+  var d1 = {0..9} dmapped new stencilDist({1..10});
   var d2 = {0..9};
 
   test(d1, d2);
@@ -141,7 +141,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9 by 2} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2} dmapped new stencilDist({1..10});
   var d2 = {0..4};
 
   test(d1, d2);
@@ -151,7 +151,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9 by 2} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2} dmapped new stencilDist({1..10});
   var d2 = {0..9 by 2};
 
   test(d1, d2);
@@ -161,7 +161,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("both are strided, have same number of elements but not aligned, shouldn't optimize");
-  var d1 = {0..9 by 2} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2} dmapped new stencilDist({1..10});
   var d2 = {1..10 by 2};
 
   test(d1, d2);
@@ -173,7 +173,7 @@ writeln("*** Cross type ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("both are strided and misaligned");
-  var d1 = {0..9 by 2 align 0} dmapped stencilDist({1..10});
+  var d1 = {0..9 by 2 align 0} dmapped new stencilDist({1..10});
   var d2 = {0..9 by 2 align 1};
 
   test(d1, d2);

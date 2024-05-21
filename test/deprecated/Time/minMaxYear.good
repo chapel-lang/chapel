@@ -1,5 +1,0 @@
-minMaxYear.chpl:3: warning: 'MINYEAR' is deprecated; use `date.min.year` instead
-minMaxYear.chpl:4: warning: 'MAXYEAR' is deprecated; use `date.max.year` instead
-true
-true
-true

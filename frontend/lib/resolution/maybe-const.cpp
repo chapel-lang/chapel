@@ -305,14 +305,28 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
                                /* raiseErrors */ false,
                                &actualAsts);
 
+    // If this call was inferred to have a receiver, then CallInfo::create will
+    // not have added a 'this' formal. Instead, grab the receiver type from
+    // this visitor's resolver and create a new CallInfo.
+    bool inferredReceiver = false;
+    if (ci.isMethodCall() == false &&
+        fn->untyped()->isMethod()) {
+      ci = CallInfo::createWithReceiver(ci, resolver.methodReceiverType());
+      inferredReceiver = true;
+    }
+
     auto formalActualMap = FormalActualMap(fn, ci);
     int nActuals = ci.numActuals();
-    for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+    int startingActual = ci.isMethodCall() ? 1 : 0;
+    for (int actualIdx = startingActual; actualIdx < nActuals; actualIdx++) {
       const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
       int formalIdx = fa->formalIdx();
 
       if (fa->hasActual()) {
-        const AstNode* actualAst = actualAsts[actualIdx];
+        // actualAsts might not include an entry for the method receiver if
+        // it was inferred, so we need to offset by one.
+        const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
+                                                      actualAsts[actualIdx];
         Access access = accessForQualifier(fa->formalType().kind());
 
         exprStack.push_back(ExprStackEntry(actualAst, access,

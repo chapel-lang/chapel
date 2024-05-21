@@ -26,19 +26,19 @@ proc buildSpace(Dom) {
     // Use a boundingBox smaller than the resize amount to expose the potential
     // bug.
     var bb = {1..3};
-    return Dom dmapped blockDist(boundingBox=bb);
+    return Dom dmapped new blockDist(boundingBox=bb);
   }
   else if distType == DistType.cyclic {
-    return Dom dmapped cyclicDist(startIdx=1);
+    return Dom dmapped new cyclicDist(startIdx=1);
   }
   else if distType == DistType.replicated {
-    return Dom dmapped replicatedDist();
+    return Dom dmapped new replicatedDist();
   }
   else if distType == DistType.stencil {
-    return Dom dmapped stencilDist(boundingBox={1..3});
+    return Dom dmapped new stencilDist(boundingBox={1..3});
   }
   else if distType == DistType.blockcyclic {
-    return Dom dmapped blockCycDist(startIdx=1, blocksize=2);
+    return Dom dmapped new blockCycDist(startIdx=1, blocksize=2);
   }
   else {
     compilerError("Compiling with unknown DistType.");

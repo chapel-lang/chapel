@@ -47,6 +47,7 @@
 #include "library.h"
 #include "llvmDebug.h"
 #include "llvmExtractIR.h"
+#include "llvmTracker.h"
 #include "llvmUtil.h"
 #include "LoopStmt.h"
 #include "misc.h"
@@ -454,6 +455,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       // for LLVM (the C backend can just print it out).
       std::string newString = chpl::unescapeStringC(i->v_string.c_str());
       ret = info->irBuilder->CreateGlobalString(newString);
+      trackLLVMValue(ret);
       break;
   }
 
@@ -676,7 +678,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     //   _ret:dtNil = nil
     if( typeInfo() == dtNil && 0 == strcmp(cname, "nil") ) {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(getPointerType(info->irBuilder));
       voidPtr.chplType = dtNil;
       return voidPtr;
     }
@@ -711,6 +713,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           llvm::Type* gepTy = global->getValueType();
           got.val = info->irBuilder->CreateStructGEP(gepTy, got.val, 0);
           got.isLVPtr = GEN_VAL;
+          trackLLVMValue(got.val);
         }
         // check for extern global variables where there is a different
         // type provided by clang
@@ -773,13 +776,14 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (cname, info->irBuilder->getInt8PtrTy()));
+                  (cname, getPointerType(info->irBuilder)));
         globalValue->setConstant(true);
         if (fDynoLibGenOrUse)
           globalValue->setLinkage(llvm::GlobalVariable::LinkOnceODRLinkage);
-        globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->irBuilder->CreateConstInBoundsGEP2_32(
-                gepTy, globalConstString, 0, 0)));
+        llvm::Value* gep = info->irBuilder->CreateConstInBoundsGEP2_32(
+                                              gepTy, globalConstString, 0, 0);
+        trackLLVMValue(gep);
+        globalValue->setInitializer(llvm::cast<llvm::Constant>(gep));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -795,7 +799,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       return ret;
     } else if (std::string(cname) == "NULL") {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(getPointerType(info->irBuilder));
       voidPtr.chplType = typeInfo();
       return voidPtr;
     }
@@ -938,6 +942,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
             linkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
+      trackLLVMValue(gVar);
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type), type);
 
       gVar->setDSOLocal(true);
@@ -983,9 +988,10 @@ void VarSymbol::codegenDef() {
         if(llvm::Value *constString = codegenImmediateLLVM(immediate)) {
           llvm::GlobalVariable *globalString =
             llvm::cast<llvm::GlobalVariable>(constString);
-          globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->irBuilder->CreateConstInBoundsGEP2_32(
-                  NULL, globalString, 0, 0)));
+          llvm::Value* gep = info->irBuilder->CreateConstInBoundsGEP2_32(
+                                                NULL, globalString, 0, 0);
+          trackLLVMValue(gep);
+          globalValue->setInitializer(llvm::cast<llvm::Constant>(gep));
         } else {
           llvm::GlobalVariable *globalString =
             new llvm::GlobalVariable(
@@ -995,11 +1001,13 @@ void VarSymbol::codegenDef() {
                 llvm::GlobalVariable::PrivateLinkage,
                 NULL,
                 "string");
+          trackLLVMValue(globalString);
           globalString->setInitializer(llvm::Constant::getNullValue(
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
-          globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->irBuilder->CreateConstInBoundsGEP1_32(
-                  NULL, globalString, 0)));
+          llvm::Value* gep = info->irBuilder->CreateConstInBoundsGEP1_32(
+                                                NULL, globalString, 0);
+          trackLLVMValue(gep);
+          globalValue->setInitializer(llvm::cast<llvm::Constant>(gep));
         }
       } else {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
@@ -1024,8 +1032,9 @@ void VarSymbol::codegenDef() {
          ctype->symbol->hasFlag(FLAG_WIDE_REF) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
-          info->irBuilder->CreateStore(
+          llvm::StoreInst* store = info->irBuilder->CreateStore(
               llvm::Constant::getNullValue(varType), varAlloca);
+          trackLLVMValue(store);
         }
       }
     }
@@ -2285,6 +2294,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
     llvm::PointerType *ptrToFnType = llvm::PointerType::get(fnType, 0);
     fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
+    trackLLVMValue(fngen.val);
 #endif
   }
   return fngen;
@@ -2368,6 +2378,7 @@ importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
                                    SF->getAddressSpace(),
                                    SF->getName(),
                                    DstM);
+  trackLLVMValue(F);
   F->copyAttributesFrom(SF);
 
   // also copy the metadata
@@ -2455,6 +2466,7 @@ void FnSymbol::codegenPrototype() {
     // No other function with the same name exists.
     llvm::Function *func = llvm::Function::Create(fTy, linkage, cname,
                                                   info->module);
+    trackLLVMValue(func);
 
     if (generatingGPUKernel) {
       func->setConvergent();
@@ -2686,6 +2698,7 @@ void FnSymbol::codegenDef() {
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
     func = getFunctionLLVM(cname);
+    trackLLVMValue(func); // 'func' was created earlier
 
     // Mark functions to dump as no-inline so they actually exist
     // after optimization
@@ -2697,8 +2710,11 @@ void FnSymbol::codegenDef() {
     if (fNoInline)
       func->addFnAttr(llvm::Attribute::NoInline);
 
+#if HAVE_LLVM_VER < 160
+    // in newer LLVM versions, this is a only parameter attribute
     if (this->hasFlag(FLAG_LLVM_READNONE))
       func->addFnAttr(llvm::Attribute::ReadNone);
+#endif
 
     if (this->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       func->addFnAttr(llvm::Attribute::NoReturn);
@@ -2715,6 +2731,7 @@ void FnSymbol::codegenDef() {
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
+    trackLLVMValue(block);
 
     if (!(info->irBuilder)) return;
 
@@ -2750,11 +2767,14 @@ void FnSymbol::codegenDef() {
 
     if (CGI) {
       const clang::CodeGen::ABIArgInfo &returnInfo = CGI->getReturnInfo();
+#if HAVE_LLVM_VER < 160
+      // in newer LLVM versions, this is a only parameter attribute
       // Adjust attributes based on return ABI info
       if (returnInfo.isInAlloca() || returnInfo.isIndirect()) {
         func->removeFnAttr(llvm::Attribute::ReadOnly);
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
+#endif
 
       // Skip the first LLVM formal if it is used for a struct return.
       // Note that we only consume the first _LLVM_ formal. The Clang
@@ -2798,10 +2818,19 @@ void FnSymbol::codegenDef() {
           INT_FATAL("TODO");
       }
 
-      if (argInfo && (argInfo->isIndirect() || argInfo->isInAlloca())) {
+      bool noReadNone = argInfo && (argInfo->isIndirect() || argInfo->isInAlloca());
+#if HAVE_LLVM_VER < 160
+      // in newer LLVM versions, this is a only parameter attribute
+      if (noReadNone) {
         func->removeFnAttr(llvm::Attribute::ReadOnly);
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
+#else
+      if (this->hasFlag(FLAG_LLVM_READNONE) &&
+          llvmArg.getType()->isPointerTy() &&
+          !noReadNone)
+        llvmArg.addAttr(llvm::Attribute::ReadNone);
+#endif
 
       Type* argType = arg->typeInfo();
       llvm::Type* chapelArgTy = argType->codegen().type;
@@ -2855,14 +2884,17 @@ void FnSymbol::codegenDef() {
             GenRet tmp = createTempVar(arg->typeInfo());
             llvm::Value* ptr = tmp.val;
             llvm::Type* ptrEltTy = chapelArgTy;
-            llvm::Type* i8PtrTy = irBuilder->getInt8PtrTy();
+            llvm::Type* i8PtrTy = getPointerType(irBuilder);
             llvm::Type* coercePtrTy = llvm::PointerType::get(sTy, stackSpace);
 
             // handle offset
             if (unsigned offset = argInfo->getDirectOffset()) {
               ptr = irBuilder->CreatePointerCast(ptr, i8PtrTy);
+              trackLLVMValue(ptr);
               ptr = irBuilder->CreateConstInBoundsGEP1_32(i8PtrTy, ptr, offset);
+              trackLLVMValue(ptr);
               ptr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
+              trackLLVMValue(ptr);
               ptrEltTy = sTy;
             }
 
@@ -2874,6 +2906,7 @@ void FnSymbol::codegenDef() {
             llvm::Value* storeAdr = NULL;
             if (srcSize <= dstSize) {
               storeAdr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
+              trackLLVMValue(storeAdr);
             } else {
               storeAdr = createAllocaInFunctionEntry(irBuilder, sTy, "coerce");
             }
@@ -2885,14 +2918,17 @@ void FnSymbol::codegenDef() {
               // store it into the addr
               llvm::Value* eltPtr =
                 irBuilder->CreateStructGEP(sTy, storeAdr, i);
-              irBuilder->CreateStore(val, eltPtr);
+              trackLLVMValue(eltPtr);
+              llvm::StoreInst* storeElt = irBuilder->CreateStore(val, eltPtr);
+              trackLLVMValue(storeElt);
             }
 
             // if we allocated a temporary, memcpy from it to the main var
             //
             if (srcSize > dstSize) {
-              irBuilder->CreateMemCpy(ptr, llvm::MaybeAlign(),
-                                      storeAdr, llvm::MaybeAlign(), dstSize);
+              llvm::CallInst* memcpy = irBuilder->CreateMemCpy(
+                ptr, llvm::MaybeAlign(), storeAdr, llvm::MaybeAlign(), dstSize);
+              trackLLVMValue(memcpy);
             }
 
             info->lvt->addValue(arg->cname, tmp.val,

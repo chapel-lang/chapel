@@ -74,6 +74,12 @@
 #include <rdma/fi_errno.h>
 #include <rdma/fi_rma.h>
 
+#include <sys/mman.h>
+#ifndef MAP_HUGETLB
+// MAP_HUGETLB is not defined on all systems (e.g. MacOS)
+#define MAP_HUGETLB 0
+#endif
+
 #ifdef __has_include
 #if __has_include(<rdma/fi_cxi_ext.h>)
 #include <rdma/fi_cxi_ext.h>
@@ -1018,9 +1024,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
 
-  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", true);
-  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", true);
-  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", true);
+  // TODO: default to false to workaround non-blocking ofi issue
+  // these should be changed back to true when that is fixed
+  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", false);
+  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", false);
+  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", false);
+
   envUseDedicatedAmhCores = chpl_env_rt_get_bool(
                                   "COMM_OFI_DEDICATED_AMH_CORES", false);
   envExpectedProvider = chpl_env_rt_get("COMM_OFI_EXPECTED_PROVIDER", NULL);
@@ -3331,24 +3340,13 @@ static void exit_any(int status) {
 }
 
 
-//
-// FIXME: this is a workaround for hangs when the provider is EFA:
-//        we skip fi_close and don't properly shutdown libfabric
-//
-static inline
-int chpl_fi_close_wrapper(struct fid* fid) {
-  chpl_bool using_efa = providerInUse(provType_efa);
-  if (!using_efa) return fi_close(fid);
-  else            return FI_SUCCESS;
-}
-
 static
 void fini_ofi(void) {
   if (chpl_numNodes <= 1)
     return;
 
   for (int i = 0; i < memTabCount; i++) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofiMrTab[i]->fid));
+    OFI_CHK(fi_close(&ofiMrTab[i]->fid));
   }
 
   if (memTabMap != NULL) {
@@ -3363,35 +3361,35 @@ void fini_ofi(void) {
     }
   }
 
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_rxEp->fid));
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_rxCQ->fid));
+  OFI_CHK(fi_close(&ofi_rxEp->fid));
+  OFI_CHK(fi_close(&ofi_rxCQ->fid));
   if (ofi_rxCntr != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_rxCntr->fid));
+    OFI_CHK(fi_close(&ofi_rxCntr->fid));
   }
 
   for (int i = 0; i < tciTabLen; i++) {
-    OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCtx->fid));
+    OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
     if (tciTab[i].txCntr != NULL) {
-      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCntr->fid));
+      OFI_CHK(fi_close(&tciTab[i].txCntr->fid));
     }
     if (tciTab[i].txCQ != NULL) {
-      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].txCQ->fid));
+      OFI_CHK(fi_close(&tciTab[i].txCQ->fid));
     }
   }
 
   if (ofi_txEpScal != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_txEpScal->fid));
+    OFI_CHK(fi_close(&ofi_txEpScal->fid));
   }
 
   for (int i = 0; i < tciTabLen; i++) {
     if (tciTab[i].av != ofi_av) {
-      OFI_CHK(chpl_fi_close_wrapper(&tciTab[i].av->fid));
+      OFI_CHK(fi_close(&tciTab[i].av->fid));
       CHPL_FREE(tciTab[i].addrs);
     }
   }
 
   if (ofi_rxAv != ofi_av) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_rxAv->fid));
+    OFI_CHK(fi_close(&ofi_rxAv->fid));
   }
 
   if (ofi_rxAddrs != NULL) {
@@ -3399,18 +3397,18 @@ void fini_ofi(void) {
   }
 
   if (ofi_av != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_av->fid));
+    OFI_CHK(fi_close(&ofi_av->fid));
   }
   if (ofi_addrs != NULL) {
     CHPL_FREE(ofi_addrs);
   }
   if (ofi_amhPollSet != NULL) {
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_amhWaitSet->fid));
-    OFI_CHK(chpl_fi_close_wrapper(&ofi_amhPollSet->fid));
+    OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
+    OFI_CHK(fi_close(&ofi_amhPollSet->fid));
   }
 
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_domain->fid));
-  OFI_CHK(chpl_fi_close_wrapper(&ofi_fabric->fid));
+  OFI_CHK(fi_close(&ofi_domain->fid));
+  OFI_CHK(fi_close(&ofi_fabric->fid));
 
   fi_freeinfo(ofi_info);
 
@@ -3450,6 +3448,22 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
   }
 }
 
+static chpl_bool get_ofiUseTHP(struct fi_info* info) {
+  // set based on `CHPL_RT_COMM_OFI_THP_HINT`
+  // if not set by user, the default is based on FI_PROVIDER.
+  // by default use if the provider is efa
+
+  const char* thpHint = chpl_env_rt_get("COMM_OFI_THP_HINT", NULL);
+  chpl_bool useTHP;
+  if (thpHint == NULL && info != NULL) {
+    chpl_bool using_efa = isInProvName("efa", info->fabric_attr->prov_name);
+    useTHP = using_efa;
+  } else {
+    useTHP = chpl_env_str_to_bool("COMM_OFI_THP_HINT", thpHint, false);
+  }
+  DBG_PRINTF(DBG_HEAP, "using transparent huge pages: %s", useTHP ? "YES" : "NO");
+  return useTHP;
+}
 
 static
 void init_fixedHeap(void) {
@@ -3468,6 +3482,7 @@ void init_fixedHeap(void) {
   // Create a fixed heap if the user needs one.
   //
   createHeap = chpl_env_rt_get_bool("COMM_OFI_NEED_FIXED_HEAP", false);
+  chpl_bool useTHP = get_ofiUseTHP(NULL);
 
   if (!createHeap && (chpl_numNodes > 1)) {
     //
@@ -3536,30 +3551,29 @@ void init_fixedHeap(void) {
                          info->fabric_attr->prov_name);
         createHeap = true;
       }
+      useTHP = get_ofiUseTHP(info);
     }
   }
   if (createHeap) {
 
+    //
+    // Either use MAX_HEAP_SIZE, or 85% of total memory
+    //
+    uint64_t max_heap_memory;
+    if (envMaxHeapSize > 0) {
+      // use user-specified envMaxHeapSize
+      max_heap_memory = envMaxHeapSize;
+    } else {
+      uint64_t total_memory = chpl_sys_physicalMemoryBytes();
+      max_heap_memory = (size_t) (0.85 * total_memory);
+    }
 
     //
-    // Don't use more than 85% of the total memory for heaps.
+    // Split up the heap among all the colocales
     //
-    uint64_t total_memory = chpl_sys_physicalMemoryBytes();
-    uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
-
     int num_locales_on_node = chpl_get_num_locales_on_node();
     size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
-
-
-    //
-    // If the maximum heap size is not specified or it's greater than the maximum heap per
-    // locale, set it to the maximum heap per locale.
-    //
-    ssize_t size = envMaxHeapSize;
-    CHK_TRUE(size != 0);
-    if ((size < 0) || (size > max_heap_per_locale)) {
-      size = max_heap_per_locale;
-    }
+    ssize_t size = max_heap_per_locale;
 
     //
     // Check for hugepages.  On certain systems you really ought to use
@@ -3601,7 +3615,13 @@ void init_fixedHeap(void) {
                      chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
         }
 #endif
+      if (!useTHP) {
         CHK_SYS_MEMALIGN(start, page_size, size);
+      } else {
+        CHK_SYS_MMAP(start, size, PROT_READ | PROT_WRITE,
+                                  MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB,
+                                  -1, 0);
+      }
       } while (start == NULL && size > decrement);
 
       if (start == NULL)

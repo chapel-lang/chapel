@@ -327,14 +327,14 @@ proc main() {
         var dist_3D = dom_3D dmapped CyclicZipOpt(startIdx=dom_3D.low);
         kernel_fdtdapml(dist_1D, dist_2D, dist_3D, M, N, P); */
     } else if dist == "C" {
-        var dist_1D = dom_1D dmapped cyclicDist(startIdx=dom_1D.low);
-        var dist_2D = dom_2D dmapped cyclicDist(startIdx=dom_2D.low);
-        var dist_3D = dom_3D dmapped cyclicDist(startIdx=dom_3D.low);
+        var dist_1D = dom_1D dmapped new cyclicDist(startIdx=dom_1D.low);
+        var dist_2D = dom_2D dmapped new cyclicDist(startIdx=dom_2D.low);
+        var dist_3D = dom_3D dmapped new cyclicDist(startIdx=dom_3D.low);
         kernel_fdtdapml(dist_1D, dist_2D, dist_3D, M, N, P); 
     } else if dist == "B" {
-        var dist_1D = dom_1D dmapped blockDist(boundingBox=dom_1D);
-        var dist_2D = dom_2D dmapped blockDist(boundingBox=dom_2D);
-        var dist_3D = dom_3D dmapped blockDist(boundingBox=dom_3D);
+        var dist_1D = dom_1D dmapped new blockDist(boundingBox=dom_1D);
+        var dist_2D = dom_2D dmapped new blockDist(boundingBox=dom_2D);
+        var dist_3D = dom_3D dmapped new blockDist(boundingBox=dom_3D);
         kernel_fdtdapml(dist_1D, dist_2D, dist_3D, M, N, P); 
     } 
 }

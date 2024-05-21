@@ -1,5 +1,0 @@
-assertOnFailToGpuizeVar.chpl:16: warning: GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers
-assertOnFailToGpuizeVar.chpl:16: note: consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime
-assertOnFailToGpuizeVar.chpl:16: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
-assertOnFailToGpuizeVar.chpl:2: note: function is marked as not eligible for GPU execution
-assertOnFailToGpuizeVar.chpl:2: note:   reached via standard library code

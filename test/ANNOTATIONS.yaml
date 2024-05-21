@@ -567,6 +567,9 @@ all:
   01/11/24:
     - text: Remove the old slicing rule (#24154)
       config: chapcs
+  05/01/24:
+    - text: upgrade default LLVM to LLVM 17
+      config: chapcs
 
 # End all
 
@@ -1198,6 +1201,9 @@ mandelbrot:
     - Implement a Swift-like version of mandelbrot (#5168)
   01/19/17:
     - Mandelbrot tweaks (#5188)
+  05/08/24:
+    - Remove complex math function wrappers for LLVM 16+ (#25019)
+
 
 mandelbrot-extras:
   01/03/14:
@@ -2442,7 +2448,8 @@ arkouda: &arkouda-base
     - Update Arkouda release testing from 1.32 to 1.33 (#24355)
   03/28/24:
     - Update Arkouda release testing from 1.33 to 2.0 (#24704)
- 
+  05/07/24:
+    - Closes 3089 Avoid OOM Crashes caused due to in intents on makeDistArray (Bears-R-Us/arkouda#3163)
 
 arkouda-string:
   <<: *arkouda-base

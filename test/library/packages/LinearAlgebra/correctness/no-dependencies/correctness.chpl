@@ -112,7 +112,7 @@ use IO;
   /* CSR Sparse array -> Dense array */
   {
     use LayoutCS;
-    var spsD: sparse subdomain(MDom) dmapped CS(sortedIndices=false);
+    var spsD: sparse subdomain(MDom) dmapped new dmap(new CS(sortedIndices=false));
     var spsA: [spsD] real;
     spsD += (1,1);
     spsD += (2,2);
@@ -632,15 +632,15 @@ use IO;
   // 1-based variants
   const parentDom1 = {1..3, 1..3};
 
-  var   Dom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false),
-        Dom2: sparse subdomain(parentDom2) dmapped CS(sortedIndices=false),
-        IDom: sparse subdomain (parentDom) dmapped CS(sortedIndices=false),
-        tDom: sparse subdomain (tParentDom) dmapped CS(sortedIndices=false),
-        tDomT: sparse subdomain (tParentDomT) dmapped CS(sortedIndices=false);
+  var   Dom: sparse subdomain(parentDom) dmapped new dmap(new CS(sortedIndices=false)),
+        Dom2: sparse subdomain(parentDom2) dmapped new dmap(new CS(sortedIndices=false)),
+        IDom: sparse subdomain (parentDom) dmapped new dmap(new CS(sortedIndices=false)),
+        tDom: sparse subdomain (tParentDom) dmapped new dmap(new CS(sortedIndices=false)),
+        tDomT: sparse subdomain (tParentDomT) dmapped new dmap(new CS(sortedIndices=false));
 
   // 1-based variants
-  var   Dom1: sparse subdomain(parentDom1) dmapped CS(sortedIndices=false),
-        IDom1: sparse subdomain(parentDom1) dmapped CS(sortedIndices=false);
+  var   Dom1: sparse subdomain(parentDom1) dmapped new dmap(new CS(sortedIndices=false)),
+        IDom1: sparse subdomain(parentDom1) dmapped new dmap(new CS(sortedIndices=false));
 
 
   // Identity sparse domain
@@ -958,7 +958,7 @@ use IO;
     // Create dense, COO, and CSR domains
     var domDense: domain(2) = {0..<3, 0..<3},
         domCOO: sparse subdomain(domDense),
-        domCSR: sparse subdomain(domDense) dmapped CS();
+        domCSR: sparse subdomain(domDense) dmapped new dmap(new CS());
 
     // Create dense, COO, and CSR matrices (arrays)
     var matDense: [domDense] complex,

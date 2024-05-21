@@ -58,6 +58,12 @@ const types::QualifiedType& typeForModuleLevelSymbol(
 const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
 /**
+  Get the QualifiedType for the well-known types in ChapelSysCTypes
+ */
+const types::QualifiedType& typeForSysCType(Context* context,
+                                            UniqueString name);
+
+/**
   Compute the type for a literal
  */
 types::QualifiedType typeForLiteral(Context* context,
@@ -209,6 +215,19 @@ types::Type::Genericity getTypeGenericity(Context* context,
  */
 types::Type::Genericity getTypeGenericity(Context* context,
                                           types::QualifiedType qt);
+
+
+/**
+  Returns true if the field should be included in the type constructor.
+  In that event, also sets formalType to the type the formal should use.
+
+  This is also used to decide if a field needs to be include in a type's
+  substitutions.
+ */
+bool shouldIncludeFieldInTypeConstructor(Context* context,
+                                         const ID& fieldId,
+                                         const types::QualifiedType& fieldType,
+                                         types::QualifiedType* formalType = nullptr);
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a

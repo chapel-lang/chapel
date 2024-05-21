@@ -2,7 +2,7 @@ use arrayAPItest;
 use BlockDist;
 
 const D = {1..10, 1..10};
-const Space = D dmapped blockDist(D);
+const Space = D dmapped new blockDist(D);
 
 var A: [Space] real;
 

@@ -66,6 +66,15 @@ module Map {
     }
   }
 
+  /* Impacts whether the copy initializer that takes a map will generate a
+     warning when the other map has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForMapParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForMapParsafeMismatch = true;
+
   /*
     Chapel's standard ``map`` type for key-value storage.
 
@@ -83,7 +92,7 @@ module Map {
     type valType;
 
     /* If `true`, this map will perform parallel safe operations. */
-    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future");
+    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future")
     param parSafe = false;
 
     /*
@@ -199,6 +208,13 @@ module Map {
                         this.type.valType else vt;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
+
+      if (this.parSafe != other.parSafe && warnForMapParsafeMismatch) {
+        compilerWarning("initializing between two maps with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForMapParsafeMismatch=false'");
+      }
+
       this.resizeThreshold = other.resizeThreshold;
       this.table = new chpl__hashtable(keyType, valType,
                                        resizeThreshold);

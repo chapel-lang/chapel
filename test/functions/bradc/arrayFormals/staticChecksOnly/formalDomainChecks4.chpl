@@ -1,6 +1,6 @@
 use BlockDist;
 
-proc foo(X: [{1..3} dmapped blockDist({1..3})] real) {
+proc foo(X: [{1..3} dmapped new blockDist({1..3})] real) {
   writeln("In foo!");
 }
 

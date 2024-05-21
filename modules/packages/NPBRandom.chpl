@@ -485,7 +485,7 @@
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
-      for i in D do
+      for D do
         yield randlc(resultType, cursor);
     }
 
@@ -515,7 +515,7 @@
           myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if innerRange.hasUnitStride() {
           cursor = randlc_skipto(seed, myStart);
-          for i in innerRange do
+          for innerRange do
             yield randlc(resultType, cursor);
         } else {
           myStart -= innerRange.lowBound.safeCast(int(64));

@@ -33,6 +33,7 @@ namespace resolution {
 struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+  using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
 
   /**
     When looking up matches for a particular identifier, we might encounter
@@ -399,12 +400,14 @@ struct Resolver {
   bool handleResolvedCallWithoutError(ResolvedExpression& r,
                                       const uast::AstNode* astForErr,
                                       const CallInfo& ci,
-                                      const CallResolutionResult& c);
+                                      const CallResolutionResult& c,
+                                      optional<ActionAndId> associatedActionAndId = {});
   // Same as handleResolvedCallWithoutError, except actually issues the error.
   void handleResolvedCall(ResolvedExpression& r,
                           const uast::AstNode* astForErr,
                           const CallInfo& ci,
-                          const CallResolutionResult& c);
+                          const CallResolutionResult& c,
+                          optional<ActionAndId> associatedActionAndId = {});
   // like handleResolvedCall, but prints the candidates that were rejected
   // by the error in detail.
   void handleResolvedCallPrintCandidates(ResolvedExpression& r,
@@ -412,14 +415,8 @@ struct Resolver {
                                          const CallInfo& ci,
                                          const CallScopeInfo& inScopes,
                                          const types::QualifiedType& receiverType,
-                                         const CallResolutionResult& c);
-  // like handleResolvedCall saves the call in associatedFns.
-  void handleResolvedAssociatedCall(ResolvedExpression& r,
-                                    const uast::AstNode* astForErr,
-                                    const CallInfo& ci,
-                                    const CallResolutionResult& c,
-                                    AssociatedAction::Action action,
-                                    ID id);
+                                         const CallResolutionResult& c,
+                                         optional<ActionAndId> associatedActionAndId = {});
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
