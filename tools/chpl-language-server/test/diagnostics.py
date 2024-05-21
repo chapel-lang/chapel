@@ -90,6 +90,7 @@ async def test_syntax_errors(client: LanguageClient):
         assert len(client.diagnostics[doc.uri]) == 1
         assert "Syntax: " in client.diagnostics[doc.uri][0].message
 
+
 @pytest.mark.asyncio
 async def test_redefinition_error_basic(client: LanguageClient):
     """
@@ -104,6 +105,7 @@ async def test_redefinition_error_basic(client: LanguageClient):
 
     async with source_file(client, file, num_errors=1) as doc:
         pass
+
 
 @pytest.mark.asyncio
 async def test_redefinition_error_fn(client: LanguageClient):
@@ -121,6 +123,7 @@ async def test_redefinition_error_fn(client: LanguageClient):
 
     async with source_file(client, file, num_errors=1) as doc:
         pass
+
 
 @pytest.mark.asyncio
 async def test_redefinition_error_ident(client: LanguageClient):
