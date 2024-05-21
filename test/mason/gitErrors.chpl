@@ -13,14 +13,14 @@ proc main(){
   defer rmTree("srcTest");
 
   try {
-    gitC("srcTest", "ini");
+    gitC("srcTest", "git ini");
   } catch e {
     writeln(e); // should get an unknown git error
   }
 
   try {
     removePath();
-    gitC("srcTest", "init");
+    gitC("srcTest", "git init");
   } catch e {
     writeln(e); // should get a missing git error
   }
