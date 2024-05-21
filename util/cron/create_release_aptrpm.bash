@@ -49,5 +49,5 @@ __get_packages $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION
 if [ -n "$OUTPUT_DIR" ]; then
   log_info "Copying packages to $OUTPUT_DIR"
   mkdir -p $OUTPUT_DIR
-  cp $CHPL_HOME/util/packaging/$PACKAGE_TYPE/build/* $OUTPUT_DIR
+  cp -r $CHPL_HOME/util/packaging/$PACKAGE_TYPE/build/* $OUTPUT_DIR
 fi
