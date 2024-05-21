@@ -390,9 +390,8 @@ proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
   const oldDir = here.cwd();
   here.chdir(newDir);
+  defer here.chdir(oldDir);
   ret = runCommand(command, quiet);
-
-  here.chdir(oldDir);
 
   return ret;
 }
