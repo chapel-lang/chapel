@@ -5,7 +5,6 @@
 # Argument are set via the environment:
 #   CHPL_VERSION: The version of the release to create.
 #   CHPL_TARBALL: The location of the tarball to use. If not set, the tarball will be downloaded.
-#   OUTPUT_DIR: The directory to to copy the built packages to. If not set, the tarball will be left in the default location.
 #   PACKAGE_TYPE: The type of package to build. Either 'apt' or 'rpm'.
 #   OS: The OS to build the package for. e.g. 'ubuntu22'
 #   PACKAGE_NAME: The name of the package to build. e.g. 'chapel'
@@ -42,12 +41,3 @@ fi
 
 log_info "Building $PACKAGE_NAME $PACKAGE_TYPE package on $OS"
 __build_packages $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $DOCKER_DIR_NAME $PARALLEL
-
-log_info "Getting $PACKAGE_NAME $PACKAGE_TYPE package from docker image"
-__get_packages $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION
-
-if [ -n "$OUTPUT_DIR" ]; then
-  log_info "Copying packages to $OUTPUT_DIR"
-  mkdir -p $OUTPUT_DIR
-  cp -r $CHPL_HOME/util/packaging/$PACKAGE_TYPE/build/* $OUTPUT_DIR
-fi
