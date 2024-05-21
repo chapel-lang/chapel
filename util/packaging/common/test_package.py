@@ -61,6 +61,7 @@ def docker_build_image(
     test_dir, package, docker_os, imagetag="chapel-test-image"
 ):
     context = os.path.join(test_dir, "..")
+    context = os.path.abspath(context)
     dockerfile = os.path.join(test_dir, "Dockerfile")
 
     # check that the package is in the context directory
@@ -119,8 +120,17 @@ def main():
     global verbose
     verbose = args.verbose
 
+    chpl_home = os.environ.get("CHPL_HOME", "")
     package = os.path.abspath(os.path.expanduser(args.package))
-    test_dir = os.path.join(os.path.dirname(package), "..", "test")
+    test_dir = os.path.join(chpl_home, "util", "packaging")
+    if package.endswith(".deb"):
+        test_dir = os.path.join(test_dir, "apt")
+    elif package.endswith(".rpm"):
+        test_dir = os.path.join(test_dir, "rpm")
+    else:
+        print(f"Package {package} is not a .deb or .rpm file")
+        sys.exit(1)
+    test_dir = os.path.join(test_dir, "test")
     test_dir = os.path.abspath(test_dir)
     docker_os = args.dockeros
 
