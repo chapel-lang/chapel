@@ -244,7 +244,7 @@ module Subprocess {
     /* `false` if this library knows that the subprocess is not running */
     var running:bool;
     /* The exit status from the subprocess, or possibly a value >= 256
-       if there was en error when creating the subprocess */
+       if there was an error when creating the subprocess */
     var exitCode:int;
 
     // the channels

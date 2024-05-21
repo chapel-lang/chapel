@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# remove the path after 'git init -q '
+cat $2 | sed 's|git init -q .*/masonInit|git init -q /path/to/masonInit|' > $2.prediff.tmp
+mv $2.prediff.tmp $2
