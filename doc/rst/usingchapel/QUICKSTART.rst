@@ -40,7 +40,9 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
          cd chapel-2.0.0
 
-   c. Set up your environment for Chapel's Quickstart mode.
+   c. Make sure you are doing the install on a machine with > 4GB of memory.
+
+   d. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
       see :ref:`quickstart-with-other-shells` below.
 
@@ -48,7 +50,7 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
          source util/quickstart/setchplenv.bash
 
-   d. Use GNU make to build Chapel.  On some systems, you may have to
+   e. Use GNU make to build Chapel.  On some systems, you may have to
       use ``gmake`` if ``make`` is not a GNU version.
 
       .. code-block:: bash
