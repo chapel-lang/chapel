@@ -227,6 +227,8 @@ module Atomics {
       return chpl__networkAtomicType(valType);
     }
   }
+  
+  extern proc chpl_comm_ensure_progress(): void;
 
   pragma "atomic type"
   pragma "ignore noinit"
@@ -398,7 +400,6 @@ module Atomics {
       this.write(false, order);
     }
 
-    extern proc chpl_comm_ensure_progress(): void;
     /*
        Waits until the stored value is equal to `val`. The implementation may
        yield the running task while waiting.
