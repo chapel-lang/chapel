@@ -504,10 +504,10 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Main Module Check:');
     if moduleCheck(projectCheckHome) {
-      writeln('   Your package has a main module whose name matches the package name. (PASSED)');
+      writeln('   Your package has one main module whose name matches the package name. (PASSED)');
     }
     else {
-      writeln('   Packages must have a main module whose name matches the package name. (FAILED)');
+      writeln('   Packages must have a single main module whose name matches the package name. (FAILED)');
       moduleTest = false;
     }
     writeln(spacer);
@@ -781,11 +781,10 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
 
  */
 private proc moduleCheck(projectHome : string) throws {
-  const mainModuleName = getPackageName() + '.chpl';
-  for fileName in listDir(projectHome + '/src', dirs=false) {
-    if fileName == mainModuleName then return true;
-  }
-  return false;
+  const modules = listDir(projectHome + '/src', dirs=false);
+  if modules.size != 1 then return false;
+  if modules[0] != getPackageName() + '.chpl' then return false;
+  return true;
 }
 
 /* Checks package for examples */
