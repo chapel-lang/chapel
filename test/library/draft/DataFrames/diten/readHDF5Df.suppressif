@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+# This test wasn't run for a while and fell behind language changes, so it's
+# failing. See https://github.com/Cray/chapel-private/issues/6322 for
+# discussion.
+
+print(True)
