@@ -1904,6 +1904,11 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
   QualifiedType useT;
 
+  // Non-default intents are currently not allowed for tuple-grouped formals.
+  //
+  // Note: This doesn't apply to nested TupleDecls like ``(a, b)`` in the
+  // formal ``((a, b), c)``. Such nested formals should be handled by
+  // ``resolveTupleUnpackDecl``.
   if (td->isTupleDeclFormal() && declKind != QualifiedType::DEFAULT_INTENT) {
     useT = QualifiedType(declKind, ErroneousType::get(context));
     ResolvedExpression& result = byPostorder.byAst(td);
