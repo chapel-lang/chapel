@@ -27,7 +27,13 @@
 #include "chpl/framework/stringify-functions.h"
 
 #ifndef CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+#ifdef NDEBUG
+// release mode
 #define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 0
+#else
+// debug mode
+#define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 1
+#endif
 #endif
 
 /**
