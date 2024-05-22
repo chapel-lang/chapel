@@ -1,6 +1,1 @@
-git: 'ini' is not a git command. See 'git --help'.
-
-The most similar commands are
-	init
-	init-db
 MasonError: Command not found: 'git init'

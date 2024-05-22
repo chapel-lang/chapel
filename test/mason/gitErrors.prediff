@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# prediff out anything thats not `MasonError`
+# the other messages are not portable to other systems
+
+cat $2 | grep "^MasonError:" > $2.prediff.tmp
+mv $2.prediff.tmp $2
