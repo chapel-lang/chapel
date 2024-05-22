@@ -781,7 +781,8 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
 
  */
 private proc moduleCheck(projectHome : string) throws {
-  const modules = listDir(projectHome + '/src', dirs=false);
+  const files = listDir(projectHome + '/src', dirs=false),
+        modules = for f in files do if f.endsWith('.chpl') then f;
   if modules.size != 1 then return false;
   if modules[0] != getPackageName() + '.chpl' then return false;
   return true;
