@@ -1933,22 +1933,36 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
     auto typeExpr = td->typeExpression();
     auto initExpr = td->initExpression();
 
-    if (typeExpr != nullptr) {
-      ResolvedExpression& result = byPostorder.byAst(typeExpr);
-      typeExprT = result.type();
-    }
-    if (initExpr != nullptr) {
-      ResolvedExpression& result = byPostorder.byAst(initExpr);
-      initExprT = result.type();
-    }
+    if (typeExpr == nullptr && initExpr == nullptr) {
+      // Note: we seem to rely on tuple components being 'var', and relying on
+      // the tuple's kind instead. Without this, the current instantiation
+      // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
+      auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
+      std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+      auto tup = TupleType::getQualifiedTuple(context, eltTypes);
+      useT = QualifiedType(declKind, tup);
+    } else {
+      if (typeExpr != nullptr) {
+        ResolvedExpression& result = byPostorder.byAst(typeExpr);
+        typeExprT = result.type();
+      }
+      if (initExpr != nullptr) {
+        ResolvedExpression& result = byPostorder.byAst(initExpr);
+        initExprT = result.type();
+      }
 
-    useT = getTypeForDecl(td, typeExpr, initExpr,
-                          declKind, typeExprT, initExprT);
+      useT = getTypeForDecl(td, typeExpr, initExpr,
+                            declKind, typeExprT, initExprT);
+
+    }
   }
 
   if (!useT.hasTypePtr()) {
     context->error(td, "Cannot establish type for tuple decl");
     useT = QualifiedType(declKind, ErroneousType::get(context));
+  } else if (useT.type()->isTupleType()) {
+    useT = QualifiedType(useT.kind(),
+                         useT.type()->toTupleType()->toReferentialTuple(context));
   }
 
   // save the type in byPostorder
