@@ -599,6 +599,44 @@ static void test14() {
     assert(vars["varB"].type()->isRealType());
     assert(vars["varC"].type()->isStringType());
   }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context,
+                  R""""(
+                  proc baz(((a, b), c, d), param which : int) {
+                    if which == 0 then return a;
+                    else if which == 1 then return b;
+                    else if which == 2 then return c;
+                    else if which == 3 then return d;
+                    else return none;
+                  }
+
+                  var litA = baz(((1, 2.0), "test", 4:uint), 0);
+                  var litB = baz(((1, 2.0), "test", 4:uint), 1);
+                  var litC = baz(((1, 2.0), "test", 4:uint), 2);
+                  var litD = baz(((1, 2.0), "test", 4:uint), 3);
+
+                  var arg = ((1, 2.0), "test", 4:uint);
+                  var varA = baz(arg, 0);
+                  var varB = baz(arg, 1);
+                  var varC = baz(arg, 2);
+                  var varD = baz(arg, 3);
+                  )"""",
+                  {"litA", "litB", "litC", "litD",
+                   "varA", "varB", "varC", "varD"});
+    assert(vars["litA"].type()->isIntType());
+    assert(vars["litB"].type()->isRealType());
+    assert(vars["litC"].type()->isStringType());
+    assert(vars["litD"].type()->isUintType());
+
+    assert(vars["varA"].type()->isIntType());
+    assert(vars["varB"].type()->isRealType());
+    assert(vars["varC"].type()->isStringType());
+    assert(vars["varD"].type()->isUintType());
+  }
 }
 
 static void test15() {
