@@ -75,6 +75,7 @@ _chpl ()
 --dyno-scope-resolve \
 --dyno-verify-serialization \
 --early-deinit \
+--exit-leaks \
 --explain-call \
 --explain-call-id \
 --explain-instantiation \
@@ -203,6 +204,7 @@ _chpl ()
 --no-dyno-scope-resolve \
 --no-dyno-verify-serialization \
 --no-early-deinit \
+--no-exit-leaks \
 --no-explain-verbose \
 --no-fast-followers \
 --no-force-vectorize \
