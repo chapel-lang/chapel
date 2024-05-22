@@ -115,8 +115,13 @@ proc runCommand(cmd, quiet=false) : string throws {
       while process.stderr.readLine(line) do write(line);
     }
     process.wait();
+    if process.exitCode != 0 {
+      throw new owned MasonError("Command failed: '" + cmd + "'");
+    }
   } catch e: FileNotFoundError {
     throw new owned MasonError("Command not found: '" + cmd + "'");
+  } catch e: MasonError {
+    throw e;
   } catch {
     throw new owned MasonError("Internal mason error");
   }

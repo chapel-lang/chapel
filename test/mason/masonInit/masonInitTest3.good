@@ -1,1 +1,1 @@
-Command not found: 'git init -q /path/to/masonInit'
+Command failed: 'git init -q /path/to/masonInit'
