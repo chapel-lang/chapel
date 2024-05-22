@@ -1914,6 +1914,18 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   // Figure out the type to use for this tuple
   if (useType != nullptr) {
     useT = QualifiedType(declKind, useType);
+  } else if (substitutions != nullptr &&
+             substitutions->count(td->id()) != 0) {
+    // TODO: should this be referential or value?
+    auto sub = substitutions->find(td->id())->second;
+    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+
+    if (subTup == nullptr) {
+      // Rely on hasTypePtr check below to recognize error
+      useT = QualifiedType();
+    } else {
+      useT = sub;
+    }
   } else {
     QualifiedType typeExprT;
     QualifiedType initExprT;
