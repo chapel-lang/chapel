@@ -120,6 +120,8 @@ proc runCommand(cmd, quiet=false) : string throws {
     }
   } catch e: FileNotFoundError {
     throw new owned MasonError("Command not found: '" + cmd + "'");
+  } catch e: MasonError {
+    throw e;
   } catch {
     throw new owned MasonError("Internal mason error");
   }
