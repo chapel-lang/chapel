@@ -344,8 +344,12 @@ proc cloneMasonReg(username: string, safeDir : string, registryPath : string) th
 /* Checks to see if 'git config --get remote.origin.url' exists
  */
 proc doesGitOriginExist() {
-  var urlExists = runCommand("git config --get remote.origin.url", true);
-  return !urlExists.isEmpty();
+  try {
+    var urlExists = runCommand("git config --get remote.origin.url", true);
+    return !urlExists.isEmpty();
+  } catch {
+    return false;
+  }
 }
 
 
@@ -378,8 +382,12 @@ private proc getUsername() {
 /* Procedure that returns the url of the git remote origin
  */
 private proc gitUrl() {
-  var url = runCommand("git config --get remote.origin.url", true);
-  return url;
+  try {
+    var url = runCommand("git config --get remote.origin.url", true);
+    return url;
+  } catch {
+    return "";
+  }
 }
 
 /* Takes the git username and creates a new branch of the mason registry users fork,
