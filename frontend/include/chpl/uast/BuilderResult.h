@@ -232,6 +232,7 @@ class BuilderResult final {
 
   static bool update(BuilderResult& keep, BuilderResult& addin);
   void mark(Context* context) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);

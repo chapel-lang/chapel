@@ -21,10 +21,12 @@
 
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
-#include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parser-error.h"
-#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/uast/chpl-syntax-printer.h"
+
 #include <vector>
 #include <string.h>
 
@@ -1877,7 +1879,7 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
 }
 
 void Visitor::checkCStringLiteral(const CStringLiteral* node) {
-   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
+  warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
 }
 
 void Visitor::visit(const ExternBlock* node) {
@@ -1894,18 +1896,31 @@ void Visitor::visit(const CStringLiteral* node) {
 namespace chpl {
 namespace uast {
 
-void
-checkBuilderResult(Context* context, UniqueString path,
-                   const BuilderResult& result) {
+// this just returns a bool to keep the query system happy
+// in practice the relevant result is an error/warning being generated
+static
+const bool& checkBuilderResultQuery(Context* context, UniqueString path,
+                                    const BuilderResult* builderResult) {
+  QUERY_BEGIN(checkBuilderResultQuery, context, path, builderResult);
+
   bool warnUnstable = parsing::shouldWarnUnstableForPath(context, path);
   bool isUserCode  = !parsing::filePathIsInBundledModule(context, path);
   auto v = Visitor(context, warnUnstable, isUserCode);
 
-  for (auto ast : result.topLevelExpressions()) {
+  for (auto ast : builderResult->topLevelExpressions()) {
     if (ast->isComment()) continue;
     v.check(ast);
   }
+
+  bool result = false;
+  return QUERY_END(result);
 }
+
+void checkBuilderResult(Context* context, UniqueString path,
+                        const BuilderResult& builderResult) {
+  checkBuilderResultQuery(context, path, &builderResult);
+}
+
 
 } // end namespace uast
 } // end namespace chpl
