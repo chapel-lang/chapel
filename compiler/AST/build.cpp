@@ -1589,29 +1589,10 @@ DefExpr* buildClassDefExpr(const char*               name,
 
   ct = new AggregateType(tag);
 
-  // Hook the string type in the modules
-  // to avoid duplication with dtString created in initPrimitiveTypes().
-  // gatherWellKnownTypes runs too late to help.
-  if (strcmp("_string", name) == 0) {
-    ct = installInternalType(ct, dtString);
-    ts = ct->symbol;
-  } else if (strcmp("_bytes", name) == 0) {
-    ct = installInternalType(ct, dtBytes);
-    ts = ct->symbol;
-  } else if (strcmp("_locale", name) == 0) {
-    ct = installInternalType(ct, dtLocale);
-    ts = ct->symbol;
-  } else if (strcmp("_range", name) == 0) {
-    ct = installInternalType(ct, dtRange);
-    ts = ct->symbol;
-  } else if (strcmp("_object", name) == 0) {
-    ct = installInternalType(ct, dtObject);
-    ts = ct->symbol;
-  } else if (strcmp("_owned", name) == 0) {
-    ct = installInternalType(ct, dtOwned);
-    ts = ct->symbol;
-  } else if (strcmp("_shared", name) == 0) {
-    ct = installInternalType(ct, dtShared);
+  // For certain internal types (e.g. dtString / _string), hook
+  // up the global variable type to the type we are now creating
+  if (AggregateType* dt = shouldWireWellKnownType(name)) {
+    ct = installInternalType(ct, dt);
     ts = ct->symbol;
   } else {
     ts = new TypeSymbol(name, ct);

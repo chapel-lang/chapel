@@ -1084,27 +1084,6 @@ void initPrimitiveTypes() {
   dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
-  dtObject                             = new AggregateType(AGGREGATE_CLASS);
-  dtObject->symbol                     = new TypeSymbol("RootClass", dtObject);
-
-  dtBytes                              = new AggregateType(AGGREGATE_RECORD);
-  dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
-
-  dtString                             = new AggregateType(AGGREGATE_RECORD);
-  dtString->symbol                     = new TypeSymbol("string", dtString);
-
-  dtLocale                             = new AggregateType(AGGREGATE_RECORD);
-  dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
-
-  dtRange                              = new AggregateType(AGGREGATE_RECORD);
-  dtRange->symbol                      = new TypeSymbol("range", dtRange);
-
-  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
-  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
-
-  dtShared                             = new AggregateType(AGGREGATE_RECORD);
-  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
-
   dtBool                               = createPrimitiveType("bool", "chpl_bool");
 
   gFalse                               = createSymbol(dtBool, "false");
@@ -1305,6 +1284,10 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
   gUninstantiated->addFlag(FLAG_PARAM);
+
+  // set up the well-known types, including setting up dummy types
+  // for dtString / _string and a few others
+  initializeWellKnown();
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {

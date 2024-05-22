@@ -30,20 +30,27 @@
 
 // The well-known types
 AggregateType* dtArray;
-AggregateType* dtDomain;
 AggregateType* dtBaseArr;
 AggregateType* dtBaseDom;
+AggregateType* dtBytes;
 AggregateType* dtCFI_cdesc_t;
 AggregateType* dtDist;
+AggregateType* dtDomain;
 AggregateType* dtError;
 AggregateType* dtExternalArray;
+AggregateType* dtLocale;
 AggregateType* dtLocaleID;
 AggregateType* dtMainArgument;
+AggregateType* dtObject;
 AggregateType* dtOnBundleRecord;
 AggregateType* dtOpaqueArray;
+AggregateType* dtOwned;
+AggregateType* dtRange;
+AggregateType* dtRef;
+AggregateType* dtShared;
+AggregateType* dtString;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
-AggregateType* dtRef;
 
 Type* dt_c_int;
 Type* dt_c_uint;
@@ -93,6 +100,13 @@ FnSymbol *gChplBuildLocaleId;
 *                                                                             *
 ************************************** | *************************************/
 
+static void initializeWellKnownTypes();
+static void initializeWellKnownFunctions();
+
+void initializeWellKnown() {
+  initializeWellKnownTypes();
+  initializeWellKnownFunctions();
+}
 
 void gatherIteratorTags() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -123,29 +137,66 @@ void gatherIteratorTags() {
 // defined in module code.
 struct WellKnownAggregateType
 {
+  // the class/record name in the modules,
+  // which will be an astr after initializeWellKnown runs
   const char*     name;
+  // pointer to the global variable storing the type
   AggregateType** type_;
+  // is it a class? if not, we assume it is a record
   bool            isClass;
 };
 
 // These types are a required part of the compiler/module interface.
 static WellKnownAggregateType sWellKnownAggregateTypes[] = {
+  // name                    global               isClass
+  { "BaseArr",               &dtBaseArr,          true  },
+  { "BaseDist",              &dtDist,             true  },
+  { "BaseDom",               &dtBaseDom,          true  },
+  { "CFI_cdesc_t",           &dtCFI_cdesc_t,      false },
+  { "Error",                 &dtError,            true  },
   { "_array",                &dtArray,            false },
   { "_domain",               &dtDomain,           false },
-  { "BaseArr",               &dtBaseArr,          true  },
-  { "BaseDom",               &dtBaseDom,          true  },
-  { "BaseDist",              &dtDist,             true  },
-  { "CFI_cdesc_t",           &dtCFI_cdesc_t,      false },
+  { "_ref",                  &dtRef,              true  },
+  { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_external_array",   &dtExternalArray,    false },
   { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },
-  { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_opaque_array",     &dtOpaqueArray,      false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
-  { "_tuple",                &dtTuple,            false },
-  { "_ref",                  &dtRef,              true  },
-  { "Error",                 &dtError,            true  },
 };
+
+// Similar to WellKnownAggregateType, but this one lists types
+// that are needed early in compilation (e.g. in build.cpp).
+// For these, the lobal type will be initialized with a dummy value
+// in initializeWellKnown. Its its contents will be replaced by the
+// actual type when the AST for that type is generated.
+struct WellKnownAggregateTypeNeededEarly
+{
+  // the class/record name in the modules,
+  // which will be an astr after initializeWellKnown runs
+  const char*     name;
+  // the user-facing name for the type
+  const char*     userFacingName;
+  // pointer to the global variable storing the type
+  AggregateType** type_;
+  // is it a class? if not, we assume it is a record
+  bool            isClass;
+};
+
+// These types are a required part of the compiler/module interface.
+static WellKnownAggregateTypeNeededEarly sWellKnownAggregateTypesNeededEarly[]=
+{
+  // name        userFacingName  global       isClass
+  { "_bytes",    "bytes",        &dtBytes,    false },
+  { "_locale",   "locale",       &dtLocale,   false },
+  { "_object",   "RootClass",    &dtObject,   true  },
+  { "_owned",    nullptr,        &dtOwned,    false },
+  { "_range",    "range",        &dtRange,    false },
+  { "_shared",   nullptr,        &dtShared,   false },
+  { "_string",   "string",       &dtString,   false },
+  { "_tuple",    nullptr,        &dtTuple,    false },
+};
+
 
 struct WellKnownType
 {
@@ -173,6 +224,61 @@ static WellKnownType sWellKnownTypes[] = {
   { "c_ssize_t",             &dt_ssize_t     },
   { "c_size_t",              &dt_size_t      },
 };
+
+static void initializeWellKnownTypes() {
+  int nTypes = sizeof(sWellKnownTypes) / sizeof(sWellKnownTypes[0]);
+  int nAggregate = sizeof(sWellKnownAggregateTypes) /
+                   sizeof(sWellKnownAggregateTypes[0]);
+  int nEarlyAggregate = sizeof(sWellKnownAggregateTypesNeededEarly) /
+                        sizeof(sWellKnownAggregateTypesNeededEarly[0]);
+
+  // update the name fields to be astrs
+  for (int i = 0; i < nTypes; i++) {
+    WellKnownType& wkt = sWellKnownTypes[i];
+    wkt.name = astr(wkt.name);
+  }
+
+  for (int i = 0; i < nAggregate; i++) {
+    WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
+    wkt.name = astr(wkt.name);
+  }
+
+  for (int i = 0; i < nEarlyAggregate; i++) {
+    WellKnownAggregateTypeNeededEarly& wkt =
+      sWellKnownAggregateTypesNeededEarly[i];
+
+    wkt.name = astr(wkt.name);
+    if (wkt.userFacingName != nullptr) {
+      wkt.userFacingName = astr(wkt.userFacingName);
+    } else {
+      wkt.userFacingName = wkt.name;
+    }
+
+    INT_ASSERT(*wkt.type_ == nullptr);
+    // create the type and set the type_ field in the WellKnownAggregate
+    auto tag = wkt.isClass ? AGGREGATE_CLASS : AGGREGATE_RECORD;
+    AggregateType* t = new AggregateType(tag);
+    const char* n = wkt.userFacingName ? wkt.userFacingName : wkt.name;
+    t->symbol = new TypeSymbol(n, t);
+    *wkt.type_ = t;
+  }
+}
+
+AggregateType* shouldWireWellKnownType(const char* name) {
+  int nEarlyAggregate = sizeof(sWellKnownAggregateTypesNeededEarly) /
+                        sizeof(sWellKnownAggregateTypesNeededEarly[0]);
+
+  for (int i = 0; i < nEarlyAggregate; i++) {
+    WellKnownAggregateTypeNeededEarly& wkt =
+      sWellKnownAggregateTypesNeededEarly[i];
+
+    if (0 == strcmp(name, wkt.name)) {
+      return *wkt.type_;
+    }
+  }
+
+  return nullptr;
+}
 
 static void removeIfUndefinedGlobalType(AggregateType*& t) {
   if (t->symbol == NULL || t->symbol->defPoint == NULL) {
@@ -235,16 +341,8 @@ void gatherWellKnownTypes() {
   int nTypes = sizeof(sWellKnownTypes) / sizeof(sWellKnownTypes[0]);
   int nAggregate = sizeof(sWellKnownAggregateTypes) /
                    sizeof(sWellKnownAggregateTypes[0]);
-
-  // First, update the name fields to be astrs
-  for (int i = 0; i < nTypes; i++) {
-    WellKnownType& wkt = sWellKnownTypes[i];
-    wkt.name = astr(wkt.name);
-  }
-  for (int i = 0; i < nAggregate; i++) {
-    WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
-    wkt.name = astr(wkt.name);
-  }
+  int nEarlyAggregate = sizeof(sWellKnownAggregateTypesNeededEarly) /
+                        sizeof(sWellKnownAggregateTypesNeededEarly[0]);
 
   // Check type aliases (for e.g. extern type c_int = int(32) )
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -302,12 +400,13 @@ void gatherWellKnownTypes() {
     USR_STOP();
 
   } else {
-    removeIfUndefinedGlobalType(dtString);
-    removeIfUndefinedGlobalType(dtBytes);
-    removeIfUndefinedGlobalType(dtLocale);
-    removeIfUndefinedGlobalType(dtRange);
-    removeIfUndefinedGlobalType(dtOwned);
-    removeIfUndefinedGlobalType(dtShared);
+    // remove types that were defined with a dummy value if
+    // we never encountered their defining record/class
+    for (int i = 0; i < nEarlyAggregate; i++) {
+      WellKnownAggregateTypeNeededEarly& wkt =
+        sWellKnownAggregateTypesNeededEarly[i];
+      removeIfUndefinedGlobalType(*wkt.type_);
+    }
   }
 }
 
@@ -524,14 +623,18 @@ static WellKnownFn sWellKnownFns[] = {
   },
 };
 
-void gatherWellKnownFns() {
+static void initializeWellKnownFunctions() {
   int nEntries = sizeof(sWellKnownFns) / sizeof(sWellKnownFns[0]);
 
-  // First, update the name fields to be astrs
+  // update the name fields to be astrs
   for (int i = 0; i < nEntries; ++i) {
     WellKnownFn& wkfn = sWellKnownFns[i];
     wkfn.name = astr(wkfn.name);
   }
+}
+
+void gatherWellKnownFns() {
+  int nEntries = sizeof(sWellKnownFns) / sizeof(sWellKnownFns[0]);
 
   // Harvest well-known functions from among the global fn definitions.
   // We check before assigning to the associated global to ensure that it
