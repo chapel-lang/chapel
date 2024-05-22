@@ -11,10 +11,10 @@ labels: 'type: Feature Request'
 <!--
 Is your feature request related to an issue? Please describe.
 Describe the solution you'd like.
-Describe any work-arounds you've considered.
+Describe any work-arounds you've considered, if any.
 -->
 
-**Is this a blocking issue with no known work-arounds?**
+**Is this issue currently blocking your progress?**
 <!-- Answer 'yes', 'no' or 'I don't know'. -->
 
 ### Code Sample
