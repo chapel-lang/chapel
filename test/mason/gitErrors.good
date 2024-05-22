@@ -1,1 +1,1 @@
-MasonError: Command not found: 'git init'
+MasonError: Command failed: 'git init'
