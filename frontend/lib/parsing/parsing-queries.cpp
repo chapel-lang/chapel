@@ -25,6 +25,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/libraries/LibraryFile.h"
 #include "chpl/parsing/Parser.h"
+#include "chpl/resolution/scope-queries.h" // for moduleInitializationOrder
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
@@ -385,9 +386,29 @@ static const ID& findMainModuleImpl(Context* context,
     if (matchingModule) {
       result = matchingModule->id();
     } else {
-      context->error(Location(),
-                     "could not find module named '%s' for --main-module",
-                     requestedMainModuleName.c_str());
+      // try harder to find the main module within something loaded
+      // up by a 'use' / 'import'. This uses 'moduleInitializationOrder'
+      // as a convenient way to compute the modules used/imported (transitively)
+      const std::vector<ID>& moduleIds =
+        resolution::moduleInitializationOrder(context, ID(),
+                                              commandLineModules);
+      // consider all of the modules loaded. Is there one with the appropriate
+      // name?
+      bool found = false;
+      for (const auto& id : moduleIds) {
+        if (id.symbolName(context) == requestedMainModuleName ||
+            id.symbolPath() == requestedMainModuleName) {
+          result = id;
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        context->error(Location(),
+                       "could not find module named '%s' for --main-module",
+                       requestedMainModuleName.c_str());
+      }
     }
   } else if (findMain.mainProcsFound.size() > 0) {
     // the main module is the single command-line module containing a 'main'
