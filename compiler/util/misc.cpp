@@ -1117,9 +1117,12 @@ void clean_exit(int status) {
 
   cleanup_for_exit();
 
-  // The context's destructor takes a while, and we're about to exit anyway,
-  // so deliberately leak it.
-  // delete gContext;
+  if (fExitLeaks) {
+    // The context's destructor takes a while, and we're about to exit anyway,
+    // so deliberately leak it.
+  } else {
+    delete gContext;
+  }
   gContext = nullptr;
 
   if (gGenInfo) {

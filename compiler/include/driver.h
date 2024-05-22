@@ -169,6 +169,7 @@ extern bool fDriverCompilationPhase;
 extern bool fDriverMakeBinaryPhase;
 extern char driverTmpDir[FILENAME_MAX];
 // end compiler driver control flags
+extern bool fExitLeaks;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
