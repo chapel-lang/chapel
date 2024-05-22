@@ -209,6 +209,9 @@ class GeneralError : public BasicError {
   static owned<GeneralError> vbuild(ErrorBase::Kind kind, Location loc,
                                     const char* fmt,
                                     va_list vl);
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, IdOrLocation loc,
+                                    const char* fmt,
+                                    va_list vl);
 
   static owned<GeneralError> get(ErrorBase::Kind kind,
                                  Location loc,

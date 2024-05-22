@@ -432,7 +432,7 @@ static const ID& findMainModuleImpl(Context* context,
                      "could not find main module: no command-line modules");
     } else {
       // TODO: make this error nice
-      context->error(Location(),
+      context->error(IdOrLocation::createForCommandLineLocation(context),
                      "a program with multiple user modules "
                      "requires a main function\n"
                      "alternatively, specify a main module with "
