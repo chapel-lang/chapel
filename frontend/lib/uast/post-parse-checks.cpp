@@ -172,6 +172,8 @@ struct Visitor {
   void checkReservedSymbolName(const NamedDecl* node);
   void checkLinkageName(const NamedDecl* node);
 
+  void checkTupleDeclFormalIntent(const TupleDecl* node);
+
   // Warnings.
   void warnUnstableUnions(const Union* node);
   void warnUnstableForeachLoops(const Foreach* node);
@@ -420,6 +422,9 @@ void Visitor::check(const AstNode* node) {
     checkReservedSymbolName(named);
     warnUnstableSymbolNames(named);
     checkLinkageName(named);
+  }
+  if (auto tup = node->toTupleDecl()) {
+    checkTupleDeclFormalIntent(tup);
   }
 
   // Now run checks via visitor and recurse to children.
@@ -1287,6 +1292,16 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
   if (!linkageName->isStringLiteral()) {
     error(linkageName, "the linkage name for '%s' must be a string literal.",
           node->name().c_str());
+  }
+}
+
+void Visitor::checkTupleDeclFormalIntent(const TupleDecl* node) {
+  // 'VAR' might show up in the case of nested tuple decl formals, for example:
+  //     proc foo(((a, b), x, y)) { ... }
+  if (node->isTupleDeclFormal() &&
+      node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
+      node->intentOrKind() != TupleDecl::IntentOrKind::VAR) {
+    error(node, "intents on tuple-grouped arguments are not yet supported");
   }
 }
 
