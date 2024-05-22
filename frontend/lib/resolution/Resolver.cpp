@@ -1904,6 +1904,13 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
   QualifiedType useT;
 
+  if (td->isTupleDeclFormal() && declKind != QualifiedType::DEFAULT_INTENT) {
+    useT = QualifiedType(declKind, ErroneousType::get(context));
+    ResolvedExpression& result = byPostorder.byAst(td);
+    result.setType(useT);
+    return;
+  }
+
   // Figure out the type to use for this tuple
   if (useType != nullptr) {
     useT = QualifiedType(declKind, useType);
