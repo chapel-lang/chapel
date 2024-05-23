@@ -589,7 +589,8 @@ proc masonPublishHelp(){
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
   writeln('    --ci-check                   Same as --check, except omits git origin checks');
-  writeln('    --[no-]update                [Do not] Prevent registries from being updated when a package is published.');
+  writeln('    --[no-]update                [Do not] Prevent registries from being updated when a package is published');
+  writeln('    --refresh-licenses           Force-update the list of valid license names and immediately exit without publishing');
   writeln();
   writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');
 }
