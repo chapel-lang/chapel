@@ -435,15 +435,12 @@ static const ID& findMainModuleImpl(Context* context,
     // emit an error
     if (commandLineModules.size() == 0) {
       // AFAIK this won't be possible to reach
-      context->error(Location(),
+      context->error(IdOrLocation::createForCommandLineLocation(context),
                      "could not find main module: no command-line modules");
     } else {
-      // TODO: make this error nice
-      context->error(IdOrLocation::createForCommandLineLocation(context),
-                     "a program with multiple user modules "
-                     "requires a main function\n"
-                     "alternatively, specify a main module with "
-                     "--main-module");
+      // can't find main: no 'main' function and multiple command line modules
+      auto loc = IdOrLocation::createForCommandLineLocation(context);
+      CHPL_REPORT(context, UnknownMainModule, loc, findMain.modulesFound);
     }
   }
 

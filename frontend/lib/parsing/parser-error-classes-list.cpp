@@ -673,6 +673,20 @@ void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
     i++;
   }
 }
+void ErrorUnknownMainModule::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& modules = std::get<std::vector<const uast::Module*>>(info_);
+  wr.heading(kind_, type_, loc,
+             "unknown main module due to multiple command line modules");
+  wr.note(loc, "add a 'proc main' or use '--main-module'");
+  wr.message("");
+  size_t i = 0;
+  for (auto mod : modules) {
+    wr.note(locationOnly(mod), "'module ", mod->name(), "' could be the main module");
+    wr.codeForDef(mod);
+    i++;
+  }
+}
 
 
 }
