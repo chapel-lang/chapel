@@ -161,8 +161,11 @@ module Optimizers {
     return best;
   }
 
+  /* a seed value of `0` means "don't use an explicit starting seed" */
   config param randomSeed = 0;
-  private var rngInt = new randomStream(int, randomSeed);
+
+  private var rngInt = if randomSeed == 0 then new randomStream(int)
+                       else new randomStream(int, randomSeed);
 
   /* Figures out a set of values to use */
   private proc generateRandom(basePoint: Point): Point {
