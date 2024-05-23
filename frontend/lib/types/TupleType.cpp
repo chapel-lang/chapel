@@ -92,16 +92,17 @@ void TupleType::computeIsParamKnown() {
 }
 
 const owned<TupleType>&
-TupleType::getTupleType(Context* context, ID id, UniqueString name,
-                        const TupleType* instantiatedFrom,
+TupleType::getTupleType(Context* context, const TupleType* instantiatedFrom,
                         SubstitutionsMap subs,
                         bool isVarArgTuple) {
-  QUERY_BEGIN(getTupleType, context, id, name, instantiatedFrom, subs,
+  QUERY_BEGIN(getTupleType, context, instantiatedFrom, subs,
                             isVarArgTuple);
 
-  auto result = toOwned(new TupleType(id, name,
-                                      instantiatedFrom, std::move(subs),
-                                      isVarArgTuple));
+  auto symbolPath = UniqueString::get(context, "ChapelTuple._tuple");
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = ID(symbolPath, -1, 0);
+  auto result = toOwned(new TupleType(id, name, instantiatedFrom,
+                                      std::move(subs), isVarArgTuple));
 
   return QUERY_END(result);
 }
@@ -116,10 +117,8 @@ TupleType::getValueTuple(Context* context, std::vector<const Type*> eltTypes) {
     i++;
   }
 
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID();
   const TupleType* instantiatedFrom = getGenericTupleType(context);
-  return getTupleType(context, id, name, instantiatedFrom,
+  return getTupleType(context, instantiatedFrom,
                       std::move(subs)).get();
 }
 
@@ -144,22 +143,16 @@ TupleType::getReferentialTuple(Context* context,
     i++;
   }
 
-  auto symbolPath = UniqueString::get(context, "ChapelTuple._tuple");
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID(symbolPath, -1, 0);
   const TupleType* instantiatedFrom = getGenericTupleType(context);
-  return getTupleType(context, id, name, instantiatedFrom,
+  return getTupleType(context, instantiatedFrom,
                       std::move(subs)).get();
 }
 
 const TupleType*
 TupleType::getGenericTupleType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelTuple._tuple");
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID(symbolPath, -1, 0);
   SubstitutionsMap subs;
   const TupleType* instantiatedFrom = nullptr;
-  return getTupleType(context, id, name, instantiatedFrom, subs).get();
+  return getTupleType(context, instantiatedFrom, subs).get();
 }
 
 const TupleType*
@@ -172,11 +165,8 @@ TupleType::getQualifiedTuple(Context* context,
     i++;
   }
 
-  auto symbolPath = UniqueString::get(context, "ChapelTuple._tuple");
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID(symbolPath, -1, 0);
   const TupleType* instantiatedFrom = getGenericTupleType(context);
-  return getTupleType(context, id, name, instantiatedFrom,
+  return getTupleType(context, instantiatedFrom,
                       std::move(subs), true).get();
 }
 
@@ -193,14 +183,10 @@ TupleType::getStarTuple(Context* context,
     return getQualifiedTuple(context, eltTypes);
   } else {
     // Size unknown, store the expected element type
-    auto symbolPath = UniqueString::get(context, "ChapelTuple._tuple");
-    auto name = UniqueString::get(context, "_tuple");
-    auto id = ID(symbolPath, -1, 0);
     const TupleType* instantiatedFrom = getGenericTupleType(context);
     SubstitutionsMap subs;
     subs.emplace(idForTupElt(-1), varArgEltType);
-    return getTupleType(context, id, name, instantiatedFrom,
-                        subs, true).get();
+    return getTupleType(context, instantiatedFrom, subs, true).get();
   }
 }
 
