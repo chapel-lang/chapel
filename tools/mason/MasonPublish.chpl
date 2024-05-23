@@ -87,7 +87,7 @@ proc masonPublish(ref args: list(string)) throws {
     if refreshLicenses {
       writeln("Force updating list of valid license names from SPDX repo...");
       refreshLicenseList(true);
-      writeln("done updating license list");
+      writeln("Done updating license list");
       exit(0);
     }
 
