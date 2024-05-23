@@ -346,29 +346,37 @@ void gatherWellKnownTypes() {
 
   // Check type aliases (for e.g. extern type c_int = int(32) )
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->defPoint != NULL &&
+    if (var->defPoint != nullptr &&
         isModuleSymbol(var->defPoint->parentSymbol) &&
         var->hasFlag(FLAG_TYPE_VARIABLE)) {
-      Type* t = NULL;
-      if (var->type != dtUnknown) {
-        t = var->type;
-      } else {
-        // handle extern type c_int = int(32)
-        DefExpr* def = var->defPoint;
-        if (CallExpr* call = toCallExpr(def->init)) {
-          t = typeForTypeSpecifier(call, false);
+      auto modTag = var->defPoint->getModule()->modTag;
+      if (modTag == MOD_INTERNAL || modTag == MOD_STANDARD) {
+        Type* t = NULL;
+        if (var->type != dtUnknown) {
+          t = var->type;
+        } else {
+          // handle extern type c_int = int(32)
+          DefExpr* def = var->defPoint;
+          if (CallExpr* call = toCallExpr(def->init)) {
+            t = typeForTypeSpecifier(call, false);
+          }
         }
-      }
 
-      if (t != NULL && t != dtUnknown)
-        gatherType(var, t, var->name);
+        if (t != NULL && t != dtUnknown)
+          gatherType(var, t, var->name);
+      }
     }
   }
 
   // check types
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     // is ts->name matching one in sWellKnownTypes or sWellKnownAggregateTypes?
-    gatherType(ts, ts->type, ts->name);
+    if (ts->defPoint != nullptr) {
+      auto modTag = ts->defPoint->getModule()->modTag;
+      if (modTag == MOD_INTERNAL || modTag == MOD_STANDARD) {
+        gatherType(ts, ts->type, ts->name);
+      }
+    }
   }
 
   if (fMinimalModules == false) {
@@ -417,6 +425,8 @@ std::vector<Type*> getWellKnownTypes()
   int nTypes = sizeof(sWellKnownTypes) / sizeof(sWellKnownTypes[0]);
   int nAggregate = sizeof(sWellKnownAggregateTypes) /
                    sizeof(sWellKnownAggregateTypes[0]);
+  int nEarlyAggregate = sizeof(sWellKnownAggregateTypesNeededEarly) /
+                        sizeof(sWellKnownAggregateTypesNeededEarly[0]);
 
   for (int i = 0; i < nTypes; i++) {
     WellKnownType& wkt = sWellKnownTypes[i];
@@ -425,6 +435,12 @@ std::vector<Type*> getWellKnownTypes()
   }
   for (int i = 0; i < nAggregate; i++) {
     WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
+    if (*wkt.type_ != NULL)
+      types.push_back(*wkt.type_);
+  }
+  for (int i = 0; i < nEarlyAggregate; i++) {
+    WellKnownAggregateTypeNeededEarly& wkt =
+      sWellKnownAggregateTypesNeededEarly[i];
     if (*wkt.type_ != NULL)
       types.push_back(*wkt.type_);
   }
@@ -640,20 +656,27 @@ void gatherWellKnownFns() {
   // We check before assigning to the associated global to ensure that it
   // is null.  In that way we can flag duplicate definitions.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    for (int i = 0; i < nEntries; ++i) {
-      WellKnownFn& wkfn = sWellKnownFns[i];
+    auto modTag = MOD_USER;
+    if (fn->defPoint)
+      if (auto mod = fn->defPoint->getModule())
+        modTag = mod->modTag;
 
-      if (fn->name == wkfn.name) {
-        wkfn.lastNameMatchedFn = fn;
+    if (modTag == MOD_INTERNAL || modTag == MOD_STANDARD) {
+      for (int i = 0; i < nEntries; ++i) {
+        WellKnownFn& wkfn = sWellKnownFns[i];
 
-        if (wkfn.flag == FLAG_UNKNOWN || fn->hasFlag(wkfn.flag) == true) {
-          if (*wkfn.fn != NULL) {
-            USR_WARN(fn,
-                     "'%s' defined more than once in Chapel internal modules.",
-                     wkfn.name);
+        if (fn->name == wkfn.name) {
+          wkfn.lastNameMatchedFn = fn;
+
+          if (wkfn.flag == FLAG_UNKNOWN || fn->hasFlag(wkfn.flag) == true) {
+            if (*wkfn.fn != NULL) {
+              USR_WARN(fn,
+                       "'%s' defined more than once in Chapel internal modules",
+                       wkfn.name);
+            }
+
+            *wkfn.fn = fn;
           }
-
-          *wkfn.fn = fn;
         }
       }
     }
