@@ -36,10 +36,16 @@ __build_packages() {
   __wget_chpl_release $chapel_version
 
   local package_dir="${CHPL_HOME}/util/packaging/${pkg_type}/${docker_dir_name}"
+  local fill_script="${CHPL_HOME}/util/packaging/${pkg_type}/common/fill_docker_template.py"
   __get_docker_tag $os $package_name $chapel_version $package_version
 
-
   pushd ${package_dir}
+
+  # if there is a template file, use it to generate the Dockerfile
+  if [ -f Dockerfile.template ]; then
+    ${fill_script} Dockerfile.template
+  fi
+
   DOCKER_BUILDKIT=1 docker buildx build \
     --platform linux/amd64,linux/arm64 \
     --output=type=local,dest=../build/$os-$package_name-$chapel_version-$package_version \
@@ -67,9 +73,16 @@ __build_image() {
   __wget_chpl_release $chapel_version
 
   local package_dir="${CHPL_HOME}/util/packaging/${pkg_type}/${docker_dir_name}"
+  local fill_script="${CHPL_HOME}/util/packaging/${pkg_type}/common/fill_docker_template.py"
   __get_docker_tag $os $package_name $chapel_version $package_version
 
   pushd ${package_dir}
+
+  # if there is a template file, use it to generate the Dockerfile
+  if [ -f Dockerfile.template ]; then
+    ${fill_script} Dockerfile.template
+  fi
+
   DOCKER_BUILDKIT=1 docker buildx build \
     --load \
     --target=build \
