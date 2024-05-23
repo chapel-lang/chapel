@@ -122,7 +122,7 @@ module Optimizers {
                       args:?t =none)
     : list(optimizableArg) throws {
 
-    var basePoint = new Point(optimizableArgs);
+    const basePoint = new Point(optimizableArgs);
 
     var points: [0..<numIters] Point;
     for i in points.indices {
@@ -155,6 +155,7 @@ module Optimizers {
       }
     } else {
       // TODO: throw if nothing completed
+      halt("todo");
     }
 
     return best;
@@ -163,7 +164,7 @@ module Optimizers {
   config param randomSeed = 0;
   private var rngInt = new randomStream(int, randomSeed);
 
-  // Figures out a set of values to use
+  /* Figures out a set of values to use */
   private proc generateRandom(basePoint: Point): Point {
     var point = new Point();
 
@@ -186,9 +187,10 @@ module Optimizers {
     return point;
   }
 
-  // This is expected to be generally helpful for the various optimizers
-  // Run the function with each of the possible combinations to try, updating
-  // to indicate the status of running with that combination and the result
+  /* This is expected to be generally helpful for the various optimizers
+     Run the function with each of the possible combinations to try, updating
+     to indicate the status of running with that combination and the result
+  */
   private proc evaluate(func, ref points: [] Point) {
     param numOptArgs = func.argTypes.size;
     forall i in points {
@@ -222,9 +224,11 @@ module Optimizers {
           }
           when 0 {
             // Error condition
+            halt("todo");
           }
           otherwise {
             // Error condition
+            halt("todo");
           }
       }
     }
@@ -267,9 +271,11 @@ module Optimizers {
           }
           when 0 {
             // Error condition
+            halt("todo");
           }
           otherwise {
             // Error condition
+            halt("todo");
           }
       }
     }
@@ -288,13 +294,9 @@ module Optimizers {
       var status: Status = Status.unevaluated;
 
       proc init(l: list(optimizableArg)) {
-        this.parameters = new list(optimizableArg);
+        this.parameters = l;
 
         init this;
-
-        for arg in l {
-          this.parameters.pushBack(arg);
-        }
       }
 
       proc init() { }
