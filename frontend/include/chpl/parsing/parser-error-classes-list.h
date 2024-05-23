@@ -73,3 +73,6 @@ POSTPARSE_ERROR_CLASS(PostParseErr, std::string)
 POSTPARSE_WARNING_CLASS(PostParseWarn, std::string)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 /* end post-parse-checks errors */
+
+// errors to do with finding the main module / command line invocation
+ERROR_CLASS(AmbiguousMain, IdOrLocation, std::vector<const uast::Function*>, std::vector<UniqueString>)

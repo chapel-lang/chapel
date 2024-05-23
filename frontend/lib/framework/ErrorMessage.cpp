@@ -38,7 +38,7 @@ Location IdOrLocation::computeLocation(Context* context) const {
 }
 
 IdOrLocation IdOrLocation::createForCommandLineLocation(Context* context) {
-  auto name = UniqueString::get(context, "<command line invocation>");
+  auto name = UniqueString::get(context, "<command line>");
   return IdOrLocation(Location(name));
 }
 

@@ -417,9 +417,16 @@ static const ID& findMainModuleImpl(Context* context,
 
     if (findMain.mainProcsFound.size() > 1) {
       // emit an error if there were multiple 'main' procs
-      // TODO: make this error nice, list which modules, etc
-      context->error(Location(),
-                     "ambiguous main functions, use --main-module");
+      auto loc = IdOrLocation::createForCommandLineLocation(context);
+      // gather the module IDs containing the main procs
+      std::vector<UniqueString> moduleNames;
+      for (auto f : findMain.mainProcsFound) {
+        ID moduleId = idToParentModule(context, f->id());
+        UniqueString moduleName = moduleId.symbolName(context);
+        moduleNames.push_back(moduleName);
+      }
+      CHPL_REPORT(context, AmbiguousMain,
+                  loc, findMain.mainProcsFound, moduleNames);
     }
   } else if (commandLineModules.size() == 1) {
     // the main module is the single command-line module

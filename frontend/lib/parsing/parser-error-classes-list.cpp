@@ -653,4 +653,26 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
 
 /* end post-parse-checks errors */
 
+
+// main module / command line invocation errors
+void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& mainFns = std::get<std::vector<const uast::Function*>>(info_);
+  auto& modNames = std::get<std::vector<UniqueString>>(info_);
+  wr.heading(kind_, type_, loc,
+             "unknown main module due to multiple 'proc main's");
+  wr.note(loc, "please use '--main-module' to disambiguate");
+  wr.message("");
+  size_t i = 0;
+  for (auto fn : mainFns) {
+    const char* moduleName = "<unknown>";
+    if (i < modNames.size())
+      moduleName = modNames[i].c_str();
+    wr.note(locationOnly(fn), "found 'proc main' in module '", moduleName, "'");
+    wr.codeForDef(fn);
+    i++;
+  }
+}
+
+
 }
