@@ -1582,19 +1582,24 @@ DefExpr* buildClassDefExpr(const char*               name,
                            AggregateTag              tag,
                            const std::vector<Expr*>& inherits,
                            BlockStmt*                decls,
-                           Flag                      externFlag) {
+                           Flag                      externFlag,
+                           ModTag                    modTag) {
   bool isExtern = externFlag == FLAG_EXTERN;
-  AggregateType* ct = NULL;
-  TypeSymbol* ts = NULL;
+  AggregateType* ct = nullptr;
+  TypeSymbol* ts = nullptr;
 
   ct = new AggregateType(tag);
 
   // For certain internal types (e.g. dtString / _string), hook
   // up the global variable type to the type we are now creating
-  if (AggregateType* dt = shouldWireWellKnownType(name)) {
-    ct = installInternalType(ct, dt);
-    ts = ct->symbol;
-  } else {
+  if (modTag == MOD_INTERNAL || modTag == MOD_STANDARD) {
+    if (AggregateType* dt = shouldWireWellKnownType(name)) {
+      ct = installInternalType(ct, dt);
+      ts = ct->symbol;
+    }
+  }
+
+  if (ts == nullptr) {
     ts = new TypeSymbol(name, ct);
   }
 
@@ -2055,10 +2060,11 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   its try block if we detect exception handling is not needed (e.g. we're
   not in a throwing function, and not in a try).
 */
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag)
+{
   auto ret = new BlockStmt();
 
-  if (fWarnUnstable && currentModuleType == MOD_USER) {
+  if (fWarnUnstable && modTag == MOD_USER) {
     USR_WARN(managers, "manage statements are not stable and may change");
   }
 

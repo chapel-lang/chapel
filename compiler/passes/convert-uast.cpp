@@ -982,7 +982,7 @@ struct Converter {
 
     auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
-    auto ret = buildManageStmt(managers, block);
+    auto ret = buildManageStmt(managers, block, currentModuleType);
     INT_ASSERT(ret);
 
     return ret;
@@ -4173,7 +4173,8 @@ struct Converter {
     auto ret = buildClassDefExpr(name, cname, tag,
                                  inherits,
                                  decls,
-                                 externFlag);
+                                 externFlag,
+                                 currentModuleType);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
