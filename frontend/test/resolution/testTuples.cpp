@@ -537,8 +537,8 @@ static void test14() {
                     var retTwo = foo((a, b, c));
                   )"""",
                   {"retOne", "retTwo"});
-    assert(!vars["retOne"].isUnknown());
-    assert(!vars["retTwo"].isUnknown());
+    assert(vars["retOne"].type()->isIntType());
+    assert(vars["retTwo"].type()->isIntType());
   }
   {
     Context ctx;

@@ -1921,7 +1921,6 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
     useT = QualifiedType(declKind, useType);
   } else if (substitutions != nullptr &&
              substitutions->count(td->id()) != 0) {
-    // TODO: should this be referential or value?
     auto sub = substitutions->find(td->id())->second;
     auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
 
