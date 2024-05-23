@@ -1857,22 +1857,33 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
   }
 
   const TupleType* rhsT = rhsType.type()->toTupleType();
+  std::vector<QualifiedType> eltTypes;
 
   if (rhsT == nullptr) {
-    CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
-    return;
-  }
-
-  // Then, check that they have the same size
-  if (lhsTuple->numDecls() != rhsT->numElements()) {
+    if (rhsType.isUnknown() ||
+        rhsType.isErroneousType() ||
+        (rhsType.hasTypePtr() && rhsType.type()->isAnyType())) {
+      // Fill element types with the unknown/generic QualifiedType, so that we
+      // at least get the 'kind' right
+      eltTypes = std::vector<QualifiedType>(lhsTuple->numDecls(), rhsType);
+    } else {
+      CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
+      return;
+    }
+  } else if (lhsTuple->numDecls() != rhsT->numElements()) {
+    // Then, check that they have the same size
     CHPL_REPORT(context, TupleDeclMismatchedElems, lhsTuple, rhsT);
     return;
+  } else {
+    for (int i = 0; i < rhsT->numElements(); i++) {
+      eltTypes.push_back(rhsT->elementType(i));
+    }
   }
 
   // Finally, try to resolve the types of the elements
   int i = 0;
   for (auto actual : lhsTuple->decls()) {
-    QualifiedType rhsEltType = rhsT->elementType(i);
+    QualifiedType rhsEltType = eltTypes[i];
     if (auto innerTuple = actual->toTupleDecl()) {
       resolveTupleUnpackDecl(innerTuple, rhsEltType);
     } else if (auto namedDecl = actual->toNamedDecl()) {
@@ -1893,9 +1904,32 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
   QualifiedType useT;
 
+  // Non-default intents are currently not allowed for tuple-grouped formals.
+  //
+  // Note: This doesn't apply to nested TupleDecls like ``(a, b)`` in the
+  // formal ``((a, b), c)``. Such nested formals should be handled by
+  // ``resolveTupleUnpackDecl``.
+  if (td->isTupleDeclFormal() && declKind != QualifiedType::DEFAULT_INTENT) {
+    useT = QualifiedType(declKind, ErroneousType::get(context));
+    ResolvedExpression& result = byPostorder.byAst(td);
+    result.setType(useT);
+    return;
+  }
+
   // Figure out the type to use for this tuple
   if (useType != nullptr) {
     useT = QualifiedType(declKind, useType);
+  } else if (substitutions != nullptr &&
+             substitutions->count(td->id()) != 0) {
+    auto sub = substitutions->find(td->id())->second;
+    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+
+    if (subTup == nullptr) {
+      // Rely on hasTypePtr check below to recognize error
+      useT = QualifiedType();
+    } else {
+      useT = sub;
+    }
   } else {
     QualifiedType typeExprT;
     QualifiedType initExprT;
@@ -1903,22 +1937,36 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
     auto typeExpr = td->typeExpression();
     auto initExpr = td->initExpression();
 
-    if (typeExpr != nullptr) {
-      ResolvedExpression& result = byPostorder.byAst(typeExpr);
-      typeExprT = result.type();
-    }
-    if (initExpr != nullptr) {
-      ResolvedExpression& result = byPostorder.byAst(initExpr);
-      initExprT = result.type();
-    }
+    if (typeExpr == nullptr && initExpr == nullptr) {
+      // Note: we seem to rely on tuple components being 'var', and relying on
+      // the tuple's kind instead. Without this, the current instantiation
+      // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
+      auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
+      std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+      auto tup = TupleType::getQualifiedTuple(context, eltTypes);
+      useT = QualifiedType(declKind, tup);
+    } else {
+      if (typeExpr != nullptr) {
+        ResolvedExpression& result = byPostorder.byAst(typeExpr);
+        typeExprT = result.type();
+      }
+      if (initExpr != nullptr) {
+        ResolvedExpression& result = byPostorder.byAst(initExpr);
+        initExprT = result.type();
+      }
 
-    useT = getTypeForDecl(td, typeExpr, initExpr,
-                          declKind, typeExprT, initExprT);
+      useT = getTypeForDecl(td, typeExpr, initExpr,
+                            declKind, typeExprT, initExprT);
+
+    }
   }
 
   if (!useT.hasTypePtr()) {
     context->error(td, "Cannot establish type for tuple decl");
     useT = QualifiedType(declKind, ErroneousType::get(context));
+  } else if (useT.type()->isTupleType()) {
+    useT = QualifiedType(useT.kind(),
+                         useT.type()->toTupleType()->toReferentialTuple(context));
   }
 
   // save the type in byPostorder
