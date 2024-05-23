@@ -50,8 +50,10 @@ __build_packages() {
     --platform linux/amd64,linux/arm64 \
     --output=type=local,dest=../build/$os-$package_name-$chapel_version-$package_version \
     --target=artifact \
+    --build-arg "BASENAME=$package_name" \
     --build-arg "CHAPEL_VERSION=$chapel_version" \
     --build-arg "PACKAGE_VERSION=$package_version" \
+    --build-arg "OS_NAME=$os" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..
@@ -86,8 +88,10 @@ __build_image() {
   DOCKER_BUILDKIT=1 docker buildx build \
     --load \
     --target=build \
+    --build-arg "BASENAME=$package_name" \
     --build-arg "CHAPEL_VERSION=$chapel_version" \
     --build-arg "PACKAGE_VERSION=$package_version" \
+    --build-arg "OS_NAME=$os" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..
