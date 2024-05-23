@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: chpl_unstableInternalSymbolForTesting is unstable
 $CHPL_HOME/modules/standard/Reflection.chpl:nnnn: warning: chpl_unstableStandardSymbolForTesting is unstable
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: chpl_unstableInternalSymbolForTesting is unstable
