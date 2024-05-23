@@ -166,6 +166,9 @@ struct GatherDecls {
       // skip gathering _tuple from the standard library
       // since dyno handles tuple types directly rather
       // than through a record.
+
+      // TODO: can we remove this at some point when TupleType becomes close
+      // enough to the _tuple record?
       skip = true;
     } else if (d->name() == "eltType" &&
                atFieldLevel && tagParent == asttags::Class &&
