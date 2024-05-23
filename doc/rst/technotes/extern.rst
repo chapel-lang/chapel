@@ -1175,7 +1175,7 @@ added to the ``chpl`` compiler's command-line invocation, as with a
 C/C++ compiler.
 
 
-Either of the two approaches above has the following impacts:
+Either of the two approaches above will result in the following:
 
  * During Chapel's C code generation stage, any header files listed on the
    compiler's command line or in a ``require`` statement will be ``#include``'d by
