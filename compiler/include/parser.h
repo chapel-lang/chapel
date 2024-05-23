@@ -33,7 +33,6 @@ extern int         chplLineno;
 extern bool        chplParseString;
 extern const char* chplParseStringMsg;
 
-extern ModTag      currentModuleType;
 extern const char* currentModuleName;
 
 extern int         yystartlineno;

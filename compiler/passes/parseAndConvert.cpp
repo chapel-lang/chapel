@@ -66,7 +66,6 @@ bool                 parsingPrivate                = true;
 
 bool                 countTokens                   = false;
 bool                 printTokens                   = false;
-ModTag               currentModuleType             = MOD_INTERNAL;
 const char*          currentModuleName             = NULL;
 
 int                  chplLineno                    = 0;
@@ -76,7 +75,7 @@ const char*          chplParseStringMsg            = NULL;
 bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
-static bool          sHandlingInternalModulesNow   = false;
+//static bool          sHandlingInternalModulesNow   = false;
 
 static const char* stdGenModulesPath;
 
@@ -310,10 +309,10 @@ void addModuleToParseList(const char* name, VisibilityStmt* expr) {
 
   if (sModDoneSet.set_in(modName) == NULL &&
       sModNameSet.set_in(modName) == NULL) {
-    if (currentModuleType           == MOD_INTERNAL ||
+    /*if (currentModuleType           == MOD_INTERNAL ||
         sHandlingInternalModulesNow == true) {
       sModReqdByInt.add(expr);
-    }
+    }*/
 
     sModNameSet.set_add(modName);
     sModNameList.add(modName);
@@ -1142,7 +1141,6 @@ static void initializeGlobalParserState(const char* path, ModTag modTag,
   // used (because when the 'module' declarations are found, they
   // will override it).
   currentModuleName             = filenameToModulename(path);
-  currentModuleType             = modTag;
   yyfilename                    = path;
   yystartlineno                 = 1;
 

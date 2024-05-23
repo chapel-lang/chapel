@@ -773,7 +773,7 @@ struct Converter {
       }
     } else {
       if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
+        if (topLevelModTag == MOD_USER) {
           USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
         }
       }
@@ -982,7 +982,7 @@ struct Converter {
 
     auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
-    auto ret = buildManageStmt(managers, block, currentModuleType);
+    auto ret = buildManageStmt(managers, block, topLevelModTag);
     INT_ASSERT(ret);
 
     return ret;
@@ -2266,7 +2266,7 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
+        if (topLevelModTag == MOD_USER) {
           USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
         }
         ret = new UnresolvedSymExpr("_singlevar");
@@ -4174,7 +4174,7 @@ struct Converter {
                                  inherits,
                                  decls,
                                  externFlag,
-                                 currentModuleType);
+                                 topLevelModTag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
