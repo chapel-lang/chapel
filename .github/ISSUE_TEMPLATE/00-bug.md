@@ -11,10 +11,11 @@ labels: 'type: Bug'
 <!--
 What behavior did you observe when encountering this issue?
 What behavior did you expect to observe?
+Describe the workarounds you've tried, if any.
 -->
 
-**Is this a blocking issue with no known work-arounds?**
-<!-- Answer 'yes', 'no' or 'I don't know'. -->
+**Is this issue currently blocking your progress?**
+<!-- Answer 'yes', 'no' or feel free to provide additional detail. -->
 
 ### Steps to Reproduce
 
