@@ -419,13 +419,15 @@ static const ID& findMainModuleImpl(Context* context,
       auto loc = IdOrLocation::createForCommandLineLocation(context);
       // gather the module IDs containing the main procs
       std::vector<UniqueString> moduleNames;
+      std::vector<ID> moduleIds;
       for (auto f : findMain.mainProcsFound) {
         ID moduleId = idToParentModule(context, f->id());
         UniqueString moduleName = moduleId.symbolName(context);
         moduleNames.push_back(moduleName);
+        moduleIds.push_back(moduleId);
       }
       CHPL_REPORT(context, AmbiguousMain,
-                  loc, findMain.mainProcsFound, moduleNames);
+                  loc, findMain.mainProcsFound, moduleIds, moduleNames);
     }
   } else if (commandLineModules.size() == 1) {
     // the main module is the single command-line module

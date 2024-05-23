@@ -190,7 +190,7 @@ void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
   // or
   //     x != y && y != z && x != z
   // It's best not to guess there.
-  int types = 0; 
+  int types = 0;
   for (auto op : ops) {
     if (op->op() == "<" || op->op() == "<=") {
       types |= 0b1;
@@ -658,19 +658,45 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
 void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
   auto& loc = std::get<IdOrLocation>(info_);
   auto& mainFns = std::get<std::vector<const uast::Function*>>(info_);
+  auto& modIds = std::get<std::vector<ID>>(info_);
   auto& modNames = std::get<std::vector<UniqueString>>(info_);
-  wr.heading(kind_, type_, loc,
-             "unknown main module due to multiple 'proc main's");
-  wr.note(loc, "please use '--main-module' to disambiguate");
-  wr.message("");
-  size_t i = 0;
-  for (auto fn : mainFns) {
+
+  bool allSameModule = true;
+  ID firstModuleId;
+  if (modIds.size() > 0) firstModuleId = modIds[0];
+  for (auto modId : modIds) {
+    if (modId != firstModuleId) {
+      allSameModule = false;
+    }
+  }
+
+  if (allSameModule) {
     const char* moduleName = "<unknown>";
-    if (i < modNames.size())
-      moduleName = modNames[i].c_str();
-    wr.note(locationOnly(fn), "found 'proc main' in module '", moduleName, "'");
-    wr.codeForDef(fn);
-    i++;
+    if (modNames.size() > 0)
+      moduleName = modNames[0].c_str();
+
+    wr.heading(kind_, type_, loc,
+               "multiple 'proc main's in module '", moduleName, "'");
+    wr.message("");
+    for (auto fn : mainFns) {
+      wr.note(locationOnly(fn), "found 'proc main' here");
+      wr.codeForDef(fn);
+    }
+  } else {
+    wr.heading(kind_, type_, loc,
+               "unknown main module due to multiple 'proc main's");
+    wr.note(loc, "please use '--main-module' to disambiguate");
+    wr.message("");
+    size_t i = 0;
+    for (auto fn : mainFns) {
+      const char* moduleName = "<unknown>";
+      if (i < modNames.size())
+        moduleName = modNames[i].c_str();
+      wr.note(locationOnly(fn),
+              "found 'proc main' in module '", moduleName, "'");
+      wr.codeForDef(fn);
+      i++;
+    }
   }
 }
 void ErrorAmbiguousMainModule::write(ErrorWriterBase& wr) const {
