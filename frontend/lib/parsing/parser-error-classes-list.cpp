@@ -673,7 +673,7 @@ void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
     i++;
   }
 }
-void ErrorUnknownMainModule::write(ErrorWriterBase& wr) const {
+void ErrorAmbiguousMainModule::write(ErrorWriterBase& wr) const {
   auto& loc = std::get<IdOrLocation>(info_);
   auto& modules = std::get<std::vector<const uast::Module*>>(info_);
   wr.heading(kind_, type_, loc,
@@ -686,6 +686,12 @@ void ErrorUnknownMainModule::write(ErrorWriterBase& wr) const {
     wr.codeForDef(mod);
     i++;
   }
+}
+void ErrorUnknownMainModule::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& name = std::get<UniqueString>(info_);
+  wr.heading(kind_, type_, loc,
+             "cannot find module named '", name, "' for '--main-module'");
 }
 
 

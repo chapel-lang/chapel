@@ -3027,7 +3027,11 @@ const std::vector<ID>& findMentionedModules(Context* context, ID modId) {
 static void moduleInitVisitModules(Context* context, ID modId,
                                    std::set<ID>& seen,
                                    std::vector<ID>& out) {
-  CHPL_ASSERT(!modId.isEmpty() && parsing::idIsModule(context, modId));
+  // ignore these cases; expect that errors along the lines
+  // of --main-module DoesNotExist or use DoesNotExist
+  // will be generated elsewhere.
+  if (modId.isEmpty() || !parsing::idIsModule(context, modId))
+    return;
 
   // avoid cycles with modules already visited
   auto p = seen.insert(modId);

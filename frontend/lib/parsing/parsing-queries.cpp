@@ -405,9 +405,8 @@ static const ID& findMainModuleImpl(Context* context,
       }
 
       if (!found) {
-        context->error(Location(),
-                       "could not find module named '%s' for --main-module",
-                       requestedMainModuleName.c_str());
+        auto loc = IdOrLocation::createForCommandLineLocation(context);
+        CHPL_REPORT(context, UnknownMainModule, loc, requestedMainModuleName);
       }
     }
   } else if (findMain.mainProcsFound.size() > 0) {
@@ -440,7 +439,7 @@ static const ID& findMainModuleImpl(Context* context,
     } else {
       // can't find main: no 'main' function and multiple command line modules
       auto loc = IdOrLocation::createForCommandLineLocation(context);
-      CHPL_REPORT(context, UnknownMainModule, loc, findMain.modulesFound);
+      CHPL_REPORT(context, AmbiguousMainModule, loc, findMain.modulesFound);
     }
   }
 
