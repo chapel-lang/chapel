@@ -13,7 +13,7 @@ substitutions[
     "ARGUMENTS"
 ] = """
 ARG BASENAME=chapel
-ARG CHAPEL_VERSION=2.0.0
+ARG CHAPEL_VERSION=2.1.0
 ARG PACKAGE_VERSION=1
 ARG OS_NAME
 ARG PARALLEL=1
@@ -24,8 +24,10 @@ substitutions[
     "USER_CREATION"
 ] = """
 RUN useradd -ms /bin/bash user && \
-    usermod -aG sudo user && \
-    echo "user:password" | chpasswd
+    usermod -aG wheel user && \
+    echo "user:password" | chpasswd && \
+    sed -i 's/%wheel[ \\t]\\{1,\\}ALL=(ALL)[ \\t]\\{1,\\}ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
+
 USER user
 WORKDIR /home/user
 """
@@ -75,28 +77,31 @@ USER user
 substitutions["PACKAGE_SETUP"] = """
 WORKDIR /home/user
 
-COPY --chown=user ./apt/$OS_NAME/control.template /home/user/control.template
-COPY --chown=user ./apt/common/make_dirs.py /home/user/make_dirs.py
+COPY --chown=user ./rpm/$OS_NAME/spec.template /home/user/spec.template
+COPY --chown=user ./rpm/common/make_spec.py /home/user/make_spec.py
 COPY --chown=user ./common/package_name.py /home/user/package_name.py
-RUN python3 make_dirs.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
+RUN python3 make_spec.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
+
+COPY --chown=user ./rpm/common/rpmlintrc /home/user/.rpmlintrc
+RUN rpmdev-setuptree && \
+    cp chapel-$CHAPEL_VERSION.tar.gz $(rpm --eval '%{_sourcedir}') && \
+    rpmlint -f .rpmlintrc $BASENAME.spec && \
+    spectool -g -R $BASENAME.spec
 
 COPY --chown=user ./common/fixpaths.py /home/user/fixpaths.py
 USER root
 RUN python3 fixpaths.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
 USER user
-
-COPY --chown=user ./apt/common/copy_files.py /home/user/copy_files.py
-RUN python3 copy_files.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
 """
 
 substitutions[
     "PACKAGE_BUILD"
 ] = """
-WORKDIR /home/user
-RUN dpkg-deb --build $(python3 package_name.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH)
+RUN rpmbuild -ba $BASENAME.spec && \
+    cp $(rpm --eval '%{_rpmdir}')/$(rpm --eval '%{_arch}')/*.rpm .
 
 FROM scratch as artifact
-COPY --from=build /home/user/*.deb /
+COPY --from=build /home/user/*.rpm /
 
 FROM build as release
 """
