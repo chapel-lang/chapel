@@ -360,9 +360,10 @@ struct FindMain {
 
 static const ID& findMainModuleImpl(Context* context,
                                     std::vector<ID> commandLineModules,
-                                    UniqueString requestedMainModuleName) {
+                                    UniqueString requestedMainModuleName,
+                                    bool libraryMode) {
   QUERY_BEGIN(findMainModuleImpl, context,
-              commandLineModules, requestedMainModuleName);
+              commandLineModules, requestedMainModuleName, libraryMode);
 
   ID result;
   auto findMain = FindMain(context);
@@ -409,7 +410,7 @@ static const ID& findMainModuleImpl(Context* context,
         CHPL_REPORT(context, UnknownMainModule, loc, requestedMainModuleName);
       }
     }
-  } else if (findMain.mainProcsFound.size() > 0) {
+  } else if (findMain.mainProcsFound.size() > 0 && !libraryMode) {
     // the main module is the single command-line module containing a 'main'
     ID mainProc = findMain.mainProcsFound[0]->id();
     result = idToParentModule(context, mainProc);
@@ -432,7 +433,7 @@ static const ID& findMainModuleImpl(Context* context,
   } else if (commandLineModules.size() == 1) {
     // the main module is the single command-line module
     result = commandLineModules[0];
-  } else {
+  } else if (!libraryMode) {
     // emit an error
     if (commandLineModules.size() == 0) {
       // AFAIK this won't be possible to reach
@@ -446,7 +447,7 @@ static const ID& findMainModuleImpl(Context* context,
   }
 
   if (result.isEmpty() && findMain.modulesFound.size() > 0) {
-    // we should have emitted an error above. use the first
+    // if we didn't find a main module, use the first
     // module encountered as the main module so compilation can continue.
     result = findMain.modulesFound[0]->id();
   }
@@ -456,16 +457,19 @@ static const ID& findMainModuleImpl(Context* context,
 
 ID findMainModule(Context* context,
                   std::vector<ID> commandLineModules,
-                  UniqueString requestedMainModuleName) {
+                  UniqueString requestedMainModuleName,
+                  bool libraryMode) {
   return findMainModuleImpl(context,
                             std::move(commandLineModules),
-                            requestedMainModuleName);
+                            requestedMainModuleName,
+                            libraryMode);
 }
 
 std::vector<ID>
 findMainAndCommandLineModules(Context* context,
                               std::vector<UniqueString> paths,
                               UniqueString requestedMainModuleName,
+                              bool libraryMode,
                               ID& mainModule) {
   std::vector<chpl::ID> commandLineModules;
 
@@ -478,7 +482,8 @@ findMainAndCommandLineModules(Context* context,
 
   mainModule = findMainModule(context,
                               commandLineModules,
-                              requestedMainModuleName);
+                              requestedMainModuleName,
+                              libraryMode);
 
   return commandLineModules;
 }

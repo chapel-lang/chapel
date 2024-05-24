@@ -424,6 +424,7 @@ static void loadAndConvertModules() {
     chpl::parsing::findMainAndCommandLineModules(gContext,
                                                  commandLinePaths,
                                                  requestedMainModuleName,
+                                                 fLibraryCompile,
                                                  mainModule);
 
   //printf("main module %s\n", mainModule.str().c_str());

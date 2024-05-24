@@ -185,10 +185,15 @@ const std::vector<ID>& toplevelModulesInFile(Context* context,
 
   requestedMainModuleName can be "", but if it is not, it should
   be the name of a module in commandLineModules.
+
+  If libraryMode is set, most errors in determining the main
+  module will be ignored. This mode is useful for library compilation,
+  where the main module concept does not make sense.
  */
 ID findMainModule(Context* context,
                   std::vector<ID> commandLineModules,
-                  UniqueString requestedMainModuleName);
+                  UniqueString requestedMainModuleName,
+                  bool libraryMode);
 
 /**
   Convenience function to compute the main module ID and command-line module IDs
@@ -200,6 +205,7 @@ std::vector<ID>
 findMainAndCommandLineModules(Context* context,
                               std::vector<UniqueString> paths,
                               UniqueString requestedMainModuleName,
+                              bool libraryMode,
                               ID& mainModule);
 
 /**
