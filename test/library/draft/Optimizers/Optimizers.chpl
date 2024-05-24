@@ -68,6 +68,12 @@ module Optimizers {
     /* The current value the argument is using */
     proc value {
       // TODO: update when support multiple argument types
+      // Stamping out a bunch of fields per supported argument type is annoying
+      // but generics makes it kinda necessary if we want to store wrappers of
+      // different argument types in the same list.
+      // Arkouda gets around this by having a concrete parent type and generic
+      // subtype (iirc), I think we could do something similar here.  We could
+      // potentially also manage this with a union.
       return intValue;
     }
 
