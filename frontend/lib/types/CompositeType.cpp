@@ -174,35 +174,30 @@ const RecordType* CompositeType::getLocaleIDType(Context* context) {
                          SubstitutionsMap());
 }
 
-bool CompositeType::isMissingBundledType(Context* context, ID id) {
-  return isMissingBundledClassType(context, id) ||
-         isMissingBundledRecordType(context, id);
+bool CompositeType::isMissingBundledType(Context* context, ID id,
+                                         uast::asttags::AstTag* tag) {
+  return parsing::bundledModulePath(context).isEmpty() &&
+         isBundledType(id, tag);
 }
 
-bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
-  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
-  if (noLibrary) {
-    auto path = id.symbolPath();
-    return path == "String._string" ||
-           path == "ChapelRange._range" ||
-           path == "ChapelTuple._tuple" ||
-           path == "Bytes._bytes";
+bool CompositeType::isBundledType(ID id, uast::asttags::AstTag* tag) {
+  static std::unordered_set<std::string> bundledRecordTypeNames = {
+      "String._string", "ChapelRange._range", "ChapelTuple._tuple",
+      "Bytes._bytes"};
+  static std::unordered_set<std::string> bundledClassTypeNames = {
+      "ChapelReduce.ReduceScanOp", "Errors.Error", "CTypes.c_ptr",
+      "CTypes.c_ptrConst"};
+
+  auto path = id.symbolPath().str();
+  if (bundledRecordTypeNames.count(path)) {
+    if (tag) *tag = uast::asttags::Record;
+    return true;
+  } else if (bundledClassTypeNames.count(path)) {
+    if (tag) *tag = uast::asttags::Class;
+    return true;
+  } else {
+    return false;
   }
-
-  return false;
-}
-
-bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
-  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
-  if (noLibrary) {
-    auto path = id.symbolPath();
-    return path == "ChapelReduce.ReduceScanOp" ||
-           path == "Errors.Error" || 
-           path == "CTypes.c_ptr" ||
-           path == "CTypes.c_ptrConst";
-  }
-
-  return false;
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {
