@@ -478,7 +478,7 @@ class BorrowedIdsWithName {
     IdAndFlags::FlagSet excludeFlagSet;
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isField, isMethod, isParenfulFunction,
-                                       filterFlags, excludeFlagSet);
+                                       filterFlags, std::move(excludeFlagSet));
     CHPL_ASSERT((bool) maybeIds);
     return *maybeIds;
   }
@@ -1220,6 +1220,7 @@ struct ResultVisibilityTrace {
     // these cover other cases
     bool automaticModule = false;
     bool toplevelModule = false;
+    bool containingModule = false;
     bool externBlock = false;
     bool rootScope = false;
 

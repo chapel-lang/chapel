@@ -575,6 +575,8 @@ struct LookupHelper {
                              bool onlyMethodsFields,
                              bool includeMethods);
 
+  bool doLookupEnclosingModuleName(const Scope* scope, UniqueString name);
+
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
   bool doLookupInReceiverScopes(const Scope* scope,
@@ -854,6 +856,46 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
   }
 
   return found;
+}
+
+bool LookupHelper::doLookupEnclosingModuleName(const Scope* scope,
+                                               UniqueString name) {
+  // this code assumes that 'scope' is a module scope
+  CHPL_ASSERT(scope && scope->moduleScope() == scope);
+
+  if (name != scope->name())
+    return false;
+
+  // the name matches! record the match
+  auto vis = uast::Decl::Visibility::PRIVATE;
+  bool isField = false;
+  bool isMethod = false;
+  bool isParenfulFn = false;
+  IdAndFlags::Flags filterFlags = 0;
+  IdAndFlags::FlagSet excludeFlagSet;
+
+  auto foundIds =
+    BorrowedIdsWithName::createWithSingleId(scope->id(), vis,
+                                            isField, isMethod, isParenfulFn,
+                                            filterFlags,
+                                            std::move(excludeFlagSet));
+
+  if (foundIds) {
+    if (traceCurPath && traceResult) {
+      ResultVisibilityTrace t;
+      t.visibleThrough = *traceCurPath;
+      VisibilityTraceElt elt;
+      elt.containingModule = true;
+      t.visibleThrough.push_back(std::move(elt));
+      traceResult->push_back(std::move(t));
+    }
+
+    result.push_back(std::move(*foundIds));
+  } else {
+    CHPL_ASSERT(false && "problem creating match for enclosing module");
+  }
+
+  return true;
 }
 
 bool LookupHelper::doLookupInToplevelModules(const Scope* scope,
@@ -1345,7 +1387,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
     if (reachedModule) {
       // check the containing module scope
-
       if (trace) {
         VisibilityTraceElt elt;
         elt.parentScope = cur;
@@ -1353,6 +1394,30 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       }
 
       bool got = doLookupInScope(cur, {}, name, newConfig);
+
+      if (trace) {
+        traceCurPath->pop_back();
+      }
+
+      if (onlyInnermost && got) return true;
+    }
+
+    if (!goPastModules && (reachedModule || asttags::isModule(scope->tag()))) {
+      // If we reached a module or we already were in a module,
+      // check for a match with the containing module's name for e.g.
+      //   module M { ...M.xyz... }
+      //
+      // Don't do this when goPastModules is used, because we will find
+      // the enclosing module when visiting its parent.
+      const Scope* modScope = asttags::isModule(scope->tag()) ? scope : cur;
+      CHPL_ASSERT(modScope && asttags::isModule(modScope->tag()));
+      if (trace) {
+        VisibilityTraceElt elt;
+        elt.parentScope = cur;
+        traceCurPath->push_back(std::move(elt));
+      }
+
+      bool got = doLookupEnclosingModuleName(modScope, name);
 
       if (trace) {
         traceCurPath->pop_back();
