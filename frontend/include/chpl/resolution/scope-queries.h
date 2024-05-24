@@ -187,7 +187,8 @@ namespace resolution {
     modules should be initialized. 'commandLineModules' can be provided
     with the list of modules that are named on the command line.
 
-    The result is vector of IDs indicating the order in which
+    The result is vector of pairs of IDs and bools.
+    The IDs indicating the order in which
     modules with those IDs should be initialized.
   */
   const std::vector<ID>&

@@ -470,7 +470,7 @@ findMainAndCommandLineModules(Context* context,
   std::vector<chpl::ID> commandLineModules;
 
   for (auto path : paths) {
-    auto ids = chpl::parsing::toplevelModulesInFile(context, path);
+    auto ids = toplevelModulesInFile(context, path);
     // append ids to commandLineModules
     commandLineModules.insert(commandLineModules.end(),
                               ids.begin(), ids.end());
