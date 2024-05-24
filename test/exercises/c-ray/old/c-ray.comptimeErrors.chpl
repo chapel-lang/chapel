@@ -1,1 +1,1 @@
-require "c-ray.chpl";
+c-ray.chpl
