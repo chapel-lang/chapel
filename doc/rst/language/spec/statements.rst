@@ -783,11 +783,15 @@ The Require Statement
 ---------------------
 
 The require statement provides a means to specify required files from
-within the program. It has an effect similar to adding the specified
-files to the Chapel compiler's command line. The filenames are relative
+within the program. This forms an alternative to listing them on the
+command line.
+
+The filenames are relative
 to the directory from which the Chapel compiler was invoked. Any
 directories specified using the Chapel compiler's -I or -L flags will
-also be searched for matching files.
+also be searched for matching .h or .a files, respectively. Similarly,
+directories specified with -M will be searched for .chpl files, provided
+those filenames do not include a slash.
 
 .. code-block:: syntax
 
