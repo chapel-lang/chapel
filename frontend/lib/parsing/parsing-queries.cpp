@@ -1084,6 +1084,13 @@ const AstNode* idToAst(Context* context, ID id) {
     return nullptr;
   }
 
+  auto path = id.symbolPath();
+  if (path == "String._string" || path == "ChapelRange._range" ||
+      path == "ChapelTuple._tuple" || path == "Bytes._bytes") {
+    parsing::getToplevelModule(context,
+                               ID::expandSymbolPath(context, path)[0].first);
+  }
+
   return astForIdQuery(context, id);
 }
 
