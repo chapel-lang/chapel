@@ -807,6 +807,33 @@ static const bool& fileExistsQuery(Context* context, std::string path) {
   return QUERY_END(result);
 }
 
+std::string getExistingFileInDirectory(Context* context,
+                                       std::string path,
+                                       std::string fname) {
+
+  if (fname.empty()) {
+    return "";
+  }
+
+  // Remove any '/' characters before adding one so we don't double.
+  while (!path.empty() && path.back() == '/') {
+    path.pop_back();
+  }
+
+  if (!path.empty()) {
+    path += "/";
+  }
+  path += fname;
+
+  path = cleanLocalPath(context, std::move(path));
+
+  if (hasFileText(context, path) || fileExistsQuery(context, path)) {
+    return path;
+  }
+
+  return "";
+}
+
 static const Module* const& getToplevelModuleQuery(Context* context,
                                                    UniqueString name) {
   QUERY_BEGIN(getToplevelModuleQuery, context, name);
@@ -832,25 +859,13 @@ static const Module* const& getToplevelModuleQuery(Context* context,
     std::string check;
     std::set<ID> seenModules;
 
+    std::string fname = name.str();
+    fname += ".chpl";
+
     for (auto path : moduleSearchPath(context)) {
-      check = path.str();
+      check = getExistingFileInDirectory(context, path.str(), fname);
 
-      // Remove any '/' characters before adding one so we don't double.
-      while (!check.empty() && check.back() == '/') {
-        check.pop_back();
-      }
-
-      // ignore empty paths
-      if (check.empty())
-        continue;
-
-      check += "/";
-      check += name.str();
-      check += ".chpl";
-
-      check = cleanLocalPath(context, std::move(check));
-
-      if (hasFileText(context, check) || fileExistsQuery(context, check)) {
+      if (!check.empty()) {
         auto filePath = UniqueString::get(context, check);
         UniqueString emptyParentSymbolPath;
         const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);

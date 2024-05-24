@@ -345,6 +345,7 @@ static BlockStmt* buildUseList(BaseAST* module, const char* newName,
 // (i.e., function resolution time) then we add the string to our list
 // of library information or to our list of source files.
 //
+// returns 'true' if the string was handled.
 bool processStringInRequireStmt(Expr* expr,
                                 bool atModuleScope,
                                 const char* str,
@@ -361,7 +362,8 @@ bool processStringInRequireStmt(Expr* expr,
         if (!atModuleScope) {
           USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
         }
-        addSourceFile(str, NULL);
+        // no need to add the source file since that is handled
+        // within resolveVisibilityStmtsQuery.
         return true;
       } else {
         USR_FATAL("'require' cannot handle non-literal '.chpl' files");

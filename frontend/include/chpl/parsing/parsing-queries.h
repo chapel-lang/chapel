@@ -384,6 +384,18 @@ bool
 filePathIsInBundledModule(Context* context, UniqueString filePath);
 
 /**
+ This helper function checks within a particular directory
+ if a file with a particular name exists. It is useful
+ when consulting the module search path.
+
+ If the file is found, returns the full path to that file.
+ If not, it returns the empty string.
+ */
+std::string getExistingFileInDirectory(Context* context,
+                                       std::string path,
+                                       std::string fname);
+
+/**
  This query parses a toplevel module by name. Returns nullptr
  if no such toplevel module can be found in the module search path.
  */

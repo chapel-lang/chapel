@@ -34,6 +34,7 @@
 #include "llvm/ADT/SmallPtrSet.h"
 
 #include <cstdio>
+#include <cstring>
 #include <set>
 #include <string>
 #include <tuple>
@@ -2710,19 +2711,34 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
       }
     }
 
-    // Process 'require' statements before uses/imports so that the modules
-    // are available.
+    // Process 'require' statements bringing in .chpl files
+    // before uses/imports so that the modules are available.
     //
-    // TODO: Handle 'require' statements with param expressions
+    // Other 'require' statements will be handled later.
     for (auto req : requireNodes) {
       for (const AstNode* child : req->children()) {
         if (const StringLiteral* str = child->toStringLiteral()) {
-          const auto path = str->value();
-          if (path.endsWith(".chpl")) {
-            parsing::parseFileToBuilderResult(context, path, UniqueString());
-          } else if (path.endsWith(".h")) {
-          } else {
-            // TODO: Unacceptable require...
+          const auto v = str->value();
+          if (v.endsWith(".chpl")) {
+            // start by checking the current directory
+            std::string f;
+            f = parsing::getExistingFileInDirectory(context, "", v.str());
+            if (!f.empty()) {
+              auto u = UniqueString::get(context, f);
+              parsing::parseFileToBuilderResult(context, u, UniqueString());
+
+            // otherwise, check also the module search path,
+            // but only do that if the requested path doesn't have a / in it
+            } else if (memchr(v.c_str(), '/', v.length()) == nullptr) {
+              for (auto dir : parsing::moduleSearchPath(context)) {
+                f = parsing::getExistingFileInDirectory(context,
+                                                        dir.str(), v.str());
+                if (!f.empty()) {
+                  auto u = UniqueString::get(context, f);
+                  parsing::parseFileToBuilderResult(context, u, UniqueString());
+                }
+              }
+            }
           }
         }
       }
