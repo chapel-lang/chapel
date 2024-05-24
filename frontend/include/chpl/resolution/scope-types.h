@@ -927,12 +927,10 @@ class ResolvedVisibilityScope {
   const Scope* scope_;
   std::vector<VisibilitySymbols> visibilityClauses_;
   std::vector<ID> modulesNamedInUseOrImport_;
-  std::vector<UniqueString> requiredSourceFiles_;
 
  public:
   using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
   using ModuleIdsIterator = Iterable<std::vector<ID>>;
-  using RequiredPathsIterator = Iterable<std::vector<UniqueString>>;
 
   ResolvedVisibilityScope(const Scope* scope)
     : scope_(scope)
@@ -949,11 +947,6 @@ class ResolvedVisibilityScope {
   /** Return an iterator over the modules named in use/import */
   ModuleIdsIterator modulesNamedInUseOrImport() const {
     return ModuleIdsIterator(modulesNamedInUseOrImport_);
-  }
-
-  /** Return an iterator over the required .chpl files */
-  RequiredPathsIterator requiredSourceFiles() const {
-    return RequiredPathsIterator(requiredSourceFiles_);
   }
 
   /** Add a visibility clause */
@@ -975,17 +968,10 @@ class ResolvedVisibilityScope {
     modulesNamedInUseOrImport_.push_back(std::move(id));
   }
 
-  /** Add a source file that is mentioned in a require statement */
-  void addRequiredSource(UniqueString path) {
-    requiredSourceFiles_.push_back(path);
-  }
-
-
   bool operator==(const ResolvedVisibilityScope& other) const {
     return scope_ == other.scope_ &&
            visibilityClauses_ == other.visibilityClauses_ &&
-           modulesNamedInUseOrImport_ == other.modulesNamedInUseOrImport_ &&
-           requiredSourceFiles_ == other.requiredSourceFiles_;
+           modulesNamedInUseOrImport_ == other.modulesNamedInUseOrImport_;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
@@ -1001,9 +987,6 @@ class ResolvedVisibilityScope {
     }
     for (const auto& id: modulesNamedInUseOrImport_) {
       id.mark(context);
-    }
-    for (const auto& path: requiredSourceFiles_) {
-      path.mark(context);
     }
   }
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;

@@ -2710,15 +2710,19 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
       }
     }
 
-    // Parse source needed due to a 'require' statements
-    // before uses/imports so that the modules are available.
+    // Process 'require' statements before uses/imports so that the modules
+    // are available.
+    //
+    // TODO: Handle 'require' statements with param expressions
     for (auto req : requireNodes) {
       for (const AstNode* child : req->children()) {
         if (const StringLiteral* str = child->toStringLiteral()) {
           const auto path = str->value();
           if (path.endsWith(".chpl")) {
             parsing::parseFileToBuilderResult(context, path, UniqueString());
-            result->addRequiredSource(path);
+          } else if (path.endsWith(".h")) {
+          } else {
+            // TODO: Unacceptable require...
           }
         }
       }
@@ -3087,8 +3091,7 @@ const std::vector<ID>& findMentionedModules(Context* context, ID modId) {
 
 static void moduleInitVisitModules(Context* context, ID modId,
                                    std::set<ID>& seen,
-                                   std::vector<ID>& out,
-                                   std::vector<UniqueString>& requiredOut) {
+                                   std::vector<ID>& out) {
   // ignore these cases; expect that errors along the lines
   // of --main-module DoesNotExist or use DoesNotExist
   // will be generated elsewhere.
@@ -3106,8 +3109,7 @@ static void moduleInitVisitModules(Context* context, ID modId,
   if (const Scope* scope = scopeForId(context, modId)) {
     if (scope->autoUsesModules()) {
       if (const Scope* autoScope = scopeForAutoModule(context)) {
-        moduleInitVisitModules(context, autoScope->id(), seen,
-                               out, requiredOut);
+        moduleInitVisitModules(context, autoScope->id(), seen, out);
       }
     }
   }
@@ -3117,22 +3119,13 @@ static void moduleInitVisitModules(Context* context, ID modId,
   for (auto cur = modId;
        !cur.isEmpty();
        cur = parsing::idToParentModule(context, cur)) {
-    moduleInitVisitModules(context, cur, seen, out, requiredOut);
+    moduleInitVisitModules(context, cur, seen, out);
   }
 
   // consider all use/import/mention that are not submodules of this module
   auto& v = findMentionedModules(context, modId);
   for (const auto& id : v) {
-    moduleInitVisitModules(context, id, seen, out, requiredOut);
-  }
-
-  // also gather any source files needed due to 'require "something.chpl";'
-  if (const Scope* s = scopeForId(context, modId)) {
-    if (const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, s)) {
-      for (auto path : r->requiredSourceFiles()) {
-        requiredOut.push_back(path);
-      }
-    }
+    moduleInitVisitModules(context, id, seen, out);
   }
 
   // Everything I need has been initialized, so initialize me.
@@ -3145,26 +3138,14 @@ moduleInitializationOrder(Context* context, ID mainModule,
   QUERY_BEGIN(moduleInitializationOrder, context,
               mainModule, commandLineModules);
 
-  std::set<ID> seen;
   std::vector<ID> ret;
-  std::vector<UniqueString> requiredSourceFiles;
+  std::set<ID> seen;
 
-  moduleInitVisitModules(context, mainModule, seen, ret, requiredSourceFiles);
+  moduleInitVisitModules(context, mainModule, seen, ret);
 
   // consider also the modules mentioned on the command line
   for (const auto& modId : commandLineModules) {
-    moduleInitVisitModules(context, modId, seen, ret, requiredSourceFiles);
-  }
-
-  // Consider also the required source files.
-  // Note that moduleInitVisitModules might append to requiredSourceFiles
-  // so we can't use the usual iterator.
-  for (size_t i = 0; i < requiredSourceFiles.size(); i++) {
-    UniqueString path = requiredSourceFiles[i];
-    auto modIds = parsing::toplevelModulesInFile(context, path);
-    for (const auto& modId : modIds) {
-      moduleInitVisitModules(context, modId, seen, ret, requiredSourceFiles);
-    }
+    moduleInitVisitModules(context, modId, seen, ret);
   }
 
   return QUERY_END(ret);
