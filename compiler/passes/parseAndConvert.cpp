@@ -216,7 +216,7 @@ void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
-  gDynoPrependInternalModulePaths.push_back(newpath);
+  gDynoPrependStandardModulePaths.push_back(newpath);
 }
 
 void setupModulePaths() {
