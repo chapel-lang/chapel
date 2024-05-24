@@ -35,6 +35,8 @@
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
 
+#include <iomanip>
+
 namespace chpl {
 namespace resolution {
 
@@ -1062,11 +1064,45 @@ void ResolvedExpression::stringify(std::ostream& ss,
   }
 }
 
+void
+ResolutionResultByPostorderID::stringify(std::ostream& ss,
+                                         chpl::StringifyKind stringKind) const {
+  std::vector<int> keys;
+  for (const auto& pair : map) {
+    keys.push_back(pair.first);
+  }
+
+  std::sort(keys.begin(), keys.end());
+
+  size_t maxIdWidth = 0;
+  for (auto key : keys) {
+    auto id = ID(symbolId.symbolPath(), key, -1);
+    if (id.str().size() > maxIdWidth)
+      maxIdWidth = id.str().size();
+  }
+
+  for (auto key : keys) {
+    auto id = ID(symbolId.symbolPath(), key, -1);
+
+    // output the ID
+    std::cout << std::setw(maxIdWidth) << std::left << id.str();
+    // restore format to default
+    std::cout.copyfmt(std::ios(NULL));
+
+    if (const ResolvedExpression* re = byIdOrNull(id)) {
+      re->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+    }
+    std::cout << "\n";
+  }
+}
+
+
 IMPLEMENT_DUMP(PoiInfo);
 IMPLEMENT_DUMP(UntypedFnSignature);
 IMPLEMENT_DUMP(UntypedFnSignature::FormalDetail);
 IMPLEMENT_DUMP(TypedFnSignature);
 IMPLEMENT_DUMP(ResolvedExpression);
+IMPLEMENT_DUMP(ResolutionResultByPostorderID);
 IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
 IMPLEMENT_DUMP(MostSpecificCandidates);
