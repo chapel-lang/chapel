@@ -2450,6 +2450,8 @@ arkouda: &arkouda-base
     - Update Arkouda release testing from 1.33 to 2.0 (#24704)
   05/07/24:
     - Closes 3089 Avoid OOM Crashes caused due to in intents on makeDistArray (Bears-R-Us/arkouda#3163)
+  05/14/24:
+    - Dataframe Indexing (Bears-R-Us/arkouda#3109)
 
 arkouda-string:
   <<: *arkouda-base
