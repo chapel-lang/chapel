@@ -1084,11 +1084,11 @@ const AstNode* idToAst(Context* context, ID id) {
     return nullptr;
   }
 
-  auto path = id.symbolPath();
-  if (path == "String._string" || path == "ChapelRange._range" ||
-      path == "ChapelTuple._tuple" || path == "Bytes._bytes") {
-    parsing::getToplevelModule(context,
-                               ID::expandSymbolPath(context, path)[0].first);
+  // If looking up the ID of a bundled type, ensure the module defining it is
+  // parsed first.
+  if (types::CompositeType::isBundledType(id)) {
+    parsing::getToplevelModule(
+        context, ID::expandSymbolPath(context, id.symbolPath())[0].first);
   }
 
   return astForIdQuery(context, id);
@@ -1106,10 +1106,8 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
-    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
-      result = asttags::Record;
-    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
-      result = asttags::Class;
+    } else {
+      (void)types::CompositeType::isMissingBundledType(context, id, &result);
     }
   }
 
