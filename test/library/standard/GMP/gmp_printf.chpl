@@ -15,7 +15,7 @@ gmp_printf("%.4Ff %Zd\n", x, y);  // Print a formatted string with 4 decimal
 var ptr: c_ptr(c_uchar);
 gmp_asprintf(ptr, "%.4Ff %Zd\n", x, y);
 extern proc printf(x...);
-printf(ptr);
+printf("%s", ptr);
 deallocate(ptr);
 
 gmp_fprintf(chpl_cstdout(), "%.4Ff %Zd\n", x, y);
