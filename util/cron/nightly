@@ -36,7 +36,6 @@ $asserts = 0;
 $warnings = 1;
 $runtests = 1;
 $buildruntime = 1;
-$hello = 0;
 $allhellos = 0;
 $examples = 0;
 $performance = 0;
@@ -93,10 +92,7 @@ while (@ARGV) {
         $runtests = 0;
     } elsif ($flag eq "-noruntime") {
         $buildruntime = 0;
-    } elsif ($flag eq "-hello") {
-        $hello = 1;
     } elsif ($flag eq "-hellos") {
-        $hello = 1;
         $allhellos = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
@@ -227,7 +223,6 @@ if ($printusage == 1) {
     print "\t-execopts <opt>                : run tests with -execopts <opt>\n";
     print "\t-fast                          : run tests using --fast\n";
     print "\t-futures                       : run all futures, not just those with skipifs\n";
-    print "\t-hello                         : run the release/examples/hello.chpl test only\n";
     print "\t-hellos                        : run the release/examples/hello*.chpl tests only\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     print "\t-mason                         : build mason before running tests\n";
@@ -382,6 +377,11 @@ if ($testblog == 1) {
     print "checking blog repo\n";
     unless(-d $blogdir) {
         $blogdir = $ENV{'CHPL_NIGHTLY_BLOGDIR'};
+        if ($blogdir eq "") {
+            print "Error: specified blog testing but blogdir was not specified!\n";
+            print "\tPlease specify the location of chapel-blog with -blogdir or by setting CHPL_NIGHTLY_BLOGDIR\n";
+            exit 1;
+        }
         unless(-d $blogdir) {
             print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
             exit 1;
@@ -582,7 +582,6 @@ if ($multilocale == 1) {
     $testflags = "$testflags -multilocale-only";
 }
 
-
 #
 # don't bother making the spec tests if we're only testing hello, world programs;
 # and they'll get made automatically if we're testing everything; so we only need
@@ -592,12 +591,20 @@ if ($examples == 1) {
     print "Making spectests\n";
     mysystem("cd $chplhomedir && $make spectests", "making spec tests", 0, 1);
     $testdirs .= " release/examples";
-    if ($parnodefile ne "") {
-        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE",
-                 "making directory file", 1, 1);
-        $testflags = "$testflags -dirfile DIRFILE";
-    }
 }
+
+if ($blogonly == 1) {
+    # test the sub-directories explicitly to avoid a bunch of skipped directories,
+    # and also avoid the problem of testing the archetypes directory
+    $testdirs .= " $blogdir/chpl-src/ $blogdir/content/posts";
+}
+
+if (!($dist eq "")) {
+    $testdirs .= " distributions/robust/arithmetic";
+}
+
+# After this point, changes to $testdirs are only reflected in the automailer, and
+# not in $testflags
 if ($parnodefile eq "") {
     $testflags = "$testflags $testdirs";
 } else {
@@ -608,32 +615,20 @@ if ($parnodefile eq "") {
     }
 }
 
-if (!($dist eq "")) {
-    $testdirs .= " distributions/robust/arithmetic";
-    $testflags = "$testflags distributions/robust/arithmetic";
-}
-
-
-if ($blogonly == 1) {
-    # test the sub-directories explicitly to avoid a bunch of skipped directories,
-    # and also avoid the problem of testing the archetypes directory
-    $testflags = "$testflags $blogdir/chpl-src/ $blogdir/content/posts";
-}
-
-if ($hello == 1) {
+# this is down here because the hellos are individual files in the release/examples
+# directory and the code above has a find statement that locates all the subdirectories
+# so -hellos would pick up all the non-hello examples (aka -examples)
+if ($allhellos == 1) {
+    # for the sake of the automailer only
+    $testdirs .= " release/examples";
     if ($parnodefile eq "") {
-        if ($allhellos == 1) {
-        $testdirs .= " release/examples/hello*.chpl";
-            $testflags = "$testflags --no-recurse release/examples";
-        } else {
-        $testdirs .= " release/examples/hello.chpl";
-            $testflags = "$testflags release/examples/hello.chpl";
-        }
+        $testflags = "$testflags --no-recurse release/examples";
     } else {
-        mysystem("cd $testdir && echo $testdir > DIRFILE", "making directory file", 1, 1);
+        mysystem("cd $testdir && echo $testdirs > DIRFILE", 1, 1);
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
+
 if ($performance == 1) {
     if ($startdate eq "-1") {
         $testflags = "$testflags -performance";
