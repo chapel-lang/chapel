@@ -956,7 +956,7 @@ static const AstNode* const& astForIdQuery(Context* context, ID id) {
   // If looking up the ID of a bundled type, ensure the module defining it is
   // parsed first.
   if (types::CompositeType::isBundledType(id)) {
-    parsing::getToplevelModule(
+    std::ignore = parsing::getToplevelModule(
         context, ID::expandSymbolPath(context, id.symbolPath())[0].first);
   }
 
@@ -991,7 +991,8 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
     if (ast != nullptr) {
       result = ast->tag();
     } else {
-      (void)types::CompositeType::isMissingBundledType(context, id, &result);
+      std::ignore =
+          types::CompositeType::isMissingBundledType(context, id, &result);
     }
   }
 
