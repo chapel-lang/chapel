@@ -47,7 +47,7 @@ host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
 chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
 
 CXXFLAGS = []
-if have_llvm:
+if have_llvm and have_llvm != "none":
     CXXFLAGS += ["-DHAVE_LLVM"]
 
 CXXFLAGS += ["-Wno-c99-designator"]
