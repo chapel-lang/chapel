@@ -2720,23 +2720,22 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
         if (const StringLiteral* str = child->toStringLiteral()) {
           const auto v = str->value();
           if (v.endsWith(".chpl")) {
-            // start by checking the current directory
-            std::string f;
-            f = parsing::getExistingFileInDirectory(context, "", v.str());
-            if (!f.empty()) {
-              auto u = UniqueString::get(context, f);
-              parsing::parseFileToBuilderResult(context, u, UniqueString());
+            bool useSearchPath = (memchr(v.c_str(), '/', v.length())==nullptr);
 
-            // otherwise, check also the module search path,
-            // but only do that if the requested path doesn't have a / in it
-            } else if (memchr(v.c_str(), '/', v.length()) == nullptr) {
-              for (auto dir : parsing::moduleSearchPath(context)) {
-                f = parsing::getExistingFileInDirectory(context,
-                                                        dir.str(), v.str());
-                if (!f.empty()) {
-                  auto u = UniqueString::get(context, f);
-                  parsing::parseFileToBuilderResult(context, u, UniqueString());
-                }
+            if (useSearchPath) {
+              std::string f =
+                parsing::getExistingFileInModuleSearchPath(context, v.str());
+              if (!f.empty()) {
+                auto u = UniqueString::get(context, f);
+                parsing::parseFileToBuilderResult(context, u, UniqueString());
+              }
+            } else {
+              // just check the current directory
+              std::string f =
+                parsing::getExistingFileInDirectory(context, ".", v.str());
+              if (!f.empty()) {
+                auto u = UniqueString::get(context, f);
+                parsing::parseFileToBuilderResult(context, u, UniqueString());
               }
             }
           }

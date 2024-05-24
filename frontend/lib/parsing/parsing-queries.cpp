@@ -815,7 +815,6 @@ static const bool& fileExistsQuery(Context* context, std::string path) {
 std::string getExistingFileInDirectory(Context* context,
                                        std::string path,
                                        std::string fname) {
-
   if (fname.empty()) {
     return "";
   }
@@ -839,6 +838,36 @@ std::string getExistingFileInDirectory(Context* context,
   return "";
 }
 
+std::string getExistingFileInModuleSearchPath(Context* context,
+                                              std::string fname) {
+  std::string check;
+  std::set<UniqueString> checked;
+  std::string found;
+
+  for (auto path : moduleSearchPath(context)) {
+    auto p = checked.insert(path);
+    if (p.second) {
+      // insertion occured, so it wasn't the first time considering this path
+
+      // check if path/fname exists
+      check = getExistingFileInDirectory(context, path.str(), fname);
+
+      if (!check.empty() && !found.empty()) {
+        auto loc = IdOrLocation::createForCommandLineLocation(context);
+        CHPL_REPORT(context, AmbiguousSourceFile, loc, found, check);
+        continue;
+      }
+
+      if (found.empty() && !check.empty()) {
+        found = check;
+      }
+    }
+  }
+
+  return found;
+}
+
+
 static const Module* const& getToplevelModuleQuery(Context* context,
                                                    UniqueString name) {
   QUERY_BEGIN(getToplevelModuleQuery, context, name);
@@ -861,38 +890,31 @@ static const Module* const& getToplevelModuleQuery(Context* context,
     }
   } else {
     // Check the module search path for the module.
-    std::string check;
     std::set<ID> seenModules;
 
     std::string fname = name.str();
     fname += ".chpl";
 
-    for (auto path : moduleSearchPath(context)) {
-      check = getExistingFileInDirectory(context, path.str(), fname);
+    std::string check = getExistingFileInModuleSearchPath(context, fname);
 
-      if (!check.empty()) {
-        auto filePath = UniqueString::get(context, check);
-        UniqueString emptyParentSymbolPath;
-        const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
-        for (auto mod: v) {
-          if (seenModules.find(mod->id()) != seenModules.end()) continue;
+    if (!check.empty()) {
+      auto filePath = UniqueString::get(context, check);
+      UniqueString emptyParentSymbolPath;
+      const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
+      for (auto mod: v) {
+        if (seenModules.find(mod->id()) != seenModules.end()) continue;
 
-          if (mod->name() == name) {
-            result = mod;
-            break;
-          } else {
-            // TODO: Production compiler does not emit this error, keep it?
-            context->error(mod, "In use/imported file, module name %s "
-                                "does not match file name %s.chpl",
-                                mod->name().c_str(),
-                                name.c_str());
-            seenModules.insert(mod->id());
-          }
+        if (mod->name() == name) {
+          result = mod;
+          break;
+        } else {
+          // TODO: Production compiler does not emit this error, keep it?
+          context->error(mod, "In use/imported file, module name %s "
+                              "does not match file name %s.chpl",
+                              mod->name().c_str(),
+                              name.c_str());
+          seenModules.insert(mod->id());
         }
-      }
-
-      if (result != nullptr) {
-        break;
       }
     }
   }

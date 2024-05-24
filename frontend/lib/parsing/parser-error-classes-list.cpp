@@ -655,6 +655,17 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
 
 
 // main module / command line invocation errors
+void ErrorAmbiguousSourceFile::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& found = std::get<1>(info_);
+  auto& other = std::get<2>(info_);
+  wr.heading(kind_, type_, loc,
+             "ambiguous module source file -- using ",
+             found,
+             " over ",
+             other);
+}
+
 void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
   auto& loc = std::get<IdOrLocation>(info_);
   auto& mainFns = std::get<std::vector<const uast::Function*>>(info_);

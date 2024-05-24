@@ -400,6 +400,15 @@ filePathIsInBundledModule(Context* context, UniqueString filePath);
 std::string getExistingFileInDirectory(Context* context,
                                        std::string path,
                                        std::string fname);
+/**
+ This helper function checks the module search path for
+ an existing file named fname.
+
+ If multiple such files exist in different directories,
+ it will choose the first and emit an ambiguity warning.
+ */
+std::string getExistingFileInModuleSearchPath(Context* context,
+                                              std::string fname);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
