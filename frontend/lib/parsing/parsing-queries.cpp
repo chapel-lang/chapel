@@ -1069,6 +1069,13 @@ const Module* getIncludedSubmodule(Context* context,
 static const AstNode* const& astForIdQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIdQuery, context, id);
 
+  // If looking up the ID of a bundled type, ensure the module defining it is
+  // parsed first.
+  if (types::CompositeType::isBundledType(id)) {
+    parsing::getToplevelModule(
+        context, ID::expandSymbolPath(context, id.symbolPath())[0].first);
+  }
+
   const AstNode* result = nullptr;
   const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
   if (r != nullptr) {
@@ -1082,13 +1089,6 @@ const AstNode* idToAst(Context* context, ID id) {
   if (id.isEmpty()) {
     CHPL_ASSERT(false && "bad query of uAST for empty ID");
     return nullptr;
-  }
-
-  // If looking up the ID of a bundled type, ensure the module defining it is
-  // parsed first.
-  if (types::CompositeType::isBundledType(id)) {
-    parsing::getToplevelModule(
-        context, ID::expandSymbolPath(context, id.symbolPath())[0].first);
   }
 
   return astForIdQuery(context, id);
