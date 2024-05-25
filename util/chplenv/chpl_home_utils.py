@@ -4,7 +4,6 @@ import optparse
 import os
 import re
 import sys
-import glob
 
 import chpl_bin_subdir, chpl_python_version, overrides
 from utils import memoize
