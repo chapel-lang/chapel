@@ -1,3 +1,10 @@
+Testing type bool
+sum: true
+min: false
+max: true
+minloc: (false, 0)
+maxloc: (true, 1)
+
 Testing type int(8)
 sum: 86
 min: 0

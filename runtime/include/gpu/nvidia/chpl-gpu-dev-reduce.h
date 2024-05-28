@@ -35,6 +35,7 @@
   MACRO(impl_kind, chpl_kind, data_type, 1024) \
 
 #define GPU_DEV_REDUCE(MACRO, impl_kind, chpl_kind) \
+  GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, chpl_bool) \
   GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, int8_t) \
   GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, int16_t)  \
   GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, int32_t)  \
