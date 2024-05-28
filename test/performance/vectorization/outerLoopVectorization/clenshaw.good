@@ -1,0 +1,4 @@
+clenshaw.chpl:20: In function 'clenshaw':
+clenshaw.chpl:25: warning: Unknown attribute tool name 'llvm'
+clenshaw.chpl:20: warning: loop was marked 'assertVectorized' but did not vectorize
+-54.1844
