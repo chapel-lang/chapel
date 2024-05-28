@@ -1,4 +1,5 @@
 use GPU;
+use GpuDiagnostics;
 use ChplConfig;
 
 config const useExpr = true;
@@ -32,7 +33,9 @@ proc testType(type t) {
         when "maxloc" do res=gpuMaxLocReduce(Arr);
       }
 
-      writeln(op, ": ", res);
+      // we cast to `t` to paper over the difference between the integral values
+      // returned from two different ways of sum-reducing bool arrays
+      writeln(op, ": ", if isTuple(res) then res:(t,int) else res:t);
     }
   }
 
@@ -45,6 +48,7 @@ proc testType(type t) {
   writeln();
 }
 
+testType(bool);
 testType(int(8));
 testType(int(16));
 testType(int(32));
