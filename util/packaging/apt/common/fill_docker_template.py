@@ -47,7 +47,14 @@ RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
     unset CHPL_HOME
 """
 
-substitutions["BUILD_GASNET_UDP"] = ""
+substitutions["BUILD_GASNET_UDP"] = """
+RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
+    export CHPL_COMM=gasnet && \
+    ./configure --prefix=/usr && \
+    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \
+    unset CHPL_HOME && \
+    unset CHPL_COMM
+"""
 
 substitutions["BUILD_OFI_SLURM"] = """
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
