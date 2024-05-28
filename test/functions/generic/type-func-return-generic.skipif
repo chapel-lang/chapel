@@ -1,2 +1,3 @@
-# this works fine on linux64
-CHPL_TARGET_PLATFORM==linux64
+# this only crashes on x86 due to use-after-free in the compiler
+CHPL_TARGET_ARCH==x86_64
+CHPL_TARGET_ARCH==x86
