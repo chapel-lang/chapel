@@ -868,6 +868,11 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   setup_ibv();
   setup_polling();
 
+  // Setting this to 1 will disable PSHM even if it was enabled during
+  // configuration. PSHM requires an external progress thread, which this
+  // shim doesn't create.
+  chpl_env_set("GASNET_SUPERNODE_MAXSIZE", "1", 1);
+
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
 
   gasnet_init(argc_p, argv_p);
