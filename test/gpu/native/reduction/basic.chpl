@@ -34,7 +34,8 @@ proc testType(type t) {
       }
 
       // we cast to `t` to paper over the difference between the integral values
-      // returned from two different ways of sum-reducing bool arrays
+      // returned from two different ways (`gpuSumReduce` and `+ reduce`) of
+      // sum-reducing bool arrays
       writeln(op, ": ", if isTuple(res) then res:(t,int) else res:t);
     }
   }
