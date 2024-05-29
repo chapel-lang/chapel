@@ -5,13 +5,14 @@ config const printTime = false;
 
 config const n = 100000;
 config const m = 40960;
+config const seed = 11;
 
 var coeffs:[0..n] real;
 var xs:[1..m] real;
 var ys:[1..m] real;
 
 proc initialize() {
-  var R = new randomStream(real, seed=11);
+  var R = new randomStream(real, seed=seed);
   R.fill(coeffs);
   R.fill(xs);
   R.fill(ys);
