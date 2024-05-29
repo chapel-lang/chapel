@@ -1,3 +1,2 @@
-# this only crashes on x86 due to use-after-free in the compiler
-CHPL_TARGET_ARCH==x86_64
-CHPL_TARGET_ARCH==x86
+# this is only guaranteed to fail with asan due to a use-after-free in the compiler
+CHPL_SANITIZE==none
