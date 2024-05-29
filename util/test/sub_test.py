@@ -734,6 +734,13 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
             extra_msg = '(private issue #480) '
             break
 
+    # detect cases of a known issue on our EX testbed
+    err_strings = [r'Failed to destroy CXI Service']
+    for s in err_strings:
+        if (re.search(s, output, re.IGNORECASE) != None):
+            extra_msg = '(private issue #6295) '
+            break
+
     return extra_msg
 
 def get_chpl_base(compiler):
