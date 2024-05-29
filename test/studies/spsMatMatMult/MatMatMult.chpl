@@ -64,8 +64,8 @@ module MatMatMult {
           // this will also make a local copy of the remote indices, so long
           // as these are 'const'/read-only
           //
-          const aBlk = A.locArr[locRow, srcloc]!.myElems,
-                bBlk = B.locArr[srcloc, locCol]!.myElems;
+          const aBlk = A.getBlock(locRow, srcloc),
+                bBlk = B.getBlock(srcloc, locCol);
 
           // This local block is not strictly necessary but ensures that the
           // computation on the blocks will not require communication

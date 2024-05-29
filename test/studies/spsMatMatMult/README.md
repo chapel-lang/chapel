@@ -36,6 +36,7 @@ Main Modules
         replicating logic
   - [x] stitch per-node results back together into a global sparse
         array
+  - [x] introduce nicer interface for querying local blocks
   - [x] introduce nicer interface for stitching results together
   - [ ] relax requirement to only the first perfect square number
         of locales

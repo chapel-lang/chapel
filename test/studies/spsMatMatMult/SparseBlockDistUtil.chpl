@@ -16,6 +16,10 @@ module SparseBlockDistUtil {
     return dom.dsiTargetLocales();
   }
 
+  proc SparseBlockArr.getBlock(localeRow, localeCol) const ref {
+    return this.locArr[localeRow, localeCol]!.myElems;
+  }
+  
   proc SparseBlockArr.setLocalBlock(locArr) {
     this.myLocArr!.myElems._value.data = locArr.data;
   }
