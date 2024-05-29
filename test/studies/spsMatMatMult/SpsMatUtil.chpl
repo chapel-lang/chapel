@@ -40,19 +40,19 @@ module SpsMatUtil {
   // the given density and layout.  If distributed is true, this will
   // be a block-distributed sparse matrix, otherwise it'll be local.
   //
-  proc randSparseMatrix(Dom, density, param layout, param distributed)
+  proc randSparseDomain(parentDom, density, param layout, param distributed)
    where distributed == false {
 
-    var SD: sparse subdomain(Dom) dmapped CS(compressRows=(layout==CSR));
+    var SD: sparse subdomain(parentDom) dmapped CS(compressRows=(layout==CSR));
 
-    for (i,j) in Dom do
+    for (i,j) in parentDom do
       if rands.next() <= density then
         SD += (i,j);
 
     return SD;
   }
 
-  proc randSparseMatrix(Dom, density, param layout, param distributed)
+  proc randSparseDomain(parentDom, density, param layout, param distributed)
    where distributed == true {
     const locsPerDim = sqrt(numLocales:real): int,
           grid = {0..<locsPerDim, 0..<locsPerDim},
@@ -66,13 +66,13 @@ module SpsMatUtil {
     // writeln(grid);
 
     type layoutType = CS(compressRows=(layout==CSR));
-    const DenseBlkDom = Dom dmapped new blockDist(boundingBox=Dom,
+    const DenseBlkDom = parentDom dmapped new blockDist(boundingBox=parentDom,
                                                   targetLocales=localeGrid,
                                                   sparseLayoutType=layoutType);
 
     var SD: sparse subdomain(DenseBlkDom);
 
-    for (i,j) in Dom do
+    for (i,j) in parentDom do
       if rands.next() <= density then
         SD += (i,j);
 

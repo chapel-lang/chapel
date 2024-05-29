@@ -2,7 +2,7 @@ use ChplConfig, MatMatMult, SpsMatUtil;
 
 config param distributed = !compiledForSingleLocale();
 
-config const n = 10,                 // create nxn sparse arrays
+config const n = 10,                 // create nxn sparse matrices
              density = 0.05,         // density of the nonzeroes, randomly
              printMatrices = true,   // print the input and output matrices?
              skipDense = false;      // skip the dense multiplication (slow)
@@ -11,12 +11,12 @@ config const n = 10,                 // create nxn sparse arrays
 //
 const Dom = {1..n, 1..n};
 
-// compute the sparse, random index patterns for the matrices
+// compute some random sparse index patterns for the matrices
 //
-const AD = randSparseMatrix(Dom, density, CSC, distributed),
-      BD = randSparseMatrix(Dom, density, CSR, distributed);
+const AD = randSparseDomain(Dom, density, CSC, distributed),
+      BD = randSparseDomain(Dom, density, CSR, distributed);
 
-// the sparse matrices themselves
+// declare the sparse matrices themselves, initializing all nonzeroes to '1'
 //
 var A: [AD] int = 1,
     B: [BD] int = 1;
