@@ -1109,11 +1109,11 @@ module GMP {
   //
   // printf/scanf
   //
-  extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_printf(fmt: c_ptrConst(c_char), in arg...);
 
-  extern proc gmp_fprintf(fp: c_ptr(c_FILE), fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_fprintf(fp: c_ptr(c_FILE), fmt: c_ptrConst(c_char), in arg...);
 
-  extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), in arg...);
 
   /* Get an MPZ value stored on another locale */
   pragma "chpldoc ignore chpl prefix"
