@@ -74,15 +74,16 @@ module MatMatMult {
           }
         }
 
+        // Get my locale's local indices and create a sparse matrix
+        // using them and the spsData computed above.
+        //
         const locInds = A.domain.parentDom.localSubdomain();
         var cBlk = makeSparseMat(locInds, spsData);
 
         // Stitch the local portions back together into the global-view
         //
-        // TODO: Create nicer interfaces for this
-        //
-        CD.myLocDom!.mySparseBlock = cBlk.domain;
-        C.myLocArr!.myElems._value.data = cBlk.data;
+        CD.setLocalBlock(cBlk.domain);
+        C.setLocalBlock(cBlk);
       }
     }
 

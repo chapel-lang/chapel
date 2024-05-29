@@ -8,8 +8,16 @@ module SparseBlockDistUtil {
     return dist.targetLocales;
   }
 
+  proc SparseBlockDom.setLocalBlock(locDom) {
+    this.myLocDom!.mySparseBlock = locDom;
+  }
+
   proc SparseBlockArr.dsiTargetLocales() const ref {
     return dom.dsiTargetLocales();
+  }
+
+  proc SparseBlockArr.setLocalBlock(locArr) {
+    this.myLocArr!.myElems._value.data = locArr.data;
   }
 }
 
