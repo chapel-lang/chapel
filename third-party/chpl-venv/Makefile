@@ -105,13 +105,13 @@ c2chapel-venv: install-chpldeps
 # like ok1/ok2.
 chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	@# Install chapel-py's Python package into the Python Application
-	@# directory structure at $(CHPL_VENV_CHPLDEPS_VERSIONED)
+	@# directory structure at $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS)
 	@# this is python version specific
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
-	  --target $(CHPL_VENV_CHPLDEPS_VERSIONED) \
+	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
 	  $(CHPL_MAKE_HOME)/tools/chapel-py \
 	  -r $(CHPL_VENV_CHAPEL_PY_REQUIREMENTS_FILE)
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core

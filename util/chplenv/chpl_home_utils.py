@@ -93,7 +93,7 @@ def get_chpldeps(version=None):
     if version is None:
         chpl_venv = os.path.join(base, "chpldeps")
     else:
-        chpl_venv = os.path.join(base, "chpldeps-py" + str(version))
+        chpl_venv = os.path.join(base, "chpl-frontend-py-deps-py" + str(version))
     return chpl_venv
 
 @memoize
