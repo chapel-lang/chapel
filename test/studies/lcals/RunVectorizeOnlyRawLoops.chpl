@@ -1,7 +1,6 @@
 module RunVectorizeOnlyRawLoops {
   use LCALSDataTypes;
   use Timer;
-  use VectorizingIterator;
   private use Math;
 
   proc runVectorizeOnlyRawLoops(loop_stats: [] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
@@ -471,7 +470,8 @@ module RunVectorizeOnlyRawLoops {
             var val = 0.0;
             ltimer.start();
             for 0..#num_samples {
-              forall i in vectorizeOnly(0..(len-1):int(32)) with (+ reduce sumx) {
+              // TODO: this should have a reduce intent instead of a ref intent
+              foreach i in 0..(len-1):int(32) with (ref sumx) {
                 var x = x0 + i*h;
                 sumx += trap_int_func(x, y, xp, yp);
               }
