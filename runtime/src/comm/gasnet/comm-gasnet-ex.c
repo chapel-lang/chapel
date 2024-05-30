@@ -728,6 +728,7 @@ static volatile int pollingQuit;
 static chpl_bool pollingRequired = false;
 static atomic_spinlock_t pollingLock;
 static chpl_bool usePSHM = false;
+static chpl_bool pshmInUse = false;
 
 static inline void am_poll_try(void) {
   // Serialize polling for IBV, UCX, Aries, and OFI. Concurrent polling causes
@@ -781,6 +782,7 @@ static void setup_polling_post_init(void) {
     gex_Rank_t numColocales;
     gex_System_QueryNbrhdInfo(NULL, &numColocales, NULL);
     pollingRequired = numColocales > 1;
+    pshmInUse = pollingRequired;
   } else {
     pollingRequired = false;
   }
@@ -1010,6 +1012,11 @@ static void start_gasnet_progress_threads(void) {
 void chpl_comm_post_task_init(void) {
   start_polling();
   start_gasnet_progress_threads();
+#if defined(GASNET_CONDUIT_IBV)
+  if ((verbosity >= 2) && (chpl_nodeID == 0)) {
+    printf("PSHM is %s.\n", pshmInUse? "enabled" : "disabled");
+  }
+#endif
 }
 
 void chpl_comm_rollcall(void) {
