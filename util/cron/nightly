@@ -73,6 +73,8 @@ $pythonDep = 0;
 $testblog = 0;
 $blogonly = 0;
 $blogdir = "";
+$chplcheck = 0;
+$chplcheckonly = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -173,6 +175,11 @@ while (@ARGV) {
         $testblog = 1;
     } elsif ($flag eq "-blogdir") {
         $blogdir = shift @ARGV;
+    } elsif ($flag eq "-chplcheck") {
+        $chplcheck = 1;
+    } elsif ($flag eq "-chplcheckonly") {
+        $chplcheck = 1;
+        $chplcheckonly = 1;
     } else {
         $printusage = 1;
         last;
@@ -214,6 +221,8 @@ if ($printusage == 1) {
     print "\t-blog                          : test the chapel blog with nightly tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
     print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
     print "\t-blogdir <blogdir>             : specify the root of the chapel-blog repo to use with -blog or -blogonly";
+    print "\t-chplcheck                     : run the chplcheck tests\n";
+    print "\t-chpl-language-server          : run the Chapel Language Server tests\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
@@ -540,6 +549,15 @@ if ($python2 == 0 && $pythonDep == 0) {
 if ($buildruntime == 0) {
     print "Built compiler but not runtime, and did not run tests\n";
     exit 0;
+}
+
+if ($chplcheck == 1) {
+    # Build chplcheck if it's requested. If something is wrong with chapel-py,
+    # this can fail. It's not fatal, since it will only throw
+    # off the chplcheck-specific tests. However, we definitely want to send
+    # mail, since this indicates a problem with chplcheck.
+    print "Making chplcheck\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chplcheck", "make chplcheck", $emailOnError);
 }
 
 print "Making $make_vars_opt runtime\n";
