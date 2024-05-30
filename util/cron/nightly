@@ -298,6 +298,7 @@ if ($basetmpdir eq "") {
 # which is the path of the error file, tells it to write the errors to a file.
 $mysystemlog = "$basetmpdir/mysystemerrs.txt";
 $emailOnError = $mysystemlog;
+unlink($mysystemlog); # the file gets appended to, so clear it first.
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
@@ -835,7 +836,7 @@ if ($runtests == 0) {
 # FIXME: Pass correct args here!
      # `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
      # Write the test results to the summary log.
-     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
+     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "$mysystemlog", "", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
 #
 # analyze memory leaks tests
 #

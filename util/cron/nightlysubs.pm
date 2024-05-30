@@ -145,6 +145,8 @@ sub writeEmail {
     my $summary = $_[6];
     my $prevsummary = $_[7];
     my $sortedsummary = $_[8];
+    my $mysystemlog = $_[9];
+
     #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
     my $filename = "$chplhomedir/email.txt";
     open(my $SF, '>', $filename) or die "Could not open file '$filename' $!";
@@ -185,6 +187,12 @@ sub writeEmail {
         print $SF "--- New Failing Future tests -----------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print $SF "\n";
+
+        if (-f $mysystemlog && -s $mysystemlog) {
+            print $SF "--- Errors in Bash Commands ------------------\n";
+            print $SF `cat $mysystemlog`;
+            print $SF "\n";
+        }
     print $SF;
     print $SF endMailChplenv();
     close($SF);
