@@ -12,12 +12,19 @@ $chplhomedir = abs_path("$cwd/../..");
 $file = "$chplhomedir/email.txt";
 unlink($file);
 
+# Special constants for 'mysystem'. The third argument of 'mysystem' should
+# be one of three values.
+#
+# * $exitOnError (aka <exit on error>): exit the script if the command fails
+# * $ignoreError (aka <ignore error>): silently allow the error to fail
+# * a path to a file: write the error to that file and continue
+$exitOnError = "<exit on error>";
+$ignoreError = "<ignore error>";
 sub mysystem {
     $command = $_[0];
     $errorname = $_[1];
-    $fatal = $_[2];
-    $mailmsg = $_[3];
-    $showcommand = $_[4];
+    $onerror = $_[2];
+    $showcommand = $_[3];
 
     if ($showcommand) { print "Executing $command\n"; }
     my $status = system($command);
@@ -25,9 +32,16 @@ sub mysystem {
         $endtime = localtime;
         $somethingfailed = 1;
         if($status != -1) {$status = $status / 256; }
+
         print "Error $errorname: $status\n";
-        if ($fatal != 0) {
+        if ($onerror == $exitOnError) {
             exit 1;
+        } elsif ($onerror == $ignoreError) {
+            # Do nothing
+        } else {
+            open(my $SF, '>>', $onerror) or die "Could not open file '$onerror' $!";
+            print $SF "Error $errorname: $status\n";
+            close($SF);
         }
     }
     $status;

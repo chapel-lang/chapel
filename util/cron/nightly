@@ -292,6 +292,12 @@ if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
 
+# The 'mysystem' function either exits on errors, ignores them, or writes them
+# to a file. The $exitOnError variable tells it to exit immediately, while
+# $ignoreErrors tells it to continue without doing anything. $emailOnError,
+# which is the path of the error file, tells it to write the errors to a file.
+$mysystemlog = "$basetmpdir/mysystemerrs.txt";
+$emailOnError = $mysystemlog;
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
@@ -390,10 +396,10 @@ if ($testblog == 1) {
     if ($blogonly == 0) {
         # copy the relevant blog source files into the test directory so they'll be
         # ran alongside all the other tests
-        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", 1, 1, 1);
-        mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
-        mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
-        mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", 1, 1, 1);
+        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", $exitOnError, 1);
+        mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", $exitOnError, 1);
+        mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", $exitOnError, 1);
+        mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", $exitOnError, 1);
     }
 }
 
@@ -509,12 +515,12 @@ if ($python2 == 0) {
 
 
 print "Making $make_vars_opt compiler\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", 1, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", $exitOnError);
 
 # Speculatively build a couple third-party libraries. This command should not
 # fail, even if it fails to build the libraries.
 print "Making $make_vars_opt third-party-try-opt\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
+mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", $exitOnError);
 
 # if we are using python2 or a deprecated version of python3, we cannot build
 # the test-venv and/or chpldoc
@@ -522,12 +528,12 @@ if ($python2 == 0 && $pythonDep == 0) {
   # Build chpldoc. Do not fail the build if it does not succeed. Do not send
   # mail either.
   print "Making $make_vars_opt chpldoc\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", $ignoreErrors);
 
   # Build test virtualenv. Fail if the build does not succeed as virtualenv is
   # needed for start_test. Send mail on failure
   print "Making $make_var_opt test-venv\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", $exitOnError);
 }
 
 if ($buildruntime == 0) {
@@ -536,21 +542,21 @@ if ($buildruntime == 0) {
 }
 
 print "Making $make_vars_opt runtime\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt runtime", "making chapel runtime", 1, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt runtime", "making chapel runtime", $exitOnError);
 
 print "Making modules\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 1, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", $exitOnError);
 
 # Build mason
 if ($mason_build == 1) {
   print "Making mason\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", 1, 1);
+  mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", $exitOnError);
 }
 
 # Build the protobuf Chapel plugin
 if ($protobuf_build == 1) {
     print "Making the protobuf Chapel plugin\n";
-    mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", 1, 1);
+    mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", $exitOnError);
 }
 
 #
@@ -589,7 +595,7 @@ if ($multilocale == 1) {
 #
 if ($examples == 1) {
     print "Making spectests\n";
-    mysystem("cd $chplhomedir && $make spectests", "making spec tests", 0, 1);
+    mysystem("cd $chplhomedir && $make spectests", "making spec tests", $emailOnError);
     $testdirs .= " release/examples";
 }
 
@@ -610,7 +616,7 @@ if ($parnodefile eq "") {
 } else {
     if ($testdirs ne "") {
         mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE",
-                 "making directory file", 1, 1);
+                 "making directory file", $exitOnError);
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
@@ -624,7 +630,7 @@ if ($allhellos == 1) {
     if ($parnodefile eq "") {
         $testflags = "$testflags --no-recurse release/examples";
     } else {
-        mysystem("cd $testdir && echo $testdirs > DIRFILE", 1, 1);
+        mysystem("cd $testdir && echo $testdirs > DIRFILE", $exitOnError);
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
@@ -711,7 +717,7 @@ if ($runtests == 0) {
   $ENV{'CHPL_HOME'} = $chplhomedir;
 
   $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
-  mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
+  mysystem($buildcheckcommand, "running `make check`", $exitOnError, 1);
 
 } else {
 
@@ -725,7 +731,7 @@ if ($runtests == 0) {
     # Confirm Chapel built correctly before start_test / paratest
     if ($buildcheck == 1) {
         $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
-        mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
+        mysystem($buildcheckcommand, "running `make check`", $exitOnError, 1);
     }
 
     if ($parnodefile eq "") {
@@ -757,7 +763,7 @@ if ($runtests == 0) {
 # Restore graph sync once we find a solution to our network issues
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/$performancedescription/html/ $perfConfigName/$syncsuffix --logFile $logdir/$str.errors";
         $rsyncMessage = "syncing performance graph to dreamhost -- log file at $logdir/$str.errors";
-        mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
+        mysystem($rsyncCommand, $rsyncMessage , $emailOnError, 1);
    }
 
 #
@@ -803,7 +809,7 @@ if ($runtests == 0) {
                 $splice = "$utildir/devel/test/spliceDat";
                 $spliceCommand = "$splice -from_a $today -to_a $today $svnPerfDir/$datName $historicalFile> $tmpDatDir/$datName";
                 $spliceDatMessage = "Attempting to splice historical data $historicalFile with nightly data $svnPerfDir/$datName";
-                mysystem($spliceCommand, $spliceMessage, 0, 0, 1);
+                mysystem($spliceCommand, $spliceMessage, $ignoreError, 1);
                 `cp $svnPerfDir/$datName $tmpNightlyDatDir/$datName`;
             }
 
@@ -813,7 +819,7 @@ if ($runtests == 0) {
             $genGraphs = "$utildir/test/genGraphs";
             $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $perfConfigName  -g $chplhomedir/test/GRAPHFILES -s $startdate -m default:v,nightly";
             $genGraphsMessage = "Generating release over release performance graphs";
-            mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
+            mysystem($genGraphsCommand, $genGraphsMessage, $emailOnError, 1);
 
             # sync the perf graphs over to dreamhost
             my $str = "syncReleaseToDreamhost.$perfConfigName/releaseOverRelease/$syncsuffix";
@@ -822,7 +828,7 @@ if ($runtests == 0) {
 # Restore graph sync once we find a solution to our network issues
             $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $perfConfigName/releaseOverRelease/$syncsuffix --logFile $logdir/$str.errors";
             $rsyncMessage = "syncing release performance graph to dreamhost -- log file at $logdir/$str.errors";
-            mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
+            mysystem($rsyncCommand, $rsyncMessage , $emailOnError, 1);
         }
     }
 
