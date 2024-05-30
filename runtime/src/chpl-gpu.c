@@ -1395,35 +1395,41 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
                            int32_t lineno, int32_t filename) {
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu\n", size);
+  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu Alloc:%p\n", size,
+                 memAlloc);
 
-  assert(chpl_gpu_is_device_ptr(memAlloc));
+  if (chpl_gpu_is_device_ptr(memAlloc)) {  // nothing is device ptr in 
+                                           // cpu-as-device mode
 
-  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev_id);
+    c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+    chpl_gpu_impl_use_device(dev_id);
 
 #ifdef GPU_RUNTIME_CPU
     return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
 #else
-  size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
-  assert(cur_size >= 0);
+    size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
+    assert(cur_size >= 0);
 
-  if (size == cur_size) {
-    return memAlloc;
-  }
+    if (size == cur_size) {
+      return memAlloc;
+    }
 
-  // TODO we could probably do something smarter, especially for the case where
-  // the new allocation size is smaller than the original allocation size.
-  void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
+    // TODO we could probably do something smarter, especially for the case where
+    // the new allocation size is smaller than the original allocation size.
+    void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
 
-  const size_t copy_size = size < cur_size ? size : cur_size;
-  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size,
-                                      /*stream=*/NULL); // for now, keep it on
-                                                        // the default stream
-  chpl_gpu_mem_free(memAlloc, lineno, filename);
+    const size_t copy_size = size < cur_size ? size : cur_size;
+    chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size,
+        /*stream=*/NULL); // for now, keep it on
+                          // the default stream
+    chpl_gpu_mem_free(memAlloc, lineno, filename);
 
-  return new_alloc;
+    return new_alloc;
 #endif
+  }
+  else {
+    return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
+  }
 }
 
 void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
