@@ -624,6 +624,10 @@ if ($blogonly == 1) {
     $testdirs .= " $blogdir/chpl-src/ $blogdir/content/posts";
 }
 
+if ($chplcheckonly == 1) {
+    $testdirs .= " chplcheck";
+}
+
 if (!($dist eq "")) {
     $testdirs .= " distributions/robust/arithmetic";
 }
