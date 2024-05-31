@@ -904,7 +904,10 @@ static void *comm_task_trampoline(void *arg)
                      "binding comm task to CPU %d failed", rarg->cpu);
             chpl_warning(msg, 0, 0);
         }
-        _DBG_P("comm task bound to CPU %d", rarg->cpu);
+        if (verbosity >= 2) {
+            // TODO: it would be better if only locales on node 0 printed this
+            printf("comm task bound to CPU %d\n", rarg->cpu);
+        }
     } else {
         int rc = chpl_topo_bindLogAccCPUs();
         if (rc) {
@@ -912,7 +915,9 @@ static void *comm_task_trampoline(void *arg)
                 "binding comm task to accessible PUs failed",
                 0, 0);
         }
-        _DBG_P("comm task bound to accessible PUs");
+        if ((verbosity >= 2) && (chpl_nodeID == 0)) {
+            printf("comm task bound to accessible PUs\n");
+        }
     }
     int rc = pthread_create(rarg->thread, NULL, comm_task_wrapper, rarg);
     if (rc) {
