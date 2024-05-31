@@ -1015,6 +1015,11 @@ void chpl_comm_post_task_init(void) {
 #if defined(GASNET_CONDUIT_IBV)
   if ((verbosity >= 2) && (chpl_nodeID == 0)) {
     printf("PSHM is %s.\n", pshmInUse? "enabled" : "disabled");
+    chpl_bool enabled = chpl_env_str_to_bool("GASNET_SND_THREAD",
+                                             getenv("GASNET_SND_THREAD"),
+                                             false);
+    printf("GASNet send progress thread is %s.\n", enabled ? "enabled" :
+          "disabled");
   }
 #endif
 }
