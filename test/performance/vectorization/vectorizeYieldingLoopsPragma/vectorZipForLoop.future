@@ -1,5 +1,0 @@
-bug: vectorize yielding loops should work for zippering as well
-
-the vectorize yielding loops pragma is used in vectorizeOnly
-iterators but doesn't yet work with zippered iteration of separate
-vectorizeOnly iteration.

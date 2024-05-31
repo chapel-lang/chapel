@@ -613,7 +613,6 @@ PRAGMA(UNSTABLE, npr, "@unstable", "applied to symbols that may misbehave or are
 PRAGMA(IGNORE_TRANSFER_ERRORS,  ypr, "ignore transfer errors", "ignore errors for ownership transfer from non-nilable owned")
 PRAGMA(FIND_USER_LINE,  ypr, "find user line", "report errors with user line number")
 PRAGMA(USER_VARIABLE_NAME,  npr, "user variable name", "temporary uses name of user variable")
-PRAGMA(VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators")
 PRAGMA(VIRTUAL, npr, "virtual", ncm)
 PRAGMA(VOID_NO_RETURN_VALUE, npr, "no return value for void", "function does not return a value if the return type is void")
 // Used to mark where a compiler generated flag was removed (but is desired

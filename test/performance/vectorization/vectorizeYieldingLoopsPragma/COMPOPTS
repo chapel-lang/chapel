@@ -1,1 +1,0 @@
---no-checks --force-vectorize --report-vectorized-loops
