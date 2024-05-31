@@ -327,7 +327,11 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       dsiAdd(i);
   }
 
+  proc setLocalBlock(locDom) {
+    this.myLocDom!.mySparseBlock = locDom;
+  }
 }
+
 
 private proc getDefaultSparseDist(type sparseLayoutType) {
   if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
@@ -539,6 +543,13 @@ class SparseBlockArr: BaseSparseArr(?) {
     return true;
   }
 
+  proc getBlock(localeRow, localeCol) const ref {
+    return this.locArr[localeRow, localeCol]!.myElems;
+  }
+
+  proc setLocalBlock(locArr) {
+    this.myLocArr!.myElems._value.data = locArr.data;
+  }
 }
 
 //
@@ -846,6 +857,10 @@ proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
+proc SparseBlockDom.dsiTargetLocales() const ref {
+  return dist.targetLocales;
+}
+
 override proc SparseBlockArr.dsiSupportsPrivatization() param do return true;
 
 proc SparseBlockArr.dsiGetPrivatizeData() do return dom.pid;
@@ -862,6 +877,12 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
   }
   return c;
 }
+
+proc SparseBlockArr.dsiTargetLocales() const ref {
+  return dom.dsiTargetLocales();
+}
+
+
 
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
