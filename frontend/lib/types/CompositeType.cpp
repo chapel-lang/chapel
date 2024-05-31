@@ -184,6 +184,22 @@ const RecordType* CompositeType::getLocaleIDType(Context* context) {
                          SubstitutionsMap());
 }
 
+const RecordType* CompositeType::getOwnedRecordType(Context* context) {
+  auto name = UniqueString::get(context, "_owned");
+  auto id = parsing::getSymbolFromTopLevelModule(context, "OwnedObject", "_owned");
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
+const RecordType* CompositeType::getSharedRecordType(Context* context) {
+  auto name = UniqueString::get(context, "_shared");
+  auto id = parsing::getSymbolFromTopLevelModule(context, "SharedObject", "_shared");
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
 bool CompositeType::isMissingBundledType(Context* context, ID id) {
   return isMissingBundledClassType(context, id) ||
          isMissingBundledRecordType(context, id);
@@ -196,7 +212,9 @@ bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
     return path == "String._string" ||
            path == "ChapelRange._range" ||
            path == "ChapelTuple._tuple" ||
-           path == "Bytes._bytes";
+           path == "Bytes._bytes" ||
+           path == "OwnedObject._owned" ||
+           path == "SharedObject._shared";
   }
 
   return false;
@@ -207,7 +225,7 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
   if (noLibrary) {
     auto path = id.symbolPath();
     return path == "ChapelReduce.ReduceScanOp" ||
-           path == "Errors.Error" || 
+           path == "Errors.Error" ||
            path == "CTypes.c_ptr" ||
            path == "CTypes.c_ptrConst";
   }

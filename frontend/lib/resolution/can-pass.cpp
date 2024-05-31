@@ -20,6 +20,7 @@
 #include "chpl/resolution/can-pass.h"
 
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/types/all-types.h"
 
 #include <cmath>
@@ -811,6 +812,36 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   return false;
 }
 
+
+CanPassResult
+CanPassResult::canInstantiateOwnedSharedHelper(Context* context,
+                                               const types::ClassType* actualCt,
+                                               const types::CompositeType* formalCt) {
+  if (formalCt->isRecordType() && actualCt->decorator().isManaged()) {
+    if (parsing::idIsInBundledModule(context, formalCt->id())) {
+      if (auto attrGrp = parsing::idToAttributeGroup(context, formalCt->id())) {
+        if (attrGrp->hasPragma(uast::pragmatags::PragmaTag::PRAGMA_MANAGED_POINTER)) {
+          if (auto manager = actualCt->manager()) {
+            // check for instantiating _owned or _shared records
+            if ((formalCt->name() == UniqueString::get(context, "_owned") &&
+                manager->isAnyOwnedType()) ||
+                (formalCt->name() == UniqueString::get(context, "_shared") &&
+                manager->isAnySharedType())) {
+                  // TODO: what ConversionKind should we return here?
+                  return CanPassResult(/* no fail reason, passes */ {},
+                          /* instantiates */ true,
+                          /* promotes */ false,
+                          /* converts */ ConversionKind::OTHER);
+            }
+          }
+        }
+      }
+    }
+  }
+  // more checking to be done by canInstantiate
+  return CanPassResult::fail(FAIL_CANNOT_INSTANTIATE);
+}
+
 CanPassResult CanPassResult::canInstantiate(Context* context,
                                             const QualifiedType& actualQT,
                                             const QualifiedType& formalQT) {
@@ -851,6 +882,13 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
         // generic actuals are allowed.
         got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
         return got;
+      }
+    } else if (auto formalCt = formalT->toCompositeType()) {
+      auto canPassOwnedShared = canInstantiateOwnedSharedHelper(context,
+                                                                actualCt,
+                                                                formalCt);
+      if (canPassOwnedShared.passes()) {
+        return canPassOwnedShared;
       }
     }
   } else if (auto actualCt = actualT->toCompositeType()) {

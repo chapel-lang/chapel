@@ -552,6 +552,14 @@ struct Resolver {
    */
   types::QualifiedType typeForId(const ID& id, bool localGenericToUnknown);
 
+  /* If the receiver is a manager record (owned/shared) returns the manager
+     class type, otherwise returns nullptr
+  */
+  const types::CompositeType*
+  checkIfReceiverIsManagerRecord(Context* context,
+                                 const types::ClassType* nct,
+                                 ID& parentId);
+
   // prepare the CallInfoActuals by inspecting the actuals of a call
   // includes special handling for operators and tuple literals
   void prepareCallInfoActuals(const uast::Call* call,

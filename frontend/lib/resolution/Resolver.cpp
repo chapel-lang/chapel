@@ -2482,7 +2482,21 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     // TODO: this needs to consider the possibility
     // that we are working with a nested method
     if (auto rt = methodReceiverType().type()) {
-      if (auto comprt = rt->getCompositeType()) {
+      // get the new class type if the receiver is a class
+      auto nct = rt->toClassType();
+      // get the manager record using ClassType method managerRecordType()
+      if (auto mr = checkIfReceiverIsManagerRecord(context, nct, parentId))
+      {
+        ct = mr;
+        auto fieldName = parsing::fieldIdToName(context, id);
+        // TODO: shared has additional fields that are not generic
+        CHPL_ASSERT(fieldName == "chpl_t" || fieldName == "chpl_p");
+        auto intent = fieldName == "chpl_t" ? QualifiedType::TYPE : QualifiedType::VAR;
+        auto borrowed = nct->withDecorator(context, nct->decorator().toBorrowed());
+        return QualifiedType(intent, borrowed);
+      }
+      else if (auto comprt = rt->getCompositeType())
+      {
         if (comprt->id() == parentId) {
           ct = comprt; // handle record, class with field
         } else if (auto bct = comprt->toBasicClassType()) {
@@ -2509,6 +2523,20 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   CHPL_UNIMPL("not yet handled");
   auto unknownType = UnknownType::get(context);
   return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+}
+
+const types::CompositeType*
+Resolver::checkIfReceiverIsManagerRecord(Context* context,
+                                         const types::ClassType* nct,
+                                         ID& parentId) {
+  if (nct) {
+    if (auto mr = nct->managerRecordType(context)) {
+      if (mr->id() == parentId) {
+        return mr;
+      }
+    }
+  }
+  return nullptr;
 }
 
 void Resolver::enterScope(const AstNode* ast) {

@@ -115,6 +115,19 @@ const ClassType* ClassType::withDecorator(Context* context,
   return ClassType::get(context, manageableType(), manager(), decorator);
 }
 
+const RecordType* ClassType::managerRecordType(Context* context) const {
+  // for owned and shared, manager is the builtin AnyClassType
+  if (auto myManager = manager()) {
+    if (myManager->isAnyOwnedType()) {
+      return CompositeType::getOwnedRecordType(context);
+    } else if (myManager->isAnySharedType()) {
+      return CompositeType::getSharedRecordType(context);
+    } else if (auto mgr = myManager->toRecordType()) {
+      return mgr;
+    }
+  }
+  return nullptr;
+}
 
 } // end namespace types
 } // end namespace chpl
