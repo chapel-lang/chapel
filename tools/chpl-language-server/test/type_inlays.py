@@ -275,11 +275,11 @@ async def test_type_inlays_loops(client: LanguageClient):
            """
 
     inlays = [
-        (pos((0, 5)), "int(64)"),
-        (pos((1, 8)), "int(64)"),
-        (pos((2, 10)), "int(64)"),
-        (pos((3, 9)), "int(64)"),
-        (pos((4, 2)), "int(64)"),
+        (pos((0, 5)), "int(64)", False),
+        (pos((1, 8)), "int(64)", False),
+        (pos((2, 10)), "int(64)", False),
+        (pos((3, 9)), "int(64)", False),
+        (pos((4, 2)), "int(64)", False),
     ]
 
     async with source_file(client, file) as doc:
@@ -305,7 +305,7 @@ async def test_type_inlays_return(client: LanguageClient):
 
     inlays = [
         (pos((2, 5)), "owned C?"),
-        (pos((5, 5)), "int(64)"),
+        (pos((5, 5)), "int(64)", False),
     ]
 
     async with source_file(client, file) as doc:
