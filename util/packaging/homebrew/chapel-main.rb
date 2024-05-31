@@ -18,6 +18,7 @@ class Chapel < Formula
 
   depends_on "cmake"
   depends_on "gmp"
+  depends_on "hwloc"
   depends_on "llvm@17"
   depends_on "python@3.12"
 
@@ -48,7 +49,7 @@ class Chapel < Formula
       CHPL_RE2=bundled
       CHPL_GMP=system
       CHPL_MEM=cstdlib
-      CHPL_TASKS=fifo
+      CHPL_HWLOC=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
