@@ -532,10 +532,13 @@ async def check_type_inlay_hints(
     Helper method for `check_inlay_hints`. Adds the `: ` prefix.
 
     `expected_inlays` is a list of tuples. The tuples can be either of length 2
-    or 3. If the tuple is of length 2, the first element is the expected
-    position and the second element is the expected text of the type. If the
-    tuple is of length 3, then the first two elements are the same. The third
-    element is a boolean that indicates whether the inlay hint is insertable.
+    or 3.
+    - If the tuple is of length 2, the first element is the expected position
+      and the second element is the expected text of the type. This implies that
+      the inlay hint is insertable.
+    - If the tuple is of length 3, then the first two elements are the same as
+      the 2-tuple. The third element is a boolean that indicates whether the
+      inlay hint is insertable.
     """
     # we currently do not make use of InlayHintKind.Type for type inlays in CLS
     inlays_with_colon = [(i[0], f": {i[1]}", None) for i in expected_inlays]
