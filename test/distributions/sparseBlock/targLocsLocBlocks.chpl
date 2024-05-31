@@ -51,9 +51,22 @@ writeln();
 
 
 writeln("A is:");
-for i in D.dim(0) {
-  for j in D.dim(1) {
-    write(A[i,j], " ");
+writeSparseMatrix(A);
+
+for locIdx in DS.targetLocales().domain {
+  const remBlk = A.getBlock((...locIdx));
+  writeln(locIdx, " owns:");
+  writeSparseMatrix(remBlk);
+}
+
+
+proc writeSparseMatrix(X) {
+  const ref DnsDom = X.domain.parentDom;
+  for i in DnsDom.dim(0) {
+    for j in DnsDom.dim(1) {
+      write(X[i,j], " ");
+    }
+    writeln();
   }
   writeln();
 }
