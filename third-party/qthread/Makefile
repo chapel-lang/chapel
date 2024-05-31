@@ -77,7 +77,7 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # exit when shutting down Qthreads.
   #
 	# We also need to provide paths to system hwloc if its enabled
-  # enabled, since it might not be in default compiler search paths.
+  # since it might not be in default compiler search paths.
 	#
   # Note that we call compileline with CHPL_MAKE_COMM=none. Under
   # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
