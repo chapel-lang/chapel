@@ -2652,6 +2652,7 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
                                    ident->name(), prevConfig,
                                    traceResult);
 
+    gdbShouldBreakHere();
     // emit an ambiguity error if this is not resolving a called ident
     CHPL_REPORT(context, AmbiguousIdentifier,
                 ident, printFirstMention, vec, traceResult);
@@ -2950,6 +2951,11 @@ void Resolver::resolveIdentifier(const Identifier* ident,
 
   // lookupIdentifier reports any errors that are needed
   auto parenlessInfo = ParenlessOverloadInfo();
+  if (ident->name() == "size" || ident->name() == "this.size") {
+    gdbShouldBreakHere();
+    auto& asdf = receiverScopes.front();
+    (void)asdf;
+  }
   auto vec = lookupIdentifier(ident, receiverScopes, parenlessInfo);
 
   if (parenlessInfo.areCandidatesOnlyParenlessProcs() && !scopeResolveOnly) {
@@ -3074,6 +3080,7 @@ bool Resolver::enter(const Identifier* ident) {
     std::ignore = initResolver->handleUseOfField(ident);
     return false;
   } else {
+    if (ident->name() == "size" || ident->name() == "this.size") gdbShouldBreakHere();
     resolveIdentifier(ident, methodReceiverScopes());
     return false;
   }
@@ -3753,6 +3760,7 @@ void Resolver::exit(const Dot* dot) {
   if (initResolver && initResolver->handleUseOfField(dot)) return;
 
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+  if (dot->field() == "size") gdbShouldBreakHere();
 
   bool deferToFunctionResolution = false;
   bool resolvingCalledDot = nearestCalledExpression() == dot;
