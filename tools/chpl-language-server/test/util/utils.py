@@ -540,7 +540,8 @@ async def check_type_inlay_hints(
     # we currently do not make use of InlayHintKind.Type for type inlays in CLS
     inlays_with_colon = [(i[0], f": {i[1]}", None) for i in expected_inlays]
     inlays = [
-        (i[0], f": {i[1]}", i[2] if len(i) >= 3 else True) for i in expected_inlays
+        (i[0], f": {i[1]}", i[2] if len(i) >= 3 else True)
+        for i in expected_inlays
     ]
     actual_inlays = await check_inlay_hints(client, doc, rng, inlays_with_colon)
 
