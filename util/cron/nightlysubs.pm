@@ -34,9 +34,9 @@ sub mysystem {
         if($status != -1) {$status = $status / 256; }
 
         print "Error $errorname: $status\n";
-        if ($onerror == $exitOnError) {
+        if ($onerror eq $exitOnError) {
             exit 1;
-        } elsif ($onerror == $ignoreError) {
+        } elsif ($onerror eq $ignoreError) {
             # Do nothing
         } else {
             open(my $SF, '>>', $onerror) or die "Could not open file '$onerror' $!";

@@ -8,7 +8,7 @@ use nightlysubs;
 sub writeFile{
     $num_args = @_;
 
-    if ($num_args != 16) {
+    if ($num_args != 17) {
         print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
         print "         \$prevsummary \$mysystemlog \$mailer \$nochangerecipient \$recipient \n";
         print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
