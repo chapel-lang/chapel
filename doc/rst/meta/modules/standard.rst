@@ -91,7 +91,6 @@ Parallelism/Distributed Computing
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
    GPU <standard/GPU>
-   VectorizingIterator <standard/VectorizingIterator>
 
 System/Interoperability
 -----------------------

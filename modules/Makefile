@@ -102,7 +102,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Subprocess.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
-	standard/VectorizingIterator.chpl \
 	standard/Version.chpl \
 	standard/WeakPointer.chpl \
 
