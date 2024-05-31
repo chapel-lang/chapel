@@ -296,7 +296,7 @@ if ($basetmpdir eq "") {
 # to a file. The $exitOnError variable tells it to exit immediately, while
 # $ignoreErrors tells it to continue without doing anything. $emailOnError,
 # which is the path of the error file, tells it to write the errors to a file.
-$mysystemlog = "$basetmpdir/mysystemerrs.txt";
+$mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
 $emailOnError = $mysystemlog;
 unlink($mysystemlog); # the file gets appended to, so clear it first.
 
