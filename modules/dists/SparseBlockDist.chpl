@@ -327,11 +327,15 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       dsiAdd(i);
   }
 
-  proc setLocalBlock(locDom) {
-    this.myLocDom!.mySparseBlock = locDom;
+  proc setLocalBlock(locIndices) {
+    ref myBlock = this.myLocDom!.mySparseBlock;
+    if myBlock.type != locIndices.type then
+      compilerError("setLocalBlock() expects its argument to be of type ",
+                    myBlock.type:string);
+    else
+      myBlock = locIndices;
   }
 }
-
 
 private proc getDefaultSparseDist(type sparseLayoutType) {
   if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
@@ -547,8 +551,17 @@ class SparseBlockArr: BaseSparseArr(?) {
     return this.locArr[localeRow, localeCol]!.myElems;
   }
 
-  proc setLocalBlock(locArr) {
-    this.myLocArr!.myElems._value.data = locArr.data;
+  proc getBlock(localeIdx) const ref {
+    return this.locArr[localeIdx]!.myElems;
+  }
+
+  proc setLocalBlock(locNonzeroes) {
+    ref myBlock = this.myLocArr!.myElems;
+    if myBlock.type != locNonzeroes.type then
+      compilerError("setLocalBlock() expects its argument to be of type ",
+                    myBlock.type:string);
+    else
+      myBlock.data = locNonzeroes.data;
   }
 }
 
