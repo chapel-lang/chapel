@@ -105,7 +105,7 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
     INCS_DEFS_PROCESSED := \
       $(shell echo $(INCS_DEFS) \
               | tr ' ' '\n' \
-              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
+              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install$(SYSTEM_INCS_DEFS)' \
               | grep -v '/third-party/qthread/install' \
               | tr '\n' ' ' \
               | sed 's/ $$//')
