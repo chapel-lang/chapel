@@ -47,3 +47,5 @@ mpf_set_d(x, 3.1415926535);
   printf("%s\n", s);
   writeln("exp = ", exp);
 }
+
+mpf_clear(x);
