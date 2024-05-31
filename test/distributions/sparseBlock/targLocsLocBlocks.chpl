@@ -1,6 +1,7 @@
 use BlockDist, LayoutCS;
 
-config const n = 10;
+config const n = 10,
+             useTupleIndexing = true;
 
 const D = {0..<n, 0..<n} dmapped new blockDist({0..<n, 0..<n},
                                                sparseLayoutType=CS(compressRows=true));
@@ -21,6 +22,8 @@ writeln();
 // build up the global sparse domain and array by having each locale set
 // its own local blocks
 coforall loc in DS.targetLocales() do on loc {
+  // compute this locale's contribution to the index set, creating a
+  // diagonal pattern per locale
   const myInds = DS.parentDom.localSubdomain();
   var locSpsInds: sparse subdomain(myInds) dmapped new dmap(new CS(compressRows=true));
 
@@ -29,6 +32,7 @@ coforall loc in DS.targetLocales() do on loc {
   }
   //  writeln(here.id, ": ", locSpsInds);
 
+  // now do the same for its local non-zeroes
   var locVals: [locSpsInds] real;
   for i in 0..<min(myInds.dim(0).size, myInds.dim(1).size) {
     const low = myInds.low;
@@ -36,9 +40,13 @@ coforall loc in DS.targetLocales() do on loc {
   }
   //  writeln(here.id, ": ", locVals);
 
+  // Take those local portions and plug them into the global domain/array
   DS.setLocalBlock(locSpsInds);
   A.setLocalBlock(locVals);
 }
+
+
+// check the results
 
 writeln("DS is:");
 for i in D.dim(0) {
@@ -54,7 +62,8 @@ writeln("A is:");
 writeSparseMatrix(A);
 
 for locIdx in DS.targetLocales().domain {
-  const remBlk = A.getBlock((...locIdx));
+  const remBlk = if useTupleIndexing then A.getBlock(locIdx)
+                                     else A.getBlock((...locIdx));
   writeln(locIdx, " owns:");
   writeSparseMatrix(remBlk);
 }
