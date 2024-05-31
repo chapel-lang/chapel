@@ -547,7 +547,6 @@ async def check_type_inlay_hints(
 
     # Check that the inlays are insertable
     for expected, actual in zip(inlays, actual_inlays):
-        print(expected, actual)
         if expected[2]:
             # the list of inlay text edits should have one element and have the
             # same text/range as the inlay
