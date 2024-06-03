@@ -89,7 +89,7 @@ async def test_lenses_switch(client: LanguageClient):
     generic_inlays = [(pos((5, 13)), "p = ", None)]
     R_real_inlays = [
         (pos((2, 15)), ": R(real(64))", None),
-        (pos((2, 24)), "param value is 0", None),
+        (pos((2, 24)), "param value is false", None),
         (pos((2, 24)), ": bool", None),
         (pos((5, 13)), "p = ", None),
     ]

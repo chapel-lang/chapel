@@ -117,6 +117,9 @@ class Param {
   static std::string valueToString(ID id) {
     return id.str();
   }
+  static std::string valueToString(bool v) {
+    return v ? "true" : "false";
+  }
   template<typename T> static std::string valueToString(T v) {
     return std::to_string(v);
   }
