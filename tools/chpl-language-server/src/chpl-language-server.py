@@ -649,7 +649,7 @@ class FileInfo:
 
             sig = candidate.function()
             fn = sig.ast()
-            if not fn:
+            if not fn or not isinstance(fn, chapel.Function):
                 continue
 
             # Even if we don't descend into it (and even if it's not an
