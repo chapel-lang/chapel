@@ -733,7 +733,9 @@ if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
 }
 
 if ($chplLanguageServer == 1) {
-    $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make test-chpl-language-server";
+    $ENV{'CHPL_HOME'} = $chplhomedir;
+    $testclscommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make test-chpl-language-server";
+    mysystem($testclscommand, "running `make test-chpl-language-server`", $exitOnError, 1);
 }
 
 if ($runtests == 0) {
