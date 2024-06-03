@@ -64,6 +64,7 @@ static struct shared_heap {
 } heap;
 
 
+#ifdef USE_JE_CHUNK_HOOKS
 // compute aligned index into our shared heap, alignment must be a power of 2
 static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment) {
   uintptr_t p;
@@ -73,6 +74,7 @@ static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment)
   p = (p + alignment - 1) & ~(alignment - 1);
   return(void*) p;
 }
+#endif
 
 
 // *** Chunk hook replacements *** //
