@@ -75,6 +75,7 @@ $blogonly = 0;
 $blogdir = "";
 $chplcheck = 0;
 $chplcheckonly = 0;
+$chplLanguageServer = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -180,6 +181,8 @@ while (@ARGV) {
     } elsif ($flag eq "-chplcheckonly") {
         $chplcheck = 1;
         $chplcheckonly = 1;
+    } elsif ($flag eq "-chpl-language-server") {
+        $chplLanguageServer = 1;
     } else {
         $printusage = 1;
         last;
@@ -729,6 +732,9 @@ if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
     $testflags = "$testflags $starttestargs";
 }
 
+if ($chplLanguageServer == 1) {
+    $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make test-chpl-language-server";
+}
 
 if ($runtests == 0) {
     print "Built compiler and runtime but did not run tests\n";
