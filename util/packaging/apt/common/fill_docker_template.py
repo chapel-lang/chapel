@@ -23,8 +23,8 @@ ARG TARGETARCH
 substitutions[
     "USER_CREATION"
 ] = """
-RUN useradd -ms /bin/bash user && \
-    usermod -aG sudo user && \
+RUN useradd -ms /bin/bash user && \\
+    usermod -aG sudo user && \\
     echo "user:password" | chpasswd
 USER user
 WORKDIR /home/user
@@ -41,33 +41,33 @@ substitutions[
     "BUILD_DEFAULT"
 ] = """
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
-RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
-    ./configure --prefix=/usr && \
-    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \
+RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
+    ./configure --prefix=/usr && \\
+    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
     unset CHPL_HOME
 """
 
 substitutions["BUILD_GASNET_UDP"] = """
-RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
-    export CHPL_COMM=gasnet && \
-    ./configure --prefix=/usr && \
-    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \
-    unset CHPL_HOME && \
+RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
+    export CHPL_COMM=gasnet && \\
+    ./configure --prefix=/usr && \\
+    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
+    unset CHPL_HOME && \\
     unset CHPL_COMM
 """
 
 substitutions["BUILD_OFI_SLURM"] = """
-RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \
-    export CHPL_COMM=ofi && \
-    export CHPL_LAUNCHER=slurm-srun && \
-    export CHPL_COMM_OFI_OOB=pmi2 && \
-    export CHPL_LIBFABRIC=bundled && \
-    ./configure --prefix=/usr && \
-    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \
-    unset CHPL_HOME && \
-    unset CHPL_COMM && \
-    unset CHPL_LAUNCHER && \
-    unset CHPL_COMM_OFI_OOB && \
+RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
+    export CHPL_COMM=ofi && \\
+    export CHPL_LAUNCHER=slurm-srun && \\
+    export CHPL_COMM_OFI_OOB=pmi2 && \\
+    export CHPL_LIBFABRIC=bundled && \\
+    ./configure --prefix=/usr && \\
+    nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
+    unset CHPL_HOME && \\
+    unset CHPL_COMM && \\
+    unset CHPL_LAUNCHER && \\
+    unset CHPL_COMM_OFI_OOB && \\
     unset CHPL_LIBFABRIC
 """
 
