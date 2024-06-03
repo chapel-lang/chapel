@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as build
+FROM ubuntu:20.04
 
 @@{ARGUMENTS}
 
@@ -19,10 +19,10 @@ RUN apt-get update && \
 @@{GET_CHAPEL}
 
 @@{BUILD_DEFAULT}
-@@{BUILD_GASNET_UDP}
 
 @@{INSTALL}
 
 @@{PACKAGE_SETUP}
 
 @@{PACKAGE_BUILD}
+
