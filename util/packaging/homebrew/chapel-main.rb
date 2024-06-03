@@ -41,7 +41,6 @@ class Chapel < Formula
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
-    ENV["CHPL_TARGET_JEMALLOC"] = "system"
     # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
     ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
 
@@ -51,6 +50,7 @@ class Chapel < Formula
       CHPL_RE2=bundled
       CHPL_GMP=system
       CHPL_MEM=jemalloc
+      CHPL_TARGET_JEMALLOC=system
       CHPL_HWLOC=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
