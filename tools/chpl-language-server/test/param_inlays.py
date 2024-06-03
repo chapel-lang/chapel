@@ -57,6 +57,9 @@ async def test_param_inlays_prim(client: LanguageClient):
             param e = if foo(string) then 1 else 10;
 
             param f = "hello";
+
+            param g = false;
+            param h = true;
            """
 
     inlays = [
@@ -66,6 +69,8 @@ async def test_param_inlays_prim(client: LanguageClient):
         (pos((7, 7)), "1"),
         (pos((8, 7)), "10"),
         (pos((10, 7)), '"hello"'),
+        (pos((12, 7)), "false"),
+        (pos((13, 7)), "true"),
     ]
 
     async with source_file(client, file) as doc:
