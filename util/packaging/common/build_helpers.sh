@@ -61,7 +61,7 @@ __build_packages() {
 }
 
 __build_image() {
-  # use this to build the package for linux/amd64 and linux/arm64
+  # use this to build a container image for local testing
   local pkg_type=$1
   local os=$2
   local package_name=$3
