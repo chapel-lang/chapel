@@ -522,25 +522,44 @@ async def check_type_inlay_hints(
     client: LanguageClient,
     doc: TextDocumentIdentifier,
     rng: Range,
-    expected_inlays: Sequence[typing.Tuple[Position, str]],
+    expected_inlays: Sequence[
+        typing.Union[
+            typing.Tuple[Position, str], typing.Tuple[Position, str, bool]
+        ]
+    ],
 ) -> typing.List[InlayHint]:
     """
     Helper method for `check_inlay_hints`. Adds the `: ` prefix.
 
-    Also checks that inlays are insertable
+    `expected_inlays` is a list of tuples. The tuples can be either of length 2
+    or 3.
+    - If the tuple is of length 2, the first element is the expected position
+      and the second element is the expected text of the type. This implies that
+      the inlay hint is insertable.
+    - If the tuple is of length 3, then the first two elements are the same as
+      the 2-tuple. The third element is a boolean that indicates whether the
+      inlay hint is insertable.
     """
-    # we current do not make use of InlayHintKind.Type for type inlays in CLS
-    inlays = [(pos, f": {text}", None) for pos, text in expected_inlays]
-    actual_inlays = await check_inlay_hints(client, doc, rng, inlays)
+    # we currently do not make use of InlayHintKind.Type for type inlays in CLS
+    inlays_with_colon = [(i[0], f": {i[1]}", None) for i in expected_inlays]
+    inlays = [
+        (i[0], f": {i[1]}", i[2] if len(i) >= 3 else True)
+        for i in expected_inlays
+    ]
+    actual_inlays = await check_inlay_hints(client, doc, rng, inlays_with_colon)
 
     # Check that the inlays are insertable
     for expected, actual in zip(inlays, actual_inlays):
-        # the list of inlay text edits should have one element and have the
-        # same text/range as the inlay
-        assert actual.text_edits is not None
-        assert len(actual.text_edits) == 1
-        assert actual.text_edits[0].range.start == expected[0]
-        assert actual.text_edits[0].new_text == expected[1]
+        if expected[2]:
+            # the list of inlay text edits should have one element and have the
+            # same text/range as the inlay
+            assert actual.text_edits is not None
+            assert len(actual.text_edits) == 1
+            assert actual.text_edits[0].range.start == expected[0]
+            assert actual.text_edits[0].new_text == expected[1]
+        else:
+            # the inlay should not be insertable
+            assert actual.text_edits is None
 
     return actual_inlays
 

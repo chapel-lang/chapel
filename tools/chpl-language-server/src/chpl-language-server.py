@@ -1146,6 +1146,7 @@ class ChapelLanguageServer(LanguageServer):
 
         name_rng = location_to_range(decl.node.name_location())
         type_str = ": " + str(type_)
+        text_edits = [TextEdit(Range(name_rng.end, name_rng.end), type_str)]
         colon_label = InlayHintLabelPart(": ")
         label = InlayHintLabelPart(str(type_))
         if isinstance(type_, chapel.CompositeType):
@@ -1154,13 +1155,20 @@ class ChapelLanguageServer(LanguageServer):
                 label.location = location_to_location(typedecl.name_location())
             elif typedecl:
                 label.location = location_to_location(typedecl.location())
+
+        # if the inlay hint is for a loop index type, we cannot insert the type
+        # as it would be a syntax error
+        parent_loop = decl.node.parent()
+        if parent_loop and isinstance(parent_loop, chapel.IndexableLoop):
+            index = parent_loop.index()
+            if index and index.unique_id() == decl.node.unique_id():
+                text_edits = None
+
         return [
             InlayHint(
                 position=name_rng.end,
                 label=[colon_label, label],
-                text_edits=[
-                    TextEdit(Range(name_rng.end, name_rng.end), type_str)
-                ],
+                text_edits=text_edits,
             )
         ]
 
