@@ -19,6 +19,7 @@ class Chapel < Formula
   depends_on "cmake"
   depends_on "gmp"
   depends_on "hwloc"
+  depends_on "jemalloc"
   depends_on "llvm@17"
   depends_on "python@3.12"
 
@@ -40,6 +41,7 @@ class Chapel < Formula
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
+    ENV["CHPL_TARGET_JEMALLOC"] = "system"
     # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
     ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
 
@@ -48,7 +50,7 @@ class Chapel < Formula
     (libexec/"chplconfig").write <<~EOS
       CHPL_RE2=bundled
       CHPL_GMP=system
-      CHPL_MEM=cstdlib
+      CHPL_MEM=jemalloc
       CHPL_HWLOC=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
