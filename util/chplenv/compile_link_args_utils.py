@@ -73,7 +73,7 @@ def get_runtime_includes_and_defines():
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
-    if mem == "jemalloc":
+    if mem == "jemalloc" and chpl_jemalloc.get('target') == "bundled":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
         # this is needed since it affects code inside of headers
         bundled.append("-DCHPL_JEMALLOC_PREFIX=chpl_je_")
