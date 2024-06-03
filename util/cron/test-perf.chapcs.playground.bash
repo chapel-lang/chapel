@@ -26,9 +26,9 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 #
 
 GITHUB_USER=jabraham17
-GITHUB_BRANCH=always-unroll
-SHORT_NAME=always-unroll
-START_DATE=05/13/24
+GITHUB_BRANCH=new-pm-perf
+SHORT_NAME=new-llvm-pm
+START_DATE=05/29/24
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
