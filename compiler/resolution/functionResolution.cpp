@@ -14157,6 +14157,27 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
 
     Expr* appendExpr = NULL;
     if (field->isParameter()) {
+
+      /*
+        For 'map' and 'set', if the type has parSafe=false, don't include the
+        'parSafe' argument in the initializer call. This way, if user code
+        initializes map or set by specifying the type without 'parSafe', ex:
+        - var m: map(int, int);
+        - var s: set(int);
+        an unstable warning won't be generated (this is necessary because the
+        initializer with a parSafe argument is marked unstable).
+
+        This conditional can be removed if/when the unstable warning is removed
+        from map and set's 'parSafe' fields.
+      */
+      if (
+        root->getModule()->modTag == MOD_STANDARD && field->hasFlag(FLAG_UNSTABLE) &&
+        strcmp(field->name, "parSafe") == 0 && value == gFalse &&
+        (strcmp(root->name(), "map") == 0 || strcmp(root->name(), "set") == 0)
+      ) {
+        continue;
+      }
+
       appendExpr = new SymExpr(value);
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
 

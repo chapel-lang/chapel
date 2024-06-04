@@ -943,6 +943,8 @@ AggregateType* AggregateType::generateType(CallExpr* call,
         USR_STOP();
       } else if (field->hasFlag(FLAG_DEPRECATED)) {
         field->maybeGenerateDeprecationWarning(ne);
+      } else if (field->hasFlag(FLAG_UNSTABLE)) {
+        field->maybeGenerateUnstableWarning(ne);
       }
       // don't allow type-constructor calls to use named-argument passing
       // for a field that isn't 'type' or 'param'
@@ -969,6 +971,21 @@ AggregateType* AggregateType::generateType(CallExpr* call,
   // place positional args in a map based on remaining unspecified fields
   for_vector(Symbol, field, genericFields) {
     if (substitutionForField(field, map) == NULL && notNamed.size() > 0) {
+      /*
+        emit an unstable warning when a map or set type is specified with
+        a value for 'parSafe' (e.g., 'map(int, int, false)'))
+
+        This conditional can be removed if/when the 'parSafe' field is no
+        longer marked as unstable.
+      */
+      if (
+        getModule()->modTag == MOD_STANDARD && field->hasFlag(FLAG_UNSTABLE) &&
+        strcmp(field->name, "parSafe") == 0 && !allowAllNamedArgs &&
+        (strcmp(name(), "map") == 0 || strcmp(name(), "set") == 0)
+      ) {
+        field->maybeGenerateUnstableWarning(call);
+      }
+
       map.put(field, notNamed.front());
       notNamed.pop();
     }

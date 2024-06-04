@@ -18,3 +18,10 @@ var m8 = new map(string,int,parSafe=false);
 m7.addOrReplace("a",1);
 m8["a"] = 1;
 writeln(m7.parSafe == true);
+
+var m9: map(int, int);
+var m10: map(int, int, true);
+var m11: map(int, int, parSafe=false);
+
+type a = map(int, int);
+type b = map(int, int, false);
