@@ -490,6 +490,27 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   wr.note(clause, "only identifiers and 'dot' expressions are supported");
 }
 
+void ErrorInvalidThrowaway::write(ErrorWriterBase& wr) const {
+  auto underscore = std::get<0>(info_);
+  auto parent = std::get<1>(info_);
+
+  wr.heading(kind_, type_, underscore,
+             "Throwaway variable '_' is not allowed in this context.");
+  wr.message("The throwaway variable is used here:");
+  wr.code(underscore, { underscore });
+  wr.message("Throwaway variables are only allowed on the left-hand side of "
+             "tuple unpacking, in function formal names, and when renaming the "
+             "target of a 'use' statement.");
+
+  if (parent) {
+    if (auto loop = parent->toIndexableLoop()) {
+      if (underscore == loop->index()) {
+        wr.message("To avoid naming the loop index, omit the name and 'in' keyword.");
+      }
+    }
+  }
+}
+
 static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
                                             const uast::AstNode* node,
                                             const uast::Attribute* attr,

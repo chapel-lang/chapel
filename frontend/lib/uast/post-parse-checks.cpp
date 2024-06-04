@@ -1557,7 +1557,8 @@ void Visitor::visit(const PrimCall* node) {
 
 void Visitor::visit(const NamedDecl* node) {
   if (node->name() == USTR("_")) {
-    context_->error(node, "The identifier '_' is not allowed here.");
+    auto parentNode = parents_.size() > 0 ? parent(0) : nullptr;
+    CHPL_REPORT(context_, InvalidThrowaway, node, parentNode);
   }
 }
 
@@ -1595,7 +1596,8 @@ void Visitor::checkUnderscoreInVariableOrFormal(const VarLikeDecl* node) {
       }
     }
   }
-  context_->error(node, "The identifier '_' is not allowed here.");
+  auto parentNode = parents_.size() > 0 ? parent(0) : nullptr;
+  CHPL_REPORT(context_, InvalidThrowaway, node, parentNode);
 }
 
 void Visitor::visit(const Variable* node) {
@@ -1711,7 +1713,8 @@ void Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
     prev = parent;
   }
 
-  context_->error(node, "The identifier '_' is not allowed here.");
+  auto parentNode = parents_.size() > 0 ? parent(0) : nullptr;
+  CHPL_REPORT(context_, InvalidThrowaway, node, parentNode);
 }
 
 void Visitor::visit(const Identifier* node) {
