@@ -154,6 +154,7 @@ struct Visitor {
   void checkUnstableSerial(const Serial* ser);
   void checkLocalBlock(const Local* node);
   void checkUnderscoreInIdentifier(const Identifier* node);
+  void checkUnderscoreInVariable(const Variable* node);
 
   /*
   TODO
@@ -199,6 +200,7 @@ struct Visitor {
   void visit(const Import* node);
   void visit(const Identifier* node);
   void visit(const Local* node);
+  void visit(const NamedDecl* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
@@ -1552,12 +1554,51 @@ void Visitor::visit(const PrimCall* node) {
   checkPrimCallInUserCode(node);
 }
 
+void Visitor::visit(const NamedDecl* node) {
+  if (node->name() == USTR("_")) {
+    context_->error(node, "The identifier '_' is not allowed here.");
+  }
+}
+
 void Visitor::visit(const OpCall* node) {
   checkDmappedKeyword(node);
   checkNonAssociativeComparisons(node);
 }
 
+void Visitor::checkUnderscoreInVariable(const Variable* node) {
+  if (node->name() != USTR("_")) return;
+  if (!parents_.empty()) {
+    auto directParent = parent(0);
+
+    if (auto td = directParent->toTupleDecl()) {
+      if (node != td->initExpression() && node != td->typeExpression()) {
+        // The variable is part of a tuple, like var (_, ) = x;
+        // This is allowed.
+        return;
+      }
+    } else if (auto fn = directParent->toFunction()) {
+      for (int i = 0; i < fn->numFormals(); i++) {
+        if (node == fn->formal(i)) {
+          // The variable is a formal parameter, like proc foo(_) { ... };
+          // This is allowed.
+          return;
+        }
+      }
+    } else if (auto fnSig = directParent->toFunctionSignature()) {
+      for (int i = 0; i < fnSig->numFormals(); i++) {
+        if (node == fnSig->formal(i)) {
+          // The variable is a formal parameter, like proc(_) { ... };
+          // This is allowed.
+          return;
+        }
+      }
+    }
+  }
+  context_->error(node, "The identifier '_' is not allowed here.");
+}
+
 void Visitor::visit(const Variable* node) {
+  checkUnderscoreInVariable(node);
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
@@ -1625,34 +1666,39 @@ void Visitor::visit(const Import* node) {
 }
 
 void Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
-  if (node->name() == USTR("_")) {
-    // The underscore is only allowed in certain special contexts:
-    // Use lists (use A as _) and tuple-declarations.
+  if (node->name() != USTR("_")) return;
 
-    const AstNode* prev = node;
-    for (size_t revIdx = 0; revIdx < parents_.size(); revIdx++) {
-      auto parent = parents_[parents_.size() - revIdx - 1];
+  // The underscore is only allowed in certain special contexts:
+  // Use lists (use A as _) and tuple-declarations.
 
-      if (auto vc = parent->toVisibilityClause()) {
-        if (vc->symbol() == prev) {
-          // The '_' is nested inside a 'use A as _' as the symbol
-          // ('_' are not allowed in limitations). It's allowed, and safe.
-          return;
-        }
-      } else if (auto tupleDecl = parent->toTupleDecl()) {
-        if (prev != tupleDecl->initExpression() &&
-            prev != tupleDecl->typeExpression()) {
-          // The '_' is a child of a tuple declaration, and not the type
-          // or init expression (which may not allow '_'). Thus, it's
-          // one of the sub-declaration names, and is allowed.
-          return;
-        }
+  const AstNode* prev = node;
+  bool allTuples = true;
+  for (size_t revIdx = 0; revIdx < parents_.size(); revIdx++) {
+    auto parent = parents_[parents_.size() - revIdx - 1];
+
+    if (auto op = parent->toOpCall()) {
+      if (revIdx == 0) {
+        // We're a direct child of an assignment operator, like _ = 42;
+        // This is not allowed; we have to be in a tuple.
+        break;
       }
-      prev = parent;
-    }
 
-    context_->error(node, "The identifier '_' is not allowed here.");
+      if (allTuples && op->actual(0) == prev) {
+        // We're in a variable like var (_, x) = (1, 2), where tuples are
+        // allowed on the left.
+        return;
+      }
+    } else if (auto vc = parent->toVisibilityClause()) {
+      if (vc->symbol() == prev) {
+        // The '_' is nested inside a 'use A as _' as the symbol
+        // ('_' are not allowed in limitations). It's allowed, and safe.
+        return;
+      }
+    }
+    prev = parent;
   }
+
+  context_->error(node, "The identifier '_' is not allowed here.");
 }
 
 void Visitor::visit(const Identifier* node) {
