@@ -690,7 +690,10 @@ class FileInfo:
         self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
-            self._search_instantiations(asts)
+            # TODO: suppress resolution errors due to false-positives
+            # this should be removed once the resolver is finished
+            with self.context.context.track_errors() as _:
+                self._search_instantiations(asts)
 
     def called_function_at_position(
         self, position: Position
