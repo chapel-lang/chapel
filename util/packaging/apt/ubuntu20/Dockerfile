@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as build
 
 ARG BASENAME=chapel
 ARG CHAPEL_VERSION=2.0.0

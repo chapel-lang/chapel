@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM debian:bullseye as build
 
 ARG BASENAME=chapel
 ARG CHAPEL_VERSION=2.0.0
