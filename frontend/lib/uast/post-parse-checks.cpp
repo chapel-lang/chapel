@@ -1678,6 +1678,7 @@ void Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
 
   const AstNode* prev = node;
   bool allTuples = true;
+  bool asVisRename = false;
   for (size_t revIdx = 0; revIdx < parents_.size(); revIdx++) {
     auto parent = parents_[parents_.size() - revIdx - 1];
 
@@ -1695,8 +1696,15 @@ void Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
       }
     } else if (auto vc = parent->toVisibilityClause()) {
       if (vc->symbol() == prev) {
-        // The '_' is nested inside a 'use A as _' as the symbol
-        // ('_' are not allowed in limitations). It's allowed, and safe.
+        // The '_' is nested inside a 'use A as _' or `import A as _` as the symbol
+        // ('_' are not allowed in limitations). Not clear yet if it's allowed,
+        // since only 'use' statements allow wildcards like this.
+        asVisRename = true;
+      }
+    } else if (auto use = parent->toUse()) {
+      if (asVisRename) {
+        // We occurred as a rename of the symbol being imported in a use
+        // statement. This is allowed.
         return;
       }
     }
