@@ -153,6 +153,7 @@ struct Visitor {
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
   void checkLocalBlock(const Local* node);
+  void checkUnderscoreInIdentifier(const Identifier* node);
 
   /*
   TODO
@@ -196,6 +197,7 @@ struct Visitor {
   void visit(const FunctionSignature* node);
   void visit(const Implements* node);
   void visit(const Import* node);
+  void visit(const Identifier* node);
   void visit(const Local* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
@@ -1620,6 +1622,41 @@ void Visitor::visit(const Import* node) {
   for (auto clause : node->visibilityClauses()) {
     checkVisibilityClauseValid(node, clause);
   }
+}
+
+void Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
+  if (node->name() == USTR("_")) {
+    // The underscore is only allowed in certain special contexts:
+    // Use lists (use A as _) and tuple-declarations.
+
+    const AstNode* prev = node;
+    for (size_t revIdx = 0; revIdx < parents_.size(); revIdx++) {
+      auto parent = parents_[parents_.size() - revIdx - 1];
+
+      if (auto vc = parent->toVisibilityClause()) {
+        if (vc->symbol() == prev) {
+          // The '_' is nested inside a 'use A as _' as the symbol
+          // ('_' are not allowed in limitations). It's allowed, and safe.
+          return;
+        }
+      } else if (auto tupleDecl = parent->toTupleDecl()) {
+        if (prev != tupleDecl->initExpression() &&
+            prev != tupleDecl->typeExpression()) {
+          // The '_' is a child of a tuple declaration, and not the type
+          // or init expression (which may not allow '_'). Thus, it's
+          // one of the sub-declaration names, and is allowed.
+          return;
+        }
+      }
+      prev = parent;
+    }
+
+    context_->error(node, "The identifier '_' is not allowed here.");
+  }
+}
+
+void Visitor::visit(const Identifier* node) {
+  checkUnderscoreInIdentifier(node);
 }
 
 /**
