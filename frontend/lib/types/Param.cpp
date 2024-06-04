@@ -542,7 +542,7 @@ static QualifiedType handleParamCast(Context* context,
                                      QualifiedType a,
                                      QualifiedType b) {
   if (!paramCastAllowed(context, a, b)) {
-    context->error(astForErr, "param cast not allowed");
+    CHPL_REPORT(context, InvalidParamCast, astForErr, a, b);
     return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }
 
