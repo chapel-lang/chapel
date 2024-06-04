@@ -154,7 +154,7 @@ struct Visitor {
   void checkUnstableSerial(const Serial* ser);
   void checkLocalBlock(const Local* node);
   void checkUnderscoreInIdentifier(const Identifier* node);
-  void checkUnderscoreInVariable(const Variable* node);
+  void checkUnderscoreInVariableOrFormal(const VarLikeDecl* node);
 
   /*
   TODO
@@ -193,6 +193,7 @@ struct Visitor {
   void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
   void visit(const Foreach* node);
+  void visit(const Formal* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
@@ -1565,7 +1566,7 @@ void Visitor::visit(const OpCall* node) {
   checkNonAssociativeComparisons(node);
 }
 
-void Visitor::checkUnderscoreInVariable(const Variable* node) {
+void Visitor::checkUnderscoreInVariableOrFormal(const VarLikeDecl* node) {
   if (node->name() != USTR("_")) return;
   if (!parents_.empty()) {
     auto directParent = parent(0);
@@ -1598,7 +1599,7 @@ void Visitor::checkUnderscoreInVariable(const Variable* node) {
 }
 
 void Visitor::visit(const Variable* node) {
-  checkUnderscoreInVariable(node);
+  checkUnderscoreInVariableOrFormal(node);
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
@@ -1633,6 +1634,10 @@ void Visitor::visit(const Union* node) {
 
 void Visitor::visit(const Foreach* node) {
   warnUnstableForeachLoops(node);
+}
+
+void Visitor::visit(const Formal* node) {
+  checkUnderscoreInVariableOrFormal(node);
 }
 
 void Visitor::visit(const Use* node) {
