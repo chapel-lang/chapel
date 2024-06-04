@@ -6,7 +6,7 @@
   GPL LICENSE SUMMARY
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021-2022 Cornelis Networks.
+  Copyright(c) 2021-2024 Cornelis Networks.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of version 2 of the GNU General Public License as
@@ -23,7 +23,7 @@
   BSD LICENSE
 
   Copyright(c) 2015 Intel Corporation.
-  Copyright(c) 2021-2022 Cornelis Networks.
+  Copyright(c) 2021-2024 Cornelis Networks.
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions
@@ -345,8 +345,8 @@ int _hfi_cmd_ioctl(int fd, struct hfi1_cmd *cmd, size_t count)
         [OPX_HFI_CMD_CTXT_RESET]       = {HFI1_IOCTL_CTXT_RESET    , 1},
         [OPX_HFI_CMD_TID_INVAL_READ]   = {HFI1_IOCTL_TID_INVAL_READ, 0},
         [OPX_HFI_CMD_GET_VERS]         = {HFI1_IOCTL_GET_VERS      , 1},
-#ifdef PSM_CUDA
-	[OPX_HFI_CMD_TID_UPDATE_V2]	= {HFI1_IOCTL_TID_UPDATE_V2 , 0},
+#ifdef OPX_HMEM
+	[OPX_HFI_CMD_TID_UPDATE_V3]	= {HFI1_IOCTL_TID_UPDATE_V3 , 0},
 #endif
     };
         _HFI_INFO("command OPX_HFI_CMD %#X, HFI1_IOCTL %#X\n",cmd->type, cmdTypeToIoctlNum[cmd->type].ioctlCmd);
@@ -425,43 +425,23 @@ int opx_hfi_get_unit_active(int unit)
 	return (rv>0);
 }
 
-/* get the number of contexts from the unit id. */
+/* Get the number of free contexts from the unit id. */
 /* Returns 0 if no unit or no match. */
-int opx_hfi_get_num_contexts(int unit_id)
+int opx_hfi_get_num_free_contexts(int unit_id)
 {
-	int n = 0;
-	int units;
 	int64_t val;
 	uint32_t p = OPX_MIN_PORT;
 
-	units = opx_hfi_get_num_units();
+	for (; p <= OPX_MAX_PORT; p++)
+		if (opx_hfi_get_port_lid(unit_id, p) > 0)
+			break;
 
-	if_pf(units <=  0)
-		return 0;
-
-	if (unit_id == OPX_UNIT_ID_ANY) {
-		uint32_t u;
-
-		for (u = 0; u < units; u++) {
-			for (p = OPX_MIN_PORT; p <= OPX_MAX_PORT; p++)
-				if (opx_hfi_get_port_lid(u, p) > 0)
-					break;
-
-			if (p <= OPX_MAX_PORT &&
-			    !opx_sysfs_unit_read_s64(u, "nctxts", &val, 0))
-				n += (uint32_t) val;
-		}
-	} else {
-		for (; p <= OPX_MAX_PORT; p++)
-			if (opx_hfi_get_port_lid(unit_id, p) > 0)
-				break;
-
-		if (p <= OPX_MAX_PORT &&
-		    !opx_sysfs_unit_read_s64(unit_id, "nctxts", &val, 0))
-			n += (uint32_t) val;
+	if (p <= OPX_MAX_PORT &&
+			!opx_sysfs_unit_read_s64(unit_id, "nfreectxts", &val, 0)) {
+		return (uint32_t) val;
 	}
 
-	return n;
+	return 0;
 }
 
 /* Given a unit number and port number, returns 1 if the unit and port are active.
@@ -510,8 +490,8 @@ int opx_hfi_get_port_lid(int unit, int port)
 	if (opx_hfi_get_port_active(unit,port) != 1)
 		return -2;
 	ret = opx_sysfs_port_read_s64(unit, port, "lid", &val, 0);
-	_HFI_VDBG("opx_hfi_get_port_lid: ret %d, unit %d port %d\n", ret, unit,
-		  port);
+	_HFI_VDBG("opx_hfi_get_port_lid: ret %d, unit %d port %d val=%ld\n", ret, unit,
+		  port, val);
 
 	if (ret == -1) {
 		if (errno == ENODEV)
@@ -611,12 +591,14 @@ int opx_hfi_get_port_rate(int unit, int port)
 	}
 
 	free(data_rate);
+	data_rate = NULL;
 	return ((int)(rate * 2) >> 1);
 
 get_port_rate_error:
 	_HFI_INFO("Failed to get link rate for unit %u:%u: %s\n",
 		  unit, port, strerror(errno));
-
+	free(data_rate);
+	data_rate = NULL;
 	return ret;
 }
 

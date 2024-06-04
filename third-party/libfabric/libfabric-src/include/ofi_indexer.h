@@ -40,6 +40,10 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <string.h>
+#include <inttypes.h>
+
+#include <ofi_osd.h>
+
 
 /*
  * Indexer:
@@ -117,6 +121,109 @@ static inline bool ofi_idx_free_list_empty(struct indexer *idx)
 
 
 /*
+ * Byte Indexer Map:
+ * Indexer & map with an index that fits into a byte.  Index 0 is invalid.
+ *
+ * Synchronization must be provided by the caller.  Caller must
+ * initialize structure to 0.
+ */
+
+enum ofi_byte_idx_type {
+	OFI_BYTE_IDX_UNKNOWN,
+	OFI_BYTE_IDX_INDEX,
+	OFI_BYTE_IDX_MAP,
+};
+
+struct ofi_byte_idx
+{
+	struct ofi_idx_entry *data;
+	uint8_t free_list;
+	OFI_DBG_VAR(enum ofi_byte_idx_type, type)
+};
+
+bool ofi_byte_idx_grow(struct ofi_byte_idx *idx);
+
+static inline uint8_t ofi_byte_idx_insert(struct ofi_byte_idx *idx, void *item)
+{
+	uint8_t index;
+
+	assert(idx->type == OFI_BYTE_IDX_UNKNOWN ||
+	       idx->type == OFI_BYTE_IDX_INDEX);
+	OFI_DBG_SET(idx->type, OFI_BYTE_IDX_INDEX);
+
+	index = idx->free_list;
+	if (index == 0) {
+		if (!ofi_byte_idx_grow(idx))
+			return 0;
+		index = idx->free_list;
+	}
+
+	idx->free_list = (uint8_t) idx->data[index].next;
+	idx->data[index].item = item;
+	idx->data[index].next = -1;
+	return index;
+}
+
+static inline void *ofi_byte_idx_remove(struct ofi_byte_idx *idx, uint8_t index)
+{
+	void *item;
+
+	assert(idx->type == OFI_BYTE_IDX_INDEX);
+
+	if (idx->data[index].next != -1)
+		return NULL;
+
+	item = idx->data[index].item;
+	idx->data[index].item = NULL;
+	idx->data[index].next = idx->free_list;
+	idx->free_list = index;
+	return item;
+}
+
+static inline void *ofi_byte_idx_at(struct ofi_byte_idx *idx, uint8_t index)
+{
+	return idx->data[index].item;
+}
+
+static inline void *ofi_byte_idx_lookup(struct ofi_byte_idx *idx, uint8_t index)
+{
+	return (idx->data && idx->data[index].next == -1) ?
+		idx->data[index].item : NULL;
+}
+
+static inline uint8_t
+ofi_byte_idx_set(struct ofi_byte_idx *idx, uint8_t index, void *item)
+{
+	assert(idx->type == OFI_BYTE_IDX_UNKNOWN ||
+	       idx->type == OFI_BYTE_IDX_MAP);
+	OFI_DBG_SET(idx->type, OFI_BYTE_IDX_MAP);
+
+	if (!idx->data && !ofi_byte_idx_grow(idx))
+		return 0;
+
+	assert(idx->data[index].next != -1);
+	idx->data[index].item = item;
+	idx->data[index].next = -1;
+	return index;
+}
+
+static inline void *
+ofi_byte_idx_clear(struct ofi_byte_idx *idx, uint8_t index)
+{
+	void *item;
+
+	assert(idx->type == OFI_BYTE_IDX_MAP);
+	assert(idx->data);
+	assert(idx->data[index].next == -1);
+
+	item = idx->data[index].item;
+	idx->data[index].item = NULL;
+	idx->data[index].next = 0;
+	return item;
+}
+
+
+/*
  * Index map:
  * The index map is similar in concept to the indexer.  It allows the user
  * to associate an integer with a pointer.  The difference between the index
@@ -180,9 +287,9 @@ ofi_array_init(struct ofi_dyn_arr *arr, size_t item_size,
 
 int ofi_array_grow(struct ofi_dyn_arr *arr, int index);
 /* Returning non-zero from callback breaks iteration */
-void ofi_array_iter(struct ofi_dyn_arr *arr, void *context,
-		    int (*callback)(struct ofi_dyn_arr *arr, void *item,
-				    void *context));
+int ofi_array_iter(struct ofi_dyn_arr *arr, void *context,
+		   int (*callback)(struct ofi_dyn_arr *arr, void *item,
+				   void *context));
 void ofi_array_destroy(struct ofi_dyn_arr *arr);
 
 static inline char *ofi_array_chunk(struct ofi_dyn_arr *arr, int index)

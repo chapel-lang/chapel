@@ -63,9 +63,6 @@
 #if !defined(PSM_VERBS) && !defined(PSM_SOCKETS) && !defined(PSM_NONE)
 #error "At least one of PSM_VERBS or PSM_SOCKETS must be defined"
 #endif
-#if defined(PSM_VERBS) && defined(PSM_SOCKETS) && defined(UMR_CACHE)
-#error "UMR_CACHE not yet allowed with both PSM_VERBS and PSM_SOCKETS enabled"
-#endif
 
 #ifdef PSM_VERBS
 #include "hal_verbs/verbs_ep.h"
@@ -126,6 +123,7 @@ struct psm2_ep {
 	uint16_t network_pkey_index;  /**> Pkey index */
 	int did_syslog;
 	const char *dev_name;	/* just for logging */
+	const char *addl_nic_info;	/* just for logging */
 	psm2_uuid_t uuid;
 	uint16_t jkey;
 	uint64_t service_id;	/* OPA service ID */
@@ -148,8 +146,12 @@ struct psm2_ep {
 	uint32_t hfi_num_send_rdma;/** Number of concurrent RDMA*/
 #endif
 #ifdef PSM_ONEAPI
-	int ze_ipc_socket;
-	char *listen_sockname;
+#ifndef PSM_HAVE_PIDFD
+	// TBD - move to ptl_am
+	int ze_ipc_socket;	// AF_UNIX listener sock to recv GPU Dev FDs
+	char *listen_sockname;	// /dev/shm filename for ze_ipc_socket
+	int need_dev_fds_poll;	// are there outstanding dev_fds to be polled
+#endif
 #endif
 	uint8_t wiremode; /* EPID protocol specific basic modes
 			   * For RoCE/IB reflects
@@ -162,6 +164,7 @@ struct psm2_ep {
 	/* per EP information needed to create verbs MR cache */
 	uint8_t mr_cache_mode; /** PSM3_MR_CACHE_MODE */
 	uint8_t mr_access; /** PSM3_MR_ACCESS */
+	psm2_mr_cache_t mr_cache; /* for easy access, same ptr as proto->mr_cache */
 #ifdef PSM_HAVE_RNDV_MOD
 	int cmd_fd;
 #endif
@@ -269,8 +272,7 @@ struct psm2_epaddr {
 	PSMI_PROFILE_UNBLOCK();						\
 } while (0)
 
-psm2_error_t psm3_parse_devices(int devices[PTL_MAX_INIT]);
-int psm3_device_is_enabled(const int devices[PTL_MAX_INIT], int devid);
+int psm3_ep_device_is_enabled(const psm2_ep_t ep, int devid);
 
 #ifdef PSM_HAVE_RNDV_MOD
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)

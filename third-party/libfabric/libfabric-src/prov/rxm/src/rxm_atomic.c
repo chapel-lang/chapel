@@ -124,9 +124,10 @@ rxm_ep_atomic_common(struct rxm_ep *rxm_ep, struct rxm_conn *rxm_conn,
 			       datatype_sz);
 		buf_len = ofi_total_iov_len(buf_iov, msg->iov_count);
 
-		buf_iface = rxm_mr_desc_to_hmem_iface_dev(msg->desc,
-							  msg->iov_count,
-							  &buf_device);
+		buf_iface = rxm_iov_desc_to_hmem_iface_dev(buf_iov,
+							   msg->desc,
+							   msg->iov_count,
+							   &buf_device);
 	}
 
 	if (op == ofi_op_atomic_compare) {
@@ -136,9 +137,10 @@ rxm_ep_atomic_common(struct rxm_ep *rxm_ep, struct rxm_conn *rxm_conn,
 		cmp_len = ofi_total_iov_len(cmp_iov, compare_iov_count);
 		assert(buf_len == cmp_len);
 
-		cmp_iface = rxm_mr_desc_to_hmem_iface_dev(compare_desc,
-							  compare_iov_count,
-							  &cmp_device);
+		cmp_iface = rxm_iov_desc_to_hmem_iface_dev(cmp_iov,
+							   compare_desc,
+							   compare_iov_count,
+							   &cmp_device);
 	}
 
 	data_len = buf_len + cmp_len + sizeof(struct rxm_atomic_hdr);
@@ -198,7 +200,7 @@ rxm_ep_generic_atomic_writemsg(struct rxm_ep *rxm_ep, const struct fi_msg_atomic
 	struct rxm_conn *rxm_conn;
 	ssize_t ret;
 
-	ofi_ep_lock_acquire(&rxm_ep->util_ep);
+	ofi_genlock_lock(&rxm_ep->util_ep.lock);
 	ret = rxm_get_conn(rxm_ep, msg->addr, &rxm_conn);
 	if (ret)
 		goto unlock;
@@ -206,7 +208,7 @@ rxm_ep_generic_atomic_writemsg(struct rxm_ep *rxm_ep, const struct fi_msg_atomic
 	ret = rxm_ep_atomic_common(rxm_ep, rxm_conn, msg, NULL, NULL, 0,
 				   NULL, NULL, 0, ofi_op_atomic, flags);
 unlock:
-	ofi_ep_lock_release(&rxm_ep->util_ep);
+	ofi_genlock_unlock(&rxm_ep->util_ep.lock);
 	return ret;
 }
 
@@ -308,7 +310,7 @@ rxm_ep_generic_atomic_readwritemsg(struct rxm_ep *rxm_ep,
 	struct rxm_conn *rxm_conn;
 	ssize_t ret;
 
-	ofi_ep_lock_acquire(&rxm_ep->util_ep);
+	ofi_genlock_lock(&rxm_ep->util_ep.lock);
 	ret = rxm_get_conn(rxm_ep, msg->addr, &rxm_conn);
 	if (ret)
 		goto unlock;
@@ -317,7 +319,7 @@ rxm_ep_generic_atomic_readwritemsg(struct rxm_ep *rxm_ep,
 				   resultv, result_desc, result_count,
 				   ofi_op_atomic_fetch, flags);
 unlock:
-	ofi_ep_lock_release(&rxm_ep->util_ep);
+	ofi_genlock_unlock(&rxm_ep->util_ep.lock);
 	return ret;
 }
 
@@ -401,7 +403,7 @@ rxm_ep_generic_atomic_compwritemsg(struct rxm_ep *rxm_ep,
 	struct rxm_conn *rxm_conn;
 	ssize_t ret;
 
-	ofi_ep_lock_acquire(&rxm_ep->util_ep);
+	ofi_genlock_lock(&rxm_ep->util_ep.lock);
 	ret = rxm_get_conn(rxm_ep, msg->addr, &rxm_conn);
 	if (ret)
 		goto unlock;
@@ -411,7 +413,7 @@ rxm_ep_generic_atomic_compwritemsg(struct rxm_ep *rxm_ep,
 				   result_desc, result_count,
 				   ofi_op_atomic_compare, flags);
 unlock:
-	ofi_ep_lock_release(&rxm_ep->util_ep);
+	ofi_genlock_unlock(&rxm_ep->util_ep.lock);
 	return ret;
 }
 

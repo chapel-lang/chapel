@@ -63,7 +63,7 @@ int psmx3_am_init(struct psmx3_trx_ctxt *trx_ctxt)
 	int err = 0;
 	uint32_t max_atomic_size;
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE, "epid %s\n", psm3_epid_fmt(trx_ctxt->psm2_epid, 0));
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "epid %s\n", psm3_epid_fmt(trx_ctxt->psm2_epid, 0));
 
 	if (!trx_ctxt->am_initialized) {
 		err = psm3_am_get_parameters(psm2_ep, &trx_ctxt->psm2_am_param,
@@ -94,7 +94,7 @@ int psmx3_am_init(struct psmx3_trx_ctxt *trx_ctxt)
 		    (psmx3_am_handlers_idx[1] != PSMX3_AM_ATOMIC_HANDLER) ||
 		    (psmx3_am_handlers_idx[2] != PSMX3_AM_SEP_HANDLER) ||
 		    (psmx3_am_handlers_idx[3] != PSMX3_AM_TRX_CTXT_HANDLER)) {
-			FI_WARN(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 				"failed to register one or more AM handlers "
 				"at indecies %d, %d, %d, %d\n", PSMX3_AM_RMA_HANDLER,
 				PSMX3_AM_ATOMIC_HANDLER, PSMX3_AM_SEP_HANDLER,

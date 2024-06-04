@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-#include <ofi_coll.h>
 #include "ofi_util.h"
 #include "uthash.h"
 
@@ -250,13 +249,13 @@ static int rxm_av_remove(struct fid_av *av_fid, fi_addr_t *fi_addr,
 			(*peer)->refcnt++;
 			ofi_mutex_unlock(&av->util_av.lock);
 
-			ofi_mutex_lock(&av->util_av.ep_list_lock);
+			ofi_genlock_lock(&av->util_av.ep_list_lock);
 			dlist_foreach(&av->util_av.ep_list, item) {
 				util_ep = container_of(item, struct util_ep,
 						       av_entry);
 				av->util_av.remove_handler(util_ep, *peer);
 			}
-			ofi_mutex_unlock(&av->util_av.ep_list_lock);
+			ofi_genlock_unlock(&av->util_av.ep_list_lock);
 
 			ofi_mutex_lock(&av->util_av.lock);
 			util_deref_peer(*peer);
@@ -360,12 +359,30 @@ int rxm_av_lookup(struct fid_av *av_fid, fi_addr_t fi_addr,
 	return ofi_ip_av_lookup(av_fid, fi_addr, addr, addrlen);
 }
 
+int rxm_av_set(struct fid_av *av_fid, struct fi_av_set_attr *attr,
+               struct fid_av_set **av_set_fid, void *context)
+{
+	struct rxm_av *rxm_av;
+
+	rxm_av = container_of(av_fid, struct rxm_av, util_av.av_fid);
+	if (!rxm_av->util_coll_av)
+		return -FI_ENOSYS;
+
+	return fi_av_set(rxm_av->util_coll_av, attr, av_set_fid, context);
+}
+
 static int rxm_av_close(struct fid *av_fid)
 {
 	struct rxm_av *av;
 	int ret;
 
 	av = container_of(av_fid, struct rxm_av, util_av.av_fid.fid);
+	if (av->util_coll_av)
+		fi_close((fid_t) av->util_coll_av);
+
+	if (av->offload_coll_av)
+		fi_close((fid_t) av->offload_coll_av);
+
 	ret = ofi_av_close(&av->util_av);
 	if (ret)
 		return ret;
@@ -393,7 +410,7 @@ static struct fi_ops_av rxm_av_ops = {
 	.remove = rxm_av_remove,
 	.lookup = rxm_av_lookup,
 	.straddr = rxm_av_straddr,
-	.av_set = ofi_av_set
+	.av_set = rxm_av_set,
 };
 
 int rxm_util_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,

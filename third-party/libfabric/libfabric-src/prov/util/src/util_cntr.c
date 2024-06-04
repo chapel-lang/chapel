@@ -42,7 +42,7 @@ static int ofi_check_cntr_attr(const struct fi_provider *prov,
 	if (!attr)
 		return FI_SUCCESS;
 
-        if (attr->flags) {
+        if (attr->flags && attr->flags != FI_PEER) {
 		FI_WARN(prov, FI_LOG_CNTR, "unsupported flags\n");
 		return -FI_EINVAL;
 	}
@@ -69,7 +69,7 @@ static int ofi_check_cntr_attr(const struct fi_provider *prov,
 	return 0;
 }
 
-static uint64_t ofi_cntr_read(struct fid_cntr *cntr_fid)
+uint64_t ofi_cntr_read(struct fid_cntr *cntr_fid)
 {
 	struct util_cntr *cntr = container_of(cntr_fid, struct util_cntr, cntr_fid);
 
@@ -79,7 +79,7 @@ static uint64_t ofi_cntr_read(struct fid_cntr *cntr_fid)
 	return ofi_atomic_get64(&cntr->cnt);
 }
 
-static uint64_t ofi_cntr_readerr(struct fid_cntr *cntr_fid)
+uint64_t ofi_cntr_readerr(struct fid_cntr *cntr_fid)
 {
 	struct util_cntr *cntr = container_of(cntr_fid, struct util_cntr, cntr_fid);
 
@@ -89,7 +89,7 @@ static uint64_t ofi_cntr_readerr(struct fid_cntr *cntr_fid)
 	return ofi_atomic_get64(&cntr->err);
 }
 
-static int ofi_cntr_add(struct fid_cntr *cntr_fid, uint64_t value)
+int ofi_cntr_add(struct fid_cntr *cntr_fid, uint64_t value)
 {
 	struct util_cntr *cntr = container_of(cntr_fid, struct util_cntr, cntr_fid);
 
@@ -102,7 +102,7 @@ static int ofi_cntr_add(struct fid_cntr *cntr_fid, uint64_t value)
 	return FI_SUCCESS;
 }
 
-static int ofi_cntr_adderr(struct fid_cntr *cntr_fid, uint64_t value)
+int ofi_cntr_adderr(struct fid_cntr *cntr_fid, uint64_t value)
 {
 	struct util_cntr *cntr = container_of(cntr_fid, struct util_cntr, cntr_fid);
 
@@ -115,7 +115,7 @@ static int ofi_cntr_adderr(struct fid_cntr *cntr_fid, uint64_t value)
 	return FI_SUCCESS;
 }
 
-static int ofi_cntr_set(struct fid_cntr *cntr_fid, uint64_t value)
+int ofi_cntr_set(struct fid_cntr *cntr_fid, uint64_t value)
 {
 	struct util_cntr *cntr = container_of(cntr_fid, struct util_cntr, cntr_fid);
 
@@ -128,7 +128,7 @@ static int ofi_cntr_set(struct fid_cntr *cntr_fid, uint64_t value)
 	return FI_SUCCESS;
 }
 
-static int ofi_cntr_seterr(struct fid_cntr *cntr_fid, uint64_t value)
+int ofi_cntr_seterr(struct fid_cntr *cntr_fid, uint64_t value)
 {
 	struct util_cntr *cntr = container_of(cntr_fid, struct util_cntr, cntr_fid);
 	assert(cntr->cntr_fid.fid.fclass == FI_CLASS_CNTR);
@@ -140,7 +140,7 @@ static int ofi_cntr_seterr(struct fid_cntr *cntr_fid, uint64_t value)
 	return FI_SUCCESS;
 }
 
-static int ofi_cntr_wait(struct fid_cntr *cntr_fid, uint64_t threshold, int timeout)
+int ofi_cntr_wait(struct fid_cntr *cntr_fid, uint64_t threshold, int timeout)
 {
 	struct util_cntr *cntr;
 	uint64_t endtime, errcnt;
@@ -204,10 +204,54 @@ static struct fi_ops_cntr util_cntr_no_wait_ops = {
 	.wait = fi_no_cntr_wait,
 };
 
+static void util_peer_cntr_inc(struct fid_peer_cntr *cntr)
+{
+	struct util_cntr *util_cntr = cntr->fid.context;
+
+	util_cntr->cntr_fid.ops->add(&util_cntr->cntr_fid, 1);
+}
+
+static void util_peer_cntr_incerr(struct fid_peer_cntr *cntr)
+{
+	struct util_cntr *util_cntr = cntr->fid.context;
+
+	util_cntr->cntr_fid.ops->adderr(&util_cntr->cntr_fid, 1);
+}
+
+static struct fi_ops_cntr_owner util_peer_cntr_owner_ops = {
+	.size = sizeof(struct fi_ops_cntr_owner),
+	.inc = &util_peer_cntr_inc,
+	.incerr = &util_peer_cntr_incerr,
+};
+
+static uint64_t ofi_peer_cntr_read(struct fid_cntr *cntr_fid)
+{
+	struct util_cntr *cntr = container_of(cntr_fid, struct util_cntr, cntr_fid);
+
+	assert(cntr->cntr_fid.fid.fclass == FI_CLASS_CNTR);
+	cntr->progress(cntr);
+
+	return 0;
+}
+
+static struct fi_ops_cntr util_peer_cntr_ops = {
+	.size = sizeof(struct fi_ops_cntr),
+	.read = ofi_peer_cntr_read,
+	.readerr = fi_no_cntr_readerr,
+	.add = fi_no_cntr_add,
+	.adderr = fi_no_cntr_adderr,
+	.set = fi_no_cntr_set,
+	.seterr = fi_no_cntr_seterr,
+	.wait = fi_no_cntr_wait,
+};
+
 int ofi_cntr_cleanup(struct util_cntr *cntr)
 {
 	if (ofi_atomic_get32(&cntr->ref))
 		return -FI_EBUSY;
+
+	if (!(cntr->flags & FI_PEER))
+		fi_close(&cntr->peer_cntr->fid);
 
 	if (cntr->wait) {
 		fi_poll_del(&cntr->wait->pollset->poll_fid,
@@ -217,7 +261,7 @@ int ofi_cntr_cleanup(struct util_cntr *cntr)
 	}
 
 	ofi_atomic_dec32(&cntr->domain->ref);
-	ofi_mutex_destroy(&cntr->ep_list_lock);
+	ofi_genlock_destroy(&cntr->ep_list_lock);
 	return 0;
 }
 
@@ -240,13 +284,13 @@ void ofi_cntr_progress(struct util_cntr *cntr)
 	struct fid_list_entry *fid_entry;
 	struct dlist_entry *item;
 
-	ofi_mutex_lock(&cntr->ep_list_lock);
+	ofi_genlock_lock(&cntr->ep_list_lock);
 	dlist_foreach(&cntr->ep_list, item) {
 		fid_entry = container_of(item, struct fid_list_entry, entry);
 		ep = container_of(fid_entry->fid, struct util_ep, ep_fid.fid);
 		ep->progress(ep);
 	}
-	ofi_mutex_unlock(&cntr->ep_list_lock);
+	ofi_genlock_unlock(&cntr->ep_list_lock);
 }
 
 static struct fi_ops util_cntr_fi_ops = {
@@ -257,6 +301,34 @@ static struct fi_ops util_cntr_fi_ops = {
 	.ops_open = fi_no_ops_open,
 };
 
+static int util_peer_cntr_close(struct fid *fid)
+{
+       free(container_of(fid, struct fid_peer_cntr, fid));
+       return 0;
+}
+
+static struct fi_ops util_peer_cntr_fi_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = util_peer_cntr_close,
+	.bind = fi_no_bind,
+	.control = fi_no_control,
+	.ops_open = fi_no_ops_open,
+};
+
+static int util_init_peer_cntr(struct util_cntr *cntr)
+{
+	cntr->peer_cntr = calloc(1, sizeof(*cntr->peer_cntr));
+	if (!cntr->peer_cntr)
+		return -FI_ENOMEM;
+
+	cntr->peer_cntr->owner_ops = &util_peer_cntr_owner_ops;
+	cntr->peer_cntr->fid.fclass = FI_CLASS_PEER_CNTR;
+	cntr->peer_cntr->fid.context = cntr;
+	cntr->peer_cntr->fid.ops = &util_peer_cntr_fi_ops;
+
+	return FI_SUCCESS;
+}
+
 int ofi_cntr_init(const struct fi_provider *prov, struct fid_domain *domain,
 		  struct fi_cntr_attr *attr, struct util_cntr *cntr,
 		  ofi_cntr_progress_func progress, void *context)
@@ -264,6 +336,7 @@ int ofi_cntr_init(const struct fi_provider *prov, struct fid_domain *domain,
 	int ret;
 	struct fi_wait_attr wait_attr;
 	struct fid_wait *wait;
+	enum ofi_lock_type ep_list_lock_type;
 
 	assert(progress);
 	ret = ofi_check_cntr_attr(prov, attr);
@@ -277,6 +350,7 @@ int ofi_cntr_init(const struct fi_provider *prov, struct fid_domain *domain,
 	ofi_atomic_initialize64(&cntr->err, 0);
 	dlist_init(&cntr->ep_list);
 
+	cntr->flags = attr->flags;
 	cntr->cntr_fid.fid.fclass = FI_CLASS_CNTR;
 	cntr->cntr_fid.fid.context = context;
 	cntr->cntr_fid.fid.ops = &util_cntr_fi_ops;
@@ -308,7 +382,21 @@ int ofi_cntr_init(const struct fi_provider *prov, struct fid_domain *domain,
 		return -FI_EINVAL;
 	}
 
-	ofi_mutex_init(&cntr->ep_list_lock);
+	if (attr->flags & FI_PEER) {
+		cntr->peer_cntr = ((struct fi_peer_cntr_context *) context)->cntr;
+		cntr->cntr_fid.ops = &util_peer_cntr_ops;
+	} else {
+		ret = util_init_peer_cntr(cntr);
+		if (ret)
+			goto errout_close_wait;
+	}
+
+	ep_list_lock_type = ofi_progress_lock_type(cntr->domain->threading,
+						   cntr->domain->control_progress);
+	ret = ofi_genlock_init(&cntr->ep_list_lock, ep_list_lock_type);
+	if (ret)
+		goto errout_close_wait;
+
 	ofi_atomic_inc32(&cntr->domain->ref);
 
 	/* CNTR must be fully operational before adding to wait set */
@@ -318,35 +406,14 @@ int ofi_cntr_init(const struct fi_provider *prov, struct fid_domain *domain,
 				  &cntr->cntr_fid.fid, 0);
 		if (ret) {
 			ofi_cntr_cleanup(cntr);
-			return ret;
+			goto errout_close_wait;
 		}
 	}
 
 	return 0;
+
+errout_close_wait:
+	if (wait && attr->wait_obj != FI_WAIT_SET)
+		fi_close(&wait->fid);
+	return ret;
 }
-
-ofi_ep_cntr_inc_func ofi_ep_tx_cntr_inc_funcs[] = {
-	[ofi_op_msg] = ofi_ep_tx_cntr_inc,
-	[ofi_op_tagged] = ofi_ep_tx_cntr_inc,
-	[ofi_op_read_req] = ofi_ep_rd_cntr_inc,
-	[ofi_op_read_rsp] = ofi_ep_rem_rd_cntr_inc,
-	[ofi_op_write] = ofi_ep_wr_cntr_inc,
-	[ofi_op_write_async] = ofi_ep_wr_cntr_inc,
-	[ofi_op_atomic] = ofi_ep_wr_cntr_inc,
-	[ofi_op_atomic_fetch] = ofi_ep_rd_cntr_inc,
-	[ofi_op_atomic_compare] = ofi_ep_rd_cntr_inc,
-	[ofi_op_read_async] = ofi_ep_rd_cntr_inc,
-};
-
-ofi_ep_cntr_inc_func ofi_ep_rx_cntr_inc_funcs[] = {
-	[ofi_op_msg] = ofi_ep_rx_cntr_inc,
-	[ofi_op_tagged] = ofi_ep_rx_cntr_inc,
-	[ofi_op_read_req] = ofi_ep_rem_rd_cntr_inc,
-	[ofi_op_read_rsp] = ofi_ep_rd_cntr_inc,
-	[ofi_op_write] = ofi_ep_rem_wr_cntr_inc,
-	[ofi_op_write_async] = ofi_ep_rem_wr_cntr_inc,
-	[ofi_op_atomic] = ofi_ep_rem_wr_cntr_inc,
-	[ofi_op_atomic_fetch] = ofi_ep_rem_rd_cntr_inc,
-	[ofi_op_atomic_compare] = ofi_ep_rem_rd_cntr_inc,
-	[ofi_op_read_async] = ofi_ep_rem_rd_cntr_inc,
-};

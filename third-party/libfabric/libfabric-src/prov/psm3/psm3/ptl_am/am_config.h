@@ -67,6 +67,14 @@
 #define AMSH_HAVE_CMA   0x1
 #define AMSH_HAVE_KASSIST 0x1
 
+#if defined(PSM_CUDA)
+/* Threshold for GPU rendezvous (aka scale-up transfer vs via CPU shared mem */
+#define PSMI_MQ_GPU_RV_THRESH 127
+#elif defined(PSM_ONEAPI)
+/* Threshold for GPU rendezvous (aka scale-up transfer vs via CPU shared mem */
+#define PSMI_MQ_GPU_RV_THRESH 127
+#endif
+
 /* Each block reserves some space at the beginning to store auxiliary data */
 #define AMSH_BLOCK_HEADER_SIZE  4096
 

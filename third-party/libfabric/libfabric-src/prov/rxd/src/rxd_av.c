@@ -457,7 +457,7 @@ int rxd_av_create(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 	return 0;
 
 err2:
-	ofi_av_close(&av->util_av);
+	(void) ofi_av_close(&av->util_av);
 err1:
 	free(av);
 	return ret;

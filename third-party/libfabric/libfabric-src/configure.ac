@@ -4,11 +4,12 @@ dnl Copyright (c) 2019-2021 Intel, Inc.  All rights reserved.
 dnl Copyright (c) 2019-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
 dnl (C) Copyright 2020 Hewlett Packard Enterprise Development LP
 dnl Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
+dnl Copyright (c) 2023 Tactical Computing Labs, LLC. All rights reserved.
 dnl
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.60])
-AC_INIT([libfabric], [1.17.1], [ofiwg@lists.openfabrics.org])
+AC_INIT([libfabric], [1.21.0], [ofiwg@lists.openfabrics.org])
 AC_CONFIG_SRCDIR([src/fabric.c])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(config)
@@ -58,7 +59,7 @@ AC_DEFINE_UNQUOTED([BUILD_ID],["$with_build_id"],
 
 # Override autoconf default CFLAG settings (e.g. "-g -O2") while still
 # allowing the user to explicitly set CFLAGS=""
-: ${CFLAGS="-fvisibility=hidden ${base_c_warn_flags}"}
+: ${CFLAGS="-pipe -fvisibility=hidden ${base_c_warn_flags}"}
 
 # AM_PROG_AS would set CFLAGS="-g -O2" by default if not set already so it
 # should not be called earlier
@@ -154,15 +155,34 @@ AS_IF([test x"$enable_debug" != x"no"],
 AC_DEFINE_UNQUOTED([ENABLE_DEBUG],[$dbg],
                    [defined to 1 if libfabric was configured with --enable-debug, 0 otherwise])
 
-AC_ARG_ENABLE([asan],
-	      [AS_HELP_STRING([--enable-asan],
-			      [Enable address sanitizer @<:@default=no@:>@])
-	      ],
-	      [],
-	      [enable_asan=no])
+AC_ARG_ENABLE([profile],
+              [AS_HELP_STRING([--enable-profile],
+                              [Enable profiling @<:@default=no@:>@])],
+              [],
+              [enable_profile=no])
 
-AS_IF([test x"$enable_asan" != x"no"],
-      [CFLAGS="-fsanitize=address $CFLAGS"])
+AS_IF([test x"$enable_profile" != x"no"],
+      [AC_DEFINE([HAVE_FABRIC_PROFILE], [1],
+                 [defined to 1 if libfabric was configured with --enable-profile, 0 otherwise])
+])
+
+AC_DEFUN([FI_ARG_ENABLE_SANITIZER],[
+        AC_ARG_ENABLE([$1],
+                      [AS_HELP_STRING([--enable-$1],
+                                      [Enable $3Sanitizer @<:@default=no@:>@])
+                      ],
+                      [],
+                      [enable_$1=no])
+        AS_IF([test x"$enable_$1" != x"no"],
+              [CFLAGS="-fsanitize=$2 $CFLAGS"])
+])
+
+m4_map([FI_ARG_ENABLE_SANITIZER],[
+       [asan, address, Address],
+       [lsan, leak, Leak],
+       [tsan, thread, Thread],
+       [ubsan, undefined, UndefinedBehavior]
+])
 
 dnl Checks for header files.
 dnl This is only necessary for Autoconf <v2.70.
@@ -352,7 +372,7 @@ AS_IF([test "$have_mm_atomics" -eq 1 -a "$ac_cv_type___int128" = "yes"],
           __atomic_exchange(&d, &s, &r, __ATOMIC_SEQ_CST);
           __atomic_compare_exchange(&d, &c, &s, 0, __ATOMIC_SEQ_CST,
 	  			    __ATOMIC_SEQ_CST);
-	 return 0;
+	 return !__atomic_is_lock_free(sizeof(d), NULL);
         ]])],
         [
             AC_MSG_RESULT(yes)
@@ -397,6 +417,35 @@ AC_ARG_ENABLE([embedded],
 AM_CONDITIONAL([EMBEDDED], [test x"$enable_embedded" = x"yes"])
 
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$ac_cv_version_script" = "yes")
+
+xpmem_happy=0
+AC_ARG_ENABLE([xpmem],
+	      [AS_HELP_STRING([--enable-xpmem@<:@=yes|no|PATH@:>@],
+			      [Enable xpmem (providers) @<:@default=yes@:>@
+			      (yes: enable xpmem; no: disable xpmem;
+			      PATH: enable xpmem and use xpmem installed under PATH)])],
+	      )
+
+AS_IF([test x"$enable_xpmem" != x"no"],
+      [FI_CHECK_PACKAGE([xpmem],
+                        [xpmem.h],
+                        [xpmem],
+                        [xpmem_make],
+                        [],
+                        [$enable_xpmem],
+                        [],
+                        [xpmem_happy=1])
+      ])
+
+AS_IF([test x"$enable_xpmem" != x"no" && test -n "$enable_xpmem" && test "$xpmem_happy" = "0" ],
+	[AC_MSG_ERROR([XPMEM support requested but XPMEM runtime not available.])])
+
+AC_DEFINE_UNQUOTED([HAVE_XPMEM], [$xpmem_happy],
+	  	   [XPMEM support availability])
+
+LIBS="$LIBS $xpmem_LIBS"
+CPPFLAGS="$CPPFLAGS $xpmem_CPPFLAGS"
+LDFLAGS="$LDFLAGS $xpmem_LDFLAGS"
 
 dnl Disable symbol versioning when -ipo is in CFLAGS or ipo is disabled by icc.
 dnl The gcc equivalent ipo (-fwhole-program) seems to work fine.
@@ -508,6 +557,16 @@ AS_IF([test $have_uffd -eq 1],
 AC_DEFINE_UNQUOTED([HAVE_UFFD_UNMAP], [$have_uffd],
 	[Define to 1 if platform supports userfault fd unmap])
 
+dnl restricted DL open
+restricted_dl=0
+AC_ARG_ENABLE([restricted_dl],
+              [AC_HELP_STRING([--enable-restricted-dl],
+                              [only look for dl providers under default location if FI_PROVIDER_PATH is not set])],
+              [restricted_dl=1],
+              [])
+AC_DEFINE_UNQUOTED([HAVE_RESTRICTED_DL], [$restricted_dl],
+  [Define to 1 to only look for dl providers under default location if FI_PROVIDER_PATH is not set])
+
 dnl Check support to intercept syscalls
 AC_CHECK_HEADERS_ONCE(elf.h sys/auxv.h)
 
@@ -537,11 +596,19 @@ AS_IF([test x"$with_uring" != x"no"],
 			[-luring],
 			[$with_uring],
 			[],
-			[have_liburing=1
-			AC_DEFINE_UNQUOTED([HAVE_LIBURING], [1], [io_uring support])]
-			[],
-			[])],
-      [])
+			[have_liburing=1])
+      ])
+
+AS_IF([test "$have_liburing" = "1"], [
+	# Requires liburing >= 2.1 for multishot support
+	save_CPPFLAGS="$CPPFLAGS"
+	AS_IF([test $with_uring != ""]
+	      [CPPFLAGS="$CPPFLAGS -I$with_uring/include/"])
+	AC_CHECK_DECLS([io_uring_prep_poll_multishot, IORING_CQE_F_MORE],
+		       [AC_DEFINE_UNQUOTED([HAVE_LIBURING], [1], [io_uring support])],
+		       [have_liburing=0], [[#include <liburing.h>]])
+	CPPFLAGS="$save_CPPFLAGS"
+])
 
 AS_IF([test x"$with_uring" != x"no" && test -n "$with_uring" && test $have_liburing -eq 0],
 	[AC_MSG_ERROR([io_uring support requested but liburing not available.])],
@@ -562,14 +629,15 @@ AC_ARG_WITH([cuda],
 
 have_cuda=0
 cuda_dlopen=0
+have_cuda_dmabuf=0
 AC_ARG_ENABLE([cuda-dlopen],
     [AS_HELP_STRING([--enable-cuda-dlopen],
         [Enable dlopen of CUDA libraries @<:@default=no@:>@])
     ],
     [
-        AS_IF([test x"$with_dlopen" = "no"],
+        AS_IF([test "$with_dlopen" = "no"],
               [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
-	cuda_dlopen=1
+	AS_IF([test "$enable_cuda_dlopen" != "no"], [cuda_dlopen=1])
     ])
 
 AS_IF([test x"$with_cuda" != x"no"],
@@ -587,11 +655,27 @@ AS_IF([test x"$with_cuda" != x"no"],
 				 [cuda_runtime.h],
 				 [cudart],
 				 [cudaMemcpy],
-				 [-lcuda],
+				 [-lcuda -lnvidia-ml],
 				 [$with_cuda],
 				 [],
 				 [have_cuda=1])
 	      ])
+
+	have_cuda_dmabuf=1
+	AC_CHECK_DECL([cuMemGetHandleForAddressRange],
+			[],
+			[have_cuda_dmabuf=0],
+			[[#include <cuda.h>]])
+
+	AC_CHECK_DECL([CU_DEVICE_ATTRIBUTE_DMA_BUF_SUPPORTED],
+			[],
+			[have_cuda_dmabuf=0],
+			[[#include <cuda.h>]])
+
+	AC_CHECK_DECL([CU_MEM_RANGE_HANDLE_TYPE_DMA_BUF_FD],
+			[],
+			[have_cuda_dmabuf=0],
+			[[#include <cuda.h>]])
       ])
 
 AC_DEFINE_UNQUOTED([ENABLE_CUDA_DLOPEN], [$cuda_dlopen], [dlopen CUDA libraries])
@@ -600,6 +684,8 @@ AS_IF([test x"$with_cuda" != x"no" && test -n "$with_cuda" && test "$have_cuda" 
 	[AC_MSG_ERROR([CUDA support requested but CUDA runtime not available.])])
 
 AC_DEFINE_UNQUOTED([HAVE_CUDA], [$have_cuda], [CUDA support])
+
+AC_DEFINE_UNQUOTED([HAVE_CUDA_DMABUF], [$have_cuda_dmabuf], [CUDA dmabuf support])
 
 AS_IF([test "$cuda_dlopen" != "1"], [LIBS="$LIBS $cuda_LIBS"])
 AS_IF([test "$have_cuda" = "1" && test x"$with_cuda" != x"yes"],
@@ -618,9 +704,9 @@ AC_ARG_ENABLE([ze-dlopen],
         [Enable dlopen of ZE libraries @<:@default=no@:>@])
     ],
     [
-        AS_IF([test x"$with_dlopen" = "no"],
+        AS_IF([test "$with_dlopen" = "no"],
               [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
-	ze_dlopen=1
+	AS_IF([test "$enable_ze_dlopen" != "no"], [ze_dlopen=1])
     ])
 
 AS_IF([test x"$with_ze" != x"no"],
@@ -677,7 +763,7 @@ AC_ARG_WITH([neuron],
 
 _FI_CHECK_PACKAGE_HEADER([neuron], [nrt/nrt.h], [$with_neuron],
 	[
-		AS_IF([test x"$with_dlopen" = "no"],
+		AS_IF([test "$with_dlopen" = "no"],
 			[AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
 		have_neuron=1
 	],
@@ -700,7 +786,7 @@ AS_IF([test x"$with_synapseai" != x"no"],
       [
 		_FI_CHECK_PACKAGE_HEADER([synapseai], [habanalabs/synapse_api.h], [$with_synapseai],
 		[
-			AS_IF([test x"$with_dlopen" = "no"],
+			AS_IF([test "$with_dlopen" = "no"],
 				[AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
 			have_synapseai=1
 		],)
@@ -712,7 +798,7 @@ AS_IF([test x"$with_synapseai" != x"no" && test -n "$with_synapseai" && test "$h
 
 AC_DEFINE_UNQUOTED([HAVE_SYNAPSEAI], [$have_synapseai], [SynapseAI support])
 
-AS_IF([test "$have_synapseai" = "1" && test x"$with_synaposeai" != x"yes"],
+AS_IF([test "$have_synapseai" = "1" && test x"$with_synapseai" != x"yes"],
       [CPPFLAGS="$CPPFLAGS $synapseai_CPPFLAGS"
        LDFLAGS="$LDFLAGS $synapseai_LDFLAGS"])
 
@@ -720,17 +806,17 @@ enable_memhooks=1
 AC_ARG_ENABLE([memhooks-monitor],
               [AS_HELP_STRING([--disable-memhooks-monitor],
                               [Determine whether memhooks memory monitor is disabled.])],
-              [enable_memhooks=0],
+              [AS_IF([test "$enable_memhooks_monitor" = "no"],[enable_memhooks=0])],
               [])
 
 AC_DEFINE_UNQUOTED(ENABLE_MEMHOOKS_MONITOR, [$enable_memhooks],
 	[Define to 1 to enable memhooks memory monitor])
 
-dnl Check for LTTNG tracking capability
+dnl Check for LTTNG tracing capability
 have_lttng=0
 AC_ARG_WITH([lttng],
     AS_HELP_STRING([--with-lttng=DIR],
-           [Enable tracing capability with LTTNG @<:@default=no@:>@]))
+           [Enable LTTng userspace tracepoints @<:@default=no@:>@]))
 
 AS_IF([test -n "$with_lttng" && test x"$with_lttng" != x"no"],
       [FI_CHECK_PACKAGE([lttng],
@@ -741,15 +827,15 @@ AS_IF([test -n "$with_lttng" && test x"$with_lttng" != x"no"],
                         [$with_lttng],
                         [],
                         [have_lttng=1],
-                        [AC_MSG_ERROR([LTTNG is requested but no found. Please check your prefix])])
+                        [AC_MSG_ERROR([LTTng-UST support requested but liblttng-ust is not available.])])
       ])
 
-AS_IF([test "$have_lttng" = "1"],
+AS_IF([test "$have_lttng" = "1" && test x"$with_lttng" != x"yes"],
       [CPPFLAGS="$CPPFLAGS $lttng_CPPFLAGS"
        LDFLAGS="$LDFLAGS $lttng_LDFLAGS"])
 
 AM_CONDITIONAL([HAVE_LTTNG], test "$have_lttng" -eq 1)
-AC_DEFINE_UNQUOTED([HAVE_LTTNG], [$have_lttng], [Build with LTTNG tracing])
+AC_DEFINE_UNQUOTED([HAVE_LTTNG], [$have_lttng], [Build with LTTng userspace tracepoints])
 
 AS_IF([test "$enable_memhooks" = "1"], [
 	AC_CHECK_FUNCS([__curbrk __clear_cache])
@@ -762,7 +848,7 @@ enable_uffd=1
 AC_ARG_ENABLE([uffd-monitor],
               [AS_HELP_STRING([--disable-uffd-monitor],
                               [Determine whether uffd memory monitor is disabled.])],
-              [enable_uffd=0],
+              [AS_IF([test "$enable_uffd_monitor" = "no"], [enable_uffd=0])],
               [])
 
 AC_DEFINE_UNQUOTED(ENABLE_UFFD_MONITOR, [$enable_uffd],
@@ -770,7 +856,7 @@ AC_DEFINE_UNQUOTED(ENABLE_UFFD_MONITOR, [$enable_uffd],
 
 
 AH_BOTTOM([
-#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)) && ENABLE_MEMHOOKS_MONITOR
+#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR
 #define HAVE_MEMHOOKS_MONITOR 1
 #else
 #define HAVE_MEMHOOKS_MONITOR 0
@@ -796,9 +882,9 @@ AC_ARG_ENABLE([gdrcopy-dlopen],
         [Enable dlopen of gdrcopy libraries @<:@default=no@:>@])
     ],
     [
-        AS_IF([test x"$with_dlopen" = "no"],
+        AS_IF([test "$with_dlopen" = "no"],
               [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
-	gdrcopy_dlopen=1
+	AS_IF([test "$enable_gdrcopy_dlopen" != "no"], [gdrcopy_dlopen=1])
     ])
 
 AS_IF([test "$have_cuda" = 1 && test x"$with_gdrcopy" != x"no"],
@@ -844,14 +930,15 @@ AC_ARG_WITH([rocr],
 
 have_rocr=0
 rocr_dlopen=0
+have_hsa_amd_portable_export_dmabuf=0
 AC_ARG_ENABLE([rocr-dlopen],
     [AS_HELP_STRING([--enable-rocr-dlopen],
         [Enable dlopen of ROCR libraries @<:@default=no@:>@])
     ],
     [
-        AS_IF([test x"$with_dlopen" = "no"],
+        AS_IF([test "$with_dlopen" = "no"],
               [AC_MSG_ERROR([dlopen not found.  libfabric requires libdl.])])
-	rocr_dlopen=1
+	AS_IF([test "$enable_rocr_dlopen" != "no"], [rocr_dlopen=1])
     ])
 
 AS_IF([test x"$with_rocr" != x"no"],
@@ -886,7 +973,20 @@ AC_DEFINE_UNQUOTED([HAVE_ROCR], [$have_rocr], [ROCR support])
 AS_IF([test "$rocr_dlopen" != "1"], [LIBS="$LIBS $rocr_LIBS"])
 AS_IF([test "$have_rocr" = "1" && test x"$with_rocr" != x"yes"],
       [CPPFLAGS="$CPPFLAGS $rocr_CPPFLAGS"
-       LDFLAGS="$LDFLAGS $rocr_LDFLAGS"])
+       LDFLAGS="$LDFLAGS $rocr_LDFLAGS"
+       have_hsa_amd_portable_export_dmabuf=1
+       AC_CHECK_DECL([hsa_amd_portable_export_dmabuf],
+                     [],
+                     [have_hsa_amd_portable_export_dmabuf=0],
+                     [[#include <hsa/hsa_ext_amd.h>]])
+
+       AC_CHECK_DECL([HSA_AMD_SYSTEM_INFO_DMABUF_SUPPORTED],
+                     [],
+                     [have_hsa_amd_portable_export_dmabuf=0],
+                     [[#include <hsa/hsa.h>]])
+      ],
+      [])
+AC_DEFINE_UNQUOTED([HAVE_HSA_AMD_PORTABLE_EXPORT_DMABUF],[$have_hsa_amd_portable_export_dmabuf],[dmabuf handle support])
 
 AC_CHECK_SIZEOF([void *])
 
@@ -901,26 +1001,26 @@ AS_CASE(["$LD"],
 
 dnl Provider-specific checks
 FI_PROVIDER_INIT
-FI_PROVIDER_SETUP([psm])
 FI_PROVIDER_SETUP([psm2])
 FI_PROVIDER_SETUP([psm3])
 FI_PROVIDER_SETUP([sockets])
 FI_PROVIDER_SETUP([verbs])
 FI_PROVIDER_SETUP([efa])
+FI_PROVIDER_SETUP([cxi])
 dnl The usnic provider must be setup after the verbs provider.  See
 dnl prov/usnic/configure.m4 for details.
 FI_PROVIDER_SETUP([usnic])
-FI_PROVIDER_SETUP([gni])
 FI_PROVIDER_SETUP([udp])
 FI_PROVIDER_SETUP([tcp])
-FI_PROVIDER_SETUP([net])
 FI_PROVIDER_SETUP([rxm])
 FI_PROVIDER_SETUP([mrail])
 FI_PROVIDER_SETUP([rxd])
-FI_PROVIDER_SETUP([bgq])
 FI_PROVIDER_SETUP([shm])
-FI_PROVIDER_SETUP([rstream])
+FI_PROVIDER_SETUP([sm2])
+FI_PROVIDER_SETUP([ucx])
 FI_PROVIDER_SETUP([perf])
+FI_PROVIDER_SETUP([trace])
+FI_PROVIDER_SETUP([profile])
 FI_PROVIDER_SETUP([hook_debug])
 FI_PROVIDER_SETUP([hook_hmem])
 FI_PROVIDER_SETUP([dmabuf_peer_mem])

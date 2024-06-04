@@ -71,6 +71,7 @@
 #include <poll.h>
 #include <inttypes.h>
 #include "utils_sysfs.h"
+#include "utils_env.h"
 #include "sockets_service.h"
 #include "psmi_wrappers.h"
 #include "psm_netutils.h"
@@ -463,27 +464,42 @@ int psm3_hfp_sockets_get_port_subnet(int unit, int port, int addr_index,
 /* in units of bits/sec */
 int psm3_hfp_sockets_get_port_speed(int unit, int port, uint64_t *speed)
 {
-	char *speedstr = NULL;
-	int ret = psm3_sysfs_port_read(unit, port, "speed", &speedstr);
-	if (ret == -1) {
-		_HFI_DBG("Failed to get port speed for unit %u/%u: %s\n",
-			unit, port, strerror(errno));
-		return ret;
-	}
-	uint64_t mbps = (uint64_t)strtoul(speedstr, NULL, 0);
-	if (mbps == 0 || mbps == ULONG_MAX) {
-		_HFI_DBG("Failed to parse port speed(%s) for unit %u/%u: %s\n",
-			speedstr, unit, port, strerror(errno));
-		errno = EINVAL;
-		ret = -1;
-		goto free;
-	}
+	uint64_t mbps;
 
+	mbps = psm3_parse_force_speed();
+	if (! mbps) {
+		char *speedstr = NULL;
+		if (psm3_sysfs_port_read(unit, port, "speed", &speedstr) < 0) {
+			_HFI_DBG("Failed to get port speed for unit %u/%u: %s\n",
+				unit, port, strerror(errno));
+#if PSM_DEFAULT_SPEED > 0
+			mbps = PSM_DEFAULT_SPEED;
+			goto done;
+#else
+			return -1;
+#endif
+		}
+		mbps = (uint64_t)strtoul(speedstr, NULL, 0);
+		if (mbps == 0 || mbps == ULONG_MAX) {
+			_HFI_DBG("Failed to parse port speed(%s) for unit %u/%u: %s\n",
+				speedstr, unit, port, strerror(errno));
+			psm3_sysfs_free(speedstr);
+#if PSM_DEFAULT_SPEED > 0
+			mbps = PSM_DEFAULT_SPEED;
+			goto done;
+#else
+			errno = EINVAL;
+			return -1;
+#endif
+		}
+		psm3_sysfs_free(speedstr);
+	}
+#if PSM_DEFAULT_SPEED > 0
+done:
+#endif
 	if (speed) *speed = (uint64_t)mbps * 1000 * 1000;
-	_HFI_VDBG("Got speed for for unit/port %d/%d: %"PRIu64" Mb/s \n",
+	_HFI_DBG("Got speed for for unit/port %d/%d: %"PRIu64" Mb/s \n",
 		unit, port, mbps);
-free:
-	psm3_sysfs_free(speedstr);
-	return ret < 0 ? -1 : 0;
+	return 0;
 }
 #endif /* PSM_SOCKETS */

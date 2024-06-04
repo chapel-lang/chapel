@@ -189,6 +189,12 @@ typedef enum
 		 * This should only be true if PSM_HAL_CAP_RDMA also true.
 		 */
 	PSM_HAL_CAP_GPUDIRECT_RDMA              = (1UL << 6),
+		/* Does the HAL support Nvidia GPU? */
+	PSM_HAL_CAP_NVIDIA_GPU                  = (1UL << 7),
+		/* Does the HAL support INTEL GPU? */
+	PSM_HAL_CAP_INTEL_GPU                   = (1UL << 8),
+		/* does HAL allow process to process via same NIC */
+	PSM_HAL_CAP_NIC_LOOPBACK		= (1UL << 9),
 
 } psmi_hal_capability_bits;
 
@@ -200,11 +206,12 @@ typedef enum
 	PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD	= (1UL <<  0),
 	/* Rx thread is started. */
 	PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED	= (1UL <<  1),
-	PSM_HAL_PSMI_RUNTIME_INTR_ENABLED       = (1UL <<  2),
-	PSM_HAL_PARAMS_VALID_NUM_UNITS          = (1UL <<  4),
-	PSM_HAL_PARAMS_VALID_NUM_PORTS          = (1UL <<  5),
-	PSM_HAL_PARAMS_VALID_DEFAULT_PKEY       = (1UL <<  6),
-	PSM_HAL_PARAMS_VALID_CACHE              = (1UL <<  7),
+	PSM_HAL_PSMI_RUNTIME_RX_THREAD_WAITING	= (1UL <<  2),
+	PSM_HAL_PSMI_RUNTIME_INTR_ENABLED       = (1UL <<  3),
+	PSM_HAL_PARAMS_VALID_NUM_UNITS          = (1UL <<  5),
+	PSM_HAL_PARAMS_VALID_NUM_PORTS          = (1UL <<  6),
+	PSM_HAL_PARAMS_VALID_DEFAULT_PKEY       = (1UL <<  7),
+	PSM_HAL_PARAMS_VALID_CACHE              = (1UL <<  8),
 
 } psmi_hal_sw_status;
 
@@ -221,6 +228,10 @@ typedef struct _psmi_hal_params
 	uint16_t   default_pkey;
 	int8_t     *unit_active,*unit_active_valid;
 	int8_t     *port_active,*port_active_valid;
+	uint64_t   *port_speed;
+	int8_t     *port_speed_valid;
+	int        *port_lid;
+	int8_t     *port_lid_valid;
 	uint16_t   *num_contexts,*num_contexts_valid;
 	uint16_t   *num_free_contexts,*num_free_contexts_valid;
 		// information from port_get_subnet
@@ -230,6 +241,7 @@ typedef struct _psmi_hal_params
 	psmi_naddr128_t   *port_subnet_addr;
 	int        *port_subnet_idx;
 	psmi_gid128_t   *port_subnet_gid;
+	char       **port_subnet_name;
 
 	int8_t     *unit_pci_bus_valid;
 	uint32_t   *unit_pci_bus_domain;
@@ -247,10 +259,16 @@ typedef struct _psmi_hal_params
 #define PSM_HAL_ALG_ACROSS     0
 #define PSM_HAL_ALG_WITHIN     1
 #define PSM_HAL_ALG_ACROSS_ALL 2
+#define PSM_HAL_ALG_CPU_CENTRIC 3
+#ifdef PSM_HAVE_GPU_CENTRIC_AFFINITY
+#define PSM_HAL_ALG_GPU_CENTRIC 4
+#endif
 
 
 typedef enum {
-	PSMI_HAL_POLL_TYPE_URGENT = 1
+	PSMI_HAL_POLL_TYPE_NONE = 0,
+	PSMI_HAL_POLL_TYPE_URGENT = 1,
+	PSMI_HAL_POLL_TYPE_ANYRCV = 2
 } psmi_hal_poll_type;
 
 /* Forward declaration of incomplete struct type _psmi_hal_instance and
@@ -298,7 +316,7 @@ struct _psmi_hal_instance
 	/* Initialize PSM3_PRINT_STATS stats for given ep */
 	void (*hfp_context_initstats)(psm2_ep_t ep);
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	void (*hfp_gdr_open)(void);
 #endif
 
@@ -399,18 +417,17 @@ struct _psmi_hal_instance
 	psm2_error_t (*hfp_ips_path_rec_init)(struct ips_proto *proto,
 				struct ips_path_rec *path_rec,
 				struct _ibta_path_rec *response);
+	/* background threads */
 	psm2_error_t (*hfp_ips_ptl_pollintr)(psm2_ep_t ep,
 				struct ips_recvhdrq *recvq, int fd_pipe,
 				int next_timeout,
-				uint64_t *pollok, uint64_t *pollcyc);
+				uint64_t *pollok, uint64_t *pollcyc, uint64_t *pollintr);
+
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	/* Direct GPU Copy */
 	void (*hfp_gdr_close)(void);
 	void* (*hfp_gdr_convert_gpu_to_host_addr)(unsigned long buf,
                                 size_t size, int flags, psm2_ep_t ep);
-#ifdef PSM_ONEAPI
-	void (*hfp_gdr_munmap_gpu_to_host_addr)(unsigned long buf,
-                                size_t size, int flags, psm2_ep_t ep);
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 	/* Given an open context and index, return an error, or the
 	 * corresponding pkey for the index as programmed by the SM */
@@ -447,6 +464,34 @@ struct _psmi_hal_instance
    The HIC should not modify the contents of the HAL instance directly. */
 extern psmi_hal_instance_t *psm3_hal_current_hal_instance;
 
+/* This block is part of a workaround to force static compilation to include
+ * HAL objects when linking. By referencing a dummy variable located within
+ * the HAL object, this forces the linker to not trim out the HAL because a
+ * symbol is required.
+ */
+#ifdef PSM_VERBS
+extern int verbs_hal_called;
+#define PSMI_HAL_INI_VERBS() do { verbs_hal_called = 1; } while(0)
+#else
+#define PSMI_HAL_INI_VERBS()
+#endif
+#ifdef PSM_SOCKETS
+extern int sockets_hal_called;
+#define PSMI_HAL_INI_SOCKETS() do { sockets_hal_called = 1; } while(0)
+#else
+#define PSMI_HAL_INI_SOCKETS()
+#endif
+#define PSMI_HAL_INI_GEN1()
+/* This macro isolates the ifdefs to only the above block, so that the only
+ * thing needed to be called is the PSMI_HAL_INI() macro to ensure the
+ * workaround is valid. */
+#define PSMI_HAL_INI() do { \
+	PSMI_HAL_INI_VERBS(); \
+	PSMI_HAL_INI_SOCKETS(); \
+	PSMI_HAL_INI_GEN1(); \
+	} while(0)
+
+
 /* Declare functions called by the HAL INSTANCES. */
 void psm3_hal_register_instance(psmi_hal_instance_t *);
 
@@ -463,16 +508,22 @@ int psm3_hal_initialize(int devid_enabled[PTL_MAX_INIT]);
 
 int psm3_hal_finalize(void);
 
+// indicate whether we cache data during PSM3 init
+extern int init_cache_on;
+
 enum psmi_hal_pre_init_cache_func_krnls
 {
 	psmi_hal_pre_init_cache_func_get_num_units,
 	psmi_hal_pre_init_cache_func_get_num_ports,
 	psmi_hal_pre_init_cache_func_get_unit_active,
 	psmi_hal_pre_init_cache_func_get_port_active,
+	psmi_hal_pre_init_cache_func_get_port_speed,
+	psmi_hal_pre_init_cache_func_get_port_lid,
 	psmi_hal_pre_init_cache_func_get_num_contexts,
 	psmi_hal_pre_init_cache_func_get_num_free_contexts,
 	psmi_hal_pre_init_cache_func_get_default_pkey,
 	psmi_hal_pre_init_cache_func_get_port_subnet,
+	psmi_hal_pre_init_cache_func_get_port_subnet_name,
 	psmi_hal_pre_init_cache_func_get_unit_pci_bus,
 	psmi_hal_pre_init_cache_func_get_unit_device_id,
 	psmi_hal_pre_init_cache_func_get_unit_device_version,
@@ -513,13 +564,10 @@ int psm3_hal_pre_init_cache_func(enum psmi_hal_pre_init_cache_func_krnls k, ...)
 
 	/* DISPATCH_FUNC */
 #define psmi_hal_get_unit_name(...)                          PSMI_HAL_DISPATCH_FUNC(get_unit_name,__VA_ARGS__)
-#define psmi_hal_get_port_subnet_name(...)                          PSMI_HAL_DISPATCH_FUNC(get_port_subnet_name,__VA_ARGS__)
-#define psmi_hal_get_port_speed(...)                            PSMI_HAL_DISPATCH_FUNC(get_port_speed,__VA_ARGS__)
-#define psmi_hal_get_port_lid(...)				PSMI_HAL_DISPATCH_FUNC(get_port_lid,__VA_ARGS__)
 #define psmi_hal_mq_init_defaults(...)		                PSMI_HAL_DISPATCH_FUNC(mq_init_defaults,__VA_ARGS__)
 #define psmi_hal_ep_open_opts_get_defaults(...)	                PSMI_HAL_DISPATCH_FUNC(ep_open_opts_get_defaults,__VA_ARGS__)
 #define psmi_hal_context_initstats(...)				PSMI_HAL_DISPATCH_FUNC(context_initstats,__VA_ARGS__)
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 #define psmi_hal_gdr_open(...)                                  PSMI_HAL_DISPATCH_FUNC(gdr_open,__VA_ARGS__)
 #endif
 #define psmi_hal_finalize_(...)                                 PSMI_HAL_DISPATCH_FUNC(finalize_,__VA_ARGS__)
@@ -530,10 +578,13 @@ int psm3_hal_pre_init_cache_func(enum psmi_hal_pre_init_cache_func_krnls k, ...)
 #define psmi_hal_get_num_ports_(...)                            PSMI_HAL_DISPATCH_PI(get_num_ports,##__VA_ARGS__)
 #define psmi_hal_get_unit_active(...)                           PSMI_HAL_DISPATCH_PI(get_unit_active,__VA_ARGS__)
 #define psmi_hal_get_port_active(...)                           PSMI_HAL_DISPATCH_PI(get_port_active,__VA_ARGS__)
+#define psmi_hal_get_port_speed(...)                            PSMI_HAL_DISPATCH_PI(get_port_speed,__VA_ARGS__)
+#define psmi_hal_get_port_lid(...)				PSMI_HAL_DISPATCH_PI(get_port_lid,__VA_ARGS__)
 #define psmi_hal_get_num_contexts(...)                          PSMI_HAL_DISPATCH_PI(get_num_contexts,__VA_ARGS__)
 #define psmi_hal_get_num_free_contexts(...)                     PSMI_HAL_DISPATCH_PI(get_num_free_contexts,__VA_ARGS__)
 #define psmi_hal_get_default_pkey(...)			        PSMI_HAL_DISPATCH_PI(get_default_pkey,##__VA_ARGS__)
 #define psmi_hal_get_port_subnet(...)				PSMI_HAL_DISPATCH_PI(get_port_subnet,__VA_ARGS__)
+#define psmi_hal_get_port_subnet_name(...)                      PSMI_HAL_DISPATCH_PI(get_port_subnet_name,__VA_ARGS__)
 #define psmi_hal_get_unit_pci_bus(...)                          PSMI_HAL_DISPATCH_PI(get_unit_pci_bus,__VA_ARGS__)
 #define psmi_hal_get_unit_device_id(...)                        PSMI_HAL_DISPATCH_PI(get_unit_device_id,__VA_ARGS__)
 #define psmi_hal_get_unit_device_version(...)                   PSMI_HAL_DISPATCH_PI(get_unit_device_version,__VA_ARGS__)
@@ -568,9 +619,6 @@ int psm3_hal_pre_init_cache_func(enum psmi_hal_pre_init_cache_func_krnls k, ...)
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 #define psmi_hal_gdr_close(...)                                 PSMI_HAL_DISPATCH(gdr_close,__VA_ARGS__)
 #define psmi_hal_gdr_convert_gpu_to_host_addr(...)              PSMI_HAL_DISPATCH(gdr_convert_gpu_to_host_addr,__VA_ARGS__)
-#ifdef PSM_ONEAPI
-#define psmi_hal_gdr_munmap_gpu_to_host_addr(...)               PSMI_HAL_DISPATCH(gdr_munmap_gpu_to_host_addr,__VA_ARGS__)
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 
 #define psmi_hal_get_port_index2pkey(...)			PSMI_HAL_DISPATCH(get_port_index2pkey,__VA_ARGS__)

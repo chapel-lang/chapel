@@ -72,6 +72,9 @@
 #define IPS_PROTO_ERRCHK_MS_MAX_DEFAULT	640	/* in millisecs */
 #define IPS_PROTO_ERRCHK_FACTOR_DEFAULT 2
 #define PSM_TID_TIMEOUT_DEFAULT "160:640:2"	/* update from above params */
+#ifdef PSM_FI
+#define PSM_TID_TIMEOUT_DEFAULT_US "160000:640000:2" /* update from above params */
+#endif
 
 #ifdef PSM_FI
 /* Fault injection, becomes parameters to psm3_faultinj_getspec so
@@ -93,6 +96,7 @@
 #define IPS_FAULTINJ_SENDLOST	5000	/* 1 every X pkts dropped at send */
 #define IPS_FAULTINJ_SENDPART	10	/* 1 every X pkts partial send */
 #define IPS_FAULTINJ_RECVPART	10	/* 1 every X pkts partial recv */
+#define IPS_FAULTINJ_CONNUNKN	500000	/* 1 every X pkts send with unknown connection */
 #ifdef PSM_HAVE_REG_MR
 #define IPS_FAULTINJ_RQ_LKEY	5000	/* 0 every X RQ WQE bad lkey */
 #define IPS_FAULTINJ_SQ_LKEY	5000	/* 0 every X SQ WQE bad lkey */
@@ -103,6 +107,10 @@
 #define IPS_FAULTINJ_REG_MR	100	/* 1 every X reg_mr ENOMEM */
 #define IPS_FAULTINJ_NONPRI_REG_MR 50	/* 1 every X non-pri reg_mr ENOMEM */
 #define IPS_FAULTINJ_PRI_REG_MR	1000	/* 1 every X pri reg_mr ENOMEM */
+#ifdef UMR_CACHE
+#define IPS_FAULTINJ_UFFD_REG	1000	/* 1 every X uffd_alloc_region ENOMEM */
+#define IPS_FAULTINJ_UFFD_REGISTER 1000	/* 1 every X uffd REGISTER ENOMEM */
+#endif
 #endif /* PSM_HAVE_REG_MR */
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 #define IPS_FAULTINJ_GDRMMAP	100	/* 1 every X GPU pin and mmap ENOMEM */

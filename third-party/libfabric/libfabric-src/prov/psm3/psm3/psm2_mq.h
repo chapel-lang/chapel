@@ -173,7 +173,8 @@ extern "C" {
  *   @li If and when possible, receive buffers should be posted as early as
  *       possible and ideally before calling into the progress engine.
  *   @li Use of rendezvous messaging that can be controlled with
- *       @ref PSM2_MQ_RNDV_HFI_SZ and @ref PSM2_MQ_RNDV_SHM_SZ options.  These
+ *       @ref PSM2_MQ_RNDV_HFI_SZ, @ref PSM2_MQ_RNDV_SHM_SZ and
+ *       PSM2_MQ_GPU_RNDV_SHM_SZ options.  These
  *       options default to values determined to make effective use of
  *       bandwidth and are hence not advisable for all communication message
  *       sizes, but rendezvous messages inherently prevent unexpected
@@ -357,7 +358,7 @@ union psm2_mq_tag {
 	};
 	struct {
 		uint64_t tag64; /**< uint64_t tag values */
-		uint32_t res; /**< uint32_t reserved */
+		uint32_t rem32; /**< uint32_t remaining 32 bits or unused */
 	};
 } psm2_mq_tag_t;
 
@@ -477,6 +478,7 @@ struct psm2_mq_req_user {
  * @param[in] option Index of option to retrieve.  Possible values are:
  *            @li @ref PSM2_MQ_RNDV_HFI_SZ
  *            @li @ref PSM2_MQ_RNDV_SHM_SZ
+ *            @li @ref PSM2_MQ_GPU_RNDV_SHM_SZ
  *            @li @ref PSM2_MQ_MAX_SYSBUF_MBYTES
  *
  * @param[in] value Pointer to storage that can be used to store the value of
@@ -498,6 +500,7 @@ psm2_error_t psm3_mq_getopt(psm2_mq_t mq, int option, void *value);
  * @param[in] option Index of option to retrieve.  Possible values are:
  *            @li @ref PSM2_MQ_RNDV_HFI_SZ
  *            @li @ref PSM2_MQ_RNDV_SHM_SZ
+ *            @li @ref PSM2_MQ_GPU_RNDV_SHM_SZ
  *            @li @ref PSM2_MQ_MAX_SYSBUF_MBYTES
  *
  * @param[in] value Pointer to storage that contains the value to be updated
@@ -519,6 +522,9 @@ psm2_error_t psm3_mq_setopt(psm2_mq_t mq, int option, const void *value);
 
 #define PSM2_MQ_FLAG_SENDSYNC	0x01
 				/**< MQ Send Force synchronous send */
+#define PSM2_MQ_FLAG_INJECT	0x02
+				/**< MQ Send Force bounce buffer for */
+				/* FI_INJECT/fi_inject behavior */
 
 #define PSM2_MQ_REQINVALID	((psm2_mq_req_t)(NULL))
 				/**< MQ request completion value */
@@ -710,6 +716,9 @@ psm3_mq_imrecv(psm2_mq_t mq, uint32_t flags, void *buf, uint32_t len,
  *            synchronously, meaning that the message will not be sent until
  *            the receiver acknowledges that it has matched the send with a
  *            receive buffer.
+ *            @li PSM2_MQ_FLAG_INJECT tells PSM to consume the send buffer
+ *            immediately to comply with FI_INJECT/fi_inject behavior,
+ *            cannot be used in conjunction with PSM2_MQ_FLAG_SENDSYNC.
  * @param[in] stag Message Send Tag
  * @param[in] buf Source buffer pointer
  * @param[in] len Length of message starting at @c buf.
@@ -742,6 +751,9 @@ psm3_mq_send(psm2_mq_t mq, psm2_epaddr_t dest, uint32_t flags, uint64_t stag,
  *            synchronously, meaning that the message will not be sent until
  *            the receiver acknowledges that it has matched the send with a
  *            receive buffer.
+ *            @li PSM2_MQ_FLAG_INJECT tells PSM to consume the send buffer
+ *            immediately to comply with FI_INJECT/fi_inject behavior,
+ *            cannot be used in conjunction with PSM2_MQ_FLAG_SENDSYNC.
  * @param[in] stag Message Send Tag
  * @param[in] buf Source buffer pointer
  * @param[in] len Length of message starting at @c buf.
@@ -776,6 +788,9 @@ psm3_mq_send2(psm2_mq_t mq, psm2_epaddr_t dest, uint32_t flags,
  *            synchronously, meaning that the message will not be sent until
  *            the receiver acknowledges that it has matched the send with a
  *            receive buffer.
+ *            @li PSM2_MQ_FLAG_INJECT tells PSM to consume the send buffer
+ *            immediately to comply with FI_INJECT/fi_inject behavior,
+ *            cannot be used in conjunction with PSM2_MQ_FLAG_SENDSYNC.
  * @param[in] stag Message Send Tag
  * @param[in] buf Source buffer pointer
  * @param[in] len Length of message starting at @c buf.
@@ -841,6 +856,9 @@ psm3_mq_isend(psm2_mq_t mq, psm2_epaddr_t dest, uint32_t flags, uint64_t stag,
  *            synchronously, meaning that the message will not be sent until
  *            the receiver acknowledges that it has matched the send with a
  *            receive buffer.
+ *            @li PSM2_MQ_FLAG_INJECT tells PSM to consume the send buffer
+ *            immediately to comply with FI_INJECT/fi_inject behavior,
+ *            cannot be used in conjunction with PSM2_MQ_FLAG_SENDSYNC.
  * @param[in] stag Message Send Tag, array of three 32-bit values.
  * @param[in] buf Source buffer pointer
  * @param[in] len Length of message starting at @c buf.
@@ -1569,6 +1587,8 @@ struct dsa_stats {
 	// DSA statistics at memcpy level (eg. per shm Fifo Long Element)
 	uint64_t	dsa_copy;	// number of individual DSA memcopy
 	uint64_t	dsa_copy_bytes;
+	uint64_t	dsa_swq_wait_ns;// in ns waiting for SWQ enqcmd
+	uint64_t	dsa_swq_no_wait;// num SWQ enqcmd with no retry
 	uint64_t	dsa_wait_ns;	// in ns after CPU memcpy portion done
 	uint64_t	dsa_no_wait;	// num copies with no wait
 	uint64_t	dsa_page_fault_rd; // copies which had read page fault
@@ -1591,7 +1611,7 @@ struct psm2_mq_stats {
 	/** this count includes unexpected zero length eager recv */
 	uint64_t rx_sys_num;
 
-	/** Total Messages transmitted (shm and hfi) */
+	/** Total Messages transmitted (shm, self and nic) */
 	uint64_t tx_num;
 	/** Messages transmitted eagerly */
 	uint64_t tx_eager_num;
@@ -1601,6 +1621,10 @@ struct psm2_mq_stats {
 	uint64_t tx_rndv_num;
 	/** Bytes transmitted using any rendezvous mechanism */
 	uint64_t tx_rndv_bytes;
+	/** Messages transmitted (self only) */
+	uint64_t tx_self_num;
+	/** Bytes transmitted (self only) */
+	uint64_t tx_self_bytes;
 	/** Messages transmitted (shm only) */
 	uint64_t tx_shm_num;
 	/** Bytes transmitted (shm only) */
@@ -1615,6 +1639,26 @@ struct psm2_mq_stats {
 #else
 	uint64_t dsa_stats[DSA_STATS_SZ*2];	/* same size as dsa_stats[2] */
 #endif
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	/** maximum handles allowed in cache **/
+	uint64_t gpu_ipc_cache_limit;
+	/** current handles in cache **/
+	uint64_t gpu_ipc_cache_nelems;
+	/** max observed handles in cache **/
+	uint64_t gpu_ipc_cache_max_nelems;
+	/** cache hits for new IOs **/
+	uint64_t gpu_ipc_cache_hit;
+	/** cache misses for new IOs **/
+	uint64_t gpu_ipc_cache_miss;
+	/** cache entries removed due to cache full **/
+	uint64_t gpu_ipc_cache_evict;
+	/** cache entries removed due to being stale **/
+	uint64_t gpu_ipc_cache_remove;
+	/** cache cleared due to error opening new Ipc Handle **/
+	uint64_t gpu_ipc_cache_clear;
+#else /* defined(PSM_CUDA) || defined(PSM_ONEAPI) */
+	uint64_t _reserved_gpu[8];
+#endif /* defined(PSM_CUDA) || defined(PSM_ONEAPI) */
 
 	/** sysbufs are used for unexpected eager receive (and RTS payload) */
 	/** Number of messages using system buffers (not used for 0 byte msg) */
@@ -1649,8 +1693,32 @@ struct psm2_mq_stats {
 	/** Messages cuCopied from a system buffer into a matched user GPU buffer */
 	uint64_t rx_sysbuf_cuCopy_num;
 #else
-	uint64_t _reserved[12];
+	uint64_t _reserved[10];
 #endif
+	/** maximum subqueues for expected and unexpected lists */
+	uint64_t max_subqueues;
+
+	/** maximum length for total entries on expected list **/
+	uint64_t max_exp_list_len;
+	/** maximum length for total entries on expected hash **/
+	uint64_t max_exp_hash_len;
+	/** number searches of expected queue **/
+	uint64_t num_exp_search;
+	/** total search compares on expected queue **/
+	uint64_t tot_exp_search_cmp;
+	/** maximum search compares on expected queue **/
+	uint64_t max_exp_search_cmp;
+
+	/** maximum length for total entries on unexpected list **/
+	uint64_t max_unexp_list_len;
+	/** maximum length for total entries on unexpected hash **/
+	uint64_t max_unexp_hash_len;
+	/** number searches of unexpected queue **/
+	uint64_t num_unexp_search;
+	/** total search compares on unexpected queue **/
+	uint64_t tot_unexp_search_cmp;
+	/** maximum search compares on unexpected queue **/
+	uint64_t max_unexp_search_cmp;
 };
 
 /*! @see psm2_mq_stats */

@@ -57,6 +57,7 @@
 #define UTILS_DEBUG_H
 
 #include <stdio.h>
+#include <time.h>
 
 // See below for macros and comments about these settings
 
@@ -141,6 +142,30 @@ int psm3_get_myrank_count();	// -1 if unknown
 int psm3_get_mylocalrank();	// -1 if unknown
 int psm3_get_mylocalrank_count();	// -1 if unknown
 
+#ifdef PSM_TS_USER
+#define PSM3_TIME_FMT "[%s.%09lu] "
+#define PSM3_TIME_ARG \
+	tbuf, ts.tv_nsec
+#define PSM3_GETTIME \
+	struct timespec ts; \
+	struct tm tm; \
+	char tbuf[40]; \
+		      \
+	clock_gettime(CLOCK_REALTIME, &ts); \
+	tzset(); \
+	localtime_r(&ts.tv_sec, &tm); \
+	strftime(tbuf, 40, "%F %T", &tm);
+#else
+#define PSM3_TIME_FMT "[%lu.%09lu] "
+#define PSM3_TIME_ARG \
+	ts.tv_sec, ts.tv_nsec
+#define PSM3_GETTIME \
+	struct timespec ts;	\
+				\
+	clock_gettime(CLOCK_REALTIME, &ts);
+
+#endif
+
 #if _HFI_DEBUGGING
 
 extern char psm3_mylabel[];
@@ -154,23 +179,35 @@ extern void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len);
 #define _HFI_UNIT_ERROR(unit, fmt, ...) \
 	do { \
 		_Pragma_unlikely \
-		printf("%s.%s: " fmt, psm3_mylabel, __progname, \
+		PSM3_GETTIME \
+		printf(PSM3_TIME_FMT "%s.%s: " fmt, PSM3_TIME_ARG, psm3_mylabel, __progname, \
 		       ##__VA_ARGS__); \
 	} while (0)
 
 #define _HFI_ERROR(fmt, ...) \
 	do { \
 		_Pragma_unlikely \
-		printf("%s.%s: " fmt, psm3_mylabel, __progname, \
+		PSM3_GETTIME \
+		printf(PSM3_TIME_FMT "%s.%s: " fmt, PSM3_TIME_ARG, psm3_mylabel, __progname, \
 		       ##__VA_ARGS__); \
 	} while (0)
 
 #define _HFI_INFO(fmt, ...) \
 	do { \
 		_Pragma_unlikely \
-		if (unlikely(psm3_dbgmask&__HFI_INFO))  \
-			printf("%s.%s: " fmt, psm3_mylabel, __func__, \
+		if (unlikely(psm3_dbgmask&__HFI_INFO)) {  \
+			PSM3_GETTIME \
+			printf(PSM3_TIME_FMT "%s.%s: " fmt, PSM3_TIME_ARG, psm3_mylabel, __func__, \
 			       ##__VA_ARGS__); \
+		} \
+	} while (0)
+
+#define _HFI_ENV_ERROR(fmt, ...) \
+	do { \
+		_Pragma_unlikely \
+		if (unlikely(psm3_dbgmask&__HFI_INFO)) {  \
+			printf("%s: env " fmt, psm3_mylabel, ##__VA_ARGS__); \
+		} \
 	} while (0)
 
 #define __HFI_PKTDBG_ON unlikely(psm3_dbgmask & __HFI_PKTDBG)
@@ -178,17 +215,20 @@ extern void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len);
 #define __HFI_DBG_WHICH(which, fmt, ...) \
 	do { \
 		_Pragma_unlikely \
-		if (unlikely(psm3_dbgmask&(which))) \
-			fprintf(psm3_dbgout, "%s.%s: " fmt, psm3_mylabel, __func__, \
-			       ##__VA_ARGS__); \
+		if (unlikely(psm3_dbgmask&(which))) {\
+			PSM3_GETTIME \
+			fprintf(psm3_dbgout, PSM3_TIME_FMT "%s.%s: " fmt, PSM3_TIME_ARG, psm3_mylabel, \
+				__func__, ##__VA_ARGS__); \
+		} \
 	} while (0)
 
 #define __HFI_DBG_WHICH_NOFUNC(which, fmt, ...) \
 	do { \
 		_Pragma_unlikely \
-		if (unlikely(psm3_dbgmask&(which))) \
+		if (unlikely(psm3_dbgmask&(which))) { \
 			fprintf(psm3_dbgout, "%s: " fmt, psm3_mylabel, \
 			       ##__VA_ARGS__); \
+		} \
 	} while (0)
 
 #define _HFI_DBG(fmt, ...) __HFI_DBG_WHICH(__HFI_DBG, fmt, ##__VA_ARGS__)
@@ -214,7 +254,8 @@ extern void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len);
 #define _HFI_DBG_ALWAYS(fmt, ...) \
 	do { \
 		_Pragma_unlikely \
-		fprintf(psm3_dbgout, "%s.%s: " fmt, psm3_mylabel, __func__, \
+		PSM3_GETTIME \
+		fprintf(psm3_dbgout, PSM3_TIME_FMT "%s.%s: " fmt, PSM3_TIME_ARG, psm3_mylabel, __func__, \
 			       ##__VA_ARGS__); \
 	} while (0)
 
@@ -245,15 +286,19 @@ extern void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len);
 
 #define _HFI_UNIT_ERROR(unit, fmt, ...) \
 	do { \
-		printf("%s: " fmt, "", ##__VA_ARGS__); \
+		PSM3_GETTIME \
+		printf(PSM3_TIME_FMT "%s: " fmt, PSM3_TIME_ARG, "", ##__VA_ARGS__); \
 	} while (0)
 
 #define _HFI_ERROR(fmt, ...) \
 	do { \
-		printf("%s: " fmt, "", ##__VA_ARGS__); \
+		PSM3_GETTIME \
+		printf(PSM3_TIME_FMT "%s: " fmt, PSM3_TIME_ARG, "", ##__VA_ARGS__); \
 	} while (0)
 
 #define _HFI_INFO(fmt, ...)
+
+#define _HFI_ENV_ERROR(fmt, ...)
 
 #define __HFI_PKTDBG_ON 0
 

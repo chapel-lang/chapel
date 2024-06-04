@@ -63,7 +63,7 @@ static void rxm_close_conn(struct rxm_conn *conn)
 
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "closing conn %p\n", conn);
 
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 	/* All deferred transfers are internally generated */
 	while (!dlist_empty(&conn->deferred_tx_queue)) {
 		tx_entry = container_of(conn->deferred_tx_queue.next,
@@ -110,8 +110,8 @@ static int rxm_bind_comp(struct rxm_ep *ep, struct fid_ep *msg_ep)
 	if (!rxm_passthru_info(ep->rxm_info))
 		return 0;
 
-	if (ep->util_ep.tx_cntr) {
-		cntr = container_of(ep->util_ep.tx_cntr, struct rxm_cntr,
+	if (ep->util_ep.cntrs[CNTR_TX]) {
+		cntr = container_of(ep->util_ep.cntrs[CNTR_TX], struct rxm_cntr,
 				    util_cntr);
 		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_SEND);
 		if (ret) {
@@ -120,8 +120,8 @@ static int rxm_bind_comp(struct rxm_ep *ep, struct fid_ep *msg_ep)
 		}
 	}
 
-	if (ep->util_ep.rx_cntr) {
-		cntr = container_of(ep->util_ep.rx_cntr, struct rxm_cntr,
+	if (ep->util_ep.cntrs[CNTR_RX]) {
+		cntr = container_of(ep->util_ep.cntrs[CNTR_RX], struct rxm_cntr,
 				    util_cntr);
 		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_RECV);
 		if (ret) {
@@ -130,8 +130,8 @@ static int rxm_bind_comp(struct rxm_ep *ep, struct fid_ep *msg_ep)
 		}
 	}
 
-	if (ep->util_ep.rd_cntr) {
-		cntr = container_of(ep->util_ep.rd_cntr, struct rxm_cntr,
+	if (ep->util_ep.cntrs[CNTR_RD]) {
+		cntr = container_of(ep->util_ep.cntrs[CNTR_RD], struct rxm_cntr,
 				    util_cntr);
 		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_READ);
 		if (ret) {
@@ -140,8 +140,8 @@ static int rxm_bind_comp(struct rxm_ep *ep, struct fid_ep *msg_ep)
 		}
 	}
 
-	if (ep->util_ep.wr_cntr) {
-		cntr = container_of(ep->util_ep.wr_cntr, struct rxm_cntr,
+	if (ep->util_ep.cntrs[CNTR_WR]) {
+		cntr = container_of(ep->util_ep.cntrs[CNTR_WR], struct rxm_cntr,
 				    util_cntr);
 		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_WRITE);
 		if (ret) {
@@ -150,8 +150,8 @@ static int rxm_bind_comp(struct rxm_ep *ep, struct fid_ep *msg_ep)
 		}
 	}
 
-	if (ep->util_ep.rem_rd_cntr) {
-		cntr = container_of(ep->util_ep.rem_rd_cntr, struct rxm_cntr,
+	if (ep->util_ep.cntrs[CNTR_REM_RD]) {
+		cntr = container_of(ep->util_ep.cntrs[CNTR_REM_RD], struct rxm_cntr,
 				    util_cntr);
 		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_REMOTE_READ);
 		if (ret) {
@@ -160,8 +160,8 @@ static int rxm_bind_comp(struct rxm_ep *ep, struct fid_ep *msg_ep)
 		}
 	}
 
-	if (ep->util_ep.rem_wr_cntr) {
-		cntr = container_of(ep->util_ep.rem_wr_cntr, struct rxm_cntr,
+	if (ep->util_ep.cntrs[CNTR_REM_WR]) {
+		cntr = container_of(ep->util_ep.cntrs[CNTR_REM_WR], struct rxm_cntr,
 				    util_cntr);
 		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_REMOTE_WRITE);
 		if (ret) {
@@ -178,12 +178,11 @@ static int rxm_open_conn(struct rxm_conn *conn, struct fi_info *msg_info)
 	struct rxm_domain *domain;
 	struct rxm_ep *ep;
 	struct fid_ep *msg_ep;
-	fi_addr_t src_addr;
 	int ret;
 
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "open msg ep %p\n", conn);
 
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 	ep = conn->ep;
 	domain = container_of(ep->util_ep.domain, struct rxm_domain,
 			      util_domain);
@@ -199,15 +198,8 @@ static int rxm_open_conn(struct rxm_conn *conn, struct fi_info *msg_info)
 		goto err;
 	}
 
-	if (ep->srx_ctx) {
-		if (!strcasestr(msg_info->fabric_attr->prov_name, "tcp")) {
-			src_addr = (unsigned) conn->peer->index;
-			(void) fi_setopt(&msg_ep->fid, FI_OPT_ENDPOINT,
-					 OFI_OPT_TCP_FI_ADDR, &src_addr,
-					 sizeof(src_addr));
-		}
-
-		ret = fi_ep_bind(msg_ep, &ep->srx_ctx->fid, 0);
+	if (ep->msg_srx) {
+		ret = fi_ep_bind(msg_ep, &ep->msg_srx->fid, 0);
 		if (ret) {
 			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
 			goto err;
@@ -226,7 +218,7 @@ static int rxm_open_conn(struct rxm_conn *conn, struct fi_info *msg_info)
 
 	conn->flow_ctrl = domain->flow_ctrl_ops->available(msg_ep);
 
-	if (!ep->srx_ctx) {
+	if (!ep->msg_srx) {
 		ret = rxm_prepost_recv(ep, msg_ep);
 		if (ret)
 			goto err;
@@ -284,7 +276,7 @@ static int rxm_send_connect(struct rxm_conn *conn)
 	int ret;
 
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "connecting %p\n", conn);
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 
 	info = conn->ep->msg_info;
 	info->dest_addrlen = conn->ep->msg_info->src_addrlen;
@@ -322,7 +314,7 @@ static int rxm_connect(struct rxm_conn *conn)
 {
 	int ret;
 
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 
 	switch (conn->state) {
 	case RXM_CM_IDLE:
@@ -349,7 +341,7 @@ static void rxm_free_conn(struct rxm_conn *conn)
 	struct rxm_av *av;
 
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "free conn %p\n", conn);
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 
 	if (conn->flags & RXM_CONN_INDEXED)
 		ofi_idm_clear(&conn->ep->conn_idx_map, conn->peer->index);
@@ -366,8 +358,11 @@ void rxm_freeall_conns(struct rxm_ep *ep)
 	struct rxm_av *av;
 	int i, cnt;
 
+	if (!ep->util_ep.av)
+		return;
+
 	av = container_of(ep->util_ep.av, struct rxm_av, util_av);
-	ofi_ep_lock_acquire(&ep->util_ep);
+	ofi_genlock_lock(&ep->util_ep.lock);
 
 	/* We can't have more connections than the current number of
 	 * possible peers.
@@ -389,7 +384,7 @@ void rxm_freeall_conns(struct rxm_ep *ep)
 		rxm_free_conn(conn);
 	}
 
-	ofi_ep_lock_release(&ep->util_ep);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 }
 
 static struct rxm_conn *
@@ -398,7 +393,7 @@ rxm_alloc_conn(struct rxm_ep *ep, struct util_peer_addr *peer)
 	struct rxm_conn *conn;
 	struct rxm_av *av;
 
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	av = container_of(ep->util_ep.av, struct rxm_av, util_av);
 	conn = rxm_av_alloc_conn(av);
 	if (!conn) {
@@ -428,7 +423,7 @@ rxm_add_conn(struct rxm_ep *ep, struct util_peer_addr *peer)
 {
 	struct rxm_conn *conn;
 
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	conn = ofi_idm_lookup(&ep->conn_idx_map, peer->index);
 	if (conn)
 		return conn;
@@ -453,7 +448,7 @@ ssize_t rxm_get_conn(struct rxm_ep *ep, fi_addr_t addr, struct rxm_conn **conn)
 	struct util_peer_addr **peer;
 	ssize_t ret;
 
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	peer = ofi_av_addr_context(ep->util_ep.av, addr);
 	*conn = rxm_add_conn(ep, *peer);
 	if (!*conn)
@@ -510,7 +505,7 @@ void rxm_process_connect(struct rxm_eq_cm_entry *cm_entry)
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL,
 	       "processing connected for handle: %p\n", conn);
 
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 	if (conn->state == RXM_CM_CONNECTING) {
 		conn->remote_index = rxm_peer_index(cm_entry->data.accept.
 						    server_conn_id);
@@ -542,7 +537,7 @@ rxm_process_reject(struct rxm_conn *conn, struct fi_eq_err_entry *entry)
 
 	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL,
 	       "Processing reject for handle: %p\n", conn);
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 
 	if (entry->err_data_size >= sizeof(cm_data->reject)) {
 		cm_data = entry->err_data;
@@ -656,7 +651,7 @@ rxm_process_connreq(struct rxm_ep *ep, struct rxm_eq_cm_entry *cm_entry)
 	ssize_t ret;
 	int cmp;
 
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	if (rxm_verify_connreq(ep, &cm_entry->data))
 		goto reject;
 
@@ -759,7 +754,7 @@ reject:
 
 void rxm_process_shutdown(struct rxm_conn *conn)
 {
-	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+	assert(ofi_genlock_held(&conn->ep->util_ep.lock));
 
 	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "shutdown conn %p (state %d)\n",
 		conn, conn->state);
@@ -783,7 +778,7 @@ static void rxm_handle_error(struct rxm_ep *ep)
 	struct fi_eq_err_entry entry = {0};
 	ssize_t ret;
 
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	ret = fi_eq_readerr(ep->msg_eq, &entry, 0);
 	if (ret != sizeof(entry)) {
 		if (ret != -FI_EAGAIN)
@@ -821,7 +816,7 @@ static void
 rxm_handle_event(struct rxm_ep *ep, uint32_t event,
 		 struct rxm_eq_cm_entry *cm_entry, size_t len)
 {
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	switch (event) {
 	case FI_NOTIFY:
 		break;
@@ -847,7 +842,7 @@ void rxm_conn_progress(struct rxm_ep *ep)
 	uint32_t event;
 	ssize_t ret;
 
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	do {
 		ret = fi_eq_read(ep->msg_eq, &event, &cm_entry,
 				 sizeof(cm_entry), 0);
@@ -870,9 +865,9 @@ void rxm_stop_listen(struct rxm_ep *ep)
 	if (!ep->cm_thread)
 		return;
 
-	ofi_ep_lock_acquire(&ep->util_ep);
+	ofi_genlock_lock(&ep->util_ep.lock);
 	ep->do_progress = false;
-	ofi_ep_lock_release(&ep->util_ep);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 
 	size_ret = fi_eq_write(ep->msg_eq, FI_NOTIFY, &entry, sizeof(entry), 0);
 	if (size_ret != sizeof(entry)) {
@@ -891,7 +886,7 @@ static void rxm_flush_msg_cq(struct rxm_ep *ep)
 	struct fi_cq_data_entry comp;
 	ssize_t ret;
 
-	assert(ofi_ep_lock_held(&ep->util_ep));
+	assert(ofi_genlock_held(&ep->util_ep.lock));
 	do {
 		ret = fi_cq_read(ep->msg_cq, &comp, 1);
 		if (ret > 0) {
@@ -919,9 +914,9 @@ static void *rxm_cm_progress(void *arg)
 
 	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "Starting auto-progress thread\n");
 
-	ofi_ep_lock_acquire(&ep->util_ep);
+	ofi_genlock_lock(&ep->util_ep.lock);
 	while (ep->do_progress) {
-		ofi_ep_lock_release(&ep->util_ep);
+		ofi_genlock_unlock(&ep->util_ep.lock);
 
 		/* We must retrieve any event after we acquire the ep lock.
 		 * Otherwise, we could obtain an event for a msg ep that
@@ -936,7 +931,7 @@ static void *rxm_cm_progress(void *arg)
 		ret = fi_eq_sread(ep->msg_eq, &event, &cm_entry,
 				  sizeof(cm_entry), -1, FI_PEEK);
 
-		ofi_ep_lock_acquire(&ep->util_ep);
+		ofi_genlock_lock(&ep->util_ep.lock);
 		if (ret > 0) {
 			ret = fi_eq_read(ep->msg_eq, &event, &cm_entry,
 					 sizeof(cm_entry), 0);
@@ -950,7 +945,7 @@ static void *rxm_cm_progress(void *arg)
 			break;
 		}
 	}
-	ofi_ep_lock_release(&ep->util_ep);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 
 	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "Stopping auto-progress thread\n");
 	return NULL;
@@ -985,9 +980,9 @@ static void *rxm_cm_atomic_progress(void *arg)
 	}
 
 	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "Starting auto-progress thread\n");
-	ofi_ep_lock_acquire(&ep->util_ep);
+	ofi_genlock_lock(&ep->util_ep.lock);
 	while (ep->do_progress) {
-		ofi_ep_lock_release(&ep->util_ep);
+		ofi_genlock_unlock(&ep->util_ep.lock);
 		ret = fi_trywait(fabric->msg_fabric, fids, 2);
 
 		if (!ret) {
@@ -997,10 +992,10 @@ static void *rxm_cm_atomic_progress(void *arg)
 			}
 		}
 		ep->util_ep.progress(&ep->util_ep);
-		ofi_ep_lock_acquire(&ep->util_ep);
+		ofi_genlock_lock(&ep->util_ep.lock);
 		rxm_conn_progress(ep);
 	}
-	ofi_ep_lock_release(&ep->util_ep);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 
 	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "Stopping auto progress thread\n");
 	return NULL;
@@ -1063,11 +1058,11 @@ void rxm_av_remove_handler(struct util_ep *util_ep, struct util_peer_addr *peer)
 	struct rxm_conn *conn;
 
 	ep = container_of(util_ep, struct rxm_ep, util_ep);
-	ofi_ep_lock_acquire(&ep->util_ep);
+	ofi_genlock_lock(&ep->util_ep.lock);
 	conn = ofi_idm_lookup(&ep->conn_idx_map, peer->index);
 	if (conn) {
 		rxm_close_conn(conn);
 		rxm_free_conn(conn);
 	}
-	ofi_ep_lock_release(&ep->util_ep);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 }

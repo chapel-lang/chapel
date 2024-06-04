@@ -2,7 +2,7 @@
 # Copyright (c) 2016 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2017-2018 Intel Corporation, Inc. All right reserved.
 # Copyright (c) 2018 Amazon.com, Inc. or its affiliates. All rights reserved.
-# (C) Copyright 2020 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 #
 # Makefile.am for libfabric
 
@@ -51,6 +51,8 @@ common_srcs =				\
 	src/hmem_neuron.c		\
 	src/hmem_synapseai.c		\
 	src/hmem_ipc_cache.c	        \
+	src/xpmem.c			\
+	src/xpmem_cache.c		\
 	src/common.c			\
 	src/enosys.c			\
 	src/rbtree.c			\
@@ -59,7 +61,7 @@ common_srcs =				\
 	src/indexer.c			\
 	src/mem.c			\
 	src/iov.c			\
-	src/shared/ofi_str.c		\
+	src/ofi_str.c		\
 	prov/util/src/util_atomic.c	\
 	prov/util/src/util_attr.c	\
 	prov/util/src/util_av.c		\
@@ -77,7 +79,7 @@ common_srcs =				\
 	prov/util/src/util_buf.c	\
 	prov/util/src/util_mr_map.c	\
 	prov/util/src/util_ns.c		\
-	prov/util/src/util_shm.c	\
+	prov/util/src/util_srx.c	\
 	prov/util/src/util_mem_monitor.c\
 	prov/util/src/util_mem_hooks.c	\
 	prov/util/src/util_mr_cache.c	\
@@ -85,8 +87,20 @@ common_srcs =				\
 	prov/util/src/rocr_mem_monitor.c \
 	prov/util/src/ze_mem_monitor.c \
 	prov/util/src/cuda_ipc_monitor.c \
-	prov/util/src/util_coll.c
-
+	prov/util/src/rocr_ipc_monitor.c \
+	prov/util/src/xpmem_monitor.c	\
+	prov/util/src/util_profile.c \
+	prov/coll/src/coll_attr.c	\
+	prov/coll/src/coll_av.c		\
+	prov/coll/src/coll_av_set.c	\
+	prov/coll/src/coll_coll.c	\
+	prov/coll/src/coll_cq.c		\
+	prov/coll/src/coll_domain.c	\
+	prov/coll/src/coll_ep.c		\
+	prov/coll/src/coll_eq.c		\
+	prov/coll/src/coll_fabric.c	\
+	prov/coll/src/coll_init.c	\
+	prov/coll/src/coll.h
 
 if MACOS
 common_srcs += src/osx/osd.c
@@ -153,6 +167,8 @@ util_fi_pingpong_LDADD = $(linkback)
 nodist_src_libfabric_la_SOURCES =
 src_libfabric_la_SOURCES =			\
 	include/ofi_hmem.h			\
+	include/ofi_cma.h			\
+	include/ofi_xpmem.h			\
 	include/ofi.h				\
 	include/ofi_abi.h			\
 	include/ofi_atom.h			\
@@ -163,14 +179,15 @@ src_libfabric_la_SOURCES =			\
 	include/ofi_iov.h			\
 	include/ofi_list.h			\
 	include/ofi_bitmask.h			\
-	include/shared/ofi_str.h		\
+	include/ofi_atomic_queue.h		\
+	include/ofi_str.h		    \
 	include/ofi_lock.h			\
 	include/ofi_mem.h			\
 	include/ofi_osd.h			\
 	include/ofi_proto.h			\
 	include/ofi_recvwin.h			\
 	include/ofi_rbuf.h			\
-	include/ofi_shm.h			\
+	include/ofi_shm_p2p.h			\
 	include/ofi_signal.h			\
 	include/ofi_epoll.h			\
 	include/ofi_tree.h			\
@@ -180,10 +197,12 @@ src_libfabric_la_SOURCES =			\
 	include/ofi_net.h			\
 	include/ofi_perf.h			\
 	include/ofi_coll.h			\
+	include/ofi_mb.h			\
 	include/fasthash.h			\
 	include/rbtree.h			\
 	include/uthash.h			\
 	include/ofi_prov.h			\
+	include/ofi_profile.h       \
 	include/rdma/providers/fi_log.h		\
 	include/rdma/providers/fi_prov.h	\
 	src/fabric.c				\
@@ -201,7 +220,7 @@ src_libfabric_la_LIBADD =
 src_libfabric_la_DEPENDENCIES = libfabric.map
 
 if !EMBEDDED
-src_libfabric_la_LDFLAGS += -version-info 21:1:20
+src_libfabric_la_LDFLAGS += -version-info 25:0:24
 endif
 src_libfabric_la_LDFLAGS += -export-dynamic \
 			   $(libfabric_version_script)
@@ -217,10 +236,12 @@ rdmainclude_HEADERS += \
 	$(top_srcdir)/include/rdma/fi_endpoint.h \
 	$(top_srcdir)/include/rdma/fi_errno.h \
 	$(top_srcdir)/include/rdma/fi_tagged.h \
-	$(top_srcdir)/include/rdma/fi_trigger.h
+	$(top_srcdir)/include/rdma/fi_trigger.h \
+	$(top_srcdir)/include/rdma/fi_profile.h
 providersinclude_HEADERS += \
-	$(top_srcdir)/include/rdma/providers/fi_prov.h \
-	$(top_srcdir)/include/rdma/providers/fi_log.h
+	$(top_srcdir)/include/rdma/providers/fi_log.h \
+	$(top_srcdir)/include/rdma/providers/fi_peer.h \
+	$(top_srcdir)/include/rdma/providers/fi_prov.h
 
 if HAVE_DIRECT
 nodist_rdmainclude_HEADERS = \
@@ -268,10 +289,16 @@ real_man_pages = \
         man/man3/fi_tagged.3 \
         man/man3/fi_trigger.3 \
         man/man3/fi_version.3 \
+        man/man3/fi_profile.3 \
         man/man7/fabric.7 \
+        man/man7/fi_arch.7 \
+        man/man7/fi_direct.7 \
+        man/man7/fi_guide.7 \
 	man/man7/fi_hook.7 \
+        man/man7/fi_intro.7 \
         man/man7/fi_provider.7 \
-        man/man7/fi_direct.7
+        man/man7/fi_setup.7
+
 
 dummy_man_pages = \
         man/man3/fi_accept.3 \
@@ -430,21 +457,21 @@ include prov/udp/Makefile.include
 include prov/verbs/Makefile.include
 include prov/efa/Makefile.include
 include prov/usnic/Makefile.include
-include prov/psm/Makefile.include
 include prov/psm2/Makefile.include
 include prov/psm3/Makefile.include
-include prov/gni/Makefile.include
+include prov/cxi/Makefile.include
 include prov/rxm/Makefile.include
 include prov/mrail/Makefile.include
 include prov/rxd/Makefile.include
-include prov/bgq/Makefile.include
 include prov/opx/Makefile.include
 include prov/shm/Makefile.include
+include prov/sm2/Makefile.include
 include prov/tcp/Makefile.include
-include prov/net/Makefile.include
-include prov/rstream/Makefile.include
+include prov/ucx/Makefile.include
 include prov/hook/Makefile.include
 include prov/hook/perf/Makefile.include
+include prov/hook/trace/Makefile.include
+include prov/hook/profile/Makefile.include
 include prov/hook/hook_debug/Makefile.include
 include prov/hook/hook_hmem/Makefile.include
 include prov/hook/dmabuf_peer_mem/Makefile.include
@@ -458,3 +485,17 @@ EXTRA_DIST += \
         config/distscript.pl \
         $(real_man_pages) $(prov_dist_man_pages) $(dummy_man_pages) \
         $(prov_extra_dist)
+
+# a workaround for http://debbugs.gnu.org/cgi/bugreport.cgi?bug=18744, this
+# bug was fixed in automake 1.15, but lesser automake is supported by us.
+am__is_gnu_make = { \
+  if test -z '$(MAKELEVEL)'; then \
+    false; \
+  elif test -n '$(MAKE_HOST)'; then \
+    true; \
+  elif test -n '$(MAKE_VERSION)' && test -n '$(CURDIR)'; then \
+    true; \
+  else \
+    false; \
+  fi; \
+}
