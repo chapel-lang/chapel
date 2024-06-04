@@ -688,8 +688,7 @@ class FileInfo:
         self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
-            with self.context.context.track_errors() as _:
-                self._search_instantiations(asts)
+            self._search_instantiations(asts)
 
     def called_function_at_position(
         self, position: Position
