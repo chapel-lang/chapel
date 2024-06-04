@@ -398,7 +398,7 @@
 %token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
 %token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
 %token <uniqueStr> TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
-%token <uniqueStr> TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
+%token <uniqueStr> TUINT TUNION TUNMANAGED TUSE
 %token <uniqueStr> TVAR TVOID
 %token <uniqueStr> TWHEN TWHERE TWHILE TWITH
 %token <uniqueStr> TYIELD
@@ -496,7 +496,7 @@
 %type <returnTag>  opt_ret_tag
 %type <astTag> class_tag
 
-%type <uniqueStr> ident_use ident_def reserved_word_ident formal_ident_def
+%type <uniqueStr> ident_use ident_def reserved_word_ident
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
 %type <uniqueStr> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
@@ -1161,8 +1161,6 @@ renames_ls:
   }
 ;
 
-/* Separated so that use statements can rename their module to "_", but nothing
-   else can */
 use_renames_ls:
   expr
   {
@@ -1172,13 +1170,6 @@ use_renames_ls:
 | expr TAS expr
   {
     auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
-    auto node = context->buildVisibilityClause(@$, toOwned(as), false);
-    $$ = context->makeList(node);
-  }
-| expr TAS TUNDERSCORE
-  {
-    auto ident = toOwned(context->buildIdent(@3, $3));
-    auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
     auto node = context->buildVisibilityClause(@$, toOwned(as), false);
     $$ = context->makeList(node);
   }
@@ -1194,15 +1185,6 @@ use_renames_ls:
     auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
     $$ = context->appendList($1, node);
   }
-| use_renames_ls TCOMMA expr TAS TUNDERSCORE
-  {
-    auto ident = context->buildIdent(@5, $5);
-    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned(ident));
-    auto locVisClause = context->makeSpannedLocation(@3, @5);
-    auto node = context->buildVisibilityClause(locVisClause, toOwned(as), false);
-    $$ = context->appendList($1, node);
-  }
-;
 
 opt_only_ls:
   /* nothing */   { $$ = nullptr; }
@@ -1232,16 +1214,6 @@ use_stmt:
                                      $7);
     context->resetDeclState();
   }
-| opt_access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI
-  {
-    auto ident = toOwned(context->buildIdent(@5, $5));
-    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
-    auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
-    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned(as),
-                                     VisibilityClause::EXCEPT,
-                                     $7);
-    context->resetDeclState();
-  }
 | opt_access_control TUSE expr TONLY opt_only_ls TSEMI
   {
     auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
@@ -1259,17 +1231,6 @@ use_stmt:
                                      $7);
     context->resetDeclState();
   }
-| opt_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
-  {
-    auto ident = toOwned(context->buildIdent(@5, $5));
-    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
-    auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
-    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned(as),
-                                     VisibilityClause::ONLY,
-                                     $7);
-    context->resetDeclState();
-  }
-;
 
 import_stmt:
   opt_access_control TIMPORT import_ls TSEMI
@@ -2649,27 +2610,22 @@ formal:
   named_formal
 ;
 
-formal_ident_def:
-  ident_def
-| TUNDERSCORE
-;
-
 named_formal:
-  opt_formal_intent_tag formal_ident_def opt_colon_formal_type opt_init_expr
+  opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
     $$ = context->buildFormal(@$, @2, $1, $2, $3, $4);
   }
-| pragma_ls opt_formal_intent_tag formal_ident_def opt_colon_formal_type
+| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type
   opt_init_expr
   {
     $$ = context->buildFormal(@$, @3, $2, $3, $4, $5, true);
   }
-| opt_formal_intent_tag formal_ident_def opt_colon_formal_type
+| opt_formal_intent_tag ident_def opt_colon_formal_type
   formal_var_arg_expr
   {
     $$ = context->buildVarArgFormal(@$, $1, $2, @2, $3, $4);
   }
-| pragma_ls opt_formal_intent_tag formal_ident_def opt_colon_formal_type
+| pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type
   formal_var_arg_expr
   {
     $$ = context->buildVarArgFormal(@$, $2, $3, @3, $4, $5, true);
@@ -2936,11 +2892,7 @@ var_decl_stmt_inner:
 ;
 
 tuple_var_decl_component:
-  TUNDERSCORE
-  {
-    $$ = context->buildTupleComponent(@$, $1);
-  }
-| ident_def
+  ident_def
   {
     $$ = context->buildTupleComponent(@$, $1);
   }
@@ -3016,8 +2968,7 @@ expr_ls:
 ;
 
 tuple_component:
-  TUNDERSCORE   { $$ = context->buildIdent(@1, $1); }
-| opt_try_expr  { $$ = $1; }
+  opt_try_expr  { $$ = $1; }
 ;
 
 tuple_expr_ls:
