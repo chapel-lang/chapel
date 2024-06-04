@@ -2400,7 +2400,7 @@ module DefaultRectangular {
   }
 
   override proc DefaultRectangularArr.isDefaultRectangular() param do return true;
-  proc type DefaultRectangularArr.isDefaultRectangular() param do return true;
+  override proc type DefaultRectangularArr.isDefaultRectangular() param do return true;
 
   config param debugDRScan = false;
 
