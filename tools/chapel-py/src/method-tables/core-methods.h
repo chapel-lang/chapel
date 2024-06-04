@@ -143,7 +143,10 @@ CLASS_BEGIN(Error)
   PLAIN_GETTER(Error, kind, "Retrieve the kind ('error', 'warning') of this type of error",
                const char*, return chpl::ErrorBase::getKindName(node->kind()))
   PLAIN_GETTER(Error, type, "Retrieve the unique name of this type of error",
-               const char*, return chpl::ErrorBase::getTypeName(node->type()))
+               std::optional<const char*>,
+               const char* name = chpl::ErrorBase::getTypeName(node->type());
+               return name ? std::optional(name) : std::nullopt;
+               )
 CLASS_END(Error)
 
 CLASS_BEGIN(ErrorManager)
