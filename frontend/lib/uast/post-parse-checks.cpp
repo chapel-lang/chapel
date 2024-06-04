@@ -1183,7 +1183,7 @@ bool Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
         // since only 'use' statements allow wildcards like this.
         asVisRename = true;
       }
-    } else if (auto use = parent->toUse()) {
+    } else if (parent->isUse()) {
       if (asVisRename) {
         // We occurred as a rename of the symbol being imported in a use
         // statement. This is allowed.
