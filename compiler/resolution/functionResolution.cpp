@@ -14165,7 +14165,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         - var m: map(int, int);
         - var s: set(int);
         an unstable warning won't be generated (this is necessary because the
-        initializer with a parSafe argument is marked unstable).
+        initializer with a parSafe formal is marked unstable).
 
         This conditional can be removed if/when the unstable warning is removed
         from map and set's 'parSafe' fields.

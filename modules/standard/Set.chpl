@@ -218,7 +218,6 @@ module Set {
                                       initialCapacity);
     }
 
-    pragma "last resort"
     @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     proc init(type eltType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
