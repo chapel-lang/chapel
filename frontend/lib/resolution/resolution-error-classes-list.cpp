@@ -664,6 +664,18 @@ void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   wr.message("The 'new' expression can only be used with records or classes.");
 }
 
+void ErrorInvalidParamCast::write(ErrorWriterBase& wr) const {
+  auto astForErr = std::get<0>(info_);
+  auto& fromQt = std::get<1>(info_);
+  auto& toQt = std::get<2>(info_);
+
+  wr.heading(kind_, type_, astForErr,
+             "cannot cast param value "
+             "of type '", fromQt.type(), "' to type '", toQt.type(), "'.");
+  wr.message("In the following expression:");
+  wr.code(astForErr, { astForErr });
+}
+
 void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
   auto superExpr = std::get<const uast::Identifier*>(info_);
   auto qt = std::get<types::QualifiedType>(info_);
