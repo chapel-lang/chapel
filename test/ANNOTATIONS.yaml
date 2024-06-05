@@ -570,6 +570,9 @@ all:
   05/01/24:
     - text: upgrade default LLVM to LLVM 17
       config: chapcs
+  06/03/24:
+    - text: Stop setting CHPL_TARGET_CPU (#25161)
+      config: chapcs
 
 # End all
 
