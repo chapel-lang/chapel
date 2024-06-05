@@ -1,4 +1,4 @@
-MyMod.dyno --dyno-debug-trace # testGenLib.MyMod.good
-OtherMod.dyno --dyno-debug-trace # testGenLib.OtherMod.good
-MyMod.dyno OtherMod.dyno --dyno-debug-trace # testGenLib.both.good
-MyMod.dyno OtherMod.dyno chpl_standard.dyno --dyno-debug-trace # testGenLib.standard.good
+MyMod.dyno --dyno-debug-print-parsed-files # testGenLib.MyMod.good
+OtherMod.dyno --dyno-debug-print-parsed-files # testGenLib.OtherMod.good
+MyMod.dyno OtherMod.dyno --dyno-debug-print-parsed-files # testGenLib.both.good
+MyMod.dyno OtherMod.dyno chpl_standard.dyno --dyno-debug-print-parsed-files # testGenLib.standard.good
