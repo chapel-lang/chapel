@@ -323,6 +323,7 @@ extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoDebugPrintParsedFiles;
 extern bool fDynoVerifySerialization;
 extern bool fDynoGenLib;
 extern bool fDynoGenStdLib;
