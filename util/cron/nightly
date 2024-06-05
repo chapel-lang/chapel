@@ -75,6 +75,7 @@ $blogonly = 0;
 $blogdir = "";
 $chplcheck = 0;
 $chplcheckonly = 0;
+$chplLanguageServer = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -180,6 +181,8 @@ while (@ARGV) {
     } elsif ($flag eq "-chplcheckonly") {
         $chplcheck = 1;
         $chplcheckonly = 1;
+    } elsif ($flag eq "-chpl-language-server") {
+        $chplLanguageServer = 1;
     } else {
         $printusage = 1;
         last;
@@ -223,6 +226,7 @@ if ($printusage == 1) {
     print "\t-blogdir <blogdir>             : specify the root of the chapel-blog repo to use with -blog or -blogonly";
     print "\t-chplcheck                     : run the chplcheck tests\n";
     print "\t-chplcheckonly                 : only run the chplcheck tests\n";
+    print "\t-chpl-language-server          : run the Chapel Language Server tests\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
@@ -729,6 +733,11 @@ if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
     $testflags = "$testflags $starttestargs";
 }
 
+if ($chplLanguageServer == 1) {
+    $ENV{'CHPL_HOME'} = $chplhomedir;
+    $testclscommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make -j$num_procs test-chpl-language-server";
+    mysystem($testclscommand, "running `make test-chpl-language-server`", $emailOnError, 1);
+}
 
 if ($runtests == 0) {
     print "Built compiler and runtime but did not run tests\n";

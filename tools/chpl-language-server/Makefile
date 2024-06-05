@@ -35,7 +35,7 @@ all: chpl-language-server install
 chpl-language-server-venv:
 	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chpl-language-server-venv
 
-chpl-language-server-test-venv:
+chpl-language-server-test-venv: chpl-language-server-venv
 	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) cls-test-venv
 
 chpl-language-server: chpl-language-server-venv

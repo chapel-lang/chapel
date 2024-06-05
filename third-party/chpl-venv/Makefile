@@ -123,11 +123,16 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 cls-test-venv: chapel-py-venv
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
+	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPLDEPS) \
 	  $(CHPL_MAKE_HOME)/tools/chapel-py \
 	  -r $(CHPL_VENV_CLS_TEST_REQUIREMENTS_FILE)
+	@# Using --upgrade above breaks the test venv, because there's a bug
+	@# in its interaction with --target. As a result, this command does
+	@# not upgrade dependencies. Other commands are unaffected because
+	@# they don't install executables into 'bin' (but pytest does).
+	@echo "Warnings about non-empty directories above are expected."
 
 chplcheck-venv: chapel-py-venv
 
