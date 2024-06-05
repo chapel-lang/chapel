@@ -124,24 +124,28 @@ static char *run_hwloc_cmd(const char *cmd, size_t *len_p)
 
 // Look for any "_N"-suffixed env vars.
 // Returns gasneti_malloc'ed string with first matched variable name, if any.
-// TODO: could be more efficient if given an interface to iterate over the environment keys.
 static
-char *check_suffixed(const char *keyname)
+char *check_suffixed(const char *prefix)
 {
-  size_t keylen = strlen(keyname);
-  size_t fulllen = keylen + 5; // 4 = "_xx\0"
-  char *fullkey = gasneti_malloc(fulllen);
-  strcpy(fullkey, keyname);
-  strcat(fullkey, "_");
-  for (int i = 0; i < 64; ++i) { // TODO: any realistic situation in which this is not enough?
-    snprintf(fullkey+(keylen+1), fulllen-(keylen+1), "%d", i);
-    gasneti_assert_uint(strlen(fullkey) ,<, fulllen);
-    if (gasneti_getenv(fullkey)) {
-      return fullkey;
+  size_t prefix_len = strlen(prefix);
+  char *keyname = gasneti_malloc(prefix_len + 3); // 3: '_' + digit + '\0'
+  strncpy(keyname, prefix, prefix_len+1);
+  keyname[prefix_len] = '_';
+  keyname[prefix_len+2] = '\0';
+
+  char *result = NULL;
+  for (char c = '0'; c <= '9'; ++c) {
+    keyname[prefix_len+1] = c;
+    const char* match = gasneti_check_env_prefix(keyname);
+    if (match) {
+      const char* p = strchr(match, '=');
+      result = gasneti_strndup(match, p - match);
+      break;
     }
   }
-  gasneti_free(fullkey);
-  return NULL;
+
+  gasneti_free(keyname);
+  return result;
 }
 
 // Simple (statically defined and not thread-safe) "set"

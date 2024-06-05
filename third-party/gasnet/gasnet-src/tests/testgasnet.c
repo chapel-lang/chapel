@@ -10,7 +10,7 @@
 #include <gasnet_tools.h>
 
 /* limit segsz to prevent stack overflows for seg_everything tests */
-#define TEST_MAXTHREADS 1
+#define TEST_MAXTHREADS 10
 #ifndef TEST_SEGSZ
   #define TEST_SEGSZ (128*1024) /* for put/overwrite test */
 #endif
@@ -157,8 +157,16 @@ void test_threadinfo(int threadid, int numthreads) {
   assert(threadid < numthreads && numthreads <= MAX_THREADS);
   all_ti[threadid] = my_ti;
   PTHREAD_LOCALBARRIER(numthreads);
-  for (i = 0; i < numthreads; i++) {
-    if (i != threadid) assert_always(my_ti != all_ti[i]);
+  if (my_ti) {
+    // If non-NULL, IDs must be unique 
+    for (i = 0; i < numthreads; i++) {
+      if (i != threadid) assert_always(my_ti != all_ti[i]);
+    }
+  } else {
+    // If *any* ID is NULL, *all* must be NULL
+    for (i = 0; i < numthreads; i++) {
+      assert_always(all_ti[i] == NULL);
+    }
   }
   PTHREAD_LOCALBARRIER(numthreads);
 }
@@ -747,13 +755,26 @@ void doit(int partner, int *partnerseg) {
   gex_System_SetVerboseErrors(1);
   assert_always(gex_System_GetVerboseErrors());
 
+  gex_System_SetVerboseErrors(0);
+  static int queried_progress_threads = 0;
+  if (! queried_progress_threads) { // Multiple calls are UB
+    // Test expected failure from gex_System_QueryProgressThreads()
+    // in the absence of GEX_FLAG_DEFER_THREADS at init time
+    unsigned int count;
+    const gex_ProgressThreadInfo_t *data;
+    int rc = gex_System_QueryProgressThreads(myclient, &count, &data, 0);
+    assert_always(rc == GASNET_ERR_RESOURCE);
+    queried_progress_threads = 1;
+  }
+  gex_System_SetVerboseErrors(1);
+ 
   /* width-independent computation of an integer variable with unknown unsigned type */
   #if PLATFORM_ARCH_LITTLE_ENDIAN
     #define compute_uint_val(lval_u64,var) do {          \
       lval_u64 = 0;                                      \
       for (size_t i=0; i < sizeof(var); i++) {           \
         lval_u64 <<= 8;                                  \
-        lval_u64 |= *(((uint8_t*)(&(var)+1)) - 1 - i);   \
+        lval_u64 |= *(((uint8_t*)(&(var)+1)) - (i + 1)); \
       }                                                  \
     } while (0)
   #else
@@ -1099,6 +1120,9 @@ void doit0(int partner, int *partnerseg) {
     GEX_FLAG_HINT_ACCEL_AD,
     GEX_FLAG_HINT_ACCEL_COLL,
     GEX_FLAG_HINT_ACCEL_ALL,
+
+    GEX_FLAG_USES_GASNET1,
+    GEX_FLAG_DEFER_THREADS,
   };
   assert_arr_nonzero(gex_Flags_t, flags_arr); // No zero values
 
@@ -1163,6 +1187,11 @@ void doit0(int partner, int *partnerseg) {
   assert_arr_nonzero(gex_Flags_t, flags_ep); // No zero values
   // Not yet specified: assert_arr_unaliased(gex_Flags_t, flags_ep);
   assert_arr_all_val(gex_EP_Capabilities_t, flags_ep, GEX_FLAG_HINT_ACCEL_ALL); // ALL includes them all
+  static gex_Flags_t const flags_client[] = { // gex_Client_Init
+    GEX_FLAG_USES_GASNET1,
+    GEX_FLAG_DEFER_THREADS,
+  };
+  assert_arr_unaliased(gex_Flags_t, flags_client);
 
   assert_inttype(gex_EC_t);
   static gex_EC_t const ec_all = GEX_EC_ALL;

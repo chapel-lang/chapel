@@ -5,3 +5,13 @@ in any other context.
 
 The unmodified PLPA package is available at
         http://www.open-mpi.org/software/plpa/
+
+Notable changes in this source directory, relative to the upstream:
+
++ Resolved incorrect CPU mask computation on 64-bit systems, as reported
+  in GASNet bug 4688.
+
++ "Safer" `PLPA_CPU_*` macros, including (1) added parenthesis to avoid issues
+  with operator precedence and (2) measures to avoid multiple evaluation of
+  their arguments (in case they have side-effects).
+

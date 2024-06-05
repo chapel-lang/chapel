@@ -33,7 +33,7 @@ AMMPI_BEGIN_EXTERNC
 #endif
 
 #define AMMPI_LIBRARY_VERSION_MAJOR   2
-#define AMMPI_LIBRARY_VERSION_MINOR   9
+#define AMMPI_LIBRARY_VERSION_MINOR   10
 #define AMMPI_LIBRARY_VERSION      AMMPI_LIBRARY_VERSION_MAJOR.AMMPI_LIBRARY_VERSION_MINOR
 #define AMMPI_LIBRARY_VERSION_STR  AMX_STRINGIFY(AMMPI_LIBRARY_VERSION)
 
@@ -269,6 +269,11 @@ extern const ammpi_stats_t AMMPI_initial_stats; /* the "empty" values for counte
 #define amx_handler_fn_t          ammpi_handler_fn_t
 #define AMX_GetSourceId           AMMPI_GetSourceId
 #define AMX_enEqual               AMMPI_enEqual
+#define AMX_GetTokenInfo          AMMPI_GetTokenInfo
+#define amx_category_t            ammpi_category_t
+#define amx_Short                 ammpi_Short
+#define amx_Medium                ammpi_Medium
+#define amx_Long                  ammpi_Long
 
 #if !defined(AMMPI_DEBUG) && !defined(AMMPI_NDEBUG)
   #if defined(GASNET_DEBUG) || defined(AMX_DEBUG)
@@ -372,6 +377,7 @@ extern int AM_GetDestEndpoint(void *token, ep_t *endp);
 extern int AM_GetMsgTag(void *token, tag_t *tagp);
 extern int AMMPI_GetSourceId(void *token, int *srcid);
 extern int AMMPI_enEqual(en_t en1, en_t en2);
+extern int AMMPI_GetTokenInfo(void *token, handler_t *handler, ammpi_category_t *cat, int *is_req);
 
 /* Poll */
 extern int AM_Poll(eb_t bundle);

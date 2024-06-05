@@ -663,8 +663,9 @@ void AMUDP_processPacket(amudp_buf_t * const buf, int isloopback) {
       /* check segment limits */
       if_pf (msg->nBytes > AMUDP_MAX_LONG)
         AMUDP_REFUSEMESSAGE(EBADLENGTH);
-      if_pf ( ep->segLength == 0 || /* empty seg */
-              ((uintptr_t)ep->segAddr + msg->destOffset) == 0) /* NULL target */
+      if_pf (msg->nBytes &&
+             ( ep->segLength == 0 || /* empty seg */
+              ((uintptr_t)ep->segAddr + msg->destOffset) == 0)) /* NULL target */
         AMUDP_REFUSEMESSAGE(EBADSEGOFF);
       if_pf (msg->destOffset + msg->nBytes > ep->segLength)
         AMUDP_REFUSEMESSAGE(EBADLENGTH);

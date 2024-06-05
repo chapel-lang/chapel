@@ -12,21 +12,29 @@ LIBGASNET_CONFIGURE_ARGS_EXTRA ?=# extra configure args to append
 LIBGASNET_CONFIGURE_ENV ?=# envvars for configure
 SUITE_BUILD_DIR:=$(shell pwd)/bgasnet
 
-_configure: force
-	@rm -f $@
-	rm -Rf $(SUITE_BUILD_DIR)
-	mkdir $(SUITE_BUILD_DIR)
-	@logfile=$(LIBGASNET_LOGDIR)/libgasnet-configure.log ; \
+do-configure: force
+	rm -Rf $(SUITE_BUILD_DIR)$(BUILD_VARIANT)
+	mkdir $(SUITE_BUILD_DIR)$(BUILD_VARIANT)
+	@logfile=$(LIBGASNET_LOGDIR)/libgasnet-configure$(BUILD_VARIANT).log ; \
 	 configure=$(TOP_SRCDIR)/gasnet/$(LIBGASNET_CONFIGURE) ; \
 	 crossconfig=$(TOP_SRCDIR)/gasnet/other/contrib/$(LIBGASNET_CONFIGURE) ; \
 	 if ! test -x $$configure && test -x $$crossconfig ; then \
 	   ln -s $$crossconfig $$configure ; \
 	 fi ; \
 	 set -x ; \
-	 ( cd $(SUITE_BUILD_DIR) && \
+	 ( cd $(SUITE_BUILD_DIR)$(BUILD_VARIANT) && \
 	   env $(LIBGASNET_CONFIGURE_ENV) \
 	   $$configure $(LIBGASNET_CONFIGURE_ARGS) $(LIBGASNET_CONFIGURE_ARGS_EXTRA) ) > $$logfile 2>&1 ; \
 	 rc=$$? ; cat $$logfile ; exit $$rc
+
+_configure: force
+	@rm -f $@
+	$(MAKE) do-configure BUILD_VARIANT=
+	@echo '#!/bin/sh' > $@ ; chmod +x $@
+
+_configure_%: force
+	@rm -f $@
+	$(MAKE) do-configure BUILD_VARIANT=$(patsubst _configure%,%,$@)
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 
 do-preclean-mpi: force
@@ -63,6 +71,26 @@ pedantic-%: $(SUITE_BUILD_DIR) force
 	 ( $(MAKE) do-conduit NETWORK=$$network MAKE_TARGET=$$target $(LIBGASNET_PEDANTIC_FLAGS) ) > $$logfile 2>&1 ; \
 	 rc=$$? ; cat $$logfile ; exit $$rc
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
+
+LIBGASNET_ALT_TEST ?= testgasnet
+
+do-alt-test: $(SUITE_BUILD_DIR) force
+	@rm -f $(TARGET)
+	@network=`echo $(TARGET) | $(PERL) -pe 's/^(.*)-(.*)-(.*)$$/$$2/'`; \
+	 parseq=`echo $(TARGET) | $(PERL) -pe 's/^(.*)-(.*)-(.*)$$/$$3/'`; \
+	 logfile=$(LIBGASNET_LOGDIR)/libgasnet-$(TARGET).log ; \
+	 set -x ; \
+	 case $(LIBGASNET_ALT_TEST) in \
+	   none) target=$$parseq;; \
+	      *) target=$(LIBGASNET_ALT_TEST)-$$parseq;; \
+	 esac; \
+	 ( $(MAKE) do-conduit NETWORK=$$network MAKE_TARGET=$$target ) > $$logfile 2>&1 ; \
+	 rc=$$? ; cat $$logfile ; exit $$rc
+	@echo '#!/bin/sh' > $(TARGET) ; chmod +x $(TARGET)
+
+alt_t-%:  force ; $(MAKE) do-alt-test TARGET=$@ SUITE_BUILD_DIR='$(SUITE_BUILD_DIR)_alt_t'
+alt_s-%:  force ; $(MAKE) do-alt-test TARGET=$@ SUITE_BUILD_DIR='$(SUITE_BUILD_DIR)_alt_s'
+alt_ts-%: force ; $(MAKE) do-alt-test TARGET=$@ SUITE_BUILD_DIR='$(SUITE_BUILD_DIR)_alt_ts'
 	 
 force:
 

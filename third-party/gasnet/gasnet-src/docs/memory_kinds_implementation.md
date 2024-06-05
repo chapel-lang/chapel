@@ -1,44 +1,28 @@
-# Preface
-
-```
-NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
-NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
-NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
-
-  This file documents the "Memory Kinds" feature of GASNet-EX, intended
-  only for use by developers with a specific interest in this feature.
-  Other client developers should limit themselves to the interfaces and
-  behaviors given in docs/GASNet-EX.txt and the GASNet-1 specification.
-
-  While it is intended that features and capabilities described here will
-  make their way into the GASNet-EX specification, the APIs in this file
-  and their implementation are only a prototype. All aspects of the APIs
-  and capabilities first introduced in this file are subject to
-  non-trivial changes before the prototype stage ends.
-
-NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
-NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
-NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
-```
+# GASNet-EX Memory Kinds: Implementation Status
 
 # Introduction
 
 This document provides a detailed status of the Memory Kinds feature
 implementation and is updated as that status changes.
 
-This document makes references to an external document, which is available on
-request from gasnet-staff@lbl.gov:  
+This document makes references to an external document:
 
-  + GASNet-EX API Proposal: Memory Kinds, Revision 2022.3.0
+  + GASNet-EX API: Memory Kinds
 
-For brevity, this will be referenced as simply "the API Proposal".
+which is available in the repository as <memory_kinds.pdf>
+For brevity, this will be referenced as simply "the MK API".
+
+The majority of this document will address only "CUDA_UVA" and "HIP" memory
+kinds.  For information regarding other experimental memory kinds, see the
+[Experimental Memory Kinds](#markdown-header-experimental-memory-kinds)
+section.
 
 # General Usage
 
 By default, the `configure` script does not enable support for
 any non-host memory kinds.  Use of new configure option `--enable-memory-kinds`
 enables probes for the necessary headers and libraries for all available device
-"kinds" (presently "CUDA_UVA" and "HIP") and enables the prototype implementation of
+"kinds" (presently "CUDA_UVA", "HIP" and "ZE") and enables the prototype implementation of
 memory kinds if such support is found.  This is the recommended mechanism to
 enable memory kinds support, since it will enable additional kinds as they are
 added.  For more detailed control for a given kind (such as "cuda-uva" or "hip") the
@@ -66,8 +50,8 @@ probe if needed:
   + `--with-hip-libs=...` or `HIP_LIBS`
   + `--with-hip-ldflags=...` or `HIP_LDFLAGS`
 
-Generally, it is sufficient to provide the installation prefix of the CUDA
-or HIP installation using the `--with-...-home` option or the corresponding
+Generally, it is sufficient to provide the installation prefix of the device
+library installation using the `--with-...-home` option or the corresponding
 environment variable, since the remaining settings
 all have sensible defaults once the installation prefix is known.
 
@@ -94,12 +78,12 @@ All current memory kinds implementation work is limited to two types of devices:
 2. Devices with the HIP API, which should include all AMD GPUs supported by AMD ROCm.
    Please consult the ROCm documentation for information on supported devices.
 
-Support is further limited to the following, and only when running drivers with
-support for PCIe peer-to-peer communication:  
+Support is further limited to the following conduit/network combinations, and
+only when running drivers with support for PCIe peer-to-peer communication:  
 
-  + ibv-conduit on Linux over Mellanox InfiniBand hardware  
-  + ucx-conduit on Linux over Mellanox InfiniBand hardware  
-  + ofi-conduit (`verbs` provider) on Linux over Mellanox InfiniBand hardware  
+  + ibv-conduit on Linux over NVIDIA/Mellanox InfiniBand hardware  
+  + ucx-conduit on Linux over NVIDIA/Mellanox InfiniBand hardware  
+  + ofi-conduit (`verbs` provider) on Linux over NVIDIA/Mellanox InfiniBand hardware  
   + ofi-conduit (`verbs` provider) on HPE Cray EX systems using Slingshot-10 NICs  
   + ofi-conduit (`cxi` provider) on HPE Cray EX systems using Slingshot-11 NICs  
   + ofi-conduit *may* work with other providers and/or networks, but the
@@ -256,7 +240,7 @@ GASNet-EX to perform such transfers.
 For the most up-to-date information on this issue see
 [bug 4149](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4149)
 
-## Small Gets into CUDA memory on Mellanox InfiniBand hardware
+## Small Gets into CUDA memory on supported InfiniBand hardware
 
 As documented
 [here](https://github.com/linux-rdma/rdma-core/blob/master/providers/mlx5/man/mlx5dv_create_qp.3.md)
@@ -267,13 +251,13 @@ eventually completed by a `memcpy()` to the original destination when the
 completion queue entry is reaped.  This `memcpy()` fails (with a `SIGSEGV`)
 when the destination is device memory.
 
-As noted in Mellanox's documentation, setting `MLX5_SCATTER_TO_CQE=0` in the
+As noted in the vendor's documentation, setting `MLX5_SCATTER_TO_CQE=0` in the
 environment disables this undesired behavior.  We hope to be able to provide a
 better solution (automatic and specific to device memory Gets) in a future
 release.
 
 This issue has been seen to impact ibv-, ucx- and ofi-conduits running over
-Mellanox InfiniBand hardware, but not on *every* system.  Because this
+supported InfiniBand hardware, but not on *every* system.  Because this
 work-around may increase the latency of all small RMA Gets, including those
 into host memory, it is recommended that you set `MLX5_SCATTER_TO_CQE=0` only
 if your system exhibits this issue.
@@ -306,7 +290,7 @@ will not define `GEX_MK_CLASS_*`.
 
 ## OFI/InfiniBand and CUDA memory
 
-When using ofi-conduit and the `verbs` provider over Mellanox InfiniBand
+When using ofi-conduit and the `verbs` provider over supported InfiniBand
 hardware, RMA Puts with their source in CUDA device memory may crash with a
 `SIGSEGV` due to incorrect algorithm selection inside libfabric.
 
@@ -326,11 +310,11 @@ For the most up-to-date information on this second issue see
 
 ## OFI/Slingshot-10 and CUDA memory
 
-Because the Slingshot-10 network uses a Mellanox InfiniBand HCA and libfabric's
+Because the Slingshot-10 network uses an InfiniBand HCA and libfabric's
 `verbs` provider, such systems are impacted by two of the known issues described
 above.
 
-1.  Small Gets into CUDA memory on Mellanox InfiniBand hardware  
+1.  Small Gets into CUDA memory on supported InfiniBand hardware  
     The work around of setting `MLX5_SCATTER_TO_CQE=0` is effective.
 
 2.  OFI/InfiniBand and CUDA memory  
@@ -398,6 +382,65 @@ HPE Cray EX systems with Slingshot-11:
 Eventual minimum requirements may be lower than on the platforms listed above, or
 possibly higher.
 
+# Experimental Memory Kinds
+
+## oneAPI Level Zero "ZE" Kind
+
+Currently there is experimental support for the "oneAPI Level Zero" API of Intel
+GPUs, which is known as the "ZE" kind.  There are known correctness issues,
+the performance has yet to be characterized or tuned, and there are multiple
+quality-of-implementation issues to be addressed before this support can be
+recommended for use in production.
+
+One notable aspect of the experimental status is that the kind-specific members
+in `gex_MK_Create_args_t` are subject to change in future releases.
+
+We advise contacting us at gasnet-staff@lbl.gov if you wish to use the ZE kind.
+
+Support for the ZE kind is only present in ofi-conduit, and has only been tested
+with the `cxi` provider for HPE Cray EX systems using Slingshot-11 NICs.  It has
+*not* been tested with ofi-conduit using the 'verbs' libfabric provider for
+Slingshot-10 or other networks using NVIDIA/Mellanox InfiniBand hardware.  
+We encourage reports of success or failure with other libfabric providers.
+
+There currently is no ZE memory kind support in ibv- or ucx-conduits.
+We are seeking access to InfiniBand-connected clusters of nodes with Intel GPUs
+to enable work on ibv- and ucx-conduits, and on the `verbs` provider for
+ofi-conduit.  
+Please contact us if you can provide such access.
+
+Configure options and environment variables to enable and configure the ZE kind
+are analogous to those for CUDA-UVA and HIP, and behave as described earlier
+under [General Usage](#markdown-header-general-usage):
+
+  + `--enable-kind-ze[=probe]`
+  + `--with-ze-home=...` or `ZE_HOME`
+  + `--with-ze-cflags=...` or `ZE_CFLAGS`
+  + `--with-ze-libs=...` or `ZE_LIBS`
+  + `--with-ze-ldflags=...` or `ZE_LDFLAGS`
+
+Clients can use the preprocessor identifier `GASNET_HAVE_MK_CLASS_ZE`
+(defined to `1` or undefined) to determine if support for the ZE memory
+kind was detected at configure time.
+
+### Minimum System Requirements for the ZE Kind
+
+Testing of the ZE kind and Slingshot-11 networks has shown the vendor-provided
+kernel with SUSE Linux Enterprise Server 15 SP4 (aka "SLES 15.4") to be usable.
+However, when using the kernel provided with SLES 15.3, all calls to
+`gex_EP_BindSegment()` with ZE device memory segments fail.  
+We encourage reports of success or failure with other kernel versions.
+
+### Known Issues with the ZE Memory Kind
+
+As of the time of writing, testing has shown 32KiB to be the largest device
+memory segment size which can successfully be used with the ZE kind and the
+ofi-conduit `cxi` provider.  Larger sizes fail in `gex_EP_BindSegment()`,
+with a verbose message indicating that the problem appears to be this known
+issue.  We encourage reports of success with larger device segments.
+For the most up-to-date information on this issue see
+[bug 4679](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4679)
+
 # Implementation Status Summary
 
 Currently the implementation is sufficient (when hardware, software and
@@ -455,26 +498,6 @@ This section describes the known limitations of each of the APIs introduced
 recently in order to support memory kinds.  Due to interaction among
 APIs, it is impossible to completely avoid forward references.
 
-## Renames:
-
-Some types, constants and functions have been renamed relative to their first
-appearances in the API Proposal (when it was known as "GASNet API Proposal:
-Multi-EP. Revision 2020.6.1"):
-
-  + `gex_Segment_EP_Bind()` is replaced by `gex_EP_SegmentBind()`
-  + `gex_MemKind_Create()` is replaced by `gex_MK_Create()`
-  + `gex_MemKind_Destroy()` is replaced by `gex_MK_Destroy()`
-  + `gex_MemKind_t` is replaced by `gex_MK_t`
-    - With the constant `GEX_MEMKIND_HOST` replaced by `GEX_MK_HOST`
-  + `gex_MemKind_Class_t` becomes `gex_MK_Class_t`
-    - With `GEX_MEMKIND_CLASS_` shortened `GEX_MK_CLASS_` in the naming of the
-      enum values
-  + `gex_MemKind_Create_args_t` to `gex_MK_Create_args_t`
-    - With `gex_mk_` shortened to `gex_` in naming of struct and union members
-
-The revisions 2020.11.0 and newer of the API Proposal uses the names above, and
-the remainder of this section will utilize the new names exclusively.
-
 ## `gex_Segment_Attach()`
 
 The `gex_Segment_Attach()` call remains the only supported means by which to
@@ -494,7 +517,7 @@ multi-EP support).
 
 On those conduits and segment modes listed under "Supported Configurations",
 the implementation of this API is believed to be
-complete with respect to the API Proposal.  In particular, it is capable of
+complete with respect to the MK API.  In particular, it is capable of
 creating segments of both client-allocated and GASNet-allocated memory, using
 either the defined `kind` value `GEX_MK_HOST` or a kind created using
 `gex_MK_Create()` with a class of `GEX_MK_CLASS_CUDA_UVA` or `GEX_MK_CLASS_HIP`.
@@ -534,7 +557,7 @@ multi-EP support).
 
 ## `gex_EP_PublishBoundSegment()`
 
-This API does not appear in the API Proposal, nor in related documents which
+This API does not appear in the MK API, nor in related documents which
 preceded it.  Complete semantics are documented in `docs/GASNet-EX.txt`.
 
 This call is currently necessary as the only means to actively distribute the
@@ -551,7 +574,7 @@ multi-EP support).
 ## `gex_TM_Pair()`
 
 This API is believed to be fully implemented in all conduits and accepted by
-all APIs required to do so by the API Proposal (notably the `gex_RMA_*()`,
+all APIs required to do so by the MK API (notably the `gex_RMA_*()`,
 `gex_AM_*()` and `gex_VIS_*()` API families).
 
 Since multi-EP support is currently exclusive to ibv, ucx and ofi conduits (and only in
@@ -572,8 +595,7 @@ Not implemented.
 
 ## `gex_MK_Create()`
 
-This API is implemented as described in the API Proposal (with some renames
-relative to their first appearance, as detailed earlier in this document), This
+This API is implemented as described in the MK API. This
 includes the conditional definition (defined to `1` or undefined) of
 `GASNET_HAVE_MK_CLASS_CUDA_UVA` and/or `GASNET_HAVE_MK_CLASS_HIP`, each of which
 is defined only when the respective headers and libs were located at configure
@@ -585,7 +607,7 @@ While these feature macros have only a conditional definition, the
 enum values `GEX_MK_CLASS_CUDA_UVA` and `GEX_MK_CLASS_HIP` are both
 defined unconditionally in `gasnet_mk.h`.
 Any calls to `gex_MK_Create()` specifying a class when *not* supported will
-return `GASNET_ERR_BAD_ARG`, as documented in the API Proposal.
+return `GASNET_ERR_BAD_ARG`, as documented in the MK API.
 
 ## `gex_MK_Destroy()`
 
