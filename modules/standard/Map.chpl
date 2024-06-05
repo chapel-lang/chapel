@@ -91,6 +91,22 @@ module Map {
     /* Type of map values. */
     type valType;
 
+    // NOTE: the compiler has some special handling for unstable warnings
+    // associated with map's parSafe field:
+    // * AggregateType::generateType -> ensures that specifying 'parSafe' in a type
+    //    expression for 'map' will generate a warning
+    // * functionResolution.createGenericRecordVarDefaultInitCall -> ensures that
+    //    the stable initializer is called when the compiler generates initializer
+    //     calls for variable declarations that don't specify 'parSafe' (or set it to false)
+    //
+    // This results in the following behavior:
+    //  - 'var m: map(int, int)' doesn't generate an unstable warning
+    //  - 'type t = map(int, int, false)' generates an unstable warning
+    //  - 'var m: map(int, int, parSafe=true)' generates two unstable warnings (one
+    //    for the type expression and one for the initializer call)
+    //  - 'var m: map(int, int, parSafe=false)' generates one unstable warning for
+    //    the type expression
+
     /* If `true`, this map will perform parallel safe operations. */
     @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future")
     param parSafe = false;

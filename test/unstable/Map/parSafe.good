@@ -5,4 +5,8 @@ parSafe.chpl:13: warning: 'map.parSafe' is unstable and is expected to be replac
 parSafe.chpl:15: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
 parSafe.chpl:16: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
 parSafe.chpl:20: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+parSafe.chpl:23: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+parSafe.chpl:24: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+parSafe.chpl:27: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+parSafe.chpl:23: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
 true
