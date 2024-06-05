@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM debian:bookworm as build
 
 ARG BASENAME=chapel
 ARG CHAPEL_VERSION=2.0.0

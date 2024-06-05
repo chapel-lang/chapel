@@ -1,4 +1,4 @@
-FROM fedora:37
+FROM fedora:37 as build
 
 ARG BASENAME=chapel
 ARG CHAPEL_VERSION=2.0.0
