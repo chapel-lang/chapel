@@ -222,7 +222,7 @@ if ($printusage == 1) {
     print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
     print "\t-blogdir <blogdir>             : specify the root of the chapel-blog repo to use with -blog or -blogonly";
     print "\t-chplcheck                     : run the chplcheck tests\n";
-    print "\t-chpl-language-server          : run the Chapel Language Server tests\n";
+    print "\t-chplcheckonly                 : only run the chplcheck tests\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
