@@ -1,1 +1,2 @@
-noUnscoreRename.chpl:5: syntax error: near '_'
+noUnscoreRename.chpl:4: In module 'User':
+noUnscoreRename.chpl:5: error: Throwaway variable '_' is not allowed in this context

@@ -153,6 +153,8 @@ struct Visitor {
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
   void checkLocalBlock(const Local* node);
+  bool checkUnderscoreInIdentifier(const Identifier* node);
+  bool checkUnderscoreInVariableOrFormal(const VarLikeDecl* node);
 
   /*
   TODO
@@ -167,6 +169,7 @@ struct Visitor {
   */
 
   // Called in the visitor loop to check against superclass types.
+  void checkUnderscoreName(const NamedDecl* node);
   void checkPrivateDecl(const Decl* node);
   void checkExportedName(const NamedDecl* node);
   void checkReservedSymbolName(const NamedDecl* node);
@@ -194,6 +197,7 @@ struct Visitor {
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
+  void visit(const Identifier* node);
   void visit(const Implements* node);
   void visit(const Import* node);
   void visit(const Local* node);
@@ -418,6 +422,7 @@ void Visitor::check(const AstNode* node) {
   // First run blanket checks over superclass node types.
   if (auto decl = node->toDecl()) checkPrivateDecl(decl);
   if (auto named = node->toNamedDecl()) {
+    checkUnderscoreName(named);
     checkExportedName(named);
     checkReservedSymbolName(named);
     warnUnstableSymbolNames(named);
@@ -1115,6 +1120,99 @@ void Visitor::checkGenericArrayTypeUsage(const BracketLoop* node) {
   }
 }
 
+bool Visitor::checkUnderscoreInVariableOrFormal(const VarLikeDecl* node) {
+  if (node->name() != USTR("_")) return true;
+  if (!parents_.empty()) {
+    auto directParent = parent(0);
+
+    if (auto td = directParent->toTupleDecl()) {
+      if (node != td->initExpression() && node != td->typeExpression()) {
+        // The variable is part of a tuple, like var (_, ) = x;
+        // This is allowed.
+        return true;
+      }
+    } else if (auto fn = directParent->toFunction()) {
+      for (int i = 0; i < fn->numFormals(); i++) {
+        if (node == fn->formal(i)) {
+          // The variable is a formal parameter, like proc foo(_) { ... };
+          // This is allowed.
+          return true;
+        }
+      }
+    } else if (auto fnSig = directParent->toFunctionSignature()) {
+      for (int i = 0; i < fnSig->numFormals(); i++) {
+        if (node == fnSig->formal(i)) {
+          // The variable is a formal parameter, like proc(_) { ... };
+          // This is allowed.
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
+  if (node->name() != USTR("_")) return true;
+
+  // The underscore is only allowed in certain special contexts:
+  // Use lists (use A as _) and tuple-declarations.
+
+  const AstNode* prev = node;
+  bool allTuples = true;
+  bool asVisRename = false;
+  for (size_t revIdx = 0; revIdx < parents_.size(); revIdx++) {
+    auto parent = parents_[parents_.size() - revIdx - 1];
+
+    if (auto op = parent->toOpCall()) {
+      if (revIdx == 0) {
+        // We're a direct child of an assignment operator, like _ = 42;
+        // This is not allowed; we have to be in a tuple.
+        break;
+      }
+
+      if (allTuples && op->actual(0) == prev) {
+        // We're in a variable like var (_, x) = (1, 2), where tuples are
+        // allowed on the left.
+        return true;
+      }
+    } else if (auto vc = parent->toVisibilityClause()) {
+      if (vc->symbol() == prev) {
+        // The '_' is nested inside a 'use A as _' or `import A as _` as the symbol
+        // ('_' are not allowed in limitations). Not clear yet if it's allowed,
+        // since only 'use' statements allow wildcards like this.
+        asVisRename = true;
+      }
+    } else if (parent->isUse()) {
+      if (asVisRename) {
+        // We occurred as a rename of the symbol being imported in a use
+        // statement. This is allowed.
+        return true;
+      }
+    }
+    prev = parent;
+  }
+
+  return false;
+}
+
+void Visitor::checkUnderscoreName(const NamedDecl* node) {
+  if (node->name() != USTR("_")) return;
+
+  // Underscores are only allowed in certain variables and formals;
+  // for all other named declarations, they are not allowed, and this
+  // conditional will fall through to the error below.
+  if (auto var = node->toVariable()) {
+    if (checkUnderscoreInVariableOrFormal(var)) return;
+  } else if (auto formal = node->toFormal()) {
+    if (checkUnderscoreInVariableOrFormal(formal)) return;
+  }
+
+  // Other cases return if no error is needed; so, if we reach here, emit one.
+  auto parentNode = parents_.size() > 0 ? parent(0) : nullptr;
+  CHPL_REPORT(context_, InvalidThrowaway, node, parentNode);
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -1556,6 +1654,7 @@ void Visitor::visit(const OpCall* node) {
 }
 
 void Visitor::visit(const Variable* node) {
+  checkUnderscoreInVariableOrFormal(node);
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
@@ -1608,6 +1707,13 @@ void Visitor::checkAllowedImplementsTypeIdent(const Implements* impl, const Iden
       typeName == USTR("index")) {
     CHPL_REPORT(context_, InvalidImplementsIdent, impl, node);
   }
+}
+
+void Visitor::visit(const Identifier* node) {
+  if (checkUnderscoreInIdentifier(node)) return;
+
+  auto parentNode = parents_.size() > 0 ? parent(0) : nullptr;
+  CHPL_REPORT(context_, InvalidThrowaway, node, parentNode);
 }
 
 void Visitor::visit(const Implements* node) {

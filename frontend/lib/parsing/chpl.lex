@@ -222,7 +222,6 @@ yield            return processToken(yyscanner, TYIELD);
 zip              return processToken(yyscanner, TZIP);
 
 "@"              return processToken(yyscanner, TATMARK);
-"_"              return processToken(yyscanner, TUNDERSCORE);
 
 "="              return processToken(yyscanner, TASSIGN);
 "+="             return processToken(yyscanner, TASSIGNPLUS);

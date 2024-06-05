@@ -1,1 +1,1 @@
-issue-25000-var.chpl:1: syntax error: near ')'
+issue-25000-var.chpl:1: error: Throwaway variable '_' is not allowed in this context
