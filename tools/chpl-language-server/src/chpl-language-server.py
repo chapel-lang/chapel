@@ -258,6 +258,8 @@ def encode_deltas(
     to it: each line is encoded as a delta from the previous line, and each
     column is encoded as a delta from the previous column.
 
+    `tokens` must be sorted by line number, and then by column number within
+
     Returns tokens with type token_type, and modifiers token_modifiers.
     """
 
@@ -688,6 +690,8 @@ class FileInfo:
         self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
+            # TODO: suppress resolution errors due to false-positives
+            # this should be removed once the resolver is finished
             with self.context.context.track_errors() as _:
                 self._search_instantiations(asts)
 
@@ -1853,6 +1857,8 @@ def run_lsp():
                     ls.get_dead_code_tokens(ast, fi.file_lines(), instantiation)
                 )
 
+        # sort tokens by line number, and then by column number
+        tokens.sort(key=lambda x: (x[0], x[1]))
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
     @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)
