@@ -67,6 +67,7 @@ _chpl ()
 --dyno \
 --dyno-break-error \
 --dyno-break-on-hash \
+--dyno-debug-print-parsed-files \
 --dyno-debug-trace \
 --dyno-gen-lib \
 --dyno-gen-std \
@@ -198,6 +199,7 @@ _chpl ()
 --no-dynamic-auto-local-access \
 --no-dyno \
 --no-dyno-break-error \
+--no-dyno-debug-print-parsed-files \
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
