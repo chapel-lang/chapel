@@ -512,60 +512,60 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
 
   std::vector<const Scope*> result;
 
-  ID curId = classDeclId;
-
   bool encounteredError = false;
-  while (!curId.isEmpty() && !encounteredError) {
-    auto ast = parsing::idToAst(context, curId);
-    if (!ast) break;
+  auto ast = parsing::idToAst(context, classDeclId);
+  if (!ast) return QUERY_END(result);
 
-    auto c = ast->toClass();
-    if (!c || c->numInheritExprs() == 0) break;
+  auto c = ast->toClass();
+  if (!c || c->numInheritExprs() == 0) return QUERY_END(result);
 
-    const uast::AstNode* lastParentClass = nullptr;
-    for (auto inheritExpr : c->inheritExprs()) {
-      // Resolve the parent class type expression
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForParentClassScopeResolve(context, c, r);
-      // Parsing excludes non-identifiers as parent class expressions.
-      //
-      // Intended to avoid calling methodReceiverScopes() recursively.
-      // Uses the empty 'savecReceiverScopes' because the class expression
-      // can't be a method anyways.
-      bool ignoredMarkedGeneric = false;
-      auto ident = Class::getInheritExprIdent(inheritExpr,
-                                              ignoredMarkedGeneric);
-      visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
+  const uast::AstNode* lastParentClass = nullptr;
+  ID parentClassDeclId;
+  for (auto inheritExpr : c->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClassScopeResolve(context, c, r);
+    // Parsing excludes non-identifiers as parent class expressions.
+    //
+    // Intended to avoid calling methodReceiverScopes() recursively.
+    // Uses the empty 'savecReceiverScopes' because the class expression
+    // can't be a method anyways.
+    bool ignoredMarkedGeneric = false;
+    auto ident = Class::getInheritExprIdent(inheritExpr,
+                                            ignoredMarkedGeneric);
+    visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
 
 
-      ResolvedExpression& re = r.byAst(ident);
-      if (re.toId().isEmpty()) {
-        context->error(inheritExpr, "invalid parent class expression");
+    ResolvedExpression& re = r.byAst(ident);
+    if (re.toId().isEmpty()) {
+      context->error(inheritExpr, "invalid parent class expression");
+      encounteredError = true;
+      break;
+    } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
+      // this is an interface; ignore it for the purposes of parent scopes.
+    } else {
+      if (lastParentClass) {
+        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
         encounteredError = true;
         break;
-      } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
-        // this is an interface; ignore it for the purposes of parent scopes.
-      } else {
-        if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
-          encounteredError = true;
-          break;
-        }
-        lastParentClass = inheritExpr;
-
-        result.push_back(scopeForId(context, re.toId()));
-        curId = re.toId();
-        // keep going through the list of parent expressions. hitting
-        // another parent expression that's a class after this point
-        // will result in an error. When we're done with other parent
-        // expressions, the loop will continue to searching for the
-        // parent classes of this parent class.
       }
-    }
+      lastParentClass = inheritExpr;
 
-    // only interfaces found, no need to look for more parents.
-    if (!lastParentClass) break;
+      result.push_back(scopeForId(context, re.toId()));
+      parentClassDeclId = re.toId();
+      // keep going through the list of parent expressions. hitting
+      // another parent expression that's a class after this point
+      // will result in an error. When we're done with other parent
+      // expressions, the loop will continue to searching for the
+      // parent classes of this parent class.
+    }
+  }
+
+  if (!encounteredError && !parentClassDeclId.isEmpty()) {
+    const auto& parentScopes =
+      gatherParentClassScopesForScopeResolving(context, parentClassDeclId);
+    result.insert(result.end(), parentScopes.begin(), parentScopes.end());
   }
 
   return QUERY_END(result);
@@ -2666,6 +2666,13 @@ Resolver::lookupIdentifier(const Identifier* ident,
   const Scope* scope = scopeStack.back();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
 
+  if (ident->name() == USTR("super")) {
+    // Super is a keyword, and should't be looked up in scopes. Return
+    // an empty ID to indicate that this identifier points to something,
+    // but that something has a special meaning.
+    return { BorrowedIdsWithName::createWithBuiltinId() };
+  }
+
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
@@ -2696,13 +2703,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
   // and probably a few other features.
   if (!scopeResolveOnly) {
     if (notFound) {
-      // If this identifier is 'super' and we couldn't find something it refers
-      // to, it could stand for 'this.super'. But in that case, no need to
-      // issue an error.
-      if (isPotentialSuper(ident)) {
-        // We found a single ID, and it's just 'super'.
-        return { BorrowedIdsWithName::createWithBuiltinId() };
-      } else if (!resolvingCalledIdent) {
+      if (!resolvingCalledIdent) {
         auto pair = namesWithErrorsEmitted.insert(ident->name());
         if (pair.second) {
           // insertion took place so emit the error
@@ -2722,13 +2723,13 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
 void Resolver::validateAndSetToId(ResolvedExpression& r,
                                   const AstNode* node,
-                                  const ID& id) {
-  r.setToId(id);
-  if (id.isEmpty()) return;
-  if (id.isFabricatedId()) return;
+                                  const ID& toId) {
+  r.setToId(toId);
+  if (toId.isEmpty()) return;
+  if (toId.isFabricatedId()) return;
 
   // Validate the newly set to ID.
-  auto idTag = parsing::idToTag(context, id);
+  auto idTag = parsing::idToTag(context, toId);
 
   // It shouldn't refer to a module unless the node is an identifier in one of
   // the places where module references are allowed (e.g. imports).
@@ -2741,7 +2742,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
           asttags::isDot(parentTag)) {
         // OK
       } else {
-        auto toAst = parsing::idToAst(context, id);
+        auto toAst = parsing::idToAst(context, toId);
         auto mod = toAst->toModule();
         auto parentAst = parsing::idToAst(context, parentId);
         CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
@@ -2750,33 +2751,32 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   }
 
   // If we're in a nested class, it shouldn't refer to an outer class' field.
-  auto scope = scopeForId(context, id);
-  auto parentId = scope->id();
+  auto parentId =
+    Builder::astTagIndicatesNewIdScope(idTag) ? toId : toId.parentSymbolId(context);
   auto parentTag = parsing::idToTag(context, parentId);
   if (asttags::isAggregateDecl(parentTag) &&
       parentId.contains(node->id()) &&
-      parentId != id /* It's okay to refer to the record itself */) {
+      parentId != toId /* It's okay to refer to the record itself */) {
     // Referring to a field of a class that's surrounding the current node.
     // Loop upwards looking for a composite type.
-    auto searchId = parsing::idToParentId(context, node->id());
+    auto searchId = node->id().parentSymbolId(context);
     while (!searchId.isEmpty()) {
-      auto searchTag = parsing::idToTag(context, searchId);
       if (searchId == parentId) {
         // We found the aggregate type in which the to-ID is declared,
         // so there's no nested class issues.
         break;
-      } else if (asttags::isAggregateDecl(searchTag)) {
+      } else if (asttags::isAggregateDecl(parsing::idToTag(context, searchId))) {
         auto parentAst = parsing::idToAst(context, parentId);
         auto searchAst = parsing::idToAst(context, searchId);
         auto searchAD = searchAst->toAggregateDecl();
         // It's an error!
         CHPL_REPORT(context, NestedClassFieldRef, parentAst->toAggregateDecl(),
-                    searchAD, node, id);
+                    searchAD, node, toId);
         break;
       }
 
       // Move on to the surrounding ID.
-      searchId = parsing::idToParentId(context, searchId);
+      searchId = searchId.parentSymbolId(context);
     }
   }
 }
@@ -2797,19 +2797,6 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
   }
 
   r.setMostSpecific(mostSpecific);
-}
-
-static bool isCalledExpression(Resolver* rv, const AstNode* ast) {
-  if (!ast) return false;
-
-  auto p = parsing::parentAst(rv->context, ast);
-  if (!p) return false;
-
-  if (auto call = p->toCall())
-    if (auto ce = call->calledExpression())
-      return ce == ast;
-
-  return false;
 }
 
 static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
@@ -2833,7 +2820,11 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   if (qt.kind() == QualifiedType::PARENLESS_FUNCTION) return;
 
   bool emitUnstableAndDeprecationWarnings = true;
-  if (isCalledExpression(rv, astMention)) {
+  if (rv->nearestCalledExpression() == astMention) {
+    // Note: the above conditional assumes that the astMention is
+    // currently the thing being traversed (which is what makes
+    // nearestCalledExpression() sufficient).
+    //
     // For functions, do not warn, since call resolution will take
     // care of that.  However, if we're referring to other symbol
     // kinds, we know right now that a deprecation warning should be

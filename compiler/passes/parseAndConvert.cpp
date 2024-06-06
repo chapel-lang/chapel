@@ -1439,5 +1439,15 @@ void parseAndConvertUast() {
   // Revert to using the default error handler now.
   gContext->installErrorHandler(nullptr);
 
+  if (fDynoDebugPrintParsedFiles) {
+    std::set<std::string> files;
+    auto filesUstr = chpl::parsing::introspectParsedFiles(gContext);
+    for (auto ustr : filesUstr) {
+      files.insert(ustr.str());
+    }
+    for (auto file : files) {
+      fprintf(stderr, "Parsed file: %s\n", file.c_str());
+    }
+  }
   parsed = true;
 }

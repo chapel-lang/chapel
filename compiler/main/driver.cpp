@@ -151,6 +151,7 @@ bool fDriverDoMonolithic = false;
 bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
 char driverTmpDir[FILENAME_MAX] = "";
+bool fExitLeaks = true;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
@@ -375,6 +376,7 @@ bool fDynoScopeResolve = true;
 bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
+bool fDynoDebugPrintParsedFiles = false;
 bool fDynoVerifySerialization = false;
 bool fDynoGenLib = false;
 bool fDynoGenStdLib = false;
@@ -1439,6 +1441,7 @@ static ArgumentDescription arg_desc[] = {
  {"driver-compilation-phase", ' ', NULL, "Run driver compilation phase (internal use flag)", "F", &fDriverCompilationPhase, NULL, setSubInvocation},
  {"driver-makebinary-phase", ' ', NULL, "Run driver makeBinary phase (internal use flag)", "F", &fDriverMakeBinaryPhase, NULL, setSubInvocation},
  {"driver-debug-phase", ' ', "<phase>", "Specify driver phase to run when debugging: compilation, makeBinary, all", "S", NULL, NULL, setDriverDebugPhase},
+ {"exit-leaks", ' ', NULL, "[Don't] leak memory on exit", "N", &fExitLeaks, NULL, NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
@@ -1508,6 +1511,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-production", ' ', NULL, "Enable [disable] using both dyno and production scope resolution", "N", &fDynoScopeProduction, "CHPL_DYNO_SCOPE_PRODUCTION", NULL},
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
+ {"dyno-debug-print-parsed-files", ' ', NULL, "Enable [disable] printing all files that were parsed by Dyno", "N", &fDynoDebugPrintParsedFiles, "CHPL_DYNO_DEBUG_PRINT_PARSED_FILES", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},

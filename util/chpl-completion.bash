@@ -67,6 +67,7 @@ _chpl ()
 --dyno \
 --dyno-break-error \
 --dyno-break-on-hash \
+--dyno-debug-print-parsed-files \
 --dyno-debug-trace \
 --dyno-gen-lib \
 --dyno-gen-std \
@@ -75,6 +76,7 @@ _chpl ()
 --dyno-scope-resolve \
 --dyno-verify-serialization \
 --early-deinit \
+--exit-leaks \
 --explain-call \
 --explain-call-id \
 --explain-instantiation \
@@ -197,12 +199,14 @@ _chpl ()
 --no-dynamic-auto-local-access \
 --no-dyno \
 --no-dyno-break-error \
+--no-dyno-debug-print-parsed-files \
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
 --no-dyno-scope-resolve \
 --no-dyno-verify-serialization \
 --no-early-deinit \
+--no-exit-leaks \
 --no-explain-verbose \
 --no-fast-followers \
 --no-force-vectorize \
