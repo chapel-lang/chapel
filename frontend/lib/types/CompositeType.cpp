@@ -135,36 +135,32 @@ void CompositeType::stringify(std::ostream& ss,
 }
 
 const RecordType* CompositeType::getStringType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "String._string");
   auto name = UniqueString::get(context, "string");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "String", "_string");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getRangeType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelRange._range");
   auto name = UniqueString::get(context, "_range");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelRange", "_range");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getBytesType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "Bytes._bytes");
   auto name = UniqueString::get(context, "bytes");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "Bytes", "_bytes");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getLocaleType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelLocale._locale");
   auto name = UniqueString::get(context, "locale");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelLocale", "_locale");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
@@ -209,9 +205,8 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "Errors.Error");
   auto name = UniqueString::get(context, "Error");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "Errors", "Error");
   auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
   auto bct = BasicClassType::get(context, id,
                                 name,
