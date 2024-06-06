@@ -92,6 +92,19 @@ def get_compile_args(flag):
         ucp_val = get_uniq_cfg_path(flag)
         return third_party_utils.get_bundled_compile_args('jemalloc',
                                                           ucp=ucp_val)
+    elif jemalloc_val == 'system':
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_compile_args('jemalloc')
+        if args != (None, None):
+            return args
+        # try homebrew
+        jemalloc_prefix = chpl_platform.get_homebrew_prefix('jemalloc')
+        if jemalloc_prefix:
+            return ([], ['-I{0}'.format(os.path.join(jemalloc_prefix, 'include'))])
+
+        envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+        error("Could not find a suitable jemalloc installation. Please install jemalloc or set {}=bundled".format(envname, envname))
+
     return ([ ], [ ])
 
 # flag is host or target
@@ -116,7 +129,18 @@ def get_link_args(flag):
         return (libs, morelibs)
 
     if jemalloc_val == 'system':
-        return ([ ], ['-ljemalloc'])
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_link_args('jemalloc')
+        if args != (None, None):
+            return args
+        # try homebrew
+        jemalloc_prefix = chpl_platform.get_homebrew_prefix('jemalloc')
+        if jemalloc_prefix:
+            return ([], ['-L{0}'.format(os.path.join(jemalloc_prefix, 'lib')),
+                         '-ljemalloc'])
+
+        envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+        error("Could not find a suitable jemalloc installation. Please install jemalloc or set {}=bundled or {}=none.".format(envname, envname))
 
     return ([ ], [ ])
 
