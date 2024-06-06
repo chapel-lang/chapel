@@ -154,9 +154,13 @@ The following are further requirements for GPU support:
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable GPU support, set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel. Several other variables affect how Chapel generates
-code for and interacts with GPUs. These variables include:
+
+Several variables affect how Chapel generates code for and interacts with GPUs.
+These variables include:
+
+* ``CHPL_LOCALE_MODEL`` --- must be set to ``gpu`` to enable GPU support.
+  Chapel will need to be rebuilt if this value is changed.  For more information,
+  see :ref:`readme-chplenv.CHPL_LOCALE_MODEL`.
 
 * ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd``, or ``cpu``. If unset, as
   part of its build process, Chapel will attempt to automatically determine what
@@ -179,8 +183,6 @@ code for and interacts with GPUs. These variables include:
   Chapel tries to automatically determine this path based on the location of
   ``hipcc``.  This variable is unused if not targeting AMD GPUs. For more
   information, see the `Vendor Portability`_ section.
-
-* ``CHPL_LOCALE_MODEL`` --- must be set to ``gpu`` to enable GPU support.
 
 * ``CHPL_RT_NUM_GPUS_PER_LOCALE`` --- sets how many GPU sublocales to have per
   locale. If using ``CHPL_GPU=cpu``, may be set to any non negative value,
