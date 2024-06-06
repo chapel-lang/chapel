@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import os
 import sys
+import optparse
 
 import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, warning
+from utils import memoize, warning, error
 
 # returns True if CHPL_GMP was set by the user
 # (i.e. not inferred to be the default)
@@ -37,6 +38,16 @@ def get():
 
     return gmp_val
 
+
+@memoize
+def has_system_gmp_install():
+    # try pkg-config
+    if third_party_utils.pkgconfig_has_system_package('gmp'):
+        return True
+    # try homebrew
+    if chpl_platform.get_homebrew_prefix('gmp'):
+        return True
+    return False
 
 @memoize
 def get_uniq_cfg_path():
@@ -86,9 +97,26 @@ def get_link_args():
 
     return ([ ], [ ])
 
+
 def _main():
     gmp_val = get()
-    sys.stdout.write("{0}\n".format(gmp_val))
+
+    parser = optparse.OptionParser(usage='usage: %prog [--prefix] [--compile] [--link]')
+    parser.add_option('--compile', dest='action',
+                      action='store_const',
+                      const='compile', default='')
+    parser.add_option('--link', dest='action',
+                      action='store_const',
+                      const='link', default='')
+
+    (options, args) = parser.parse_args()
+
+    if options.action == 'compile':
+        sys.stdout.write("{0}\n".format(get_compile_args()))
+    elif options.action == 'link':
+        sys.stdout.write("{0}\n".format(get_link_args()))
+    else:
+        sys.stdout.write("{0}\n".format(gmp_val))
 
 
 if __name__ == '__main__':
