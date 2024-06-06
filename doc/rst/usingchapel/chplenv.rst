@@ -417,6 +417,8 @@ CHPL_LOCALE_MODEL
         flat     top-level locales are not further subdivided
         numa     top-level locales are further subdivided into
                  sublocales, each one a NUMA domain
+        gpu      top-level locales are further subdivided into
+                 sublocales, each one a GPU
         ======== =============================================
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
@@ -424,6 +426,8 @@ CHPL_LOCALE_MODEL
    .. warning:: The NUMA locale model is deprecated and will be removed
       in a future release.
 
+   .. warning:: The GPU Support in Chapel is experimental and the interface
+      is subject to change.  Please see :ref:`readme-gpu` for more information.
 
 .. _readme-chplenv.CHPL_TASKS:
 

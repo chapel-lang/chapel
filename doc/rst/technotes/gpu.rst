@@ -120,6 +120,9 @@ used with GPU support.
 
 The following are further requirements for GPU support:
 
+* You must set ``CHPL_LOCALE_MODEL`` to ``gpu`` to enable GPU support
+  before building Chapel.
+
 * For targeting NVIDIA or AMD GPUs, ``LLVM`` must be used as Chapel's backend
   compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``).
 
@@ -152,9 +155,13 @@ The following are further requirements for GPU support:
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable GPU support, set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel. Several other variables affect how Chapel generates
-code for and interacts with GPUs. These variables include:
+Several variables affect how Chapel generates code for and interacts with GPUs.
+These variables include:
+
+* ``CHPL_LOCALE_MODEL`` --- must be set to ``gpu`` to enable GPU support. If
+  unset, Chapel will default to the ``flat`` locale model. Changing this variable
+  requires rebuilding Chapel. For more information on locale models, see
+  :ref:`readme-chplenv.CHPL_LOCALE_MODEL` .
 
 * ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd``, or ``cpu``. If unset, as
   part of its build process, Chapel will attempt to automatically determine what
