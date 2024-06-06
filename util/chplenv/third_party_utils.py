@@ -98,6 +98,10 @@ def filter_libs(bundled_libs, system_libs):
 
     return (bundled_ret, system_ret)
 
+@memoize
+def pkgconfig_has_system_package(pkg):
+    exists, returncode, _, _ = try_run_command(['pkg-config', '--exists', pkg])
+    return exists and returncode == 0
 #
 # Return compiler arguments required to use a system library known to
 # pkg-config. The pkg argument should be the name of a system-installed
@@ -108,8 +112,7 @@ def filter_libs(bundled_libs, system_libs):
 @memoize
 def pkgconfig_get_system_compile_args(pkg):
     # check that pkg-config knows about the package in question
-    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
-    if returncode:
+    if not pkgconfig_has_system_package(pkg):
         return (None, None)
     # run pkg-config to get the cflags
     cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
@@ -170,8 +173,7 @@ def pkgconfig_default_static():
 @memoize
 def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
     # check that pkg-config knows about the package in question
-    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
-    if returncode:
+    if not pkgconfig_has_system_package(pkg):
         return (None, None)
     # run pkg-config to get the link flags
     static_arg = [ ]
