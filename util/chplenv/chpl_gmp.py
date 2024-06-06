@@ -49,6 +49,17 @@ def get_compile_args():
     gmp_val = get()
     if gmp_val == 'bundled':
          return third_party_utils.get_bundled_compile_args('gmp')
+    elif gmp_val == 'system':
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_compile_args('gmp')
+        if args != (None, None):
+            return args
+        # try homebrew
+        gmp_prefix = chpl_platform.get_homebrew_prefix('gmp')
+        if gmp_prefix:
+            return ([], ['-I{0}'.format(os.path.join(gmp_prefix, 'include'))])
+
+        error("Could not find a suitable GMP installation.  Please install GMP or set CHPL_GMP=bundled or CHPL_GMP=none.")
 
     return ([ ], [ ])
 
@@ -61,7 +72,17 @@ def get_link_args():
          return third_party_utils.pkgconfig_get_bundled_link_args('gmp')
 
     elif gmp_val == 'system':
-        return ([ ], ['-lgmp'])
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_link_args('gmp')
+        if args != (None, None):
+            return args
+        # try homebrew
+        gmp_prefix = chpl_platform.get_homebrew_prefix('gmp')
+        if gmp_prefix:
+            return ([], ['-L{0}'.format(os.path.join(gmp_prefix, 'lib')),
+                         '-lgmp'])
+
+        error("Could not find a suitable GMP installation. Please install GMP or set CHPL_GMP=bundled or CHPL_GMP=none.")
 
     return ([ ], [ ])
 
