@@ -1442,10 +1442,11 @@ astToAttributeGroup(Context* context, const uast::AstNode* ast) {
     // If we find an attribute group on the AST, return it.
     if (auto ag = ast->attributeGroup()) return ag;
 
-    // Multi-decls aren't nested, so no need to check parents for a group.
-    if (ast->isMultiDecl()) return nullptr;
+    // Right now, only Variables and TupleDecls can inherit attributes
+    // from enclosing MultiDecls or TupleDecls.
+    if (!ast->isVariable() && !ast->isTupleDecl()) return nullptr;
 
-    // handle nesting: what if we're a Variable inside a MultiDecl?
+    // handle nesting: what if we're a Variable inside a MultiDecl or TupleDecl?
     auto parent = parentAst(context, ast);
     bool done = !parent || (!parent->isTupleDecl() && !parent->isMultiDecl());
     // recurse if not done
