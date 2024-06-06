@@ -123,6 +123,8 @@ The following are further requirements for GPU support:
 * For targeting NVIDIA or AMD GPUs, ``LLVM`` must be used as Chapel's backend
   compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``).
 
+* The environment variable ``CHPL_LOCALE_MODEL`` must be set to ``gpu``.
+
 * Specifically for targeting NVIDIA GPUs:
 
   * CUDA toolkit version 11.x or 12.x must be installed.
@@ -177,6 +179,8 @@ code for and interacts with GPUs. These variables include:
   Chapel tries to automatically determine this path based on the location of
   ``hipcc``.  This variable is unused if not targeting AMD GPUs. For more
   information, see the `Vendor Portability`_ section.
+
+* ``CHPL_LOCALE_MODEL`` --- must be set to ``gpu`` to enable GPU support.
 
 * ``CHPL_RT_NUM_GPUS_PER_LOCALE`` --- sets how many GPU sublocales to have per
   locale. If using ``CHPL_GPU=cpu``, may be set to any non negative value,
