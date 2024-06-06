@@ -254,7 +254,7 @@ void AMMPI_processPacket(ammpi_buf_t *buf, int isloopback) {
       break;
     case ammpi_Long: 
       /* check segment limits */
-      if_pf (((uintptr_t)ep->segAddr + msg->destOffset) == 0 || ep->segLength == 0)
+      if_pf (msg->nBytes && (((uintptr_t)ep->segAddr + msg->destOffset) == 0 || ep->segLength == 0))
         AMMPI_REFUSEMESSAGE(ep, buf, EBADSEGOFF);
       if_pf (msg->destOffset + msg->nBytes > ep->segLength || msg->nBytes > AMMPI_MAX_LONG)
         AMMPI_REFUSEMESSAGE(ep, buf, EBADLENGTH);

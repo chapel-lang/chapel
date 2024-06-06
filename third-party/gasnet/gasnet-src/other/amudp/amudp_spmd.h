@@ -87,6 +87,12 @@ extern const char* AMUDP_SPMDgetenvMaster(const char *keyname);
  * the string returned should never be modified by the caller
  */
 
+extern const char *AMUDP_check_env_prefix(const char* prefix);
+/* This function searches the environment of the SPMD master as it appeared at spawn time
+ * for any variable name with the given prefix.  Returns an arbitary matching
+ * "VAR=VAL" string if any is found, and NULL otherwise
+ */
+
 extern int AMUDP_SPMDAllGather(void *source, void *dest, size_t len);
 /* AMUDP_SPMDAllGather: gather len bytes from source buf on each node, concatenate them and write 
    them into the dest buffer (which must have length len*numnodes) in rank order

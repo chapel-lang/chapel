@@ -3,6 +3,20 @@ README file for aries-conduit
 Paul H. Hargrove <PHHargrove@lbl.gov>
 Larry Stewart <stewart@serissa.com> 
 
+=====================================================================
+=====================================================================
+
+The aries-conduit is now DEPRECATED.
+No further development of aries-conduit is anticipated.
+It will be removed in a future release.
+
+The GASNet developers have neither the access nor the funding to keep
+this conduit working in the near future.  If you are interested in
+contributing maintenance for this conduit, please contact
+gasnet-staff@lbl.gov ASAP
+
+=====================================================================
+=====================================================================
 
 User Information:
 -----------------
@@ -471,7 +485,7 @@ The following table indicates the pairs of atomic operation and data type that
 are eligible for offloaded to the Aries NIC.  The offloaded atomics will be
 used when the arguments to gex_AD_Create() express only supported pairs (unless
 suppressed by use of GEX_FLAG_AD_FAVOR_MY_RANK or GEX_FLAG_AD_FAVOR_MY_NBRHD
-flags, or in a single-process run).
+flags, or in a run spanning a single shared memory nbrhd.)
 
           I32   U32   I64   U64   FLT   DBL
           ---   ---   ---   ---   ---   ---

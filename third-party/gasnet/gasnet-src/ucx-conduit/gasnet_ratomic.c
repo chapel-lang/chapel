@@ -571,8 +571,47 @@ GASNETE_DT_INT_APPLY(GASNETE_UCXRATOMIC_TBL)
 
 void gasnete_ucxratomic_init_hook(gasneti_AD_t real_ad)
 {
+    gex_Flags_t flags = real_ad->_flags;
+    gasneti_TM_t real_tm = real_ad->_tm;
     gex_DT_t dt = real_ad->_dt;
     gex_OP_t ops = real_ad->_ops;
+
+    // Check for cases that should favor AM over NIC
+    if (! (flags & GEX_FLAG_AD_FAVOR_REMOTE)) {
+        if (flags & (GEX_FLAG_AD_FAVOR_MY_RANK | GEX_FLAG_AD_FAVOR_MY_NBRHD)) {
+            // Client's flags favor AM-based atomics
+            goto use_am;
+        } else if (real_tm->_size == 1) {
+            // Singleton team case favors AM-based
+            goto use_am;
+        }
+    #if GASNET_PSHM
+        // TODO-EX: once atomics are supported on non-primordial endpoints,
+        // this closed form could incorrectly enable tools-based atomic ops
+        // in the initator (bypassing AM) on memory which is not cross-mapped.
+        // TODO-EX: this closed form misses an optimization opportunity for
+        // cases in which the primordial team spans multiple neighborhoods, but
+        // the AD's team only includes EPs within a single nbrhd (bound to
+        // primordial segments).  In this case the reference implementation can
+        // always bypass AM and operate directly on cross-mapped shared segments
+        // (without concerns for attentiveness).
+        else if (gasneti_mysupernode.node_count == gasneti_nodes) {
+            // Single-neighborhood case favors AM-based *if* the datatype is
+            // "tools safe" (and thus not actually using AM).  Otherwise, we
+            // will assume that the NIC is a better option since it does not
+            // rely on target attentiveness.
+            #define GASNETE_UCXRATOMIC_TOOLS_CASE(dtcode) \
+                case dtcode##_dtype:                    \
+                    if (GASNETE_RATOMIC_PSHMSAFE##dtcode) goto use_am; \
+                    break;
+            switch (dt) {
+                GASNETE_DT_APPLY(GASNETE_UCXRATOMIC_TOOLS_CASE)
+                default: gasneti_unreachable();
+            }
+            #undef GASNETE_UCXRATOMIC_TOOLS_CASE
+        }
+    #endif
+    }
 
 #define GASNETE_UCXRATOMIC_TBL_CASE(dtcode) \
     case dtcode##_dtype:                    \

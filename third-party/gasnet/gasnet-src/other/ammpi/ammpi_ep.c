@@ -1133,6 +1133,17 @@ extern int AM_GetMsgTag(void *token, tag_t *tagp) {
   return AM_OK;
 }
 /* ------------------------------------------------------------------------------------ */
+extern int AMMPI_GetTokenInfo(void *token, handler_t *handler, ammpi_category_t *cat, int *is_req) {
+  AMX_CHECKINIT();
+  AMX_CHECK_ERR((!token || !handler || !cat || !is_req),BAD_ARG);
+
+  ammpi_msg_t *msg = &((ammpi_buf_t *)token)->Msg;
+  *handler = msg->handlerId;
+  *cat     = AMMPI_MSG_CATEGORY(msg);
+  *is_req  = AMMPI_MSG_ISREQUEST(msg);
+  return AM_OK;
+}
+/* ------------------------------------------------------------------------------------ */
 extern int AMMPI_SetHandlerCallbacks(ep_t ep, AMMPI_preHandlerCallback_t preHandlerCallback, 
                                               AMMPI_postHandlerCallback_t postHandlerCallback) {
   AMX_CHECKINIT();

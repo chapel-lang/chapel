@@ -44,7 +44,11 @@ CHAPEL_URL      ?= https://github.com/$(CHAPEL_GIT_REPO)/archive/$(CHAPEL_GIT_CO
 CHAPEL_ARCHIVE  ?= $(notdir $(CHAPEL_URL))
 chapel-download: force
 	rm -Rf $(CHAPEL_BLDDIR) $(CHAPEL_TMPDIR) && mkdir $(CHAPEL_TMPDIR)
-	cd $(CHAPEL_TMPDIR) && $(WGET) $(CHAPEL_URL) 2>&1 || ( cat wget-log 2> /dev/null ; exit 3 ) || exit $$?
+	if ( expr $(CHAPEL_URL) : file:/ || expr /$(CHAPEL_URL) : // ) >/dev/null; then \
+	  set -x ; cd $(CHAPEL_TMPDIR) && ln -s $(CHAPEL_URL:file:%=%) . ; \
+	else \
+	  set -x ; cd $(CHAPEL_TMPDIR) && $(WGET) $(CHAPEL_URL) 2>&1 || ( cat wget-log 2> /dev/null ; exit 3 ) || exit $$? ; \
+	fi
 	cd $(CHAPEL_TMPDIR) && cat wget-log 2> /dev/null ; rm -f wget-log ; exit 0
 	@CHAPEL_TESTDIR=`pwd` && \
 	 cd $(CHAPEL_TMPDIR) && CHAPEL_ARCHIVE=`/bin/ls` && CHAPEL_DOWNLOAD="$(strip $(CHAPEL_DOWNLOAD))" && \
@@ -79,6 +83,7 @@ chapel-unpack-tgz:   force
 
 ifneq ($(strip $(CHPL_COMM_DEBUG)),)
 CHPL_GASNET_MORE_CFG_OPTIONS += --enable-debug
+CHAPEL_MAKE_RUNTIME_ARGS += DEBUG=1 WARNINGS=1 ASSERTS=1
 endif
 CHAPEL_MAKE_ARGS += CHPL_GASNET_MORE_CFG_OPTIONS="$(CHPL_GASNET_MORE_CFG_OPTIONS)"
 
@@ -127,6 +132,8 @@ _chapel: force
 	mkdir -p "$(CHAPEL_HOME)"
 	cd $(CHAPEL_BLDDIR) && . util/setchplenv.$(CHAPEL_SHELL) && (                       \
 	  env $(CONFIG_ENV) $(CHAPEL_BUILD_ENV) ./configure --chpl-home="$(CHAPEL_HOME)" && \
+	  env $(COMMON_ENV) $(CHAPEL_BUILD_ENV) $(MAKE) $(CHAPEL_MAKE_ARGS) compiler &&     \
+	  env $(COMMON_ENV) $(CHAPEL_BUILD_ENV) $(MAKE) $(CHAPEL_MAKE_ARGS) $(CHAPEL_MAKE_RUNTIME_ARGS) runtime && \
 	  env $(COMMON_ENV) $(CHAPEL_BUILD_ENV) $(MAKE) $(CHAPEL_MAKE_ARGS) all             \
 	) >> $(LOGFILE) 2>&1
 	if test "$(CHAPEL_HOME)" != "$(CHAPEL_BLDDIR)"; then \
@@ -178,9 +185,8 @@ BENCHMARKS = lcals lulesh miniMD
 $(BENCHMARKS): force; $(MAKE) one_test TEST_EXE=$@ TEST_DIR=examples/benchmarks/$@
 
 # directory examples/benchmarks/hpcc
-HPCC = stream stream-ep ra ra-atomics fft ptrans hpl
+HPCC = stream stream-ep ra ra-atomics
 $(HPCC): force; $(MAKE) one_test TEST_EXE=$@ TEST_DIR=examples/benchmarks/hpcc
-chpl_flags_fft = --ieee-float
 chpl_flags_ra = -O -s useOn=true
 chpl_flags_ra-atomics = -O
 unexport $(addprefix chpl_flags_,$(HPCC))
