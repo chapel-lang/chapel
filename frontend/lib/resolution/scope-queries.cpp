@@ -1056,6 +1056,11 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
 // Performance: ideally this could be a SmallPtrSet, but we're getting
 // different .c_str() pointers for USTR("int") and strings we get from the
 // parser. Seems fixable.
+//
+// Other reserved identifiers (bytes, imag) could be added here, but in
+// my performance benchmarks they didn't occur frequently so were not
+// worth the additional checking by this function. This list is not intended
+// to be complete; rather, it is intended to cover the most common cases.
 static bool isReservedIdentifier(UniqueString name) {
   static std::unordered_set<UniqueString> reserved = {
     USTR("bool"),
