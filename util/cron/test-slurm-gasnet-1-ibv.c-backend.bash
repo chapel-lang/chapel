@@ -13,7 +13,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ex-ibv.c-backend"
 
 export CHPL_COMM_SUBSTRATE=ibv
 
-# Test GASNet EX
-export CHPL_GASNET_VERSION=ex
+# Test GASNet 1
+export CHPL_GASNET_VERSION=1
 
 $CWD/nightly -cron -examples ${nightly_args} < /dev/null

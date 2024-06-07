@@ -17,8 +17,8 @@ perf_hpe_apollo_args="-performance-configs gn-ibv-large:v,gn-ex-ibv-large:v -per
 
 export GASNET_PHYSMEM_MAX="0.90"
 
-# Test GASNet EX
-export CHPL_GASNET_VERSION=ex
+# Test GASNet 1
+export CHPL_GASNET_VERSION=1
 
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance-description gn-ex-ibv-large -numtrials 1 -sync-dir-suffix gex"

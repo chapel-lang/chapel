@@ -13,7 +13,7 @@ export GASNET_QUIET=Y
 # Test a GASNet compile using the default segment (everything for linux64)
 export CHPL_GASNET_SEGMENT=everything
 
-# Test GASNet EX
-export CHPL_GASNET_VERSION=ex
+# Test GASNet 1
+export CHPL_GASNET_VERSION=1
 
 $CWD/nightly -cron $(get_nightly_paratest_args 8)
