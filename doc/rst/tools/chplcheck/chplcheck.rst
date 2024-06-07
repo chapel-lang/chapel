@@ -147,7 +147,10 @@ Emacs
 With Emacs 29.1, support has been added for language server protocols via `Eglot
 <https://www.gnu.org/software/emacs/manual/html_mono/eglot.html>`_
 
-To utilize the linter via Eglot, add the following to your ``.emacs`` file:
+To utilize the linter via Eglot, add the following to your ``.emacs`` file (note
+that this assumes you have already followed the instructions in
+``$CHPL_HOME/highlight/emacs/README.rst`` to install Chapel syntax highlighting
+in Emacs):
 
 .. code-block:: lisp
 
