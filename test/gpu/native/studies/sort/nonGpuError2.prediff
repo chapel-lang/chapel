@@ -1,0 +1,10 @@
+#!/bin/bash
+
+outfile=$2
+not_enough_gpus="This program requires at least two GPUs."
+halt_msg="nonGpuError2.chpl:10: error: halt reached - gpuSort can only be on an array from the gpu on which it lives (array is on LOCALE0, call was made on LOCALE0-GPU1)"
+if grep -q "$not_enough_gpus" "$outfile"; then
+  echo -e "Passed" > "$outfile"
+elif grep -q "$halt_msg" "$outfile"; then
+  echo -e "Passed" > "$outfile"
+fi

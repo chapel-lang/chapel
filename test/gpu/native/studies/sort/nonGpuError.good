@@ -1,0 +1,1 @@
+nonGpuError.chpl:4: error: halt reached - gpuSort can only be on an array from the gpu on which it lives (array is on LOCALE0, call was made on LOCALE0-GPU0)

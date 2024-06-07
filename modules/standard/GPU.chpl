@@ -981,6 +981,12 @@ module GPU
   */
   proc gpuSort(ref gpuInputArr : [] ?t) {
     if !here.isGpu() then halt("gpuSort must be run on a gpu locale");
+    // Since we don't have distributed arrays for GPU
+    // targetLocales will only return one locale so we just index into that
+    // Change this when we add support for sorting distributed GPU arrays
+    var x = gpuInputArr.targetLocales()[0];
+    if x != here then
+      halt("gpuSort can only be on an array from the gpu on which it lives (array is on ",  x ,", call was made on " , here, ")");
     if gpuInputArr.size == 0 then return;
 
     if CHPL_GPU=="cpu" {
