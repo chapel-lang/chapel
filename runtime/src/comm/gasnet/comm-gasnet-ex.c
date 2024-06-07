@@ -766,7 +766,7 @@ static void setup_polling_pre_init(void) {
 
   // If there is a send thread give it exclusive access to the NIC. This
   // has no effect if there isn't a send thread.
-  chpl_env_set("GASNET_SND_THREAD_POLL_MODE", "exclusive", 1 /*overwrite*/);
+  chpl_env_set("GASNET_SND_THREAD_POLL_MODE", "exclusive", 0 /*overwrite*/);
 #endif
 }
 
