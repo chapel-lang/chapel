@@ -868,6 +868,14 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   setup_ibv();
   setup_polling();
 
+  // PSHM needs an external progress thread to guarantee AM handlers make
+  // progress in the absence of other GASNet calls, so if we've disabled our
+  // external progress thread then we should disable PSHM
+  if (!pollingRequired) {
+    // disable PSHM even if it was enabled during configuration.
+    chpl_env_set("GASNET_SUPERNODE_MAXSIZE", "1", 0);
+  }
+
   // Setting this to 1 will disable PSHM even if it was enabled during
   // configuration. PSHM requires an external progress thread, which this
   // shim doesn't create.
