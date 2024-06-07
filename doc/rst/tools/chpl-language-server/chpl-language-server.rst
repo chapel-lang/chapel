@@ -62,6 +62,39 @@ VSCode
 Install the ``chapel`` extension from the `Visual Studio Code marketplace
 <https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
 
+Emacs
+^^^^^
+
+With Emacs 29.1, support has been added for language server protocols via `Eglot
+<https://www.gnu.org/software/emacs/manual/html_mono/eglot.html>`_
+
+To utilize the Chapel language server with Eglot, add the following to your
+``.emacs`` file:
+
+.. code-block:: lisp
+
+  (with-eval-after-load 'eglot
+    (add-to-list 'eglot-server-programs
+                 '(chpl-mode . ("chpl-language-server"))))
+
+This will enable using the language server with a particular ``.chpl`` file by
+calling ``M-x eglot``.
+
+To automatically use Eglot and the language server with every ``.chpl`` file,
+additionally add the following to your ``.emacs`` file:
+
+.. code-block:: lisp
+
+   (add-hook 'chpl-mode-hook 'eglot-ensure)
+
+.. note::
+
+   There is currently a limitation with Eglot that only one language server can
+   be registered per language.  We are investigating merging the support for
+   :ref:`readme-chplcheck` such that both can be used in Emacs at the same time,
+   stay tuned!
+
+
 Supported Features
 ------------------
 
