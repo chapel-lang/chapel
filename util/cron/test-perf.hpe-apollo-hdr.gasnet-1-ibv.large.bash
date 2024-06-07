@@ -13,7 +13,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.gasnet-1-ibv.large"
 
 source $CWD/common-hpe-apollo.bash
 source $CWD/common-perf-hpe-apollo-hdr.bash
-perf_hpe_apollo_args="-performance-configs gn-ibv-large:v,gn-ex-ibv-large:v -perflabel ml- -startdate 08/28/23"
+perf_hpe_apollo_args="-performance-configs gn-ibv-large:v,gn-1-ibv-large:v -perflabel ml- -startdate 08/28/23"
 
 export GASNET_PHYSMEM_MAX="0.90"
 
@@ -21,6 +21,6 @@ export GASNET_PHYSMEM_MAX="0.90"
 export CHPL_GASNET_VERSION=1
 
 nightly_args="${nightly_args} -no-buildcheck"
-perf_args="-performance-description gn-ex-ibv-large -numtrials 1 -sync-dir-suffix gex"
+perf_args="-performance-description gn-1-ibv-large -numtrials 1 -sync-dir-suffix g1"
 
 $CWD/nightly -cron ${perf_args} ${perf_hpe_apollo_args} ${nightly_args}

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test gasnet-ex mpi against hellos on cray-cs.
+# Test gasnet mpi against hellos on cray-cs.
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash

@@ -2,7 +2,7 @@
 #
 # Multi-node, multi-locale testing on a cray-cs cluster with slurm-gasnetrun_ibv
 # launcher:
-# test gasnet-ex (segment large) against "examples"
+# test gasnet (segment large) against "examples"
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
