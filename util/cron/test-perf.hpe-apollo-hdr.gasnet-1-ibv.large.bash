@@ -9,7 +9,7 @@ export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'
 
 source $CWD/common-perf.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.gasnet-ex-ibv.large"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.gasnet-1-ibv.large"
 
 source $CWD/common-hpe-apollo.bash
 source $CWD/common-perf-hpe-apollo-hdr.bash
