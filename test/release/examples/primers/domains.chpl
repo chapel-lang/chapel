@@ -37,8 +37,9 @@ writeln(RD); // {1..10, 1..10, 1..10}
 // reuse of existing domains.
 //
 // The :proc:`~ChapelDomain.expand` method returns a new domain that is expanded or
-// contracted depending on the sign of the offset argument.  The
-// expansion/contraction happens symmetrically to the lower and upper bound.
+// contracted in each dimension depending on the value and sign of the offset
+// argument.  The expansion/contraction in each dimension happens symmetrically to
+// the lower and upper bound.
 //
 var RDexp = RD.expand((1,2,-2));
 writeln(RDexp); // {0..11, -1..12, 3..8}
@@ -47,13 +48,16 @@ writeln(RDexp); // {0..11, -1..12, 3..8}
 // The :proc:`~ChapelDomain.exterior` method returns a new domain that is an
 // exterior portion of the current domain.  This is not the "border" of the
 // domain (which is not a rectangular domain), in particular the new domain
-// will share no indices with the original domain.  Inputs specify the width
-// of the new domain in the respective dimension.  A positive value specifies
-// that the exterior should be taken from the high bound; a negative offset,
-// the low bound.
+// will share no indices with the original domain unless an offset is 0, in which
+// case the respective range will be that of the original domain.
+// Inputs specify the width of the new domain in the respective dimension.
+// A positive value specifies that the exterior should be taken from the high
+// bound; a negative offset, the low bound.
 //
-var RDext = RD.exterior((1,4,-4));
-writeln(RDext); // {11..11, 11..14, -3..0}
+var RDext0 = RD.exterior((1,4,-4));
+writeln(RDext0); // {11..11, 11..14, -3..0}
+var RDext1 = RD.exterior((0,4,0));
+writeln(RDext1); // {1..10, 11..14, 1..10}
 
 //
 // The :proc:`~ChapelDomain.interior` method returns a new domain that is the
@@ -66,10 +70,13 @@ writeln(RDint); // {9..10, 1..5, 10..10}
 
 //
 // The :proc:`~ChapelDomain.translate` method returns a new domain that is the
-// current domain translated by the offset.
+// current domain translated by the offset. If only a single offset is passed
+// it will apply to all dimensions.
 //
-var RDtrans = RD.translate((0,4,-4));
-writeln(RDtrans); // {1..10, 5..14, -3..6}
+var RDtrans0 = RD.translate((0,4,-4));
+writeln(RDtrans0); // {1..10, 5..14, -3..6}
+var RDtrans1 = RD.translate(4);
+writeln(RDtrans1); // {5..14, 5..14, 5..14}
 
 //
 // A subdomain is a domain that is declared in terms of a parent
@@ -96,7 +103,7 @@ writeln("RSD2:", RSD2); // RSD2:{1..0, 1..0, 1..0}
 
 // We can select parts of the original rectangular domain using slicing.
 RSD1 = RD[..n/2, .., ..];   // This gives half of the domain,
-RSD2 = RD[n/2+1.., .., ..]; // and this gives the other half. 
+RSD2 = RD[n/2+1.., .., ..]; // and this gives the other half.
 
 writeln("RSD1:", RSD1); // RSD1:{1..5, 1..10, 1..10}
 writeln("RSD2:", RSD2); // RSD2:{6..10, 1..10, 1..10}
