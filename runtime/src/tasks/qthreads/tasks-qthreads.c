@@ -960,7 +960,14 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     wrapper_info->cpu = cpu;
     wrapper_info->thread = allocate_comm_task();
     pthread_t dummy;
-    return pthread_create(&dummy, NULL, comm_task_trampoline, wrapper_info);
+    int rc = pthread_create(&dummy, NULL, comm_task_trampoline, wrapper_info);
+    if (rc == 0) {
+        rc = pthread_detach(dummy);
+        if (rc) {
+            chpl_error("pthread_detach of comm_task_trampoline failed", 0, 0);
+        }
+    }
+    return rc;
 }
 
 void chpl_task_addTask(chpl_fn_int_t       fid,
