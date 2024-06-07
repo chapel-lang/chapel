@@ -71,7 +71,7 @@ With Emacs 29.1, support has been added for language server protocols via `Eglot
 To utilize the Chapel language server with Eglot, add the following to your
 ``.emacs`` file (note that this assumes you have already followed the
 instructions in ``$CHPL_HOME/highlight/emacs/README.rst`` to install Chapel
-syntax highlighting in emacs):
+syntax highlighting in Emacs):
 
 .. code-block:: lisp
 
