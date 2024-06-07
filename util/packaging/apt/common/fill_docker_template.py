@@ -42,6 +42,7 @@ substitutions[
 ] = """
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
+    rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
     nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
     unset CHPL_HOME
@@ -49,26 +50,23 @@ RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
 
 substitutions["BUILD_GASNET_UDP"] = """
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
-    export CHPL_COMM=gasnet && \\
+    rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
+    echo "CHPL_COMM=gasnet" >> $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
     nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
-    unset CHPL_HOME && \\
-    unset CHPL_COMM
+    unset CHPL_HOME
 """
 
 substitutions["BUILD_OFI_SLURM"] = """
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
-    export CHPL_COMM=ofi && \\
-    export CHPL_LAUNCHER=slurm-srun && \\
-    export CHPL_COMM_OFI_OOB=pmi2 && \\
-    export CHPL_LIBFABRIC=bundled && \\
+    rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
+    echo "CHPL_COMM=ofi" >> $CHPL_HOME/chplconfig && \\
+    echo "CHPL_LAUNCHER=slurm-srun" >> $CHPL_HOME/chplconfig && \\
+    echo "CHPL_COMM_OFI_OOB=pmi2" >> $CHPL_HOME/chplconfig && \\
+    echo "CHPL_LIBFABRIC=bundled" >> $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
     nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
-    unset CHPL_HOME && \\
-    unset CHPL_COMM && \\
-    unset CHPL_LAUNCHER && \\
-    unset CHPL_COMM_OFI_OOB && \\
-    unset CHPL_LIBFABRIC
+    unset CHPL_HOME
 """
 
 substitutions[
