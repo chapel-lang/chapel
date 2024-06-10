@@ -142,6 +142,9 @@ from lsprotocol.types import (
 import argparse
 import configargparse
 
+REAL_NUMBERIC = (chapel.RealLiteral, chapel.IntLiteral, chapel.UintLiteral)
+NUMERIC = REAL_NUMBERIC + (chapel.ImagLiteral,)
+
 def is_basic_literal_like(node: chapel.AstNode) -> Optional[chapel.Literal]:
     """
     Check for "basic" literals: basically, 1, "hello", -42, etc.
@@ -155,7 +158,7 @@ def is_basic_literal_like(node: chapel.AstNode) -> Optional[chapel.Literal]:
     if isinstance(node, chapel.OpCall) and node.op() == "-" and node.num_actuals() == 1:
         # Do not recurse; do not consider --42 as a basic literal.
         act = node.actual(0)
-        if isinstance(act, chapel.Literal):
+        if isinstance(act, NUMERIC):
             return act
 
     return None
@@ -177,7 +180,7 @@ def is_literal_like(node: chapel.AstNode) -> bool:
             left = is_basic_literal_like(node.actual(0))
             right = node.actual(1)
 
-            real_number = (chapel.RealLiteral, chapel.IntLiteral)
+            real_number = REAL_NUMBERIC
             imag_number = chapel.ImagLiteral
             if isinstance(left, real_number) and isinstance(right, imag_number):
                 return True
