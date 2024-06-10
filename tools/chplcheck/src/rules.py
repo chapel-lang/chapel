@@ -36,6 +36,32 @@ def variables(node: AstNode):
             yield from variables(child)
 
 
+def might_incorrectly_report_location(node: AstNode) -> bool:
+    """
+    Some Dyno AST nodes do not return locations in the way that we expect.
+    For instance, some NamedDecl nodes currently use the name as the location,
+    which does not indicate their actual indentation. Rules that depend on
+    indentation should leave these variables alone.
+    """
+
+
+    # some NamedDecl nodes currently use the name as the location, which
+    # does not indicate their actual indentation.
+    if isinstance(node, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+        return True
+
+    # private function locations are bugged and don't include the 'private'
+    # keyword.
+    #
+    # https://github.com/chapel-lang/chapel/issues/24818
+    elif (
+        isinstance(node, (Function, Use, Import))
+        and node.visibility() != ""
+    ):
+        return True
+
+    return False
+
 def fixit_remove_unused_node(
     node: AstNode,
     lines: Optional[List[str]] = None,
@@ -403,6 +429,8 @@ def register_rules(driver: LintDriver):
         for child in root:
             if isinstance(child, Comment):
                 continue
+            if might_incorrectly_report_location(child):
+                continue
             yield from MisleadingIndentation(context, child)
 
             if prev is not None:
@@ -432,6 +460,8 @@ def register_rules(driver: LintDriver):
                 # safe to access [-1], loops must have at least 1 child
                 for blockchild in reversed(list(grandchildren[-1])):
                     if isinstance(blockchild, Comment):
+                        continue
+                    if might_incorrectly_report_location(blockchild):
                         continue
                     prev = blockchild
                     prevloop = child
@@ -640,21 +670,10 @@ def register_rules(driver: LintDriver):
             if isinstance(child, Comment):
                 continue
 
-            # some NamedDecl nodes currently use the name as the location, which
-            # does not indicate their actual indentation.
-            if isinstance(child, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+            if might_incorrectly_report_location(child):
                 continue
             # Empty statements get their own warnings, no need to warn here.
             elif isinstance(child, EmptyStmt):
-                continue
-            # private function locations are bugged and don't include the 'private'
-            # keyword.
-            #
-            # https://github.com/chapel-lang/chapel/issues/24818
-            elif (
-                isinstance(child, (Function, Use, Import))
-                and child.visibility() != ""
-            ):
                 continue
 
             line, depth = child.location().start()
