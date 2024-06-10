@@ -1119,7 +1119,8 @@ void clean_exit(int status) {
 
   if (fExitLeaks) {
     // The context's destructor takes a while, and we're about to exit anyway,
-    // so deliberately leak it.
+    // so deliberately leak it. Still perform file-based cleanup, though.
+    gContext->cleanupTmpDirIfNeeded();
   } else {
     delete gContext;
   }
