@@ -986,7 +986,7 @@ module GPU
     // Change this when we add support for sorting distributed GPU arrays
     const loc = gpuInputArr.targetLocales()[0];
     if loc != here then
-      halt("gpuSort can only be on an array from the gpu on which it lives (array is on ",  loc ,", call was made on " , here, ")");
+      halt("gpuSort must be run on the gpu where its argument array lives (array is on ",  loc ,", gpuSort was called on " , here, ")");
     if gpuInputArr.size == 0 then return;
 
     if CHPL_GPU=="cpu" {
