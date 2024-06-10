@@ -897,7 +897,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (!usePSHM) {
     // Setting this to 1 will disable PSHM even if it was enabled during
     // GASNet configuration.
-    chpl_env_set("GASNET_SUPERNODE_MAXSIZE", "1", 1);
+    chpl_env_set("GASNET_SUPERNODE_MAXSIZE", "1", 0);
   }
 
   setup_polling_pre_init();
