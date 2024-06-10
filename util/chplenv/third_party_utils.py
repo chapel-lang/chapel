@@ -5,6 +5,7 @@ import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
 from utils import error, memoize, run_command, warning, try_run_command
+import homebrew_utils
 
 #
 # This is the default unique configuration path which
@@ -98,10 +99,6 @@ def filter_libs(bundled_libs, system_libs):
 
     return (bundled_ret, system_ret)
 
-@memoize
-def pkgconfig_has_system_package(pkg):
-    exists, returncode, _, _ = try_run_command(['pkg-config', '--exists', pkg])
-    return exists and returncode == 0
 #
 # Return compiler arguments required to use a system library known to
 # pkg-config. The pkg argument should be the name of a system-installed
@@ -174,7 +171,8 @@ def pkgconfig_default_static():
 @memoize
 def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
     # check that pkg-config knows about the package in question
-    if not pkgconfig_has_system_package(pkg):
+    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
+    if returncode:
         return (None, None)
     # run pkg-config to get the link flags
     static_arg = [ ]
@@ -429,3 +427,12 @@ def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
     replace_path = install_path
 
     return (read_pkg_config_file(pcpath, find_path, replace_path), pcpath)
+
+
+def could_not_find_pkgconfig_pkg(pkg, envname):
+    if homebrew_utils.homebrew_exists() and homebrew_utils.homebrew_pkg_exists(pkg):
+        # tell user to install pkg-config as well
+        error("{0} is installed via homebrew, but pkg-config is not installed. Please install pkg-config with `brew install pkg-config`.".format(pkg))
+    else:
+        install_str = " with `brew install {0}` ".format(pkg) if homebrew_utils.homebrew_exists() else ""
+        error("Could not find a suitable {0} installation. Please install {0}{1}or set {2}=bundled`.".format(pkg, install_str, envname))

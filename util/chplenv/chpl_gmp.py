@@ -38,17 +38,6 @@ def get():
 
     return gmp_val
 
-
-@memoize
-def has_system_gmp_install():
-    # try pkg-config
-    if third_party_utils.pkgconfig_has_system_package('gmp'):
-        return True
-    # try homebrew
-    if chpl_platform.get_homebrew_prefix('gmp'):
-        return True
-    return False
-
 @memoize
 def get_uniq_cfg_path():
     return third_party_utils.default_uniq_cfg_path()
@@ -65,12 +54,8 @@ def get_compile_args():
         args = third_party_utils.pkgconfig_get_system_compile_args('gmp')
         if args != (None, None):
             return args
-        # try homebrew
-        gmp_prefix = chpl_platform.get_homebrew_prefix('gmp')
-        if gmp_prefix:
-            return ([], ['-I{0}'.format(os.path.join(gmp_prefix, 'include'))])
-
-        error("Could not find a suitable GMP installation.  Please install GMP or set CHPL_GMP=bundled or CHPL_GMP=none.")
+        else:
+            third_party_utils.could_not_find_pkgconfig_pkg("gmp", "CHPL_GMP")
 
     return ([ ], [ ])
 
@@ -87,13 +72,8 @@ def get_link_args():
         args = third_party_utils.pkgconfig_get_system_link_args('gmp')
         if args != (None, None):
             return args
-        # try homebrew
-        gmp_prefix = chpl_platform.get_homebrew_prefix('gmp')
-        if gmp_prefix:
-            return ([], ['-L{0}'.format(os.path.join(gmp_prefix, 'lib')),
-                         '-lgmp'])
-
-        error("Could not find a suitable GMP installation. Please install GMP or set CHPL_GMP=bundled or CHPL_GMP=none.")
+        else:
+            third_party_utils.could_not_find_pkgconfig_pkg("gmp", "CHPL_GMP")
 
     return ([ ], [ ])
 

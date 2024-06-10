@@ -8,6 +8,7 @@ import re
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
 import chpl_gpu
+import homebrew_utils
 from utils import which, memoize, error, run_command, try_run_command, warning
 from collections import defaultdict
 
@@ -254,7 +255,7 @@ def find_system_llvm_config():
         return llvm_config
 
 
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    homebrew_prefix = homebrew_utils.get_homebrew_prefix()
 
     paths = [ ]
     for vers in llvm_versions():

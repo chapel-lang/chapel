@@ -92,22 +92,6 @@ def is_arch_linux():
     arch_file = "/etc/arch-release"
     return os.path.exists(arch_file)
 
-# if running on a system with homebrew, return the homebrew prefix
-# if not, return None
-@memoize
-def get_homebrew_prefix(pkg=None):
-    # Check to see if Homebrew is installed. If it is, return the prefix.
-    cmd = ['brew', '--prefix']
-    if pkg is not None:
-        cmd.append(str(pkg))
-    exists, retcode, my_out, my_err = try_run_command(cmd)
-    if exists and retcode == 0:
-        # Make sure to include homebrew search path
-        homebrew_prefix = my_out.strip()
-        return homebrew_prefix
-
-    return None
-
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')
     parser.add_option('--host', dest='flag', action='store_const',
