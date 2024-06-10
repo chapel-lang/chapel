@@ -169,7 +169,7 @@ def is_literal_like(node: chapel.AstNode) -> bool:
 
     if isinstance(node, chapel.OpCall):
         # A complex number is far from a literal in the AST; in fact, it
-        # potentially has as many as 4 AST nodes: -1 - 2i has a unary negation,
+        # potentially has as many as 4 AST nodes: -1 + 2i has a unary negation,
         # an addition, and two "pure" literals.
         op = node.op()
         if (op == "+" or op == "-") and node.num_actuals() == 2:
