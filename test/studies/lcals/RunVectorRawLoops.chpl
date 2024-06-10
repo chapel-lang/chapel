@@ -1,9 +1,9 @@
-module RunVectorizeOnlyRawLoops {
+module RunVectorRawLoops {
   use LCALSDataTypes;
   use Timer;
   private use Math;
 
-  proc runVectorizeOnlyRawLoops(loop_stats: [] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runVectorRawLoops(loop_stats: [] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
 
