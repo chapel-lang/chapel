@@ -23,4 +23,9 @@ writeln("second thing");
   writeln(i);
   writeln("second thing");
 
+  proc f() {
+      for 1..10 do
+          writeln("Hello, world!");
+      var unrelated = "hi";
+  }
 }
