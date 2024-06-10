@@ -44,7 +44,6 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     indentation should leave these variables alone.
     """
 
-
     # some NamedDecl nodes currently use the name as the location, which
     # does not indicate their actual indentation.
     if isinstance(node, (VarLikeDecl, TupleDecl, ForwardingDecl)):
@@ -54,13 +53,11 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     # keyword.
     #
     # https://github.com/chapel-lang/chapel/issues/24818
-    elif (
-        isinstance(node, (Function, Use, Import))
-        and node.visibility() != ""
-    ):
+    elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
         return True
 
     return False
+
 
 def fixit_remove_unused_node(
     node: AstNode,
