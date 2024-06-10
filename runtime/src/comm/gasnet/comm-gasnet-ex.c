@@ -729,6 +729,8 @@ static chpl_bool pollingRequired = false;
 static atomic_spinlock_t pollingLock;
 static chpl_bool usePSHM = false;
 static chpl_bool pshmInUse = false;
+static chpl_bool haveSendThread = false;
+static chpl_bool haveReceiveThread = false;
 
 static inline void am_poll_try(void) {
   // Serialize polling for IBV, UCX, Aries, and OFI. Concurrent polling causes
@@ -998,10 +1000,18 @@ static void start_gasnet_progress_threads(void) {
   for (int i = 0; i < count; i++) {
 
     // Don't create an internal receive thread if there is an external one
+    // Test for equality ensures a combination RCV+SND thread will still run
     if (pollingRequired &&
         (info[i].gex_thread_roles == GEX_THREAD_ROLE_RCV)) {
       continue;
     }
+    if (info[i].gex_thread_roles & GEX_THREAD_ROLE_RCV) {
+      haveReceiveThread = true;
+    }
+    if (info[i].gex_thread_roles & GEX_THREAD_ROLE_SND) {
+      haveSendThread = true;
+    }
+
     if (chpl_task_createCommTask((chpl_fn_p) info[i].gex_progress_fn,
                                  info[i].gex_progress_arg, reservedCore)) {
       chpl_internal_error("unable to start internal GASNet progress thread");
@@ -1015,11 +1025,10 @@ void chpl_comm_post_task_init(void) {
 #if defined(GASNET_CONDUIT_IBV)
   if ((verbosity >= 2) && (chpl_nodeID == 0)) {
     printf("PSHM is %s.\n", pshmInUse? "enabled" : "disabled");
-    chpl_bool enabled = chpl_env_str_to_bool("GASNET_SND_THREAD",
-                                             getenv("GASNET_SND_THREAD"),
-                                             false);
-    printf("GASNet send progress thread is %s.\n", enabled ? "enabled" :
-          "disabled");
+    printf("GASNet receive progress thread is %s.\n", haveReceiveThread ?
+           "enabled" : "disabled");
+    printf("GASNet send progress thread is %s.\n", haveSendThread ?
+           "enabled" : "disabled");
   }
 #endif
 }
