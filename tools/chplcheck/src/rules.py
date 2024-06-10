@@ -46,6 +46,8 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
 
     # some NamedDecl nodes currently use the name as the location, which
     # does not indicate their actual indentation.
+    #
+    # https://github.com/chapel-lang/chapel/issues/25208
     if isinstance(node, (VarLikeDecl, TupleDecl, ForwardingDecl)):
         return True
 
