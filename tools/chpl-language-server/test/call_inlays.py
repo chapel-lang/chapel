@@ -104,6 +104,29 @@ async def test_call_inlays_complex(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_call_inlays_negative(client: LanguageClient):
+    """
+    Ensure that call inlays are shown for negative literals in call expressions.
+    """
+
+    file = """
+        proc foo(a) {}
+        foo(-42);
+        foo(-42.0);
+        foo(-42i);
+        foo(-42.0i);
+
+        // Not 'literals' in our sense:
+        foo(- -42);
+        """
+
+    inlays = [(pos((i, 4)), "a = ", None) for i in range(1, 5)]
+
+    async with source_file(client, file) as doc:
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+
+
+@pytest.mark.asyncio
 async def test_nested_call_inlays(client: LanguageClient):
     """
     Ensure that call inlays are shown for literals in nested call expressions.
