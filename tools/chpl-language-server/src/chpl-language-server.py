@@ -145,6 +145,7 @@ import configargparse
 REAL_NUMBERIC = (chapel.RealLiteral, chapel.IntLiteral, chapel.UintLiteral)
 NUMERIC = REAL_NUMBERIC + (chapel.ImagLiteral,)
 
+
 def is_basic_literal_like(node: chapel.AstNode) -> Optional[chapel.Literal]:
     """
     Check for "basic" literals: basically, 1, "hello", -42, etc.
@@ -155,13 +156,18 @@ def is_basic_literal_like(node: chapel.AstNode) -> Optional[chapel.Literal]:
     if isinstance(node, chapel.Literal):
         return node
 
-    if isinstance(node, chapel.OpCall) and node.op() == "-" and node.num_actuals() == 1:
+    if (
+        isinstance(node, chapel.OpCall)
+        and node.op() == "-"
+        and node.num_actuals() == 1
+    ):
         # Do not recurse; do not consider --42 as a basic literal.
         act = node.actual(0)
         if isinstance(act, NUMERIC):
             return act
 
     return None
+
 
 def is_literal_like(node: chapel.AstNode) -> bool:
     if is_basic_literal_like(node):
