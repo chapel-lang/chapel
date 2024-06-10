@@ -39,12 +39,8 @@ def get_compile_args():
         args = third_party_utils.pkgconfig_get_system_compile_args('hwloc')
         if args != (None, None):
             return args
-        # try homebrew
-        hwloc_prefix = chpl_platform.get_homebrew_prefix('hwloc')
-        if hwloc_prefix:
-            return ([], ['-I{0}'.format(os.path.join(hwloc_prefix, 'include'))])
-
-        error("Could not find a suitable hwloc installation.  Please install hwloc or set CHPL_HWLOC=bundled or CHPL_HWLOC=none.")
+        else:
+            third_party_utils.could_not_find_pkgconfig_pkg("hwloc", "CHPL_HWLOC")
 
     return ([ ], [ ])
 
@@ -66,14 +62,8 @@ def get_link_args():
                 error("CHPL_HWLOC=system requires hwloc >= 2.1", ValueError)
 
             return third_party_utils.pkgconfig_get_system_link_args('hwloc')
-        # try homebrew
-        hwloc_prefix = chpl_platform.get_homebrew_prefix('hwloc')
-        if hwloc_prefix:
-            # TODO: this should also check the version
-            return ([], ['-L{0}'.format(os.path.join(hwloc_prefix, 'lib')),
-                         '-lhwloc'])
-
-        error("Could not find a suitable hwloc installation. Please install hwloc or set CHPL_HWLOC=bundled or CHPL_HWLOC=none.")
+        else:
+            third_party_utils.could_not_find_pkgconfig_pkg("hwloc", "CHPL_HWLOC")
 
     return ([ ], [ ])
 
@@ -89,12 +79,8 @@ def get_prefix():
             prefix = run_command(['pkg-config', '--variable', 'prefix', 'hwloc'])
             if prefix:
                 return prefix.strip()
-        # try homebrew
-        hwloc_prefix = chpl_platform.get_homebrew_prefix('hwloc')
-        if hwloc_prefix:
-            return hwloc_prefix.strip()
-
-        error("Could not find a suitable hwloc installation.  Please install hwloc or set CHPL_HWLOC=bundled or CHPL_HWLOC=none.")
+        else:
+            third_party_utils.could_not_find_pkgconfig_pkg("hwloc", "CHPL_HWLOC")
 
     return ''
 

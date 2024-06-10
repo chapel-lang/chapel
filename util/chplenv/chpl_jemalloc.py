@@ -4,6 +4,7 @@ import sys
 import optparse
 
 import chpl_bin_subdir, chpl_compiler, chpl_mem, chpl_platform, overrides, third_party_utils
+import homebrew_utils
 from utils import error, memoize, run_command, warning
 
 
@@ -97,13 +98,9 @@ def get_compile_args(flag):
         args = third_party_utils.pkgconfig_get_system_compile_args('jemalloc')
         if args != (None, None):
             return args
-        # try homebrew
-        jemalloc_prefix = chpl_platform.get_homebrew_prefix('jemalloc')
-        if jemalloc_prefix:
-            return ([], ['-I{0}'.format(os.path.join(jemalloc_prefix, 'include'))])
-
-        envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
-        error("Could not find a suitable jemalloc installation. Please install jemalloc or set {}=bundled".format(envname, envname))
+        else:
+            envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+            third_party_utils.could_not_find_pkgconfig_pkg("jemalloc", envname)
 
     return ([ ], [ ])
 
@@ -133,15 +130,9 @@ def get_link_args(flag):
         args = third_party_utils.pkgconfig_get_system_link_args('jemalloc')
         if args != (None, None):
             return args
-        # try homebrew
-        jemalloc_prefix = chpl_platform.get_homebrew_prefix('jemalloc')
-        if jemalloc_prefix:
-            return ([], ['-L{0}'.format(os.path.join(jemalloc_prefix, 'lib')),
-                         '-ljemalloc'])
-
-        envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
-        error("Could not find a suitable jemalloc installation. Please install jemalloc or set {}=bundled or {}=none.".format(envname, envname))
-
+        else:
+            envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+            third_party_utils.could_not_find_pkgconfig_pkg("jemalloc", envname)
     return ([ ], [ ])
 
 def _main():
