@@ -98,6 +98,7 @@ static std::set<const char*> llvmPrintIrCNames;
 static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
 llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+chpl::owned<llvm::raw_fd_ostream> llvmPrintIrFile = nullptr;
 
 const char* llvmStageName[llvmStageNum::LAST] = {
   "", //llvmStageNum::NOPRINT
@@ -191,9 +192,16 @@ static llvmStageNum_t partlyPrintedStage = llvmStageNum::NOPRINT;
 
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
-    std::cout << "; " << "LLVM IR representation of " << name
-              << " function after " << llvmStageNameFromLlvmStageNum(numStage)
-              << " optimization stage\n" << std::flush;
+    if (llvmPrintIrFile) {
+      *llvmPrintIrFile << "; " << "LLVM IR representation of " << name
+                << " function after " << llvmStageNameFromLlvmStageNum(numStage)
+                << " optimization stage\n";
+      llvmPrintIrFile->flush();
+    } else {
+      std::cout << "; " << "LLVM IR representation of " << name
+                << " function after " << llvmStageNameFromLlvmStageNum(numStage)
+                << " optimization stage\n" << std::flush;
+    }
     if (!(numStage == llvmStageNum::BASIC ||
           numStage == llvmStageNum::FULL)) {
       // Basic and full can happen module-at-a-time due to current

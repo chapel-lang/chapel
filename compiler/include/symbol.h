@@ -36,6 +36,8 @@
 #include <vector>
 #include <map>
 
+#include "llvm/Support/raw_ostream.h"
+
 #ifdef HAVE_LLVM
 // Forward declare MDNode.
 namespace llvm
@@ -973,6 +975,7 @@ typedef enum {
 using llvmStageNum::llvmStageNum_t;
 
 extern llvmStageNum_t llvmPrintIrStageNum;
+extern chpl::owned<llvm::raw_fd_ostream> llvmPrintIrFile;
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);

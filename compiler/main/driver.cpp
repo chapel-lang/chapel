@@ -649,6 +649,17 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
   llvmPrintIrStageNum = stageNum;
 }
 
+static void setPrintIrFile(const ArgumentDescription* desc, const char* arg) {
+  if (llvmPrintIrFile) {
+    USR_FATAL("Cannot specify --llvm-print-ir-file more than once");
+  }
+  std::error_code error;
+  llvmPrintIrFile = std::make_unique<llvm::raw_fd_ostream>(arg, error);
+  if (llvmPrintIrFile == NULL) {
+    USR_FATAL("Could not open file '%s'", arg);
+  }
+}
+
 /*
   this function is called when a tool name is passed through the command line
   with the --using-attribute-toolname flag. It is called each time the flag is
@@ -1386,6 +1397,7 @@ static ArgumentDescription arg_desc[] = {
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"llvm-print-ir-file", ' ', "<file>", "Specifies the filename to write the LLVM IR to", "S", NULL, "CHPL_LLVM_PRINT_IR_FILE", &setPrintIrFile},
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
  {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, &setLLVMPrintPasses},
