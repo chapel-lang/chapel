@@ -112,7 +112,8 @@ def pkgconfig_has_system_package(pkg):
 @memoize
 def pkgconfig_get_system_compile_args(pkg):
     # check that pkg-config knows about the package in question
-    if not pkgconfig_has_system_package(pkg):
+    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
+    if not exists or returncode:
         return (None, None)
     # run pkg-config to get the cflags
     cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
