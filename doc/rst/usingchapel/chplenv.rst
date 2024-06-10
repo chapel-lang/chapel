@@ -417,9 +417,14 @@ CHPL_LOCALE_MODEL
         flat     top-level locales are not further subdivided
         numa     top-level locales are further subdivided into
                  sublocales, each one a NUMA domain
+        gpu      enable gpu sublocales
         ======== =============================================
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
+
+   To enable GPU support, the value must be set to ``gpu``. See :ref:`readme-gpu` for more information.
+
+   .. warning:: GPU support is under active development and settings may change.
 
    .. warning:: The NUMA locale model is deprecated and will be removed
       in a future release.
