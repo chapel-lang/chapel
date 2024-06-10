@@ -54,10 +54,10 @@ writeln(RDexp); // {0..11, -1..12, 3..8}
 // A positive value specifies that the exterior should be taken from the high
 // bound; a negative offset, the low bound.
 //
-var RDext0 = RD.exterior((1,4,-4));
-writeln(RDext0); // {11..11, 11..14, -3..0}
-var RDext1 = RD.exterior((0,4,0));
-writeln(RDext1); // {1..10, 11..14, 1..10}
+var RDext1 = RD.exterior((1,4,-4));
+writeln(RDext1); // {11..11, 11..14, -3..0}
+var RDext2 = RD.exterior((0,4,0));
+writeln(RDext2); // {1..10, 11..14, 1..10}
 
 //
 // The :proc:`~ChapelDomain.interior` method returns a new domain that is the
@@ -70,13 +70,20 @@ writeln(RDint); // {9..10, 1..5, 10..10}
 
 //
 // The :proc:`~ChapelDomain.translate` method returns a new domain that is the
-// current domain translated by the offset. If only a single offset is passed
-// it will apply to all dimensions.
+// current domain translated by the offset.
 //
-var RDtrans0 = RD.translate((0,4,-4));
-writeln(RDtrans0); // {1..10, 5..14, -3..6}
-var RDtrans1 = RD.translate(4);
-writeln(RDtrans1); // {5..14, 5..14, 5..14}
+var RDtrans1 = RD.translate((0,4,-4));
+writeln(RDtrans1); // {1..10, 5..14, -3..6}
+
+//
+// All four functions above
+// (:proc:`~ChapelDomain.expand`, :proc:`~ChapelDomain.exterior`,
+// :proc:`~ChapelDomain.interior`, :proc:`~ChapelDomain.translate`)
+// may also be called with a single offset, in which case the offset will
+// apply to all dimensions.
+//
+var RDtrans2 = RD.translate(4);
+writeln(RDtrans2); // {5..14, 5..14, 5..14}
 
 //
 // A subdomain is a domain that is declared in terms of a parent
