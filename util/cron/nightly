@@ -305,14 +305,6 @@ if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
 
-# The 'mysystem' function either exits on errors, ignores them, or writes them
-# to a file. The $exitOnError variable tells it to exit immediately, while
-# $ignoreErrors tells it to continue without doing anything. $emailOnError,
-# which is the path of the error file, tells it to write the errors to a file.
-$mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
-$emailOnError = $mysystemlog;
-unlink($mysystemlog); # the file gets appended to, so clear it first.
-
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
 $here = dirname(__FILE__);
@@ -442,6 +434,14 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
     $machine = hostname;
     $config_name = "debug.$machine";
 }
+
+# The 'mysystem' function either exits on errors, ignores them, or writes them
+# to a file. The $exitOnError variable tells it to exit immediately, while
+# $ignoreErrors tells it to continue without doing anything. $emailOnError,
+# which is the path of the error file, tells it to write the errors to a file.
+$mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
+$emailOnError = $mysystemlog;
+unlink($mysystemlog); # the file gets appended to, so clear it first.
 
 #
 # directory variables
