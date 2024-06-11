@@ -152,6 +152,7 @@ try:
     chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
     # Add chplcheck to the path, but load via importlib
     sys.path.append(chplcheck_path)
+
     def load_module(module_name: str):
         file_path = os.path.join(chplcheck_path, module_name + ".py")
         spec = importlib.util.spec_from_file_location(module_name, file_path)
@@ -163,6 +164,7 @@ try:
             raise ValueError(f"Could not load module from {file_path}")
         spec.loader.exec_module(module)
         return module
+
     chplcheck = load_module("chplcheck")
     chplcheck_lsp = load_module("lsp")
     chplcheck_config = load_module("config")
@@ -992,7 +994,6 @@ class CLSConfig:
         if chplcheck_config:
             chplcheck_config.Config.add_arguments(self.parser, "chplcheck-")
 
-
     def _parse_end_markers(self):
         self.args["end_markers"] = [
             a.strip() for a in self.args["end_markers"].split(",")
@@ -1069,7 +1070,14 @@ class ChapelLanguageServer(LanguageServer):
         """
         Setup the linter, if it is enabled
         """
-        if not (self.do_linting and chplcheck and chplcheck_lsp and chplcheck_config and chplcheck_driver and chplcheck_rules):
+        if not (
+            self.do_linting
+            and chplcheck
+            and chplcheck_lsp
+            and chplcheck_config
+            and chplcheck_driver
+            and chplcheck_rules
+        ):
             return
 
         config = chplcheck_config.Config.from_args(clsConfig.args)
@@ -1082,7 +1090,6 @@ class ChapelLanguageServer(LanguageServer):
 
         self.lint_driver.disable_rules(*config.disabled_rules)
         self.lint_driver.enable_rules(*config.enabled_rules)
-
 
     def get_deprecation_replacement(
         self, text: str
@@ -1197,7 +1204,9 @@ class ChapelLanguageServer(LanguageServer):
         # get lint diagnostics if applicable
         if self.lint_driver:
             assert chplcheck_lsp
-            lint_diagnostics = chplcheck_lsp.get_lint_diagnostics(fi.context.context, self.lint_driver, fi.get_asts())
+            lint_diagnostics = chplcheck_lsp.get_lint_diagnostics(
+                fi.context.context, self.lint_driver, fi.get_asts()
+            )
             diagnostics.extend(lint_diagnostics)
 
         return diagnostics
@@ -1758,7 +1767,9 @@ def run_lsp():
         # get lint fixits if applicable
         if ls.lint_driver:
             assert chplcheck_lsp
-            lint_actions = chplcheck_lsp.get_lint_actions(params.context.diagnostics)
+            lint_actions = chplcheck_lsp.get_lint_actions(
+                params.context.diagnostics
+            )
             actions.extend(lint_actions)
 
         return actions

@@ -109,7 +109,9 @@ class LintDriver:
     def _has_internal_name(self, node: chapel.AstNode):
         if not hasattr(node, "name"):
             return False
-        return any(node.name().startswith(p) for p in self.config.internal_prefixes)
+        return any(
+            node.name().startswith(p) for p in self.config.internal_prefixes
+        )
 
     @staticmethod
     def _is_unstable_module(node: chapel.AstNode):
@@ -202,7 +204,9 @@ class LintDriver:
             # so we can't stop it from going into unstable modules. Instead,
             # once the rule emits a warning, check by traversing the AST
             # if the warning target should be skipped.
-            if self.config.skip_unstable and LintDriver._in_unstable_module(node):
+            if self.config.skip_unstable and LintDriver._in_unstable_module(
+                node
+            ):
                 continue
 
             yield (node, name, fixits)
