@@ -17,7 +17,6 @@ typedef struct TLS TLS;
 
 int qthread_key_create(qthread_key_t *key, void (*destructor)(void*))
 {
-	int i;
 	int size = qthread_size_tasklocal();
 	TLS *t = (TLS *)qthread_get_tasklocal(size);
 	qt_keypair_t *p;

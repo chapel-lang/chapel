@@ -35,20 +35,21 @@ extern int qthread_library_initialized;
         syncvar_t           *addlast_sentinel;                              \
         struct _structname_ *backptr;                                       \
     }
-#define INNER_LOOP(_fname_, _structtype_, _opmacro_)    static aligned_t _fname_(struct _structtype_ *args) \
-    {                                                                                                       \
-        size_t i;                                                                                           \
-        args->ret = args->array[args->start];                                                               \
-        for (i = args->start + 1; i < args->stop; i++) {                                                    \
-            _opmacro_(args->ret, args->array[i]);                                                           \
-        }                                                                                                   \
-        if (args->addlast) {                                                                                \
-            qthread_syncvar_readFF(NULL, args->addlast_sentinel);                                           \
-            _opmacro_(args->ret, *(args->addlast));                                                         \
-            FREE(args->backptr, sizeof(struct _structtype_));                                               \
-        }                                                                                                   \
-        qthread_syncvar_fill(&(args->ret_sentinel));                                                        \
-        return 0;                                                                                           \
+#define INNER_LOOP(_fname_, _structtype_, _opmacro_)    static aligned_t _fname_(void *args_void) \
+    {                                                                                             \
+        struct _structtype_ *args = (struct _structtype_ *)args_void;                             \
+        size_t i;                                                                                 \
+        args->ret = args->array[args->start];                                                     \
+        for (i = args->start + 1; i < args->stop; i++) {                                          \
+            _opmacro_(args->ret, args->array[i]);                                                 \
+        }                                                                                         \
+        if (args->addlast) {                                                                      \
+            qthread_syncvar_readFF(NULL, args->addlast_sentinel);                                 \
+            _opmacro_(args->ret, *(args->addlast));                                               \
+            FREE(args->backptr, sizeof(struct _structtype_));                                     \
+        }                                                                                         \
+        qthread_syncvar_fill(&(args->ret_sentinel));                                              \
+        return 0;                                                                                 \
     }
 #define INNER_LOOP_FF(_fname_, _structtype_, _opmacro_) static aligned_t _fname_(struct _structtype_ *args) \
     {                                                                                                       \
@@ -557,8 +558,9 @@ struct qutil_qsort_args {
     aligned_t *furthest_leftwall, *furthest_rightwall;
 };
 
-static inline aligned_t qutil_qsort_partition(struct qutil_qsort_args *args)
+static inline aligned_t qutil_qsort_partition(void *args_void)
 {   /*{{{*/
+    struct qutil_qsort_args *args = (struct qutil_qsort_args *)args_void;
     double      *a      = args->array;
     const double pivot  = args->pivot;
     const size_t length = args->length;
@@ -712,8 +714,9 @@ static inline qutil_qsort_iprets_t qutil_qsort_inner_partitioner(double      *ar
     return retval;
 } /*}}}*/
 
-static inline aligned_t qutil_qsort_inner(struct qutil_qsort_iargs *a)
+static inline aligned_t qutil_qsort_inner(void *a_void)
 {   /*{{{*/
+    struct qutil_qsort_iargs *a = (struct qutil_qsort_iargs *)a_void;
     double              *array = a->array, pivot;
     qutil_qsort_iprets_t furthest;
 
@@ -821,8 +824,9 @@ struct qutil_aligned_qsort_args {
     aligned_t *furthest_leftwall, *furthest_rightwall;
 };
 
-static inline aligned_t qutil_aligned_qsort_partition(struct qutil_aligned_qsort_args *args)
+static inline aligned_t qutil_aligned_qsort_partition(void *args_void)
 {   /*{{{*/
+    struct qutil_aligned_qsort_args *args = (struct qutil_aligned_qsort_args *)args_void;
     aligned_t      *a      = args->array;
     const aligned_t pivot  = args->pivot;
     const size_t    length = args->length;
@@ -973,8 +977,9 @@ static inline qutil_qsort_iprets_t qutil_aligned_qsort_inner_partitioner(aligned
     return retval;
 } /*}}}*/
 
-static inline aligned_t qutil_aligned_qsort_inner(struct qutil_aligned_qsort_iargs *a)
+static inline aligned_t qutil_aligned_qsort_inner(void *a_void)
 {   /*{{{*/
+    struct qutil_aligned_qsort_iargs *a = (struct qutil_aligned_qsort_iargs *)a_void;
     aligned_t           *array = a->array, pivot;
     qutil_qsort_iprets_t furthest;
 

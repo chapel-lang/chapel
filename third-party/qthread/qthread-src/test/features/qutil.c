@@ -102,7 +102,14 @@ static aligned_t qmain(void *junk)
 
     i_array = (saligned_t *)calloc(i_len, sizeof(saligned_t));
     for (i = 0; i < i_len; i++) {
-        i_array[i]            = random();
+        // Pick most of them to be 1 with a few 2s mixed in.
+        // Make the 2s unlikely enough that it's nearly impossible
+        // to run into overflow when taking the product.
+        if (i_len < 8) {
+            i_array[i] = random() % 2 + 1;
+        } else {
+            i_array[i] = random() < 8 * (INT_MAX / i_len) ? 2 : 1;
+        }
         i_sum_authoritative  += i_array[i];
         i_mult_authoritative *= i_array[i];
         if (i_max_authoritative < i_array[i]) {

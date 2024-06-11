@@ -19,7 +19,8 @@
 #include "qthread_innards.h" /* for qlib */
 #include "qt_qthread_mgmt.h"
 
-int qt_usleep(useconds_t useconds)
+#if HAVE_SYSCALL && HAVE_DECL_SYS_USLEEP
+static int qt_usleep(useconds_t useconds)
 {
      if (qt_blockable()) {
         qtimer_t t       = qtimer_create();
@@ -36,8 +37,6 @@ int qt_usleep(useconds_t useconds)
     }
 }
 
-
-#if HAVE_SYSCALL && HAVE_DECL_SYS_USLEEP
 int usleep(useconds_t useconds)
 {
   if (qt_blockable()) {

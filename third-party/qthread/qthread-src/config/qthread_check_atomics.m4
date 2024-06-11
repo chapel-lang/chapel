@@ -29,7 +29,7 @@ AC_CACHE_CHECK([whether compiler supports builtin atomic CAS-32],
 #include <stdlib.h>
 #include <stdint.h> /* for uint32_t */
 
-int main()
+int main(void)
 {
 uint32_t bar=1, old=1, new=2;
 uint32_t foo = __sync_val_compare_and_swap(&bar, old, new);
@@ -48,7 +48,7 @@ AC_CACHE_CHECK([whether compiler supports builtin atomic CAS-64],
 #include <stdlib.h>
 #include <stdint.h> /* for uint64_t */
 
-int main()
+int main(void)
 {
 uint64_t bar=1, old=1, new=2;
 uint64_t foo = __sync_val_compare_and_swap(&bar, old, new);
@@ -66,7 +66,7 @@ AC_CACHE_CHECK([whether compiler supports builtin atomic CAS-ptr],
 #endif
 #include <stdlib.h>
 
-int main()
+int main(void)
 {
 void *bar=(void*)1, *old=(void*)1, *new=(void*)2;
 void *foo = __sync_val_compare_and_swap(&bar, old, new);
@@ -138,7 +138,7 @@ AC_CACHE_CHECK([whether compiler supports builtin atomic incr],
 #include <stdlib.h>
 #include <stdint.h> /* for uint64_t */
 
-int main()
+int main(void)
 {
 uint64_t bar=1;
 uint64_t foo = __sync_fetch_and_add(&bar, 1);
@@ -155,7 +155,7 @@ return foo;
 #include <stdlib.h>
 #include <stdint.h> /* for uint32_t */
 
-int main()
+int main(void)
 {
 uint32_t bar=1;
 uint32_t foo = __sync_fetch_and_add(&bar, 1);
@@ -180,7 +180,6 @@ AS_IF([test "$qthread_cv_atomic_incr" = "yes"],
 int main(int argc, char *argv[])
 {
 uint64_t master = 0;
-uint64_t test;
 if ((__sync_fetch_and_add(&master, 1) != 0) || (master != 1)) {
   return -1;
 }
@@ -213,7 +212,7 @@ return 0;
 #include <stdlib.h>
 #include <stdint.h> /* for uint32_t */
 
-int main()
+int main(void)
 {
 uint64_t master = 0;
 if ((__sync_fetch_and_add(&master, 1) != 0) || (master != 1)) {
@@ -231,7 +230,7 @@ AS_IF([test "$qthread_cv_atomic_CAS" = "yes"],
 		[AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #include <stdlib.h>
 
-int main()
+int main(void)
 {
 long bar=1, old=1, new=2;
 long foo = __sync_val_compare_and_swap(&bar, old, new);

@@ -31,7 +31,7 @@ int API_FUNC qthread_shep_ok(void)
     if (ret == NULL) {
         return QTHREAD_PTHREAD_ERROR;
     } else {
-        return QTHREAD_CASLOCK_READ_UI(ret->active);
+        return atomic_load_explicit(&ret->active, memory_order_relaxed);
     }
 }                      /*}}} */
 
@@ -212,7 +212,7 @@ qthread_shepherd_t INTERNAL *qthread_find_active_shepherd(qthread_shepherd_id_t 
         int        found    = 0;
 
         for (size_t i = 0; i < nsheps; i++) {
-            if (QTHREAD_CASLOCK_READ_UI(sheps[i].active)) {
+            if (atomic_load_explicit(&sheps[i].active, memory_order_relaxed)) {
                 ssize_t shep_busy_level = qt_threadqueue_advisory_queuelen(sheps[i].ready);
 
                 if (found == 0) {
@@ -252,7 +252,7 @@ qthread_shepherd_t INTERNAL *qthread_find_active_shepherd(qthread_shepherd_id_t 
         saligned_t            busyness;
         unsigned int          target_dist;
 
-        while (target < (nsheps - 1) && QTHREAD_CASLOCK_READ_UI(sheps[l[target]].active) == 0) {
+        while (target < (nsheps - 1) && atomic_load_explicit(&sheps[l[target]].active, memory_order_relaxed) == 0) {
             target++;
         }
         if (target >= (nsheps - 1)) {

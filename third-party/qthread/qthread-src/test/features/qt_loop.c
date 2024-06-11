@@ -1,20 +1,21 @@
 #ifdef HAVE_CONFIG_H
 # include "config.h"                   /* for _GNU_SOURCE */
 #endif
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <qthread/qloop.h>
 #include "argparsing.h"
 
-static aligned_t threads = 0;
+static _Atomic aligned_t threads = 0;
 static aligned_t numincrs = 1024;
 
 static void sum(const size_t startat,
                 const size_t stopat,
                 void        *arg_)
 {
-    qthread_incr(&threads, stopat - startat);
+    atomic_fetch_add_explicit(&threads, stopat - startat, memory_order_relaxed);
 }
 
 int main(int   argc,
@@ -28,6 +29,7 @@ int main(int   argc,
     iprintf("%i threads\n", qthread_num_workers());
 
     qt_loop(0, numincrs, sum, NULL);
+
 
     if (threads != numincrs) {
         iprintf("threads == %lu, not %lu\n", (unsigned long)threads, (unsigned long)numincrs);

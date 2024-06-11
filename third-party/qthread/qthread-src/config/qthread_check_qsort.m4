@@ -22,18 +22,18 @@ AC_CHECK_FUNCS([qsort_r],
 
 struct sigaction sa;
 
-int cmp(void *a, const void *b, const void*c)
+static int cmp(void *a, const void *b, const void*c)
 {
   assert(a == NULL);
   return *(int*)b - *(int*)c;
 }
 
-void handler(int sig, siginfo_t* s, void* v)
+static void handler(int sig, siginfo_t* s, void* v)
 {
     _exit(1);
 }
 
-void register_handle()
+static void register_handle(void)
 {
     memset (&sa, '\0', sizeof(sa));
     sa.sa_sigaction = &handler;
@@ -42,7 +42,7 @@ void register_handle()
     sigaction(SIGSEGV, &sa, NULL); 
 }
 
-int main()
+int main(void)
 {
     int array[5] = {7,3,5,2,8};
     int i;
