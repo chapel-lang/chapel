@@ -402,12 +402,7 @@ fi
 # copy chplconfig
 if [ -f chplconfig ]
 then
-  if [ ! -z "$PREFIX" ]
-  then
-    myinstallfileto chplconfig "$PREFIX/lib/chapel/$VERS/chplconfig"
-  else
-    myinstallfileto chplconfig "$DEST_CHPL_HOME/chplconfig"
-  fi
+  myinstallfileto chplconfig "$DEST_CHPL_HOME/chplconfig"
 fi
 
 # Clean up: remove any .pyc files

@@ -548,7 +548,7 @@ static void setupChplHome(const char* argv0) {
       // Set an extra default CHPL_CONFIG directory
       rc = snprintf(CHPL_CONFIG, FILENAME_MAX, "%s/%s/%s",
                     get_configured_prefix(), // e.g. /usr
-                    "/lib/chapel",
+                    "share/chapel",
                     majMinorVers);
       if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
