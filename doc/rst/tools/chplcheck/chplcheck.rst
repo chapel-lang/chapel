@@ -168,12 +168,17 @@ additionally add the following to your ``.emacs`` file:
 
    (add-hook 'chpl-mode-hook 'eglot-ensure)
 
+.. note::
 
+   There is currently a limitation with Eglot that only one language server can
+   be registered per language. To use ``chplcheck`` and ``chapel-language-server``
+   at the same time, see the
+   :ref:`Emacs documentation for chapel-language-server <chpl-language-server-emacs>`.
 
 Writing New Rules
 -----------------
 
-Rules are written using the :ref:`Python bindings for Chapel's compiler frontend<readme-chapel-py>`. In
+Rules are written using the :ref:`Python bindings for Chapel's compiler frontend <readme-chapel-py>`. In
 essence, a rule is a Python function that is used to detect issues with the
 AST. When registered with ``chplcheck``, the name of the function becomes the name
 of the rule (which can be used to enable and disable the rule, as per the

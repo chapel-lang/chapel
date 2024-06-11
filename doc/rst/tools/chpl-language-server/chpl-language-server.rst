@@ -62,6 +62,8 @@ VSCode
 Install the ``chapel`` extension from the `Visual Studio Code marketplace
 <https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
 
+.. _chpl-language-server-emacs:
+
 Emacs
 ^^^^^
 
@@ -191,10 +193,10 @@ The following features are extra visual aids:
 Using ``chplcheck`` from ``CLS``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Although ``chplcheck`` is a separate tool from ``CLS``, it can be used from
-``CLS`` to provide additional diagnostics. This is done by enabling the
-``--chplcheck`` flag. This will incorporate the diagnostics and fixits from
-``chplcheck``.
+Although :ref:`chplcheck <readme-chplcheck>` is a separate tool from ``CLS``,
+it can be used from ``CLS`` to provide additional diagnostics. This is done by
+enabling the ``--chplcheck`` flag. This will incorporate the diagnostics and
+fixits from ``chplcheck``.
 
 You can also still pass many of the same ``chplcheck`` flags to ``CLS``, just
 prefixed with ``--chplcheck-``. For example, the following command runs the
