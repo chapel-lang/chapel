@@ -23,6 +23,7 @@ from typing import Any, Callable, Iterator, List, Optional, Tuple
 import chapel
 from fixits import Fixit
 import rule_types
+from config import Config
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
 
@@ -59,12 +60,11 @@ class LintDriver:
     for registering new rules.
     """
 
-    def __init__(self, skip_unstable: bool, internal_prefixes: List[str]):
+    def __init__(self, config: Config):
+        self.config: Config = config
         self.SilencedRules: List[str] = []
         self.BasicRules: List[Tuple[str, Any, rule_types.BasicRule]] = []
         self.AdvancedRules: List[Tuple[str, rule_types.AdvancedRule]] = []
-        self.skip_unstable: bool = skip_unstable
-        self.internal_prefixes: List[str] = internal_prefixes
 
     def rules_and_descriptions(self):
         # Use a dict in case a rule is registered multiple times.
@@ -109,7 +109,7 @@ class LintDriver:
     def _has_internal_name(self, node: chapel.AstNode):
         if not hasattr(node, "name"):
             return False
-        return any(node.name().startswith(p) for p in self.internal_prefixes)
+        return any(node.name().startswith(p) for p in self.config.internal_prefixes)
 
     @staticmethod
     def _is_unstable_module(node: chapel.AstNode):
@@ -130,7 +130,7 @@ class LintDriver:
         return False
 
     def _preorder_skip_unstable_modules(self, node):
-        if not self.skip_unstable:
+        if not self.config.skip_unstable:
             yield from chapel.preorder(node)
             return
 
@@ -202,7 +202,7 @@ class LintDriver:
             # so we can't stop it from going into unstable modules. Instead,
             # once the rule emits a warning, check by traversing the AST
             # if the warning target should be skipped.
-            if self.skip_unstable and LintDriver._in_unstable_module(node):
+            if self.config.skip_unstable and LintDriver._in_unstable_module(node):
                 continue
 
             yield (node, name, fixits)
