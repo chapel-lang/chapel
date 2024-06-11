@@ -1,0 +1,17 @@
+RedundantParentheses.chpl:1: node violates rule UseExplicitModules
+RedundantParentheses.chpl:3: node violates rule RedundantParentheses
+RedundantParentheses.chpl:4: node violates rule RedundantParentheses
+RedundantParentheses.chpl:5: node violates rule RedundantParentheses
+RedundantParentheses.chpl:6: node violates rule RedundantParentheses
+RedundantParentheses.chpl:7: node violates rule RedundantParentheses
+RedundantParentheses.chpl:9: node violates rule RedundantParentheses
+RedundantParentheses.chpl:10: node violates rule RedundantParentheses
+RedundantParentheses.chpl:11: node violates rule RedundantParentheses
+RedundantParentheses.chpl:12: node violates rule RedundantParentheses
+RedundantParentheses.chpl:13: node violates rule RedundantParentheses
+RedundantParentheses.chpl:15: node violates rule RedundantParentheses
+RedundantParentheses.chpl:17: node violates rule RedundantParentheses
+RedundantParentheses.chpl:19: node violates rule RedundantParentheses
+RedundantParentheses.chpl:21: node violates rule RedundantParentheses
+RedundantParentheses.chpl:23: node violates rule RedundantParentheses
+[Success matching fixit for RedundantParentheses]
