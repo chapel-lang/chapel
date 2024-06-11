@@ -16,6 +16,7 @@ ARG BASENAME=chapel
 ARG CHAPEL_VERSION=2.0.0
 ARG PACKAGE_VERSION=1
 ARG OS_NAME
+ARG DOCKER_DIR_NAME
 ARG PARALLEL=1
 ARG TARGETARCH
 """
@@ -80,7 +81,7 @@ USER user
 substitutions["PACKAGE_SETUP"] = """
 WORKDIR /home/user
 
-COPY --chown=user ./apt/$OS_NAME/control.template /home/user/control.template
+COPY --chown=user ./apt/$DOCKER_DIR_NAME/control.template /home/user/control.template
 COPY --chown=user ./apt/common/make_dirs.py /home/user/make_dirs.py
 COPY --chown=user ./common/package_name.py /home/user/package_name.py
 RUN python3 make_dirs.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH

@@ -16,6 +16,7 @@ ARG BASENAME=chapel
 ARG CHAPEL_VERSION=2.1.0
 ARG PACKAGE_VERSION=1
 ARG OS_NAME
+ARG DOCKER_DIR_NAME
 ARG PARALLEL=1
 ARG TARGETARCH
 """
@@ -82,7 +83,7 @@ USER user
 substitutions["PACKAGE_SETUP"] = """
 WORKDIR /home/user
 
-COPY --chown=user ./rpm/$OS_NAME/spec.template /home/user/spec.template
+COPY --chown=user ./rpm/$DOCKER_DIR_NAME/spec.template /home/user/spec.template
 COPY --chown=user ./rpm/common/make_spec.py /home/user/make_spec.py
 COPY --chown=user ./common/package_name.py /home/user/package_name.py
 RUN python3 make_spec.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH

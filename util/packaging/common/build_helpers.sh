@@ -54,6 +54,7 @@ __build_packages() {
     --build-arg "CHAPEL_VERSION=$chapel_version" \
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "OS_NAME=$os" \
+    --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..
@@ -92,6 +93,7 @@ __build_image() {
     --build-arg "CHAPEL_VERSION=$chapel_version" \
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "OS_NAME=$os" \
+    --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..
