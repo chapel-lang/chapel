@@ -727,7 +727,6 @@ static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired = false;
 static atomic_spinlock_t pollingLock;
-static chpl_bool usePSHM = false;
 static chpl_bool pshmInUse = false;
 static chpl_bool haveSendThread = false;
 static chpl_bool haveReceiveThread = false;
@@ -780,14 +779,10 @@ static void setup_polling_post_init(void) {
   // The IBV conduit does not require polling, but PSHM does. PSHM is only
   // enabled if there are co-locales, so polling is only required if
   // there are co-locales that are using PSHM.
-  if (usePSHM) {
-    gex_Rank_t numColocales;
-    gex_System_QueryNbrhdInfo(NULL, &numColocales, NULL);
-    pollingRequired = numColocales > 1;
-    pshmInUse = pollingRequired;
-  } else {
-    pollingRequired = false;
-  }
+  gex_Rank_t numColocales;
+  gex_System_QueryNbrhdInfo(NULL, &numColocales, NULL);
+  pollingRequired = numColocales > 1;
+  pshmInUse = pollingRequired;
 #else
   pollingRequired = true;
 #endif
@@ -894,14 +889,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   set_max_segsize();
   set_num_comm_domains();
   setup_ibv();
-
-  usePSHM = chpl_env_rt_get_bool("COMM_GASNET_USE_PSHM", usePSHM);
-  if (!usePSHM) {
-    // Setting this to 1 will disable PSHM even if it was enabled during
-    // GASNet configuration.
-    chpl_env_set("GASNET_SUPERNODE_MAXSIZE", "1", 0);
-  }
-
   setup_polling_pre_init();
 
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "chapel",
