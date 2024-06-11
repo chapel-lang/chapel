@@ -40,7 +40,7 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
     # don't bother checking if we can link against hwloc
     CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   else ifeq ($(CHPL_MAKE_HWLOC),system)
-		CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
     CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
