@@ -40,7 +40,8 @@ import itertools
 import os
 import json
 import re
-
+import sys
+import importlib.util
 
 import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
@@ -141,6 +142,41 @@ from lsprotocol.types import (
 
 import argparse
 import configargparse
+
+
+# attempt to import chplcheck
+try:
+    chpl_home = os.environ.get("CHPL_HOME")
+    if chpl_home is None:
+        raise ValueError("CHPL_HOME not set")
+    chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
+    # Add chplcheck to the path, but load via importlib
+    sys.path.append(chplcheck_path)
+    def load_module(module_name: str):
+        file_path = os.path.join(chplcheck_path, module_name + ".py")
+        spec = importlib.util.spec_from_file_location(module_name, file_path)
+        if spec is None:
+            raise ValueError(f"Could not load module from {file_path}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        if spec.loader is None:
+            raise ValueError(f"Could not load module from {file_path}")
+        spec.loader.exec_module(module)
+        return module
+    chplcheck = load_module("chplcheck")
+    chplcheck_lsp = load_module("lsp")
+    chplcheck_config = load_module("config")
+    chplcheck_driver = load_module("driver")
+    chplcheck_rules = load_module("rules")
+
+except ValueError as e:
+    if os.environ.get("CHPL_DEVELOPER", None):
+        print("Error loading chplcheck: ", str(e), file=sys.stderr)
+    chplcheck = None
+    chplcheck_lsp = None
+    chplcheck_config = None
+    chplcheck_driver = None
+    chplcheck_rules = None
 
 REAL_NUMBERIC = (chapel.RealLiteral, chapel.IntLiteral, chapel.UintLiteral)
 NUMERIC = REAL_NUMBERIC + (chapel.ImagLiteral,)
@@ -952,6 +988,11 @@ class CLSConfig:
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
+        add_bool_flag("lint", "do_linting", False)
+        if chplcheck_config:
+            chplcheck_config.Config.add_arguments(self.parser, "chplcheck-")
+
+
     def _parse_end_markers(self):
         self.args["end_markers"] = [
             a.strip() for a in self.args["end_markers"].split(",")
@@ -1005,6 +1046,10 @@ class ChapelLanguageServer(LanguageServer):
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
+        self.do_linting: bool = config.get("do_linting")
+
+        self.lint_driver = None
+        self._setup_linter(config)
 
         self._setup_regexes()
 
@@ -1019,6 +1064,25 @@ class ChapelLanguageServer(LanguageServer):
         pat2 = f"{prefix}{chars}use{chars}(?P<tick>[`' ])(?P<replace2>{ident})(?P=tick){chars}instead{chars}"
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
+
+    def _setup_linter(self, clsConfig: CLSConfig):
+        """
+        Setup the linter, if it is enabled
+        """
+        if not (self.do_linting and chplcheck and chplcheck_lsp and chplcheck_config and chplcheck_driver and chplcheck_rules):
+            return
+
+        config = chplcheck_config.Config.from_args(clsConfig.args)
+        self.lint_driver = chplcheck_driver.LintDriver(config)
+
+        chplcheck_rules.register_rules(self.lint_driver)
+
+        for p in config.add_rules:
+            chplcheck.load_module(self.lint_driver, os.path.abspath(p))
+
+        self.lint_driver.disable_rules(*config.disabled_rules)
+        self.lint_driver.enable_rules(*config.enabled_rules)
+
 
     def get_deprecation_replacement(
         self, text: str
@@ -1117,7 +1181,7 @@ class ChapelLanguageServer(LanguageServer):
         as a list of LSP Diagnostics.
         """
 
-        _, errors = self.get_file_info(uri, do_update=True)
+        fi, errors = self.get_file_info(uri, do_update=True)
 
         diagnostics = []
         for e in errors:
@@ -1129,6 +1193,12 @@ class ChapelLanguageServer(LanguageServer):
                 for (note_loc, note_msg) in e.notes()
             ]
             diagnostics.append(diag)
+
+        # get lint diagnostics if applicable
+        if self.lint_driver:
+            assert chplcheck_lsp
+            lint_diagnostics = chplcheck_lsp.get_lint_diagnostics(fi.context.context, self.lint_driver, fi.get_asts())
+            diagnostics.extend(lint_diagnostics)
 
         return diagnostics
 
@@ -1684,6 +1754,12 @@ def run_lsp():
                     is_preferred=True,
                 )
             )
+
+        # get lint fixits if applicable
+        if ls.lint_driver:
+            assert chplcheck_lsp
+            lint_actions = chplcheck_lsp.get_lint_actions(params.context.diagnostics)
+            actions.extend(lint_actions)
 
         return actions
 
