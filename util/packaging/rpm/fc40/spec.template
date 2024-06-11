@@ -15,7 +15,7 @@ Chapel Programming Language
 %global debug_package %{nil}
 
 %prep
-%setup -q
+%setup -q -n chapel-%{version}
 
 %build
 
