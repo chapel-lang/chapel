@@ -245,14 +245,17 @@ def register_rules(driver: LintDriver):
             subject = node.index()
 
         # No supported node to examine for redundant parentheses.
-        if subject is None: return True
+        if subject is None:
+            return True
 
         # Tuples need their parentheses.
-        if isinstance(subject, Tuple): return True
+        if isinstance(subject, Tuple):
+            return True
 
         # No parentheses to speak of
         paren_loc = subject.parenth_location()
-        if paren_loc is None: return True
+        if paren_loc is None:
+            return True
 
         # If parentheeses span multiple lines, don't provide a fixit,
         # since the indentation would need more thought.
