@@ -229,8 +229,7 @@ def register_rules(driver: LintDriver):
 
         return check
 
-    @driver.basic_rule(Loop)
-    @driver.basic_rule(Conditional)
+    @driver.basic_rule(set((Loop, Conditional)))
     def RedundantParentheses(
         context: Context, node: typing.Union[Loop, Conditional]
     ):
@@ -260,7 +259,7 @@ def register_rules(driver: LintDriver):
         # If parentheeses span multiple lines, don't provide a fixit,
         # since the indentation would need more thought.
         start_line, start_col = paren_loc.start()
-        end_line, _ = paren_loc.end()
+        end_line, end_col = paren_loc.end()
         if start_line != end_line:
             return BasicRuleResult(node, ignorable=False)
 
@@ -269,9 +268,14 @@ def register_rules(driver: LintDriver):
         lines = chapel.get_file_lines(context, node)
         new_text = range_to_text(paren_loc, lines)[1:-1]
 
+        start_line_str = lines[start_line - 1]
+        end_line_str = lines[end_line - 1]
         # For 'if(x)', can't turn this into 'ifx', need an extra space.
-        if start_col > 1 and not lines[start_line - 1][start_col - 2].isspace():
+        if start_col > 1 and not start_line_str[start_col - 2].isspace():
             new_text = " " + new_text
+        # Similarly, '(x)do', can't turn this into 'xdo', need an extra space.
+        if end_col < len(end_line_str) and not end_line_str[end_col - 1].isspace():
+            new_text += " "
 
         fixit = Fixit.build(Edit.build(paren_loc, new_text))
         return BasicRuleResult(node, ignorable=False, fixits=[fixit])
