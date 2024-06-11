@@ -516,19 +516,19 @@ static void setupChplHome(const char* argv0) {
     // E.g. /usr/lib/chapel/1.16/runtime/lib
     rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s/%s/%s",
                   get_configured_prefix(), // e.g. /usr
-                  "/lib/chapel",
+                  "lib/chapel",
                   majMinorVers,
                   "runtime/lib");
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
     rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s/%s/%s",
                   get_configured_prefix(), // e.g. /usr
-                  "/lib/chapel",
+                  "lib/chapel",
                   majMinorVers,
                   "runtime/include");
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
     rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s/%s/%s",
                   get_configured_prefix(), // e.g. /usr
-                  "/lib/chapel",
+                  "lib/chapel",
                   majMinorVers,
                   "third-party");
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
