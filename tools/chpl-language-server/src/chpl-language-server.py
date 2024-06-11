@@ -988,7 +988,7 @@ class CLSConfig:
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
-        add_bool_flag("lint", "do_linting", False)
+        add_bool_flag("chplcheck", "do_linting", False)
         if chplcheck_config:
             chplcheck_config.Config.add_arguments(self.parser, "chplcheck-")
 
