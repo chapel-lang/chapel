@@ -12,6 +12,12 @@ while b {}
 while b do writeln("Hello");
 do {} while b;
 
+if b {}
+if b then writeln("Hello");
+while b {}
+while b do writeln("Hello");
+do {} while b;
+
 if (a &&
     b) {}
 if(a &&

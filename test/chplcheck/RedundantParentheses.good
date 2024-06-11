@@ -10,8 +10,13 @@ RedundantParentheses.chpl:11: node violates rule RedundantParentheses
 RedundantParentheses.chpl:12: node violates rule RedundantParentheses
 RedundantParentheses.chpl:13: node violates rule RedundantParentheses
 RedundantParentheses.chpl:15: node violates rule RedundantParentheses
+RedundantParentheses.chpl:16: node violates rule RedundantParentheses
 RedundantParentheses.chpl:17: node violates rule RedundantParentheses
+RedundantParentheses.chpl:18: node violates rule RedundantParentheses
 RedundantParentheses.chpl:19: node violates rule RedundantParentheses
 RedundantParentheses.chpl:21: node violates rule RedundantParentheses
 RedundantParentheses.chpl:23: node violates rule RedundantParentheses
+RedundantParentheses.chpl:25: node violates rule RedundantParentheses
+RedundantParentheses.chpl:27: node violates rule RedundantParentheses
+RedundantParentheses.chpl:29: node violates rule RedundantParentheses
 [Success matching fixit for RedundantParentheses]
