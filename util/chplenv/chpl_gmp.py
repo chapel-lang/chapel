@@ -50,6 +50,10 @@ def get_compile_args():
     if gmp_val == 'bundled':
          return third_party_utils.get_bundled_compile_args('gmp')
     elif gmp_val == 'system':
+        # On cray-x* systems, gmp should be in the system library path
+        if chpl_platform.get('target').startswith('cray-x'):
+            return ([], [])
+
         # try pkg-config
         args = third_party_utils.pkgconfig_get_system_compile_args('gmp')
         if args != (None, None):
@@ -68,6 +72,10 @@ def get_link_args():
          return third_party_utils.pkgconfig_get_bundled_link_args('gmp')
 
     elif gmp_val == 'system':
+        # On cray-x* systems, gmp should be in the system library path
+        if chpl_platform.get('target').startswith('cray-x'):
+            return ([], ["-lgmp"])
+
         # try pkg-config
         args = third_party_utils.pkgconfig_get_system_link_args('gmp')
         if args != (None, None):

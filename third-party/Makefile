@@ -112,14 +112,12 @@ $(GASNET_INSTALL_DIR): $(GASNET_DEPEND)
 
 try-gmp: FORCE
   ifneq ($(CHPL_MAKE_GMP_IS_OVERRIDDEN), True)
-  ifneq ($(CHPL_MAKE_GMP), system)
     ifeq ($(wildcard $(GMP_BUILD_DIR)),)
 	@echo "Speculatively attempting to build gmp"
 	-@$(MAKE) GMP_SPECULATIVE=yes gmp
     else ifeq ($(wildcard $(GMP_H_FILE)),)
 	$(info Speculative build of gmp squashed due to previous failures.)
     endif
-  endif
   endif
 
 gmp: $(GMP_H_FILE)
