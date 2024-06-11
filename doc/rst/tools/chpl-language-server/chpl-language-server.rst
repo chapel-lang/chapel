@@ -79,7 +79,7 @@ syntax highlighting in Emacs):
 
   (with-eval-after-load 'eglot
     (add-to-list 'eglot-server-programs
-                 '(chpl-mode . ("chpl-language-server", "--chplcheck"))))
+                 '(chpl-mode . ("chpl-language-server" "--chplcheck"))))
 
 This will enable using the language server with a particular ``.chpl`` file by
 calling ``M-x eglot``.
