@@ -1737,6 +1737,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*initExpression*/ nullptr);
     builder->noteDeclNameLocation(var.get(), convLoc);
     builder->copyExprParenthLocation(e, var.get());
+    builder->deleteExprParenthLocation(e);
     return var;
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
@@ -1760,6 +1761,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                /*typeExpression*/ nullptr,
                                /*initExpression*/ nullptr);
     builder->copyExprParenthLocation(e, td.get());
+    builder->deleteExprParenthLocation(e);
     return td;
   } else {
     CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);

@@ -169,6 +169,11 @@ void Builder::copyAdditionalLocation(AstLocMap& m, const AstNode* from, const As
   }
 }
 
+void Builder::deleteAdditionalLocation(AstLocMap& m, const AstNode* ast) {
+  if (!ast) return;
+  m.erase(ast);
+}
+
 #define LOCATION_MAP(ast__, location__) \
   void Builder::note##location__##Location(ast__* ast, Location loc) { \
     auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
@@ -181,6 +186,10 @@ void Builder::copyAdditionalLocation(AstLocMap& m, const AstNode* from, const As
   void Builder::copy##location__##Location(const ast__* from, const ast__* to) { \
     auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
     copyAdditionalLocation(m, from, to); \
+  }\
+  void Builder::delete##location__##Location(const ast__* ast) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    deleteAdditionalLocation(m, ast); \
   }
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
