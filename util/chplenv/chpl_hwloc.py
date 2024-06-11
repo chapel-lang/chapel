@@ -103,9 +103,11 @@ def _main():
     if options.action == 'prefix':
         sys.stdout.write("{0}\n".format(get_prefix()))
     elif options.action == 'compile':
-        sys.stdout.write("{0}\n".format(get_compile_args()))
+        bundled, system = get_compile_args()
+        sys.stdout.write("{0}\n".format(' '.join(bundled + system)))
     elif options.action == 'link':
-        sys.stdout.write("{0}\n".format(get_link_args()))
+        bundled, system = get_link_args()
+        sys.stdout.write("{0}\n".format(' '.join(bundled + system)))
     else:
         sys.stdout.write("{0}\n".format(hwloc_val))
 
