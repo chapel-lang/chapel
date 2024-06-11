@@ -194,7 +194,7 @@ class ChplcheckProxy:
             return module
 
         mods = []
-        for mod in ["main", "config", "lsp", "driver", "rules"]:
+        for mod in ["chplcheck", "config", "lsp", "driver", "rules"]:
             m = load_module(mod)
             if m is None:
                 return None
