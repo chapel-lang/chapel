@@ -43,7 +43,10 @@ def _get_location(node: chapel.AstNode):
     else:
         return chapel.lsp.location_to_range(node.location())
 
-def get_lint_diagnostics(context: chapel.Context, driver: LintDriver, asts: List[chapel.AstNode]) -> List[Diagnostic]:
+
+def get_lint_diagnostics(
+    context: chapel.Context, driver: LintDriver, asts: List[chapel.AstNode]
+) -> List[Diagnostic]:
     """
     Run the linter rules on the Chapel ASTs and return them as LSP diagnostics.
     """
@@ -62,6 +65,7 @@ def get_lint_diagnostics(context: chapel.Context, driver: LintDriver, asts: List
                 diagnostic.data = {"rule": rule, "fixits": fixits}
             diagnostics.append(diagnostic)
     return diagnostics
+
 
 def get_lint_actions(diagnostics: List[Diagnostic]) -> List[CodeAction]:
     """
@@ -89,9 +93,7 @@ def get_lint_actions(diagnostics: List[Diagnostic]) -> List[CodeAction]:
                 start = e.start
                 end = e.end
                 rng = Range(
-                    start=Position(
-                        max(start[0] - 1, 0), max(start[1] - 1, 0)
-                    ),
+                    start=Position(max(start[0] - 1, 0), max(start[1] - 1, 0)),
                     end=Position(max(end[0] - 1, 0), max(end[1] - 1, 0)),
                 )
                 edit = TextEdit(range=rng, new_text=e.text)
@@ -109,6 +111,7 @@ def get_lint_actions(diagnostics: List[Diagnostic]) -> List[CodeAction]:
             )
             actions.append(action)
     return actions
+
 
 def run_lsp(driver: LintDriver):
     """

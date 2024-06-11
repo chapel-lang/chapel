@@ -57,14 +57,19 @@ async def test_lint_fixits(client: LanguageClient):
         assert len(client.diagnostics[doc.uri]) == 1
 
         diagnostics = client.diagnostics[doc.uri]
-        actions = await client.text_document_code_action_async(CodeActionParams(doc, rng((0, 0), endpos(file)), CodeActionContext(diagnostics)))
+        actions = await client.text_document_code_action_async(
+            CodeActionParams(
+                doc, rng((0, 0), endpos(file)), CodeActionContext(diagnostics)
+            )
+        )
         assert actions is not None
         # there should 2 actions, one to fixit and one to ignore. make sure that both exists
         # TODO: check that the fixits are valid and what we expect for a given input string
         # TODO: this should also be made into a helper function
         assert len(actions) == 2
-        assert "Apply Fix for" in actions[0].title and "Ignore" not in actions[0].title
+        assert (
+            "Apply Fix for" in actions[0].title
+            and "Ignore" not in actions[0].title
+        )
         assert "Ignore" in actions[1].title
         # TODO: check that applying the fixits actually resolves the warning
-
-
