@@ -274,7 +274,10 @@ def register_rules(driver: LintDriver):
         if start_col > 1 and not start_line_str[start_col - 2].isspace():
             new_text = " " + new_text
         # Similarly, '(x)do', can't turn this into 'xdo', need an extra space.
-        if end_col < len(end_line_str) and not end_line_str[end_col - 1].isspace():
+        if (
+            end_col < len(end_line_str)
+            and not end_line_str[end_col - 1].isspace()
+        ):
             new_text += " "
 
         fixit = Fixit.build(Edit.build(paren_loc, new_text))
