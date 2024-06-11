@@ -48,7 +48,7 @@ static void testHelloWorld() {
   assert(guard.numErrors() == 0);
 }
 
-static void testRecordSerialize() {
+static void testSerialize() {
   auto config = getConfigWithHome();
   Context ctx(config);
   Context* context = &ctx;
@@ -61,11 +61,21 @@ static void testRecordSerialize() {
     record R {
       var x : int;
     }
+    class C {
+      var x : int;
+    }
 
     proc main() {
       var writer : fileWriter(false);
       var r : R;
       r.serialize(writer, writer.serializer);
+
+      var o = new owned C(5);
+      o.serialize(writer, writer.serializer);
+      var s = new shared C(5);
+      s.serialize(writer, writer.serializer);
+      var u = new unmanaged C(5);
+      u.serialize(writer, writer.serializer);
     }
     )""";
 
@@ -75,7 +85,7 @@ static void testRecordSerialize() {
   assert(guard.numErrors() == 0);
 }
 
-static void testRecordDeserialize() {
+static void testDeserialize() {
   auto config = getConfigWithHome();
   Context ctx(config);
   Context* context = &ctx;
@@ -88,11 +98,21 @@ static void testRecordDeserialize() {
     record R {
       var x : int;
     }
+    class C {
+      var x : int;
+    }
 
     proc main() {
       var reader : fileReader(false);
       var r : R;
       r.deserialize(reader, reader.deserializer);
+
+      var o = new owned C(5);
+      o.deserialize(reader, reader.deserializer);
+      var s = new shared C(5);
+      s.deserialize(reader, reader.deserializer);
+      var u = new unmanaged C(5);
+      u.deserialize(reader, reader.deserializer);
     }
     )""";
 
@@ -104,8 +124,8 @@ static void testRecordDeserialize() {
 
 int main() {
   testHelloWorld();
-  testRecordSerialize();
-  testRecordDeserialize();
+  testSerialize();
+  testDeserialize();
 
   return 0;
 }

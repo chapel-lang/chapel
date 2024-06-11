@@ -426,7 +426,19 @@ generateDeSerialize(Context* context, const CompositeType* compType,
       UntypedFnSignature::FormalDetail(USTR("this"),
                                        UntypedFnSignature::DK_NO_DEFAULT,
                                        nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, compType));
+
+  QualifiedType thisType;
+  if (compType->isBasicClassType()) {
+    const Type* manager = nullptr;
+    auto borrowedNonnilDecor =
+        ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+    auto receiverType =
+        ClassType::get(context, compType->toBasicClassType(), manager, borrowedNonnilDecor);
+    thisType = QualifiedType(QualifiedType::CONST_IN, receiverType);
+  } else {
+    thisType =QualifiedType(QualifiedType::CONST_REF, compType);
+  }
+  formalTypes.push_back(thisType);
 
   // TODO: Add constraints to these arguments
   ufsFormals.push_back(
