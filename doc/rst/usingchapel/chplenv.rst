@@ -660,6 +660,7 @@ CHPL_HWLOC
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
        bundled  use the hwloc distribution bundled with Chapel in third-party
+       system   use a system install of hwloc (requires version 2.1+)
        ======== ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
@@ -670,20 +671,13 @@ CHPL_HWLOC
    and rebuild (and please file a bug with the Chapel team.) Note that
    building without hwloc will have a negative impact on performance.
 
-   .. (comment) CHPL_HWLOC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_HWLOC=system is not regularly tested and may not work
-       for you. Chapel depends on hwloc features that are not available in
-       all versions. For best results, we recommend using the bundled hwloc
-       if possible.
+..  (comment) CHPL_TARGET_JEMALLOC is not a user-facing feature
 
-..  (comment) CHPL_JEMALLOC is not a user-facing feature
+   .. _readme-chplenv.CHPL_TARGET_JEMALLOC:
 
-   .. _readme-chplenv.CHPL_JEMALLOC:
-
-   CHPL_JEMALLOC
+   CHPL_TARGET_JEMALLOC
    ~~~~~~~~~~~~~
-      Optionally, the ``CHPL_JEMALLOC`` environment variable can select
+      Optionally, the ``CHPL_TARGET_JEMALLOC`` environment variable can select
       between no jemalloc, or using the jemalloc distributed with Chapel in
       third-party. This setting is intended to elaborate upon
       ``CHPL_MEM=jemalloc``.
@@ -693,18 +687,12 @@ CHPL_HWLOC
           ======== ==============================================================
           none     do not build or use jemalloc
           bundled  use the jemalloc distribution bundled with Chapel in third-party
+          system   use the jemalloc found on the system
           ======== ==============================================================
 
-      If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
+      If unset, ``CHPL_TARGET_JEMALLOC`` defaults to ``bundled`` if
       :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
       defaults to ``none``.
-
-   .. (comment) CHPL_JEMALLOC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_JEMALLOC=system is not regularly tested and may not work
-       for you. Chapel depends on jemalloc features that are not available in
-       all versions. For best results, we recommend using the bundled jemalloc
-       if possible.
 
 ..  (comment) CHPL_LIBFABRIC is not a user-facing feature
 
