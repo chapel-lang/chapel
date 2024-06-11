@@ -461,7 +461,7 @@ record blockDist : writeSerializable {
 
   @chpldoc.nodoc
   inline operator ==(d1: blockDist(?), d2: blockDist(?)) {
-    if (d1._value == d2._value) then
+    if d1._value == d2._value then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
@@ -754,8 +754,8 @@ proc BlockImpl.redistribute(const in newBbox) {
 
 
 proc BlockImpl.dsiAssign(other: this.type) {
-  if (this.targetLocDom != other.targetLocDom ||
-      || reduce (this.targetLocales != other.targetLocales)) {
+  if this.targetLocDom != other.targetLocDom ||
+     (|| reduce (this.targetLocales != other.targetLocales)) {
     halt("'blockDist' assignments currently require the target locale arrays to match");
   }
 
@@ -1868,7 +1868,7 @@ proc BlockImpl.dsiTargetLocales() const ref {
 
 proc BlockImpl.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
-    if (targetLocales[locIdx] == loc) then
+    if targetLocales[locIdx] == loc then
       return (true, locIdx);
   return (false, targetLocDom.first);
 }
@@ -1881,7 +1881,7 @@ proc BlockDom.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTarget
 // returns the current locale's subdomain
 
 proc BlockArr.dsiLocalSubdomain(loc: locale) {
-  if (loc == here) {
+  if loc == here {
     // quick solution if we have a local array
     if const myLocArrNN = myLocArr then
       return myLocArrNN.locDom.myBlock;
@@ -1894,7 +1894,7 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
 }
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
-  if (gotit) {
+  if gotit {
     if loc == here {
       // If we're doing the common case of just querying our own ownership,
       // return the local, pre-computed value
@@ -1983,7 +1983,7 @@ proc BlockArr.canDoOptimizedSwap(other) {
 proc BlockArr.doiOptimizedSwap(other: this.type)
   where this.strides == other.strides {
 
-  if(canDoOptimizedSwap(other)) {
+  if canDoOptimizedSwap(other) {
     if debugOptimizedSwap {
       writeln("BlockArr doing optimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
@@ -2226,7 +2226,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
       // the "first" locale scans the per-locale contributions as they
       // become ready
-      if (locid == firstLoc) then on elemPerLoc {
+      if locid == firstLoc then on elemPerLoc {
         const metaop = op.clone();
 
         var next: resType = metaop.identity;
