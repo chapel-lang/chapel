@@ -74,19 +74,11 @@ class Config:
 
     @classmethod
     def from_args(cls, args: Union[argparse.Namespace, Dict[str, Any]]):
-        if isinstance(args, argparse.Namespace):
-            return cls(
-                disabled_rules=args.chplcheck_disabled_rules,
-                enabled_rules=args.chplcheck_enabled_rules,
-                skip_unstable=args.chplcheck_skip_unstable,
-                internal_prefixes=args.chplcheck_internal_prefixes,
-                add_rules=args.chplcheck_add_rules,
-            )
-        else:
-            return cls(
-                disabled_rules=args["chplcheck_disabled_rules"],
-                enabled_rules=args["chplcheck_enabled_rules"],
-                skip_unstable=args["chplcheck_skip_unstable"],
-                internal_prefixes=args["chplcheck_internal_prefixes"],
-                add_rules=args["chplcheck_add_rules"],
-            )
+        args = vars(args) if isinstance(args, argparse.Namespace) else args
+        return cls(
+            disabled_rules=args["chplcheck_disabled_rules"],
+            enabled_rules=args["chplcheck_enabled_rules"],
+            skip_unstable=args["chplcheck_skip_unstable"],
+            internal_prefixes=args["chplcheck_internal_prefixes"],
+            add_rules=args["chplcheck_add_rules"],
+        )

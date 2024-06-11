@@ -32,6 +32,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from types import ModuleType
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_left, bisect_right
@@ -144,41 +145,53 @@ import argparse
 import configargparse
 
 
-# attempt to import chplcheck
-try:
-    chpl_home = os.environ.get("CHPL_HOME")
-    if chpl_home is None:
-        raise ValueError("CHPL_HOME not set")
-    chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
-    # Add chplcheck to the path, but load via importlib
-    sys.path.append(chplcheck_path)
+class ChplcheckProxy:
 
-    def load_module(module_name: str):
-        file_path = os.path.join(chplcheck_path, module_name + ".py")
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        if spec is None:
-            raise ValueError(f"Could not load module from {file_path}")
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        if spec.loader is None:
-            raise ValueError(f"Could not load module from {file_path}")
-        spec.loader.exec_module(module)
-        return module
+    def __init__(self, main: ModuleType, config: ModuleType, lsp: ModuleType, driver: ModuleType, rules: ModuleType):
+        self.main = main
+        self.config = config
+        self.lsp = lsp
+        self.driver = driver
+        self.rules = rules
 
-    chplcheck = load_module("chplcheck")
-    chplcheck_lsp = load_module("lsp")
-    chplcheck_config = load_module("config")
-    chplcheck_driver = load_module("driver")
-    chplcheck_rules = load_module("rules")
 
-except ValueError as e:
-    if os.environ.get("CHPL_DEVELOPER", None):
-        print("Error loading chplcheck: ", str(e), file=sys.stderr)
-    chplcheck = None
-    chplcheck_lsp = None
-    chplcheck_config = None
-    chplcheck_driver = None
-    chplcheck_rules = None
+    @classmethod
+    def get(cls) -> Optional["ChplcheckProxy"]:
+
+        def error(msg: str):
+            if os.environ.get("CHPL_DEVELOPER", None):
+                print("Error loading chplcheck: ", str(e), file=sys.stderr)
+
+        chpl_home = os.environ.get("CHPL_HOME")
+        if chpl_home is None:
+            error("CHPL_HOME not set")
+            return None
+
+        def load_module(module_name: str) -> Optional[ModuleType]:
+            file_path = os.path.join(chplcheck_path, module_name + ".py")
+            spec = importlib.util.spec_from_file_location(module_name, file_path)
+            if spec is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            if spec.loader is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            spec.loader.exec_module(module)
+            return module
+
+        mods = []
+        for mod in ["main", "config", "lsp", "driver", "rules"]:
+            m = load_module(mod)
+            if m is None:
+                return None
+            mods.append(m)
+        proxy = ChplcheckProxy(*mods)
+
+        return proxy
+
+chplcheck = ChplcheckProxy.get()
 
 REAL_NUMBERIC = (chapel.RealLiteral, chapel.IntLiteral, chapel.UintLiteral)
 NUMERIC = REAL_NUMBERIC + (chapel.ImagLiteral,)
@@ -991,8 +1004,8 @@ class CLSConfig:
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
         add_bool_flag("chplcheck", "do_linting", False)
-        if chplcheck_config:
-            chplcheck_config.Config.add_arguments(self.parser, "chplcheck-")
+        if chplcheck:
+            chplcheck.config.Config.add_arguments(self.parser, "chplcheck-")
 
     def _parse_end_markers(self):
         self.args["end_markers"] = [
@@ -1070,23 +1083,16 @@ class ChapelLanguageServer(LanguageServer):
         """
         Setup the linter, if it is enabled
         """
-        if not (
-            self.do_linting
-            and chplcheck
-            and chplcheck_lsp
-            and chplcheck_config
-            and chplcheck_driver
-            and chplcheck_rules
-        ):
+        if not (self.do_linting and chplcheck):
             return
 
-        config = chplcheck_config.Config.from_args(clsConfig.args)
-        self.lint_driver = chplcheck_driver.LintDriver(config)
+        config = chplcheck.config.Config.from_args(clsConfig.args)
+        self.lint_driver = chplcheck.driver.LintDriver(config)
 
-        chplcheck_rules.register_rules(self.lint_driver)
+        chplcheck.rules.register_rules(self.lint_driver)
 
         for p in config.add_rules:
-            chplcheck.load_module(self.lint_driver, os.path.abspath(p))
+            chplcheck.main.load_module(self.lint_driver, os.path.abspath(p))
 
         self.lint_driver.disable_rules(*config.disabled_rules)
         self.lint_driver.enable_rules(*config.enabled_rules)
@@ -1202,9 +1208,8 @@ class ChapelLanguageServer(LanguageServer):
             diagnostics.append(diag)
 
         # get lint diagnostics if applicable
-        if self.lint_driver:
-            assert chplcheck_lsp
-            lint_diagnostics = chplcheck_lsp.get_lint_diagnostics(
+        if self.lint_driver and chplcheck:
+            lint_diagnostics = chplcheck.lsp.get_lint_diagnostics(
                 fi.context.context, self.lint_driver, fi.get_asts()
             )
             diagnostics.extend(lint_diagnostics)
@@ -1765,9 +1770,8 @@ def run_lsp():
             )
 
         # get lint fixits if applicable
-        if ls.lint_driver:
-            assert chplcheck_lsp
-            lint_actions = chplcheck_lsp.get_lint_actions(
+        if ls.lint_driver and chplcheck:
+            lint_actions = chplcheck.lsp.get_lint_actions(
                 params.context.diagnostics
             )
             actions.extend(lint_actions)
