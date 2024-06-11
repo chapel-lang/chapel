@@ -147,13 +147,19 @@ import configargparse
 
 class ChplcheckProxy:
 
-    def __init__(self, main: ModuleType, config: ModuleType, lsp: ModuleType, driver: ModuleType, rules: ModuleType):
+    def __init__(
+        self,
+        main: ModuleType,
+        config: ModuleType,
+        lsp: ModuleType,
+        driver: ModuleType,
+        rules: ModuleType,
+    ):
         self.main = main
         self.config = config
         self.lsp = lsp
         self.driver = driver
         self.rules = rules
-
 
     @classmethod
     def get(cls) -> Optional["ChplcheckProxy"]:
@@ -169,7 +175,9 @@ class ChplcheckProxy:
 
         def load_module(module_name: str) -> Optional[ModuleType]:
             file_path = os.path.join(chplcheck_path, module_name + ".py")
-            spec = importlib.util.spec_from_file_location(module_name, file_path)
+            spec = importlib.util.spec_from_file_location(
+                module_name, file_path
+            )
             if spec is None:
                 error(f"Could not load module from {file_path}")
                 return None
@@ -190,6 +198,7 @@ class ChplcheckProxy:
         proxy = ChplcheckProxy(*mods)
 
         return proxy
+
 
 chplcheck = ChplcheckProxy.get()
 
