@@ -652,8 +652,8 @@ CHPL_GMP
 CHPL_HWLOC
 ~~~~~~~~~~
    Optionally, the ``CHPL_HWLOC`` environment variable can select between
-   no hwloc support or using the hwloc package distributed with Chapel in
-   third-party.
+   no hwloc support, using the hwloc package distributed with Chapel in
+   third-party, or using a system hwloc.
 
        ======== ==============================================================
        Value    Description
@@ -678,9 +678,9 @@ CHPL_HWLOC
    CHPL_TARGET_JEMALLOC
    ~~~~~~~~~~~~~
       Optionally, the ``CHPL_TARGET_JEMALLOC`` environment variable can select
-      between no jemalloc, or using the jemalloc distributed with Chapel in
-      third-party. This setting is intended to elaborate upon
-      ``CHPL_MEM=jemalloc``.
+      between no jemalloc, using the jemalloc distributed with Chapel in
+      third-party, or using a system jemalloc. This setting is intended to
+      elaborate upon ``CHPL_MEM=jemalloc``.
 
           ======== ==============================================================
           Value    Description
