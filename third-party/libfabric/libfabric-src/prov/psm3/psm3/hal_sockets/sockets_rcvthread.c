@@ -82,11 +82,11 @@
  * 	PSM2_OK - poll found an event and processed it
  * 	PSM2_INTERNAL_ERR - unexpected error attempting poll()
  * updates counters: pollok (poll's which made progress), pollcyc (time spent
- * 	polling without finding any events)
+ * 	polling without finding any events), pollintr (polls woken before timeout)
  */
 psm2_error_t psm3_sockets_ips_ptl_pollintr(psm2_ep_t ep,
 		struct ips_recvhdrq *recvq, int fd_pipe, int next_timeout,
-		uint64_t *pollok, uint64_t *pollcyc)
+		uint64_t *pollok, uint64_t *pollcyc, uint64_t *pollintr)
 {
 	struct pollfd pfd[2];
 	int ret;
@@ -124,6 +124,13 @@ psm2_error_t psm3_sockets_ips_ptl_pollintr(psm2_ep_t ep,
 		close(fd_pipe);
 		return PSM2_IS_FINALIZED;
 	} else {
+		(*pollintr) += ret;
+		// The LOCK_TRY avoids a deadlock when ep destruction has
+		// creation_lock, writes fd_pipe and needs to wait for this
+		// thread to exit. Since sockets does not support psm3_wait() and
+		// does not need poll_type reenabled, we can simply skip the polling
+		// when competing with thread shutdown.
+		psmi_assert(! psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_WAITING));
 		if (!PSMI_LOCK_TRY(psm3_creation_lock)) {
 			if (ret == 0 || pfd[0].revents & (POLLIN | POLLERR)) {
 				if (PSMI_LOCK_DISABLED) {
@@ -157,12 +164,6 @@ psm2_error_t psm3_sockets_ips_ptl_pollintr(psm2_ep_t ep,
 							*/
 							err = psm3_poll_internal(ep,
 										 ret == 0 ? PSMI_TRUE : PSMI_FALSE, 0);
-#ifdef PSM_HAVE_REG_MR
-#ifdef UMR_CACHE
-							if (ep->mr_cache_mode == MR_CACHE_MODE_USER && !ep->verbs_ep.umrc.thread)
-								psm3_sockets_poll_uffd_events(ep);
-#endif
-#endif
 							if (err == PSM2_OK)
 								(*pollok)++;
 							else

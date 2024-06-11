@@ -252,28 +252,54 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
   strcpy(expr, numPtr);
   char *x = strchr(expr, 'x');
   if (x != NULL) {
-    // parse locale expression of the form MxN where N is optional
+    // parse locale expression of the form NxLt where L and t are optional
     *x = '\0';
     char *lpn = x+1;
     if (*lpn != '\0') {
-      // locales per node (N) was specified
+      // locales per node (L) was specified
       _argNumLocalesPerNode = c_string_to_int32_t_precise(lpn, &invalid,
                                                    invalidChars);
+      const char *t = NULL;
       if (invalid) {
-        char *message = chpl_glom_strings(3, "\"", lpn,
-                              "\" is not a valid number of locales per node.");
-        chpl_error(message, lineno, filename);
+        char *suffix = strchr(lpn, invalidChars[0]);
+        assert(suffix);
+        if (suffix == lpn) {
+          // locales per node must be specified if there is a suffix
+          char *message = chpl_glom_strings(3, "\"", suffix,
+                          "\" is not a valid number of co-locales.");
+          chpl_error(message, lineno, filename);
+        }
+
+        if (!strcmp(suffix, "s") || !strcmp(suffix, "socket")) {
+          t = "socket";
+        } else if (!strcmp(suffix, "numa")) {
+          t = "numa";
+        } else if (!strcmp(suffix, "llc")) {
+          t = "cache";
+        } else if (!strcmp(suffix, "c") || !strcmp(suffix, "core")) {
+          t = "core";
+        } else {
+          char *message = chpl_glom_strings(3, "\"", suffix,
+                          "\" is not a valid suffix.");
+          chpl_error(message, lineno, filename);
+        }
       }
+      if (t) {
+        chpl_env_set("CHPL_RT_COLOCALE_OBJ_TYPE", t, 1);
+      }
+
       if (_argNumLocalesPerNode < 1) {
         chpl_error("Number of locales per node must be > 0.",
                    lineno, filename);
-      }
-      if (_argNumLocalesPerNode > 1) {
-        chpl_env_set("CHPL_RT_LOCALES_PER_NODE", lpn, 1);
+      } else if ((_argNumLocalesPerNode > 1) || t) {
+        // We have co-locales if there is more then one locale per node or if
+        // the locale is bound to an architectural feature.
+        chpl_env_set_uint("CHPL_RT_LOCALES_PER_NODE",
+                          (uint64_t)_argNumLocalesPerNode, 1);
       }
     } else {
 
-      // N wasn't specified, determine the default from
+      // L wasn't specified, determine the default from
       // CHPL_RT_LOCALES_PER_NODE. It is an error if it is not set.
 
       if (!chpl_env_rt_get("LOCALES_PER_NODE", NULL)) {
@@ -283,6 +309,8 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       if (_argNumLocalesPerNode < 1) {
         chpl_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
       }
+
+      // TODO: allow for a suffix w/out L
     }
 
     int32_t numNodes = c_string_to_int32_t_precise(expr, &invalid,

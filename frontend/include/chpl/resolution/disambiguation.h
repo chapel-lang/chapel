@@ -45,8 +45,7 @@ namespace resolution {
 MostSpecificCandidates
 findMostSpecificCandidates(
     Context* context,
-    const std::vector<const TypedFnSignature*>& lst,
-    const std::vector<types::QualifiedType>& forwardingInfo,
+    const CandidatesAndForwardingInfo& lst,
     const CallInfo& call,
     const Scope* callInScope,
     const PoiScope* callInPoiScope);

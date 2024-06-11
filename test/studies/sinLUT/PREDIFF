@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+
+# only do this if '-scorrectness=true'
+if [[ "$5" != *"-scorrectness=true"* ]]; then
+  exit 0
+fi
+
+cp $2 $2.prediff.tmp
+> $2
+
+# check that Chapel Calculated == Chapel Lookup
+calc=`sed '1q;d' $2.prediff.tmp | sed 's/.*: //'`
+lookup=`sed '2q;d' $2.prediff.tmp | sed 's/.*: //'`
+if [ "$calc" = "$lookup" ]; then
+    echo "Chapel Calculated == Chapel Lookup" >> $2
+else
+    echo "Chapel Calculated != Chapel Lookup" >> $2
+fi
+# check that C Caclulated == C Lookup
+calc=`sed '3q;d' $2.prediff.tmp | sed 's/.*: //'`
+lookup=`sed '4q;d' $2.prediff.tmp | sed 's/.*: //'`
+if [ "$calc" = "$lookup" ]; then
+    echo "C Calculated == C Lookup" >> $2
+else
+    echo "C Calculated != C Lookup" >> $2
+fi
+
+rm $2.prediff.tmp

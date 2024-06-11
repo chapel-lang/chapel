@@ -31,7 +31,7 @@ testLocal();
 proc testDist() {
   writeln("testing distributed sorting");
   var D = {0..#n};
-  var DD: domain(1) dmapped blockDist(boundingBox=D) = D;
+  var DD: domain(1) dmapped new blockDist(boundingBox=D) = D;
   var A: [DD] int;
 
   fillRandom(A, seed=seed);

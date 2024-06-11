@@ -847,78 +847,90 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
   if (untyped->name() == USTR("init") ||
       untyped->name() == USTR("init=") ||
       untyped->name() == USTR("deinit") ||
-      untyped->name() == USTR("=")) {
+      untyped->name() == USTR("=") ||
+      untyped->name() == USTR("serialize") ||
+      untyped->name() == USTR("deserialize")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
       return true;
   } else if (untyped->name() == USTR("==")) {
       result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
       return true;
+  } else if (untyped->name() == USTR(":")) {
+    // Assume that compiler-generated casts are actually cast.
+    auto input = sig->formalType(0);
+    auto outputType = sig->formalType(1);
+
+    result = QualifiedType(input.kind(), outputType.type());
+    return true;
   } else if (untyped->idIsField() && untyped->isMethod()) {
-      // method accessor - compute the type of the field
-      QualifiedType ft = computeTypeOfField(context,
-                                            sig->formalType(0).type(),
-                                            untyped->id());
-      if (ft.isType() || ft.isParam()) {
-        // return the type as-is (preserving param/type-ness)
-        result = ft;
-      } else if (ft.isConst()) {
-        // return a const ref
-        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
-      } else {
-        // return a ref
-        result = QualifiedType(QualifiedType::REF, ft.type());
-      }
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
-      auto dt = sig->formalType(0).type()->toDomainType();
+    // method accessor - compute the type of the field
+    QualifiedType ft = computeTypeOfField(context,
+                                          sig->formalType(0).type(),
+                                          untyped->id());
+    if (ft.isType() || ft.isParam()) {
+      // return the type as-is (preserving param/type-ness)
+      result = ft;
+    } else if (ft.isConst()) {
+      // return a const ref
+      result = QualifiedType(QualifiedType::CONST_REF, ft.type());
+    } else {
+      // return a ref
+      result = QualifiedType(QualifiedType::REF, ft.type());
+    }
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
+    auto dt = sig->formalType(0).type()->toDomainType();
 
-      if (untyped->name() == "idxType") {
-        result = dt->idxType();
-      } else if (untyped->name() == "rank") {
-        // Can't use `RankType::rank` because `D.rank` is defined for associative
-        // domains, even though they don't have a matching substitution.
-        result = QualifiedType(QualifiedType::PARAM,
-                               IntType::get(context, 64),
-                               IntParam::get(context, dt->rankInt()));
-      } else if (untyped->name() == "stridable") {
-        result = dt->stridable();
-      } else if (untyped->name() == "parSafe") {
-        result = dt->parSafe();
-      } else if (untyped->name() == "isRectangular") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
-        auto type = BoolType::get(context);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else if (untyped->name() == "isAssociative") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
-        auto type = BoolType::get(context);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
-        return true;
-      }
+    if (untyped->name() == "idxType") {
+      result = dt->idxType();
+    } else if (untyped->name() == "rank") {
+      // Can't use `RankType::rank` because `D.rank` is defined for associative
+      // domains, even though they don't have a matching substitution.
+      result = QualifiedType(QualifiedType::PARAM,
+                             IntType::get(context, 64),
+                             IntParam::get(context, dt->rankInt()));
+    } else if (untyped->name() == "stridable") {
+      result = dt->stridable();
+    } else if (untyped->name() == "parSafe") {
+      result = dt->parSafe();
+    } else if (untyped->name() == "isRectangular") {
+      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
+      auto type = BoolType::get(context);
+      result = QualifiedType(QualifiedType::PARAM, type, val);
+    } else if (untyped->name() == "isAssociative") {
+      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
+      auto type = BoolType::get(context);
+      result = QualifiedType(QualifiedType::PARAM, type, val);
+    } else {
+      CHPL_ASSERT(false && "unhandled compiler-generated domain method");
       return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
-      auto at = sig->formalType(0).type()->toArrayType();
-
-      if (untyped->name() == "domain") {
-        result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
-      } else if (untyped->name() == "eltType") {
-        result = at->eltType();
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated array method");
-      }
-
+    }
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
+    auto at = sig->formalType(0).type()->toArrayType();
+    
+    if (untyped->name() == "domain") {
+      result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
+    } else if (untyped->name() == "eltType") {
+      result = at->eltType();
+    } else {
+      CHPL_ASSERT(false && "unhandled compiler-generated array method");
+    }
       return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
                untyped->name() == "size") {
       auto tup = sig->formalType(0).type()->toTupleType();
       result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, tup->numElements()));
       return true;
-    } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated record method");
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() && untyped->name() == "eltType") {
+      auto cpt = sig->formalType(0).type()->toCPtrType();
+      result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
       return true;
-    }
+  } else {
+    CHPL_ASSERT(false && "unhandled compiler-generated record method");
+    return true;
+  }
 }
 
 // returns 'true' if it was a case handled here & sets 'result' in that case
@@ -1022,8 +1034,9 @@ const QualifiedType& returnType(Context* context,
     // resolve the function body
     // resolveFunction will arrange to call computeReturnType
     // and store the return type in the result.
-    const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
-    result = rFn->returnType();
+    if (auto rFn = resolveFunction(context, sig, poiScope)) {
+      result = rFn->returnType();
+    }
   }
 
   return QUERY_END(result);
@@ -1040,17 +1053,17 @@ inferOutFormalsQuery(Context* context,
   std::vector<types::QualifiedType> formalTypes;
 
   // resolve the function body
-  const ResolvedFunction* rFn = resolveFunction(context, sig,
-                                                instantiationPoiScope);
-  const ResolutionResultByPostorderID& rr = rFn->resolutionById();
+  if (auto rFn = resolveFunction(context, sig, instantiationPoiScope)) {
+    const ResolutionResultByPostorderID& rr = rFn->resolutionById();
 
-  int numFormals = sig->numFormals();
-  for (int i = 0; i < numFormals; i++) {
-    const types::QualifiedType& ft = sig->formalType(i);
-    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
-      formalTypes.push_back(rr.byAst(untyped->formalDecl(i)).type());
-    } else {
-      formalTypes.push_back(ft);
+    int numFormals = sig->numFormals();
+    for (int i = 0; i < numFormals; i++) {
+      const types::QualifiedType& ft = sig->formalType(i);
+      if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
+        formalTypes.push_back(rr.byAst(untyped->formalDecl(i)).type());
+      } else {
+        formalTypes.push_back(ft);
+      }
     }
   }
 

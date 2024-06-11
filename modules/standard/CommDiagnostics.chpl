@@ -316,30 +316,25 @@ module CommDiagnostics
     var cache_readahead_waited : uint(64);
 
     @chpldoc.nodoc
-    proc writeThis(c) throws {
+    proc serialize(writer, ref serializer) throws {
       use Reflection;
 
       var first = true;
-      c.write("(");
+      writer.write("(");
       for param i in 0..<getNumFields(chpl_commDiagnostics) {
         param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {
           if commDiagsPrintUnstable || name != 'amo' {
-            if first then first = false; else c.write(", ");
-            c.write(name, " = ", val);
+            if first then first = false; else writer.write(", ");
+            writer.write(name, " = ", val);
           }
         }
       }
-      if first then c.write("<no communication>");
-      c.write(")");
+      if first then writer.write("<no communication>");
+      writer.write(")");
     }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
-    }
-  };
+  }
 
   /*
     The Chapel record type inherits the comm layer definition of it.

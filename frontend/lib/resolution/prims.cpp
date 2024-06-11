@@ -226,8 +226,7 @@ static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
 static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
                                       bool forMethod, bool resolveFn,
                                       const PrimCall* call,
-                                      const Scope* inScope,
-                                      const PoiScope* inPoiScope) {
+                                      const CallScopeInfo& inScopes) {
   if ((forMethod && ci.numActuals() < 2) ||
       (!forMethod && ci.numActuals() < 1)) {
     return QualifiedType();
@@ -255,7 +254,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
                            std::move(actuals));
   auto callResult = context->runAndTrackErrors([&](Context* context) {
     return resolveGeneratedCall(context, call, callInfo,
-                                inScope, inPoiScope);
+                                inScopes);
   });
   const TypedFnSignature* bestCandidate = nullptr;
   for (auto candidate : callResult.result().mostSpecific()) {
@@ -271,7 +270,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
     if (resolveFn) {
       // We did find a candidate; resolve the function body.
       auto bodyResult = context->runAndTrackErrors([&](Context* context) {
-        return resolveFunction(context, bestCandidate, inPoiScope);
+        return resolveFunction(context, bestCandidate, inScopes.poiScope());
       });
       callAndFnResolved &= bodyResult.ranWithoutErrors();
     }
@@ -309,7 +308,7 @@ static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
   // Combine the properties of the argument's kind with those of the 'REF'
   // kind. This should inherit const-ness, throw off param-ness, and result in
   // errors if the argument is a TYPE.
-  kp.combineWith(KindProperties::fromKind(QualifiedType::REF));
+  kp.combineWithJoin(KindProperties::fromKind(QualifiedType::REF));
   if (!kp.valid()) return QualifiedType();
 
   // 'combineWith' actually disables ref-ness if either argument is non-ref.
@@ -375,6 +374,33 @@ static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallI
   return QualifiedType(QualifiedType::TYPE, typePtr);
 }
 
+static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
+                                       const CallInfo& ci) {
+  CHPL_ASSERT(prim == PRIM_GET_SVEC_MEMBER ||
+              prim == PRIM_GET_SVEC_MEMBER_VALUE);
+
+  if (ci.numActuals() == 2 && ci.actual(0).type().hasTypePtr()) {
+    auto index = ci.actual(1).type();
+    if (index.hasTypePtr() && index.type()->isIntegralType()) {
+      auto act = ci.actual(0).type();
+      if (auto tup = act.type()->toTupleType()) {
+        if (tup->isStarTuple()) {
+          auto eltType = tup->starType();
+          QualifiedType::Kind retKind = eltType.kind();
+          if (prim == PRIM_GET_SVEC_MEMBER_VALUE) {
+            // Return as value for _VALUE variant, maintaining constness.
+            retKind =
+                KindProperties::combineKindsMeet(retKind, QualifiedType::PARAM);
+          }
+          return QualifiedType(retKind, eltType.type());
+        }
+      }
+    }
+  }
+
+  return QualifiedType();
+}
+
 static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
   // Note: this is slightly different semantically from the primitive in
   // production. In production owned(X) is a type of its own (aliasing _owned(X)),
@@ -429,7 +455,7 @@ struct TestFunctionFinder {
     // The function also needs to be concrete.
     const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn);
     const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-    if (sig->needsInstantiation()) return false;
+    if (sig == nullptr || sig->needsInstantiation()) return false;
 
     if (canPass(context, testType, sig->formalType(0)).passes()) {
       // One formal of 'testType', which constitutes a test.
@@ -1070,13 +1096,13 @@ CallResolutionResult resolvePrimCall(Context* context,
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim) && allParam) {
     if (ci.numActuals() == 2) {
-      type = Param::fold(context, prim, ci.actual(0).type(), ci.actual(1).type());
+      type = Param::fold(context, call, prim, ci.actual(0).type(), ci.actual(1).type());
     } else if (ci.numActuals() == 1) {
-      type = Param::fold(context, prim, ci.actual(0).type(), QualifiedType());
+      type = Param::fold(context, call, prim, ci.actual(0).type(), QualifiedType());
     } else {
       CHPL_ASSERT(false && "unsupported param folding");
     }
-    return CallResolutionResult(candidates, type, poi);
+    return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
   }
 
   // otherwise, handle each primitive individually
@@ -1210,8 +1236,8 @@ CallResolutionResult resolvePrimCall(Context* context,
         bool resolveFn = prim == PRIM_CALL_AND_FN_RESOLVES ||
                          prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
 
-        type = primCallResolves(context, ci, forMethod, resolveFn, call,
-                                inScope, inPoiScope);
+        auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+        type = primCallResolves(context, ci, forMethod, resolveFn, call, inScopes);
       }
       break;
 
@@ -1318,7 +1344,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* string operations */
     case PRIM_STRING_COMPARE:
     case PRIM_STRING_CONTAINS:
-    case PRIM_STRING_CONCAT:
     case PRIM_STRING_LENGTH_BYTES:
     {
       if (ci.numActuals() > 0) {
@@ -1332,13 +1357,32 @@ CallResolutionResult resolvePrimCall(Context* context,
                                IntParam::get(context, s));
           break;
         } else if (actualType.type()->isStringType() ||
-                   actualType.type()->isBytesType()) {
+                   actualType.type()->isBytesType() ||
+                   actualType.type()->isCStringType() ||
+                   actualType.type()->isCPtrType()) {
           // for non-param string/bytes, the return type is just a default int
           type = QualifiedType(QualifiedType::CONST_VAR,
                                IntType::get(context, 0));
           break;
         }
       }
+    }
+    case PRIM_STRING_CONCAT:
+    {
+      if (ci.numActuals() == 2) {
+        auto lhs = ci.actual(0).type();
+        auto rhs = ci.actual(1).type();
+
+        if (lhs.type() == rhs.type() &&
+            lhs.isParam() && rhs.isParam() &&
+            (lhs.type()->isStringType() || lhs.type()->isBytesType())) {
+          auto lstr = lhs.param()->toStringParam()->value();
+          auto rstr = rhs.param()->toStringParam()->value();
+          auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
+          type = QualifiedType(QualifiedType::PARAM, lhs.type(), StringParam::get(context, concat));
+        }
+      }
+      break;
     }
     case PRIM_STRING_LENGTH_CODEPOINTS:
     case PRIM_ASCII:
@@ -1506,12 +1550,15 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_CREATE_FN_TYPE:
     case PRIM_GPU_KERNEL_LAUNCH:
-    case PRIM_GPU_KERNEL_LAUNCH_FLAT:
     case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_DEINIT_KERNEL_CFG:
     case PRIM_GPU_ARG:
     case PRIM_GPU_PID_OFFLOAD:
+    case PRIM_GPU_ATTRIBUTE_BLOCK:
+    case PRIM_GPU_PRIMITIVE_BLOCK:
+    case PRIM_GPU_BLOCK_REDUCE:
+    case PRIM_GPU_REDUCE_WRAPPER:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
@@ -1589,6 +1636,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_GPU_INIT_KERNEL_CFG:
+    case PRIM_GPU_INIT_KERNEL_CFG_3D:
       type = QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));
       break;
 
@@ -1617,10 +1665,34 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 32));
       break;
+    case PRIM_ON_LOCALE_NUM:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CompositeType::getLocaleIDType(context));
+      break;
+
+    case PRIM_ARRAY_GET: {
+        if (ci.numActuals() == 2 && ci.actual(0).type().hasTypePtr()) {
+          auto index = ci.actual(1).type();
+          if (index.hasTypePtr() && index.type()->isIntegralType()) {
+            auto act = ci.actual(0).type();
+            if (auto ptr = act.type()->toCPtrType()) {
+              type = QualifiedType(QualifiedType::REF, ptr->eltType());
+            }
+          } else {
+            context->error(call, "bad call to primitive \"%s\": second argument must be an integral type", primTagToName(prim));
+          }
+        }
+      }
+      break;
+
+    case PRIM_GET_SVEC_MEMBER:
+    case PRIM_GET_SVEC_MEMBER_VALUE:
+        return primGetSvecMember(context, prim, ci);
+        break;
+
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
     case PRIM_TUPLE_EXPAND:
-    case PRIM_ARRAY_GET:
     case PRIM_MAYBE_LOCAL_THIS:
     case PRIM_MAYBE_LOCAL_ARR_ELEM:
     case PRIM_MAYBE_AGGREGATE_ASSIGN:
@@ -1641,7 +1713,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_LOGICAL_FOLDER:
     case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
-    case PRIM_ON_LOCALE_NUM:
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
     case PRIM_PRIVATE_BROADCAST:
@@ -1649,8 +1720,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_CAPTURE_FN_TO_CLASS:
     case PRIM_RESOLUTION_POINT:
     case PRIM_FTABLE_CALL:
-    case PRIM_GET_SVEC_MEMBER:
-    case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_VIRTUAL_METHOD_CALL:
     case PRIM_END_OF_STATEMENT:
     case PRIM_CURRENT_ERROR:
@@ -1696,11 +1765,17 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_REF_DESERIALIZE:
     case PRIM_UNKNOWN:
+    case PRIM_INNERMOST_CONTEXT:
+    case PRIM_OUTER_CONTEXT:
+    case PRIM_HOIST_TO_CONTEXT:
+    case PRIM_STATIC_FUNCTION_VAR:
+    case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
+    case PRIM_STATIC_FUNCTION_VAR_WRAPPER:
     case NUM_KNOWN_PRIMS:
     case PRIM_BREAKPOINT:
     case PRIM_CONST_ARG_HASH:
     case PRIM_CHECK_CONST_ARG_HASH:
-    case PRIM_TASK_INDEPENDENT_SVAR_CAPTURE:
+    case PRIM_TASK_PRIVATE_SVAR_CAPTURE:
       CHPL_UNIMPL("misc primitives");
 
     // no default to get a warning when new primitives are added
@@ -1711,7 +1786,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }
 
-  return CallResolutionResult(candidates, type, poi);
+  return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
 }
 
 

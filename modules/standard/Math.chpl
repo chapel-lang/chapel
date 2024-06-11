@@ -80,17 +80,22 @@ Constants
 Trigonometric Functions
 ^^^^^^^^^^^^^^^^^^^^^^^
 :proc:`~Math.acos`
-:proc:`~Math.acosh`
 :proc:`~Math.asin`
-:proc:`~Math.asinh`
 :proc:`~Math.atan`
 :proc:`~Math.atan2`
-:proc:`~Math.atanh`
 :proc:`~Math.cos`
-:proc:`~Math.cosh`
 :proc:`~Math.sin`
-:proc:`~Math.sinh`
 :proc:`~Math.tan`
+
+.. _math-hyperbolic:
+
+Hyperbolic Functions
+^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.acosh`
+:proc:`~Math.asinh`
+:proc:`~Math.atanh`
+:proc:`~Math.cosh`
+:proc:`~Math.sinh`
 :proc:`~Math.tanh`
 
 .. _math-log:
@@ -218,6 +223,21 @@ module Math {
   @unstable("'reciprSqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
   param reciprSqrt2 = 0.70710678118654752440;
 
+  /*
+    Enables the new return types for some of the trigonometric and hyperbolic functions that operate on ``imag``
+
+    Functions Affected:
+    - ``proc cos(imag): real``
+    - ``proc cosh(imag): real``
+    - ``proc sin(imag): imag``
+    - ``proc sinh(imag): imag``
+    - ``proc tan(imag): imag``
+    - ``proc tanh(imag): imag``
+    - ``proc asin(imag): imag``
+    - ``proc atanh(imag): imag``
+  */
+  config param useNewImaginaryTrig = false;
+
   /* Returns the arc cosine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
@@ -322,6 +342,22 @@ module Math {
     extern proc casin(z: complex(128)): complex(128);
     return casin(x);
   }
+
+  /*
+    Returns the arc sine of the argument `x`.
+    Uses the formula `asin(i*x) == i*asinh(x)`.
+  */
+  proc asin(x: imag(32)): imag(32) where useNewImaginaryTrig do
+    return asinh(x:real(32)) : imag(32);
+  /*
+    Returns the arc sine of the argument `x`.
+    Uses the formula `asin(i*x) == i*asinh(x)`.
+  */
+  proc asin(x: imag(64)): imag(64) where useNewImaginaryTrig do
+    return asinh(x:real(64)) : imag(64);
+  @deprecated("The overload of 'asin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc asin(x: imag): complex where !useNewImaginaryTrig do
+    return asin(x:complex);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
@@ -435,6 +471,22 @@ module Math {
     return catanh(x);
   }
 
+  /*
+    Returns the inverse hyperbolic tangent of the argument `x`.
+    Uses the formula `atanh(i*x) == i*atan(x)`.
+  */
+  proc atanh(x: imag(32)): imag(32) where useNewImaginaryTrig do
+    return atan(x:real(32)) : imag(32);
+  /*
+    Returns the inverse hyperbolic tangent of the argument `x`.
+    Uses the formula `atanh(i*x) == i*atan(x)`.
+  */
+  proc atanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
+    return atan(x:real(64)) : imag(64);
+  @deprecated("The overload of 'atanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc atanh(x: imag): complex where !useNewImaginaryTrig do
+    return atanh(x:complex);
+
   /* Returns the cosine of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -464,6 +516,22 @@ module Math {
     return ccos(x);
   }
 
+  /*
+    Returns the cosine of the argument `x`.
+    Uses the formula `cos(i*x) == cosh(x)`.
+  */
+  inline proc cos(x: imag(32)): real(32) where useNewImaginaryTrig do
+    return cosh(x:real(32));
+  /*
+    Returns the cosine of the argument `x`.
+    Uses the formula `cos(i*x) == cosh(x)`.
+  */
+  inline proc cos(x: imag(64)): real(64) where useNewImaginaryTrig do
+    return cosh(x:real(64));
+  @deprecated("The overload of 'cos' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc cos(x: imag): complex where !useNewImaginaryTrig do
+    return cos(x:complex);
+
   /* Returns the hyperbolic cosine of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -492,6 +560,22 @@ module Math {
     extern proc ccosh(z: complex(128)): complex(128);
     return ccosh(x);
   }
+
+  /*
+    Returns the hyperbolic cosine of the argument `x`.
+    Uses the formula `cosh(i*x) == cos(x)`.
+  */
+  inline proc cosh(x: imag(32)): real(32) where useNewImaginaryTrig do
+    return cos(x:real(32));
+  /*
+    Returns the hyperbolic cosine of the argument `x`.
+    Uses the formula `cosh(i*x) == cos(x)`.
+  */
+  inline proc cosh(x: imag(64)): real(64) where useNewImaginaryTrig do
+    return cos(x:real(64));
+  @deprecated("The overload of 'cosh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc cosh(x: imag): complex where !useNewImaginaryTrig do
+    return cosh(x:complex);
 
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
@@ -1135,6 +1219,23 @@ module Math {
     return csin(x);
   }
 
+  /*
+    Returns the sine of the argument `x`.
+    Uses the formula `sin(i*x) == i*sinh(x)`.
+  */
+  proc sin(x: imag(32)): imag(32) where useNewImaginaryTrig do
+    return sinh(x:real(32)) : imag(32);
+  /*
+    Returns the sine of the argument `x`.
+    Uses the formula `sin(i*x) == i*sinh(x)`.
+  */
+  proc sin(x: imag(64)): imag(64) where useNewImaginaryTrig do
+    return sinh(x:real(64)) : imag(64);
+  @deprecated("The overload of 'sin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc sin(x: imag): complex where !useNewImaginaryTrig do
+    return sin(x:complex);
+
+
   /* Returns the hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -1163,6 +1264,23 @@ module Math {
     extern proc csinh(z: complex(128)): complex(128);
     return csinh(x);
   }
+
+  /*
+    Returns the hyperbolic sine of the argument `x`.
+    Uses the formula `sinh(i*x) == i*sin(x)`.
+  */
+  proc sinh(x: imag(32)): imag(32) where useNewImaginaryTrig do
+    return sin(x:real(32)) : imag(32);
+  /*
+    Returns the hyperbolic sine of the argument `x`.
+    Uses the formula `sinh(i*x) == i*sin(x)`.
+  */
+  proc sinh(x: imag(64)): imag(64) where useNewImaginaryTrig do
+    return sin(x:real(64)) : imag(64);
+  @deprecated("The overload of 'sinh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc sinh(x: imag): complex where !useNewImaginaryTrig do
+    return sinh(x:complex);
+
 
   /* Returns the tangent of the argument `x`. */
   pragma "fn synchronization free"
@@ -1193,6 +1311,23 @@ module Math {
     return ctan(x);
   }
 
+  /*
+    Returns the tangent of the argument `x`.
+    Uses the formula `tan(i*x) == i*tanh(x)`.
+  */
+  proc tan(x: imag(32)): imag(32) where useNewImaginaryTrig do
+    return tanh(x:real(32)) : imag(32);
+  /*
+    Returns the tangent of the argument `x`.
+    Uses the formula `tan(i*x) == i*tanh(x)`.
+  */
+  proc tan(x: imag(64)): imag(64) where useNewImaginaryTrig do
+    return tanh(x:real(64)) : imag(64);
+  @deprecated("The overload of 'tan' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc tan(x: imag): complex where !useNewImaginaryTrig do
+    return tan(x:complex);
+
+
   /* Returns the hyperbolic tangent of the argument `x`. */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
@@ -1221,6 +1356,22 @@ module Math {
     extern proc ctanh(z: complex(128)): complex(128);
     return ctanh(x);
   }
+
+  /*
+    Returns the hyperbolic tangent of the argument `x`.
+    Uses the formula `tanh(i*x) == i*tan(x)`.
+  */
+  proc tanh(x: imag(32)): imag(32) where useNewImaginaryTrig do
+    return tan(x:real(32)) : imag(32);
+  /*
+    Returns the hyperbolic tangent of the argument `x`.
+    Uses the formula `tanh(i*x) == i*tan(x)`.
+  */
+  proc tanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
+    return tan(x:real(64)) : imag(64);
+  @deprecated("The overload of 'tanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
+  inline proc tanh(x: imag): complex where !useNewImaginaryTrig do
+    return tanh(x:complex);
 
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
@@ -1492,17 +1643,5 @@ module Math {
   @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
   inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
-  }
-
-  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
-  inline proc fma(x: imag(64), y: imag(64), z: imag(64)): imag(64) {
-    type t = real(64);
-    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(64);
-  }
-
-  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
-  inline proc fma(x: imag(32), y: imag(32), z: imag(32)): imag(32) {
-    type t = real(32);
-    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(32);
   }
 }

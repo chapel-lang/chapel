@@ -114,7 +114,7 @@ module SSCA2_kernels
       const vertex_domain = G.vertices;
 
       forall ( x, y ) in Heavy_Edge_List do {
-	var Active_Level, Next_Level : domain ( index (vertex_domain) );
+	var Active_Level, Next_Level : domain ( index (vertex_domain), parSafe=true);
 	var min_distance             : [vertex_domain] atomic int;
         forall m in min_distance do m.write(-1);
 
@@ -169,7 +169,7 @@ module SSCA2_kernels
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PrivateDist, but aliasing is not supported (yet)
-  const PrivateSpace = LocaleSpace dmapped blockDist(boundingBox=LocaleSpace);
+  const PrivateSpace = LocaleSpace dmapped new blockDist(boundingBox=LocaleSpace);
 
   // ==================================================================
   //                              KERNEL 4
@@ -204,7 +204,7 @@ module SSCA2_kernels
       // Considering using a dense 1-d array instead.  This would
       // complicate the Level_Set implementation a little, but would
       // probably be more efficient.
-      type Sparse_Vertex_List = domain(index(vertex_domain));
+      type Sparse_Vertex_List = domain(index(vertex_domain), parSafe=true);
 
       var atomic_Between_Cent : [vertex_domain] atomic real;
       var atomic_Sum_Min_Dist : atomic real;
@@ -239,17 +239,17 @@ module SSCA2_kernels
           else
             Locales[((t-1)/numTPVs)/numLocales];
 
-      const TPVLocaleSpace = TPVSpace dmapped blockDist(boundingBox=TPVSpace,
+      const TPVLocaleSpace = TPVSpace dmapped new blockDist(boundingBox=TPVSpace,
                                                     targetLocales=TPVLocales);
 
       // There will be numTPVs copies of the temps, thus throttling the
       // number of starting vertices being considered simultaneously.
-      var TPV: [TPVLocaleSpace] unmanaged taskPrivateData(domain(index(vertex_domain)),
+      var TPV: [TPVLocaleSpace] unmanaged taskPrivateData(domain(index(vertex_domain), parSafe=true),
                                                 vertex_domain.type)?;
 
       // Initialize
       coforall tpvElem in TPV do on tpvElem {
-          const tpv = new unmanaged taskPrivateData(domain(index(vertex_domain)), vertex_domain);
+          const tpv = new unmanaged taskPrivateData(domain(index(vertex_domain), parSafe=true), vertex_domain);
           tpvElem = tpv;
           forall v in vertex_domain do
             tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};

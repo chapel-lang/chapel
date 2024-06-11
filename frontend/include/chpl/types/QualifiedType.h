@@ -67,6 +67,7 @@ class QualifiedType final {
   static const Kind FUNCTION = uast::Qualifier::FUNCTION;
   static const Kind PARENLESS_FUNCTION = uast::Qualifier::PARENLESS_FUNCTION;
   static const Kind MODULE = uast::Qualifier::MODULE;
+  static const Kind INIT_RECEIVER = uast::Qualifier::INIT_RECEIVER;
 
   static const char* kindToString(Kind k);
 
@@ -132,6 +133,10 @@ class QualifiedType final {
     bool genericParam = kind_ == PARAM && !hasParamPtr();
     if (genericParam || kind_ == TYPE_QUERY)
       return Type::GENERIC;
+
+    // params with know values (hasParamPtr()) can't be generic.
+    if (kind_ == PARAM)
+      return Type::CONCRETE;
 
     return typeGenericity();
   }

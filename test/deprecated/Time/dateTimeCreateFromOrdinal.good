@@ -1,1 +1,0 @@
-dateTimeCreateFromOrdinal.chpl:4: warning: 'dateTime.createFromOrdinal' is deprecated; use 'new dateTime(date.createFromOrdinal(ordinal))' instead

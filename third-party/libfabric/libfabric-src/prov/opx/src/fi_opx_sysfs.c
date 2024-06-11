@@ -244,6 +244,8 @@ static int opx_sysfs_unit_open_for_node(uint32_t unit, int flags)
 	}
 
 	errno = saved_errno;
+	free(path_copy);
+	path_copy = NULL;
 	return fd;
 }
 

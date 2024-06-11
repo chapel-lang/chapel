@@ -5,18 +5,18 @@ config const filename = "asserteof.test.nums";
 var infile = open(filename, ioMode.cwr);
 
 {
-  var writer = infile.writer();
+  var writer = infile.writer(locking=false);
   writer.writeln(1);
   writer.writeln(2);
   writer.close();
 }
 
 {
-  var reader = infile.reader();
-  var x:int;
-  var y:int;
-  reader.read(x);
-  reader.read(y);
+  var reader = infile.reader(locking=false);
+  var x: string;
+  var y: string;
+  x = reader.readLine();
+  y = reader.readLine();
   reader.assertEOF();
   reader.close();
 }
@@ -24,9 +24,9 @@ var infile = open(filename, ioMode.cwr);
 writeln("Past First Check");
 
 {
-  var reader = infile.reader();
-  var x:int;
-  reader.read(x);
+  var reader = infile.reader(locking=false);
+  var x: string;
+  x = reader.readLine();
   reader.assertEOF();
   reader.close();
 }

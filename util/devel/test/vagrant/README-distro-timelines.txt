@@ -22,7 +22,7 @@ x 3.15  EOL 2023-11-01
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
        -- which has 2 years of standard support, 3 of maintenance
-x 2    EOL June 30, 2025
+  2    EOL June 30, 2025
 x 2022 was renamed to 2023 in March 2023
   2023 EOL 2028
   2025 to be released
@@ -33,36 +33,39 @@ Arch
 CentOS -- see https://wiki.centos.org/About/Product
 x 5 full updates until Jan 2014, maintenance until Mar 2017
 x 6 full updates until May 2017, maintenance until Nov 2020
-    6.9  released Apr 2017
-    6.10 released Jul 2018
-  7 full updates until Dec 2020, maintenance until Jun 2024
-    7.3  released Dec 2016
-    7.4  released Sep 2017
-    7.5  released May 2018
-    7.6  released Dec 2018
+x   6.9      released Apr 2017
+x   6.10     released Jul 2018
+- 7 full updates until Dec 2020, maintenance until Jun 2024
+x   7.3      released Dec 2016
+x   7.4      released Sep 2017
+x   7.5      released May 2018
+x   7.6      released Dec 2018
+x   7.7      released Sep 2019
+x   7.8-2003 released Apr 2020
+-   7.9-2009 released Nov 2020 EOL Jun 2024
     # note -- gcc 11 is available with devtoolset-11
       https://stackoverflow.com/questions/36327805/how-to-install-gcc-5-3-with-yum-on-centos-7-2/37355018
-  8 not-stream - EOL 2021-12-31
+x 8 not-stream - EOL 2021-12-31
     (CentOS only available in Stream releases after that)
 
 CentOS Stream
        -- dnf doesn't old show versions by default but they can be found, e.g.
        -- dnf list --showduplicates llvm && dnf install llvm-devel-14.0.6
-  8 - EOL May 2024
+- 8 - EOL May 2024
   9 - EOL expected 2027
 
 
 Debian -- see https://wiki.debian.org/DebianReleases
        -- and https://app.vagrantup.com/debian
-x 6 "squeeze"  long-term support until Feb 2016
-x 7 "wheezy"   long-term support until May 2018
-x 8 "jessie"   long-term support until May 2020
-x 9 "stretch"  long-term support until Jun 2022
- 10 "buster"   long-term support until Jun 2024
- 11 "bullseye" long-term support until Jun 2026
- 12 "bookworm" released June 2023
- 13 "trixie"   expected release ?
- 14 "forky"    expected release ?
+x  6 "squeeze"  long-term support until Feb 2016
+x  7 "wheezy"   long-term support until May 2018
+x  8 "jessie"   long-term support until May 2020
+x  9 "stretch"  long-term support until Jun 2022
+- 10 "buster"   long-term support until Jun 2024
+  11 "bullseye" long-term support until Jun 2026
+  12 "bookworm" released June 2023
+  13 "trixie"   expected release ?
+  14 "forky"    expected release ?
 
 Fedora -- see https://en.wikipedia.org/wiki/Fedora_Linux_release_history
        -- and https://fedoraproject.org/wiki/End_of_life
@@ -83,9 +86,10 @@ x 34 EOL Jun 2022
 x 35 EOL Dec 2022
 x 36 EOL May 2023
 x 37 EOL Nov 2023
-  38 EOL May 2024
+- 38 EOL May 2024
   39 EOL Nov 2024
-  40 EOL May 2025
+  40 EOL May 2025 -- release Apr 2024
+  41 release Oct 2024
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd
@@ -103,10 +107,11 @@ x 12.0 EOL Feb 2020
 x 12.1 EOL Jan 2021
 x 12.2 EOL Mar 2022
 x 12.3 EOL Mar 2023
-  12.4 EOL Dec 2023
+x 12.4 EOL Dec 2023
 x 13.0 EOL Aug 2022
 x 13.1 EOL Jul 2023
-  13.2
+  13.2 released Apr 2023
+  13.3 expected Apr 2024
   14.0 released Nov 2023
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
@@ -122,17 +127,18 @@ x 15.2 EOL Dec 2021
 x 15.3 EOL Nov 2022
 x 15.4 EOL Nov 2023
   15.5 EOL Dec 2024
+  15.6 EOL Dec 2025
 
 Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
   8.x EOL May 2029
 x 8.8 EOL Nov 2023
-  8.9 EOL May 2024
+- 8.9 EOL May 2024
 
   9.x EOL May 2032
 x 9.0 EOL Nov 2022
 x 9.1 EOL May 2023
 x 9.2 EOL Nov 2023
-  9.3 EOL May 2024
+- 9.3 EOL May 2024
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
        -- and https://app.vagrantup.com/ubuntu
@@ -158,5 +164,5 @@ x 20.10 "Groovy Gorilla"    EOL July 2021
 x 21.04 "Hirsute Hippo"     EOL Jan 2022
 x 21.10 "Impish Indri"      EOL July 2022
 x 22.10 "Kinetic Kudu"      EOL July 2023
-  23.04 "Lunar Lobster"     EOL Jan 2024
-  23.10 "Mantic Minotaur"   EOL Jul 2024
+x 23.04 "Lunar Lobster"     EOL Jan 2024
+- 23.10 "Mantic Minotaur"   EOL Jul 2024

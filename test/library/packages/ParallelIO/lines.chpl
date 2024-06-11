@@ -61,7 +61,7 @@ proc makeRandLines(path: string, n: int): [] bytes throws {
 
 proc randBytes(len: int): bytes {
     use CTypes;
-    const x = [i in 0..<len] rng.getNext(65, 122);
+    const x = [i in 0..<len] rng.next(65, 122);
     return bytes.createCopyingBuffer(c_ptrToConst(x), len);
 }
 

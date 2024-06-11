@@ -611,7 +611,7 @@ module Curl {
       var offset:c_size_t;       // offset that we want to skip to
                                // (in the case where we cannot request byteranges)
       var curr:c_int;          // the index of the current buffer
-    };
+    }
 
     // userdata, is a curl_iovec_t. This is set to be passed into this function,
     // when we
@@ -1137,8 +1137,7 @@ module Curl {
     }
 
     proc openCurlFile(url:string,
-                     mode:ioMode = ioMode.r,
-                     style:iostyleInternal = defaultIOStyleInternal()) throws {
+                     mode:ioMode = ioMode.r) throws {
 
       var err_out: errorCode = 0;
       var rc = 0;
@@ -1174,7 +1173,7 @@ module Curl {
       var ret: file;
 
       try {
-        ret = openplugin(fl, mode, fl.seekable, style);
+        ret = openplugin(fl, mode, fl.seekable, defaultIOStyleInternal());
       } catch e {
         fl.close();
         delete fl;

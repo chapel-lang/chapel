@@ -61,7 +61,7 @@ randStream.fill(randsFromStream);
 //
 // Or random numbers can be requested one at a a time:
 //
-var firstRand = randStreamSeeded.getNext();
+var firstRand = randStreamSeeded.next();
 writeln(firstRand == randsSeeded[0]);
 
 // Note that since since we are using the same seed, the numbers generated will
@@ -71,32 +71,31 @@ writeln(firstRand == randsSeeded[0]);
 // The next random number generated will follow the most
 // recent...
 //
-var nextRand = randStreamSeeded.getNext();
+var nextRand = randStreamSeeded.next();
 writeln(nextRand == randsSeeded[1]);
 
-// ...unless the position to look at has been changed.
-randStreamSeeded.skipToNth(6);
-var rand6 = randStreamSeeded.getNext();
+//
+// ...unless the position to look at has been changed. In this case,
+// the 6th random number in the stream will be generated. Note that
+// the position argument must be greater than or equal to ``0``.
+//
+randStreamSeeded.skipTo(6);
+var rand6 = randStreamSeeded.next();
 writeln(rand6 == randsSeeded[6]);
 
 //
-// A specific random number in the stream can be obtained by
-// specifying the position.  This argument must be greater
-// than or equal to ``0``.
+// The position can be earlier or later than the most recent.
 //
-var rand1 = randStreamSeeded.getNth(1);
-writeln(rand1 == nextRand);
-
-//
-// This position can be earlier or later than the most recent.
-//
-var rand3 = randStreamSeeded.getNth(3);
+randStreamSeeded.skipTo(3);
+var rand3 = randStreamSeeded.next();
 writeln(rand3 == randsSeeded[3]);
 
 
 //
-// The stream can also be used to iterate over a specified set of positions.
+// The stream can also be used to iterate over a domain.
+// Note that this doesn't yield the 5th through 10th elements
+// of the stream, but rather the next 5 random numbers.
 //
-for i in randStreamSeeded.iterate({5..10}) {
+for i in randStreamSeeded.next({5..10}) {
   writeln(i);
 }

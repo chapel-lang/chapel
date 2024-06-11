@@ -1,0 +1,7 @@
+compareAssoc.chpl:6: error: comparison operators are not associative
+compareAssoc.chpl:10: error: comparison operators are not associative
+compareAssoc.chpl:14: error: comparison operators are not associative
+compareAssoc.chpl:18: error: comparison operators are not associative
+compareAssoc.chpl:22: error: comparison operators are not associative
+compareAssoc.chpl:26: error: comparison operators are not associative
+compareAssoc.chpl:27: error: comparison operators are not associative

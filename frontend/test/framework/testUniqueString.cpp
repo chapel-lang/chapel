@@ -377,6 +377,63 @@ static void test3() {
   assert(!s1.endsWith(UniqueString::get(ctx, "foo")));
 }
 
+static void test4() {
+  Context context;
+  Context* ctx = &context;
+
+  const char* abcs = "abcdefghijklmnopqrstuvwxyz";
+  UniqueString abc = UniqueString::get(ctx, abcs);
+  UniqueString abc0 = UniqueString::get(ctx, abcs, strlen(abcs)+1);
+  UniqueString a = UniqueString::get(ctx, "a");
+  UniqueString a0 = UniqueString::get(ctx, "a", 2);
+  UniqueString a0a = UniqueString::get(ctx, "a\x00a", 3);
+  UniqueString a0b = UniqueString::get(ctx, "a\x00b", 3);
+  UniqueString d = UniqueString::get(ctx, "d");
+
+  assert(abc == abcs);
+  assert(abc == std::string(abcs));
+  assert(abc != d);
+  assert(abc != "d");
+  assert(abc != std::string("d"));
+  assert(a != a0);
+  assert(abc != abc0);
+
+  assert(1 == abc.compare(a));
+  assert(0 == abc.compare(abc));
+  assert(0 == abc.compare(abcs));
+  assert(-1 == abc.compare(d));
+  assert(-1 == abc.compare("d"));
+
+  assert(-1 == a.compare(abc));
+
+  assert(1 == d.compare(abc));
+  assert(1 == d.compare(abcs));
+
+  // check some versions with null bytes
+  assert(1 == abc.compare(a0));
+  assert(-1 == abc.compare(abc0));
+  assert(-1 == a.compare(a0));
+  assert(-1 == abc.compare(abc0));
+  assert(1 == a0.compare(a));
+  assert(1 == abc0.compare(abc));
+  assert(-1 == a0a.compare(a0b));
+  assert(1 == a0b.compare(a0a));
+
+  assert(a < abc);
+
+  assert(abc < d);
+  assert(abc <= d);
+  assert(abc <= abc);
+  assert(! (abc > d));
+  assert(! (abc >= d));
+
+  assert(! (d < abc));
+  assert(! (d <= abc));
+  assert(d > abc);
+  assert(d >= abc);
+}
+
+
 int main(int argc, char** argv) {
   const char* inputFile = "moby.txt";
   std::string timingArg = "--timing";
@@ -392,6 +449,7 @@ int main(int argc, char** argv) {
   test1();
   test2();
   test3();
+  test4();
 
   Context context;
   Context* ctx = &context;

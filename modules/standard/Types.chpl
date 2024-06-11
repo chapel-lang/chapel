@@ -114,9 +114,11 @@ proc isEnumType(type t) param {
 }
 
 /* Return true if ``t`` is a class type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isClassType(type t) param do return __primitive("is class type", t);
 
 /* Return true if ``t`` is a record type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isRecordType(type t) param {
   if __primitive("is record type", t) == false then
     return false;
@@ -138,6 +140,7 @@ proc isRecordType(type t) param {
 }
 
 /* Return true if ``t`` is a union type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isUnionType(type t) param do return __primitive("is union type", t);
 
 /* Returns ``true`` if its argument is a tuple type.  */
@@ -455,8 +458,10 @@ proc isSingle(type t)    param do  return isSingleType(t);
 @chpldoc.nodoc
 proc isAtomic(type t)    param do  return isAtomicType(t);
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc
 proc isGeneric(type t)   param do  return isGenericType(t);
+
 @chpldoc.nodoc
 proc isHomogeneousTuple(type t)  param do  return isHomogeneousTupleType(t);
 @chpldoc.nodoc
@@ -704,9 +709,9 @@ proc toNilableIfClassType(type arg) type {
 // joint documentation, for user convenience
 /*
 Returns the number of bits used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
+pragma "no where doc"
 proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
@@ -748,8 +753,7 @@ param bitsPerByte = 8;
 
 /*
 Returns the number of bytes used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
 proc numBytes(type t) param do return numBits(t)/8;
 
@@ -762,6 +766,7 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc min(type t) param  where isBool(t) do      return false: t;
 
 @chpldoc.nodoc
@@ -800,6 +805,7 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc max(type t) param  where isBool(t) do      return true: t;
 
 @chpldoc.nodoc

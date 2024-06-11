@@ -1,0 +1,25 @@
+FROM @@{OS_BASE_IMAGE}
+
+RUN dnf upgrade -y && dnf install -y sudo vim which
+
+RUN useradd -ms /bin/bash user && \
+    usermod -aG wheel user && \
+    echo "user:password" | chpasswd && \
+    sed -i 's/%wheel[ \t]\{1,\}ALL=(ALL)[ \t]\{1,\}ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
+
+USER user
+WORKDIR /home/user
+
+COPY --chown=user @@{HOST_PACKAGE_PATH}/@@{PACKAGE_NAME} /home/user/@@{PACKAGE_NAME}
+
+USER root
+RUN dnf install -y ./@@{PACKAGE_NAME}
+USER user
+WORKDIR /home/user
+
+RUN mason new MyPackage
+WORKDIR /home/user/MyPackage
+RUN chplcheck src/*.chpl
+RUN mason build
+RUN mason run
+WORKDIR /home/user

@@ -3,11 +3,11 @@ use CyclicDist;
 config const n=10;
 assert(n > 0); // relied upon in the cast 'n:uint'
 const S = {1..n};
-const BDom: domain(1) dmapped cyclicDist(startIdx=S.low)=S;
+const BDom: domain(1) dmapped new cyclicDist(startIdx=S.low)=S;
 //const BDist = new blockDist(boundingBox=S);
 //const BDom : domain(1) dmapped BDist=S;
 
-//var A : [[1..n] dmapped blockDist(rank=1,boundingBox=[1..n])] int;
+//var A : [[1..n] dmapped new blockDist(rank=1,boundingBox=[1..n])] int;
 var A : [BDom] int;
 var B : [BDom] int;
 writeln("A and B defined on ",S);
@@ -184,7 +184,7 @@ if (Dom2.size == Dom1.size)
 
 
 const R = {n/2+1..3*n/2};
-const BRDom: domain(1) dmapped cyclicDist(startIdx=R.low)=R;
+const BRDom: domain(1) dmapped new cyclicDist(startIdx=R.low)=R;
 
 var C : [BRDom] int;
 var D : [BRDom] int;
@@ -233,7 +233,7 @@ if (Dom4.size == Dom3.size)
 }
 
 const T = {n/2+1..5*n/2};
-const BTDom: domain(1) dmapped cyclicDist(startIdx=T.low)=T;
+const BTDom: domain(1) dmapped new cyclicDist(startIdx=T.low)=T;
 
 var E : [BTDom] int;
 writeln("E defined on ",T);

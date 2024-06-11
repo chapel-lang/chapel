@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016-2018 Intel Corporation. All rights reserved.
- * Copyright (c) 2022 Cornelis Networks.
+ * Copyright (c) 2021-2023 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -59,10 +59,19 @@
 #include <limits.h>
 #include <signal.h>
 
+#ifdef OPX_DAOS_SUPPORT
 #define OPX_SHM_MAX_CONN_NUM 0xffff
+#else
+/* FI_OPX_MAX_HFIS * 256 */
+#define OPX_SHM_MAX_CONN_NUM 0x1000
+#endif
+
 #define OPX_SHM_SEGMENT_NAME_MAX_LENGTH (512)
 #define OPX_SHM_TX_CONNECT_MAX_WAIT (5000)	// 5 seconds
 #define OPX_SHM_SEGMENT_NAME_PREFIX "/opx.shm."
+#define OPX_SHM_FILE_NAME_PREFIX_FORMAT "%s-%02hhX.%d"
+
+#define OPX_SHM_SEGMENT_INDEX(hfi_unit, rx_id) ((uint16_t) ((((uint16_t)hfi_unit) << 8) | ((uint8_t)rx_id)))
 
 #define opx_shm_compiler_barrier() __asm__ __volatile__ ( "" ::: "memory" )
 #define opx_shm_x86_pause()  __asm__ __volatile__ ( "pause"  )
@@ -77,10 +86,10 @@ struct opx_shm_connection {
 struct opx_shm_tx {
 	struct opx_shm_fifo_segment	*fifo_segment[OPX_SHM_MAX_CONN_NUM];
 	struct opx_shm_connection	connection[OPX_SHM_MAX_CONN_NUM];
-	struct fi_provider		  	*prov;
-	struct opx_shm_tx		  	*next; // for signal handler
-	uint32_t				  	rank;
-	uint32_t				  	rank_inst;
+	struct fi_provider		*prov;
+	struct opx_shm_tx		*next; // for signal handler
+	uint32_t			rank;
+	uint32_t			rank_inst;
 };
 
 struct opx_shm_resynch {
@@ -90,12 +99,12 @@ struct opx_shm_resynch {
 
 struct opx_shm_rx {
 	struct opx_shm_fifo_segment	*fifo_segment;
-	void						*segment_ptr;
-	size_t				 		segment_size;
-	char				 		segment_key[OPX_SHM_SEGMENT_NAME_MAX_LENGTH];
-	struct fi_provider			*prov;
-	struct opx_shm_rx   		*next; // for signal handler
-	struct opx_shm_resynch 		resynch_connection[OPX_SHM_MAX_CONN_NUM];
+	void				*segment_ptr;
+	size_t				segment_size;
+	char				segment_key[OPX_SHM_SEGMENT_NAME_MAX_LENGTH];
+	struct fi_provider		*prov;
+	struct opx_shm_rx 		*next; // for signal handler
+	struct opx_shm_resynch		resynch_connection[OPX_SHM_MAX_CONN_NUM];
 };
 
 extern struct opx_shm_tx *shm_tx_head;
@@ -103,25 +112,42 @@ extern struct opx_shm_rx *shm_rx_head;
 
 struct opx_shm_packet
 {
-	ofi_atomic64_t sequence_;
-	uint32_t		origin_rank;
-	uint32_t		origin_rank_inst;
-	uint64_t		pad;
-	uint8_t			data[FI_OPX_SHM_PACKET_SIZE];
+    ofi_atomic64_t      sequence_;
+    uint32_t        origin_rank;
+    uint32_t        origin_rank_inst;
+
+    // TODO: Figure out why using pad_next_cacheline causes a segfault due to alignment w/ movaps instruction
+    //       but the other one below does not, even though in both cases the struct size is the
+    //       same, and data starts at a 16-byte aligned offset into the struct.
+
+    // sizeof(opx_shm_packet) == 8320, data starts at offset 0x40 (64)
+    // uint8_t      pad_next_cacheline[FI_OPX_CACHE_LINE_SIZE - sizeof(ofi_atomic64_t) - sizeof(uint32_t) - sizeof(uint32_t)];
+
+    // sizeof(opx_shm_packet) == 8320, data starts at offset 0x20 (32)
+    uint64_t        pad;
+
+    uint8_t         data[FI_OPX_SHM_PACKET_SIZE];
 }__attribute__((__aligned__(64)));
 
 struct opx_shm_fifo {
-	ofi_atomic64_t              enqueue_pos_;
-	char                        pad0_[FI_OPX_CACHE_LINE_SIZE];
-	ofi_atomic64_t              dequeue_pos_;
-	char                        pad1_[FI_OPX_CACHE_LINE_SIZE];
-	struct opx_shm_packet       buffer_[FI_OPX_SHM_FIFO_SIZE];
+    ofi_atomic64_t      enqueue_pos_;
+    uint8_t         pad0_[FI_OPX_CACHE_LINE_SIZE - sizeof(ofi_atomic64_t)];
+    ofi_atomic64_t      dequeue_pos_;
+    uint8_t         pad1_[FI_OPX_CACHE_LINE_SIZE - sizeof(ofi_atomic64_t)];
+    struct opx_shm_packet   buffer_[FI_OPX_SHM_FIFO_SIZE];
 } __attribute__((__aligned__(64)));
 
+static_assert((offsetof(struct opx_shm_fifo, enqueue_pos_) & 0x3fUL) == 0,
+        "struct opx_shm_fifo->enqueue_pos_ needs to be 64-byte aligned!");
+static_assert((offsetof(struct opx_shm_fifo, dequeue_pos_) & 0x3fUL) == 0,
+        "struct opx_shm_fifo->dequeue_pos_ needs to be 64-byte aligned!");
+static_assert(offsetof(struct opx_shm_fifo, buffer_) == (FI_OPX_CACHE_LINE_SIZE * 2),
+        "struct opx_shm_fifo->buffer_ should be 2 cachelines into struct");
+
 struct opx_shm_fifo_segment {
-	ofi_atomic64_t              initialized_;
-	char                        pad1_[FI_OPX_CACHE_LINE_SIZE];
-	struct opx_shm_fifo			fifo;
+    ofi_atomic64_t      initialized_;
+    uint8_t         pad1_[FI_OPX_CACHE_LINE_SIZE - sizeof(ofi_atomic64_t)];
+    struct opx_shm_fifo fifo;
 } __attribute__((__aligned__(64)));
 
 static inline
@@ -144,8 +170,6 @@ ssize_t opx_shm_rx_init (struct opx_shm_rx *rx,
 		rx->resynch_connection[i].completed = false;
 		rx->resynch_connection[i].counter = 0;
 	}
-
-	memset(rx->segment_key, 0, OPX_SHM_SEGMENT_NAME_MAX_LENGTH);
 
 	snprintf(rx->segment_key, OPX_SHM_SEGMENT_NAME_MAX_LENGTH,
 		OPX_SHM_SEGMENT_NAME_PREFIX "%s.%d",
@@ -199,7 +223,6 @@ ssize_t opx_shm_rx_init (struct opx_shm_rx *rx,
 	assert((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
 	for (size_t i = 0; i != buffer_size; i += 1) {
 		ofi_atomic_initialize64(&rx->fifo_segment->fifo.buffer_[i].sequence_, i);
-		ofi_atomic_set64(&rx->fifo_segment->fifo.buffer_[i].sequence_, i);
 	}
 	ofi_atomic_initialize64(&rx->fifo_segment->fifo.enqueue_pos_, 0);
 	ofi_atomic_initialize64(&rx->fifo_segment->fifo.dequeue_pos_, 0);
@@ -268,10 +291,12 @@ ssize_t opx_shm_tx_init (struct opx_shm_tx *tx,
 static inline
 ssize_t opx_shm_tx_connect (struct opx_shm_tx *tx,
 		const char * const unique_job_key,
+		const uint32_t segment_index,
 		const unsigned rx_id,
 		const unsigned fifo_size,
 		const unsigned packet_size)
 {
+	assert(segment_index < OPX_SHM_MAX_CONN_NUM);
 	int err = 0;
 
 	char segment_key[OPX_SHM_SEGMENT_NAME_MAX_LENGTH];
@@ -281,10 +306,10 @@ ssize_t opx_shm_tx_connect (struct opx_shm_tx *tx,
 		OPX_SHM_SEGMENT_NAME_PREFIX "%s.%d",
 		unique_job_key, rx_id);
 
-	if (rx_id >= OPX_SHM_MAX_CONN_NUM) {
+	if (segment_index >= OPX_SHM_MAX_CONN_NUM) {
 		FI_LOG(tx->prov, FI_LOG_WARN, FI_LOG_FABRIC,
-			"Unable to create shm object '%s'; rx %d too large\n",
-			segment_key, rx_id);
+			"Unable to create shm object '%s'; segment_index %u (rx %u) too large\n",
+			segment_key, segment_index, rx_id);
 		return -FI_E2BIG;
 	}
 
@@ -342,15 +367,15 @@ ssize_t opx_shm_tx_connect (struct opx_shm_tx *tx,
 		}
 	}
 
-	tx->connection[rx_id].segment_ptr = segment_ptr;
-	tx->connection[rx_id].segment_size = segment_size;
-	tx->connection[rx_id].inuse = false;
-	tx->fifo_segment[rx_id] = fifo_segment;
-	strcpy(tx->connection[rx_id].segment_key, segment_key);
+	tx->connection[segment_index].segment_ptr = segment_ptr;
+	tx->connection[segment_index].segment_size = segment_size;
+	tx->connection[segment_index].inuse = false;
+	tx->fifo_segment[segment_index] = fifo_segment;
+	strcpy(tx->connection[segment_index].segment_key, segment_key);
 
 	FI_LOG(tx->prov, FI_LOG_INFO, FI_LOG_FABRIC,
-		"SHM connection to %u context passed. Segment (%s), %d, segment (%p) size %zu\n",
-		rx_id, segment_key, segment_fd, segment_ptr, segment_size);
+		"SHM connection to %u context passed. Segment (%s), %d, segment (%p) size %zu segment_index %u\n",
+		rx_id, segment_key, segment_fd, segment_ptr, segment_size, segment_index);
 
 	return FI_SUCCESS;
 
@@ -364,15 +389,16 @@ error_return:
 
 static inline
 ssize_t opx_shm_tx_close (struct opx_shm_tx *tx,
-		const unsigned rx_id)
+			  const uint16_t segment_index)
 {
-	if (tx->connection[rx_id].segment_ptr != NULL) {
-		munmap(tx->connection[rx_id].segment_ptr,
-			tx->connection[rx_id].segment_size);
-		tx->connection[rx_id].segment_ptr = NULL;
-		tx->connection[rx_id].segment_size = 0;
-		tx->fifo_segment[rx_id] = NULL;
-		tx->connection[rx_id].inuse = false;
+	assert(segment_index < OPX_SHM_MAX_CONN_NUM);
+	if (tx->connection[segment_index].segment_ptr != NULL) {
+		munmap(tx->connection[segment_index].segment_ptr,
+			tx->connection[segment_index].segment_size);
+		tx->connection[segment_index].segment_ptr = NULL;
+		tx->connection[segment_index].segment_size = 0;
+		tx->fifo_segment[segment_index] = NULL;
+		tx->connection[segment_index].inuse = false;
 	}
 
 	return FI_SUCCESS;
@@ -401,67 +427,67 @@ static inline
 unsigned opx_shm_daos_rank_index (unsigned rank, unsigned rank_inst)
 {
 	unsigned index = rank_inst << 8 | rank;
+	assert(index < OPX_SHM_MAX_CONN_NUM);
 
 	return index;
 }
 
 static inline
-void * opx_shm_tx_next (struct opx_shm_tx *tx, unsigned peer, uint64_t *pos,
-		bool use_rank, unsigned rank, unsigned rank_inst, ssize_t *rc)
+void * opx_shm_tx_next (struct opx_shm_tx *tx, uint8_t peer_hfi_unit, uint8_t peer_rx_index,
+			uint64_t *pos, bool use_rank, unsigned rank, unsigned rank_inst, ssize_t *rc)
 {
 	/* HFI Rank Support:  Used HFI rank index instead of HFI index. */
-	unsigned rx_index = (!use_rank) ? peer : opx_shm_daos_rank_index(rank, rank_inst);
+	unsigned segment_index = (!use_rank) ? OPX_SHM_SEGMENT_INDEX(peer_hfi_unit, peer_rx_index)
+					     : opx_shm_daos_rank_index(rank, rank_inst);
 
-	if (rx_index >= OPX_SHM_MAX_CONN_NUM) {
+	assert(segment_index < OPX_SHM_MAX_CONN_NUM);
+	if (segment_index >= OPX_SHM_MAX_CONN_NUM) {
 		*rc = -FI_EIO;
 		FI_LOG(tx->prov, FI_LOG_WARN, FI_LOG_FABRIC,
-			"SHM %u context exceeds maximum contexts supported.\n", rx_index);
+			"SHM %u context exceeds maximum contexts supported.\n", segment_index);
 		return NULL;
 	}
 
-	if (tx->fifo_segment[rx_index] == NULL) {
+	if (tx->fifo_segment[segment_index] == NULL) {
 		*rc = -FI_EIO;
 		FI_LOG(tx->prov, FI_LOG_WARN, FI_LOG_FABRIC,
-			"SHM %u context FIFO not initialized.\n", rx_index);
+			"SHM %u context FIFO not initialized.\n", segment_index);
 		return NULL;
 	}
 
-	struct opx_shm_fifo_segment *tx_fifo_segment = tx->fifo_segment[rx_index];
+	struct opx_shm_fifo_segment *tx_fifo_segment = tx->fifo_segment[segment_index];
 	struct opx_shm_fifo *tx_fifo = &tx_fifo_segment->fifo;
 
 	FI_LOG(tx->prov, FI_LOG_DEBUG, FI_LOG_FABRIC,
-		"SHM sending to %u context. Segment (%s)\n", rx_index,
-			tx->connection[rx_index].segment_key);
+		"SHM sending to %u context. Segment (%s)\n", segment_index,
+			tx->connection[segment_index].segment_key);
 
-    struct opx_shm_packet* packet;
+	struct opx_shm_packet* packet;
 	*pos = atomic_load_explicit(&tx_fifo->enqueue_pos_.val, memory_order_acquire);
-    for (;;)
-    {
-        packet = &tx_fifo->buffer_[*pos & FI_OPX_SHM_BUFFER_MASK];
+	for (;;)
+	{
+		packet = &tx_fifo->buffer_[*pos & FI_OPX_SHM_BUFFER_MASK];
 		size_t seq = atomic_load_explicit(&(packet->sequence_.val), memory_order_acquire);
-		 intptr_t dif = (intptr_t)seq - (intptr_t)*pos;
-        if (dif == 0)
-        {
-			if(atomic_compare_exchange_weak(&tx_fifo->enqueue_pos_.val, pos, *pos + 1))
+		intptr_t dif = (intptr_t)seq - (intptr_t)*pos;
+		if (dif == 0) {
+			if(atomic_compare_exchange_weak(&tx_fifo->enqueue_pos_.val, (int64_t *)pos, *pos + 1))
 				break;
-        }
-        else if (dif < 0) {
+		} else if (dif < 0) {
 			// queue is full. can't return a packet.
 			FI_LOG(tx->prov, FI_LOG_DEBUG, FI_LOG_FABRIC, "Handle NULL enqueue\n");
 			*rc = -FI_EAGAIN;
-            return NULL;
-		}
-        else {
+			return NULL;
+		} else {
 			*pos = atomic_load_explicit(&tx_fifo->enqueue_pos_.val, memory_order_acquire);
 			//opx_shm_x86_pause();
 		}
-    }
+	}
 
-	tx->connection[rx_index].inuse = true;
+	tx->connection[segment_index].inuse = true;
 	*rc = FI_SUCCESS;
 	FI_LOG(tx->prov, FI_LOG_DEBUG, FI_LOG_FABRIC,
-		"SHM sent to %u context. Segment (%s)\n", rx_index,
-			tx->connection[rx_index].segment_key);
+		"SHM sent to %u context. Segment (%s)\n", segment_index,
+			tx->connection[segment_index].segment_key);
 
 	return (void*) packet->data;
 }
@@ -483,27 +509,24 @@ struct opx_shm_packet * opx_shm_rx_next (struct opx_shm_rx *rx, uint64_t * pos)
 	struct opx_shm_fifo_segment *rx_fifo_segment = rx->fifo_segment;
 	struct opx_shm_fifo *rx_fifo = &rx_fifo_segment->fifo;
 
-    struct opx_shm_packet* packet;
+	struct opx_shm_packet* packet;
 	*pos = atomic_load_explicit(&rx_fifo->dequeue_pos_.val, memory_order_acquire);
 
-    for (;;)
-    {
-        packet = &rx_fifo->buffer_[*pos & FI_OPX_SHM_BUFFER_MASK];
+	for (;;) {
+		packet = &rx_fifo->buffer_[*pos & FI_OPX_SHM_BUFFER_MASK];
 		size_t seq = atomic_load_explicit(&(packet->sequence_.val), memory_order_acquire);
-        intptr_t dif = (intptr_t)seq - (intptr_t)(*pos + 1);
-        if (dif == 0)
-        {
-			if (atomic_compare_exchange_weak(&rx_fifo->dequeue_pos_.val, pos, *pos + 1))
+		intptr_t dif = (intptr_t)seq - (intptr_t)(*pos + 1);
+		if (dif == 0) {
+			if (atomic_compare_exchange_weak(&rx_fifo->dequeue_pos_.val, (int64_t *)pos, *pos + 1)) {
 				break;
-        }
-        else if (dif < 0) {
-            return NULL;
-		}
-        else {
+			}
+		} else if (dif < 0) {
+			return NULL;
+		} else {
 			*pos = atomic_load_explicit(&rx_fifo->dequeue_pos_.val, memory_order_acquire);
 			//opx_shm_x86_pause();
 		}
-    }
+	}
 	return packet;
 }
 

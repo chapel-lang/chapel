@@ -13,7 +13,7 @@ var myRand = new randomStream(int);
 
 // Return a random number on the range [1, n]
 proc getRand(n: int) {
-  return (myRand.getNext()*max(int)):int%n+1;
+  return (myRand.next()*max(int)):int%n+1;
 }
 
 
@@ -246,7 +246,7 @@ proc costFcn(board: [] int): int {
 
 
 proc main() {
-  var boardData = open(inputfile, ioMode.r).reader();
+  var boardData = open(inputfile, ioMode.r).reader(locking=false);
 
   // Read the board from the input file
 

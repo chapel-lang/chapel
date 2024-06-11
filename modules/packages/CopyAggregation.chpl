@@ -50,7 +50,7 @@
 
      const size = 10000;
      const space = {0..size};
-     const D = space dmapped blockDist(space);
+     const D = space dmapped new blockDist(space);
      var A, reversedA: [D] int = D;
 
      forall (rA, i) in zip(reversedA, D) with (var agg = new SrcAggregator(int)) do
@@ -111,7 +111,7 @@ module CopyAggregation {
     type elemType;
     @chpldoc.nodoc
     var agg: if aggregate then DstAggregatorImpl(elemType) else nothing;
-    inline proc copy(ref dst: elemType, const in srcVal: elemType) {
+    inline proc ref copy(ref dst: elemType, const in srcVal: elemType) {
       if aggregate then agg.copy(dst, srcVal);
                    else dst = srcVal;
     }
@@ -392,7 +392,7 @@ module AggregationPrimitives {
     proc ref cachedAlloc(): c_ptr(elemType) {
       if data == nil {
         const rvf_size = size.safeCast(c_size_t);
-        on Locales[loc] do {
+        on Locales[loc] {
           data = allocate(elemType, rvf_size);
         }
       }

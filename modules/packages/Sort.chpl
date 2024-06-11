@@ -435,8 +435,8 @@ The choice of sorting algorithm used is made by the implementation.
 
 .. note::
 
-  This function currently either uses a parallel radix sort or a serial
-  quickSort. The algorithms used will change over time.
+  This function currently either uses a parallel radix sort or a parallel
+  improved quick sort.  The algorithms used will change over time.
 
   It currently uses parallel radix sort if the following conditions are met:
 
@@ -1122,6 +1122,7 @@ module MergeSort {
 
 // this quick sort is not stable
 // it is in-place however
+// it is parallel but has limited parallelism
 @chpldoc.nodoc
 module QuickSort {
   private use Sort;
@@ -1575,24 +1576,20 @@ module SampleSortHelp {
     var numBuckets: int;
     var equalBuckets: bool;
 
-    proc writeThis(ch) throws {
-      ch.write("SampleBucketizer(");
-      ch.write("\n logBuckets=", logBuckets);
-      ch.write("\n numBuckets=", numBuckets);
-      ch.write("\n equalBuckets=", equalBuckets);
-      ch.write("\n storage=");
-      for i in 0..numBuckets {
-        ch.write((try! " %xt".format(storage[i])));
-      }
-      ch.write("\n sortedStorage=");
-      for i in 0..numBuckets {
-        ch.write(try! " %xt".format(sortedStorage[i]));
-      }
-      ch.write(")\n");
-    }
-
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("SampleBucketizer(");
+      writer.write("\n logBuckets=", logBuckets);
+      writer.write("\n numBuckets=", numBuckets);
+      writer.write("\n equalBuckets=", equalBuckets);
+      writer.write("\n storage=");
+      for i in 0..numBuckets {
+        writer.write((try! " %xt".format(storage[i])));
+      }
+      writer.write("\n sortedStorage=");
+      for i in 0..numBuckets {
+        writer.write(try! " %xt".format(sortedStorage[i]));
+      }
+      writer.write(")\n");
     }
 
     proc getNumBuckets() {
@@ -1717,7 +1714,7 @@ module SampleSortHelp {
     var arrayIndex = start_n + sampleStep - 1;
     var splitterIndex = 0;
     splitters[splitterIndex] = A[arrayIndex:idxType];
-    for i in 2..numBuckets-1 {
+    for 2..numBuckets-1 {
       arrayIndex += sampleStep;
       // Skip duplicates
       if chpl_compare(splitters[splitterIndex], A[arrayIndex:idxType], criterion)!=0 {
@@ -1738,7 +1735,7 @@ module SampleSortHelp {
     // Fill the array to the next power of two
     var logBuckets = log2(uniqueSplitters) + 1;
     numBuckets = 1 << logBuckets;
-    for i in uniqueSplitters+1 .. numBuckets-1 {
+    for uniqueSplitters+1 .. numBuckets-1 {
       splitterIndex += 1;
       splitters[splitterIndex] = A[arrayIndex];
     }
@@ -1763,7 +1760,7 @@ module SampleSortHelp {
     while numSamples > 0 {
       numSamples -= 1;
 
-      var offset = randNums.getNext(start_n, end_n);
+      var offset = randNums.next(start_n, end_n);
       if offset != start_n {
         // A[start_n] <=> A[offset] but with shallow copy.
         var tmp: A.eltType;
@@ -2198,7 +2195,7 @@ module SequentialInPlacePartitioning {
         end = end_n;
       }
 
-      for (i,bin) in bucketizer.classify(A, start, end, criterion, startbit) {
+      for (_,bin) in bucketizer.classify(A, start, end, criterion, startbit) {
         counts[bin] += 1;
       }
     }
@@ -2424,12 +2421,12 @@ module TwoArrayPartitioning {
       for bin in 0..#nBuckets {
         counts[bin] = 0;
       }
-      for (i,bin) in state.bucketizer.classify(src, start, end,
+      for (_,bin) in state.bucketizer.classify(src, start, end,
                                                criterion, startbit) {
         counts[bin] += 1;
       }
       // Now store the counts into the global counts array
-      foreach bin in 0..#nBuckets {
+      foreach bin in 0..#nBuckets with (ref state) {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
       }
     }
@@ -2841,15 +2838,12 @@ module TwoArrayDistributedPartitioning {
       init this;
       tasks.pushBack(t);
     }
-    proc writeThis(f) throws {
-      f.write("TwoArrayDistSortTask");
-      for t in tasks {
-        f.write(" ");
-        f.write(t);
-      }
-    }
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("TwoArrayDistSortTask");
+      for t in tasks {
+        writer.write(" ");
+        writer.write(t);
+      }
     }
 
     proc isEmpty() {
@@ -3088,13 +3082,13 @@ module TwoArrayDistributedPartitioning {
         for t in distTask.tasks {
           if !t.isEmpty() {
             if t.useSecondState {
-              for (loc, tid) in t.localeAndIds(A) {
+              for (_, tid) in t.localeAndIds(A) {
                 assert(!usedLocales2[tid]); // means race condition would occur
                 usedLocales2[tid] = true;
               }
 
             } else {
-              for (loc, tid) in t.localeAndIds(A) {
+              for (_, tid) in t.localeAndIds(A) {
                 assert(!usedLocales1[tid]); // means race condition would occur
                 usedLocales1[tid] = true;
               }
@@ -3856,7 +3850,7 @@ module MSBRadixSort {
         }
       }
 
-      forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) with (ref A) {
+      forall (_,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) with (ref A) {
         msbRadixSort(A, bin_start, bin_end, criterion, subbits, endbit, settings);
       }
     } else {

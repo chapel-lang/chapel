@@ -68,6 +68,7 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_GET_USER_FILE:
       case PRIM_BLOCK_LOCAL:
       case PRIM_GPU_SET_BLOCKSIZE:
+      case PRIM_TASK_PRIVATE_SVAR_CAPTURE:
         return FAST_AND_LOCAL;
 
       // Loops can have arbitrary trip counts, don't consider fast
@@ -305,9 +306,12 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ASSERT_ON_GPU:
   case PRIM_GET_REQUESTED_SUBLOC:
   case PRIM_GPU_INIT_KERNEL_CFG:
+  case PRIM_GPU_INIT_KERNEL_CFG_3D:
   case PRIM_GPU_DEINIT_KERNEL_CFG:
   case PRIM_GPU_ARG:
   case PRIM_GPU_PID_OFFLOAD:
+  case PRIM_GPU_BLOCK_REDUCE:
+  case PRIM_GPU_REDUCE_WRAPPER:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
@@ -324,7 +328,6 @@ classifyPrimitive(CallExpr *call) {
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_GPU_KERNEL_LAUNCH:
-  case PRIM_GPU_KERNEL_LAUNCH_FLAT:
    return LOCAL_NOT_FAST;
 
   case PRIM_BREAKPOINT:

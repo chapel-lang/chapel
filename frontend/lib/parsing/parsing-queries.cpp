@@ -147,7 +147,7 @@ const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
   UniqueString libPath;
-  if (context->pathHasLibrary(path, libPath)) {
+  if (context->pathIsInLibrary(path, libPath)) {
     auto lib = libraries::LibraryFile::load(context, libPath);
     return lib->loadSourceAst(context, path);
   } else {
@@ -316,6 +316,150 @@ const ModuleVec& parseToplevel(Context* context, UniqueString path) {
   UniqueString emptyParentSymbolPath;
   return parse(context, path, emptyParentSymbolPath);
 }
+
+const std::vector<ID>& toplevelModulesInFile(Context* context,
+                                             UniqueString path) {
+  QUERY_BEGIN(toplevelModulesInFile, context, path);
+
+  std::vector<ID> result;
+  const ModuleVec& modules = parseToplevel(context, path);
+  for (const Module* mod : modules) {
+    result.push_back(mod->id());
+  }
+
+  return QUERY_END(result);
+}
+
+struct FindMain {
+  std::vector<const Function*> mainProcsFound;
+  std::vector<const Module*> modulesFound;
+
+  FindMain(Context* context) { }
+
+  bool enter(const Function* fn) {
+    if (fn->name() == USTR("main") &&
+        fn->kind() == Function::PROC &&
+        !fn->isMethod()) {
+      mainProcsFound.push_back(fn);
+    }
+    return true;
+  }
+  void exit(const Function* fn) { }
+
+  bool enter(const Module* mod) {
+    modulesFound.push_back(mod);
+    return true;
+  }
+  void exit(const Module* mod) { }
+
+  // traverse through anything else
+  bool enter(const AstNode* ast) {
+    return true;
+  }
+  void exit(const AstNode* ast) { }
+};
+
+
+static const ID& findMainModuleImpl(Context* context,
+                                    std::vector<ID> commandLineModules,
+                                    UniqueString requestedMainModuleName) {
+  QUERY_BEGIN(findMainModuleImpl, context,
+              commandLineModules, requestedMainModuleName);
+
+  ID result;
+  auto findMain = FindMain(context);
+
+  // traverse to find modules (to check name) and main functions
+  for (const auto& id : commandLineModules) {
+    if (const AstNode* ast = idToAst(context, id)) {
+      ast->traverse(findMain);
+    }
+  }
+
+  if (!requestedMainModuleName.isEmpty()) {
+    // the main module is provided by a command-line option, so use that
+    const Module* matchingModule = nullptr;
+    for (const Module* mod : findMain.modulesFound) {
+      if (mod->name() == requestedMainModuleName) {
+        matchingModule = mod;
+        break;
+      }
+    }
+    if (matchingModule) {
+      result = matchingModule->id();
+    } else {
+      context->error(Location(),
+                     "could not find module named '%s' for --main-module",
+                     requestedMainModuleName.c_str());
+    }
+  } else if (findMain.mainProcsFound.size() > 0) {
+    // the main module is the single command-line module containing a 'main'
+    ID mainProc = findMain.mainProcsFound[0]->id();
+    result = idToParentModule(context, mainProc);
+
+    if (findMain.mainProcsFound.size() > 1) {
+      // emit an error if there were multiple 'main' procs
+      // TODO: make this error nice, list which modules, etc
+      context->error(Location(),
+                     "ambiguous main functions, use --main-module");
+    }
+  } else if (commandLineModules.size() == 1) {
+    // the main module is the single command-line module
+    result = commandLineModules[0];
+  } else {
+    // emit an error
+    if (commandLineModules.size() == 0) {
+      // AFAIK this won't be possible to reach
+      context->error(Location(),
+                     "could not find main module: no command-line modules");
+    } else {
+      // TODO: make this error nice
+      context->error(Location(),
+                     "a program with multiple user modules "
+                     "requires a main function\n"
+                     "alternatively, specify a main module with "
+                     "--main-module");
+    }
+  }
+
+  if (result.isEmpty() && findMain.modulesFound.size() > 0) {
+    // we should have emitted an error above. use the first
+    // module encountered as the main module so compilation can continue.
+    result = findMain.modulesFound[0]->id();
+  }
+
+  return QUERY_END(result);
+}
+
+ID findMainModule(Context* context,
+                  std::vector<ID> commandLineModules,
+                  UniqueString requestedMainModuleName) {
+  return findMainModuleImpl(context,
+                            std::move(commandLineModules),
+                            requestedMainModuleName);
+}
+
+std::vector<ID>
+findMainAndCommandLineModules(Context* context,
+                              std::vector<UniqueString> paths,
+                              UniqueString requestedMainModuleName,
+                              ID& mainModule) {
+  std::vector<chpl::ID> commandLineModules;
+
+  for (auto path : paths) {
+    auto ids = chpl::parsing::toplevelModulesInFile(context, path);
+    // append ids to commandLineModules
+    commandLineModules.insert(commandLineModules.end(),
+                              ids.begin(), ids.end());
+  }
+
+  mainModule = findMainModule(context,
+                              commandLineModules,
+                              requestedMainModuleName);
+
+  return commandLineModules;
+}
+
 
 static const std::vector<UniqueString>&
 moduleSearchPathQuery(Context* context) {
@@ -697,6 +841,24 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
+ID getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName) {
+  std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
+
+  // Performance: this has to concatenate the two strings at runtime.
+  // This presumably has an overhead over writing something like Symbol.symname
+  // explicitly. If this becomes a performance issue, we can switch to
+  // a different format of this function, either accepting a full path as
+  // a second argument, or by using templates to concatenate the strings at
+  // compile time.
+  std::string fullPath = modName;
+  fullPath += ".";
+  fullPath += symName;
+
+  return ID(UniqueString::get(context, fullPath), -1, 0);
+}
+
 static const Module* const&
 getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
   QUERY_BEGIN(getIncludedSubmoduleQuery, context, includeModuleId);
@@ -835,6 +997,16 @@ AstTag idToTag(Context* context, ID id) {
   return idToTagQuery(context, id);
 }
 
+bool idIsModule(Context* context, ID id) {
+  if (id.postOrderId() >= 0) {
+    // it can't possibly be a module if it's got a positive post-order ID
+    // since all modules have post-order ID -1
+    return false;
+  }
+  AstTag tag = idToTag(context, id);
+  return asttags::isModule(tag);
+}
+
 static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsParenlessFunctionQuery, context, id);
 
@@ -855,6 +1027,14 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
 bool idIsParenlessFunction(Context* context, ID id) {
   return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
+}
+
+bool idIsNestedFunction(Context* context, ID id) {
+  if (id.isEmpty() || !idIsFunction(context, id)) return false;
+  if (auto up = id.parentSymbolId(context)) {
+    return idIsFunction(context, up);
+  }
+  return false;
 }
 
 bool idIsFunction(Context* context, ID id) {
@@ -984,6 +1164,7 @@ const ID& idToParentId(Context* context, ID id) {
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
+  if (node == nullptr) return nullptr;
   auto parentId = idToParentId(context, node->id());
   if (parentId.isEmpty()) return nullptr;
   return idToAst(context, parentId);
@@ -1020,6 +1201,16 @@ ID idToParentModule(Context* context, ID id) {
     return parentSymId;
 
   return getModuleForId(context, parentSymId);
+}
+
+bool idIsToplevelModule(Context* context, ID id) {
+  if (idIsModule(context, id)) {
+    ID parentSymId = id.parentSymbolId(context);
+    if (parentSymId.isEmpty())
+      return true;
+  }
+
+  return false;
 }
 
 static const Function::ReturnIntent&
@@ -1067,7 +1258,12 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  CHPL_ASSERT(isVariable(idToTag(context, id)));
+  AstTag tagForId = idToTag(context, id);
+  // TODO: do we really need this assert? In which cases do we arrive here unexpectedly?
+  CHPL_ASSERT(isVariable(tagForId)  ||
+              isMultiDecl(tagForId) ||
+              isTupleDecl(tagForId) ||
+              isForwardingDecl(tagForId));
 
   while (true) {
     ID parent = idToParentId(context, cur);
@@ -1261,9 +1457,16 @@ const uast::AttributeGroup*
 astToAttributeGroup(Context* context, const uast::AstNode* ast) {
   const uast::AttributeGroup* ret = nullptr;
   if (ast) {
+    // If we find an attribute group on the AST, return it.
+    if (auto ag = ast->attributeGroup()) return ag;
+
+    // Right now, only Variables and TupleDecls can inherit attributes
+    // from enclosing MultiDecls or TupleDecls.
+    if (!ast->isVariable() && !ast->isTupleDecl()) return nullptr;
+
+    // handle nesting: what if we're a Variable inside a MultiDecl or TupleDecl?
     auto parent = parentAst(context, ast);
-    bool done = ast->isMultiDecl() || !parent ||
-                (!parent->isTupleDecl() && !parent->isMultiDecl());
+    bool done = !parent || (!parent->isTupleDecl() && !parent->isMultiDecl());
     // recurse if not done
     return done
            ? ast->attributeGroup()
@@ -1411,28 +1614,8 @@ static std::string hardcodedDeprecationForId(Context* context, ID idMention,
     ID idTarget) {
   std::string deprecationMsg;
 
-  // Time.dayOfWeek behavior change
-  {
-    if (idIsInStandardModule(context, idTarget) &&
-        idTarget.parentSymbolId(context).symbolName(context) == "Time" &&
-        idTarget.symbolName(context) == "dayOfWeek") {
-      // skip warning if -scIsoDayOfWeek=true
-      bool newBehaviorOptIn = false;
-      const ConfigSettingsList& configs = parsing::configSettings(context);
-      for (const auto& config : configs) {
-        if (config.first == "cIsoDayOfWeek" && config.second == "true") {
-          newBehaviorOptIn = true;
-          break;
-        }
-      }
-      if (!newBehaviorOptIn) {
-        deprecationMsg =
-            "in an upcoming release 'dayOfWeek' will represent "
-            "Monday as 1 instead of 0. Recompile with '-scIsoDayOfWeek=true' "
-            "to opt-in to the new behavior";
-      }
-    }
-  }
+  // If this is empty, there are no compiler-implemented deprecation warnings at
+  // the moment. Yay!
 
   return deprecationMsg;
 }

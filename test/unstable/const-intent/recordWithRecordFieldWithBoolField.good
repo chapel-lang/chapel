@@ -1,0 +1,4 @@
+(x = (x = true))
+(x = (x = false))
+recordWithRecordFieldWithBoolField.chpl:11: warning: The argument 'arg' was modified indirectly during this function, this behavior is unstable and may change in the future.
+If this behavior is intentional, declaring the argument as 'const ref' will silence this warning.  If not, declaring the argument as 'const in' will prevent indirect modifications

@@ -184,6 +184,25 @@ UniqueString UniqueString::get(Context* context,
   }
 }
 
+int UniqueString::compare(const UniqueString other) const {
+  if (*this == other) return 0;
+  size_t lenThis = this->length();
+  size_t lenOther = other.length();
+  size_t minsize = (lenThis < lenOther) ? lenThis : lenOther;
+  int cmp = memcmp(this->c_str(), other.c_str(), minsize);
+  if (cmp == 0) {
+    if (lenThis == lenOther) return 0;
+    return (lenThis < lenOther) ? -1 : 1;
+  }
+  return (cmp < 0) ? -1 : 1;
+}
+
+int UniqueString::compare(const char* other) const {
+  int cmp = strcmp(this->c_str(), other);
+  if (cmp == 0) return 0;
+  return (cmp < 0) ? -1 : 1;
+}
+
 bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
   return defaultUpdate(keep, addin);
 }
@@ -227,8 +246,9 @@ UniqueString UniqueString::deserialize(Deserializer& des) {
   if ((byte & 0x80) == 0) {
     // string is inline here, byte is the length
     uint64_t len = byte;
-    char buf[128];
+    char buf[128]; // max size is 127, plus room for null terminating
     des.readData(buf, len);
+    buf[len] = '\0';
     return get(des.context(), buf, len);
   } else {
     // compute the index to look up in the strings table

@@ -37,6 +37,7 @@ set(SRCS
     normalize.cpp
     normalizeErrors.cpp
     parallel.cpp
+    parseAndConvert.cpp
     resolveIntents.cpp
     ResolveScope.cpp
     returnStarTuplesByRefArgs.cpp

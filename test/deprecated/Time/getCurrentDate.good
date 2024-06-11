@@ -1,4 +1,0 @@
-getCurrentDate.chpl:3: warning: 'getCurrentDate' is deprecated; access the individual fields of 'date.utcToday()' as needed instead, or use 'date.today()' for local wall time
-true
-true
-true

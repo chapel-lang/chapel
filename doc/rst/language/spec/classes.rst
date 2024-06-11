@@ -1,5 +1,12 @@
 .. default-domain:: chpl
 
+.. index::
+   single: classes
+   single: classes; instances
+   seealso: classes; owned classes
+   seealso: classes; shared classes
+   seealso: classes; borrowed classes
+   seealso: classes; unmanaged classes
 .. _Chapter-Classes:
 
 =======
@@ -26,6 +33,9 @@ A class is generic if it has generic fields. A class can also be generic
 if it inherits from a generic class. Generic classes and fields are
 discussed in :ref:`Generic_Types`.
 
+.. index::
+   single: classes; declarations
+   single: class
 .. _Class_Declarations:
 
 Class Declarations
@@ -73,6 +83,13 @@ Generic classes are described in :ref:`Generic_Types`.
       as discussion is needed regarding its impact on inheritance, for
       instance.
 
+.. index::
+   pair: classes; lifetime
+   single: classes; borrows
+   pair: owned classes; lifetime
+   pair: shared classes; lifetime
+   pair: unmanaged classes; lifetime
+   pair: borrowed classes; lifetime
 .. _Class_Lifetime_and_Borrows:
 
 Class Lifetime and Borrows
@@ -156,6 +173,12 @@ it refers to.
       Additional syntax to specify the lifetimes of function returns will
       probably be needed.
 
+.. index::
+   single: classes; types
+   pair: owned classes; types
+   pair: shared classes; types
+   pair: unmanaged classes; types
+   pair: borrowed classes; types
 .. _Class_Types:
 
 Class Types
@@ -264,6 +287,8 @@ available for this purpose (see :ref:`Explicit_Class_Conversions`).
       borrowed C
       owned C
 
+.. index::
+   pair: classes; nilable
 .. _Nilable_Classes:
 
 Nilable Class Types
@@ -331,6 +356,8 @@ expression of a class type ``C``. It will return ``borrowed C`` for any
 non-nilable ``C`` type (e.g. ``owned C``). It will return
 ``borrowed C?`` for any nilable ``C`` type (e.g. ``C?``).
 
+.. index::
+   single: classes; values
 .. _Class_Values:
 
 Class Values
@@ -378,6 +405,9 @@ non-nilable classes are not currently supported.
    implicitly from the initialization expression. Finally, an object
    of type ``owned D`` is created and assigned to ``c``.
 
+.. index::
+   single: classes; nil
+   single: nil
 .. _Class_nil_value:
 
 The *nil* Value
@@ -395,6 +425,8 @@ formal/variable/field is non-nilable or generic, including generic
 memory management.
 
 
+.. index::
+   pair: classes; fields
 .. _Class_Fields:
 
 Class Fields
@@ -434,6 +466,13 @@ Field access is described in :ref:`Class_Field_Accesses`.
       declarations with ``ref`` or ``const ref`` keywords, are an area of
       future work.
 
+.. index::
+   pair: classes; methods
+   single: methods; primary
+   single: methods; secondary
+   single: primary methods
+   single: secondary methods
+   single: methods; this
 .. _Class_Methods:
 
 Class Methods
@@ -549,6 +588,9 @@ management. See also :ref:`Methods_without_Parentheses`.
       owned C?
 
 
+.. index::
+   single: classes; nested classes
+   single: nested classes
 .. _Nested_Classes:
 
 Nested Classes
@@ -558,6 +600,11 @@ A class defined within another class or record is a nested class. A
 nested class can be referenced only within its immediately enclosing
 class or record.
 
+.. index::
+   single: inheritance
+   single: classes; inheritance
+   single: derived class
+   single: classes; derived
 .. _Inheritance:
 
 Inheritance
@@ -578,6 +625,9 @@ will have type constructor arguments based upon generic fields in the
 fully specified ``C`` will be a subclass of a corresponding fully
 specified ``ParentC``.
 
+.. index::
+   single: RootClass
+   single: classes; RootClass
 .. _The_Root_Class:
 
 The Root Class
@@ -590,6 +640,9 @@ directly or indirectly. If a class declaration does not contain a
 indirectly through the class it inherits from. A variable of type
 ``RootClass`` can hold a reference to an object of any class type.
 
+.. index::
+   single: classes; accessing inherited fields
+   single: inheritance; accessing fields
 .. _Accessing_Base_Class_Fields:
 
 Accessing Base Class Fields
@@ -601,6 +654,8 @@ accessed in their base class unless a getter method is overridden in the
 derived class, as discussed
 in :ref:`Overriding_Base_Class_Methods`.
 
+.. index::
+   single: shadowing; inherited class fields
 .. _Shadowing_Base_Class_Fields:
 
 Shadowing Base Class Fields
@@ -609,6 +664,10 @@ Shadowing Base Class Fields
 A field in a derived class declared with the same name as a field in a
 base class will cause a compilation error.
 
+.. index::
+   single: dynamic dispatch
+   single: methods; overriding inherited methods
+   single: override
 .. _Overriding_Base_Class_Methods:
 
 Overriding Base Class Methods
@@ -660,6 +719,10 @@ Methods without parentheses are not candidates for dynamic dispatch.
    access a base field within a base method should that field be
    shadowed by a subclass.
 
+.. index::
+   pair: new; classes
+   single: new
+   pair: keywords; new
 .. _Class_New:
 
 Class New
@@ -713,6 +776,8 @@ a ``type-expression`` that results in a class type. Then:
 See also :ref:`Class_Lifetime_and_Borrows` and
 :ref:`Class_Types`.
 
+.. index::
+   pair: classes; initializers
 .. _Class_Initializers:
 
 Class Initializers
@@ -729,6 +794,11 @@ If the program declares no initializers for a class, the compiler must
 generate an initializer for that class based on the types and
 initialization expressions of fields defined by that class.
 
+.. index::
+   pair: classes; user-defined initializers
+   seealso: initializers; user-defined initializers
+   single: user-defined initializers; complete
+   single: user-defined initializers; conditionals
 .. _User_Defined_Initializers:
 
 User-Defined Initializers
@@ -796,6 +866,8 @@ Section :ref:`Generic_User_Initializers` for details.
    and the second initializer lets the user specify the initial message
    when creating a MessagePoint.
 
+.. index::
+   single: user-defined initializers; field initialization vs assignment
 .. _Field_Initialization_Versus_Assignment:
 
 Field Initialization Versus Assignment
@@ -877,6 +949,8 @@ be issued.
       usedBeforeInitialized.chpl:4: In initializer:
       usedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
 
+.. index::
+   single: user-defined initializers; omitting fields
 .. _Omitting_Field_Initializations:
 
 Omitting Field Initializations
@@ -993,6 +1067,9 @@ initialized out of order, a compile-time error will be issued.
    confusing and surprising, and is avoided by requiring fields to be
    initialized in field declaration order.
 
+.. index::
+   single: user-defined initializers; limitations
+   single: user-defined initializers; init this
 .. _Limitations_on_Instance_Usage_in_Initializers:
 
 Limitations on Instance Usage in Initializers
@@ -1103,6 +1180,8 @@ compiler will insert it at the end of the initializer.
    ``init this`` statement is used. If the second initializer tried to
    invoke the ``verify`` method, a compile-time error would be issued.
 
+.. index::
+   single: user-defined initializers; invoking other initializers
 .. _Invoking_Other_Initializers:
 
 Invoking Other Initializers
@@ -1150,6 +1229,8 @@ after such a call to ``init``.
    fully initialized, the ``init this`` statement has been used, and so
    ``this`` can be passed to the ``writeln`` function.
 
+.. index::
+   single: user-defined initializers; conditionals
 .. _Initializing_Fields_in_Conditional_Statements:
 
 Initializing Fields in Conditional Statements
@@ -1259,12 +1340,18 @@ at the end of the conditional statement.
    of the if-branch in order to match the state at the end of the
    else-branch.
 
+.. index::
+   single: user-defined initializers; limitations
+
 Miscellaneous Field Initialization Rules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Fields may not be initialized within loop statements or parallel
 statements.
 
+.. index::
+   pair: classes;compiler-generated initializers
+   seealso: initializers; compiler-generated initializers
 .. _The_Compiler_Generated_Initializer:
 
 The Compiler-Generated Initializer
@@ -1333,6 +1420,8 @@ value of the corresponding actual argument.
    -  The call ``new C(0,0.0,"")`` specifies the initial values for all
       fields explicitly.
 
+.. index::
+   single: user-defined initializers; postinit for classes
 .. _The_postinit_Method:
 
 The postinit Method
@@ -1393,6 +1482,10 @@ For classes that inherit, the user may invoke the parent’s ``postinit``
 method or let the compiler insert a call automatically
 (:ref:`The_postinit_Method_for_Inheriting_Classes`).
 
+.. index::
+   single: initializers; initializers and inheritance
+   single: inheritance; initializers
+   single: user-defined initializers; initializers and inheritance
 .. _Initializing_Inherited:
 
 Initializing Inherited Classes
@@ -1518,6 +1611,8 @@ be accessed before explicit calls to ``init``.
    parent’s initializer because it explicitly invokes another
    initializer.
 
+.. index::
+   single: user-defined initializers; methods and inheritance
 .. _Calling_Methods_on_Parent_Classes:
 
 Calling Methods on Parent Classes
@@ -1590,6 +1685,8 @@ functions as though it were of the parent type.
       Child.foo
       {x = 1.0, y = 2.0, z = 3.0}
 
+.. index::
+   single: compiler-generated initializers; initializers and inheritance
 .. _The_Compiler_Generated_Initializer_for_Inheriting_Classes:
 
 The Compiler Generated Initializer for Inheriting Classes
@@ -1637,6 +1734,8 @@ formals for the child type.
    initializer with three formals named ``x``, ``y``, and ``z`` that all
    have default values based on their types.
 
+.. index::
+   single: user-defined initializers; postinit for classes
 .. _The_postinit_Method_for_Inheriting_Classes:
 
 The postinit Method for Inheriting Classes
@@ -1684,6 +1783,9 @@ parent’s ``postinit`` method.
       Parent.postinit: 1.0, 2.0
       Child.postinit: 3.0, 4.0
 
+.. index::
+   pair: classes; field access
+   pair: classes; receiver
 .. _Class_Field_Accesses:
 
 Field Accesses
@@ -1764,6 +1866,9 @@ instantiated class type itself.
    and assigns the field ``age`` in the object ``anActor`` the value
    ``27``.
 
+.. index::
+   pair: classes; getter method
+   single: methods; field getter
 .. _Getter_Methods:
 
 Field Getter Methods
@@ -1773,6 +1878,9 @@ The compiler implements field access as calls to a compiler-generated
 methods without parentheses that have the same name as the field. See
 also :ref:`Methods_without_Parentheses`.
 
+.. index::
+   single: classes; method calls
+   single: methods; calling
 .. _Class_Method_Calls:
 
 Class Method Calls
@@ -1792,6 +1900,8 @@ method receivers.
 Common Operations
 -----------------
 
+.. index::
+   pair: classes; assignment
 .. _Class_Assignment:
 
 Class Assignment
@@ -1843,6 +1953,10 @@ different memory management strategies are disallowed:
    the source and the destination would appear responsible for deleting
    the instance
 
+.. index::
+   single: classes; delete
+   single: delete; class unmanaged instances
+   single: deallocation; unmanaged class instances
 .. _Class_Delete:
 
 Deleting Unmanaged Class Instances
@@ -1909,6 +2023,8 @@ behavior is undefined.
 
       DONE
 
+.. index::
+   pair: classes; deinitializer
 .. _Class_Deinitializer:
 
 Class Deinitializer
@@ -1957,6 +2073,9 @@ the memory.
 
 
 
+.. index::
+   single: owned classes
+   pair: classes; owned
 .. _Owned_Objects:
 
 Owned Objects
@@ -2011,7 +2130,8 @@ and transfer the owned class instance to the other value.
 
  var emptyOwnedObject: owned MyClass;
 
-
+.. index::
+   single: owned classes; borrowing
 .. _about-owned-borrowing:
 
 Borrowing from `owned`
@@ -2036,6 +2156,8 @@ that could be deleted before the `borrow`. For example:
    // a is deleted here
  }
 
+.. index::
+   single: owned classes; implicit conversions
 .. _about-owned-coercions:
 
 Coercions for `owned`
@@ -2071,6 +2193,9 @@ For example:
  // myStudent containing nil.
 
 
+.. index::
+   single: owned classes; default intent
+
 `owned` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2078,6 +2203,9 @@ The default intent for :type:`~OwnedObject.owned` is ``const``. See more on
 argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
 more on the default intent in the :ref:`Intents_for_owned_and_shared`.
 
+.. index::
+   single: owned classes; predefined methods
+   single: predefined functions; owned classes
 .. _Owned_Methods:
 
 Methods on `owned` Classes
@@ -2086,7 +2214,9 @@ Methods on `owned` Classes
 .. include:: /builtins/OwnedObject.rst
 
 
-
+.. index::
+   single: shared classes
+   pair: classes; shared
 .. _Shared_Objects:
 
 Shared Objects
@@ -2130,6 +2260,9 @@ will be deleted after all of these references go out of scope.
    // goes out of scope.
  }
 
+.. index::
+   single: shared classes; borrowing
+
 Borrowing from `shared`
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2141,6 +2274,9 @@ some checking for errors in this case. In these ways,
 
 See :ref:`about-owned-borrowing` for more details and examples.
 
+.. index::
+   single: shared classes; implicit conversions
+
 Coercions for `shared`
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2151,6 +2287,9 @@ subclass of ``U``.
 
 See :ref:`about-owned-coercions` for more details and examples.
 
+.. index::
+   single: shared classes; default intent
+
 `shared` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2158,6 +2297,9 @@ The default intent for :type:`~SharedObject.shared` is ``const``. See more on
 argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
 more on the default intent in the :ref:`Intents_for_owned_and_shared`.
 
+.. index::
+   single: shared classes; predefined methods
+   single: predefined functions; shared classes
 .. _Shared_Methods:
 
 Methods on `shared` Classes

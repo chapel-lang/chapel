@@ -249,10 +249,11 @@ psm2_error_t ips_ptl_init(const psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 		goto fail;
 
 	/*
-	 * Receive thread, always initialized but not necessary creates a
+	 * ips_ptl threads, always initialized but not necessary creates a
 	 * pthread.
 	 */
-	err = psm3_ips_ptl_rcvthread_init(ptl_gen, &ptl->recvq);
+	if ((err = psm3_ips_ptl_rcvthread_init(ptl_gen, &ptl->recvq)))
+		goto fail;
 fail:
 	return err;
 }
@@ -262,13 +263,20 @@ static psm2_error_t ips_ptl_fini(ptl_t *ptl_gen, int force, uint64_t timeout_in)
 	struct ptl_ips *ptl = (struct ptl_ips *)ptl_gen;
 	psm2_error_t err = PSM2_OK;
 
-	if ((err = psm3_ips_proto_fini(&ptl->proto, force, timeout_in)))
-		goto fail;
-
-	/* We have to cancel the thread after terminating the protocol because
+	/* Finalize the protocol before stopping the threads because
 	 * connect/disconnect packets use interrupts and the kernel doesn't
 	 * like to have no pollers waiting */
+	if ((err = psm3_ips_proto_disconnect_all(&ptl->proto, force, timeout_in)))
+		goto fail;
+
+	/* stop the threads.  They may be accessing fields in proto such as
+	 * proto->mr_cache, or ep linked lists.  In practice the threads are
+	 * already mostly blocked since our caller has psm3_creation_lock */
 	if ((err = psm3_ips_ptl_rcvthread_fini(ptl_gen)))
+		goto fail;
+
+	/* now free the proto resources */
+	if ((err = psm3_ips_proto_fini(&ptl->proto)))
 		goto fail;
 
 	if ((err = psm3_ips_epstate_fini(&ptl->epstate)))

@@ -66,6 +66,15 @@ module Map {
     }
   }
 
+  /* Impacts whether the copy initializer that takes a map will generate a
+     warning when the other map has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForMapParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForMapParsafeMismatch = true;
+
   /*
     Chapel's standard ``map`` type for key-value storage.
 
@@ -82,8 +91,24 @@ module Map {
     /* Type of map values. */
     type valType;
 
+    // NOTE: the compiler has some special handling for unstable warnings
+    // associated with map's parSafe field:
+    // * AggregateType::generateType -> ensures that specifying 'parSafe' in a type
+    //    expression for 'map' will generate a warning
+    // * functionResolution.createGenericRecordVarDefaultInitCall -> ensures that
+    //    the stable initializer is called when the compiler generates initializer
+    //     calls for variable declarations that don't specify 'parSafe' (or set it to false)
+    //
+    // This results in the following behavior:
+    //  - 'var m: map(int, int)' doesn't generate an unstable warning
+    //  - 'type t = map(int, int, false)' generates an unstable warning
+    //  - 'var m: map(int, int, parSafe=true)' generates two unstable warnings (one
+    //    for the type expression and one for the initializer call)
+    //  - 'var m: map(int, int, parSafe=false)' generates one unstable warning for
+    //    the type expression
+
     /* If `true`, this map will perform parallel safe operations. */
-    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future");
+    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future")
     param parSafe = false;
 
     /*
@@ -199,6 +224,13 @@ module Map {
                         this.type.valType else vt;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
+
+      if (this.parSafe != other.parSafe && warnForMapParsafeMismatch) {
+        compilerWarning("initializing between two maps with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForMapParsafeMismatch=false'");
+      }
+
       this.resizeThreshold = other.resizeThreshold;
       this.table = new chpl__hashtable(keyType, valType,
                                        resizeThreshold);
@@ -598,45 +630,6 @@ module Map {
       }
     }
 
-    /*
-      Reads the contents of this map from a channel. The format looks like:
-
-        .. code-block:: chapel
-
-           {k1: v1, k2: v2, .... , kn: vn}
-
-      :arg ch: A channel to read from.
-    */
-    proc ref readThis(ch: fileReader) throws {
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-      if isJson then
-        _readJson(ch);
-      else
-        _readWriteHelper(ch);
-    }
-
-    @chpldoc.nodoc
-    proc ref _readJson(ch: fileReader) throws {
-      _enter(); defer _leave();
-      var first = true;
-
-      ch.readLiteral("{");
-
-      while !ch.matchLiteral("}") {
-        if first {
-          first = false;
-        } else {
-          ch.readLiteral(",");
-        }
-        var k : keyType;
-        ch.readf("%jt", k);
-        ch.readLiteral(":");
-        var v : valType;
-        ch.readf("%jt", v);
-        add(k, v);
-      }
-    }
-
     @chpldoc.nodoc
     proc ref _readHelper(r: fileReader, ref deserializer) throws {
       if deserializer.type == defaultDeserializer &&
@@ -658,7 +651,15 @@ module Map {
       des.endMap();
     }
 
-    @chpldoc.nodoc
+    /*
+      Reads the contents of this map from a ``fileReader``.
+      The 'defaultDeserializer' format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+    */
     proc ref deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader, deserializer);
     }
@@ -679,49 +680,14 @@ module Map {
     }
 
     /*
-      Writes the contents of this map to a channel. The format looks like:
+      Writes the contents of this map to a ``fileWriter``.
+      The 'defaultSerializer' format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-      if isJson then
-        _writeJson(ch);
-      else
-        _readWriteHelper(ch);
-    }
-
-    @chpldoc.nodoc
-    proc _writeJson(ch: fileWriter) throws {
-      _enter(); defer _leave();
-      var first = true;
-
-      ch.writeLiteral("{");
-
-      for slot in table.allSlots() {
-        if table.isSlotFull(slot) {
-          if first {
-            first = false;
-          } else {
-            ch.writeLiteral(", ");
-          }
-          ref tabEntry = table.table[slot];
-          ref key = tabEntry.key;
-          ref val = tabEntry.val;
-          ch.writef("%jt", key);
-          ch.writeLiteral(": ");
-          ch.writef("%jt", val);
-        }
-      }
-
-      ch.writeLiteral("}");
-    }
-
-    @chpldoc.nodoc
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter(); defer _leave();
 
@@ -736,32 +702,6 @@ module Map {
       }
 
       ser.endMap();
-    }
-
-    @chpldoc.nodoc
-    proc _readWriteHelper(ch) throws {
-      _enter(); defer _leave();
-      var first = true;
-      proc rwLiteral(lit:string) throws {
-        if ch._writing then ch.writeLiteral(lit); else ch.readLiteral(lit);
-      }
-      rwLiteral("{");
-      for slot in table.allSlots() {
-        if table.isSlotFull(slot) {
-          if first {
-            first = false;
-          } else {
-            rwLiteral(", ");
-          }
-          ref tabEntry = table.table[slot];
-          ref key = tabEntry.key;
-          ref val = tabEntry.val;
-          if ch._writing then ch.write(key); else key = ch.read(key.type);
-          rwLiteral(": ");
-          if ch._writing then ch.write(val); else val = ch.read(val.type);
-        }
-      }
-      rwLiteral("}");
     }
 
     /*

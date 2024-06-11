@@ -15,9 +15,11 @@ gpu/native/studies/gpuArrayOps/gpuArrayOps.graph
 
 gpu/native/studies/transpose/transpose-time.graph
 
-gpu/native/studies/chop/chplGPU.graph
+gpu/native/studies/chop/chop.graph
 
 gpu/native/studies/coral/coral.graph
+
+gpu/native/studies/minibude/Bude.graph
 
 gpu/native/studies/compiler-performance/transform.graph
 gpu/native/studies/compiler-performance/end-to-end.graph

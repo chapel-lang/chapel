@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: statement
 .. _Chapter-Statements:
 
 ==========
@@ -93,6 +95,8 @@ additionally as follows:
 
 -  manage :ref:`The_Manage_Statement`
 
+.. index::
+   single: block
 .. _Blocks:
 
 Blocks
@@ -116,6 +120,10 @@ variables (:ref:`Local_Variables`).
 The statements within a block are executed serially unless the block is
 in a cobegin statement (:ref:`Cobegin`).
 
+.. index::
+   single: expressions; statement
+   single: expression statement
+   single: statements; expression
 .. _Expression_Statements:
 
 Expression Statements
@@ -133,6 +141,26 @@ effects. The syntax for an expression statement is given by
      new-expression ;
      let-expression ;
 
+.. index::
+   single: assignment
+   single: statements; assignment
+   single: =
+   single: +=
+   single: -=
+   single: *=
+   single: /=
+   single: %=
+   single: **=
+   single: &=
+   single: |=
+   single: ^=
+   single: ||=
+   single: &&=
+   single: <<=
+   single: >>=
+   single: operators; assignment
+   single: operators; compound assignment
+   single: operators; simple assignment
 .. _Assignment_Statements:
 
 Assignment Statements
@@ -211,6 +239,12 @@ the left-hand side expression should have ``ref`` intent and be modified
 within the body of the function. The return type of the function should
 be ``void``.
 
+.. index::
+   single: swap; statement
+   single: statements; swap
+   single: swap; operator
+   single: operators; swap
+   single: <=>
 .. _The_Swap_Statement:
 
 The Swap Statement
@@ -254,6 +288,13 @@ as necessary.
       b = a;
       a = t;
 
+.. index::
+   single: statements; conditional
+   single: if
+   single: then
+   single: else
+   single: conditional statements
+   single: conditional statement; dangling else
 .. _The_Conditional_Statement:
 
 The Conditional Statement
@@ -351,6 +392,13 @@ statement, too.
       B,other
       A,other
 
+.. index::
+   single: select
+   single: when
+   single: otherwise
+   single: statements; select
+   single: statements; when
+   single: statements; otherwise
 .. _The_Select_Statement:
 
 The Select Statement
@@ -395,6 +443,10 @@ Each statement embedded in the *when-statement* or the
 *otherwise-statement* has its own scope whether or not an explicit block
 surrounds it.
 
+.. index::
+   single: while loops
+   single: while
+   single: statements; while
 .. _The_While_and_Do_While_Loops:
 
 The While Do and Do While Loops
@@ -527,6 +579,10 @@ Otherwise the variable stores a borrow of the expression's value
 The variable can be modified within the loop body if it is declared
 with the ``var`` keyword.
 
+.. index::
+   single: for loops
+   single: for
+   single: statements; for
 .. _The_For_Loop:
 
 The For Loop
@@ -566,6 +622,11 @@ If the iteratable-expression begins with the keyword ``zip`` followed by
 a parenthesized expression-list, the listed expressions must support
 zippered iteration.
 
+.. index::
+   single: zip
+   pair: keywords; zip
+   single: zippered iteration
+   single: iteration; zippered
 .. _Zippered_Iteration:
 
 Zippered Iteration
@@ -604,6 +665,11 @@ support iteration over a 2D `m` x `n` space as well.
 
       1 4 2 5 3 6 
 
+.. index::
+   single: statements; param for
+   single: for param
+   single: for loops; param
+   pair: for; param
 .. _Parameter_For_Loops:
 
 Parameter For Loops
@@ -627,6 +693,14 @@ Parameter for loops are restricted to iteration over range literals with
 an optional by expression where the bounds and stride must be
 parameters. The loop is then unrolled for each iteration.
 
+.. index::
+   single: statements; jumps
+   single: label
+   single: break
+   single: continue
+   single: statements; label
+   single: statements; break
+   single: statements; continue
 .. _Label_Break_Continue:
 
 The Break, Continue and Label Statements
@@ -700,6 +774,9 @@ A ``break`` statement cannot be used to exit a parallel loop
         }
       }
 
+.. index::
+   single: require
+   single: statements; require
 .. _The_Require_statement:
 
 The Require Statement
@@ -770,6 +847,11 @@ depending on the value of *requireFoo*:
          require defaultHeader;
 
 
+.. index::
+   single: use
+   single: statements; use
+   single: modules; using
+   single: enumerated types; using
 .. _The_Use_Statement:
 
 The Use Statement
@@ -787,6 +869,10 @@ see :ref:`Using_Modules`.  For more information on enumerated types, please
 see :ref:`Enumerated_Types`.  For more information on modules in general, please
 see :ref:`Chapter-Modules`.
 
+.. index::
+   single: import
+   single: statements; import
+   single: modules; importing
 .. _The_Import_Statement:
 
 The Import Statement
@@ -805,6 +891,9 @@ within the scope.  For further information about ``import`` statements, see
 
 For more information on modules in general, please see :ref:`Chapter-Modules`.
 
+.. index::
+   single: defer
+   single: statements; defer
 .. _The_Defer_Statement:
 
 The Defer Statement
@@ -1012,6 +1101,8 @@ cleanup action run.
       Condition: true
       Inside if
 
+.. index::
+   single: statements; empty
 .. _The_Empty_Statement:
 
 The Empty Statement

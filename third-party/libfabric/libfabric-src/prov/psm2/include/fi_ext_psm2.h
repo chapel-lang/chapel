@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 /* Provider specific name for fi_set_val() / fi_get_val() */
-#define	FI_PSM2_DISCONNECT	(1U | FI_PROV_SPECIFIC)
+#define	FI_PSM2_DISCONNECT	(1U | (1UL << 31))
 
 #ifdef __cplusplus
 }

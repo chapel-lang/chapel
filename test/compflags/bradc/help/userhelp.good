@@ -10,8 +10,8 @@ Module Processing Options:
 
 Warning and Language Control Options:
       --[no-]permit-unhandled-module-errors
-                                      Permit unhandled errors in explicit
-                                      modules; such errors halt at runtime
+                                      Permit unhandled thrown errors; such
+                                      errors halt at runtime
       --[no-]warn-unstable            Enable [disable] warnings for uses of
                                       language features that are in flux
       --[no-]warnings                 Enable [disable] output of warnings
@@ -25,6 +25,33 @@ Warning and Language Control Options:
                                       source
       --[no-]warn-potential-races     Enable [disable] output of warnings for
                                       potential race conditions
+      --[no-]warn-int-to-uint         Enable [disable] warnings for implicitly
+                                      converting a potentially negative int
+                                      value of any width to a uint
+      --[no-]warn-small-integral-to-float
+                                      Enable [disable] warnings for implicitly
+                                      converting a small int/uint to a small
+                                      real/complex
+      --[no-]warn-integral-to-float   Enable [disable] warnings for implicitly
+                                      converting an int/uint to a real/complex
+                                      of any width
+      --[no-]warn-float-to-float      Enable [disable] warnings for implicitly
+                                      converting a real/imag/complex to a
+                                      real/imag/complex with different
+                                      precision
+      --[no-]warn-integral-to-integral
+                                      Enable [disable] warnings for implicitly
+                                      converting an int/uint to an int/uint
+                                      with different size
+      --[no-]warn-implicit-numeric-conversions
+                                      Enable [disable] warnings for implicitly
+                                      converting a value of numeric type to a
+                                      different numeric type
+      --[no-]warn-param-implicit-numeric-conversions
+                                      Enable [disable] int-to-uint,
+                                      real-to-real, and integral-to-integral
+                                      implicit conversion warnings to apply to
+                                      'param' values
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
@@ -125,7 +152,6 @@ C Code Compilation Options:
       --static                        Generate a statically linked binary
 
 LLVM Code Generation Options:
-      --[no-]llvm                     [Don't] use the LLVM code generator
       --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
                                       optimizations
       --mllvm <flags>                 LLVM flags (can be specified multiple

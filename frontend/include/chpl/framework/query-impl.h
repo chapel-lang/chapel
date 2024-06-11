@@ -27,7 +27,13 @@
 #include "chpl/framework/stringify-functions.h"
 
 #ifndef CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+#ifdef NDEBUG
+// release mode
+#define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 0
+#else
+// debug mode
 #define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 1
+#endif
 #endif
 
 /**
@@ -228,7 +234,16 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   }
 
   if (newElementWasAdded == false && savedElement->lastChecked == -1) {
-    haltForRecursiveQuery(savedElement);
+    // A recursion error was encountered. We will try to gracefully handle
+    // this error by adding it to the set of recursion errors on this
+    // result.
+    //
+    // When a query introduces a recursion error, its output is forced to
+    // be the default value of its type (e.g., pointer-returning queries
+    // return nullptr, class C queries return C()).
+    savedElement->recursionErrors.insert(savedElement);
+    updateResultForQueryMapR(queryMap, savedElement, tupleOfArgs, ResultType(),
+                             /* forSetter */ false);
   }
 
   return savedElement;
@@ -341,6 +356,12 @@ Context::queryEnd(
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
                                    std::move(result), /* forSetter */ false);
 
+  if (r->recursionErrors.count(r) != 0) {
+    // This query had the opportunity to handle its own recursion, but didn't.
+    // Emit a generic error.
+    emitErrorForRecursiveQuery(r);
+  }
+
   if (enableDebugTrace
       && std::find(queryTraceIgnoreQueries.begin(),
                    queryTraceIgnoreQueries.end(),
@@ -395,10 +416,26 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   bool initialResult = (r->lastChanged == -1);
   auto currentRevision = this->currentRevisionNumber;
 
+  // If recursion errors happened at the time the result is being saved,
+  // the query is 'poisoned' by recursion and we should store the default result.
+  if (!r->recursionErrors.empty()) {
+    // Note: cannot use
+    //
+    //   ResultType dummyValue;
+    //
+    // The above for integers will leave them uninitialized; the below, using
+    // {}, will zero-initialize them. This matters especially for pointers:
+    // we don't want to return a garbage pointer from a recursion-causing
+    // query.
+
+    ResultType dummyValue {};
+    chpl::update<ResultType> combiner;
+    changed = combiner(r->result, dummyValue);
+  }
   // For setter queries, only run the combiner if the last
   // time the query was checked was an earlier revision.
   // If the combiner is skipped, 'changed' is left as false.
-  if (forSetter == false || r->lastChecked != currentRevision) {
+  else if (forSetter == false || r->lastChecked != currentRevision) {
     chpl::update<ResultType> combiner;
     changed = combiner(r->result, result);
     // now 'r->result' is updated and 'result' is garbage for collection
@@ -586,7 +623,7 @@ Context::querySetterUpdateResult(
 
 #else
 
-#define QUERY_BEGIN_TIMING()
+#define QUERY_BEGIN_TIMING(context__)
 
 #endif
 
@@ -606,6 +643,11 @@ Context::querySetterUpdateResult(
   } \
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
   QUERY_BEGIN_TIMING(context);
+
+#define QUERY_REGISTER_TRACER(tracerBody) \
+  BEGIN_QUERY_MAP->registerTracer([](const decltype(BEGIN_QUERY_ARGS)& args) { \
+    tracerBody; \
+  });
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used

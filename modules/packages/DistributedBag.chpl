@@ -272,11 +272,6 @@ module DistributedBag
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
-      compilerError("Reading a distBag is not supported");
-    }
-
-    @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a distBag is not supported");
     }
@@ -289,19 +284,14 @@ module DistributedBag
 
     // Write the contents of this distBag to a channel.
     @chpldoc.nodoc
-    proc writeThis(ch) throws {
-      ch.write("[");
+    proc serialize(writer, ref serializer) throws {
+      writer.write("[");
       var size = this.getSize();
       for (i, iteration) in zip(this, 0..<size) {
-        ch.write(i);
-        if (iteration < size-1) then ch.write(", ");
+        writer.write(i);
+        if (iteration < size-1) then writer.write(", ");
       }
-      ch.write("]");
-    }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("]");
     }
 
     forwarding _value;

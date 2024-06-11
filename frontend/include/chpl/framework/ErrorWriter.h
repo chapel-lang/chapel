@@ -134,12 +134,20 @@ struct Writer<errordetail::AsFileName<T>> {
 template <>
 struct Writer<const types::Type*> {
   void operator()(Context* context, std::ostream& oss, const types::Type* type) {
-    if (type->isUnknownType()) {
+    if (!type || type->isUnknownType()) {
       oss << "unknown type";
     } else {
       stringify<const types::Type*> str;
       str(oss, CHPL_SYNTAX, type);
     }
+  }
+};
+
+template <>
+struct Writer<const types::Param*> {
+  void operator()(Context* context, std::ostream& oss, const types::Param* param) {
+    stringify<const types::Param*> str;
+    str(oss, CHPL_SYNTAX, param);
   }
 };
 
@@ -425,6 +433,91 @@ class ErrorWriter : public ErrorWriterBase {
 
   void writeNewline();
 };
+
+/**
+  Implementation of ErrorWriterBase that records calls
+  to the various API functions in order to retrieve information
+  from ErrorMessages.
+ */
+class CompatibilityWriter : public ErrorWriterBase {
+ private:
+  IdOrLocation idOrLoc_;
+  /** The computed location (derived from the ::id_ or ::loc_) */
+  Location computedLoc_;
+  /** The error's brief message */
+  std::string message_;
+  /** A list of notes associated with this error (aka details) */
+  std::vector<ErrorNote> notes_;
+  std::vector<ErrorCodeSnippet> codeSnippets_;
+
+ public:
+  CompatibilityWriter(Context* context)
+    : ErrorWriterBase(context, OutputFormat::BRIEF) {}
+
+  void writeHeading(ErrorBase::Kind kind, ErrorType type,
+                    IdOrLocation idOrLoc, const std::string& message) override {
+    // We may not have a context e.g. if we are just figuring out the error
+    // message text. Trust that `computedLoc_` is not important for that.
+    if (context_) this->computedLoc_ = errordetail::locate(context_, idOrLoc);
+    this->idOrLoc_ = std::move(idOrLoc);
+    this->message_ = message;
+  }
+
+  void writeMessage(const std::string& message) override {}
+
+  void writeCode(const Location& loc,
+                 const std::vector<Location>& hl) override {
+    this->codeSnippets_.push_back(std::make_tuple(loc, hl));
+  }
+
+  void writeNote(IdOrLocation loc, const std::string& message) override {
+    this->notes_.push_back(std::make_tuple(std::move(loc), message));
+  }
+
+  /**
+    Get the error's ID (could be empty in favor of the location).
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
+  inline ID id() const { return idOrLoc_.id(); }
+  /**
+    Get the error's location (could be empty in favor of the ID)
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
+  inline Location location() const { return idOrLoc_.location(); }
+  /**
+    Return the location that should be reported to the user.
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
+  inline Location computedLocation() const { return computedLoc_; }
+  /**
+    Return the error's brief message.
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
+  inline const std::string& message() const { return message_; }
+  /**
+    Return the error's notes / details.
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
+  const std::vector<ErrorNote>& notes() const { return notes_; }
+  /**
+    Return the error's code snippets.
+
+    This only works after ErrorBase::write was invoked with this
+    CompatibilityWriter.
+   */
+  const std::vector<ErrorCodeSnippet>& codeSnippets() const { return codeSnippets_; }
+};
+
 
 } // end namespace chpl
 

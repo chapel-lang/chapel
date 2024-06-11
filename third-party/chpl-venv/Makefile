@@ -19,6 +19,7 @@ all: test-venv chpldoc-venv
 
 clean: FORCE
 	rm -rf build
+	rm -rf $(CHPL_MAKE_HOME)/tools/chapel-py/build
 
 cleanall: FORCE clean
 
@@ -104,20 +105,38 @@ c2chapel-venv: install-chpldeps
 # like ok1/ok2.
 chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	@# Install chapel-py's Python package into the Python Application
-	@# directory structure at $(CHPL_VENV_CHPLDEPS)
+	@# directory structure at $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS)
+	@# this is python version specific
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	$(PIP) install --upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
-	  --target $(CHPL_VENV_CHPLDEPS) \
+	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
+	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
+	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
 	  $(CHPL_MAKE_HOME)/tools/chapel-py \
-	  -r $(CHPL_VENV_CHPLCHECK_REQUIREMENTS_FILE)
+	  -r $(CHPL_VENV_CHAPEL_PY_REQUIREMENTS_FILE)
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core
 	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
 		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-		$(CHPL_MAKE_HOME)/tools/chapel-py/scripts/generate-pyi.py \
+		python3 -c 'import chapel; print(chapel.Context()._get_pyi_file())' \
 		>$(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi
 
+cls-test-venv: chapel-py-venv
+	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
+	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install \
+	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
+	  --target $(CHPL_VENV_CHPLDEPS) \
+	  $(CHPL_MAKE_HOME)/tools/chapel-py \
+	  -r $(CHPL_VENV_CLS_TEST_REQUIREMENTS_FILE)
+	@# Using --upgrade above breaks the test venv, because there's a bug
+	@# in its interaction with --target. As a result, this command does
+	@# not upgrade dependencies. Other commands are unaffected because
+	@# they don't install executables into 'bin' (but pytest does).
+	@echo "Warnings about non-empty directories above are expected."
+
 chplcheck-venv: chapel-py-venv
+
+chpl-language-server-venv: chapel-py-venv
 
 install-requirements: install-chpldeps
 

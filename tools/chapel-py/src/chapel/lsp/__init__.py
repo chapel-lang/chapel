@@ -33,6 +33,7 @@ def location_to_range(location) -> Range:
         end=Position(max(0, end[0] - 1), max(end[1] - 1, 0)),
     )
 
+
 def error_to_diagnostic(error) -> Diagnostic:
     """
     Convert a Chapel error into a lsprotocol.types Diagnostic
@@ -44,11 +45,16 @@ def error_to_diagnostic(error) -> Diagnostic:
         "warning": DiagnosticSeverity.Warning,
     }
 
+    type_ = error.type()
+    if type_ is not None:
+        message = "{}: [{}]: {}".format(
+            error.kind().capitalize(), type_, error.message()
+        )
+    else:
+        message = "{}: {}".format(error.kind().capitalize(), error.message())
     diagnostic = Diagnostic(
         range=location_to_range(error.location()),
-        message="{}: [{}]: {}".format(
-            error.kind().capitalize(), error.type(), error.message()
-        ),
+        message=message,
         severity=kind_to_severity[error.kind()],
     )
     return diagnostic

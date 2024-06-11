@@ -1,0 +1,74 @@
+module DoKeywordAndBlock {
+  for i in 1..10 {
+    writeln(i);
+  }
+
+  for i in 1..10 do writeln(i);
+
+  for i in 1..10 {
+    writeln(i);
+  }
+
+  var A: [1..10] int;
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  forall i in 1..10 with (ref A) {}
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  forall i in 1..10 with (ref A)
+  {}
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  forall i in 1..10 with (ref A) {
+
+  }
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  for i in 1..10 {}
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  for i in 1..10
+  {}
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  for i in 1..10 {
+
+  }
+
+
+  var mydo: int;
+  // make sure `mydo` does not become `do`
+  forall 1..10 with (ref mydo ) {
+    mydo = 1;
+  }
+
+  for 1..10 {}
+  for 1..10
+    {}
+  for 1..10
+       {}
+  for 1..10 {
+  }
+  forall 1..10 with (ref A) {}
+  forall 1..10 with (ref A) {}
+
+  on Locales[0] {}
+
+  var a = 1;
+  select a {
+    when 1 {}
+    when 2 {}
+    when 3 {}
+  }
+
+  local {}
+  serial {}
+  while true {}
+
+  record R: contextManager {
+    proc enterContext() {}
+    @chplcheck.ignore("UnusedFormal")
+    proc exitContext(in err) {}
+  }
+  manage new R() {}
+}

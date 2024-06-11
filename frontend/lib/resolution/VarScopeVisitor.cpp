@@ -387,7 +387,7 @@ void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
 
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
 
-  if (ast->id().postOrderId() < 0) {
+  if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
@@ -400,7 +400,7 @@ bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
-  if (ast->id().postOrderId() < 0) {
+  if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
@@ -448,9 +448,12 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
     // This filter is intended as an optimization.
     const MostSpecificCandidates& candidates = rv.byAst(callAst).mostSpecific();
     bool anyInOutInout = false;
+    bool isMethod = false;
     for (const MostSpecificCandidate& candidate : candidates) {
       if (candidate) {
         auto fn = candidate.fn();
+        if (fn->untyped()->isMethod()) isMethod = true;
+
         int n = fn->numFormals();
         for (int i = 0; i < n; i++) {
           const QualifiedType& formalQt = fn->formalType(i);
@@ -477,10 +480,19 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
       // Use FormalActualMap to figure out which variable ID
       // is passed to a formal with out/in/inout intent.
       // Issue an error if it does not match among return intent overloads.
+      //
+      // TODO: Should we store the resolved CallInfo so we don't need to build
+      // it back up here?
       std::vector<const AstNode*> actualAsts;
       auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
                                  /* raiseErrors */ false,
                                  &actualAsts);
+
+      if (isMethod && ci.isMethodCall() == false) {
+        // Create a dummy 'this' actual
+        ci = ci.createWithReceiver(ci, QualifiedType());
+        actualAsts.insert(actualAsts.begin(), nullptr);
+      }
 
       // compute a vector indicating which actuals are passed to
       // an 'out' formal in all return intent overloads
@@ -497,10 +509,15 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
         Qualifier kind = actualFormalIntents[actualIdx];
 
         // handle an actual that is passed to an 'out'/'in'/'inout' formal
-        if (kind == Qualifier::OUT) {
+        if (actualAst == nullptr) {
+          CHPL_ASSERT(ci.isMethodCall() && actualIdx == 0);
+        } else if (kind == Qualifier::OUT) {
           handleOutFormal(callAst, actualAst,
                           actualFormalTypes[actualIdx], rv);
-        } else if (kind == Qualifier::IN || kind == Qualifier::CONST_IN) {
+        } else if ((kind == Qualifier::IN || kind == Qualifier::CONST_IN) &&
+                   !(ci.name() == "init" && actualIdx == 0)) {
+          // don't do this for the 'this' argument to 'init', because it
+          // is not getting copied.
           handleInFormal(callAst, actualAst,
                          actualFormalTypes[actualIdx], rv);
         } else if (kind == Qualifier::INOUT) {

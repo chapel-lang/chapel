@@ -7,7 +7,7 @@ config const checkSync = false;
 
 var syncVar: sync bool = true;
 
-const D = {1..n} dmapped blockDist({1..n});
+const D = {1..n} dmapped new blockDist({1..n});
 
 var A: [D] real;
 

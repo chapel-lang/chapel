@@ -4,6 +4,9 @@
 Building Chapel
 ===============
 
+Before getting started, be sure you are building Chapel on a machine
+that has more than 4GB of memory.
+
 To build the Chapel compiler, set up your environment as described in
 :ref:`readme-chplenv`, cd to ``$CHPL_HOME`` (the root directory of
 your unpacked Chapel release), and run GNU make.  This will build the

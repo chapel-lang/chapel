@@ -122,7 +122,7 @@ proc Gen_RMAT_graph ( a : real,
 
     const edge_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {edge_range} dmapped blockDist ( {edge_range} )
+        {edge_range} dmapped new blockDist ( {edge_range} )
       else
         {edge_range} ;
 
@@ -355,7 +355,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
      if rmatEdgeGenFile != "" {
       writeln("writing edges to ", rmatEdgeGenFile);
       const fl = open(rmatEdgeGenFile, ioMode.cw);
-      const ch = fl.writer();
+      const ch = fl.writer(locking=false);
       for (ed, w) in zip(Edges, Edge_Weight) do
         ch.writeln (ed.start, " ", ed.end, " ", w);
       ch.close();
@@ -486,7 +486,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
      if rmatGraphConFile != "" {
       writeln("writing neighbor lists to ", rmatGraphConFile);
       const fl = open(rmatGraphConFile, ioMode.cw);
-      const ch = fl.writer();
+      const ch = fl.writer(locking=false);
       for (u, vx) in zip(G.vertices, G.Row) do
         for (v, w) in vx.neighborList do
           ch.writeln(u, " ", v, " ", w);

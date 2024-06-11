@@ -13,10 +13,10 @@ proc test(m: map(?)) {
 
   var f = openTempFile();
   {
-    f.writer().withSerializer(FormatWriter).writeln(m);
+    f.writer(locking=false).withSerializer(FormatWriter).writeln(m);
   }
   {
-    var x = f.reader().withDeserializer(FormatReader).read(m.type);
+    var x = f.reader(locking=false).withDeserializer(FormatReader).read(m.type);
     if m != x then
       writeln("FAILURE: ", m.type:string);
     else

@@ -99,9 +99,9 @@ const ElemSpace = {0..#numElems},
 
 /* Declare the (potentially distributed) problem domains */
 
-const Elems = if useBlockDist then ElemSpace dmapped blockDist(ElemSpace)
+const Elems = if useBlockDist then ElemSpace dmapped new blockDist(ElemSpace)
                               else ElemSpace,
-      Nodes = if useBlockDist then NodeSpace dmapped blockDist(NodeSpace)
+      Nodes = if useBlockDist then NodeSpace dmapped new blockDist(NodeSpace)
                               else NodeSpace;
 
 
@@ -273,7 +273,7 @@ proc main() {
 
   if printCoords {
     var outfile = open("coords.out", ioMode.cw);
-    var writer = outfile.writer();
+    var writer = outfile.writer(locking=false);
     var fmtstrnum = if debug then "%1.9er" else "%1.4er";
     var fmtstr = fmtstrnum + " " + fmtstrnum + " " + fmtstrnum + "\n";
     for i in Nodes {

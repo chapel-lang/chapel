@@ -71,6 +71,9 @@ extern void gasneti_decode_args(int *argc, char ***argv);
 /* extract exit coordination timeout from environment vars (with defaults) */
 extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double dflt_factor, double lower_bound);
 
+// Used in some conduits to coordinate user-provided exit code across layers
+extern gasneti_atomic_t gasneti_exit_code;
+
 /* Safe memory allocation/deallocation 
    Beware - in debug mode, gasneti_malloc/gasneti_calloc/gasneti_free are NOT
    compatible with malloc/calloc/free
@@ -110,7 +113,7 @@ extern int gasneti_strncasecmp(const char *s1, const char *s2, size_t n);
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, nbytes);
     ret = malloc(nbytes);
     if_pf (ret == NULL && nbytes > 0) 
-      gasneti_fatalerror("gasneti_malloc(%d) failed", (int)nbytes);
+      gasneti_fatalerror("gasneti_malloc(%" PRIuSZ ") failed", nbytes);
     return ret;
   }
   GASNETI_INLINE(_gasneti_malloc_allowfail) GASNETI_MALLOC
@@ -119,7 +122,7 @@ extern int gasneti_strncasecmp(const char *s1, const char *s2, size_t n);
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, nbytes);
     ret = malloc(nbytes);
     if_pf (ret == NULL && nbytes > 0) { /* allow a NULL return for out-of-memory */
-      GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%i)",(int)nbytes));
+      GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%" PRIuSZ ")",nbytes));
     }
     return ret;
   }
@@ -129,7 +132,7 @@ extern int gasneti_strncasecmp(const char *s1, const char *s2, size_t n);
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, (N*S));
     ret = calloc(N,S);
     if_pf (ret == NULL && N*S > 0) 
-      gasneti_fatalerror("gasneti_calloc(%d,%d) failed", (int)N, (int)S);
+      gasneti_fatalerror("gasneti_calloc(%" PRIuSZ ",%" PRIuSZ ") failed", N, S);
     return ret;
   }
   GASNETI_INLINE(_gasneti_realloc)
@@ -138,7 +141,7 @@ extern int gasneti_strncasecmp(const char *s1, const char *s2, size_t n);
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, nbytes);
     ret = realloc(ptr, nbytes);
     if_pf (ret == NULL && nbytes > 0) 
-      gasneti_fatalerror("gasneti_realloc(%d) failed", (int)nbytes);
+      gasneti_fatalerror("gasneti_realloc(%" PRIuSZ ") failed", nbytes);
     return ret;
   }
   GASNETI_INLINE(_gasneti_free)
@@ -896,6 +899,15 @@ extern int gasneti_VerboseErrors;
      GASNETI_RETURN_ERRFR(RESOURCE, fncall, msg);            \
    }                                                         \
  } while (0)
+
+/* ------------------------------------------------------------------------------------ */
+/* Trivial handling of defered-start progress threads */
+
+extern int gasneti_query_progress_threads(
+            gex_Client_t                     e_client,
+            unsigned int                    *count_p,
+            const gex_ProgressThreadInfo_t **info_p,
+            gex_Flags_t                      flags);
 
 /* ------------------------------------------------------------------------------------ */
 /* nodemap data and functions */

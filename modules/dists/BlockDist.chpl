@@ -428,36 +428,36 @@ record blockDist : writeSerializable {
               dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this.rank = _instance.rank;
-      this.idxType = _instance.idxType;
-      this.sparseLayoutType = _instance.sparseLayoutType;
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
-                                                         _instance,
-                                                         _unowned);
-    }
+  proc init(_pid : int, _instance, _unowned : bool) {
+    this.rank = _instance.rank;
+    this.idxType = _instance.idxType;
+    this.sparseLayoutType = _instance.sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                       _instance,
+                                                       _unowned);
+  }
 
-    proc init(value) {
-      this.rank = value.rank;
-      this.idxType = value.idxType;
-      this.sparseLayoutType = value.sparseLayoutType;
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                             if _isPrivatized(value)
-                               then _newPrivatizedClass(value)
-                               else nullPid,
-                             _to_unmanaged(value));
-    }
+  proc init(value) {
+    this.rank = value.rank;
+    this.idxType = value.idxType;
+    this.sparseLayoutType = value.sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                           if _isPrivatized(value)
+                             then _newPrivatizedClass(value)
+                             else nullPid,
+                           _to_unmanaged(value));
+  }
 
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : blockDist(?)) {
-      this.init(other._value.dsiClone());
-    }
+  // Note: This does not handle the case where the desired type of 'this'
+  // does not match the type of 'other'. That case is handled by the compiler
+  // via coercions.
+  proc init=(const ref other : blockDist(?)) {
+    this.init(other._value.dsiClone());
+  }
 
-    proc clone() {
-      return new blockDist(this._value.dsiClone());
-    }
+  proc clone() {
+    return new blockDist(this._value.dsiClone());
+  }
 
   @chpldoc.nodoc
   inline operator ==(d1: blockDist(?), d2: blockDist(?)) {
@@ -471,12 +471,8 @@ record blockDist : writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -638,10 +634,6 @@ class LocBlockArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocBlockArr.writeThis() is not implemented / should not be needed");
-  }
-
   override proc serialize(writer, ref serializer) throws {
     halt("LocBlockArr.serialize() is not implemented / should not be needed");
   }
@@ -860,20 +852,16 @@ override proc BlockImpl.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockImpl.writeThis(x) throws {
-  x.writeln("blockDist");
-  x.writeln("---------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
-  for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
-      " owns chunk: ", locDist(locid).myChunk);
-}
-
 override proc BlockImpl.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.writeln("blockDist");
+  writer.writeln("---------");
+  writer.writeln("distributes: ", boundingBox);
+  writer.writeln("across locales: ", targetLocales);
+  writer.writeln("indexed via: ", targetLocDom);
+  writer.writeln("resulting in: ");
+  for locid in targetLocDom do
+    writer.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+      " owns chunk: ", locDist(locid).myChunk);
 }
 
 proc BlockImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -974,7 +962,7 @@ proc blockDist.createDomain(rng: range(?)...) {
 
 // create a domain over a blockDist Distribution
 proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
-  return dom dmapped blockDist(dom, targetLocales);
+  return dom dmapped new blockDist(dom, targetLocales);
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges
@@ -1022,8 +1010,8 @@ proc type blockDist.createArray(
 ) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   if boundsChecking then
-  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
-    if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
+    for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+      if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
 
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
@@ -1504,7 +1492,6 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
 }
 
 pragma "fn unordered safe"
-pragma "not called from gpu"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if const myLocArr = this.myLocArr {
@@ -2180,7 +2167,6 @@ class BoxedSync : writeSerializable {
   }
 
   // guard against dynamic dispatch trying to resolve write()ing the sync
-  override proc writeThis(f) throws { }
   override proc serialize(writer, ref serializer) throws { }
 }
 

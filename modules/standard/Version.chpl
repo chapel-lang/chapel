@@ -200,12 +200,8 @@ module Version {
     param commit: string = "";
 
     @chpldoc.nodoc
-    proc writeThis(s) throws {
-      s.write(this:string);
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(this:string);
     }
 
     @chpldoc.nodoc
@@ -368,12 +364,8 @@ module Version {
 
 
     @chpldoc.nodoc
-    proc writeThis(s) throws {
-      s.write(this:string);
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(this:string);
     }
 
     @chpldoc.nodoc
@@ -422,7 +414,7 @@ module Version {
     }
 
     @chpldoc.nodoc
-    operator = (ref LHS:version, otherVersion: versionValue) {
+    operator = (ref LHS:version, otherVersion: versionValue(?)) {
       LHS.major = otherVersion.major;
       LHS.minor = otherVersion.minor;
       LHS.update = otherVersion.update;
@@ -544,31 +536,31 @@ module Version {
   */
   @chpldoc.nodoc
   operator ==(v1: version,
-              v2: versionValue) : bool {
+              v2: versionValue(?)) : bool {
     return spaceship(v1, v2) == 0;
   }
 
   @chpldoc.nodoc
-  operator ==(v1: versionValue,
+  operator ==(v1: versionValue(?),
               v2: version) : bool {
     return v2 == v1;
   }
 
   @chpldoc.nodoc
   operator !=(v1: version,
-              v2: versionValue) : bool {
+              v2: versionValue(?)) : bool {
     return spaceship(v1, v2) != 0;
   }
 
   @chpldoc.nodoc
-  operator !=(v1: versionValue,
+  operator !=(v1: versionValue(?),
               v2: version) : bool {
     return v2 != v1;
   }
 
   @chpldoc.nodoc
   operator <(v1: version,
-             v2: versionValue) : bool throws {
+             v2: versionValue(?)) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
@@ -576,14 +568,14 @@ module Version {
   }
 
   @chpldoc.nodoc
-  operator <(v1: versionValue,
+  operator <(v1: versionValue(?),
              v2: version) : bool throws {
     return v2 > v1;
   }
 
   @chpldoc.nodoc
   operator <=(v1: version,
-              v2: versionValue) : bool throws {
+              v2: versionValue(?)) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
@@ -591,14 +583,14 @@ module Version {
   }
 
   @chpldoc.nodoc
-  operator <=(v1: versionValue,
+  operator <=(v1: versionValue(?),
               v2: version) : bool throws {
     return v2 >= v1;
   }
 
   @chpldoc.nodoc
   operator >(v1: version,
-             v2: versionValue) : bool throws {
+             v2: versionValue(?)) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
@@ -606,14 +598,14 @@ module Version {
   }
 
   @chpldoc.nodoc
-  operator >(v1: versionValue,
+  operator >(v1: versionValue(?),
              v2: version) : bool throws {
     return v2 < v1;
   }
 
   @chpldoc.nodoc
   operator >=(v1: version,
-              v2: versionValue) : bool throws {
+              v2: versionValue(?)) : bool throws {
     const retval = spaceship(v1, v2);
     if (retval == 2) then
       throw new VersionComparisonError("can't compare versions that only differ by commit IDs");
@@ -621,7 +613,7 @@ module Version {
   }
 
   @chpldoc.nodoc
-  operator >=(v1: versionValue,
+  operator >=(v1: versionValue(?),
               v2: version) : bool throws {
     return v2 <= v1;
   }

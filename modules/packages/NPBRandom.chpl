@@ -356,15 +356,10 @@
       }
 
       @chpldoc.nodoc
-      override proc writeThis(f) throws {
-        f.write("NPBRandomStream(eltType=", eltType:string);
-        f.write(", parSafe=", parSafe);
-        f.write(", seed=", seed, ")");
-      }
-
-      @chpldoc.nodoc
       override proc serialize(writer, ref serializer) throws {
-        writeThis(writer);
+        writer.write("NPBRandomStream(eltType=", eltType:string);
+        writer.write(", parSafe=", parSafe);
+        writer.write(", seed=", seed, ")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -490,7 +485,7 @@
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
-      for i in D do
+      for D do
         yield randlc(resultType, cursor);
     }
 
@@ -520,7 +515,7 @@
           myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
         if innerRange.hasUnitStride() {
           cursor = randlc_skipto(seed, myStart);
-          for i in innerRange do
+          for innerRange do
             yield randlc(resultType, cursor);
         } else {
           myStart -= innerRange.lowBound.safeCast(int(64));

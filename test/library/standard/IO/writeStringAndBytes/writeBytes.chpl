@@ -1,6 +1,6 @@
 use IO;
 
-var w = openWriter("bfile.txt");
+var w = openWriter("bfile.txt", locking=false);
 var b = b"negates itself when prepended to itself \xE2\xAC\x85\xEf\xB8\x8F negates itself when prepended to itself";
 
 // default size:

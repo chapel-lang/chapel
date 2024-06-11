@@ -32,7 +32,7 @@ proc main() {
 proc get_strings(out s1: string, out s2: string) {
   use IO;
 
-  var infile = open(filename, ioMode.r).reader();
+  var infile = open(filename, ioMode.r).reader(locking=false);
 
   infile.read(s1);
   infile.read(s2);

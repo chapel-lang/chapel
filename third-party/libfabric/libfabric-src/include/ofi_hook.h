@@ -59,6 +59,8 @@
 enum ofi_hook_class {
 	HOOK_NOOP,
 	HOOK_PERF,
+	HOOK_TRACE,
+	HOOK_PROFILE,
 	HOOK_DEBUG,
 	HOOK_HMEM,
 	HOOK_DMABUF_PEER_MEM,
@@ -163,7 +165,7 @@ struct hook_domain {
 	struct fid_domain *hdomain;
 	struct hook_fabric *fabric;
 	struct ofi_ops_flow_ctrl *base_ops_flow_ctrl;
-	ssize_t (*base_credit_handler)(struct fid_ep *ep_fid, size_t credits);
+	ssize_t (*base_credit_handler)(struct fid_ep *ep_fid, uint64_t credits);
 };
 
 int hook_domain_init(struct fid_fabric *fabric, struct fi_info *info,

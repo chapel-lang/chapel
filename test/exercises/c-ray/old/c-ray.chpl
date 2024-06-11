@@ -23,7 +23,7 @@
  * ----------------------------------------------------------------------------
  */
 
-use Image;    // use helper module related to writing out images
+use CRayImage;    // use helper module related to writing out images
 use IO;       // allows access to stderr, stdin, ioMode
 use List;
 use ChplConfig;
@@ -136,8 +136,8 @@ use BlockDist, CyclicDist;
 proc main() {
   const pixinds = {0..#yres, 0..#xres},
         pixdom = if !multilocale then pixinds
-              else (if blockdist then pixinds dmapped blockDist(pixinds)
-                                 else pixinds dmapped cyclicDist((0,0)));
+              else (if blockdist then pixinds dmapped new blockDist(pixinds)
+                                 else pixinds dmapped new cyclicDist((0,0)));
   var pixels: [pixdom] pixelType;
 
   loadScene();
@@ -432,7 +432,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, ioMode.r).reader();
+                                     else open(scene, ioMode.r).reader(locking=true);
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect
@@ -525,11 +525,11 @@ proc initRands() {
       else new randomStream(real);
 
     for u in urand do
-      u(X) = rng.getNext() - 0.5;
+      u(X) = rng.next() - 0.5;
     for u in urand do
-      u(Y) = rng.getNext() - 0.5;
+      u(Y) = rng.next() - 0.5;
     for r in irand do
-      r = (nran * rng.getNext()): int;
+      r = (nran * rng.next()): int;
   }
 }
 

@@ -1,34 +1,6 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
+
 #include <assert.h>
 #include "efa.h"
 #include "efa_shm.h"
@@ -68,7 +40,7 @@ int efa_shm_ep_name_construct(char *smr_name, size_t *smr_name_len, struct efa_e
 	int ret;
 
 	if (!inet_ntop(AF_INET6, raw_addr->raw, gidstr, INET6_ADDRSTRLEN)) {
-		FI_WARN(&rxr_prov, FI_LOG_CQ, "Failed to convert GID to string errno: %d\n", errno);
+		EFA_WARN(FI_LOG_CQ, "Failed to convert GID to string errno: %d\n", errno);
 		return -errno;
 	}
 
@@ -87,61 +59,59 @@ int efa_shm_ep_name_construct(char *smr_name, size_t *smr_name_len, struct efa_e
 	return FI_SUCCESS;
 }
 
-struct fi_info *g_shm_info;
-
 /**
- * @brief initliaze the global variable g_shm_info
+ * @brief Create a shm info object based on application info
  *
- * g_shm_info is used to create shm resources (fabric,domain,endpoint,cq)
- *
+ * @param[in] app_info the application info
+ * @param[out] shm_info the shm info
  */
-void efa_shm_info_initialize(const struct fi_info *app_hints)
+void efa_shm_info_create(const struct fi_info *app_info, struct fi_info **shm_info)
 {
 	int ret;
 	struct fi_info *shm_hints;
 
+	char *shm_provider;
+	if (efa_env.use_sm2) {
+		shm_provider = "sm2";
+	} else {
+		shm_provider = "shm";
+	}
+
 	shm_hints = fi_allocinfo();
-	shm_hints->caps = FI_MSG | FI_TAGGED | FI_RECV | FI_SEND | FI_READ
-			   | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE
-			   | FI_MULTI_RECV | FI_RMA;
-	shm_hints->domain_attr->av_type = FI_AV_TABLE;
-	shm_hints->domain_attr->mr_mode = FI_MR_VIRT_ADDR;
-	shm_hints->domain_attr->caps |= FI_LOCAL_COMM;
-	shm_hints->tx_attr->msg_order = FI_ORDER_SAS;
-	shm_hints->rx_attr->msg_order = FI_ORDER_SAS;
-	shm_hints->fabric_attr->name = strdup("shm");
-	shm_hints->fabric_attr->prov_name = strdup("shm");
-	shm_hints->ep_attr->type = FI_EP_RDM;
+	shm_hints->caps = app_info->caps;
+	shm_hints->caps &= ~FI_REMOTE_COMM;
 
 	/*
-	 * We validate whether FI_HMEM is supported before this function is
-	 * called, so it's safe to check for this via the app hints directly.
-	 * We should combine this and the earlier FI_HMEM validation when we
-	 * clean up the getinfo path. That's not possible at the moment as we
-	 * only have one SHM info for the entire provider which isn't right.
+	 * If application requests FI_HMEM and efa supports it,
+	 * make this request to shm as well.
 	 */
-	if (app_hints && (app_hints->caps & FI_HMEM)) {
-		shm_hints->caps |= FI_HMEM;
+	shm_hints->domain_attr->mr_mode = FI_MR_VIRT_ADDR;
+	if (app_info && (app_info->caps & FI_HMEM)) {
 		shm_hints->domain_attr->mr_mode |= FI_MR_HMEM;
 	}
 
-	ret = fi_getinfo(FI_VERSION(1, 8), NULL, NULL,
-	                 OFI_GETINFO_HIDDEN, shm_hints, &g_shm_info);
+	shm_hints->domain_attr->threading = app_info->domain_attr->threading;
+	shm_hints->domain_attr->av_type = FI_AV_TABLE;
+	shm_hints->domain_attr->caps |= FI_LOCAL_COMM;
+	shm_hints->tx_attr->msg_order = FI_ORDER_SAS;
+	shm_hints->rx_attr->msg_order = FI_ORDER_SAS;
+	/*
+	 * use the same op_flags requested by applications for shm
+	 */
+	shm_hints->tx_attr->op_flags  = app_info->tx_attr->op_flags;
+	shm_hints->rx_attr->op_flags  = app_info->rx_attr->op_flags;
+	shm_hints->fabric_attr->name = strdup(shm_provider);
+	shm_hints->fabric_attr->prov_name = strdup(shm_provider);
+	shm_hints->ep_attr->type = FI_EP_RDM;
+
+	ret = fi_getinfo(FI_VERSION(1, 19), NULL, NULL,
+	                 OFI_GETINFO_HIDDEN, shm_hints, shm_info);
 	fi_freeinfo(shm_hints);
 	if (ret) {
-		FI_WARN(&rxr_prov, FI_LOG_CORE, "Disabling EFA shared memory support; failed to get shm provider's info: %s\n",
+		EFA_WARN(FI_LOG_CORE, "Disabling EFA shared memory support; failed to get shm provider's info: %s\n",
 			fi_strerror(-ret));
-		rxr_env.enable_shm_transfer = 0;
-		ret = 0;
+		*shm_info = NULL;
 	} else {
-		assert(!strcmp(g_shm_info->fabric_attr->name, "shm"));
-	}
-}
-
-void efa_shm_info_finalize()
-{
-	if (g_shm_info) {
-		fi_freeinfo(g_shm_info);
-		g_shm_info = NULL;
+		assert(!strcmp((*shm_info)->fabric_attr->name, shm_provider));
 	}
 }

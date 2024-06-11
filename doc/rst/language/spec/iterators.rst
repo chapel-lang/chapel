@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: functions; iterators
+   single: iterators
 .. _Chapter-Iterators:
 
 =========
@@ -14,6 +17,8 @@ values (consecutively or in parallel) via its yield statements.
    The parallel iterator story is under development. It is expected that
    the specification will be expanded regarding parallel iterators.
 
+.. index::
+   single: iterators;definition
 .. _Iterator_Function_Definitions:
 
 Iterator Definitions
@@ -65,6 +70,10 @@ declaration, with some key differences:
 
    Iterators that yield types or params are not currently supported.
 
+.. index::
+   single: yield
+   pair: keywords; yield
+   single: iterators;yield
 .. _The_Yield_Statement:
 
 The Yield Statement
@@ -107,6 +116,8 @@ are not permitted to have a return expression. An iterator also
 completes after the last statement in the iterator is executed. An
 iterator need not contain any yield statements.
 
+.. index::
+   single: iterators;calls
 .. _Iterator_Calls:
 
 Iterator Calls
@@ -127,6 +138,9 @@ in the :ref:`Procedures Chapter <Chapter-Procedures>`.
 However, the result of an iterator call depends upon its context, as
 described below.
 
+.. index::
+   single: iterators;in for loops
+   single: iterators;in forall loops
 .. _Iterators_in_For_and_Forall_Loops:
 
 Iterators in For and Forall Loops
@@ -137,6 +151,8 @@ evaluated alongside the loop body in an interleaved manner. For each
 iteration, the iterator yields a value or a reference
 and the loop body is executed.
 
+.. index::
+   single: iterators;and arrays
 .. _Iterators_as_Arrays:
 
 Iterators as Arrays
@@ -185,6 +201,8 @@ value.
 
       1 4 9 16 25
 
+.. index::
+   single: iterators;and generics
 .. _Iterators_and_Generics:
 
 Iterators and Generics
@@ -199,6 +217,8 @@ for loops. The arguments to the iterator call expression, if any, are
 evaluated at the call site, i.e. prior to passing the iterator to the
 generic function.
 
+.. index::
+   single: iterators;recursive
 .. _Recursive_Iterators:
 
 Recursive Iterators
@@ -268,6 +288,9 @@ typically made by iterating over it in a loop.
       Tree Data
       b d e c a
 
+.. index::
+   single: iterators;promotion
+   single: promotion;iterator
 .. _Iterator_Promotion_of_Scalar_Functions:
 
 Iterator Promotion of Scalar Functions
@@ -316,6 +339,9 @@ scalar function as described in :ref:`Promotion`.
       10
       11
 
+.. index::
+   single: parallel iterators
+   single: iterators;parallel
 .. _Parallel_Iterators:
 
 Parallel Iterators

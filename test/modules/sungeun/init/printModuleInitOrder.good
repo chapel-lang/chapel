@@ -50,7 +50,6 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ExportWrappers
-    ChapelGpuSupport
     ChapelContext
     AlignedTSupport
     CopyAggregation

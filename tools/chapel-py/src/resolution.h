@@ -19,6 +19,13 @@
 
 #include "chpl/uast/AstNode.h"
 #include "chpl/types/Type.h"
+#include "chpl/resolution/resolution-types.h"
+
+const chpl::resolution::ResolvedExpression*
+scopeResolveResultsForNode(chpl::Context* context, const chpl::uast::AstNode* node);
+
+const chpl::resolution::ResolvedExpression*
+resolveResultsForNode(chpl::Context* context, const chpl::uast::AstNode* node);
 
 const chpl::uast::AstNode* const&
 nodeOrNullFromToId(chpl::Context* context, const chpl::uast::AstNode* node);

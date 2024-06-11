@@ -29,6 +29,19 @@ ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 
+
+CLANG_VER := $(shell echo __clang_major__ | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//')
+
+#
+# Use -Wno-error=int-conversion for clang 15+
+#
+CFLAGS += $(shell test $(CLANG_VER) -ge 15 && echo -Wno-error=int-conversion)
+
+#
+# use -Wno-error=incompatible-function-pointer-types for clang 16+
+#
+CFLAGS += $(shell test $(CLANG_VER) -ge 16 && echo -Wno-error=incompatible-function-pointer-types)
+
 CHPL_LIBFABRIC_CFG_OPTIONS += $(CHPL_LIBFABRIC_MORE_CFG_OPTIONS)
 
 default: all

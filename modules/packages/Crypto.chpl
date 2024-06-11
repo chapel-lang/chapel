@@ -181,7 +181,7 @@ module Crypto {
         halt("Enter an array with size greater than 0 in order to create a buffer");
       }
       this.buffDomain = s.domain;
-      for i in this.buffDomain do {
+      for i in this.buffDomain {
         this.buff[i] = s[i];
       }
     }
@@ -225,8 +225,12 @@ module Crypto {
     */
     proc toHex() throws {
       var buffHex: [this.buffDomain] string;
-      for i in this.buffDomain do {
-        buffHex[i] = try "%02xu".format(this.buff[i]);
+      for i in this.buffDomain {
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHex[i].appendCodepointValues(nib1, nib2);
       }
       return buffHex;
     }
@@ -239,8 +243,12 @@ module Crypto {
     */
     proc toHexString() throws {
       var buffHexString: string;
-      for i in this.buffDomain do {
-        buffHexString += try "%02xu".format(this.buff[i]);
+      for i in this.buffDomain {
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHexString.appendCodepointValues(nib1, nib2);
       }
       return buffHexString;
     }
@@ -332,7 +340,7 @@ module Crypto {
     proc init(iv: owned CryptoBuffer, encSymmKey: [] owned CryptoBuffer, encSymmValue: owned CryptoBuffer) {
       init this;
       this.keyDomain = encSymmKey.domain;
-      for i in this.keyDomain do {
+      for i in this.keyDomain {
         this.keys[i] = encSymmKey[i];
       }
       this.iv = iv;
@@ -398,7 +406,7 @@ module Crypto {
 
     var ctx = CHPL_EVP_MD_CTX_new();
 
-    var hash: [0..#hashLen] uint(8); ;
+    var hash: [0..#hashLen] uint(8);
     var retHashLen: c_uint = 0;
 
     var md: CONST_EVP_MD_PTR;
@@ -1039,7 +1047,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       EVP_CIPHER_CTX_init(ctx); // TODO
 
       var numKeys = keys.size;
-      for i in keys.domain do {
+      for i in keys.domain {
         var keySize = EVP_PKEY_size(keys[i].getKeyPair());
         var dummyMalloc: [1..((keySize): int(64))] uint(8);
         encSymmKeys[i] = new unmanaged CryptoBuffer(dummyMalloc);
@@ -1047,12 +1055,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
       var encSymmKeysPtr: [keys.domain] c_ptr(uint(8));
       var encryptedSymKeyLen: c_int = 0;
-      for i in keys.domain do {
+      for i in keys.domain {
         encSymmKeysPtr[i] = encSymmKeys[i].getBuffPtr();
       }
 
       var keyObjs: [keys.domain] EVP_PKEY_PTR;
-      for i in keys.domain do {
+      for i in keys.domain {
         keyObjs[i] = keys[i].getKeyPair();
       }
 
@@ -1090,7 +1098,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var numEncKeys = encKeys.size;
       var openErrCode = 0;
 
-      for i in encKeys.domain do {
+      for i in encKeys.domain {
         openErrCode = EVP_OpenInit(ctx,
                                   EVP_aes_256_cbc(),
                                   encKeys[i].getBuffPtr(),
@@ -1349,5 +1357,25 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_bf_ofb(): CONST_EVP_CIPHER_PTR;
 
     extern proc RAND_seed(const buf: c_ptr(void), num: c_int);
+  }
+
+  /*
+   * Convert a nibble into a character in its hexadecimal representation.
+   * Copied from Bytes.chpl.
+   * TODO: Put this in a shared location both can use.
+   */
+  @chpldoc.nodoc
+  private proc convertNibble(in nib:uint(8), uppercase: bool): uint(8) {
+    nib = nib & 0xf;
+    if 0 <= nib && nib <= 9 {
+      param zero:uint(8) = b"0"(0); // aka 0x30
+      return zero + nib;
+    } else if 10 <= nib && nib <= 15 {
+      param a:uint(8) = b"a"(0); // aka 0x61
+      param A:uint(8) = b"A"(0); // aka 0x41
+      return (if uppercase then A else a) + nib - 10;
+    }
+
+    return 0;
   }
 }

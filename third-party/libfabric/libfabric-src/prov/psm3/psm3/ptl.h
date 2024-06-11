@@ -68,14 +68,6 @@
 #include <psm2_am.h>
 #include <psm_help.h>
 
-/* We currently have 3 PTLs, 0 is reserved. */
-#define PTL_DEVID_IPS  1
-#define PTL_DEVID_AMSH 2
-#define PTL_DEVID_SELF 3
-
-/* We can currently initialize up to 3 PTLs */
-#define PTL_MAX_INIT	3
-
 /* struct ptl is an incomplete type, and it serves as a generic or opaque
    container.  It should remain an incomplete type in the entire psm
    source base. concrete ptl types need to have a suffix such as ptl_self,
@@ -272,8 +264,8 @@ struct ptl_strategy_stats {
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	uint64_t rndv_long_cuCopy_recv;
 	uint64_t rndv_long_cuCopy_recv_bytes;
-	uint64_t rndv_long_gdr_recv;
-	uint64_t rndv_long_gdr_recv_bytes;
+	uint64_t rndv_long_gdrcopy_recv;
+	uint64_t rndv_long_gdrcopy_recv_bytes;
 #endif
 
 	/* LONG DATA approach used by sender after LONG selected by receiver */

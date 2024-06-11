@@ -1,0 +1,1 @@
+assoc-from-tuple-of-ranges.chpl:4: error: cannot assign a tuple of range(int(64),both,one) into an associative domain with idxType int(64)

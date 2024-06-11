@@ -49,12 +49,12 @@ class subthing : mything, serializable {
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var bOwn = new owned mything(2);
   var b = bOwn.borrow();
@@ -74,12 +74,12 @@ class subthing : mything, serializable {
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var bOwn = new owned subthing(5,6);
   var b = bOwn.borrow();
@@ -100,12 +100,12 @@ class subthing : mything, serializable {
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
   var bOwn = new owned subthing(5,6);
   var b = bOwn.borrow();

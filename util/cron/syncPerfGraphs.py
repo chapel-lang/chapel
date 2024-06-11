@@ -6,7 +6,7 @@
 # dest is the same, and that we can check for errors consistently before syncing.
 
 # rsync over ssh is used to transfer the files to Dreamhost. The user running
-# this script needs to have configured access to tower.dreamhost.com
+# this script needs to have configured access to iad1-shared-b8-21.dreamhost.com
 
 import contextlib
 import os
@@ -20,7 +20,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description='Syncs chapel performance '
         'graphs to dreamhost. Assumes user has configured access to '
-        'tower.dreamhost.com. Checks for a SUCCESS file in the directory that '
+        'iad1-shared-b8-21.dreamhost.com. Checks for a SUCCESS file in the directory that '
         'will be synced to ensure the graphs were successfully created.')
     parser.add_argument('dirToSync', metavar='DIR', help='perf directory to '
         'sync that contains the SUCCESS file')
@@ -62,10 +62,10 @@ def syncToCrayWebhost(dirToSync, destDir, logFile, numRetries):
           'unsuccessful. Graphs will NOT be synced.\n'.format(dirToSync))
         return 124
 
-    # Assumes correct username and authentication for tower.dreamhost.com is
+    # Assumes correct username and authentication for iad1-shared-b8-21.dreamhost.com is
     # configured for the current system.
     webHost = 'chapcs11.us.cray.com'
-    perfBaseDir = '/users/chapelu/public_html/perf'
+    perfBaseDir = '/hpcdc/data/users/chapelu/public_html/perf'
     perfDir = posixpath.join(perfBaseDir, destDir)
 
     rsyncDesc = 'rsync perf graphs to internal webhost'
@@ -89,10 +89,10 @@ def syncToDreamhost(dirToSync, destDir, logFile, numRetries):
           'unsuccessful. Graphs will NOT be synced.\n'.format(dirToSync))
         return 124
 
-    # Assumes correct username and authentication for tower.dreamhost.com is
+    # Assumes correct username and authentication for iad1-shared-b8-21.dreamhost.com is
     # configured for the current system.
 
-    webHost = 'tower.dreamhost.com'
+    webHost = 'iad1-shared-b8-21.dreamhost.com'
     perfBaseDir = '/home/chapeljenkins/chapel-lang.org/perf'
     perfDir = posixpath.join(perfBaseDir, destDir)
 

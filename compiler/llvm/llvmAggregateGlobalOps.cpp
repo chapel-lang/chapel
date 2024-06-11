@@ -49,6 +49,7 @@
 
 #ifdef HAVE_LLVM
 
+#include "llvmTracker.h"
 #include "llvmUtil.h"
 
 #include "llvm/Pass.h"
@@ -58,20 +59,14 @@
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/GetElementPtrTypeIterator.h"
 #include "llvm/IR/InstIterator.h"
-
-#if HAVE_LLVM_VER < 90
-#include "llvm/IR/CallSite.h"
-#endif
-
 #include "llvm/IR/Verifier.h"
 
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/LazyCallGraph.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
-
-#include "llvm/IR/GetElementPtrTypeIterator.h"
 
 #include <cstdio>
 #include <list>
@@ -207,94 +202,6 @@ Instruction* postponeDependentInstructions(
 // The next several fns are stolen almost totally unmodified from MemCpyOptimizer.
 // modified code areas say CUSTOM.
 
-#if HAVE_LLVM_VER < 100
-
-static int64_t GetOffsetFromIndex(const GEPOperator *GEP,
-                                  unsigned Idx,
-                                  bool &VariableIdxFound,
-                                  const DataLayout &DL){
-  // Skip over the first indices.
-  gep_type_iterator GTI = gep_type_begin(GEP);
-  for (unsigned i = 1; i != Idx; ++i, ++GTI)
-    /*skip along*/;
-
-  // Compute the offset implied by the rest of the indices.
-  int64_t Offset = 0;
-  for (unsigned i = Idx, e = GEP->getNumOperands(); i != e; ++i, ++GTI) {
-    ConstantInt *OpC = dyn_cast<ConstantInt>(GEP->getOperand(i));
-    if (!OpC)
-      return VariableIdxFound = true;
-    if (OpC->isZero()) continue;  // No offset.
-
-    // Handle struct indices, which add their field offset to the pointer.
-    if (StructType *STy = GTI.getStructTypeOrNull())
-    {
-      Offset += DL.getStructLayout(STy)->getElementOffset(OpC->getZExtValue());
-      continue;
-    }
-
-    // Otherwise, we have a sequential type like an array or vector.  Multiply
-    // the index by the ElementSize.
-    uint64_t Size = DL.getTypeAllocSize(GTI.getIndexedType());
-    Offset += Size*OpC->getSExtValue();
-  }
-
-  return Offset;
-}
-/// IsPointerOffset - Return true if Ptr1 is provably equal to Ptr2 plus a
-/// constant offset, and return that constant offset.  For example, Ptr1 might
-/// be &A[42], and Ptr2 might be &A[40].  In this case offset would be -8.
-static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
-                            const DataLayout &DL) {
-  Ptr1 = Ptr1->stripPointerCasts();
-  Ptr2 = Ptr2->stripPointerCasts();
-
-  // Handle the trivial case first.
-  if (Ptr1 == Ptr2) {
-    Offset = 0;
-    return true;
-  }
-
-  GEPOperator *GEP1 = dyn_cast<GEPOperator>(Ptr1);
-  GEPOperator *GEP2 = dyn_cast<GEPOperator>(Ptr2);
-
-  bool VariableIdxFound = false;
-
-  // If one pointer is a GEP and the other isn't, then see if the GEP is a
-  // constant offset from the base, as in "P" and "gep P, 1".
-  if (GEP1 && !GEP2 && GEP1->getOperand(0)->stripPointerCasts() == Ptr2) {
-    Offset = -GetOffsetFromIndex(GEP1, 1, VariableIdxFound, DL);
-    return !VariableIdxFound;
-  }
-
-  if (GEP2 && !GEP1 && GEP2->getOperand(0)->stripPointerCasts() == Ptr1) {
-    Offset = GetOffsetFromIndex(GEP2, 1, VariableIdxFound, DL);
-    return !VariableIdxFound;
-  }
-
-  // Right now we handle the case when Ptr1/Ptr2 are both GEPs with an identical
-  // base.  After that base, they may have some number of common (and
-  // potentially variable) indices.  After that they handle some constant
-  // offset, which determines their offset from each other.  At this point, we
-  // handle no other case.
-  if (!GEP1 || !GEP2 || GEP1->getOperand(0) != GEP2->getOperand(0))
-    return false;
-
-  // Skip any common indices and track the GEP types.
-  unsigned Idx = 1;
-  for (; Idx != GEP1->getNumOperands() && Idx != GEP2->getNumOperands(); ++Idx)
-    if (GEP1->getOperand(Idx) != GEP2->getOperand(Idx))
-      break;
-
-  int64_t Offset1 = GetOffsetFromIndex(GEP1, Idx, VariableIdxFound, DL);
-  int64_t Offset2 = GetOffsetFromIndex(GEP2, Idx, VariableIdxFound, DL);
-  if (VariableIdxFound) return false;
-
-  Offset = Offset2-Offset1;
-  return true;
-}
-
-#endif
 
 static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
                                                Value *Ptr2,
@@ -302,12 +209,8 @@ static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
   chpl::optional<int64_t> optOffset;
 #if HAVE_LLVM_VER >= 170
   optOffset = Ptr2->getPointerOffsetFrom(Ptr1, DL);
-#elif HAVE_LLVM_VER >= 100
-  optOffset = isPointerOffset(Ptr1, Ptr2, DL);
 #else
-  int64_t Offset;
-  if (IsPointerOffset(Ptr1, Ptr2, Offset, DL))
-    optOffset = Offset;
+  optOffset = isPointerOffset(Ptr1, Ptr2, DL);
 #endif
   return optOffset;
 }
@@ -741,24 +644,24 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Dst = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
+        trackLLVMValue(i8Dst);
 
         Type* StoreType = oldStore->getValueOperand()->getType();
         Type* PtrType = StoreType->getPointerTo(0);
         Value* Dst = irBuilder.CreatePointerCast(i8Dst, PtrType);
+        trackLLVMValue(Dst);
 
         StoreInst* newStore =
           irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
-#if HAVE_LLVM_VER >= 100
+        trackLLVMValue(newStore);
         newStore->setAlignment(oldStore->getAlign());
-#else
-        newStore->setAlignment(oldStore->getAlignment());
-#endif
         newStore->takeName(oldStore);
       }
     }
 
     // cast the pointer that was load/stored to i8 if necessary.
     Value *globalPtr = irBuilder.CreatePointerCast(StartPtr, globalInt8PtrTy);
+    trackLLVMValue(globalPtr);
 
     // Get a Constant* for the length.
     Constant* len = ConstantInt::get(sizeTy, Range.End-Range.Start, false);
@@ -776,13 +679,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     Function *func = Intrinsic::getDeclaration(M, Intrinsic::memcpy, types);
 
-#if HAVE_LLVM_VER >= 70
     // LLVM 7 and later: memcpy has no alignment argument
     Value* args[4]; // dst src len isvolatile
-#else
-    // LLVM 6 and earlier: memcpy had alignment argument
-    Value* args[5]; // dst src len alignment isvolatile
-#endif
 
     if( isStore ) {
       // it's a store (ie put)
@@ -795,21 +693,13 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     }
     args[2] = len;
 
-#if HAVE_LLVM_VER >= 70
     // LLVM 7 and later: memcpy has no alignment argument
 
     // isvolatile
     args[3] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
-#else
-    // LLVM 6 and earlier: memcpy had alignment argument
-
-    // alignment
-    args[3] = ConstantInt::get(Type::getInt32Ty(Context), 0, false);
-    // isvolatile
-    args[4] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
-#endif
 
     Instruction* aMemCpy = irBuilder.CreateCall(func, args);
+    trackLLVMValue(aMemCpy);
 
     if (!Range.TheStores.empty())
       aMemCpy->setDebugLoc(Range.TheStores[0]->getDebugLoc());
@@ -837,19 +727,18 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
+        trackLLVMValue(i8Src);
 
         Type* LoadType = oldLoad->getType();
         Type* PtrType = LoadType->getPointerTo(0);
 
         Value* Src = irBuilder.CreatePointerCast(i8Src, PtrType);
+        trackLLVMValue(Src);
 
         LoadInst* newLoad = irBuilder.CreateLoad(LoadType, Src);
+        trackLLVMValue(newLoad);
 
-#if HAVE_LLVM_VER >= 100
         newLoad->setAlignment(oldLoad->getAlign());
-#else
-        newLoad->setAlignment(oldLoad->getAlignment());
-#endif
         oldLoad->replaceAllUsesWith(newLoad);
         newLoad->takeName(oldLoad);
         lastAddedInsn = newLoad;

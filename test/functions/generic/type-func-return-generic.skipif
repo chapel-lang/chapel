@@ -1,0 +1,2 @@
+# this is only guaranteed to fail with asan due to a use-after-free in the compiler
+CHPL_SANITIZE==none

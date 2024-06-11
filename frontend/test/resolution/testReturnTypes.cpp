@@ -1094,6 +1094,53 @@ static void testSelectParams() {
   }
 }
 
+static void testCPtrEltType() {
+  std::string chpl_home;
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+  } else {
+    printf("CHPL_HOME must be set");
+    exit(1);
+  }
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  { 
+    //works for c_ptr
+    std::string program = ops + R"""(
+    use CTypes;
+    var y: c_ptr(uint(8));
+    type x = y.eltType;
+    )""";
+
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
+  }
+  return;
+  { 
+    //works for user-defined class 
+    std::string program = ops + R"""(
+    use CTypes;
+    class c_ptr2 {
+      type eltType;
+    }
+    var y: c_ptr2(uint(8));
+    type x = y.eltType;
+    )""";
+
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
+  }
+}
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
@@ -1144,5 +1191,6 @@ int main() {
   testSelectTypes();
   testSelectParams();
 
+  testCPtrEltType();
   return 0;
 }

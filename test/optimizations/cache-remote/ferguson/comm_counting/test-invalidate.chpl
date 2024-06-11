@@ -142,7 +142,7 @@ proc test_invalidate(const start:int, const size:int) {
   test_invalidate_mode(start, size, 0, -1, -1);
 
   // check reading 1 random byte within start..#size
-  var challengeOffset = rng.getNext(start, start+size-1);
+  var challengeOffset = rng.next(start, start+size-1);
   test_invalidate_mode(start, size, 1, challengeOffset, 1);
   // check reading the entire region start..#size
   test_invalidate_mode(start, size, 1, start, size);

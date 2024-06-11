@@ -410,6 +410,29 @@ struct {								\
 	*(elm)->field.tqe_prev = TAILQ_NEXT((elm), field);		\
 } while (0)
 
+#ifdef PSM_DEBUG
+// we use && head in assert to get a more helpful assert message
+#define TAILQ_ON_ASSERT(head, type, entry, field) do { \
+		struct type *p; \
+		TAILQ_FOREACH(p, head, field) { \
+			if (p == entry) \
+				break; \
+		} \
+		psmi_assert(p && head); \
+	} while (0)
+#define TAILQ_NOT_ON_ASSERT(head, type, entry, field) do { \
+		struct type *p; \
+		TAILQ_FOREACH(p, head, field) { \
+			if (p == entry) \
+				break; \
+		} \
+		psmi_assert(!p && head); \
+	} while (0)
+#else
+#define ASSERT_ON_TAILQ(head, type, entry, field)
+#define ASSERT_NOT_ON_TAILQ(head, type, entry, field)
+#endif
+
 /*
  * Circular queue declarations.
  */

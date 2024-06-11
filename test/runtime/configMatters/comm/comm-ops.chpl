@@ -8,7 +8,7 @@ config const numTasks = here.maxTaskPar;
 config const printTime = true;
 config const printDiags = false;
 
-enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,FASTAM,AM};
+enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,FASTAM,AM,CFAMO};
 
 var t: stopwatch;
 proc startDiags() {
@@ -75,6 +75,7 @@ proc test(op: OP) {
     ref aLoc = A.localAccess[tid].val;
     ref aRem = A[tid+numTasks].val;
     ref lRem = Locales[numLocales-1];
+    ref aRemShared = A[1].val;
     select op {
 
       // RMA
@@ -86,6 +87,7 @@ proc test(op: OP) {
       when OP.CASAMO do for i in 0..<iters do aRem.compareAndSwap(i, i+1);
       when OP.GETAMO do for i in 0..<iters do bLoc = aRem.read();
       when OP.PUTAMO do for i in 0..<iters do aRem.write(bLoc);
+      when OP.CFAMO  do for i in 0..<iters do aRemShared.fetchAdd(1);
       // AM
       when OP.FASTAM do for i in 0..<iters do on lRem do B.localAccess[tid].val = 0;
       when OP.AM     do for i in 0..<iters do on lRem do B.localAccess[tid].val = thwartFastOn();

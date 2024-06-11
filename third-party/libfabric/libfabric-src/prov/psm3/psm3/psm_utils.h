@@ -216,16 +216,18 @@ int psm3_subnets_match_epid(psmi_subnet128_t subnet, psm2_epid_t epid);
 
 #ifdef PSM_SOCKETS
 // manage sockaddr fundamentals
-int psm3_sockaddr_cmp(struct sockaddr_in6 *a, struct sockaddr_in6 *b);
+int psm3_sockaddr_cmp(psm3_sockaddr_in_t *a, psm3_sockaddr_in_t *b);
 // build an AF_INET6 sockaddr
 // can be for a IPv4 (GID ::ffff:<ipaddr>) or IPv6 style GID
-void psm3_build_sockaddr(struct sockaddr_in6 *in6, uint16_t port,
+void psm3_build_sockaddr(psm3_sockaddr_in_t *in, uint16_t port,
 				uint64_t gid_hi, uint64_t gid_lo,
 				uint32_t scope_id);
-void psm3_epid_build_sockaddr(struct sockaddr_in6 *in6, psm2_epid_t epid,
+void psm3_epid_build_sockaddr(psm3_sockaddr_in_t *in, psm2_epid_t epid,
 				uint32_t scope_id);
-void psm3_epid_build_aux_sockaddr(struct sockaddr_in6 *in6, psm2_epid_t epid,
+void psm3_epid_build_aux_sockaddr(psm3_sockaddr_in_t *in, psm2_epid_t epid,
 				uint32_t scope_id);
+int psm3_parse_tcp_src_bind(void);
+int psm3_parse_tcp_reuseport(void);
 #endif
 int psm3_epid_cmp_internal(psm2_epid_t a, psm2_epid_t b);
 int psm3_epid_zero_internal(psm2_epid_t a);
@@ -407,17 +409,6 @@ void psmi_heapdebug_finalize(void);
 void psm3_log_memstats(psmi_memtype_t type, int64_t nbytes);
 
 /*
- * Parse int parameters
- * -1 -> parse error
- */
-long psm3_parse_str_long(const char *str);
-
-/*
- * Parsing int parameters set in string tuples.
- */
-int psm3_parse_str_tuples(const char *str, int ntup, int *vals);
-
-/*
  * Resource Limiting based on PSM memory mode.
  */
 #define PSMI_MEMMODE_NORMAL  0
@@ -441,6 +432,8 @@ psm2_error_t psm3_parse_mpool_env(const psm2_mq_t mq, int level,
 				 uint32_t *valo, uint32_t *chunkszo);
 int psm3_parse_memmode(void);
 int psm3_parse_identify(void);
+void psm3_print_identify(const char *fmt, ...) \
+				__attribute__((format(printf, 1, 2)));
 #ifdef PSM_HAVE_REG_MR
 unsigned psm3_parse_senddma(void);
 #endif
@@ -451,43 +444,6 @@ unsigned psmi_parse_gpudirect_rdma_recv_limit(int force);
 unsigned psmi_parse_gpudirect_rv_gpu_cache_size(int reload);
 #endif
 
-/*
- * Parsing environment variables
- */
-
-union psmi_envvar_val {
-	void *e_void;
-	char *e_str;
-	int e_int;
-	unsigned int e_uint;
-	long e_long;
-	unsigned long e_ulong;
-	unsigned long long e_ulonglong;
-};
-
-#define PSMI_ENVVAR_LEVEL_USER	         1
-#define PSMI_ENVVAR_LEVEL_HIDDEN         2
-#define PSMI_ENVVAR_LEVEL_NEVER_PRINT    4
-
-#define PSMI_ENVVAR_TYPE_YESNO		0
-#define PSMI_ENVVAR_TYPE_STR		1
-#define PSMI_ENVVAR_TYPE_INT		2
-#define PSMI_ENVVAR_TYPE_UINT		3
-#define PSMI_ENVVAR_TYPE_UINT_FLAGS	4
-#define PSMI_ENVVAR_TYPE_LONG		5
-#define PSMI_ENVVAR_TYPE_ULONG		6
-#define PSMI_ENVVAR_TYPE_ULONG_FLAGS	7
-#define PSMI_ENVVAR_TYPE_ULONG_ULONG    8
-
-#define PSMI_ENVVAR_VAL_YES ((union psmi_envvar_val) 1)
-#define PSMI_ENVVAR_VAL_NO  ((union psmi_envvar_val) 0)
-
-int
-MOCKABLE(psm3_getenv)(const char *name, const char *descr, int level,
-		int type, union psmi_envvar_val defval,
-		union psmi_envvar_val *newval);
-MOCK_DCL_EPILOGUE(psm3_getenv);
-int psm3_parse_val_pattern(const char *env, int def, int def_syntax);
 /*
  * Misc functionality
  */
@@ -540,7 +496,7 @@ int psm3_diags(void);
  * Multiple Endpoints
  */
 extern int psm3_multi_ep_enabled;
-void psm3_multi_ep_init();
+void psm3_parse_multi_ep();
 
 #ifdef PSM_FI
 /*
@@ -566,6 +522,7 @@ void psm3_multi_ep_init();
  *		sendfull - report no resources on send (pio_flush)
  *		sendfullctrl - report no resources on send ctrl message
  *		sendfullcb - report no resources ctrl msg retry timer callback
+ *		connunkn - unknown connection in TCP
  *		reg_mr - register MR failure (ENOMEM)
  *		nonpri_reg_mr - non-priority register MR failure (ENOMEM)
  *		pri_reg_mr - priority register MR failure (ENOMEM)
@@ -585,7 +542,9 @@ struct psm3_faultinj_spec {
 	struct drand48_data drand48_data;
 	int num;
 	int denom;
-	long int initial_seed;
+	int initial_seed;
+	// put last so better CPU cache hit rate in performance paths
+	char help[PSM3_FAULTINJ_HELPLEN];
 };
 
 #define PSM3_FAULTINJ_ENABLED()	(!!psm3_faultinj_enabled)
@@ -601,7 +560,7 @@ int psm3_faultinj_is_fault(struct psm3_faultinj_spec *fi, psm2_ep_t ep);
 				: 1 \
 			: 0)
 
-void psm3_faultinj_init();
+void psm3_parse_faultinj();
 void psm3_faultinj_fini();
 struct psm3_faultinj_spec *psm3_faultinj_getspec(const char *spec_name,
 						 const char *help,

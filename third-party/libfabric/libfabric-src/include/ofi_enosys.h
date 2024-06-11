@@ -52,7 +52,7 @@ extern "C" {
 /*
 static struct fi_ops X = {
 	.size = sizeof(struct fi_ops),
-	.close = X,
+	.close = fi_no_close,
 	.bind = fi_no_bind,
 	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
@@ -60,6 +60,7 @@ static struct fi_ops X = {
 	.ops_set = fi_no_ops_set,
 };
  */
+int fi_no_close(struct fid *fid);
 int fi_no_bind(struct fid *fid, struct fid *bfid, uint64_t flags);
 int fi_no_control(struct fid *fid, int command, void *arg);
 int fi_no_ops_open(struct fid *fid, const char *name,
@@ -322,17 +323,23 @@ static struct fi_ops_poll X = {
 /*
 static struct fi_ops_eq X = {
 	.size = sizeof(struct fi_ops_eq),
-	.read = X,
-	.readerr = X,
+	.read = fi_no_eq_read,
+	.readerr = fi_no_eq_readerr,
 	.write = fi_no_eq_write,
 	.sread = fi_no_eq_sread,
-	.strerror = X,
+	.strerror = fi_no_eq_strerror,
 };
 */
+ssize_t fi_no_eq_read(struct fid_eq *eq, uint32_t *event, void *buf,
+		size_t len, uint64_t flags);
+ssize_t fi_no_eq_readerr(struct fid_eq *eq, struct fi_eq_err_entry *buf,
+		uint64_t flags);
 ssize_t fi_no_eq_write(struct fid_eq *eq, uint32_t event,
 		const void *buf, size_t len, uint64_t flags);
 ssize_t fi_no_eq_sread(struct fid_eq *eq, uint32_t *event,
 		void *buf, size_t len, int timeout, uint64_t flags);
+const char *fi_no_eq_strerror(struct fid_eq *eq, int prov_errno,
+		const void *err_data, char *buf, size_t len);
 
 /*
 static struct fi_ops_cq X = {
@@ -372,6 +379,9 @@ static struct fi_ops_cntr X = {
 int fi_no_cntr_add(struct fid_cntr *cntr, uint64_t value);
 int fi_no_cntr_set(struct fid_cntr *cntr, uint64_t value);
 int fi_no_cntr_wait(struct fid_cntr *cntr, uint64_t threshold, int timeout);
+uint64_t fi_no_cntr_readerr(struct fid_cntr *cntr);
+int fi_no_cntr_adderr(struct fid_cntr *cntr, uint64_t value);
+int fi_no_cntr_seterr(struct fid_cntr *cntr, uint64_t value);
 
 /*
 static struct fi_ops_rma X = {
@@ -453,8 +463,8 @@ static struct fi_ops_av X = {
 	.insertsvc = fi_no_av_insertsvc,
 	.insertsym = fi_no_av_insertsym,
 	.remove = fi_no_av_remove,
-	.lookup = X,
-	.straddr = X,
+	.lookup = fi_no_av_lookup,
+	.straddr = fi_no_av_straddr,
 };
 */
 int fi_no_av_insert(struct fid_av *av, const void *addr, size_t count,
@@ -467,6 +477,10 @@ int fi_no_av_insertsym(struct fid_av *av, const char *node, size_t nodecnt,
 			uint64_t flags, void *context);
 int fi_no_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 			uint64_t flags);
+int fi_no_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
+		    size_t *addrlen);
+const char *fi_no_av_straddr(struct fid_av *av, const void *addr, char *buf,
+			     size_t *len);
 
 /*
 static struct fi_ops_av_set X = {

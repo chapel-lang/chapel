@@ -316,13 +316,12 @@ static void gatherVecsByReturnIntent(const DisambiguationContext& dctx,
 
 static const MostSpecificCandidates&
 findMostSpecificCandidatesQuery(Context* context,
-                                std::vector<const TypedFnSignature*> lst,
-                                std::vector<QualifiedType> forwardingInfo,
+                                CandidatesAndForwardingInfo lst,
                                 CallInfo call,
                                 const Scope* callInScope,
                                 const PoiScope* callInPoiScope) {
   QUERY_BEGIN(findMostSpecificCandidatesQuery, context,
-              lst, forwardingInfo, call, callInScope, callInPoiScope);
+              lst, call, callInScope, callInPoiScope);
 
   // Construct the DisambiguationContext
   bool explain = true;
@@ -336,17 +335,27 @@ findMostSpecificCandidatesQuery(Context* context,
     int n = lst.size();
     for (int i = 0; i < n; i++) {
       QualifiedType forwardingTo;
-      if (!forwardingInfo.empty()) {
-        forwardingTo = forwardingInfo[i];
+      if (lst.hasForwardingInfo()) {
+        forwardingTo = lst.getForwardingInfo(i);
       }
       candidates.push_back(
-          new DisambiguationCandidate(lst[i], forwardingTo, call, i));
+          new DisambiguationCandidate(lst.get(i), forwardingTo, call, i));
     }
   }
 
   MostSpecificCandidates result =
     // disambiguateByMatch(dctx, candidates);
     computeMostSpecificCandidates(context, dctx, candidates);
+
+  if (result.numBest() == 1) {
+    MostSpecificCandidate only;
+    if (result.bestRef()) only = result.bestRef();
+    else if (result.bestConstRef()) only = result.bestConstRef();
+    else if (result.bestValue()) only = result.bestValue();
+
+    // Ensure that the only result is in the 'ONLY' slot.
+    result = MostSpecificCandidates::getOnly(only);
+  }
 
   // Delete all of the FormalActualMaps
   for (auto elt : candidates) {
@@ -359,8 +368,7 @@ findMostSpecificCandidatesQuery(Context* context,
 // entry point for disambiguation
 MostSpecificCandidates
 findMostSpecificCandidates(Context* context,
-                           const std::vector<const TypedFnSignature*>& lst,
-                           const std::vector<QualifiedType>& forwardingInfo,
+                           const CandidatesAndForwardingInfo& lst,
                            const CallInfo& call,
                            const Scope* callInScope,
                            const PoiScope* callInPoiScope) {
@@ -371,7 +379,8 @@ findMostSpecificCandidates(Context* context,
 
   if (lst.size() == 1) {
     // If there is just one candidate, return it
-    auto msc = MostSpecificCandidate::fromTypedFnSignature(context, lst[0], call);
+    auto msc =
+        MostSpecificCandidate::fromTypedFnSignature(context, lst.get(0), call);
     return MostSpecificCandidates::getOnly(msc);
   }
 
@@ -379,8 +388,7 @@ findMostSpecificCandidates(Context* context,
   // run the query to handle the more complex case
   // TODO: is it worth storing this in a query? Or should
   // we recompute it each time?
-  return findMostSpecificCandidatesQuery(context, lst, forwardingInfo,
-                                         call,
+  return findMostSpecificCandidatesQuery(context, lst, call,
                                          callInScope, callInPoiScope);
 }
 
@@ -1175,6 +1183,7 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
       // Initializer work-around: Skip 'this' for generic initializers
       continue;
     }
+    if (!fa1->actualType().hasTypePtr()) continue;
 
     // if (fa1->formalType().kind() == uast::Qualifier::OUT) {
       // continue; // type comes from call site so ignore it here
@@ -1425,6 +1434,8 @@ static int testArgMapping(const DisambiguationContext& dctx,
   QualifiedType f2Type = fa2->formalType();
   QualifiedType actualType = fa1->actualType();
   CHPL_ASSERT(actualType == fa2->actualType());
+
+  if (!actualType.hasTypePtr()) return -1;
 
   // Give up early for out intent arguments
   // (these don't impact candidate selection)

@@ -6,8 +6,8 @@ From: ubuntu:mantic
 
 %post
     /provision-scripts/apt-get-deps.sh
-    # installs LLVM 16
-    /provision-scripts/apt-get-llvm.sh
+    # installs LLVM 17 (default would be LLVM 16)
+    /provision-scripts/apt-get-llvm-17.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

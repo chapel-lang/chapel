@@ -60,17 +60,20 @@ static const char* getTmpDir(void) {
 // Returns 0 on success, 1 and prints an error message on failure
 static int checkSlurmVersion(void) {
   const int buflen = 256;
-  char version[buflen];
+  char versionBuf[buflen];
   char *argv[3];
   argv[0] = (char *) "sbatch";
   argv[1] = (char *) "--version";
   argv[2] = NULL;
 
-  memset(version, 0, buflen);
-  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
-    chpl_error("Error trying to determine slurm version", 0, 0);
+  char* version = getenv("CHPL_LAUNCHER_SLURM_VERSION");
+  if (version == NULL) {
+    version = versionBuf;
+    memset(version, 0, buflen);
+    if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+      chpl_error("Error trying to determine slurm version", 0, 0);
+    }
   }
-
   if (!strstr(version, "slurm")) {
     printf("Error: This launcher is only compatible with native slurm\n");
     printf("Output of \"sbatch --version\" was: %s\n", version);
@@ -97,6 +100,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   int threadsPerCore = -1;
   const int buflen = 1024;
   char buf[buflen];
+  char orig[buflen];
   char partition_arg[128];
   char* argv[7];
   char reservationBuf[128];
@@ -139,8 +143,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     chpl_error("Error trying to determine number of cores per node", 0, 0);
   }
 
-  if (!strncmp("Invalid node format specification: i", buf,
-               strlen("Invalid node format specification: i"))) {
+  if (strstr(buf, "Invalid node format specification: i")) {
     // older versions of sinfo don't support the %i format. Try again
     // without it. We won't be able to exclude reservations, but there's
     // not much we can do about that.
@@ -152,6 +155,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
 
   char *cursor = buf;
   char *line;
+  strcpy(orig, buf);
   chpl_bool found = false;
   while ((line = strsep(&cursor, "\n")) != NULL) {
     if (*line != '\0') {
@@ -171,8 +175,12 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     }
   }
   if (!found) {
-    chpl_error("unable to determine number of cores per locale; "
-               "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+    char msg[2048];
+    snprintf(msg, sizeof(msg),
+            "unable to determine number of cores per locale; "
+             "please set CHPL_LAUNCHER_CORES_PER_LOCALE\n"
+             "Output of \"sinfo\" was:\n%s", orig);
+    chpl_error(msg, 0, 0);
   }
 
   if (nomultithread) {
@@ -213,6 +221,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  char* gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   char* memEnv = getenv("CHPL_LAUNCHER_MEM");
   const char* nodeAccessStr = NULL;
   const char* memStr = NULL;
@@ -395,6 +404,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
 
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
+    }
+
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
@@ -539,6 +553,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
     }
 
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
+    }
+
     // add the (possibly wrapped) binary name
     len += snprintf(iCom+len, sizeof(iCom)-len, "%s %s",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
@@ -590,7 +609,6 @@ static void chpl_launch_cleanup(void) {
 int chpl_launch(int argc, char* argv[], int32_t numLocales,
                 int32_t numLocalesPerNode) {
   int retcode;
-
   // check the slurm version before continuing
   if (checkSlurmVersion()) {
     return 1;

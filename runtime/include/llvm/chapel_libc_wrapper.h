@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+// with newer versions of LLVM (16+), this file is not needed
+
 #ifdef __cplusplus
 extern "C" {
 #endif

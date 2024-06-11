@@ -1,6 +1,0 @@
-testtesttesttestwritefbinary.chpl:6: warning: binary conversion "%|1i" is deprecated.
-writefbinary.chpl:7: warning: binary conversion "%|1u" is deprecated.
-writefbinary.chpl:10: warning: binary conversion "%|1S" is deprecated.
-writefbinary.chpl:10: warning: binary conversion "%|vS" is deprecated.
-writefbinary.chpl:13: warning: binary conversion "%|1S" is deprecated.
-writefbinary.chpl:13: warning: binary conversion "%|vS" is deprecated.

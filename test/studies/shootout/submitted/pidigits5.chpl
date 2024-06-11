@@ -43,23 +43,23 @@ proc computePi() {
         tPrecalculation = false;
       }
       qCalculating.waitFor(false); // Wait for 'q *= 10' to finish (if it runs)
-      temp1.add(q,q);
+      add(temp1, q, q);
 
       qMultiplicand = k;
       qCalculating.write(true);  // Unblock task for 'q *= qMultiplicand'
 
       temp1 += r;
-      r.mul(temp1,doubleK);
+      mul(r, temp1, doubleK);
 
       qCalculating.waitFor(false); // Wait for 'q *= qMultiplicand' to finish
       tCalculating.waitFor(false); // Wait for 't *= doubleK' to finish (if...)
       if q <= r {
         extractCalculating.write(true);  // Unblock extraction task
 
-        temp1.mul(q,4);
+        mul(temp1, q, 4);
         temp1 += r;
 
-        temp2.divQ(temp1, t);
+        div(temp2, temp1, t);
         const digit2 = temp2: int;
 
         extractCalculating.waitFor(false); // Wait for extraction task
@@ -69,7 +69,7 @@ proc computePi() {
           qCalculating.write(true);  // Unblock task for 'q *= 10'
 
           write(digit);
-          temp1.mul(t, digit);
+          mul(temp1, t, digit);
 
           k += 1;
           doubleK = 2*k + 1;
@@ -77,8 +77,8 @@ proc computePi() {
           tCalculating.write(true);  // Unblock 't *= doubleK' task
           tPrecalculation = true;
 
-          temp1.sub(r, temp1);
-          r.mul(temp1, 10);
+          sub(temp1, r, temp1);
+          mul(r, temp1, 10);
 
           i += 1;
           nDigits += 1;
@@ -121,12 +121,11 @@ proc extractor() {
   while true {
     extractCalculating.waitFor(true);
 
-    tmp1.mul(q, 3);
+    mul(tmp1, q, 3);
     tmp1 += r;
-    tmp2.divQ(tmp1, t);
+    div(tmp2, tmp1, t);
     digit = tmp2: int;
 
     extractCalculating.write(false);
   }
 }
-use CompatGMP;

@@ -1196,7 +1196,7 @@ module DefaultRectangular {
         chpl_debug_writeln("*** In defRectArr simple-dd standalone iterator");
       }
       foreach i in dom.these(tag, tasksPerLocale,
-                         ignoreRunning, minIndicesPerTask) {
+                         ignoreRunning, minIndicesPerTask) with (ref this) {
         yield dsiAccess(i);
       }
     }
@@ -1646,7 +1646,7 @@ module DefaultRectangular {
         const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices:step.type-1) * step;
-        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
+        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) with (ref info) {
           yield info.theData(i);
         }
       } else {
@@ -1839,7 +1839,10 @@ module DefaultRectangular {
                             _isSimpleIoType(arr.eltType);
 
     const len = dom.dsiNumIndices:int;
-    if useBulkElements && arr.isDataContiguous(dom) && len > 0 {
+    var dataLoc = if len > 0 then arr.dsiAccess(dom.dsiFirst).locale
+                  else here;
+    if useBulkElements && arr.isDataContiguous(dom) && len > 0 &&
+      f._home == dataLoc {
       var ptr = c_addrOf(arr.dsiAccess(dom.dsiFirst));
       if f._writing then
         helper.writeBulkElements(ptr, len);
@@ -2397,7 +2400,7 @@ module DefaultRectangular {
   }
 
   override proc DefaultRectangularArr.isDefaultRectangular() param do return true;
-  proc type DefaultRectangularArr.isDefaultRectangular() param do return true;
+  override proc type DefaultRectangularArr.isDefaultRectangular() param do return true;
 
   config param debugDRScan = false;
 

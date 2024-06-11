@@ -21,7 +21,7 @@ module test_fully_blocked_elemental_cholesky {
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
-    const mat_dom : domain (2) dmapped cyclicDist ( startIdx = MatIdx.low )
+    const mat_dom : domain (2) dmapped new cyclicDist ( startIdx = MatIdx.low )
       = MatIdx;
 
     const distribution_type = "cyclic";

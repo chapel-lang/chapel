@@ -436,6 +436,10 @@ UCX_LDFLAGS = @UCX_LDFLAGS@
 UCX_LIBS = @UCX_LIBS@
 UCX_guess_prog = @UCX_guess_prog@
 VERSION = @VERSION@
+ZE_CFLAGS = @ZE_CFLAGS@
+ZE_LDFLAGS = @ZE_LDFLAGS@
+ZE_LIBS = @ZE_LIBS@
+ZE_guess_prog = @ZE_guess_prog@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -573,7 +577,8 @@ CONDUIT_SPECIAL_OBJS = $(mpi_special_objs)
 # to be included in libgasnet if support was enabled at configure time
 @HAVE_FI_HMEM_CUDA_TRUE@ofi_kind_cuda_uva = cuda_uva
 @HAVE_FI_HMEM_ROCR_TRUE@ofi_kind_hip = hip
-CONDUIT_KINDS = $(ofi_kind_cuda_uva) $(ofi_kind_hip)
+@HAVE_FI_HMEM_ZE_TRUE@ofi_kind_ze = ze
+CONDUIT_KINDS = $(ofi_kind_cuda_uva) $(ofi_kind_hip) $(ofi_kind_ze)
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:

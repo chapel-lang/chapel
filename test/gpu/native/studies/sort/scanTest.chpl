@@ -28,8 +28,15 @@ if multiDimArray {
 var timer: Time.stopwatch;
 
 testType(uint);
+testType(uint(32));
+testType(uint(16));
+testType(uint(8));
 testType(int);
+testType(int(32));
+testType(int(16));
+testType(int(8));
 testType(real);
+// testType(real(32)); // Causes overflow (I think?)
 
 proc testType(type t) {
   var cpuArr: [low..#arrSize] t;

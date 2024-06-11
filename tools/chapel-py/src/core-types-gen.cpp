@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-#include "core-types.h"
+#include "core-types-gen.h"
 #include "resolution.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -46,7 +47,7 @@ using namespace uast;
   } \
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
 #include "generated-types-list.h"
 
 static const char* blockStyleToString(BlockStyle blockStyle) {
@@ -54,6 +55,7 @@ static const char* blockStyleToString(BlockStyle blockStyle) {
     case BlockStyle::EXPLICIT: return "explicit";
     case BlockStyle::IMPLICIT: return "implicit";
     case BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK: return "unnecessary";
+    default: return "";
   }
 }
 
@@ -65,22 +67,50 @@ static const char* opKindToString(Range::OpKind kind) {
   }
 }
 
+static std::optional<chpl::Location> getValidLocation(const chpl::Location& loc) {
+  /*isEmpty doesn't work since that only relies upon path, which is set*/
+  if (loc.line() != -1) {
+    return loc;
+  }
+  return std::nullopt;
+}
+
+template <typename T> struct InvokeHelper {};
+
+template <typename Ret, typename... Args>
+struct InvokeHelper<Ret(Args...)> {
+  template <typename F>
+  static PyObject* invoke(ContextObject* contextObject, F&& fn) {
+    auto result = fn();
+    return PythonFnHelper<Ret(Args...)>::ReturnTypeInfo::wrap(contextObject, std::move(result));
+  }
+};
+
+template <typename... Args>
+struct InvokeHelper<void(Args...)> {
+  template <typename F>
+  static PyObject* invoke(ContextObject* contextObject, F&& fn) {
+    fn();
+    Py_RETURN_NONE;
+  }
+};
+
 /* The METHOD macro is overridden here to actually create a Python-compatible
    function to insert into the method table. Each such function retrieves
    a node's context object, calls the method body, and wraps the result
    in a Python-compatible type.
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
-  static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    auto node = ((NODE##Object*) self)->parent.ptr->to##NODE(); \
-    auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject; \
-    auto context = &contextObject->context; \
+  PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
+    auto&& node = ((NODE##Object*) self)->unwrap(); \
+    auto contextObject = ((NODE##Object*) self)->context(); \
+    auto context = &contextObject->value_; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
-    auto result = [node, &context, &args]() { \
-      (void) context; \
-      BODY; \
-    }() ; \
-    return PythonFnHelper<TYPEFN>::ReturnTypeInfo::wrap(contextObject, std::move(result));\
+    return InvokeHelper<TYPEFN>::invoke(contextObject, \
+      [&node, context, contextObject, &args]() -> PythonFnHelper<TYPEFN>::ReturnType { \
+        (void) context, contextObject; \
+        BODY; \
+      }); \
   }
 
 /* Call METHOD on each method in the method-tables.h header to generate
@@ -91,8 +121,8 @@ static const char* opKindToString(Range::OpKind kind) {
    that have actuals don't all share a parent class (Attribute vs FnCall, e.g.).
    */
 #define ACTUAL_ITERATOR(NAME)\
-  static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
-    auto node = ((NAME##Object*) self)->parent.ptr->to##NAME(); \
+  PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
+    auto node = ((NAME##Object*) self)->unwrap(); \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
     auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \
@@ -115,39 +145,6 @@ static const char* opKindToString(Range::OpKind kind) {
 ACTUAL_ITERATOR(Attribute);
 ACTUAL_ITERATOR(FnCall);
 
-/* The following code is used to help set up the (Python) method tables for
-   each Chapel AST node class. Each node class needs a table, but not all
-   classes have Python methods we want to expose. We thus want to default
-   to an empty method table (to save on typing / boilerplate), but at the same
-   time to make it easy to override a node's method table.
-
-   To this end, we use template specialization of the PerTypeMethods struct. The
-   default template provides an empty table; it can be specialized per-node to
-   change the table for that node.
-
-   Macros below take this a step further and compiler-generate the template
-   specializations. */
-template <typename ObjectType>
-struct PerTypeMethods {
-  static constexpr PyMethodDef methods[] = {
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
-
-#define CLASS_BEGIN(NAME) \
-  template <> \
-  struct PerTypeMethods<NAME##Object> { \
-    static constexpr PyMethodDef methods[] = {
-#define CLASS_END(NAME) \
-      {NULL, NULL, 0, NULL}  /* Sentinel */ \
-    }; \
-  };
-#define METHOD(NODE, NAME, DOCSTR, TYPE, BODY) \
-  {#NAME, NODE##Object_##NAME, PythonFnHelper<TYPE>::PyArgTag, DOCSTR},
-#define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
-  {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
-#include "method-tables.h"
-
 /* Having generated the method calls and the method tables, we can now
    generate the Python type objects for each AST node. The DEFINE_PY_TYPE_FOR
    macro defines what a type object for an AST node (abstract or not) should
@@ -159,7 +156,7 @@ struct PerTypeMethods {
   }; \
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
 #include "generated-types-list.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
@@ -174,6 +171,6 @@ struct PerTypeMethods {
   TYPE.tp_new = PyType_GenericNew; \
 
 void setupGeneratedTypes() {
-#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
+#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
 #include "generated-types-list.h"
 }

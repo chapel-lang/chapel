@@ -531,8 +531,8 @@ where D.rank == 2
   var columnMap : [D.dim(1)] D.idxType = D.dim(1);
   //use seed to create two new seeds, one for each shuffle
   var randStreamSeeded = new randomStream(int, seed);
-  const seed1 = randStreamSeeded.getNext() | 1;
-  const seed2 = randStreamSeeded.getNext() | 1;
+  const seed1 = randStreamSeeded.next() | 1;
+  const seed2 = randStreamSeeded.next() | 1;
   shuffle( rowMap, seed = seed1 );
   shuffle( columnMap , seed = seed2);
   return new shared PermutationMap( rowMap, columnMap );
@@ -613,7 +613,7 @@ proc createSparseUpperTriangluarIndexList(
       var totalAdded = 0;
       while totalAdded < numberNonZerosAddedInStrictlyUT {
         // get random row
-        var row = (abs( random.getNext() ) % (high-1)) + 1;
+        var row = (abs( random.next() ) % (high-1)) + 1;
         // if row is not filled, add
         if rowCount[row] < high-row{
           rowCount[row] += 1;
@@ -648,7 +648,7 @@ proc createSparseUpperTriangluarIndexList(
         var bagOfIndices : domain(D.idxType);
         while rowCount[row] > 0 {
           // random column in range row+1 .. high
-          var column = (abs( localRandom.getNext() ) % (high-row)) + row+1;
+          var column = (abs( localRandom.next() ) % (high-row)) + row+1;
           // if not already in our index set, add it
           if !bagOfIndices.contains( column ) {
             bagOfIndices += column; // add to set
@@ -1166,7 +1166,7 @@ proc main(){
     when ToposortImplementation.Serial {
        if !silentMode then writeln("Converting to CSC domain");
 
-      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
@@ -1175,7 +1175,7 @@ proc main(){
     when ToposortImplementation.Parallel {
        if !silentMode then writeln("Converting to CSC domain");
 
-      var dmappedPermutedSparseD : sparse subdomain(D) dmapped CS(compressRows=false);
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");
@@ -1183,7 +1183,7 @@ proc main(){
     }
     when ToposortImplementation.Distributed {
        if !silentMode then writeln("Converting to Sparse Block domain");
-      var distributedD : D.type dmapped blockDist(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
+      var distributedD : D.type dmapped new blockDist(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
       distributedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );

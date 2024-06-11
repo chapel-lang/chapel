@@ -106,11 +106,14 @@ static inline size_t psmx3_ioc_elements_count(const struct fi_ioc *ioc, size_t c
 	return total;
 }
 
+#ifndef NDEBUG
+// if NDEBUG defined then assert() does nothing and this function becomes unused
 static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 				    int datatype)
 {
 	return psmx3_ioc_elements_count(ioc, count) * ofi_datatype_size(datatype);
 }
+#endif
 
 #define CASE_INT_TYPE(FUNC,...) \
 		case FI_INT8:	FUNC(__VA_ARGS__,int8_t); break; \

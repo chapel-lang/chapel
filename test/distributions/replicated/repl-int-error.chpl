@@ -2,7 +2,7 @@ use ReplicatedDist;
 
 config const n = 8;
 const Space = {1..n, 1..n};
-const ReplicatedSpace = Space dmapped replicatedDist();
+const ReplicatedSpace = Space dmapped new replicatedDist();
 var RA: [ReplicatedSpace] int;
 
 coforall loc in Locales with (ref RA) do

@@ -121,7 +121,7 @@ proc compute_levels (ParentTree, ref Level): int
 
    var error: int=0;
 
-   forall k in vertex_domain with (ref error, ref Level) do { // race
+   forall k in vertex_domain with (ref error) do { // race
 
 // Would prefer to be able to use a continue statement here as opposed to
 // an if statement on these checks

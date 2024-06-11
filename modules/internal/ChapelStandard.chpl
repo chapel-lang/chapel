@@ -74,6 +74,7 @@ module ChapelStandard {
   public use ChapelAutoAggregation;
   public use ChapelGpuSupport;
   public use ChapelContext;
+  public use ChapelStaticVars;
 
   // Standard modules.
   public use Types as Types;

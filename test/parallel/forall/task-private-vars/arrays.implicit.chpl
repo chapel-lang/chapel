@@ -4,7 +4,7 @@ config const numMessages = 12;
 config const asize = 100;
 
 const MessageDom = {1..numMessages};
-const MessageSpace = MessageDom dmapped blockDist(MessageDom);
+const MessageSpace = MessageDom dmapped new blockDist(MessageDom);
 
 proc makeArray() {
   var A: [1..asize] int;

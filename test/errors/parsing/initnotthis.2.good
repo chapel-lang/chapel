@@ -1,0 +1,6 @@
+─── error in initnotthis.chpl:8 ───
+  Explicit calls to init() on anything other than 'this' or 'super' are not allowed.
+
+─── error in initnotthis.chpl:13 ───
+  Explicit calls to init() on anything other than 'this' or 'super' are not allowed.
+

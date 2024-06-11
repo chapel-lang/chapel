@@ -98,7 +98,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     var thisid = this.locale.id;
     if locDoms(dist.targetLocDom.lowBound) == nil {
       coforall localeIdx in dist.targetLocDom {
-        on dist.targetLocales(localeIdx) do {
+        on dist.targetLocales(localeIdx) {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType,
@@ -598,10 +598,6 @@ class LocSparseBlockArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocSparseBlockArr.writeThis() is not implemented / should not be needed");
-  }
-
   override proc serialize(writer, ref serializer) throws {
     halt("LocSparseBlockArr.serialize() is not implemented / should not be needed");
   }

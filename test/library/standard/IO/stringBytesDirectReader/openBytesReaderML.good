@@ -1,0 +1,4 @@
+openBytesReaderML.chpl:6: warning: 'openBytesReader' is an experimental feature; its name and behavior are subject to change
+hello world!
+I'm a bytes!
+From Locale 0

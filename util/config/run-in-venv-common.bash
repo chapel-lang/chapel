@@ -10,10 +10,5 @@ fi
 python=$($CHPL_HOME/util/config/find-python.sh)
 chpldeps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps)
 
-if [ ! -e "$chpldeps" ]; then
-  echo "chpl dependencies are missing - try make test-venv or make chapel-py-venv" 1>&2
-  exit 1
-fi
-
 # include the dependencies
 export PYTHONPATH="$chpldeps":$PYTHONPATH

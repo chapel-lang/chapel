@@ -66,7 +66,16 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);
 void print_llvm(llvm::Module* m);
-// print_clang is also available in another file
+
+// print_clang() is available in clangUtil.h,cpp
+
+void list_view(const llvm::Type* t);
+void list_view(const llvm::Value* v);
+void list_view(const llvm::Module *m);
+
+void nprint_view(const llvm::Type* t);
+void nprint_view(const llvm::Value* v);
+void nprint_view(const llvm::Module *m);
 
 llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx);
 
@@ -81,6 +90,11 @@ bool isOpaquePointer(llvm::Type* ty);
 // if ptr is an AllocaInst or GlobalValue, we can get the pointed-to type
 // from it. Otherwise, return nullptr.
 llvm::Type* tryComputingPointerElementType(llvm::Value* ptr);
+
+// These functions return the LLVM equivalent of a `void*`
+// Newer LLVMs don't distinguish between pointer type, these return an opaque `ptr`
+llvm::Type* getPointerType(llvm::LLVMContext& ctx, unsigned AS=0);
+llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS=0);
 
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H

@@ -32,7 +32,7 @@ def CompVersion(version_string):
     are not specified, 0 will be used for their value(s)
     """
     CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
-    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
+    match = re.search(u"(\\d+)(\\.(\\d+))?(\\.(\\d+))?(\\.(\\d+))?", version_string)
     if match:
         major    = int(match.group(1))
         minor    = int(match.group(3) or 0)
@@ -40,8 +40,10 @@ def CompVersion(version_string):
         build    = int(match.group(7) or 0)
         return CompVersionT(major=major, minor=minor, revision=revision, build=build)
     else:
-        error("Could not convert version '{0}' to a tuple".format(
-            version_string), ValueError)
+        error(
+            "Could not convert version '{0}' to a tuple".format(version_string),
+            ValueError,
+        )
 
 
 @memoize

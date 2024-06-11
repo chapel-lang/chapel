@@ -568,6 +568,7 @@ static ShadowVarSymbol* create_IN_Parentvar(LoopWithShadowVarsInterface* fs,
     CallExpr*  cast    = createCast(userOuterVar, SI->type->symbol);
     VarSymbol* inptemp = newTempConst("INPtemp", SI->type);
     inptemp->qual      = QUAL_CONST_VAL;
+    inptemp->addFlag(FLAG_TFI_BORROW_TEMP);
 
     fs->asExpr()->insertBefore(holder);
     holder->insertAtTail(new DefExpr(inptemp));
@@ -994,7 +995,23 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
                                                Symbol* field)
 {
   bool isConst = ovar->isConstant() || field->isConstant();
-  VarSymbol* fieldRef = createFieldRef(fs->asExpr(), ovar, field, isConst);
+
+  // with --baseline, we have to be careful where we insert the initialization of
+  // the new ref we are creating. With foreach loops that accesses a field of a
+  // symbol that has implicit ref intent, the initialization has to be in the
+  // loop body.
+  Expr* anchor = nullptr;
+  const bool insertIntoBody = fNoInlineIterators &&
+                              isAggregateType(field->type);
+  if (!insertIntoBody || fs->isForallStmt()) {
+    anchor = fs->asExpr();
+  }
+  else {
+    CallExpr* noop = new CallExpr(PRIM_NOOP);
+    fs->loopBody()->insertAtHead(noop);
+    anchor = noop;
+  }
+  VarSymbol* fieldRef = createFieldRef(anchor, ovar, field, isConst);
 
   // Now create the shadow variable.
   Type*           svarType   = field->type;

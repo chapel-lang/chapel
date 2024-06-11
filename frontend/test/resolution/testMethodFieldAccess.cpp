@@ -1057,6 +1057,139 @@ static void testExample20() {
            "" /* ambiguity error */);
 }
 
+static void testExample21() {
+  testCall("example21.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x where true do return 1;
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.r.x");
+}
+
+static void testExample22() {
+  testCall("example22.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x do return 1;
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.r.x");
+}
+
+static void testExample23() {
+  testCall("example23.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x where true do return 1;
+                  proc x where true do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* ambiguity error */);
+}
+
+static void testExample24() {
+  testCall("example24.chpl",
+           R""""(
+              module M {
+                proc x where false do return 1;
+                record r {
+                  proc x where true do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.r.x");
+}
+
+static void testExample25() {
+  testCall("example25.chpl",
+           R""""(
+              module M {
+                proc x where true do return 1;
+                record r {
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.x");
+}
+
+static void testExample26() {
+  testCall("example26.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x where false do return 1;
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* both false; no matches. */);
+}
+
+static void testExample27() {
+  testCall("example27.chpl",
+           R""""(
+              module M {
+                proc x where false do return 1;
+                record r {
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* both false; no matches. */);
+}
+
 int main() {
   test1r();
   test1c();
@@ -1112,6 +1245,13 @@ int main() {
   testExample18();
   testExample19();
   testExample20();
+  testExample21();
+  testExample22();
+  testExample23();
+  testExample24();
+  testExample25();
+  testExample26();
+  testExample27();
 
   return 0;
 }

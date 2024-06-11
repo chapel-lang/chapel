@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# skip if using CHPL_GPU=cpu
+if [ "$CHPL_GPU" = "cpu" ]; then
+  echo "True"
+  exit
+fi
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
+# We're currently using Josh's fork, at some point this may get integrated into
+# the main minbude repos here: https://github.com/UoB-HPC/miniBUDE.git
+MINIBUDE_URL=${MINIBUDE_URL:-https://github.com/milthorpe/miniBUDE.git}
+MINIBUDE_BRANCH=${MINIBUDE_BRANCH:-v2}
+
+# Clone miniBUDE, skipif clone failed. Timeouts are frequent enough we don't
+# want to cause a failure.  It would be nice to add extra output to the log to
+# explain why it skipped but any output beyond "True" or "False" (even if sent
+# to stderr) will cause the skipif itself to fail.
+rm -rf miniBUDE
+if ! git clone ${MINIBUDE_URL} --branch=${MINIBUDE_BRANCH} --depth=1 2>gitClone.out; then
+  #echo "git clone failed; output:" >&2
+  #cat gitClone.out >&2
+  echo "True"
+  exit
+fi
+
+# Apply patches, if any
+if ! (for p in $(find patches -name "*patch"); do git -C miniBUDE apply ../$p; done) 2>gitPatch.out; then
+  echo "Patching failed; output:" >&2
+  cat gitPatch.out >&2
+  echo "True"
+  exit
+fi
+
+echo "False"

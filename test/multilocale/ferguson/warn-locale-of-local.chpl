@@ -1,7 +1,7 @@
 use BlockDist;
 
 var space = {0..#8};
-var dom = space dmapped blockDist(boundingBox=space);
+var dom = space dmapped new blockDist(boundingBox=space);
 var A: [dom] int;
 
 config const verbose = false;

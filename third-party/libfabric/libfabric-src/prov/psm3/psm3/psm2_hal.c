@@ -97,7 +97,7 @@ void psm3_hal_register_instance(psmi_hal_instance_t *psm_hi)
 	REJECT_IMPROPER_HI(hfp_mq_init_defaults);
 	REJECT_IMPROPER_HI(hfp_ep_open_opts_get_defaults);
 	REJECT_IMPROPER_HI(hfp_context_initstats);
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	REJECT_IMPROPER_HI(hfp_gdr_open);
 #endif
 
@@ -152,9 +152,6 @@ void psm3_hal_register_instance(psmi_hal_instance_t *psm_hi)
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	REJECT_IMPROPER_HI(hfp_gdr_close);
 	REJECT_IMPROPER_HI(hfp_gdr_convert_gpu_to_host_addr);
-#ifdef PSM_ONEAPI
-	REJECT_IMPROPER_HI(hfp_gdr_munmap_gpu_to_host_addr);
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 	REJECT_IMPROPER_HI(hfp_get_port_index2pkey);
 	REJECT_IMPROPER_HI(hfp_poll_type);
@@ -233,6 +230,69 @@ int psm3_hal_pre_init_cache_func(enum psmi_hal_pre_init_cache_func_krnls k, ...)
 					rv = -1;
 			}
 			break;
+		case psmi_hal_pre_init_cache_func_get_port_speed:
+			{
+				int unit = va_arg(ap,int);
+
+				if ((unit >= 0) && (unit < p->params.num_units))
+				{
+					int port = va_arg(ap,int);
+					if ((port >= 1) && (port <= p->params.num_ports))
+					{
+						int i = unit * (p->params.num_ports+1) + port;
+						// only cache during PSM3 init
+						if (!init_cache_on || !p->params.port_speed_valid[i]) {
+							rv = p->hfp_get_port_speed(unit,port,&p->params.port_speed[i]);
+							p->params.port_speed_valid[i] = rv == 0 ? 1 : -1;
+						}
+						rv = (p->params.port_subnet_valid[i] ==1)? 0: -1;
+						if (rv == 0) {
+							uint64_t *speed = va_arg(ap, uint64_t*);
+							if (speed) *speed = p->params.port_speed[i];
+						}
+					}
+					else
+						rv = -1;
+				}
+				else
+					rv = -1;
+			}
+			break;
+		case psmi_hal_pre_init_cache_func_get_port_lid:
+			{
+				int unit = va_arg(ap,int);
+
+				if ((unit >= 0) && (unit < p->params.num_units))
+				{
+					int port = va_arg(ap,int);
+					if ((port >= 1) && (port <= p->params.num_ports))
+					{
+						int addr_index = va_arg(ap,int);
+						if (addr_index >= 0 && addr_index < psm3_addr_per_nic)
+						{
+							int i = unit * ((p->params.num_ports+1) * psm3_addr_per_nic) + port * psm3_addr_per_nic + addr_index;
+							// only cache during PSM3 init
+							if (!init_cache_on || !p->params.port_lid_valid[i]) {
+								rv = p->hfp_get_port_lid(unit,port,addr_index);
+								if (rv > 0) {
+									p->params.port_lid_valid[i] = 1;
+									p->params.port_lid[i] = rv;
+								} else {
+									p->params.port_lid_valid[i] = -1;
+									rv = -1;
+								}
+								break;
+							}
+							rv = p->params.port_lid_valid[i] == -1 ? -1 : p->params.port_lid[i];
+						}
+					}
+					else
+						rv = -1;
+				}
+				else
+					rv = -1;
+			}
+			break;
 		case psmi_hal_pre_init_cache_func_get_num_contexts:
 			{
 				int unit = va_arg(ap,int);
@@ -301,6 +361,51 @@ int psm3_hal_pre_init_cache_func(enum psmi_hal_pre_init_cache_func_krnls k, ...)
 								if (addr) *addr = p->params.port_subnet_addr[i];
 								if (idx) *idx = p->params.port_subnet_idx[i];
 								if (gid) *gid = p->params.port_subnet_gid[i];
+							}
+						}
+						else
+							rv = -1;
+					}
+					else
+						rv = -1;
+				}
+				else
+					rv = -1;
+			}
+			break;
+		case psmi_hal_pre_init_cache_func_get_port_subnet_name:
+			{
+				int unit = va_arg(ap,int);
+
+				if ((unit >= 0) && (unit < p->params.num_units))
+				{
+					int port = va_arg(ap,int);
+					if ((port >= 1) && (port <= p->params.num_ports))
+					{
+						int addr_index = va_arg(ap,int);
+						if (addr_index >= 0 && addr_index < psm3_addr_per_nic)
+						{
+							int i = unit * ((p->params.num_ports+1) * psm3_addr_per_nic) + port * psm3_addr_per_nic + addr_index;
+							// only cache during PSM3 init
+							if (!init_cache_on || !p->params.port_subnet_name[i]) {
+								char buffer[PATH_MAX] = {};
+								rv = p->hfp_get_port_subnet_name(unit, port, addr_index, buffer, sizeof(buffer));
+								if (p->params.port_subnet_name[i]) {
+									psmi_free(p->params.port_subnet_name[i]);
+								}
+								if (rv == 0) {
+									p->params.port_subnet_name[i] = psmi_strdup(PSMI_EP_NONE, buffer);
+								} else {
+									p->params.port_subnet_name[i] = NULL;
+									rv = -1;
+									break;
+								}
+							}
+							char *buf      = va_arg(ap, char*);
+							size_t bufsize = va_arg(ap, size_t);
+							rv = p->params.port_subnet_name[i] ? 0 : -1;
+							if (rv == 0 && buf) {
+								(void)snprintf(buf, bufsize, "%s", p->params.port_subnet_name[i]);
 							}
 						}
 						else
@@ -472,6 +577,10 @@ static void psm3_hal_free_cache(struct _psmi_hal_instance *p)
 	FREE_HAL_CACHE(unit_active_valid);
 	FREE_HAL_CACHE(port_active);
 	FREE_HAL_CACHE(port_active_valid);
+	FREE_HAL_CACHE(port_speed);
+	FREE_HAL_CACHE(port_speed_valid);
+	FREE_HAL_CACHE(port_lid);
+	FREE_HAL_CACHE(port_lid_valid);
 	FREE_HAL_CACHE(num_contexts);
 	FREE_HAL_CACHE(num_contexts_valid);
 	FREE_HAL_CACHE(num_free_contexts);
@@ -481,6 +590,7 @@ static void psm3_hal_free_cache(struct _psmi_hal_instance *p)
 	FREE_HAL_CACHE(port_subnet_addr);
 	FREE_HAL_CACHE(port_subnet_idx);
 	FREE_HAL_CACHE(port_subnet_gid);
+	FREE_HAL_CACHE_ARRAY(port_subnet_name, p->params.num_units * p->params.num_ports * psm3_addr_per_nic);
 
 	FREE_HAL_CACHE(unit_pci_bus_valid);
 	FREE_HAL_CACHE(unit_pci_bus_domain);
@@ -524,6 +634,10 @@ static psmi_hal_instance_t *psm3_hal_select_hal(psmi_hal_instance_t *p,
 	ALLOC_HAL_CACHE(unit_active_valid, int8_t, nunits);
 	ALLOC_HAL_CACHE(port_active, int8_t, nunits*(nports+1));
 	ALLOC_HAL_CACHE(port_active_valid, int8_t, nunits*(nports+1));
+	ALLOC_HAL_CACHE(port_speed, uint64_t, nunits*(nports+1));
+	ALLOC_HAL_CACHE(port_speed_valid, int8_t, nunits*(nports+1));
+	ALLOC_HAL_CACHE(port_lid, int, nunits*(nports+1)*psm3_addr_per_nic);
+	ALLOC_HAL_CACHE(port_lid_valid, int8_t, nunits*(nports+1)*psm3_addr_per_nic);
 	ALLOC_HAL_CACHE(num_contexts, uint16_t, nunits);
 	ALLOC_HAL_CACHE(num_contexts_valid, uint16_t, nunits);
 	ALLOC_HAL_CACHE(num_free_contexts, uint16_t, nunits);
@@ -533,6 +647,7 @@ static psmi_hal_instance_t *psm3_hal_select_hal(psmi_hal_instance_t *p,
 	ALLOC_HAL_CACHE(port_subnet_addr, psmi_naddr128_t, nunits*(nports+1)*psm3_addr_per_nic);
 	ALLOC_HAL_CACHE(port_subnet_idx, int, nunits*(nports+1)*psm3_addr_per_nic);
 	ALLOC_HAL_CACHE(port_subnet_gid, psmi_gid128_t, nunits*(nports+1)*psm3_addr_per_nic);
+	ALLOC_HAL_CACHE_ARRAY(port_subnet_name, char, nunits*(nports+1)*psm3_addr_per_nic);
 
 	ALLOC_HAL_CACHE(unit_pci_bus_valid, int8_t, nunits);
 	ALLOC_HAL_CACHE(unit_pci_bus_domain, uint32_t, nunits);
@@ -559,6 +674,72 @@ fail_cache_alloc:
 	psm3_hal_free_cache(p);
 	return NULL;
 }
+
+/* check syntax of pattern. and confirm it matches at least 1 HAL
+ * returns:
+ * 0 - valid
+ * -1 - empty string
+ * -2 - invalid syntax
+ */
+static int parse_check_hal(int type, const union psmi_envvar_val val, void *ptr,
+			size_t errstr_size, char errstr[])
+{
+	int i;
+	int ret;
+
+	psmi_assert(type == PSMI_ENVVAR_TYPE_STR);
+	if (! val.e_str || ! *val.e_str)
+		return -1;
+	// use fnmatch to check syntax of pattern
+	// reviewing fnmatch source it only returns 0 or FNM_NOMATCH, but be
+	// safe and match fnmatch documentation that other values indicate error
+	ret = fnmatch(val.e_str, "dontcare", 0
+#ifdef FNM_EXTMATCH
+				| FNM_EXTMATCH
+#endif
+		);
+	if (ret && ret != FNM_NOMATCH) {
+		if (errstr_size)
+			snprintf(errstr, errstr_size, " invalid "
+#ifdef FNM_EXTMATCH
+					"extended "
+#endif
+					"glob pattern");
+		return -2;
+	}
+	// we check for at least 1 matching HAL, but purposely do
+	// not check for active NICs within the HAL
+	// We allow any valid HAL, even if not included in the build
+	// This avoids surprises if user or middleware uses PSM3_HAL to limit
+	// PSM3 to a specific HAL, but the PSM3 build found lacks that HAL
+	ret = -2;	// assume no matching HAL found
+	for (i=0; i <= PSM_HAL_INDEX_MAX; i++)
+	{
+		if (i == PSM_HAL_INDEX_LOOPBACK)
+			continue;
+		if (0 == strcmp("unknown", psm3_hal_index_to_str(i)))
+			continue;
+
+		if (0 == strcmp(val.e_str, "any") ||
+		    0 == fnmatch(val.e_str, psm3_hal_index_to_str(i), 0
+#ifdef FNM_EXTMATCH
+								| FNM_EXTMATCH
+#endif
+			 ))
+		{
+			ret = 0;
+			break;
+		}
+	}
+	if (ret == -2) {
+		if (errstr_size)
+			snprintf(errstr, errstr_size, " no matching HAL found");
+		return -2;
+	}
+	return 0;
+}
+
+static char hal_help[512] = "";
 
 static struct _psmi_hal_instance *psm3_hal_get_pi_inst(void)
 {
@@ -587,11 +768,12 @@ static struct _psmi_hal_instance *psm3_hal_get_pi_inst(void)
 	 */
 
 	union psmi_envvar_val env_hal; /* HAL instance preference */
-	psm3_getenv("PSM3_HAL",
-		    "Hardware Abstraction Layer to use (Default is first HAL"
-		    " to find a valid, unfiltered NIC [any])",
+	psm3_getenv_range("PSM3_HAL",
+		    "Hardware Abstraction Layer to use", hal_help,
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
-		    (union psmi_envvar_val)"any", &env_hal);
+		    (union psmi_envvar_val)"any",
+		    (union psmi_envvar_val)NULL, (union psmi_envvar_val)NULL,
+		    parse_check_hal, NULL, &env_hal);
 
 	for (i=0; i <= PSM_HAL_INDEX_MAX; i++)
 	{
@@ -651,7 +833,39 @@ int psm3_hal_initialize(int devid_enabled[PTL_MAX_INIT])
 {
 	struct _psmi_hal_instance *p = NULL;
 
+	PSMI_HAL_INI();
+
 	if (! psm3_hal_current_hal_instance) {
+		int i;
+		char valid_hal_list[80];
+		int valid_len = 0;
+		char avail_hal_list[80];
+		int avail_len = 0;
+
+		valid_hal_list[0] = '\0';
+		avail_hal_list[0] = '\0';
+		for (i=0; i <= PSM_HAL_INDEX_MAX; i++)
+		{
+			if (i == PSM_HAL_INDEX_LOOPBACK)
+				continue;
+			if (0 == strcmp("unknown", psm3_hal_index_to_str(i)))
+				continue;
+
+			snprintf(&valid_hal_list[valid_len],
+					 sizeof(valid_hal_list)-valid_len, "%s'%s'",
+					 valid_hal_list[0]?", ":"", psm3_hal_index_to_str(i));
+			valid_len = strlen(valid_hal_list);
+			if (psm3_hal_table[i]) {
+				snprintf(&avail_hal_list[avail_len],
+					 sizeof(avail_hal_list)-avail_len, "%s'%s'",
+					 avail_hal_list[0]?", ":"", psm3_hal_index_to_str(i));
+				avail_len = strlen(avail_hal_list);
+			}
+		}
+		snprintf(hal_help, sizeof(hal_help),
+			"  'any' - use first HAL which finds a valid, unfiltered NIC (default)\n"
+			"  valid HALs: %s\n"
+			"  available HALs: %s", valid_hal_list, avail_hal_list);
 		if (! psm3_device_is_enabled(devid_enabled, PTL_DEVID_IPS)) {
 			// register the loopback HAL and select it.  Unlike normal HALs
 			// we don't call psm3_hal_register_instance because it would enforce

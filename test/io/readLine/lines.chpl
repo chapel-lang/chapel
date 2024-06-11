@@ -3,7 +3,7 @@ use List;
 
 proc testData(param testNum) {
   var f = openTempFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
   var data: list(string);
   if testNum == 1 {
     data.pushBack("hello from line 1\n");
@@ -29,7 +29,7 @@ proc testData(param testNum) {
 proc test(param testNum, param stripNewline) {
   var (f, data) = testData(testNum);
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var lines = r.lines(stripNewline);
   assert(lines.size == data.size);
   for (lineFromFile, originalLine) in zip(lines, data) {

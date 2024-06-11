@@ -8,31 +8,32 @@ use nightlysubs;
 sub writeFile{
     $num_args = @_;
 
-    if ($num_args != 16) {
+    if ($num_args != 17) {
         print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
-        print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
+        print "         \$prevsummary \$mysystemlog \$mailer \$nochangerecipient \$recipient \n";
         print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
         print "         \$endtime \$crontab \$testdirs \$debug\n";
         exit 1;
     }
-    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
+    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mysystemlog, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
     $status = $_[0];
     $rawsummary = $_[1];
     $sortedsummary = $_[2];
     $prevsummary = $_[3];
-    $mailer = $_[4];
-    $nochangerecipient = $_[5];
-    $recipient = $_[6];
-    $subjectid = $_[7];
-    $config_name = $_[8];
-    $revision = $_[9];
-    $rawlog = $_[10];
-    $starttime = $_[11];
-    $endtime = $_[12];
-    $crontab = $_[13];
-    $testdirs = $_[14];
-    $debug = $_[15];
+    $mysystemlog = $_[4];
+    $mailer = $_[5];
+    $nochangerecipient = $_[6];
+    $recipient = $_[7];
+    $subjectid = $_[8];
+    $config_name = $_[9];
+    $revision = $_[10];
+    $rawlog = $_[11];
+    $starttime = $_[12];
+    $endtime = $_[13];
+    $crontab = $_[14];
+    $testdirs = $_[15];
+    $debug = $_[16];
 
 
     # Ensure the "previous" summary exists, e.g. if this is the first run of the
@@ -105,7 +106,9 @@ sub writeFile{
         $newfailures += 0;
     }
 
-    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
+    if (-f $mysystemlog && -s $mysystemlog) {
+        # Even if no errors occurred etc., the build failed, so send an email.
+    } elsif ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
         $email=0;
         $recipient = $nochangerecipient;
     }
@@ -124,7 +127,8 @@ sub writeFile{
              $numtestssummary ,
              $summary ,
              $prevsummary ,
-             $sortedsummary );
+             $sortedsummary ,
+             $mysystemlog);
         }
     } else {
         print "CHPL_TEST_NOMAIL: No $mailcommand\n";

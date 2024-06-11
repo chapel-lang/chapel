@@ -1,3 +1,3 @@
-2 { fileTextQuery ("testGenLib.chpl") 
+Parsed file: testGenLib.chpl
 MYPREFIX: doMyM-doMyM-doMyM
 MYPREFIX: doMrehtO-doMrehtO-doMrehtO

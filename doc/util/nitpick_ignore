@@ -36,6 +36,7 @@ cpp:identifier AstList::const_iterator
 cpp:identifier size_t
 cpp:identifier detail
 cpp:identifier detail::PODUniqueString
+cpp:identifier TraceElement
 cpp:identifier AstList::const_iterator::difference_type
 cpp:identifier uint64_t
 cpp:identifier uint32_t
@@ -46,6 +47,8 @@ cpp:identifier int32_t
 cpp:identifier int16_t
 cpp:identifier int8_t
 cpp:identifier va_list
+cpp:identifier ErrorNote
+cpp:identifier ErrorCodeSnippet
 # TODO: Expand macros before generating docs to remove these.
 cpp:identifier ErrorParseErr
 cpp:identifier ParamTag
@@ -63,7 +66,14 @@ cpp:identifier ZERO
 cpp:identifier SYMBOL_ONLY
 cpp:identifier uast::asttags::NUM_AST_TAGS
 cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
+cpp:identifier VisibilitySymbols::REGULAR_SCOPE
+cpp:identifier VIS_USE
 # Common symbols used as template typenames.
 cpp:identifier T
 cpp:identifier Deserializer
 cpp:identifier Serializer
+# For some reason, 'LOOKUP_' symbols in headers are not found.
+cpp:identifier LOOKUP_DECLS
+cpp:identifier LOOKUP_IMPORT_AND_USE
+cpp:identifier LOOKUP_PARENTS
+cpp:identifier LOOKUP_EXTERN_BLOCKS

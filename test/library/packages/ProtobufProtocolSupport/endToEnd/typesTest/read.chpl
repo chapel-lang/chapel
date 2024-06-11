@@ -3,7 +3,7 @@ use IO;
 
 var messageObj = new typesTest.Types();
 var file = open("out", ioMode.r);
-var readingChannel = file.reader();
+var readingChannel = file.reader(locking=false);
 
 messageObj.deserialize(readingChannel);
 

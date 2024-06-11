@@ -1,3 +1,0 @@
-foreachTaskIntents.chpl:5: error: foreach loops do not yet support task intents
-foreachTaskIntents.chpl:11: error: foreach loops do not yet support task intents
-foreachTaskIntents.chpl:17: error: foreach loops do not yet support task intents

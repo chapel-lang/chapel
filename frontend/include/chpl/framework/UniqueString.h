@@ -30,6 +30,8 @@
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/util/hash.h"
 
+#include "llvm/ADT/StringRef.h"
+
 #include <cstring>
 #include <string>
 
@@ -113,6 +115,13 @@ class UniqueString final {
   }
 
   /**
+    Get or create a unique string for an LLVM StringRef.
+   */
+  static inline UniqueString get(Context* context, llvm::StringRef s) {
+    return UniqueString::get(context, s.data(), s.size());
+  }
+
+  /**
     Return the null-terminated string.
     The returned pointer may refer to invalid memory if the UniqueString
     goes out of scope.
@@ -142,6 +151,13 @@ class UniqueString final {
   // representation similar to std::ostream.str()
   std::string str() const {
     return std::string(c_str(), length());
+  }
+
+  /**
+    Returns a reference to the string as an llvm::StringRef
+   */
+  llvm::StringRef stringRef() {
+    return llvm::StringRef(c_str(), length());
   }
 
 
@@ -272,24 +288,29 @@ class UniqueString final {
     return !(*this == other);
   }
 
+  inline bool operator<(const UniqueString other) const {
+    return this->compare(other) < 0;
+  }
+  inline bool operator<=(const UniqueString other) const {
+    return this->compare(other) <= 0;
+  }
+   inline bool operator>(const UniqueString other) const {
+    return this->compare(other) > 0;
+  }
+  inline bool operator>=(const UniqueString other) const {
+    return this->compare(other) >= 0;
+  }
+
   /**
    Returns:
      * -1 if this string is less than the passed string
      * 0 if they are the same
      * 1 if this string is greater
-
-    \rst
-    .. note::
-
-      will only compare up to the first null byte.
-    \endrst
    */
-  int compare(const UniqueString other) const {
-    return *this == other ? 0 : compare(other.c_str());
-  }
-  int compare(const char* other) const {
-    return strcmp(this->c_str(), other);
-  }
+  int compare(const UniqueString other) const;
+
+  int compare(const char* other) const;
+
   size_t hash() const {
     std::hash<size_t> hasher;
     return hasher((size_t) s.i.v);

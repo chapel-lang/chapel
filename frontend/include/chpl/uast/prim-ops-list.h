@@ -39,6 +39,10 @@
 
 PRIMITIVE_G(UNKNOWN, "")
 
+PRIMITIVE_R(INNERMOST_CONTEXT, "innermost context")
+PRIMITIVE_R(OUTER_CONTEXT, "outer context")
+PRIMITIVE_R(HOIST_TO_CONTEXT, "hoist to context")
+
 PRIMITIVE_R(ACTUALS_LIST, "actuals list")
 PRIMITIVE_G(NOOP, "noop")
 PRIMITIVE_G(MOVE, "move")
@@ -130,6 +134,10 @@ PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
 PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
 
+PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper")
+
 PRIMITIVE_G(ADDR_OF, "addr of")
 PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")
@@ -143,7 +151,6 @@ PRIMITIVE_G(GET_DYNAMIC_END_COUNT, "get dynamic end count")
 PRIMITIVE_G(SET_DYNAMIC_END_COUNT, "set dynamic end count")
 
 PRIMITIVE_G(GPU_KERNEL_LAUNCH, "gpu kernel launch")
-PRIMITIVE_G(GPU_KERNEL_LAUNCH_FLAT, "gpu kernel launch flat")
 PRIMITIVE_G(GPU_THREADIDX_X, "gpu threadIdx x")
 PRIMITIVE_G(GPU_THREADIDX_Y, "gpu threadIdx y")
 PRIMITIVE_G(GPU_THREADIDX_Z, "gpu threadIdx z")
@@ -162,9 +169,15 @@ PRIMITIVE_R(GPU_SET_BLOCKSIZE, "gpu set blockSize")
 PRIMITIVE_G(ASSERT_ON_GPU, "chpl_assert_on_gpu")
 PRIMITIVE_R(GPU_ELIGIBLE, "gpu eligible")
 PRIMITIVE_G(GPU_INIT_KERNEL_CFG, "gpu init kernel cfg")
+PRIMITIVE_G(GPU_INIT_KERNEL_CFG_3D, "gpu init kernel cfg 3d")
 PRIMITIVE_G(GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg")
 PRIMITIVE_G(GPU_ARG, "gpu arg")
+PRIMITIVE_G(GPU_BLOCK_REDUCE, "gpu block reduce")
+PRIMITIVE_G(GPU_REDUCE_WRAPPER, "gpu reduce wrapper")
 PRIMITIVE_G(GPU_PID_OFFLOAD, "gpu pid offload")
+PRIMITIVE_R(GPU_ATTRIBUTE_BLOCK, "gpu attribute block")
+PRIMITIVE_R(GPU_PRIMITIVE_BLOCK, "gpu primitive block")
+
 PRIMITIVE_G(GET_SERIAL, "task_get_serial")
 PRIMITIVE_G(SET_SERIAL, "task_set_serial")
 
@@ -407,4 +420,4 @@ PRIMITIVE_G(BREAKPOINT, "breakpoint")
 
 PRIMITIVE_G(CONST_ARG_HASH, "hash const arguments")
 PRIMITIVE_G(CHECK_CONST_ARG_HASH, "check hashes of const arguments")
-PRIMITIVE_R(TASK_INDEPENDENT_SVAR_CAPTURE, "task independent svar capture")
+PRIMITIVE_R(TASK_PRIVATE_SVAR_CAPTURE, "task private svar capture")

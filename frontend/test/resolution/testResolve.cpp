@@ -874,6 +874,7 @@ static void test20() {
 
 // Test resolving functions with pragma "last resort".
 static void test21() {
+  printf("test21\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -1168,6 +1169,395 @@ static void test21() {
   }
 }
 
+// Resolve calls to 'this' on a field.
+static void test22() {
+  printf("test22\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  // Resolve unambiguous call to 'this'.
+  {
+    printf("part 1\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this(arg: int) {
+              return arg;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+          }
+          var outer : Outer;
+          var x = outer.inner(3);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    assert(type.type());
+    assert(!type.isUnknown());
+    assert(type.type()->isIntType());
+
+    guard.realizeErrors();
+    context->collectGarbage();
+  }
+
+  // Above but as param
+  {
+    printf("part 2\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this(param arg: int) param {
+              return arg;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+          }
+          var outer : Outer;
+          param x = outer.inner(3);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    ensureParamInt(type, 3);
+
+    guard.realizeErrors();
+    context->collectGarbage();
+  }
+
+  // Non-applicable 'this' candidate
+  {
+    printf("part 3\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this() {
+              return 3;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+          }
+          var outer : Outer;
+          param x = outer.inner(3);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    assert(type.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
+
+    guard.realizeErrors();
+
+    context->collectGarbage();
+  }
+
+  // Normal method and 'this' both applicable.
+  // We prefer the 'this' call, but likely want to make this a multiple
+  // definition error eventually anyways.
+  {
+    printf("part 4\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this(param arg: int) param {
+              return 3;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+            proc inner(param arg: int) param {
+              return 5;
+            }
+          }
+          var outer : Outer;
+          param x = outer.inner(1);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    ensureParamInt(type, 3);
+
+    guard.realizeErrors();
+
+    context->collectGarbage();
+  }
+
+  // Normal method applicable, 'this' not applicable.
+  // This doesn't resolve as we only try to resolve the field's 'this' and not
+  // methods with the same name.
+  // Like the above, the method and field with the same name should be made a
+  // multiple definition error.
+  {
+    printf("part 5\n");
+    context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
+
+    std::string contents =
+        R""""(
+        module M {
+          record Inner {
+            proc this() param {
+              return 3;
+            }
+          }
+          record Outer {
+            var inner : Inner;
+            proc inner(param arg: int) param {
+              return 5;
+            }
+          }
+          var outer : Outer;
+          param x = outer.inner(1);
+        }
+        )"""";
+
+    auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+    assert(type.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
+
+    guard.realizeErrors();
+
+    context->collectGarbage();
+  }
+}
+
+static void test23() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    std::string prog =
+      R"""(
+      record R {
+        var x : int;
+
+        proc foo() {
+          return 5;
+        }
+      }
+
+      proc helper() {
+        var r : R;
+        return r;
+      }
+
+      proc foo() {
+        return "hello";
+      }
+
+      // should be an int, not a string.
+      var x = helper().foo();
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+      record Inner {
+        var x : int;
+
+        proc innerFoo() {
+          return x;
+        }
+      }
+
+      record Outer {
+        var inner : Inner;
+
+        proc helper() const ref {
+          return inner;
+        }
+      }
+
+      var o : Outer;
+      var x = o.helper().innerFoo();
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+  }
+}
+
+static void test24() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    // straightforward case for qualified module
+    std::string prog =
+      R"""(
+      module M {
+          proc fn() do return 42;
+      }
+      var x = M.fn();
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+
+    // Ignore warnings for 'implicit module'.
+    assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+  }
+
+  {
+    // qualified call when POI is involved. Make sure that although the
+    // current scope isn't searched for the function, it is still searched
+    // for POI functions when resolving the generic function's body.
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+      module M {
+        proc genericFn(x) {
+          return foo(x);
+        }
+      }
+
+      record myRecord {}
+      proc foo(r: myRecord) do return 42;
+
+      var x = M.genericFn(new myRecord());
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+
+    // Ignore warnings for 'implicit module'.
+    assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+  }
+  {
+    // another POI case, to make sure that the POI-based generic function
+    // we just wrote isn't defaulting to some return type.
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+      module M {
+        proc genericFn(x) {
+          return foo(x);
+        }
+      }
+
+      record myRecord1 {}
+      proc foo(r: myRecord1) do return 42;
+
+      record myRecord2 {}
+      proc foo(r: myRecord2) do return "hello";
+
+      var x = (M.genericFn(new myRecord1()), M.genericFn(new myRecord2()));
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    auto tt = t.type()->toTupleType();
+    assert(tt);
+    assert(tt->sortedSubstitutions().at(0).second.type()->isIntType());
+    assert(tt->sortedSubstitutions().at(1).second.type()->isStringType());
+
+    // Ignore warnings for 'implicit module'.
+    assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+  }
+  {
+    // qualified call, but we're not calling a function. Rather, we're invoking
+    // an overloaded call operator on a value, which we retrieve from a module.
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+      module M {
+        record hasCallOperator {
+          proc this(arg: bool) do return 42;
+        }
+
+        var myKindaFn: hasCallOperator;
+      }
+
+      var x = M.myKindaFn(true);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+
+    // Ignore warnings for 'implicit module'.
+    assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+  }
+
+  {
+    // nested module qualified access should work too.
+    std::string prog =
+      R"""(
+      module M {
+        module N {
+          proc fn() do return 42;
+        }
+      }
+      var x = M.N.fn();
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isIntType());
+    assert(t.type()->toIntType()->isDefaultWidth());
+
+    // Ignore warnings for 'implicit module'.
+    assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+  }
+}
+
+static void test25() {
+  // Test that 'none' has type 'nothing'
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    // straightforward case for qualified module
+    std::string prog = "var x = none;";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    assert(t.type());
+    assert(t.type()->isNothingType());
+    assert(t.isParam());
+    assert(t.param());
+    assert(t.param()->isNoneParam());
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -1190,6 +1580,10 @@ int main() {
   test19();
   test20();
   test21();
+  test22();
+  test23();
+  test24();
+  test25();
 
   return 0;
 }

@@ -136,12 +136,12 @@ proc test(x, ref y) {
   printDebugFmt(x);
   var f = openTempFile();
   try {
-    f.writer().withSerializer(FormatWriter).write(x);
+    f.writer(locking=false).withSerializer(FormatWriter).write(x);
   } catch e {
     writeln("ERROR: ", e);
   }
   try {
-    f.reader().withDeserializer(FormatReader).read(y);
+    f.reader(locking=false).withDeserializer(FormatReader).read(y);
 
     if x != y {
       writeln("FAILURE: ", x.type:string);

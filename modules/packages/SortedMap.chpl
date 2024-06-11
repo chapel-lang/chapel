@@ -409,24 +409,19 @@ module SortedMap {
     }
 
     @chpldoc.nodoc
-    proc writeThis(ch: fileWriter) throws {
+    proc serialize(writer, ref serializer) throws {
       _enter(); defer _leave();
       var first = true;
-      ch.write("{");
+      writer.write("{");
       for kv in _set {
         if first {
           first = false;
         } else {
-          ch.write(", ");
+          writer.write(", ");
         }
-        ch.write(kv[0], ": ", kv[1]!.val);
+        writer.write(kv[0], ": ", kv[1]!.val);
       }
-      ch.write("}");
-    }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("}");
     }
 
     /*

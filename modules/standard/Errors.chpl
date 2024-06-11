@@ -248,7 +248,7 @@ module Errors {
         var curnext = curr._next;
         if const asTaskErr = curr: unmanaged TaskErrors? {
           on asTaskErr do
-            for e in asTaskErr do
+            for asTaskErr do
               n += 1;
         } else {
           n += 1;
@@ -433,7 +433,7 @@ module Errors {
     /* Returns `true` if this :class:`TaskErrors` contains an error
        of the given type or a subclass of that type. */
     proc contains(type t) {
-      for e in filter(t) {
+      for filter(t) {
         return true;
       }
       return false;
@@ -631,7 +631,7 @@ module Errors {
   /*
     Assert that a boolean condition is true.  If it is false, prints
     'assert failed - ' followed by all subsequent arguments, as though
-    printed using :proc:`~ChapelIO.write()`.
+    printed using :proc:`~IO.write()`.
 
     .. note :: In the current implementation, this assert never becomes a no-op.
                That is, using it will always incur execution-time checks.

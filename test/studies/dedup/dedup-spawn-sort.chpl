@@ -19,10 +19,10 @@ proc main(args:[] string)
   // Now create a distributed-memory version of paths.
 
   var n:int = paths.size;
-  var BlockN = {1..n} dmapped blockDist({1..n});
+  var BlockN = {1..n} dmapped new blockDist({1..n});
   var distributedPaths:[BlockN] string;
   distributedPaths = paths.toArray();
-  var BlockNumLocales = {0..#numLocales} dmapped blockDist({0..#numLocales});
+  var BlockNumLocales = {0..#numLocales} dmapped new blockDist({0..#numLocales});
   var distributedBuffers: [BlockNumLocales] file;
   var distributedWriters: [BlockNumLocales]
     fileWriter(locking=true);
@@ -30,7 +30,7 @@ proc main(args:[] string)
   // Open up buffers to store the hashes 
   forall (f,w) in zip(distributedBuffers, distributedWriters) {
     f = openMemFile();
-    w = f.writer();
+    w = f.writer(locking=false);
   }
   // Compute the SHA1 sums using the external program
   // Do so in parallel across all locales
@@ -52,7 +52,7 @@ proc main(args:[] string)
       for f in distributedBuffers {
         on f do {
           var data:string;
-          var reader = f.reader();
+          var reader = f.reader(locking=false);
           reader.readAll(data);
           sorter.stdin.writeln(data);
         }

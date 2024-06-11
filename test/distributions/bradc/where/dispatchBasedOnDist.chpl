@@ -1,7 +1,7 @@
 use BlockDist, CyclicDist;
 
-var DBlk: domain(1) dmapped blockDist(boundingBox={1..10}) = {1..10};
-var DCyc: domain(1) dmapped cyclicDist(startIdx=1) = {1..10};
+var DBlk: domain(1) dmapped new blockDist(boundingBox={1..10}) = {1..10};
+var DCyc: domain(1) dmapped new cyclicDist(startIdx=1) = {1..10};
 
 var ABlk: [DBlk] real;
 var ACyc: [DCyc] real;

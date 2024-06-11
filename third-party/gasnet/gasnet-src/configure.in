@@ -9,12 +9,12 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[2023])
-define([GASNET_RELEASE_VERSION_MINOR_D],[3])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2024])
+define([GASNET_RELEASE_VERSION_MINOR_D],[5])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[16])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[18])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
@@ -326,6 +326,10 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
                           [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-format-overflow"])
     GASNET_TRY_WNO_FLAG([$1],[$3-Wno-format-truncation],
                           [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-format-truncation"])
+
+    # Disable DEVWARN flag(s) from -Wcast-function-type that we don't support in our library code
+    GASNET_TRY_WNO_FLAG([$1],[$3-Wno-cast-function-type-strict],
+                          [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-cast-function-type-strict"])
 
     ifelse(GASNETI_C_OR_CXX([$1]),[C],[  # CC and MPI_CC only.  Not desired for CXX
       GASNET_TRY_WNO_FLAG([$1],[$3-Wno-strict-prototypes],
@@ -2831,6 +2835,7 @@ AC_DEFUN([CONDUIT_LDFLAGS],[
 ])
 dnl CONDUIT_SPAWNER
 dnl sets and substitutes GASNET_[CONDUIT_NAME]_SPAWNER_CONF
+dnl defines GASNETC_[CONDUIT_NAME]_SPAWNER_CONF
 AC_DEFUN([CONDUIT_SPAWNER],[
   pushdef([the_option],--with-[]CONDUIT_NAME[]-spawner)
   pushdef([the_variable],GASNET_[]CONDUIT_UPPERNAME[]_SPAWNER_CONF)
@@ -2858,6 +2863,7 @@ AC_DEFUN([CONDUIT_SPAWNER],[
   elif test "$gasnet_spawner_conf" = pmi; then
     force_pmi=yes
   fi
+  AC_DEFINE_UNQUOTED(GASNETC_[]CONDUIT_UPPERNAME[]_SPAWNER_CONF, "$gasnet_spawner_conf")
   the_variable=$gasnet_spawner_conf
   AC_SUBST(the_variable)
   unset gasnet_spawner_conf
@@ -3860,6 +3866,17 @@ if test "$enabled_ibv" = yes; then
         AC_DEFINE(GASNETC_IBV_RCV_THREAD)
       fi
 
+    GASNET_IF_ENABLED_WITH_AUTO(ibv-snd-thread, [See ibv-conduit/README (enabled by default if pthreads available)], 
+      [enabled_ibv_snd_thread=yes
+       if test "$have_pthread" = no; then
+         AC_MSG_ERROR([--enable-ibv-snd-thread requires pthread support but pthreads $pthread_reason])
+       fi],
+      [enabled_ibv_snd_thread=no],
+      [enabled_ibv_snd_thread=$have_pthread])
+      if test "$enabled_ibv_snd_thread" = yes; then
+        AC_DEFINE(GASNETC_IBV_SND_THREAD)
+      fi
+
     GASNET_IF_ENABLED_WITH_AUTO(ibv-conn-thread, [See ibv-conduit/README (enabled by default if pthreads available)], 
       [enabled_ibv_conn_thread=yes
        if test "$have_pthread" = no; then
@@ -4019,14 +4036,14 @@ fi
 AC_SUBST(IBV_CFLAGS)
 AC_SUBST(IBV_LDFLAGS)
 AC_SUBST(IBV_LIBS)
-AM_CONDITIONAL(IBV_SEQ_THREADS, test "$enabled_ibv_rcv_thread$enabled_ibv_conn_thread" != nono)
+AM_CONDITIONAL(IBV_SEQ_THREADS, test "$enabled_ibv_rcv_thread$enabled_ibv_snd_thread$enabled_ibv_conn_thread" != nonono)
 CONDUIT_END([test "$enabled_ibv$have_ibv" = yesyes])
 AM_CONDITIONAL(USE_IBV_CONDUIT, test "$enabled_ibv$have_ibv" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
 # Aries Conduit
 
-CONDUIT_BEGIN(aries,yes,[Cray XC Aries conduit (aries)])
+CONDUIT_BEGIN(aries,yes,[Cray XC Aries conduit *DEPRECATED* (aries)])
 CONDUIT_DISALLOW_SEGMENT(everything)
 # gni only supported on compute node linux for now (cnl)
 case "$target" in
@@ -4155,6 +4172,9 @@ if test "$enabled_aries" = yes; then
 fi
 CONDUIT_END([test "$enabled_aries$have_aries" = yesyes])
 AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
+if test "$enabled_aries$have_aries" = yesyes; then
+  GASNET_MSG_WARN([aries-conduit has been deprecated.  Please see the aries-conduit README for more information.])
+fi
 
 
 #--------------------------------------------------------------------------------------------------------
@@ -4233,7 +4253,7 @@ if test "$enabled_ofi" = yes; then
     # List of known providers in order of preference.
     # Presence on this list does not necessarily indicate support status.
     # Consult ofi-conduit/README for the status of supported libfabric providers.
-    known_providers="cxi psm2 gni verbs;ofi_rxm sockets udp;ofi_rxd tcp;ofi_rxm"
+    known_providers="cxi psm2 gni verbs;ofi_rxm efa sockets udp;ofi_rxd tcp;ofi_rxm"
     
     GASNET_WITH(ofi-provider, [Statically configure ofi-conduit for the given provider],
         ofi_provider="$withval", )
@@ -4312,6 +4332,12 @@ if test "$enabled_ofi" = yes; then
             ofi_define_mr_virt_addr=0
             ofi_define_mr_prov_key=0
             ofi_define_use_av_map=0
+        ;;
+        efa)
+            ofi_define_mr_virt_addr=1
+            ofi_define_mr_prov_key=1
+            ofi_define_use_av_map=0
+            ofi_retry_recvmsg=1
         ;;
         default|generic|"")  # NOTE: "default" is deprecated and can be removed when Spack packaging drops 2022.3.0
             if test -n "$ofi_provider"; then
@@ -4530,6 +4556,14 @@ configured for that provider. If that is not your desired provider, override thi
                 }],
             [ have_fi_hmem_rocr=yes
               AC_DEFINE(GASNETC_HAVE_FI_HMEM_ROCR) ])
+          GASNET_TRY_CACHE_LINK(for FI_HMEM_ZE, have_fi_hmem_ze, [
+                #include <rdma/fi_domain.h>
+            ], [{
+                  struct fi_mr_attr x;
+                  x.iface = FI_HMEM_ZE;
+                }],
+            [ have_fi_hmem_ze=yes
+              AC_DEFINE(GASNETC_HAVE_FI_HMEM_ZE) ])
           ])
     GASNET_POPVAR(CFLAGS)
     GASNET_POPVAR(LDFLAGS)
@@ -4543,6 +4577,7 @@ CONDUIT_END([test "$enabled_ofi$have_ofi" = yesyes])
 AM_CONDITIONAL(USE_OFI_CONDUIT, test "$enabled_ofi$have_ofi" = yesyes)
 AM_CONDITIONAL(HAVE_FI_HMEM_CUDA, test "$have_fi_hmem_cuda" = yes)
 AM_CONDITIONAL(HAVE_FI_HMEM_ROCR, test "$have_fi_hmem_rocr" = yes)
+AM_CONDITIONAL(HAVE_FI_HMEM_ZE, test "$have_fi_hmem_ze" = yes)
 #---------------------------------------------------------------------------------------------------------------
 # CONDUIT CONFIGURATIONS FINISH
 #---------------------------------------------------------------------------------------------------------------
@@ -4780,17 +4815,9 @@ AC_DEFUN([GASNET_PMI_SPAWNER_CFLAGS], [
 
 have_pmi=no
 if test "$enable_pmi" != 'no'; then
-  # On a Cray EX the module is named 'cray-pmi', which is sufficiently unique:
-  expr ":${LOADEDMODULES}" : ".*:cray-pmi/" >/dev/null 2>&1
-  loaded_cray_pmi=$?  # 0 is success
-  # On a Cray XC the module is named 'pmi', which is insufficiently unique, so we look for
-  # both 'pmi' and 'craype'.
-  ( expr ":${LOADEDMODULES}" : ".*:pmi/" && \
-    expr ":${LOADEDMODULES}" : ".*:craype/" ) >/dev/null 2>&1
-  loaded_pmi_plus_craype=$?  # 0 is success
-  # Auto-detect Cray PMI prefix if either environment module loaded, *unless* non-Cray version requested
-  if ( test "$loaded_cray_pmi" = 0 || test "$loaded_pmi_plus_craype" = 0 ) && \
-     ( test "$using_pmi_version" = 'cray' || test -z "$using_pmi_version" ); then
+  # Auto-detect Cray PMI prefix, *unless* non-Cray version requested
+  if ( test -n "$CRAYPE_NETWORK_TARGET" || test "$GASNET_PLATFORM" = crayex ) &&
+   ( test "$using_pmi_version" = 'cray' || test -z "$using_pmi_version" ); then
     # Several places to look.
     for dir in `expr "x${CRAY_PMI_INCLUDE_OPTS}" : 'x-I\([[^ ]]*\)' 2>/dev/null` \
                `expr "x${CRAY_PMI_POST_LINK_OPTS}" : 'x-L\([[^ ]]*\)' 2>/dev/null` \
@@ -5217,7 +5244,7 @@ GASNET_HELP_OUTPUT([
 Memory-kinds options:])
 
 GASNET_IF_ENABLED(memory-kinds,
-        [Prototype support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  Individual --enable-kind-* options have precedence.],
+        [Prototype support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  However, the individual --enable-kind-* options have precedence.  Use of --enable-memory-kinds=force makes failure to detect at least one supported kind fatal.],
         [enable_mk_default=probe], [enable_mk_default=no])
 
 # This is potentially used CUDA_UVA and by HIP
@@ -5450,7 +5477,11 @@ if test "$enable_mk_hip" != "no"; then
       hipError_t res;
       res = hipMalloc(&addr, 1024);
       res = hipPointerGetAttributes(&attr, addr);
+    #if HIP_VERSION_MAJOR < 6
       int bad = (attr.memoryType != hipMemoryTypeDevice) || attr.isManaged;
+    #else
+      int bad = (attr.type != hipMemoryTypeDevice) || attr.isManaged;
+    #endif
     ], [ : ], [ have_mk_hip=no; GASNET_ERR_SAVE() ])
 
     GASNET_POPVAR(LIBS)
@@ -5480,6 +5511,89 @@ AC_SUBST(HIP_LDFLAGS)
 AC_SUBST(HIP_LIBS)
 AM_CONDITIONAL(HAVE_MK_CLASS_HIP, test "$have_mk_hip" = "yes")
 
+# GEX_MK_CLASS_ZE
+enable_mk_ze_implicit=no
+GASNET_IF_ENABLED_WITH_AUTO(kind-ze,
+        [Support for memory kinds on devices via oneAPI Level Zero (auto-detected with --enable-memory-kinds, otherwise disabled)],
+        [enable_mk_ze="yes"; force_mk_ze="yes"],
+        [enable_mk_ze="no"], [
+         if test "x$enable_kind_ze" = 'xprobe'; then
+           enable_mk_ze="probe"
+         elif test "$GASNETI_PTR_BITS" = 32; then
+           enable_mk_ze="no"
+         else
+           enable_mk_ze="$enable_mk_default"
+           enable_mk_ze_implicit=yes
+         fi
+        ])
+unset have_mk_ze
+if test "$enable_mk_ze" != "no"; then
+  AC_MSG_CHECKING(for target having Level Zero memory kinds support)
+  if test "$GASNETI_PTR_BITS" = 32; then
+    AC_MSG_RESULT([no (32-bit targets are not supported)])
+    have_mk_ze=no
+  else
+    have_mk_ze=no
+    case "$target_cpu:$target_os" in
+      x86_64:linux*)    have_mk_ze='yes';;
+    esac
+    if test "$have_mk_ze" = 'no'; then
+      AC_MSG_RESULT([no (unsupported or unrecognized target $target)])
+    else
+      AC_MSG_RESULT([$have_mk_ze])
+    fi
+  fi
+
+  if test "$have_mk_ze" != "no"; then
+    GASNET_PACKAGE_HOME(ZE, [oneAPI Level Zero], [ocloc], [/usr/local], [include/level_zero/ze_api.h])
+    GASNET_PACKAGE_CFLAGS(ZE)
+    GASNET_ENV_DEFAULT(ZE_LIBS, -lze_loader)
+    GASNET_PACKAGE_LDFLAGS(ZE, ze_loader)
+    GASNET_SPLIT_LINKER_OPTS(ZE,ZE_LIBS)
+
+    # Try to compile and link a basic program using the ZE APIs
+    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $ZE_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $ZE_LDFLAGS")
+    GASNET_PUSHVAR(LIBS,"$LIBS $ZE_LIBS")
+
+    GASNET_TRY_CACHE_LINK(for working oneAPI Level Zero configuration, ze_works, [
+      #include <level_zero/ze_api.h>
+    ], [
+      ze_result_t res = zeInit(0);
+      uint32_t count = 0;
+      ze_driver_handle_t driver = NULL;
+      (void) zeDriverGet(&count, &driver);
+      ze_device_handle_t device = NULL;
+      (void) zeDeviceGet(driver, &count, &device);
+    ], [ : ], [ have_mk_ze=no; GASNET_ERR_SAVE() ])
+
+    GASNET_POPVAR(LIBS)
+    GASNET_POPVAR(LDFLAGS)
+    GASNET_POPVAR(CFLAGS)
+  fi
+
+  if test "$have_mk_ze" = "yes"; then
+    AC_DEFINE(GASNETI_MK_CLASS_ZE_ENABLED)
+    GASNET_MSG_WARN([
+oneAPI Level Zero memory kinds support has been enabled.
+This support is experimental and may have performance and correctness bugs.])
+  elif test "$force_mk_ze" = "yes"; then
+    GASNET_MSG_ERROR([oneAPI Level Zero memory kinds support was requested with --enable-kind-ze but is not available])
+  else
+    unset ZE_CFLAGS
+    unset ZE_LDFLAGS
+    unset ZE_LIBS
+  fi
+fi
+AC_SUBST(ZE_CFLAGS)
+AC_SUBST(ZE_LDFLAGS)
+AC_SUBST(ZE_LIBS)
+AM_CONDITIONAL(HAVE_MK_CLASS_ZE, test "$have_mk_ze" = "yes")
+
+if test "x$enable_memory_kinds$have_mk_cuda_uva$have_mk_hip$have_mk_ze" = "xforcenonono"; then
+  GASNET_MSG_ERROR([Memory kinds support enabled with --enable-memory-kinds=force, but no supported memory kind was found])
+fi
+
 AC_DEFUN([MK_OUTPUT],[
   pushdef([lowername],translit($1,'A-Z','a-z'))
   if test "$have_mk_[]lowername" = "yes"; then
@@ -5506,6 +5620,7 @@ cat >>$CONDUIT_LIST <<EOF
 EOF
 MK_OUTPUT(cuda_uva, GPUs with NVIDIA CUDA API (cuda-uva))
 MK_OUTPUT(hip,      GPUs with AMD HIP API (hip))
+MK_OUTPUT(ze,       GPUs with Intel oneAPI *EXPERIMENTAL* (ze))
 
 dnl GASNET_TOOLSONLY_FALSE_END
 ########################################################################
@@ -6021,15 +6136,30 @@ AC_SUBST(ENVCMD)
 NOASLR_LDFLAGS=
 case "$target_os" in
   darwin*)
-    # Darwin linker complains about symbols defined in multiple dynamic libs.
-    # This is a minor annoyance in some cases, however it becomes a fatal error
-    # when linking with the mpich libs.
     if test "$CC_FAMILY$CC_SUBFAMILY" = 'GNUNVIDIA'; then
       dash_Wl='-Xlinker '
     else
       dash_Wl='-Wl,'
     fi
-    LDFLAGS="$LDFLAGS ${dash_Wl}-multiply_defined,suppress"
+
+    tmp_ver=`expr "$target_os" : 'darwin\([[0-9]]*\)' 2>/dev/null`
+
+    # Darwin linker may complain about symbols defined in multiple dynamic libs.
+    # This is a minor annoyance in some cases, however it becomes a fatal error
+    # when linking with the mpich libs.
+    # The `-multiply_defined suppress` linker option has been documented as
+    # obsolete since Darwin 9 (MacOSX Leopard, Oct 2007) and has since (as of
+    # Apple clang 15 / macOS Ventura / Darwin 22) begun to generate linker
+    # warnings (see bug 4677).
+    # To detect such warnings, we could use GASNET_TRY_LDFLAG() if such existed.
+    # However, this OS version check should be sufficient:
+    AC_MSG_CHECKING([for -multiply_defined linker option])
+    if expr $tmp_ver \< 22 >/dev/null; then
+      AC_MSG_RESULT(yes)
+      LDFLAGS="$LDFLAGS ${dash_Wl}-multiply_defined,suppress"
+    else
+      AC_MSG_RESULT(no)
+    fi
 
     # Darwin 11 (MacOSX Lion) and newer use address-space randomization by default
     # But -no_pie is ignored (with a warning) on aarch64

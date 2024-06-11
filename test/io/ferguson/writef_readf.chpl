@@ -25,7 +25,7 @@ proc testio(fmts: [] string, values: [])
         var x = v;
         var f = openTempFile();
         {
-          var ch = f.writer();
+          var ch = f.writer(locking=false);
           if noisy then writeln("Writing ", x:string);
           ch.writef(usefmt:t, x);
           if writextra then ch.write("  \t\n");
@@ -33,7 +33,7 @@ proc testio(fmts: [] string, values: [])
         }
 
         {
-          var ch = f.reader();
+          var ch = f.reader(locking=false);
           var y:x.type;
           var z:x.type;
           if noisy then writeln("Reading element");

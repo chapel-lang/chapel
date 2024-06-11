@@ -106,10 +106,6 @@ module AutoMath {
   pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_float_isnan(x: real(32)): c_int;
 
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  private extern proc fabs(x: real(64)): real(64);
-
 
   //
   //////////////////////////////////////////////////////////////////////////
@@ -138,7 +134,7 @@ module AutoMath {
   proc abs(param x : integral) param do return if x < 0 then -x else x;
 
   /* Returns the magnitude of the real argument `x`. */
-  inline proc abs(x : real(64)):real(64) do return fabs(x);
+  inline proc abs(x : real(64)):real(64) do return __primitive("abs", x);
 
   /* Return the absolute value of a param real(64) as a param */
   proc abs(param x: real(64)) param :real(64) {
@@ -146,12 +142,7 @@ module AutoMath {
   }
 
   /* Returns the magnitude of the real argument `x`. */
-  inline proc abs(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc fabsf(x: real(32)): real(32);
-    return fabsf(x);
-  }
+  inline proc abs(x : real(32)): real(32) do return __primitive("abs", x);
 
   /* Return the absolute value of a param real(32) as a param */
   proc abs(param x: real(32)) param : real(32) {
@@ -159,7 +150,7 @@ module AutoMath {
   }
 
   /* Returns the real magnitude of the imaginary argument `x`. */
-  inline proc abs(x : imag(64)): real(64) do return fabs(_i2r(x));
+  inline proc abs(x : imag(64)): real(64) do return __primitive("abs", _i2r(x));
 
   /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
   */
@@ -168,12 +159,7 @@ module AutoMath {
   }
 
   /* Returns the real magnitude of the imaginary argument `x`. */
-  inline proc abs(x: imag(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc fabsf(x: real(32)): real(32);
-    return fabsf(_i2r(x));
-  }
+  inline proc abs(x: imag(32)): real(32) do return __primitive("abs", _i2r(x));
 
   /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
   */
@@ -348,9 +334,9 @@ module AutoMath {
   inline proc max(x: uint(64), y: uint(64)) do return if x > y then x else y;
 
   @chpldoc.nodoc
-  inline proc max(x: real(32), y: real(32)) do return if (x > y) | isNan(x) then x else y;
+  inline proc max(x: real(32), y: real(32)) do return if (x > y) || isNan(x) then x else y;
   @chpldoc.nodoc
-  inline proc max(x: real(64), y: real(64)) do return if (x > y) | isNan(x) then x else y;
+  inline proc max(x: real(64), y: real(64)) do return if (x > y) || isNan(x) then x else y;
 
   @chpldoc.nodoc
   inline proc max(x: int(8), y: uint(8)) do return if x > y then x : uint(8) else y;
@@ -417,9 +403,9 @@ module AutoMath {
   inline proc min(x: uint(64), y: uint(64)) do return if x < y then x else y;
 
   @chpldoc.nodoc
-  inline proc min(x: real(32), y: real(32)) do return if (x < y) | isNan(x) then x else y;
+  inline proc min(x: real(32), y: real(32)) do return if (x < y) || isNan(x) then x else y;
   @chpldoc.nodoc
-  inline proc min(x: real(64), y: real(64)) do return if (x < y) | isNan(x) then x else y;
+  inline proc min(x: real(64), y: real(64)) do return if (x < y) || isNan(x) then x else y;
 
   @chpldoc.nodoc
   inline proc min(x: int(8), y: uint(8)) do return if x < y then x else y : int(8);
@@ -594,24 +580,28 @@ module AutoMath {
   /* Returns the signum function of the integer argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   inline proc sgn(x : int(?w)): int(8) do
     return ((x > 0) : int(8) - (x < 0) : int(8)) : int(8);
 
   /* Returns the signum function of the unsigned integer argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   inline proc sgn(x : uint(?w)): uint(8) do
     return (x > 0) : uint(8);
 
   /* Returns the signum function of the integer param argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   proc sgn(param x : integral) param do
     return if x > 0 then 1 else if x == 0 then 0 else -1;
 
   /* Returns the signum function of the real argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  @unstable("sgn is unstable and may change its name and return type in the future")
   inline proc sgn(x : real(?w)): int(8) do
     return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
 
@@ -619,9 +609,7 @@ module AutoMath {
 
      It is an error if the `x` is less than zero.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc sqrt(x: real(64)): real(64);
+  inline proc sqrt(x: real(64)): real(64) do return __primitive("sqrt", x);
 
   /* Returns the square root of the argument `x`.
 
@@ -638,12 +626,7 @@ module AutoMath {
 
      It is an error if  `x` is less than zero.
   */
-  inline proc sqrt(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc sqrtf(x: real(32)): real(32);
-    return sqrtf(x);
-  }
+  inline proc sqrt(x : real(32)): real(32) do return __primitive("sqrt", x);
 
   /* Returns the square root of the argument `x`.
 
@@ -656,7 +639,7 @@ module AutoMath {
     return __primitive("sqrt", x);
   }
 
-  /* Returns the square root of the argument `z`. */
+  /* Returns the square root of the argument `x`. */
   inline proc sqrt(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -664,12 +647,12 @@ module AutoMath {
     return csqrtf(x);
   }
 
-  /* Returns the square root of the argument `z`. */
-  proc sqrt(param x: complex(64)) param :complex(64) {
+  /* Returns the square root of the argument `x`. */
+  proc sqrt(param x: complex(64)) param : complex(64) {
     return __primitive("sqrt", x);
   }
 
-  /* Returns the square root of the argument `z`. */
+  /* Returns the square root of the argument `x`. */
   inline proc sqrt(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -677,8 +660,8 @@ module AutoMath {
     return csqrt(x);
   }
 
-  /* Returns the square root of the argument `z`. */
-  proc sqrt(param x: complex(128)) param :complex(128) {
+  /* Returns the square root of the argument `x`. */
+  proc sqrt(param x: complex(128)) param : complex(128) {
     return __primitive("sqrt", x);
   }
 

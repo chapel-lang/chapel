@@ -72,9 +72,10 @@ fi_opx_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf, uint64_t flags
 		const int lock_required = fi_opx_threading_lock_required(threading, fi_opx_global.progress);
 
 		fi_opx_lock_if_required(&opx_cq->lock, lock_required);
-		*buf = ext->err_entry;
+		ofi_cq_err_memcpy(opx_cq->domain->fabric->fabric_fid.api_version,
+				  buf, &ext->err_entry);
 		slist_remove_head((struct slist *)&opx_cq->err);
-		free(ext);
+		OPX_BUF_FREE(ext);
 		ext = NULL;
 		fi_opx_unlock_if_required(&opx_cq->lock, lock_required);
 

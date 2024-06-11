@@ -27,6 +27,7 @@ from . import visitor
 
 QualifiedType = typing.Tuple[str, Optional[ChapelType], Optional[Param]]
 
+
 def preorder(node):
     """
     Recursively visit the given AST node, going in pre-order (parent-then-children)
@@ -216,7 +217,6 @@ def match_pattern(ast, pattern):
 
     """
 
-    variables = {}
     counts = {}
 
     def fresh(metavar):
@@ -236,7 +236,7 @@ def match_pattern(ast, pattern):
         count = counts[metavar]
         return metavar if count == 0 else metavar + str(count - 1)
 
-    def check_var(ast, pat):
+    def check_var(ast, pat, variables: Dict):
         # Empty pattern is wildcard
         if len(pat) == 0:
             return True
@@ -256,15 +256,15 @@ def match_pattern(ast, pattern):
             print("Equality constrait:", variables[variable], ast)
             return True
 
-    def match_inner(ast, pat):
+    def match_inner(ast, pat, variables: Dict) -> bool:
         if isinstance(pat, str):
-            return check_var(ast, pat)
+            return check_var(ast, pat, variables)
         elif isinstance(pat, tuple):
             (pat_name, node_type) = pat
 
             if not isinstance(ast, node_type):
                 return False
-            if not check_var(ast, pat_name):
+            if not check_var(ast, pat_name, variables):
                 return False
 
             return True
@@ -279,7 +279,7 @@ def match_pattern(ast, pattern):
 
             if not isinstance(ast, node_type):
                 return False
-            if pat_name is not None and not check_var(ast, pat_name):
+            if pat_name is not None and not check_var(ast, pat_name, variables):
                 return False
 
             idx += 1
@@ -293,7 +293,7 @@ def match_pattern(ast, pattern):
                 if child_pat == "rest":
                     # Special case rest pattern; subsequent children allowed.
                     break
-                if not match_inner(child, child_pat):
+                if not match_inner(child, child_pat, variables):
                     return False
                 idx += 1
             else:
@@ -305,13 +305,22 @@ def match_pattern(ast, pattern):
                     return False
 
             return True
+        elif isinstance(pat, set):
+            # check if any of patterns in the set match
+            for p in pat:
+                local_variables = variables.copy()
+                if match_inner(ast, p, local_variables):
+                    variables.update(local_variables)
+                    return True
+            return False
         elif issubclass(pat, AstNode):
             # Just check if the AST node matches
             return isinstance(ast, pat)
         else:
             raise Exception("Invalid pattern!")
 
-    return variables if match_inner(ast, pattern) else None
+    variables = {}
+    return variables if match_inner(ast, pattern, variables) else None
 
 
 def each_matching(node, pattern, iterator=preorder):
@@ -347,3 +356,59 @@ def files_with_contexts(files):
 
         for filename in to_yield:
             yield (filename, ctx)
+
+
+def range_to_tokens(
+    rng: Location, lines: List[str]
+) -> List[typing.Tuple[int, int, int]]:
+    """
+    Convert a Chapel location to a list of token-compatible ranges. If a location
+    spans multiple lines, it gets split into multiple tokens. The lines
+    and columns are zero-indexed.
+
+    Returns a list of (line, column, length).
+    """
+
+    line_start, char_start = rng.start()
+    line_end, char_end = rng.end()
+
+    if line_start == line_end:
+        return [(line_start - 1, char_start - 1, char_end - char_start)]
+
+    tokens = [
+        (
+            line_start - 1,
+            char_start - 1,
+            len(lines[line_start - 1]) - char_start + 1,
+        )
+    ]
+    for line in range(line_start + 1, line_end):
+        tokens.append((line - 1, 0, len(lines[line - 1])))
+    tokens.append((line_end - 1, 0, char_end - 1))
+
+    return tokens
+
+
+def range_to_lines(rng: Location, lines: List[str]) -> List[str]:
+    """
+    Convert a Chapel location to a list of strings
+    """
+    text = []
+    for line, column, length in range_to_tokens(rng, lines):
+        text.append(lines[line][column : column + length])
+    return text
+
+
+def range_to_text(rng: Location, lines: List[str]) -> str:
+    """
+    Convert a Chapel location to a single string
+    """
+    return "\n".join(range_to_lines(rng, lines))
+
+
+def get_file_lines(context: Context, node: AstNode) -> typing.List[str]:
+    """
+    Get the lines of the file containing the given node
+    """
+    path = node.location().path()
+    return context.get_file_text(path).splitlines()

@@ -1,7 +1,7 @@
 use IO;
 
-testAdvanceUpTo(openReader("singleByteInput.txt"), "-");
-testAdvanceUpTo(openReader("singleByteInput.txt"), b"-");
+testAdvanceUpTo(openReader("singleByteInput.txt", locking=false), "-");
+testAdvanceUpTo(openReader("singleByteInput.txt", locking=false), b"-");
 
 proc testAdvanceUpTo(r, sep) {
   // try to read a separator that isn't in the channel (should throw 'UnexpectedEofError')

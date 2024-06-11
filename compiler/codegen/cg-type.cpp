@@ -78,7 +78,7 @@ void FunctionType::codegenDef() {
     #ifdef HAVE_LLVM
     llvm::Type* returnTy = this->returnType()->symbol->getLLVMType();
     std::vector<llvm::Type*> argTys;
-    auto& ctx = info->llvmContext;
+    auto& ctx = gContext->llvmContext();
 
     // Handle the void type specifically.
     if (this->returnType() == dtVoid || this->returnType() == dtNothing) {
@@ -313,11 +313,10 @@ void AggregateType::codegenDef() {
     TypeSymbol* base = getDataClassType(symbol);
     const char* baseType = base->cname;
     if( outfile ) {
-      // TODO: add const qualifier for const pointers
-      // This would require properly using const qualifiers throughout generated C
-      // code, which we currently do not have. Otherwise we get warnings about
-      // discarding const qualification. Anna, 04-19-2023
-      fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
+      const char* constness =
+          symbol->hasFlag(FLAG_C_PTRCONST_CLASS) ? "const " : "";
+      fprintf(outfile, "typedef %s%s *%s;\n", constness, baseType,
+              symbol->cname);
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType;
@@ -377,11 +376,7 @@ void AggregateType::codegenDef() {
 #ifdef HAVE_LLVM
       int paramID = 0;
       std::vector<llvm::Type*> params;
-#if HAVE_LLVM_VER >= 100
       std::vector<llvm::MaybeAlign> aligns;
-#else
-      std::vector<unsigned> aligns;
-#endif
 
       if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS)) {
         llvm::Type* cidType = info->lvt->getType("chpl__class_id");
@@ -436,7 +431,7 @@ void AggregateType::codegenDef() {
           // stops us from doing 0-byte memory allocation
           // (comes up with ioNewline and --no-local RA)
           // TODO - don't ever allocate 0-byte structures
-          params.push_back(llvm::Type::getInt32Ty(info->llvmContext));
+          params.push_back(llvm::Type::getInt32Ty(gContext->llvmContext()));
         }
         for_fields(field, this) {
           if (field->type != dtNothing && field->type != dtVoid) {
@@ -470,7 +465,7 @@ void AggregateType::codegenDef() {
         if (isOpaquePointer(llBaseType)) {
 #if HAVE_LLVM_VER >= 140
           // No need to compute the element type for an opaque pointer
-          globalPtrTy = llvm::PointerType::get(info->llvmContext,
+          globalPtrTy = llvm::PointerType::get(gContext->llvmContext(),
                                                globalAddressSpace);
 #endif
         } else {
@@ -518,11 +513,7 @@ void AggregateType::codegenDef() {
         if (aligns.size() == params.size()) {
           for (size_t i = 0; i < params.size(); i++) {
             unsigned offset = info->module->getDataLayout().getStructLayout(stype)->getElementOffset(i);
-#if HAVE_LLVM_VER >= 100
             unsigned align = 1 << Log2(aligns[i].valueOrOne());
-#else
-            unsigned align = aligns[i];
-#endif
             if ((offset % align) != 0) {
               // Not aligned. Issue an error. In the future, we expect to add
               // padding to make it aligned.

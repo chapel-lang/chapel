@@ -127,9 +127,39 @@ static void test2() {
   assert(qt.type()->toRecordType()->id() == rec->id());
 }
 
+// test that we can resolve the type of multi-decl fields properly when they
+// they are later used as a return type of a method
+static void test3() {
+  printf("test3\n");
+
+  std::string program = R"""(
+    class C {
+      var a, b : int;
+    }
+
+    proc C.getA() {
+      return a;
+    }
+
+    var foo = new C(40, 2);
+    var x = foo.getA();
+    )""";
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+  auto m = parseModule(context, program);
+  auto results = resolveModule(context, m->id());
+  auto var = findVariable(m, "x");
+  auto qt = results.byAst(var).type();
+  assert(qt.type()->isIntType());
+  assert(qt.type()->toIntType()->bitwidth() == 64);
+}
+
+
 int main() {
   test1();
   test2();
+  test3();
 
   return 0;
 }

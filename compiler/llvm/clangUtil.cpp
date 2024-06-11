@@ -78,6 +78,7 @@
 #else
 #include "llvm/Support/Host.h"
 #endif
+#include "llvm/Support/CodeGen.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
@@ -98,10 +99,6 @@ using LlvmOptimizationLevel = llvm::OptimizationLevel;
 #else
 #include "llvm/Support/TargetRegistry.h"
 using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
-#endif
-
-#if HAVE_LLVM_VER >= 90
-#include "llvm/Support/CodeGen.h"
 #endif
 
 #ifdef HAVE_LLVM_RV
@@ -129,6 +126,7 @@ using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
 #include "build.h"
 
 #include "llvmDebug.h"
+#include "llvmTracker.h"
 #include "llvmVer.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
@@ -1365,7 +1363,7 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
-          info->llvmContext);
+          gContext->llvmContext());
 
         INT_ASSERT(Builder);
         INT_ASSERT(!info->module);
@@ -1753,17 +1751,10 @@ void setupClang(GenInfo* info, std::string mainFile)
   //CompilerInvocation* CI =
   //  createInvocationFromCommandLine(clangArgs, clangInfo->Diags);
 
-#if HAVE_LLVM_VER >= 100
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             job->getArguments(),
             *clangDiags);
-#else
-  bool success = CompilerInvocation::CreateFromArgs(
-            Clang->getInvocation(),
-            &job->getArguments().front(), (&job->getArguments().back())+1,
-            *clangDiags);
-#endif
 
   CompilerInvocation* CI = &Clang->getInvocation();
 
@@ -1951,7 +1942,7 @@ static llvm::TargetOptions getTargetOptions(
 
   Options.FunctionSections = CodeGenOpts.FunctionSections;
   Options.DataSections = CodeGenOpts.DataSections;
-#if LLVM_VERSION_MAJOR == 120
+#if LLVM_VERSION_MAJOR == 12
   // clang::CodeGenOptions::IgnoreXCOFFVisibility first appeared in
   // LLVM version 12 and then went away in version 13.
   Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
@@ -2045,7 +2036,8 @@ static void loadModuleFromBitcode() {
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
   auto bitcodeResult =
-      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext);
+      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(),
+                             gContext->llvmContext());
   INT_ASSERT(bitcodeResult &&
              "could not deserialize module from loaded bitcode");
   info->module = bitcodeResult.get().release();
@@ -2133,8 +2125,12 @@ static void setupModule()
   // Choose the code model
   chpl::optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
 
-  llvm::CodeGenOpt::Level optLevel =
+  auto optLevel =
+#if HAVE_LLVM_VER >= 180
+    fFastFlag ? llvm::CodeGenOptLevel::Aggressive : llvm::CodeGenOptLevel::None;
+#else
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
+#endif
 
   // Create the target machine.
   info->targetMachine = Target->createTargetMachine(Triple.str(),
@@ -2309,6 +2305,11 @@ void finishCodegenLLVM() {
 
   if(debug_info)debug_info->finalize();
 
+  // finish bringing in symbols from separately compiled .dyno files
+  if (fDynoLibGenOrUse && !fDynoGenLib) {
+    linkInDynoFiles();
+  }
+
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
@@ -2319,7 +2320,7 @@ void finishCodegenLLVM() {
     }
   }
 
-  // Run all LLVM optimizations.
+  // Run all LLVM optimizations and save to .bc files.
   llvmRunOptimizations();
 
 #ifdef HAVE_LLVM
@@ -2433,11 +2434,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   PMBuilder.LoopsInterleaved = CodeGenOpts.UnrollLoops;
   PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;
 #if HAVE_LLVM_VER < 150
-#if HAVE_LLVM_VER > 60
   PMBuilder.PrepareForThinLTO = CodeGenOpts.PrepareForThinLTO;
-#else
-  PMBuilder.PrepareForThinLTO = CodeGenOpts.EmitSummaryIndex;
-#endif
   PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
 #endif
 
@@ -2500,7 +2497,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
   PassInstrumentationCallbacks PIC;
   StandardInstrumentations SI(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
@@ -2644,7 +2641,7 @@ void prepareCodegenLLVM()
   info->PIC = new PassInstrumentationCallbacks();
   info->SI = new StandardInstrumentations(
 #if HAVE_LLVM_VER >= 160
-                              info->llvmContext,
+                              gContext->llvmContext(),
 #endif
                               /* DebugLogging */ false);
 #if HAVE_LLVM_VER >= 170
@@ -2943,6 +2940,10 @@ static void helpComputeClangArgs(std::string& clangCC,
   // of cabs but it appears to slow down simple complex multiplication.
   if (ffloatOpt > 0) { // --no-ieee-float
     clangCCArgs.push_back("-ffast-math");
+#if HAVE_LLVM_VER >= 180
+    // turn off inf warnings, added in clang 18
+    clangCCArgs.push_back("-Wno-nan-infinity-disabled");
+#endif
   } else {
     if (ffloatOpt < 0) { // --ieee-float
       clangCCArgs.push_back("-fno-fast-math"); // -fno-fast-math
@@ -3017,7 +3018,7 @@ void runClang(const char* just_parse_filename) {
   // tell clang to use CUDA/AMD support
   if (isFullGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
-    clangOtherArgs.push_back("--std=c++11");
+    clangOtherArgs.push_back("--std=c++14");
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
@@ -3068,9 +3069,12 @@ void runClang(const char* just_parse_filename) {
       }
     }
 
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+// this is not needed in newer LLVM versions
     // Include header containing libc wrappers
     clangOtherArgs.push_back("-include");
     clangOtherArgs.push_back("llvm/chapel_libc_wrapper.h");
+#endif
 
     // Include extern C blocks
     if( fAllowExternC && gAllExternCode.filename ) {
@@ -3199,8 +3203,10 @@ void runClang(const char* just_parse_filename) {
       Function * F =
         Function::Create(FT, Function::InternalLinkage,
                          "chplDummyFunction", info->module);
+      trackLLVMValue(F);
       llvm::BasicBlock *block =
         llvm::BasicBlock::Create(info->module->getContext(), "entry", F);
+      trackLLVMValue(block);
       info->irBuilder->SetInsertPoint(block);
     }
     // read macros. May call IRBuilder methods to codegen a string,
@@ -3208,7 +3214,8 @@ void runClang(const char* just_parse_filename) {
     readMacrosClang();
 
     if( ! parseOnly ) {
-      info->irBuilder->CreateRetVoid();
+      llvm::ReturnInst* ret = info->irBuilder->CreateRetVoid();
+      trackLLVMValue(ret);
     }
   }
 }
@@ -3327,7 +3334,8 @@ llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
 #if HAVE_LLVM_VER >= 120
-  llvm::Type* t = llvm::StructType::getTypeByName(info->llvmContext, name);
+  llvm::Type* t = llvm::StructType::getTypeByName(gContext->llvmContext(),
+                                                  name);
 #else
   llvm::Type* t = info->module->getTypeByName(name);
 #endif
@@ -3930,11 +3938,7 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
 
   clang::CanQual<clang::FunctionProtoType> proto =
              FTy.getAs<clang::FunctionProtoType>();
-#if HAVE_LLVM_VER >= 90
   return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
-#else
-  return clang::CodeGen::arrangeFreeFunctionType(CGM, proto, FD);
-#endif
 }
 
 
@@ -3995,29 +3999,22 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 }
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
+             FnSymbol* fn)
 {
 
   // Don't try to use the calling convention code for variadic args.
-  if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
-    return NULL;
-
-  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
-#if HAVE_LLVM_VER >= 100
-  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
-  argInfo = &a[curCArg].info;
-#else
-  int i = 0;
-  for (auto &ii : CGI->arguments()) {
-    if (i == curCArg) {
-      argInfo = &ii.info;
-      break;
+  if ((unsigned) curCArg >= CGI->arg_size()) {
+    if (CGI->isVariadic()) {
+      return NULL;
     }
-    i++;
+    else {
+      USR_FATAL(fn, "Argument number mismatch in export proc");
+    }
   }
-#endif
 
-  return argInfo;
+  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
+  return &a[curCArg].info;
 }
 
 //
@@ -4175,7 +4172,6 @@ bool isCTypeUnion(const char* name) {
   return false;
 }
 
-#if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -4214,28 +4210,6 @@ llvm::MaybeAlign getAlignment(::Type* type) {
     return llvm::MaybeAlign();
   }
 }
-
-#else
-uint64_t getPointerAlign(int addrSpace) {
-  GenInfo* info = gGenInfo;
-  INT_ASSERT(info);
-  ClangInfo* clangInfo = info->clangInfo;
-  INT_ASSERT(clangInfo);
-
-  uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
-  return align;
-}
-unsigned getCTypeAlignment(const clang::TypeDecl* td) {
-  return helpGetCTypeAlignment(td);
-}
-unsigned getCTypeAlignment(const clang::QualType& qt) {
-  return helpGetCTypeAlignment(qt);
-}
-unsigned getAlignment(::Type* type) {
-  return helpGetAlignment(type);
-}
-#endif
-
 
 bool isBuiltinExternCFunction(const char* cname)
 {
@@ -4449,7 +4423,7 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   // load into new module
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
-                                 info->llvmContext);
+                                 gContext->llvmContext());
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
@@ -4585,15 +4559,10 @@ void setupForGlobalToWide(void) {
   const char* dummy = "chpl_wide_opt_dummy";
   if( getFunctionLLVM(dummy) ) INT_FATAL("dummy function already exists");
 
-  llvm::Type* retType = llvm::Type::getInt8PtrTy(ginfo->module->getContext());
+  llvm::Type* retType = getPointerType(ginfo->module->getContext());
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
-                          dummy, retType, argType
-#if HAVE_LLVM_VER < 90
-                          );
-#else
-                          ).getCallee();
-#endif
+                        dummy, retType, argType).getCallee();
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
 
   // Mark the function as external so that it will not be removed
@@ -4601,6 +4570,7 @@ void setupForGlobalToWide(void) {
 
   llvm::BasicBlock* block =
      llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
+  trackLLVMValue(block);
   ginfo->irBuilder->SetInsertPoint(block);
 
   llvm::Value* fns[] = {info->getFn, info->putFn,
@@ -4615,11 +4585,15 @@ void setupForGlobalToWide(void) {
   for( int i = 0; fns[i]; i++ ) {
     llvm::Value* f = fns[i];
     llvm::Value* ptr = ginfo->irBuilder->CreatePointerCast(f, retType);
+    trackLLVMValue(ptr);
     llvm::Value* id = llvm::ConstantInt::get(argType, i);
     llvm::Value* eq = ginfo->irBuilder->CreateICmpEQ(arg, id);
+    trackLLVMValue(eq);
     ret = ginfo->irBuilder->CreateSelect(eq, ptr, ret);
+    trackLLVMValue(ret);
   }
-  ginfo->irBuilder->CreateRet(ret);
+  llvm::ReturnInst* retret = ginfo->irBuilder->CreateRet(ret);
+  trackLLVMValue(retret);
 
   if (developer || fVerify) {
     llvm::verifyFunction(*fn, &errs());
@@ -4680,8 +4654,7 @@ void checkAdjustedDataLayout() {
 
   // Check that the data layout setting worked
   const llvm::DataLayout& dl = info->module->getDataLayout();
-  llvm::Type* testTy = llvm::Type::getInt8PtrTy(info->module->getContext(),
-                                                GLOBAL_PTR_SPACE);
+  llvm::Type* testTy = getPointerType(info->module->getContext(), GLOBAL_PTR_SPACE);
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
@@ -4719,7 +4692,11 @@ static llvm::CodeGenFileType getCodeGenFileType() {
     case GpuCodegenType::GPU_CG_AMD_HIP:
     case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
     default:
+#if HAVE_LLVM_VER >= 180
+      return llvm::CodeGenFileType::AssemblyFile;
+#else
       return llvm::CodeGenFileType::CGFT_AssemblyFile;
+#endif
   }
 }
 
@@ -4861,6 +4838,11 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   std::string inputs = "-inputs=/dev/null";
   std::string outputs = "-outputs=" + fatbinFilename;
 #endif
+  auto sdkString = std::string(gGpuSdkPath);
+  // check file exists, maybe use alternate path (say if spack installed)
+  std::string lldBin = pathExists((sdkString + "/llvm/bin/lld").c_str()) ?
+                       sdkString + "/llvm/bin/lld"  :
+                       sdkString + "/bin/lld";
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
     std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
@@ -4870,8 +4852,9 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                          "--triple=amdgcn-amd-amdhsa --mcpu=" + gpuArch + " " +
                          artifactFilename + " " +
                          "-o " + gpuObject;
-    std::string lldCmd = std::string(gGpuSdkPath) +
-                        "/llvm/bin/lld -flavor gnu" +
+
+    std::string lldCmd = lldBin +
+                         " -flavor gnu" +
                          " --no-undefined -shared" +
                          " -plugin-opt=-amdgpu-internalize-symbols" +
                          " -plugin-opt=mcpu=" + gpuArch +
@@ -5120,7 +5103,8 @@ void makeBinaryLLVM(void) {
     // to avoid unused argument errors for optimization flags.
 
     if(debugCCode) {
-      options += " -g";
+      bool isDarwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+      options += isDarwin ? "-gfull" : "-g";
     }
 
     // We used to supply link args here *and* later on
@@ -5178,6 +5162,27 @@ void makeBinaryLLVM(void) {
                      dotOFiles, clangLDArgs);
     }
 
+    // TODO: Library compiles can produce a '.a' archive as output which
+    // 'dsymutil' doesn't seem to know how to handle. So we'll probably
+    // need a more complicated invocation.
+    const bool generateDarwinSymArchive =
+          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && debugCCode &&
+          !fLibraryCompile;
+
+    if (generateDarwinSymArchive) {
+      const char* bin = "dsymutil";
+      const char* sfx = ".dSYM";
+      const char* tmp = astr(tmpbinname, sfx);
+      const char* out = astr(executableFilename, sfx);
+
+      // TODO: The innermost binary in the .dSYM with all the DWARF info
+      // will have the name "executable.tmp", is there a way to give it a
+      // better name?
+      std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
+      mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
+      moveResultFromTmp(out, tmp);
+    }
+
     // If we're not using a launcher, copy the program here
     if (0 == strcmp(CHPL_LAUNCHER, "none")) {
 
@@ -5233,11 +5238,10 @@ static void llvmEmitObjectFile(void) {
       if (error || outputOfile.has_error())
         USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
 
-#if HAVE_LLVM_VER >= 100
-      llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
+#if HAVE_LLVM_VER >= 180
+      llvm::CodeGenFileType FileType = llvm::CodeGenFileType::ObjectFile;
 #else
-      llvm::TargetMachine::CodeGenFileType FileType =
-        llvm::TargetMachine::CGFT_ObjectFile;
+      llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
 #endif
 
       {
@@ -5246,16 +5250,8 @@ static void llvmEmitObjectFile(void) {
         emitPM.add(createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
 
-#if HAVE_LLVM_VER > 60
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                                 nullptr,
-                                                 FileType,
-                                                 disableVerify);
-#else
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                                 FileType,
-                                                 disableVerify);
-#endif
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile, nullptr,
+                                                 FileType, disableVerify);
 
         emitPM.run(*info->module);
 
@@ -5574,18 +5570,36 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
 }
 
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
+  const bool targetExists = llvm::sys::fs::exists(resultName);
+  bool isTargetDirectory = false;
   std::error_code err;
 
-  // rm -f hello
-  if( printSystemCommands )
-    printf("rm -f %s\n", resultName);
+  if (targetExists) {
+    err = llvm::sys::fs::is_directory(tmpbinname, isTargetDirectory);
+    if (err) {
+      USR_FATAL("Failed to determine if '%s' is a directory: %s\n",
+                tmpbinname,
+                err.message().c_str());
+    }
 
-  err = llvm::sys::fs::remove(resultName);
-  if (err) {
-    USR_FATAL("removing file %s failed: %s\n",
-              resultName,
-              err.message().c_str());
+    // Debug message, e.g., 'rm -f hello'
+    if (printSystemCommands) {
+      const char* hdr = isTargetDirectory ? "Removing directory: rm -rf"
+                                          : "Removing file: rm -f";
+      printf("%s %s\n", hdr, resultName);
+    }
+
+    err = isTargetDirectory
+          ? llvm::sys::fs::remove_directories(resultName, false)
+          : llvm::sys::fs::remove(resultName);
+    if (err) {
+      const char* hdr = isTargetDirectory
+            ? "Removing directory"
+            : "Removing file";
+      USR_FATAL("%s %s failed: %s\n", hdr, resultName, err.message().c_str());
+    }
   }
+
   // mv tmp/hello.tmp hello
   if( printSystemCommands )
     printf("mv %s %s\n", tmpbinname, resultName);

@@ -45,7 +45,7 @@ else {
 }
 
 var mobyFile = open(sourcePath, ioMode.r);
-var mobyReader = mobyFile.reader();
+var mobyReader = mobyFile.reader(locking=false);
 
 var Passage: [1..n] dataType;
 var word: dataType;
@@ -53,7 +53,7 @@ var totalNumBytes = 0;
 for i in 1..n {
   var read = mobyReader.read(word);
   if !read {
-    mobyReader = mobyFile.reader();
+    mobyReader = mobyFile.reader(locking=false);
     continue;
   }
   Passage[i] = word;

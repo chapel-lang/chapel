@@ -123,16 +123,17 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 #
 # Warnings squashed for generated code
 #
-#  111 : warns about unreachable statements
-#  167 : warns about incompatible parameter type (https://github.com/chapel-lang/chapel/issues/7983)
-#  174 : warns about expressions that have no effect
-#  177 : warns about unused variable declarations
-#  556 : warns about type X being assigned to entity of type Y
+#  111  : warns about unreachable statements
+#  167  : warns about incompatible parameter type (https://github.com/chapel-lang/chapel/issues/7983)
+#  174  : warns about expressions that have no effect
+#  177  : warns about unused variable declarations
+#  556  : warns about type X being assigned to entity of type Y
+#  2332 : warns about discarded const qualifier (https://github.com/chapel-lang/chapel/issues/24894)
 
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr279,304,593,810,869,981,1572,1599 -diag-warning 1292,3924
 WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
-SQUASH_WARN_GEN_CFLAGS = -wr111,167,174,177,556
+SQUASH_WARN_GEN_CFLAGS = -wr111,167,174,177,556,2332
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )

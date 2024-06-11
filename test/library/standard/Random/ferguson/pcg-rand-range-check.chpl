@@ -60,7 +60,7 @@ var histo:[0..255] int;
   var rs = new randomStream(seed = seed, eltType = uint(8));
 
   for i in 1..1000000 {
-    var got = rs.getNext();
+    var got = rs.next();
 
     histo[got] += 1;
   }
@@ -80,7 +80,7 @@ histo = 0;
   var rs = new randomStream(seed = seed, eltType = uint(8));
 
   for i in 1..1000000 {
-    var got = rs.getNext(5, 20);
+    var got = rs.next(5, 20);
     histo[got] += 1;
   }
 
@@ -99,7 +99,7 @@ histo = 0;
   var rs = new randomStream(seed = seed, eltType = uint(64));
 
   for i in 1..1000000 {
-    var got = rs.getNext(5, 20):int;
+    var got = rs.next(5, 20):int;
 
     histo[got] += 1;
   }

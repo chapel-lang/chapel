@@ -964,6 +964,7 @@ checkRetTypeMatchesRetVarType() {
 
     // auto ii functions break this rule, but only during the time that
     // they are prototypes.  After the body is filled in, they should obey it.
+    // But, for some of them, the body is never filled in.
     if (fn->hasFlag(FLAG_AUTO_II)) continue;
 
     // No body, so no return symbol.

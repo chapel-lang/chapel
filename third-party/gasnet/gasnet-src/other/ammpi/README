@@ -65,6 +65,17 @@ AMMPI has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
+AMMPI 2.11 (PENDING)
+- Allow zero-byte Long AMs without validation of address against segment bounds,
+  aligning the behavior with the GASNet-EX specification where the AM-2
+  specification leaves the behavior in such cases unspecified.
+
+AMMPI 2.10 (12/2023)
+- Implement new extension AMX_GetTokenInfo()
+- Finalize MPI more cautiously at exit, in case the client has already done so
+- Improved error reporting from the default AM handler
+- Repair USE_CLEAR_UNUSED_SPACE define for use with Valgrind
+
 AMMPI 2.9 (06/2018)
 - Medium and Long AM handlers change in signature on 64-bit platforms: 
   the nbytes argument now has type size_t instead of int

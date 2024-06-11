@@ -127,8 +127,12 @@ enum psm3_ibv_rate ips_link_speed_to_enum(uint64_t link_speed)
 		return PSM3_IBV_RATE_300_GBPS;
 	else if (link_speed <= 400*PSM3_GIGABIT)
 		return PSM3_IBV_RATE_400_GBPS;
-	else
+	else if (link_speed <= 600*PSM3_GIGABIT)
 		return PSM3_IBV_RATE_600_GBPS;
+	else if (link_speed <= 800*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_800_GBPS;
+	else
+		return PSM3_IBV_RATE_1200_GBPS;
 }
 
 static uint64_t ips_enum_to_link_speed(enum psm3_ibv_rate rate)
@@ -155,6 +159,8 @@ static uint64_t ips_enum_to_link_speed(enum psm3_ibv_rate rate)
 	case PSM3_IBV_RATE_50_GBPS:	return  50*PSM3_GIGABIT;
 	case PSM3_IBV_RATE_400_GBPS:	return 400*PSM3_GIGABIT;
 	case PSM3_IBV_RATE_600_GBPS:	return 600*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_800_GBPS:	return 800*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_1200_GBPS:	return 1200*PSM3_GIGABIT;
 	default:			return 100*PSM3_GIGABIT;
 	}
 }
@@ -458,6 +464,51 @@ fail:
 	return err;
 }
 
+/* parse error check timeouts for PSM3_ERRCHK_TIMEOUT or PSM3_ERRCHK_TIMEOUT_US
+ * format is min:max:factor
+ * all must be non-zero, min must be <= max
+ * Either field can be omitted in which case default (input tvals) is used
+ * for given field.
+ * 0 - successfully parsed, tvals updated
+ * -1 - str empty, tvals unchanged
+ * -2 - syntax error, tvals may have been changed
+ */
+static int parse_errchk_timeout(const char *str,
+			size_t errstr_size, char errstr[],
+			int tvals[3])
+{
+	psmi_assert(tvals);
+	int ret = psm3_parse_str_tuples(str, 3, tvals);
+	if (ret < 0)
+		return ret;
+	if (tvals[0] < 0 || tvals[1] < 0 || tvals[2] < 0) {
+		if (errstr_size)
+			snprintf(errstr, errstr_size, " Negative values not allowed");
+		return -2;
+	}
+	if (tvals[0] == 0 || tvals[1] == 0 || tvals[2] == 0) {
+		if (errstr_size)
+			snprintf(errstr, errstr_size, " Zero values not allowed");
+		return -2;
+	}
+	if (tvals[0] > tvals[1]) {
+		if (errstr_size)
+			snprintf(errstr, errstr_size, " min (%d) must be <= max (%d)", tvals[0], tvals[1]);
+		return -2;
+	}
+	return 0;
+}
+
+static int parse_check_errchk_timeout(int type,
+			const union psmi_envvar_val val, void *ptr,
+			size_t errstr_size, char errstr[])
+{
+	// parser will set tvals to result, use a copy to protect input of defaults
+	int tvals[3] = { ((int*)ptr)[0], ((int*)ptr)[1], ((int*)ptr)[2] };
+	psmi_assert(type == PSMI_ENVVAR_TYPE_STR_TUPLES);
+	return parse_errchk_timeout(val.e_str, errstr_size, errstr, tvals);
+}
+
 static psm2_error_t ips_none_path_rec_init(struct ips_proto *proto)
 {
 	psm2_error_t err = PSM2_OK;
@@ -472,23 +523,24 @@ static psm2_error_t ips_none_path_rec_init(struct ips_proto *proto)
 	 */
 	{
 		union psmi_envvar_val env_to;
-		char *errchk_to = PSM_TID_TIMEOUT_DEFAULT;
 		int tvals[3] = {
 			IPS_PROTO_ERRCHK_MS_MIN_DEFAULT,
 			IPS_PROTO_ERRCHK_MS_MAX_DEFAULT,
 			IPS_PROTO_ERRCHK_FACTOR_DEFAULT
 		};
 
-		if (!psm3_getenv("PSM3_ERRCHK_TIMEOUT",
-				 "Errchk timeouts in mS <min:max:factor>",
-				 PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
-				 (union psmi_envvar_val)errchk_to, &env_to)) {
-			/* Not using default values, parse what we can */
-			errchk_to = env_to.e_str;
-			psm3_parse_str_tuples(errchk_to, 3, tvals);
-			/* Adjust for max smaller than min, things would break */
-			if (tvals[1] < tvals[0])
-				tvals[1] = tvals[0];
+		(void)psm3_getenv_range("PSM3_ERRCHK_TIMEOUT",
+				 "Errchk timeouts in milliseconds <min:max:factor>",
+				 "Specified as min:max:factor where min and max is the range of timeouts\nand factor is the multiplier for growing timeout",
+				 PSMI_ENVVAR_LEVEL_USER,
+				 PSMI_ENVVAR_TYPE_STR_TUPLES,
+				 (union psmi_envvar_val)PSM_TID_TIMEOUT_DEFAULT,
+				 (union psmi_envvar_val)NULL,
+				 (union psmi_envvar_val)NULL,
+				 parse_check_errchk_timeout, tvals, &env_to);
+		if (parse_errchk_timeout(env_to.e_str, 0, NULL, tvals) < 0) {
+			// already checked, shouldn't get parse errors nor empty strings
+			psmi_assert(0);
 		}
 
 		proto->epinfo.ep_timeout_ack = ms_2_cycles(tvals[0]);
@@ -502,21 +554,26 @@ static psm2_error_t ips_none_path_rec_init(struct ips_proto *proto)
 		 * This allows values in units of microseconds and will override
 		 * any values specified in PSM3_ERRCHK_TIMEOUT
 		 */
-		if (!psm3_getenv("PSM3_ERRCHK_TIMEOUT_US",
-				 "Errchk timeouts in usec <min:max:factor>",
-				 PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
-				 (union psmi_envvar_val)"", &env_to)) {
-			/* Not using default values, parse what we can */
-			int us_tvals[3] = {
-				IPS_PROTO_ERRCHK_MS_MIN_DEFAULT*1000,
-				IPS_PROTO_ERRCHK_MS_MAX_DEFAULT*1000,
-				IPS_PROTO_ERRCHK_FACTOR_DEFAULT
-			};
-			errchk_to = env_to.e_str;
-			psm3_parse_str_tuples(errchk_to, 3, us_tvals);
-			/* Adjust for max smaller than min, things would break */
-			if (us_tvals[1] < us_tvals[0])
-				us_tvals[1] = us_tvals[0];
+		int us_tvals[3] = {
+			IPS_PROTO_ERRCHK_MS_MIN_DEFAULT*1000,
+			IPS_PROTO_ERRCHK_MS_MAX_DEFAULT*1000,
+			IPS_PROTO_ERRCHK_FACTOR_DEFAULT
+		};
+		if (1 > psm3_getenv_range("PSM3_ERRCHK_TIMEOUT_US",
+				 "Errchk timeouts in microseconds <min:max:factor>",
+				 "Specified as min:max:factor where min and max is the range of timeouts\nand factor is the multiplier for growing timeout",
+				 PSMI_ENVVAR_LEVEL_USER,
+				 PSMI_ENVVAR_TYPE_STR_TUPLES,
+				 (union psmi_envvar_val)PSM_TID_TIMEOUT_DEFAULT_US,
+				 (union psmi_envvar_val)NULL,
+				 (union psmi_envvar_val)NULL,
+				 parse_check_errchk_timeout, us_tvals, &env_to)) {
+			// value specified (perhaps bad input), use
+			// what was returned (will be default if bad input)
+			if (parse_errchk_timeout(env_to.e_str, 0, NULL, us_tvals) < 0) {
+				// already checked, shouldn't get parse errors nor empty strings
+				psmi_assert(0);
+			}
 			proto->epinfo.ep_timeout_ack = us_2_cycles(us_tvals[0]);
 			proto->epinfo.ep_timeout_ack_max = us_2_cycles(us_tvals[1]);
 			proto->epinfo.ep_timeout_ack_factor = us_tvals[2];

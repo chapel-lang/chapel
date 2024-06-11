@@ -1,0 +1,2 @@
+# with C backend, we fail with a relatively helpful message from the backend
+CHPL_TARGET_COMPILER != llvm

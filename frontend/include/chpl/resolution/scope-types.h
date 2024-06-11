@@ -41,6 +41,7 @@ class BorrowedIdsWithName;
 class IdAndFlags {
  public:
   // helper types
+  /// \cond DO_NOT_DOCUMENT
   enum {
     /** Public */
     PUBLIC = 1,
@@ -62,6 +63,8 @@ class IdAndFlags {
     NOT_METHOD = 128,
     // note: if adding something here, also update flagsToString
   };
+  /// \endcond
+
   /**
     A bit-set of the flags defined in the above enum.
     Represents a conjunction / AND of all the set bit.
@@ -578,6 +581,7 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 class Scope {
  public:
   // supporting types/enums
+  /// \cond DO_NOT_DOCUMENT
   enum {
     CONTAINS_FUNCTION_DECLS = 1,
     CONTAINS_USE_IMPORT = 2,
@@ -585,6 +589,8 @@ class Scope {
     METHOD_SCOPE = 8,
     CONTAINS_EXTERN_BLOCK = 16,
   };
+  /// \endcond
+
   /** A bit-set of the flags defined in the above enum */
   using ScopeFlags = unsigned int;
 
@@ -633,6 +639,8 @@ class Scope {
   const ID& id() const { return id_; }
 
   UniqueString name() const { return name_; }
+
+  const DeclMap& declared() const { return declared_; }
 
   /** Returns 'true' if this Scope directly contains use or import statements
       including the automatic 'use' for the standard library. */
@@ -739,7 +747,7 @@ class VisibilitySymbols {
     /**
       all the contents of the scope, e.g.:
 
-          import Foo;
+          use Foo;
 
       The names field will be empty.
 
@@ -918,9 +926,11 @@ class ResolvedVisibilityScope {
  private:
   const Scope* scope_;
   std::vector<VisibilitySymbols> visibilityClauses_;
+  std::vector<ID> modulesNamedInUseOrImport_;
 
  public:
   using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
+  using ModuleIdsIterator = Iterable<std::vector<ID>>;
 
   ResolvedVisibilityScope(const Scope* scope)
     : scope_(scope)
@@ -932,6 +942,11 @@ class ResolvedVisibilityScope {
   /** Return an iterator over the visibility clauses */
   VisibilitySymbolsIterable visibilityClauses() const {
     return VisibilitySymbolsIterable(visibilityClauses_);
+  }
+
+  /** Return an iterator over the modules named in use/import */
+  ModuleIdsIterator modulesNamedInUseOrImport() const {
+    return ModuleIdsIterator(modulesNamedInUseOrImport_);
   }
 
   /** Add a visibility clause */
@@ -948,9 +963,15 @@ class ResolvedVisibilityScope {
     visibilityClauses_.push_back(std::move(elt));
   }
 
+  /** Add a module ID for a module named in use/import */
+  void addModulesNamedInUseOrImport(ID id) {
+    modulesNamedInUseOrImport_.push_back(std::move(id));
+  }
+
   bool operator==(const ResolvedVisibilityScope& other) const {
     return scope_ == other.scope_ &&
-           visibilityClauses_ == other.visibilityClauses_;
+           visibilityClauses_ == other.visibilityClauses_ &&
+           modulesNamedInUseOrImport_ == other.modulesNamedInUseOrImport_;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
@@ -963,6 +984,9 @@ class ResolvedVisibilityScope {
     context->markPointer(scope_);
     for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
+    }
+    for (const auto& id: modulesNamedInUseOrImport_) {
+      id.mark(context);
     }
   }
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -979,6 +1003,7 @@ enum VisibilityStmtKind {
   VIS_IMPORT,
 };
 
+/// \cond DO_NOT_DOCUMENT
 enum {
   /**
     When looking at a scope, find symbols declared in that scope.
@@ -1046,6 +1071,7 @@ enum {
    */
   LOOKUP_METHODS = 2048,
 };
+/// \endcond
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
 using LookupConfig = unsigned int;

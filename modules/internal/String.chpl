@@ -87,11 +87,8 @@ module String {
     proc init=(other: byteIndex) { _bindex = other._bindex; }
     proc init=(i: int) { _bindex = i; }
 
-    proc writeThis(f) throws {
-      f.write(_bindex);
-    }
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(_bindex);
     }
 
     operator :(val: byteIndex, type t:string) {
@@ -113,12 +110,8 @@ module String {
     proc init=(i: int) { _cpindex = i; }
     proc init=(cpi: codepointIndex) { _cpindex = cpi._cpindex; }
 
-    proc writeThis(f) throws {
-      f.write(_cpindex);
-    }
-
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(_cpindex);
     }
 
     operator :(val: codepointIndex, type t:string) {
@@ -518,7 +511,8 @@ module String {
     :type length: `int`
 
     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.`DecodeError` if `x` contains non-UTF-8 characters.
+     characters. In that event, this function does not free `x`; that is
+     the caller's responsibility.
 
     :returns: A new :type:`string`
   */
@@ -551,7 +545,8 @@ module String {
     :type length: `int`
 
     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.
+     characters. In that event, this function does not free `x`; that is the
+     caller's responsibility.
 
     :returns: A new :type:`string`
   */
@@ -577,7 +572,8 @@ module String {
      :type length: `int`
 
      :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-      characters.
+      characters. In that event, this function does not free `x`; that is the
+      caller's responsibility.
 
      :returns: A new :type:`string`
   */
@@ -678,6 +674,7 @@ module String {
   // submodule can be `private use`d from other String-supporting modules.
   @chpldoc.nodoc
   module NVStringFactory {
+    use ChapelStandard; // For '=' operators between ints
     use BytesStringCommon;
     use ByteBufferHelpers only bufferType;
 
@@ -700,6 +697,21 @@ module String {
       // same names, because "wellknown" implementation in the compiler does not
       // allow overloads.
       var ret: string;
+
+      // 2024/02/15 Lydia NOTE: This avoids a valgrind warning when performing
+      // checks about arguments passed by default/const intent when they could
+      // be implicitly modified.  The string type has boolean fields, which C
+      // inserts padding for but we can't actually initialize the padding
+      // without a memset
+      if (chpl_warnUnstable && chpl_constArgChecking) {
+        var origIsOwned = ret.isOwned;
+        var origLocaleID = ret.locale_id;
+
+        __primitive("zero variable", ret);
+        ret.isOwned = origIsOwned;
+        ret.locale_id = origLocaleID;
+      }
+
       initWithBorrowedBuffer(ret, x, length, size);
       ret.cachedNumCodepoints = numCodepoints;
       return ret;
@@ -874,17 +886,8 @@ module String {
     }
 
     // These should never be called (but are default functions for records)
-    proc writeThis(f) throws {
-      compilerError("not implemented: writeThis");
-    }
-
-    // These should never be called (but are default functions for records)
     proc serialize(writer, ref serializer) throws {
       compilerError("not implemented: serialize");
-    }
-
-    proc readThis(f) throws {
-      compilerError("not implemented: readThis");
     }
 
     // assumes that 'this' is already local

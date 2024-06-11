@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
 #include "buildDefaultFunctions.h"
+#include "config.h"
 #include "DecoratedClassType.h"
 #include "passes.h"
 #include "resolution.h"
@@ -143,7 +144,7 @@ attachSuperThis(AggregateType* super,
                 bool throws);
 
 static FnSymbol*
-attachSuperWriteMethod(AggregateType* super, const char* name);
+attachSuperSerializeMethod(AggregateType* super);
 
 static AggregateType*
 insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
@@ -154,9 +155,8 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
                 FnSymbol* payload);
 
 static FnSymbol*
-attachChildWriteMethod(const SharedFcfSuperInfo info, AggregateType* child,
-                       FnSymbol* payload,
-                       const char* name);
+attachChildSerializeMethod(const SharedFcfSuperInfo info, AggregateType* child,
+                       FnSymbol* payload);
 
 static FnSymbol*
 attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
@@ -322,10 +322,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->thisMethod = attachSuperThis(v->type, formals, retTag,
                                   retType,
                                   throws);
-  std::ignore = attachSuperWriteMethod(v->type, "writeThis");
-  if (!fNoIOGenSerialization) {
-    std::ignore = attachSuperWriteMethod(v->type, "serialize");
-  }
+  std::ignore = attachSuperSerializeMethod(v->type);
 
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
 
@@ -563,9 +560,9 @@ attachSuperThis(AggregateType* super,
 }
 
 static FnSymbol*
-attachSuperWriteMethod(AggregateType* super, const char* name) {
+attachSuperSerializeMethod(AggregateType* super) {
   ArgSymbol* fileArg = nullptr;
-  auto ret = buildWriteThisFnSymbol(super, &fileArg, name);
+  auto ret = buildSerializeFnSymbol(super, &fileArg);
   ret->throwsErrorInit();
   normalize(ret);
   return ret;
@@ -687,14 +684,12 @@ generateWriteThisOutput(FnSymbol* fn) {
 }
 
 static FnSymbol*
-attachChildWriteMethod(const SharedFcfSuperInfo info,
+attachChildSerializeMethod(const SharedFcfSuperInfo info,
                      AggregateType* child,
-                     FnSymbol* payload,
-                     const char* name) {
+                     FnSymbol* payload) {
   ArgSymbol* fileArg = NULL;
-  FnSymbol* ret = buildWriteThisFnSymbol(child, &fileArg, name);
+  FnSymbol* ret = buildSerializeFnSymbol(child, &fileArg);
 
-  // All compiler generated writeThis routines now throw.
   ret->throwsErrorInit();
 
   if (ioModule == NULL) {
@@ -820,10 +815,7 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   auto child = insertChildWrapperAtPayload(info, fn);
   std::ignore = attachChildThis(info, child, fn);
 
-  std::ignore = attachChildWriteMethod(info, child, fn, "writeThis");
-  if (!fNoIOGenSerialization) {
-    std::ignore = attachChildWriteMethod(info, child, fn, "serialize");
-  }
+  std::ignore = attachChildSerializeMethod(info, child, fn);
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);
   auto factory = insertSharedParentFactory(info, child, fn);
@@ -969,52 +961,15 @@ const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool
-readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
-                    VarSymbol*& cachedValue) {
-
-  // TODO: This is O(n) number of params, we need a better way to look
-  // things up after resolve. I think that 'dyno' can always do the
-  // elegant thing here. Just preserve the ID for 'ChapelBase', and then
-  // use it in conjunction with a lookup for the config name. You fetch
-  // the 'ResolvedExpression' and you're done.
-  if (!cachedValue) {
-    if (!modSym->initFn || !modSym->initFn->isResolved()) {
-      INT_FATAL(modSym, "Called before '%s' is resolved",
-                        modSym->name);
-    }
-
-    form_Map(SymbolMapElem, e, paramMap) {
-      auto sym = e->key;
-      if (sym->defPoint && sym->defPoint->getModule() == modSym) {
-        if (!strcmp(sym->name, configParamName)) {
-          auto vs = toVarSymbol(e->value);
-          if (!vs || (vs != gTrue && vs != gFalse)) {
-            INT_FATAL("Unexpected config param type or bad AST");
-            return false;
-          }
-          cachedValue = vs;
-          break;
-        }
-      }
-    }
-
-    // Provide a hint, just in case.
-    if (!cachedValue) {
-      INT_FATAL("Could not find '%s', is it declared in '%s'?",
-                configParamName,
-                modSym->name);
-    }
-  }
-
-  bool ret = (cachedValue == gTrue);
-  return ret;
-}
-
 bool usePointerImplementation(void) {
-  static VarSymbol* cachedValue = nullptr;
-  return readConfigParamBool(baseModule, "fcfsUsePointerImplementation",
-                             cachedValue);
+  static bool fcfsUsePointerImplementation = false;
+  static bool fcfsUsePointerImplementationLegal = false;
+  if(!fcfsUsePointerImplementationLegal) {
+    fcfsUsePointerImplementation = getConfigParamBool(baseModule,
+        "fcfsUsePointerImplementation") == gTrue;
+    fcfsUsePointerImplementationLegal = true;
+  }
+  return fcfsUsePointerImplementation;
 }
 
 Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {

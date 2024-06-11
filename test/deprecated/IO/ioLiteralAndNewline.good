@@ -1,8 +1,0 @@
-ioLiteralAndNewline.chpl:5: warning: ioLiteral is deprecated; please use fileReader.readLiteral, fileReader.matchLiteral, or fileWriter.writeLiteral instead
-ioLiteralAndNewline.chpl:6: warning: ioLiteral is deprecated; please use fileReader.readLiteral, fileReader.matchLiteral, or fileWriter.writeLiteral instead
-ioLiteralAndNewline.chpl:11: warning: ioNewline is deprecated; please use fileReader.readNewline, fileReader.matchNewline, or fileWriter.writeNewline instead
-ioLiteralAndNewline.chpl:12: warning: ioNewline is deprecated; please use fileReader.readNewline, fileReader.matchNewline, or fileWriter.writeNewline instead
-ioLiteralAndNewline.chpl:8: warning: fileWriter.readWriteLiteral is deprecated; please use fileWriter.writeLiteral instead
-ioLiteralAndNewline.chpl:9: warning: fileReader.readWriteLiteral is deprecated; please use fileReader.readLiteral instead
-ioLiteralAndNewline.chpl:14: warning: fileWriter.readWriteNewline is deprecated; please use fileWriter.writeNewline instead
-ioLiteralAndNewline.chpl:15: warning: fileReader.readWriteNewline is deprecated; please use fileReader.readNewline instead

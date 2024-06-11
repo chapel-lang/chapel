@@ -1,0 +1,19 @@
+diffParsafe.chpl:13: warning: initializing between two sets with different parSafe settings
+Note: this warning can be silenced with '-swarnForSetParsafeMismatch=false'
+diffParsafe.chpl:22: warning: initializing between two sets with different parSafe settings
+Note: this warning can be silenced with '-swarnForSetParsafeMismatch=false'
+diffParsafe.chpl:29: warning: initializing between two sets with different parSafe settings
+Note: this warning can be silenced with '-swarnForSetParsafeMismatch=false'
+diffParsafe.chpl:31: warning: initializing between two sets with different parSafe settings
+Note: this warning can be silenced with '-swarnForSetParsafeMismatch=false'
+x: set(int(64),false)
+a: set(int(64),false)
+b: set(int(64),false)
+c: set(int(64),true)
+y: set(int(64),true)
+d: set(int(64),true)
+e: set(int(64),false)
+f: set(int(64),true)
+g: set(int(64),true)
+h: set(int(64),false)
+i: set(int(64),false)

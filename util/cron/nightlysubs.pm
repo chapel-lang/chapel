@@ -12,12 +12,19 @@ $chplhomedir = abs_path("$cwd/../..");
 $file = "$chplhomedir/email.txt";
 unlink($file);
 
+# Special constants for 'mysystem'. The third argument of 'mysystem' should
+# be one of three values.
+#
+# * $exitOnError (aka <exit on error>): exit the script if the command fails
+# * $ignoreError (aka <ignore error>): silently allow the error to fail
+# * a path to a file: write the error to that file and continue
+$exitOnError = "<exit on error>";
+$ignoreError = "<ignore error>";
 sub mysystem {
     $command = $_[0];
     $errorname = $_[1];
-    $fatal = $_[2];
-    $mailmsg = $_[3];
-    $showcommand = $_[4];
+    $onerror = $_[2];
+    $showcommand = $_[3];
 
     if ($showcommand) { print "Executing $command\n"; }
     my $status = system($command);
@@ -25,9 +32,16 @@ sub mysystem {
         $endtime = localtime;
         $somethingfailed = 1;
         if($status != -1) {$status = $status / 256; }
+
         print "Error $errorname: $status\n";
-        if ($fatal != 0) {
+        if ($onerror eq $exitOnError) {
             exit 1;
+        } elsif ($onerror eq $ignoreError) {
+            # Do nothing
+        } else {
+            open(my $SF, '>>', $onerror) or die "Could not open file '$onerror' $!";
+            print $SF "Error $errorname: $status\n";
+            close($SF);
         }
     }
     $status;
@@ -131,6 +145,8 @@ sub writeEmail {
     my $summary = $_[6];
     my $prevsummary = $_[7];
     my $sortedsummary = $_[8];
+    my $mysystemlog = $_[9];
+
     #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
     my $filename = "$chplhomedir/email.txt";
     open(my $SF, '>', $filename) or die "Could not open file '$filename' $!";
@@ -171,6 +187,12 @@ sub writeEmail {
         print $SF "--- New Failing Future tests -----------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print $SF "\n";
+
+        if (-f $mysystemlog && -s $mysystemlog) {
+            print $SF "--- Errors in Bash Commands ------------------\n";
+            print $SF `cat $mysystemlog`;
+            print $SF "\n";
+        }
     print $SF;
     print $SF endMailChplenv();
     close($SF);

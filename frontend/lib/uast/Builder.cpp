@@ -150,10 +150,23 @@ void Builder::noteAdditionalLocation(AstLocMap& m, AstNode* ast,
   m.emplace(ast, std::move(loc));
 }
 
+void Builder::tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast,
+                                     Location loc) {
+  if (!ast || loc.isEmpty()) return;
+  auto found = m.find(ast);
+  if (found == m.end()) {
+    m.emplace_hint(found, ast, std::move(loc));
+  }
+}
+
 #define LOCATION_MAP(ast__, location__) \
   void Builder::note##location__##Location(ast__* ast, Location loc) { \
     auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
     noteAdditionalLocation(m, ast, std::move(loc)); \
+  } \
+  void Builder::tryNote##location__##Location(ast__* ast, Location loc) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    tryNoteAdditionalLocation(m, ast, std::move(loc)); \
   }
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
@@ -446,6 +459,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
 
   } else {
     // not a new scope
+    CHPL_ASSERT(!ast->isModule()); // modules should be a new scope
 
     // visit the children now to get integer part of ids in postorder
     for (auto & child : ast->children_) {

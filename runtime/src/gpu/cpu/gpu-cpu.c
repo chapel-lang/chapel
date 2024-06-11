@@ -153,6 +153,10 @@ bool chpl_gpu_impl_can_reduce(void) {
   return false;
 }
 
+bool chpl_gpu_impl_can_sort(void){
+  return false;
+}
+
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -162,9 +166,9 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                       "the module code\n");\
 }
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Min, min)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Min, min)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
@@ -177,9 +181,21 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                       "the module code\n");\
 }
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
+GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
 
+#define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream) {\
+  chpl_internal_error("This function shouldn't have been called. "\
+                      "cpu-as-device mode should handle sorting in "\
+                      "the module code\n");\
+}
+
+GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
+
+#undef DEF_ONE_SORT
 #endif // HAS_GPU_LOCALE

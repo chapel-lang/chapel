@@ -14,10 +14,10 @@ writeln("a is initialized to: ", a);
 writeln("b is initialized to: ", b);
 
 var f = open("_test_freadClass.txt", ioMode.cwr);
-var writer = f.writer();
+var writer = f.writer(locking=false);
 writer.writeln(a);
 writer.close();
 
-var reader = f.reader();
+var reader = f.reader(locking=false);
 reader.read(b);
 writeln("b after reading in a's values from a file: ", b);

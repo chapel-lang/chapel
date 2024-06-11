@@ -21,10 +21,15 @@
 // The first actual is the AST type the location is associated with.
 // The second actual is a string naming the location.
 // The second actual must have a unique name.
-// 
+//
 
 LOCATION_MAP(Dot, DotField)
 LOCATION_MAP(NamedDecl, DeclName)
+LOCATION_MAP(Loop, LoopHeader)
+LOCATION_MAP(AstNode, BlockHeader)
+LOCATION_MAP(NamedDecl, DeclHeader)
+LOCATION_MAP(AstNode, ExprParenth)
+LOCATION_MAP(AstNode, CurlyBraces)
 // LOCATION_MAP(AstNode, NamedActual)
 // LOCATION_MAP(AstNode, AttributeNamedActual)
 // LOCATION_MAP(Function, ReturnIntent)

@@ -2348,12 +2348,18 @@ private proc isBCPindex(type t) param do
     if isPositiveStride(newStrides, st) then
       // start from the low index
       return if hasLowBoundForIter(r)
-             then newAlignedRange(r.chpl_alignedLowAsIntForIter)
+             // inlined: newAlignedRange(r.chpl_alignedLowAsIntForIter)
+             // because Dyno can't helper capturing nested functions.
+             then new range(i, b, newStrides, lw, hh, st,
+                            r.chpl_alignedLowAsIntForIter, true, true)
              else if st == 1 then newZeroAlmtRange() else newUnalignedRange();
     else
       // start from the high index
       return if hasHighBoundForIter(r)
-             then newAlignedRange(r.chpl_alignedHighAsIntForIter)
+             // inlined: newAlignedRange(r.chpl_alignedHighAsIntForIter)
+             // because Dyno can't helper capturing nested functions.
+             then new range(i, b, newStrides, lw, hh, st,
+                            r.chpl_alignedHighAsIntForIter, true, true)
              else if st == -1 then newZeroAlmtRange() else newUnalignedRange();
 
     proc newAlignedRange(alignment) do
@@ -2723,7 +2729,7 @@ private proc isBCPindex(type t) param do
     type resultType = r.chpl_integralIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    proc absSameType() {
+    proc absSameType(r, type resultType) {
       if r.hasNegativeStride() {
         return (-r.stride):resultType;
       } else {
@@ -2737,14 +2743,14 @@ private proc isBCPindex(type t) param do
                          bounds = boundKind.both,
                          strides = r.strides,
                          _low = r._low,
-                         _high = r._low - absSameType(),
+                         _high = r._low - absSameType(r, resultType),
                          _stride = r.stride,
                          alignmentValue = r._alignment);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
                          strides = r.strides,
-                         _low = r._high + absSameType(),
+                         _low = r._high + absSameType(r, resultType),
                          _high = r._high,
                          _stride = r.stride,
                          alignmentValue = r._alignment);
@@ -3318,7 +3324,7 @@ private proc isBCPindex(type t) param do
   // An error overload for trying to iterate over '..'
   pragma "order independent yielding loops"
   @chpldoc.nodoc
-  iter range.these() where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
+  iter range.these(): nothing where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
     compilerError("iteration over a range with no bounds");
   }
 

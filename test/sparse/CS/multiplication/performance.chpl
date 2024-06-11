@@ -28,8 +28,8 @@ proc main() {
         D2 = {1..n, 1..m};
 
   // Domains
-  var ADom: sparse subdomain(D1) dmapped CS(compressRows=true),
-      BDom: sparse subdomain(D2) dmapped CS(compressRows=false);
+  var ADom: sparse subdomain(D1) dmapped new dmap(new CS(compressRows=true)),
+      BDom: sparse subdomain(D2) dmapped new dmap(new CS(compressRows=false));
 
   // Arrays
   var A: [ADom] real,
@@ -61,7 +61,7 @@ proc populate(ref A, ref ADom, sparsity: real, seed: int) where A.isSparse() {
     // Ensure no duplicates
     var newIdx = idx, loc: nnz.type;
     while indices.find(newIdx, loc) {
-      newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high), randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
+      newIdx = (randomIndices.next(ADom.dim(0).low, ADom.dim(0).high), randomIndices.next(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
   }
@@ -70,7 +70,7 @@ proc populate(ref A, ref ADom, sparsity: real, seed: int) where A.isSparse() {
 
   var randomReals = new randomStream(eltType=real, seed=seed);
   for idx in ADom {
-    A[idx] = randomReals.getNext();
+    A[idx] = randomReals.next();
   }
 }
 
@@ -83,13 +83,13 @@ proc populate(ref A: [?ADom], sparsity: real, seed: int) where !A.isSparse() {
     // Ensure no duplicates
     var newIdx = idx, loc: nnz.type;
     while indices.find(newIdx, loc) {
-      newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high), randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
+      newIdx = (randomIndices.next(ADom.dim(0).low, ADom.dim(0).high), randomIndices.next(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
   }
 
   var randomReals = new randomStream(eltType=real, seed=seed);
   for idx in indices {
-    A[idx] = randomReals.getNext();
+    A[idx] = randomReals.next();
   }
 }

@@ -5,6 +5,7 @@ import os
 import sys
 
 import chpl_platform, chpl_locale_model, overrides
+import homebrew_utils
 from utils import which, error, memoize, warning
 
 
@@ -164,10 +165,8 @@ def get(flag='host'):
 
     if flag == 'host':
         compiler_val = overrides.get('CHPL_HOST_COMPILER', '')
-
     elif flag == 'target':
         compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
-
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
@@ -258,7 +257,7 @@ COMPILERS = [('gnu', 'gcc', 'g++'),
              ('clang', 'clang', 'clang++'),
              ('ibm', 'xlc', 'xlC'),
              ('intel', 'icc', 'icpc'),
-             ('pgi', 'pgicc', 'pgc++')]
+             ('pgi', 'pgcc', 'pgc++')]
 
 # given a compiler command string, (e.g. "gcc" or "/path/to/clang++"),
 # figure out the compiler family (e.g. gnu or clang),
@@ -376,7 +375,8 @@ def get_compiler_command(flag, lang):
         llvm_val = chpl_llvm.get()
         if llvm_val == 'none' and compiler_val == 'llvm':
             error("Cannot use CHPL_TARGET_COMPILER=llvm when CHPL_LLVM=none")
-        if llvm_val == 'bundled' or compiler_val == 'llvm':
+            command = ['unknown']
+        elif llvm_val == 'bundled' or compiler_val == 'llvm':
             if (flag == 'host' and
                 llvm_val == 'bundled' and
                 compiler_val == 'clang'):
@@ -429,7 +429,7 @@ def get_system_compile_args(flag):
         paths.append('-I/usr/local/include')
 
     # Add Homebrew include directory if Homebrew is installed
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    homebrew_prefix = homebrew_utils.get_homebrew_prefix()
     if homebrew_prefix:
         paths.append('-I' + homebrew_prefix + '/include')
 
@@ -475,7 +475,7 @@ def get_system_link_args(flag):
         paths.append('-L/usr/local/lib')
 
     # Add Homebrew lib directory if Homebrew is installed
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    homebrew_prefix = homebrew_utils.get_homebrew_prefix()
     if homebrew_prefix:
         paths.append('-L' + homebrew_prefix + '/lib')
 

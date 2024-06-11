@@ -1,0 +1,5 @@
+perfkeys: GFLOP/s:
+files: Bude.dat
+graphkeys: Performance
+ylabel: GFLOP/s
+graphtitle: miniBUDE (-w=64, bm2 dataset)

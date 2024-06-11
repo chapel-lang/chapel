@@ -200,7 +200,7 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
 
   } else {
     // !IOserial
-    const repfileDom = repfileBase dmapped replicatedDist(Locales);
+    const repfileDom = repfileBase dmapped new replicatedDist(Locales);
     var repfiles: [repfileDom] file;
 
     coforall l in Locales with (ref repfiles) do on l {
@@ -267,10 +267,8 @@ var IOgateSync: sync bool;
 // But it is not implemented. Use --IOserial instead.
 //
 iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
-                         dON, dRow, dEdge, dstyle) {
+                         dON, dRow, dEdge, dstyle): VType {
   halt("serial graphReaderIterator should not be invoked");
-  yield 0:VType;
-
 }
 
 // This is the follower iterator.

@@ -181,41 +181,28 @@ variables. See :ref:`readme-main` for more
 information.
 
 
------------------------------
-Setting the Number of Locales
------------------------------
+---------------------
+Multi-locale Programs
+---------------------
 
-For multi-locale Chapel executions, the number of locales on which to
-execute a program is specified on the executable's command-line.  This
-can be set either using the ``-nl`` flag, or by assigning to the built-in
-numLocales configuration constant using the normal mechanisms.  So, to
-execute on four locales, one could use:
+For multi-locale Chapel programs, the number of locales is specified on the
+executable's command-line.  This can be set either using the ``-nl`` flag
+(e.g., ``-nl 4``), or by assigning to the built-in ``numLocales``
+configuration constant (e.g., ``-snumLocales=4`` or ``--numLocales=4``).
+See :ref:`readme-multilocale` for more information about multiple locales,
+and the methods for specifying the number of locales and nodes.
 
-  .. code-block:: sh
+Multi-locale programs require a communication layer (i.e., you cannot run
+multi-locale programs if ``CHPL_COMM=none``). See :ref:`readme-multilocale`
+for information about choosing the proper communication layer for your
+platform.
 
-    ./myprogram -nl 4
-
-or:
-
-  .. code-block:: sh
-
-    ./myprogram --numLocales=4
-
-or:
-
-  .. code-block:: sh
-
-    ./myprogram -snumLocales=4
-
-For users running with ``CHPL_COMM=none`` (the default), only one
-locale can be used.  See :ref:`readme-multilocale` for more
-information about executing on multiple locales.
-
-Multi-locale programs often use a launcher executable to do some initial
-command-line checking before spawning the real program, which is then
-stored in a second binary named ``<original_binary_name>_real``.  See
-:ref:`readme-launcher` for more information about the launcher executable.
-
+Multi-locale programs typically use a launcher executable (e.g., ``hello``)
+that does some initial command-line checking before using a system launcher
+(e.g., ``slurm``) to launch the real program. The real program is named
+``<original_binary_name>_real`` (e.g., ``hello_real``). See
+:ref:`readme-launcher` for more information about launchers and
+the launcher executable.
 
 --------------------------------------
 Controlling Degree of Data Parallelism

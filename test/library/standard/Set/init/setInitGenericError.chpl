@@ -5,5 +5,5 @@ record R {
   var y = 10;
 }
 
-var s = new set(R);
+var s = new set(R(?));
 writeln(s);

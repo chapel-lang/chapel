@@ -335,12 +335,34 @@ static void test4() {
   assert(foundOnlyIdx == 2);
 }
 
+static void test5() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    proc foo(arg) where arg.type == int {
+      return 42;
+    }
+
+    proc foo(arg) {
+      return "hello";
+    }
+
+    var x = foo(42);
+    )""";
+
+  auto qt = resolveQualifiedTypeOfX(context, program);
+  assert(qt.type()->isIntType());
+}
+
 int main() {
 
   test1();
   test2();
   test3();
   test4();
+  test5();
 
   return 0;
 }

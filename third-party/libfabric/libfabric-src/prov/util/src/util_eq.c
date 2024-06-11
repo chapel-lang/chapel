@@ -390,12 +390,7 @@ static int util_verify_eq_attr(const struct fi_provider *prov,
 		return -FI_EINVAL;
 	}
 
-	if (attr->flags & ~(FI_WRITE)) {
-		FI_WARN(prov, FI_LOG_EQ, "invalid flags\n");
-		return -FI_EINVAL;
-	}
-
-	if (attr->flags & ~(FI_AFFINITY | FI_WRITE)) {
+	if (attr->flags & ~(FI_AFFINITY | FI_WRITE | FI_PEER)) {
 		FI_WARN(prov, FI_LOG_EQ, "invalid flags\n");
 		return -FI_EINVAL;
 	}

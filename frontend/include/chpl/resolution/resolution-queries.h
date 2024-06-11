@@ -58,6 +58,12 @@ const types::QualifiedType& typeForModuleLevelSymbol(
 const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
 /**
+  Get the QualifiedType for the well-known types in ChapelSysCTypes
+ */
+const types::QualifiedType& typeForSysCType(Context* context,
+                                            UniqueString name);
+
+/**
   Compute the type for a literal
  */
 types::QualifiedType typeForLiteral(Context* context,
@@ -71,6 +77,31 @@ types::QualifiedType getInstantiationType(Context* context,
                                           types::QualifiedType actualType,
                                           types::QualifiedType formalType);
 
+/**
+  Returns a map from enum element IDs to their numeric values.
+  The caller is responsible for validating that node is an enum ID.
+  If an invalid ID is given, an empty map is returned.
+
+  Abstract elements are not stored in the returned map, to distinguish
+  from non-abstract elements whose values could not be computed.
+ */
+const std::map<ID, types::QualifiedType>&
+computeNumericValuesOfEnumElements(Context* context, ID node);
+
+const chpl::optional<types::QualifiedType>&
+computeUnderlyingTypeOfEnum(Context* context, ID element);
+
+/**
+  Returns the numeric value of an enum element.
+  The caller is responsible for validating that element is an enum element ID.
+  If an invalid ID is given, an empty optional is returned.
+ */
+const chpl::optional<types::QualifiedType>&
+computeNumericValueOfEnumElement(Context* context, ID element);
+
+ID lookupEnumElementByNumericValue(Context* context,
+                                   const ID& node,
+                                   const types::QualifiedType& value);
 
 /////// function resolution
 
@@ -185,6 +216,19 @@ types::Type::Genericity getTypeGenericity(Context* context,
 types::Type::Genericity getTypeGenericity(Context* context,
                                           types::QualifiedType qt);
 
+
+/**
+  Returns true if the field should be included in the type constructor.
+  In that event, also sets formalType to the type the formal should use.
+
+  This is also used to decide if a field needs to be include in a type's
+  substitutions.
+ */
+bool shouldIncludeFieldInTypeConstructor(Context* context,
+                                         const ID& fieldId,
+                                         const types::QualifiedType& fieldType,
+                                         types::QualifiedType* formalType = nullptr);
+
 /**
   Compute an initial TypedFnSignature for a type constructor for a
   particular type. If some fields of `t` are still generic,
@@ -208,6 +252,9 @@ ApplicabilityResult instantiateSignature(Context* context,
   Compute a ResolvedFunction given a TypedFnSignature.
   Checks the generic cache for potential for reuse. When reuse occurs,
   the ResolvedFunction might point to a different TypedFnSignature.
+
+  This function will resolve a nested function if it does not refer to
+  any outer variables.
  */
 const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
@@ -234,6 +281,12 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
   do full resolution of types or paren-ful calls in the body.
  */
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
+
+/**
+  Compute the set of outer variables referenced by this function. Will return
+  'nullptr' if there are no outer variables.
+  */
+const OuterVariables* computeOuterVariables(Context* context, ID id);
 
 /*
  * Scope-resolve an AggregateDecl's fields, along with their type expressions
@@ -297,7 +350,7 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
   Compute the (potentially generic) TypedFnSignatures of possibly applicable
   candidate functions from a list of visible functions.
  */
-const std::vector<const TypedFnSignature*>&
+const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
                         std::vector<BorrowedIdsWithName> lst,
                         CallInfo call);
@@ -313,11 +366,11 @@ filterCandidatesInitial(Context* context,
  */
 void
 filterCandidatesInstantiating(Context* context,
-                              const std::vector<const TypedFnSignature*>& lst,
+                              const CandidatesAndForwardingInfo& lst,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
-                              std::vector<const TypedFnSignature*>& result,
+                              CandidatesAndForwardingInfo& result,
                               std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
@@ -332,8 +385,7 @@ filterCandidatesInstantiating(Context* context,
 CallResolutionResult resolveCall(Context* context,
                                  const uast::Call* call,
                                  const CallInfo& ci,
-                                 const Scope* inScope,
-                                 const PoiScope* inPoiScope,
+                                 const CallScopeInfo& inScopes,
                                  std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
@@ -347,8 +399,7 @@ CallResolutionResult resolveCall(Context* context,
 CallResolutionResult resolveCallInMethod(Context* context,
                                          const uast::Call* call,
                                          const CallInfo& ci,
-                                         const Scope* inScope,
-                                         const PoiScope* inPoiScope,
+                                         const CallScopeInfo& inScopes,
                                          types::QualifiedType implicitReceiver,
                                          std::vector<ApplicabilityResult>* rejected = nullptr);
 
@@ -361,8 +412,7 @@ CallResolutionResult resolveCallInMethod(Context* context,
 CallResolutionResult resolveGeneratedCall(Context* context,
                                           const uast::AstNode* astForErr,
                                           const CallInfo& ci,
-                                          const Scope* inScope,
-                                          const PoiScope* inPoiScope,
+                                          const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
@@ -378,8 +428,7 @@ CallResolutionResult
 resolveGeneratedCallInMethod(Context* context,
                              const uast::AstNode* astForErr,
                              const CallInfo& ci,
-                             const Scope* inScope,
-                             const PoiScope* inPoiScope,
+                             const CallScopeInfo& inScopes,
                              types::QualifiedType implicitReceiver);
 
 // tries to resolve an (unambiguous) init=

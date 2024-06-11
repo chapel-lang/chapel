@@ -5,7 +5,7 @@ use BlockDist;
 config const n = 8;
 
 const DDom = {1..n};
-const DDD = DDom dmapped blockDist(DDom);
+const DDD = DDom dmapped new blockDist(DDom);
 const Dtpv = {1..3};
 
 proc main {

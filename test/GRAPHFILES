@@ -78,6 +78,12 @@ users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
 studies/jacobi/jacobi.graph
 library/standard/List/perf/listBenchmark1.graph
+studies/1brc/1brc.graph
+studies/sinLUT/sinlut.graph
+performance/vectorization/unrolling/dotProduct-real64.graph
+performance/vectorization/unrolling/dotProduct-int32.graph
+performance/vectorization/unrolling/dotProduct-real64-big.graph
+performance/vectorization/outerLoopVectorization/clenshaw.graph
 # suite: HPC Challenge
 studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
@@ -319,6 +325,9 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: plb2 benchmarks
+studies/plb2/matmul/matmul.graph
+studies/plb2/nqueen/nqueen.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
 Samples/Performance/cleanCopy/foobar.graph

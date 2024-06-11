@@ -943,6 +943,8 @@ AggregateType* AggregateType::generateType(CallExpr* call,
         USR_STOP();
       } else if (field->hasFlag(FLAG_DEPRECATED)) {
         field->maybeGenerateDeprecationWarning(ne);
+      } else if (field->hasFlag(FLAG_UNSTABLE)) {
+        field->maybeGenerateUnstableWarning(ne);
       }
       // don't allow type-constructor calls to use named-argument passing
       // for a field that isn't 'type' or 'param'
@@ -969,18 +971,19 @@ AggregateType* AggregateType::generateType(CallExpr* call,
   // place positional args in a map based on remaining unspecified fields
   for_vector(Symbol, field, genericFields) {
     if (substitutionForField(field, map) == NULL && notNamed.size() > 0) {
-      if (getModule()->modTag == MOD_STANDARD &&
-          field->hasFlag(FLAG_DEPRECATED) &&
-          strcmp(field->name, "kind") == 0) {
-        std::string typeName = notNamed.front()->type->symbol->name;
-        if (typeName != "iokind" && typeName != "_iokind") {
-          // If trying to pass a type other than iokind to 'kind' field,
-          // assume user is ignoring the deprecated field.
-          //
-          // TODO: How can we write this to apply more generally to any
-          // deprecated field?
-          continue;
-        }
+      /*
+        emit an unstable warning when a map or set type is specified with
+        a value for 'parSafe' (e.g., 'map(int, int, false)'))
+
+        This conditional can be removed if/when the 'parSafe' field is no
+        longer marked as unstable.
+      */
+      if (
+        getModule()->modTag == MOD_STANDARD && field->hasFlag(FLAG_UNSTABLE) &&
+        strcmp(field->name, "parSafe") == 0 && !allowAllNamedArgs &&
+        (strcmp(name(), "map") == 0 || strcmp(name(), "set") == 0)
+      ) {
+        field->maybeGenerateUnstableWarning(call);
       }
 
       map.put(field, notNamed.front());
@@ -1589,21 +1592,6 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
       // A fully instantiated type
       bool isFirst = true;
       for_vector(Symbol, field, root->genericFields) {
-        Symbol* newField = at->getField(field->name);
-        const char* valStr = buildValueName(newField, cname);
-
-        bool isFileReaderWriter = root->getModule() == ioModule &&
-                                  (strcmp(root->symbol->name, "fileReader") == 0 ||
-                                   strcmp(root->symbol->name, "fileWriter") == 0);
-        bool isSubprocess = root->getModule()->modTag == MOD_STANDARD &&
-                            strcmp(root->getModule()->name, "Subprocess") == 0 &&
-                            strcmp(root->symbol->name, "subprocess") == 0;
-        if ((isFileReaderWriter || isSubprocess) &&
-            strcmp(field->name, "kind") == 0 &&
-            strcmp(valStr, "dynamic") == 0) {
-          continue;
-        }
-
         if (isFirst) {
           isFirst = false;
         } else {
@@ -1615,7 +1603,8 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
           str += "=";
         }
 
-        str += valStr;
+        Symbol* newField = at->getField(field->name);
+        str += buildValueName(newField, cname);
       }
     } else {
       // A partial instantiation
@@ -1864,6 +1853,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   instantiations.push_back(retval);
 
   checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
+
+  handleDefaultAssociativeWarnings(field, field->defPoint->exprType,
+                                   /*initExpr*/ nullptr, this);
 
   return retval;
 }
@@ -3315,4 +3307,32 @@ int64_t AggregateType::cArrayLength() const {
   if (sizeInt < 0)
     USR_FATAL(symbol, "c_array must have positive size");
   return sizeInt;
+}
+
+Type* AggregateType::arrayElementType() const {
+  if (!symbol->hasFlag(FLAG_ARRAY)) return nullptr;
+  Type* ret = nullptr;
+  Type* instType = this->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  if (!instClass) return nullptr;
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while (ts == nullptr) {
+    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if (ts != nullptr) ret = ts->type;
+  return ret;
+}
+
+Type* AggregateType::finalArrayElementType() const {
+  AggregateType* arrayType = (AggregateType*) this;
+  Type* ret = nullptr;
+  do {
+    ret = arrayType->arrayElementType();
+    arrayType = toAggregateType(ret);
+  } while (arrayType && arrayType->symbol->hasFlag(FLAG_ARRAY));
+  return ret;
 }

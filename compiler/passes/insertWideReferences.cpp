@@ -2230,7 +2230,7 @@ static void fixAST() {
         makeMatch(lhs, rhs);
         makeMatch(rhs, lhs);
       }
-      else if (call->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT) ||
+      else if (call->isPrimitive(PRIM_GPU_KERNEL_LAUNCH) ||
                call->isPrimitive(PRIM_GPU_ARG) ||
                call->isPrimitive(PRIM_GPU_PID_OFFLOAD)) {
         // currently, we don't pass wide references to GPU kernels as we don't

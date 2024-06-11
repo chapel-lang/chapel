@@ -71,13 +71,16 @@ static void testEmptyRecordUserInit() {
   // Remember that 'new r' is the base expression of the call.
   auto& reNewExpr = rr.byAst(newExpr);
   auto& qtNewExpr = reNewExpr.type();
-  assert(qtNewExpr.kind() == QualifiedType::VAR);
+  assert(qtNewExpr.kind() == QualifiedType::INIT_RECEIVER);
   assert(qtNewExpr.type() == qtR.type());
 
   // The 'new' call should have the same type as the 'new' expr.
+  // However, the 'new' expr has the special INIT_RECEIVER intent,
+  // so don't compare that.
   auto& reNewCall = rr.byAst(newCall);
   auto& qtNewCall = reNewCall.type();
-  assert(qtNewExpr == qtNewCall);
+  assert(qtNewExpr.type() == qtNewCall.type());
+  assert(qtNewExpr.param() == qtNewCall.param());
 
   // The 'new' call should have 'init' as an associated function.
   auto& associatedActions = reNewCall.associatedActions();
@@ -131,13 +134,14 @@ static void testEmptyRecordCompilerGenInit() {
   // Remember that 'new r' is the base expression of the call.
   auto& reNewExpr = rr.byAst(newExpr);
   auto& qtNewExpr = reNewExpr.type();
-  assert(qtNewExpr.kind() == QualifiedType::VAR);
+  assert(qtNewExpr.kind() == QualifiedType::INIT_RECEIVER);
   assert(qtNewExpr.type() == qtR.type());
 
   // The 'new' call should have the same type as the 'new' expr.
   auto& reNewCall = rr.byAst(newCall);
   auto& qtNewCall = reNewCall.type();
-  assert(qtNewExpr == qtNewCall);
+  assert(qtNewExpr.type() == qtNewCall.type());
+  assert(qtNewExpr.param() == qtNewCall.param());
 
   // The 'new' call should have 'init' as an associated function.
   // This 'init' is compiler generated.
@@ -229,7 +233,8 @@ static void testTertMethodCallCrossModule() {
   auto& reInitExpr = rr.byAst(initExpr);
   assert(reInitExpr.type() == reX.type());
   auto& reNewExpr = rr.byAst(newExpr);
-  assert(reNewExpr.type() == reInitExpr.type());
+  assert(reNewExpr.type().type() == reInitExpr.type().type());
+  assert(reNewExpr.type().param() == reInitExpr.type().param());
 
   assert(reInitExpr.associatedActions().size() == 1);
   auto tfsInit = reInitExpr.associatedActions()[0].fn();
@@ -532,6 +537,526 @@ static void testRecordNewSegfault(void) {
   assert(!guard.realizeErrors());
 }
 
+static void testGenericRecordUserSecondaryInitDependentField() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+    proc defaultValueFor(type t: int) param do return 42;
+
+    record r {
+      type f1;
+      type f2 = (f1, f1);
+      param f3 = defaultValueFor(f1);
+    }
+
+    proc r.init(type f1) {
+      this.f1 = f1;
+    }
+
+    var x = new r(int);
+    )""");
+
+  auto ct = qt.type()->toCompositeType();
+  assert(ct);
+  assert(ct->name() == "r");
+
+  // It should already be instantiated, no need to use defaults.
+  auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(fields.numFields() == 3);
+
+  auto f1 = fields.fieldType(0);
+  assert(f1.isType());
+  assert(f1.type()->isIntType());
+  assert(f1.type()->toIntType()->isDefaultWidth());
+
+  auto f2 = fields.fieldType(1);
+  assert(f2.isType());
+  assert(f2.type()->isTupleType());
+  assert(f2.type()->toTupleType()->numElements() == 2);
+  assert(f2.type()->toTupleType()->elementType(0).type() == f1.type());
+  assert(f2.type()->toTupleType()->elementType(1).type() == f1.type());
+
+  auto f3 = fields.fieldType(2);
+  assert(f3.isParam());
+  assert(f3.type() == f1.type());
+  assert(f3.param());
+  assert(f3.param()->isIntParam());
+  assert(f3.param()->toIntParam()->value() == 42);
+}
+
+static void testNewGenericWithDefaults() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    record r {
+      type f1 = int;
+    }
+
+    proc r.init(type f1) {
+      this.f1 = f1;
+    }
+
+    var x1 = new r(int);
+    var x2 = new r(bool);
+    )""", { "x1", "x2" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isType());
+    assert(f1.type()->isIntType());
+    assert(f1.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isType());
+    assert(f1.type()->isBoolType());
+  }
+}
+
+static void testCompilerGeneratedGenericNewWithDefaultInit() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    record r {
+      param flag : bool;
+      var x : if flag then int else real;
+    }
+
+    var x1 = new r(true);
+    var x2 = new r(false);
+    )""", { "x1", "x2" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamTrue());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isIntType());
+    assert(f2.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+}
+
+static void testCompilerGeneratedGenericNew() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    record r {
+      param flag : bool;
+      var x : if flag then int else real;
+    }
+
+    var x1 = new r(true, 1);
+    var x2 = new r(false, 1.0);
+    var x3 = new r(true, 1.0);
+    var x4 = new r(false, 1);
+    )""", { "x1", "x2", "x3", "x4" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamTrue());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isIntType());
+    assert(f2.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  {
+    auto qt = vars.at("x3");
+    assert(qt.isUnknown());
+  }
+
+  {
+    auto ct = vars.at("x4").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  assert(guard.realizeErrors() == 1);
+}
+
+static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    class C {
+      param flag : bool;
+      var x : if flag then int else real;
+    }
+
+    var x1 = new C(true);
+    var x2 = new C(false);
+    )""", { "x1", "x2" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamTrue());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isIntType());
+    assert(f2.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+}
+
+static void testCompilerGeneratedGenericNewClass() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    class C {
+      param flag : bool;
+      var x : if flag then int else real;
+    }
+
+    var x1 = new C(true, 1);
+    var x2 = new C(false, 1.0);
+    var x3 = new C(true, 1.0);
+    var x4 = new C(false, 1);
+    )""", { "x1", "x2", "x3", "x4" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamTrue());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isIntType());
+    assert(f2.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  {
+    auto qt = vars.at("x3");
+    assert(qt.isUnknown());
+  }
+
+  {
+    auto ct = vars.at("x4").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  assert(guard.realizeErrors() == 1);
+}
+
+static void testSimpleUserGenericNew() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    // Need an operator= for non-compile-time values to be assigned.
+    operator =(ref lhs: numeric, rhs: numeric) {
+      __primitive("=", lhs, rhs);
+    }
+
+    class C {
+      var x;
+
+      proc init(value) {
+        this.x = value;
+      }
+    }
+
+    var x1 = new C(42);
+    var x2 = new C(1.0);
+    )""", { "x1", "x2" });
+
+
+  {
+    auto ct = vars.at("x1").type()->getCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.kind() == QualifiedType::VAR);
+    assert(f1.type());
+    assert(f1.type()->isIntType());
+    assert(f1.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->getCompositeType();
+    assert(ct);
+    assert(ct->name() == "C");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.kind() == QualifiedType::VAR);
+    assert(f1.type());
+    assert(f1.type()->isRealType());
+    assert(f1.type()->toRealType()->isDefaultWidth());
+  }
+}
+
+static void testUserGenericNew() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    // Need an operator= for non-compile-time values to be assigned.
+    operator =(ref lhs: numeric, rhs: numeric) {
+      __primitive("=", lhs, rhs);
+    }
+
+    record r {
+      param flag : bool;
+      var x : if flag then int else real;
+
+      proc init(param flag: bool, x: if flag then int else real) {
+        this.flag = flag;
+        this.x = x;
+      }
+    }
+
+    var x1 = new r(true, 1);
+    var x2 = new r(false, 1.0);
+    var x3 = new r(true, 1.0);
+    var x4 = new r(false, 1);
+    )""", { "x1", "x2", "x3", "x4" });
+
+
+  {
+    auto ct = vars.at("x1").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamTrue());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isIntType());
+    assert(f2.type()->toIntType()->isDefaultWidth());
+  }
+
+  {
+    auto ct = vars.at("x2").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  {
+    auto qt = vars.at("x3");
+    assert(qt.isUnknown());
+  }
+
+  {
+    auto ct = vars.at("x4").type()->toCompositeType();
+    assert(ct);
+    assert(ct->name() == "r");
+
+    // It should already be instantiated, no need to use defaults.
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 2);
+
+    auto f1 = fields.fieldType(0);
+    assert(f1.isParamFalse());
+    auto f2 = fields.fieldType(1);
+    assert(f2.kind() == QualifiedType::VAR);
+    assert(f2.type());
+    assert(f2.type()->isRealType());
+    assert(f2.type()->toRealType()->isDefaultWidth());
+  }
+
+  assert(guard.realizeErrors() == 1);
+}
+
+
 int main() {
   testEmptyRecordUserInit();
   testEmptyRecordCompilerGenInit();
@@ -539,6 +1064,14 @@ int main() {
   testClassManagementNilabilityInNewExpr();
   testGenericRecordUserInitDependentField();
   testRecordNewSegfault();
+  testGenericRecordUserSecondaryInitDependentField();
+  testNewGenericWithDefaults();
+  testCompilerGeneratedGenericNewWithDefaultInit();
+  testCompilerGeneratedGenericNew();
+  testCompilerGeneratedGenericNewWithDefaultInitClass();
+  testCompilerGeneratedGenericNewClass();
+  testSimpleUserGenericNew();
+  testUserGenericNew();
 
   return 0;
 }

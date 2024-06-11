@@ -445,6 +445,10 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
     ss << ")";
     i++;
   }
+
+  for (const auto& id : modulesNamedInUseOrImport_) {
+    ss << "  names " << id.str();
+  }
 }
 
 IMPLEMENT_DUMP(OwnedIdsWithName);

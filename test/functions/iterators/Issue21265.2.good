@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/List.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/standard/List.chpl:nnnn: error: cannot initialize list with element type 'nothing'
+  Issue21265.chpl:11: called as list.init(type eltType = nothing, param parSafe = false)

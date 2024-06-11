@@ -58,7 +58,11 @@
 
 #include "psm_user.h"
 
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#define MM_NUM_OF_POOLS 9
+#else
 #define MM_NUM_OF_POOLS 7
+#endif
 
 typedef struct psmi_mem_ctrl {
     struct psmi_mem_block_ctrl *free_list;

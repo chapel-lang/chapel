@@ -5,14 +5,14 @@ config const n = 2;
 
 proc warning1() {
 
-  var myDomain: domain(2) = {1..n, 1..n} dmapped blockDist({1..n, 1..n});
+  var myDomain: domain(2) = {1..n, 1..n} dmapped new blockDist({1..n, 1..n});
   writeln(myDomain);
 
 }
 
 proc warning2() {
 
-  var myDomain: domain(2) = {1..n, 1..n} dmapped cyclicDist(startIdx=(1,1));
+  var myDomain: domain(2) = {1..n, 1..n} dmapped new cyclicDist(startIdx=(1,1));
   writeln(myDomain);
 
 }
@@ -20,7 +20,7 @@ proc warning2() {
 proc warning3() {
 
   var myDomain: domain(2);
-  myDomain = {1..n, 1..n} dmapped blockDist({1..n, 1..n});
+  myDomain = {1..n, 1..n} dmapped new blockDist({1..n, 1..n});
   writeln(myDomain);
 
 }
@@ -30,7 +30,7 @@ proc ok1() {
   var myDomain: domain(2);
   myDomain;  // disabling split-init for myDomain
   // this one is not a warning today
-  myDomain = {1..n, 1..n} dmapped blockDist({1..n, 1..n});
+  myDomain = {1..n, 1..n} dmapped new blockDist({1..n, 1..n});
   writeln(myDomain);
 
 }

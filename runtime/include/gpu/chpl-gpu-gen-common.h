@@ -27,6 +27,9 @@
 #include "chpl-comm.h"
 #include <string.h>
 
+// device code for reduction support
+#include "chpl-gpu-dev-reduce.h"
+
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
   // TODO
@@ -38,8 +41,8 @@ __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 }
 
 __device__ static inline void* c_pointer_return(void* x) { return x; }
-__device__ static inline void* c_pointer_return_const(const void* x) {
-  return (void*)x;
+__device__ static inline const void* c_pointer_return_const(const void* x) {
+  return x;
 }
 
 __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
@@ -62,10 +65,30 @@ __device__ static inline void chpl_gen_comm_get(void *addr, c_nodeid_t node,
   // TODO
 }
 
+__device__ static inline void chpl_gen_comm_get_unordered(void *addr,
+                                                          c_nodeid_t node,
+                                                          void* raddr, size_t
+                                                          size, int32_t commID,
+                                                          int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_get_unordered called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
 __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
 {
   printf("Warning: chpl_gen_comm_put called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
+__device__ static inline void chpl_gen_comm_put_unordered(void *addr,
+                                                          c_nodeid_t node,
+                                                          void* raddr, size_t
+                                                          size, int32_t commID,
+                                                          int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_put_unordered called inside a GPU kernel. This shouldn't have happened.\n");
   // TODO
 }
 
@@ -137,6 +160,11 @@ MAYBE_GPU static inline void chpl_gpu_printTimeDelta(
 __host__ static inline void chpl_gpu_force_sync() {
   chpl_internal_error("chpl_gpu_force_sync called from host");
 }
+
+__host__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  chpl_internal_error("chpl_gpu_force_warp_sync called from host");
+}
+
 
 __device__ static inline
 void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,

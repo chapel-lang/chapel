@@ -119,6 +119,7 @@ void Type::gatherBuiltins(Context* context,
   auto localeType = CompositeType::getLocaleType(context);
   gatherType(context, map, "locale", localeType);
   gatherType(context, map, "_locale", localeType);
+  gatherType(context, map, "chpl_localeID_t", CompositeType::getLocaleIDType(context));
 
   auto rangeType = CompositeType::getRangeType(context);
   gatherType(context, map, "range", rangeType);
@@ -133,10 +134,6 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "borrowed", genericBorrowed);
   auto genericUnmanaged = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
   gatherType(context, map, "unmanaged", genericUnmanaged);
-
-  gatherType(context, map, "c_ptr", CPtrType::get(context));
-
-  gatherType(context, map, "c_ptrConst", CPtrType::getConst(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }
@@ -158,7 +155,9 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   for (int i = 0; i < leadingSpaces; i++) {
     ss << "  ";
   }
-  ss << "type ";
+  if (stringKind != chpl::StringifyKind::CHPL_SYNTAX) {
+    ss << "type ";
+  }
   ss << typetags::tagToString(this->tag());
 }
 
@@ -231,7 +230,7 @@ const CompositeType* Type::getCompositeType() const {
     return at;
 
   if (auto ct = toClassType())
-    return ct->basicClassType();
+    return ct->manageableType();
 
   return nullptr;
 }

@@ -202,6 +202,10 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LAST
 };
 
+static
+std::string runCommand(std::string& command);
+static
+std::string getChplDepsApp();
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
@@ -210,6 +214,16 @@ static void printStuff(const char* argv0, void* mainAddr) {
   if (fPrintVersion) {
     std::string version = chpl::getVersion();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
+
+    std::string getVersion = "python3 " + getChplDepsApp() + " version";
+
+    std::string getVersionSphinx = getVersion + " Sphinx";
+    std::string sphinxVersion = runCommand(getVersionSphinx);
+    fprintf(stdout, "\tSphinx version %s", sphinxVersion.c_str());
+
+    std::string getVersionChplDomain = getVersion + " sphinxcontrib-chapeldomain";
+    std::string chplDomainVersion = runCommand(getVersionChplDomain);
+    fprintf(stdout, "\tsphinxcontrib-chapeldomain version %s", chplDomainVersion.c_str());
 
     fPrintCopyright  = true;
     printedSomething = true;
@@ -1853,16 +1867,19 @@ struct GatherModulesVisitor {
   void handleUseOrImport(const AstNode* node) {
     if (processUsedModules_) {
       auto scope = resolution::scopeForId(context_, node->id());
-      auto used = resolution::findUsedImportedModules(context_, scope);
-      for (auto id: used) {
-        if (idIsInBundledModule(context_, id)) {
-          continue;
-        }
-        // only add it and visit its children if we haven't seen it already
-        if (modules.find(id) == modules.end()) {
-          modules.insert(id);
-          auto ast = idToAst(context_, id);
-          ast->traverse(*this);
+      if (scope != nullptr && scope->containsUseImport()) {
+        if (auto r = resolveVisibilityStmts(context_, scope)) {
+          for (auto id: r->modulesNamedInUseOrImport()) {
+            if (idIsInBundledModule(context_, id)) {
+              continue;
+            }
+            // only add it and visit its children if we haven't seen it already
+            if (modules.find(id) == modules.end()) {
+              modules.insert(id);
+              auto ast = idToAst(context_, id);
+              ast->traverse(*this);
+            }
+          }
         }
       }
     }
@@ -2269,13 +2286,13 @@ class ChpldocErrorHandler : public Context::ErrorHandler {
 
 int main(int argc, char** argv) {
   Args args = parseArgs(argc, argv, (void*)main);
-  std::string warningMsg;
+  std::string diagnosticMsg;
   bool foundEnv = false;
   bool installed = false;
   // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
     std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME,
-                                       installed, foundEnv, warningMsg);
+                                       installed, foundEnv, diagnosticMsg);
     if (installed) {
       // need to determine and update third-party location before calling
       // getChplDepsApp to make sure we get an updated path in the case
@@ -2285,12 +2302,16 @@ int main(int argc, char** argv) {
       CHPL_THIRD_PARTY += getMajorMinorVersion();
       CHPL_THIRD_PARTY += "/third-party";
     }
-    if (!warningMsg.empty()) {
-      fprintf(stderr, "%s\n", warningMsg.c_str());
-    }
-    if (err) {
+
+    // When error code is set, diagnosticMsg contains the error.
+    if (!diagnosticMsg.empty()) {
+      fprintf(stderr, "%s\n", diagnosticMsg.c_str());
+    } else if (err) {
       fprintf(stderr, "CHPL_HOME not set to a valid value. Please set CHPL_HOME or pass a value "
                       "using the --home option\n" );
+    }
+
+    if (err) {
       clean_exit(1);
     }
   }

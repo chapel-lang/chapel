@@ -14,12 +14,12 @@ var rs = new randomStream(real, seed);
 // Distribute the domain representing the random points in a 
 // Blocked manner over the target locale set.
 //
-var D = {1..n} dmapped blockDist({1..n});
+var D = {1..n} dmapped new blockDist({1..n});
 
 //
 // The computation is identical to the non-distributed case.
 //
-var count = + reduce [(x,y) in zip(rs.iterate(D), rs.iterate(D))]
+var count = + reduce [(x,y) in zip(rs.next(D), rs.next(D))]
                        (x**2 + y**2) <= 1.0;
 
 writef("Approximation of pi   = %{#.#######}\n", count * 4.0 / n);

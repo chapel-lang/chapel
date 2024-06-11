@@ -15,5 +15,5 @@ proc printType(type t) {
     writeln(".rank: ", t.rank:string);
 }
 
-printType(R);
+printType(R(?));
 printType(R());

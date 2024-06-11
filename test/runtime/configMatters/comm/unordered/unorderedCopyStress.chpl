@@ -21,7 +21,7 @@ config const sizePerLocale = 10000,
              size = sizePerLocale * numLocales;
 
 const space = {0..size};
-const D = space dmapped blockDist(space, dataParTasksPerLocale=tasksPerLocale);
+const D = space dmapped new blockDist(space, dataParTasksPerLocale=tasksPerLocale);
 var A, reversedA: [D] copyType;
 
 forall (a, r, d) in zip(A, reversedA, D) {

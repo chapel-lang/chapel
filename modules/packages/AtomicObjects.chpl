@@ -391,10 +391,6 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
-      compilerWarning("Reading an ABA is not supported");
-    }
-    @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an ABA is not supported");
     }
@@ -406,12 +402,8 @@ prototype module AtomicObjects {
     }
 
     /* Writes an ABA */
-    proc writeThis(f) throws {
-      f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
     }
 
     forwarding this.getObject()!;
@@ -515,7 +507,7 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    inline proc atomicVariable ref {
+    inline proc ref atomicVariable ref {
       if hasABASupport {
         return atomicVar[0]._ABA_ptr;
       } else {
@@ -575,11 +567,11 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc read() : objType? {
+    proc ref read() : objType? {
       return fromPointer(atomicVariable.read());
     }
 
-    proc compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
+    proc ref compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
       return atomicVariable.compareAndSwap(toPointer(expectedObj), toPointer(newObj));
     }
 
@@ -600,7 +592,7 @@ prototype module AtomicObjects {
       compareAndSwapABA(expectedObj, newObj.getObject());
     }
 
-    proc write(newObj:objType?) {
+    proc ref write(newObj:objType?) {
       atomicVariable.write(toPointer(newObj));
     }
 
@@ -625,7 +617,7 @@ prototype module AtomicObjects {
       write128bit_special(new ABA(objType?, toPointer(newObj), 0));
     }
 
-    inline proc exchange(newObj:objType?) : objType? {
+    inline proc ref exchange(newObj:objType?) : objType? {
       return fromPointer(atomicVariable.exchange(toPointer(newObj)));
     }
 
@@ -658,10 +650,6 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
-      compilerWarning("Reading an AtomicObject is not supported");
-    }
-    @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an AtomicObject is not supported");
     }
@@ -676,12 +664,9 @@ prototype module AtomicObjects {
       compilerWarning("Deserializing an AtomicObject is not yet supported");
     }
 
-    proc writeThis(f) throws {
-      f.write(atomicVariable.read());
-    }
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(atomicVariable.read());
     }
   }
 }

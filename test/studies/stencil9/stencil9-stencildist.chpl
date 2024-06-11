@@ -7,8 +7,8 @@ config const epsilon = 0.01;
 config const printArrays = false;
 
 const LocDom = {1..n  , 1..n  },
-         Dom = LocDom dmapped stencilDist(LocDom, fluff=(1,1)),
-      BigDom = {0..n+1, 0..n+1} dmapped stencilDist(LocDom, fluff=(1,1));
+         Dom = LocDom dmapped new stencilDist(LocDom, fluff=(1,1)),
+      BigDom = {0..n+1, 0..n+1} dmapped new stencilDist(LocDom, fluff=(1,1));
 
 var A, B: [BigDom] real;
 

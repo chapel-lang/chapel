@@ -8,7 +8,7 @@ use Graph500_defs;
 proc BFS ( root : vertex_id, ref ParentTree, G )
 {
 
-  type Vertex_List = domain ( vertex_id );
+  type Vertex_List = domain (vertex_id, parSafe=true);
   var visited : [vertex_domain] sync int = -1;
 
   var Active_Level = new unmanaged Level_Set (Vertex_List);
@@ -27,9 +27,9 @@ proc BFS ( root : vertex_id, ref ParentTree, G )
   while Active_Level.Members.size > 0 do
   {
 
-    forall u in Active_Level.Members with (ref ParentTree) do {
+    forall u in Active_Level.Members do {
 
-      forall v in G.Neighbors (u) with (ref ParentTree) do {
+      forall v in G.Neighbors (u) do {
 
         if ( visited (v).readXX() < 0 )
         {

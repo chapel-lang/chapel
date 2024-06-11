@@ -11,13 +11,13 @@ const upper = 0.5 + 1.0i;
 
 const cols = size / 8;
 //const row_space = [0..#cols];
-//const row_domain: domain(1) dmapped blockDist(boundingBox=row_space) = row_space;
+//const row_domain: domain(1) dmapped new blockDist(boundingBox=row_space) = row_space;
 
 proc main() {
 
   var datastart:int(64);
   var f = open(outfile, ioMode.cwr);
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   writer.writeln("P4");
   writer.writeln(size, " ", size);
   datastart = writer.offset();

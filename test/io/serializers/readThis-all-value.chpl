@@ -31,9 +31,9 @@ record A {
 proc main() {
   var a : A;
   var f = openMemFile();
-  f.writer().write(a);
+  f.writer(locking=false).write(a);
 
   var x : A;
-  f.reader().read(x);
+  f.reader(locking=false).read(x);
   writeln(x);
 }

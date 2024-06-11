@@ -14,7 +14,7 @@ The purpose of this flag is to identify portions of a program that use a
 language or library feature has recently changed meaning or which is
 expected to change meaning in the future.
 
-version 1.34, March 2024
+version 2.0, March 2024
 ------------------------
 
 .. _readme-evolution.default-task-intent-arrays:
@@ -22,7 +22,7 @@ version 1.34, March 2024
 Default task intents for arrays
 *******************************
 
-In 1.34, the default task intent for an array is now determined by the outer
+In 2.0, the default task intent for an array is now determined by the outer
 variable. If the outer array is ``const`` then the default intent is ``const``,
 otherwise the default intent is ``ref``. Therefore, if an array is modifiable
 outside a parallel block, it is modifiable inside the parallel block. It is no
@@ -44,8 +44,129 @@ The default task intent for ``A`` is ``ref``, since the argument formal ``A``
 is mutable. This simplifies parallel code, making it simpler and cleaner to
 write.
 
-Prior to 1.34, the above ``begin`` would have resulted in a deprecation
-warning. In 1.34, this is valid code again.
+Prior to 2.0, the above ``begin`` would have resulted in a deprecation
+warning. In 2.0, this is valid code again.
+
+.. _readme-evolution.assoc-dom-par-safe:
+
+Associative Domains default to ``parSafe=false``
+************************************************
+Associative domains have been stabilized and prioritize performance by
+default; however, some diligence is is required for correct use..
+
+Associative domains in Chapel have a ``parSafe`` setting that
+determines their behavior when operated on by concurrent tasks.
+
+``parSafe`` stands for "parallel safety". Setting
+``parSafe=true`` allows multiple tasks to modify
+an associative domain's index set concurrently without race conditions.
+It is important to note that ``parSafe=true`` does not protect the
+user against all race conditions. For example, iterating over an associative
+domain while another task modifies it represents a race condition and the
+behavior is undefined.
+See the `documentation <https://chapel-lang.org/docs/1.33/language/spec/domains.html?highlight=parsafe#parallel-safety-with-respect-to-domains-and-arrays>`_
+for  more information.
+
+The default of ``parSafe=true`` added overhead to operations and made
+programs slower by default, even when such safety guarantees were not needed.
+This is because it uses locking on the underlying data structure each time the
+domain is modified. This overhead is unnecessary, for example, when the domain
+is operated upon by a single task.
+
+Motivated by this we have changed their default from
+``parSafe=true`` to ``parSafe=false``.
+With this change associative domains have been stabilized, except for domains
+requesting ``parSafe=true``, which remain unstable.
+
+Here's a breakdown of the changes and how they might impact
+your programs:
+
+1. New default for associative domains:
+    * Previously, associative domains were "parSafe" by default. This has
+      changed to ``parSafe=false``. For example:
+
+      .. code-block:: chapel
+
+          var dom: domain(int);
+
+      used to imply that ``dom`` was set to ``parSafe=true`` but now it defaults
+      to ``parSafe=false``.
+    * This means that the checks to guarantee parallel safety are no longer
+      inserted by default, thus improving performance.
+      Therefore, it is now the user's responsibility to ensure parallel safety
+      as needed.
+    * A warning will be generated for domains without an explicit ``parSafe``
+      setting, to draw user attention to code that may need to be updated,
+      unless compiled with ``-s noParSafeWarning``.
+
+      .. code-block:: chapel
+
+          var d1: domain(int);                 // warns
+          var d2: domain(int, parSafe=false);  // does not warn
+
+      where the compilation output of the above program would look as follows:
+
+      .. code-block:: console
+
+          $ chpl foo.chpl
+          foo.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'.
+          foo.chpl:1: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
+          foo.chpl:1: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
+
+    * Since ``const`` domains are never modified, they are exempt from these
+      warnings as changing their default to ``parSafe=false`` does not have the
+      potential to impact correctness.
+
+      .. code-block:: chapel
+
+          const dom: domain(int);  // does not warn
+
+    * In order to ease the transition, users can temporarily revert to the old
+      behavior by compiling with ``-s assocParSafeDefault=true``.
+
+      .. code-block:: console
+
+          $ chpl defaultAssociativeDomain.chpl -s assocParSafeDefault=true
+
+      If a program used associative domains and relied on ``parSafe=true``,
+      it might be useful to try compiling with ``-s assocParSafeDefault=true`` and
+      then add an explicit ``parSafe`` argument for each associative domain
+      individually, to ensure no races are introduced into the
+      program by forgoing the parallel safety guarantees.
+
+2. ``parSafe=true`` domains are unstable:
+    * Domains using ``parSafe=true`` are still considered unstable and continue
+      to trigger unstable warnings when declared. For example:
+
+      .. code-block:: chapel
+
+          var dom: domain(int, parSafe=true);  // generates unstable warning
+
+      generates the following compilation output:
+
+      .. code-block:: console
+
+          $ chpl bar.chpl --warn-unstable
+          bar.chpl:1: warning: parSafe=true is unstable for associative domains
+
+3. Associative domain literals:
+    * Associative domain literals also generate warnings by default. Use
+      explicit type declarations like ``domain(int, parSafe=false)`` to avoid
+      them.
+
+      .. code-block:: chapel
+
+          var d1 = {"Mon", "Tue", "Wed"};                                // warns
+          var d2: domain(string, parSafe=false) = {"Mon", "Tue", "Wed"}; // does not warn
+
+      where the compilation output of the above program would look as follows:
+
+      .. code-block::  console
+
+          $ chpl baz.chpl
+          baz.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'.
+          baz.chpl:1: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
+          baz.chpl:1: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
 
 version 1.32, September 2023
 ----------------------------

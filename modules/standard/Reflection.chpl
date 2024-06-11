@@ -36,6 +36,7 @@ chpl_unstableStandardSymbolForTesting;
 /* Ensure that a query about fields is applied to a class/record/union type.
    Return that type. If it is a class type, strip any decorators/mem managers.
 */
+pragma "suppress generic actual warning"
 private proc checkQueryT(type t) type {
   if isClassType(t) then
     return t: borrowed class;
@@ -52,6 +53,7 @@ private proc checkValidQueryT(type t) param {
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
  */
+pragma "suppress generic actual warning"
 proc getNumFields(type t) param : int do
   return __primitive("num fields", checkQueryT(t));
 
@@ -68,6 +70,7 @@ proc numFields(type t) param : int do return getNumFields(t);
    :arg idx: which field to get the name of
    :returns: the name of the field, as a param string
  */
+pragma "suppress generic actual warning"
 proc getFieldName(type t, param idx:int) param : string do
   return __primitive("field num to name", checkQueryT(t), idx+1);
 
@@ -109,7 +112,7 @@ proc getField(const ref obj:?t, param idx: int) type
 
    :arg obj: a class or record
    :arg idx: which field to get
-   :returns: an rvalue referring to that field.
+   :returns: a const reference to that field.
  */
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param idx:int) const ref do
@@ -151,7 +154,7 @@ proc getField(const ref obj:?t, param name: string) type
 
    :arg obj: a class or record
    :arg name: the name of a field
-   :returns: an rvalue referring to that field.
+   :returns: a const reference to that field.
  */
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param name:string) const ref {
@@ -169,10 +172,12 @@ inline proc getField(const ref obj:?t, param name:string) const ref {
    types can be added to isImplementedWithRecords() as needed.
 */
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc
 proc isImplementedWithRecords(type t) param do
   return isRangeType(t) || isStringType(t);
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc
 proc numImplementationFields(type t) param : int
   where isImplementedWithRecords(t) do
@@ -205,7 +210,7 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
 
    :arg x: a class or record
    :arg i: which field to get
-   :returns: an rvalue referring to that field.
+   :returns: a mutable reference to that field.
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
@@ -220,7 +225,7 @@ inline proc getFieldRef(ref x:?t, param i:int) ref {
 
    :arg x: a class or record
    :arg s: the name of a field
-   :returns: an rvalue referring to that field.
+   :returns: a mutable reference to that field.
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
@@ -240,6 +245,7 @@ proc getFieldRef(ref x:?t, param s:string) ref {
    :returns: an index usable in :proc:`getField`, or ``-1`` if the field
              was not found.
  */
+pragma "suppress generic actual warning"
 proc getFieldIndex(type t, param name:string) param : int do
   return __primitive("field name to num", checkQueryT(t), name)-1;
 
@@ -250,6 +256,7 @@ proc getFieldIndex(type t, param name:string) param : int do
    :arg name: the name of a field
    :returns: ``true`` if the field is present.
  */
+pragma "suppress generic actual warning"
 proc hasField(type t, param name:string) param : bool do
   return getFieldIndex(t, name) >= 0;
 
@@ -260,6 +267,7 @@ proc hasField(type t, param name:string) param : bool do
    :arg idx: which field to query
    :returns: ``true`` if the field is instantiated
 */
+pragma "suppress generic actual warning"
 @unstable(reason="'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead")
 proc isFieldBound(type t, param idx: int) param : bool {
   return __primitive("is bound", checkQueryT(t),
@@ -273,6 +281,7 @@ proc isFieldBound(type t, param idx: int) param : bool {
    :arg name: the name of a field
    :returns: ``true`` if the field is instantiated
 */
+pragma "suppress generic actual warning"
 @unstable(reason="'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead")
 proc isFieldBound(type t, param name : string) param : bool {
   return __primitive("is bound", checkQueryT(t), name);

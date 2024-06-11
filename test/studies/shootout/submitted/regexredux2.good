@@ -1,10 +1,3 @@
-regexredux2.chpl:10: In function 'main':
-regexredux2.chpl:29: warning: 'readstring' is deprecated; please use 'readString' instead
-regexredux2.chpl:33: warning: 'Regex.compile' is deprecated. Please use 'new regex()' instead.
-regexredux2.chpl:33: warning: regex.sub is deprecated. Please use string.replace.
-regexredux2.chpl:43: warning: 'Regex.compile' is deprecated. Please use 'new regex()' instead.
-regexredux2.chpl:43: warning: regex.sub is deprecated. Please use string.replace.
-regexredux2.chpl:48: warning: 'Regex.compile' is deprecated. Please use 'new regex()' instead.
 agggtaaa|tttaccct 1
 [cgt]gggtaaa|tttaccc[acg] 0
 a[act]ggtaaa|tttacc[agt]t 0

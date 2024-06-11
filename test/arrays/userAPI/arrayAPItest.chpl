@@ -3,7 +3,7 @@ config param testError = 0, testDisplayRepresentation = false;
 proc readArray(ref X) {
   use IO;
 
-  open("realValues.txt", ioMode.r).reader().read(X);
+  open("realValues.txt", ioMode.r).reader(locking=false).read(X);
 }
 
 proc testArrayAPI1D(lbl, ref X: [], sliceDom, reindexDom) {

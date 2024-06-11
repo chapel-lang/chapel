@@ -351,6 +351,12 @@ static int fi_opx_rx_ctx(struct fid_ep *sep, int index,
 
 	fi_opx_ref_inc(&opx_sep->ref_cnt, "scalable endpoint");
 
+	free(info.fabric_attr);
+	free(info.domain_attr);
+	free(info.ep_attr);
+	free(info.tx_attr);
+	free(info.rx_attr);
+
 	return 0;
 
 err:

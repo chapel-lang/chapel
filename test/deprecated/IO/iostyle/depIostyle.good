@@ -1,1 +1,0 @@
-depIostyle.chpl:3: warning: iostyle is deprecated; please use Serializers or Deserializers instead

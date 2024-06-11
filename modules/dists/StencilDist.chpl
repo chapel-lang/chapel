@@ -416,12 +416,8 @@ record stencilDist : writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -619,9 +615,6 @@ class LocStencilArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocStencilArr.writeThis() is not implemented / should not be needed");
-  }
   override proc serialize(writer, ref serializer) throws {
     halt("LocStencilArr.serialize() is not implemented / should not be needed");
   }
@@ -794,19 +787,16 @@ override proc StencilImpl.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc StencilImpl.writeThis(x) throws {
-  x.writeln("Stencil");
-  x.writeln("-------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
-  for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
-      " owns chunk: ", locDist(locid).myChunk);
-}
 override proc StencilImpl.serialize(writer, ref serializer) throws {
-  writeThis(writer);
+  writer.writeln("Stencil");
+  writer.writeln("-------");
+  writer.writeln("distributes: ", boundingBox);
+  writer.writeln("across locales: ", targetLocales);
+  writer.writeln("indexed via: ", targetLocDom);
+  writer.writeln("resulting in: ");
+  for locid in targetLocDom do
+    writer.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+      " owns chunk: ", locDist(locid).myChunk);
 }
 
 proc StencilImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -907,7 +897,7 @@ proc type stencilDist.createDomain(
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
-  return dom dmapped stencilDist(dom, targetLocales, fluff=fluff, periodic=periodic);
+  return dom dmapped new stencilDist(dom, targetLocales, fluff=fluff, periodic=periodic);
 }
 
 // create a domain over a Stencil Distribution constructed from a series of ranges

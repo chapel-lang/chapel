@@ -194,6 +194,8 @@ ChapelGpuSupport
   from print-module-resolution.ChapelStandard.ChapelGpuSupport
 ChapelContext
   from print-module-resolution.ChapelStandard.ChapelContext
+ChapelStaticVars
+  from print-module-resolution.ChapelStandard.ChapelStaticVars
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard

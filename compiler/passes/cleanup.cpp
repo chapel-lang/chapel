@@ -253,7 +253,12 @@ static void cleanup(ModuleSymbol* module) {
 
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
-        block->flattenAndRemove();
+        // If the scopeless block is for applying GPU attributes to promoted
+        // expressions, do not flatten it. The bounds of the block denote
+        // where the GPU attribute is applied.
+        if (!block->isGpuMetadata()) {
+          block->flattenAndRemove();
+        }
       }
 
     } else if (CallExpr* call = toCallExpr(ast)) {

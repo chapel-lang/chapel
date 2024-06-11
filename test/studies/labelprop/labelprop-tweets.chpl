@@ -84,10 +84,10 @@ proc main(args:[] string) {
   // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int) ) dmapped hashedDist(idxType=(int, int));
+    var Pairs: domain( (int, int), parSafe=false) dmapped new hashedDist(idxType=(int, int));
     run(todo, Pairs);
   } else {
-    var Pairs: domain( (int, int) );
+    var Pairs: domain( (int, int), parSafe=false);
     run(todo, Pairs);
   }
 }
@@ -100,7 +100,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
 
   const FilesSpace = {1..todo.size};
   const BlockSpace = if distributed then
-                       FilesSpace dmapped blockDist(boundingBox=FilesSpace)
+                       FilesSpace dmapped new blockDist(boundingBox=FilesSpace)
                      else
                        FilesSpace;
   var allfiles:[BlockSpace] string;
@@ -263,7 +263,7 @@ proc process_json(fname: string, ref Pairs)
     var sub = spawn(["gunzip", "-c", fname], stdout=pipeStyle.pipe);
     process_json(sub.stdout, fname, Pairs);
   } else {
-    var logfile = openReader(fname);
+    var logfile = openReader(fname, locking=false);
     process_json(logfile, fname, Pairs);
   }
 }
@@ -292,7 +292,7 @@ proc create_and_analyze_graph(ref Pairs)
   var nmutual = 0;
 
   // Build idToNode
-  var userIds:domain(int);
+  var userIds:domain(int, parSafe=true);
 
   forall (id, other_id) in Pairs with (ref userIds) {
     if Pairs.contains( (other_id, id) ) {
@@ -474,7 +474,7 @@ proc create_and_analyze_graph(ref Pairs)
         writeln("on node ", vid, " currently in group ", labels[vid]);
 
       // label -> count
-      var foundLabels:domain(int(32));
+      var foundLabels:domain(int(32), parSafe=false);
       var counts:[foundLabels] int;
 
       for nid in G.Neighbors(vid) {
@@ -503,7 +503,7 @@ proc create_and_analyze_graph(ref Pairs)
       var tiebreaker = new randomStream(seed+vid, eltType=bool);
 
       for (count,lab) in zip(counts, counts.domain) {
-        if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
+        if count > maxcount || (count == maxcount && tiebreaker.next()) {
           maxcount = count;
           maxlabel = lab;
         }

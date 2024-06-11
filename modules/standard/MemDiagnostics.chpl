@@ -103,7 +103,7 @@ private extern proc chpl_memoryUsed(): uint(64);
   be expressed either as individual bytes or as chunks of 2**10,
   2**20, or 2**30 bytes.
  */
-enum MemUnits {Bytes, KB, MB, GB};
+enum MemUnits {Bytes, KB, MB, GB}
 
 /*
   How much physical memory is present on this locale?

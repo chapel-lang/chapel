@@ -152,7 +152,7 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
       var blockCount: int = HDFS.chadoopGetBlockCount(blockHosts);
 
       const Space = {0..blockCount-1};
-      const Bspace = Space dmapped blockDist(boundingBox=Space);
+      const Bspace = Space dmapped new blockDist(boundingBox=Space);
       var Biter: [Bspace] int;
 
       forall (j, i) in zip (Biter, 0..) {

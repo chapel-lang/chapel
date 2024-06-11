@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "limits.h"
+
 #include "test-resolution.h"
 
 #include "chpl/resolution/can-pass.h"
@@ -77,7 +79,14 @@ static bool passesInstantiates(CanPassResult r) {
          r.conversionKind() == CanPassResult::NONE;
 }
 
-/*
+static bool passesInstantiatesBorrowing(CanPassResult r) {
+  return r.passes() &&
+         r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS;
+}
+
 static bool passesOther(CanPassResult r) {
   return r.passes() &&
          !r.instantiates() &&
@@ -85,7 +94,6 @@ static bool passesOther(CanPassResult r) {
          r.converts() &&
          r.conversionKind() == CanPassResult::OTHER;
 }
-*/
 
 static bool doesNotPass(CanPassResult r) {
   return !r.passes();
@@ -103,6 +111,7 @@ static void test1() {
   QualifiedType int32(QualifiedType::VAR, IntType::get(context, 32));
   QualifiedType int64(QualifiedType::VAR, IntType::get(context, 64));
   QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
+  QualifiedType complex128(QualifiedType::VAR, ComplexType::get(context, 0));
 
   CanPassResult r;
   r = canPass(c, int0, int0); assert(passesAsIs(r));
@@ -136,6 +145,9 @@ static void test1() {
   r = canPass(c, int0, int16); assert(doesNotPass(r));
   r = canPass(c, int0, int32); assert(doesNotPass(r));
   r = canPass(c, int0, int64); assert(passesAsIs(r));
+
+  r = canPass(c, int0, complex128); assert(passesNumeric(r));
+  r = canPass(c, complex128, real0); assert(doesNotPass(r));
 }
 
 static void test2() {
@@ -340,11 +352,13 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  Context ctx;
+  auto config = getConfigWithHome();
+  Context ctx(config);
   Context* context = &ctx;
   Context* c = context;
+  setupModuleSearchPaths(context, false, false, {}, {});
 
-  // test that we can pass param string c_string
+  // test that we can pass param string c_string or c_ptrConst(c_char)
   // but we can't pass param string to bytes
 
   auto s = UniqueString::get(context, "hello");
@@ -359,10 +373,20 @@ static void test6() {
                                  CStringType::get(context));
   auto bytesQT = QualifiedType(QualifiedType::VAR,
                                CompositeType::getBytesType(context));
+
+  const chpl::types::Type* eltType = nullptr;
+  if (CHAR_MAX == SCHAR_MAX) {
+    eltType = IntType::get(context, 8);
+  } else {
+    eltType = UintType::get(context, 8);
+  }
+  auto cptrQT = QualifiedType(QualifiedType::VAR,
+                              CPtrType::getConst(context, eltType));
   CanPassResult r;
   r = canPass(c, paramString, stringQT); assert(passesAsIs(r));
   r = canPass(c, paramString, cStringQT); assert(passesParamNarrowing(r));
   r = canPass(c, paramString, bytesQT); assert(doesNotPass(r));
+  r = canPass(c, paramString, cptrQT); assert(passesOther(r));
 }
 
 static void test7() {
@@ -403,6 +427,13 @@ static void test7() {
     return QualifiedType(QualifiedType::VAR,
                          ClassType::get(context, bctArg, mgmtArg, decArg));
   };
+
+  auto borrowedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, borrowedQ));
+  auto unmanagedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, unmanagedQ));
 
   auto ownedMgmt = AnyOwnedType::get(context);
 
@@ -540,6 +571,11 @@ static void test7() {
   r = canPass(c, ownedChild,       unmanagedParentQ); assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParent);  assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParentQ); assert(doesNotPass(r));
+
+
+  // check passing to generic class type
+  r = canPass(c, unmanagedChildQ, unmanagedGenericRefQt); assert(passesInstantiates(r));
+  r = canPass(c, unmanagedChildQ, borrowedGenericRefQt); assert(passesInstantiatesBorrowing(r));
 }
 
 static void test8() {

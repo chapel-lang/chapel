@@ -740,11 +740,11 @@ static void AMUDP_InitParameters(ep_t ep) {
            char *end = (char *)valstr;                           \
            long val = strtol(valstr, &end, 0);                   \
            if (end == valstr) {                                  \
-            AMX_Warn(name" may not be empty! Using default.");   \
+            AMX_Warn(AMX_ENV_PREFIX_STR "_" name " may not be empty! Using default."); \
             val = (long)var;                                     \
            } else if (sizeof(var) < 8 &&                         \
                    (uint64_t)val != (uint64_t)(uint32_t)val) {   \
-            AMX_Warn(name" too large! Using default.");          \
+            AMX_Warn(AMX_ENV_PREFIX_STR "_" name " too large! Using default."); \
             val = (long)var;                                     \
            } else var = (uint32_t)val;                           \
            validate;                                      \
@@ -753,35 +753,34 @@ static void AMUDP_InitParameters(ep_t ep) {
 
     ENVINT_WITH_DEFAULT(recvDepth, "RECVDEPTH", { 
       if (val <= 0 || val > AMUDP_MAX_RECVDEPTH) 
-        AMX_FatalErr("RECVDEPTH must be in 1..%d", AMUDP_MAX_RECVDEPTH);
+        AMX_FatalErr(AMX_ENV_PREFIX_STR "_RECVDEPTH must be in 1..%d", AMUDP_MAX_RECVDEPTH);
     });
 
     ENVINT_WITH_DEFAULT(sendDepth, "SENDDEPTH",
-                        { if (!val) AMX_FatalErr("SENDDEPTH must be non-zero"); });
+                        { if (!val) AMX_FatalErr(AMX_ENV_PREFIX_STR "_SENDDEPTH must be non-zero"); });
 
     ENVINT_WITH_DEFAULT(AMUDP_MaxRequestTimeout_us, "REQUESTTIMEOUT_MAX",
                         { if (val <= 0) AMUDP_MaxRequestTimeout_us = AMUDP_TIMEOUT_INFINITE; });
     ENVINT_WITH_DEFAULT(AMUDP_InitialRequestTimeout_us, "REQUESTTIMEOUT_INITIAL",
                         { if (val <= 0) AMUDP_InitialRequestTimeout_us = AMUDP_TIMEOUT_INFINITE; });
     ENVINT_WITH_DEFAULT(AMUDP_RequestTimeoutBackoff, "REQUESTTIMEOUT_BACKOFF",
-                        { if (val <= 1) AMX_FatalErr("REQUESTTIMEOUT_BACKOFF must be > 1"); });
+                        { if (val <= 1) AMX_FatalErr(AMX_ENV_PREFIX_STR "_REQUESTTIMEOUT_BACKOFF must be > 1"); });
     if (AMUDP_InitialRequestTimeout_us > AMUDP_MaxRequestTimeout_us) {
-       AMX_Warn("REQUESTTIMEOUT_INITIAL must not exceed REQUESTTIMEOUT_MAX. Raising MAX...");
+       AMX_Warn(AMX_ENV_PREFIX_STR "_REQUESTTIMEOUT_INITIAL must not exceed " AMX_ENV_PREFIX_STR "_REQUESTTIMEOUT_MAX. Raising MAX...");
        AMUDP_MaxRequestTimeout_us = MAX(AMUDP_InitialRequestTimeout_us, AMUDP_InitialRequestTimeout_us*AMUDP_RequestTimeoutBackoff);
     }
     AMUDP_InitRetryCache();
 
-    ENVINT_WITH_DEFAULT(AMUDP_SocketBuffer_initial, "SOCKETBUFFER_INITIAL", { 
-                          /* 0 = default */ 
-                          if (val > 0x7FFFFFFF)  // not currently 64-bit clean
-                            AMX_FatalErr("SOCKETBUFFER_INITIAL too large");
-                        });
+    ENVINT_WITH_DEFAULT(AMUDP_SocketBuffer_initial, "SOCKETBUFFER_INITIAL", { /* 0 = default */ 
+                          if (val > 0x7FFFFFFF)  // not currently 64-bit clean, must fit in SIGNED 32-bit
+                            AMX_FatalErr(AMX_ENV_PREFIX_STR "_SOCKETBUFFER_INITIAL too large");
+                       });
     AMUDP_SocketBuffer_max = MAX(AMUDP_SocketBuffer_initial,AMUDP_SocketBuffer_max);
     ENVINT_WITH_DEFAULT(AMUDP_SocketBuffer_max, "SOCKETBUFFER_MAX", {
-                          if (val > 0x7FFFFFFF)  // not currently 64-bit clean
-                            AMX_FatalErr("SOCKETBUFFER_INITIAL too large");
+                          if (val > 0x7FFFFFFF)  // not currently 64-bit clean, must fit in SIGNED 32-bit
+                            AMX_FatalErr(AMX_ENV_PREFIX_STR "_SOCKETBUFFER_MAX too large");
                           if (!val || (uint32_t)val < AMUDP_SocketBuffer_initial) 
-                          AMX_FatalErr("SOCKETBUFFER_MAX must be >= SOCKETBUFFER_INITIAL"); 
+                          AMX_FatalErr(AMX_ENV_PREFIX_STR "_SOCKETBUFFER_MAX must be >= " AMX_ENV_PREFIX_STR "_SOCKETBUFFER_INITIAL"); 
                         });
 
     firsttime = 0;
@@ -794,7 +793,7 @@ static void AMUDP_InitParameters(ep_t ep) {
   if (ep->sendDepth < 0 || ep->sendDepth > maxsendDepth) // silently cap, since the max is P-dependent
     ep->sendDepth = maxsendDepth;
   if (ep->sendDepth < ep->depth) {
-    AMX_Warn("SENDDEPTH may not be less than DEPTH. Raising SENDDEPTH...");
+    AMX_Warn(AMX_ENV_PREFIX_STR "_SENDDEPTH may not be less than " AMX_ENV_PREFIX_STR "_NETWORKDEPTH. Raising " AMX_ENV_PREFIX_STR "_SENDDEPTH...");
     ep->sendDepth = ep->depth;
   }
 }
@@ -940,6 +939,17 @@ extern int AM_GetMsgTag(void *token, tag_t *tagp) {
   AMX_CHECK_ERR((!token || !tagp),BAD_ARG);
   
   *tagp = ((amudp_buf_t *)token)->msg.tag;
+  return AM_OK;
+}
+/* ------------------------------------------------------------------------------------ */
+extern int AMUDP_GetTokenInfo(void *token, handler_t *handler, amudp_category_t *cat, int *is_req) {
+  AMX_CHECKINIT();
+  AMX_CHECK_ERR((!token || !handler || !cat || !is_req),BAD_ARG);
+
+  amudp_msg_t *msg = &((amudp_buf_t *)token)->msg;
+  *handler = msg->handlerId;
+  *cat     = AMUDP_MSG_CATEGORY(msg);
+  *is_req  = AMUDP_MSG_ISREQUEST(msg);
   return AM_OK;
 }
 /* ------------------------------------------------------------------------------------ */

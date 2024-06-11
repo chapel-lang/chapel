@@ -1,2 +1,0 @@
-readerWriter.chpl:5: warning: writer with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead
-readerWriter.chpl:7: warning: reader with a 'style' argument is deprecated, please pass a Deserializer to the 'deserializer' argument instead

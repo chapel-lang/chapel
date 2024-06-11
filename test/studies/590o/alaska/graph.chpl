@@ -530,7 +530,7 @@ proc readGraph(filename) {
 
   // Create and open  an input file with the specified filename in read (ioMode.r) mode
   var infile = open(filename, ioMode.r);
-  var reader = infile.reader();
+  var reader = infile.reader(locking=false);
 
   // Read the number of nodes and edges
   //  var n,m:int;

@@ -1,6 +1,0 @@
-attrs==23.1.0
-cattrs==23.1.2
-lsprotocol==2023.0.0b1
-pygls==1.1.1
-typeguard==3.0.2
-ConfigArgParse==1.7

@@ -413,7 +413,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       if (networkdepth <= 0) networkdepth = AMUDP_DEFAULT_NETWORKDEPTH;
     }
     if (networkdepth > AMUDP_MAX_NETWORKDEPTH) { // provide useful error message
-      AMX_FatalErr("NETWORKDEPTH must be <= %d", AMUDP_MAX_NETWORKDEPTH);
+      AMX_FatalErr(AMX_ENV_PREFIX_STR "_NETWORKDEPTH must be <= %d", AMUDP_MAX_NETWORKDEPTH);
     }
 
     if (nproc == 0) { /* default to read from args */
@@ -1520,6 +1520,22 @@ extern const char* AMUDP_SPMDgetenvMaster(const char *keyname) {
     if (!strncmp(keyname, p, keylen) && p[keylen] == '=') {
       return p + keylen + 1;
     }
+    p += strlen(p) + 1;
+  }
+  return NULL; // not found
+}
+
+extern const char *AMUDP_check_env_prefix(const char* prefix) {
+  if (!AMUDP_SPMDMasterEnvironment) {
+    AMX_Err("called AMUDP_env_prefix before AMUDP_SPMDStartup()");
+    return NULL;
+  }
+
+  char *p = AMUDP_SPMDMasterEnvironment;
+  if (!prefix) return NULL;
+  int len = strlen(prefix);
+  while (*p) {
+    if (!strncmp(prefix, p, len)) return p;
     p += strlen(p) + 1;
   }
   return NULL; // not found

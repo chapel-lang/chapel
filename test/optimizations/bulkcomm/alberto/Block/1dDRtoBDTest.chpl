@@ -2,7 +2,7 @@
 use BlockDist;
 config const n=500;
 var DA = {1..n};
-var Dom1 = DA dmapped blockDist(DA);
+var Dom1 = DA dmapped new blockDist(DA);
 
 var A:[Dom1] real(64);
 var C:[Dom1] real(64);

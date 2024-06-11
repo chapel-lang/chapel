@@ -38,6 +38,29 @@
 namespace chpl {
 namespace resolution {
 
+/**
+
+  In some situations, we may decide not to resolve a call. This could
+  happen if we believe it to already be ill-formed (e.g., why would we resolve
+  f(x) if x is ill-typed?
+
+  This enum contains reasons why we might want that to do that.
+ */
+enum SkipCallResolutionReason {
+  NONE = 0,
+
+  /* an unknown param (e.g. param int, without a value) */
+  UNKNOWN_PARAM,
+  /* a type that is a generic type unless there are substitutions */
+  GENERIC_TYPE,
+  /* a value of generic type */
+  GENERIC_VALUE,
+  /* UnknownType, ErroneousType */
+  UNKNOWN_ACT, ERRONEOUS_ACT,
+  /* other reason to skip */
+  OTHER_REASON,
+};
+
 enum struct DefaultsPolicy {
   /** Do not use default values when determining field type. */
   IGNORE_DEFAULTS,
@@ -61,25 +84,40 @@ enum struct DefaultsPolicy {
  */
 class UntypedFnSignature {
  public:
+  enum DefaultKind {
+    /** Formals that have default values, like `in x = 10` */
+    DK_DEFAULT,
+    /** Formals that do not have default values, like `ref x` */
+    DK_NO_DEFAULT,
+    /** Formals that might have a default value. This comes up when working
+        with generic initializers; whether an initializer's formal has
+        a default depends on if its type has a default value. But if
+        the type is unknown -- as in a generic initializer's type signature --
+        then we don't know if the formal has a default. */
+    DK_MAYBE_DEFAULT,
+  };
+
   struct FormalDetail {
     UniqueString name;
-    bool hasDefaultValue = false;
+    DefaultKind defaultKind = DK_NO_DEFAULT;
     const uast::Decl* decl = nullptr;
     bool isVarArgs = false;
 
     FormalDetail(UniqueString name,
-                 bool hasDefaultValue,
+                 DefaultKind defaultKind,
                  const uast::Decl* decl,
                  bool isVarArgs = false)
       : name(name),
-        hasDefaultValue(hasDefaultValue),
+        defaultKind(defaultKind),
         decl(decl),
         isVarArgs(isVarArgs)
-    { }
+    {
+      CHPL_ASSERT(name != USTR("this") || defaultKind == DK_NO_DEFAULT);
+    }
 
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
-             hasDefaultValue == other.hasDefaultValue &&
+             defaultKind == other.defaultKind &&
              decl == other.decl &&
              isVarArgs == other.isVarArgs;
     }
@@ -88,7 +126,7 @@ class UntypedFnSignature {
     }
 
     size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, decl, isVarArgs);
+      return chpl::hash(name, defaultKind, decl, isVarArgs);
     }
 
     void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -147,7 +185,8 @@ class UntypedFnSignature {
            idTag == uast::asttags::Record   ||
            idTag == uast::asttags::Tuple    ||
            idTag == uast::asttags::Union    ||
-           idTag == uast::asttags::Variable);
+           idTag == uast::asttags::Variable ||
+           idTag == uast::asttags::Enum);
   }
 
   static const owned<UntypedFnSignature>&
@@ -285,10 +324,10 @@ class UntypedFnSignature {
     return formals_[i].name;
   }
 
-  /** Return whether the i'th formal has a default value. */
-  bool formalHasDefault(int i) const {
+  /** Return whether the i'th formal might have a default value. */
+  bool formalMightHaveDefault(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
-    return formals_[i].hasDefaultValue;
+    return formals_[i].defaultKind != DK_NO_DEFAULT;
   }
 
   /** Returns the Decl for the i'th formal / field.
@@ -315,6 +354,175 @@ class UntypedFnSignature {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+/**
+  This type represents the outer variables used in a function. It stores
+  the variables and all their mentions in lexical order. It presents the
+  concept of a 'reaching variable', which is a reference to an outer
+  variable that is not defined in the symbol's immediate parent.
+*/
+// TODO: We can drop some of this state if we decide we don't care about
+// preserving lexical ordering or mentions at all (not 100% sure yet).
+class OuterVariables {
+
+  // Record all outer variables used in lexical order.
+  std::vector<ID> variables_;
+
+  // Record all mentions of variables in lexical order. A variable may have
+  // zero mentions if it was only ever referenced by a child function. In
+  // this case, we still record the variable so that we can know to propagate
+  // it into our parent's state.
+  std::vector<ID> mentions_;
+
+  using VarAndMentionIndices = std::pair<size_t, std::vector<size_t>>;
+  using IdToVarAndMentionIndices = std::unordered_map<ID, VarAndMentionIndices>;
+
+  // Enables lookup of variables and their mentions given just an ID. The
+  // first part of the pair is the index of the variable, and the second
+  // component is the list of mention indices.
+  IdToVarAndMentionIndices idToVarAndMentionIndices_;
+
+  // The number of outer variables that are defined in distant (not our
+  // immediate) parents. Only variables defined by a function's most
+  // immediate parents need to be recorded into its 'TypedFnSignature'.
+  int numReachingVariables_ = 0;
+
+  // The function that owns this instance.
+  ID symbol_;
+
+  // The immediate parent of 'symbol_'. So that we can detect if a variable
+  // is 'reaching' without needing the compiler context.
+  ID parent_;
+
+  template <typename T>
+  static inline bool inBounds(const std::vector<T> v, size_t idx) {
+    return 0 <= idx && idx < v.size();
+  }
+
+public:
+  OuterVariables(Context* context, ID symbol)
+      : symbol_(std::move(symbol)),
+        parent_(symbol_.parentSymbolId(context)) {
+  }
+
+ ~OuterVariables() = default;
+
+  bool operator==(const OuterVariables& other) const {
+    return variables_ == other.variables_ &&
+           mentions_ == other.mentions_ &&
+           idToVarAndMentionIndices_ == other.idToVarAndMentionIndices_ &&
+           numReachingVariables_ == other.numReachingVariables_ &&
+           symbol_ == other.symbol_ &&
+           parent_ == other.parent_;
+  }
+
+  bool operator!=(const OuterVariables& other) const {
+    return !(*this == other);
+  }
+
+  void swap(OuterVariables& other) {
+    std::swap(variables_, other.variables_);
+    std::swap(mentions_, other.mentions_);
+    std::swap(idToVarAndMentionIndices_, other.idToVarAndMentionIndices_);
+    std::swap(numReachingVariables_, other.numReachingVariables_);
+    std::swap(symbol_, other.symbol_);
+    std::swap(parent_, other.parent_);
+  }
+
+  void mark(Context* context) const {
+    for (auto& v : variables_) v.mark(context);
+    for (auto& id : mentions_) id.mark(context);
+    for (auto& p : idToVarAndMentionIndices_) p.first.mark(context);
+    symbol_.mark(context);
+    parent_.mark(context);
+  }
+
+  static inline bool update(owned<OuterVariables>& keep,
+                            owned<OuterVariables>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+
+  // Mutating method used to build up state.
+  void add(Context* context, ID mention, ID var);
+
+  /** Returns 'true' if there are no outer variables. */
+  bool isEmpty() const { return numVariables() == 0; }
+
+  /** The total number of outer variables. */
+  int numVariables() const { return variables_.size(); }
+
+  /** The number of outer variables declared in our immediate parent. */
+  int numImmediateVariables() const {
+    return numVariables() - numReachingVariables_;
+  }
+
+  /** The number of outer variables declared in our non-immediate parents. */
+  int numReachingVariables() const { return numReachingVariables_; }
+
+  /** The number of outer variable mentions in this symbol's body. */
+  int numMentions() const { return mentions_.size(); }
+
+  /** Get the number of mentions for 'var' in this symbol. */
+  int numMentions(const ID& var) const {
+    auto it = idToVarAndMentionIndices_.find(var);
+    return it != idToVarAndMentionIndices_.end()
+      ? it->second.second.size()
+      : 0;
+  }
+
+  /** Returns 'true' if there is at least one mention of 'var'. */
+  bool mentions(const ID& var) const { return numMentions(var) > 0; }
+
+  /** Returns 'true' if this contains an entry for 'var'. */
+  bool contains(const ID& var) const {
+    return idToVarAndMentionIndices_.find(var) !=
+           idToVarAndMentionIndices_.end();
+  }
+
+  /** Get the i'th outer variable or the empty ID if 'idx' was out of bounds. */
+  ID variable(size_t idx) const {
+    return inBounds(variables_, idx) ? variables_[idx] : ID();
+  }
+
+  /** A reaching variable is declared in a non-immediate parent(s). */
+  bool isReachingVariable(const ID& var) const {
+    auto it = idToVarAndMentionIndices_.find(var);
+    if (it != idToVarAndMentionIndices_.end()) {
+      auto& var = variables_[it->second.first];
+      return !parent_.contains(var);
+    }
+    return false;
+  }
+
+  /** A reaching variable is declared in a non-immediate parent(s). */
+  bool isReachingVariable(size_t idx) const {
+    if (auto id = variable(idx)) return isReachingVariable(id);
+    return false;
+  }
+
+  /** Get the i'th mention in this function. */
+  ID mention(size_t idx) const {
+    return inBounds(mentions_, idx) ? mentions_[idx] : ID();
+  }
+
+  /** Get the i'th mention for 'var' within this function, or the empty ID. */
+  ID mention(const ID& var, size_t idx) const {
+    auto it = idToVarAndMentionIndices_.find(var);
+    if (it == idToVarAndMentionIndices_.end()) return {};
+    return inBounds(it->second.second, idx)
+      ? mentions_[it->second.second[idx]]
+      : ID();
+  }
+
+  /** Get the first mention of 'var', or the empty ID. */
+  ID firstMention(const ID& var) const { return mention(var, 0); }
+
+  /** Get the ID of the symbol this instance was created for. */
+  const ID& symbol() const { return symbol_; }
+
+  /** Get the ID of the owning symbol's parent. */
+  const ID& parent() const { return parent_; }
 };
 
 /** CallInfoActual */
@@ -418,12 +626,18 @@ class CallInfo {
 
       If actualAsts is provided and not 'nullptr', it will be updated
       to contain the uAST pointers for each actual.
+
+      If moduleScopeId is provided and not 'nullptr', it will be updated
+      with the ID of the scope that should be searched for candidates.
+      That is, if the call expression is 'M.f(...)' for a module 'M', then
+      'moduleScopeId' will be set to the ID of the module 'M'.
    */
   static CallInfo create(Context* context,
                          const uast::Call* call,
                          const ResolutionResultByPostorderID& byPostorder,
                          bool raiseErrors = true,
                          std::vector<const uast::AstNode*>* actualAsts=nullptr,
+                         ID* moduleScopeId=nullptr,
                          UniqueString rename = UniqueString());
 
   /** Construct a CallInfo by adding a method receiver argument to
@@ -885,6 +1099,92 @@ class TypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+// Container for resolution candidates and (if applicable) their corresponding
+// forwarding-to types.
+struct CandidatesAndForwardingInfo {
+ private:
+  std::vector<const TypedFnSignature*> candidates;
+  // Note we have a (small) storage footprint for forwardingInfo even in the
+  // relatively common case where it is unused; could potentially use something
+  // lighter than this struct for candidates without forwarding info.
+  std::vector<types::QualifiedType> forwardingInfo;
+
+ public:
+  using const_iterator = std::vector<const TypedFnSignature*>::const_iterator;
+
+  // Add a candidate without forwarding info.
+  void addCandidate(const TypedFnSignature* candidate) {
+    candidates.push_back(candidate);
+  }
+
+  // Compute and fill in forwarding info for a range of newly-added candidates.
+  void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
+    CHPL_ASSERT(forwardingInfo.size() <= start);
+    forwardingInfo.resize(start);
+    types::QualifiedType forwardingReceiverActualType = fci.calledType();
+    for (size_t i = start; i < candidates.size(); i++) {
+      forwardingInfo.push_back(forwardingReceiverActualType);
+    }
+  }
+
+  // Move the contents of another container into this one, clearing out the
+  // other.
+  void takeFromOther(CandidatesAndForwardingInfo& other) {
+    candidates.insert(candidates.end(),
+                      std::make_move_iterator(other.candidates.begin()),
+                      std::make_move_iterator(other.candidates.end()));
+    forwardingInfo.insert(forwardingInfo.end(),
+                          std::make_move_iterator(other.forwardingInfo.begin()),
+                          std::make_move_iterator(other.forwardingInfo.end()));
+    other.candidates.clear();
+    other.forwardingInfo.clear();
+  }
+
+  // Get the candidate at the provided index with no bounds checking.
+  inline const TypedFnSignature* get(size_t i) const { return candidates[i]; }
+
+  // Get the forwarding info at the provided index.
+  // Fails if there isn't forwarding info saved for each candidate.
+  inline const types::QualifiedType& getForwardingInfo(size_t i) const {
+    CHPL_ASSERT(candidates.size() == forwardingInfo.size());
+    return forwardingInfo[i];
+  }
+
+  // Check if any candidates are present
+  inline bool empty() const { return candidates.empty(); }
+
+  // Get the number of candidates
+  inline size_t size() const { return candidates.size(); }
+
+  // Return true if this container stores any forwarding info
+  inline bool hasForwardingInfo() const { return !forwardingInfo.empty(); }
+
+  // Iterator over contained candidates
+  const_iterator begin() const { return candidates.begin(); }
+  const_iterator end() const { return candidates.end(); }
+
+  /* Query system supporting functions */
+
+  static bool update(CandidatesAndForwardingInfo& keep,
+                     CandidatesAndForwardingInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  size_t hash() const { return chpl::hash(candidates, forwardingInfo); }
+  void mark(Context* context) const {
+    chpl::mark<decltype(candidates)>{}(context, candidates);
+    chpl::mark<decltype(forwardingInfo)>{}(context, forwardingInfo);
+  }
+  bool operator==(const CandidatesAndForwardingInfo& other) const {
+    return candidates == other.candidates &&
+           forwardingInfo == other.forwardingInfo;
+  }
+  void swap(CandidatesAndForwardingInfo& other) {
+    std::swap(candidates, other.candidates);
+    std::swap(forwardingInfo, other.forwardingInfo);
+  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+};
+
 /**
   An enum that represents the reason why a function candidate was filtered out
   during call resolution.
@@ -925,6 +1225,9 @@ enum PassingFailureReason {
   FAIL_CANNOT_CONVERT,
   /* An instantiation was needed but is not possible. */
   FAIL_CANNOT_INSTANTIATE,
+  /* We had a generic formal, but the actual did not instantiate it; actual
+     might be generic. */
+  FAIL_DID_NOT_INSTANTIATE,
   /* A type was used as an argument to a value, or the other way around. */
   FAIL_TYPE_VS_NONTYPE,
   /* A param value was expected, but a non-param value was given. */
@@ -1518,21 +1821,28 @@ class CallResolutionResult {
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
   PoiInfo poiInfo_;
+  // whether the resolution result was handled using some compiler-level logic,
+  // which does not correspond to a TypedSignature or AST.
+  bool speciallyHandled_ = false;
 
  public:
   CallResolutionResult() {}
 
-  // for simple cases where mostSpecific and poiInfo are irrelevant
+  // for simple cases where mostSpecific and poiInfo are irrelevant.
+  // Since the result was handled using some compiler-level logic (hence no
+  // 'mostSpecific'), the result is marked as specially handled.
   CallResolutionResult(types::QualifiedType exprType)
-    : exprType_(std::move(exprType)) {
+    : exprType_(std::move(exprType)), speciallyHandled_(true) {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        types::QualifiedType exprType,
-                       PoiInfo poiInfo)
+                       PoiInfo poiInfo,
+                       bool speciallyHandled = false)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
-      poiInfo_(std::move(poiInfo))
+      poiInfo_(std::move(poiInfo)),
+      speciallyHandled_(speciallyHandled)
   {
   }
 
@@ -1545,10 +1855,14 @@ class CallResolutionResult {
   /** point-of-instantiation scopes used when resolving signature or body */
   const PoiInfo& poiInfo() const { return poiInfo_; }
 
+  /** whether the resolution result was handled using some compiler-level logic */
+  bool speciallyHandled() const { return speciallyHandled_; }
+
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific_ == other.mostSpecific_ &&
            exprType_ == other.exprType_ &&
-           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
+           speciallyHandled_ == other.speciallyHandled_;
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
@@ -1557,6 +1871,7 @@ class CallResolutionResult {
     mostSpecific_.swap(other.mostSpecific_);
     exprType_.swap(other.exprType_);
     poiInfo_.swap(other.poiInfo_);
+    std::swap(speciallyHandled_, other.speciallyHandled_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -1564,6 +1879,43 @@ class CallResolutionResult {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+/**
+
+  When resolving calls like f(), we need three scopes to search.
+  * The 'call scope', which becomes relevant if we're resolving a generic function.
+    When we resolve a generic function, and come across other calls,
+    this 'call scope' becomes the 'poi scope' for resolving those dependent calls.
+  * The 'lookup scope', which is used to restrict where we search for candidates.
+    For instance, when resolving `M.f()`, we don't want to look for `f` in
+    the current scope, only in the scope of `M`. The call scope is not
+    always the same as the 'lookup scope' because while resolving `M.f`,
+    we still want to use the 'call scope' for POI.
+  * The 'POI scope', which is used when resolving calls in generic functions
+    as described in the first bullet.
+
+  This data structure bundles all three scopes for convenient threading through
+  the call resolution process.
+ */
+class CallScopeInfo {
+ private:
+  const Scope* callScope_;
+  const Scope* lookupScope_;
+  const PoiScope* poiScope_;
+
+  CallScopeInfo(const Scope* callScope, const Scope* lookupScope, const PoiScope* poiScope)
+    : callScope_(callScope), lookupScope_(lookupScope), poiScope_(poiScope) {
+  }
+
+ public:
+  static CallScopeInfo forNormalCall(const Scope* scope, const PoiScope* poiScope);
+  static CallScopeInfo forQualifiedCall(Context* context, const ID& moduleId,
+                                        const Scope* scope, const PoiScope* poiScope);
+
+  const Scope* callScope() const { return callScope_; }
+  const Scope* lookupScope() const { return lookupScope_; }
+  const PoiScope* poiScope() const { return poiScope_; }
 };
 
 class ResolvedParamLoop;
@@ -2295,6 +2647,14 @@ template<> struct hash<chpl::resolution::CallInfoActual>
 template<> struct hash<chpl::resolution::CallInfo>
 {
   size_t operator()(const chpl::resolution::CallInfo& key) const {
+    return key.hash();
+  }
+};
+
+template <>
+struct hash<chpl::resolution::CandidatesAndForwardingInfo> {
+  size_t operator()(
+      const chpl::resolution::CandidatesAndForwardingInfo& key) const {
     return key.hash();
   }
 };

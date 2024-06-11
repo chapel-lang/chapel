@@ -20,6 +20,7 @@
 #include "chpl/types/ArrayType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 
@@ -45,8 +46,7 @@ void ArrayType::stringify(std::ostream& ss,
 }
 
 static ID getArrayID(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelArray._array");
-  return ID(symbolPath, -1, 0);
+  return parsing::getSymbolFromTopLevelModule(context, "ChapelArray", "_array");
 }
 
 const owned<ArrayType>&

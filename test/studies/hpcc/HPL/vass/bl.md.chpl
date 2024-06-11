@@ -65,8 +65,8 @@ const
   rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
-   dmapped blockDist(boundingBox={1..nbb1, 1..nbb2}, targetLocales=tla) //MBD
-// dmapped blockCycDist(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
+   dmapped new blockDist(boundingBox={1..nbb1, 1..nbb2}, targetLocales=tla) //MBD
+// dmapped new blockCycDist(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
 // dmapped dimensionalDist2D(tla, bdim1, bdim2, "dim") //BD //BC
   = MatVectSpace;
 
@@ -80,9 +80,9 @@ var refsuccess = true;
 // the domains for the arrays used for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    dimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
+    new dimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
   replBD = {1..blkSize, 1..n+1} dmapped
-    dimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
+    new dimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;

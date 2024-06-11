@@ -52,7 +52,8 @@ namespace chpl {
 
 class ErrorWriterBase;
 
-using Note = std::tuple<IdOrLocation, std::string>;
+using ErrorNote = std::tuple<IdOrLocation, std::string>;
+using ErrorCodeSnippet = std::tuple<Location, std::vector<Location>>;
 
 /** Enum representing the different types of errors in Dyno. */
 enum ErrorType {
@@ -163,12 +164,12 @@ class BasicError : public ErrorBase {
   /** The error's message. */
   std::string message_;
   /** Additional notes / details attached to the error. */
-  std::vector<Note> notes_;
+  std::vector<ErrorNote> notes_;
 
  protected:
   BasicError(Kind kind, ErrorType type, IdOrLocation idOrLoc,
              std::string message,
-             std::vector<Note> notes) :
+             std::vector<ErrorNote> notes) :
     ErrorBase(kind, type), idOrLoc_(std::move(idOrLoc)),
     message_(std::move(message)), notes_(std::move(notes)) {}
 
@@ -191,7 +192,7 @@ class GeneralError : public BasicError {
  protected:
   GeneralError(const GeneralError& other) = default;
   GeneralError(ErrorBase::Kind kind, IdOrLocation idOrLoc,
-               std::string message, std::vector<Note> notes)
+               std::string message, std::vector<ErrorNote> notes)
     : BasicError(kind, General, std::move(idOrLoc),
                  std::move(message), std::move(notes)) {}
 
@@ -229,16 +230,16 @@ class GeneralError : public BasicError {
   class Error##NAME__ : public ErrorBase {\
    private:\
     using ErrorInfo = std::tuple<EINFO__>;\
-    ErrorInfo info;\
+    ErrorInfo info_;\
 \
     Error##NAME__(const Error##NAME__& other) = default;\
     Error##NAME__(ErrorInfo info) :\
-      ErrorBase(KIND__, NAME__), info(std::move(info)) {}\
+      ErrorBase(KIND__, NAME__), info_(std::move(info)) {}\
 \
    protected:\
     bool contentsMatchInner(const ErrorBase* other) const override {\
       auto otherCast = static_cast<const Error##NAME__*>(other);\
-      return info == otherCast->info;\
+      return info_ == otherCast->info_;\
     }\
    public:\
     ~Error##NAME__() = default;\
@@ -247,11 +248,13 @@ class GeneralError : public BasicError {
     void write(ErrorWriterBase& writer) const override;\
     void mark(Context* context) const override {\
       ::chpl::mark<ErrorInfo> marker;\
-      marker(context, info);\
+      marker(context, info_);\
     }\
     owned<ErrorBase> clone() const override {\
       return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
+\
+    ErrorInfo info() const { return info_; }\
   };
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS

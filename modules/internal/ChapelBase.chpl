@@ -87,6 +87,26 @@ module ChapelBase {
   var chpl_unstableInternalSymbolForTesting: int;
   chpl_unstableInternalSymbolForTesting;
 
+
+  // We have the following two config params here instead of in
+  // ChapelDomain so to make it easy for us to access these in the
+  // compiler, since we already always have a reference to baseModule
+  // in the production compiler.
+
+  /* Compile with ``-sassocParSafeDefault=true`` to use ``parSafe=true``
+     by default for associative domains and arrays.
+     Compiling with an explicit ``-sassocParSafeDefault[=false]`` will
+     turn off the par safe warning, just like ``-snoParSafeWarning``*/
+  @chpldoc.nodoc
+  config param assocParSafeDefault = false;
+
+  /* Compile with ``-snoParSafeWarning`` to suppress the warning
+     about a missing explicit ``parSafe`` parameter and
+     about the default parSafe mode for associative domains
+     and arrays changing from ``true`` to ``false``. */
+  @chpldoc.nodoc
+  config param noParSafeWarning = false;
+
   pragma "object class"
   pragma "global type symbol"
   pragma "no object"
@@ -1383,12 +1403,14 @@ module ChapelBase {
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc creal(x:complex(128)): real(64);
-      return creal(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_creal(x:complex(128)): real(64);
+      return chpl_creal(this);
     } else {
       pragma "fn synchronization free"
-      extern proc crealf(x:complex(64)): real(32);
-      return crealf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_crealf(x:complex(64)): real(32);
+      return chpl_crealf(this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
@@ -1400,12 +1422,14 @@ module ChapelBase {
   inline proc chpl_anycomplex.im {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc cimag(x:complex(128)): real(64);
-      return cimag(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimag(x:complex(128)): real(64);
+      return chpl_cimag(this);
     } else {
       pragma "fn synchronization free"
-      extern proc cimagf(x:complex(64)): real(32);
-      return cimagf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimagf(x:complex(64)): real(32);
+      return chpl_cimagf(this);
     }
   }
 
@@ -1630,6 +1654,19 @@ module ChapelBase {
       _ddata_allocate_postalloc(ret, size);
     }
 
+    return ret;
+  }
+
+  pragma "llvm return noalias"
+  proc _ddata_allocate_noinit_gpu_shared(type eltType, size: integral,
+                                         out callPostAlloc: bool,
+                                         subloc = c_sublocid_none) {
+    if CHPL_LOCALE_MODEL != "gpu" then
+      compilerError("_ddata_allocate_noinit_gpu_shared can't be called in this config");
+
+    var ret: _ddata(eltType);
+    // TODO why fixed size?
+    ret = __primitive("cast", ret.type, __primitive("gpu allocShared", 4096*8));
     return ret;
   }
 
@@ -3253,12 +3290,18 @@ module ChapelBase {
   inline operator <=(param a: int(64), b: int(64)) do return __primitive("<=", a, b);
 
 
+  pragma "suppress generic actual warning"
   proc isGenericType(type t) param do return __primitive("is generic type", t);
+  pragma "suppress generic actual warning"
   proc isNilableClassType(type t) param do return __primitive("is nilable class type", t);
+  pragma "suppress generic actual warning"
   proc isNonNilableClassType(type t) param do return __primitive("is non nilable class type", t);
 
+  pragma "suppress generic actual warning"
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param do return true;
+  pragma "suppress generic actual warning"
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param do return true;
+  pragma "suppress generic actual warning"
   proc isBorrowedOrUnmanagedClassType(type t) param do return false;
 
   // These style element #s are used in the default Writer and Reader.
@@ -3289,16 +3332,13 @@ module ChapelBase {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
     const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) throws {
+    override proc serialize(writer, ref serializer) throws {
       try {
-      ch.writef("chpl_ModuleDeinit(%s)",string.createCopyingBuffer(moduleName));
+        writer.writef("chpl_ModuleDeinit(%s)",string.createCopyingBuffer(moduleName));
       }
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
-    }
-    override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
     }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
@@ -3338,6 +3378,7 @@ module ChapelBase {
   // this could in principle be just _unmanaged (similar to type
   // constructor for a record) but that is more challenging because
   // _unmanaged is a built-in non-record type.
+  pragma "suppress generic actual warning"
   proc _to_unmanaged(type t) type {
     type rt = __primitive("to unmanaged class", t);
     return rt;
@@ -3347,6 +3388,7 @@ module ChapelBase {
     return ret;
   }
   // type constructor for converting to a borrow
+  pragma "suppress generic actual warning"
   proc _to_borrowed(type t) type {
     type rt = __primitive("to borrowed class", t);
     return rt;
@@ -3356,6 +3398,7 @@ module ChapelBase {
     return ret;
   }
   // changing nilability
+  pragma "suppress generic actual warning"
   proc _to_nonnil(type t) type {
     type rt = __primitive("to non nilable class", t);
     return rt;
@@ -3364,6 +3407,7 @@ module ChapelBase {
     var ret = __primitive("to non nilable class", arg);
     return ret;
   }
+  pragma "suppress generic actual warning"
   proc _to_nilable(type t) type {
     type rt = __primitive("to nilable class", t);
     return rt;

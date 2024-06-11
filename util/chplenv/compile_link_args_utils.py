@@ -73,7 +73,7 @@ def get_runtime_includes_and_defines():
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
-    if mem == "jemalloc":
+    if mem == "jemalloc" and chpl_jemalloc.get('target') == "bundled":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
         # this is needed since it affects code inside of headers
         bundled.append("-DCHPL_JEMALLOC_PREFIX=chpl_je_")
@@ -100,8 +100,11 @@ def get_runtime_link_args(runtime_subdir):
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
         if gpu_type == "nvidia":
             system.append("-L" + os.path.join(sdk_path, "lib64"))
-            system.append("-lcuda")
             system.append("-lcudart")
+            if chpl_platform.is_wsl():
+                # WSL needs to link with libcuda that belongs to the driver hosted in Windows
+                system.append("-L" + os.path.join("/usr", "lib", "wsl", "lib"))
+            system.append("-lcuda")
         elif gpu_type == "amd":
             lib_path = os.path.join(sdk_path, "lib")
             system.append("-L" + lib_path)

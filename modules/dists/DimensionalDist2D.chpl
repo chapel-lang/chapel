@@ -124,7 +124,7 @@ and distributes using block-cyclic distribution in the second dimension.
     var MyLocales = reshape(Locales[0..N_1*N_2-1], MyLocaleView);
 
     const D = Space
-      dmapped DimensionalDist2D(MyLocales,
+      dmapped new DimensionalDist2D(MyLocales,
                                 new ReplicatedDim(numLocales = N_1),
                                 new BlockCyclicDim(numLocales = N_2,
                                                    lowIdx     = 1,
@@ -317,12 +317,8 @@ record dimensionalDist2D: writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -509,9 +505,6 @@ class LocDimensionalArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocDimensionalArr.writeThis() is not implemented / should not be needed");
-  }
   override proc serialize(writer, ref serializer) throws {
     halt("LocDimensionalArr.serialize() is not implemented / should not be needed");
   }

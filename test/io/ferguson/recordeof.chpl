@@ -27,7 +27,7 @@ proc MyRecord.serialize(writer, ref serializer) throws {
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   var rec:MyRecord;
   var i = 1;
