@@ -32,6 +32,7 @@ from driver import LintDriver
 from lsp import run_lsp
 from rules import register_rules
 from fixits import Fixit, Edit
+from config import Config
 
 
 def print_violation(node: chapel.AstNode, name: str):
@@ -201,26 +202,8 @@ def main():
         prog="chplcheck", description="A linter for the Chapel language"
     )
     parser.add_argument("filenames", nargs="*")
-    parser.add_argument(
-        "--disable-rule", action="append", dest="disabled_rules", default=[]
-    )
-    parser.add_argument(
-        "--enable-rule", action="append", dest="enabled_rules", default=[]
-    )
+    Config.add_arguments(parser)
     parser.add_argument("--lsp", action="store_true", default=False)
-    parser.add_argument("--skip-unstable", action="store_true", default=False)
-    parser.add_argument(
-        "--internal-prefix",
-        action="append",
-        dest="internal_prefixes",
-        default=[],
-    )
-    parser.add_argument(
-        "--add-rules",
-        action="append",
-        default=[],
-        help="Add a custom rule file",
-    )
     parser.add_argument(
         "--list-rules",
         action="store_true",
@@ -253,13 +236,12 @@ def main():
     )
     args = parser.parse_args()
 
-    driver = LintDriver(
-        skip_unstable=args.skip_unstable,
-        internal_prefixes=args.internal_prefixes,
-    )
+    config = Config.from_args(args)
+    driver = LintDriver(config)
+
     # register rules before enabling/disabling
     register_rules(driver)
-    for p in args.add_rules:
+    for p in config.add_rules:
         load_module(driver, os.path.abspath(p))
 
     if args.list_rules:
@@ -267,8 +249,8 @@ def main():
         print_rules(driver)
         return
 
-    driver.disable_rules(*args.disabled_rules)
-    driver.enable_rules(*args.enabled_rules)
+    driver.disable_rules(*config.disabled_rules)
+    driver.enable_rules(*config.enabled_rules)
 
     if args.list_active_rules:
         print("Active rules:")

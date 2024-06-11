@@ -62,6 +62,8 @@ VSCode
 Install the ``chapel`` extension from the `Visual Studio Code marketplace
 <https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
 
+.. _chpl-language-server-emacs:
+
 Emacs
 ^^^^^
 
@@ -77,7 +79,7 @@ syntax highlighting in Emacs):
 
   (with-eval-after-load 'eglot
     (add-to-list 'eglot-server-programs
-                 '(chpl-mode . ("chpl-language-server"))))
+                 '(chpl-mode . ("chpl-language-server", "--chplcheck"))))
 
 This will enable using the language server with a particular ``.chpl`` file by
 calling ``M-x eglot``.
@@ -91,11 +93,8 @@ additionally add the following to your ``.emacs`` file:
 
 .. note::
 
-   There is currently a limitation with Eglot that only one language server can
-   be registered per language.  We are investigating merging the support for
-   :ref:`readme-chplcheck` such that both can be used in Emacs at the same time,
-   stay tuned!
-
+   The above uses the ``--chplcheck`` flag to enable additional diagnostics from
+   ``chplcheck``. If you do not want to use ``chplcheck``, you can remove this.
 
 Supported Features
 ------------------
@@ -190,6 +189,25 @@ The following features are extra visual aids:
 | Generic        | ``CLS`` can show the various               | No flag, on by default                |
 | Instantiations | instantiations of a generic function.      |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
+
+Using ``chplcheck`` from ``CLS``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Although :ref:`chplcheck <readme-chplcheck>` is a separate tool from ``CLS``,
+it can be used from ``CLS`` to provide additional diagnostics. This is done by
+enabling the ``--chplcheck`` flag. This will incorporate the diagnostics and
+fixits from ``chplcheck``.
+
+You can also still pass many of the same ``chplcheck`` flags to ``CLS``, just
+prefixed with ``--chplcheck-``. For example, the following command runs the
+language server with linting enabled various ``chplcheck`` flags:
+
+.. code-block:: bash
+
+   chpl-language-server --chplcheck \
+     --chplcheck-enable-rule UseExplicitModules \
+     --chplcheck-disable-rule UnusedLoopIndex \
+     --chplcheck-add-rules path/to/my/myrules.py
 
 Configuring Chapel Projects
 ---------------------------
