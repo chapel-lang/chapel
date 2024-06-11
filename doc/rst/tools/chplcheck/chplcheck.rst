@@ -168,13 +168,6 @@ additionally add the following to your ``.emacs`` file:
 
    (add-hook 'chpl-mode-hook 'eglot-ensure)
 
-.. note::
-
-   There is currently a limitation with Eglot that only one language server can
-   be registered per language.  We are investigating merging the support for
-   :ref:`readme-chpl-language-server` such that both can be used in Emacs at the
-   same time, stay tuned!
-
 
 
 Writing New Rules
