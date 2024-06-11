@@ -61,19 +61,19 @@ struct qt_mpool_s {
 #else
     pthread_key_t                 threadlocal_cache;
 #endif
-    qt_mpool_threadlocal_cache_t *caches;  // for cleanup
+    qt_mpool_threadlocal_cache_t *_Atomic caches;  // for cleanup
 
     QTHREAD_FASTLOCK_TYPE         reuse_lock;
-    void                         *reuse_pool;
+    void                 *_Atomic reuse_pool;
 
     QTHREAD_FASTLOCK_TYPE         pool_lock;
     void                        **alloc_list;
-    size_t                        alloc_list_pos;
+    size_t _Atomic                alloc_list_pos;
 };
 
 typedef struct qt_mpool_cache_entry_s {
-    struct qt_mpool_cache_entry_s *next;
-    struct qt_mpool_cache_entry_s *block_tail;
+    struct qt_mpool_cache_entry_s *_Atomic next;
+    struct qt_mpool_cache_entry_s *_Atomic block_tail;
     uint8_t                        data[];
 } qt_mpool_cache_t;
 
@@ -82,7 +82,7 @@ struct threadlocal_cache_s {
     uint_fast16_t                 count;
     uint8_t                      *block;
     uint_fast32_t                 i;
-    qt_mpool_threadlocal_cache_t *next;  // for cleanup
+    qt_mpool_threadlocal_cache_t *_Atomic next;  // for cleanup
 };
 
 #ifdef TLS
@@ -200,11 +200,14 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
             alloc_size *= 2;
         }
     }
-    pool->alloc_size      = alloc_size;
-    pool->items_per_alloc = alloc_size / item_size;
-    pool->reuse_pool      = NULL;
     QTHREAD_FASTLOCK_INIT(pool->reuse_lock);
     QTHREAD_FASTLOCK_INIT(pool->pool_lock);
+    QTHREAD_FASTLOCK_LOCK(&pool->reuse_lock);
+    atomic_store_explicit(&pool->reuse_pool, NULL, memory_order_relaxed);
+    QTHREAD_FASTLOCK_UNLOCK(&pool->reuse_lock);
+    QTHREAD_FASTLOCK_LOCK(&pool->pool_lock);
+    pool->alloc_size      = alloc_size;
+    pool->items_per_alloc = alloc_size / item_size;
 #ifdef TLS
     pool->offset = qthread_incr(&pool_cache_global_max, 1);
 #else
@@ -215,9 +218,10 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
     pool->alloc_list = qt_internal_aligned_alloc(pagesize, pagesize);
     qassert_goto((pool->alloc_list != NULL), errexit);
     memset(pool->alloc_list, 0, pagesize);
-    pool->alloc_list_pos = 0;
+    atomic_store_explicit(&pool->alloc_list_pos, 0u, memory_order_relaxed);
 
-    pool->caches = NULL;
+    atomic_store_explicit(&pool->caches, NULL, memory_order_relaxed);
+    QTHREAD_FASTLOCK_UNLOCK(&pool->pool_lock);
     return pool;
 
     qgoto(errexit);
@@ -301,9 +305,11 @@ static qt_mpool_threadlocal_cache_t *qt_mpool_internal_getcache(qt_mpool pool)
         tc->count = 0;
         tc->block = NULL;
         tc->i     = 0;
+        qt_mpool_threadlocal_cache_t *old_caches;
         do {
-            tc->next = pool->caches;
-        } while (qthread_cas_ptr(&pool->caches, tc->next, tc) != tc->next);
+            old_caches = atomic_load_explicit(&pool->caches, memory_order_relaxed);
+            atomic_store_explicit(&tc->next, old_caches, memory_order_relaxed);
+        } while (!atomic_compare_exchange_weak_explicit(&pool->caches, &old_caches, tc, memory_order_release, memory_order_relaxed));
         qthread_debug(MPOOL_DETAILS, "added %p to caches\n", tc);
         pthread_setspecific(pool->threadlocal_cache, tc);
     }
@@ -320,11 +326,11 @@ void INTERNAL *qt_mpool_alloc(qt_mpool pool)
     qassert_ret((pool != NULL), NULL);
 
     tc = qt_mpool_internal_getcache(pool);
-    qthread_debug(MPOOL_BEHAVIOR, "->tc:%p cache:%p (bt:%p) cnt:%u\n", tc, tc->cache, tc->cache ? tc->cache->block_tail : NULL, (unsigned int)tc->count);
+    qthread_debug(MPOOL_BEHAVIOR, "->tc:%p cache:%p (bt:%p) cnt:%u\n", tc, tc->cache, tc->cache ? atomic_load_explicit(&tc->cache->block_tail, memory_order_relaxed) : NULL, (unsigned int)tc->count);
     if (tc->cache) {
         qt_mpool_cache_t *cache = tc->cache;
         qthread_debug(MPOOL_DETAILS, "->...cached count:%zu\n", (size_t)tc->count - 1);
-        tc->cache = cache->next;
+        tc->cache = atomic_load_explicit(&cache->next, memory_order_relaxed);
         --tc->count;
         ALLOC_SCRIBBLE(cache, pool->item_size);
         return cache;
@@ -342,14 +348,14 @@ void INTERNAL *qt_mpool_alloc(qt_mpool pool)
 
         cnt = 0;
         /* cache is empty; need to fill it */
-        if (pool->reuse_pool) { // global cache
+        if (atomic_load_explicit(&pool->reuse_pool, memory_order_relaxed)) { // global cache
             qthread_debug(MPOOL_BEHAVIOR, "->...pull from reuse\n");
             QTHREAD_FASTLOCK_LOCK(&pool->reuse_lock);
-            if (pool->reuse_pool) {
-                cache                   = pool->reuse_pool;
-                pool->reuse_pool        = cache->block_tail->next;
-                cache->block_tail->next = NULL;
-                cnt                     = items_per_alloc;
+            if (atomic_load_explicit(&pool->reuse_pool, memory_order_relaxed)) {
+                cache = atomic_load_explicit(&pool->reuse_pool, memory_order_relaxed);
+                atomic_store_explicit(&pool->reuse_pool, atomic_load_explicit(&cache->block_tail->next, memory_order_relaxed), memory_order_relaxed);
+                atomic_store_explicit(&cache->block_tail->next, NULL, memory_order_relaxed);
+                cnt = items_per_alloc;
             }
             QTHREAD_FASTLOCK_UNLOCK(&pool->reuse_lock);
         }
@@ -365,16 +371,16 @@ void INTERNAL *qt_mpool_alloc(qt_mpool pool)
             assert(pool->alignment == 0 ||
                    (((uintptr_t)p) & (pool->alignment - 1)) == 0);
             QTHREAD_FASTLOCK_LOCK(&pool->pool_lock);
-            if (pool->alloc_list_pos == (pagesize / sizeof(void *) - 1)) {
+            if (atomic_load_explicit(&pool->alloc_list_pos, memory_order_relaxed) == (pagesize / sizeof(void *) - 1)) {
                 void **tmp = qt_internal_aligned_alloc(pagesize, pagesize);
                 qassert_ret((tmp != NULL), NULL);
                 memset(tmp, 0, pagesize);
                 tmp[pagesize / sizeof(void *) - 1] = pool->alloc_list;
                 pool->alloc_list                   = tmp;
-                pool->alloc_list_pos               = 0;
+                atomic_store_explicit(&pool->alloc_list_pos, 0, memory_order_relaxed);
             }
-            pool->alloc_list[pool->alloc_list_pos] = p;
-            pool->alloc_list_pos++;
+            pool->alloc_list[atomic_load_explicit(&pool->alloc_list_pos, memory_order_relaxed)] = p;
+            atomic_fetch_add_explicit(&pool->alloc_list_pos, 1u, memory_order_relaxed);
             QTHREAD_FASTLOCK_UNLOCK(&pool->pool_lock);
             /* store the block for later allocation */
             tc->block = p;
@@ -383,7 +389,7 @@ void INTERNAL *qt_mpool_alloc(qt_mpool pool)
             return p;
         } else {
             qthread_debug(MPOOL_BEHAVIOR, "->...from_global_pool count:%zu\n", (size_t)(cnt - 1));
-            tc->cache = cache->next;
+            tc->cache = atomic_load_explicit(&cache->next, memory_order_relaxed);
             tc->count = cnt - 1;
             // cache->next       = NULL; // unnecessary
             // cache->block_tail = NULL; // unnecessary
@@ -409,15 +415,15 @@ void INTERNAL qt_mpool_free(qt_mpool pool,
     tc    = qt_mpool_internal_getcache(pool);
     cache = tc->cache;
     cnt   = tc->count;
-    qthread_debug(MPOOL_DETAILS, "->cache:%p (bt:%p) cnt:%u\n", cache, cache ? cache->block_tail : NULL, (unsigned int)cnt);
+    qthread_debug(MPOOL_DETAILS, "->cache:%p (bt:%p) cnt:%u\n", cache, cache ? atomic_load_explicit(&cache->block_tail, memory_order_relaxed) : NULL, (unsigned int)cnt);
     if (cache) {
         assert(cnt != 0);
-        n->next       = cache;
-        n->block_tail = cache->block_tail; // cache is likely to be IN cache, so this won't be slow
+        atomic_store_explicit(&n->next, cache, memory_order_relaxed);
+        atomic_store_explicit(&n->block_tail, atomic_load_explicit(&cache->block_tail, memory_order_relaxed), memory_order_relaxed); // cache is likely to be IN cache, so this won't be slow
     } else {
         assert(cnt == 0);
-        n->next       = NULL;
-        n->block_tail = n;
+        atomic_store_explicit(&n->next, NULL, memory_order_relaxed);
+        atomic_store_explicit(&n->block_tail, n, memory_order_relaxed);
     }
     cnt++;
     if (cnt >= (items_per_alloc * 2)) {
@@ -425,19 +431,19 @@ void INTERNAL qt_mpool_free(qt_mpool pool,
         /* push to global */
         qthread_debug(MPOOL_BEHAVIOR, "->push to global! cnt:%u\n", (unsigned)cnt);
         assert(n);
-        assert(n->block_tail);
-        toglobal            = n->block_tail->next;
-        n->block_tail->next = NULL;
+        assert(atomic_load_explicit(&n->block_tail, memory_order_relaxed));
+        toglobal            = atomic_load_explicit(&atomic_load_explicit(&n->block_tail, memory_order_relaxed)->next, memory_order_relaxed);
+        atomic_store_explicit(&atomic_load_explicit(&n->block_tail, memory_order_relaxed)->next, NULL, memory_order_relaxed);
         assert(toglobal);
-        assert(toglobal->block_tail);
+        assert(atomic_load_explicit(&toglobal->block_tail, memory_order_relaxed));
         QTHREAD_FASTLOCK_LOCK(&pool->reuse_lock);
-        toglobal->block_tail->next = pool->reuse_pool;
-        pool->reuse_pool           = toglobal;
+        atomic_store_explicit(&atomic_load_explicit(&toglobal->block_tail, memory_order_relaxed)->next, atomic_load_explicit(&pool->reuse_pool, memory_order_relaxed), memory_order_relaxed);
+        atomic_store_explicit(&pool->reuse_pool, toglobal, memory_order_relaxed);
         QTHREAD_FASTLOCK_UNLOCK(&pool->reuse_lock);
         cnt -= items_per_alloc;
     } else if (cnt == items_per_alloc + 1) {
         qthread_debug(MPOOL_BEHAVIOR, "->chop_block\n");
-        n->block_tail = n;
+        atomic_store_explicit(&n->block_tail, n, memory_order_relaxed);
     }
     tc->cache = n;
     tc->count = cnt;
@@ -466,9 +472,9 @@ void INTERNAL qt_mpool_destroy(qt_mpool pool)
         qt_internal_aligned_free(p, pagesize);
     }
     qthread_debug(MPOOL_DETAILS, "begin free TLS caches\n");
-    while (pool->caches) {
-        qt_mpool_threadlocal_cache_t *freeme = pool->caches;
-        pool->caches = freeme->next;
+    qt_mpool_threadlocal_cache_t *freeme;
+    while ((freeme = atomic_load_explicit(&pool->caches, memory_order_relaxed))) {
+        atomic_store_explicit(&pool->caches, atomic_load_explicit(&freeme->next, memory_order_relaxed), memory_order_relaxed);
         qt_internal_aligned_free(freeme, CACHELINE_WIDTH);
     }
     qthread_debug(MPOOL_DETAILS, "done freeing TLS caches\n");

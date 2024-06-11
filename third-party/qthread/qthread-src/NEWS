@@ -1,4 +1,11 @@
---- 1.19 (current) ---
+--- 1.20 (current) ---
+Improvements:
+ - Improve and expand CI testing
+ - Fix compilation and testing for an expanded range of platforms, compilers, and operating systems
+ - Fix numerous sanitizer errors
+ - Remove some unused/outdated code
+
+--- 1.19 ---
 
 New Features:
  - Add a mechanism to reset the default task spawn order

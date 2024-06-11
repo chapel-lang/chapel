@@ -50,7 +50,7 @@ struct qthread_worker_s {
 #ifdef QTHREAD_PERFORMANCE
     struct qtperfdata_s*             performance_data;
 #endif
-    Q_ALIGNED(8) uint_fast8_t QTHREAD_CASLOCK(active);
+    _Atomic Q_ALIGNED(8) uint_fast8_t active;
 };
 typedef struct qthread_worker_s qthread_worker_t;
 
@@ -66,7 +66,7 @@ struct qthread_shepherd_s {
 #endif /* ifdef QTHREAD_LOCAL_PRIORITY */
     /* round robin scheduler - can probably be smarter */
     aligned_t             sched_shepherd;
-    uintptr_t             QTHREAD_CASLOCK(active);
+    _Atomic uintptr_t     active;
     /* affinity information */
     unsigned int          node;  /* whereami */
 #ifdef QTHREAD_HAVE_LGRP

@@ -5,11 +5,11 @@
 #include <qthread/qarray.h>
 #include "argparsing.h"
 
-static unsigned int ELEMENT_COUNT = 1000;
+static unsigned int ELEMENT_COUNT = 500;
 
 aligned_t count = 0;
 typedef struct {
-    char pad[10000];
+    char pad[1000];
 } bigobj;
 typedef struct {
     char pad[41];

@@ -73,7 +73,7 @@ double qtimer_secs(qtimer_t q)
     return conversion * (double)difference;
 }
 
-qtimer_t qtimer_create()
+qtimer_t qtimer_create(void)
 {
     return qt_calloc(1, sizeof(struct qtimer_s));
 }

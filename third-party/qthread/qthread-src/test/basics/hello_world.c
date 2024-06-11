@@ -30,7 +30,7 @@ int main(int   argc,
     iprintf("%i shepherds...\n", qthread_num_shepherds());
     iprintf("  %i threads total\n", qthread_num_workers());
 
-    status = qthread_fork(greeter, (void*)123456789, &return_value);
+    status = qthread_fork(greeter, NULL, &return_value);
     assert(status == QTHREAD_SUCCESS);
 
     int ret = qthread_readFF(NULL, &return_value);

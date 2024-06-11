@@ -15,6 +15,7 @@ static aligned_t user_func(void *arg)
     qt_begin_blocking_action();
     iprintf("\t\tinside blocking action\n");
     foo = 1;
+    atomic_thread_fence(memory_order_acq_rel);
     iprintf("\t\tshep=%i\n", (signed)qthread_shep());
     assert(qthread_shep() == NO_SHEPHERD); // because we're in a blocking action
     if (initialized) {
@@ -55,6 +56,7 @@ int main(int argc,
     iprintf("Spawning user_func task\n");
     qthread_fork(user_func, NULL, &t);
     qthread_readFF(NULL, &t);
+    atomic_thread_fence(memory_order_acq_rel);
     assert(foo == 1);
 
     return (foo == 1)?0:EXIT_FAILURE;

@@ -22,6 +22,7 @@
 #include "qt_asserts.h"
 #include "qt_prefetch.h"
 #include "qt_threadqueues.h"
+#include "qt_threadqueue_scheduler.h"
 #include "qt_envariables.h"
 #include "qt_debug.h"
 #ifdef QTHREAD_USE_EUREKAS
@@ -294,7 +295,7 @@ void INTERNAL qt_threadqueue_free(qt_threadqueue_t *q)
 
 static QINLINE int qt_threadqueue_isstealable(qthread_t *t)
 {   /*{{{*/
-    return ((t->flags & QTHREAD_UNSTEALABLE) == 0) ? 1 : 0;
+    return ((atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_UNSTEALABLE) == 0) ? 1 : 0;
 } /*}}}*/
 
 /* enqueue at tail */
@@ -471,11 +472,8 @@ void INTERNAL qt_threadqueue_enqueue_yielded(qt_threadqueue_t *restrict q,
                                        !(f &QTHREAD_BIG_STRUCT) &&                         \
                                        !(f &QTHREAD_FUTURE) && !(f &QTHREAD_REAL_MCCOY) && \
                                        !(f &QTHREAD_AGGREGATED))
-// && (f & QTHREAD_AGGREGABLE) \
-//               )
-// (f & QTHREAD_AGGREGABLE)
 
-qthread_t INTERNAL *qt_init_agg_task() // partly a duplicate from qthread.c
+qthread_t INTERNAL *qt_init_agg_task(void) // partly a duplicate from qthread.c
 {
     qthread_t *t = ALLOC_QTHREAD();
 
@@ -498,7 +496,7 @@ qthread_t INTERNAL *qt_init_agg_task() // partly a duplicate from qthread.c
 #endif /* ifdef QTHREAD_NONLAZY_THREADIDS */
 
     t->thread_state    = QTHREAD_STATE_NEW;
-    t->flags           = 0;
+    atomic_store_explicit(&t->flags__, 0, memory_order_relaxed);
     t->target_shepherd = NO_SHEPHERD;
     t->team            = NULL;
     t->f               = (qthread_f)qlib->agg_f; // changed function pointer type!!!
@@ -506,9 +504,9 @@ qthread_t INTERNAL *qt_init_agg_task() // partly a duplicate from qthread.c
     t->ret             = 0;
     t->rdata           = NULL;
     t->preconds        = NULL;  // use for list of f and arg
-    t->flags &= ~QTHREAD_HAS_ARGCOPY;
-    t->flags |= QTHREAD_SIMPLE; // will remain a simple task if all tasks it batches are simple.
-    t->flags |= QTHREAD_AGGREGATED;
+    atomic_fetch_and_explicit(&t->flags__, ~QTHREAD_HAS_ARGCOPY, memory_order_relaxed);
+    atomic_fetch_or_explicit(&t->flags__, QTHREAD_SIMPLE, memory_order_relaxed); // will remain a simple task if all tasks it batches are simple.
+    atomic_fetch_or_explicit(&t->flags__, QTHREAD_AGGREGATED, memory_order_relaxed);
 
     int loc_id = qthread_worker(NULL);
     t->arg      = agged_tasks_arg[loc_id];
@@ -560,7 +558,7 @@ int INTERNAL qt_keep_adding_agg_task(qthread_t *agg_task,
             tail_l = *tail_addr;
             if(tail_l != NULL) {
                 int max_allowed = max_t - count;
-                while((len_l < max_allowed) && QTHREAD_TASK_IS_AGGREGABLE(tail_l->value->flags) && tail_l != head_l) {
+                while((len_l < max_allowed) && QTHREAD_TASK_IS_AGGREGABLE(atomic_load_explicit(&tail_l->value->flags__, memory_order_relaxed)) && tail_l != head_l) {
                     len_l++;
                     if (tail_l->stealable) { ste_l++; }
                     tail_l = tail_l->prev;
@@ -607,12 +605,12 @@ int INTERNAL qt_keep_adding_agg_task(qthread_t *agg_task,
     while(*head_addr != NULL) {
         node = *tail_addr;
         t    = node->value;
-        if(!QTHREAD_TASK_IS_AGGREGABLE(t->flags)) {
+        if(!QTHREAD_TASK_IS_AGGREGABLE(atomic_load_explicit(&t->flags__, memory_order_relaxed))) {
             // printf("Found non-agg task, stopping\n");
             break;
         }
 
-        if((t->flags & QTHREAD_RET_MASK) != (agg_task->flags & QTHREAD_RET_MASK)) {
+        if((atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_RET_MASK) != (atomic_load_explicit(&agg_task->flags__, memory_order_relaxed) & QTHREAD_RET_MASK)) {
             // printf("Found task with different return value, stopping\n");
             break;
         }
@@ -684,9 +682,11 @@ void INTERNAL qt_add_first_agg_task(qthread_t             *agg_task,
     ((void **)(agg_task->arg))[0] = node->value->arg;
     ((void **)(agg_task->ret))[0] = node->value->ret;
     // First task added defines the type of ret accepted inside this agg task
-    agg_task->flags |= ((node->value->flags & QTHREAD_RET_IS_SINC) |      \
-                        (node->value->flags & QTHREAD_RET_IS_VOID_SINC) | \
-                        (node->value->flags & QTHREAD_RET_IS_SYNCVAR));
+    uint16_t node_value_flags = atomic_load_explicit(&node->value->flags__, memory_order_relaxed);
+    atomic_fetch_or_explicit(&agg_task->flags__, (node_value_flags & QTHREAD_RET_IS_SINC) |
+                        (node_value_flags & QTHREAD_RET_IS_VOID_SINC) |
+                        (node_value_flags & QTHREAD_RET_IS_SYNCVAR),
+                        memory_order_relaxed);
     assert(node->value->rdata == NULL);
     qthread_thread_free(node->value);
     FREE_TQNODE(node);
@@ -704,7 +704,9 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
     qthread_shepherd_t *my_shepherd = qthread_internal_getshep();
     qthread_t          *t;
     qthread_worker_id_t worker_id = NO_WORKER;
+#ifdef QTHREAD_TASK_AGGREGATION
     int                 curr_cost, max_t, ret_agg_task;
+#endif
 
     assert(q != NULL);
     assert(my_shepherd);
@@ -757,7 +759,7 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
             assert(node->next == NULL);
             assert(node->prev == NULL);
 #ifdef QTHREAD_TASK_AGGREGATION
-            if(QTHREAD_TASK_IS_AGGREGABLE(node->value->flags) && \
+            if(QTHREAD_TASK_IS_AGGREGABLE(atomic_load_explicit(&node->value->flags__, memory_order_relaxed)) && \
                ((max_t = (qc->qlength + 1 + q->qlength) / qthread_readstate(ACTIVE_WORKERS) / DIV_FACTOR) > 1)
                ) {
                 max_t = (max_t > MAX_ABS_AGG ? MAX_ABS_AGG : max_t);
@@ -860,7 +862,7 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
                 q->qlength--;
                 q->qlength_stealable -= node->stealable;
 #ifdef QTHREAD_TASK_AGGREGATION
-                if(QTHREAD_TASK_IS_AGGREGABLE(node->value->flags) && \
+                if(QTHREAD_TASK_IS_AGGREGABLE(atomic_load_explicit(&node->value->flags__, memory_order_relaxed)) && \
                    ((max_t = (q->qlength) / qthread_readstate(ACTIVE_WORKERS) / DIV_FACTOR) > 1)
                    ) { // no point creating an agg task with a single simple task
                     max_t = (max_t > MAX_ABS_AGG ? MAX_ABS_AGG : max_t);
@@ -913,7 +915,7 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
 #endif
             t = node->value;
             FREE_TQNODE(node);
-            if ((t->flags & QTHREAD_REAL_MCCOY)) { // only needs to be on worker 0 for termination
+            if ((atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_REAL_MCCOY)) { // only needs to be on worker 0 for termination
                 if (worker_id == NO_WORKER) {
                     worker_id = qthread_worker(NULL);
                 }
@@ -1484,12 +1486,12 @@ qthread_t INTERNAL *qt_threadqueue_dequeue_specific(qt_threadqueue_t *q,
     return (t);
 }     /*}}}*/
 
-void INTERNAL qthread_steal_enable()
+void INTERNAL qthread_steal_enable(void)
 {       /*{{{*/
     steal_disable = 0;
 }     /*}}}*/
 
-void INTERNAL qthread_steal_disable()
+void INTERNAL qthread_steal_disable(void)
 {       /*{{{*/
     steal_disable = 1;
 }     /*}}}*/

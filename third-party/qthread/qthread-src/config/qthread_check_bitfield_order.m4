@@ -27,13 +27,13 @@ union foo {
         unsigned b : 3;
         unsigned c : 1;
     } s;
-} fb;]],
-[[
-struct sigaction sa;
-void handler (int sig, siginfo_t* s, void* v)
+} fb;
+static void handler (int sig, siginfo_t* s, void* v)
 {
     _exit(1);
-}
+}]],
+[[
+struct sigaction sa;
 
 memset (&sa, '\0', sizeof(sa));
 sa.sa_sigaction = &handler;

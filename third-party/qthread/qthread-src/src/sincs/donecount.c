@@ -161,6 +161,8 @@ void API_FUNC qt_sinc_reset(qt_sinc_t   *sinc_,
 
 // add akp for power throttling
 void API_FUNC qt_sinc_resize(qt_sinc_t   *sinc_,
+                             const size_t diff);
+void API_FUNC qt_sinc_resize(qt_sinc_t   *sinc_,
                              const size_t diff)
 {   /*{{{*/
     qt_internal_sinc_t *const restrict sinc = (qt_internal_sinc_t *)sinc_;

@@ -1,19 +1,20 @@
+#include <stdatomic.h>
 #include <stdio.h>
 #include <assert.h>
 #include <qthread/qthread.h>
 #include "argparsing.h"
 
-aligned_t master = 0;
+aligned_t _Atomic master = 0;
 
 static aligned_t incr(void *arg)
 {
     aligned_t localmaster, addition, ret;
 
-    ret = master;
+    ret = atomic_load_explicit(&master, memory_order_relaxed);
     do {
         localmaster = ret;
         addition    = localmaster + 1;
-        ret         = qthread_cas(&master, ret, addition);
+        ret         = qthread_cas((aligned_t*)&master, ret, addition);
     } while (ret != localmaster);
     return 0;
 }
@@ -32,19 +33,20 @@ int main(int   argc,
     assert(qthread_initialize() == QTHREAD_SUCCESS);
     CHECK_VERBOSE();
 
-    rets[0] = qthread_cas(&master, 0, 1);
-    assert(master == 1);
+    rets[0] = qthread_cas((aligned_t*)&master, 0, 1);
+    assert(atomic_load_explicit(&master, memory_order_relaxed) == 1);
     assert(rets[0] == 0);
-    master = 0;
+    atomic_store_explicit(&master, 0, memory_order_relaxed);
     for (i = 0; i < 30; i++) {
         qthread_fork(incr, NULL, &(rets[i]));
     }
     for (i = 0; i < 30; i++) {
         qthread_readFF(NULL, rets + i);
     }
-    if (master != 30) {
+    aligned_t localmaster = atomic_load_explicit(&master, memory_order_relaxed);
+    if (localmaster != 30) {
         fprintf(stderr, "master is %lu rather than 30\n",
-                (long unsigned)master);
+                (long unsigned)localmaster);
     }
 
     assert(qthread_cas32(&four, 4, 0xdeadbeef) == 4);

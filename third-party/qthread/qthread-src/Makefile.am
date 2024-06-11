@@ -18,6 +18,9 @@ EXTRA_DIST = \
 			 TODO.md \
 			 autogen.sh
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = qthread.pc
+
 SUBDIRS = man include src test
 
 ACLOCAL_AMFLAGS = -I config

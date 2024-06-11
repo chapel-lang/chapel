@@ -27,7 +27,7 @@ static void task_2(size_t start, size_t stop, void  *args_) {
 }
 
 int main(int argc, char *argv[]) {
-    uint64_t iters = 1000000l;
+    uint64_t iters = 10000l;
     assert(qthread_initialize() == 0);
 
     /* Simple lock acquire and release */

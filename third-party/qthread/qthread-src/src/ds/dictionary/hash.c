@@ -26,27 +26,27 @@ uint64_t API_FUNC qt_hash64(uint64_t key)
     a = b = 0x9e3779b97f4a7c13LL;   // the golden ratio
     c = 0xdeadbeefcafebabeULL + sizeof(uint64_t);
 
-    a += ((uint64_t)k.b[7]) << 56;
-    a += ((uint64_t)k.b[6]) << 48;
-    a += ((uint64_t)k.b[5]) << 40;
-    a += ((uint64_t)k.b[4]) << 32;
-    a += k.b[3] << 24;
-    a += k.b[2] << 16;
-    a += k.b[1] << 8;
+    a += ((uint64_t)k.b[7]) << 56u;
+    a += ((uint64_t)k.b[6]) << 48u;
+    a += ((uint64_t)k.b[5]) << 40u;
+    a += ((uint64_t)k.b[4]) << 32u;
+    a += (uint64_t)k.b[3] << 24u;
+    a += (uint64_t)k.b[2] << 16u;
+    a += (uint64_t)k.b[1] << 8u;
     a += k.b[0];
 
-    a = a - b;  a = a - c;  a = a ^ (c >> 43);
-    b = b - c;  b = b - a;  b = b ^ (a << 9);
-    c = c - a;  c = c - b;  c = c ^ (b >> 8);
-    a = a - b;  a = a - c;  a = a ^ (c >> 38);
-    b = b - c;  b = b - a;  b = b ^ (a << 23);
-    c = c - a;  c = c - b;  c = c ^ (b >> 5);
-    a = a - b;  a = a - c;  a = a ^ (c >> 35);
-    b = b - c;  b = b - a;  b = b ^ (a << 49);
-    c = c - a;  c = c - b;  c = c ^ (b >> 11);
-    a = a - b;  a = a - c;  a = a ^ (c >> 12);
-    b = b - c;  b = b - a;  b = b ^ (a << 18);
-    c = c - a;  c = c - b;  c = c ^ (b >> 22);
+    a = a - b;  a = a - c;  a = a ^ (c >> 43u);
+    b = b - c;  b = b - a;  b = b ^ (a << 9u);
+    c = c - a;  c = c - b;  c = c ^ (b >> 8u);
+    a = a - b;  a = a - c;  a = a ^ (c >> 38u);
+    b = b - c;  b = b - a;  b = b ^ (a << 23u);
+    c = c - a;  c = c - b;  c = c ^ (b >> 5u);
+    a = a - b;  a = a - c;  a = a ^ (c >> 35u);
+    b = b - c;  b = b - a;  b = b ^ (a << 49u);
+    c = c - a;  c = c - b;  c = c ^ (b >> 11u);
+    a = a - b;  a = a - c;  a = a ^ (c >> 12u);
+    b = b - c;  b = b - a;  b = b ^ (a << 18u);
+    c = c - a;  c = c - b;  c = c ^ (b >> 22u);
     return c;
 
 #else /* i.e. a 32-bit machine */

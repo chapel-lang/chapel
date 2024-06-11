@@ -9,6 +9,12 @@
 #include <qthread/qthread.h>
 #include "argparsing.h"
 
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+#define SKIP_CONCURRENT_WRITEFF_TEST
+#endif
+#endif
+
 // Test that a writeFF on a full var performs the write, and leaves the FEB
 // state untouched. 
 static void testBasicWriteFF(void) 
@@ -29,8 +35,11 @@ static void testBasicWriteFF(void)
 
 #define ALL_ONES  ~0u
 #define ALL_ZEROS 0
-#define ITERS_PER_WORKER 10000
+#define ITERS_PER_WORKER 1000
 
+// This test deliberately creates a race condition, so
+// don't run it when thread sanitizer is enabled.
+#ifndef SKIP_CONCURRENT_WRITEFF_TEST
 static aligned_t concurrent_t;
 static aligned_t alignedWriteFF_iters(void *arg)
 {
@@ -45,6 +54,7 @@ static aligned_t alignedWriteFF_iters(void *arg)
 static void testConcurrentWriteFF(void)
 {
     int num_writers = (int)qthread_num_workers()/2;
+    if (num_writers <= 1) num_writers = 2;
     aligned_t rets[num_writers*2];
     concurrent_t = 0;
     qthread_fill(&concurrent_t);
@@ -63,6 +73,7 @@ static void testConcurrentWriteFF(void)
     assert((concurrent_t == ALL_ZEROS) || (concurrent_t == ALL_ONES));
     assert(qthread_feb_status(&concurrent_t) == 1);
 }
+#endif
 
 int main(int argc,
          char *argv[])
@@ -73,7 +84,9 @@ int main(int argc,
     iprintf("  %i threads total\n", qthread_num_workers());
 
     testBasicWriteFF();
+#ifndef SKIP_CONCURRENT_WRITEFF_TEST
     testConcurrentWriteFF();
+#endif
 
     return 0;
 }

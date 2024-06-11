@@ -281,15 +281,16 @@ static void ks_test(void)
     free(A[1]);
 } /*}}}*/
 
+// TODO: This check is likely buggy. What is a more sane/readable way to check the RNG?
 static void autocorrelation(void)
 {   /*{{{*/
     int    eye = 3, m = 5, M;
     int    k;
     double pim, sigmapim, Zzero;
-    double A[ITER];
+    double A[ITER + 1];
 
     iprintf("\nAutocorrelation:\n");
-    for (size_t i = 0; i < ITER; ++i) {
+    for (size_t i = 0; i < ITER + 1; ++i) {
         A[i] = qtimer_fastrand();
     }
 

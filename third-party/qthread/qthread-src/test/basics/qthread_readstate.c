@@ -15,7 +15,7 @@
     assert(v opr val); \
 } while (0)
 
-aligned_t spinner(void *arg)
+static aligned_t spinner(void *arg)
 {
     while (*(aligned_t*)arg == 0) ;
     return 1;
@@ -24,7 +24,6 @@ aligned_t spinner(void *arg)
 int main(int   argc,
          char *argv[])
 {
-    aligned_t return_value = 0;
     int status;
 
     CHECK_VERBOSE(); // part of the testing harness; toggles iprintf() output
@@ -34,8 +33,6 @@ int main(int   argc,
 
     iprintf("%i shepherds...\n", qthread_num_shepherds());
     iprintf("  %i threads total\n", qthread_num_workers());
-
-    size_t output;
 
     TEST_OPTION(STACK_SIZE, >=, 2048);
     {

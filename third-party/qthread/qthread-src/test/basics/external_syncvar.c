@@ -34,7 +34,7 @@ int main(void)
     qthread_syncvar_readFE(&readout, &x);
     iprintf("found readout = %lu\n", (unsigned long)readout);
 
-    return 0;
+    return pthread_join(thread, NULL);
 }
 
 /* vim:set expandtab: */

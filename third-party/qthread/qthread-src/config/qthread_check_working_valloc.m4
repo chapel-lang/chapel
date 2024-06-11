@@ -17,7 +17,7 @@ AC_DEFUN([QTHREAD_CHECK_WORKING_VALLOC],
 # include <unistd.h>
 #endif
 
-int main()
+int main(void)
 {
   int i;
   char * allocs[100];

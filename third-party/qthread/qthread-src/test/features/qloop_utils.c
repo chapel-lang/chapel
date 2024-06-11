@@ -121,7 +121,14 @@ int main(int argc,
         ia = (saligned_t *)malloc(sizeof(saligned_t) * BIGLEN);
         assert(ia);
         for (i = 0; i < BIGLEN; i++) {
-            ia[i] = random();
+            // Pick most of them to be 1 with a few 2s mixed in.
+            // Make the 2s unlikely enough that it's nearly impossible
+            // to run into overflow when taking the product.
+            if (BIGLEN < 8) {
+                ia[i] = random() % 2 + 1;
+            } else { 
+                ia[i] = random() < 8 * (INT_MAX / BIGLEN) ? 2 : 1;
+            }
         }
         gettimeofday(&start, NULL);
         for (i = 0; i < BIGLEN; i++) isum += ia[i];

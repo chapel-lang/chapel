@@ -7,13 +7,35 @@
 #include <qthread/qthread.h>
 #include "argparsing.h"
 
-static unsigned int target = 10;
+static unsigned int target = 8;
 static aligned_t x = 0;
 
 static aligned_t alldone;
 
-Q_NOINLINE size_t thread2(size_t left,
-                               size_t depth)
+#ifdef __clang__
+#define STACKLEFT_NOINLINE __attribute__((optnone))
+#elif __GNUC__
+#define STACKLEFT_NOINLINE __attribute__((optimize(0)))
+#else
+#define STACKLEFT_NOINLINE
+#endif
+
+// Macro for excluding a function from thread sanitizer.
+// Currently this is just used for qt_swapctxt.
+// Something about thread sanitizer's instrumentation is
+// incompatible with our context switching.
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+#define QT_SKIP_THREAD_SANITIZER __attribute__((disable_sanitizer_instrumentation))
+#else
+#define QT_SKIP_THREAD_SANITIZER
+#endif
+#else
+#define QT_SKIP_THREAD_SANITIZER
+#endif
+
+static STACKLEFT_NOINLINE size_t thread2(size_t left,
+                                         size_t depth)
 {
     size_t foo = qthread_stackleft();
     iprintf("leveli%i: %zu bytes left\n", (int)depth, foo);
@@ -28,7 +50,7 @@ Q_NOINLINE size_t thread2(size_t left,
     return 1;
 }
 
-static aligned_t thread(void *arg)
+static QT_SKIP_THREAD_SANITIZER aligned_t thread(void *arg)
 {
     int me = qthread_id();
     size_t foo = qthread_stackleft();

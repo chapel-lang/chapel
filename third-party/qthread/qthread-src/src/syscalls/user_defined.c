@@ -38,7 +38,7 @@ void qt_begin_blocking_action(void)
         assert(me->rdata);
 
         me->rdata->blockedon.io = job;
-        me->thread_state        = QTHREAD_STATE_SYSCALL;
+        atomic_store_explicit(&me->thread_state, QTHREAD_STATE_SYSCALL, memory_order_relaxed);
         qthread_back_to_master(me);
         /* ...and I wake up in a dedicated pthread! */
     } else {
