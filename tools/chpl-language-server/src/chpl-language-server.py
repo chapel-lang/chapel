@@ -173,6 +173,10 @@ class ChplcheckProxy:
             error("CHPL_HOME not set")
             return None
 
+        chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
+        # Add chplcheck to the path, but load via importlib
+        sys.path.append(chplcheck_path)
+
         def load_module(module_name: str) -> Optional[ModuleType]:
             file_path = os.path.join(chplcheck_path, module_name + ".py")
             spec = importlib.util.spec_from_file_location(
