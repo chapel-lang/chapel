@@ -19,6 +19,7 @@
 
 module ChapelRemoteVars {
   use OwnedObject;
+  use ChapelIteratorSupport;
 
   class _remoteVarContainer {
     type valueType;
@@ -49,13 +50,8 @@ module ChapelRemoteVars {
     return new _remoteVarWrapper(inType, try! c : owned _remoteVarContainer(inType));
   }
 
-  private proc arrayTypeFromIteratorRecord(theIter: _iteratorRecord) type {
-    var tmp = theIter;
-    return tmp.type;
-  }
-
   inline proc chpl__buildRemoteWrapper(loc: locale, value: _iteratorRecord) {
-    type inType = arrayTypeFromIteratorRecord(value);
+    type inType = chpl_buildStandInRTT(value.type);
     var c: owned _remoteVarContainer(inType)?;
     on loc {
       c = new _remoteVarContainer(inType, value);
