@@ -1,40 +1,32 @@
 all var
 After A
-In initCopy(definedConst=false)domain definedConst: true
-Normal path
+In initCopy(definedConst=false), domain definedConst: true; taking normal path
 After B
 After C
-In initCopy(definedConst=false)domain definedConst: true
-Localize path
+In initCopy(definedConst=false), domain definedConst: true; localizing
 After D
 
 const A, var others
 After A
-In initCopy(definedConst=false)domain definedConst: true
-Normal path
+In initCopy(definedConst=false), domain definedConst: true; taking normal path
 After B
 After C
-In initCopy(definedConst=false)domain definedConst: true
-Localize path
+In initCopy(definedConst=false), domain definedConst: true; localizing
 After D
 
 var A, const others
 After A
-In initCopy(definedConst=true)domain definedConst: true
-Normal path
+In initCopy(definedConst=true), domain definedConst: true; taking normal path
 After B
 After C
-In initCopy(definedConst=true)domain definedConst: true
-Localize path
+In initCopy(definedConst=true), domain definedConst: true; localizing
 After D
 
 var Dom, var A, const others
 After A
-In initCopy(definedConst=true)domain definedConst: false
-Normal path
+In initCopy(definedConst=true), domain definedConst: false; taking normal path
 After B
 After C
-In initCopy(definedConst=true)domain definedConst: false
-Normal path
+In initCopy(definedConst=true), domain definedConst: false; taking normal path
 After D
 localizeConstDom.chpl:68: error: cannot access remote data in local block

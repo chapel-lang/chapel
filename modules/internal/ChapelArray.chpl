@@ -3010,18 +3010,25 @@ module ChapelArray {
     return b;
   }
 
+  config param localizeConstDomains = true,
+               debugLocalizedConstDomains = false;
+  
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
-    writeln("In initCopy(definedConst=", definedConst, ")", "domain definedConst: ", rhs.domain.definedConst);
-    if rhs.domain.definedConst && rhs.domain._value.locale != here {
-      writeln("Localize path");
+    const localize = (localizeConstDomains &&
+                      rhs.domain.definedConst &&
+                      rhs.domain._value.locale != here);
+    if debugLocalizedConstDomains then
+      writeln("In initCopy(definedConst=", definedConst,
+              "), domain definedConst: ", rhs.domain.definedConst, "; ",
+              if localize then "localizing" else "taking normal path");
+    if localize {
       // localize domain for efficiency since it's 'const'
       const lhsDom = rhs.domain;
       pragma "no copy"
       var lhs: [lhsDom] rhs.eltType = rhs;
       return lhs;
     } else {
-      writeln("Normal path");
       pragma "no copy"
       var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
       return lhs;
