@@ -295,12 +295,17 @@ This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
 
-Making Ignorable Rules
+Making Rules Ignorable
 ~~~~~~~~~~~~~~~~~~~~~~
 
-If a lint rule is ignorable, it should be marked as such. Ignorable rules automatically have a fixit associated with them which adds a ``@chplcheck.ignore`` annotation to the node.
+If a lint rule is ignorable, it should be marked as such. Ignorable rules
+automatically have a fixit associated with them which adds a
+``@chplcheck.ignore`` annotation to the node.
 
-Ignorable basic rules should return ``BasicRuleResult`` with ``ignorable`` set to ``True`` rather than just a boolean. The ``BasicRuleResult`` constructor takes a ``AstNode`` as an argument, which is the node that the rule is being applied to. For example, the following defines a basic rule that is ignorable:
+Ignorable basic rules should return ``BasicRuleResult`` with ``ignorable`` set
+to ``True`` rather than just a boolean. The ``BasicRuleResult`` constructor
+takes a ``AstNode`` as an argument, which is the node that the rule is being
+applied to. For example, the following defines a basic rule that is ignorable:
 
 .. code-block:: python
 
@@ -310,7 +315,12 @@ Ignorable basic rules should return ``BasicRuleResult`` with ``ignorable`` set t
            return BasicRuleResult(node, ignorable=True)
        return True
 
-Ignorable advanced rules should yield a ``AdvancedRuleResult`` with ``anchor`` set rather than just a ``AstNode``. The ``AdvancedRuleResult`` constructor takes an ``AstNode`` as an argument, which is the node that the rule is being applied to. The ``anchor`` is the node should have a ``@chplcheck.ignore`` annotation to suppress the warning. ``anchor`` and ``node`` can be the same node. For example, the following defines an advanced rule that is ignorable:
+Ignorable advanced rules should yield a ``AdvancedRuleResult`` with ``anchor``
+set rather than just a ``AstNode``. The ``AdvancedRuleResult`` constructor
+takes an ``AstNode`` as an argument, which is the node that the rule is being
+applied to. The ``anchor`` is the node should have a ``@chplcheck.ignore``
+annotation to suppress the warning. ``anchor`` and ``node`` can be the same
+node. For example, the following defines an advanced rule that is ignorable:
 
 .. code-block:: python
 
@@ -324,9 +334,17 @@ Ignorable advanced rules should yield a ``AdvancedRuleResult`` with ``anchor`` s
 Fixits
 ~~~~~~
 
-Rules can have fixits associated with them. To define a fixit, the rule should construct a ``Fixit`` object and add it to the ``fixits`` field of ``BasicRuleResult`` or ``AdvancedRuleResult`` for basic and advanced rules, respectively.
+Rules can have fixits associated with them. To define a fixit, the rule should
+construct a ``Fixit`` object and add it to the ``fixits`` field of
+``BasicRuleResult`` or ``AdvancedRuleResult`` for basic and advanced rules,
+respectively.
 
-A ``Fixit`` contains a list of ``Edit`` objects to apply to the code and an optional description, which is shown to the user when the fixit is applied. ``Edit`` objects contain a file path, a range defined by start and end positions, and the text to replace inside of that range. The recommend way to create an ``Edit`` object is to use the ``Edit.build`` class method, which takes an ``chapel.Location`` and the text to replace it with.
+A ``Fixit`` contains a list of ``Edit`` objects to apply to the code and an
+optional description, which is shown to the user when the fixit is applied.
+``Edit`` objects contain a file path, a range defined by start and end
+positions, and the text to replace inside of that range. The recommend way to
+create an ``Edit`` object is to use the ``Edit.build`` class method, which
+takes an ``chapel.Location`` and the text to replace it with.
 
 For example, the following defines a rule that has a fixit associated with it:
 
