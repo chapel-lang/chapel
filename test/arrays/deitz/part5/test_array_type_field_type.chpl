@@ -4,5 +4,5 @@ class C {
   var A: AT;
 }
 
-var c = new C([1..3]);
+var c = new C({1..3});
 writeln(c);
