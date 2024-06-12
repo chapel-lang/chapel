@@ -1,1 +1,1 @@
-0
+reduce2Dwith3D.chpl:4: error: rank mismatch in zippered iteration (can't zip a 2D expression with a 3D array)

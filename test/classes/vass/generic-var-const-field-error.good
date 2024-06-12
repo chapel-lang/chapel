@@ -1,2 +1,4 @@
-generic-var-const-field-error.chpl:5: error: the generic field 'cst' must be instantiated or initialized explicitly
-generic-var-const-field-error.chpl:12: error: the generic field 'vbl' must be instantiated or initialized explicitly
+generic-var-const-field-error.chpl:5: error: unresolved call 'C.init()'
+generic-var-const-field-error.chpl:1: note: this candidate did not match: C.init(cst)
+generic-var-const-field-error.chpl:5: note: because call does not supply enough arguments
+generic-var-const-field-error.chpl:2: note: it is missing a value for formal 'in cst'
