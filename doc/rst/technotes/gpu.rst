@@ -131,7 +131,7 @@ The following are further requirements for GPU support:
 
   * ``CHPL_LLVM`` must be set to ``system`` or ``bundled``.
 
-  * We test with system LLVM 17. Older versions may work.
+  * We test with system LLVM 18. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
 
