@@ -114,7 +114,7 @@ static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
 
 // CPU reservation must happen before CPU information is returned to other
 // layers.
-static chpl_bool okToReserveCPU = true;
+static const char *cantReserveCPU = NULL;
 
 static chpl_bool oversubscribed = false;
 
@@ -297,7 +297,7 @@ static int numCPUsLogAcc  = -1;
 static int numCPUsLogAll  = -1;
 
 int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
-  okToReserveCPU = false;
+  cantReserveCPU = "chpl_topo_getNumCPUsPhysical called";
   int cpus = (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
   if (cpus == -1) {
     chpl_error("number of cpus is uninitialized", 0, 0);
@@ -307,7 +307,7 @@ int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
 
 
 int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
-  okToReserveCPU = false;
+  cantReserveCPU = "chpl_topo_getNumCPUsLogical called";
   int cpus = (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
   if (cpus == -1) {
     chpl_error("number of cpus is uninitialized", 0, 0);
@@ -785,7 +785,7 @@ int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
   // Initializes CPU information.
-  okToReserveCPU = false;
+  cantReserveCPU = "chpl_topo_getCPUs called";
   return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }
 
@@ -1105,7 +1105,7 @@ chpl_topo_reserveCPUPhysical(void) {
   _DBG_P("topoSupport->cpubind->set_thisthread_cpubind: %d",
          topoSupport->cpubind->set_thisthread_cpubind);
   _DBG_P("numCPUsPhysAcc: %d", numCPUsPhysAcc);
-  if (okToReserveCPU) {
+  if (!cantReserveCPU) {
     if ((topoSupport->cpubind->set_thisthread_cpubind) &&
         (numCPUsPhysAcc > 1)) {
 
@@ -1144,7 +1144,7 @@ chpl_topo_reserveCPUPhysical(void) {
       }
     }
   } else {
-    _DBG_P("okToReserveCPU is false");
+    _DBG_P("cantReserveCPU: %s", cantReserveCPU);
   }
 
   if (debug) {
