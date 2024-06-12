@@ -2466,7 +2466,8 @@ static void bulkViewTransfer() {
       if (call->isNamed("=")) {
         CallExpr* lhs = toCallExpr(call->get(1));
         CallExpr* rhs = toCallExpr(call->get(2));
-        if (lhs && rhs) {
+        if (lhs && !isUnresolvedSymExpr(lhs->baseExpr) &&
+            rhs && !isUnresolvedSymExpr(rhs->baseExpr)) {
           candidates.push_back(call);
         }
       }
