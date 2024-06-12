@@ -3017,7 +3017,7 @@ module ChapelArray {
   // default because it was completed close to Chapel 2.1 and we
   // wanted more time to live with it before having it on by default.
   //
-  config param localizeConstDomains = true,
+  config param localizeConstDomains = false,
                debugLocalizedConstDomains = false;
 
   pragma "init copy fn"
