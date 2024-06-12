@@ -3017,7 +3017,7 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     const localize = (localizeConstDomains &&
                       numLocales > 1 &&
-                      rhs.domain.definedConst &&
+                      (definedConst || rhs.domain.definedConst) &&
                       rhs.domain._value.locale != here);
     if debugLocalizedConstDomains then
       writeln("In initCopy(definedConst=", definedConst,

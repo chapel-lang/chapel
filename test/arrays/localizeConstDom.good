@@ -27,6 +27,5 @@ After A
 In initCopy(definedConst=true), domain definedConst: false; taking normal path
 After B
 After C
-In initCopy(definedConst=true), domain definedConst: false; taking normal path
+In initCopy(definedConst=true), domain definedConst: false; localizing
 After D
-localizeConstDom.chpl:68: error: cannot access remote data in local block
