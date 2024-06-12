@@ -2511,7 +2511,19 @@ module ChapelArray {
   }
 
   proc chpl__slicingExprsSupportViewTransfer(x...) param {
-    return (isHomogeneousTuple(x) && isRange(x[0]));
+    if isHomogeneousTuple(x) && isRange(x[0]) {
+      for param i in 0..<x.size {
+        if !(x[i].strides == strideKind.positive ||
+             x[i].strides == strideKind.one) {
+          // negative strided slices are not supported and generate a warning.
+          // Instead of trying to generate the warning, just avoid covering
+          // unsupported things here
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
