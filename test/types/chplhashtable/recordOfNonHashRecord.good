@@ -6,6 +6,6 @@ recordOfNonHashRecord.chpl:22: note: is passed to formal 'this: WrapR'
 $CHPL_HOME/modules/standard/Set.chpl:nnnn: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelHashing.chpl:nnnn: note:   bool.hash()
 $CHPL_HOME/modules/internal/ChapelHashing.chpl:nnnn: note:   int.hash()
-note: and 38 other candidates, use --print-all-candidates to see them
+note: and 39 other candidates, use --print-all-candidates to see them
   $CHPL_HOME/modules/standard/Set.chpl:nnnn: called as (set(WrapR,false))._addElem(elem: WrapR) from method 'add'
   recordOfNonHashRecord.chpl:32: called as (set(WrapR,false)).add(element: WrapR)
