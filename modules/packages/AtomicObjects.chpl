@@ -133,12 +133,12 @@ prototype module AtomicObjects {
     // Returns: If successful or not
     static inline int _cas128bit(volatile uint128_t *src, uint128_t *cmp, uint128_t *with) {
       #if defined(__x86_64__)
-	// We originally wrote _cas128bit expecting it to only apply on x86_64
-	// but later added a version that calls into a clang/gcc builtin that
-	// can handle other architectures. Maybe we should remove this branch
-	// and just always use the builtin but I'm hesitant to make that change
-	// without doing a performance analysis to ensure that it performs as
-	// well (or better) than this branch (I fully expect that it would).
+        // We originally wrote _cas128bit expecting it to only apply on x86_64
+        // but later added a version that calls into a clang/gcc builtin that
+        // can handle other architectures. Maybe we should remove this branch
+        // and just always use the builtin but I'm hesitant to make that change
+        // without doing a performance analysis to ensure that it performs as
+        // well (or better) than this branch (I fully expect that it would).
         char result;
         __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
           "setz %7; "
@@ -157,7 +157,7 @@ prototype module AtomicObjects {
           return __atomic_compare_exchange(src, cmp, with, 1, 1, 1);
         #else
           #error "Unable to build the AtomicObjects package module " \
-	         "so that it can perform 128-bit compare-and-swap operations."
+                 "so that it can perform 128-bit compare-and-swap operations."
         #endif
       #else
         #error "Unable to build the AtomicObjects package module " \
