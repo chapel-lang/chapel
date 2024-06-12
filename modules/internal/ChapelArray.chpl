@@ -2499,6 +2499,7 @@ module ChapelArray {
           }
         }
       } else if kind==_tElt.initCopy {
+        use Reflection;
         if needsInitWorkaround(a.eltType) {
           [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
@@ -2507,6 +2508,8 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
+        } else if canResolveMethod(a._value, "doiCopyInit", b._value) {
+          a._value.doiCopyInit(b._value);
         } else {
           [ (aa,bb) in zip(a,b) ] {
             if isSyncType(bb.type) {
