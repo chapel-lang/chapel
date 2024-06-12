@@ -353,9 +353,8 @@ For example, the following defines a rule that has a fixit associated with it:
    @driver.basic_rule(chapel.Function)
    def NoFunctionFoo(context, node):
        if node.name() == "foo":
-           fixit = Fixit([
-               Edit.build(node.name_location(), "bar")
-           ], "Replace 'foo' with 'bar'")
+           fixit = Fixit.build(Edit.build(node.name_location(), "bar"))
+           fixit.description = "Replace 'foo' with 'bar'"
            return BasicRuleResult(node, fixits=[fixit])
        return True
 
