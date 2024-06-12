@@ -1736,6 +1736,14 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
     builder->noteDeclNameLocation(var.get(), convLoc);
+    builder->copyExprParenthLocation(e, var.get());
+    builder->deleteExprParenthLocation(e);
+    // Delete the location of 'e' because it's about to be deallocated;
+    // we don't want a new allocation of an AST node to have the same pointer
+    // and still be in the map, since that would pollute location information.
+    //
+    // This is more of a workaround; a more general solution is necessary
+    // to handle pointer-based maps in the presence of AST node deallocation.
     return var;
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
@@ -1751,13 +1759,17 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
       }
     }
 
-    return TupleDecl::build(builder, convLoc, /*attributeGroup*/ nullptr,
-                            Decl::DEFAULT_VISIBILITY,
-                            Decl::DEFAULT_LINKAGE,
-                            (TupleDecl::IntentOrKind) Variable::INDEX,
-                            std::move(elements),
-                            /*typeExpression*/ nullptr,
-                            /*initExpression*/ nullptr);
+    auto td = TupleDecl::build(builder, convLoc, /*attributeGroup*/ nullptr,
+                               Decl::DEFAULT_VISIBILITY,
+                               Decl::DEFAULT_LINKAGE,
+                               (TupleDecl::IntentOrKind) Variable::INDEX,
+                               std::move(elements),
+                               /*typeExpression*/ nullptr,
+                               /*initExpression*/ nullptr);
+    builder->copyExprParenthLocation(e, td.get());
+    builder->deleteExprParenthLocation(e);
+    // See the comment above for why we delete the location of 'e'.
+    return td;
   } else {
     CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);
     return nullptr;
