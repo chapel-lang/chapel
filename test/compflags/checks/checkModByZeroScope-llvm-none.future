@@ -13,3 +13,7 @@ writeln_chpl2(((int64_t)((INT64(10) % INT64(0)))), INT64(7), INT32(51));
 This is caused by an optimization where code gen effectively treats variables
 as params where appropriate, within a scoped section. See the related issue for
 more information.
+
+This test works with the llvm backend.  When this future passes, it
+may be removed entirely in favor of removing the
+checkModByZeroScope.skipif file.
