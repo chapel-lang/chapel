@@ -32,6 +32,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from types import ModuleType
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_left, bisect_right
@@ -40,7 +41,8 @@ import itertools
 import os
 import json
 import re
-
+import sys
+import importlib.util
 
 import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
@@ -141,6 +143,121 @@ from lsprotocol.types import (
 
 import argparse
 import configargparse
+
+
+class ChplcheckProxy:
+
+    def __init__(
+        self,
+        main: ModuleType,
+        config: ModuleType,
+        lsp: ModuleType,
+        driver: ModuleType,
+        rules: ModuleType,
+    ):
+        self.main = main
+        self.config = config
+        self.lsp = lsp
+        self.driver = driver
+        self.rules = rules
+
+    @classmethod
+    def get(cls) -> Optional["ChplcheckProxy"]:
+
+        def error(msg: str):
+            if os.environ.get("CHPL_DEVELOPER", None):
+                print("Error loading chplcheck: ", str(e), file=sys.stderr)
+
+        chpl_home = os.environ.get("CHPL_HOME")
+        if chpl_home is None:
+            error("CHPL_HOME not set")
+            return None
+
+        chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
+        # Add chplcheck to the path, but load via importlib
+        sys.path.append(chplcheck_path)
+
+        def load_module(module_name: str) -> Optional[ModuleType]:
+            file_path = os.path.join(chplcheck_path, module_name + ".py")
+            spec = importlib.util.spec_from_file_location(
+                module_name, file_path
+            )
+            if spec is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            if spec.loader is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            spec.loader.exec_module(module)
+            return module
+
+        mods = []
+        for mod in ["chplcheck", "config", "lsp", "driver", "rules"]:
+            m = load_module(mod)
+            if m is None:
+                return None
+            mods.append(m)
+        proxy = ChplcheckProxy(*mods)
+
+        return proxy
+
+
+chplcheck = ChplcheckProxy.get()
+
+REAL_NUMBERIC = (chapel.RealLiteral, chapel.IntLiteral, chapel.UintLiteral)
+NUMERIC = REAL_NUMBERIC + (chapel.ImagLiteral,)
+
+
+def is_basic_literal_like(node: chapel.AstNode) -> Optional[chapel.Literal]:
+    """
+    Check for "basic" literals: basically, 1, "hello", -42, etc.
+    Returns the "underlying" literal removing surrounding AST (1, "hello", 42).
+    This helps do type comparisons in more complex checks. If the node is
+    not a basic literal, returns None.
+    """
+    if isinstance(node, chapel.Literal):
+        return node
+
+    if (
+        isinstance(node, chapel.OpCall)
+        and node.op() == "-"
+        and node.num_actuals() == 1
+    ):
+        # Do not recurse; do not consider --42 as a basic literal.
+        act = node.actual(0)
+        if isinstance(act, NUMERIC):
+            return act
+
+    return None
+
+
+def is_literal_like(node: chapel.AstNode) -> bool:
+    if is_basic_literal_like(node):
+        return True
+
+    if isinstance(node, chapel.OpCall):
+        # A complex number is far from a literal in the AST; in fact, it
+        # potentially has as many as 4 AST nodes: -1 + 2i has a unary negation,
+        # an addition, and two "pure" literals.
+        op = node.op()
+        if (op == "+" or op == "-") and node.num_actuals() == 2:
+            # The left element can be a 'basic literal-like', like 1 or -42i.
+            # But the right element shouldn't have any operators, otherwise
+            # we'd get somethig that looks like 1 - -42i. So we just
+            # use the right argument directly.
+            left = is_basic_literal_like(node.actual(0))
+            right = node.actual(1)
+
+            real_number = REAL_NUMBERIC
+            imag_number = chapel.ImagLiteral
+            if isinstance(left, real_number) and isinstance(right, imag_number):
+                return True
+            if isinstance(left, imag_number) and isinstance(right, real_number):
+                return True
+
+    return False
 
 
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
@@ -899,6 +1016,10 @@ class CLSConfig:
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
+        add_bool_flag("chplcheck", "do_linting", False)
+        if chplcheck:
+            chplcheck.config.Config.add_arguments(self.parser, "chplcheck-")
+
     def _parse_end_markers(self):
         self.args["end_markers"] = [
             a.strip() for a in self.args["end_markers"].split(",")
@@ -952,6 +1073,10 @@ class ChapelLanguageServer(LanguageServer):
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
+        self.do_linting: bool = config.get("do_linting")
+
+        self.lint_driver = None
+        self._setup_linter(config)
 
         self._setup_regexes()
 
@@ -966,6 +1091,24 @@ class ChapelLanguageServer(LanguageServer):
         pat2 = f"{prefix}{chars}use{chars}(?P<tick>[`' ])(?P<replace2>{ident})(?P=tick){chars}instead{chars}"
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
+
+    def _setup_linter(self, clsConfig: CLSConfig):
+        """
+        Setup the linter, if it is enabled
+        """
+        if not (self.do_linting and chplcheck):
+            return
+
+        config = chplcheck.config.Config.from_args(clsConfig.args)
+        self.lint_driver = chplcheck.driver.LintDriver(config)
+
+        chplcheck.rules.register_rules(self.lint_driver)
+
+        for p in config.add_rules:
+            chplcheck.main.load_module(self.lint_driver, os.path.abspath(p))
+
+        self.lint_driver.disable_rules(*config.disabled_rules)
+        self.lint_driver.enable_rules(*config.enabled_rules)
 
     def get_deprecation_replacement(
         self, text: str
@@ -1064,7 +1207,7 @@ class ChapelLanguageServer(LanguageServer):
         as a list of LSP Diagnostics.
         """
 
-        _, errors = self.get_file_info(uri, do_update=True)
+        fi, errors = self.get_file_info(uri, do_update=True)
 
         diagnostics = []
         for e in errors:
@@ -1076,6 +1219,13 @@ class ChapelLanguageServer(LanguageServer):
                 for (note_loc, note_msg) in e.notes()
             ]
             diagnostics.append(diag)
+
+        # get lint diagnostics if applicable
+        if self.lint_driver and chplcheck:
+            lint_diagnostics = chplcheck.lsp.get_lint_diagnostics(
+                fi.context.context, self.lint_driver, fi.get_asts()
+            )
+            diagnostics.extend(lint_diagnostics)
 
         return diagnostics
 
@@ -1222,7 +1372,7 @@ class ChapelLanguageServer(LanguageServer):
                 # tuples. We don't need hints for those.
                 continue
 
-            if not isinstance(act, chapel.core.Literal):
+            if not is_literal_like(act):
                 # Only show named arguments for literals.
                 continue
 
@@ -1631,6 +1781,13 @@ def run_lsp():
                     is_preferred=True,
                 )
             )
+
+        # get lint fixits if applicable
+        if ls.lint_driver and chplcheck:
+            lint_actions = chplcheck.lsp.get_lint_actions(
+                params.context.diagnostics
+            )
+            actions.extend(lint_actions)
 
         return actions
 

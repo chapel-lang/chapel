@@ -91,8 +91,15 @@ GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 MPI_CC += $(SHARED_LIB_CFLAGS)
 endif
 
-# Disable hwloc until https://github.com/chapel-lang/chapel/issues/18050
+ifeq ($(CHPL_MAKE_HWLOC),bundled)
+CHPL_GASNET_CFG_OPTIONS += --with-hwloc-home=$(HWLOC_INSTALL_DIR)
+endif
+ifeq ($(CHPL_MAKE_HWLOC),system)
+CHPL_GASNET_CFG_OPTIONS += --with-hwloc-home=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+endif
+ifeq ($(CHPL_MAKE_HWLOC),none)
 CHPL_GASNET_CFG_OPTIONS += --disable-hwloc
+endif
 
 # Disable IBV ODP due to https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4008
 CHPL_GASNET_CFG_OPTIONS += --disable-ibv-odp

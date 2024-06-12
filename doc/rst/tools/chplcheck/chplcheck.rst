@@ -141,10 +141,44 @@ VSCode
 Install the ``chapel`` extension from the `Visual Studio Code marketplace
 <https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
 
+Emacs
+~~~~~
+
+With Emacs 29.1, support has been added for language server protocols via `Eglot
+<https://www.gnu.org/software/emacs/manual/html_mono/eglot.html>`_
+
+To utilize the linter via Eglot, add the following to your ``.emacs`` file (note
+that this assumes you have already followed the instructions in
+``$CHPL_HOME/highlight/emacs/README.rst`` to install Chapel syntax highlighting
+in Emacs):
+
+.. code-block:: lisp
+
+   (with-eval-after-load 'eglot
+     (add-to-list 'eglot-server-programs
+                  '(chpl-mode . ("chplcheck" "--lsp"))))
+
+This will enable using the linter with a particular ``.chpl`` file by calling
+``M-x eglot``.
+
+To automatically use Eglot and the linter with every ``.chpl`` file,
+additionally add the following to your ``.emacs`` file:
+
+.. code-block:: lisp
+
+   (add-hook 'chpl-mode-hook 'eglot-ensure)
+
+.. note::
+
+   There is currently a limitation with Eglot that only one language server can
+   be registered per language. To use ``chplcheck`` and ``chapel-language-server``
+   at the same time, see the
+   :ref:`Emacs documentation for chapel-language-server <chpl-language-server-emacs>`.
+
 Writing New Rules
 -----------------
 
-Rules are written using the :ref:`Python bindings for Chapel's compiler frontend<readme-chapel-py>`. In
+Rules are written using the :ref:`Python bindings for Chapel's compiler frontend <readme-chapel-py>`. In
 essence, a rule is a Python function that is used to detect issues with the
 AST. When registered with ``chplcheck``, the name of the function becomes the name
 of the rule (which can be used to enable and disable the rule, as per the

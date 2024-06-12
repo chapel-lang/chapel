@@ -1030,7 +1030,7 @@ void gasnetc_init_md(void)
 
 uintptr_t gasnetc_init_messaging(void)
 {
-  const gex_Rank_t remote_nodes = gasneti_nodes - (GASNET_PSHM ? gasneti_nodemap_local_count : 1);
+  const gex_Rank_t remote_nodes = gasneti_nodes - (GASNETI_PSHM_P ? gasneti_nodemap_local_count : 1);
   gni_return_t status;
   uint32_t local_address;
   uint32_t i;
@@ -1521,7 +1521,7 @@ void gasnetc_shutdown(void)
 #endif
 
     /* for each connected rank */
-    left = gasneti_nodes - (GASNET_PSHM ? gasneti_nodemap_local_count : 1);
+    left = gasneti_nodes - (GASNETI_PSHM_P ? gasneti_nodemap_local_count : 1);
     for (tries=0; tries<10; ++tries) {
       for (i = 0; i < gasneti_nodes; i += 1) {
       #if !GASNETC_LOCAL_GNI_EP

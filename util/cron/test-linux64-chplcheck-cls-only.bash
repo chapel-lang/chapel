@@ -9,4 +9,4 @@ source $CWD/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-chplcheck-cls-only"
 
-$CWD/nightly -cron -assertions -chplcheckonly -chpl-language-server ${nightly_args} $(get_nightly_paratest_args 8)
+$CWD/nightly -cron -asserts -chplcheckonly -chpl-language-server ${nightly_args} $(get_nightly_paratest_args 8)

@@ -402,6 +402,10 @@ UCX_LDFLAGS = @UCX_LDFLAGS@
 UCX_LIBS = @UCX_LIBS@
 UCX_guess_prog = @UCX_guess_prog@
 VERSION = @VERSION@
+ZE_CFLAGS = @ZE_CFLAGS@
+ZE_LDFLAGS = @ZE_LDFLAGS@
+ZE_LIBS = @ZE_LIBS@
+ZE_guess_prog = @ZE_guess_prog@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -473,6 +477,7 @@ EXTRA_DIST = $(dotpl_DATA) \
 	gasnet_handler.h \
 	gasnetrun_mic \
 	gasnet_ibrun \
+	ident \
 	cross-configure-cray-aries-alps \
 	cross-configure-cray-aries-slurm \
 	cross-configure-intel-knc \
@@ -483,7 +488,10 @@ EXTRA_DIST = $(dotpl_DATA) \
 #
 dotpldir = $(bindir)
 dotpl_DATA = gasnet_trace.pl
-bin_SCRIPTS = gasnet_trace
+bin_SCRIPTS = \
+	gasnet_trace \
+	ident
+
 @BUILD_IS_SRC_FALSE@files_we_copy = $(dotpl_DATA)
 
 # Files to copy from srcdir to builddir if they differ

@@ -210,6 +210,11 @@ extern int AMUDP_SPMDHandleControlTraffic(int *controlMessagesServiced);
 #define amx_handler_fn_t          amudp_handler_fn_t
 #define AMX_GetSourceId           AMUDP_GetSourceId
 #define AMX_enEqual               AMUDP_enEqual
+#define AMX_GetTokenInfo          AMUDP_GetTokenInfo
+#define amx_category_t            amudp_category_t
+#define amx_Short                 amudp_Short
+#define amx_Medium                amudp_Medium
+#define amx_Long                  amudp_Long
 
 #undef AM_Init
 #define AM_Init AMX_CONCAT(AM_Init_AMUDP,AMUDP_DEBUG_CONFIG)
@@ -263,6 +268,7 @@ extern int AM_GetDestEndpoint(void *token, ep_t *endp);
 extern int AM_GetMsgTag(void *token, tag_t *tagp);
 extern int AMUDP_GetSourceId(void *token, int *srcid); /* srcid retrieves a compressed id */
 extern int AMUDP_enEqual(en_t en1, en_t en2);
+extern int AMUDP_GetTokenInfo(void *token, handler_t *handler, amudp_category_t *cat, int *is_req);
 
 
 /* Poll */

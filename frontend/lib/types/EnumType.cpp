@@ -59,9 +59,8 @@ const EnumType* EnumType::get(Context* context, ID id, UniqueString name) {
 }
 
 const EnumType* EnumType::getBoundKindType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelRange.boundKind");
   auto name = UniqueString::get(context, "boundKind");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelRange", "boundKind");
   return EnumType::get(context, id, name);
 }
 

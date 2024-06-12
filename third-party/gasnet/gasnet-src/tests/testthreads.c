@@ -118,6 +118,7 @@ void	test_amlong(threaddata_t *tdata);
 #if TEST_MPI
 void init_test_mpi(int *argc, char ***argv);
 void attach_test_mpi(void);
+void finalize_test_mpi(void);
 void mpi_barrier(threaddata_t *tdata);
 void test_mpi(threaddata_t *tdata);
 
@@ -350,6 +351,12 @@ main(int argc, char **argv)
 	MSG("Tests complete");
 
         BARRIER();
+
+        #if TEST_MPI && TEST_CLOBBER_MPI
+          // Forcibly finalize MPI, even though GASNet might still be using it
+          // This is BAD practice and appears here only for corner-case testing puroposes
+          finalize_test_mpi();
+        #endif
 
 	gasnet_exit(0);
 

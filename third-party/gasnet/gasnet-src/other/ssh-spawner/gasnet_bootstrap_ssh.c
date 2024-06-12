@@ -288,6 +288,10 @@ static void do_propagate_env(const char * keyname, int flags) {
   }
 }
 
+static const char* do_check_env_prefix_hook(const char *prefix) {
+  return master_env ? gasneti_check_env_prefix_helper(master_env, prefix) : NULL;
+}
+
 #if HAVE_SETPGID || HAVE_SETPGRP
   /* signals sent to entire process groups */
   #define pid_to_kill(pid) (-(pid))
@@ -1486,6 +1490,7 @@ static void do_connect(const char *spawn_args, int *argc_p, char ***argv_p)
 
   gasneti_getenv_hook = &do_getenv;
   gasneti_propagate_env_hook = &do_propagate_env;
+  gasneti_check_env_prefix_hook = &do_check_env_prefix_hook;
   envcmd = my_getenv_withdefault(ENV_PREFIX "ENVCMD", "env");
 
   myname = myrank;
@@ -1504,7 +1509,7 @@ static void spawn_one_control(gex_Rank_t child_id, const char *cmdline, const ch
   } else if (pid == 0) {
     char *cmd =
         gasneti_sappendf(NULL,
-                         "cd %s; exec %s %s " ENV_PREFIX "SPAWN_CONTROL=ssh "
+                         "cd %s; exec %s %s " ENV_PREFIX GASNET_CORE_NAME_STR "_SPAWNER=ssh "
                                               ENV_PREFIX "SPAWN_ARGS='%c%s%c%d%c%d%c%s' "
                                               "%s",
                                       quote_arg(cwd),
@@ -2537,9 +2542,8 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_ssh(int *argc_p, char *
     explicit_master = 1;
     spawn_args = "XX"; // unused, but avoids "may be used uninitialized" warnings
   } else {
-    spawner    = my_getenv(ENV_PREFIX "SPAWN_CONTROL");
     spawn_args = my_getenv(ENV_PREFIX "SPAWN_ARGS");
-    if (!spawner || !spawn_args || strcmp(spawner, "ssh") || (strlen(spawn_args) < 2)) {
+    if (!spawn_args || (strlen(spawn_args) < 2)) {
       return NULL;
     }
     gasnett_unsetenv(ENV_PREFIX "SPAWN_ARGS");
@@ -2610,6 +2614,7 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_ssh(int *argc_p, char *
 
   gasneti_getenv_hook = &do_getenv;
   gasneti_propagate_env_hook = &do_propagate_env;
+  gasneti_check_env_prefix_hook = &do_check_env_prefix_hook;
   *nodes_p  = nranks;
   *mynode_p = myrank;
 

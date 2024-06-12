@@ -75,7 +75,6 @@ async def test_call_inlays(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_call_inlays_complex(client: LanguageClient):
     """
     Ensure that call inlays are shown for complex literals in call expressions.
@@ -84,9 +83,44 @@ async def test_call_inlays_complex(client: LanguageClient):
     file = """
            proc foo(a) {}
            foo(3i+10);
+           foo(3i+10.0);
+           foo(3.0i+10.0);
+           foo(3.0i+10);
+           foo(10+3i);
+           foo(10.0+3i);
+           foo(10.0+3.0i);
+           foo(10+3.0i);
+
+           // Not 'literals' in our sense:
+           foo(3i + 4i);
+           foo(1 + 1);
+           foo((-1) - (-i));
            """
 
-    inlays = [(pos((1, 4)), "a = ", None)]
+    inlays = [(pos((i, 4)), "a = ", None) for i in range(1, 9)]
+
+    async with source_file(client, file) as doc:
+        await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)
+
+
+@pytest.mark.asyncio
+async def test_call_inlays_negative(client: LanguageClient):
+    """
+    Ensure that call inlays are shown for negative literals in call expressions.
+    """
+
+    file = """
+        proc foo(a) {}
+        foo(-42);
+        foo(-42.0);
+        foo(-42i);
+        foo(-42.0i);
+
+        // Not 'literals' in our sense:
+        foo(- -42);
+        """
+
+    inlays = [(pos((i, 4)), "a = ", None) for i in range(1, 5)]
 
     async with source_file(client, file) as doc:
         await check_inlay_hints(client, doc, rng((0, 0), endpos(file)), inlays)

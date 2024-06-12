@@ -168,9 +168,12 @@ namespace resolution {
 
   /**
     Resolve the uses and imports in a given scope.
+
+    If 'skipPrivate' is set, avoids resolving visibility statements that
+    only expose scope-private symbols. This helps avoid unnecessary work.
   */
   const ResolvedVisibilityScope*
-  resolveVisibilityStmts(Context* context, const Scope* scope);
+  resolveVisibilityStmts(Context* context, const Scope* scope, bool skipPrivate = false);
 
   /**
     Return the scope for the automatically included 'ChapelStandard' module,

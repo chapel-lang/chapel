@@ -5,6 +5,7 @@ import os
 import sys
 
 import chpl_platform, chpl_locale_model, overrides
+import homebrew_utils
 from utils import which, error, memoize, warning
 
 
@@ -428,7 +429,7 @@ def get_system_compile_args(flag):
         paths.append('-I/usr/local/include')
 
     # Add Homebrew include directory if Homebrew is installed
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    homebrew_prefix = homebrew_utils.get_homebrew_prefix()
     if homebrew_prefix:
         paths.append('-I' + homebrew_prefix + '/include')
 
@@ -474,7 +475,7 @@ def get_system_link_args(flag):
         paths.append('-L/usr/local/lib')
 
     # Add Homebrew lib directory if Homebrew is installed
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    homebrew_prefix = homebrew_utils.get_homebrew_prefix()
     if homebrew_prefix:
         paths.append('-L' + homebrew_prefix + '/lib')
 

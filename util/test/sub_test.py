@@ -2481,7 +2481,7 @@ def main():
                                 sys.stdout.write(']\n')
                         # only notify for a failed execution if launching the test was successful
                         elif (not launcher_error):
-                            sys.stdout.write('[Error execution failed for %s]\n'%(test_name))
+                            sys.stdout.write('%s[Error execution failed for %s]\n'%(futuretest,test_name))
 
                         if exectimeout or status != 0 or exec_status != 0:
                             break

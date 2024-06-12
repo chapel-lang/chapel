@@ -1049,6 +1049,33 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
   return scope->parentScope();
 }
 
+// As a quick optimization to avoid looking up names in scopes where they
+// can't possibly be (because they're reserved), skip names like 'int' which
+// can't be redefined.
+//
+// Performance: ideally this could be a SmallPtrSet, but we're getting
+// different .c_str() pointers for USTR("int") and strings we get from the
+// parser. Seems fixable.
+//
+// Other reserved identifiers (bytes, imag) could be added here, but in
+// my performance benchmarks they didn't occur frequently so were not
+// worth the additional checking by this function. This list is not intended
+// to be complete; rather, it is intended to cover the most common cases.
+static bool isReservedIdentifier(UniqueString name) {
+  static std::unordered_set<UniqueString> reserved = {
+    USTR("bool"),
+    USTR("complex"),
+    USTR("domain"),
+    USTR("int"),
+    USTR("nil"),
+    USTR("uint"),
+    USTR("real"),
+    USTR("string"),
+    USTR("void"),
+  };
+  return reserved.count(name);
+}
+
 // appends to result
 //
 // traceCurPath and traceResult support gathering additional information
@@ -1078,6 +1105,13 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
   bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
+
+  // reserved (non-redefinable) identifiers will be found in the toplevel
+  // scope only.
+  if (checkParents && !onlyMethodsFields && isReservedIdentifier(name)) {
+    result.push_back(BorrowedIdsWithName::createWithBuiltinId());
+    return true;
+  }
 
   IdAndFlags::Flags curFilter = 0;
   IdAndFlags::FlagSet excludeFilter;
@@ -2572,9 +2606,10 @@ doResolveVisibilityStmt(Context* context,
 static
 const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
                                                       Context* context,
-                                                      const Scope* scope)
+                                                      const Scope* scope,
+                                                      bool skipPrivate)
 {
-  QUERY_BEGIN(resolveVisibilityStmtsQuery, context, scope);
+  QUERY_BEGIN(resolveVisibilityStmtsQuery, context, scope, skipPrivate);
 
   owned<ResolvedVisibilityScope> result;
   const AstNode* ast = parsing::idToAst(context, scope->id());
@@ -2587,8 +2622,14 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
     std::vector<const AstNode*> usesAndImports;
     std::vector<const Require*> requireNodes;
     for (const AstNode* child : ast->children()) {
-      if (child->isUse() || child->isImport()) {
-        usesAndImports.push_back(child);
+      if (auto useNode = child->toUse()) {
+        if (!skipPrivate || useNode->visibility() == Decl::PUBLIC) {
+          usesAndImports.push_back(useNode);
+        }
+      } else if (auto importNode = child->toImport()) {
+        if (!skipPrivate || importNode->visibility() == Decl::PUBLIC) {
+          usesAndImports.push_back(importNode);
+        }
       } else if (auto req = child->toRequire()) {
         requireNodes.push_back(req);
       }
@@ -2621,21 +2662,21 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
 }
 
 const ResolvedVisibilityScope*
-resolveVisibilityStmts(Context* context, const Scope* scope) {
+resolveVisibilityStmts(Context* context, const Scope* scope, bool skipPrivate) {
   if (!scope->containsUseImport()) {
     // stop early if this scope has no use/import statements
     return nullptr;
   }
 
   if (context->isQueryRunning(resolveVisibilityStmtsQuery,
-                              std::make_tuple(scope))) {
+                              std::make_tuple(scope, skipPrivate))) {
     // ignore use/imports if we are currently resolving uses/imports
     // for this scope
     return nullptr;
   }
 
   const owned<ResolvedVisibilityScope>& o =
-    resolveVisibilityStmtsQuery(context, scope);
+    resolveVisibilityStmtsQuery(context, scope, skipPrivate);
   const ResolvedVisibilityScope* r = o.get();
 
   return r;

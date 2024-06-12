@@ -123,6 +123,8 @@ The following are further requirements for GPU support:
 * For targeting NVIDIA or AMD GPUs, ``LLVM`` must be used as Chapel's backend
   compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``).
 
+* The environment variable ``CHPL_LOCALE_MODEL`` must be set to ``gpu``.
+
 * Specifically for targeting NVIDIA GPUs:
 
   * CUDA toolkit version 11.x or 12.x must be installed.
@@ -152,9 +154,13 @@ The following are further requirements for GPU support:
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable GPU support, set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel. Several other variables affect how Chapel generates
-code for and interacts with GPUs. These variables include:
+
+Several variables affect how Chapel generates code for and interacts with GPUs.
+These variables include:
+
+* ``CHPL_LOCALE_MODEL`` --- must be set to ``gpu`` to enable GPU support.
+  Chapel will need to be rebuilt if this value is changed.  For more information,
+  see :ref:`readme-chplenv.CHPL_LOCALE_MODEL`.
 
 * ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd``, or ``cpu``. If unset, as
   part of its build process, Chapel will attempt to automatically determine what

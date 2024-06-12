@@ -40,7 +40,7 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
     # don't bother checking if we can link against hwloc
     CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   else ifeq ($(CHPL_MAKE_HWLOC),system)
-		CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
     CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
@@ -76,8 +76,8 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
-	# We also need to provide paths to system hwloc if its enabled
-  # since it might not be in default compiler search paths.
+	# We also need to provide paths to system hwloc and jemalloc if they are
+  # enabled, since it might not be in default compiler search paths.
 	#
   # Note that we call compileline with CHPL_MAKE_COMM=none. Under
   # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
@@ -91,6 +91,9 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   #
  	ifeq ($(CHPL_MAKE_HWLOC),system)
 		SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|hwloc
+  endif
+	ifeq ($(CHPL_MAKE_TARGET_JEMALLOC),system)
+	SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|jemalloc
   endif
 
   COMPILELINE_STDERR_REDIRECT=2> /dev/null

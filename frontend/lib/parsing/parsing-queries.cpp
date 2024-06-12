@@ -841,6 +841,24 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
+ID getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName) {
+  std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
+
+  // Performance: this has to concatenate the two strings at runtime.
+  // This presumably has an overhead over writing something like Symbol.symname
+  // explicitly. If this becomes a performance issue, we can switch to
+  // a different format of this function, either accepting a full path as
+  // a second argument, or by using templates to concatenate the strings at
+  // compile time.
+  std::string fullPath = modName;
+  fullPath += ".";
+  fullPath += symName;
+
+  return ID(UniqueString::get(context, fullPath), -1, 0);
+}
+
 static const Module* const&
 getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
   QUERY_BEGIN(getIncludedSubmoduleQuery, context, includeModuleId);
@@ -1439,9 +1457,16 @@ const uast::AttributeGroup*
 astToAttributeGroup(Context* context, const uast::AstNode* ast) {
   const uast::AttributeGroup* ret = nullptr;
   if (ast) {
+    // If we find an attribute group on the AST, return it.
+    if (auto ag = ast->attributeGroup()) return ag;
+
+    // Right now, only Variables and TupleDecls can inherit attributes
+    // from enclosing MultiDecls or TupleDecls.
+    if (!ast->isVariable() && !ast->isTupleDecl()) return nullptr;
+
+    // handle nesting: what if we're a Variable inside a MultiDecl or TupleDecl?
     auto parent = parentAst(context, ast);
-    bool done = ast->isMultiDecl() || !parent ||
-                (!parent->isTupleDecl() && !parent->isMultiDecl());
+    bool done = !parent || (!parent->isTupleDecl() && !parent->isMultiDecl());
     // recurse if not done
     return done
            ? ast->attributeGroup()
