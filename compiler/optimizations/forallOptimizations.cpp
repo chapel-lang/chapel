@@ -2460,8 +2460,10 @@ static bool isLocalAccess(CallExpr *call) {
 
 static bool exprSuitableForProtoSlice(Expr* e) {
   if (CallExpr* call = toCallExpr(e)) {
-    if (call->baseExpr != nullptr && isSymExpr(call->baseExpr)) {
-      return true;
+    if (SymExpr* callBase = toSymExpr(call->baseExpr)) {
+      if (!isFnSymbol(callBase->symbol())) {
+        return true;
+      }
     }
   }
   return false;
