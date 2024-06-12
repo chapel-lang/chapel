@@ -58,8 +58,10 @@ RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
     unset CHPL_HOME
 """
 
+# TODO: remove `export CHPL_COMM_OFI_OOB=pmi2` when https://github.com/chapel-lang/chapel/issues/25236 is resolved
 substitutions["BUILD_OFI_SLURM"] = """
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
+    export CHPL_COMM_OFI_OOB=pmi2 && \\
     rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
     echo "CHPL_COMM=ofi" >> $CHPL_HOME/chplconfig && \\
     echo "CHPL_LAUNCHER=slurm-srun" >> $CHPL_HOME/chplconfig && \\
@@ -67,7 +69,7 @@ RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
     echo "CHPL_LIBFABRIC=bundled" >> $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
     nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
-    unset CHPL_HOME
+    unset CHPL_HOME && unset CHPL_COMM_OFI_OOB
 """
 
 substitutions[
