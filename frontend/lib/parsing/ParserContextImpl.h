@@ -2669,6 +2669,11 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
+    if (auto var = firstDecl->toVariable()) {
+      if (var->destination()) {
+        error(locEverything, "cannot apply 'on' to multi-variable declaration");
+      }
+    }
     auto attributeGroup = buildAttributeGroup(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributeGroup),
