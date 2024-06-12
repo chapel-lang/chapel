@@ -305,14 +305,6 @@ if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
 
-# The 'mysystem' function either exits on errors, ignores them, or writes them
-# to a file. The $exitOnError variable tells it to exit immediately, while
-# $ignoreErrors tells it to continue without doing anything. $emailOnError,
-# which is the path of the error file, tells it to write the errors to a file.
-$mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
-$emailOnError = $mysystemlog;
-unlink($mysystemlog); # the file gets appended to, so clear it first.
-
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
 $here = dirname(__FILE__);
@@ -443,6 +435,14 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
     $config_name = "debug.$machine";
 }
 
+# The 'mysystem' function either exits on errors, ignores them, or writes them
+# to a file. The $exitOnError variable tells it to exit immediately, while
+# $ignoreErrors tells it to continue without doing anything. $emailOnError,
+# which is the path of the error file, tells it to write the errors to a file.
+$mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
+$emailOnError = $mysystemlog;
+unlink($mysystemlog); # the file gets appended to, so clear it first.
+
 #
 # directory variables
 #
@@ -508,7 +508,7 @@ if ($python2 == 0) {
   #
   $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
   if ($hostplatform =~ "cygwin") {
-      mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
+      mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;", "removing FILES files", $ignoreErrors);
   }
 
   $hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
@@ -769,15 +769,15 @@ if ($runtests == 0) {
     if ($parnodefile eq "") {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
-        $status = mysystem($testcommand, "running standard tests", 0, 0);
+        $status = mysystem($testcommand, "running standard tests", $ignoreErrors);
         print "Moving the log and summary files\n";
-        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", 1, 1);
+        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", $exitOnError);
         $rawlog = $permlog;
         $rawsummary = $permsum;
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
         print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";
-        $status = mysystem("cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags", "running parallel tests", 0, 0);
+        $status = mysystem("cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags", "running parallel tests", $ignoreErrors);
     }
 
 
@@ -872,7 +872,7 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleakslog eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleakslog > $memleaksdir/$memleakslog", "analyzeMemLeaksLog", 1, 0, 0);
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleakslog > $memleaksdir/$memleakslog", "analyzeMemLeaksLog", $exitOnError, 0);
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
@@ -889,7 +889,7 @@ if ($runtests == 0) {
             }
         }
 
-        mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
+        mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", $exitOnError, 0);
     }
 }
 exit 0;
