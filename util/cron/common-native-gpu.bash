@@ -6,6 +6,9 @@ source $CWD/common.bash
 # number as a parameter to the script.
 # source /cray/css/users/chapelu/setup_system_llvm.bash
 
+# Prevent which LLVM from being set by this variable, so it can be overridden
+# later to use ROCM LLVM.
+unset CHPL_LLVM_CONFIG
 export CHPL_LLVM=system
 export CHPL_LOCALE_MODEL=gpu
 export CHPL_TEST_GPU=true
