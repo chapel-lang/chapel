@@ -81,6 +81,8 @@ module ChapelArray {
   config param logAllArrEltAccess = false;
 
   @chpldoc.nodoc
+  config param disableShortArrayTransferOpt = false;
+  @chpldoc.nodoc
   config const shortArrayTransferThreshold = 50;
 
   proc _isPrivatized(value) param do
@@ -2319,7 +2321,7 @@ module ChapelArray {
   private proc chpl__staticCheckShortArrayTransfer(a, b) param {
     // this is the case I'm focusing on in the initial PR. This can definitely
     // be loosened up... by a lot.
-    return isProtoSlice(a) && isProtoSlice(b);
+    return !disableShortArrayTransferOpt && isProtoSlice(a) && isProtoSlice(b);
   }
 
   private inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
