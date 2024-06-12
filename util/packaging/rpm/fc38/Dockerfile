@@ -45,7 +45,7 @@ RUN python3 make_spec.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TA
 COPY --chown=user ./rpm/common/rpmlintrc /home/user/.rpmlintrc
 RUN rpmdev-setuptree && \
     cp chapel-$CHAPEL_VERSION.tar.gz $(rpm --eval '%{_sourcedir}') && \
-    rpmlint -f .rpmlintrc $BASENAME.spec && \
+    rpmlint --ignore-unused-rpmlintrc --file $BASENAME.spec && \
     spectool -g -R $BASENAME.spec
 
 COPY --chown=user ./common/fixpaths.py /home/user/fixpaths.py
