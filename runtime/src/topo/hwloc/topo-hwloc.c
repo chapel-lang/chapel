@@ -516,6 +516,7 @@ static void cpuInfoInit(void) {
 static const char *objTypeString(hwloc_obj_type_t t) {
   const char *str = NULL;
   switch(t) {
+    case HWLOC_OBJ_MACHINE: str = "machine"; break;
     case HWLOC_OBJ_PACKAGE: str = "socket"; break;
     case HWLOC_OBJ_NUMANODE: str = "NUMA domain"; break;
     case HWLOC_OBJ_CORE: str = "core"; break;
@@ -592,7 +593,8 @@ static void partitionResources(void) {
       if (myRootType == HWLOC_OBJ_TYPE_MAX) {
         // Chose a root object if the number of them matches the number of
         // locales.
-        hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_PACKAGE, HWLOC_OBJ_NUMANODE,
+        hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_MACHINE, HWLOC_OBJ_PACKAGE,
+                                        HWLOC_OBJ_NUMANODE,
                                         HWLOC_OBJ_L5CACHE, HWLOC_OBJ_L4CACHE,
                                         HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L2CACHE,
                                         HWLOC_OBJ_L1CACHE, HWLOC_OBJ_CORE,
@@ -750,7 +752,7 @@ void chpl_topo_post_args_init(void) {
   if (verbosity >= 2) {
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
     printf("%d: using core(s) %s", chpl_nodeID, buf);
-    if (myRoot) {
+    if (myRoot && (myRoot->type != HWLOC_OBJ_MACHINE)) {
       printf(" in %s %d\n", objTypeString(myRoot->type),
              myRoot->logical_index);
     } else {
