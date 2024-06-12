@@ -2715,7 +2715,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
     } else if (ambiguous &&
                !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
                !resolvingCalledIdent) {
-      issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config);
+      /* issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config); */
     }
   }
 
@@ -2953,8 +2953,8 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   auto parenlessInfo = ParenlessOverloadInfo();
   if (ident->name() == "size" || ident->name() == "this.size") {
     gdbShouldBreakHere();
-    auto& asdf = receiverScopes.front();
-    (void)asdf;
+    /* auto& asdf = receiverScopes.front(); */
+    /* (void)asdf; */
   }
   auto vec = lookupIdentifier(ident, receiverScopes, parenlessInfo);
 
@@ -2970,6 +2970,27 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     // can't establish the type. If this is in a function
     // call, we'll establish it later anyway.
     result.setType(QualifiedType());
+
+  QualifiedType receiverType;
+  ID receiverIdIgnored;
+  if (getMethodReceiver(&receiverType, &receiverIdIgnored) && receiverType.type()) {
+    // resolve a.x where a is a record/class and x is a field or parenless
+    // method
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(receiverType, USTR("this")));
+    auto ci = CallInfo(/* name */ ident->name(),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ true,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ true, actuals);
+    auto inScope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+    auto c = resolveGeneratedCall(context, ident, ci, inScopes);
+    // save the most specific candidates in the resolution result for the id
+    if (!handleResolvedCallWithoutError(result, ident, ci, c)) {
+      return;
+    }
+  }
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
     const IdAndFlags& idv = vec[0].firstIdAndFlags();
