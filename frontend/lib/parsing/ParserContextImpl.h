@@ -498,6 +498,16 @@ bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
   return this->isVarDeclConfig;
 }
 
+void ParserContext::noteVarDestinationExpr(AstNode* targetExpr) {
+  this->varDestinationExpr = targetExpr;
+}
+
+owned<AstNode> ParserContext::consumeVarDestinationExpr() {
+  auto toReturn = toOwned(this->varDestinationExpr);
+  this->varDestinationExpr = nullptr;
+  return toReturn;
+}
+
 YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
   if (this->declStartLocation.first_line == 0)
     return curLoc;
@@ -508,6 +518,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 void ParserContext::resetDeclStateOnError() {
   // Consume the linkage name just to clean it up.
   std::ignore = consumeVarDeclLinkageName();
+  std::ignore = consumeVarDestinationExpr();
   this->resetDeclState();
 }
 
@@ -1056,6 +1067,7 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                              nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
+                             nullptr,
                              nullptr,
                              resourceName,
                              kind,
@@ -1693,6 +1705,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
+                                consumeVarDestinationExpr(),
                                 name,
                                 varDeclKind,
                                 isVarDeclConfig,
@@ -1729,6 +1742,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
+                           /*destinationExpr*/ nullptr,
                            ident->name(),
                            Variable::INDEX,
                            /*isConfig*/ false,
