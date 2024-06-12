@@ -3012,10 +3012,11 @@ module ChapelArray {
 
   config param localizeConstDomains = true,
                debugLocalizedConstDomains = false;
-  
+
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     const localize = (localizeConstDomains &&
+                      numLocales > 1 &&
                       rhs.domain.definedConst &&
                       rhs.domain._value.locale != here);
     if debugLocalizedConstDomains then
