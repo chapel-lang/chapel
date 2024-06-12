@@ -3835,16 +3835,17 @@ struct Converter {
       if (ag->getAttributeNamed(USTR("functionStatic"))) {
         if (!node->initExpression()) {
           USR_FATAL(node->id(), "function-static variables must have an initializer.");
-        } else if (node->destination()) {
-          USR_FATAL(node->id(), "cannot create function-static remote variables.");
         }
+        // post-parse checks rule this out.
+        CHPL_ASSERT(!node->destination());
         isStatic = true;
       }
     }
 
     bool isRemote = node->destination() != nullptr;
-    if (isRemote && !node->initExpression() && !node->typeExpression()) {
-      USR_FATAL(node->id(), "remote variables must have an initializer or type expression.");
+    if (isRemote) {
+      // post-parse checks rule this out.
+      CHPL_ASSERT(node->initExpression() || node->typeExpression());
     }
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
@@ -3893,11 +3894,9 @@ struct Converter {
         case uast::Variable::CONST:
           symbolKind = uast::Variable::CONST_REF;
           break;
-        case uast::Variable::REF:
-        case uast::Variable::CONST_REF:
-          break;
         default:
-          USR_FATAL(node->id(), "unsupported intent for remote variable");
+          // post-parse checks rule this out.
+          CHPL_ASSERT(false && "unsupported remote variable kind");
       }
     }
 
