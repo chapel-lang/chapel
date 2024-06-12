@@ -322,7 +322,7 @@ record cyclicDist : writeSerializable {
 
   @chpldoc.nodoc
   inline operator ==(d1: cyclicDist(?), d2: cyclicDist(?)) {
-    if d1._value == d2._value then
+    if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
@@ -472,7 +472,7 @@ class CyclicImpl: BaseDist, writeSerializable {
 
 proc CyclicImpl.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
-    if targetLocs[locIdx] == loc then
+    if (targetLocs[locIdx] == loc) then
       return (true, locIdx);
   return (false, targetLocDom.first);
 }
@@ -1583,7 +1583,7 @@ proc CyclicArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTarge
 proc CyclicDom.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
 
 proc CyclicArr.dsiLocalSubdomain(loc: locale) {
-  if loc == here {
+  if (loc == here) {
     // quick solution if we have a local array
     if const myLocArrNN = myLocArr then
       return myLocArrNN.locDom.myBlock;
@@ -1596,7 +1596,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 }
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
-  if gotit {
+  if (gotit) {
     return whole[(...(chpl__computeCyclic(idxType, locid, dist.targetLocDom.dims(), dist.startIdx)))] : myBlockType(rank, idxType);
   } else {
     var d: myBlockType(rank, idxType);
@@ -1631,7 +1631,7 @@ proc CyclicArr.canDoOptimizedSwap(other) {
 proc CyclicArr.doiOptimizedSwap(other: this.type)
   where this.strides == other.strides {
 
-  if canDoOptimizedSwap(other) {
+  if(canDoOptimizedSwap(other)) {
     if debugOptimizedSwap {
       writeln("CyclicArr doing optimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
