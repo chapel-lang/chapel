@@ -2458,16 +2458,23 @@ static bool isLocalAccess(CallExpr *call) {
   return false;
 }
 
+static bool exprSuitableForProtoSlice(Expr* e) {
+  if (CallExpr* call = toCallExpr(e)) {
+    if (call->baseExpr != nullptr && !isUnresolvedSymExpr(call->baseExpr)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static void bulkViewTransfer() {
   std::vector<CallExpr*> candidates;
 
   for_alive_in_Vec (CallExpr, call, gCallExprs) {
     if (call->getModule()->modTag == MOD_USER) {
       if (call->isNamed("=")) {
-        CallExpr* lhs = toCallExpr(call->get(1));
-        CallExpr* rhs = toCallExpr(call->get(2));
-        if (lhs && !isUnresolvedSymExpr(lhs->baseExpr) &&
-            rhs && !isUnresolvedSymExpr(rhs->baseExpr)) {
+        if (exprSuitableForProtoSlice(call->get(1)) &&
+            exprSuitableForProtoSlice(call->get(2))) {
           candidates.push_back(call);
         }
       }
