@@ -2715,7 +2715,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
     } else if (ambiguous &&
                !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
                !resolvingCalledIdent) {
-      issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config);
+      /* issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config); */
     }
   }
 
@@ -2937,6 +2937,84 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
   }
 }
 
+void Resolver::resolveIdentifierHandleResult(
+    const Identifier* ident, ID id,
+    ResolvedExpression& result) {
+  assert(!id.isEmpty());
+
+  // use the type established at declaration/initialization,
+  // but for things with generic type, use unknown.
+  QualifiedType type = typeForId(id, /*localGenericToUnknown*/ true);
+
+  maybeEmitWarningsForId(this, type, ident, id);
+
+  // Record uses of outer variables.
+  if (isOuterVariable(this, id) && outerVars) {
+    const ID& mention = ident->id();
+    const ID& var = id;
+    outerVars->add(context, mention, var);
+  }
+
+  if (type.kind() == QualifiedType::TYPE) {
+    // now, for a type that is generic with defaults,
+    // compute the default version when needed. e.g.
+    //   record R { type t = int; }
+    //   var x: R; // should refer to R(int)
+    bool computeDefaults = true;
+    bool resolvingCalledIdent = nearestCalledExpression() == ident;
+
+    // For calls like
+    //
+    //   type myType = anotherType(int)
+    //
+    // Use the generic version of anotherType to feed as receiver.
+    if (resolvingCalledIdent) {
+      computeDefaults = false;
+    }
+
+    // Other special exceptions like 'r' in:
+    //
+    //  proc r.init() { ... }
+    //
+    if (!genericReceiverOverrideStack.empty()) {
+      auto& topEntry = genericReceiverOverrideStack.back();
+      if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
+          topEntry.second == parsing::parentAst(context, ident)) {
+        computeDefaults = false;
+      }
+    }
+
+    if (computeDefaults) {
+      type = computeTypeDefaults(*this, type);
+    }
+    // Do not resolve function calls under 'scopeResolveOnly'
+  } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
+    CHPL_ASSERT(scopeResolveOnly &&
+                "resolution of parenless functions should've happened above");
+
+    // Possibly a "compatibility hack" with production: we haven't checked
+    // whether the call is valid, but the production scope resolver doesn't
+    // care and assumes `ident` points to this parenless function. Setting
+    // the toId also helps determine if this is a method call and should
+    // have `this` inserted, as well as whether or not to turn this
+    // into a parenless call.
+
+    // Fall through to validateAndSetToId
+  } else if (scopeResolveOnly && type.kind() == QualifiedType::FUNCTION) {
+    // Possibly a "compatibility hack" with production: we haven't checked
+    // whether the call is valid, but the production scope resolver doesn't
+    // care and assumes `ident` points to this function. Setting
+    // the toId also helps determine if this is a method call
+
+    // Fall through to validateAndSetToId
+  }
+
+  validateAndSetToId(result, ident, id);
+  result.setType(type);
+  // if there are multiple ids we should have gotten
+  // a multiple definition error at the declarations.
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
@@ -2967,9 +3045,39 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   } else if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-    // can't establish the type. If this is in a function
-    // call, we'll establish it later anyway.
-    result.setType(QualifiedType());
+    // See if ambiguity can be resolved by considering method receiver types.
+    ID potentialResult;
+    for (auto& ids : vec) {
+      for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
+        auto cur = idIt.curIdAndFlags();
+          // Skip considering methods where receiver type doesn't match.
+        if (cur.isMethod()) {
+          auto ast = parsing::idToAst(context, cur.id())->toFunction();
+          ResolvedExpression& r = byPostorder.byAst(ast->thisFormal());
+          QualifiedType curTy = r.type();
+          if (curTy.type()) {
+            if (curTy != methodReceiverType()) {
+              continue;
+            }
+          }
+        }
+
+        if (potentialResult.isEmpty()) {
+          potentialResult = cur.id();
+        } else {
+          potentialResult = ID();
+          break;
+        }
+      }
+    }
+
+    if (potentialResult.isEmpty()) {
+      // can't establish the type. If this is in a function
+      // call, we'll establish it later anyway.
+      result.setType(QualifiedType());
+    } else {
+      resolveIdentifierHandleResult(ident, potentialResult, result);
+    }
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
     const IdAndFlags& idv = vec[0].firstIdAndFlags();
@@ -2999,79 +3107,9 @@ void Resolver::resolveIdentifier(const Identifier* ident,
 
       result.setType(type);
       return;
+    } else {
+      resolveIdentifierHandleResult(ident, id, result);
     }
-
-    // use the type established at declaration/initialization,
-    // but for things with generic type, use unknown.
-    type = typeForId(id, /*localGenericToUnknown*/ true);
-
-    maybeEmitWarningsForId(this, type, ident, id);
-
-    // Record uses of outer variables.
-    if (isOuterVariable(this, id) && outerVars) {
-      const ID& mention = ident->id();
-      const ID& var = id;
-      outerVars->add(context, mention, var);
-    }
-
-    if (type.kind() == QualifiedType::TYPE) {
-      // now, for a type that is generic with defaults,
-      // compute the default version when needed. e.g.
-      //   record R { type t = int; }
-      //   var x: R; // should refer to R(int)
-      bool computeDefaults = true;
-      bool resolvingCalledIdent = nearestCalledExpression() == ident;
-
-      // For calls like
-      //
-      //   type myType = anotherType(int)
-      //
-      // Use the generic version of anotherType to feed as receiver.
-      if (resolvingCalledIdent) {
-        computeDefaults = false;
-      }
-
-      // Other special exceptions like 'r' in:
-      //
-      //  proc r.init() { ... }
-      //
-      if (!genericReceiverOverrideStack.empty()) {
-        auto& topEntry = genericReceiverOverrideStack.back();
-        if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
-            topEntry.second == parsing::parentAst(context, ident)) {
-          computeDefaults = false;
-        }
-      }
-
-      if (computeDefaults) {
-        type = computeTypeDefaults(*this, type);
-      }
-    // Do not resolve function calls under 'scopeResolveOnly'
-    } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
-      CHPL_ASSERT(scopeResolveOnly && "resolution of parenless functions should've happened above");
-
-      // Possibly a "compatibility hack" with production: we haven't checked
-      // whether the call is valid, but the production scope resolver doesn't
-      // care and assumes `ident` points to this parenless function. Setting
-      // the toId also helps determine if this is a method call and should
-      // have `this` inserted, as well as whether or not to turn this
-      // into a parenless call.
-
-      // Fall through to validateAndSetToId
-    } else if (scopeResolveOnly &&
-               type.kind() == QualifiedType::FUNCTION) {
-      // Possibly a "compatibility hack" with production: we haven't checked
-      // whether the call is valid, but the production scope resolver doesn't
-      // care and assumes `ident` points to this function. Setting
-      // the toId also helps determine if this is a method call
-
-      // Fall through to validateAndSetToId
-    }
-
-    validateAndSetToId(result, ident, id);
-    result.setType(type);
-    // if there are multiple ids we should have gotten
-    // a multiple definition error at the declarations.
   }
 }
 

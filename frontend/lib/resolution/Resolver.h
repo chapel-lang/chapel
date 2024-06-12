@@ -542,6 +542,8 @@ struct Resolver {
                                const uast::Identifier* ident,
                                llvm::ArrayRef<const Scope*> receiverScopes);
 
+  void resolveIdentifierHandleResult(const uast::Identifier* ident, ID id,
+                                     ResolvedExpression& result);
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
 
