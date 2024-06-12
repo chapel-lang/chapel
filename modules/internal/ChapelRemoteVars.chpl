@@ -58,8 +58,7 @@ module ChapelRemoteVars {
     type inType = arrayTypeFromIteratorRecord(value);
     var c: owned _remoteVarContainer(inType)?;
     on loc {
-      var tmp = value;
-      c = new _remoteVarContainer(inType, tmp);
+      c = new _remoteVarContainer(inType, value);
     }
     return new _remoteVarWrapper(inType, try! c : owned _remoteVarContainer(inType));
   }
