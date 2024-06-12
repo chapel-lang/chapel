@@ -34,16 +34,16 @@ module ChapelRemoteVars {
     }
   }
 
-  proc chpl__buildRemoteWrapper(loc: locale, type inType) {
+  inline proc chpl__buildRemoteWrapper(loc: locale, type inType) {
     var default: inType;
     return chpl__buildRemoteWrapper(loc, inType, default);
   }
 
-  proc chpl__buildRemoteWrapper(loc: locale, in value: ?t) {
+  inline proc chpl__buildRemoteWrapper(loc: locale, in value: ?t) {
     return chpl__buildRemoteWrapper(loc, t, value);
   }
 
-  proc chpl__buildRemoteWrapper(loc: locale, type inType, in value: inType) {
+  inline proc chpl__buildRemoteWrapper(loc: locale, type inType, in value: inType) {
     var c: owned _remoteVarContainer(inType)?;
     on loc do c = new _remoteVarContainer(inType, value);
     return new _remoteVarWrapper(inType, try! c : owned _remoteVarContainer(inType));
