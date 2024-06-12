@@ -6,6 +6,9 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
 source $CWD/common-native-gpu.bash
 
+# Prevent which LLVM from being set by this variable, so it can be overridden
+# # later to use ROCM LLVM.
+unset CHPL_LLVM_CONFIG
 export CHPL_GPU=amd
 export CHPL_GPU_ARCH=gfx906
 export CHPL_LLVM=system
