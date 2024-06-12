@@ -2167,7 +2167,7 @@ module ChapelArray {
     return isArray(a) || isProtoSlice(a);
   }
 
-  proc areBothArraysOrProtoSlices(a,b) {
+  proc areBothArraysOrProtoSlices(a, b) {
     return isArrayOrProtoSlice(a) && isArrayOrProtoSlice(b);
   }
 
@@ -2364,7 +2364,6 @@ module ChapelArray {
     }
     else {
       chpl__transferArray(a, b, kind);
-
     }
   }
 
@@ -2420,6 +2419,9 @@ module ChapelArray {
 
   inline proc chpl__bulkTransferArray(ref a: chpl__protoSlice,
                                       b: chpl__protoSlice) {
+    if debugBulkTransfer {
+      chpl_debug_writeln("Performing protoSlice bulk transfer");
+    }
     return chpl__bulkTransferArray(a.ptrToArr.deref(), a.domOrRange,
                                    b.ptrToArr.deref(), b.domOrRange);
   }
@@ -2507,8 +2509,6 @@ module ChapelArray {
     }
 
     bulkTransferDebug("in chpl__bulkTransferArray");
-    bulkTransferDebug("destView.type: " + destView.type:string +
-                      "srcView.type: " + srcView.type:string);
 
     //
     // BHARSH TODO: I would prefer to hoist these 'canResolveMethod' calls into
