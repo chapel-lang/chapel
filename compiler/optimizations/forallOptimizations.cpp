@@ -2460,7 +2460,7 @@ static bool isLocalAccess(CallExpr *call) {
 
 static bool exprSuitableForProtoSlice(Expr* e) {
   if (CallExpr* call = toCallExpr(e)) {
-    if (call->baseExpr != nullptr && !isUnresolvedSymExpr(call->baseExpr)) {
+    if (call->baseExpr != nullptr && isSymExpr(call->baseExpr)) {
       return true;
     }
   }
@@ -2475,6 +2475,7 @@ static void bulkViewTransfer() {
       if (call->isNamed("=")) {
         if (exprSuitableForProtoSlice(call->get(1)) &&
             exprSuitableForProtoSlice(call->get(2))) {
+          //nprint_view(call);
           candidates.push_back(call);
         }
       }
