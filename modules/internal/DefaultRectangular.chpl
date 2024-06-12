@@ -1647,7 +1647,8 @@ module DefaultRectangular {
       const second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, chpl__idxToInt(viewRange.low)+1));
       const step   = (second-first);
       const last   = first + (viewRange.size:step.type-1) * step;
-      foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
+      foreach i in chpl_direct_pos_stride_range_iter(first, last, step)
+          with (ref info) {
         yield info.theData(i);
       }
     } else {
