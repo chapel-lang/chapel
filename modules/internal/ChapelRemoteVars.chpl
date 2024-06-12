@@ -35,21 +35,25 @@ module ChapelRemoteVars {
     }
   }
 
+  @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, type inType) {
     var default: inType;
     return chpl__buildRemoteWrapper(loc, inType, default);
   }
 
+  @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, in value: ?t) {
     return chpl__buildRemoteWrapper(loc, t, value);
   }
 
+  @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, type inType, in value: inType) {
     var c: owned _remoteVarContainer(inType)?;
     on loc do c = new _remoteVarContainer(inType, value);
     return new _remoteVarWrapper(inType, try! c : owned _remoteVarContainer(inType));
   }
 
+  @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, value: _iteratorRecord) {
     type inType = chpl_buildStandInRTT(value.type);
     var c: owned _remoteVarContainer(inType)?;
