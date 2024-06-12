@@ -1315,11 +1315,24 @@ idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString field
 
   bool result = false;
   auto ast = parsing::idToAst(context, typeDeclId);
-  if (ast && (ast->isAggregateDecl() || ast->isFunction())) {
-    /* auto ad = ast->toAggregateDecl(); */
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
 
-    for (auto child: ast->children()) {
+    for (auto child: ad->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        bool found = helpFieldNameCheck(child, fieldName);
+        if (found) {
+          result = true;
+          break;
+        }
+      }
+    }
+  } else if (ast && ast->isFunction()) {
+    auto fn = ast->toFunction();
+    for (auto child: fn->stmts()) {
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
           child->isTupleDecl()) {

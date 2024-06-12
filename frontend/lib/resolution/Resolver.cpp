@@ -2986,16 +2986,23 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       auto inScope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(context, ident, ci, inScopes);
-      for (const auto* scope : receiverScopes) {
-        if (parsing::idContainsFieldWithName(context, scope->id(),
-                                             ident->name())) {
-          context->error(ident, "asdf parenless proc redeclares the field '%s'",
-                         ident->name().c_str());
-          return;
-        }
-      }
+      /* for (const auto* scope : receiverScopes) { */
+      /*   if (parsing::idContainsFieldWithName(context, scope->id(), */
+      /*                                        ident->name())) { */
+      /*     context->error(ident, "asdf parenless proc redeclares the field '%s'", */
+      /*                    ident->name().c_str()); */
+      /*     return; */
+      /*   } */
+      /* } */
+      /* if (parsing::idContainsFieldWithName( */
+      /*         context, receiverType.type()->toCompositeType()->id(), */
+      /*         ident->name())) { */
+      /*   context->error(ident, "parenless proc redeclares the field '%s'", */
+      /*                  ident->name().c_str()); */
+      /*   return; */
+      /* } */
       if (parsing::idContainsFieldWithName(
-              context, receiverType.type()->toCompositeType()->id(),
+              context, typedSignature->untyped()->id(),
               ident->name())) {
         context->error(ident, "parenless proc redeclares the field '%s'",
                        ident->name().c_str());
