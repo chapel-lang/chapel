@@ -14,7 +14,7 @@ RUN dnf upgrade -y && \
 @@{GET_CHAPEL}
 
 @@{BUILD_DEFAULT}
-@@{BUILD_GASNET_UDP}
+@@{BUILD_OFI_SLURM}
 
 @@{INSTALL}
 
