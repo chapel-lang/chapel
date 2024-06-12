@@ -539,25 +539,7 @@ static void setupChplHome(const char* argv0) {
   }
 
   // and setenv the derived enviro vars for use by called scripts/Makefiles
-  {
-    int rc;
-    saveChplHomeDerivedInEnv();
-
-    if (installed) {
-      char CHPL_CONFIG[FILENAME_MAX+1] = "";
-      // Set an extra default CHPL_CONFIG directory
-      rc = snprintf(CHPL_CONFIG, FILENAME_MAX, "%s/%s/%s",
-                    get_configured_prefix(), // e.g. /usr
-                    "share/chapel",
-                    majMinorVers);
-      if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-
-      // Don't overwrite CHPL_CONFIG so that a user-specified
-      // one would be left alone.
-      rc = setenv("CHPL_CONFIG", CHPL_CONFIG, 0);
-      if( rc ) USR_FATAL("Could not setenv CHPL_CONFIG");
-    }
-  }
+  saveChplHomeDerivedInEnv();
 }
 
 // If the compiler was built without LLVM and CHPL_LLVM is not set in
