@@ -785,7 +785,7 @@ int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
   // Initializes CPU information.
-    cantReserveCPU = "chpl_topo_getCPUs called";
+  cantReserveCPU = "chpl_topo_getCPUs called";
   return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }
 
