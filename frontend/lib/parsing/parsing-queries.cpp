@@ -1315,10 +1315,10 @@ idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString field
 
   bool result = false;
   auto ast = parsing::idToAst(context, typeDeclId);
-  if (ast && ast->isAggregateDecl()) {
-    auto ad = ast->toAggregateDecl();
+  if (ast && (ast->isAggregateDecl() || ast->isFunction())) {
+    /* auto ad = ast->toAggregateDecl(); */
 
-    for (auto child: ad->children()) {
+    for (auto child: ast->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
