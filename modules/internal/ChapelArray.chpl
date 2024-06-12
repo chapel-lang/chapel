@@ -2454,7 +2454,18 @@ module ChapelArray {
     inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
     inline proc _value { return ptrToArr.deref()._value; }
-    inline proc sizeAs(type t) { return slicingExprs.sizeAs(t); }
+
+    inline proc sizeAs(type t) where rank==1 {
+      return slicingExprs.sizeAs(t);
+    }
+
+    inline proc sizeAs(type t) {
+      var size = 1:t;
+      for param r in 0..<rank {
+        size *= slicingExprs[r].sizeAs(t);
+      }
+      return size;
+    }
     inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
 
     iter these() ref {
