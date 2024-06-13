@@ -973,6 +973,12 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         INT_ASSERT(initialization);
         insertBroadcast(initialization, def->sym);
 
+      } else if (def->sym->hasFlag(FLAG_REMOTE_VARIABLE)) {
+        // replicate address of remote variables
+        Expr* initialization = def->sym->getInitialization();
+
+        INT_ASSERT(initialization);
+        insertBroadcast(initialization, def->sym);
       } else {
         // put other global constants and all global variables on the heap
         // ... but not type variables without a runtime type component
@@ -1021,6 +1027,12 @@ makeHeapAllocations() {
         // don't heap-allocate globals
         continue;
       }
+    }
+
+    if (var->hasFlag(FLAG_REMOTE_VARIABLE)) {
+      // don't widen remote variables, they're already references
+      // to heap-allocated memory.
+      continue;
     }
 
     if (isString(var) && var->isImmediate()) {

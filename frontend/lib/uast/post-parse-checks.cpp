@@ -126,6 +126,7 @@ struct Visitor {
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
+  void checkRemoteVar(const Variable* node);
   void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
@@ -872,6 +873,25 @@ void Visitor::checkConfigVar(const Variable* node) {
 void Visitor::checkExportVar(const Variable* node) {
   if (node->linkage() == Decl::EXPORT) {
     error(node, "export variables are not yet supported.");
+  }
+}
+
+void Visitor::checkRemoteVar(const Variable* node) {
+  // These checks only apply to remote variables.
+  if (!node->destination()) return;
+
+  if (auto ag = node->attributeGroup()) {
+    if (ag->getAttributeNamed(USTR("functionStatic"))) {
+      error(node, "cannot create function-static remote variables.");
+    }
+  }
+
+  if (node->kind() != Variable::VAR && node->kind() != Variable::CONST) {
+    error(node, "unsupported intent for remote variable.");
+  }
+
+  if (!node->initExpression() && !node->typeExpression()) {
+    error(node, "remote variables must have an initializer or type expression.");
   }
 }
 
@@ -1658,6 +1678,7 @@ void Visitor::visit(const Variable* node) {
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
+  checkRemoteVar(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {

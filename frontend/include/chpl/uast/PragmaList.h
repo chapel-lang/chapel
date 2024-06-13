@@ -188,6 +188,7 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
 PRAGMA(NO_PROMOTION_WHEN_BY_REF, ypr, "no promotion when by ref", ncm)
 
 PRAGMA(CONTEXT_TYPE, ypr, "context type", ncm)
+PRAGMA(REMOTE_VARIABLE, ypr, "remote variable", ncm)
 
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
 PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)

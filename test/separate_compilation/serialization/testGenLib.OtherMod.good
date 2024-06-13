@@ -31,6 +31,7 @@ Parsed file: $CHPL_HOME/modules/internal/ChapelNumLocales.chpl
 Parsed file: $CHPL_HOME/modules/internal/ChapelPrivatization.chpl
 Parsed file: $CHPL_HOME/modules/internal/ChapelRange.chpl
 Parsed file: $CHPL_HOME/modules/internal/ChapelReduce.chpl
+Parsed file: $CHPL_HOME/modules/internal/ChapelRemoteVars.chpl
 Parsed file: $CHPL_HOME/modules/internal/ChapelSerializedBroadcast.chpl
 Parsed file: $CHPL_HOME/modules/internal/ChapelStandard.chpl
 Parsed file: $CHPL_HOME/modules/internal/ChapelStaticVars.chpl
