@@ -46,7 +46,9 @@ within `MyAppName`.
 
 Or, to create a mason package that can be used as a dependency in other mason
 projects, run: ``mason new <MyPackageName> --lib``. This will create a similar
-file structure, except `MyPackageName.chpl` won't have a `main` function:
+file structure; however, the primary source file, `MyPackageName.chpl`, won't
+have a `main` routine because the library is not intended to be run as a
+standalone program:
 
 .. code-block:: none
 
@@ -55,11 +57,15 @@ file structure, except `MyPackageName.chpl` won't have a `main` function:
    │   └── MyPackageName.chpl
    └── Mason.toml
 
-For either type of mason project, you can add new dependencies with ``mason add
-<package name>``. This will add your dependency to the `toml` file. When your
-project is built, mason will download the dependency from the `Mason-Registry
-<https://github.com/chapel-lang/mason-registry>`_, allowing you to use it in
-your application or library.
+For either type of mason project, add new dependencies with ``mason add
+<package name>``. This will add the new dependency to the list in the `toml`
+file. When the project is built, mason will download source files for all
+Chapel dependencies using the `Mason-Registry
+<https://github.com/chapel-lang/mason-registry>`_, allowing them to be used
+in the application or library.
+
+Note that mason also supports numerous other features such as unit testing,
+examples, and documentation. See the sections below for more information.
 
 
 Getting Started with Mason
