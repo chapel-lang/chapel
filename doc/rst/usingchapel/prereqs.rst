@@ -217,6 +217,12 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-17-dev llvm-17 clang-17 libclang-17-dev libclang-cpp17-dev
 
 
+  * Ubuntu 24.04 "Noble Numbat"::
+
+      sudo apt-get update
+      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
+      sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
+
 Compatibility Notes
 -------------------
 
