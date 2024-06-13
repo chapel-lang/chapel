@@ -2956,15 +2956,15 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   } else if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-    // can't establish the type. If this is in a function
+    // Ambiguous, can't establish the type. If this is in a function
     // call, we'll establish it later anyway.
     result.setType(QualifiedType());
 
+    // Check if we can break ambiguity by performing function resolution with
+    // an implicit 'this' receiver, to filter based on receiver type.
     QualifiedType receiverType;
     ID receiverId;
     if (getMethodReceiver(&receiverType, &receiverId) && receiverType.type()) {
-      // resolve a.x where a is a record/class and x is a field or parenless
-      // method
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiverType, USTR("this")));
       auto ci = CallInfo(/* name */ ident->name(),
@@ -2975,11 +2975,14 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       auto inScope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(context, ident, ci, inScopes);
+      // Ensure we error out for redeclarations within the method itself, which
+      // function resolution doesn't catch.
       if (parsing::idContainsFieldWithName(
               context, typedSignature->untyped()->id(), ident->name())) {
         context->error(ident, "parenless proc redeclares the field '%s'",
                        ident->name().c_str());
       } else {
+        // Save resolution result if this was sufficient to break ambiguity.
         std::ignore = handleResolvedCallWithoutError(result, ident, ci, c);
       }
     }
