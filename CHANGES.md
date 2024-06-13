@@ -1,8 +1,169 @@
 Release Changes List
 ====================
 
+version 2.1
+===========
+
+released June 27, 2024
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+New Language Features
+---------------------
+
+Language Feature Improvements
+-----------------------------
+
+Semantic Changes / Changes to the Language Definition
+-----------------------------------------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Namespace Changes
+-----------------
+
+New Standard Library Features
+-----------------------------
+
+New Package Module Features
+---------------------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Changes / Feature Improvements in Libraries
+-------------------------------------------
+
+Name Changes in Libraries
+-------------------------
+
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
+
+GPU Computing
+-------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Improvements to Compilation Times / Generated Code
+--------------------------------------------------
+
+Memory Improvements
+-------------------
+
+Tool Improvements
+-----------------
+
+Documentation Improvements
+--------------------------
+
+Example Codes
+-------------
+
+Syntax Highlighting
+-------------------
+
+Configuration / Build / Packaging Changes
+-----------------------------------------
+
+Compiler Improvements
+---------------------
+
+Compiler Flags
+--------------
+
+Generated Executable Flags
+--------------------------
+
+Launchers
+---------
+
+Runtime Library Changes
+-----------------------
+
+Portability / Platform-specific Improvements
+--------------------------------------------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Bug Fixes
+---------
+
+Bug Fixes for Build Issues
+--------------------------
+
+Bug Fixes for GPU Computing
+---------------------------
+
+Bug Fixes for Libraries
+-----------------------
+
+Bug Fixes for Tools
+-------------------
+
+Bug Fixes for the Runtime
+-------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Process
+-----------------------------------
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Syntactic / Naming Changes
+------------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+
+Developer-oriented changes: Makefile / Build-time changes
+---------------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements / changes
+-----------------------------------------------------------
+
+Developer-oriented changes: 'dyno' Compiler improvements / changes
+------------------------------------------------------------------
+
+Developer-oriented changes: GPU support
+---------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Platform-specific bug fixes
+-------------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+
+Developer-oriented changes: Utilities
+-------------------------------------
+
+
 version 2.0.1
 =============
+
+released April 25, 2024
 
 This version is an update to the 2.0 release to address a portability
 bug when using GASNet on InfiniBand systems with LLVM 16 or 17.
