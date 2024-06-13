@@ -2148,8 +2148,10 @@ module ChapelArray {
   @chpldoc.nodoc
   proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
     if a.isRectangular() && b.isRectangular() {
-      const aDims = a._value.dom.dsiDims(),
-            bDims = b._value.dom.dsiDims();
+      const aDims = if isProtoSlice(a) then a.dims()
+                                       else a._value.dom.dsiDims();
+      const bDims = if isProtoSlice(b) then b.dims()
+                                       else b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
         if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
@@ -2460,6 +2462,14 @@ module ChapelArray {
 
     inline proc domOrRange where rank>1 {
       return {(...slicingExprs)};
+    }
+
+    inline proc dims() where rank == 1 {
+      return (slicingExprs,);
+    }
+
+    inline proc dims() {
+      return slicingExprs;
     }
 
     inline proc rank param { return ptrToArr.deref().rank; }
