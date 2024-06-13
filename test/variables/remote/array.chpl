@@ -21,6 +21,14 @@ iter myIter() {
   writeln(D);
   writeln(D.locale == Locales.last);
 
+  on Locales.last var E = for i in 1..10 do i * i;
+  writeln(E);
+  writeln(E.locale == Locales.last);
+
+  on Locales.last var F = for i in 1..10 do myIter();
+  writeln(F);
+  writeln(F.locale == Locales.last);
+
   /* Write to them to ensure they're mutable. */
   A[1] = 42;
   writeln(A);
@@ -30,6 +38,10 @@ iter myIter() {
   writeln(C);
   D[1] = 45;
   writeln(D);
+  E[1] = 46;
+  writeln(E);
+  F[1] = 47;
+  writeln(F);
 }
 {
   on Locales.last const A: [1..10] int;
