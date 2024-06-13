@@ -39,10 +39,10 @@ fi
 # Address program output variations peculiar to the various configuation
 # settings.
 
-# On Cray CS, X*, and HPE Cray EX systems, compute node system names
+# On Cray CS, X*, HPE Cray EX, and HPE Apollo  systems, compute node system names
 # aren't meaningful.
 case $target in
-  cray-cs|cray-x*|hpe-cray-ex)
+  cray-cs|cray-x*|hpe-cray-ex|hpe-apollo)
      sed "s/\(executing locale 0 of 1 on node \).*/\1'$uname'/" \
          < $2 > $2.tmp &&
      mv $2.tmp $2;;
@@ -52,12 +52,19 @@ esac
 # We also don't need oversubscription status.
 case $tasks in
   qthreads) grep -v -e '^QTHREADS' -e '^oversubscribed' $2 > $2.tmp &&
-            mv $2.tmp $2;;
+            mv $2.tmp $2
+            grep -v '^comm task bound to' $2 > $2.tmp && mv $2.tmp $2;;
+
 esac
 
-# Remove info related to running col-locales
+
+# Remove info related to co-locales
 
 grep -v '^[0-9]*: using core(s)' $2 > $2.tmp && mv $2.tmp $2
+
+# Remove GASNet messages
+grep -v '^GASNet' $2 > $2.tmp && mv $2.tmp $2
+grep -v '^PSHM' $2 > $2.tmp && mv $2.tmp $2
 
 # If we use the amudprun launcher, there's a path on the front of it.
 # If we use the aprun launcher, the depth (-d) value may vary, and also
