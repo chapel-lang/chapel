@@ -1069,13 +1069,6 @@ const Module* getIncludedSubmodule(Context* context,
 static const AstNode* const& astForIdQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIdQuery, context, id);
 
-  // If looking up the ID of a bundled type, ensure the module defining it is
-  // parsed first.
-  if (types::CompositeType::isBundledType(id)) {
-    std::ignore = parsing::getToplevelModule(
-        context, ID::expandSymbolPath(context, id.symbolPath())[0].first);
-  }
-
   const AstNode* result = nullptr;
   const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
   if (r != nullptr) {
@@ -1106,9 +1099,10 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
-    } else {
-      std::ignore =
-          types::CompositeType::isMissingBundledType(context, id, &result);
+    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
+      result = asttags::Record;
+    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
+      result = asttags::Class;
     }
   }
 

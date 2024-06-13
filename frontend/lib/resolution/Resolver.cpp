@@ -3408,7 +3408,7 @@ void Resolver::exit(const Range* range) {
   }
 
   const RecordType* rangeType = CompositeType::getRangeType(context);
-  if (CompositeType::isMissingBundledType(context, rangeType->id())) {
+  if (CompositeType::isMissingBundledRecordType(context, rangeType->id())) {
     // The range record is part of the standard library, but
     // it's possible to invoke the resolver without the stdlib.
     // In this case, mark ranges as UnknownType, but do not error.

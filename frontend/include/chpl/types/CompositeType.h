@@ -22,7 +22,6 @@
 
 #include "chpl/types/Type.h"
 #include "chpl/types/QualifiedType.h"
-#include "chpl/uast/AstTag.h"
 
 namespace chpl {
 namespace uast {
@@ -228,15 +227,24 @@ class CompositeType : public Type {
       is no definition available for the bundled types needed
       by the language but provided in the library (such as 'string' or 'Error').
       This function allows code to easily detect that case.
+   */
+  static bool isMissingBundledType(Context* context, ID id);
 
-      The optional tag out-parameter, if provided, will be set to the AstTag
-      of the type (Record or Class).
+  /** When compiling without a standard library (for testing purposes),
+      the compiler code needs to work around the fact that there
+      is no definition available for the class types needed
+      by the language but provided in the library (such as 'ReduceScanOp').
+      This function allows code to easily detect that case.
    */
-  static bool isMissingBundledType(Context* context, ID id,
-                                   uast::asttags::AstTag* tag = nullptr);
-  /** Check if the provided ID is a bundled type provided in the library.
+  static bool isMissingBundledClassType(Context* context, ID id);
+
+  /** When compiling without a standard library (for testing purposes),
+      the compiler code needs to work around the fact that there
+      is no definition available for the record types needed
+      by the language but provided in the library (such as 'string').
+      This function allows code to easily detect that case.
    */
-  static bool isBundledType(ID id, uast::asttags::AstTag* tag = nullptr);
+  static bool isMissingBundledRecordType(Context* context, ID id);
 
   /* Get the Error type */
   static const ClassType* getErrorType(Context* context);
