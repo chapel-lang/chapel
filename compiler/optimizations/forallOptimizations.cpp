@@ -2460,22 +2460,9 @@ static bool isLocalAccess(CallExpr *call) {
 
 static bool exprSuitableForProtoSlice(Expr* e) {
   if (CallExpr* call = toCallExpr(e)) {
-    bool callWithSuitableBase = false;
     if (SymExpr* callBase = toSymExpr(call->baseExpr)) {
       if (!isFnSymbol(callBase->symbol())) {
-        callWithSuitableBase = true;
-      }
-    }
-
-    if (callWithSuitableBase) {
-      for_actuals (actual, call) {
-        if (CallExpr* actualCall = toCallExpr(actual)) {
-          if ( (actualCall->isNamed("chpl_build_bounded_range") ||
-                actualCall->isNamed("chpl_build_unbounded_range") ||
-                actualCall->isNamed("chpl_build_low_bounded_range")) ) {
-            return true;
-          }
-        }
+        return true;
       }
     }
   }
