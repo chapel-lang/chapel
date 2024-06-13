@@ -2980,31 +2980,12 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       auto inScope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(context, ident, ci, inScopes);
-      /* for (const auto* scope : receiverScopes) { */
-      /*   if (parsing::idContainsFieldWithName(context, scope->id(), */
-      /*                                        ident->name())) { */
-      /*     context->error(ident, "asdf parenless proc redeclares the field '%s'", */
-      /*                    ident->name().c_str()); */
-      /*     return; */
-      /*   } */
-      /* } */
-      /* if (parsing::idContainsFieldWithName( */
-      /*         context, receiverType.type()->toCompositeType()->id(), */
-      /*         ident->name())) { */
-      /*   context->error(ident, "parenless proc redeclares the field '%s'", */
-      /*                  ident->name().c_str()); */
-      /*   return; */
-      /* } */
       if (parsing::idContainsFieldWithName(
-              context, typedSignature->untyped()->id(),
-              ident->name())) {
+              context, typedSignature->untyped()->id(), ident->name())) {
         context->error(ident, "parenless proc redeclares the field '%s'",
                        ident->name().c_str());
-        return;
-      }
-      // save the most specific candidates in the resolution result for the id
-      if (!handleResolvedCallWithoutError(result, ident, ci, c)) {
-        return;
+      } else {
+        std::ignore = handleResolvedCallWithoutError(result, ident, ci, c);
       }
     }
   } else {
