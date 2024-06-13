@@ -1892,7 +1892,9 @@ static llvm::TargetOptions getTargetOptions(
     Options.NoTrappingFPMath = 1;
     Options.NoSignedZerosFPMath = 1;
     Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+#if HAVE_LLVM_VER >= 140
     Options.ApproxFuncFPMath = 1;
+#endif
     Options.setFPDenormalMode(llvm::DenormalMode::getPreserveSign());
     Options.setFP32DenormalMode(llvm::DenormalMode::getPreserveSign());
   } else if (ffloatOpt == 0) {
