@@ -3962,6 +3962,7 @@ struct Converter {
 
       auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
       def = new DefExpr(varSym, new CallExpr(wrapperGet));
+      varSym->addFlag(FLAG_REMOTE_VARIABLE);
 
       auto block = new BlockStmt(BLOCK_SCOPELESS);
       block->insertAtTail(wrapperDef);
