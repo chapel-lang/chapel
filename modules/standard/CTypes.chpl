@@ -997,7 +997,7 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
     if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
-      compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
+      compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
     if (boundsChecking && arr._value.locale != here) then
       halt(
