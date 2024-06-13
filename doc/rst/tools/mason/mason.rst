@@ -25,7 +25,7 @@ Chapel programs.
    feedback and requests on the guide as we go.
 
 
-Quick start Instructions
+Quick Start Instructions
 ------------------------
 
 To install mason, run ``make mason`` from your Chapel home directory.
