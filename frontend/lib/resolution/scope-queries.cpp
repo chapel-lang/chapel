@@ -2721,22 +2721,35 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
           const auto v = str->value();
           if (v.endsWith(".chpl")) {
             bool useSearchPath = (memchr(v.c_str(), '/', v.length())==nullptr);
+            std::string f;
 
             if (useSearchPath) {
-              std::string f =
-                parsing::getExistingFileInModuleSearchPath(context, v.str());
-              if (!f.empty()) {
-                auto u = UniqueString::get(context, f);
-                parsing::parseFileToBuilderResult(context, u, UniqueString());
-              }
+              // look in the module search path
+              f = parsing::getExistingFileInModuleSearchPath(context, v.str());
             } else {
               // just check the current directory
-              std::string f =
-                parsing::getExistingFileInDirectory(context, ".", v.str());
-              if (!f.empty()) {
-                auto u = UniqueString::get(context, f);
-                parsing::parseFileToBuilderResult(context, u, UniqueString());
+              f = parsing::getExistingFileInDirectory(context, ".", v.str());
+            }
+
+            if (!f.empty()) {
+              auto u = UniqueString::get(context, f);
+              UniqueString empty;
+              const auto& r =
+                parsing::parseFileToBuilderResultAndCheck(context, u, empty);
+              for (auto expr : r.topLevelExpressions()) {
+                if (auto mod = expr->toModule()) {
+                  // if it's a module, recurse to compute its visibility scope
+                  auto requiredModScope = scopeForModule(context, mod->id());
+                  // run resolveVisibilityStmtsQuery for side-effects
+                  // (namely, to process any nested 'require' statements)
+                  resolveVisibilityStmtsQuery(context, requiredModScope);
+                }
               }
+            } else {
+              context->error(req,
+                             "could not find source file '%s' "
+                             "for 'require' statement",
+                             f.c_str());
             }
           }
         }

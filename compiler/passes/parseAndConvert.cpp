@@ -87,6 +87,8 @@ static UniqueString cleanLocalPath(UniqueString path);
 
 static void          processInternalModules();
 
+static void checkFilenameNotTooLong(UniqueString path);
+
 //static void          parseCommandLineFiles();
 
 //static void          parseDependentModules(bool isInternal);
@@ -453,6 +455,11 @@ static void loadAndConvertModules() {
       UniqueString path;
       bool found = gContext->filePathForId(id, path);
       INT_ASSERT(found);
+
+      // check that the filename is not too long
+      checkFilenameNotTooLong(path);
+
+      // compute the modTag
       ModTag modTag = MOD_USER;
       if (chpl::parsing::filePathIsInInternalModule(gContext, path)) {
         modTag = MOD_INTERNAL;
@@ -464,6 +471,8 @@ static void loadAndConvertModules() {
         // See also issue #24998.
         modTag = MOD_STANDARD;
       }
+
+      // convert it from uAST to AST
       bool namedOnCommandLine = commandLineModulesSet.count(id) > 0;
       dynoConvertFile(path.c_str(), modTag, namedOnCommandLine);
     } else {
@@ -623,8 +632,8 @@ static void printModuleSearchPath();
 static void helpPrintPath(Vec<const char*> path);
 //static void ensureRequiredStandardModulesAreParsed();
 
-#if 0
-static void parseChplSourceFile(const char* inputFileName) {
+static void checkFilenameNotTooLong(UniqueString path) {
+  const char* inputFileName = path.c_str();
   /*
     The selection of 16 here was chosen to provide enough space for
     generating files like .tmp.obj (whose length is 8) from the
@@ -646,10 +655,7 @@ static void parseChplSourceFile(const char* inputFileName) {
     // throw error with concatenated message
     USR_FATAL(errorMessage, baseName, maxFileName);
   }
-
-  parseFile(inputFileName, MOD_USER, true);
 }
-#endif
 
 static UniqueString cleanLocalPath(UniqueString path) {
   if (path.startsWith("/") ||
