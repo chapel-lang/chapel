@@ -3,10 +3,10 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 2.0 release
+Contributors to the Chapel 2.1 release
 --------------------------------------
 * Jade Abraham, [HPE]
-* Paul Cassella, [HPE]
+* Dan Bonachea, [Lawrence Berkeley National Laboratory, formerly UC Berkeley]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
 * Sarah Coghlan, [HPE]
@@ -23,14 +23,11 @@ Contributors to the Chapel 2.0 release
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
-* Josh Milthorpe, [ORNL]
 * Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
-* Karlon West, [HPE]
-* Tom Westerhout, individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -50,13 +47,13 @@ Contributors to previous releases
 * Nimit Bhardwaj, individual contributor
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
-* Dan Bonachea, [UC Berkeley]
 * Kyle Brady, [Cray Inc.]
 * Gabriel Brown, individual contributor
 * Daniel Buettner, [LTS]
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
 * David Callahan, [Cray Inc.]
+* Paul Cassella, [HPE]
 * Sanket Chaudhari, individual contributor
 * Naman Chikara, individual contributor
 * R Chinmay, individual contributor
@@ -124,6 +121,7 @@ Contributors to previous releases
 * Cory McCartan, [Cray Inc.] intern from Sammamish High School
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Erin Melia, individual contributor
+* Josh Milthorpe, [ORNL]
 * Kyle Milz, individual contributor
 * Iain Moncrief, [HPE] intern from [Oregon State University]
 * Barry Moore, [University of Pittsburgh]
@@ -197,6 +195,8 @@ Contributors to previous releases
 * Chris Wailes, [Indiana University]
 * Tony Wallace, [Cray Inc.]
 * Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
+* Karlon West, [HPE]
+* Tom Westerhout, individual contributor
 * Alvis Wong, [GSoC 2019] student from [University of Waterloo]
 * Wayne Wong, [Cray Inc.]
 * Tong Xu, individual contributor
