@@ -1,7 +1,6 @@
 module MatMatMult {
   use CommDiagnostics, Time;
   use SpsMatUtil;
-  use LayoutCSUtil, SparseBlockDistUtil;
   
   config const countComms=false,
                printTimings=false;
@@ -64,8 +63,8 @@ module MatMatMult {
           // this will also make a local copy of the remote indices, so long
           // as these are 'const'/read-only
           //
-          const aBlk = A.getBlock(locRow, srcloc),
-                bBlk = B.getBlock(srcloc, locCol);
+          const aBlk = A.getLocalSubarray(locRow, srcloc),
+                bBlk = B.getLocalSubarray(srcloc, locCol);
 
           // This local block is not strictly necessary but ensures that the
           // computation on the blocks will not require communication
@@ -82,8 +81,8 @@ module MatMatMult {
 
         // Stitch the local portions back together into the global-view
         //
-        CD.setLocalBlock(cBlk.domain);
-        C.setLocalBlock(cBlk);
+        CD.setLocalSubdomain(cBlk.domain);
+        C.setLocalSubarray(cBlk);
       }
     }
 

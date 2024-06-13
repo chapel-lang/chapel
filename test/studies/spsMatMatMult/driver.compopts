@@ -1,1 +1,1 @@
---no-cache-remote
+--no-cache-remote -slocalizeConstDomains=true

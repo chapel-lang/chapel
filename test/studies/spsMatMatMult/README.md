@@ -59,16 +59,9 @@ Helper Modules
         - [ ] task-private accumulators
   - [ ] look at tuning operations not on critical path (e.g., matrix
         output, setup, ...)
+        - [ ] assigning sparse domains may be easily optimizable
   - [ ] look at alternatives to reduction in order to reduce deep
         copies of maps and to support tree-based combining
-
-* LayoutCSUtil.chpl: In working on this, I found myself wanting
-  2D-specific / CSR-/CSC-specific helper routines from the CSC/R
-  layout, so started implementing them in this helper module; we
-  could/should consider merging these back into the main LayoutCS.chpl
-  file.
-
-* SparseBlockDistUtil.chpl: Similar, but for SparseBlockDist routines
 
 
 Other Files
