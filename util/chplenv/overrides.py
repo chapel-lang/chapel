@@ -44,6 +44,7 @@ chplvars = [
              'CHPL_GASNET_SEGMENT',
              'CHPL_GASNET_VERSION',
              'CHPL_LIBFABRIC',
+             'CHPL_COMM_OFI_OOB',
 
              'CHPL_TASKS',
              'CHPL_LAUNCHER',
