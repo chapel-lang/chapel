@@ -2658,10 +2658,9 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
   }
 }
 
-std::vector<BorrowedIdsWithName>
-Resolver::lookupIdentifier(const Identifier* ident,
-                           llvm::ArrayRef<const Scope*> receiverScopes,
-                           ParenlessOverloadInfo& outParenlessOverloadInfo) {
+std::vector<BorrowedIdsWithName> Resolver::lookupIdentifier(
+    const Identifier* ident, llvm::ArrayRef<const Scope*> receiverScopes,
+    ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
@@ -2670,7 +2669,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
     // Super is a keyword, and should't be looked up in scopes. Return
     // an empty ID to indicate that this identifier points to something,
     // but that something has a special meaning.
-    return { BorrowedIdsWithName::createWithBuiltinId() };
+    return {BorrowedIdsWithName::createWithBuiltinId()};
   }
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
@@ -2679,9 +2678,9 @@ Resolver::lookupIdentifier(const Identifier* ident,
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
-                                           ident->name(), config,
-                                           ident->id());
+                                           ident->name(), config, ident->id());
   bool notFound = vec.empty();
+  bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
 
   if (!notFound) {
     // We might be ambiguous, but due to having found multiple parenless procs.
@@ -2692,7 +2691,8 @@ Resolver::lookupIdentifier(const Identifier* ident,
     // outParenlessOverloadInfo will be falsey if we found non-parenless-proc
     // IDs. In that case we may emit an ambiguity error later, after filtering
     // out incorrect receivers.
-    outParenlessOverloadInfo = ParenlessOverloadInfo::fromBorrowedIds(context, vec);
+    outParenlessOverloadInfo =
+        ParenlessOverloadInfo::fromBorrowedIds(context, vec);
   }
 
   // TODO: these errors should be enabled for scope resolution
@@ -2708,6 +2708,37 @@ Resolver::lookupIdentifier(const Identifier* ident,
           // insertion took place so emit the error
           bool mentionedMoreThanOnce = identHasMoreMentions(ident);
           CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
+        }
+      }
+    } else if (ambiguous &&
+               !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
+               !resolvingCalledIdent) {
+      // Check if we can break ambiguity by performing function resolution with
+      // an implicit 'this' receiver, to filter based on receiver type.
+      QualifiedType receiverType;
+      ID receiverId;
+      if (getMethodReceiver(&receiverType, &receiverId) &&
+          receiverType.type()) {
+        std::vector<CallInfoActual> actuals;
+        actuals.push_back(CallInfoActual(receiverType, USTR("this")));
+        auto ci = CallInfo(/* name */ ident->name(),
+                           /* calledType */ QualifiedType(),
+                           /* isMethodCall */ true,
+                           /* hasQuestionArg */ false,
+                           /* isParenless */ true, actuals);
+        auto inScope = scopeStack.back();
+        auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+        auto c = resolveGeneratedCall(context, ident, ci, inScopes);
+        // Ensure we error out for redeclarations within the method itself,
+        // which function resolution doesn't catch.
+        if (parsing::idContainsFieldWithName(
+                context, typedSignature->untyped()->id(), ident->name())) {
+          context->error(ident, "parenless proc redeclares the field '%s'",
+                         ident->name().c_str());
+        } else {
+          // Save result if successful (emitting error otherwise).
+          ResolvedExpression& result = byPostorder.byAst(ident);
+          handleResolvedCall(result, ident, ci, c);
         }
       }
     }
@@ -2956,36 +2987,9 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   } else if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-    // Ambiguous, can't establish the type. If this is in a function
+    // can't establish the type. If this is in a function
     // call, we'll establish it later anyway.
     result.setType(QualifiedType());
-
-    // Check if we can break ambiguity by performing function resolution with
-    // an implicit 'this' receiver, to filter based on receiver type.
-    QualifiedType receiverType;
-    ID receiverId;
-    if (getMethodReceiver(&receiverType, &receiverId) && receiverType.type()) {
-      std::vector<CallInfoActual> actuals;
-      actuals.push_back(CallInfoActual(receiverType, USTR("this")));
-      auto ci = CallInfo(/* name */ ident->name(),
-                         /* calledType */ QualifiedType(),
-                         /* isMethodCall */ true,
-                         /* hasQuestionArg */ false,
-                         /* isParenless */ true, actuals);
-      auto inScope = scopeStack.back();
-      auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-      auto c = resolveGeneratedCall(context, ident, ci, inScopes);
-      // Ensure we error out for redeclarations within the method itself, which
-      // function resolution doesn't catch.
-      if (parsing::idContainsFieldWithName(
-              context, typedSignature->untyped()->id(), ident->name())) {
-        context->error(ident, "parenless proc redeclares the field '%s'",
-                       ident->name().c_str());
-      } else {
-        // Save resolution result if this was sufficient to break ambiguity.
-        std::ignore = handleResolvedCallWithoutError(result, ident, ci, c);
-      }
-    }
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
     const IdAndFlags& idv = vec[0].firstIdAndFlags();
