@@ -1175,10 +1175,6 @@ module ChapelDistribution {
       // Elements in data are deinited in dsiDestroyArr if necessary.
     }
 
-    proc doiCopyInit(rhs: BaseSparseArrImpl(?)) {
-      this.data = rhs.data;
-    }
-
     override proc dsiElementInitializationComplete() {
       data.dsiElementInitializationComplete();
     }
