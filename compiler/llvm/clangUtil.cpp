@@ -84,6 +84,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/ADT/FloatingPointMode.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/Internalize.h"
@@ -1891,6 +1892,9 @@ static llvm::TargetOptions getTargetOptions(
     Options.NoTrappingFPMath = 1;
     Options.NoSignedZerosFPMath = 1;
     Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+    Options.ApproxFuncFPMath = 1;
+    Options.setFPDenormalMode(llvm::DenormalMode::getPreserveSign());
+    Options.setFP32DenormalMode(llvm::DenormalMode::getPreserveSign());
   } else if (ffloatOpt == 0) {
     // Target default floating point optimization
     Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
@@ -2940,6 +2944,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   // of cabs but it appears to slow down simple complex multiplication.
   if (ffloatOpt > 0) { // --no-ieee-float
     clangCCArgs.push_back("-ffast-math");
+    clangCCArgs.push_back("-funsafe-math-optimizations");
 #if HAVE_LLVM_VER >= 180
     // turn off inf warnings, added in clang 18
     clangCCArgs.push_back("-Wno-nan-infinity-disabled");
@@ -3054,6 +3059,11 @@ void runClang(const char* just_parse_filename) {
       closefile(fp);
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(genHeaderFilename);
+
+      if (ffloatOpt == 1) {
+        clangOtherArgs.push_back("-fcuda-flush-denormals-to-zero");
+        clangOtherArgs.push_back("-fcuda-approx-transcendentals");
+      }
     }
 
     // Running clang to compile all runtime and extern blocks
