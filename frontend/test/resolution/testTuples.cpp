@@ -491,26 +491,152 @@ static void test13() {
   assert(vt == tt);
 }
 
+// TupleDecl formals
 static void test14() {
   printf("test14\n");
-  Context ctx;
-  Context* context = &ctx;
 
-  auto qt = resolveTypeOfXInit(context,
-                R""""(
-                  proc f(x: int, (y, z): (real, int)) { return (x, y, z); }
-                  var x = f( 1, (2.0, 3) );
-                )"""");
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
 
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  assert(qt.type()->isTupleType());
-  auto tt = qt.type()->toTupleType();
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                    proc f(x: int, (y, z): (real, int)) { return (x, y, z); }
+                    var x = f( 1, (2.0, 3) );
+                  )"""");
 
-  assert(tt->numElements() == 3);
-  assert(!tt->isStarTuple());
-  assert(tt->elementType(0).type()->isIntType());
-  assert(tt->elementType(1).type()->isRealType());
-  assert(tt->elementType(2).type()->isIntType());
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isTupleType());
+    auto tt = qt.type()->toTupleType();
+
+    assert(tt->numElements() == 3);
+    assert(!tt->isStarTuple());
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isRealType());
+    assert(tt->elementType(2).type()->isIntType());
+  }
+
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    // Using a homogeneous tuple type expression
+    auto vars = resolveTypesOfVariables(context,
+                  R""""(
+                    proc foo((x, y, z): 3*int) {
+                      return x;
+                    }
+
+                    var three = (1, 2, 3);
+                    var retOne = foo(three);
+
+                    var a, b, c : int;
+
+                    var retTwo = foo((a, b, c));
+                  )"""",
+                  {"retOne", "retTwo"});
+    assert(vars["retOne"].type()->isIntType());
+    assert(vars["retTwo"].type()->isIntType());
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto qt = resolveTypeOfXInit(context,
+                  R""""(
+                  proc blah(type (a, b, c)) {
+                    var ret : a;
+                    return ret;
+                  }
+
+                  var x = blah((int, real, string));
+
+                  )"""");
+
+    assert(qt.isErroneousType());
+    assert(guard.numErrors() == 2);
+
+    // From post-parse-checks
+    auto& err = guard.error(0);
+    assert(err->message() == "intents on tuple-grouped arguments are not yet supported");
+
+    assert(guard.error(1)->type() == ErrorType::NoMatchingCandidates);
+
+    guard.realizeErrors();
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context,
+                  R""""(
+                  proc baz((x, y, z), param which : int) {
+                    if which == 0 then return x;
+                    else if which == 1 then return y;
+                    else if which == 2 then return z;
+                    else return none;
+                  }
+
+                  var litA = baz((1, 2.0, "test"), 0);
+                  var litB = baz((1, 2.0, "test"), 1);
+                  var litC = baz((1, 2.0, "test"), 2);
+
+                  var three = (1, 2.0, "test");
+                  var varA = baz(three, 0);
+                  var varB = baz(three, 1);
+                  var varC = baz(three, 2);
+                  )"""",
+                  {"litA", "litB", "litC", "varA", "varB", "varC"});
+    assert(vars["litA"].type()->isIntType());
+    assert(vars["litB"].type()->isRealType());
+    assert(vars["litC"].type()->isStringType());
+
+    assert(vars["varA"].type()->isIntType());
+    assert(vars["varB"].type()->isRealType());
+    assert(vars["varC"].type()->isStringType());
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context,
+                  R""""(
+                  proc baz(((a, b), c, d), param which : int) {
+                    if which == 0 then return a;
+                    else if which == 1 then return b;
+                    else if which == 2 then return c;
+                    else if which == 3 then return d;
+                    else return none;
+                  }
+
+                  var litA = baz(((1, 2.0), "test", 4:uint), 0);
+                  var litB = baz(((1, 2.0), "test", 4:uint), 1);
+                  var litC = baz(((1, 2.0), "test", 4:uint), 2);
+                  var litD = baz(((1, 2.0), "test", 4:uint), 3);
+
+                  var arg = ((1, 2.0), "test", 4:uint);
+                  var varA = baz(arg, 0);
+                  var varB = baz(arg, 1);
+                  var varC = baz(arg, 2);
+                  var varD = baz(arg, 3);
+                  )"""",
+                  {"litA", "litB", "litC", "litD",
+                   "varA", "varB", "varC", "varD"});
+    assert(vars["litA"].type()->isIntType());
+    assert(vars["litB"].type()->isRealType());
+    assert(vars["litC"].type()->isStringType());
+    assert(vars["litD"].type()->isUintType());
+
+    assert(vars["varA"].type()->isIntType());
+    assert(vars["varB"].type()->isRealType());
+    assert(vars["varC"].type()->isStringType());
+    assert(vars["varD"].type()->isUintType());
+  }
 }
 
 static void test15() {
@@ -617,6 +743,75 @@ static void argHelper(std::string formal, std::string actual,
   }
 }
 
+static void test18() {
+  printf("test18\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto program = R""""(
+                  var t = (1, "hello", 3.0);
+                  var x = t(0);
+                  var y = t(1);
+                  var z = t(2);
+                )"""";
+
+  auto m = parseModule(context, std::move(program));
+
+  auto x = findVariable(m, "x");
+  auto y = findVariable(m ,"y");
+  auto z = findVariable(m ,"z");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  assert(rr.byAst(x).type().type()->isIntType());
+  assert(rr.byAst(y).type().type()->isStringType());
+  assert(rr.byAst(z).type().type()->isRealType());
+}
+
+// Test "get svec member[ value]" primitives
+static void test19() {
+  printf("test19\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto program = R""""(
+                  var t = (1, 2, 3);
+                  var x = t(0);
+                  var y = t(1);
+                  var z = t(2);
+
+                  class Foo {
+                    proc init() {}
+                  }
+                  var myFoo = new owned Foo();
+
+                  var a = __primitive("get svec member", t, 0);
+                  var b = __primitive("get svec member value", t, 0);
+                  var c = __primitive("get svec member", (myFoo, myFoo), 1);
+                  var d = __primitive("get svec member value", (myFoo, myFoo), 1);
+                )"""";
+
+  auto variables = resolveTypesOfVariablesInit(
+      context, program, {"x", "y", "z", "a", "b", "c", "d"});
+
+  assert(variables.at("x").type()->isIntType());
+  assert(variables.at("y").type()->isIntType());
+  assert(variables.at("z").type()->isIntType());
+
+  assert(variables.at("a").kind() == QualifiedType::VAR);
+  assert(variables.at("a").type()->isIntType());
+
+  assert(variables.at("b").kind() == QualifiedType::VAR);
+  assert(variables.at("b").type()->isIntType());
+
+  assert(variables.at("c").kind() == QualifiedType::REF);
+  assert(variables.at("c").type()->isClassType());
+
+  assert(variables.at("d").kind() == QualifiedType::VAR);
+  assert(variables.at("d").type()->isClassType());
+}
+
+
 static void testTupleGeneric() {
   printf("testTupleGeneric\n");
 
@@ -651,31 +846,6 @@ static void testTupleGeneric() {
   argHelper("(numeric, numeric)", "(5, 'hi')", false);
 }
 
-static void test18() {
-  printf("test18\n");
-  Context ctx;
-  Context* context = &ctx;
-
-  auto program = R""""(
-                  var t = (1, "hello", 3.0);
-                  var x = t(0);
-                  var y = t(1);
-                  var z = t(2);
-                )"""";
-
-  auto m = parseModule(context, std::move(program));
-
-  auto x = findVariable(m, "x");
-  auto y = findVariable(m ,"y");
-  auto z = findVariable(m ,"z");
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  assert(rr.byAst(x).type().type()->isIntType());
-  assert(rr.byAst(y).type().type()->isStringType());
-  assert(rr.byAst(z).type().type()->isRealType());
-}
-
 int main() {
   test1();
   test2();
@@ -697,6 +867,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   testTupleGeneric();
 

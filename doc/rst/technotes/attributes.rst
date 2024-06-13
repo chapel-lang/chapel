@@ -18,7 +18,8 @@ Generally, an attribute in Chapel is specified above a symbol declaration with
 an ``@`` followed by an identifier that specifies the attribute name. A list of
 arguments can be enclosed in parentheses ``()``. Arguments can be named or
 specified in order, but mixing the use of named and unnamed arguments in the
-same attribute is not supported.
+same attribute is not supported. Note that whitespace is not allowed
+between the ``@`` and the identifier.
 
 Attributes in Chapel are currently used to indicate feature stability and to
 exclude features from documentation when using :ref:`chpldoc <readme-chpldoc>`.

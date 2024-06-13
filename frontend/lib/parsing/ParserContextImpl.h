@@ -498,6 +498,16 @@ bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
   return this->isVarDeclConfig;
 }
 
+void ParserContext::noteVarDestinationExpr(AstNode* targetExpr) {
+  this->varDestinationExpr = targetExpr;
+}
+
+owned<AstNode> ParserContext::consumeVarDestinationExpr() {
+  auto toReturn = toOwned(this->varDestinationExpr);
+  this->varDestinationExpr = nullptr;
+  return toReturn;
+}
+
 YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
   if (this->declStartLocation.first_line == 0)
     return curLoc;
@@ -508,6 +518,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 void ParserContext::resetDeclStateOnError() {
   // Consume the linkage name just to clean it up.
   std::ignore = consumeVarDeclLinkageName();
+  std::ignore = consumeVarDestinationExpr();
   this->resetDeclState();
 }
 
@@ -890,6 +901,19 @@ Identifier* ParserContext::buildEmptyIdent(YYLTYPE location) {
 Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
   return Identifier::build(builder, convertLocation(location), name).release();
 }
+Identifier* ParserContext::buildAttributeIdent(YYLTYPE location,
+                                               PODUniqueString name) {
+  // remove the leading '@' from the name
+  UniqueString n = name;
+  if (n.startsWith("@")) {
+    // remove the @ sign
+    n = UniqueString::get(context(), n.c_str()+1);
+  } else {
+    CHPL_ASSERT(false && "expect attributes to start with @");
+  }
+  return Identifier::build(builder, convertLocation(location), n).release();
+}
+
 
 WithClause*
 ParserContext::buildWithClause(YYLTYPE location, YYLTYPE locWith,
@@ -1043,6 +1067,7 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                              nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
+                             nullptr,
                              nullptr,
                              resourceName,
                              kind,
@@ -1680,6 +1705,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
+                                consumeVarDestinationExpr(),
                                 name,
                                 varDeclKind,
                                 isVarDeclConfig,
@@ -1716,6 +1742,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
+                           /*destinationExpr*/ nullptr,
                            ident->name(),
                            Variable::INDEX,
                            /*isConfig*/ false,
@@ -1723,6 +1750,14 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
     builder->noteDeclNameLocation(var.get(), convLoc);
+    builder->copyExprParenthLocation(e, var.get());
+    builder->deleteExprParenthLocation(e);
+    // Delete the location of 'e' because it's about to be deallocated;
+    // we don't want a new allocation of an AST node to have the same pointer
+    // and still be in the map, since that would pollute location information.
+    //
+    // This is more of a workaround; a more general solution is necessary
+    // to handle pointer-based maps in the presence of AST node deallocation.
     return var;
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
@@ -1738,13 +1773,17 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
       }
     }
 
-    return TupleDecl::build(builder, convLoc, /*attributeGroup*/ nullptr,
-                            Decl::DEFAULT_VISIBILITY,
-                            Decl::DEFAULT_LINKAGE,
-                            (TupleDecl::IntentOrKind) Variable::INDEX,
-                            std::move(elements),
-                            /*typeExpression*/ nullptr,
-                            /*initExpression*/ nullptr);
+    auto td = TupleDecl::build(builder, convLoc, /*attributeGroup*/ nullptr,
+                               Decl::DEFAULT_VISIBILITY,
+                               Decl::DEFAULT_LINKAGE,
+                               (TupleDecl::IntentOrKind) Variable::INDEX,
+                               std::move(elements),
+                               /*typeExpression*/ nullptr,
+                               /*initExpression*/ nullptr);
+    builder->copyExprParenthLocation(e, td.get());
+    builder->deleteExprParenthLocation(e);
+    // See the comment above for why we delete the location of 'e'.
+    return td;
   } else {
     CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);
     return nullptr;
@@ -2628,6 +2667,11 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
 
       if (!isTypeVar) {
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
+      }
+    }
+    if (auto var = firstDecl->toVariable()) {
+      if (var->destination()) {
+        error(locEverything, "cannot apply 'on' to multi-variable declaration");
       }
     }
     auto attributeGroup = buildAttributeGroup(locEverything);

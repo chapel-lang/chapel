@@ -2,7 +2,7 @@ use MemDiagnostics;
 use BlockDist;
 
 const SPACE = {1..2, 1..2};
-const DDOM = SPACE dmapped blockDist(SPACE);
+const DDOM = SPACE dmapped new blockDist(SPACE);
 var DARRAY: [DDOM] int;
 
 config const initval = 1;

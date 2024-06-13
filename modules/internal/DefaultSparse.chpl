@@ -527,6 +527,24 @@ module DefaultSparse {
         return dom.dsiLocalSubdomain(loc);
       }
     }
+
+    proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
+      if !boundsChecking || srcDom == destDom {
+        destClass.data = this.data;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
+      if !boundsChecking || srcDom == destDom {
+        this.data = srcClass.data;
+        return true;
+      } else {
+        return false;
+      }
+    }
   }
 
 

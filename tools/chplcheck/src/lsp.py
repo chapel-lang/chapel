@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-from typing import Union
+from typing import Union, List
 import chapel
 import chapel.lsp
 from pygls.server import LanguageServer
@@ -34,6 +34,83 @@ from lsprotocol.types import (
 from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
 from fixits import Fixit, Edit
 from driver import LintDriver
+
+
+def _get_location(node: chapel.AstNode):
+    """Helper to get the location of a node"""
+    if isinstance(node, chapel.NamedDecl):
+        return chapel.lsp.location_to_range(node.name_location())
+    else:
+        return chapel.lsp.location_to_range(node.location())
+
+
+def get_lint_diagnostics(
+    context: chapel.Context, driver: LintDriver, asts: List[chapel.AstNode]
+) -> List[Diagnostic]:
+    """
+    Run the linter rules on the Chapel ASTs and return them as LSP diagnostics.
+    """
+    diagnostics = []
+    # Silence errors from scope resolution etc., especially since they
+    # may be emitted from other files (dependencies).
+    with context.track_errors() as _:
+        for node, rule, fixits in driver.run_checks(context, asts):
+            diagnostic = Diagnostic(
+                range=_get_location(node),
+                message="Lint: rule [{}] violated".format(rule),
+                severity=DiagnosticSeverity.Warning,
+            )
+            if fixits:
+                fixits = [Fixit.to_dict(f) for f in fixits]
+                diagnostic.data = {"rule": rule, "fixits": fixits}
+            diagnostics.append(diagnostic)
+    return diagnostics
+
+
+def get_lint_actions(diagnostics: List[Diagnostic]) -> List[CodeAction]:
+    """
+    Return LSP code actions for the given diagnostics.
+    """
+    actions = []
+    for d in diagnostics:
+        if not d.data:
+            continue
+        name = d.data.get("rule", None)
+        if not name:
+            continue
+        if "fixits" not in d.data:
+            continue
+        fixits = [Fixit.from_dict(f) for f in d.data["fixits"]]
+        if not fixits:
+            continue
+
+        for f in fixits:
+            if not f:
+                continue
+            changes = dict()
+            for e in f.edits:
+                uri = "file://" + e.path
+                start = e.start
+                end = e.end
+                rng = Range(
+                    start=Position(max(start[0] - 1, 0), max(start[1] - 1, 0)),
+                    end=Position(max(end[0] - 1, 0), max(end[1] - 1, 0)),
+                )
+                edit = TextEdit(range=rng, new_text=e.text)
+                if uri not in changes:
+                    changes[uri] = []
+                changes[uri].append(edit)
+            title = "Apply Fix for {}".format(name)
+            if f.description:
+                title += " ({})".format(f.description)
+            action = CodeAction(
+                title=title,
+                kind=CodeActionKind.QuickFix,
+                diagnostics=[d],
+                edit=WorkspaceEdit(changes=changes),
+            )
+            actions.append(action)
+    return actions
 
 
 def run_lsp(driver: LintDriver):
@@ -80,12 +157,6 @@ def run_lsp(driver: LintDriver):
 
         return context.parse(uri[len("file://") :])
 
-    def get_location(node: chapel.AstNode):
-        if isinstance(node, chapel.NamedDecl):
-            return chapel.lsp.location_to_range(node.name_location())
-        else:
-            return chapel.lsp.location_to_range(node.location())
-
     def build_diagnostics(uri: str):
         """
         Parse a file at a particular URI, run the linter rules on the resulting
@@ -96,20 +167,7 @@ def run_lsp(driver: LintDriver):
         with context.track_errors() as errors:
             asts = parse_file(context, uri)
 
-        # Silence errors from scope resolution etc., especially since they
-        # may be emitted from other files (dependencies).
-        with context.track_errors() as _:
-            diagnostics = []
-            for node, rule, fixits in driver.run_checks(context, asts):
-                diagnostic = Diagnostic(
-                    range=get_location(node),
-                    message="Lint: rule [{}] violated".format(rule),
-                    severity=DiagnosticSeverity.Warning,
-                )
-                if fixits:
-                    fixits = [Fixit.to_dict(f) for f in fixits]
-                    diagnostic.data = {"rule": rule, "fixits": fixits}
-                diagnostics.append(diagnostic)
+        diagnostics = get_lint_diagnostics(context, driver, asts)
 
         # process the errors from syntax/scope resolution
         # TODO: should chplcheck still do this?
@@ -130,47 +188,7 @@ def run_lsp(driver: LintDriver):
     @server.feature(TEXT_DOCUMENT_CODE_ACTION)
     async def code_action(ls: LanguageServer, params: CodeActionParams):
         diagnostics = params.context.diagnostics
-        actions = []
-        for d in diagnostics:
-            if not d.data:
-                continue
-            name = d.data.get("rule", None)
-            if not name:
-                continue
-            if "fixits" not in d.data:
-                continue
-            fixits = [Fixit.from_dict(f) for f in d.data["fixits"]]
-            if not fixits:
-                continue
-
-            for f in fixits:
-                if not f:
-                    continue
-                changes = dict()
-                for e in f.edits:
-                    uri = "file://" + e.path
-                    start = e.start
-                    end = e.end
-                    rng = Range(
-                        start=Position(
-                            max(start[0] - 1, 0), max(start[1] - 1, 0)
-                        ),
-                        end=Position(max(end[0] - 1, 0), max(end[1] - 1, 0)),
-                    )
-                    edit = TextEdit(range=rng, new_text=e.text)
-                    if uri not in changes:
-                        changes[uri] = []
-                    changes[uri].append(edit)
-                title = "Apply Fix for {}".format(name)
-                if f.description:
-                    title += " ({})".format(f.description)
-                action = CodeAction(
-                    title=title,
-                    kind=CodeActionKind.QuickFix,
-                    diagnostics=[d],
-                    edit=WorkspaceEdit(changes=changes),
-                )
-                actions.append(action)
+        actions = get_lint_actions(diagnostics)
         return actions
 
     server.start_io()

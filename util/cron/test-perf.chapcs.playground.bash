@@ -25,12 +25,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of LLVM 18
-source /data/cf/chapel/setup_system_llvm.bash 18
 GITHUB_USER=jabraham17
-GITHUB_BRANCH=fixes-llvm-18
-SHORT_NAME=llvm18
-START_DATE=04/22/24
+GITHUB_BRANCH=new-pm-perf
+SHORT_NAME=new-llvm-pm
+START_DATE=05/29/24
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

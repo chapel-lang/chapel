@@ -1395,16 +1395,16 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
                            int32_t lineno, int32_t filename) {
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu\n", size);
-
-  assert(chpl_gpu_is_device_ptr(memAlloc));
+  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu Alloc:%p\n", size,
+                 memAlloc);
 
   c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
   chpl_gpu_impl_use_device(dev_id);
 
 #ifdef GPU_RUNTIME_CPU
-    return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
+  return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
 #else
+  assert(chpl_gpu_is_device_ptr(memAlloc));
   size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
   assert(cur_size >= 0);
 

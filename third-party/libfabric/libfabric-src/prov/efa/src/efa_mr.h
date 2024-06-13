@@ -1,54 +1,25 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #ifndef EFA_MR_H
 #define EFA_MR_H
 
-#include "efa.h"
+#include <stdbool.h>
+#include <ofi_mr.h>
 
 /*
  * Descriptor returned for FI_HMEM peer memory registrations
  */
 struct efa_mr_peer {
-	enum fi_hmem_iface      iface;
+	enum fi_hmem_iface  iface;
 	union {
-		uint64_t        reserved;
-		/* this field is gdrcopy handle when gdrcopy is enabled,
-		 * otherwise it is cuda device id.
-		 */
-		uint64_t        cuda;
-		int             neuron;
-		int             synapseai;
+	    uint64_t        reserved;
+	    uint64_t        cuda;
+	    int             neuron;
+	    int             synapseai;
 	} device;
+	uint64_t            flags;
+	void                *hmem_data;
 };
 
 struct efa_mr {
@@ -61,11 +32,14 @@ struct efa_mr {
 	struct fid_mr		*shm_mr;
 	struct efa_mr_peer	peer;
 	bool			inserted_to_mr_map;
+	bool 			needs_sync;
 };
 
 extern int efa_mr_cache_enable;
 extern size_t efa_mr_max_cached_count;
 extern size_t efa_mr_max_cached_size;
+
+struct efa_domain;
 
 int efa_mr_cache_open(struct ofi_mr_cache **cache, struct efa_domain *domain);
 
@@ -77,9 +51,6 @@ int efa_mr_cache_entry_reg(struct ofi_mr_cache *cache,
 
 void efa_mr_cache_entry_dereg(struct ofi_mr_cache *cache,
 			      struct ofi_mr_entry *entry);
-
-int efa_mr_reg_shm(struct fid_domain *domain_fid, struct iovec *iov,
-		   uint64_t access, struct fid_mr **mr_fid);
 
 static inline bool efa_mr_is_hmem(struct efa_mr *efa_mr)
 {
@@ -102,5 +73,21 @@ static inline bool efa_mr_is_synapseai(struct efa_mr *efa_mr)
 {
 	return efa_mr ? (efa_mr->peer.iface == FI_HMEM_SYNAPSEAI) : false;
 }
+
+static inline void *efa_mr_get_shm_desc(struct efa_mr *efa_mr)
+{
+	if (!efa_mr)
+		return NULL;
+
+	return efa_mr->shm_mr ? fi_mr_desc(efa_mr->shm_mr) : NULL;
+}
+#define EFA_MR_IOV_LIMIT 1
+#define EFA_MR_SUPPORTED_PERMISSIONS (FI_SEND | FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE)
+
+/*
+ * Multiplier to give some room in the device memory registration limits
+ * to allow processes added to a running job to bootstrap.
+ */
+#define EFA_MR_CACHE_LIMIT_MULT (.9)
 
 #endif

@@ -4,6 +4,7 @@ import sys
 import optparse
 
 import chpl_bin_subdir, chpl_compiler, chpl_mem, chpl_platform, overrides, third_party_utils
+import homebrew_utils
 from utils import error, memoize, run_command, warning
 
 
@@ -92,6 +93,15 @@ def get_compile_args(flag):
         ucp_val = get_uniq_cfg_path(flag)
         return third_party_utils.get_bundled_compile_args('jemalloc',
                                                           ucp=ucp_val)
+    elif jemalloc_val == 'system':
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_compile_args('jemalloc')
+        if args != (None, None):
+            return args
+        else:
+            envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+            third_party_utils.could_not_find_pkgconfig_pkg("jemalloc", envname)
+
     return ([ ], [ ])
 
 # flag is host or target
@@ -116,8 +126,13 @@ def get_link_args(flag):
         return (libs, morelibs)
 
     if jemalloc_val == 'system':
-        return ([ ], ['-ljemalloc'])
-
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_link_args('jemalloc')
+        if args != (None, None):
+            return args
+        else:
+            envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+            third_party_utils.could_not_find_pkgconfig_pkg("jemalloc", envname)
     return ([ ], [ ])
 
 def _main():

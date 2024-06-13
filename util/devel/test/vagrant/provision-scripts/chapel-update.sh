@@ -9,7 +9,7 @@ do
     cd chapel && git checkout main && git pull --ff-only && cd .. && echo UPDATED
   else
     echo cloning chapel
-    git clone https://github.com/chapel-lang/chapel && echo CLONED
+    git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/chapel.git" --depth 1 https://github.com/chapel-lang/chapel && echo CLONED
   fi
 
   if [ $? -eq 0 ]

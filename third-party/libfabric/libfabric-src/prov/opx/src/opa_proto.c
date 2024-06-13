@@ -257,6 +257,7 @@ static int map_hfi_mem(int fd, struct _hfi_ctrl *ctrl, size_t subctxt_cnt)
 
 	/* 11a) subctxt_uregbase */
 	sz = HFI_MMAP_PGSIZE;
+	assert(sz > 0);
 	maddr = HFI_MMAP_ERRCHECK(fd, binfo, subctxt_uregbase, sz, PROT_READ|PROT_WRITE);
 	opx_hfi_touch_mmap(maddr, sz);
 	arrsz[SUBCTXT_UREGBASE] = sz;

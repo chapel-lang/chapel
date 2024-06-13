@@ -6,9 +6,9 @@ use MasonNew;
 const dir = here.cwd();
 
 proc dry() {
-  masonNew(['mason', 'new', 'publishCheck']);
+  masonNew(['new', 'publishCheck']);
   here.chdir(dir + '/publishCheck');
-  masonPublish(['mason', 'publish', '--dry-run']);
+  masonPublish(['publish', '--dry-run']);
 }
 
 dry();

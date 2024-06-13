@@ -263,22 +263,43 @@ Once connected to the instance via ssh, do the following:
       . ~/chapel/util/setchplenv.bash
 
       export CHPL_COMM=ofi
+      export CHPL_LAUNCHER=slurm-srun
+      export CHPL_COMM_OFI_OOB=pmi2
+      export SLURM_MPI_TYPE=pmi2
+
       # if using a cluster without EFA, use FI_PROVIDER=tcp instead
       export FI_PROVIDER=efa
 
-      export CHPL_LAUNCHER=slurm-srun
       export CHPL_LIBFABRIC=system
       export PKG_CONFIG_PATH=/opt/amazon/efa/lib64/pkgconfig/
-      export CHPL_COMM_OFI_OOB=pmi2
-      PMI2_DIR=/opt/slurm/lib/
-      export CHPL_LD_FLAGS="-L$PMI2_DIR -Wl,-rpath,$PMI2_DIR"
-      export SLURM_MPI_TYPE=pmi2
+      export CHPL_LD_FLAGS="-L/opt/slurm/lib/ -Wl,-rpath,/opt/slurm/lib/"
+
       export CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
       export CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true
 
-      # Set this based on the max amount of memory available per-instance
-      # Note that EFA currently prevents the use of a heap larger than 96G
-      export CHPL_RT_MAX_HEAP_SIZE=75%
+   Due to limitations in the number of pages that can be registered with EFA,
+   by default Chapel will try and use transparent huge pages. Make sure your
+   cluster has transparent huge pages enabled and has enough huge pages.
+
+   .. code-block:: bash
+
+      NUM_NODES=<max number of nodes in your cluster>
+      NUM_PAGES=<number of pages to use>
+      echo always | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null
+      echo $NUM_PAGES | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages >/dev/null
+
+   .. note::
+
+       Setting more huge pages than there is memory on the system can cause the
+       system to hang. Make sure to set the number of huge pages to a value
+       that is less than the total memory on the system (you can query this
+       with ``srun lsmem``). If you set it too low, you may get out of memory
+       errors when running Chapel programs. Try increasing the number of huge
+       pages or set a max heap size with ``CHPL_RT_MAX_HEAP_SIZE``.
+
+   If you wish to not use transparent huge pages, set ``export
+   CHPL_RT_COMM_OFI_THP_HINT=0``. Depending on your system, you my also need to
+   set ``CHPL_RT_MAX_HEAP_SIZE`` to a value less than ``96G``.
 
    For best performance, users should also set ``export
    FI_EFA_USE_DEVICE_RDMA=1``. This enables higher network performance by using

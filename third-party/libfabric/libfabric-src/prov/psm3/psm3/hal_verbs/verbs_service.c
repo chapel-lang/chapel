@@ -71,6 +71,7 @@
 #include <poll.h>
 #include <inttypes.h>
 #include "utils_sysfs.h"
+#include "utils_env.h"
 #include "verbs_service.h"
 #include "psmi_wrappers.h"
 #include "psm_netutils.h"
@@ -634,26 +635,47 @@ int psm3_hfp_verbs_get_port_subnet(int unit, int port, int addr_index,
 /* in units of bits/sec */
 int psm3_hfp_verbs_get_port_speed(int unit, int port, uint64_t *speed)
 {
-	char *speedstr = NULL;
-	int ret = psm3_sysfs_port_read(unit, port, "rate", &speedstr);
-	if (ret == -1) {
-		_HFI_DBG("Failed to port speed for unit %u/%u: %s\n",
-			unit, port, strerror(errno));
-		return ret;
+	uint64_t mbps;
+
+	mbps = psm3_parse_force_speed();
+	if (! mbps) {
+		uint32_t gbps;
+		char *speedstr = NULL;
+		if (psm3_sysfs_port_read(unit, port, "rate", &speedstr) < 0) {
+			_HFI_DBG("Failed to get port speed for unit %u/%u: %s\n",
+				unit, port, strerror(errno));
+#if PSM_DEFAULT_SPEED > 0
+			mbps = PSM_DEFAULT_SPEED;
+			goto done;
+#else
+			return -1;
+#endif
+		}
+		int n = sscanf(speedstr, "%u Gb/sec", &gbps);
+		if (n != 1) {
+			_HFI_DBG("Failed to parse port speed(%s) for unit %u/%u: sccanf ret = %d\n",
+				speedstr, unit, port, n);
+			psm3_sysfs_free(speedstr);
+#if PSM_DEFAULT_SPEED > 0
+			mbps = PSM_DEFAULT_SPEED;
+			goto done;
+#else
+			errno = EINVAL;
+			return -1;
+#endif
+		}
+		psm3_sysfs_free(speedstr);
+		if (speed) *speed = (uint64_t)gbps * 1000 * 1000 * 1000;
+		_HFI_DBG("Got speed for for unit/port %d/%d: %u Gb/s\n",
+			unit, port, gbps);
+	} else {
+#if PSM_DEFAULT_SPEED > 0
+done:
+#endif
+		if (speed) *speed = mbps * 1000 * 1000;
+		_HFI_DBG("Got speed for for unit/port %d/%d: %"PRIu64" Mb/s\n",
+			unit, port, mbps);
 	}
-	uint32_t gbps;
-	int n = sscanf(speedstr, "%u Gb/sec", &gbps);
-	if (n != 1) {
-		_HFI_DBG("Failed to parse port speed(%s) for unit %u/%u: sccanf ret = %d\n",
-			speedstr, unit, port, n);
-		ret = -1;
-		goto free;
-	}
-	if (speed) *speed = (uint64_t)gbps * 1000 * 1000 * 1000;
-	_HFI_VDBG("Got speed for for unit/port %d/%d: %u Gb/s\n",
-		unit, port, gbps);
-free:
-	psm3_sysfs_free(speedstr);
-	return ret < 0 ? -1 : 0;
+	return 0;
 }
 #endif /* PSM_VERBS */

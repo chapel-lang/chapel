@@ -3836,8 +3836,16 @@ struct Converter {
         if (!node->initExpression()) {
           USR_FATAL(node->id(), "function-static variables must have an initializer.");
         }
+        // post-parse checks rule this out.
+        CHPL_ASSERT(!node->destination());
         isStatic = true;
       }
+    }
+
+    bool isRemote = node->destination() != nullptr;
+    if (isRemote) {
+      // post-parse checks rule this out.
+      CHPL_ASSERT(node->initExpression() || node->typeExpression());
     }
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
@@ -3874,8 +3882,26 @@ struct Converter {
       }
     }
 
+    uast::Variable::Kind symbolKind = node->kind();
+    if (isRemote) {
+      // Remote variables get desugared early (now!), but they get turned
+      // into references to remote memory. So, we need the symbol storage
+      // kind to be REF, not VAR.
+      switch(symbolKind) {
+        case uast::Variable::VAR:
+          symbolKind = uast::Variable::REF;
+          break;
+        case uast::Variable::CONST:
+          symbolKind = uast::Variable::CONST_REF;
+          break;
+        default:
+          // post-parse checks rule this out.
+          CHPL_ASSERT(false && "unsupported remote variable kind");
+      }
+    }
+
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
-    attachSymbolStorage(node->kind(), varSym);
+    attachSymbolStorage(symbolKind, varSym);
 
     attachSymbolAttributes(node, varSym);
 
@@ -3901,6 +3927,7 @@ struct Converter {
       varSym->cname = convertLinkageNameAstr(node);
     }
 
+    Expr* destinationExpr = convertExprOrNull(node->destination());
     Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = nullptr;
 
@@ -3923,23 +3950,40 @@ struct Converter {
       initExpr = convertExprOrNull(node->initExpression());
     }
 
-    auto def = new DefExpr(varSym, initExpr, typeExpr);
-    VariableDefInfo ret = { def, /* entireExpr */ nullptr };
-    // Note: entireExpr is set below depending on if there are any attributes.
+    DefExpr* def = nullptr;
+    VariableDefInfo ret;
+    if (isRemote) {
+      auto wrapper = new VarSymbol(astr("chpl_wrapper_", varSym->name));
+      auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
+      wrapperCall->insertAtTail(destinationExpr);
+      if (typeExpr) wrapperCall->insertAtTail(typeExpr);
+      if (initExpr) wrapperCall->insertAtTail(initExpr);
+      auto wrapperDef = new DefExpr(wrapper, wrapperCall);
+
+      auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
+      def = new DefExpr(varSym, new CallExpr(wrapperGet));
+      varSym->addFlag(FLAG_REMOTE_VARIABLE);
+
+      auto block = new BlockStmt(BLOCK_SCOPELESS);
+      block->insertAtTail(wrapperDef);
+      block->insertAtTail(def);
+      ret = VariableDefInfo { def, block };
+    } else {
+      def = new DefExpr(varSym, initExpr, typeExpr);
+      ret = VariableDefInfo { def, /* entireExpr */ def };
+    }
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
     if (!loopFlags.empty()) {
       auto block = new BlockStmt(BLOCK_SCOPELESS);
       block->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
-      block->insertAtTail(def);
+      block->insertAtTail(ret.entireExpr);
 
       if (auto primBlock = loopFlags.createPrimitivesBlock(*this)) {
         block->insertAtTail(primBlock);
       }
 
       ret.entireExpr = block;
-    } else {
-      ret.entireExpr = def;
     }
 
     // If the init expression of this variable is a domain and this
@@ -4147,6 +4191,14 @@ bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
 }
 
 bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  // In cases like compound promotion (A + 1 + 1), we might end up inserting
+  // the GPU blockSize attribute several times, even though there's only
+  // one place in the code where the attribute was created. To work around this,
+  // add a unique identifier integer to each blockSize call. If blockSizes
+  // are included twice, but they have a unique identifier that matches,
+  // we can safely ignore the second one.
+  static int counter = 0;
+
   if (blockSizeAttr) {
     if (blockSizeAttr->numActuals() != 1) {
       USR_FATAL(blockSizeAttr->id(),
@@ -4155,7 +4207,9 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
     }
 
     Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE,
+                                    blockSize,
+                                    new_IntSymbol(counter++)));
     return true;
   }
   return false;
@@ -4409,7 +4463,9 @@ Type* Converter::convertRecordType(const types::QualifiedType qt) {
     return dtBytes;
   }
 
-  CHPL_UNIMPL("unhandled record type");
+  std::string msg = "unhandled record type: ";
+  msg += t == nullptr ? "(null)" : t->name().str();
+  CHPL_UNIMPL(msg.c_str());
   return nullptr;
 }
 

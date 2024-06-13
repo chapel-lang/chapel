@@ -101,40 +101,56 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
   return ID();
 }
 
-static const ID scopeResolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
+static const resolution::ResolvedExpression* scopeResolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
   if (auto fn = fnNode->toFunction()) {
     auto& byId =
         resolution::scopeResolveFunction(context, fn->id())->resolutionById();
     if (auto res = byId.byAstOrNull(node)) {
-      return res->toId();
+      return res;
     }
   }
-  return ID();
+  return nullptr;
 }
 
-static const ID scopeResolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
+static const resolution::ResolvedExpression* scopeResolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
   if (auto mod = modNode->toModule()) {
     auto& byId = resolution::scopeResolveModule(context, mod->id());
     if (auto res = byId.byAstOrNull(node)) {
-      return res->toId();
+      return res;
     }
   }
-  return ID();
+  return nullptr;
 }
 
-static const ID scopeResolveResultsForNode(Context* context, const AstNode* node) {
+// For scope resolution, we handle AST nodes that don't necessarily get
+// their own ResolvedExpression (specificlaly, uses/imports), so return an ID
+// instead of a ResolvedExpression.
+static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
-    if (auto id = scopeResolveViaFunction(context, search, node)) {
-      return id;
-    } else if (auto id = scopeResolveViaModule(context, search, node)) {
-      return id;
+    if (auto rr = scopeResolveViaFunction(context, search, node)) {
+      return rr->toId();
+    } else if (auto rr = scopeResolveViaModule(context, search, node)) {
+      return rr->toId();
     } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
       return id;
     }
     search = parsing::parentAst(context, search);
   }
   return ID();
+}
+
+const resolution::ResolvedExpression* scopeResolveResultsForNode(Context* context, const AstNode* node) {
+  const AstNode* search = node;
+  while (search) {
+    if (auto rr = scopeResolveViaFunction(context, search, node)) {
+      return rr;
+    } else if (auto rr = scopeResolveViaModule(context, search, node)) {
+      return rr;
+    }
+    search = parsing::parentAst(context, search);
+  }
+  return nullptr;
 }
 
 static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
@@ -145,7 +161,7 @@ static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
 
 const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) {
   QUERY_BEGIN(nodeOrNullFromToId, context, node);
-  auto id = scopeResolveResultsForNode(context, node);
+  auto id = scopeResolveToIdForNode(context, node);
   auto nodeOrNull = idOrEmptyToAstNodeOrNull(context, id);
   return QUERY_END(nodeOrNull);
 }

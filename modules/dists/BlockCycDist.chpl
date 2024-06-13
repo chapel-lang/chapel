@@ -111,7 +111,7 @@ to the ID of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const D: domain(2)
-      dmapped blockCycDist(startIdx=Space.lowBound,blocksize=(2,3))
+      dmapped new blockCycDist(startIdx=Space.lowBound,blocksize=(2,3))
       = Space;
     var A: [D] int;
 

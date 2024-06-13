@@ -664,6 +664,18 @@ void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   wr.message("The 'new' expression can only be used with records or classes.");
 }
 
+void ErrorInvalidParamCast::write(ErrorWriterBase& wr) const {
+  auto astForErr = std::get<0>(info_);
+  auto& fromQt = std::get<1>(info_);
+  auto& toQt = std::get<2>(info_);
+
+  wr.heading(kind_, type_, astForErr,
+             "cannot cast param value "
+             "of type '", fromQt.type(), "' to type '", toQt.type(), "'.");
+  wr.message("In the following expression:");
+  wr.code(astForErr, { astForErr });
+}
+
 void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
   auto superExpr = std::get<const uast::Identifier*>(info_);
   auto qt = std::get<types::QualifiedType>(info_);
@@ -886,7 +898,18 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       } else if (formalDecl->isTupleDecl()) {
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
-      wr.message("The formal ", formalName, " expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+
+      if (badPass.formalType().isUnknown()) {
+        // The formal type can be unknown in an initial instantiation if it
+        // depends on the previous formals' types. In that case, don't print it
+        // and say something nicer.
+        wr.message("The instantiated type of formal ", formalName,
+                   " does not allow actuals of type '", badPass.actualType().type(), "'.");
+      } else {
+        wr.message("The formal ", formalName, " expects ", badPass.formalType(),
+                   ", but the actual was ", badPass.actualType(), ".");
+      }
+
       if (actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }

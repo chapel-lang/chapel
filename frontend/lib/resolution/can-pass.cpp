@@ -710,6 +710,14 @@ CanPassResult CanPassResult::canConvert(Context* context,
     return convert(OTHER);
   }
 
+  if (actualQT.isParam() && actualT->isStringType() && formalT->isCPtrType()) {
+    auto ptr = formalT->toCPtrType();
+    auto charType = typeForSysCType(context, USTR("c_char"));
+    if (ptr->isConst() && ptr->eltType() == charType.type()) {
+      return convert(OTHER);
+    }
+  }
+
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     auto aT = actualQT.type()->toTupleType();
@@ -830,7 +838,18 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult got = canPassSubtypeOrBorrowing(context, actualCt, formalCt);
-      if (got.passes() && got.instantiates()) {
+      if (got.passes()) {
+        if (got.instantiates()) {
+          return got;
+        }
+
+        // The type passed, but didn't actually instantiate. This is odd
+        // since we are trying to instantiate a generic formal. This suggests
+        // the actual is generic, too, which typically doesn't make sense.
+        // Explicitly set the fail reason but keep the rest of the properties
+        // intact, so that that the caller can dismiss this error if
+        // generic actuals are allowed.
+        got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
         return got;
       }
     }
@@ -968,16 +987,24 @@ CanPassResult CanPassResult::canPass(Context* context,
     // Further checking will occur after the instantiation occurs,
     // so checking here just rules out predictable situations.
 
-    if (formalQT.kind() != QualifiedType::TYPE &&
-        isTypeGeneric(context, actualQT))
+    bool canAcceptGenericActuals =
+      formalQT.kind() == QualifiedType::TYPE ||
+      actualQT.kind() == QualifiedType::INIT_RECEIVER;
+
+    if (isTypeGeneric(context, actualQT) && !canAcceptGenericActuals)
       return fail(FAIL_GENERIC_TO_NONTYPE); // generic types can only be passed to type actuals
 
     auto got = canInstantiate(context, actualQT, formalQT);
-    if (!got.passes() && formalQT.kind() == QualifiedType::TYPE) {
-      // Instantiation may not be necessary for generic type formals: we
-      // could be passing a (subtype) generic type actual.
-      // Fall through to the checks below.
-    } else if (!got.passes() && formalQT.isParam()) {
+    if (!got.passes() &&
+         got.reason() == FAIL_DID_NOT_INSTANTIATE && canAcceptGenericActuals) {
+      // No instantiation occurred, but the actual isn't incompatible with
+      // the formal. This suggests a generic actual being passed to the
+      // formal; this is typically not allowed, but in this case
+      // (canAcceptGenericActuals) it is. So, it's not an error.
+      got.failReason_ = chpl::optional<PassingFailureReason>();
+      return got;
+    }
+    if (!got.passes() && formalQT.isParam()) {
       // 'isTypeGeneric' will return 'true' if there is not a param value
       // for the given QualifiedType, which is usually the case for a param
       // formal despite the presence of a type expression.
@@ -1050,6 +1077,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     case QualifiedType::INOUT:
     case QualifiedType::VAR:       // var/const var don't really make sense
     case QualifiedType::CONST_VAR: // as formals but we allow it for testing
+    case QualifiedType::INIT_RECEIVER:
       {
         // TODO: promotion
         return canConvert(context, actualQT, formalQT);
@@ -1088,25 +1116,41 @@ void KindProperties::setParam(bool isParam) {
   this->isParam = isParam;
 }
 
-void KindProperties::combineWith(const KindProperties& other) {
-  if (!isValid) return;
-  if (!other.isValid || isType != other.isType) {
+bool KindProperties::checkValidCombine(const KindProperties& other) const {
+  if (!isValid || !other.isValid) {
+    return false;
+  }
+  if (isType != other.isType) {
     // Can't mix types and non-types.
+    return false;
+  }
+
+  return true;
+}
+
+void KindProperties::combineWithJoin(const KindProperties& other) {
+  if (!checkValidCombine(other)) {
     invalidate();
     return;
   }
+
   isConst = isConst || other.isConst;
   isRef = isRef && other.isRef;
   isParam = isParam && other.isParam;
 }
 
+void KindProperties::combineWithMeet(const KindProperties& other) {
+  bool bothConst = isConst && other.isConst;
+  combineWithJoin(other);
+  isConst = bothConst;
+}
+
 void KindProperties::strictCombineWith(const KindProperties& other) {
-  if (!isValid) return;
-  if (!other.isValid || isType != other.isType) {
-    // Can't mix types and non-types.
+  if (!checkValidCombine(other)) {
     invalidate();
     return;
   }
+
   if (isParam && !other.isParam) {
     // If a param is required, can't return a non-param.
     invalidate();
@@ -1116,6 +1160,14 @@ void KindProperties::strictCombineWith(const KindProperties& other) {
   // into a reference and const will happen later.
   // leave isRef and isConst as specified.
   // We could do some checking now, but that might be a bit premature.
+}
+
+types::QualifiedType::Kind KindProperties::combineKindsMeet(
+    types::QualifiedType::Kind kind1, types::QualifiedType::Kind kind2) {
+  auto kp1 = KindProperties::fromKind(kind1);
+  auto kp2 = KindProperties::fromKind(kind2);
+  kp1.combineWithMeet(kp2);
+  return kp1.toKind();
 }
 
 QualifiedType::Kind KindProperties::toKind() const {
@@ -1163,7 +1215,7 @@ commonType(Context* context,
     }
     auto kind = type.kind();
     auto typeProperties = KindProperties::fromKind(kind);
-    properties.combineWith(typeProperties);
+    properties.combineWithJoin(typeProperties);
   }
 
   if (requiredKind) {

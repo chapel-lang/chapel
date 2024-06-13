@@ -76,8 +76,13 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
         $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
     }
 
+    $repo_cache_path = "/missing";
+    if (exists($ENV{'REPO_CACHE_PATH'})) {
+        $repo_cache_path = $ENV{'REPO_CACHE_PATH'};
+    }
+
     print "[gen_release] Cloning the sources (repo: $git_url branch: $git_branch)...\n";
-    SystemOrDie("git clone --branch $git_branch $git_url $rootdir");
+    SystemOrDie("git clone --reference-if-able \"$repo_cache_path/chapel.git\" --branch $git_branch $git_url $rootdir");
 
     if (exists($ENV{'CHPL_GEN_RELEASE_COMMIT'})) {
         $commit = $ENV{'CHPL_GEN_RELEASE_COMMIT'};

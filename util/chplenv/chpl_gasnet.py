@@ -7,7 +7,7 @@ import os
 def get_version():
     version = overrides.get('CHPL_GASNET_VERSION')
     if not version:
-        version = '1'
+        version = 'ex'
     if version not in ("1", "ex"):
         error("CHPL_GASNET_VERSION must be '1' or 'ex'")
     return version

@@ -39,7 +39,7 @@ static int mrail_cq_write_send_comp(struct util_cq *cq,
 {
 	int ret = 0;
 
-	ofi_ep_tx_cntr_inc(&tx_buf->ep->util_ep);
+	ofi_ep_cntr_inc(&tx_buf->ep->util_ep, CNTR_TX);
 
 	if (tx_buf->flags & FI_COMPLETION) {
 		ret = ofi_cq_write(cq, tx_buf->context,
@@ -58,9 +58,9 @@ static int mrail_cq_write_send_comp(struct util_cq *cq,
 		fi_close(tx_buf->rndv_mr_fid);
 	}
 
-	ofi_ep_lock_acquire(&tx_buf->ep->util_ep);
+	ofi_genlock_lock(&tx_buf->ep->util_ep.lock);
 	ofi_buf_free(tx_buf);
-	ofi_ep_lock_release(&tx_buf->ep->util_ep);
+	ofi_genlock_unlock(&tx_buf->ep->util_ep.lock);
 
 	return ret;
 }
@@ -72,7 +72,7 @@ int mrail_cq_write_recv_comp(struct mrail_ep *mrail_ep, struct mrail_hdr *hdr,
 	FI_DBG(&mrail_prov, FI_LOG_CQ, "finish recv: length: %zu "
 	       "tag: 0x%" PRIx64 "\n", comp->len - sizeof(struct mrail_pkt),
 	       hdr->tag);
-	ofi_ep_rx_cntr_inc(&mrail_ep->util_ep);
+	ofi_ep_cntr_inc(&mrail_ep->util_ep, CNTR_RX);
 	if (!(recv->flags & FI_COMPLETION))
 		return 0;
 	return ofi_cq_write(mrail_ep->util_ep.rx_cq, recv->context,
@@ -87,7 +87,7 @@ static int mrail_cq_write_rndv_recv_comp(struct mrail_ep *mrail_ep,
 {
 	FI_DBG(&mrail_prov, FI_LOG_CQ, "finish rndv recv: length: %zu "
 	       "tag: 0x%" PRIx64 "\n", recv->rndv.len, recv->rndv.tag);
-	ofi_ep_rx_cntr_inc(&mrail_ep->util_ep);
+	ofi_ep_cntr_inc(&mrail_ep->util_ep, CNTR_RX);
 	if (!(recv->flags & FI_COMPLETION))
 		return 0;
 	return ofi_cq_write(mrail_ep->util_ep.rx_cq, recv->context,
@@ -271,7 +271,7 @@ int mrail_cq_process_buf_recv(struct fi_cq_tagged_entry *comp,
 				"Unable to write truncation error to util cq\n");
 			retv = ret;
 		}
-		mrail_cntr_incerr(mrail_ep->util_ep.rx_cntr);
+		mrail_cntr_incerr(mrail_ep->util_ep.cntrs[CNTR_RX]);
 		goto out;
 	}
 	ret = mrail_cq_write_recv_comp(mrail_ep, &mrail_pkt->hdr, comp, recv);
@@ -339,7 +339,7 @@ static int mrail_process_ooo_recvs(struct mrail_ep *mrail_ep,
 	struct mrail_recv *recv;
 	int ret;
 
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	ooo_recv = mrail_get_next_recv(peer_info);
 	while (ooo_recv) {
 		FI_DBG(&mrail_prov, FI_LOG_CQ, "found ooo_recv seq=%d\n",
@@ -348,7 +348,7 @@ static int mrail_process_ooo_recvs(struct mrail_ep *mrail_ep,
 		 * us to use peer_info->addr as an int here. */
 		recv = mrail_match_recv(mrail_ep, &ooo_recv->comp,
 				(int) peer_info->addr);
-		ofi_ep_lock_release(&mrail_ep->util_ep);
+		ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 
 		if (recv) {
 			ret = mrail_cq_process_buf_recv(&ooo_recv->comp, recv);
@@ -356,11 +356,11 @@ static int mrail_process_ooo_recvs(struct mrail_ep *mrail_ep,
 				return ret;
 		}
 
-		ofi_ep_lock_acquire(&mrail_ep->util_ep);
+		ofi_genlock_lock(&mrail_ep->util_ep.lock);
 		ofi_buf_free(ooo_recv);
 		ooo_recv = mrail_get_next_recv(peer_info);
 	}
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 	return 0;
 }
 
@@ -439,14 +439,14 @@ static int mrail_handle_recv_completion(struct fi_cq_tagged_entry *comp,
 			"ep=%p peer=%d received seq=%d, expected=%d\n",
 			mrail_ep, (int)peer_info->addr, seq_no,
 			peer_info->expected_seq_no);
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	if (seq_no == peer_info->expected_seq_no) {
 		/* This message was received in order */
 		peer_info->expected_seq_no++;
 		/* Requesting FI_AV_TABLE from the underlying provider allows
 		 * us to use src_addr as an int here. */
 		recv = mrail_match_recv(mrail_ep, comp, (int) src_addr);
-		ofi_ep_lock_release(&mrail_ep->util_ep);
+		ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 
 		if (recv) {
 			ret = mrail_cq_process_buf_recv(comp, recv);
@@ -461,7 +461,7 @@ static int mrail_handle_recv_completion(struct fi_cq_tagged_entry *comp,
 		 * Save it into the out-of-order recv queue.
 		 */
 		mrail_save_ooo_recv(mrail_ep, peer_info, seq_no, comp);
-		ofi_ep_lock_release(&mrail_ep->util_ep);
+		ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 		ret = 0;
 	}
 exit:
@@ -536,9 +536,9 @@ static void mrail_handle_rma_completion(struct util_cq *cq,
 		}
 
 		if (comp->flags & FI_WRITE)
-			ofi_ep_wr_cntr_inc(&req->mrail_ep->util_ep);
+			ofi_ep_cntr_inc(&req->mrail_ep->util_ep, CNTR_WR);
 		else
-			ofi_ep_rd_cntr_inc(&req->mrail_ep->util_ep);
+			ofi_ep_cntr_inc(&req->mrail_ep->util_ep, CNTR_RD);
 
 		mrail_free_req(req->mrail_ep, req);
 	}
@@ -582,9 +582,9 @@ void mrail_poll_cq(struct util_cq *cq)
 				if (tx_buf->hdr.protocol_cmd == MRAIL_RNDV_REQ) {
 					/* buf will be freed when ACK comes */
 				} else if (tx_buf->hdr.protocol_cmd == MRAIL_RNDV_ACK) {
-					ofi_ep_lock_acquire(&tx_buf->ep->util_ep);
+					ofi_genlock_lock(&tx_buf->ep->util_ep.lock);
 					ofi_buf_free(tx_buf);
-					ofi_ep_lock_release(&tx_buf->ep->util_ep);
+					ofi_genlock_unlock(&tx_buf->ep->util_ep.lock);
 				}
 			} else {
 				ret = mrail_cq_write_send_comp(cq, tx_buf);

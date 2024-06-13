@@ -71,8 +71,8 @@ for l in lines:
         for m in re.finditer(r'proc (\S*?)\(', l):
             name = m.group(1)
             sets[state].add(name)
-        # add params
-        for m in re.finditer(r'param (\S*?) +=', l):
+        # add params, ignore configs
+        for m in re.finditer(r'(?<!config )param (\S*?) +=', l):
             name = m.group(1)
             sets[state].add(name)
         # parenless proc params

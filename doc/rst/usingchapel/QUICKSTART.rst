@@ -40,7 +40,9 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
          cd chapel-2.0.0
 
-   c. Set up your environment for Chapel's Quickstart mode.
+   c. Make sure you are doing the install on a machine with > 4GB of memory.
+
+   d. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
       see :ref:`quickstart-with-other-shells` below.
 
@@ -48,7 +50,7 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
          source util/quickstart/setchplenv.bash
 
-   d. Use GNU make to build Chapel.  On some systems, you may have to
+   e. Use GNU make to build Chapel.  On some systems, you may have to
       use ``gmake`` if ``make`` is not a GNU version.
 
       .. code-block:: bash
@@ -96,18 +98,22 @@ rebuild Chapel from source in a different configuration:
   option; LLVM is the default back-end, which needs to be available for
   full functionality.  There are a few options for using LLVM:
 
-  - Ensure that you have a compatible version of LLVM installed on
-    your system and set ``CHPL_LLVM=system``. Once you have it working,
-    you can leave ``CHPL_LLVM`` unset and Chapel should detect it if it
-    is in your path. See :ref:`readme-prereqs` for details on the
-    currently supported LLVM versions.
+  - Ensure that you have a compatible version of LLVM installed on your
+    system and enable it with ``export CHPL_LLVM=system``.  Once you have
+    it working, you can leave ``CHPL_LLVM`` unset and Chapel should
+    detect it if it is in your path. See :ref:`readme-prereqs` for
+    details on the currently supported LLVM versions.
 
-  - Or, set ``CHPL_LLVM=bundled`` to have Chapel build and use the bundled
-    version of LLVM. Note that building the bundled version of LLVM
-    can take a long time and requires CMake version 3.13.4 or higher.
+  - Or, use ``export CHPL_LLVM=bundled`` to have Chapel build and use the
+    bundled version of LLVM. Note that building the bundled version of
+    LLVM can take a long time and requires CMake version 3.13.4 or
+    higher.
 
-  - set ``CHPL_LLVM=none`` to continue using the C back-end rather
+  - Use ``export CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM
+
+  Please see :ref:`readme-chplenv.CHPL_LLVM` for more information about
+  ``CHPL_LLVM`` and related configuration.
 
 * If you are interested in building Chapel to support multiple compute
   nodes (locales), refer to :ref:`readme-multilocale` for other

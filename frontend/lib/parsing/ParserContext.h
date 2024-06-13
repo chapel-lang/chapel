@@ -69,6 +69,7 @@ struct ParserContext {
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
   bool isBuildingFormal;
+  AstNode* varDestinationExpr;
   AttributeGroupParts attributeGroupParts;
   bool hasAttributeGroupParts;
   int numAttributesBuilt;
@@ -109,6 +110,7 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
+    this->varDestinationExpr      = nullptr;
     this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
@@ -161,6 +163,8 @@ struct ParserContext {
 
   bool noteIsBuildingFormal(bool isBuildingFormal);
   bool noteIsVarDeclConfig(bool isConfig);
+  void noteVarDestinationExpr(AstNode* targetExpr);
+  owned<AstNode> consumeVarDestinationExpr();
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclStateOnError();
   void resetDeclState();
@@ -314,6 +318,7 @@ struct ParserContext {
 
   Identifier* buildEmptyIdent(YYLTYPE location);
   Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
+  Identifier* buildAttributeIdent(YYLTYPE location, PODUniqueString name);
 
   AstNode* buildPrimCall(YYLTYPE location, MaybeNamedActualList* lst);
 

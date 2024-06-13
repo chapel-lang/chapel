@@ -32,7 +32,7 @@ def CompVersion(version_string):
     are not specified, 0 will be used for their value(s)
     """
     CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
-    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
+    match = re.search(u"(\\d+)(\\.(\\d+))?(\\.(\\d+))?(\\.(\\d+))?", version_string)
     if match:
         major    = int(match.group(1))
         minor    = int(match.group(3) or 0)

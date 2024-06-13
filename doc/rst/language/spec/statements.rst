@@ -623,6 +623,8 @@ a parenthesized expression-list, the listed expressions must support
 zippered iteration.
 
 .. index::
+   single: zip
+   pair: keywords; zip
    single: zippered iteration
    single: iteration; zippered
 .. _Zippered_Iteration:
@@ -665,6 +667,7 @@ support iteration over a 2D `m` x `n` space as well.
 
 .. index::
    single: statements; param for
+   single: for param
    single: for loops; param
    pair: for; param
 .. _Parameter_For_Loops:

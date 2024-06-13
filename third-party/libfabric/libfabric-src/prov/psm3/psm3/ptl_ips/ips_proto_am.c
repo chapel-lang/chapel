@@ -198,7 +198,7 @@ am_short_reqrep(ips_scb_t *scb, struct ips_epaddr *ipsaddr,
 	int i, hdr_qwords = IPS_AM_HDR_NARGS;
 	struct ips_proto *proto = ((psm2_epaddr_t)ipsaddr)->proto;
 
-	psmi_assert(proto->msgflowid < EP_FLOW_LAST);
+	psmi_assert(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 
 	struct ips_flow *flow = &ipsaddr->flows[proto->msgflowid];
 
@@ -536,7 +536,7 @@ int psm3_ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 	int ret = IPS_RECVHDRQ_CONTINUE;
 	enum ips_msg_order msgorder;
 
-	psmi_assert(flowid < EP_FLOW_LAST);
+	psmi_assert(flowid < EP_NUM_FLOW_ENTRIES);
 	flow = &ipsaddr->flows[flowid];
 	/*
 	 * Based on AM request/reply traffic pattern, if we don't have a reply

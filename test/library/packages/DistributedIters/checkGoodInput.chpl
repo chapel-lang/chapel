@@ -48,7 +48,7 @@ const testDomainLiteral={1..n};
 var testAssociativeDomain:domain(int);
 testAssociativeDomain += 3;
 var testSparseDomain:sparse subdomain(testDomainLiteral);
-const testBlockDistributedDomain={1..n} dmapped blockDist(boundingBox={1..n});
+const testBlockDistributedDomain={1..n} dmapped new blockDist(boundingBox={1..n});
 
 select mode
 {

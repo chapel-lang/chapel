@@ -131,7 +131,9 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
         CHPL_ASSERT(varargs->initExpression() == nullptr);
       }
 
-      auto fd = UntypedFnSignature::FormalDetail(name, hasDefault,
+      auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                    : UntypedFnSignature::DK_NO_DEFAULT;
+      auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
                                                  decl, decl->isVarArgFormal());
       formals.push_back(fd);
     }
@@ -182,6 +184,25 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForIdQuery(context, functionId);
 }
 
+static UniqueString getCallName(const uast::Call* call) {
+  UniqueString name;
+  // Get the name of the called expression.
+  if (auto op = call->toOpCall()) {
+    name = op->op();
+  } else if (auto called = call->calledExpression()) {
+    if (auto calledIdent = called->toIdentifier()) {
+      name = calledIdent->name();
+    } else if (auto calledDot = called->toDot()) {
+      name = calledDot->field();
+    } else if (auto op = called->toOpCall()) {
+      name = op->op();
+    } else {
+      CHPL_UNIMPL("CallInfo without a name");
+    }
+  }
+  return name;
+}
+
 CallInfo CallInfo::createSimple(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -191,13 +212,7 @@ CallInfo CallInfo::createSimple(const uast::FnCall* call) {
   std::vector<CallInfoActual> actuals;
 
   // set the name (simple cases only)
-  if (auto called = call->calledExpression()) {
-    if (auto id = called->toIdentifier()) {
-      name = id->name();
-    }
-  }
-
-  CHPL_ASSERT(!name.isEmpty());
+  name = getCallName(call);
 
   int i = 0;
   for (auto actual : call->actuals()) {
@@ -349,6 +364,14 @@ tryGetType(const AstNode* node, const ResolutionResultByPostorderID& byPostorder
   return {};
 }
 
+static QualifiedType convertToInitReceiverType(const QualifiedType original) {
+  if (original.kind() != QualifiedType::TYPE &&
+      original.kind() != QualifiedType::PARAM) {
+    return QualifiedType(QualifiedType::INIT_RECEIVER, original.type());
+  }
+  return original;
+}
+
 CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
@@ -368,20 +391,7 @@ CallInfo CallInfo::create(Context* context,
     actualAsts->clear();
   }
 
-  // Get the name of the called expression.
-  if (auto op = call->toOpCall()) {
-    name = op->op();
-  } else if (auto called = call->calledExpression()) {
-    if (auto calledIdent = called->toIdentifier()) {
-      name = calledIdent->name();
-    } else if (auto calledDot = called->toDot()) {
-      name = calledDot->field();
-    } else if (auto op = called->toOpCall()) {
-      name = op->op();
-    } else {
-      CHPL_UNIMPL("CallInfo without a name");
-    }
-  }
+  name = getCallName(call);
 
   // Set up a method call if relevant.
   if (auto calledExpr = call->calledExpression()) {
@@ -418,11 +428,19 @@ CallInfo CallInfo::create(Context* context,
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
-      actuals.push_back(CallInfoActual(*dotReceiverType, USTR("this")));
+
+      // If this is a receiver to 'init', adjust the receiver type to
+      // use the INIT_RECEIVER intent.
+      auto dotReceiverQt = *dotReceiverType;
+      if (name == USTR("init")) {
+        dotReceiverQt = convertToInitReceiverType(dotReceiverQt);
+      }
+
+      actuals.push_back(CallInfoActual(dotReceiverQt, USTR("this")));
       if (actualAsts != nullptr) {
         actualAsts->push_back(dotReceiver);
       }
-      calledType = *dotReceiverType;
+      calledType = dotReceiverQt;
       isMethodCall = true;
     }
   }
@@ -456,6 +474,12 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
+
+  if (ci.name() == USTR("init")) {
+    // For calls to 'init', tag the receiver with a special intent to
+    // relax some checks on its genericity.
+    receiverType = convertToInitReceiverType(receiverType);
+  }
 
   auto name = rename.isEmpty() ? ci.name_ : rename;
   return CallInfo(name, receiverType,
@@ -545,7 +569,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       entry.actualIdx_ = -1;
       entry.formalType_ = formalQT;
       entry.formalInstantiated_ = formalInstantiated;
-      entry.hasDefault_ = untyped->formalHasDefault(i);
+      entry.hasDefault_ = untyped->formalMightHaveDefault(i);
 
       entryIdx++;
     } else {
@@ -598,7 +622,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         entry.actualIdx_ = -1;
         entry.formalType_ = qt;
         entry.formalInstantiated_ = formalInstantiated;
-        entry.hasDefault_ = untyped->formalHasDefault(i);
+        entry.hasDefault_ = untyped->formalMightHaveDefault(i);
         entry.isVarArgEntry_ = true;
 
         entryIdx++;

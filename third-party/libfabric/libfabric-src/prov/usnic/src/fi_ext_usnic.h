@@ -42,7 +42,7 @@
 #include <stdint.h>
 #include <net/if.h>
 
-#define FI_PROTO_RUDP (100U | FI_PROV_SPECIFIC)
+#define FI_PROTO_RUDP (100U | (1UL << 31))
 
 #define FI_EXT_USNIC_INFO_VERSION 2
 

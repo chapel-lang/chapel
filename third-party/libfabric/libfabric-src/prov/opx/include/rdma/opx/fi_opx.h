@@ -48,6 +48,7 @@
 #include <rdma/fi_errno.h>
 #include <ofi_lock.h>
 #include <uthash.h>
+#include <ofi_list.h>
 
 // #define FI_OPX_TRACE 1
 
@@ -100,6 +101,55 @@ struct fi_opx_daos_hfi_rank {
 	UT_hash_handle 	hh;         /* makes this structure hashable */
 };
 
+enum opx_hfi1_type {
+	OPX_HFI1_UNDEF		= 0,	// undefined
+	OPX_HFI1_WFR		= 4,	// Omni-path (all generations)
+	OPX_HFI1_JKR		= 5 	// CN5000 (initial generation)
+};
+
+struct fi_opx_hfi_local_info {
+	uint8_t  hfi_unit;
+	uint16_t lid;
+	enum opx_hfi1_type type;
+	struct fi_opx_hfi_local_lookup *hfi_local_lookup_hashmap;
+	int sim_fd;                     // simulator fd
+};
+
+#ifdef OPX_SIM
+/* Build L8SIM support */
+#define  OPX_SIM_ENABLED
+#warning OPX_SIM enabled
+
+#if (!defined(OPX_WFR) && !defined(OPX_JKR))
+#warning PICK ONE OPX_WFR or OPX_JKR
+#endif
+
+#else
+/* Build only "real" HFI1 support (default) */
+#undef  OPX_SIM_ENABLED
+#endif
+
+/* Build constant for JKR/WFR path optimization */
+#if defined(OPX_WFR)
+#define OPX_HFI1_TYPE OPX_HFI1_WFR
+#elif defined(OPX_JKR)
+#define OPX_HFI1_TYPE OPX_HFI1_JKR
+#else
+/* Both JKR and WFR runtime support (not constant) */
+#define OPX_HFI1_TYPE fi_opx_global.hfi_local_info.type
+#endif
+
+struct fi_opx_hfi_local_lookup_key {
+	uint16_t lid;
+};
+
+struct fi_opx_hfi_local_lookup {
+	struct fi_opx_hfi_local_lookup_key key;
+	uint8_t  hfi_unit;
+	uint32_t instance;
+	UT_hash_handle 	hh;         /* makes this structure hashable */
+};
+
 struct fi_opx_global_data {
 	struct fi_info		*info;
 	struct fi_domain_attr	*default_domain_attr;
@@ -109,6 +159,8 @@ struct fi_opx_global_data {
 	struct fi_provider 	*prov;
 	struct fi_opx_daos_hfi_rank	*daos_hfi_rank_hashmap;
 	enum fi_progress	progress;
+	struct dlist_entry	tid_domain_list;
+	struct fi_opx_hfi_local_info hfi_local_info;
 };
 
 extern struct fi_opx_global_data fi_opx_global;
@@ -136,11 +188,11 @@ So for example, 2k ring length (0-based) mask is
 2047 * 32 = 0xFFE0  
 */
 static const uint64_t FI_OPX_HDRQ_MASK_RUNTIME	= 0ULL;
-static const uint64_t FI_OPX_HDRQ_MASK_2048 		= 0X000000000000FFE0UL;
-static const uint64_t FI_OPX_HDRQ_MASK_8192		= 0X000000000003FFE0UL;
+static const uint64_t FI_OPX_HDRQ_MASK_2048 	= 0X000000000000FFE0UL;
+static const uint64_t FI_OPX_HDRQ_MASK_8192	= 0X000000000003FFE0UL;
 
 
-#define FI_OPX_DEFAULT_MSG_ORDER										\
+#define FI_OPX_DEFAULT_MSG_ORDER						\
 		(FI_ORDER_ATOMIC_RAR | FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR | FI_ORDER_ATOMIC_WAW)
 
 #define FI_OPX_TXONLY_CAPS							\
@@ -149,17 +201,23 @@ static const uint64_t FI_OPX_HDRQ_MASK_8192		= 0X000000000003FFE0UL;
 #define FI_OPX_RXONLY_CAPS							\
 	( FI_RECV | FI_DIRECTED_RECV | FI_MULTI_RECV | FI_REMOTE_READ )
 
+#ifdef OPX_HMEM
 #define FI_OPX_BASE_CAPS							\
-	( FI_MSG | FI_TAGGED | FI_LOCAL_COMM | FI_REMOTE_COMM	\
+	( FI_MSG | FI_TAGGED | FI_LOCAL_COMM | FI_REMOTE_COMM			\
+	| FI_SOURCE | FI_NAMED_RX_CTX | FI_RMA | FI_ATOMIC | FI_HMEM )
+#else
+#define FI_OPX_BASE_CAPS							\
+	( FI_MSG | FI_TAGGED | FI_LOCAL_COMM | FI_REMOTE_COMM			\
 	| FI_SOURCE | FI_NAMED_RX_CTX | FI_RMA | FI_ATOMIC )
+#endif
 
 #define FI_OPX_DEFAULT_CAPS							\
 	(FI_OPX_BASE_CAPS | FI_OPX_TXONLY_CAPS | FI_OPX_RXONLY_CAPS)
 
-#define FI_OPX_DEFAULT_TX_CAPS						\
+#define FI_OPX_DEFAULT_TX_CAPS							\
 	(FI_OPX_BASE_CAPS | FI_OPX_TXONLY_CAPS)
 
-#define FI_OPX_DEFAULT_RX_CAPS						\
+#define FI_OPX_DEFAULT_RX_CAPS							\
 	(FI_OPX_BASE_CAPS | FI_OPX_RXONLY_CAPS)
 
 #define FI_OPX_DEFAULT_MODE							\

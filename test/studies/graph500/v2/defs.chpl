@@ -4,7 +4,7 @@
 module Graph500_defs
 {
 
-//  use BlockDist;
+  use BlockDist;
 //  config param DISTRIBUTION_TYPE = "BLOCK";
   config param DISTRIBUTION_TYPE = "";
   config param REPRODUCIBLE_PROBLEMS = true;
@@ -24,7 +24,7 @@ module Graph500_defs
 
   const edgelist_domain =
     if DISTRIBUTION_TYPE == "BLOCK" then
-      {1..N_RAWEDGES} dmapped blockDist ( {1..N_RAWEDGES} )
+      {1..N_RAWEDGES} dmapped new blockDist ( {1..N_RAWEDGES} )
     else
       {1..N_RAWEDGES} ;
 
@@ -46,7 +46,7 @@ module Graph500_defs
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped new blockDist ( {1..N_VERTICES} )
       else
         {1..N_VERTICES} ;
 

@@ -56,6 +56,7 @@ ERROR_CLASS(IncompatibleTypeAndInit, const uast::AstNode*, const uast::AstNode*,
 ERROR_CLASS(InvalidClassCast, const uast::PrimCall*, types::QualifiedType)
 ERROR_CLASS(InvalidIndexCall, const uast::FnCall*, types::QualifiedType)
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
+ERROR_CLASS(InvalidParamCast, const uast::AstNode*, types::QualifiedType, types::QualifiedType)
 ERROR_CLASS(InvalidSuper, const uast::Identifier*, types::QualifiedType)
 ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)

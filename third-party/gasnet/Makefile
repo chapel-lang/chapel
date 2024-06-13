@@ -17,12 +17,9 @@ endif
 
 # PSHM (inter-Process SHared Memory) provide a mechanism for gasnet instances
 # on the same node to communicate through shared memory instead of the real
-# conduit. In "production" we only run a single gasnet client per node so this
-# doesn't help, but for smp it's required, and we've noticed faster testing
-# times since we do local spawning, which will result in multiple gasnet
-# clients on the same node. Note that pshm only works with segment fast/large.
-SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
-ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large smp-fast smp-large))
+# conduit. This is critical to communication performance for co-locales.
+# Note that pshm only works with segment fast/large.
+ifneq (,$(findstring $(CHPL_MAKE_COMM_SEGMENT), fast large))
 CHPL_GASNET_CFG_OPTIONS += --enable-pshm
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
@@ -91,8 +88,15 @@ GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 MPI_CC += $(SHARED_LIB_CFLAGS)
 endif
 
-# Disable hwloc until https://github.com/chapel-lang/chapel/issues/18050
+ifeq ($(CHPL_MAKE_HWLOC),bundled)
+CHPL_GASNET_CFG_OPTIONS += --with-hwloc-home=$(HWLOC_INSTALL_DIR)
+endif
+ifeq ($(CHPL_MAKE_HWLOC),system)
+CHPL_GASNET_CFG_OPTIONS += --with-hwloc-home=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+endif
+ifeq ($(CHPL_MAKE_HWLOC),none)
 CHPL_GASNET_CFG_OPTIONS += --disable-hwloc
+endif
 
 # Disable IBV ODP due to https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4008
 CHPL_GASNET_CFG_OPTIONS += --disable-ibv-odp

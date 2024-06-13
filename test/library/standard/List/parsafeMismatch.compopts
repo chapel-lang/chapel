@@ -1,0 +1,3 @@
+ # parsafeMismatch.true.good
+-swarnForListParsafeMismatch=true # parsafeMismatch.true.good
+-swarnForListParsafeMismatch=false # parsafeMismatch.false.good

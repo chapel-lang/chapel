@@ -578,7 +578,7 @@ bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr) {
   }
 }
 
-static bool considerForOuter(Symbol* sym) {
+bool considerForOuter(Symbol* sym) {
   if (isTypeSymbol(sym->defPoint->parentSymbol)) {
     // Fields are considered 'outer'
     return true;

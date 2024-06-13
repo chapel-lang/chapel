@@ -49,6 +49,7 @@
 
 #ifdef HAVE_LLVM
 
+#include "llvmTracker.h"
 #include "llvmUtil.h"
 
 #include "llvm/Pass.h"
@@ -643,13 +644,16 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Dst = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
+        trackLLVMValue(i8Dst);
 
         Type* StoreType = oldStore->getValueOperand()->getType();
         Type* PtrType = StoreType->getPointerTo(0);
         Value* Dst = irBuilder.CreatePointerCast(i8Dst, PtrType);
+        trackLLVMValue(Dst);
 
         StoreInst* newStore =
           irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
+        trackLLVMValue(newStore);
         newStore->setAlignment(oldStore->getAlign());
         newStore->takeName(oldStore);
       }
@@ -657,6 +661,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     // cast the pointer that was load/stored to i8 if necessary.
     Value *globalPtr = irBuilder.CreatePointerCast(StartPtr, globalInt8PtrTy);
+    trackLLVMValue(globalPtr);
 
     // Get a Constant* for the length.
     Constant* len = ConstantInt::get(sizeTy, Range.End-Range.Start, false);
@@ -694,6 +699,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     args[3] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
 
     Instruction* aMemCpy = irBuilder.CreateCall(func, args);
+    trackLLVMValue(aMemCpy);
 
     if (!Range.TheStores.empty())
       aMemCpy->setDebugLoc(Range.TheStores[0]->getDebugLoc());
@@ -721,13 +727,16 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
+        trackLLVMValue(i8Src);
 
         Type* LoadType = oldLoad->getType();
         Type* PtrType = LoadType->getPointerTo(0);
 
         Value* Src = irBuilder.CreatePointerCast(i8Src, PtrType);
+        trackLLVMValue(Src);
 
         LoadInst* newLoad = irBuilder.CreateLoad(LoadType, Src);
+        trackLLVMValue(newLoad);
 
         newLoad->setAlignment(oldLoad->getAlign());
         oldLoad->replaceAllUsesWith(newLoad);

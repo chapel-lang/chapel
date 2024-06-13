@@ -173,6 +173,36 @@ const ModuleVec& parse(Context* context, UniqueString path,
 const ModuleVec& parseToplevel(Context* context, UniqueString path);
 
 /**
+  Parse a file (with parentSymbolPath="", so not a submodule)
+  and return the IDs of the top-level modules that it contains.
+ */
+const std::vector<ID>& toplevelModulesInFile(Context* context,
+                                             UniqueString path);
+
+/**
+  Given the modules from files named on the command line,
+  determine which module is the main module, and return it.
+
+  requestedMainModuleName can be "", but if it is not, it should
+  be the name of a module in commandLineModules.
+ */
+ID findMainModule(Context* context,
+                  std::vector<ID> commandLineModules,
+                  UniqueString requestedMainModuleName);
+
+/**
+  Convenience function to compute the main module ID and command-line module IDs
+  based upon paths provided at the command line.
+
+  Returns the command-line module IDs and sets mainModule to the main module ID.
+ */
+std::vector<ID>
+findMainAndCommandLineModules(Context* context,
+                              std::vector<UniqueString> paths,
+                              UniqueString requestedMainModuleName,
+                              ID& mainModule);
+
+/**
   Return the current module search path.
  */
 const std::vector<UniqueString>& moduleSearchPath(Context* context);
@@ -331,6 +361,16 @@ filePathIsInBundledModule(Context* context, UniqueString filePath);
 const uast::Module* getToplevelModule(Context* context, UniqueString name);
 
 /**
+ Given a particular (presumably standard) module, return the ID of a symbol
+ with the given name in that module. Beyond creating the ID, this also ensures
+ that the standard module is parsed, and thus, that 'idToAst' on the returned
+ ID will return a non-null value.
+ */
+ID getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName);
+
+/**
  This query parses a submodule for 'include submodule'.
  Returns nullptr if no such file can be found.
  */
@@ -346,6 +386,11 @@ const uast::AstNode* idToAst(Context* context, ID id);
  Returns the tag for the node with the given ID.
  */
 uast::AstTag idToTag(Context* context, ID id);
+
+/**
+  Returns true if the ID is a module.
+ */
+bool idIsModule(Context* context, ID id);
 
 /**
  Returns true if the ID is a parenless function.
@@ -408,6 +453,11 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
   or the empty ID when given a toplevel module.
  */
 ID idToParentModule(Context* context, ID id);
+
+/**
+  Returns 'true' if ID refers to a toplevel module.
+ */
+bool idIsToplevelModule(Context* context, ID id);
 
 /**
  Given an ID that represents a Function, get the declared return

@@ -36,15 +36,7 @@ static Context* context;
 
 // Use a single context with revisions to get this test running faster.
 static void setupContext() {
-  std::string chpl_home;
-  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
-    chpl_home = chpl_home_env;
-  } else {
-    printf("CHPL_HOME must be set");
-    exit(1);
-  }
-  Context::Configuration config;
-  config.chplHome = chpl_home;
+  auto config = getConfigWithHome();
   context = new Context(config);
 }
 

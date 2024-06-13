@@ -81,14 +81,6 @@ psm3_tcp_proto_local_ack(struct ips_proto *proto, struct ips_flow *flow)
 		flow->scb_num_unacked--;
 		psmi_assert(flow->scb_num_unacked >= flow->scb_num_pending);
 #endif
-#ifdef PSM_ONEAPI
-		if (scb->scb_flags & IPS_SEND_FLAG_USE_GDRCOPY) {
-			psm3_sockets_gdr_munmap_gpu_to_host_addr(
-					scb->gdr_addr, scb->gdr_size,
-					0, proto->ep);
-			scb->scb_flags &= ~IPS_SEND_FLAG_USE_GDRCOPY;
-		}
-#endif
 		if (scb->callback)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);

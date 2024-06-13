@@ -334,7 +334,7 @@ module CommDiagnostics
       if first then writer.write("<no communication>");
       writer.write(")");
     }
-  };
+  }
 
   /*
     The Chapel record type inherits the comm layer definition of it.

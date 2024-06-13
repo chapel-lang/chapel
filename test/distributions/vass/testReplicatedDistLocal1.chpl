@@ -5,7 +5,7 @@ use ReplicatedDist;
 const ls = Locales;
 writeln("running on locales ", ls.domain);
 
-var d = {1..3,1..3} dmapped replicatedDist(ls);
+var d = {1..3,1..3} dmapped new replicatedDist(ls);
 var a: [d] int;
 
 //

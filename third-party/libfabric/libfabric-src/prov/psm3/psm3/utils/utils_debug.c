@@ -100,6 +100,8 @@ static void hfi_brake_debug(void) __attribute__ ((constructor));
      file system that is common to all hosts where you will run your code.
      Also, in the script, make sure to propagate the "PSM3_BRAKE_FILE_NAME"
      env var to all hosts.
+     Note: this variable can only be set in the environment, it cannot be
+     set in /etc/psm3.conf
   3. Bring up 3 putty sessions to one of the hosts that your script uses.
   4. In putty session number 1, touch the PSM3_BRAKE_FILE and sync.
   5. In putty session number 1, start the script.   You should see messages
@@ -125,6 +127,8 @@ static void hfi_brake_debug(void)
 {
 	struct stat buff;
 	char hostname[80];
+	// can't use psm3_env_get since called in a constructor before psm3_init
+	// so /etc/psm3.conf can't control this setting
 	const char *hfi_brake_file_name = getenv("PSM3_BRAKE_FILE_NAME");
 	gethostname(hostname, 80);
 	hostname[sizeof(hostname) - 1] = '\0';
@@ -166,8 +170,10 @@ static void psm3_init_mylabel(void)
 	    || (((e = getenv("MPI_NRANKS")) && *e)) // Platform MPI
 	    || (((e = getenv("MPIRUN_NPROCS")) && *e)) // older MPICH
 	    // N/A || (((e = getenv("PSC_MPI_TBD")) && *e)) // pathscale MPI
+	    || (((e = getenv("WORLD_SIZE")) && *e)) // pyTorch torchrun
 	    || (((e = getenv("SLURM_NTASKS")) && *e)) // SLURM
 	    || (((e = getenv("SLURM_NPROCS")) && *e)) // older SLURM
+	    || (((e = getenv("CCL_LOCAL_SIZE")) && *e)) // oneCCL 1 node w/o launcher
 	) {
 		char *ep;
 		unsigned long val;
@@ -181,7 +187,9 @@ static void psm3_init_mylabel(void)
 	    || (((e = getenv("MPI_LOCALRANKID")) && *e)) // Platform MPI
 	    // N/A | (((e = getenv("MPIRUN_TBD")) && *e)) // older MPICH
 	    || (((e = getenv("PSC_MPI_NODE_RANK")) && *e)) // pathscale MPI
+	    || (((e = getenv("LOCAL_RANK")) && *e)) // pyTorch torchrun
 	    || (((e = getenv("SLURM_LOCALID")) && *e)) // SLURM
+	    || (((e = getenv("CCL_LOCAL_RANK")) && *e)) // oneCCL 1 node w/o launcher
 	) {
 		char *ep;
 		unsigned long val;
@@ -195,7 +203,9 @@ static void psm3_init_mylabel(void)
 	    || (((e = getenv("MPI_LOCALNRANKS")) && *e)) // Platform MPI
 	    // N/A || (((e = getenv("MPIRUN_TBD")) && *e)) // older MPICH
 	    || (((e = getenv("PSC_MPI_PPN")) && *e)) // pathscale MPI
+	    || (((e = getenv("LOCAL_WORLD_SIZE")) && *e)) // pyTorch torchrun
 	    || (((e = getenv("SLURM_NTASKS_PER_NODE")) && *e)) // SLURM
+	    || (((e = getenv("CCL_LOCAL_SIZE")) && *e)) // oneCCL 1 node w/o launcher
 	) {
 		char *ep;
 		unsigned long val;
@@ -209,8 +219,10 @@ static void psm3_init_mylabel(void)
 	    || (((e = getenv("MPI_RANKID")) && *e)) // Platform MPI and *_NRANKS
 	    || (((e = getenv("MPIRUN_RANK")) && *e)) // older MPICH and *_NPROCS
 	    || (((e = getenv("PSC_MPI_RANK")) && *e)) // pathscale MPI
+	    || (((e = getenv("RANK")) && *e)) // pyTorch torchrun
 	    || (((e = getenv("SLURM_TASKID")) && *e)) // SLURM
 	    || (((e = getenv("SLURM_PROCID")) && *e)) // SLURM
+	    || (((e = getenv("CCL_LOCAL_RANK")) && *e)) // oneCCL 1 node w/o launcher
 	) {
 		char *ep;
 		unsigned long val;
@@ -332,6 +344,8 @@ static void psm3_init_backtrace(void)
 	act.sa_sigaction = hfi_sighdlr;
 	act.sa_flags = SA_SIGINFO;
 
+	// since this is called in a constructor, prior to psm3_init
+	// we must use getenv and /etc/psm3.conf can't control this setting
 	if (getenv("PSM3_BACKTRACE")) {
 		/* permanent, although probably
 		   undocumented way to disable backtraces. */
@@ -359,6 +373,8 @@ static char *check_dbgfile_env(char *env) {
    %h is expanded to the hostname, and %p to the pid, if present. */
 static void psm3_init_dbgfile(void)
 {
+	// since this is called in a constructor, prior to psm3_init,
+	// we must use getenv and /etc/psm3.conf can't control this setting
 	char *fname = getenv("PSM3_DEBUG_FILENAME");
 	char *fname1, *fname2; /* for dups */
 	char *dname, *bname, *exph, *expp, tbuf[1024], rbuf[PATH_MAX], fnbuf[PATH_MAX];
@@ -486,29 +502,33 @@ static void psm3_fini_backtrace(void)
 
 void psm3_dump_buf(uint8_t *buf, uint32_t len)
 {
-	int i, j;
+	int i, j, print_len;
+	char tmp[1080] = {}; // max length is 1024 + 7 + 16*3 = 1078
 	for (i=0; i<len; i += 16 ) {
-		fprintf(psm3_dbgout, "%s: 0x%04x:", psm3_mylabel, i);
-		for (j=0; j<16 && i+j < len; j++)
-			fprintf(psm3_dbgout, " %02x", (unsigned)buf[i+j]);
-		fprintf(psm3_dbgout, "\n");
+		print_len = snprintf(tmp, sizeof(tmp), "%s: 0x%04x:", psm3_mylabel, i);
+		for (j=0; j<16 && i+j < len && print_len < sizeof(tmp) - 1; j++)
+			print_len += snprintf(tmp + print_len, sizeof(tmp) - print_len, " %02x", (unsigned)buf[i+j]);
+
+		fprintf(psm3_dbgout, "%s\n", tmp);
+		fflush(psm3_dbgout);
 	}
 }
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 void psm3_dump_gpu_buf(uint8_t *buf, uint32_t len)
 {
-	int i, j;
+	int i, j, print_len;
 	uint8_t hbuf[1024];
-
+	char tmp[1080] = {};
 	for (i=0; i<len; i += 16 ) {
-		fprintf(psm3_dbgout, "%s: 0x%04x:", psm3_mylabel, i);
+		print_len = snprintf(tmp, sizeof(tmp), "%s: 0x%04x:", psm3_mylabel, i);
 		if (0 == i % 1024)
 			PSM3_GPU_MEMCPY_DTOH(hbuf, buf,
                                                 min(len-i, 1024));
-		for (j=0; j<16 && i+j < len; j++)
-			fprintf(psm3_dbgout, " %02x", (unsigned)hbuf[i%1024+j]);
-		fprintf(psm3_dbgout, "\n");
+		for (j=0; j<16 && i+j < len && print_len < sizeof(tmp) - 1; j++)
+			print_len += snprintf(tmp + print_len, sizeof(tmp) - print_len, " %02x", (unsigned)hbuf[i%1024+j]);
+		fprintf(psm3_dbgout, "%s\n", tmp);
+		fflush(psm3_dbgout);
 	}
 }
 #endif

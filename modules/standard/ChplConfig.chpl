@@ -129,7 +129,7 @@ module ChplConfig {
   CHPL_MEM = __primitive("get compiler variable", "CHPL_MEM");
 
   /* See :ref:`readme-chplenv.CHPL_MAKE` for more information. */
-  @unstable("'ChplConfig.CHPL_MAKE' is unstable and may be replaced with a different way to access this information in the future");
+  @unstable("'ChplConfig.CHPL_MAKE' is unstable and may be replaced with a different way to access this information in the future")
   param CHPL_MAKE:string;
   CHPL_MAKE = __primitive("get compiler variable", "CHPL_MAKE");
 

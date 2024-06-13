@@ -19,7 +19,7 @@
  */
 
 //
-// Launch assistance for the uGNI communication interface.
+// Launch assistance for the OFI communication interface.
 //
 
 #include <inttypes.h>

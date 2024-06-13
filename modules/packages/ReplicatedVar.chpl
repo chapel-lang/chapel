@@ -43,7 +43,7 @@ Limitations:
 
 .. code-block:: chapel
 
-   var replArray: [MyDomain dmapped replicatedDist()] real;
+   var replArray: [MyDomain dmapped new replicatedDist()] real;
 
 .. _ReplicatedVar_basic-usage:
 
@@ -84,7 +84,7 @@ modify the above variable declarations as follows:
 
 .. code-block:: chapel
 
-    var myRepVar: [rcDomainBase dmapped replicatedDist(myLocales,
+    var myRepVar: [rcDomainBase dmapped new replicatedDist(myLocales,
                      "over which to replicate 'myRepVar'")] MyType;
     var collected: [myLocales.domain] MyType;
 
@@ -236,7 +236,7 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
 
   // declare a replicated variable
   // DIFFERENT from rcExample(): the domain in myRepVar's type
-  var myRepVar: [rcDomainBase dmapped replicatedDist(localesToReplicateOver,
+  var myRepVar: [rcDomainBase dmapped new replicatedDist(localesToReplicateOver,
    "over which to replicate 'myRepVar' in rcExampleOverLocales()")] MyType;
 
   // initialize all copies to 'initVal'

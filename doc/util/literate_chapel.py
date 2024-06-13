@@ -11,7 +11,7 @@ def title_comment(line):
     return line.startswith('//') and len(line.lstrip('//').strip()) > 0
 
 def metadata_comment(line):
-    """Condition for a line t be a front matter comment"""
+    """Condition for a line to be a front matter comment"""
     return line.startswith('//') and re.match(r"^\/\/ [a-zA-Z]+:.*$", line)
 
 def to_pieces(handle, islearnChapelInYMinutes=False):
@@ -80,6 +80,10 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
         # Identification of line
         if commentdepth > 0 or commentends > 0:
             state = 'blockcomment'
+            if commentstarts > 0:
+                # reset indentation at the start of a block comment
+                #indentation = -1;
+                pass
         elif line.startswith('//'):
             state = 'linecomment'
         elif 'code' in laststate:
@@ -93,6 +97,7 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
                 # Strip white space for line comments
                 proseline = proseline.replace('//', '  ', 1)
                 proseline = proseline.strip()
+                indentation = -1 # indentation should be recomputed for /* */
             else:
                 # Preserve white space for block comments, for indent purposes
                 if commentstarts:
@@ -102,21 +107,25 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
                 # No need for trailing white space... ever
                 proseline = proseline.rstrip(' ')
 
-            # Handle indentation
-            if indentation == -1:
-                # Detect level of indentation (number of leading whitespaces)
-                baseline = len(proseline) - len(proseline.lstrip(' '))
-                if baseline > 0:
-                    # Set indentation for the proceeding block
-                    indentation = baseline
-                    # Set indentation for baseline to 0
-                    proseline = proseline.lstrip(' ')
-            else:
-                # Remove the amount of indent that was removed from baseline
-                if proseline.startswith(' '*indentation):
-                    proseline = proseline[indentation:]
-                else:
-                    proseline = proseline.lstrip(' ')
+                # Handle indentation for block comments
+                if indentation == -1 and proseline.strip() != "":
+                    # Detect level of indentation (count leading whitespaces)
+                    baseline = len(proseline) - len(proseline.lstrip(' '))
+                    if baseline > 0:
+                        # Set indentation for this block
+                        indentation = baseline
+                        # Set indentation for baseline to 0
+                        proseline = proseline.lstrip(' ')
+                    elif baseline == 0:
+                        indentation = 0
+                elif indentation > 0:
+                    # Remove the the leading whitespace according
+                    # to the indent level computed previously for this block
+                    if proseline.startswith(' '*indentation):
+                        proseline = proseline[indentation:]
+                    else:
+                        proseline = proseline.lstrip(' ')
+
             # Special case for multi line comment in learnChapelInYMinutes
             if islearnChapelInYMinutes and 'multi-line comment' in proseline:
                 push_line(' '*indentation + '/*')

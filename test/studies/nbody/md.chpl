@@ -20,7 +20,7 @@ config const
 config const n = 1000;
 const D_dr = {1..n};
 
-const D_distrib = D_dr dmapped blockDist(D_dr);
+const D_distrib = D_dr dmapped new blockDist(D_dr);
 var A, B: [D_distrib] real;
 
 proc computeOne(b_i, b_j) {

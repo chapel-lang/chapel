@@ -107,7 +107,7 @@ static ssize_t rxd_ep_cancel_recv(struct rxd_ep *ep, struct dlist_entry *list,
 	struct fi_cq_err_entry err_entry;
 	int ret = 0;
 
-	ofi_mutex_lock(&ep->util_ep.lock);
+	ofi_genlock_lock(&ep->util_ep.lock);
 
 	entry = dlist_remove_first_match(list, &rxd_match_ctx, context);
 	if (!entry)
@@ -127,7 +127,7 @@ static ssize_t rxd_ep_cancel_recv(struct rxd_ep *ep, struct dlist_entry *list,
 	rxd_rx_entry_free(ep, rx_entry);
 	ret = 1;
 out:
-	ofi_mutex_unlock(&ep->util_ep.lock);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 	return ret;
 }
 
@@ -263,12 +263,12 @@ static int rxd_ep_enable(struct rxd_ep *ep)
 	ep->tx_flags = rxd_tx_flags(ep->util_ep.tx_op_flags);
 	ep->rx_flags = rxd_rx_flags(ep->util_ep.rx_op_flags);
 
-	ofi_mutex_lock(&ep->util_ep.lock);
+	ofi_genlock_lock(&ep->util_ep.lock);
 	for (i = 0; i < ep->rx_size; i++) {
 		if (rxd_ep_post_buf(ep))
 			break;
 	}
-	ofi_mutex_unlock(&ep->util_ep.lock);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 	return 0;
 }
 
@@ -957,7 +957,7 @@ void rxd_ep_progress(struct util_ep *util_ep)
 
 	ep = container_of(util_ep, struct rxd_ep, util_ep);
 
-	ofi_mutex_lock(&ep->util_ep.lock);
+	ofi_genlock_lock(&ep->util_ep.lock);
 	for(ret = 1, i = 0;
 	    ret > 0 && (!rxd_env.spin_count || i < rxd_env.spin_count);
 	    i++) {
@@ -992,7 +992,7 @@ void rxd_ep_progress(struct util_ep *util_ep)
 	}
 
 out:
-	ofi_mutex_unlock(&ep->util_ep.lock);
+	ofi_genlock_unlock(&ep->util_ep.lock);
 }
 
 static int rxd_buf_region_alloc_fn(struct ofi_bufpool_region *region)

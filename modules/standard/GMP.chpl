@@ -227,6 +227,13 @@ module GMP {
   /* The GMP ``gmp_randstate_t`` type */
   extern type gmp_randstate_t = 1 * __gmp_randstate_struct;
 
+  /* We know that 'mp_exp_t' will be an integral type, but GMP isn't
+     specific about what size it will have. */
+  extern type mp_exp_t = c_long;
+  if c_sizeof(mp_exp_t) != c_sizeof(c_long) {
+    warning("GMP.chpl didn't get definition of 'mp_exp_t' correct");
+  }
+
   //
   // The organization of the following interfaces is aligned with
   //
@@ -912,6 +919,9 @@ module GMP {
 
   extern proc mpf_get_ui(const ref op: mpf_t) : c_ulong;
 
+  extern proc mpf_get_str(str: c_ptr(c_char), out expptr: mp_exp_t,
+                          base: c_int, n_digits: c_size_t,
+                          const in op: mpf_t): c_ptr(c_char);
 
   //
   // 7.5 Arithmetic Functions
@@ -1109,11 +1119,11 @@ module GMP {
   //
   // printf/scanf
   //
-  extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_printf(fmt: c_ptrConst(c_char), in arg...);
 
-  extern proc gmp_fprintf(fp: c_ptr(c_FILE), fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_fprintf(fp: c_ptr(c_FILE), fmt: c_ptrConst(c_char), in arg...);
 
-  extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), in arg...);
 
   /* Get an MPZ value stored on another locale */
   pragma "chpldoc ignore chpl prefix"

@@ -30,7 +30,7 @@
  * SOFTWARE.
  */
 
-#include <shared/ofi_str.h>
+#include <ofi_str.h>
 
 #include "mrail.h"
 
@@ -280,12 +280,9 @@ static int mrail_get_core_info(uint32_t version, const char *node, const char *s
 	size_t i;
 	int ret = 0;
 	int num_rails;
-	enum fi_log_level level = ((hints && hints->fabric_attr &&
-				    hints->fabric_attr->prov_name) ?
-				   FI_LOG_WARN : FI_LOG_INFO);
 
 	if (!mrail_addr_strv) {
-		FI_LOG(&mrail_prov, level, FI_LOG_FABRIC,
+		FI_INFO(&mrail_prov, FI_LOG_FABRIC,
 		       "OFI_MRAIL_ADDR_STRC env variable not set!\n");
 		return -FI_ENODATA;
 	}

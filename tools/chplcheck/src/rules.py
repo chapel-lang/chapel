@@ -36,6 +36,31 @@ def variables(node: AstNode):
             yield from variables(child)
 
 
+def might_incorrectly_report_location(node: AstNode) -> bool:
+    """
+    Some Dyno AST nodes do not return locations in the way that we expect.
+    For instance, some NamedDecl nodes currently use the name as the location,
+    which does not indicate their actual indentation. Rules that depend on
+    indentation should leave these variables alone.
+    """
+
+    # some NamedDecl nodes currently use the name as the location, which
+    # does not indicate their actual indentation.
+    #
+    # https://github.com/chapel-lang/chapel/issues/25208
+    if isinstance(node, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+        return True
+
+    # private function locations are bugged and don't include the 'private'
+    # keyword.
+    #
+    # https://github.com/chapel-lang/chapel/issues/24818
+    elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
+        return True
+
+    return False
+
+
 def fixit_remove_unused_node(
     node: AstNode,
     lines: Optional[List[str]] = None,
@@ -203,6 +228,60 @@ def register_rules(driver: LintDriver):
             return BasicRuleResult(node, ignorable=True, fixits=[fixit])
 
         return check
+
+    @driver.basic_rule(set((Loop, Conditional)))
+    def RedundantParentheses(
+        context: Context, node: typing.Union[Loop, Conditional]
+    ):
+        """
+        Warn for unnecessary parentheses in conditional statements and loops.
+        """
+
+        subject = None
+        if isinstance(node, (DoWhile, While, Conditional)):
+            subject = node.condition()
+        elif isinstance(node, IndexableLoop):
+            subject = node.index()
+
+        # No supported node to examine for redundant parentheses.
+        if subject is None:
+            return True
+
+        # Tuples need their parentheses.
+        if isinstance(subject, Tuple):
+            return True
+
+        # No parentheses to speak of
+        paren_loc = subject.parenth_location()
+        if paren_loc is None:
+            return True
+
+        # If parentheeses span multiple lines, don't provide a fixit,
+        # since the indentation would need more thought.
+        start_line, start_col = paren_loc.start()
+        end_line, end_col = paren_loc.end()
+        if start_line != end_line:
+            return BasicRuleResult(node, ignorable=False)
+
+        # Now, we should warn: there's a node in a conditional or
+        # if/else, it has parentheses at the top level, but it doesn't need them.
+        lines = chapel.get_file_lines(context, node)
+        new_text = range_to_text(paren_loc, lines)[1:-1]
+
+        start_line_str = lines[start_line - 1]
+        end_line_str = lines[end_line - 1]
+        # For 'if(x)', can't turn this into 'ifx', need an extra space.
+        if start_col > 1 and not start_line_str[start_col - 2].isspace():
+            new_text = " " + new_text
+        # Similarly, '(x)do', can't turn this into 'xdo', need an extra space.
+        if (
+            end_col < len(end_line_str)
+            and not end_line_str[end_col - 1].isspace()
+        ):
+            new_text += " "
+
+        fixit = Fixit.build(Edit.build(paren_loc, new_text))
+        return BasicRuleResult(node, ignorable=False, fixits=[fixit])
 
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context: Context, node: Coforall):
@@ -403,6 +482,8 @@ def register_rules(driver: LintDriver):
         for child in root:
             if isinstance(child, Comment):
                 continue
+            if might_incorrectly_report_location(child):
+                continue
             yield from MisleadingIndentation(context, child)
 
             if prev is not None:
@@ -432,6 +513,8 @@ def register_rules(driver: LintDriver):
                 # safe to access [-1], loops must have at least 1 child
                 for blockchild in reversed(list(grandchildren[-1])):
                     if isinstance(blockchild, Comment):
+                        continue
+                    if might_incorrectly_report_location(blockchild):
                         continue
                     prev = blockchild
                     prevloop = child
@@ -640,21 +723,10 @@ def register_rules(driver: LintDriver):
             if isinstance(child, Comment):
                 continue
 
-            # some NamedDecl nodes currently use the name as the location, which
-            # does not indicate their actual indentation.
-            if isinstance(child, (VarLikeDecl, TupleDecl, ForwardingDecl)):
+            if might_incorrectly_report_location(child):
                 continue
             # Empty statements get their own warnings, no need to warn here.
             elif isinstance(child, EmptyStmt):
-                continue
-            # private function locations are bugged and don't include the 'private'
-            # keyword.
-            #
-            # https://github.com/chapel-lang/chapel/issues/24818
-            elif (
-                isinstance(child, (Function, Use, Import))
-                and child.visibility() != ""
-            ):
                 continue
 
             line, depth = child.location().start()

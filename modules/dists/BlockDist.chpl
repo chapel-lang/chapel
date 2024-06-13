@@ -962,7 +962,7 @@ proc blockDist.createDomain(rng: range(?)...) {
 
 // create a domain over a blockDist Distribution
 proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
-  return dom dmapped blockDist(dom, targetLocales);
+  return dom dmapped new blockDist(dom, targetLocales);
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges

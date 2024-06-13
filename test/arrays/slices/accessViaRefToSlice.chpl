@@ -3,7 +3,7 @@ use CommDiagnostics;
 
 config const printArray = true;
 
-const D = {1..10, 1..10} dmapped blockDist({1..10, 1..10});
+const D = {1..10, 1..10} dmapped new blockDist({1..10, 1..10});
 var A: [D] real;
 const DInner = D[3..8, 3..8];
 

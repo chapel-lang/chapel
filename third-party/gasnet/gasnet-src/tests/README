@@ -67,5 +67,5 @@ whole new test, unless one is testing a truly novel aspect of functionality or
 performance. This helps to reduce build time and nightly test cost for the tests.
 
 * New tests should be added to tests/Makefile.in (with appropriate arguments, if necessary)
-and also to upcr/upc-tests/gasnet-tests/harness.conf
+and also to tests/harness/gasnet-tests/harness.conf
 

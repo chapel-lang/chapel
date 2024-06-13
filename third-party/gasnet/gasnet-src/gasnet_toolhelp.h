@@ -536,12 +536,28 @@ int gasneti_count0s_uint32_t(uint32_t _x) {
   // _gasneti_mutex_heldbysomeone(pl) and _gasneti_mutex_heldbyme(pl)
   #define _gasneti_mutex_heldbysomeone(pl) ((pl)->_owner._id64 != GASNETI_OWNERID_NONE)
   #if GASNETI_USE_TRUE_MUTEXES
+    #include <pthread.h>
     typedef union {
       volatile uint64_t  _id64;
       volatile pthread_t _id;
     } _gasneti_mutexowner_t;
-    #define _gasneti_mutex_heldbyme(pl)      (_gasneti_mutex_heldbysomeone(pl) && \
-                                             pthread_equal(pthread_self(), (pl)->_owner._id))
+
+    typedef struct {
+      _gasneti_mutexowner_t _owner;
+      pthread_mutex_t _lock;
+      _GASNETI_MUTEX_CAUTIOUS_INIT_FIELD
+      GASNETI_BUG2231_WORKAROUND_PAD
+    } gasneti_mutex_t;
+
+    GASNETI_INLINE(_gasneti_mutex_heldbyme)
+    int _gasneti_mutex_heldbyme(gasneti_mutex_t *_pl) {
+      // NOTE: this is written cautiously to ensure we never pass GASNETI_OWNERID_NONE
+      // to pthread_equal() (which has undefined behavior and leads to crashes on at least NetBSD)
+      // EVEN when another thread is concurrently modifying the owner_id field
+      _gasneti_mutexowner_t _owner = _pl->_owner; // take a snapshot of owner
+      return _owner._id64 != GASNETI_OWNERID_NONE &&     // held by someone
+             pthread_equal(pthread_self(), _owner._id);  // it's me!
+    }
   #else
     typedef struct {
       volatile uint64_t  _id64;
@@ -551,13 +567,6 @@ int gasneti_count0s_uint32_t(uint32_t _x) {
     #define _gasneti_mutex_heldbyme(pl)      ((pl)->_owner._id64 == _gasneti_ownerid64_me)
   #endif
   #if GASNETI_USE_TRUE_MUTEXES
-    #include <pthread.h>
-    typedef struct {
-      _gasneti_mutexowner_t _owner;
-      pthread_mutex_t _lock;
-      _GASNETI_MUTEX_CAUTIOUS_INIT_FIELD
-      GASNETI_BUG2231_WORKAROUND_PAD
-    } gasneti_mutex_t;
     #if defined(PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP)
       /* These are faster, though less "featureful" than the default
        * mutexes on linuxthreads implementations which offer them.
@@ -1127,6 +1136,10 @@ extern void gasneti_envint_display(const char *_key, int64_t _val, int _is_dflt,
 extern void gasneti_envstr_display(const char *_key, const char *_val, int _is_dflt);
 extern void gasneti_envdbl_display(const char *_key, double _val, int _is_dflt);
 
+// Search environment(s) for existance of any variable with the given prefix
+// Returns an arbitary "VAR=VAL" string if any matches found, or NULL otherwise.
+extern const char* gasneti_check_env_prefix(const char *_prefix);
+
 extern const char *gasneti_tmpdir(void);
 
 /* Custom (spawner- or conduit-specific) supplement to gasneti_getenv
@@ -1135,6 +1148,12 @@ extern const char *gasneti_tmpdir(void);
 typedef char *(gasneti_getenv_fn_t)(const char *_keyname);
 extern gasneti_getenv_fn_t *gasneti_getenv_hook;
 
+// Custom (spawner- or conduit-specific) supplement to gasneti_check_env_prefix
+// If set to non-NULL this has precedence over gasneti_globalEnv.
+typedef const char *(gasneti_check_env_prefix_fn_t)(const char *_prefix);
+extern gasneti_check_env_prefix_fn_t *gasneti_check_env_prefix_hook;
+// Helper for implementing a gasneti_check_env_prefix_hook
+extern const char* gasneti_check_env_prefix_helper(const char *_environ, const char *_prefix);
 
 /* ------------------------------------------------------------------------------------ */
 /* Attempt to maximize allowable cpu and memory resource limits for this

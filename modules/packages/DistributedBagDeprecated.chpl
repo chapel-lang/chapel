@@ -1028,7 +1028,7 @@ module DistributedBagDeprecated {
             while true {
               select segment.currentStatus {
                 // Quick acquire...
-                when STATUS_UNLOCKED do {
+                when STATUS_UNLOCKED {
                   if segment.acquireWithStatus(STATUS_ADD) {
                     segment.addElements(elt);
                     segment.releaseStatus();

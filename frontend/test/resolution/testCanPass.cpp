@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "limits.h"
+
 #include "test-resolution.h"
 
 #include "chpl/resolution/can-pass.h"
@@ -85,7 +87,6 @@ static bool passesInstantiatesBorrowing(CanPassResult r) {
          r.conversionKind() == CanPassResult::BORROWS;
 }
 
-/*
 static bool passesOther(CanPassResult r) {
   return r.passes() &&
          !r.instantiates() &&
@@ -93,7 +94,6 @@ static bool passesOther(CanPassResult r) {
          r.converts() &&
          r.conversionKind() == CanPassResult::OTHER;
 }
-*/
 
 static bool doesNotPass(CanPassResult r) {
   return !r.passes();
@@ -352,11 +352,13 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  Context ctx;
+  auto config = getConfigWithHome();
+  Context ctx(config);
   Context* context = &ctx;
   Context* c = context;
+  setupModuleSearchPaths(context, false, false, {}, {});
 
-  // test that we can pass param string c_string
+  // test that we can pass param string c_string or c_ptrConst(c_char)
   // but we can't pass param string to bytes
 
   auto s = UniqueString::get(context, "hello");
@@ -371,10 +373,20 @@ static void test6() {
                                  CStringType::get(context));
   auto bytesQT = QualifiedType(QualifiedType::VAR,
                                CompositeType::getBytesType(context));
+
+  const chpl::types::Type* eltType = nullptr;
+  if (CHAR_MAX == SCHAR_MAX) {
+    eltType = IntType::get(context, 8);
+  } else {
+    eltType = UintType::get(context, 8);
+  }
+  auto cptrQT = QualifiedType(QualifiedType::VAR,
+                              CPtrType::getConst(context, eltType));
   CanPassResult r;
   r = canPass(c, paramString, stringQT); assert(passesAsIs(r));
   r = canPass(c, paramString, cStringQT); assert(passesParamNarrowing(r));
   r = canPass(c, paramString, bytesQT); assert(doesNotPass(r));
+  r = canPass(c, paramString, cptrQT); assert(passesOther(r));
 }
 
 static void test7() {

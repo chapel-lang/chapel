@@ -1003,7 +1003,7 @@ extern const QIO_HINT_OWNED:c_int;
 
 // can be left opaque, but we need the correct C type name
 @chpldoc.nodoc
-extern record qio_file_t {};
+extern record qio_file_t {}
 @chpldoc.nodoc
 extern type qio_file_ptr_t = c_ptr(qio_file_t);
 private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
@@ -1017,7 +1017,7 @@ extern record qiovec_t {
 
 // opaque like qio_file_t
 @chpldoc.nodoc
-extern record qio_channel_t {};
+extern record qio_channel_t {}
 @chpldoc.nodoc
 extern type qio_channel_ptr_t = c_ptr(qio_channel_t);
 private extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
@@ -9227,7 +9227,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
         numRead /= c_sizeof(t): numRead.type;  // convert from #bytes to #elts
       } // else no-op, reading a 0-element array reads nothing
     } else {
-      for (i, b) in zip(data.domain, data) {
+      for (_, b) in zip(data.domain, data) {
         e = try _read_binary_internal(this._channel_internal,
                                       endianToIoKind(endian), b);
 

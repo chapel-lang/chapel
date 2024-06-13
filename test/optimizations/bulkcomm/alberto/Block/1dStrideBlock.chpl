@@ -10,7 +10,7 @@ const S = {1..n};
 const BDist = new blockDist(idxType=uint, boundingBox=S);
 const BDom : domain(1, uint) dmapped BDist=S;
 
-//var A : [[1..n] dmapped blockDist(rank=1,boundingBox=[1..n])] int;
+//var A : [[1..n] dmapped new blockDist(rank=1,boundingBox=[1..n])] int;
 var A : [BDom] uint;
 var B : [BDom] uint;
 writeln("A and B defined on ",S);

@@ -62,8 +62,14 @@ defaults to ``true`` if omitted. For example:
 
     use LayoutCS;
     var D = {0..#n, 0..#m};  // a default-distributed domain
-    var CSR_Domain: sparse subdomain(D) dmapped CS(compressRows=true); // Default argument
-    var CSC_Domain : sparse subdomain(D) dmapped CS(compressRows=false);
+    var CSR_Domain: sparse subdomain(D) dmapped new dmap(new CS(compressRows=true)); // Default argument
+    var CSC_Domain : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
+
+
+.. note::
+
+    In an upcoming release, it will be possible to declare CS domains without
+    using the unstable ``new dmap`` syntax.
 
 To declare a CSR or CSC array, use a CSR or CSC domain, respectively.
 For example:
@@ -649,6 +655,21 @@ class CSDom: BaseSparseDomImpl(?) {
 } // CSDom
 
 
+proc CSDom.rows() {
+  return this.rowRange;
+}
+
+proc CSDom.cols() {
+  return this.colRange;
+}
+
+@chpldoc.nodoc
+iter CSDom.uidsInRowCol(rc) {
+  for uid in startIdx[rc]..<startIdx[rc+1] do
+    yield uid;
+}
+
+
 class CSArr: BaseSparseArrImpl(?) {
 
   proc init(type eltType,
@@ -749,6 +770,53 @@ class CSArr: BaseSparseArrImpl(?) {
       }
     }
   }
+
+  proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
+    if srcDom == destDom {
+      destClass.data = this.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
+    if srcDom == destDom {
+      this.data = srcClass.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
 } // CSArr
+
+proc CSArr.rows() {
+  return this.dom.rows();
+}
+
+proc CSArr.cols() {
+  return this.dom.cols();
+}
+
+@chpldoc.nodoc
+iter CSArr.indsAndVals(rc) {
+  ref dom = this.dom;
+  for uid in dom.uidsInRowCol(rc) do
+    yield (dom.idx[uid], this.data[uid]);
+}
+
+iter CSArr.colsAndVals(r) {
+  if this.dom.compressRows == false then
+    compilerError("Can't (efficiently) iterate over rows using a CSC layout");
+  for colVal in indsAndVals(r) do
+    yield colVal;
+}
+
+iter CSArr.rowsAndVals(c) {
+  if this.dom.compressRows == true then
+    compilerError("Can't (efficiently) iterate over columns using a CSR layout");
+  for rowVal in indsAndVals(c) do
+    yield rowVal;
+}
 
 } // LayoutCS

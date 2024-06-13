@@ -297,3 +297,18 @@ QualifiedType getTypeForFirstStmt(Context* context,
 
   return resolvedExpr.type();
 }
+
+Context::Configuration getConfigWithHome() {
+  std::string chpl_home;
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+  } else {
+    printf("CHPL_HOME must be set");
+    exit(1);
+  }
+
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+
+  return config;
+}

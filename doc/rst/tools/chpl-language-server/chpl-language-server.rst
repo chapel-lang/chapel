@@ -62,6 +62,40 @@ VSCode
 Install the ``chapel`` extension from the `Visual Studio Code marketplace
 <https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
 
+.. _chpl-language-server-emacs:
+
+Emacs
+^^^^^
+
+With Emacs 29.1, support has been added for language server protocols via `Eglot
+<https://www.gnu.org/software/emacs/manual/html_mono/eglot.html>`_
+
+To utilize the Chapel language server with Eglot, add the following to your
+``.emacs`` file (note that this assumes you have already followed the
+instructions in ``$CHPL_HOME/highlight/emacs/README.rst`` to install Chapel
+syntax highlighting in Emacs):
+
+.. code-block:: lisp
+
+  (with-eval-after-load 'eglot
+    (add-to-list 'eglot-server-programs
+                 '(chpl-mode . ("chpl-language-server" "--chplcheck"))))
+
+This will enable using the language server with a particular ``.chpl`` file by
+calling ``M-x eglot``.
+
+To automatically use Eglot and the language server with every ``.chpl`` file,
+additionally add the following to your ``.emacs`` file:
+
+.. code-block:: lisp
+
+   (add-hook 'chpl-mode-hook 'eglot-ensure)
+
+.. note::
+
+   The above uses the ``--chplcheck`` flag to enable additional diagnostics from
+   ``chplcheck``. If you do not want to use ``chplcheck``, you can remove this.
+
 Supported Features
 ------------------
 
@@ -155,6 +189,25 @@ The following features are extra visual aids:
 | Generic        | ``CLS`` can show the various               | No flag, on by default                |
 | Instantiations | instantiations of a generic function.      |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
+
+Using ``chplcheck`` from ``CLS``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Although :ref:`chplcheck <readme-chplcheck>` is a separate tool from ``CLS``,
+it can be used from ``CLS`` to provide additional diagnostics. This is done by
+enabling the ``--chplcheck`` flag. This will incorporate the diagnostics and
+fixits from ``chplcheck``.
+
+You can also still pass many of the same ``chplcheck`` flags to ``CLS``, just
+prefixed with ``--chplcheck-``. For example, the following command runs the
+language server with linting enabled various ``chplcheck`` flags:
+
+.. code-block:: bash
+
+   chpl-language-server --chplcheck \
+     --chplcheck-enable-rule UseExplicitModules \
+     --chplcheck-disable-rule UnusedLoopIndex \
+     --chplcheck-add-rules path/to/my/myrules.py
 
 Configuring Chapel Projects
 ---------------------------

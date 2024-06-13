@@ -5,6 +5,7 @@ import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
 from utils import error, memoize, run_command, warning, try_run_command
+import homebrew_utils
 
 #
 # This is the default unique configuration path which
@@ -109,7 +110,7 @@ def filter_libs(bundled_libs, system_libs):
 def pkgconfig_get_system_compile_args(pkg):
     # check that pkg-config knows about the package in question
     exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
-    if returncode:
+    if not exists or returncode:
         return (None, None)
     # run pkg-config to get the cflags
     cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
@@ -426,3 +427,12 @@ def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
     replace_path = install_path
 
     return (read_pkg_config_file(pcpath, find_path, replace_path), pcpath)
+
+
+def could_not_find_pkgconfig_pkg(pkg, envname):
+    if homebrew_utils.homebrew_exists() and homebrew_utils.homebrew_pkg_exists(pkg):
+        # tell user to install pkg-config as well
+        error("{0} is installed via homebrew, but pkg-config is not installed. Please install pkg-config with `brew install pkg-config`.".format(pkg))
+    else:
+        install_str = " with `brew install {0}`".format(pkg) if homebrew_utils.homebrew_exists() else ""
+        error("Could not find a suitable {0} installation. Please install {0}{1} or set {2}=bundled.".format(pkg, install_str, envname))

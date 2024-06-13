@@ -18,11 +18,9 @@ DESCRIPTION
 -----------
 
 The **chpl** command invokes the Chapel compiler. **chpl** converts one
-or more Chapel source files into an executable. It does this by
-compiling Chapel code to C99 code and then invoking the target
-platform's C compiler to create the executable. However, most users will
-not need to be aware of the use of C as an intermediate format during
-compilation.
+or more Chapel source files into an executable. **chpl** can be configured to
+produce object files using either LLVM or a C compiler. See LLVM Code Generation
+Options or C Code Generation Options below.
 
 SOURCE FILES
 ------------
@@ -31,21 +29,19 @@ Chapel recognizes four source file types: **.chpl**, .c, .h, and .o.
 
 **foo.chpl**
 
-    Chapel sources are compiled by the Chapel compiler into C intermediate
-    code, which is then passed to the target compiler to be compiled into
-    object code.
+    Chapel source file.
 
 **foo.c**
 
-    C source files are passed directly to the target C compiler.
+    C source file.
 
 **foo.h**
 
-    C header files are included in the generated C code.
+    C header file.
 
 **foo.o**
 
-    Object files are passed directly to the target linker.
+    Object file.
 
 OPTIONS
 -------
@@ -691,13 +687,6 @@ OPTIONS
     default.
 
 *LLVM Code Generation Options*
-
-.. _man-llvm:
-
-**\--[no-]llvm**
-
-    Use LLVM as the code generation target rather than C. See
-    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 .. _man-llvm-wide-opt:
 

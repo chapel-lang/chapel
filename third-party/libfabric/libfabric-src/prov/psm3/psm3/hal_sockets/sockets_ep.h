@@ -114,6 +114,9 @@
 								// cache size
 #define CPU_PAGE_ALIGN	PSMI_PAGESIZE	// boundary to align buffer pools for
 
+#ifndef PSM_TCP_POLL
+#include <sys/epoll.h>
+#endif
 #include <sys/poll.h>
 
 #define TCP_PORT_AUTODETECT 0			// default is to allow system to use any port
@@ -124,6 +127,9 @@
 #define TCP_INC_CONN	128			// fds array grow size
 #define TCP_POLL_TO	1000			// timeout for continuous poll in ms. used when no more data in
 						// the middle of draining a packet.
+#ifndef PSM_TCP_POLL
+#define TCP_MAX_EVENTS	1024			// max events to get from epoll
+#endif
 #define TCP_MAX_PKTLEN	((64*1024-1)*4)	// pktlen in LRH is 16 bits, so the
                                         // max pktlen is (64k-1)*4 = 256k-4
 #define TCP_MAX_MTU (TCP_MAX_PKTLEN - TCP_MAX_PSM_HEADER)
@@ -132,6 +138,7 @@
 #define TCP_INACT_SKIP_POLLS	20
 #define TCP_ACT_SKIP_POLLS	10
 #define TCP_SHRT_BUF_SIZE	512
+#define TCP_CONN_MSG_BUF_BLOCK	512
 // Direct user buffer doesn't work with multi-rail. The current code intends
 // to exclusively use user buffer on direct write. But with short buffer,
 // which avoids HOL blocking on small msgs, what may happen is that in one
@@ -158,7 +165,14 @@ struct psm3_sockets_ep {
 	/* fields specific to TCP */
 	int listener_fd; // listening socket
 	int tcp_incoming_fd; // latest incoming socket
+#ifdef PSM_TCP_POLL
 	struct pollfd *fds; // one extra for listening socket
+#else
+	int efd; // epoll fd
+	struct epoll_event event; // epoll event
+	struct epoll_event *events; // epoll events
+	int *fds;
+#endif
 	int nfds;
 	int max_fds;
         struct fd_ctx **map_fds; // map  fd -> fd_ctx
@@ -166,11 +180,12 @@ struct psm3_sockets_ep {
   
 	uint32_t snd_pace_thresh; // send pace threshold
 	uint32_t shrt_buf_size; // shrt_buf size
+	int poll_count; // current poll count
 	int inactive_skip_polls; // polls to skip under inactive connections
 	int active_skip_polls_offset; // tailored for internal use. it's inactive_skip_polls - active_skip_polls
 	struct msghdr snd_msg; // struct used for sendmsg
 	/* fields specific to UDP */
-	int udp_gso;	// is GSO enabled for UDP
+	unsigned udp_gso;	// is GSO enabled for UDP, max chunk_size
 	uint8_t *sbuf_udp_gso;	// buffer to compose UDP GSO packet sequence
 	int udp_gso_zerocopy;	// is UDP GSO Zero copy option enabled
 	int udp_gro; // will be used later
@@ -182,12 +197,16 @@ struct psm3_sockets_ep {
 	uint32_t if_index;	// index of our local netdev
 	in_port_t pri_socket;	// primary socket, UDP/TCP based on sockets_mode
 	in_port_t aux_socket;	// for TCP only: aux UDP socket
+	in_port_t out_socket;   // for TCP only: local outgoing socket for reuse
 	int if_mtu;
 	short if_flags;
 	// if asked to revisit a packet we save it here
 	uint8_t *revisit_buf;
 	int revisit_fd;
 	uint32_t revisit_payload_size;
+	int* rfds; // array of fds that need to revisit
+	int nrfd; // number of fds need to revisit
+	int max_rfds; // array capacity
 
 	/* remaining fields are for TCP only */
 	// read in partial pkt in rbuf

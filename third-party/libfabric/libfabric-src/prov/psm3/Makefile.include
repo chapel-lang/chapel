@@ -58,6 +58,8 @@ prov_psm3_psm3_libptl_am_la_SOURCES = \
 	prov/psm3/psm3/ptl_am/am_config.h \
 	prov/psm3/psm3/ptl_am/am_cuda_memhandle_cache.c \
 	prov/psm3/psm3/ptl_am/am_cuda_memhandle_cache.h \
+	prov/psm3/psm3/ptl_am/am_oneapi_memhandle_cache.c \
+	prov/psm3/psm3/ptl_am/am_oneapi_memhandle_cache.h \
 	prov/psm3/psm3/ptl_am/am_reqrep.c \
 	prov/psm3/psm3/ptl_am/am_reqrep_shmem.c \
 	prov/psm3/psm3/ptl_am/cmarw.h \
@@ -128,13 +130,17 @@ prov_psm3_psm3_libptl_self_la_CFLAGS = \
 
 prov_psm3_psm3_libutils_la_SOURCES = \
 	prov/psm3/psm3/utils/utils_debug.c \
+	prov/psm3/psm3/utils/utils_dsa.c \
 	prov/psm3/psm3/utils/utils_dwordcpy-x86_64.c \
+	prov/psm3/psm3/utils/utils_env.c \
 	prov/psm3/psm3/utils/utils_sysfs.c \
 	prov/psm3/psm3/utils/utils_syslog.c \
 	prov/psm3/psm3/utils/utils_time.c \
 	prov/psm3/psm3/utils/utils_mallopt.c \
 	prov/psm3/psm3/include/utils_byteorder.h \
 	prov/psm3/psm3/include/utils_debug.h \
+	prov/psm3/psm3/include/utils_dsa.h \
+	prov/psm3/psm3/include/utils_env.h \
 	prov/psm3/psm3/include/utils_macros.h \
 	prov/psm3/psm3/include/utils_queue.h \
 	prov/psm3/psm3/include/psm_revision.h \
@@ -214,6 +220,9 @@ prov_psm3_psm3_libpsm3i_la_SOURCES = \
 	prov/psm3/psm3/psm_mq_recv.c \
 	prov/psm3/psm3/psm_mq_utils.c \
 	prov/psm3/psm3/psm_netutils.h \
+	prov/psm3/psm3/psm_nic_select.c \
+	prov/psm3/psm3/psm_nic_select.h \
+	prov/psm3/psm3/psm_oneapi_ze.c \
 	prov/psm3/psm3/psm_perf.c \
 	prov/psm3/psm3/psm_perf.h \
 	prov/psm3/psm3/psm_rndv_mod.c \
@@ -224,13 +233,13 @@ prov_psm3_psm3_libpsm3i_la_SOURCES = \
 	prov/psm3/psm3/psm_sysbuf.h \
 	prov/psm3/psm3/psm_timer.c \
 	prov/psm3/psm3/psm_timer.h \
+	prov/psm3/psm3/psm_uffd.c \
+	prov/psm3/psm3/psm_uffd.h \
 	prov/psm3/psm3/psm_user.h \
 	prov/psm3/psm3/psm_utils.c \
 	prov/psm3/psm3/psm_utils.h \
 	prov/psm3/psm3/psm_verbs_mr.c \
 	prov/psm3/psm3/psm_verbs_mr.h \
-	prov/psm3/psm3/psm_verbs_umrc.c \
-	prov/psm3/psm3/psm_verbs_umrc.h \
 	prov/psm3/psm3/psmi_wrappers.c \
 	prov/psm3/psm3/psmi_wrappers.h \
 	prov/psm3/psm3/psm2.h \

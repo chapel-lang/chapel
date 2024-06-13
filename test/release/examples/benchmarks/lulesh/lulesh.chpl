@@ -136,9 +136,9 @@ const ElemSpace = if use3DRepresentation
 
 /* Declare the (potentially distributed) problem domains */
 
-const Elems = if useBlockDist then ElemSpace dmapped blockDist(ElemSpace)
+const Elems = if useBlockDist then ElemSpace dmapped new blockDist(ElemSpace)
                               else ElemSpace,
-      Nodes = if useBlockDist then NodeSpace dmapped blockDist(NodeSpace)
+      Nodes = if useBlockDist then NodeSpace dmapped new blockDist(NodeSpace)
                               else NodeSpace;
 
 

@@ -165,7 +165,7 @@ where tag == iterKind.follower
   const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
-  for i in current do {
+  for i in current {
     yield i;
   }
 }
@@ -307,7 +307,7 @@ where tag == iterKind.leader
     const factor=nTasks;
     var lock: chpl_LocalSpinlock;
 
-    coforall tid in 0..#nTasks with (ref remain) do {
+    coforall tid in 0..#nTasks with (ref remain) {
       while undone.read() do {
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock);
@@ -331,7 +331,7 @@ where tag == iterKind.follower
   const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
-  for i in current do {
+  for i in current {
     yield i;
   }
 }
@@ -413,7 +413,7 @@ iter guided(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) {
     yield i;
   }
 }
@@ -476,7 +476,7 @@ enum Method {
     in the victim range is performed from its tail.
   */
   WholeTail = 2
-};
+}
 
 /*
   Used to select the adaptive stealing method.
@@ -541,7 +541,7 @@ where tag == iterKind.leader
 
       // Step 2: While there is work at tid, do splitting
 
-      while moreLocalWork[tid] do {
+      while moreLocalWork[tid] {
         // There is local work
         // The current range we get after splitting locally
         const zeroBasedIters:rType=adaptSplit(localWork[tid], factorSteal, moreLocalWork[tid], locks[tid]);
@@ -558,7 +558,7 @@ where tag == iterKind.leader
       var victim=(tid+1) % nTasks;
       var stealFailed:bool=false;
 
-      while moreWork.read() do {
+      while moreWork.read() {
         if debugDynamicIters then
           writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
 
@@ -620,7 +620,7 @@ where tag == iterKind.follower
   var current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
-  for i in current do {
+  for i in current {
     yield i;
   }
 }
@@ -703,7 +703,7 @@ iter adaptive(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) {
     yield i;
   }
 }

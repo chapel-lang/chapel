@@ -143,7 +143,7 @@ private proc testDynamicWorkload()
 {
   var timer:stopwatch;
 
-  const replicatedDomain:domain(1) dmapped replicatedDist() = controlDomain;
+  const replicatedDomain:domain(1) dmapped new replicatedDist() = controlDomain;
   var array:[controlDomain]real;
   var replicatedArray:[replicatedDomain]real;
 
@@ -178,7 +178,7 @@ private proc testGuidedWorkload()
 {
   var timer:stopwatch;
 
-  const replicatedDomain:domain(1) dmapped replicatedDist() = controlDomain;
+  const replicatedDomain:domain(1) dmapped new replicatedDist() = controlDomain;
   var array:[controlDomain]real;
   var replicatedArray:[replicatedDomain]real;
 
@@ -212,7 +212,7 @@ private proc testControlWorkload():real
 {
   var timer:stopwatch;
 
-  const D:domain(1) dmapped blockDist(boundingBox=controlDomain) = controlDomain;
+  const D:domain(1) dmapped new blockDist(boundingBox=controlDomain) = controlDomain;
   var array:[D]real;
 
   fillArray(array);

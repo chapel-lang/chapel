@@ -32,6 +32,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from types import ModuleType
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_left, bisect_right
@@ -40,7 +41,8 @@ import itertools
 import os
 import json
 import re
-
+import sys
+import importlib.util
 
 import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
@@ -143,6 +145,121 @@ import argparse
 import configargparse
 
 
+class ChplcheckProxy:
+
+    def __init__(
+        self,
+        main: ModuleType,
+        config: ModuleType,
+        lsp: ModuleType,
+        driver: ModuleType,
+        rules: ModuleType,
+    ):
+        self.main = main
+        self.config = config
+        self.lsp = lsp
+        self.driver = driver
+        self.rules = rules
+
+    @classmethod
+    def get(cls) -> Optional["ChplcheckProxy"]:
+
+        def error(msg: str):
+            if os.environ.get("CHPL_DEVELOPER", None):
+                print("Error loading chplcheck: ", str(e), file=sys.stderr)
+
+        chpl_home = os.environ.get("CHPL_HOME")
+        if chpl_home is None:
+            error("CHPL_HOME not set")
+            return None
+
+        chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
+        # Add chplcheck to the path, but load via importlib
+        sys.path.append(chplcheck_path)
+
+        def load_module(module_name: str) -> Optional[ModuleType]:
+            file_path = os.path.join(chplcheck_path, module_name + ".py")
+            spec = importlib.util.spec_from_file_location(
+                module_name, file_path
+            )
+            if spec is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            if spec.loader is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            spec.loader.exec_module(module)
+            return module
+
+        mods = []
+        for mod in ["chplcheck", "config", "lsp", "driver", "rules"]:
+            m = load_module(mod)
+            if m is None:
+                return None
+            mods.append(m)
+        proxy = ChplcheckProxy(*mods)
+
+        return proxy
+
+
+chplcheck = ChplcheckProxy.get()
+
+REAL_NUMBERIC = (chapel.RealLiteral, chapel.IntLiteral, chapel.UintLiteral)
+NUMERIC = REAL_NUMBERIC + (chapel.ImagLiteral,)
+
+
+def is_basic_literal_like(node: chapel.AstNode) -> Optional[chapel.Literal]:
+    """
+    Check for "basic" literals: basically, 1, "hello", -42, etc.
+    Returns the "underlying" literal removing surrounding AST (1, "hello", 42).
+    This helps do type comparisons in more complex checks. If the node is
+    not a basic literal, returns None.
+    """
+    if isinstance(node, chapel.Literal):
+        return node
+
+    if (
+        isinstance(node, chapel.OpCall)
+        and node.op() == "-"
+        and node.num_actuals() == 1
+    ):
+        # Do not recurse; do not consider --42 as a basic literal.
+        act = node.actual(0)
+        if isinstance(act, NUMERIC):
+            return act
+
+    return None
+
+
+def is_literal_like(node: chapel.AstNode) -> bool:
+    if is_basic_literal_like(node):
+        return True
+
+    if isinstance(node, chapel.OpCall):
+        # A complex number is far from a literal in the AST; in fact, it
+        # potentially has as many as 4 AST nodes: -1 + 2i has a unary negation,
+        # an addition, and two "pure" literals.
+        op = node.op()
+        if (op == "+" or op == "-") and node.num_actuals() == 2:
+            # The left element can be a 'basic literal-like', like 1 or -42i.
+            # But the right element shouldn't have any operators, otherwise
+            # we'd get somethig that looks like 1 - -42i. So we just
+            # use the right argument directly.
+            left = is_basic_literal_like(node.actual(0))
+            right = node.actual(1)
+
+            real_number = REAL_NUMBERIC
+            imag_number = chapel.ImagLiteral
+            if isinstance(left, real_number) and isinstance(right, imag_number):
+                return True
+            if isinstance(left, imag_number) and isinstance(right, real_number):
+                return True
+
+    return False
+
+
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     if isinstance(decl, chapel.Module) and decl.kind() != "implicit":
         return SymbolKind.Module
@@ -157,21 +274,23 @@ def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     elif isinstance(decl, chapel.EnumElement):
         return SymbolKind.EnumMember
     elif isinstance(decl, chapel.Function):
-        if decl.is_method():
-            return SymbolKind.Method
-        elif decl.name() in ("init", "init="):
+        if decl.name() in ("init", "init="):
             return SymbolKind.Constructor
         elif decl.kind() == "operator":
             return SymbolKind.Operator
+        elif decl.is_method():
+            return SymbolKind.Method
         else:
             return SymbolKind.Function
     elif isinstance(decl, chapel.Variable):
-        if decl.is_field():
+        if decl.intent() == "type":
+            return SymbolKind.TypeParameter
+        elif decl.intent() == "param":
+            return SymbolKind.Constant
+        elif decl.is_field():
             return SymbolKind.Field
         elif decl.intent() == "<const-var>":
             return SymbolKind.Constant
-        elif decl.intent() == "type":
-            return SymbolKind.TypeParameter
         else:
             return SymbolKind.Variable
     return None
@@ -255,6 +374,8 @@ def encode_deltas(
     Given a (non-encoded) list of token positions, applies the LSP delta-encoding
     to it: each line is encoded as a delta from the previous line, and each
     column is encoded as a delta from the previous column.
+
+    `tokens` must be sorted by line number, and then by column number within
 
     Returns tokens with type token_type, and modifiers token_modifiers.
     """
@@ -497,7 +618,6 @@ class FileInfo:
         Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
-    used_modules: List[chapel.Module] = field(init=False)
     visible_decls: List[Tuple[str, chapel.AstNode]] = field(init=False)
 
     def __post_init__(self):
@@ -556,15 +676,22 @@ class FileInfo:
         self._note_reference(node)
 
     @enter
-    def _enter_NamedDecl(self, node: chapel.NamedDecl):
+    def _enter_Module(self, node: chapel.Module):
+        # Trigger scope resolution to error duplicate variable warnings.
+        _ = node.scope_resolve()
+
         self.def_segments.append(NodeAndRange(node))
 
-    def _collect_used_modules(self, asts: List[chapel.AstNode]):
-        self.used_modules = []
-        for ast in asts:
-            scope = ast.scope()
-            if scope:
-                self.used_modules.extend(scope.used_imported_modules())
+    @enter
+    def _enter_Function(self, node: chapel.Function):
+        # Trigger scope resolution to error duplicate variable warnings.
+        _ = node.scope_resolve()
+
+        self.def_segments.append(NodeAndRange(node))
+
+    @enter
+    def _enter_NamedDecl(self, node: chapel.NamedDecl):
+        self.def_segments.append(NodeAndRange(node))
 
     def _collect_possibly_visible_decls(self, asts: List[chapel.AstNode]):
         self.visible_decls = []
@@ -641,7 +768,7 @@ class FileInfo:
 
             sig = candidate.function()
             fn = sig.ast()
-            if not fn:
+            if not fn or not isinstance(fn, chapel.Function):
                 continue
 
             # Even if we don't descend into it (and even if it's not an
@@ -677,10 +804,11 @@ class FileInfo:
         self.def_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
-        self._collect_used_modules(asts)
         self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
+            # TODO: suppress resolution errors due to false-positives
+            # this should be removed once the resolver is finished
             with self.context.context.track_errors() as _:
                 self._search_instantiations(asts)
 
@@ -888,6 +1016,10 @@ class CLSConfig:
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
+        add_bool_flag("chplcheck", "do_linting", False)
+        if chplcheck:
+            chplcheck.config.Config.add_arguments(self.parser, "chplcheck-")
+
     def _parse_end_markers(self):
         self.args["end_markers"] = [
             a.strip() for a in self.args["end_markers"].split(",")
@@ -941,6 +1073,10 @@ class ChapelLanguageServer(LanguageServer):
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
+        self.do_linting: bool = config.get("do_linting")
+
+        self.lint_driver = None
+        self._setup_linter(config)
 
         self._setup_regexes()
 
@@ -956,7 +1092,23 @@ class ChapelLanguageServer(LanguageServer):
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
 
-        self._curly_bracket_with_comment = re.compile(r"\}.*//")
+    def _setup_linter(self, clsConfig: CLSConfig):
+        """
+        Setup the linter, if it is enabled
+        """
+        if not (self.do_linting and chplcheck):
+            return
+
+        config = chplcheck.config.Config.from_args(clsConfig.args)
+        self.lint_driver = chplcheck.driver.LintDriver(config)
+
+        chplcheck.rules.register_rules(self.lint_driver)
+
+        for p in config.add_rules:
+            chplcheck.main.load_module(self.lint_driver, os.path.abspath(p))
+
+        self.lint_driver.disable_rules(*config.disabled_rules)
+        self.lint_driver.enable_rules(*config.enabled_rules)
 
     def get_deprecation_replacement(
         self, text: str
@@ -1027,7 +1179,7 @@ class ChapelLanguageServer(LanguageServer):
 
         This method retrieves the FileInfo object for a particular URI,
         creating one if it doesn't exist. If do_update is set to True,
-        then the FileInfo's index is reuilt even if it has already been
+        then the FileInfo's index is rebuilt even if it has already been
         computed. This is useful if the underlying file has changed.
         """
 
@@ -1043,6 +1195,10 @@ class ChapelLanguageServer(LanguageServer):
             )
             self.file_infos[uri] = file_info
 
+        # filter out errors that are not related to the file
+        cur_path = uri[len("file://") :]
+        errors = [e for e in errors if e.location().path() == cur_path]
+
         return (file_info, errors)
 
     def build_diagnostics(self, uri: str) -> List[Diagnostic]:
@@ -1051,7 +1207,7 @@ class ChapelLanguageServer(LanguageServer):
         as a list of LSP Diagnostics.
         """
 
-        _, errors = self.get_file_info(uri, do_update=True)
+        fi, errors = self.get_file_info(uri, do_update=True)
 
         diagnostics = []
         for e in errors:
@@ -1063,6 +1219,13 @@ class ChapelLanguageServer(LanguageServer):
                 for (note_loc, note_msg) in e.notes()
             ]
             diagnostics.append(diag)
+
+        # get lint diagnostics if applicable
+        if self.lint_driver and chplcheck:
+            lint_diagnostics = chplcheck.lsp.get_lint_diagnostics(
+                fi.context.context, self.lint_driver, fi.get_asts()
+            )
+            diagnostics.extend(lint_diagnostics)
 
         return diagnostics
 
@@ -1125,9 +1288,19 @@ class ChapelLanguageServer(LanguageServer):
             or isinstance(type_, chapel.ErroneousType)
         ):
             return []
+        # skip implicit this formals
+        if (
+            isinstance(decl.node, chapel.Formal)
+            and isinstance(decl.node.parent(), chapel.Function)
+            and decl.node.parent().this_formal() is not None
+            and decl.node.unique_id()
+            == decl.node.parent().this_formal().unique_id()
+        ):
+            return []
 
         name_rng = location_to_range(decl.node.name_location())
         type_str = ": " + str(type_)
+        text_edits = [TextEdit(Range(name_rng.end, name_rng.end), type_str)]
         colon_label = InlayHintLabelPart(": ")
         label = InlayHintLabelPart(str(type_))
         if isinstance(type_, chapel.CompositeType):
@@ -1136,13 +1309,20 @@ class ChapelLanguageServer(LanguageServer):
                 label.location = location_to_location(typedecl.name_location())
             elif typedecl:
                 label.location = location_to_location(typedecl.location())
+
+        # if the inlay hint is for a loop index type, we cannot insert the type
+        # as it would be a syntax error
+        parent_loop = decl.node.parent()
+        if parent_loop and isinstance(parent_loop, chapel.IndexableLoop):
+            index = parent_loop.index()
+            if index and index.unique_id() == decl.node.unique_id():
+                text_edits = None
+
         return [
             InlayHint(
                 position=name_rng.end,
                 label=[colon_label, label],
-                text_edits=[
-                    TextEdit(Range(name_rng.end, name_rng.end), type_str)
-                ],
+                text_edits=text_edits,
             )
         ]
 
@@ -1192,7 +1372,7 @@ class ChapelLanguageServer(LanguageServer):
                 # tuples. We don't need hints for those.
                 continue
 
-            if not isinstance(act, chapel.core.Literal):
+            if not is_literal_like(act):
                 # Only show named arguments for literals.
                 continue
 
@@ -1372,9 +1552,10 @@ class ChapelLanguageServer(LanguageServer):
                 block_size = end_loc.line - header_loc.end()[0]
                 if block_size < self.end_marker_threshold:
                     continue
-                # skip blocks where the comment is already added
-                curly_line = file_lines[end_loc.line]
-                if re.search(self._curly_bracket_with_comment, curly_line):
+                # skip blocks where other text already exists
+                curly_line = file_lines[end_loc.line].rstrip()
+                assert len(curly_line) > 0
+                if curly_line[-1] != "}":
                     continue
 
                 text = chapel.range_to_lines(header_loc, file_lines)
@@ -1498,7 +1679,12 @@ def run_lsp():
         if not decl:
             return None
 
-        return location_to_location(decl.location())
+        loc = (
+            decl.name_location()
+            if isinstance(decl, chapel.NamedDecl)
+            else decl.location()
+        )
+        return location_to_location(loc)
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
@@ -1551,7 +1737,6 @@ def run_lsp():
         for name, decl in fi.visible_decls:
             if isinstance(decl, chapel.NamedDecl):
                 items.append(completion_item_for_decl(decl, override_name=name))
-        items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
 
         items = [item for item in items if item]
 
@@ -1596,6 +1781,13 @@ def run_lsp():
                     is_preferred=True,
                 )
             )
+
+        # get lint fixits if applicable
+        if ls.lint_driver and chplcheck:
+            lint_actions = chplcheck.lsp.get_lint_actions(
+                params.context.diagnostics
+            )
+            actions.extend(lint_actions)
 
         return actions
 
@@ -1822,6 +2014,8 @@ def run_lsp():
                     ls.get_dead_code_tokens(ast, fi.file_lines(), instantiation)
                 )
 
+        # sort tokens by line number, and then by column number
+        tokens.sort(key=lambda x: (x[0], x[1]))
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
     @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)

@@ -1714,7 +1714,7 @@ module SampleSortHelp {
     var arrayIndex = start_n + sampleStep - 1;
     var splitterIndex = 0;
     splitters[splitterIndex] = A[arrayIndex:idxType];
-    for i in 2..numBuckets-1 {
+    for 2..numBuckets-1 {
       arrayIndex += sampleStep;
       // Skip duplicates
       if chpl_compare(splitters[splitterIndex], A[arrayIndex:idxType], criterion)!=0 {
@@ -1735,7 +1735,7 @@ module SampleSortHelp {
     // Fill the array to the next power of two
     var logBuckets = log2(uniqueSplitters) + 1;
     numBuckets = 1 << logBuckets;
-    for i in uniqueSplitters+1 .. numBuckets-1 {
+    for uniqueSplitters+1 .. numBuckets-1 {
       splitterIndex += 1;
       splitters[splitterIndex] = A[arrayIndex];
     }
@@ -2195,7 +2195,7 @@ module SequentialInPlacePartitioning {
         end = end_n;
       }
 
-      for (i,bin) in bucketizer.classify(A, start, end, criterion, startbit) {
+      for (_,bin) in bucketizer.classify(A, start, end, criterion, startbit) {
         counts[bin] += 1;
       }
     }
@@ -2421,7 +2421,7 @@ module TwoArrayPartitioning {
       for bin in 0..#nBuckets {
         counts[bin] = 0;
       }
-      for (i,bin) in state.bucketizer.classify(src, start, end,
+      for (_,bin) in state.bucketizer.classify(src, start, end,
                                                criterion, startbit) {
         counts[bin] += 1;
       }
@@ -3082,13 +3082,13 @@ module TwoArrayDistributedPartitioning {
         for t in distTask.tasks {
           if !t.isEmpty() {
             if t.useSecondState {
-              for (loc, tid) in t.localeAndIds(A) {
+              for (_, tid) in t.localeAndIds(A) {
                 assert(!usedLocales2[tid]); // means race condition would occur
                 usedLocales2[tid] = true;
               }
 
             } else {
-              for (loc, tid) in t.localeAndIds(A) {
+              for (_, tid) in t.localeAndIds(A) {
                 assert(!usedLocales1[tid]); // means race condition would occur
                 usedLocales1[tid] = true;
               }
@@ -3850,7 +3850,7 @@ module MSBRadixSort {
         }
       }
 
-      forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) with (ref A) {
+      forall (_,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) with (ref A) {
         msbRadixSort(A, bin_start, bin_end, criterion, subbits, endbit, settings);
       }
     } else {

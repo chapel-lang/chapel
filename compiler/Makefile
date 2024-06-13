@@ -62,7 +62,6 @@ include codegen/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
 include optimizations/Makefile.include
-include parser/Makefile.include
 include passes/Makefile.include
 include resolution/Makefile.include
 include util/Makefile.include
@@ -78,9 +77,8 @@ LIBS = -lm
 
 all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
 
-clean: FORCE $(CLEANSUBDIRS) echocompilerdir
-	@cd $(COMPILER_BUILD) && $(CMAKE) --build . --target clean
-	rm -f $(CLEAN_TARGS)
+clean-cmakecache: FORCE
+	rm -f $(COMPILER_BUILD)/CMakeCache.txt
 
 cleanall: $(CLEANALLSUBDIRS) echocompilerdir
 	rm -rf $(CLEANALL_TARGS)
@@ -154,6 +152,21 @@ ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-prefix; echo "$$?"), 0)
 else ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-chpl-home; echo "$$?"), 0)
 	CMAKE_FLAGS += -DINSTALLATION_MODE=home -DCMAKE_INSTALL_PREFIX=$(shell cat $(CHPL_MAKE_HOME)/configured-chpl-home)
 endif
+
+# clean reruns the cmake configure step if the cache wasn't found or else the
+# cmake --build . --target clean command will fail. It is down here instead of
+# at the top of the file to make use of the `CMAKE_FLAGS` variable
+clean: FORCE $(CLEANSUBDIRS) echocompilerdir
+	@if [ -d $(COMPILER_BUILD) ]; then \
+		cd $(COMPILER_BUILD) ; \
+		if [ ! -f CMakeCache.txt ]; then \
+			$(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) ; \
+		fi ; \
+		$(CMAKE) --build . --target clean ; \
+		cd - ; \
+	fi
+	rm -f $(CLEAN_TARGS)
+	@$(MAKE) clean-cmakecache
 
 # used in test-frontend to make sure cmake is configured with assertions on
 CMAKE_FLAGS_NO_NDEBUG=$(subst -DNDEBUG,,$(CMAKE_FLAGS))

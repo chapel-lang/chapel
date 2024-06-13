@@ -114,7 +114,7 @@ static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
 
 // CPU reservation must happen before CPU information is returned to other
 // layers.
-static chpl_bool okToReserveCPU = true;
+static const char *cantReserveCPU = NULL;
 
 static chpl_bool oversubscribed = false;
 
@@ -297,7 +297,7 @@ static int numCPUsLogAcc  = -1;
 static int numCPUsLogAll  = -1;
 
 int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
-  okToReserveCPU = false;
+  cantReserveCPU = "chpl_topo_getNumCPUsPhysical called";
   int cpus = (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
   if (cpus == -1) {
     chpl_error("number of cpus is uninitialized", 0, 0);
@@ -307,7 +307,7 @@ int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
 
 
 int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
-  okToReserveCPU = false;
+  cantReserveCPU = "chpl_topo_getNumCPUsLogical called";
   int cpus = (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
   if (cpus == -1) {
     chpl_error("number of cpus is uninitialized", 0, 0);
@@ -516,6 +516,7 @@ static void cpuInfoInit(void) {
 static const char *objTypeString(hwloc_obj_type_t t) {
   const char *str = NULL;
   switch(t) {
+    case HWLOC_OBJ_MACHINE: str = "machine"; break;
     case HWLOC_OBJ_PACKAGE: str = "socket"; break;
     case HWLOC_OBJ_NUMANODE: str = "NUMA domain"; break;
     case HWLOC_OBJ_CORE: str = "core"; break;
@@ -592,7 +593,8 @@ static void partitionResources(void) {
       if (myRootType == HWLOC_OBJ_TYPE_MAX) {
         // Chose a root object if the number of them matches the number of
         // locales.
-        hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_PACKAGE, HWLOC_OBJ_NUMANODE,
+        hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_MACHINE, HWLOC_OBJ_PACKAGE,
+                                        HWLOC_OBJ_NUMANODE,
                                         HWLOC_OBJ_L5CACHE, HWLOC_OBJ_L4CACHE,
                                         HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L2CACHE,
                                         HWLOC_OBJ_L1CACHE, HWLOC_OBJ_CORE,
@@ -750,7 +752,7 @@ void chpl_topo_post_args_init(void) {
   if (verbosity >= 2) {
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
     printf("%d: using core(s) %s", chpl_nodeID, buf);
-    if (myRoot) {
+    if (myRoot && (myRoot->type != HWLOC_OBJ_MACHINE)) {
       printf(" in %s %d\n", objTypeString(myRoot->type),
              myRoot->logical_index);
     } else {
@@ -785,7 +787,7 @@ int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
   // Initializes CPU information.
-  okToReserveCPU = false;
+  cantReserveCPU = "chpl_topo_getCPUs called";
   return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }
 
@@ -1105,7 +1107,7 @@ chpl_topo_reserveCPUPhysical(void) {
   _DBG_P("topoSupport->cpubind->set_thisthread_cpubind: %d",
          topoSupport->cpubind->set_thisthread_cpubind);
   _DBG_P("numCPUsPhysAcc: %d", numCPUsPhysAcc);
-  if (okToReserveCPU) {
+  if (!cantReserveCPU) {
     if ((topoSupport->cpubind->set_thisthread_cpubind) &&
         (numCPUsPhysAcc > 1)) {
 
@@ -1144,7 +1146,7 @@ chpl_topo_reserveCPUPhysical(void) {
       }
     }
   } else {
-    _DBG_P("okToReserveCPU is false");
+    _DBG_P("cantReserveCPU: %s", cantReserveCPU);
   }
 
   if (debug) {

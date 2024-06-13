@@ -1543,6 +1543,18 @@ void GpuKernel::findGpuPrimitives() {
   for_vector(CallExpr, callExpr, callExprsInBody) {
     if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
       if (blockSizeCall_ != nullptr) {
+        // Check if the blockSize calls are clones of each other by comparing
+        // their unique identifier actuals. blockSize calls created for
+        // attributes get unique number as a second actual, and for clones,
+        // that number should match.
+        if (blockSizeCall_->numActuals() == 2 &&
+            callExpr->numActuals() == 2) {
+          auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
+          auto sym2 = toSymExpr(callExpr->get(2))->symbol();
+
+          if (sym1 == sym2) continue;
+        }
+
         USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
       }
       blockSizeCall_ = callExpr;

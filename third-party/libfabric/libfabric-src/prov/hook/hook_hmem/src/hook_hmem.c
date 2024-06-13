@@ -33,6 +33,7 @@
 #include "ofi_prov.h"
 #include "ofi_iov.h"
 #include "ofi_atomic.h"
+#include "ofi_hmem.h"
 #include "hook_prov.h"
 #include "hook_hmem.h"
 
@@ -68,8 +69,8 @@ static int hook_hmem_add_region(struct hook_hmem_domain *domain,
 		goto out;
 	}
 
-	ret = ofi_hmem_get_base_addr(iface, iov->iov_base, &base_iov.iov_base,
-				     &base_iov.iov_len);
+	ret = ofi_hmem_get_base_addr(iface, iov->iov_base, iov->iov_len,
+				     &base_iov.iov_base, &base_iov.iov_len);
 	if (ret) {
 		ofi_buf_free(*hmem_desc);
 		return -FI_EINVAL;
@@ -1668,6 +1669,7 @@ static int hook_hmem_mr_regv(struct fid *fid, const struct iovec *iov,
 	 */
 	attr.iface = FI_HMEM_SYSTEM;
 	attr.device.reserved = 0;
+	attr.hmem_data = NULL;
 
 	return hook_hmem_mr_regattr(fid, &attr, flags, mr);
 }

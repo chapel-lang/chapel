@@ -5,7 +5,7 @@ config const n = 5;
 
 const dataLocalDom = {1..n};
 const dataDom = if CHPL_COMM == "none" then dataLocalDom
-                else dataLocalDom dmapped blockDist(dataLocalDom);
+                else dataLocalDom dmapped new blockDist(dataLocalDom);
 
 var dataM: [dataDom] int = [i in 1..n] i % b + 1;
 var dataB: [dataDom] int = 1..n;

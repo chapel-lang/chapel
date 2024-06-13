@@ -77,8 +77,28 @@ A distribution can be specified explicitly using a ``dmapped`` clause:
    distribution-record:
      expression
 
-where the ``distribution-record`` expression produces
-an instance of a distribution record.
+where ``distribution-record`` is an instance of a distribution or layout type.
+
+.. warning::
+
+   In previous versions of Chapel, it was legal to insert a distribution
+   initialization-expression on the right side of a ``dmapped`` expression,
+   where the ``new`` keyword was essentially implied. For example, the following
+   was legal:
+
+      .. code-block:: chapel
+
+         var d = {1..n} dmapped blockDist({1..n});
+
+   but should now be replaced by:
+
+      .. code-block:: chapel
+
+         var d = {1..n} dmapped new blockDist({1..n});
+
+   Omitting the ``new`` keyword is deprecated and will become an error in a
+   future release.
+
 
 .. warning::
 
@@ -275,4 +295,3 @@ targetLocales
 Distributions that describe partitioning across multiple locales
 typically define the method ``targetLocales()`` that returns
 these locales as an array.
-

@@ -258,7 +258,7 @@ module ArgumentParser {
   // TODO: Add public github issue when available
 
   @chpldoc.nodoc
-  enum argKind { positional, subcommand, option, flag, passthrough };
+  enum argKind { positional, subcommand, option, flag, passthrough }
 
   // stores an argument definition
   @chpldoc.nodoc

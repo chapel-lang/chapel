@@ -236,6 +236,15 @@ extern int chpl_comm_ofi_abort_on_error;
       }                                                                 \
     } while (0)
 
+#define CHK_SYS_MMAP(p, sz, prot, flags, fd, off)                              \
+    do {                                                                       \
+      if((p = mmap(NULL, (sz), (prot), (flags), (fd), (off))) == MAP_FAILED) { \
+        INTERNAL_ERROR_V("mmap(NULL, %#zx, %#zx, %#zx, %d, %d): %s",           \
+                         (size_t)(sz), (size_t)(prot), (size_t)(flags),        \
+                         (int)(fd), (int)(off), strerror(errno));              \
+      }                                                                        \
+    } while (0)
+
 #define CHK_SYS_FREE(p)                                                 \
   do {                                                                  \
     sys_free(p);                                                        \

@@ -53,15 +53,6 @@ static const Type* receiverTypeFromTfs(const TypedFnSignature* tfs) {
   return ret;
 }
 
-static const CompositeType* typeToCompType(const Type* type) {
-  if (auto cls = type->toClassType()) {
-    return cls->manageableType()->toCompositeType();
-  } else {
-    auto ret = type->toCompositeType();
-    return ret;
-  }
-}
-
 owned<InitResolver>
 InitResolver::create(Context* ctx, Resolver& visitor, const Function* fn) {
   auto tfs = visitor.typedSignature;
@@ -91,7 +82,7 @@ bool InitResolver::setupFromType(const Type* type) {
   fieldToInitState_.clear();
   fieldIdsByOrdinal_.clear();
 
-  auto ct = typeToCompType(type);
+  auto ct = type->getCompositeType();
   auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
 
   // If any of the newly-set fields are type or params, setting them
@@ -228,7 +219,7 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
 }
 
 bool InitResolver::isFinalReceiverStateValid(void) {
-  auto ctInitial = typeToCompType(initialRecvType_);
+  auto ctInitial = initialRecvType_->getCompositeType();
   auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial,
                                       DefaultsPolicy::USE_DEFAULTS);
   bool ret = true;
@@ -293,7 +284,7 @@ static const Type* ctFromSubs(Context* context,
 }
 
 const Type* InitResolver::computeReceiverTypeConsideringState(void) {
-  auto ctInitial = typeToCompType(initialRecvType_);
+  auto ctInitial = initialRecvType_->getCompositeType();
 
   // The non-default fields are used to determine if we need to create
   // substitutions. I.e., if a field is concrete even if we ignore defaults,
@@ -308,7 +299,6 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
 
   auto isValidQtForSubstitutions = [this](const QualifiedType qt) {
     if (qt.isUnknown()) return false;
-    if (!qt.isType() && !qt.isParam()) return false;
     return getTypeGenericity(this->ctx_, qt.type()) == Type::CONCRETE;
   };
 
@@ -319,6 +309,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     bool isInitiallyConcrete = qtInitial.genericity() == Type::CONCRETE;
 
     if (isInitiallyConcrete) continue;
+
+    if (!shouldIncludeFieldInTypeConstructor(ctx_, id, qtInitial)) continue;
 
     // TODO: Will need to relax this as we go.
     if (isValidQtForSubstitutions(state->qt)) {
@@ -336,7 +328,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
         // dependently typed, we might be able to compute defaults that
         // depend on these prior substitutions.
         auto ctIntermediate = ctFromSubs(ctx_, initialRecvType_, ctInitial, subs);
-        auto& rfIntermediate = fieldsForTypeDecl(ctx_, typeToCompType(ctIntermediate),
+        auto& rfIntermediate = fieldsForTypeDecl(ctx_, ctIntermediate->getCompositeType(),
                                                  DefaultsPolicy::USE_DEFAULTS);
 
         qtForSub = rfIntermediate.fieldType(i);
@@ -441,7 +433,7 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
   auto state = fieldStateFromId(id);
   if (!state || !state->initPointId.isEmpty()) return false;
 
-  auto ct = typeToCompType(currentRecvType_);
+  auto ct = currentRecvType_->getCompositeType();
   auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);
@@ -493,7 +485,7 @@ bool InitResolver::isMentionOfNodeInLhsOfAssign(const AstNode* node) {
 ID InitResolver::fieldIdFromName(UniqueString name) {
   if (!isNameOfField(ctx_, name, initialRecvType_)) return ID();
   // TODO: Need to replace this as we continue to build it up?
-  auto ct = typeToCompType(initialRecvType_);
+  auto ct = initialRecvType_->getCompositeType();
   auto ret = parsing::fieldIdWithName(ctx_, ct->id(), name);
   return ret;
 }
@@ -575,12 +567,12 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
 
   CHPL_ASSERT(fn->formalName(0) == USTR("this"));
   auto receiverType = fn->formalType(0).type();
-  auto receiverCompType = typeToCompType(receiverType);
+  auto receiverCompType = receiverType->getCompositeType();
   if (receiverCompType->instantiatedFromCompositeType()) {
     receiverCompType = receiverCompType->instantiatedFromCompositeType();
   }
 
-  auto initialCompType = typeToCompType(initialRecvType_);
+  auto initialCompType = initialRecvType_->getCompositeType();
   if (initialCompType->instantiatedFromCompositeType()) {
     initialCompType = initialCompType->instantiatedFromCompositeType();
   }

@@ -164,9 +164,9 @@ static int rxd_peek_recv(struct rxd_ep *rxd_ep, fi_addr_t addr, uint64_t tag,
 {
 	struct rxd_unexp_msg *unexp_msg;
 
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	rxd_ep_progress(&rxd_ep->util_ep);
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	unexp_msg = rxd_ep_check_unexp_list(unexp_list, addr, tag, ignore);
 	if (!unexp_msg) {
@@ -210,7 +210,7 @@ ssize_t rxd_ep_generic_recvmsg(struct rxd_ep *rxd_ep, const struct iovec *iov,
 	assert(!(flags & FI_PEEK) || op == RXD_TAGGED);
 
 
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.rx_cq->cirq)) {
 		ret = -FI_EAGAIN;
@@ -261,7 +261,7 @@ ssize_t rxd_ep_generic_recvmsg(struct rxd_ep *rxd_ep, const struct iovec *iov,
 	ret = rxd_ep_discard_recv(rxd_ep, context, unexp_msg);
 
 out:
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 
@@ -361,7 +361,7 @@ ssize_t rxd_ep_generic_inject(struct rxd_ep *rxd_ep, const struct iovec *iov,
 	assert(ofi_total_iov_len(iov, iov_count) <=
 	       (size_t) rxd_ep_domain(rxd_ep)->max_inline_msg);
 
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
@@ -386,7 +386,7 @@ ssize_t rxd_ep_generic_inject(struct rxd_ep *rxd_ep, const struct iovec *iov,
 		(void) rxd_start_xfer(rxd_ep, tx_entry);
 
 out:
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 
@@ -405,7 +405,7 @@ ssize_t rxd_ep_generic_sendmsg(struct rxd_ep *rxd_ep, const struct iovec *iov,
 		return rxd_ep_generic_inject(rxd_ep, iov, iov_count, addr, tag, 0,
 					     op, rxd_flags);
 
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
@@ -433,7 +433,7 @@ ssize_t rxd_ep_generic_sendmsg(struct rxd_ep *rxd_ep, const struct iovec *iov,
 
 	ret = 0;
 out:
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 

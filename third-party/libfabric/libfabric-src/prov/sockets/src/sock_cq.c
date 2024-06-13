@@ -449,7 +449,8 @@ static ssize_t sock_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf,
 			&& buf->err_data && buf->err_data_size) {
 			err_data = buf->err_data;
 			err_data_size = buf->err_data_size;
-			*buf = entry;
+			ofi_cq_err_memcpy(api_version, buf, &entry);
+
 			buf->err_data = err_data;
 
 			/* Fill provided user's buffer */
@@ -733,7 +734,7 @@ int sock_cq_report_error(struct sock_cq *cq, struct sock_pe_entry *entry,
 			 size_t err_data_size)
 {
 	int ret;
-	struct fi_cq_err_entry err_entry;
+	struct fi_cq_err_entry err_entry = {0};
 
 	pthread_mutex_lock(&cq->lock);
 	if (ofi_rbavail(&cq->cqerr_rb) < sizeof(err_entry)) {

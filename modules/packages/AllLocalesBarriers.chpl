@@ -68,8 +68,8 @@
 module AllLocalesBarriers {
   use BlockDist, Collectives;
 
-  private const BarrierSpace = LocaleSpace dmapped blockDist(LocaleSpace);
-  private var globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
+  private const BarrierSpace = LocaleSpace dmapped new blockDist(LocaleSpace);
+  private var globalBarrier = [BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
   private proc deinit() { [b in globalBarrier] delete b; }
 
   @chpldoc.nodoc

@@ -747,7 +747,7 @@ class VisibilitySymbols {
     /**
       all the contents of the scope, e.g.:
 
-          import Foo;
+          use Foo;
 
       The names field will be empty.
 
@@ -926,9 +926,11 @@ class ResolvedVisibilityScope {
  private:
   const Scope* scope_;
   std::vector<VisibilitySymbols> visibilityClauses_;
+  std::vector<ID> modulesNamedInUseOrImport_;
 
  public:
   using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
+  using ModuleIdsIterator = Iterable<std::vector<ID>>;
 
   ResolvedVisibilityScope(const Scope* scope)
     : scope_(scope)
@@ -940,6 +942,11 @@ class ResolvedVisibilityScope {
   /** Return an iterator over the visibility clauses */
   VisibilitySymbolsIterable visibilityClauses() const {
     return VisibilitySymbolsIterable(visibilityClauses_);
+  }
+
+  /** Return an iterator over the modules named in use/import */
+  ModuleIdsIterator modulesNamedInUseOrImport() const {
+    return ModuleIdsIterator(modulesNamedInUseOrImport_);
   }
 
   /** Add a visibility clause */
@@ -956,9 +963,15 @@ class ResolvedVisibilityScope {
     visibilityClauses_.push_back(std::move(elt));
   }
 
+  /** Add a module ID for a module named in use/import */
+  void addModulesNamedInUseOrImport(ID id) {
+    modulesNamedInUseOrImport_.push_back(std::move(id));
+  }
+
   bool operator==(const ResolvedVisibilityScope& other) const {
     return scope_ == other.scope_ &&
-           visibilityClauses_ == other.visibilityClauses_;
+           visibilityClauses_ == other.visibilityClauses_ &&
+           modulesNamedInUseOrImport_ == other.modulesNamedInUseOrImport_;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
@@ -971,6 +984,9 @@ class ResolvedVisibilityScope {
     context->markPointer(scope_);
     for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
+    }
+    for (const auto& id: modulesNamedInUseOrImport_) {
+      id.mark(context);
     }
   }
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;

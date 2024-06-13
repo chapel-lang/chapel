@@ -132,6 +132,15 @@ module List {
 
   private use IO;
 
+  /* Impacts whether the copy initializer that takes a list will generate a
+     warning when the other list has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForListParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForListParsafeMismatch = true;
+
   /*
     A list is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. Unlike a stack, the
@@ -151,7 +160,7 @@ module List {
     type eltType;
 
     /*If `true`, this list will perform parallel safe operations.*/
-    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future");
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     param parSafe = false;
 
     @chpldoc.nodoc
@@ -410,8 +419,6 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
 
-      ``this.parSafe`` will default to ``false`` if it is not yet set.
-
       :arg other: The list to initialize from.
     */
     proc init=(other: list) {
@@ -423,11 +430,16 @@ module List {
       this.eltType = if this.type.eltType != ?
                      then this.type.eltType
                      else other.eltType;
-      // set parSafe to false if it was not already provided in lhs type
+      // set parSafe to other.parSafe if it was not already provided in lhs type
       this.parSafe = if this.type.parSafe != ?
                      then this.type.parSafe
-                     else false;
+                     else other.parSafe;
 
+      if (this.parSafe != other.parSafe && warnForListParsafeMismatch) {
+        compilerWarning("initializing between two lists with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForListParsafeMismatch=false'");
+      }
       init this;
       _commonInitFromIterable(other);
     }

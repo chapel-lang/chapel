@@ -69,6 +69,8 @@ public:
   Expr*   getFirstExpr()                              override;
 };
 
+bool considerForOuter(Symbol* sym);
+
 void lowerLoopExprs(BaseAST* ast);
 
 #endif

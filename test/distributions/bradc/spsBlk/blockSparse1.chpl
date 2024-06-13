@@ -13,7 +13,7 @@ config const n = 8;
 // The block-distributed dense domain that will serve as the parent
 // domain for the sparse one.
 //
-const Elems = {0..#n} dmapped blockDist({0..#n});
+const Elems = {0..#n} dmapped new blockDist({0..#n});
 
 //
 // The sparse subdomain.  In the current code framework, the parent

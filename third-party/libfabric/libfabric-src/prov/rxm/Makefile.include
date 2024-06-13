@@ -11,6 +11,8 @@ _rxm_files = \
        prov/rxm/src/rxm_cq.c	\
        prov/rxm/src/rxm_rma.c	\
        prov/rxm/src/rxm_atomic.c	\
+       prov/rxm/src/rxm_eq.c	\
+       prov/rxm/src/rxm_hmem.c	\
        prov/rxm/src/rxm.h
 
 if HAVE_RXM_DL

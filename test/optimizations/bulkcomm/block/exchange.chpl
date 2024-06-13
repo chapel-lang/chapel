@@ -20,7 +20,7 @@ proc main() {
   var tmr : stopwatch;
 
   const Space = {0..#(numLocales*numLocales*n)};
-  const D     = Space dmapped blockDist(Space);
+  const D     = Space dmapped new blockDist(Space);
 
   var A : [D] int;
 

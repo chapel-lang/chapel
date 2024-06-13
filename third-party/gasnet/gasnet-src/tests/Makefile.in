@@ -57,10 +57,14 @@ MPI2_TESTS = 			\
 
 MPI_TESTS = $(MPI1_TESTS) $(MPI2_TESTS)
 
+# Tests using pthreads in SEQ builds:
+@HAVE_PTHREAD_TRUE@ PTHREAD_TESTS = \
+@HAVE_PTHREAD_TRUE@        testprogthr
+
 # tests that can be built in any mode
 # in order of most useful execution
 # NOTE: if you add a test here that is expected to pass on all conduits,
-#   please also add it to upcr-harness/gasnet-tests/harness.conf
+#   please also add it to harness/gasnet-tests/harness.conf
 testprograms_seq =      \
         testgasnet      \
         testlegacy      \
@@ -105,8 +109,11 @@ testprograms_seq =      \
         testtmpair      \
         testreadonly    \
         testalltoall    \
+        testtoken       \
         testcudauva     \
         testhip         \
+        testze          \
+        $(PTHREAD_TESTS) \
         $(CONDUIT_TESTS) \
         $(MPI_TESTS_SEQ)
 
@@ -417,6 +424,12 @@ testcudauva_extracflags = @CUDA_UVA_CFLAGS@
 # some tests need hip_runtime.h other related options
 testhip_extracflags = @HIP_CFLAGS@
 
+# some tests need ze_api.h other related options
+testze_extracflags = @ZE_CFLAGS@
+
+# some tests need libpthreads even in a SEQ build
+testprogthr_extralibs = @GASNET_THREAD_LIBS@
+
 # delay function, used by multiple tests
 # need to deliberately exclude and disable optimization for this object file to prevent breaking delay
 NOOPT_FLAG=-O0
@@ -433,7 +446,7 @@ mpi-check: force
 # testmpi must be compiled like an MPI program with GASNet support
 testmpi: mpi-check force
 	$(GASNET_MPI_CC) -I$(srcdir) $(GASNET_CPPFLAGS) @MPI_CFLAGS@ $(KEEPTMP_CFLAGS) $(MANUAL_MPICFLAGS) -c -o $@.o $(srcdir)/$@.c
-	$(GASNET_MPI_LD) $(GASNET_LDFLAGS) @MPI_CFLAGS@ -o $@ $@.o $(GASNET_LIBS) @MPI_LIBS@ $(MANUAL_LIBS)
+	$(GASNET_MPI_LD) $(GASNET_LDFLAGS) @MPI_CFLAGS@ -o $@ $@.o $(GASNET_LIBS) @MPI_LIBS@ $(MANUAL_LIBS) $($@_extralibs)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 # the following are just plain MPI programs
@@ -451,13 +464,13 @@ testcxx testlegacycxx: force
 		exit 1; \
 	 fi
 	$(GASNET_CXX) -I$(srcdir) $($@_extraincs) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) $($@_extracxxflags) -c -o $@.o $(srcdir)/$@.cc
-	$(GASNET_CXX) $(GASNET_CXXFLAGS) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
+	$(GASNET_CXX) $(GASNET_CXXFLAGS) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS) $($@_extralibs)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 # This is a model for how GASNet clients should be built:
 test% : force
 	$(GASNET_CC) -I$(srcdir) $($@_extraincs) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) $($@_extracflags) -c -o $@.o $(srcdir)/$@.c
-	$(GASNET_LD) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
+	$(GASNET_LD) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS) $($@_extralibs)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 force:

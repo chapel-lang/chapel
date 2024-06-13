@@ -71,26 +71,9 @@ psm2_error_t psm3_context_close(psm2_ep_t ep);
 // for use by HAL context_open to set CPU affinity consistent with
 // NIC NUMA location
 int
-psm3_context_set_affinity(psm2_ep_t ep, cpu_set_t nic_cpuset);
+psm3_context_set_affinity(psm2_ep_t ep, int unit);
 
 psm2_error_t psm3_context_interrupt_set(psm2_ep_t ep, int enable);
 int psm3_context_interrupt_isenabled(psm2_ep_t ep);
-
-/*
- * round robin contexts across HFIs, then
- * ports; this is the default.
- * This option spreads the HFI selection within the local socket.
- * If it is preferred to spread job over over entire set of
- * HFIs within the system, see ALG_ACROSS_ALL below.
- */
-#define PSMI_UNIT_SEL_ALG_ACROSS     PSM_HAL_ALG_ACROSS
-
-#define PSMI_UNIT_SEL_ALG_ACROSS_ALL PSM_HAL_ALG_ACROSS_ALL
-
-/*
- * use all contexts on an HFI (round robin
- * active ports within), then next HFI
- */
-#define PSMI_UNIT_SEL_ALG_WITHIN     PSM_HAL_ALG_WITHIN
 
 #endif /* PSM_CONTEXT_H */

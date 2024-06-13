@@ -137,38 +137,109 @@
 	}
 #endif
 
+#ifdef PSM_FI
+static __inline__ void
+psm3_unknown_connection(struct ips_proto *proto, struct ips_flow * flow)
+{
+	int fd;
+	uint8_t size, idx;
+	uint8_t *buf;
+
+	ips_epaddr_t *ipsaddr = flow->ipsaddr;
+	fd = socket(psm3_socket_domain, SOCK_STREAM, 0);
+	if (fd <= 0) {
+		return;
+	}
+	struct linger lg;
+	lg.l_onoff = 1;		/* non-zero value enables linger option in kernel */
+        lg.l_linger = 0;	/* timeout interval in seconds */
+        setsockopt( fd, SOL_SOCKET, SO_LINGER, (void *)&lg, sizeof(lg));
+
+	if (psm3_parse_tcp_src_bind()) {
+		psm3_sockaddr_in_t loc_addr;
+		psm3_build_sockaddr(&loc_addr, 0, proto->ep->gid.hi, proto->ep->gid.lo,
+					proto->ep->sockets_ep.if_index);
+		bind(fd, (struct sockaddr *)&loc_addr, sizeof(loc_addr));
+	}
+
+	if (0 == connect(fd, &ipsaddr->sockets.remote_pri_addr, sizeof(ipsaddr->sockets.remote_pri_addr))) {
+		size = random() % 100;
+		if (size) {
+			buf = psmi_malloc(proto->ep, UNDEFINED, size);
+			if (buf) {
+				if (size < 56) {
+					// intentionally dirty data with one byte initialized
+					idx = (size == 1) ? 0 : psm3_rand((long int) getpid()) % (size - 1);
+					buf[idx] = idx;
+				} else {
+					// simulate the rare case that can pass check
+					memcpy(buf, EXP_HDR, sizeof(EXP_HDR));
+					if (size % 2) {
+						buf[4] = 0xee;
+						buf[5] = 0xee;
+					} else {
+						buf[4] = 0x00;
+						buf[5] = 0x01;
+					}
+				}
+				send(fd, buf, size, 0);
+				psmi_free(buf);
+			}
+		}
+	}
+
+	close(fd);
+}
+#endif
+
 static __inline__ psm2_error_t
-psm3_sockets_tcp_connect(struct ips_proto *proto, ips_epaddr_t *ipsaddr)
+psm3_sockets_tcp_connect(struct ips_proto *proto, struct ips_flow * flow)
 {
 	psm2_error_t err = PSM2_OK;
-	struct sockaddr_in6 loc_addr;
-	psm3_build_sockaddr(&loc_addr, 0, proto->ep->gid.hi, proto->ep->gid.lo,
-				proto->ep->sockets_ep.if_index);
-	if (-1 == bind(ipsaddr->sockets.tcp_fd, (struct sockaddr *)&loc_addr, sizeof(loc_addr))) {
-		// TBD - should this be fatal and goto fail?
-		if (errno == EADDRINUSE) {
-			// continue and hopefully the issue will be gone
-			err = PSM2_EP_NO_RESOURCES;
-			return err;
+	psm3_sockaddr_in_t loc_addr;
+	ips_epaddr_t *ipsaddr = flow->ipsaddr;
+
+	if (ipsaddr->sockets.tcp_fd == -1) {
+		ipsaddr->sockets.tcp_fd = socket(psm3_socket_domain, SOCK_STREAM | SOCK_NONBLOCK, 0);
+		// 0 is a valid fd, but we treat 0 as an uninitialized value, so make
+		// sure we didn't end up with 0 (stdin should have 0)
+		if (ipsaddr->sockets.tcp_fd == 0) {
+			// create a copy of the file descriptor using the unused one
+			ipsaddr->sockets.tcp_fd = dup(ipsaddr->sockets.tcp_fd);
+			close(0);
 		}
-		_HFI_ERROR("unable bind (fd=%d) to addr %s: %s\n",
-			ipsaddr->sockets.tcp_fd, psm3_sockaddr_fmt((struct sockaddr *)&loc_addr, 0),
-			strerror(errno));
-		err = PSM2_INTERNAL_ERR;
-		goto fail;
-	} else {
-		_HFI_PRDBG("PSM TCP bind (fd=%d) to addr %s\n", ipsaddr->sockets.tcp_fd,
-			psm3_sockaddr_fmt((struct sockaddr *)&loc_addr, 0));
+		if (ipsaddr->sockets.tcp_fd == -1) {
+			_HFI_ERROR( "Unable to create TCP tx socket for %s: %s\n", proto->ep->dev_name, strerror(errno));
+			err = PSM2_INTERNAL_ERR;
+			goto fail;
+		}
+
+		if (psm3_tune_tcp_socket("socket", proto->ep, ipsaddr->sockets.tcp_fd)) {
+			_HFI_ERROR("unable to tune socket for connection to %s for %s: %s\n",
+				psm3_sockaddr_fmt((struct sockaddr *)&ipsaddr->sockets.remote_pri_addr, 0),
+				proto->ep->dev_name, strerror(errno));
+			err = PSM2_INTERNAL_ERR;
+			goto fail;
+		}
+		// new socket, reset partial send info just in case we are "reuse" a flow
+		flow->send_remaining = 0;
+		flow->conn_msg_remainder = 0;
 	}
-#ifdef PSM_LOG
-	socklen_t addr_len = sizeof(loc_addr);
-	if ( -1 == getsockname(ipsaddr->sockets.tcp_fd, (struct sockaddr *)&loc_addr, &addr_len)
-		|| addr_len > sizeof(loc_addr)) {
-		_HFI_ERROR("Failed to query TCP socket address for %s: %s\n", proto->ep->dev_name, strerror(errno));
-		goto fail;
+
+	if (psm3_parse_tcp_src_bind()) {
+		psm3_build_sockaddr(&loc_addr, proto->ep->sockets_ep.out_socket, proto->ep->gid.hi, proto->ep->gid.lo,
+					proto->ep->sockets_ep.if_index);
+		if (-1 == bind(ipsaddr->sockets.tcp_fd, (struct sockaddr *)&loc_addr, sizeof(loc_addr))) {
+			_HFI_ERROR("unable bind (fd=%d) to addr %s:%d %s\n",
+				ipsaddr->sockets.tcp_fd, psm3_sockaddr_fmt((struct sockaddr *)&loc_addr, 0),
+				proto->ep->sockets_ep.out_socket, strerror(errno));
+			err = PSM2_INTERNAL_ERR;
+			goto fail;
+		} else {
+			_HFI_PRDBG("PSM TCP bind (fd=%d) to addr %s\n", ipsaddr->sockets.tcp_fd,
+				psm3_sockaddr_fmt((struct sockaddr *)&loc_addr, 0));
+		}
 	}
-	PSM2_LOG_MSG("Loc Addr:%s", psm3_sockaddr_fmt((struct sockaddr *)&loc_addr, 0));
-#endif
 
 	if (-1 == connect(ipsaddr->sockets.tcp_fd, &ipsaddr->sockets.remote_pri_addr, sizeof(ipsaddr->sockets.remote_pri_addr))) {
 		if ( errno == EALREADY || errno == EINPROGRESS || errno == EISCONN) {
@@ -185,19 +256,46 @@ psm3_sockets_tcp_connect(struct ips_proto *proto, ips_epaddr_t *ipsaddr)
 		}
 	}
 	ipsaddr->sockets.connected = 1;
-	_HFI_PRDBG("PSM TCP connected to %s\n",
-		psm3_sockaddr_fmt((struct sockaddr *)&ipsaddr->sockets.remote_pri_addr, 0));
+
+	if (!proto->ep->sockets_ep.out_socket && psm3_parse_tcp_reuseport()) {
+		socklen_t addr_len = sizeof(loc_addr);
+		if ( -1 == getsockname(ipsaddr->sockets.tcp_fd, (struct sockaddr *)&loc_addr, &addr_len)
+			|| addr_len > sizeof(loc_addr)) {
+			_HFI_ERROR("Failed to query TCP socket address for %s: %s\n", proto->ep->dev_name, strerror(errno));
+			goto fail;
+		}
+
+		proto->ep->sockets_ep.out_socket = __be16_to_cpu(psm3_socket_port(&loc_addr));
+		_HFI_PRDBG("Local port for reuse: %d\n", proto->ep->sockets_ep.out_socket);
+	}
+
+#ifndef PSM_LOG
+	if_pf (_HFI_VDBG_ON)
+#endif
+	{
+		socklen_t addr_len = sizeof(loc_addr);
+		if ( -1 == getsockname(ipsaddr->sockets.tcp_fd, (struct sockaddr *)&loc_addr, &addr_len)
+			|| addr_len > sizeof(loc_addr)) {
+			_HFI_ERROR("Failed to query TCP socket address for %s: %s\n", proto->ep->dev_name, strerror(errno));
+			goto fail;
+		}
+		_HFI_VDBG("fd=%d Loc Addr:%s\n", ipsaddr->sockets.tcp_fd, psm3_sockaddr_fmt((struct sockaddr *)&loc_addr, 0));
+#ifdef PSM_LOG
+		PSM2_LOG_MSG("fd=%d Loc Addr:%s", ipsaddr->sockets.tcp_fd, psm3_sockaddr_fmt((struct sockaddr *)&loc_addr, 0));
+#endif
+	}
+
+	_HFI_PRDBG("PSM TCP connected to %s fd=%d\n",
+		psm3_sockaddr_fmt((struct sockaddr *)&ipsaddr->sockets.remote_pri_addr, 0), ipsaddr->sockets.tcp_fd);
 	PSM2_LOG_MSG("connected to %s fd=%d",
 		psm3_sockaddr_fmt((struct sockaddr *)&ipsaddr->sockets.remote_pri_addr, 0), ipsaddr->sockets.tcp_fd);
-	err = psm3_sockets_tcp_add_fd(proto->ep, ipsaddr->sockets.tcp_fd, 1);
-	if (err != PSM2_OK) {
-		goto fail;
-	}
 	return err;
 fail:
 	if (ipsaddr->sockets.tcp_fd > 0) {
 		close(ipsaddr->sockets.tcp_fd);
-		ipsaddr->sockets.tcp_fd = 0;
+		// will re-connect
+		ipsaddr->sockets.tcp_fd = -1;
+		ipsaddr->sockets.connected = 0;
 	}
 	return err;
 }
@@ -255,8 +353,7 @@ psm3_sockets_tcp_aux_send(psm2_ep_t ep, struct ips_flow *flow,
 		msg.msg_iovlen = 1;
 	}
 	msg.msg_name = &flow->ipsaddr->sockets.remote_aux_addr;
-	msg.msg_namelen = sizeof(struct sockaddr_in6);
-
+	msg.msg_namelen = sizeof(psm3_sockaddr_in_t);
 	if_pf (sendmsg(ep->sockets_ep.udp_tx_fd, &msg, 0) == -1) {
 		PSM2_LOG_MSG("sendto fd=%d ret=-1 errno=%d", ep->sockets_ep.udp_tx_fd, errno);
 		if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -270,24 +367,6 @@ psm3_sockets_tcp_aux_send(psm2_ep_t ep, struct ips_flow *flow,
 	}
 
 	return ret;
-}
-
-static __inline__ ssize_t
-psm3_sockets_tcp_sendmsg(psm2_ep_t ep, struct ips_flow *flow, struct ips_message_header *header,
-	uint32_t *payload, uint32_t payload_len, uint32_t remaining, int flags
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	, uint32_t is_gpu_payload
-#endif
-	)
-{
-	struct msghdr msg = ep->sockets_ep.snd_msg;
-	msg.msg_iovlen = 0;
-	MSG_IOV(msg, header, payload, payload_len, remaining
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-		, ep->sockets_ep.sbuf, is_gpu_payload
-#endif
-		);
-	return sendmsg(flow->ipsaddr->sockets.tcp_fd, &msg, flags);
 }
 
 //TODO: If we choose to use bulk message send for data messages, we
@@ -314,10 +393,13 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 	struct ips_message_header *ips_lrh = &scb->ips_lrh;
 	uint8_t opcode = _get_proto_hfi_opcode(ips_lrh);
 	uint32_t len;
+	struct msghdr msg = ep->sockets_ep.snd_msg;
 
 	psmi_assert(flow->transfer == PSM_TRANSFER_PIO);
+	// shall be called for ctr msg only. will cleanup isCtrlMsg in HED-4082
+	psmi_assert(isCtrlMsg);
 	PSMI_LOCK_ASSERT(proto->mq->progress_lock);
-	PSM2_LOG_MSG("entering with fd=%d len=%d opcode=%x",
+	PSM2_LOG_MSG("entering with fd=%d pay_len=%d opcode=%x",
 		flow->ipsaddr->sockets.tcp_fd, length, opcode);
 
 	if_pf(flow->ipsaddr->cstate_outgoing == CSTATE_OUTGOING_WAITING) {
@@ -326,39 +408,66 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 			return PSM2_INTERNAL_ERR;
 		}
 		if (!flow->ipsaddr->sockets.connected) {
-			ret = psm3_sockets_tcp_connect(proto, flow->ipsaddr);
+			ret = psm3_sockets_tcp_connect(proto, flow);
 			if (ret != PSM2_OK) {
 				return ret;
 			}
 		}
-		// we are in connecting state, check whether the connection is established
-		struct pollfd pfd = {
-			.fd = flow->ipsaddr->sockets.tcp_fd,
-			.events = POLLOUT};
-		if (poll(&pfd, 1, 0) == 1 && (pfd.revents & POLLOUT)) {
-			int error;
-			socklen_t n = sizeof(error);
-			if (getsockopt(flow->ipsaddr->sockets.tcp_fd, SOL_SOCKET, SO_ERROR, &error, &n) < 0 ||
-				error) {
-				_HFI_DBG("non-blocking connect failed - error=%d fd=%d\n",
-					error, flow->ipsaddr->sockets.tcp_fd);
-				return PSM2_INTERNAL_ERR;
+		struct fd_ctx *ctx = psm3_sockets_get_fd_ctx(ep, flow->ipsaddr->sockets.tcp_fd);
+		if (opcode == OPCODE_CONNECT_REQUEST && (!ctx || ctx->state == FD_STATE_NONE)) {
+			// we are in connecting state, check whether the connection is established
+			struct pollfd pfd = {
+				.fd = flow->ipsaddr->sockets.tcp_fd,
+				.events = POLLOUT};
+			if (poll(&pfd, 1, 0) == 1 && (pfd.revents & POLLOUT)) {
+				int error;
+				socklen_t n = sizeof(error);
+				if (getsockopt(flow->ipsaddr->sockets.tcp_fd, SOL_SOCKET, SO_ERROR, &error, &n) < 0 ||
+					error) {
+					_HFI_DBG("non-blocking connect failed - error=%d fd=%d\n",
+						error, flow->ipsaddr->sockets.tcp_fd);
+					int id = psm3_sockets_get_index_by_fd(ep, flow->ipsaddr->sockets.tcp_fd);
+					if (id >= 0) {
+						psm3_sockets_tcp_close_fd(ep, flow->ipsaddr->sockets.tcp_fd, id, flow);
+					} else {
+						close(flow->ipsaddr->sockets.tcp_fd);
+					}
+					// will re-connect
+					flow->ipsaddr->sockets.tcp_fd = -1;
+					flow->ipsaddr->sockets.connected = 0;
+					return PSM2_INTERNAL_ERR;
+				}
+				// connection successfully established
+				_HFI_VDBG("Connection established fd=%d\n", flow->ipsaddr->sockets.tcp_fd);
+				if (ctx == NULL) {
+					psm3_sockets_tcp_add_fd(ep, flow->ipsaddr->sockets.tcp_fd, 1);
+					ctx = psm3_sockets_get_fd_ctx(ep, flow->ipsaddr->sockets.tcp_fd);
+					if (ctx) {
+						ctx->ipsaddr = flow->ipsaddr;
+						ctx->state = FD_STATE_VALID;
+					} else {
+						// shouldn't happen
+						close(flow->ipsaddr->sockets.tcp_fd);
+						flow->ipsaddr->sockets.tcp_fd = -1;
+						flow->ipsaddr->sockets.connected = 0;
+						// return PSM2_OK to retry in next loop rather than retry immediately
+						return PSM2_OK;
+					}
+				}
+			} else {
+				_HFI_VDBG("non-blocking connecting revents=%d fd=%d\n", pfd.revents, flow->ipsaddr->sockets.tcp_fd);
+				return PSM2_EP_NO_RESOURCES;
 			}
-			// connection successfully established
-			struct fd_ctx *ctx = psm3_sockets_get_fd_ctx(ep, flow->ipsaddr->sockets.tcp_fd);
-			if_pf (ctx == NULL) {
-				// shouldn't happen
-				return PSM2_INTERNAL_ERR;
-			}
-			ctx->valid = 1;
-			_HFI_VDBG("Connection established fd=%d\n", flow->ipsaddr->sockets.tcp_fd);
-		} else {
-			_HFI_VDBG("non-blocking connecting revents=%d fd=%d\n", pfd.revents, flow->ipsaddr->sockets.tcp_fd);
-			return PSM2_EP_NO_RESOURCES;
 		}
 	}
 
-	if_pf (flow->send_remaining && !(scb->scb_flags & IPS_SEND_FLAG_TCP_REMAINDER)) {
+	if_pf (flow->conn_msg_remainder) {
+		psmi_assert(flow->partial_conn_msg);
+		len = flow->conn_msg_remainder;
+		msg.msg_iov[0].iov_base = flow->partial_conn_msg;
+		msg.msg_iov[0].iov_len = len;
+		msg.msg_iovlen = 1;
+	} else if_pf (flow->send_remaining && !(scb->scb_flags & IPS_SEND_FLAG_TCP_REMAINDER)) {
 		// this flow has partial send, but the scb is not the one we want to continue
 		// this likely will not happen, but we have ctr and data msg retry in different
 		// timers. So we check here to play safe.
@@ -377,9 +486,15 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 			_HFI_VDBG("skip because of undesired scb\n");
 			return PSM2_EP_NO_RESOURCES;
 		}
+	} else {
+		len = flow->send_remaining ? flow->send_remaining : sizeof(*ips_lrh) + length;
+		msg.msg_iovlen = 0;
+		MSG_IOV(msg, ips_lrh, payload, length, len
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+			, ep->sockets_ep.sbuf, is_gpu_payload
+#endif
+			);
 	}
-
-	len = flow->send_remaining ? flow->send_remaining : sizeof(*ips_lrh) + length;
 
 #ifdef PSM_FI
 	// This is a bit of a high stress cheat.  While TCP is loss-less
@@ -413,7 +528,7 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 		return PSM2_EP_NO_RESOURCES;
 	}
 
-	if (likely(flow->send_remaining == 0)) {
+	if (likely(flow->send_remaining == 0 && flow->conn_msg_remainder == 0)) {
 		psmi_assert_always(! cksum_valid);	// no software checksum yet
 		psmi_assert((len & 3) == 0);	// must be DWORD mult
 #ifndef PSM_TCP_ACK
@@ -462,13 +577,22 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 	// perhaps bth (does PSM use bth to hold PSNs? - yes)
 	if (likely(flow->ipsaddr->sockets.tcp_fd > 0)) {
 #ifdef PSM_FI
-		size_t part_len = len;
+		int org_len = 0;
 		if_pf(PSM3_FAULTINJ_ENABLED_EP(ep)) {
 			PSM3_FAULTINJ_STATIC_DECL(fi_sendpart, "sendpart",
 					"partial TCP send",
 					1, IPS_FAULTINJ_SENDPART);
-			if_pf(PSM3_FAULTINJ_IS_FAULT(fi_sendpart, ep, ""))
-				part_len = min(len, 32);	// purposely less than min pkt size
+			if_pf(PSM3_FAULTINJ_IS_FAULT(fi_sendpart, ep, "")) {
+				org_len = msg.msg_iov[0].iov_len;
+				msg.msg_iov[0].iov_len = min(msg.msg_iov[0].iov_len, 32); // purposely less than min pkt size
+				msg.msg_iovlen = 1;
+			}
+			PSM3_FAULTINJ_STATIC_DECL(fi_connunkn, "connunkn",
+					"unknown connection",
+					1, IPS_FAULTINJ_CONNUNKN);
+			if_pf(PSM3_FAULTINJ_IS_FAULT(fi_connunkn, ep, "")) {
+				psm3_unknown_connection(proto, flow);
+			}
 		}
 #endif // PSM_FI
 		int flags = MSG_DONTWAIT;
@@ -478,28 +602,84 @@ psm3_sockets_tcp_spio_transfer_frame(struct ips_proto *proto, struct ips_flow *f
 			// to ignore it, otherwise this can cause IMPI termination
 			flags |= MSG_NOSIGNAL;
 		}
-		ssize_t res = psm3_sockets_tcp_sendmsg(ep, flow, ips_lrh, payload, length,
+		ssize_t res = sendmsg(flow->ipsaddr->sockets.tcp_fd, &msg, flags);
 #ifdef PSM_FI
-			part_len,
-#else
-			len,
+		if_pf(org_len) {
+			// restore iov_len because below code needs it
+			msg.msg_iov[0].iov_len = org_len;
+		}
 #endif
-			flags
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-			, is_gpu_payload
-#endif
-			);
 		if (res == len) {
-			// send out full pkt (or last chunk)
+			// sent out full pkt (or last chunk)
+			// if we just sent a partial conn msg, we need return PSM2_EP_NO_RESOURCES
+			// to trigger a retry of the callers intended send message
+			ret = flow->conn_msg_remainder ? PSM2_EP_NO_RESOURCES : PSM2_OK;
 			flow->send_remaining = 0;
+			flow->conn_msg_remainder = 0;
 			_HFI_VDBG("Sent successfully. opcode=%x fd=%d\n", opcode, flow->ipsaddr->sockets.tcp_fd);
 		} else if (res > 0) {
-			// send out partial pkt
-			flow->send_remaining = len - res;
-			scb->scb_flags |= IPS_SEND_FLAG_TCP_REMAINDER;
-			proto->stats.partial_write_cnt++;
-			_HFI_VDBG("Partial sending. fd=%d res=%ld len=%d remainder=%d\n",
-					flow->ipsaddr->sockets.tcp_fd, res, len, flow->send_remaining);
+			if_pf (flow->conn_msg_remainder) {
+				// partial conn msg already copied to flow->partial_conn_msg
+				flow->conn_msg_remainder = len - res;
+				// we can avoid memmove by using offset. But this is a very very rare case
+				// that multiple partial sends on a short conn msg. So no need to introduce
+				// a new field for offset.
+				memmove(flow->partial_conn_msg, flow->partial_conn_msg + res,
+					flow->conn_msg_remainder);
+				_HFI_VDBG("Partial conn msg send: opcode=%x send=%ld remainder=%d fd=%d\n",
+					opcode, res, flow->conn_msg_remainder, flow->ipsaddr->sockets.tcp_fd);
+			} else if (opcode == OPCODE_CONNECT_REQUEST ||
+				opcode == OPCODE_CONNECT_REPLY ||
+				opcode == OPCODE_DISCONNECT_REQUEST) {
+			    	// first time partial send on conn msg
+				flow->conn_msg_remainder = len - res;
+			    	if (flow->conn_msg_remainder > flow->partial_conn_msg_size) {
+			    		flow->partial_conn_msg_size = TCP_CONN_MSG_BUF_BLOCK *
+			    			(1 + flow->conn_msg_remainder/TCP_CONN_MSG_BUF_BLOCK);
+			    		// when we grow the buff, we do not need to retain the data
+			    		// below is faster than psmi_realloc that will do memcpy
+			    		if (flow->partial_conn_msg) {
+						psmi_free(flow->partial_conn_msg);
+			    		}
+					flow->partial_conn_msg = (uint8_t *) psmi_calloc(ep,
+						NETWORK_BUFFERS, flow->partial_conn_msg_size, 1);
+					if (!flow->partial_conn_msg) {
+						_HFI_ERROR("Unable to allocate buffer for partial connection message\n");
+						return PSM2_INTERNAL_ERR;
+					}
+			    	}
+			    	// we can potentially use ep->sbuf to store partial conn msg. But the buffer
+			    	// is at EP level. When one flow blocks on partial conn msg, all other flows
+			    	// have to wait for it. It's more efficient to use flow->partial_conn_msg
+			    	// that is at flow level. Below memecpy uses msg.msg_iov that already has data
+			    	// copied from device for GPU.
+				if (res < msg.msg_iov[0].iov_len) {
+					memcpy(flow->partial_conn_msg, (uint8_t *)msg.msg_iov[0].iov_base + res,
+						msg.msg_iov[0].iov_len - res);
+					memcpy(flow->partial_conn_msg + msg.msg_iov[0].iov_len - res,
+						msg.msg_iov[1].iov_base, msg.msg_iov[1].iov_len);
+				} else {
+					memcpy(flow->partial_conn_msg,
+						(uint8_t *)msg.msg_iov[1].iov_base + msg.msg_iov[1].iov_len - flow->conn_msg_remainder,
+						flow->conn_msg_remainder);
+				}
+				_HFI_VDBG("New partial conn msg send: opcode=%x send=%ld remainder=%d fd=%d\n",
+                                          opcode, res, flow->conn_msg_remainder, flow->ipsaddr->sockets.tcp_fd);
+				proto->stats.partial_ctr_write_cnt++;
+			} else {
+				// this shall not happen since we are doing local ack
+				// send out partial pkt
+				flow->send_remaining = len - res;
+				scb->scb_flags |= IPS_SEND_FLAG_TCP_REMAINDER;
+				if (isCtrlMsg) {
+					proto->stats.partial_ctr_write_cnt++;
+				} else {
+					proto->stats.partial_data_write_cnt++;
+				}
+			}
+			_HFI_VDBG("Partial sending. opcode=%x fd=%d res=%ld len=%d remainder=%d conn_msg_remainder=%d\n",
+					opcode, flow->ipsaddr->sockets.tcp_fd, res, len,
+					flow->send_remaining, flow->conn_msg_remainder);
 			ret = PSM2_EP_NO_RESOURCES;
 		} else if (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOTCONN) {
 			// socket is not ready. Either of outgoing buffer is full or not yet connected.
@@ -609,7 +789,21 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 	uint32_t len;
 	int i;
 
-	PSM2_LOG_MSG("entering with fd=%d\n", flow->ipsaddr->sockets.tcp_fd);
+	PSM2_LOG_MSG("entering with fd=%d", flow->ipsaddr->sockets.tcp_fd);
+
+	if_pf (flow->conn_msg_remainder) {
+		// continue partial conn msg, the passed in scb is used as a dumy scb
+		ret = psm3_sockets_tcp_spio_transfer_frame(proto, flow, scb, ips_scb_buffer(scb),
+			scb->payload_size, PSMI_TRUE, scb->ips_lrh.flags & IPS_SEND_FLAG_PKTCKSUM,
+			scb->cksum[0]
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+			, IS_TRANSFER_BUF_GPU_MEM(scb)
+#endif
+		);
+		if (ret != PSM2_OK) {
+			return ret;
+		}
+	}
 
 	if_pf (flow->send_remaining && !(scb->scb_flags & IPS_SEND_FLAG_TCP_REMAINDER)) {
 		// this flow has partial send, but the scb is not the one we want to continue
@@ -702,7 +896,13 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 				"partial TCP send",
 				1, IPS_FAULTINJ_SENDPART);
 		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_sendpart, ep, "")) {
-			iovs[msg.msg_iovlen - 1].iov_len = 32; // purposely less than min pkt size
+			iovs[msg.msg_iovlen - 1].iov_len = min(32, iovs[msg.msg_iovlen - 1].iov_len); // purposely less than min pkt size
+		}
+		PSM3_FAULTINJ_STATIC_DECL(fi_connunkn, "connunkn",
+				"unknown connection",
+				1, IPS_FAULTINJ_CONNUNKN);
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_connunkn, ep, "")) {
+			psm3_unknown_connection(proto, flow);
 		}
 	}
 #endif // PSM_FI
@@ -733,7 +933,7 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 			} else if (sum > res) {
 				flow->send_remaining = sum - res;
 				scb->scb_flags |= IPS_SEND_FLAG_TCP_REMAINDER;
-				proto->stats.partial_write_cnt++;
+				proto->stats.partial_data_write_cnt++;
 				*send_count = msg_count - 1;
 				_HFI_VDBG("Partial sending. fd=%d num_msg_sent=%d partial_msg_len=%ld partial_msg_remainder=%d\n",
 					flow->ipsaddr->sockets.tcp_fd, *send_count,
@@ -779,7 +979,8 @@ psm3_sockets_tcp_spio_transfer_frames(struct ips_proto *proto, struct ips_flow *
 // caller will wait for ack before freeing scb, so we could potentially
 // send directly from the payload in future and avoid some copies
 static __inline__ int
-psm3_sockets_udp_gso_send(int fd, struct ips_proto *proto, struct sockaddr_in6 *addr, 
+psm3_sockets_udp_gso_send(int fd, struct ips_proto *proto,
+		psm3_sockaddr_in_t *addr,
 		struct ips_scb *scb, uint8_t *payload, uint32_t length,
 		uint32_t frag_size
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
@@ -863,8 +1064,7 @@ psm3_sockets_udp_gso_send(int fd, struct ips_proto *proto, struct sockaddr_in6 *
 	msg.msg_control = control;
 	msg.msg_controllen = sizeof(control);
 	msg.msg_name = addr;
-	msg.msg_namelen = sizeof(struct sockaddr_in6);
-
+	msg.msg_namelen = sizeof(psm3_sockaddr_in_t);
 	// specify how to segment (segment size)
 	struct cmsghdr* cm = CMSG_FIRSTHDR(&msg);
 	cm->cmsg_level = SOL_UDP;

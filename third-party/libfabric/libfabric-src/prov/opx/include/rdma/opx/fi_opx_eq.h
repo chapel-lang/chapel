@@ -260,51 +260,41 @@ static inline size_t fi_opx_cq_fill(uintptr_t output,
 		union fi_opx_context * context,
 		const enum fi_cq_format format)
 {
-	assert((context->flags & FI_OPX_CQ_CONTEXT_EXT)==0);
-	assert(sizeof(struct fi_context2) == sizeof(union fi_opx_context));
+	assert(!(context->flags & FI_OPX_CQ_CONTEXT_HMEM));
+	assert(!(context->flags & FI_OPX_CQ_CONTEXT_EXT));
+	const uint64_t is_multi_recv = context->flags & FI_OPX_CQ_CONTEXT_MULTIRECV;
+
+	size_t return_size;
 
 	struct fi_cq_tagged_entry * entry = (struct fi_cq_tagged_entry *) output;
 	switch (format) {
-	case FI_CQ_FORMAT_CONTEXT:
-		if ((context->flags & FI_OPX_CQ_CONTEXT_MULTIRECV) == 0) {	/* likely */
-			entry->op_context = (void *)context;
-		} else {
-			entry->op_context = (void *)context->multi_recv_context;
-		}
-		return sizeof(struct fi_cq_entry);
-		break;
-	case FI_CQ_FORMAT_MSG:
-		*((struct fi_cq_msg_entry *)output) = *((struct fi_cq_msg_entry *)context);
-		if ((context->flags & FI_OPX_CQ_CONTEXT_MULTIRECV) == 0) {	/* likely */
-			entry->op_context = (void *)context;
-		} else {
-			entry->op_context = (void *)context->multi_recv_context;
-		}
-		return sizeof(struct fi_cq_msg_entry);
-		break;
-	case FI_CQ_FORMAT_DATA:
-		*((struct fi_cq_data_entry *)output) = *((struct fi_cq_data_entry *)context);
-		if ((context->flags & FI_OPX_CQ_CONTEXT_MULTIRECV) == 0) {	/* likely */
-			entry->op_context = (void *)context;
-		} else {
-			entry->op_context = (void *)context->multi_recv_context;
-		}
-		return sizeof(struct fi_cq_data_entry);
-		break;
-	case FI_CQ_FORMAT_TAGGED:
-		*((struct fi_cq_tagged_entry *)output) = *((struct fi_cq_tagged_entry *)context);
-		if ((context->flags & FI_OPX_CQ_CONTEXT_MULTIRECV) == 0) {	/* likely */
-			entry->op_context = (void *)context;
-		} else {
-			entry->op_context = (void *)context->multi_recv_context;
-		}
-		return sizeof(struct fi_cq_tagged_entry);
-		break;
-	default:
-		assert(0);
+		case FI_CQ_FORMAT_CONTEXT:
+			return_size = sizeof(struct fi_cq_entry);
+			break;
+		case FI_CQ_FORMAT_MSG:
+			*((struct fi_cq_msg_entry *)output) = *((struct fi_cq_msg_entry *)context);
+			return_size = sizeof(struct fi_cq_msg_entry);
+			break;
+		case FI_CQ_FORMAT_DATA:
+			*((struct fi_cq_data_entry *)output) = *((struct fi_cq_data_entry *)context);
+			return_size = sizeof(struct fi_cq_data_entry);
+			break;
+		case FI_CQ_FORMAT_TAGGED:
+			*((struct fi_cq_tagged_entry *)output) = *((struct fi_cq_tagged_entry *)context);
+			return_size = sizeof(struct fi_cq_tagged_entry);
+			break;
+		default:
+			assert(0);
+			return_size = 0;
 	}
 
-	return 0;
+	if (OFI_LIKELY(!is_multi_recv)) {
+		entry->op_context = (void *)context;
+	} else {
+		entry->op_context = (void *)context->multi_recv_context;
+	}
+
+	return return_size;
 }
 
 static ssize_t fi_opx_cq_poll_noinline (struct fi_opx_cq *opx_cq,
@@ -335,7 +325,10 @@ static ssize_t fi_opx_cq_poll_noinline (struct fi_opx_cq *opx_cq,
 			const uint64_t byte_counter = context->byte_counter;
 
 			if (byte_counter == 0) {
-				if(context->flags & FI_OPX_CQ_CONTEXT_MULTIRECV) {
+				if (context->flags & FI_OPX_CQ_CONTEXT_MULTIRECV) {
+					assert(!(context->flags & FI_OPX_CQ_CONTEXT_HMEM));
+					assert(!(context->flags & FI_OPX_CQ_CONTEXT_EXT));
+
 					union fi_opx_context *multi_recv_context = context->multi_recv_context;
 					assert(multi_recv_context != NULL);
 					multi_recv_context->byte_counter-=1;
@@ -349,6 +342,12 @@ static ssize_t fi_opx_cq_poll_noinline (struct fi_opx_cq *opx_cq,
 						assert(multi_recv_context->next == NULL);
 						fi_opx_context_slist_insert_tail(multi_recv_context, opx_ep->rx->cq_completed_ptr);
 					}
+				} else if (context->flags & FI_OPX_CQ_CONTEXT_EXT) {
+					struct fi_opx_context_ext *ext = (struct fi_opx_context_ext *) context;
+					context = (union fi_opx_context *) ext->msg.op_context;
+					*context = ext->opx_context;
+					context->flags &= ~(FI_OPX_CQ_CONTEXT_EXT | FI_OPX_CQ_CONTEXT_HMEM);
+					OPX_BUF_FREE(ext);
 				}
 				output += fi_opx_cq_fill(output, context, format);
 				++ num_entries;
@@ -390,9 +389,8 @@ static ssize_t fi_opx_cq_poll_noinline (struct fi_opx_cq *opx_cq,
 	return num_entries;
 }
 
-static inline void __attribute__((always_inline)) fi_opx_ep_rx_poll (struct fid_ep *ep, const uint64_t caps, const enum ofi_reliability_kind reliability, const uint64_t hdrq_mask);
-
 __OPX_FORCE_INLINE__
+__attribute__ ((flatten))
 ssize_t fi_opx_cq_poll_inline(struct fid_cq *cq, void *buf, size_t count,
 		fi_addr_t *src_addr, const enum fi_cq_format format,
 		const int lock_required,

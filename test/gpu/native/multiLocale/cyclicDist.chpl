@@ -1,7 +1,7 @@
 // Do some computation on gpus across multiple locales, collect results
 // together in some cycically distributed array
 use CyclicDist;
-const Dom = {0..<numLocales} dmapped cyclicDist(startIdx=0);
+const Dom = {0..<numLocales} dmapped new cyclicDist(startIdx=0);
 var A : [Dom] int;
 
 coforall loc in Locales with (ref A) do on loc {

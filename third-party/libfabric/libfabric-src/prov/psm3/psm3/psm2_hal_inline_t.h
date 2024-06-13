@@ -124,7 +124,7 @@ static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_path_rec_init)
 static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ptl_pollintr)
 				(psm2_ep_t ep, struct ips_recvhdrq *recvq,
 					int fd_pipe, int next_timeout,
-					uint64_t *pollok, uint64_t *pollcyc);
+					uint64_t *pollok, uint64_t *pollcyc, uint64_t *pollintr);
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(gdr_close)
 				(void);

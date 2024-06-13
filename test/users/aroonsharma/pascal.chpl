@@ -29,13 +29,13 @@ if dist=='NONE' {
   //totalcomm2=volume;
   dobench(mydist, mydom);  
 } */else if dist=='C' {
-  var mydist = mydom dmapped cyclicDist(startIdx=mydom.low);
+  var mydist = mydom dmapped new cyclicDist(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='BC' {
-  var mydist = mydom dmapped blockCycDist(startIdx=mydom.low, blocksize=blocksize);
+  var mydist = mydom dmapped new blockCycDist(startIdx=mydom.low, blocksize=blocksize);
   dobench(mydist, mydom);
 } else if dist=='B' {
-  var mydist = mydom dmapped blockDist(boundingBox=mydom);
+  var mydist = mydom dmapped new blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 }
 

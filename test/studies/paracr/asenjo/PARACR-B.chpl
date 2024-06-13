@@ -19,7 +19,7 @@ var stages:int= GetNumStages(n);
 var error:int=0;
 
 const Space = {1..n};
-const Dom = Space dmapped blockDist(boundingBox=Space);
+const Dom = Space dmapped new blockDist(boundingBox=Space);
 
 var Dstages: domain(1,int)={1..stages};
 var AA,BB,CC,DD:[Dom] real;

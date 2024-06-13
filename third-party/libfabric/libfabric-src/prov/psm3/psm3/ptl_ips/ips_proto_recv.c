@@ -317,10 +317,10 @@ psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 	ack_seq_num.psn_num = p_hdr->ack_seq_num;
 	// check actual psn acked (ack_seq_num-1), we only want to process acks
 	// for packets we never got an ack for
-	if ((flowid = ips_proto_flowid(p_hdr)) < EP_FLOW_TIDFLOW) {
+	if ((flowid = ips_proto_flowid(p_hdr)) < EP_NUM_FLOW_ENTRIES) {
 		ack_seq_num.psn_num =
 		    (ack_seq_num.psn_num - 1) & proto->psn_mask;
-		psmi_assert(flowid < EP_FLOW_LAST);
+		psmi_assert(flowid < EP_NUM_FLOW_ENTRIES);
 		flow = &ipsaddr->flows[flowid];
 		if (!pio_dma_ack_valid(proto, flow, ack_seq_num))
 			goto ret;
@@ -388,14 +388,6 @@ psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 			ips_proto_dma_wait_until(proto, scb);
 		}
 #endif /* PSM_HAVE_SDMA */
-#ifdef PSM_ONEAPI
-		if (scb->scb_flags & IPS_SEND_FLAG_USE_GDRCOPY) {
-			psmi_hal_gdr_munmap_gpu_to_host_addr(
-					scb->gdr_addr, scb->gdr_size,
-					0, proto->ep);
-			scb->scb_flags &= ~IPS_SEND_FLAG_USE_GDRCOPY;
-		}
-#endif
 		if (scb->callback)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);
@@ -513,9 +505,9 @@ int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 	// we are likely to get a previous ack_seq_num in NAK, in which case
 	// we need to resend unacked packets starting with ack_seq_num.  So check
 	// psn of 1st NAK would like us to retransmit (e.g. don't -1 before check)
-	if ((flowid = ips_proto_flowid(p_hdr)) < EP_FLOW_TIDFLOW) {
+	if ((flowid = ips_proto_flowid(p_hdr)) < EP_NUM_FLOW_ENTRIES) {
 		protocol = PSM_PROTOCOL_GO_BACK_N;
-		psmi_assert(flowid < EP_FLOW_LAST);
+		psmi_assert(flowid < EP_NUM_FLOW_ENTRIES);
 		flow = &ipsaddr->flows[flowid];
 		if (!pio_dma_ack_valid(proto, flow, ack_seq_num))
 			goto ret;
@@ -580,14 +572,6 @@ int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 		}
 #endif /* PSM_HAVE_SDMA */
 
-#ifdef PSM_ONEAPI
-		if (scb->scb_flags & IPS_SEND_FLAG_USE_GDRCOPY) {
-			psmi_hal_gdr_munmap_gpu_to_host_addr(
-					scb->gdr_addr, scb->gdr_size,
-					0, proto->ep);
-			scb->scb_flags &= ~IPS_SEND_FLAG_USE_GDRCOPY;
-		}
-#endif
 		if (scb->callback)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);
@@ -720,7 +704,7 @@ psm3_ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev)
 
 	INC_TIME_SPEND(TIME_SPEND_USER4);
 	PSM2_LOG_MSG("entering");
-	psmi_assert(flowid < EP_FLOW_LAST);
+	psmi_assert(flowid < EP_NUM_FLOW_ENTRIES);
 	flow = &ipsaddr->flows[flowid];
 	recvq->proto->epaddr_stats.err_chk_recv++;
 

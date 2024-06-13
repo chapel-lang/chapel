@@ -1338,9 +1338,14 @@ procedure. The default main function is equivalent to:
 Module Initialization Order
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Module initialization is performed using the following algorithm.
+Module initialization is performed at program start-up and initializes
+modules in an order determined by the ``use`` and ``import`` statements.
+Not all modules need to be initialized (see :ref:`Module_Initialization`
+for details).
 
-Starting from the module that defines the main procedure, the modules named in
+The following describes the module initialization order.
+
+Starting from :ref:`The_main_Module`, the modules named in
 its use and import statements are visited depth-first and initialized in
 post-order. If a use or import statement names a module that has already been
 visited, it is not visited a second time. Thus, infinite recursion is avoided.

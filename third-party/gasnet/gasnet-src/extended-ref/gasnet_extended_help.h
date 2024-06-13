@@ -287,6 +287,9 @@ typedef union {
       return 0;                                                    \
     } } while(0)
 
+#define GASNETI_CHECK_LEGACY_PUT(tm,flags) _GASNETI_CHECK_LEGACY("put",tm,flags)
+#define GASNETI_CHECK_LEGACY_GET(tm,flags) _GASNETI_CHECK_LEGACY("get",tm,flags)
+
 #if GASNET_DEBUG
   #define GASNETI_CHECK_PUT_LCOPT(lc_opt, isnbi) do {                                    \
     gex_Event_t *_gcpl_lc_opt = (lc_opt);                                                \

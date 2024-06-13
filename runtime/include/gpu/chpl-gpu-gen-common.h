@@ -65,10 +65,30 @@ __device__ static inline void chpl_gen_comm_get(void *addr, c_nodeid_t node,
   // TODO
 }
 
+__device__ static inline void chpl_gen_comm_get_unordered(void *addr,
+                                                          c_nodeid_t node,
+                                                          void* raddr, size_t
+                                                          size, int32_t commID,
+                                                          int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_get_unordered called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
 __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
 {
   printf("Warning: chpl_gen_comm_put called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
+__device__ static inline void chpl_gen_comm_put_unordered(void *addr,
+                                                          c_nodeid_t node,
+                                                          void* raddr, size_t
+                                                          size, int32_t commID,
+                                                          int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_put_unordered called inside a GPU kernel. This shouldn't have happened.\n");
   // TODO
 }
 

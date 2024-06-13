@@ -149,10 +149,10 @@ proc main() {
         var user_dist_square = dom_square dmapped CyclicZipOpt(startIdx=dom_square.low);
         kernel_fw(user_dist_square, N);   */
     } else if dist == "C" {
-        var user_dist_square = dom_square dmapped cyclicDist(startIdx=dom_square.low);
+        var user_dist_square = dom_square dmapped new cyclicDist(startIdx=dom_square.low);
         kernel_fw(user_dist_square, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped blockDist(boundingBox=dom_square);
+        var user_dist_square = dom_square dmapped new blockDist(boundingBox=dom_square);
         kernel_fw(user_dist_square, N);  
     } 
 }

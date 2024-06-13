@@ -104,33 +104,5 @@ psm3_sockets_gdr_convert_gpu_to_host_addr(unsigned long buf,
 #endif
 }
 
-#ifdef PSM_ONEAPI
-void
-psm3_sockets_gdr_munmap_gpu_to_host_addr(unsigned long buf,
-					 size_t size, int flags,
-					 psm2_ep_t ep)
-{
-	int ret;
-	uintptr_t pageaddr = buf & GPU_PAGE_MASK;
-	uint64_t pagelen = (uint64_t) (PSMI_GPU_PAGESIZE +
-					   ((buf + size - 1) & GPU_PAGE_MASK) -
-					   pageaddr);
-
-	PSMI_ONEAPI_ZE_CALL(zeMemGetAddressRange, ze_context,
-			    (const void *)buf, (void **)&pageaddr, &pagelen);
-	_HFI_VDBG("buf=%p size=%zu pageaddr=%p pagelen=%"PRIu64" flags=0x%x ep=%p\n",
-		(void *)buf, size, (void *)pageaddr, pagelen, flags, ep);
-#ifdef RNDV_MOD
-	ep = ep->mctxt_master;
-	ret = psm3_rv_munmap_unpin(ep->rv, pageaddr, pagelen, IBV_ACCESS_IS_GPU_ADDR);
-	if (ret)
-		_HFI_ERROR("Failed to munmap buf=%p size=%zu pageaddr=%p pagelen=%"PRIu64" flags=0x%x ep=%p\n",
-			   (void *)buf, size, (void *)pageaddr, pagelen, flags,
-			   ep);
-#else
-	psmi_assert_always(0);	// unimplemented, should not get here
-#endif /* RNDV_MOD */
-}
-#endif /* PSM_ONEAPI */
 #endif /* PSM_CUDA || PSM_ONEAPI */
 #endif /* PSM_SOCKETS */

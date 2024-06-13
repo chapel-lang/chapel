@@ -458,7 +458,7 @@ module TomlParser {
    fieldEmpty,
    fieldDate,
    fieldTime,
-   fieldDateTime };
+   fieldDateTime }
  private use fieldtag;
 
  @chpldoc.nodoc

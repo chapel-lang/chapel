@@ -512,60 +512,60 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
 
   std::vector<const Scope*> result;
 
-  ID curId = classDeclId;
-
   bool encounteredError = false;
-  while (!curId.isEmpty() && !encounteredError) {
-    auto ast = parsing::idToAst(context, curId);
-    if (!ast) break;
+  auto ast = parsing::idToAst(context, classDeclId);
+  if (!ast) return QUERY_END(result);
 
-    auto c = ast->toClass();
-    if (!c || c->numInheritExprs() == 0) break;
+  auto c = ast->toClass();
+  if (!c || c->numInheritExprs() == 0) return QUERY_END(result);
 
-    const uast::AstNode* lastParentClass = nullptr;
-    for (auto inheritExpr : c->inheritExprs()) {
-      // Resolve the parent class type expression
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForParentClassScopeResolve(context, c, r);
-      // Parsing excludes non-identifiers as parent class expressions.
-      //
-      // Intended to avoid calling methodReceiverScopes() recursively.
-      // Uses the empty 'savecReceiverScopes' because the class expression
-      // can't be a method anyways.
-      bool ignoredMarkedGeneric = false;
-      auto ident = Class::getInheritExprIdent(inheritExpr,
-                                              ignoredMarkedGeneric);
-      visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
+  const uast::AstNode* lastParentClass = nullptr;
+  ID parentClassDeclId;
+  for (auto inheritExpr : c->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClassScopeResolve(context, c, r);
+    // Parsing excludes non-identifiers as parent class expressions.
+    //
+    // Intended to avoid calling methodReceiverScopes() recursively.
+    // Uses the empty 'savecReceiverScopes' because the class expression
+    // can't be a method anyways.
+    bool ignoredMarkedGeneric = false;
+    auto ident = Class::getInheritExprIdent(inheritExpr,
+                                            ignoredMarkedGeneric);
+    visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
 
 
-      ResolvedExpression& re = r.byAst(ident);
-      if (re.toId().isEmpty()) {
-        context->error(inheritExpr, "invalid parent class expression");
+    ResolvedExpression& re = r.byAst(ident);
+    if (re.toId().isEmpty()) {
+      context->error(inheritExpr, "invalid parent class expression");
+      encounteredError = true;
+      break;
+    } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
+      // this is an interface; ignore it for the purposes of parent scopes.
+    } else {
+      if (lastParentClass) {
+        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
         encounteredError = true;
         break;
-      } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
-        // this is an interface; ignore it for the purposes of parent scopes.
-      } else {
-        if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
-          encounteredError = true;
-          break;
-        }
-        lastParentClass = inheritExpr;
-
-        result.push_back(scopeForId(context, re.toId()));
-        curId = re.toId();
-        // keep going through the list of parent expressions. hitting
-        // another parent expression that's a class after this point
-        // will result in an error. When we're done with other parent
-        // expressions, the loop will continue to searching for the
-        // parent classes of this parent class.
       }
-    }
+      lastParentClass = inheritExpr;
 
-    // only interfaces found, no need to look for more parents.
-    if (!lastParentClass) break;
+      result.push_back(scopeForId(context, re.toId()));
+      parentClassDeclId = re.toId();
+      // keep going through the list of parent expressions. hitting
+      // another parent expression that's a class after this point
+      // will result in an error. When we're done with other parent
+      // expressions, the loop will continue to searching for the
+      // parent classes of this parent class.
+    }
+  }
+
+  if (!encounteredError && !parentClassDeclId.isEmpty()) {
+    const auto& parentScopes =
+      gatherParentClassScopesForScopeResolving(context, parentClassDeclId);
+    result.insert(result.end(), parentScopes.begin(), parentScopes.end());
   }
 
   return QUERY_END(result);
@@ -1052,9 +1052,8 @@ Resolver::computeCustomInferType(const AstNode* decl,
   auto rr = resolveGeneratedCall(context, nullptr, ci, inScopes);
   if (rr.mostSpecific().only()) {
     ret = rr.exprType();
-    handleResolvedAssociatedCall(byPostorder.byAst(decl), decl, ci, rr,
-                                 AssociatedAction::INFER_TYPE,
-                                 decl->id());
+    handleResolvedCall(byPostorder.byAst(decl), decl, ci, rr,
+                       { { AssociatedAction::INFER_TYPE, decl->id() } });
   } else {
     context->error(ct->id(), "'chpl__inferCopyType' is unimplemented");
   }
@@ -1603,19 +1602,34 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
 bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
                                               const uast::AstNode* astForErr,
                                               const CallInfo& ci,
-                                              const CallResolutionResult& c) {
+                                              const CallResolutionResult& c,
+                                              optional<ActionAndId> actionAndId) {
 
   if (!c.exprType().hasTypePtr()) {
-    r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
-    r.setMostSpecific(c.mostSpecific());
+    if (!actionAndId) {
+      // Only set the type to erroneous if we're handling an actual user call,
+      // and not an associated action.
+      r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+      r.setMostSpecific(c.mostSpecific());
+    }
 
     // If the call was specially handled, assume special-case logic has already
-    // issued its own error.
+    // issued its own error, so we shouldn't emit a general error.
     return !c.speciallyHandled();
   } else {
-    r.setPoiScope(c.poiInfo().poiScope());
-    r.setType(c.exprType());
-    validateAndSetMostSpecific(r, astForErr, c.mostSpecific());
+    if (actionAndId) {
+      // save candidates as associated functions
+      for (auto& sig : c.mostSpecific()) {
+        if (sig) {
+          r.addAssociatedAction(std::get<0>(*actionAndId), sig.fn(),
+                                std::get<1>(*actionAndId));
+        }
+      }
+    } else {
+      r.setPoiScope(c.poiInfo().poiScope());
+      r.setType(c.exprType());
+      validateAndSetMostSpecific(r, astForErr, c.mostSpecific());
+    }
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
   }
@@ -1625,9 +1639,10 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
 void Resolver::handleResolvedCall(ResolvedExpression& r,
                                   const uast::AstNode* astForErr,
                                   const CallInfo& ci,
-                                  const CallResolutionResult& c) {
+                                  const CallResolutionResult& c,
+                                  optional<ActionAndId> actionAndId) {
 
-  if (handleResolvedCallWithoutError(r, astForErr, ci, c)) {
+  if (handleResolvedCallWithoutError(r, astForErr, ci, c, std::move(actionAndId))) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   }
 }
@@ -1637,9 +1652,12 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                                  const CallInfo& ci,
                                                  const CallScopeInfo& inScopes,
                                                  const QualifiedType& receiverType,
-                                                 const CallResolutionResult& c) {
+                                                 const CallResolutionResult& c,
+                                                 optional<ActionAndId> actionAndId) {
 
-  if (handleResolvedCallWithoutError(r, call, ci, c)) {
+  bool wasCallGenerated = (bool) actionAndId;
+  CHPL_ASSERT(!wasCallGenerated || receiverType.isUnknown());
+  if (handleResolvedCallWithoutError(r, call, ci, c, std::move(actionAndId))) {
     if (c.mostSpecific().isEmpty() &&
         !c.mostSpecific().isAmbiguous()) {
       // The call isn't ambiguous; it might be that we rejected all the candidates
@@ -1647,8 +1665,13 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       // this time to preserve the list of rejected candidates.
 
       std::vector<ApplicabilityResult> rejected;
-      std::ignore = resolveCallInMethod(context, call, ci, inScopes,
-                                        receiverType, &rejected);
+
+      if (wasCallGenerated) {
+        std::ignore = resolveGeneratedCall(context, call, ci, inScopes, &rejected);
+      } else {
+        std::ignore = resolveCallInMethod(context, call, ci, inScopes,
+                                          receiverType, &rejected);
+      }
 
       if (!rejected.empty()) {
         // There were candidates but we threw them out. We can issue a nicer
@@ -1660,26 +1683,6 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
 
     // Fall through to the more general error handling.
     issueErrorForFailedCallResolution(call, ci, c);
-  }
-}
-
-void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
-                                            const uast::AstNode* astForErr,
-                                            const CallInfo& ci,
-                                            const CallResolutionResult& c,
-                                            AssociatedAction::Action action,
-                                            ID id) {
-  if (!c.exprType().hasTypePtr() && !c.speciallyHandled()) {
-    issueErrorForFailedCallResolution(astForErr, ci, c);
-  } else {
-    // save candidates as associated functions
-    for (auto& sig : c.mostSpecific()) {
-      if (sig) {
-        r.addAssociatedAction(action, sig.fn(), id);
-      }
-    }
-    // gather the poi scopes used when resolving the call
-    poiInfo.accumulate(c.poiInfo());
   }
 }
 
@@ -1839,9 +1842,8 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, inScopes);
-      handleResolvedAssociatedCall(r, astForErr, ci, c,
-                                   AssociatedAction::ASSIGN,
-                                   lhsTuple->id());
+      handleResolvedCall(r, astForErr, ci, c,
+                         { { AssociatedAction::ASSIGN, lhsTuple->id() } });
     }
     i++;
   }
@@ -1855,22 +1857,33 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
   }
 
   const TupleType* rhsT = rhsType.type()->toTupleType();
+  std::vector<QualifiedType> eltTypes;
 
   if (rhsT == nullptr) {
-    CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
-    return;
-  }
-
-  // Then, check that they have the same size
-  if (lhsTuple->numDecls() != rhsT->numElements()) {
+    if (rhsType.isUnknown() ||
+        rhsType.isErroneousType() ||
+        (rhsType.hasTypePtr() && rhsType.type()->isAnyType())) {
+      // Fill element types with the unknown/generic QualifiedType, so that we
+      // at least get the 'kind' right
+      eltTypes = std::vector<QualifiedType>(lhsTuple->numDecls(), rhsType);
+    } else {
+      CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
+      return;
+    }
+  } else if (lhsTuple->numDecls() != rhsT->numElements()) {
+    // Then, check that they have the same size
     CHPL_REPORT(context, TupleDeclMismatchedElems, lhsTuple, rhsT);
     return;
+  } else {
+    for (int i = 0; i < rhsT->numElements(); i++) {
+      eltTypes.push_back(rhsT->elementType(i));
+    }
   }
 
   // Finally, try to resolve the types of the elements
   int i = 0;
   for (auto actual : lhsTuple->decls()) {
-    QualifiedType rhsEltType = rhsT->elementType(i);
+    QualifiedType rhsEltType = eltTypes[i];
     if (auto innerTuple = actual->toTupleDecl()) {
       resolveTupleUnpackDecl(innerTuple, rhsEltType);
     } else if (auto namedDecl = actual->toNamedDecl()) {
@@ -1891,9 +1904,32 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
   QualifiedType useT;
 
+  // Non-default intents are currently not allowed for tuple-grouped formals.
+  //
+  // Note: This doesn't apply to nested TupleDecls like ``(a, b)`` in the
+  // formal ``((a, b), c)``. Such nested formals should be handled by
+  // ``resolveTupleUnpackDecl``.
+  if (td->isTupleDeclFormal() && declKind != QualifiedType::DEFAULT_INTENT) {
+    useT = QualifiedType(declKind, ErroneousType::get(context));
+    ResolvedExpression& result = byPostorder.byAst(td);
+    result.setType(useT);
+    return;
+  }
+
   // Figure out the type to use for this tuple
   if (useType != nullptr) {
     useT = QualifiedType(declKind, useType);
+  } else if (substitutions != nullptr &&
+             substitutions->count(td->id()) != 0) {
+    auto sub = substitutions->find(td->id())->second;
+    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+
+    if (subTup == nullptr) {
+      // Rely on hasTypePtr check below to recognize error
+      useT = QualifiedType();
+    } else {
+      useT = sub;
+    }
   } else {
     QualifiedType typeExprT;
     QualifiedType initExprT;
@@ -1901,22 +1937,36 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
     auto typeExpr = td->typeExpression();
     auto initExpr = td->initExpression();
 
-    if (typeExpr != nullptr) {
-      ResolvedExpression& result = byPostorder.byAst(typeExpr);
-      typeExprT = result.type();
-    }
-    if (initExpr != nullptr) {
-      ResolvedExpression& result = byPostorder.byAst(initExpr);
-      initExprT = result.type();
-    }
+    if (typeExpr == nullptr && initExpr == nullptr) {
+      // Note: we seem to rely on tuple components being 'var', and relying on
+      // the tuple's kind instead. Without this, the current instantiation
+      // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
+      auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
+      std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+      auto tup = TupleType::getQualifiedTuple(context, eltTypes);
+      useT = QualifiedType(declKind, tup);
+    } else {
+      if (typeExpr != nullptr) {
+        ResolvedExpression& result = byPostorder.byAst(typeExpr);
+        typeExprT = result.type();
+      }
+      if (initExpr != nullptr) {
+        ResolvedExpression& result = byPostorder.byAst(initExpr);
+        initExprT = result.type();
+      }
 
-    useT = getTypeForDecl(td, typeExpr, initExpr,
-                          declKind, typeExprT, initExprT);
+      useT = getTypeForDecl(td, typeExpr, initExpr,
+                            declKind, typeExprT, initExprT);
+
+    }
   }
 
   if (!useT.hasTypePtr()) {
     context->error(td, "Cannot establish type for tuple decl");
     useT = QualifiedType(declKind, ErroneousType::get(context));
+  } else if (useT.type()->isTupleType()) {
+    useT = QualifiedType(useT.kind(),
+                         useT.type()->toTupleType()->toReferentialTuple(context));
   }
 
   // save the type in byPostorder
@@ -1988,15 +2038,14 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // note: the resolution machinery will get compiler generated candidates
   auto crr = resolveGeneratedCall(context, call, ci, inScopes);
+  handleResolvedCallPrintCandidates(re, call, ci, inScopes, QualifiedType(), crr,
+                                    { { AssociatedAction::NEW_INIT, call->id() } });
 
-  CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
+  CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
   if (auto initMsc = crr.mostSpecific().only()) {
     auto initTfs = initMsc.fn();
-    handleResolvedAssociatedCall(re, call, ci, crr,
-                                 AssociatedAction::NEW_INIT,
-                                 call->id());
 
     // Set the final output type based on the result of the 'new' call.
     auto qtInitReceiver = initTfs->formalType(0);
@@ -2016,9 +2065,6 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
     auto qt = QualifiedType(QualifiedType::VAR, type);
     re.setType(qt);
-
-  } else {
-    issueErrorForFailedCallResolution(call, ci, crr);
   }
 
   return true;
@@ -2502,9 +2548,8 @@ bool Resolver::enter(const uast::Select* sel) {
                             /* isParenless */ false,
                             actuals);
         auto c = resolveGeneratedCall(context, caseExpr, ci, inScopes);
-        handleResolvedAssociatedCall(caseResult, caseExpr, ci, c,
-                                     AssociatedAction::COMPARE,
-                                     caseExpr->id());
+        handleResolvedCall(caseResult, caseExpr, ci, c,
+                           { { AssociatedAction::COMPARE, caseExpr->id() } });
 
         auto type = c.exprType();
         anyParamTrue = anyParamTrue || type.isParamTrue();
@@ -2621,6 +2666,13 @@ Resolver::lookupIdentifier(const Identifier* ident,
   const Scope* scope = scopeStack.back();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
 
+  if (ident->name() == USTR("super")) {
+    // Super is a keyword, and should't be looked up in scopes. Return
+    // an empty ID to indicate that this identifier points to something,
+    // but that something has a special meaning.
+    return { BorrowedIdsWithName::createWithBuiltinId() };
+  }
+
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
 
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
@@ -2651,13 +2703,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
   // and probably a few other features.
   if (!scopeResolveOnly) {
     if (notFound) {
-      // If this identifier is 'super' and we couldn't find something it refers
-      // to, it could stand for 'this.super'. But in that case, no need to
-      // issue an error.
-      if (isPotentialSuper(ident)) {
-        // We found a single ID, and it's just 'super'.
-        return { BorrowedIdsWithName::createWithBuiltinId() };
-      } else if (!resolvingCalledIdent) {
+      if (!resolvingCalledIdent) {
         auto pair = namesWithErrorsEmitted.insert(ident->name());
         if (pair.second) {
           // insertion took place so emit the error
@@ -2677,13 +2723,13 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
 void Resolver::validateAndSetToId(ResolvedExpression& r,
                                   const AstNode* node,
-                                  const ID& id) {
-  r.setToId(id);
-  if (id.isEmpty()) return;
-  if (id.isFabricatedId()) return;
+                                  const ID& toId) {
+  r.setToId(toId);
+  if (toId.isEmpty()) return;
+  if (toId.isFabricatedId()) return;
 
   // Validate the newly set to ID.
-  auto idTag = parsing::idToTag(context, id);
+  auto idTag = parsing::idToTag(context, toId);
 
   // It shouldn't refer to a module unless the node is an identifier in one of
   // the places where module references are allowed (e.g. imports).
@@ -2696,7 +2742,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
           asttags::isDot(parentTag)) {
         // OK
       } else {
-        auto toAst = parsing::idToAst(context, id);
+        auto toAst = parsing::idToAst(context, toId);
         auto mod = toAst->toModule();
         auto parentAst = parsing::idToAst(context, parentId);
         CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
@@ -2705,33 +2751,32 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   }
 
   // If we're in a nested class, it shouldn't refer to an outer class' field.
-  auto scope = scopeForId(context, id);
-  auto parentId = scope->id();
+  auto parentId =
+    Builder::astTagIndicatesNewIdScope(idTag) ? toId : toId.parentSymbolId(context);
   auto parentTag = parsing::idToTag(context, parentId);
   if (asttags::isAggregateDecl(parentTag) &&
       parentId.contains(node->id()) &&
-      parentId != id /* It's okay to refer to the record itself */) {
+      parentId != toId /* It's okay to refer to the record itself */) {
     // Referring to a field of a class that's surrounding the current node.
     // Loop upwards looking for a composite type.
-    auto searchId = parsing::idToParentId(context, node->id());
+    auto searchId = node->id().parentSymbolId(context);
     while (!searchId.isEmpty()) {
-      auto searchTag = parsing::idToTag(context, searchId);
       if (searchId == parentId) {
         // We found the aggregate type in which the to-ID is declared,
         // so there's no nested class issues.
         break;
-      } else if (asttags::isAggregateDecl(searchTag)) {
+      } else if (asttags::isAggregateDecl(parsing::idToTag(context, searchId))) {
         auto parentAst = parsing::idToAst(context, parentId);
         auto searchAst = parsing::idToAst(context, searchId);
         auto searchAD = searchAst->toAggregateDecl();
         // It's an error!
         CHPL_REPORT(context, NestedClassFieldRef, parentAst->toAggregateDecl(),
-                    searchAD, node, id);
+                    searchAD, node, toId);
         break;
       }
 
       // Move on to the surrounding ID.
-      searchId = parsing::idToParentId(context, searchId);
+      searchId = searchId.parentSymbolId(context);
     }
   }
 }
@@ -2752,19 +2797,6 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
   }
 
   r.setMostSpecific(mostSpecific);
-}
-
-static bool isCalledExpression(Resolver* rv, const AstNode* ast) {
-  if (!ast) return false;
-
-  auto p = parsing::parentAst(rv->context, ast);
-  if (!p) return false;
-
-  if (auto call = p->toCall())
-    if (auto ce = call->calledExpression())
-      return ce == ast;
-
-  return false;
 }
 
 static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
@@ -2788,7 +2820,11 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   if (qt.kind() == QualifiedType::PARENLESS_FUNCTION) return;
 
   bool emitUnstableAndDeprecationWarnings = true;
-  if (isCalledExpression(rv, astMention)) {
+  if (rv->nearestCalledExpression() == astMention) {
+    // Note: the above conditional assumes that the astMention is
+    // currently the thing being traversed (which is what makes
+    // nearestCalledExpression() sufficient).
+    //
     // For functions, do not warn, since call resolution will take
     // care of that.  However, if we're referring to other symbol
     // kinds, we know right now that a deprecation warning should be
@@ -3566,7 +3602,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           skip = UNKNOWN_PARAM;
         } else if (qt.isUnknown()) {
           skip = UNKNOWN_ACT;
-        } else if (t != nullptr && !(ci.name() == USTR("init") && actualIdx == 0)) {
+        } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
           // For initializer calls, allow generic formals using the above
           // condition; this way, 'this.init(..)' while 'this' is generic
           // should be fine.
@@ -3939,7 +3975,7 @@ static void resolveNewForClass(Resolver& rv, const New* node,
                                const ClassType* classType) {
   ResolvedExpression& re = rv.byPostorder.byAst(node);
   auto cls = getDecoratedClassForNew(rv.context, node, classType);
-  auto qt = QualifiedType(QualifiedType::VAR, cls);
+  auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, cls);
   re.setType(qt);
 }
 
@@ -3950,7 +3986,7 @@ static void resolveNewForRecord(Resolver& rv, const New* node,
   if (node->management() != New::DEFAULT_MANAGEMENT) {
     CHPL_REPORT(rv.context, MemManagementNonClass, node, recordType);
   } else {
-    auto qt = QualifiedType(QualifiedType::VAR, recordType);
+    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, recordType);
     re.setType(qt);
   }
 }
@@ -3962,7 +3998,7 @@ static void resolveNewForUnion(Resolver& rv, const New* node,
   if (node->management() != New::DEFAULT_MANAGEMENT) {
     CHPL_REPORT(rv.context, MemManagementNonClass, node, unionType);
   } else {
-    auto qt = QualifiedType(QualifiedType::VAR, unionType);
+    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, unionType);
     re.setType(qt);
   }
 }
@@ -4056,9 +4092,8 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
 
     if (c.mostSpecific().only()) {
       idxType = c.exprType();
-      resolver.handleResolvedAssociatedCall(iterandRE, astForErr, ci, c,
-                                            AssociatedAction::ITERATE,
-                                            iterand->id());
+      resolver.handleResolvedCall(iterandRE, astForErr, ci, c,
+                                  { { AssociatedAction::ITERATE, iterand->id() } });
     } else {
       idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand, iterandRE.type());
     }
@@ -4307,10 +4342,9 @@ constructReduceScanOpClass(Resolver& resolver,
     CHPL_REPORT(context, ReductionInvalidName, reduceOrScan, opName, iterType);
     return nullptr;
   } else {
-    resolver.handleResolvedAssociatedCall(resolver.byPostorder.byAst(reduceOrScan),
-                                          reduceOrScan, ci, c,
-                                          AssociatedAction::REDUCE_SCAN,
-                                          reduceOrScan->id());
+    resolver.handleResolvedCall(resolver.byPostorder.byAst(reduceOrScan),
+                                reduceOrScan, ci, c,
+                                { { AssociatedAction::REDUCE_SCAN, reduceOrScan->id() } });
   }
 
   // We found some type; is it a subclass of ReduceScanOp?
