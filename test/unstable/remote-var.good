@@ -1,4 +1,3 @@
-warning: GPU support is under active development. As such, the interface is unstable and expected to change in the forthcoming releases.
 remote-var.chpl:2: warning: remote variables are unstable
 remote-var.chpl:6: warning: remote variables are unstable
 remote-var.chpl:10: warning: remote variables are unstable
