@@ -1208,6 +1208,112 @@ static void testExample27() {
            "" /* both false; no matches. */);
 }
 
+// Check diambiguation of identifiers in methods, between a
+// field and a proc on a different receiver.
+static void testExample28() {
+  {
+    testCall("example28a.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                  }
+                  record bar {
+                  }
+                  proc bar.size do return 3;
+                  proc foo.asdf() {
+                    return size;
+                  }
+                }
+             )"""",
+             "M.asdf",
+             "M.asdf@2",
+             "M.foo@1");
+  }
+
+  // Same as 28a but with primary calling method
+  {
+    testCall("example28b.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                    proc asdf() {
+                      return size;
+                    }
+                  }
+                  record bar {
+                  }
+                  proc bar.size do return 3;
+                }
+             )"""",
+             "M.foo.asdf",
+             "M.foo.asdf@1",
+             "M.foo@1");
+  }
+
+  // Same as 28a but with primary called method
+  {
+    testCall("example28c.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                    proc asdf() {
+                      return size;
+                    }
+                  }
+                  record bar {
+                    proc size do return 3;
+                  }
+                }
+             )"""",
+             "M.foo.asdf",
+             "M.foo.asdf@1",
+             "M.foo@1");
+  }
+
+  // Same as 28b but with primary called method
+  {
+    testCall("example28d.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                    proc asdf() {
+                      return size;
+                    }
+                  }
+                  record bar {
+                    proc size do return 3;
+                  }
+                }
+             )"""",
+             "M.foo.asdf",
+             "M.foo.asdf@1",
+             "M.foo@1");
+  }
+
+  // Sanity check: 2a but with same receiver, clearly ambiguous
+  {
+    testCall("example28e.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                  }
+                  proc foo.size do return 3;
+                  proc foo.asdf() {
+                    return size;
+                  }
+                }
+             )"""",
+             "M.asdf",
+             "M.asdf@2",
+             "" /* ambiguous */);
+  }
+}
+
 int main() {
   test1r();
   test1c();
@@ -1271,6 +1377,7 @@ int main() {
   testExample25();
   testExample26();
   testExample27();
+  testExample28();
 
   return 0;
 }
