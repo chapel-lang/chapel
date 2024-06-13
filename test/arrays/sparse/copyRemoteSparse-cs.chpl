@@ -43,12 +43,11 @@ on Locales[numLocales-1] {
   var B = A2;
   stopCommDiagnostics();
   if countComms then printCommDiagnosticsTable();
+
   local {
-    for i in 1..9 {
-      for j in 1..9 {
-        if B.domain.contains(i,j) then
-          B[i,j] = 2;
-      }
+    for ij in D {
+      if B.domain.contains(ij) then
+        B[ij] = 2;
     }
   }
   writeMatrix(B);
