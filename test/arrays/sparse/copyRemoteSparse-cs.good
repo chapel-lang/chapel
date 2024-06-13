@@ -4,7 +4,7 @@ In initCopy(definedConst=true), domain definedConst: false; localizing
 |      0 |  39 |          0 |
 |      1 |   0 |          0 |
 |      2 |   0 |          0 |
-|      3 |  93 |          1 |
+|      3 | 195 |          2 |
 1.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
 0.0 2.2 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
 0.0 0.0 3.3 0.0 0.0 0.0 0.0 0.0 0.0 
@@ -21,4 +21,4 @@ In initCopy(definedConst=false), domain definedConst: false; taking normal path
 |      1 |   0 |   0 |          0 |
 |      2 |   0 |   0 |          0 |
 |      3 |  32 |   0 |          3 |
-copyRemoteSparse.chpl:47: error: cannot access remote data in local block
+copyRemoteSparse-cs.chpl:49: error: cannot access remote data in local block

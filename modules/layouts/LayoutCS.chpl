@@ -755,6 +755,24 @@ class CSArr: BaseSparseArrImpl(?) {
       }
     }
   }
+
+  proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
+    if srcDom == destDom {
+      destClass.data = this.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
+    if srcDom == destDom {
+      this.data = srcClass.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
 } // CSArr
 
 } // LayoutCS
