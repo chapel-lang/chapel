@@ -11,6 +11,7 @@ Contributors to the Chapel 2.1 release
 * Soohoon Choi, [HPE]
 * Sarah Coghlan, [HPE]
 * Jeremiah Corrado, [HPE]
+* Mark Dewing, individual contributor
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
@@ -18,6 +19,7 @@ Contributors to the Chapel 2.1 release
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
+* Bonnie Hurwitz, [University of Arizona] / [HPE] contractor
 * Engin Kayraklioglu, [HPE]
 * Shreyas Khandekar, [HPE] (former intern from [University of Arizona])
 * Vassily Litvinov, [HPE]
