@@ -361,7 +361,14 @@ static void preNormalizeHandleStaticVars() {
       if (call->numActuals() > 0) {
         // The actual specifies the sharing kind.
         auto sharingKind = toSymExpr(call->get(1));
-        if (!sharingKind) {
+        bool valid = false;
+        if (sharingKind && sharingKind->symbol()->defPoint) {
+          auto parentSymbol = sharingKind->symbol()->defPoint->parentSymbol;
+          if (parentSymbol && parentSymbol->hasFlag(FLAG_SHARING_KIND_ENUM)) {
+            valid = true;
+          }
+        }
+        if (!valid) {
           USR_FATAL(call, "invalid argument to @functionStatic attribute");
         }
 

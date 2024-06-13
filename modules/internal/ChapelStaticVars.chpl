@@ -22,6 +22,7 @@ module ChapelStaticVars {
   use OwnedObject;
   use Atomics;
 
+  pragma "sharing kind enum"
   enum sharingKind {
     /**
       Default distribution mode. The value is computed on whichever
