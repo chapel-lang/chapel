@@ -1,2 +1,2 @@
-on Locales[1] const x = 42;
+on Locales.last const x = 42;
 x = 43;
