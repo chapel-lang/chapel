@@ -6,7 +6,7 @@ The following people have contributed to Chapel releases:
 Contributors to the Chapel 2.1 release
 --------------------------------------
 * Jade Abraham, [HPE]
-* Dan Bonachea, [Lawrence Berkeley National Laboratory, formerly UC Berkeley]
+* [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
 * Sarah Coghlan, [HPE]
@@ -310,6 +310,7 @@ implementation.
 [Whitworth University]: http://www.whitworth.edu/cms/
 [Yale University]: http://physics.yale.edu/
 
+[Dan Bonachea]: https://crd.lbl.gov/divisions/amcr/computer-science-amcr/class/members/dan-bonachea/
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 [Kenjiro Taura]: http://www.eidos.ic.i.u-tokyo.ac.jp/~tau/
