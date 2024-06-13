@@ -592,7 +592,8 @@ static ShadowVarSymbol* create_IN_Parentvar(LoopWithShadowVarsInterface* fs,
 }
 
 static void constDueToTFI(ShadowVarSymbol* svar, Symbol* ovar) {
-  if (!ovar->isConstant())
+  if (!ovar->isConstant() ||
+      ovar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
     svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
 }
 
