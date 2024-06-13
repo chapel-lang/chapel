@@ -4247,8 +4247,6 @@ CallResolutionResult resolveFnCall(Context* context,
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
-  if (ci.name().str() == "size") gdbShouldBreakHere();
-
   // Note: currently type constructors are not implemented as methods
   if (ci.calledType().kind() == QualifiedType::TYPE &&
       ci.isMethodCall() == false) {
