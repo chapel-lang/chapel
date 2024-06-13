@@ -2681,18 +2681,17 @@ Resolver::lookupIdentifier(const Identifier* ident,
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
                                            ident->name(), config,
                                            ident->id());
-
   bool notFound = vec.empty();
-  bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
 
-  if (!vec.empty()) {
+  if (!notFound) {
     // We might be ambiguous, but due to having found multiple parenless procs.
     // It's not certain that this is an error; in particular, some parenless
     // procs can be ruled out if their 'where' clauses are false. If even
     // one identifier is not a parenless proc, there's an ambiguity.
     //
     // outParenlessOverloadInfo will be falsey if we found non-parenless-proc
-    // IDs, in which case we should emit an ambiguity error.
+    // IDs. In that case we may emit an ambiguity error later, after filtering
+    // out incorrect receivers.
     outParenlessOverloadInfo = ParenlessOverloadInfo::fromBorrowedIds(context, vec);
   }
 
@@ -2711,10 +2710,6 @@ Resolver::lookupIdentifier(const Identifier* ident,
           CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
         }
       }
-    } else if (ambiguous &&
-               !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
-               !resolvingCalledIdent) {
-      /* issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config); */
     }
   }
 
