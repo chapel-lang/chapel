@@ -1,0 +1,22 @@
+FROM fedora:40 as build
+
+@@{ARGUMENTS}
+
+RUN dnf upgrade -y && \
+    dnf install -y \
+      gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake \
+      which diffutils wget vim \
+      llvm17-devel clang17 clang17-devel \
+      rpm-build rpm-devel rpmlint coreutils patch rpmdevtools chrpath
+
+@@{USER_CREATION}
+
+@@{GET_CHAPEL}
+
+@@{BUILD_DEFAULT}
+
+@@{INSTALL}
+
+@@{PACKAGE_SETUP}
+
+@@{PACKAGE_BUILD}
