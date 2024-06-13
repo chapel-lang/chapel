@@ -2499,7 +2499,6 @@ module ChapelArray {
           }
         }
       } else if kind==_tElt.initCopy {
-        use Reflection;
         if needsInitWorkaround(a.eltType) {
           [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
@@ -2508,8 +2507,6 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
-        } else if canResolveMethod(a._value, "doiCopyInit", b._value) {
-          a._value.doiCopyInit(b._value);
         } else {
           [ (aa,bb) in zip(a,b) ] {
             if isSyncType(bb.type) {
@@ -2557,9 +2554,9 @@ module ChapelArray {
 
   @chpldoc.nodoc
   inline operator =(ref a: [], b: range(?)) {
-    if a.rank == 1 then {
+    if a.rank == 1 then
       chpl__transferArray(a, b);
-    } else
+    else
       compilerError("cannot assign from ranges to multidimensional arrays");
   }
 
