@@ -23,11 +23,13 @@ Contributors to the Chapel 2.1 release
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
+* Fábio Malacco Moreira, individual contributor
 * Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
+* Nicole Vadot, individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
