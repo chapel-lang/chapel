@@ -772,7 +772,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
 
   const Module* result = nullptr;
 
-  auto searchId = ID(name, -1, 0);
+  auto searchId = ID(name);
   UniqueString path;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(searchId, path, parentSymbolPath);
@@ -856,7 +856,7 @@ ID getSymbolFromTopLevelModule(Context* context,
   fullPath += ".";
   fullPath += symName;
 
-  return ID(UniqueString::get(context, fullPath), -1, 0);
+  return ID(UniqueString::get(context, fullPath));
 }
 
 static const Module* const&

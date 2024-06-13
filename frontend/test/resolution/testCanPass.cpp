@@ -587,7 +587,7 @@ static void test8() {
   auto anyEnumType = QualifiedType(QualifiedType::VAR, AnyEnumType::get(c));
   auto anEnum = QualifiedType(QualifiedType::VAR,
       EnumType::get(context,
-                   ID(UniqueString::get(c, "someModule"), -1, 0),
+                   ID(UniqueString::get(c, "someModule")),
                    UniqueString::get(c, "someEnum")));
 
   // test passing an enum type to `enum` works fine
