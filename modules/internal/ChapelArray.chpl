@@ -2182,7 +2182,18 @@ module ChapelArray {
       // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
       return;
 
-    if a._value == b._value {
+    var eqVals: bool;
+    if isArray(a) && isArray(b) {
+      eqVals = (a._value == b._value);
+    }
+    else if isProtoSlice(a) && isProtoSlice(b) {
+      eqVals = (a == b); // default record comparison should cover it
+    }
+    else {
+      compilerError("Internal error: cross-type assignments are not supported");
+    }
+
+    if eqVals then {
       // Do nothing for A = A but we could generate a warning here
       // since it is probably unintended. We need this check here in order
       // to avoid memcpy(x,x) which happens inside doiBulkTransfer.
