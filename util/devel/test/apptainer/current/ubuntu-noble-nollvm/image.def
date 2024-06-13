@@ -1,0 +1,11 @@
+BootStrap: docker
+From: ubuntu:noble
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/apt-get-deps.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"
