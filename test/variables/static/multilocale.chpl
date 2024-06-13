@@ -6,7 +6,7 @@ proc add(arg) {
   return counter;
 }
 
-coforall loc in Locales do on loc {
+forall loc in Locales do on loc {
   add(1);
   add(2);
   add(3);
