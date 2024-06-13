@@ -327,10 +327,12 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       dsiAdd(i);
   }
 
-  proc setLocalBlock(locIndices) {
+  proc setLocalSubdomain(locIndices, loc: locale = here) {
+    if loc != here then
+      halt("setLocalSubdomain() doesn't currently support remote updates");
     ref myBlock = this.myLocDom!.mySparseBlock;
     if myBlock.type != locIndices.type then
-      compilerError("setLocalBlock() expects its argument to be of type ",
+      compilerError("setLocalSubdomain() expects its argument to be of type ",
                     myBlock.type:string);
     else
       myBlock = locIndices;
@@ -547,18 +549,20 @@ class SparseBlockArr: BaseSparseArr(?) {
     return true;
   }
 
-  proc getBlock(localeRow, localeCol) const ref {
+  proc getLocalSubarray(localeRow, localeCol) const ref {
     return this.locArr[localeRow, localeCol]!.myElems;
   }
 
-  proc getBlock(localeIdx) const ref {
+  proc getLocalSubarray(localeIdx) const ref {
     return this.locArr[localeIdx]!.myElems;
   }
 
-  proc setLocalBlock(locNonzeroes) {
+  proc setLocalSubarray(locNonzeroes, loc: locale = here) {
+    if loc != here then
+      halt("setLocalSubarray() doesn't currently support remote updates");
     ref myBlock = this.myLocArr!.myElems;
     if myBlock.type != locNonzeroes.type then
-      compilerError("setLocalBlock() expects its argument to be of type ",
+      compilerError("setLocalSubarray() expects its argument to be of type ",
                     myBlock.type:string);
     else
       myBlock.data = locNonzeroes.data;

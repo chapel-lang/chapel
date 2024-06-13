@@ -41,8 +41,8 @@ coforall loc in DS.targetLocales() do on loc {
   //  writeln(here.id, ": ", locVals);
 
   // Take those local portions and plug them into the global domain/array
-  DS.setLocalBlock(locSpsInds);
-  A.setLocalBlock(locVals);
+  DS.setLocalSubdomain(locSpsInds);
+  A.setLocalSubarray(locVals);
 }
 
 
@@ -62,8 +62,8 @@ writeln("A is:");
 writeSparseMatrix(A);
 
 for locIdx in DS.targetLocales().domain {
-  const remBlk = if useTupleIndexing then A.getBlock(locIdx)
-                                     else A.getBlock((...locIdx));
+  const remBlk = if useTupleIndexing then A.getLocalSubarray(locIdx)
+                                     else A.getLocalSubarray((...locIdx));
   writeln(locIdx, " owns:");
   writeSparseMatrix(remBlk);
 }

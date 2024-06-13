@@ -9,10 +9,10 @@ const DS: sparse subdomain(D);
 var A: [DS] real;
 
 var SpsD: sparse subdomain(D);
-DS.setLocalBlock(SpsD);
+DS.setLocalSubdomain(SpsD);
 
 var CSC: sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
-DS.setLocalBlock(CSC);
+DS.setLocalSubdomain(CSC);
 
 var B: [D] real;
-A.setLocalBlock(B);
+A.setLocalSubarray(B);
