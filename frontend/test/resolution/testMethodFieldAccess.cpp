@@ -725,6 +725,24 @@ static void testExample5a() {
            "" /* ambiguity */);
 }
 
+// Like 5a but this.foo instead of foo
+static void testExample5b() {
+  testCall("example5b.chpl",
+           R""""(
+              module M {
+                record r { }
+                proc r.test() {
+                  var foo: int;
+                  proc r.foo { }
+                  this.foo;
+                }
+              }
+           )"""",
+           "M.test",
+           "M.test@5",
+           "M.test.foo");
+}
+
 static void testExample6() {
   testCall("example6.chpl",
            R""""(
@@ -1230,6 +1248,7 @@ int main() {
   testExample4a();
   testExample5();
   testExample5a();
+  testExample5b();
   testExample6();
   testExample7();
   testExample8();
