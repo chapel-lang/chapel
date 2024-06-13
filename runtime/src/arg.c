@@ -291,9 +291,7 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       if (_argNumLocalesPerNode < 1) {
         chpl_error("Number of locales per node must be > 0.",
                    lineno, filename);
-      } else if ((_argNumLocalesPerNode > 1) || t) {
-        // We have co-locales if there is more then one locale per node or if
-        // the locale is bound to an architectural feature.
+      } else {
         chpl_env_set_uint("CHPL_RT_LOCALES_PER_NODE",
                           (uint64_t)_argNumLocalesPerNode, 1);
       }
