@@ -2490,15 +2490,23 @@ module ChapelArray {
     inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
 
     iter these() ref {
-      ref arrInst = ptrToArr.deref()._instance;
       if rank == 1 then {
-        foreach elem in chpl__serialViewIter1D(arrInst, domOrRange) {
+        foreach elem in chpl__serialViewIter1D(ptrToArr.deref()._instance,
+                                               domOrRange) {
           yield elem;
         }
       }
       else {
-        const viewDomInst = domOrRange._instance;
-        foreach elem in chpl__serialViewIter(arrInst, viewDomInst) {
+
+        /* 
+          Storing `inst` here and iterating over `inst` doesn't seem to work.
+          Check the arrays primer for how that causes issues. Potentially an
+          iterator inlining issue, or memory cleanup going sideways.
+
+          const inst = domOrRange._instance;
+        */
+        foreach elem in chpl__serialViewIter(ptrToArr.deref()._instance,
+                                             domOrRange._instance) {
           yield elem;
         }
       }
