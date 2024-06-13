@@ -20,6 +20,7 @@
 #include "chpl/types/TupleType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 
@@ -98,9 +99,8 @@ TupleType::getTupleType(Context* context, const TupleType* instantiatedFrom,
   QUERY_BEGIN(getTupleType, context, instantiatedFrom, subs,
                             isVarArgTuple);
 
-  auto symbolPath = UniqueString::get(context, "ChapelTuple._tuple");
   auto name = UniqueString::get(context, "_tuple");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelTuple", "_tuple");
   auto result = toOwned(new TupleType(id, name, instantiatedFrom,
                                       std::move(subs), isVarArgTuple));
 
