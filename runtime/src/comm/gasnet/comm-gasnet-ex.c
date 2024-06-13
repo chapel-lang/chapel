@@ -774,15 +774,15 @@ static void setup_polling_pre_init(void) {
 }
 
 static void setup_polling_post_init(void) {
-#if defined(GASNET_CONDUIT_IBV)
 
   // The IBV conduit does not require polling, but PSHM does. PSHM is only
   // enabled if there are co-locales, so polling is only required if
   // there are co-locales that are using PSHM.
   gex_Rank_t numColocales;
   gex_System_QueryNbrhdInfo(NULL, &numColocales, NULL);
-  pollingRequired = numColocales > 1;
-  pshmInUse = pollingRequired;
+  pshmInUse = numColocales > 1;
+#if defined(GASNET_CONDUIT_IBV)
+  pollingRequired = pshmInUse;
 #else
   pollingRequired = true;
 #endif
@@ -1009,7 +1009,6 @@ static void start_gasnet_progress_threads(void) {
 void chpl_comm_post_task_init(void) {
   start_polling();
   start_gasnet_progress_threads();
-#if defined(GASNET_CONDUIT_IBV)
   if ((verbosity >= 2) && (chpl_nodeID == 0)) {
     printf("PSHM is %s.\n", pshmInUse? "enabled" : "disabled");
     printf("GASNet receive progress thread is %s.\n", haveReceiveThread ?
@@ -1017,7 +1016,6 @@ void chpl_comm_post_task_init(void) {
     printf("GASNet send progress thread is %s.\n", haveSendThread ?
            "enabled" : "disabled");
   }
-#endif
 }
 
 void chpl_comm_rollcall(void) {
