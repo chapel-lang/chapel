@@ -2477,6 +2477,7 @@ static void bulkViewTransfer() {
       if (call->isNamed("=")) {
         if (exprSuitableForProtoSlice(call->get(1)) &&
             exprSuitableForProtoSlice(call->get(2))) {
+          //std::cout << call->stringLoc() << std::endl;
           //nprint_view(call);
           candidates.push_back(call);
         }
@@ -2528,5 +2529,7 @@ static void bulkViewTransfer() {
 
     call->insertBefore(arrCond);
     elseBlock->insertAtTail(call->remove());
+
+    //list_view(arrCond);
   }
 }

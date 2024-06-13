@@ -2526,6 +2526,8 @@ module ChapelArray {
     }
   }
 
+  // TODO can we allow const arrs to be passed here without breaking constness
+  // guarantees?
   proc chpl__createProtoSlice(ref Arr, slicingExprs) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
@@ -2536,7 +2538,13 @@ module ChapelArray {
   }
 
   proc chpl__basesSupportViewTransfer(a, b) param {
-    return chpl__isDROrDRView(a) && chpl__isDROrDRView(b);
+    /*
+       Want the following, but slices of slices caused some issues that I
+       couldn't fix on a short fuse. I don't think there's a major obstacle
+       there, though.
+         return chpl__isDROrDRView(a) && chpl__isDROrDRView(b);
+    */
+    return a.isDefaultRectangular() && b.isDefaultRectangular();
   }
 
   proc chpl__slicingExprsSupportViewTransfer(x...) param {
