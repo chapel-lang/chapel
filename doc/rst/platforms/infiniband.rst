@@ -233,6 +233,26 @@ Setting ``GASNET_PHYSMEM_MAX`` to a small value can limit
 communication performance so it is highly recommend to use the value
 GASNet suggests.
 
+----------
+Co-locales
+----------
+
+By default, Chapel enables GASNet's PSHM (shared-memory bypass) feature when
+co-locales are in-use. Communication between co-locales will occur in memory
+and not through the network. However, PSHM requires an extra "progress"
+thread that will run on the same cores as the Chapel tasks, and will
+compete with those tasks for cycles. For computation-bound applications the
+overhead incurred by the progress thread may outweigh the benefits of PSHM.
+You can disable PSHM by setting ``GASNET_SUPERNODE_MAXSIZE=1``.
+
+Another alternative is to dedicate a core for the progress thread, preventing
+it from running on the same cores as the Chapel tasks. This is accomplished
+by setting ``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE=true``. Note that
+this means there will be one fewer core to run Chapel tasks, which may not be
+advantageous on machines with relatively few cores. Also note that this
+variable will dedicate a core whether or not PSHM is in-use, so you should
+only set this variable if you are using co-locales and you have not disabled
+PSHM using ``GASNET_SUPERNODE_MAXSIZE`` as described above.
 
 --------
 See Also
