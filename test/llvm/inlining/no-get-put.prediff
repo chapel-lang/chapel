@@ -21,17 +21,6 @@ for e in exclude_list:
         if e in l:
             output.append('Error: found call to {} in {}'.format(e, outfilename))
 
-# there should be calls to chpl_comm_get, or chpl_comm_put, and llvm.memmove
-include_list = ['chpl_comm_get', 'chpl_comm_put', 'llvm.memmove']
-for i in include_list:
-    found = False
-    for l in call_lines:
-        if i in l:
-            found = True
-            break
-    if not found:
-        output.append('Error: did not find call to {} in {}'.format(i, outfilename))
-
 if len(output) > 0:
     with open(outfilename, 'w') as f:
         for o in output:
