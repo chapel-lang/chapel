@@ -2459,7 +2459,7 @@ module ChapelArray {
 
   private proc allBounded(ranges) param {
     if chpl__isTupleOfRanges(ranges) {
-      for i in 0..<ranges.size {
+      for param i in 0..<ranges.size {
         if ranges[i].bounds != boundKind.both {
           return false;
         }
