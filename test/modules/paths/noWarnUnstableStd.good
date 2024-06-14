@@ -1,4 +1,4 @@
-warning: Ambiguous module source file -- using std/Path.chpl over $CHPL_HOME/modules/standard/Path.chpl
+<command line>: warning: ambiguous module source file -- using std/Path.chpl over /home/mppf/w/12/modules/standard/Path.chpl
 In my personal copy of Path
 inside M
 In personal Path - unstable proc
