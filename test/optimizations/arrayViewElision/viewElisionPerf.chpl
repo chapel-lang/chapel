@@ -37,10 +37,10 @@ do {
 } while t.elapsed() < totalSeconds;
 t.stop();
 
+assert(Arr2[2] == 4);
 
 if correctness {
   assert(totalOps == 1);
-  assert(Arr2[2] == 4);
   for a in Arr2[3..] do assert(a == 2);
 }
 else {
