@@ -77,4 +77,32 @@ void removeAggregationFromRecursiveForall(ForallStmt *forall);
 void transformConditionalAggregation(CondStmt *cond);
 void cleanupRemainingAggCondStmts();
 
+class ProtoSliceAssignHelper {
+public:
+  ProtoSliceAssignHelper() = delete;
+  ProtoSliceAssignHelper(CallExpr* call);
+  ~ProtoSliceAssignHelper();
+
+  inline CondStmt* condStmt() const { return condStmt_; }
+  inline Expr* flag() const { return condStmt_->condExpr; }
+  inline bool supported() const { return supported_; }
+  inline BlockStmt* staticCheckBlock() const { return staticCheckBlock_; }
+
+  CallExpr* getReplacement();
+
+private:
+  CallExpr* call_;
+  CallExpr* newProtoSliceLhs_;
+  CallExpr* newProtoSliceRhs_;
+  CondStmt* condStmt_;
+  Symbol* tmpCondFlag_;
+  bool supported_;
+  BlockStmt* staticCheckBlock_;
+
+  void findCondStmt();
+  void findProtoSlices();
+  bool handleOneProtoSlice(CallExpr* call);
+  CallExpr* findOneProtoSliceCall(Expr* e);
+};
+
 #endif

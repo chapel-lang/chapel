@@ -52,6 +52,10 @@ PRAGMA(ALIASING_ARRAY, ypr, "aliasing array", ncm)
 // can alias the same scopes as 'this'
 PRAGMA(ALIAS_SCOPE_FROM_THIS, ypr, "alias scope from this", ncm)
 
+// Added to the condExpr of a static ArrayView Elision conditional. Should
+// disappear after resolution
+PRAGMA(ARRAYVIEW_ELISION_FLAG, npr, "static flag for arrayview elision", ncm)
+
 // This flag is used in scalarReplace.cpp to determine if an assignment of a ref
 // has an allocator as the RHS.  If so, then it is not creating an alias, since
 // the allocator function does not retain a reference to the referenced object.

@@ -230,6 +230,8 @@ PRIMITIVE_R(MAYBE_LOCAL_THIS, "may be local access")
 PRIMITIVE_R(MAYBE_LOCAL_ARR_ELEM, "may be local array element")
 PRIMITIVE_R(MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment")
 
+PRIMITIVE_R(PROTO_SLICE_ASSIGN, "assign proto slices")
+
 PRIMITIVE_R(ERROR, "error")
 PRIMITIVE_R(WARNING, "warning")
 PRIMITIVE_R(WHEN, "when case expressions")

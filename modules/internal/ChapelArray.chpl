@@ -2510,8 +2510,12 @@ module ChapelArray {
       return {(...ranges)};
     }
 
-    inline proc dims() {
+    inline proc dims() where chpl__isTupleOfRanges(this.ranges) {
       return ranges;
+    }
+
+    inline proc dims() {
+      return (ranges,);
     }
 
     inline proc rank param { return ptrToArr.deref().rank; }
@@ -2570,14 +2574,29 @@ module ChapelArray {
 
   // TODO can we allow const arrs to be passed here without breaking constness
   // guarantees?
-  proc chpl__createProtoSlice(ref Arr, slicingExprs) {
+  // TODO we can also accept domains and ints (rank-change)
+  proc chpl__createProtoSlice(ref Arr, slicingExprs: range) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(ref Arr, slicingExprs...) {
+  proc chpl__createProtoSlice(ref Arr, slicingExprs:range ...) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
+
+  proc chpl__createProtoSlice(ref Arr, slicingExprs) {
+    // this is an array access. This call will be eliminated later in
+    // resolution, but we want it to live for a bit for easier resolution
+    return 0;
+  }
+
+  pragma "last resort"
+  proc chpl__createProtoSlice(ref Arr, slicingExprs... ) {
+    // this is an array access. This call will be eliminated later in
+    // resolution, but we want it to live for a bit for easier resolution
+    return 0;
+  }
+
 
   proc chpl__exprSupportsViewTransfer(base, exprs...) param {
     if base.isDefaultRectangular() {
@@ -2589,31 +2608,20 @@ module ChapelArray {
     return false;
   }
 
-  proc chpl__basesSupportViewTransfer(a, b) param {
-    /*
-       Want the following, but slices of slices caused some issues that I
-       couldn't fix on a short fuse. I don't think there's a major obstacle
-       there, though.
-         return chpl__isDROrDRView(a) && chpl__isDROrDRView(b);
-    */
-    return a.isDefaultRectangular() && b.isDefaultRectangular();
-  }
-
-  proc chpl__slicingExprsSupportViewTransfer(x...) param {
-    /*compilerWarning(x.type:string);*/
-    if isHomogeneousTuple(x) && isRange(x[0]) {
-      /*for param i in 0..<x.size {*/
-        /*if !(x[i].strides == strideKind.positive ||*/
-             /*x[i].strides == strideKind.one) {*/
-          /*// negative strided slices are not supported and generate a warning.*/
-          /*// Instead of trying to generate the warning, just avoid covering*/
-          /*// unsupported things here*/
-          /*return false;*/
-        /*}*/
-      /*}*/
+  proc chpl__typesSupportArrayViewElision(type baseType,
+                                          type indexingTypes...) param: bool {
+    var dummy: baseType;
+    if isArrayType(baseType) &&
+       isSubtype(dummy._instance.type, DefaultRectangularArr) {
+      for param tid in 0..<indexingTypes.size {
+        if !isRangeType(indexingTypes[tid]) then
+          return false;
+      }
       return true;
     }
-    return false;
+    else {
+      return false;
+    }
   }
 
   inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {

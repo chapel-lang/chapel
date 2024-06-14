@@ -1696,6 +1696,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_MAYBE_LOCAL_THIS:
     case PRIM_MAYBE_LOCAL_ARR_ELEM:
     case PRIM_MAYBE_AGGREGATE_ASSIGN:
+    case PRIM_PROTO_SLICE_ASSIGN:
     case PRIM_BLOCK_PARAM_LOOP:
     case PRIM_BLOCK_WHILEDO_LOOP:
     case PRIM_BLOCK_DOWHILE_LOOP:
