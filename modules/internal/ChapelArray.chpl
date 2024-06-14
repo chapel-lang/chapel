@@ -81,6 +81,8 @@ module ChapelArray {
   config param logAllArrEltAccess = false;
 
   @chpldoc.nodoc
+  config param debugShortArrayTransferOpt = false;
+  @chpldoc.nodoc
   config param disableShortArrayTransferOpt = false;
   @chpldoc.nodoc
   config const shortArrayTransferThreshold = 50;
@@ -2340,6 +2342,10 @@ module ChapelArray {
   private inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
     param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
     const sizeOk = a.sizeAs(uint) < shortArrayTransferThreshold;
+    if debugShortArrayTransferOpt {
+      chpl_debug_writeln("<ShortArrayTransfer> Size: ", a.sizeAs(uint),
+                         " Threshold: ", shortArrayTransferThreshold);
+    }
     if localCompilation {
       return sizeOk;
     }
@@ -2359,6 +2365,8 @@ module ChapelArray {
     }
     else if chpl__staticCheckShortArrayTransfer(a, b) &&
             chpl__dynamicCheckShortArrayTransfer(a, b) {
+      if debugShortArrayTransferOpt then
+        chpl_debug_writeln("Will perform a short array transfer");
       chpl__transferArray(a, b, kind, alwaysSerialize=true);
     }
     else if chpl__compatibleForBulkTransfer(a, b, kind) {
@@ -2444,32 +2452,66 @@ module ChapelArray {
     return chpl__bulkTransferArray(a._value, AD, b._value, BD);
   }
 
+
+  private proc allBounded(ranges: range) param {
+    return ranges.bounds == boundKind.both;
+  }
+
+  private proc allBounded(ranges) param {
+    if chpl__isTupleOfRanges(ranges) {
+      for i in 0..<ranges.size {
+        if ranges[i].bounds != boundKind.both {
+          return false;
+        }
+      }
+      return true;
+    }
+    compilerError("Unexpected type to allBounded");
+    return false;
+  }
+
   record chpl__protoSlice {
+    param rank;
+    type idxType;
     var ptrToArr; // I want this to be a `forwarding ref` to the array
-    var slicingExprs;
+    var ranges;
+
+    proc init(ptrToArr, slicingExprs) {
+      this.rank = ptrToArr.deref().rank;
+      this.idxType = ptrToArr.deref().idxType;
+      this.ptrToArr = ptrToArr;
+      if allBounded(slicingExprs) {
+        this.ranges = slicingExprs;
+      }
+      else if chpl__isTupleOfRanges(slicingExprs) {
+        this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(), slicingExprs);
+      }
+      else {
+        this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(),
+                                         (slicingExprs,));
+      }
+    }
 
     proc init=(other: chpl__protoSlice) {
+      this.rank = other.rank;
+      this.idxType = other.idxType;
       this.ptrToArr = other.ptrToArr;
-      this.slicingExprs = other.slicingExprs;
+      this.ranges = other.ranges;
       init this;
       extern proc printf(s...);
       printf("this is probably not what you want\n");
     }
 
     inline proc domOrRange where rank==1 {
-      return slicingExprs;
+      return ranges;
     }
 
     inline proc domOrRange where rank>1 {
-      return {(...slicingExprs)};
-    }
-
-    inline proc dims() where rank == 1 {
-      return (slicingExprs,);
+      return {(...ranges)};
     }
 
     inline proc dims() {
-      return slicingExprs;
+      return ranges;
     }
 
     inline proc rank param { return ptrToArr.deref().rank; }
@@ -2477,13 +2519,13 @@ module ChapelArray {
     inline proc _value { return ptrToArr.deref()._value; }
 
     inline proc sizeAs(type t) where rank==1 {
-      return slicingExprs.sizeAs(t);
+      return ranges.sizeAs(t);
     }
 
     inline proc sizeAs(type t) {
       var size = 1:t;
       for param r in 0..<rank {
-        size *= slicingExprs[r].sizeAs(t);
+        size *= ranges[r].sizeAs(t);
       }
       return size;
     }
@@ -2537,6 +2579,16 @@ module ChapelArray {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
+  proc chpl__exprSupportsViewTransfer(base, exprs...) param {
+    if base.isDefaultRectangular() {
+
+
+
+    }
+
+    return false;
+  }
+
   proc chpl__basesSupportViewTransfer(a, b) param {
     /*
        Want the following, but slices of slices caused some issues that I
@@ -2548,16 +2600,17 @@ module ChapelArray {
   }
 
   proc chpl__slicingExprsSupportViewTransfer(x...) param {
+    /*compilerWarning(x.type:string);*/
     if isHomogeneousTuple(x) && isRange(x[0]) {
-      for param i in 0..<x.size {
-        if !(x[i].strides == strideKind.positive ||
-             x[i].strides == strideKind.one) {
-          // negative strided slices are not supported and generate a warning.
-          // Instead of trying to generate the warning, just avoid covering
-          // unsupported things here
-          return false;
-        }
-      }
+      /*for param i in 0..<x.size {*/
+        /*if !(x[i].strides == strideKind.positive ||*/
+             /*x[i].strides == strideKind.one) {*/
+          /*// negative strided slices are not supported and generate a warning.*/
+          /*// Instead of trying to generate the warning, just avoid covering*/
+          /*// unsupported things here*/
+          /*return false;*/
+        /*}*/
+      /*}*/
       return true;
     }
     return false;
