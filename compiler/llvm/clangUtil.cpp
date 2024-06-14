@@ -4365,8 +4365,10 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
       dumpIrPoint = PassManagerBuilder::EP_ModuleOptimizerEarly;
       return true;
     case llvmStageNum::LateLoopOptimizer:
-      USR_FATAL("Cannot use llvm-print-ir-stage late-loop-optimizer "
+      if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
+        USR_FATAL("Cannot use llvm-print-ir-stage late-loop-optimizer "
                       "with the old pass manager\n");
+      }
       return false;
     case llvmStageNum::LoopOptimizerEnd:
       dumpIrPoint = PassManagerBuilder::EP_LoopOptimizerEnd;
