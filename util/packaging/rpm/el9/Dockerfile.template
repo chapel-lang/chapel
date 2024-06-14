@@ -2,6 +2,8 @@ FROM rockylinux/rockylinux:9 as build
 
 @@{ARGUMENTS}
 
+@@{INJECT_BEFORE_DEPS}
+
 RUN dnf upgrade -y && \
     dnf install -y --allowerasing \
       gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake \

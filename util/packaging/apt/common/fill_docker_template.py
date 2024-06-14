@@ -21,6 +21,11 @@ ARG PARALLEL=1
 ARG TARGETARCH
 """
 
+substitutions["INJECT_BEFORE_DEPS"] = ""
+inject = os.environ.get("INJECT_BEFORE_DEPS")
+if inject is not None:
+    substitutions["INJECT_BEFORE_DEPS"] = inject
+
 substitutions[
     "USER_CREATION"
 ] = """
