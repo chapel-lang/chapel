@@ -1,4 +1,0 @@
-static-bad.chpl:2: error: the '@functionStatic' attribute can only be applied to variables in functions
-static-bad.chpl:6: error: the '@functionStatic' attribute can only be applied to variables
-static-bad.chpl:8: In method 'fn2':
-static-bad.chpl:10: error: the '@functionStatic' attribute cannot be applied to variables in methods
