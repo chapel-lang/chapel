@@ -2909,7 +2909,7 @@ void resolveCall(CallExpr* call) {
     if (resolveFunctionPointerCall(call))
       return;
 
-    if (call->isNamed("chpl__coerceCopy")) {
+    if (call->isNamedAstr(astr_coerceCopy)) {
       resolveCoerceCopyMove(call);
       return;
     }
