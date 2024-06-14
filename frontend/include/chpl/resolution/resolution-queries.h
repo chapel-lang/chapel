@@ -113,14 +113,17 @@ ID lookupEnumElementByNumericValue(Context* context,
  */
 const TypedFnSignature*
 typedSignatureInitial(Context* context,
-                      const UntypedFnSignature* untypedSig);
+                      const UntypedFnSignature* untypedSig,
+                      const CallerDetails& caller={});
 
 /**
   Compute a initial TypedFnSignature for an ID.
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
  */
-const TypedFnSignature* typedSignatureInitialForId(Context* context, ID id);
+const TypedFnSignature*
+typedSignatureInitialForId(Context* context, ID id,
+                           const CallerDetails& caller={});
 
 /**
   Returns a Type that represents the initial type provided by a TypeDecl
@@ -277,7 +280,8 @@ ApplicabilityResult instantiateSignature(Context* context,
  */
 const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope);
+                                        const PoiScope* poiScope,
+                                        const CallerDetails& caller={});
 
 /**
   Compute a ResolvedFunction given a TypedFnSignature for an initializer.
@@ -293,19 +297,14 @@ const ResolvedFunction* resolveInitializer(Context* context,
   Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.
   */
-const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
+const ResolvedFunction* resolveConcreteFunction(Context* context, ID id,
+                                                const CallerDetails& caller={});
 
 /**
   Compute a ResolvedFunction given a TypedFnSignature, but don't
   do full resolution of types or paren-ful calls in the body.
  */
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
-
-/**
-  Compute the set of outer variables referenced by this function. Will return
-  'nullptr' if there are no outer variables.
-  */
-const OuterVariables* computeOuterVariables(Context* context, ID id);
 
 /*
  * Scope-resolve an AggregateDecl's fields, along with their type expressions
@@ -337,9 +336,9 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
   the return type is explicitly declared. We probably still want to compute
   the value in such cases, though.
  */
-const types::QualifiedType& returnType(Context* context,
-                                       const TypedFnSignature* sig,
-                                       const PoiScope* poiScope);
+types::QualifiedType returnType(Context* context, const TypedFnSignature* sig,
+                                const PoiScope* poiScope,
+                                const CallerDetails& caller={});
 
 /**
   Compute the types for any generic 'out' formal types after instantiation
@@ -406,12 +405,16 @@ filterCandidatesInstantiating(Context* context,
 
   'resolveCallInMethod' should be used instead when resolving a non-method call
   within a method.
+
+  The 'caller' is an opaque formal that can supply information used to resolve
+  calls to nested functions.
  */
 CallResolutionResult resolveCall(Context* context,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const CallScopeInfo& inScopes,
-                                 std::vector<ApplicabilityResult>* rejected = nullptr);
+                                 std::vector<ApplicabilityResult>* rejected=nullptr,
+                                 const CallerDetails& caller={});
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
@@ -426,7 +429,8 @@ CallResolutionResult resolveCallInMethod(Context* context,
                                          const CallInfo& ci,
                                          const CallScopeInfo& inScopes,
                                          types::QualifiedType implicitReceiver,
-                                         std::vector<ApplicabilityResult>* rejected = nullptr);
+                                         std::vector<ApplicabilityResult>* rejected=nullptr,
+                                         const CallerDetails& caller={});
 
 /**
   Given a CallInfo representing a call, a Scope representing the

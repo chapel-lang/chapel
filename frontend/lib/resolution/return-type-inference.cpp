@@ -1135,13 +1135,11 @@ static bool helpComputeReturnType(Context* context,
   return false;
 }
 
-const QualifiedType& returnType(Context* context,
-                                const TypedFnSignature* sig,
-                                const PoiScope* poiScope) {
-  QUERY_BEGIN(returnType, context, sig, poiScope);
-
+static QualifiedType returnTypeImpl(Context* context,
+                                    const TypedFnSignature* sig,
+                                    const PoiScope* poiScope,
+                                    const CallerDetails& caller) {
   const UntypedFnSignature* untyped = sig->untyped();
-
   QualifiedType result;
 
   bool computed = helpComputeReturnType(context, sig, poiScope, result);
@@ -1153,12 +1151,30 @@ const QualifiedType& returnType(Context* context,
     // resolve the function body
     // resolveFunction will arrange to call computeReturnType
     // and store the return type in the result.
-    if (auto rFn = resolveFunction(context, sig, poiScope)) {
+    if (auto rFn = resolveFunction(context, sig, poiScope, caller)) {
       result = rFn->returnType();
     }
   }
 
+  return result;
+}
+
+static const QualifiedType& returnTypeQuery(Context* context,
+                                            const TypedFnSignature* sig,
+                                            const PoiScope* poiScope) {
+  QUERY_BEGIN(returnTypeQuery, context, sig, poiScope);
+  CallerDetails empty;
+  auto result = returnTypeImpl(context, sig, poiScope, empty);
   return QUERY_END(result);
+}
+
+QualifiedType returnType(Context* context, const TypedFnSignature* sig,
+                         const PoiScope* poiScope,
+                         const CallerDetails& caller) {
+  auto ret = sig->isNestedFunction()
+    ? returnTypeImpl(context, sig, poiScope, caller)
+    : returnTypeQuery(context, sig, poiScope);
+  return ret;
 }
 
 static const TypedFnSignature* const&

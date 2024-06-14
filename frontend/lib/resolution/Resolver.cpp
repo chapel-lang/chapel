@@ -224,9 +224,11 @@ Resolver::createForScopeResolvingModuleStmt(
 
 Resolver
 Resolver::createForInitialSignature(Context* context, const Function* fn,
-                                    ResolutionResultByPostorderID& byId)
+                                    ResolutionResultByPostorderID& byId,
+                                    const CallerDetails* parentDetails)
 {
   auto ret = Resolver(context, fn, byId, nullptr);
+  ret.parentDetails = parentDetails;
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
@@ -269,11 +271,13 @@ Resolver::createForFunction(Context* context,
                             const Function* fn,
                             const PoiScope* poiScope,
                             const TypedFnSignature* typedFnSignature,
-                            ResolutionResultByPostorderID& byId) {
+                            ResolutionResultByPostorderID& byId,
+                            const CallerDetails* parentDetails) {
   auto ret = Resolver(context, fn, byId, poiScope);
   ret.typedSignature = typedFnSignature;
   ret.signatureOnly = false;
   ret.fnBody = fn->body();
+  ret.parentDetails = parentDetails;
 
   CHPL_ASSERT(typedFnSignature);
   CHPL_ASSERT(typedFnSignature->untyped());
@@ -324,13 +328,11 @@ Resolver::createForInitializer(Context* context,
 Resolver
 Resolver::createForScopeResolvingFunction(Context* context,
                                           const Function* fn,
-                                          ResolutionResultByPostorderID& byId,
-                                          owned<OuterVariables> outerVars) {
+                                          ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.typedSignature = nullptr; // re-set below
   ret.signatureOnly = true; // re-set below
   ret.scopeResolveOnly = true;
-  ret.outerVars = std::move(outerVars);
   ret.fnBody = fn->body();
 
   ret.byPostorder.setupForFunction(fn);
@@ -550,41 +552,38 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
-static bool isOuterVariable(Resolver* rv, ID target) {
-  if (target.isEmpty()) return false;
+static bool
+isOuterVariable(Resolver* rv, const ID& target, const ID& mention) {
+  if (!target || target.isSymbolDefiningScope()) return false;
 
-  // E.g., a function, or a class/record/union/enum. We don't need to track
-  // this, and shouldn't, because its current instantiation may not make any
-  // sense in this context. As well, these things have an "infinite lifetime",
-  // and are always reachable.
-  if (target.isSymbolDefiningScope()) return false;
+  if (ID parentSymbolId = target.parentSymbolId(rv->context)) {
 
+    // No match if the target's parent symbol is what we're resolving.
+    if (rv->symbol && parentSymbolId == rv->symbol->id()) return false;
 
-  auto parentSymbolId = target.parentSymbolId(rv->context);
+    // Ditto for the mention.
+    if (mention.parentSymbolId(rv->context) == parentSymbolId) return false;
 
-  // No match if there is no parent or if the parent is the resolver symbol.
-  if (parentSymbolId.isEmpty()) return false;
-  if (rv->symbol && parentSymbolId == rv->symbol->id()) return false;
+    switch (parsing::idToTag(rv->context, parentSymbolId)) {
+      case asttags::Function: return true;
 
-  switch (parsing::idToTag(rv->context, parentSymbolId)) {
-    case asttags::Function: return true;
-
-    // Module-scope variables are not considered outer-variables. However,
-    // variables declared in a module initializer statement can be, e.g.,
-    /**
-      module M {
-        if someCondition {
-          var someVar = 42;
-          proc f() { writeln(someVar); }
-          f();
+      // Module-scope variables are not considered outer-variables. However,
+      // variables declared in a module initializer statement can be, e.g.,
+      /**
+        module M {
+          if someCondition {
+            var someVar = 42;
+            proc f() { writeln(someVar); }
+            f();
+          }
         }
-      }
-    */
-    case asttags::Module: {
-      auto targetParentId = parsing::idToParentId(rv->context, target);
-      return parentSymbolId != targetParentId;
-    } break;
-    default: break;
+      */
+      case asttags::Module: {
+        auto targetParentId = parsing::idToParentId(rv->context, target);
+        return parentSymbolId != targetParentId;
+      } break;
+      default: break;
+    }
   }
 
   return false;
@@ -1719,14 +1718,13 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       // The call isn't ambiguous; it might be that we rejected all the candidates
       // that we encountered. Re-run resolution, providing a 'rejected' vector
       // this time to preserve the list of rejected candidates.
-
       std::vector<ApplicabilityResult> rejected;
-
       if (wasCallGenerated) {
         std::ignore = resolveGeneratedCall(context, call, ci, inScopes, &rejected);
       } else {
         std::ignore = resolveCallInMethod(context, call, ci, inScopes,
-                                          receiverType, &rejected);
+                                          receiverType, &rejected,
+                                          makeCallerDetails());
       }
 
       if (!rejected.empty()) {
@@ -3113,18 +3111,37 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       return;
     }
 
-    // use the type established at declaration/initialization,
+    // For outer variables, use their recorded type, or look them up from
+    // parent frames if we're encountering them for the first time. If
+    // no stored result or parent frame is present then the type is unknown.
+    // Still record the type in this case so that we can know what outer
+    // variables we have encountered.
+    if (isOuterVariable(this, id, ident->id())) {
+      const ID& mention = ident->id();
+      const ID& target = id;
+
+      auto it = outerVariables.find(target);
+      if (it != outerVariables.end()) {
+        type = it->second.first;
+        it->second.second.push_back(mention);
+
+      } else if (ID parentFn = target.parentFunctionId(context)) {
+        if (parentDetails) {
+          if (auto parent = parentDetails->findParentOf(context, target)) {
+            type = parent->resolutionById()->byId(target).type();
+            auto p = std::make_pair(type, std::vector<ID>({ mention }));
+            outerVariables.emplace_hint(it, target, std::move(p));
+          }
+        }
+      }
+
+    // Otherwise, use the type established at declaration/initialization,
     // but for things with generic type, use unknown.
-    type = typeForId(id, /*localGenericToUnknown*/ true);
+    } else {
+      type = typeForId(id, /*localGenericToUnknown*/ true);
+    }
 
     maybeEmitWarningsForId(this, type, ident, id);
-
-    // Record uses of outer variables.
-    if (isOuterVariable(this, id) && outerVars) {
-      const ID& mention = ident->id();
-      const ID& var = id;
-      outerVars->add(context, mention, var);
-    }
 
     if (type.kind() == QualifiedType::TYPE) {
       // now, for a type that is generic with defaults,
@@ -3342,32 +3359,13 @@ void Resolver::exit(const NamedDecl* decl) {
     genericReceiverOverrideStack.pop_back();
   }
 
-  // We are resolving a symbol with a different path (e.g., a Function or
-  // a CompositeType declaration). In most cases we do not try to resolve
-  // in this traversal. However, if we are a nested function and the child
-  // is also a nested function, we need to check and potentially propagate
-  // their outer variable set into our own.
+  // We are resolving a symbol that introduces a new path component and has
+  // a postorder number of '-1' (e.g., a nested function). In most cases we
+  // just stop resolving, but we record nested functions.
   auto idChild = decl->id();
   if (idChild.isSymbolDefiningScope()) {
-    if (this->symbol != nullptr &&
-        parsing::idIsNestedFunction(context, this->symbol->id()) &&
-        parsing::idIsNestedFunction(context, idChild) &&
-        outerVars.get()) {
-      if (auto ovs = computeOuterVariables(context, idChild)) {
-        for (int i = 0; i < ovs->numVariables(); i++) {
-
-          // If the variable is reaching in the child function, it means it
-          // was defined in one of _our_ parent(s). So we need to track it.
-          if (ovs->isReachingVariable(i)) {
-            ID var = ovs->variable(i);
-
-            // Mentions from child functions are not recorded in the parent
-            // function's info, so just use the first (as a convenience).
-            ID mention = ovs->firstMention(var);
-            outerVars->add(context, mention, var);
-          }
-        }
-      }
+    if (parsing::idIsNestedFunction(context, idChild)) {
+      childFunctionIds.push_back(idChild);
     }
     return;
   }
@@ -3802,8 +3800,10 @@ void Resolver::handleCallExpr(const uast::Call* call) {
       receiverType = QualifiedType(QualifiedType::INIT_RECEIVER, gen);
     }
 
-    CallResolutionResult c
-      = resolveCallInMethod(context, call, ci, inScopes, receiverType);
+    std::vector<ApplicabilityResult>* rejected = nullptr;
+    auto c = resolveCallInMethod(context, call, ci, inScopes, receiverType,
+                                 rejected,
+                                 makeCallerDetails());
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
@@ -3955,7 +3955,7 @@ void Resolver::exit(const Dot* dot) {
   }
 
   if (dot->field() == USTR("type")) {
-    const Type* receiverType;
+    const Type* receiverType = nullptr;
     ResolvedExpression& r = byPostorder.byAst(dot);
 
     if (receiver.type().type() != nullptr) {

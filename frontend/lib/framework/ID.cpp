@@ -20,6 +20,9 @@
 #include "chpl/framework/ID.h"
 
 #include "chpl/framework/update-functions.h"
+#include "chpl/resolution/scope-types.h"
+#include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/AstTag.h"
 
 #include <cstring>
 
@@ -140,6 +143,15 @@ ID ID::parentSymbolId(Context* context) const {
 
   // Otherwise, construct an ID for the parent symbol
   return ID(parentSymPath, -1, 0);
+}
+
+ID ID::parentFunctionId(Context* context) const {
+  ID parentSymId = this->parentSymbolId(context);
+  auto parentScope = resolution::scopeForId(context, parentSymId);
+  for (auto s = parentScope; s != nullptr; s = s->parentScope()) {
+    if (s->tag() == uast::asttags::Function) return s->id();
+  }
+  return ID();
 }
 
 UniqueString ID::symbolName(Context* context) const {

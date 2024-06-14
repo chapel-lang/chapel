@@ -1261,11 +1261,8 @@ static const ID& methodReceiverTypeIdForMethodId(Context* context,
         } else {
           // Resolve the method receiver to an ID
           ResolutionResultByPostorderID r;
-          owned<OuterVariables> outerVars =
-            toOwned(new OuterVariables(context, methodId));
           auto visitor =
-            Resolver::createForScopeResolvingFunction(context, fn, r,
-                                                      std::move(outerVars));
+            Resolver::createForScopeResolvingFunction(context, fn, r);
 
           const AstNode* typeExpr = nullptr;
           if (auto thisFormal = fn->thisFormal()) {

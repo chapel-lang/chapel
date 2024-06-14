@@ -750,7 +750,6 @@ class CallInfo {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-
 using PoiCallIdFnIds = std::set<std::pair<ID, ID>>;
 using PoiRecursiveCalls = std::set<std::pair<const TypedFnSignature*,
                                              const PoiScope*>>;
@@ -1035,7 +1034,7 @@ class TypedFnSignature {
     return untypedSignature_;
   }
 
-  inline bool isCompilerGenerated() const {
+  bool isCompilerGenerated() const {
     return untyped()->isCompilerGenerated();
   }
 
@@ -1047,6 +1046,22 @@ class TypedFnSignature {
   /** Returns if any of the formals are generic or unknown */
   bool needsInstantiation() const {
     return needsInstantiation_;
+  }
+
+  bool isInit() const {
+    return untyped()->name() == USTR("init") && untyped()->isMethod();
+  }
+
+  bool isInitEquals() const {
+    return untyped()->name() == USTR("init=") && untyped()->isMethod();
+  }
+
+  bool isInitializer() const {
+    return isInit() || isInitEquals();
+  }
+
+  bool isDeinit() const {
+    return untyped()->name() == USTR("deinit") && untyped()->isMethod();
   }
 
   /** If this TypedFnSignature represents the result of additional
@@ -1100,6 +1115,10 @@ class TypedFnSignature {
   const TypedFnSignature* parentFn() const {
     const TypedFnSignature* sig = inferredFrom();
     return sig->parentFn_;
+  }
+
+  bool isNestedFunction() const {
+    return parentFn() != nullptr;
   }
 
   /** Returns the number of formals */
@@ -1972,6 +1991,53 @@ class CallScopeInfo {
   const Scope* callScope() const { return callScope_; }
   const Scope* lookupScope() const { return lookupScope_; }
   const PoiScope* poiScope() const { return poiScope_; }
+};
+
+class CallerDetails {
+ private:
+  const CallerDetails* parent_ = nullptr;
+  const TypedFnSignature* signature_ = nullptr;
+  const ResolutionResultByPostorderID* resolutionById_ = nullptr;
+  const CallScopeInfo callScopeInfo_;
+
+ public:
+  CallerDetails()
+    : parent_(nullptr), signature_(nullptr), resolutionById_(nullptr),
+      callScopeInfo_(CallScopeInfo::forNormalCall(nullptr, nullptr)) {}
+  CallerDetails(const CallerDetails* parent,
+                const TypedFnSignature* signature,
+                const ResolutionResultByPostorderID* resolutionById,
+                CallScopeInfo callScopeInfo)
+    : parent_(parent),
+      signature_(signature),
+      resolutionById_(resolutionById),
+      callScopeInfo_(std::move(callScopeInfo)) {
+    CHPL_ASSERT(!isEmpty() || (id() && id().isSymbolDefiningScope()));
+  }
+
+ ~CallerDetails() = default;
+  explicit operator bool() const { return !isEmpty(); }
+  const CallerDetails* parent() const { return parent_; }
+  const TypedFnSignature* signature() const { return signature_; }
+  const ResolutionResultByPostorderID* resolutionById() const { return resolutionById_; }
+  const CallScopeInfo& callScopeInfo() const { return callScopeInfo_; }
+  const PoiScope* poiScope() const { return callScopeInfo_.poiScope(); }
+  const Scope* callScope() const { return callScopeInfo_.callScope(); }
+  ID id() const { return signature_ ? signature_->id() : ID(); }
+  bool contains(const ID& id) const {
+    return id && signature_ && signature_->id().contains(id);
+  }
+  bool isEmpty() const {
+    return !signature_ && !resolutionById_ && !callScope() && !poiScope();
+  }
+  const CallerDetails* findParentOf(Context* context, const ID& id) const {
+    if (ID p = id.parentFunctionId(context)) {
+      for (auto up = this; up; up = up->parent()) {
+        if (up && !up->isEmpty() && up->signature()->id() == p) return up;
+      }
+    }
+    return nullptr;
+  }
 };
 
 class ResolvedParamLoop;
