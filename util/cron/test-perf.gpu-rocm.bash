@@ -20,10 +20,6 @@ source $CWD/common-native-gpu-perf.bash
 source $CWD/common-perf.bash
 export CHPL_TARGET_CPU=native
 
-# Prevent which LLVM from being set by this variable, so it can be overridden
-# # later to use ROCM LLVM.
-unset CHPL_LLVM_CONFIG
-
 # everything we source above will end up sourcing `common.bash` which will then
 # source `load-base-deps.bash`. In the system we run this config,
 # `load-base-deps.bash` ends up exporting
@@ -33,6 +29,8 @@ unset CHPL_LLVM_CONFIG
 # appear after all the `source`s.
 module load rocm
 
+# Use LLVM 14 as we don't support the ROCM bundled LLVM yet.
+source /cray/css/users/chapelu/setup_system_llvm.bash 14
 
 nightly_args="${nightly_args} -startdate 07/20/23"
 
