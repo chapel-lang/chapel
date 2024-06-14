@@ -1,0 +1,1 @@
+--llvm-print-ir kernel --llvm-print-ir-stage full --fast --no-ieee-float --no-local

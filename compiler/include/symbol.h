@@ -846,6 +846,9 @@ extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
 extern const char* astr_autoDestroy;
 
+extern const char* astr_gen_comm_get;
+extern const char* astr_gen_comm_put;
+
 bool isAstrOpName(const char* name);
 
 void initAstrConsts();
