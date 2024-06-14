@@ -5,16 +5,12 @@
 config const ni = 2;
 const RNGi = 1..ni;
 
-proc inc1i { }
+var count: atomic int;
+proc inc1i { count.add(1); }
 
 iter iter1par() {
   writeln("iter1par serial");
   for idx in RNGi do
-    yield idx;
-}
-iter iter1par(param tag) where tag == iterKind.standalone {
-  writeln("iter1par standalone");
-  for idx in RNGi.these(tag) do
     yield idx;
 }
 iter iter1par(param tag) where tag == iterKind.leader {
@@ -23,7 +19,7 @@ iter iter1par(param tag) where tag == iterKind.leader {
     yield idx;
 }
 iter iter1par(param tag, followThis) where tag == iterKind.follower {
-  inc1i;
+  inc1i; // bug: this call was generating an incorrect error
   for idx in RNGi.these(tag, followThis) do
     yield idx;
 }
@@ -31,3 +27,5 @@ iter iter1par(param tag, followThis) where tag == iterKind.follower {
 proc multiply(arg1: int, arg2: int)   { writeln("mul=", arg1*arg2); }
 
 multiply([ IND in iter1par() ] IND, 0);
+
+assert(count.read() > 0); // make sure inc1i was run
