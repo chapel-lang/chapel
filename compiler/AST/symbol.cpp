@@ -2166,9 +2166,6 @@ const char* astr_coerceCopy = NULL;
 const char* astr_coerceMove = NULL;
 const char* astr_autoDestroy = NULL;
 
-const char* astr_gen_comm_get = NULL;
-const char* astr_gen_comm_put = NULL;
-
 void initAstrConsts() {
   astrSassign = astr("=");
   astrSdot    = astr(".");
@@ -2215,9 +2212,6 @@ void initAstrConsts() {
   astr_coerceMove = astr("chpl__coerceMove");
 
   astr_autoDestroy = astr("chpl__autoDestroy");
-
-  astr_gen_comm_get = astr("chpl_gen_comm_get");
-  astr_gen_comm_put = astr("chpl_gen_comm_put");
 }
 
 bool isAstrOpName(const char* name) {
