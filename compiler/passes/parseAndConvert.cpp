@@ -629,7 +629,7 @@ static void processInternalModules() {
 //static void addDashMsToUserPath();
 //static void addUsrDirToModulePath(const char* dir);
 static void printModuleSearchPath();
-static void helpPrintPath(Vec<const char*> path);
+//static void helpPrintPath(Vec<const char*> path);
 //static void ensureRequiredStandardModulesAreParsed();
 
 static void checkFilenameNotTooLong(UniqueString path) {
@@ -933,21 +933,12 @@ static void addUsrDirToModulePath(const char* dir) {
 static void printModuleSearchPath() {
   fprintf(stderr, "module search dirs:\n");
 
-  if (developer == true) {
-    helpPrintPath(sIntModPath);
+  const std::vector<UniqueString>& paths = chpl::parsing::moduleSearchPath(gContext);
+  for (auto p : paths) {
+    fprintf(stderr, "  %s\n", cleanFilename(p.c_str()));
   }
-
-  helpPrintPath(sUsrModPath);
-
-  helpPrintPath(sStdModPath);
 
   fprintf(stderr, "end of module search dirs\n");
-}
-
-static void helpPrintPath(Vec<const char*> path) {
-  forv_Vec(const char*, dirName, path) {
-    fprintf(stderr, "  %s\n", cleanFilename(dirName));
-  }
 }
 
 #if 0

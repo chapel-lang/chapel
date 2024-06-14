@@ -584,19 +584,31 @@ void setBundledModulePath(Context* context, UniqueString path) {
   QUERY_STORE_INPUT_RESULT(bundledModulePathQuery, context, path);
 }
 
-static void addFilePathModules(std::vector<std::string>& searchPath,
-                               const std::vector<std::string>& inputFilenames) {
+static void pushBackIfNew(std::vector<std::string>& searchPath,
+                          std::set<std::string>& set,
+                          const std::string& path) {
+  auto pair = set.insert(path);
+  if (pair.second) {
+    // it was inserted in the set, so append it to the vector
+    searchPath.push_back(path);
+  }
+}
+
+static void
+addCommandLineFileDirectories(std::vector<std::string>& searchPath,
+                              std::set<std::string>& set,
+                              const std::vector<std::string>& inputFilenames) {
   for (auto& fname : inputFilenames) {
     auto idx = fname.find_last_of('/');
     if (idx == std::string::npos) {
       // local file
-      searchPath.push_back(".");
+      pushBackIfNew(searchPath, set, ".");
     } else if (idx == 0) {
       // root path: /foo.chpl
-      searchPath.push_back("/");
+      pushBackIfNew(searchPath, set, "/");
     } else {
       auto path = fname.substr(0, idx);
-      searchPath.push_back(path);
+      pushBackIfNew(searchPath, set, path);
     }
   }
 }
@@ -633,43 +645,54 @@ void setupModuleSearchPaths(
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
+  std::set<std::string> dedupSet;
+
   std::vector<UniqueString> uPrependedInternalModulePaths;
   std::vector<UniqueString> uPrependedStandardModulePaths;
 
+  // add the internal module paths
   for (auto& path : prependInternalModulePaths) {
-    searchPath.push_back(path);
+    pushBackIfNew(searchPath, dedupSet, path);
     UniqueString uPath = UniqueString::get(context, path);
     uPrependedInternalModulePaths.push_back(uPath);
   }
 
   setPrependedInternalModulePath(context, uPrependedInternalModulePaths);
 
-  // TODO: Shouldn't these use the internal path we just set?
-  searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
+  pushBackIfNew(searchPath, dedupSet,
+                internal + "/localeModels/" + chplLocaleModel);
 
   const char* tt = enableTaskTracking ? "on" : "off";
-  searchPath.push_back(modRoot + "/internal/tasktable/" + tt);
+  pushBackIfNew(searchPath, dedupSet,
+                internal + "/tasktable/" + tt);
 
-  searchPath.push_back(modRoot + "/internal/tasks/" + chplTasks);
+  pushBackIfNew(searchPath, dedupSet,
+                internal + "/tasks/" + chplTasks);
 
-  searchPath.push_back(modRoot + "/internal/comm/" + chplComm);
+  pushBackIfNew(searchPath, dedupSet,
+                internal + "/comm/" + chplComm);
 
-  searchPath.push_back(modRoot + "/internal");
+  pushBackIfNew(searchPath, dedupSet, internal);
+
+  // move on to standard modules
+  dedupSet.clear(); // clear it so a path could be both internal & standard
 
   for (auto& path : prependStandardModulePaths) {
-    searchPath.push_back(path);
+    pushBackIfNew(searchPath, dedupSet, path);
     UniqueString uPath = UniqueString::get(context, path);
     uPrependedStandardModulePaths.push_back(uPath);
   }
 
-  // TODO: Shouldn't these use the standard path we just set?
-  searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
+  pushBackIfNew(searchPath, dedupSet,
+                modRoot + "/standard/gen/" + chplSysModulesSubdir);
+  pushBackIfNew(searchPath, dedupSet, modRoot + "/standard");
+  pushBackIfNew(searchPath, dedupSet, modRoot + "/packages");
+  pushBackIfNew(searchPath, dedupSet, modRoot + "/layouts");
+  pushBackIfNew(searchPath, dedupSet, modRoot + "/dists");
+  pushBackIfNew(searchPath, dedupSet, modRoot + "/dists/dims");
 
-  searchPath.push_back(modRoot + "/standard");
-  searchPath.push_back(modRoot + "/packages");
-  searchPath.push_back(modRoot + "/layouts");
-  searchPath.push_back(modRoot + "/dists");
-  searchPath.push_back(modRoot + "/dists/dims");
+  // move on to user module paths
+  dedupSet.clear(); // clear it so a path could be both internal/standard & user
 
   // Add paths from the CHPL_MODULE_PATH environment variable
   if (!chplModulePath.empty()) {
@@ -678,15 +701,15 @@ void setupModuleSearchPaths(
     std::string path;
 
     while (std::getline(ss, path, ':')) {
-      searchPath.push_back(path);
+      pushBackIfNew(searchPath, dedupSet, path);
     }
   }
 
-  addFilePathModules(searchPath, inputFilenames);
+  addCommandLineFileDirectories(searchPath, dedupSet, inputFilenames);
 
   // Add paths from the command line
   for (const auto& p : cmdLinePaths) {
-    searchPath.push_back(p);
+    pushBackIfNew(searchPath, dedupSet, p);
   }
 
   // Convert them all to UniqueStrings.
