@@ -683,6 +683,8 @@ void setupModuleSearchPaths(
     uPrependedStandardModulePaths.push_back(uPath);
   }
 
+  setPrependedStandardModulePath(context, uPrependedStandardModulePaths);
+
   pushBackIfNew(searchPath, dedupSet,
                 modRoot + "/standard/gen/" + chplSysModulesSubdir);
   pushBackIfNew(searchPath, dedupSet, modRoot + "/standard");
