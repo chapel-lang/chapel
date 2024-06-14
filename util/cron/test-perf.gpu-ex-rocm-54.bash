@@ -19,9 +19,6 @@ source $CWD/common-perf.bash
 # appear after all the `source`s.
 module load rocm/5.4.3  # pin to rocm 5.4.3
 
-# Use LLVM 14 as we don't support the ROCM bundled LLVM yet.
-source /cray/css/users/chapelu/setup_system_llvm.bash 14
-
 export CHPL_COMM=none
 export CHPL_LLVM=system
 unset CHPL_LLVM_CONFIG  # we need this to avoid warnings
