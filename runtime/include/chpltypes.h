@@ -39,6 +39,8 @@ typedef double _Complex       _complex128;
 #ifndef _Complex_I
 static const _complex64 _Complex_I = {0.0f, 1.0f};
 #endif
+// C's complex I macro conflicts with some template parameters in e.g. rocPRIM
+#undef I
 
 #ifdef __cplusplus
 extern "C" {
