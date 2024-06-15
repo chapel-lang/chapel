@@ -92,6 +92,12 @@ class CS: BaseDist {
   param compressRows: bool = true;
   param sortedIndices: bool = LayoutCSDefaultToSorted;
 
+  proc init(param compressRows: bool = true,
+            param sortedIndices: bool = LayoutCSDefaultToSorted) {
+    this.compressRows = compressRows;
+    this.sortedIndices = sortedIndices;
+  }
+
   override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.strides, _to_unmanaged(this), dom);
   }
