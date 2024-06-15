@@ -17,9 +17,12 @@ endif
 
 # PSHM (inter-Process SHared Memory) provide a mechanism for gasnet instances
 # on the same node to communicate through shared memory instead of the real
-# conduit. This is critical to communication performance for co-locales.
-# Note that pshm only works with segment fast/large.
-ifneq (,$(findstring $(CHPL_MAKE_COMM_SEGMENT), fast large))
+# conduit. In "production" we only run a single gasnet client per node so this
+# doesn't help, but for smp it's required, and we've noticed faster testing
+# times since we do local spawning, which will result in multiple gasnet
+# clients on the same node. Note that pshm only works with segment fast/large.
+SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
+ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large smp-fast smp-large))
 CHPL_GASNET_CFG_OPTIONS += --enable-pshm
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
