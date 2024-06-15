@@ -103,12 +103,12 @@ def get_llvm_config_version(llvm_config):
 # Returns the full output of clang --version for the passed clang command.
 # Returns None if something went wrong.
 @memoize
-def get_clang_version(clang_command):
+def get_clang_version(clang_command, short=False):
     got_version = None
 
     if clang_command != 'none' and clang_command != None:
-        exists, returncode, got_out, got_err = try_run_command([clang_command,
-                                                                '--version'])
+        version = '--version' if not short else '-dumpversion'
+        exists, returncode, got_out, _ = try_run_command([clang_command, version])
 
         if exists and returncode == 0:
             got_version = got_out
@@ -398,7 +398,7 @@ def validate_llvm_config():
                   "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CXX.".format(llvm_config))
 
         def print_clang_version_error(clang, name="clang"):
-            clang_version = get_clang_version(clang)
+            clang_version = get_clang_version(clang, short=True)
             llvm_version = str(get_llvm_config_version(llvm_config)).strip()
             if clang_version is None:
                 error(
@@ -477,26 +477,38 @@ def get_overriden_llvm_clang(lang):
     # These use split in order to separate the command out from
     # any arguments passed to it.
     tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
+    res = None
     if lang_upper == 'C':
         llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
         if llvm_clang_c:
-            return llvm_clang_c.split()
-        if tgt_llvm:
+            res = llvm_clang_c.split()
+        elif tgt_llvm:
             target_cc = overrides.get('CHPL_TARGET_CC')
             if target_cc:
-                return target_cc.split()
+                res = target_cc.split()
     elif lang_upper == 'CXX':
         llvm_clang_cxx = overrides.get('CHPL_LLVM_CLANG_CXX')
         if llvm_clang_cxx:
-            return llvm_clang_cxx.split()
-        if tgt_llvm:
+            res = llvm_clang_cxx.split()
+        elif tgt_llvm:
             target_cc = overrides.get('CHPL_TARGET_CXX')
             if target_cc:
-                return target_cc.split()
+                res = target_cc.split()
     else:
         error('unknown lang value {}'.format(lang))
 
-    return None
+    if res is not None:
+        # validate that the command is clang by checking a preprocessor macro
+        macro = "__clang_major__"
+        exists, returncode, out, _ = try_run_command([res[0], "-E", "-x", "c", "-"], macro)
+        if exists and returncode == 0 and out:
+            # check that the preprocess output does not contains the macro
+            if macro in out:
+                error("'{}' is not clang and cannot be used with LLVM".format(res[0]))
+        else:
+            warning("unable to execute '{}' to validate it".format(res[0]))
+
+    return res
 
 # given a lang argument of 'c' or 'c++'/'cxx', return the system clang command
 # to use. Checks that the clang version matches the version of llvm-config in
