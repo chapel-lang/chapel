@@ -1,0 +1,13 @@
+BootStrap: docker
+From: alpine:3.20
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/apk-deps.sh
+    # For Alpine 3.20, default llvm/clang version is 17?
+    /provision-scripts/apk-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

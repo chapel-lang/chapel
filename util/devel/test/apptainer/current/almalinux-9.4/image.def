@@ -1,0 +1,13 @@
+BootStrap: docker
+From: almalinux:9.4
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-deps.sh
+    # installs llvm/clang 17
+    /provision-scripts/dnf-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"
