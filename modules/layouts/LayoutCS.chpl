@@ -89,8 +89,8 @@ or for a specific domain by passing ``sortedIndices=false`` as an argument
 to the ``CS()`` initializer.
 */
 class CS: BaseDist {
-  param compressRows: bool;
-  param sortedIndices: bool;
+  param compressRows: bool = true;
+  param sortedIndices: bool = LayoutCSDefaultToSorted;
 
   proc init(param compressRows: bool = true,
             param sortedIndices: bool = LayoutCSDefaultToSorted) {
