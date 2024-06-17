@@ -15,6 +15,13 @@ if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
   if [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.0.0" ]; then
     # use LLVM 17, latest supported by 2.0.0
     if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
+      # Hack to avoid build issues with GMP. Spack installed GMP is pulled in as
+      # a dependency of GDB. Then for some reason, it's (undesirably) linked
+      # against by the bundled GMP's self-tests, causing them to fail due to
+      # version mismatch. Avoid this by unloading GDB and therefore GMP.
+      # Anna 2024-06-17
+      module unload gdb
+
       source /data/cf/chapel/setup_system_llvm.bash 17
     fi
   else
