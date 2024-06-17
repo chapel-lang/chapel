@@ -276,8 +276,8 @@ CC and Similar
    The compiler family settings ``CHPL_HOST_COMPILER`` and
    ``CHPL_TARGET_COMPILER`` can be inferred from these ``*CC`` ``*CXX``
    variables in some cases as described in
-   :ref:`readme-chplenv.CHPL_COMPILER`. To infer a compiler family from a
-   a path to a compiler, the configuration looks to recognize an
+   :ref:`readme-chplenv.CHPL_COMPILER`. To infer a compiler family from the
+   path to a compiler, the configuration looks to recognize an
    executable name normally used with that compiler. For example,
    the ``gnu`` family normally uses ``gcc`` for C code and ``g++`` for
    C++ code. This inference process ignores the directory as well as any
