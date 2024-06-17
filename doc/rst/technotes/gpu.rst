@@ -123,6 +123,9 @@ The following are further requirements for GPU support:
 * For targeting NVIDIA or AMD GPUs, ``LLVM`` must be used as Chapel's backend
   compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``).
 
+  * Note that ``CHPL_TARGET_COMPILER`` must be ``llvm``. This is the default
+    when ``CHPL_LLVM`` is set to ``system`` or ``bundled``.
+
 * The environment variable ``CHPL_LOCALE_MODEL`` must be set to ``gpu``.
 
 * Specifically for targeting NVIDIA GPUs:
