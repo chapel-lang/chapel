@@ -765,7 +765,9 @@ static void setup_polling_pre_init(void) {
 
   // By default we want a GASNet send progress thread. Note that we do
   // not override any existing value, so the user can disable it if desired.
-  chpl_env_set("GASNET_SND_THREAD", "1", 0 /*overwrite*/);
+  // Currently off by default because it was observed to reduce performance
+  // when running one locale-per-node on a multi-socket system without binding
+  chpl_env_set("GASNET_SND_THREAD", "0", 0 /*overwrite*/);
 
   // If there is a send thread give it exclusive access to the NIC. This
   // has no effect if there isn't a send thread.
