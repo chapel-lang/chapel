@@ -22,13 +22,17 @@ module ChapelRemoteVars {
   use ChapelIteratorSupport;
 
   class _remoteVarContainer {
-    type valueType;
-    var containedValue: valueType;
+    var containedValue;
   }
 
   record _remoteVarWrapper {
     type eltType;
     var tmp: owned _remoteVarContainer(eltType);
+
+    proc init(in tmp: owned _remoteVarContainer(?eltType)) {
+      this.eltType = eltType;
+      this.tmp = tmp;
+    }
 
     proc ref get() ref {
       return tmp.containedValue;
@@ -49,18 +53,23 @@ module ChapelRemoteVars {
   @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, type inType, in value: inType) {
     var c: owned _remoteVarContainer(inType)?;
-    on loc do c = new _remoteVarContainer(inType, value);
-    return new _remoteVarWrapper(inType, try! c : owned _remoteVarContainer(inType));
+    on loc do c = new _remoteVarContainer(value);
+    return new _remoteVarWrapper(try! c : owned _remoteVarContainer(inType));
+  }
+
+  private proc remoteWrapperTypeForIR(value) type {
+    var arr = value;
+    return owned _remoteVarContainer(arr.type);
   }
 
   @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, value: _iteratorRecord) {
-    type inType = chpl_buildStandInRTT(value.type);
-    var c: owned _remoteVarContainer(inType)?;
+    type wrapperType = remoteWrapperTypeForIR(value);
+    var c: wrapperType?;
     on loc {
-      c = new _remoteVarContainer(inType, value);
+      c = new _remoteVarContainer(value);
     }
-    return new _remoteVarWrapper(inType, try! c : owned _remoteVarContainer(inType));
+    return new _remoteVarWrapper(try! c : wrapperType);
   }
 
 }
