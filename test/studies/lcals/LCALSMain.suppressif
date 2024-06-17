@@ -1,2 +1,0 @@
-# suppress timeouts with --no-local
-COMPOPTS <= --no-local
