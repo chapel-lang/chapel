@@ -31,7 +31,7 @@ Contributors to the Chapel 2.1 release
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
-* Nicole Vadot, individual contributor
+* [Nicole Vadot], individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -318,4 +318,4 @@ implementation.
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 [Kenjiro Taura]: http://www.eidos.ic.i.u-tokyo.ac.jp/~tau/
-
+[Nicole Vadot]: https://people.epfl.ch/nicole.vadot
