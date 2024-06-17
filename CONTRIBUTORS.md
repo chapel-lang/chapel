@@ -25,6 +25,7 @@ Contributors to the Chapel 2.1 release
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
+* Josh Milthorpe, [ORNL]
 * Fábio Malacco Moreira, individual contributor
 * Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Ahmad Rezaii, [HPE]
@@ -125,7 +126,6 @@ Contributors to previous releases
 * Cory McCartan, [Cray Inc.] intern from Sammamish High School
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Erin Melia, individual contributor
-* Josh Milthorpe, [ORNL]
 * Kyle Milz, individual contributor
 * Iain Moncrief, [HPE] intern from [Oregon State University]
 * Barry Moore, [University of Pittsburgh]
