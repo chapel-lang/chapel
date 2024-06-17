@@ -61,7 +61,7 @@ Flags                   Description
 ``-s <name[=expr]>``    set a config declaration with the given expression
                         as its default value (config params must be set
                         to values that are known at compile time)
-``--M <dir>``           add the specified directory to the module search path
+``-M <dir>``            add the specified directory to the module search path
 ``--savec <dir>``       saves the generated C code in the specified
                         directory
 ``-g``                  support debugging of the generated C code
