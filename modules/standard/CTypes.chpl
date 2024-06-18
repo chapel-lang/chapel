@@ -237,6 +237,8 @@ module CTypes {
       Default-initializes a :type:`c_array`, where each element gets the default value of ``eltType``.
     */
     proc init(type eltType, param size) {
+      if eltType == void then
+        compilerError("c_array element type cannot be void");
       this.eltType = eltType;
       this.size = size;
       init this;
