@@ -56,7 +56,7 @@ static int reservedCore = -1;
 
 #define GEX_NO_FLAGS 0
 
-static int defer_gasnet_progress_threads = 0;
+static chpl_bool defer_gasnet_progress_threads = 0;
 
 static gasnet_seginfo_t* seginfo_table = NULL;
 static gex_Client_t      myclient;
@@ -897,11 +897,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   defer_gasnet_progress_threads = chpl_env_rt_get_bool("COMM_GASNET_DEFER_PROGRESS_THREADS", false);
 
+  gex_Flags_t flags = GEX_FLAG_USES_GASNET1 |
+                      (defer_gasnet_progress_threads ? GEX_FLAG_DEFER_THREADS : 0);
+
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "chapel",
                               argc_p, argv_p,
-                              GEX_FLAG_USES_GASNET1 |
-                              (defer_gasnet_progress_threads ?
-                               GEX_FLAG_DEFER_THREADS : 0)));
+                              flags));
 
   setup_polling_post_init();
   chpl_nodeID = gasnet_mynode();
