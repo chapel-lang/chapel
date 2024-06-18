@@ -56,6 +56,8 @@ static int reservedCore = -1;
 
 #define GEX_NO_FLAGS 0
 
+static int defer_gasnet_progress_threads = 0;
+
 static gasnet_seginfo_t* seginfo_table = NULL;
 static gex_Client_t      myclient;
 static gex_EP_t          myep;
@@ -893,10 +895,13 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   setup_ibv();
   setup_polling_pre_init();
 
+  defer_gasnet_progress_threads = chpl_env_rt_get_bool("COMM_GASNET_DEFER_PROGRESS_THREADS", false);
+
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "chapel",
                               argc_p, argv_p,
                               GEX_FLAG_USES_GASNET1 |
-                              GEX_FLAG_DEFER_THREADS));
+                              (defer_gasnet_progress_threads ?
+                               GEX_FLAG_DEFER_THREADS : 0)));
 
   setup_polling_post_init();
   chpl_nodeID = gasnet_mynode();
@@ -1010,13 +1015,17 @@ static void start_gasnet_progress_threads(void) {
 
 void chpl_comm_post_task_init(void) {
   start_polling();
-  start_gasnet_progress_threads();
+  if (defer_gasnet_progress_threads) {
+    start_gasnet_progress_threads();
+  }
   if ((verbosity >= 2) && (chpl_nodeID == 0)) {
     printf("PSHM is %s.\n", pshmInUse? "enabled" : "disabled");
-    printf("GASNet receive progress thread is %s.\n", haveReceiveThread ?
-           "enabled" : "disabled");
-    printf("GASNet send progress thread is %s.\n", haveSendThread ?
-           "enabled" : "disabled");
+    if (defer_gasnet_progress_threads) {
+      printf("GASNet receive progress thread is %s.\n", haveReceiveThread ?
+             "enabled" : "disabled");
+      printf("GASNet send progress thread is %s.\n", haveSendThread ?
+             "enabled" : "disabled");
+    }
   }
 }
 
