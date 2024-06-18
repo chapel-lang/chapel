@@ -263,8 +263,13 @@ def main():
 
     printed_warning = False
 
+    prev_context = None
     for filename, context in chapel.files_with_contexts(args.filenames):
-        context.set_module_paths([], [])
+        # Avoid re-setting module paths on already-used contexts, due to
+        # bucketing from files_with_contexts.
+        if context is not prev_context:
+            context.set_module_paths([], [])
+        prev_context = context
 
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as _:
