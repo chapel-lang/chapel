@@ -290,6 +290,7 @@ int main(int argc, char** argv) {
 
     // Run this query first to make the other output more understandable
     ctx->setDebugTraceFlag(false);
+    setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
     if (timing) ctx->beginQueryTimingTrace(timing);
@@ -297,8 +298,6 @@ int main(int argc, char** argv) {
     CompilerFlags flags;
     flags.set(CompilerFlags::WARN_UNSTABLE, warnUnstable);
     setCompilerFlags(ctx, std::move(flags));
-
-    setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
 
     std::set<const ResolvedFunction*> calledFns;
 
