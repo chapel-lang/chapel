@@ -56,7 +56,7 @@ static int reservedCore = -1;
 
 #define GEX_NO_FLAGS 0
 
-static chpl_bool defer_gasnet_progress_threads = 0;
+static chpl_bool defer_gasnet_progress_threads = false;
 
 static gasnet_seginfo_t* seginfo_table = NULL;
 static gex_Client_t      myclient;
