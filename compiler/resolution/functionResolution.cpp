@@ -11402,6 +11402,8 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
     char *token, *str1 = NULL, *str2 = NULL;
     token = strstr(flag, ":");
     if (token) {
+      if (*(token+1) == ':')  // allow ":" as the call name
+        token += 1;
       *token = '\0';
       str1 = token+1;
       token = strstr(str1, ":");
