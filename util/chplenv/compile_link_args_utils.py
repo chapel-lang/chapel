@@ -70,6 +70,7 @@ def get_runtime_includes_and_defines():
 
         elif gpu_type == "amd":
             # -isystem instead of -I silences warnings from inside these includes.
+            system.append("-isystem" + os.path.join(sdk_path, "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
