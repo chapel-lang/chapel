@@ -122,11 +122,16 @@ apply these fixits by using the ``--fixit`` flag. When using ``chplcheck`` from
 an editor, the editor may provide a way to apply fixits directly with a Quick
 Fix.
 
-When using the command line, a few additional flags are available to control how fixits are applied:
+When using the command line, a few additional flags are available to control how
+fixits are applied:
 
-* ``--fixit``: Apply fixits to the file. By default, this is done in-place, overwriting the original file with the fixed version.
-* ``--fixit-suffix <suffix>``: Save the original file with the given suffix before applying fixits.
-* ``--interactive``: Starts an interactive session where you can choose which fixits to apply.
+* ``--fixit``: Apply fixits to the file. By default, this is done in-place,
+  overwriting the original file with the fixed version.
+* ``--fixit-suffix <suffix>``: Apply fixits to a new file with the given suffix
+  appended to the original file name. For example, ``--fixit-suffix .fixed``
+  would create a new file named ``myfile.chpl.fixed`` with the fixits applied.
+* ``--interactive``: Starts an interactive session where you can choose which
+  fixits to apply.
 
 Setting Up In Your Editor
 -------------------------
@@ -298,9 +303,8 @@ each formal for which there wasn't a corresponding identifier.
 Making Rules Ignorable
 ~~~~~~~~~~~~~~~~~~~~~~
 
-If a lint rule is ignorable, it should be marked as such. Ignorable rules
-automatically have a fixit associated with them which adds a
-``@chplcheck.ignore`` annotation to the node.
+The linter has a mechanism for marking a rule as supporting the ``@chplcheck.ignore`` attribute. When rules are marked as such, the linter will automatically
+provide a `fixit <#writing-fixits>`_ to apply the attribute.
 
 Ignorable basic rules should return ``BasicRuleResult`` with ``ignorable`` set
 to ``True`` rather than just a boolean. The ``BasicRuleResult`` constructor
@@ -332,6 +336,9 @@ node. For example, the following defines an advanced rule that is ignorable:
                yield AdvancedRuleResult(idx, anchor=loop)
 
 Since loop indices can't have attributes applied to them directly, the rule above uses the parent loop as an anchor. Applying the attribute to the loop will silence the warning on the index.
+
+.. _writing-fixits:
+
 Fixits
 ~~~~~~
 
@@ -361,7 +368,7 @@ For example, the following defines a rule that has a fixit associated with it:
 
 .. note::
 
-   The API for defining Fixits is still under development and may change in the
+   The API for defining fixits is still under development and may change in the
    future.
 
 Adding Custom Rules
