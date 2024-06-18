@@ -3498,14 +3498,29 @@ bool Resolver::enter(const Call* call) {
     return true;
   }
 
-  // handle && and || to not bother to evaluate the RHS
+  // handle && and || (or ! negation of either) to not bother to evaluate the RHS
   // if the LHS is param and false/true, respectively.
-  if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
-    QualifiedType result = typeForBooleanOp(op);
-    // Update the type of the && call
-    byPostorder.byAst(op).setType(result);
-    // Don't visit the children since we already did
-    return false;
+  if (op) {
+    bool negate = false;
+    auto innerOp = op;
+    if (op->op() == USTR("!")) {
+      negate = true;
+      innerOp = op->actual(0)->toOpCall();
+    }
+    if (innerOp && (innerOp->op() == USTR("&&") || innerOp->op() == USTR("||"))) {
+      QualifiedType result = typeForBooleanOp(innerOp);
+
+      if (negate && result.isParam()) {
+        result = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                               BoolParam::get(context, !result.isParamTrue()));
+      }
+
+      // Update the type of the op call
+      byPostorder.byAst(op).setType(result);
+
+      // Don't visit the children since we already did
+      return false;
+    }
   }
 
   // Do not descend into children for 'prim resolves' since it accepts a single
