@@ -102,8 +102,8 @@ This will suppress the warning about ``MyRecord`` not being in camelCase.
 
 .. note::
 
-   ``chplcheck.ignore`` is a Chapel annotation and is subject to the same
-   limitations. This means that it cannot be used to ignore all warnings, for
+   ``chplcheck.ignore`` is a Chapel attribute and is subject to the same
+   limitations as other attributes in the language. This means that it cannot be used to ignore all warnings; for
    example it currently cannot be used on an ``if`` statement.
 
 .. note::
@@ -124,7 +124,7 @@ Fix.
 
 When using the command line, a few additional flags are available to control how fixits are applied:
 
-* ``--fixit``: Apply fixits to the file in place.
+* ``--fixit``: Apply fixits to the file. By default, this is done in-place, overwriting the original file with the fixed version.
 * ``--fixit-suffix <suffix>``: Save the original file with the given suffix before applying fixits.
 * ``--interactive``: Starts an interactive session where you can choose which fixits to apply.
 
@@ -331,6 +331,7 @@ node. For example, the following defines an advanced rule that is ignorable:
            if idx.name() == "i":
                yield AdvancedRuleResult(idx, anchor=loop)
 
+Since loop indices can't have attributes applied to them directly, the rule above uses the parent loop as an anchor. Applying the attribute to the loop will silence the warning on the index.
 Fixits
 ~~~~~~
 
@@ -344,7 +345,7 @@ optional description, which is shown to the user when the fixit is applied.
 ``Edit`` objects contain a file path, a range defined by start and end
 positions, and the text to replace inside of that range. The recommend way to
 create an ``Edit`` object is to use the ``Edit.build`` class method, which
-takes an ``chapel.Location`` and the text to replace it with.
+takes a ``chapel.Location`` and the text to replace it with.
 
 For example, the following defines a rule that has a fixit associated with it:
 
