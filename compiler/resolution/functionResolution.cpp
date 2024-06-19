@@ -11750,7 +11750,9 @@ static void postResolveLiftStaticVars() {
       targetMod->block->insertAtHead(wrapperSym->defPoint->remove());
 
       // If we created some cleanup code to run in the per-locale case,
-      // retrieve it now.
+      // retrieve it now. See the comment in normalize.cpp's
+      // preNormalizeHandleStaticVars for the structure of the cleanup block,
+      // as well as why it's needed.
       BlockStmt* cleanupBlock = nullptr;
       if (wrapperSym->hasFlag(FLAG_LOCALE_PRIVATE)) {
         cleanupBlock = toBlockStmt(wrapperBlock->body.tail->remove());
@@ -11763,14 +11765,12 @@ static void postResolveLiftStaticVars() {
       wrapperBlock->flattenAndRemove();
       call->remove();
 
-      // In some cases, we need to do cleanup. See the comment
-      // in normalize.cpp's preNormalizeHandleStaticVars for the
-      // structure of the cleanup block.
+      // In some cases, we need to do cleanup.
       if (!cleanupBlock) continue;
       SET_LINENO(wrapperSym);
 
       auto cleanupFnDefBlock = toBlockStmt(cleanupBlock->body.head->remove());
-      INT_ASSERT1(cleanupFnDefBlock);
+      INT_ASSERT(cleanupFnDefBlock);
       auto cleanupCall = toBlockStmt(cleanupBlock->body.tail->remove());
       INT_ASSERT(cleanupCall);
 
