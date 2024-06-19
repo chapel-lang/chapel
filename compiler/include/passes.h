@@ -107,6 +107,9 @@ void initForTaskIntents();
 void removeTiMarks();
 bool isTiMark(Symbol* sym);
 
+// callDestructors.cpp
+void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor);
+
 // deadCodeElimination.cpp
 void deadBlockElimination();
 
