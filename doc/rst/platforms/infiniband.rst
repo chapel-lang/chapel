@@ -203,7 +203,7 @@ help consider opening a bug as described in :ref:`readme-bugs`.
 Setting Memory Registration Limits
 ----------------------------------
 
-On most high performance networks, including InfiniBand, memory has
+On most high-performance networks, including InfiniBand, memory has
 to be registered with the network in order for Chapel to take
 advantage of fast one-sided communication. On InfiniBand networks
 there may be limits placed on how much memory can be registered so
@@ -230,7 +230,7 @@ an absolute value with something like
 ``GASNET_PHYSMEM_MAX='0.667'``.
 
 Setting ``GASNET_PHYSMEM_MAX`` to a small value can limit
-communication performance so it is highly recommend to use the value
+communication performance so it is highly recommended to use the value
 GASNet suggests.
 
 ----------
