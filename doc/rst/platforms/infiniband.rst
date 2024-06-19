@@ -237,13 +237,39 @@ GASNet suggests.
 Co-locales
 ----------
 
-By default, Chapel enables GASNet's PSHM (shared-memory bypass) feature when
-co-locales are in-use. Communication between co-locales will occur in memory
-and not through the network. However, PSHM requires an extra "progress"
-thread that will run on the same cores as the Chapel tasks, and will
-compete with those tasks for cycles. For computation-bound applications the
-overhead incurred by the progress thread may outweigh the benefits of PSHM.
-You can disable PSHM by setting ``GASNET_SUPERNODE_MAXSIZE=1``.
+By default, Chapel disables GASNet's PSHM (Process SHared-Memory bypass)
+feature when running on InfiniBand.  This means that by default on-node
+communication between co-locales traverses the loopback IB network interface,
+incurring overheads associated with the IB verbs networking layer that are high
+relative to the latencies one might expect for on-node communication.  Using
+co-locales in this configuration will generate a startup warning from GASNet
+that looks like this:
+
+.. code-block:: printoutput
+
+      *** WARNING (proc 0): Running with multiple processes per host without shared-memory communication support (PSHM).  This can significantly reduce performance.  Please re-configure GASNet using `--enable-pshm` to enable fast intra-host comms.
+
+This (somewhat confusingly worded) message accurately reflects the fact that
+Chapel's co-locale behavior with the InfiniBand backend has not yet been tuned
+and may provide sub-optimal performance for on-node communication.
+
+Users wishing to experiment with enabling the shared-memory bypass support for
+the InfiniBand backend can do so by adding the following environment variable
+setting when building Chapel:
+
+.. code-block:: bash
+
+      export CHPL_GASNET_MORE_CFG_OPTIONS=--enable-pshm
+
+This will enable the PSHM support when co-locales are in-use, such that on-node
+communication between co-locales will occur in memory and not through the
+network.  It's worth noting that Chapel's integration of the PSHM feature
+currently requires an extra "progress" thread that defaults to running on the
+same cores as the Chapel tasks, and will compete with those tasks for cycles.
+For computation-bound applications the overhead incurred by this progress thread
+may outweigh the benefits of PSHM.  You can optionally disable PSHM at
+application run-time by setting ``export GASNET_SUPERNODE_MAXSIZE=1``, although
+this won't exactly match the behavior of building without PSHM support.
 
 Another alternative is to dedicate a core for the progress thread, preventing
 it from running on the same cores as the Chapel tasks. This is accomplished
