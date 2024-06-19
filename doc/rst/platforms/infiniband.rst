@@ -280,6 +280,46 @@ variable will dedicate a core whether or not PSHM is in-use, so you should
 only set this variable if you are using co-locales and you have not disabled
 PSHM using ``GASNET_SUPERNODE_MAXSIZE`` as described above.
 
+----------------
+Progress Threads
+----------------
+
+In addition to the "busy" polling-based progress thread described above that
+is enabled when co-locales are combined with GASNet's (default disabled) PSHM
+support, the InfiniBand backend also optionally includes GASNet-level blocking
+progress threads used to help retire incoming and outgoing network communication
+operations (named the blocking "receive" and "send" progress threads, respectively). 
+These threads are "blocking" in that they are awakened on-demand when the network
+adapter reports there is communication work to be done, and otherwise generally
+remain parked in a kernel call where they do not consume any core cycles.
+By default the blocking receive progress thread is enabled and the blocking
+send progress thread is disabled.
+
+The blocking send progress thread may be enabled at application run-time by setting:
+
+.. code-block:: bash
+
+      export GASNET_SND_THREAD=1
+
+This enables a helper thread that has been shown to accelerate injection of
+communication in some cases, but in other cases may degrade communication
+throughput (notably on NUMA systems where the locale straddles the NUMA boundary).
+GASNet also provides additional environment variable settings that can
+optionally be used to control the detailed behavior of these threads, see
+documentation referenced below.
+
+An experimental Chapel feature also allows more control over the behavior of
+these progress threads:
+
+.. code-block:: bash
+
+      export CHPL_RT_COMM_GASNET_DEFER_PROGRESS_THREADS=true
+
+In particular this setting enables the
+``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE`` setting described in the
+earlier section to also control the placement and binding of the send and receive
+progress threads.
+
 --------
 See Also
 --------
