@@ -414,7 +414,7 @@ static void preNormalizeHandleStaticVars() {
         auto cleanupBlock = new BlockStmt(BLOCK_SCOPELESS);
         auto cleanupFnBlock = new BlockStmt(BLOCK_SCOPELESS);
         auto cleanupCallBlock = new BlockStmt(BLOCK_SCOPELESS);
-        auto cleanupFn = new FnSymbol("cleanupStaticWrapper");
+        auto cleanupFn = new FnSymbol("chpl__cleanupStaticWrapper");
         cleanupFnBlock->insertAtTail(new DefExpr(cleanupFn));
         cleanupBlock->insertAtTail(cleanupFnBlock);
         cleanupBlock->insertAtTail(
