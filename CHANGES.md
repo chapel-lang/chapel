@@ -211,6 +211,18 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - added support for resolving if-variables as non-nilable classes
+  - added support for `init=` from types other than the one that was declared
+  - added support for passing param strings to `c_ptrConst(c_char)`
+  - added support for initializers on inheriting, non-generic classes
+  - improved resolution of tuple-grouped arguments
+  - improved error messages for compile-time out-of-bounds errors on tuples
+  - improved support for where-clauses on generic methods
+  - improved resolution of multi-decl and tuple-decl variables at module scope
+  - fixed a bug where variables passed to `in` intents were considered 'dead'
+  - fixed a bug in `param` coercion when passing to arguments
+  - fixed a bug where unpacked tuple assignment caused false constness errors
 
 Developer-oriented changes: GPU support
 ---------------------------------------
