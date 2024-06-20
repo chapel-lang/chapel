@@ -40,7 +40,7 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
          cd chapel-2.0.0
 
-   c. Make sure you are doing the install on a machine with > 4GB of memory.
+   c. Make sure you are doing the install on a machine with > 2GB of memory.
 
    d. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
