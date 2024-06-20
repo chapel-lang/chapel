@@ -15,10 +15,7 @@ def get():
         libfabric_val = overrides.get('CHPL_LIBFABRIC')
         platform_val = chpl_platform.get('target')
         if not libfabric_val:
-            cmd_exists, returncode = try_run_command(['pkg-config',
-                                                      '--exists',
-                                                      'libfabric'])[0:2]
-            if cmd_exists and returncode == 0:
+            if third_party_utils.pkgconfig_system_has_package('libfabric'):
                 libfabric_val = 'system'
             else:
                 libfabric_val = 'bundled'
