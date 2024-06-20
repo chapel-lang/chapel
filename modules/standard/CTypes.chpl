@@ -238,7 +238,9 @@ module CTypes {
     */
     proc init(type eltType, param size) {
       if eltType == void then
-        compilerError("c_array element type cannot be void");
+        compilerError("c_array element type cannot be 'void'");
+      if eltType == nothing then
+        compilerError("c_array element type cannot be 'nothing'");
       this.eltType = eltType;
       this.size = size;
       init this;

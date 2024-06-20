@@ -1,9 +1,0 @@
-$CHPL_HOME/modules/standard/CTypes.chpl:239: In initializer:
-$CHPL_HOME/modules/standard/CTypes.chpl:251: internal error: RES-CLE-UPS-0792 chpl version 2.1.0 pre-release (44fa2742bd)
-
-Internal errors indicate a bug in the Chapel compiler,
-and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
-  carray-nothing.chpl:3: called as (c_array(nothing,5)).init(type eltType = nothing, param size = 5)
