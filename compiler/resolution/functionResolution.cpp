@@ -1566,7 +1566,7 @@ bool canCoerceAsSubtype(Type*     actualType,
     Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
     if (actualElt && formalElt && (actualElt == formalElt))
-      return true;
+      return ! actualSym->isConstant();
   }
 
   // Check for class subtyping
