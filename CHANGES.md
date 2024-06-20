@@ -95,6 +95,7 @@ Deprecated / Unstable / Removed Library Features
 
 GPU Computing
 -------------
+* added support for `reduce` expressions and intents within GPU kernels
 * extended `@gpu.blockSize` to support GPU-ineligible expressions
 * extended GPU attributes to apply to promoted initializer expressions
 * added support for `syncWarp()` for gpu kernels  
@@ -251,6 +252,7 @@ Compiler Flags
 
 Generated Executable Flags
 --------------------------
+* added a new `--gpus-per-node` flag for SLURM-based launchers
 
 Launchers
 ---------
@@ -273,11 +275,13 @@ Portability / Platform-specific Improvements
 * fixed memory leaks in the runtime when using `CHPL_COMM=ofi` with AWS EFA
 * fixed a portability issue  in which the PGI compiler's name was mis-spelled
 * fixed regex escape sequences generating errors with Python 3.12
+* fixed some bugs with `CHPL_COMM=ugni` when using bundled LLVM and/or GPUs
 
 Error Messages / Semantic Checks
 --------------------------------
 * improved errors when modifying `const` shadow variables in nested `forall`s
 * added an error when using `var` intents with `foreach` loops
+* added an error message for calling `export proc`s with wrong number of args
 * improved error message for improper uses of '_', the 'throwaway' variable
 * added warnings for copy-initing maps/sets/lists with mismatched `parSafe`s  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Map.html#Map.warnForMapParsafeMismatch,  
@@ -301,6 +305,8 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed the error message for using `CHPL_TASKS=fifo` with GPU support
+* fixed errors concerning rank-change array views on GPU memory
 * improved error messages for `gpuSort()` when called from the wrong locale  
   (see https://chapel-lang.org/docs/2.1/modules/standard/GPU.html#GPU.gpuSort)
 
