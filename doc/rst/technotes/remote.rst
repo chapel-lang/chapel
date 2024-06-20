@@ -188,7 +188,6 @@ future work:
   move execution to the locale on which ``someVar`` is declared, to achieve
   the same effect with remote variable declarations, the locale must be
   queried: ``on someVar.locale myVar = 42;``.
-* Because of the desugaring described in the `implementation details
-  <remote-variables-implementation>`_ section, and because records and
-  classes today don't support ``ref`` fields, remote variables cannot be
-  used as fields of records or classes.
+* Because of the desugaring described in the :ref:`remote-variables-implementation`
+  section, and because records and classes today don't support ``ref`` fields,
+  remote variables cannot be used as fields of records or classes.
