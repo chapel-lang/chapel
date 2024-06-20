@@ -38,6 +38,8 @@ Language Feature Improvements
 -----------------------------
 * enabled support for assigning between sparse arrays with matching indices  
   (e.g., `mySpsArr = mySpsArr2;` now works if the arrays' domains are equal)
+* stabilized operators between tuples and scalars, like `+`, `-`, `*`, etc.  
+  (see https://chapel-lang.org/docs/2.1/language/spec/tuples.html#tuple-operators)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -95,6 +97,8 @@ Deprecated / Unstable / Removed Library Features
 
 GPU Computing
 -------------
+* added support for `syncWarp()` for gpu kernels  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/GPU.html#GPU.syncWarp)
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -114,6 +118,8 @@ Memory Improvements
 
 Tool Improvements
 -----------------
+* updated script for anonymized unstable warnings to work with Chapel 2.1  
+  (see https://chapel-lang.org/docs/2.1/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 
 Documentation Improvements
 --------------------------
@@ -122,6 +128,8 @@ Documentation Improvements
 * documented how to install the language server and linter tools for Emacs  
   (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#emacs  
    and https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#emacs)
+* added a mention of expected memory requirements for building Chapel  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html)
 * added a 'quick start' section to the documentation for `mason`  
   (see https://chapel-lang.org/docs/2.1/language/spec/domain-maps.html#distributions-for-domain-types)
 * improved the descriptions of `require` statements and `-I`/`-L` flags  
@@ -191,9 +199,13 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* improved error messages for `gpuSort()` when called from the wrong locale  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/GPU.html#GPU.gpuSort)
 
 Bug Fixes for Libraries
 -----------------------
+* fixed `fillRandom()` to allow type coercion for `min`/`max` arguments  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/Random.html#Random.fillRandom)
 * fixed an off-by-one error in the 'Zarr' IO module's chunk index calculations
 * remoevd erroneously emitted unstable warnings for `[map|set].parSafe`
 
