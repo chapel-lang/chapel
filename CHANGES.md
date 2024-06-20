@@ -11,6 +11,8 @@ Highlights (see subsequent sections for further details)
 
 Syntactic / Naming Changes
 --------------------------
+* disallowed spaces after `@` in attributes, which were never intended  
+  (see https://chapel-lang.org/docs/2.1/technotes/attributes.html)
 
 New Language Features
 ---------------------
@@ -63,6 +65,10 @@ Changes / Feature Improvements in Libraries
    and https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.mpf_get_str)
 * improved support for 'GMP' routines that accept varargs
   (e.g., see https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.gmp_printf)
+* 'IO' routines like `advanceThrough()` now throw errors for empty separators  
+   (see https://chapel-lang.org/docs/2.1/modules/standard/IO.html#IO.fileReader.advanceThrough)
+* adjusted the `regex` initializer to convey that `posix` enables `multiLine`  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/Regex.html#Regex.regex.init)
 
 Name Changes in Libraries
 -------------------------
@@ -86,6 +92,8 @@ Performance Optimizations / Improvements
 * added an experimental optimization that localizes domains for array copies  
   (enable by compiling with `-slocalizeConstDomains=true`)
 * enabled bulk assignment between sparse arrays whose index sets match
+* improved the performance of several 'IO' `fileReader` methods like `readAll()`
+* improved the performance of `regex.replace*()` methods in the 'Regex' module
 
 Compilation Time Improvements
 -----------------------------
@@ -104,13 +112,23 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
+* improved the behavior of the documentation search box  
+  (see e.g. https://chapel-lang.org/docs/2.1/search.html?q=forall&check_keywords=yes&area=default)
+* added index entries for the language specification  
+  (see https://chapel-lang.org/docs/2.1/genindex.html)
 * refreshed the 'Chapel Quick Reference' document for 2.x versions  
   (see https://chapel-lang.org/docs/2.1/language/reference.html)
+* updated the Quickstart instructions to show commands for setting `CHPL_LLVM`  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/QUICKSTART.html#using-chapel-in-its-preferred-configuration)
 * documented how to install the language server and linter tools for Emacs  
   (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#emacs  
    and https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#emacs)
 * added a mention of expected memory requirements for building Chapel  
   (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html)
+* documented the behavior of parenless procedure calls in generic functions  
+  (see https://chapel-lang.org/docs/2.1/language/spec/generics.html#function-visibility-in-generic-functions)
+* updated the Mac OS X platform docs to describe non-homebrew installation  
+  (see https://chapel-lang.org/docs/2.1/platforms/macosx.html#building-from-source)
 * added a 'quick start' section to the documentation for `mason`  
   (see https://chapel-lang.org/docs/2.1/language/spec/domain-maps.html#distributions-for-domain-types)
 * improved the descriptions of `require` statements and `-I`/`-L` flags  
@@ -120,6 +138,10 @@ Documentation Improvements
    and https://chapel-lang.org/docs/2.1/technotes/libraries.html#initializing-and-using-your-library-from-fortran)
 * improved descriptions of routines like `expand()` in the domain primer  
   (see https://chapel-lang.org/docs/2.1/primers/domains.html)
+* documented that 'Regex' replacement can use capture groups like `\1`  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/Regex.html#Regex.string.replace)
+* documented how a `fileReader` behaves when reading invalid UTF-8  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/IO.html#unicode-support)
 * fixed the docs for `[numBits|numBytes|min|max]()` in 'Types' w.r.t. `bool`s  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Types.html#Types.numBits)
 * removed some accidentally documented `ioerror()` routines in the 'OS' module
@@ -136,6 +158,12 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* Chapel now requires Python 3.5 or newer  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#readme-prereqs)
+* updated the Python package versions used by `chpldoc`  
+  (see `$CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt` for details)
+* added sample installation commands for Ubuntu Noble in the prerequisites doc  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#installation)
 * removed some unnecessary `__pycache` files from the released source tarball
 
 Compiler Improvements
@@ -171,6 +199,7 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a bug with error handling and reductions inside `forall` loops
+* fixed an erronous error message with certain uses of parenless procs
 * fixed a bug in the LLVM back-end for `export` procedures with `in` intents
 * fixed a bug where `export` declarations could hit 'missing `override`' errors
 
@@ -185,6 +214,15 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed behavior of the `advanceThrough()` and `advanceTo()` methods on EOF  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/IO.html#IO.fileReader.advanceThrough)
+* fixed `advanceThrough()` to throw when a single byte pattern was not found  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/IO.html#IO.fileReader.advanceThrough)
+* fixed a problem where `atEOF()` / `assertEOF()` would consume whitespace  
+* fixed several problems in the 'Regex' module:
+  - fixed a bug where regular expressions defaulted to 'longest-match' mode
+  - fixed the behavior of `replace()` when the pattern matches the empty string
+  - fixed the `nonGreedy` and `multiLine` initializer arguments
 * fixed `fillRandom()` to allow type coercion for `min`/`max` arguments  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Random.html#Random.fillRandom)
 * fixed an off-by-one error in the 'Zarr' IO module's chunk index calculations
@@ -235,6 +273,7 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* improved the computation of module initialization order
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added support for resolving if-variables as non-nilable classes
   - added support for `init=` from types other than the one that was declared
