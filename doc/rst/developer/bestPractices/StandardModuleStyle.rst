@@ -87,6 +87,11 @@ Many paren-ful methods take some notable action. Try to make these
 methods method names be a verb. In particular, a method that modifies an
 argument in-place should be a verb.
 
+When possible, functions and methods that return should declare their return
+type explicitly.  When not possible, such functions and methods should use the
+``:returns:`` documentation field (as described in
+:ref:`chpldoc-arg-return-yield-types`).
+
 Factory Functions and Methods
 +++++++++++++++++++++++++++++
 
