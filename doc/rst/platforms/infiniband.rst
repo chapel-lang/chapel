@@ -304,7 +304,7 @@ This enables a helper thread that has been shown to accelerate injection of
 communication in some cases, but in other cases may degrade communication
 throughput (notably on NUMA systems where the locale straddles the NUMA boundary).
 GASNet also provides additional environment variable settings that can
-optionally be used to control the detailed behavior of these threads, see
+optionally be used to control the detailed behavior of these threads, see the
 GASNet documentation referenced in :ref:`ibv-conduit-docs`.
 
 By default, the blocking progress threads are created by GASNet and do not
