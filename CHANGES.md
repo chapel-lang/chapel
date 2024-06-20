@@ -101,8 +101,19 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
+* documented how to install the language server and linter tools for Emacs  
+  (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#emacs  
+   and https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#emacs)
 * improved the descriptions of `require` statements and `-I`/`-L` flags  
   (see https://chapel-lang.org/docs/2.1/technotes/extern.html#expressing-dependencies)
+* clarified how to call module init functions when using Chapel as a library  
+  (see https://chapel-lang.org/docs/2.1/technotes/libraries.html#initializing-your-library  
+   and https://chapel-lang.org/docs/2.1/technotes/libraries.html#initializing-and-using-your-library-from-fortran)
+* fixed the docs for `[numBits|numBytes|min|max]()` in 'Types' w.r.t. `bool`s  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/Types.html#Types.numBits)
+* removed some accidentally documented `ioerror()` routines in the 'OS' module
+* improved formatting of 'Task Parallelism and Synchronization' in the spec  
+  (see https://chapel-lang.org/docs/2.1/language/spec/task-parallelism-and-synchronization.html)
 * simplified the version numbers on our 'man' pages to reduce maintenance  
   (e.g., see the last line when running `man chpl`)
 
@@ -137,9 +148,14 @@ Portability / Platform-specific Improvements
 
 Error Messages / Semantic Checks
 --------------------------------
+* added warnings for copy-initing maps/sets/lists with mismatched `parSafe`s  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/Map.html#Map.warnForMapParsafeMismatch,  
+       https://chapel-lang.org/docs/2.1/modules/standard/Set.html#Set.warnForSetParsafeMismatch,  
+   and https://chapel-lang.org/docs/2.1/modules/standard/List.html#List.warnForListParsafeMismatch)
 
 Bug Fixes
 ---------
+* fixed a bug with error handling and reductions inside `forall` loops
 * fixed a bug where `export` declarations could hit 'missing `override`' errors
 
 Bug Fixes for Build Issues
@@ -165,6 +181,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* fixed some code examples in the 'All About Compiler-Generated Code' doc  
+  (see https://chapel-lang.org/docs/2.1/developer/bestPractices/GeneratedCode.html#best-practices-generated-code)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
