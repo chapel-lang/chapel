@@ -92,6 +92,7 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
                qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
         if (tls == NULL) {
             pthread_t me = pthread_self();
+            // if not process or comm thread, ok to return NULL
             if (pthread_equal(me, chpl_qthread_process_pthread)) {
                 tls = &chpl_qthread_process_tls;
             } else {
