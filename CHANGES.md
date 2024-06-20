@@ -42,6 +42,8 @@ New Standard Library Features
 
 New Package Module Features
 ---------------------------
+* added a new 'Image' package module for writing images
+  (see https://chapel-lang.org/docs/2.1/modules/packages/Image.html)
 * added support for configurable profiling to the 'Zarr' IO package module  
   (see https://chapel-lang.org/docs/2.1/modules/packages/Zarr.html#Zarr.zarrProfiling)
 
@@ -58,6 +60,8 @@ Standard Domain Maps (Layouts and Distributions)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* changed the return types of `imag` trigonometric/hyperbolic 'Math' functions  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/Math.html#Math.useNewImaginaryTrig)
 * updated 'BLAS' `alpha`/`beta` arguments to accept `const`/`param` vals  
   (e.g., see https://chapel-lang.org/docs/modules/packages/BLAS.html#BLAS.gemm)
 * added support for `mp_exp_t` and `mpf_get_str()` to the 'GMP' module  
@@ -89,11 +93,13 @@ GPU Computing
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved the performance of remote data transfers through inlining
 * added an experimental optimization that localizes domains for array copies  
   (enable by compiling with `-slocalizeConstDomains=true`)
 * enabled bulk assignment between sparse arrays whose index sets match
 * improved the performance of several 'IO' `fileReader` methods like `readAll()`
 * improved the performance of `regex.replace*()` methods in the 'Regex' module
+* improved code-generation of `complex` math functions for better performance
 
 Compilation Time Improvements
 -----------------------------
@@ -107,8 +113,19 @@ Memory Improvements
 
 Tool Improvements
 -----------------
+* added Sphinx version and chapeldomain version to `chpldoc --version`
+* added auto-fixits to the `chplcheck` linter  
+  (see https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#Fixits)
+* added a `chplcheck` warning for simple domains in loops  
+  (e.g., `for i in {1..10} do ...` should be `for i in 1..10 do ...`)
+* expanded support for end-block markers in `chpl-language-server` (CLS)
+* added a `--chplcheck` flag to run linting from within the CLS  
+  (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#chplcheck)
+* added a `--[no]-show-instantiations` flag to control CLS code lenses  
+  (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * updated script for anonymized unstable warnings to work with Chapel 2.1  
   (see https://chapel-lang.org/docs/2.1/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
+* improved Mason error messages when dependencies are missing
 
 Documentation Improvements
 --------------------------
@@ -118,6 +135,12 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.1/genindex.html)
 * refreshed the 'Chapel Quick Reference' document for 2.x versions  
   (see https://chapel-lang.org/docs/2.1/language/reference.html)
+* added a new page documenting and visualizing Chapel's portability  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/portability.html)
+* refactored the tools documentation to be more user-friendly  
+  (see https://chapel-lang.org/docs/2.1/tools/index.html)
+* updated the 'VSCode' extension's documentation  
+  (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#vscode)
 * updated the Quickstart instructions to show commands for setting `CHPL_LLVM`  
   (see https://chapel-lang.org/docs/2.1/usingchapel/QUICKSTART.html#using-chapel-in-its-preferred-configuration)
 * documented how to install the language server and linter tools for Emacs  
@@ -129,6 +152,8 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.1/language/spec/generics.html#function-visibility-in-generic-functions)
 * updated the Mac OS X platform docs to describe non-homebrew installation  
   (see https://chapel-lang.org/docs/2.1/platforms/macosx.html#building-from-source)
+* added documentation for running with hugepages when using AWS EFA  
+  (see https://chapel-lang.org/docs/2.1/platforms/aws.html#building-chapel)
 * added a 'quick start' section to the documentation for `mason`  
   (see https://chapel-lang.org/docs/2.1/language/spec/domain-maps.html#distributions-for-domain-types)
 * improved the descriptions of `require` statements and `-I`/`-L` flags  
@@ -136,8 +161,12 @@ Documentation Improvements
 * clarified how to call module init functions when using Chapel as a library  
   (see https://chapel-lang.org/docs/2.1/technotes/libraries.html#initializing-your-library  
    and https://chapel-lang.org/docs/2.1/technotes/libraries.html#initializing-and-using-your-library-from-fortran)
+* clarified Chapel environment requirements for GPUs  
+  (see https://chapel-lang.org/docs/main/technotes/gpu.html#requirements)
 * improved descriptions of routines like `expand()` in the domain primer  
   (see https://chapel-lang.org/docs/2.1/primers/domains.html)
+* updated the `manage` technote to reflect the current state of the language  
+  (see https://chapel-lang.org/docs/2.1/technotes/manage.html)
 * documented that 'Regex' replacement can use capture groups like `\1`  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Regex.html#Regex.string.replace)
 * documented how a `fileReader` behaves when reading invalid UTF-8  
@@ -147,8 +176,12 @@ Documentation Improvements
 * removed some accidentally documented `ioerror()` routines in the 'OS' module
 * improved formatting of 'Task Parallelism and Synchronization' in the spec  
   (see https://chapel-lang.org/docs/2.1/language/spec/task-parallelism-and-synchronization.html)
+* added support for linking to a specific flag's entry on the 'man' page  
+  (e.g., https://chapel-lang.org/docs/2.1/usingchapel/man.html#man-module-dir)
 * simplified the version numbers on our 'man' pages to reduce maintenance  
   (e.g., see the last line when running `man chpl`)
+* fixed broken links in the prerequisites docs
+  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#amazon-linux-2-chpl-llvm-system-incompatibility)
 
 Example Codes
 -------------
@@ -158,20 +191,33 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* started releasing Chapel packages for several Linux distributions  
+  (see https://chapel-lang.org/install-pkg.html))
+* added support for building with `CHPL_HWLOC=system` and/or `CHPL_GMP=system  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/chplenv.html#chpl-hwloc  
+   and https://chapel-lang.org/docs/2.1/usingchapel/chplenv.html#chpl-gmp)
 * Chapel now requires Python 3.5 or newer  
   (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#readme-prereqs)
+* improved error messages when Python versions don't match for `chapel-py` tools
+* removed Python2 support from `compileline.py`
 * updated the Python package versions used by `chpldoc`  
   (see `$CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt` for details)
+* improved error messages when the Clang version doesn't match LLVM
+* added `chpl-shim` to `make install` to make it available in the user's path
+* added `printchplenv --ignore-errors` to ignore errors and continue
 * added sample installation commands for Ubuntu Noble in the prerequisites doc  
   (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#installation)
+* added an error message if `CHPL_RE2=system` is set
 * removed some unnecessary `__pycache` files from the released source tarball
 
 Compiler Improvements
 ---------------------
+* updated `chpl` to support LLVM 18
 * improved information generated by `--explain-call` for return intent overloads
 
 Compiler Flags
 --------------
+* removed the deprecated `--llvm` flag in favor of `--target-compiler=llvm`
 
 Generated Executable Flags
 --------------------------
@@ -183,9 +229,18 @@ Launchers
 Runtime Library Changes
 -----------------------
 * updated the runtime to use the GASNet-EX API by default for `CHPL_COMM=gasnet`
+* updated GASNet to make use of the same copy of `hwloc` as Chapel does
+* added support for transparent huge pages with OFI  
+  (see https://chapel-lang.org/docs/2.1/platforms/libfabric.html#transparent-hugepages)
+* ensured that co-locales respect `CHPL_RT_MAX_HEAP_SIZE`  
+  (see https://chapel-lang.org/docs/2.1/platforms/libfabric.html#memory-registration-and-the-heap)
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* removed usage of non-standard C++17 variable length arrays
+* improved portability for various compilers and libraries  
+  (e.g. LLVM, GCC, Clang, CUDA, and OFI)
+* fixed memory leaks in the runtime when using `CHPL_COMM=ofi` with AWS EFA
 * fixed a portability issue  in which the PGI compiler's name was mis-spelled
 
 Error Messages / Semantic Checks
@@ -202,9 +257,11 @@ Bug Fixes
 * fixed an erronous error message with certain uses of parenless procs
 * fixed a bug in the LLVM back-end for `export` procedures with `in` intents
 * fixed a bug where `export` declarations could hit 'missing `override`' errors
+* fixed bad applications of `pragma "llvm readnone"` in new versions of LLVM
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed `--print-chpl-settings`/`printchplenv` inconsistency in prefix installs
 * fixed an error when compiling `chpl` with GCC 13 when using LLVM <= 14
 
 Bug Fixes for GPU Computing
@@ -230,6 +287,11 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* prevented `chpl-shim` from overwriting files when not necessary
+* fixed the `chapel-py` build config to not warn with `CHPL_LLVM=none`
+* fixed `chapel-py` failing to build with some compilers
+* allowed `chplcheck` and `chpl-language-server` to be built without `CHPL_HOME`
+* fixed various visual bugs and crashes in `chpl-language-server`
 * fixed a bug in the `mason` registry's CI that prevented using sub-modules  
   (see: https://chapel-lang.org/docs/2.1/tools/mason/guide/buildinglargerpackages.html)
 
@@ -239,10 +301,13 @@ Bug Fixes for the Runtime
 * fixed a bug where fencing was not done correctly when `CHPL_COMM=ofi`
 * fixed a bug with respect to write-after-write ordering for `CHPL_COMM=ofi`
 * fixed a bug in the binding of progress threads with `CHPL_COMM={ofi,gasnet}`
+* set `CHPL_RT_COMM_OFI_INJECT_*` to false to avoid runtime hangs with AWS EFA
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of LLVM to 18.1.6
 * updated the bundled copy of GASNet to version 2024.5.0
+* updated the bundled version of libfabric/OFI to 1.21
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -263,6 +328,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* added support for building Chapel with `CHPL_TARGET_JEMALLOC=system`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -270,6 +336,7 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * added support for tracking creation of LLVM `Value`s using `breakOnLLVMID`
+* fixed `--llvm-print-ir-stage every` not working with old LLVM versions
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
@@ -290,6 +357,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - fixed a bug in `param` coercion when passing to arguments
   - fixed a bug where unpacked tuple assignment caused false constness errors
   - fixed a bug disambiguating between `unmanaged` and `borrowed` formals
+* fixed how Dyno prints booleans to match the production compiler
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -304,12 +372,14 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* fixed issue with `sub_test` not suppressing perf test timeouts
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 
 Developer-oriented changes: Utilities
 -------------------------------------
+* added support for building Chapel packages for multiple Linux distributions
 
 
 version 2.0.1
