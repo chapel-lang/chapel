@@ -306,7 +306,7 @@ communication in some cases, but in other cases may degrade communication
 throughput (notably on NUMA systems where the locale straddles the NUMA boundary).
 GASNet also provides additional environment variable settings that can
 optionally be used to control the detailed behavior of these threads, see
-documentation referenced below.
+GASNet documentation referenced in :ref:`ibv-conduit-docs`.
 
 An experimental Chapel feature also allows more control over the behavior of
 these progress threads:
@@ -319,6 +319,8 @@ In particular this setting enables the
 ``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE`` setting described in the
 earlier section to also control the placement and binding of the send and receive
 progress threads.
+
+.. _ibv-conduit-docs:
 
 --------
 See Also
