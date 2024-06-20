@@ -308,17 +308,18 @@ GASNet also provides additional environment variable settings that can
 optionally be used to control the detailed behavior of these threads, see
 GASNet documentation referenced in :ref:`ibv-conduit-docs`.
 
-An experimental Chapel feature also allows more control over the behavior of
-these progress threads:
+By default, the blocking progress threads are created by GASNet and do not
+have any thread-specific core binding.  An experimental Chapel feature
+allows more control over the behavior of the blocking progress threads:
 
 .. code-block:: bash
 
       export CHPL_RT_COMM_GASNET_DEFER_PROGRESS_THREADS=true
 
-In particular this setting enables the
+Specifically, this setting enables the
 ``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE`` setting described in the
-earlier section to also control the placement and binding of the send and receive
-progress threads.
+earlier section to additionally control the placement and binding of GASNet's
+blocking send and receive progress threads.
 
 .. _ibv-conduit-docs:
 
