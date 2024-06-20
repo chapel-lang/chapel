@@ -21,7 +21,7 @@ to :ref:`using-a-more-full-featured-chapel` below.
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 2.0 source release, see
+1) If you don't already have the Chapel 2.1 source release, see
    https://chapel-lang.org/download.html.
 
 
@@ -31,14 +31,14 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
       .. code-block:: bash
 
-         tar xzf chapel-2.0.0.tar.gz
+         tar xzf chapel-2.1.0.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-2.0.0
+         cd chapel-2.1.0
 
    c. Make sure you are doing the install on a machine with > 4GB of memory.
 
