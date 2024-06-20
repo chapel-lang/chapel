@@ -7,6 +7,7 @@ Contributors to the Chapel 2.1 release
 --------------------------------------
 * Jade Abraham, [HPE]
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
+* Gabriel Brown, individual contributor
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
 * Sarah Coghlan, [HPE]
@@ -21,7 +22,7 @@ Contributors to the Chapel 2.1 release
 * Guillaume Helbecque, individual contributor
 * Bonnie Hurwitz, [University of Arizona] / [HPE] contractor
 * Engin Kayraklioglu, [HPE]
-* Shreyas Khandekar, [HPE] (former intern from [University of Arizona])
+* [Shreyas Khandekar], [HPE] (former intern from [University of Arizona])
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
@@ -53,7 +54,6 @@ Contributors to previous releases
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Kyle Brady, [Cray Inc.]
-* Gabriel Brown, individual contributor
 * Daniel Buettner, [LTS]
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
@@ -316,6 +316,7 @@ implementation.
 
 [Dan Bonachea]: https://go.lbl.gov/dan-bonachea/
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
+[Shreyas Khandekar]: https://shreyaskhandekar.com
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 [Kenjiro Taura]: http://www.eidos.ic.i.u-tokyo.ac.jp/~tau/
 [Nicole Vadot]: https://people.epfl.ch/nicole.vadot
