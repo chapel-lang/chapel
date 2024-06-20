@@ -103,7 +103,7 @@ Array types and promotion are supported, making the following code valid:
    on loc var A: [1..10] int;
    on loc var B = A + 1;
 
-A useful pattern with Chapel's `GPU Support <gpu>`_ is to declare an array
+A useful pattern with Chapel's `GPU Support <./gpu.html>`_ is to declare an array
 on the GPU using remote variable declarations, and copy a portion
 of a host array into it:
 
