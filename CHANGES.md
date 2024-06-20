@@ -86,6 +86,12 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated the `cIsoDayOfWeek` `config param` from the 'Time' module
+* removed deprecated features from the 'Time' module:
+  - the `MINYEAR` and `MAXYEAR` constants
+  - the day-of-week `enum`s as well as procedures that used them
+  - the `getCurrentDate()`, `isoCalendar()`, `isoFormat()`, `abs()` procedures
+  - the `dateTime` ordinal methods and `combine()` method
 
 GPU Computing
 -------------
@@ -96,8 +102,12 @@ Performance Optimizations / Improvements
   (enable by compiling with `-slocalizeConstDomains=true`)
 * enabled bulk assignment between sparse arrays whose index sets match
 
-Improvements to Compilation Times / Generated Code
---------------------------------------------------
+Compilation Time Improvements
+-----------------------------
+
+Generated Code Improvements
+---------------------------
+* added `const` qualifiers for `c_ptrConst` types in generated C code
 
 Memory Improvements
 -------------------
@@ -177,6 +187,7 @@ Bug Fixes
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed an error when compiling `chpl` with GCC 13 when using LLVM <= 14
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -236,6 +247,9 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for `init=` from types other than the one that was declared
   - added support for passing param strings to `c_ptrConst(c_char)`
   - added support for initializers on inheriting, non-generic classes
+  - added support for initializing a nilable class from a `new` non-nilable one
+  - added support for the 'get svec member [value]' primitives
+  - improved resolution of range literals
   - improved resolution of tuple-grouped arguments
   - improved error messages for compile-time out-of-bounds errors on tuples
   - improved support for where-clauses on generic methods
@@ -243,6 +257,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - fixed a bug where variables passed to `in` intents were considered 'dead'
   - fixed a bug in `param` coercion when passing to arguments
   - fixed a bug where unpacked tuple assignment caused false constness errors
+  - fixed a bug disambiguating between `unmanaged` and `borrowed` formals
 
 Developer-oriented changes: GPU support
 ---------------------------------------
