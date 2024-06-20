@@ -17,6 +17,8 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* enabled support for assigning between sparse arrays with matching indices  
+  (e.g., `mySpsArr = mySpsArr2;` now works if the arrays' domains are equal)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -35,9 +37,24 @@ New Package Module Features
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* added a new initializer to 'LayoutCS' avoiding the need for named arguments
+* added new utility routines for sparse arrays stored using 'LayoutCS':
+  - `rows`/`cols()` queries to return the dense range of indices per dimension
+  - `[cols|rows]AndVals()` iterators that yield nonzeroes' indices and values
+* enabled `.targetLocales()` queries on sparse `blockDist` domains/arrays
+* added new utility routines for sparse `blockDist`-distributed domains/arrays:
+  - `setLocalSubdomain()` assigns the current locale's subdomain of nonzeroes
+  - `[get|set]LocalSubarry()` queries/sets the current locale's nonzero values
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* updated 'BLAS' `alpha`/`beta` arguments to accept `const`/`param` vals  
+  (e.g., see https://chapel-lang.org/docs/modules/packages/BLAS.html#BLAS.gemm)
+* added support for `mp_exp_t` and `mpf_get_str()` to the 'GMP' module  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.mp_exp_t  
+   and https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.mpf_get_str)
+* improved support for 'GMP' routines that accept varargs
+  (e.g., see https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.gmp_printf)
 
 Name Changes in Libraries
 -------------------------
@@ -50,6 +67,9 @@ GPU Computing
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* added an experimental optimization that localizes domains for array copies  
+  (enable by compiling with `-slocalizeConstDomains=true`)
+* enabled bulk assignment between sparse arrays whose index sets match
 
 Improvements to Compilation Times / Generated Code
 --------------------------------------------------
@@ -62,6 +82,10 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
+* improved the descriptions of `require` statements and `-I`/`-L` flags  
+  (see https://chapel-lang.org/docs/2.1/technotes/extern.html#expressing-dependencies)
+* simplified the version numbers on our 'man' pages to reduce maintenance  
+  (e.g., see the last line when running `man chpl`)
 
 Example Codes
 -------------
@@ -71,6 +95,7 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* removed some unnecessary `__pycache` files from the released source tarball
 
 Compiler Improvements
 ---------------------
@@ -89,12 +114,14 @@ Runtime Library Changes
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* fixed a portability issue  in which the PGI compiler's name was mis-spelled
 
 Error Messages / Semantic Checks
 --------------------------------
 
 Bug Fixes
 ---------
+* fixed a bug where `export` declarations could hit 'missing `override`' errors
 
 Bug Fixes for Build Issues
 --------------------------
