@@ -17,6 +17,7 @@ Contributors to the Chapel 2.1 release
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
 * Luca Ferranti, individual contributor
+* [Paul Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
@@ -84,7 +85,6 @@ Contributors to previous releases
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
-* Paul Hargrove, [Lawrence Berkeley National Laboratory]
 * Akihiro Hayashi, [Rice University]
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
@@ -316,6 +316,7 @@ implementation.
 
 [Dan Bonachea]: https://go.lbl.gov/dan-bonachea/
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
+[Paul H. Hargrove]: https://go.lbl.gov/paul-hargrove
 [Shreyas Khandekar]: https://shreyaskhandekar.com
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 [Kenjiro Taura]: http://www.eidos.ic.i.u-tokyo.ac.jp/~tau/
