@@ -227,8 +227,11 @@ module GMP {
   /* The GMP ``gmp_randstate_t`` type */
   extern type gmp_randstate_t = 1 * __gmp_randstate_struct;
 
-  /* We know that 'mp_exp_t' will be an integral type, but GMP isn't
-     specific about what size it will have. */
+  /* GMP doesn't specify what type of integer ``mp_exp_t`` will be,
+     but Chapel needs to know.  In current GMP headers, it is usually
+     a ``c_long``, so we declare it as such here, and use an
+     initialization-time check to catch cases where this is
+     inaccurate. */
   extern type mp_exp_t = c_long;
   if c_sizeof(mp_exp_t) != c_sizeof(c_long) {
     warning("GMP.chpl didn't get definition of 'mp_exp_t' correct");
