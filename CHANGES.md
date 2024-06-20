@@ -25,12 +25,16 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated support for `dmapped` clauses with raw initialization expressions  
+  (see https://chapel-lang.org/docs/2.1/language/spec/domain-maps.html#distributions-for-domain-types)
 
 Namespace Changes
 -----------------
 
 New Standard Library Features
 -----------------------------
+* added a new `randomStream.sample()` overload accepting a 'weights' argument  
+  (see: https://chapel-lang.org/docs/2.1/modules/standard/Random.html#Random.randomStream.sample)
 
 New Package Module Features
 ---------------------------
@@ -89,6 +93,8 @@ Documentation Improvements
 * documented how to install the language server and linter tools for Emacs  
   (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#emacs  
    and https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#emacs)
+* added a 'quick start' section to the documentation for `mason`  
+  (see https://chapel-lang.org/docs/2.1/language/spec/domain-maps.html#distributions-for-domain-types)
 * improved the descriptions of `require` statements and `-I`/`-L` flags  
   (see https://chapel-lang.org/docs/2.1/technotes/extern.html#expressing-dependencies)
 * clarified how to call module init functions when using Chapel as a library  
@@ -159,9 +165,12 @@ Bug Fixes for GPU Computing
 Bug Fixes for Libraries
 -----------------------
 * fixed an off-by-one error in the 'Zarr' IO module's chunk index calculations
+* remoevd erroneously emitted unstable warnings for `[map|set].parSafe`
 
 Bug Fixes for Tools
 -------------------
+* fixed a bug in the `mason` registry's CI that prevented using sub-modules  
+  (see: https://chapel-lang.org/docs/2.1/tools/mason/guide/buildinglargerpackages.html)
 
 Bug Fixes for the Runtime
 -------------------------
