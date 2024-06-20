@@ -148,6 +148,7 @@ Tool Improvements
 * updated script for anonymized unstable warnings to work with Chapel 2.1  
   (see https://chapel-lang.org/docs/2.1/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 * improved Mason error messages when dependencies are missing
+* updated `c2chapel` to map `FILE` to `c_FILE`
 
 Documentation Improvements
 --------------------------
@@ -185,6 +186,8 @@ Documentation Improvements
    and https://chapel-lang.org/docs/2.1/technotes/libraries.html#initializing-and-using-your-library-from-fortran)
 * clarified Chapel environment requirements for GPUs  
   (see https://chapel-lang.org/docs/main/technotes/gpu.html#requirements)
+* added `-M` to the list of useful compiler flags and improved `-s`'s position  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/compiling.html#most-useful-flags)
 * improved descriptions of routines like `expand()` in the domain primer  
   (see https://chapel-lang.org/docs/2.1/primers/domains.html)
 * updated the `manage` technote to reflect the current state of the language  
@@ -200,6 +203,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.1/language/spec/task-parallelism-and-synchronization.html)
 * added support for linking to a specific flag's entry on the 'man' page  
   (e.g., https://chapel-lang.org/docs/2.1/usingchapel/man.html#man-module-dir)
+* removed outdated compiler internal information from `chpl`'s 'man' page
 * simplified the version numbers on our 'man' pages to reduce maintenance  
   (e.g., see the last line when running `man chpl`)
 * fixed broken links in the prerequisites docs
@@ -213,8 +217,10 @@ Syntax Highlighting
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* started releasing Chapel as a Spack package
+  (see https://chapel-lang.org/install-spack.html)
 * started releasing Chapel packages for several Linux distributions  
-  (see https://chapel-lang.org/install-pkg.html))
+  (see https://chapel-lang.org/install-pkg.html)
 * added support for building with `CHPL_HWLOC=system` and/or `CHPL_GMP=system  
   (see https://chapel-lang.org/docs/2.1/usingchapel/chplenv.html#chpl-hwloc  
    and https://chapel-lang.org/docs/2.1/usingchapel/chplenv.html#chpl-gmp)
@@ -264,6 +270,7 @@ Portability / Platform-specific Improvements
   (e.g. LLVM, GCC, Clang, CUDA, and OFI)
 * fixed memory leaks in the runtime when using `CHPL_COMM=ofi` with AWS EFA
 * fixed a portability issue  in which the PGI compiler's name was mis-spelled
+* fixed regex escape sequences generating errors with Python 3.12
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -317,6 +324,9 @@ Bug Fixes for Tools
 * fixed various visual bugs and crashes in `chpl-language-server`
 * fixed a bug in the `mason` registry's CI that prevented using sub-modules  
   (see: https://chapel-lang.org/docs/2.1/tools/mason/guide/buildinglargerpackages.html)
+* updated `mason`'s source of valid license names to latest SPDX repository
+* added `--refresh-licenses` flag to `mason publish` to update license names 
+* updated `c2chapel` to map `FILE` to `c_FILE`
 
 Bug Fixes for the Runtime
 -------------------------
@@ -352,6 +362,7 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * added support for building Chapel with `CHPL_TARGET_JEMALLOC=system`
+* added `clean-cmakecache` target to delete 'CMakeCache.txt'
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -376,6 +387,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved error messages for compile-time out-of-bounds errors on tuples
   - improved support for where-clauses on generic methods
   - improved resolution of multi-decl and tuple-decl variables at module scope
+  - fixed a bug in resolving types in multi-decl field declarations
   - fixed a bug where variables passed to `in` intents were considered 'dead'
   - fixed a bug in `param` coercion when passing to arguments
   - fixed a bug where unpacked tuple assignment caused false constness errors
@@ -395,8 +407,10 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added flags to optionally test blog articles' code using the 'nightly' script
 * extended 'skipif' files to support logging output
 * fixed issue with `sub_test` not suppressing perf test timeouts
+* removed single `-hello` option from 'nightly' script
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
