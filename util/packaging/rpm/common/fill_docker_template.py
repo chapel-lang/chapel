@@ -99,7 +99,7 @@ RUN python3 make_spec.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TA
 COPY --chown=user ./rpm/common/rpmlintrc /home/user/.rpmlintrc
 RUN rpmdev-setuptree && \\
     cp chapel-$CHAPEL_VERSION.tar.gz $(rpm --eval '%{_sourcedir}') && \\
-    ignore_unused=$([[ "$(rpm --eval '%{?dist}')" == ".el9" ]] && echo "" || echo "--ignore-unused-rpmlintrc") && \\
+    ignore_unused=$([[ "$(rpm --eval '%{fc#}')" == "1" ]] && echo "--ignore-unused-rpmlintrc") || echo "" && \\
     rpmlint $ignore_unused --file .rpmlintrc $BASENAME.spec && \\
     unset ignore_unused && \\
     spectool -g -R $BASENAME.spec
