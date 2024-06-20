@@ -53,6 +53,8 @@ New Standard Library Features
 
 New Package Module Features
 ---------------------------
+* added support for configurable profiling to the 'Zarr' IO package module  
+  (see https://chapel-lang.org/docs/2.1/modules/packages/Zarr.html#Zarr.zarrProfiling)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -175,6 +177,7 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed an off-by-one error in the 'Zarr' IO module's chunk index calculations
 
 Bug Fixes for Tools
 -------------------
