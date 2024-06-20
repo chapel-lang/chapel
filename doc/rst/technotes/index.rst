@@ -26,6 +26,7 @@ Base Language Features
    Attributes <attributes>
    Interfaces <interfaces>
    Function-static Variables <static>
+   Remote Variables <remote>
 
 Initializers and Generic Programming
 ------------------------------------
