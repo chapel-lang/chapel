@@ -139,3 +139,22 @@ Other Identifiers
 -----------------
 
 Variables, fields, and argument names should be camelCase or PascalCase.
+
+Handling Failure
+----------------
+
+In general, when code in a library encounters erroneous behavior, an appropriate
+Error should be thrown.  This will enable users of the library to potentially
+recover from the bad behavior without having to restart their program.
+
+There are some known exceptions to this recommendation:
+
+- When division by zero is encountered, libraries will halt (unless the check
+  for division by zero has been disabled, see the flag's
+  :ref:`man page entry <man-div-by-zero-checks>`).
+- When accesses are made outside of the known bounds of a container type,
+  libraries will halt (unless bounds checking has been disabled, see the flag's
+  :ref:`man page entry <man-bounds-checks>`).
+- Other checks controlled by flags that are listed when running ``chpl -h``.
+- When the program runs out of memory and the function in question does not
+  already throw other types of errors, the library will halt.
