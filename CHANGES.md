@@ -35,12 +35,16 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* added a prototype implementation of remote variable declarations
+  (see TODO)
 
 Language Feature Improvements
 -----------------------------
 * made `in` intent copying behavior for `foreach` loops consistent with `forall`
 * enabled support for assigning between sparse arrays with matching indices  
   (e.g., `mySpsArr = mySpsArr2;` now works if the arrays' domains are equal)
+* added initial support for per-locale "static" local variables
+  (see TODO)
 * stabilized operators between tuples and scalars, like `+`, `-`, `*`, etc.  
   (see https://chapel-lang.org/docs/2.1/language/spec/tuples.html#tuple-operators)
 
@@ -110,6 +114,8 @@ Deprecated / Unstable / Removed Library Features
 
 GPU Computing
 -------------
+* extended `@gpu.blockSize` to support GPU-ineligible expressions
+* extended GPU attributes to apply to promoted initializer expressions
 * added support for `syncWarp()` for gpu kernels  
   (see https://chapel-lang.org/docs/2.1/modules/standard/GPU.html#GPU.syncWarp)
 
@@ -135,6 +141,21 @@ Memory Improvements
 
 Tool Improvements
 -----------------
+* numerous improvements to Chapel's language server
+  - provided auto-completion for symbols from 'use' and 'import' statements
+  - enabled go-to-definition on identifiers in 'use' and 'import' statements
+  - adjusted error messages to display additional information on hover
+  - ensured redefinition errors are issued as intended in more cases
+  - extended call inlays to support negative numbers and complex number literals
+  - ensured types displayed in hints are valid Chapel syntax
+* numerous improvements to Chapel's linter, 'chplcheck'
+  - allowed silencing advanced rules with '@chplcheck.ignore'
+  - added command-line flags to list available and enabled rules
+  - added a warning that checks for improper indentation
+  - added a warning for redundant semicolons
+  - added a warning for redundant pattern matching like '(_, _)'
+  - added a warning for redundant parentheses in if-else and loop conditions
+  - fixed false positives in 'MisleadingIndentation' rule
 * added Sphinx version and chapeldomain version to `chpldoc --version`
 * added auto-fixits to the `chplcheck` linter  
   (see https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#Fixits)
@@ -276,6 +297,7 @@ Error Messages / Semantic Checks
 --------------------------------
 * improved errors when modifying `const` shadow variables in nested `forall`s
 * added an error when using `var` intents with `foreach` loops
+* improved error message for improper uses of '_', the 'throwaway' variable
 * added warnings for copy-initing maps/sets/lists with mismatched `parSafe`s  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Map.html#Map.warnForMapParsafeMismatch,  
        https://chapel-lang.org/docs/2.1/modules/standard/Set.html#Set.warnForSetParsafeMismatch,  
@@ -284,6 +306,8 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a bug with error handling and reductions inside `forall` loops
+* fixed "symbol not found" errors when checking imports due to module order
+* fixed calling throwing functions from square-bracket loop expressions
 * fixed an erronous error message with certain uses of parenless procs
 * fixed a bug in the LLVM back-end for `export` procedures with `in` intents
 * fixed a bug where `export` declarations could hit 'missing `override`' errors
@@ -362,6 +386,7 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * added support for building Chapel with `CHPL_TARGET_JEMALLOC=system`
+* added environment variables to always build 'chapel-py' and language server
 * added `clean-cmakecache` target to delete 'CMakeCache.txt'
 
 Developer-oriented changes: Compiler Flags
@@ -369,6 +394,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* improved performance when using '--dyno-scope-bundled'
 * added support for tracking creation of LLVM `Value`s using `breakOnLLVMID`
 * fixed `--llvm-print-ir-stage every` not working with old LLVM versions
 
@@ -378,20 +404,31 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added support for resolving if-variables as non-nilable classes
   - added support for `init=` from types other than the one that was declared
+  - added support for resolving calls to 'this.init()' from other 'init' methods
   - added support for passing param strings to `c_ptrConst(c_char)`
   - added support for initializers on inheriting, non-generic classes
   - added support for initializing a nilable class from a `new` non-nilable one
   - added support for the 'get svec member [value]' primitives
+  - added support for overloaded parenless procs with 'where' clauses
+  - added support for module-qualified function calls like 'M.f()'
+  - added support for 'none' param value
+  - implemented user-provided initializers for generic classes
+  - improved support for initializers for generic types with defaults
+  - implemented compiler-generated initializers for basic generic types
+  - improved support for where-clauses on generic methods
   - improved resolution of range literals
   - improved resolution of tuple-grouped arguments
   - improved error messages for compile-time out-of-bounds errors on tuples
-  - improved support for where-clauses on generic methods
   - improved resolution of multi-decl and tuple-decl variables at module scope
+  - fixed the resolution of chained method calls in the form 'a.b().c()'
   - fixed a bug in resolving types in multi-decl field declarations
   - fixed a bug where variables passed to `in` intents were considered 'dead'
   - fixed a bug in `param` coercion when passing to arguments
   - fixed a bug where unpacked tuple assignment caused false constness errors
   - fixed a bug disambiguating between `unmanaged` and `borrowed` formals
+  - fixed a resolver crash due to circular forwarding statements
+  - fixed resolution of methods declared on 'extern' types
+  - fixed crash when casting params to non-param types
 * fixed how Dyno prints booleans to match the production compiler
 
 Developer-oriented changes: GPU support
@@ -414,6 +451,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* improved 'chapel-py' scope resolution results for `use`s/`import`s
 
 Developer-oriented changes: Utilities
 -------------------------------------
