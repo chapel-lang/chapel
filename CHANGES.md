@@ -224,6 +224,14 @@ Developer-oriented changes: Utilities
 -------------------------------------
 
 
+version 2.0.1
+=============
+
+released April 25, 2024
+
+This version is an update to the 2.0 release to address a portability
+bug when using GASNet on InfiniBand systems with LLVM 16 or 17.
+
 
 version 2.0
 ===========
@@ -234,7 +242,7 @@ Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * Chapel's core language and library features are now considered stable!
 * added `chpl-language-server`, a new LSP-based tool for VSCode/vim/... users
-* added new 'ParallelIO', 'DistributedBag' and 'Zarr' package modules
+* added new 'ParallelIO' & 'Zarr' package modules and reworked 'DistributedBag'
 * significantly improved the behavior and interfaces of the 'Random' module
 * dramatically improved co-locale support (running multiple locales per node)
 * improved GPU support via new attributes, optimizations, and portability
@@ -302,14 +310,11 @@ Deprecated / Unstable / Removed Language Features
   (e.g., `.stridable`, `.boundedType`, `.safeCast()`, `.boundsCheck()`, etc.)
 * removed the `useNewArrayFind` config param used to update `.find()` calls
 
-Namespace Changes
------------------
-
 New Standard Library Features
 -----------------------------
 * added new routines for reading from a `string`/`bytes` like it was a file  
   (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#IO.openStringReader)
-* added a new `getFile()` method to 'IO's `fileReeader`/`fileWriter` types  
+* added a new `getFile()` method to 'IO's `fileReader`/`fileWriter` types  
   (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#IO.fileReader.getFile)
 * added support for initializing a `list` of `list`s from an array of arrays
 * `abs()` and `sqrt()` taking `param`s now return a `param` in more cases  
@@ -326,14 +331,11 @@ New Package Module Features
 ---------------------------
 * added a new 'ParallelIO' module with routines for reading files in parallel  
   (see https://chapel-lang.org/docs/2.0/modules/packages/ParallelIO.html)
-* improved the `DistributedBag` package w.r.t. depth-first-search and quality  
+* reworked the `DistributedBag` package w.r.t. depth-first-search and quality  
   (see https://chapel-lang.org/docs/2.0/modules/packages/DistributedBag.html)
 * added a new prototype distributed 'Zarr' I/O module  
   (see https://chapel-lang.org/docs/2.0/modules/packages/Zarr.html)
 * improved the performance of `toHex()` routines in the 'Crypto' package
-
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -406,9 +408,6 @@ Improvements to Compilation Times / Generated Code
 * reduced `chpl`'s memory usage for large programs via the compiler driver  
   (see https://chapel-lang.org/docs/2.0/technotes/driver.html)
 
-Memory Improvements
--------------------
-
 Tool Improvements
 -----------------
 * added `chpl-language-server`, a language server implementation for Chapel  
@@ -435,7 +434,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html  
    and https://chapel-lang.org/docs/2.0/modules/standard/IO/FormattedIO.html)
 * merged 'ChapelIO' documentation into the 'IO' module's documentation  
-  (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html)
+  (see https://chapel-lang.org/docs/2.0/modules/standard/IO.html#automatically-available-symbols)
 * clarified required conditions for split initialization and copy elision  
   (see https://chapel-lang.org/docs/2.0/language/spec/variables.html#split-initialization  
    and https://chapel-lang.org/docs/2.0/language/spec/variables.html#copy-elision)
@@ -450,9 +449,6 @@ Example Codes
   - no-longer-necessary `with`-clauses for parallel loops modifying arrays
   - changes to `parSafe` for associative domains and locking behavior for IO
   - changes to the 'Random' module's interface
-
-Syntax Highlighting
--------------------
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
@@ -484,16 +480,13 @@ Compiler Flags
 
 Generated Executable Flags
 --------------------------
-
-Launchers
----------
-* added co-locale support to the `smp` launcher
 * added `-nl` suffixes to bind co-locales to specific architectural feature  
   (e.g., `-nl 8x2s` says to run 2 locales on each of 8 nodes, one per socket)  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
 
 Runtime Library Changes
 -----------------------
+* added co-locale support to the `gasnet/smp` configuration
 * added support for generalized co-locales that are not bound to a socket  
   (see https://chapel-lang.org/docs/2.0/usingchapel/multilocale.html#co-locales)
 * added co-locale support for NICs that are not in a socket
@@ -539,9 +532,6 @@ Bug Fixes for Build Issues
 * fixed a bug in which the `c2chapel` virtual environment was incorrectly built
 * fixed unrecognized key bug for `CHPL_GPU_MEM_STRATEGY` in `chplconfig` files
 
-Bug Fixes for GPU Computing
----------------------------
-
 Bug Fixes for Libraries
 -----------------------
 * fixed a bug that incorrectly copied a `c_array` when casting to `c_ptr`
@@ -562,10 +552,7 @@ Third-Party Software Changes
 ----------------------------
 * updated the bundled copy of LLVM to version 17.0.6
 * updated the Python package versions used by `chpldoc`  
-  (see $CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt for details)
-
-Developer-oriented changes: Process
------------------------------------
+  (see `$CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt` for details)
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -578,15 +565,9 @@ Developer-oriented changes: Documentation
 * removed the Docker packaging README in favor of Chapel's Dockerhub page  
   (see https://hub.docker.com/r/chapel/chapel/)
 
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * applied missing `(?)` expressions on generic formals in the 'Version' module
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -646,9 +627,6 @@ Developer-oriented changes: GPU support
 ---------------------------------------
 * added an initial capability to use distributed arrays within GPU kernels
 * improved kernel launch w.r.t. debuggability and to enable upcoming features
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
