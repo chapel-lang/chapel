@@ -279,7 +279,7 @@ The current implementation has the following limitations:
   described in `Implementation Details`_.
 * There is limited support for alternative ways of sharing the data between
   locales. The current implementation supports storing data on a single
-  locale, or storing a copy of the data on each locale. Alternative sharing
+  locale, or re-computing it on all locales. Alternative sharing
   modes (e.g., computing the value once and replicating it to all locales)
   are desirable.
 * Split-initialization of static variables is not supported.
