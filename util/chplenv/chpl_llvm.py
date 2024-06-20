@@ -7,7 +7,6 @@ import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
-from third_party_utils import pkgconfig_system_has_package
 import chpl_gpu
 import homebrew_utils
 from utils import which, memoize, error, run_command, try_run_command, warning
@@ -838,9 +837,11 @@ def gather_pe_chpl_pkgconfig_libs():
 
         # on login/compute nodes, lustre requires the devel api to make
         # lustre/lustreapi.h available (it's implicitly available on esl nodes)
-        pkg = "cray-lustre-api-devel"
-        if "lustre" in auxfs and pkgconfig_system_has_package(pkg):
-            ret = pkg + ":" + ret
+        if "lustre" in auxfs:
+            import third_party_utils
+            pkg = "cray-lustre-api-devel"
+            if third_party_utils.pkgconfig_system_has_package(pkg):
+                ret = pkg + ":" + ret
 
     return ret
 
