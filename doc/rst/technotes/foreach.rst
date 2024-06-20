@@ -44,5 +44,5 @@ Status and Future Work
 - The current implementation does not make full use of vectorization hinting.
   We hope to expand the coverage especially to vectorize outer loops.
 
-- We intend to add ``with`` clauses to ``foreach`` loops to support
-  vector-lane-private variables.
+- ``foreach`` loops support ``with`` clauses. However, the behavior for vector-
+  or GPU-based execution for shadow variables may change in the future.
