@@ -17,7 +17,7 @@ Contributors to the Chapel 2.1 release
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
 * Luca Ferranti, individual contributor
-* [Paul Hargrove], [Lawrence Berkeley National Laboratory]
+* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
