@@ -138,9 +138,11 @@ Generated Executable Flags
 
 Launchers
 ---------
+* updated the `pbs-gasnetrun_ibv` launcher to request exclusive access to nodes
 
 Runtime Library Changes
 -----------------------
+* updated the runtime to use the GASNet-EX API by default for `CHPL_COMM=gasnet`
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -172,9 +174,14 @@ Bug Fixes for Tools
 
 Bug Fixes for the Runtime
 -------------------------
+* fixed a bug where `-nl Mx1` did not set `CHPL_RT_LOCALES_PER_NODE` correctly
+* fixed a bug where fencing was not done correctly when `CHPL_COMM=ofi`
+* fixed a bug with respect to write-after-write ordering for `CHPL_COMM=ofi`
+* fixed a bug in the binding of progress threads with `CHPL_COMM={ofi,gasnet}`
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled copy of GASNet to version 2024.5.0
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -210,6 +217,8 @@ Developer-oriented changes: GPU support
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added the option to enable shared-memory bypass when using 'gasnet/ofi'
+* added the ability to use a dedicated core for progress threads with 'gasnet'
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
