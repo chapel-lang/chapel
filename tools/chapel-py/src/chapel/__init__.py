@@ -330,12 +330,16 @@ def each_matching(node, pattern, iterator=preorder):
             yield (child, variables)
 
 
-def files_with_contexts(files):
+def files_with_contexts(
+    files, setup: Optional[typing.Callable[[Context], None]] = None
+):
     """
     Some files might have the same name, which Dyno really doesn't like.
     Stratify files into "buckets"; within each bucket, all filenames are
     unique. Between each bucket, re-create the Dyno context to avoid giving
     it conflicting files.
+
+    For each newly-created context, call the setup function with it.
 
     Yields files from the argument, as well as the context created for them.
     """
@@ -354,8 +358,27 @@ def files_with_contexts(files):
         ctx = Context()
         to_yield = buckets[bucket]
 
+        if setup:
+            setup(ctx)
+
         for filename in to_yield:
             yield (filename, ctx)
+
+
+def files_with_stdlib_contexts(
+    files, setup: Optional[typing.Callable[[Context], None]] = None
+):
+    """
+    Like files_with_contexts, but also includes the standard library in the
+    context.
+    """
+
+    def setup_with_stdlib(ctx):
+        ctx.set_module_paths([], [])
+        if setup:
+            setup(ctx)
+
+    yield from files_with_contexts(files, setup_with_stdlib)
 
 
 def range_to_tokens(
