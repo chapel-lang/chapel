@@ -38,6 +38,7 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* made `in` intent copying behavior for `foreach` loops consistent with `forall`
 * enabled support for assigning between sparse arrays with matching indices  
   (e.g., `mySpsArr = mySpsArr2;` now works if the arrays' domains are equal)
 * stabilized operators between tuples and scalars, like `+`, `-`, `*`, etc.  
@@ -92,6 +93,8 @@ Changes / Feature Improvements in Libraries
    (see https://chapel-lang.org/docs/2.1/modules/standard/IO.html#IO.fileReader.advanceThrough)
 * adjusted the `regex` initializer to convey that `posix` enables `multiLine`  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Regex.html#Regex.regex.init)
+* enabled the 'AtomicObjects' package module to work on Arm processors  
+  (see https://chapel-lang.org/docs/2.1/modules/packages/AtomicObjects.html)
 
 Name Changes in Libraries
 -------------------------
@@ -265,6 +268,7 @@ Portability / Platform-specific Improvements
 Error Messages / Semantic Checks
 --------------------------------
 * improved errors when modifying `const` shadow variables in nested `forall`s
+* added an error when using `var` intents with `foreach` loops
 * added warnings for copy-initing maps/sets/lists with mismatched `parSafe`s  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Map.html#Map.warnForMapParsafeMismatch,  
        https://chapel-lang.org/docs/2.1/modules/standard/Set.html#Set.warnForSetParsafeMismatch,  
@@ -391,6 +395,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* extended 'skipif' files to support logging output
 * fixed issue with `sub_test` not suppressing perf test timeouts
 
 Developer-oriented changes: Tool Improvements
