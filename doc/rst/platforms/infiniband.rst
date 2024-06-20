@@ -277,8 +277,7 @@ by setting ``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE=true``. Note that
 this means there will be one fewer core to run Chapel tasks, which may not be
 advantageous on machines with relatively few cores. Also note that this
 variable will dedicate a core whether or not PSHM is in-use, so you should
-only set this variable if you are using co-locales and you have not disabled
-PSHM using ``GASNET_SUPERNODE_MAXSIZE`` as described above.
+probably only set this variable if you are using co-locales and PSHM is enabled.
 
 ----------------
 Progress Threads
