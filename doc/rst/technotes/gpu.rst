@@ -132,8 +132,6 @@ The following are further requirements for GPU support:
 
   * CUDA toolkit version 11.x or 12.x must be installed.
 
-  * ``CHPL_LLVM`` must be set to ``system`` or ``bundled``.
-
   * We test with system LLVM 18. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
@@ -149,10 +147,15 @@ The following are further requirements for GPU support:
     * You can check the current status of ROCm version support `here
       <https://github.com/chapel-lang/chapel/issues/23480>`_.
 
-  * ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm installations come
-    with LLVM. Setting ``CHPL_LLVM=system`` will allow you to use that LLVM.
+  * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
+    installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
+    use that LLVM.
 
-* For using the `CPU-as-Device mode`_, none of the above requirements apply.
+* Specifically for using the `CPU-as-Device mode`_:
+
+  * ``CHPL_GPU=cpu`` must be explicitly set. In other words, Chapel will not
+    automatically fall back to this mode simply because it can't detect GPUs.
+
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -292,10 +295,6 @@ demonstrates initializing an array ``A`` from a ``foreach`` expression:
    @gpu.blockSize(128)
    var A = foreach i in 1..1024 do i * i;
 
-Currently, only explicit loop expressions are supported (i.e., GPU
-attributes are not applied to promoted function calls). This is an area of
-active development.
-
 CPU-as-Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``CHPL_GPU`` environment variable can be set to ``cpu`` to enable many GPU
@@ -415,11 +414,15 @@ For more examples see the tests under |multi_locale_dir|_ available from our
 
 Reductions and Scans
 ~~~~~~~~~~~~~~~~~~~~
-``reduce`` and ``scan`` expressions are not supported on GPU-allocated data,
-yet. However, as an interim solution, the :mod:`GPU` module has standalone
-functions for basic reductions (e.g. :proc:`~GPU.gpuSumReduce`) and scans (e.g.
-:proc:`~GPU.gpuScan`). We expect these functions to be deprecated in favor of
-``reduce`` and ``scan`` expressions in a future release.
+The :mod:`GPU` module has standalone functions for basic reductions (e.g.
+:proc:`~GPU.gpuSumReduce`) and scans (e.g.  :proc:`~GPU.gpuScan`). We expect
+these functions to be deprecated in favor of ``reduce`` and ``scan`` expressions
+in a future release.
+
+As of Chapel 2.1, ``+``, ``min`` and ``max`` reductions are supported via
+``reduce`` expressions and intents. We are working towards expanding this to
+other kinds of reductions and ``scan`` expressions and deprecating the mentioned
+functions in the :mod:`GPU` module.
 
 Device-to-Device Communication Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -528,8 +531,8 @@ Chapel runtime will use a GPU stream per-task, per-device by default. While
 individual streams are synchronized with the host after each operation (e.g.,
 whole array operations and kernel launches will return only when the operation
 is completed), this allows efficiently oversubscribing GPUs by running multiple
-tasks on them to gain more performance by allowing CUDA to overlap data movement
-with computation.
+tasks on them to gain more performance by allowing the device runtime to overlap
+data movement with computation.
 
 * This behavior is disabled for ``CHPL_GPU_MEM_STRATEGY=unified_memory``.
 
@@ -574,9 +577,6 @@ improvements in the future.
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
 
-* `GPU-Related Attributes`_ on variables are not yet applied to promoted
-  function calls.
-
 Using C Interoperability
 ~~~~~~~~~~~~~~~~~~~~~~~~
 C interoperability on the host side is supported. However, GPU programming
@@ -606,7 +606,7 @@ marked with * are covered in our nightly testing configuration.
 
   * Hardware: RTX A2000, P100*, V100*, A100* and H100
 
-  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0*, 12.2, 12.4
+  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0, 12.2*, 12.4
 
 * AMD
 
