@@ -105,7 +105,7 @@ Standard Layouts and Distributions
 * enabled `.targetLocales()` queries on sparse `blockDist` domains/arrays
 * added new utility routines for sparse `blockDist`-distributed domains/arrays:
   - `setLocalSubdomain()` to assign the current locale's subdomain of nonzeroes
-  - `[get|set]LocalSubarry()` to query/set the current locale's nonzero values
+  - `[get|set]LocalSubarray()` to query/set the current locale's nonzero values
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -276,7 +276,7 @@ Portability / Platform-specific Improvements
 * fixed memory leaks in the runtime when using `CHPL_COMM=ofi` with AWS EFA
 * fixed regex escape sequences generating errors with Python 3.12
 * fixed some bugs with `CHPL_COMM=ugni` when using bundled LLVM and/or GPUs
-* fixed a portability issue  in which the PGI compiler's name was mis-spelled
+* fixed a portability issue  in which the PGI compiler's name was misspelled
 
 Compiler Improvements
 ---------------------
