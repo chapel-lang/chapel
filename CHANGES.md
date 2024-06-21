@@ -16,8 +16,8 @@ TODO:
 * check initial 'A-Z'
 * check 'see:'
 * check for changes put too far down in file
-o remove empty sections
-o check links
+* remove empty sections
+* check links
 * add highlights
 o spellcheck
 
@@ -47,7 +47,7 @@ Updates to Chapel's Release Formats
   (see https://chapel-lang.org/install-spack.html)
 * started releasing Chapel packages for several Linux distributions  
   (see https://chapel-lang.org/install-pkg.html)
-* updated Chapel's Homebrew formula to install the preferred shared-mem config  
+* updated Chapel's Homebrew formula to install the preferred shared-mem config
 
 Prerequisite Updates
 --------------------
@@ -78,16 +78,10 @@ Language Feature Improvements
 * stabilized operators between tuples and scalars, like `+`, `-`, `*`, etc.  
   (see https://chapel-lang.org/docs/2.1/language/spec/tuples.html#tuple-operators)
 
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated support for `dmapped` clauses with `new`-less initializer calls  
   (see https://chapel-lang.org/docs/2.1/language/spec/domain-maps.html#distributions-for-domain-types)
-
-Namespace Changes
------------------
 
 New Standard Library Features
 -----------------------------
@@ -132,9 +126,6 @@ Standard Layouts and Distributions
 * added new utility routines for sparse `blockDist`-distributed domains/arrays:
   - `setLocalSubdomain()` to assign the current locale's subdomain of nonzeroes
   - `[get|set]LocalSubarry()` to query/set the current locale's nonzero values
-
-Name Changes in Libraries
--------------------------
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -282,18 +273,9 @@ Example Codes
 * fixed an inconsistency in the 'distributions' primer between the docs and code
 * added index entries to some primers to aid in documentation search results
 
-Compilation Time Improvements
------------------------------
-
 Generated Code Improvements
 ---------------------------
 * added `const` qualifiers for `c_ptrConst` types in generated C code
-
-Memory Improvements
--------------------
-
-Syntax Highlighting
--------------------
 
 Configuration / Build Changes
 -----------------------------
@@ -359,7 +341,7 @@ Bug Fixes
 ---------
 * fixed a bug with error-handling and reductions within `forall` loops
 * fixed calling throwing functions from square-bracket loop expressions
-* fixed an erronous error message with certain uses of parenless procs
+* fixed an erroneous error message with certain uses of parenless procs
 * fixed 'symbol not found' errors when checking imports due to module order
 * fixed a bug in the LLVM back-end for `export` procedures with `in` intents
 * fixed a bug where `export` declarations could hit 'missing `override`' errors
@@ -419,31 +401,16 @@ Third-Party Software Changes
 * updated the bundled copy of GASNet to version 2024.5.0
 * updated the bundled version of libfabric/OFI to 1.21
 
-Developer-oriented changes: Process
------------------------------------
-
 Developer-oriented changes: Documentation
 -----------------------------------------
 * fixed some code examples in the 'All About Compiler-Generated Code' doc  
   (see https://chapel-lang.org/docs/2.1/developer/bestPractices/GeneratedCode.html#best-practices-generated-code)
-
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
-Developer-oriented changes: Module changes
-------------------------------------------
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * added support for building Chapel with `CHPL_TARGET_JEMALLOC=system`
 * added environment variables to always build `chapel-py` and language server
 * added `clean-cmakecache` target to delete `CMakeCache.txt`
-
-Developer-oriented changes: Compiler Flags
-------------------------------------------
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -463,8 +430,8 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for initializing a nilable class from a `new` non-nilable one
   - added support for module-qualified function calls like `M.f()`
   - added support for overloaded parenless procs with `where` clauses
-  - added support for passing param strings to `c_ptrConst(c_char)`
-  - added support for `none` param value
+  - added support for passing `param` strings to `c_ptrConst(c_char)`
+  - added support for `none` `param` value
   - added support for the 'get svec member [value]' primitives
   - improved support for initializers for generic types with defaults
   - improved support for where-clauses on generic methods
@@ -477,21 +444,12 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - fixed resolution of methods declared on `extern` types
   - fixed a bug where variables passed to `in` intents were considered 'dead'
   - fixed a bug in `param` coercion when passing to arguments
-  - fixed crash when casting params to non-param types
+  - fixed crash when casting `param`s to non-`param` types
   - fixed a bug where unpacked tuple assignment caused false constness errors
   - fixed a bug disambiguating between `unmanaged` and `borrowed` formals
   - fixed a resolver crash due to circular forwarding statements
 * improved performance when using `--dyno-scope-bundled`
 * fixed how Dyno prints booleans to match the production compiler
-
-Developer-oriented changes: GPU support
----------------------------------------
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
-
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
 
 Developer-oriented changes: Testing System
 ------------------------------------------
