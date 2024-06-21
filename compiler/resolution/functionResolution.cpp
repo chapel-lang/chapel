@@ -1567,7 +1567,7 @@ bool canCoerceAsSubtype(Type*     actualType,
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
     if (actualElt && formalElt && (actualElt == formalElt))
       // disallow const c_array to coerce to non-const c_ptr
-      return ! actualSym->isConstant() ||
+      return ! actualSym || ! actualSym->isConstant() ||
              formalType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
   }
 
