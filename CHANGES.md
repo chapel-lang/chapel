@@ -316,6 +316,7 @@ Runtime Library Changes
   (see https://chapel-lang.org/docs/2.1/platforms/libfabric.html#memory-registration-and-the-heap)
 * added the ability to enable shared-memory bypass when using 'gasnet/ibv'
 * added the ability to use a dedicated core for progress threads with 'gasnet'
+* added the ability to enable a blocking send thread for `gasnet/ibv`
 
 Bug Fixes
 ---------
