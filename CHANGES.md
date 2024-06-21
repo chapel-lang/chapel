@@ -309,12 +309,12 @@ Launchers
 Runtime Library Changes
 -----------------------
 * updated the runtime to use the GASNet-EX API by default for `CHPL_COMM=gasnet`
-* updated GASNet to use the same copy of `hwloc` as Chapel does
+* enabled GASNet's `hwloc` support, using the same copy of `hwloc` as Chapel
 * added support for transparent huge pages with OFI  
   (see https://chapel-lang.org/docs/2.1/platforms/libfabric.html#transparent-hugepages)
 * ensured that co-locales respect `CHPL_RT_MAX_HEAP_SIZE`  
   (see https://chapel-lang.org/docs/2.1/platforms/libfabric.html#memory-registration-and-the-heap)
-* added the ability to enable shared-memory bypass when using 'gasnet/ofi'
+* added the ability to enable shared-memory bypass when using 'gasnet/ibv'
 * added the ability to use a dedicated core for progress threads with 'gasnet'
 
 Bug Fixes
