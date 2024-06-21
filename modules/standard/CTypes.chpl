@@ -516,17 +516,22 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
-    return c_ptrTo(x[0]);
+  inline operator :(ref x:c_array, type t:c_ptr) {
+    if t.eltType == void then
+      return __primitive("cast", t, c_ptrTo(x[0]));
+    else if x.eltType == t.eltType then
+      return c_ptrTo(x[0]);
+    else
+      compilerError("cast of c_array to c_ptr with a different element type");
   }
   @chpldoc.nodoc
-  inline operator :(const ref x:c_array, type t:c_ptrConst(?e))
-      where x.eltType == e {
-    return c_ptrToConst(x[0]);
-  }
-  @chpldoc.nodoc
-  inline operator :(ref x:c_array, type t:c_ptr(void)) {
-    return c_ptrTo(x[0]):c_ptr(void);
+  inline operator :(const ref x:c_array, type t:c_ptrConst) {
+    if t.eltType == void then
+      return __primitive("cast", t, c_ptrToConst(x[0]));
+    else if x.eltType == t.eltType then
+      return c_ptrToConst(x[0]);
+    else
+      compilerError("cast of c_array to c_ptr with a different element type");
   }
   @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:c_ptr(void)) {

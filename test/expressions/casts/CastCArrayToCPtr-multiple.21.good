@@ -1,0 +1,4 @@
+CastCArrayToCPtr-multiple.chpl:39: error: unresolved call 'qiv(c_array(int(64),9))'
+CastCArrayToCPtr-multiple.chpl:27: note: this candidate did not match: qiv(arg: c_ptr(int))
+CastCArrayToCPtr-multiple.chpl:39: note: because actual argument #1 with type 'c_array(int(64),9)'
+CastCArrayToCPtr-multiple.chpl:27: note: is passed to formal 'arg: c_ptr(int(64))'
