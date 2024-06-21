@@ -1,26 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* '(http:' -> '(see http:'
-* sort items within categories
-* check placement of items into categories
-* check sorting of categories
-* check for ' vs `
-* fulfill TODOs
-* check man page for new compiler flags
-* check test/release/examples
-* check for docs/1.33/ links
-* check forced linebreaks
-* check initial '*'
-* check initial 'A-Z'
-* check 'see:'
-* check for changes put too far down in file
-* remove empty sections
-* check links
-* add highlights
-o spellcheck
-
 version 2.1
 ===========
 
@@ -28,14 +8,14 @@ released June 27, 2024
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* added the ability to install Chapel using Spack or many Linux package managers
+* added Chapel installations using Spack or several Linux package managers
 * improved the performance and hardware utilization of the Homebrew formula
 * added a new prototype ability to directly declare variables on remote locales
-* improved sparse domains/arrays in terms of new utility routines and generality
-* integrated GPU-based reductions with Chapel's `reduce` expressions and intents
-* made numerous/significant improvements to the linter and language server tools
+* improved sparse domains/arrays via new utility routines and generality
+* integrated GPU reductions with Chapel's `reduce` expressions and intents
+* made numerous/significant improvements to the linter and language server
 * added a new 'Image' package module and updated 'AtomicObjects' to support Arm
-* improved docs in many ways, including better search and a new portability page
+* improved docs in many ways, incl. better search and a new portability page
 * updated the `chpl` compiler to support (and prefer) LLVM 18
 * improved Chapel's support for AWS EFA
 * updated GASNet configs to use the GASNet-EX API and support new features
