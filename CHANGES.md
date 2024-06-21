@@ -16,6 +16,7 @@ TODO:
 * check initial 'A-Z'
 * check 'see:'
 * check for changes put too far down in file
+o remove empty sections
 o check links
 * add highlights
 o spellcheck
@@ -148,7 +149,7 @@ Tool Improvements
 -----------------
 * made numerous improvements to Chapel's linter, `chplcheck`:
   - added support for auto-fixits  
-    (see https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#Fixits)
+    (see https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#fixits)
   - added a `chplcheck` warning for simple domains in loops  
     (e.g., `for i in {1..10} do ...` should be `for i in 1..10 do ...`)
   - added a warning that checks for improper indentation
@@ -169,7 +170,7 @@ Tool Improvements
   - expanded support for end-block markers
   - ensured types displayed in hints are valid Chapel syntax
   - added a `--chplcheck` flag to run linting from within the CLS  
-    (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#chplcheck)
+    (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#using-chplcheck-from-cls)
   - added a `--[no]-show-instantiations` flag to control CLS code lenses  
     (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
 * improved error messages when Python versions don't match for `chapel-py` tools
@@ -200,7 +201,7 @@ Performance Optimizations / Improvements
 Documentation Improvements
 --------------------------
 * improved the behavior of the documentation search box  
-  (see e.g. https://chapel-lang.org/docs/2.1/search.html?q=forall&check_keywords=yes&area=default)
+  (e.g., see https://chapel-lang.org/docs/2.1/search.html?q=forall&check_keywords=yes&area=default)
 * added a new page documenting and visualizing Chapel's portability  
   (see https://chapel-lang.org/docs/2.1/usingchapel/portability.html)
 * refreshed the 'Chapel Quick Reference' document for 2.x versions  
@@ -226,7 +227,7 @@ Documentation Improvements for Tools
   (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#emacs  
    and https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#emacs)
 * added a 'quick start' section to the documentation for `mason`  
-  (see https://chapel-lang.org/docs/2.1/language/spec/domain-maps.html#distributions-for-domain-types)
+  (see https://chapel-lang.org/docs/2.1/tools/mason/mason.html#quick-start-instructions)
 * updated the VSCode extension's documentation  
   (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#vscode)
 
@@ -269,7 +270,7 @@ Documentation Improvements for Libraries
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
 * added support for linking to a specific flag's entry on the 'man' page  
-  (e.g., https://chapel-lang.org/docs/2.1/usingchapel/man.html#man-module-dir)
+  (e.g., see https://chapel-lang.org/docs/2.1/usingchapel/man.html#man-module-dir)
 * removed outdated compiler internal information from `chpl`'s 'man' page
 * simplified the version numbers on our 'man' pages to reduce maintenance  
   (e.g., see the last line when running `man chpl`)
@@ -349,7 +350,7 @@ Runtime Library Changes
 * updated GASNet to use the same copy of `hwloc` as Chapel does
 * added support for transparent huge pages with OFI  
   (see https://chapel-lang.org/docs/2.1/platforms/libfabric.html#transparent-hugepages)
-* ensured that co-locales respect `CHPL_RT_MAX_HEAP_SIZE` 
+* ensured that co-locales respect `CHPL_RT_MAX_HEAP_SIZE`  
   (see https://chapel-lang.org/docs/2.1/platforms/libfabric.html#memory-registration-and-the-heap)
 * added the ability to enable shared-memory bypass when using 'gasnet/ofi'
 * added the ability to use a dedicated core for progress threads with 'gasnet'
