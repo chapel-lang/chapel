@@ -28,9 +28,28 @@ released June ??, 2024
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 
+
+Changes to Chapel's Release Formats
+-----------------------------------
+* started releasing Chapel as a Spack package
+  (see https://chapel-lang.org/install-spack.html)
+* started releasing Chapel packages for several Linux distributions  
+  (see https://chapel-lang.org/install-pkg.html)
+* updated Chapel's Homebrew formula to build the preferred shared-mem config  
+  (see TODO)
+
+Prerequisite Updates
+--------------------
+* Chapel now requires Python 3.5 or newer  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#readme-prereqs)
+* updated the Python package versions used by `chpldoc`  
+  (see `$CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt` for details)
+* added sample installation commands for Ubuntu Noble in the prerequisites doc  
+  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#installation)
+
 Syntactic / Naming Changes
 --------------------------
-* disallowed spaces after `@` in attributes, which were never intended  
+* stopped allowing spaces after `@` in attributes, which were never intended  
   (see https://chapel-lang.org/docs/2.1/technotes/attributes.html)
 
 New Language Features
@@ -43,7 +62,7 @@ Language Feature Improvements
 * made `in` intent copying behavior for `foreach` loops consistent with `forall`
 * enabled support for assigning between sparse arrays with matching indices  
   (e.g., `mySpsArr = mySpsArr2;` now works if the arrays' domains are equal)
-* added initial support for per-locale "static" local variables
+* extended local vars that persist across calls to support per-locale copies  
   (see TODO)
 * stabilized operators between tuples and scalars, like `+`, `-`, `*`, etc.  
   (see https://chapel-lang.org/docs/2.1/language/spec/tuples.html#tuple-operators)
@@ -61,44 +80,47 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
-* added a new `randomStream.sample()` overload accepting a 'weights' argument  
+* added a `randomStream.sample()` overload that accepts a 'weights' argument  
   (see: https://chapel-lang.org/docs/2.1/modules/standard/Random.html#Random.randomStream.sample)
 
 New Package Module Features
 ---------------------------
-* added a new 'Image' package module for writing images
+* added a new 'Image' package module for writing images  
   (see https://chapel-lang.org/docs/2.1/modules/packages/Image.html)
 * added support for configurable profiling to the 'Zarr' IO package module  
   (see https://chapel-lang.org/docs/2.1/modules/packages/Zarr.html#Zarr.zarrProfiling)
 
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
-* added a new initializer to 'LayoutCS' avoiding the need for named arguments
-* added new utility routines for sparse arrays stored using 'LayoutCS':
-  - `rows`/`cols()` queries to return the dense range of indices per dimension
-  - `[cols|rows]AndVals()` iterators that yield nonzeroes' indices and values
-* enabled `.targetLocales()` queries on sparse `blockDist` domains/arrays
-* added new utility routines for sparse `blockDist`-distributed domains/arrays:
-  - `setLocalSubdomain()` assigns the current locale's subdomain of nonzeroes
-  - `[get|set]LocalSubarry()` queries/sets the current locale's nonzero values
-
-Changes / Feature Improvements in Libraries
--------------------------------------------
-* changed the return types of `imag` trigonometric/hyperbolic 'Math' functions  
+Changes / Feature Improvements in Standard Libraries
+----------------------------------------------------
+* improved the return types of `imag` trigonometric/hyperbolic 'Math' routines  
   (see https://chapel-lang.org/docs/2.1/modules/standard/Math.html#Math.useNewImaginaryTrig)
-* updated 'BLAS' `alpha`/`beta` arguments to accept `const`/`param` vals  
-  (e.g., see https://chapel-lang.org/docs/modules/packages/BLAS.html#BLAS.gemm)
+* 'IO' routines like `advanceThrough()` now throw errors for empty separators  
+   (see https://chapel-lang.org/docs/2.1/modules/standard/IO.html#IO.fileReader.advanceThrough)
+* adjusted the `regex` initializer to convey that `posix` enables `multiLine`  
+  (see https://chapel-lang.org/docs/2.1/modules/standard/Regex.html#Regex.regex.init)
 * added support for `mp_exp_t` and `mpf_get_str()` to the 'GMP' module  
   (see https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.mp_exp_t  
    and https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.mpf_get_str)
 * improved support for 'GMP' routines that accept varargs
   (e.g., see https://chapel-lang.org/docs/2.1/modules/standard/GMP.html#GMP.gmp_printf)
-* 'IO' routines like `advanceThrough()` now throw errors for empty separators  
-   (see https://chapel-lang.org/docs/2.1/modules/standard/IO.html#IO.fileReader.advanceThrough)
-* adjusted the `regex` initializer to convey that `posix` enables `multiLine`  
-  (see https://chapel-lang.org/docs/2.1/modules/standard/Regex.html#Regex.regex.init)
+
+Changes / Feature Improvements in Package Modules
+-------------------------------------------------
+* updated 'BLAS' `alpha`/`beta` arguments to accept `const`/`param` vals  
+  (e.g., see https://chapel-lang.org/docs/modules/packages/BLAS.html#BLAS.gemm)
 * enabled the 'AtomicObjects' package module to work on Arm processors  
   (see https://chapel-lang.org/docs/2.1/modules/packages/AtomicObjects.html)
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+* added a new initializer to 'LayoutCS', supporting positional arguments
+* added new utility routines for sparse arrays stored using 'LayoutCS':
+  - `rows`/`cols()` queries to return the dense range of indices per dimension
+  - `[cols|rows]AndVals()` iterators that yield nonzeroes' indices and values
+* enabled `.targetLocales()` queries on sparse `blockDist` domains/arrays
+* added new utility routines for sparse `blockDist`-distributed domains/arrays:
+  - `setLocalSubdomain()` to assign the current locale's subdomain of nonzeroes
+  - `[get|set]LocalSubarry()` to query/set the current locale's nonzero values
 
 Name Changes in Libraries
 -------------------------
@@ -106,7 +128,7 @@ Name Changes in Libraries
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated the `cIsoDayOfWeek` `config param` from the 'Time' module
-* removed deprecated features from the 'Time' module:
+* removed several deprecated features from the 'Time' module:
   - the `MINYEAR` and `MAXYEAR` constants
   - the day-of-week `enum`s as well as procedures that used them
   - the `getCurrentDate()`, `isoCalendar()`, `isoFormat()`, `abs()` procedures
@@ -115,17 +137,17 @@ Deprecated / Unstable / Removed Library Features
 GPU Computing
 -------------
 * added support for `reduce` expressions and intents within GPU kernels
-* extended `@gpu.blockSize` to support GPU-ineligible expressions
 * extended GPU attributes to apply to promoted initializer expressions
 * added support for `syncWarp()` for gpu kernels  
   (see https://chapel-lang.org/docs/2.1/modules/standard/GPU.html#GPU.syncWarp)
+* extended `@gpu.blockSize` to support GPU-ineligible expressions as arguments
 
 Performance Optimizations / Improvements
 ----------------------------------------
-* improved the performance of remote data transfers through inlining
 * added an experimental optimization that localizes domains for array copies  
   (enable by compiling with `-slocalizeConstDomains=true`)
 * enabled bulk assignment between sparse arrays whose index sets match
+* applied LLVM inlining to reduce overheads for remote data transfers
 * improved the performance of several 'IO' `fileReader` methods like `readAll()`
 * improved the performance of `regex.replace*()` methods in the 'Regex' module
 * improved code-generation of `complex` math functions for better performance
@@ -142,32 +164,32 @@ Memory Improvements
 
 Tool Improvements
 -----------------
-* numerous improvements to Chapel's language server
-  - provided auto-completion for symbols from 'use' and 'import' statements
-  - enabled go-to-definition on identifiers in 'use' and 'import' statements
+* made numerous improvements to Chapel's linter, `chplcheck`
+  - added support for auto-fixits
+    (see https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#Fixits)
+  - added a `chplcheck` warning for simple domains in loops  
+    (e.g., `for i in {1..10} do ...` should be `for i in 1..10 do ...`)  - added  - added a warning that checks for improper indentation
+  - added a warning for redundant semicolons
+  - added a warning for redundant pattern matching like `(_, _)`
+  - added a warning for redundant parentheses in if-else and loop conditions
+  - added command-line flags to list available and enabled rules
+  - allowed silencing advanced rules with `@chplcheck.ignore`
+  - fixed false positives in 'MisleadingIndentation' rule
+* made numerous improvements to the Chapel language server (CLS)
+  - provided auto-completion for symbols from `use` and `import` statements
+  - enabled go-to-definition on identifiers in `use` and `import` statements
   - adjusted error messages to display additional information on hover
   - ensured redefinition errors are issued as intended in more cases
   - extended call inlays to support negative numbers and complex number literals
+  - expanded support for end-block markers
   - ensured types displayed in hints are valid Chapel syntax
-* numerous improvements to Chapel's linter, 'chplcheck'
-  - allowed silencing advanced rules with '@chplcheck.ignore'
-  - added command-line flags to list available and enabled rules
-  - added a warning that checks for improper indentation
-  - added a warning for redundant semicolons
-  - added a warning for redundant pattern matching like '(_, _)'
-  - added a warning for redundant parentheses in if-else and loop conditions
-  - fixed false positives in 'MisleadingIndentation' rule
+  - added a `--chplcheck` flag to run linting from within the CLS  
+    (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#chplcheck)
+  - added a `--[no]-show-instantiations` flag to control CLS code lenses  
+    (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
+* improved error messages when Python versions don't match for `chapel-py` tools
 * added Sphinx version and chapeldomain version to `chpldoc --version`
-* added auto-fixits to the `chplcheck` linter  
-  (see https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#Fixits)
-* added a `chplcheck` warning for simple domains in loops  
-  (e.g., `for i in {1..10} do ...` should be `for i in 1..10 do ...`)
-* expanded support for end-block markers in `chpl-language-server` (CLS)
-* added a `--chplcheck` flag to run linting from within the CLS  
-  (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#chplcheck)
-* added a `--[no]-show-instantiations` flag to control CLS code lenses  
-  (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
-* updated script for anonymized unstable warnings to work with Chapel 2.1  
+* updated script for anonymized unstable warnings w.r.t. Chapel 2.1 warnings  
   (see https://chapel-lang.org/docs/2.1/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 * improved Mason error messages when dependencies are missing
 * updated `c2chapel` to map `FILE` to `c_FILE`
@@ -237,28 +259,16 @@ Example Codes
 Syntax Highlighting
 -------------------
 
-Configuration / Build / Packaging Changes
------------------------------------------
-* started releasing Chapel as a Spack package
-  (see https://chapel-lang.org/install-spack.html)
-* started releasing Chapel packages for several Linux distributions  
-  (see https://chapel-lang.org/install-pkg.html)
+Configuration / Build Changes
+-----------------------------
 * added support for building with `CHPL_HWLOC=system` and/or `CHPL_GMP=system  
   (see https://chapel-lang.org/docs/2.1/usingchapel/chplenv.html#chpl-hwloc  
    and https://chapel-lang.org/docs/2.1/usingchapel/chplenv.html#chpl-gmp)
-* Chapel now requires Python 3.5 or newer  
-  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#readme-prereqs)
-* improved error messages when Python versions don't match for `chapel-py` tools
-* removed Python2 support from `compileline.py`
-* updated the Python package versions used by `chpldoc`  
-  (see `$CHPL_HOME/third-party/chpl-venv/chpldoc-requirements*.txt` for details)
+* added an error message if the user attempts to set `CHPL_RE2=system`
 * improved error messages when the Clang version doesn't match LLVM
 * added `chpl-shim` to `make install` to make it available in the user's path
-* added `printchplenv --ignore-errors` to ignore errors and continue
-* added sample installation commands for Ubuntu Noble in the prerequisites doc  
-  (see https://chapel-lang.org/docs/2.1/usingchapel/prereqs.html#installation)
-* added an error message if `CHPL_RE2=system` is set
-* removed some unnecessary `__pycache` files from the released source tarball
+* added `printchplenv --ignore-errors` to continue past errors encountered
+* removed some unnecessary `__pycache__` files from the released source tarball
 
 Compiler Improvements
 ---------------------
@@ -462,6 +472,7 @@ Developer-oriented changes: Tool Improvements
 Developer-oriented changes: Utilities
 -------------------------------------
 * added support for building Chapel packages for multiple Linux distributions
+* removed Python2 support from `compileline.py`
 
 
 version 2.0.1
