@@ -1188,8 +1188,16 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   if (failingActualIsReceiver)
     failingActualDesc = astr("method call receiver");
   else
-    failingActualDesc = astr("actual argument #",
+  {
+    const char* constAct = "";
+    // const-ness of the actual matters only in this particular case
+    if (failingActual && failingFormal && failingActual->isConstant() &&
+        failingActual->type->symbol->hasFlag(FLAG_C_ARRAY) &&
+        failingFormal->type->symbol->hasFlag(FLAG_C_PTR_CLASS))
+      constAct = "const ";
+    failingActualDesc = astr(constAct, "actual argument #",
                              istr(failingActualUserIndex));
+  }
 
   if (fnIsMethod && !callIsMethod) {
     USR_PRINT(call, "because call is not written as a method call");
