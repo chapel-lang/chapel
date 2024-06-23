@@ -1717,12 +1717,9 @@ module ChapelDomain {
     pragma "no copy return"
     @chpldoc.nodoc
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
-      if eltType == void {
-        compilerError("array element type cannot be 'void'");
-      }
-      if eltType == nothing {
-        compilerError("array element type cannot be 'nothing'");
-      }
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
       var x = _value.dsiBuildArrayWith(eltType, data, allocSize);
       pragma "dont disable remote value forwarding"
       proc help() {
