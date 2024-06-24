@@ -681,6 +681,14 @@ void setupModuleSearchPaths(
   // move on to user module paths
   dedupSet.clear(); // clear it so a path could be both internal/standard & user
 
+  // Add directories containing command line files
+  addCommandLineFileDirectories(searchPath, dedupSet, inputFilenames);
+
+  // Add paths from -M flags on the command line
+  for (const auto& p : cmdLinePaths) {
+    searchPath.push_back(p);
+  }
+
   // Add paths from the CHPL_MODULE_PATH environment variable
   if (!chplModulePath.empty()) {
 
@@ -690,13 +698,6 @@ void setupModuleSearchPaths(
     while (std::getline(ss, path, ':')) {
       searchPath.push_back(path);
     }
-  }
-
-  addCommandLineFileDirectories(searchPath, dedupSet, inputFilenames);
-
-  // Add paths from the command line
-  for (const auto& p : cmdLinePaths) {
-    searchPath.push_back(p);
   }
 
   // deduplicate
