@@ -1120,7 +1120,7 @@ static void testAssignThenInit(void) {
     //  https://github.com/chapel-lang/chapel/issues/24900
     //
     // The errors are currently issued twice.
-    assert(guard.realizeErrors() == 2);
+    assert(guard.realizeErrors() == 1);
   }
 }
 
