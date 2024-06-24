@@ -104,6 +104,35 @@ proc reindexTest(type dtype) {
   
 }
 
+proc localIOTest(type dtype) {
+  // Test having each locale read and write a different store
+  const N = 100;
+  coforall loc in Locales do on loc {
+    const storeName = "LocalIOStore_%?".format(loc.id);
+    const D = {0..<N};
+    var A: [D] dtype;
+    fillRandom(A);
+    if exists(storeName) then rmTree(storeName);
+    writeZarrArrayLocal(storeName, A, (7,));
+    var B = readZarrArrayLocal(storeName, dtype, 1);
+    forall i in D do
+      assert(A[i] == B[i], "Mismatch on indices %?. Written: %?.\n Read: %?.\nFailure on locale %?\n".format(i, A[i], B[i], loc.id));
+  }
+  
+  // 2 dimensional stores with different low bounds
+  coforall loc in Locales do on loc {
+    const storeName = "LocalIOStore_%?".format(loc.id);
+    const D = {0..<N,1..N};
+    var A: [D] dtype;
+    fillRandom(A);
+    if exists(storeName) then rmTree(storeName);
+    writeZarrArrayLocal(storeName, A, (7,22));
+    var B = readZarrArrayLocal(storeName, dtype, 2);
+    ref viewB = B.reindex(D);
+    forall i in D do
+      assert(A[i] == viewB[i], "Mismatch on indices %?. Written: %?.\n Read: %?.\nFailure on locale %?\n".format(i, A[i], viewB[i], loc.id));
+  }
+}
 
 proc main() {
   testGetLocalChunks();
@@ -114,6 +143,7 @@ proc main() {
     writeln("Testing ", dtype:string);
     smallTest(dtype);
     reindexTest(dtype);
+    localIOTest(dtype);
   }
   writeln("Pass");
 }
