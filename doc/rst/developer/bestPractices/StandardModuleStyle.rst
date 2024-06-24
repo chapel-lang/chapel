@@ -135,10 +135,34 @@ Accessor methods will avoid using "get" in their name.  E.g., instead of
 
 Methods that are not accessors are still allowed to use "get" in their name.
 
+Formals
++++++++
+
+Formal names should be camelCase.  Descriptive names are recommended, within
+reason.  Encoding the type name into a formal name is generally avoided when
+multiple types are supported, as doing so makes it harder to support generic
+functions.
+
+Some commonly used names are:
+
+- idx for an index
+
+- x and y for general pairs of formals
+
+- src and dst/dest (source and destination) for directional pairs of formals
+
+  - lhs and rhs (left hand side and right hand side) may also be used
+
+- eltType for the type of elements stored in a collection (also used as a field
+  name)
+
+- obj for a general object instance (as opposed to formals that can also be
+  primitive types)
+
 Other Identifiers
 -----------------
 
-Variables, fields, and argument names should be camelCase or PascalCase.
+Variables and fields should be camelCase or PascalCase.
 
 Handling Failure
 ----------------
