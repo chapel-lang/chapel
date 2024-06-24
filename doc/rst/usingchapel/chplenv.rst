@@ -671,8 +671,6 @@ CHPL_HWLOC
    and rebuild (and please file a bug with the Chapel team.) Note that
    building without hwloc will have a negative impact on performance.
 
-..  (comment) CHPL_TARGET_JEMALLOC is not a user-facing feature
-
    .. _readme-chplenv.CHPL_TARGET_JEMALLOC:
 
    CHPL_TARGET_JEMALLOC
