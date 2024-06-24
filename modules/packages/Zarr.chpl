@@ -543,9 +543,11 @@ module Zarr {
   }
 
   /* 
-    Updates a single chunk within a Zarr store with the data in `A`. It is assumed that the Zarr store and the associated metadata file already exists.
+    Updates a single chunk within a Zarr store with the data in `A`. The
+    Zarr store and the associated metadata file must already exist.
 
-    :arg directoryPath: Relative or absolute path to the root of the zarr store. This directory should exist and contain a '.zarray' metadata file.
+    :arg directoryPath: Relative or absolute path to the root of the zarr
+      store. This directory should exist and contain a '.zarray' metadata file.
 
     :arg A: The array to update the chunk with.
 
