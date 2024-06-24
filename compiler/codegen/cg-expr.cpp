@@ -6144,13 +6144,11 @@ DEFINE_PRIM(DYNAMIC_CAST) {
 DEFINE_PRIM(STACK_ALLOCATE_CLASS) {
     AggregateType* at = toAggregateType(call->get(1)->typeInfo());
     const char* struct_name = at->classStructName(true);
-    GenRet tmp = createTempVar(struct_name,
+    int alignment = 0;  // ignored for C codegen
 #ifdef HAVE_LLVM
-      gGenInfo->cfile ? 0 : at->symbol->getLLVMStructureAlignment()
-#else
-      0  // ignored for C codegen
+    if (! gGenInfo->cfile) alignment = at->symbol->getLLVMStructureAlignment();
 #endif
-    );
+    GenRet tmp = createTempVar(struct_name, alignment);
 
     ret = codegenCast(at, codegenAddrOf(tmp));
 }

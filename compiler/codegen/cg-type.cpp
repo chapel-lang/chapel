@@ -296,7 +296,7 @@ static void buildStructFields(const llvm::DataLayout& DL,
       INT_ASSERT(fieldType);
       uint64_t fieldSize = DL.getTypeStoreSize(fieldType);
 
-      if(fieldSize > largestSize) {
+      if (fieldSize > largestSize) {
         largestType = fieldType;
         largestSize = fieldSize;
       }
@@ -310,7 +310,7 @@ static void buildStructFields(const llvm::DataLayout& DL,
 
     llvm::StructType * st;
     // handle an empty union.
-    if( largestType ) {
+    if (largestType != nullptr) {
       st = llvm::StructType::get(largestType);
     } else {
       st = llvm::StructType::get(info->module->getContext());
@@ -386,7 +386,7 @@ static void buildStructFields(const llvm::DataLayout& DL,
         addFieldWhenEP("_dummyFieldToAvoidWarning", padTy, 1, 1);
       else
         addFieldWhenNotEP("_dummyFieldToAvoidWarning",
-          llvm::Type::getInt8Ty(gContext->llvmContext())); // here padTy==0
+          llvm::Type::getInt32Ty(gContext->llvmContext())); // here padTy==0
     }
   } // if 'ag' is a class or record
 

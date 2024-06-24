@@ -1946,11 +1946,13 @@ GenRet TypeSymbol::codegen() {
     }
   } else {
 #ifdef HAVE_LLVM
+    {
       // If we don't have an LLVM type yet, the type hasn't been
       // code generated, so code generate it now. This can get called
       // when adding types partway through code generation.
-    ensureCodegenned(this);
       // codegenMetadata(); //TODO -- enable TBAA generation in the future.
+    }
+    // getLLVMType() ensures that LLVM type has been generated
     ret.type = getLLVMType();
 #endif
   }

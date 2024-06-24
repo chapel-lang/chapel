@@ -4146,17 +4146,19 @@ bool isCTypeUnion(const char* name) {
   return false;
 }
 
-llvm::MaybeAlign getPointerAlign() {
+// pointer alignment from clang, in the default address space
+// unless given explicitly
+#if HAVE_LLVM_VER >= 160
+llvm::MaybeAlign getPointerAlign(clang::LangAS AS)
+#else
+llvm::MaybeAlign getPointerAlign(int AS)
+#endif
+{
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-#if HAVE_LLVM_VER >= 160
-  auto AS = LangAS::Default;
-#else
-  auto AS = 0;
-#endif
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(AS);
   return llvm::MaybeAlign(align);
 }
