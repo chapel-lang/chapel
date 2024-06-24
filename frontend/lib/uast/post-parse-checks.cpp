@@ -1854,7 +1854,8 @@ void Visitor::checkImplicitModuleSameName(const Module* mod) {
   const AstNode* unused = nullptr;
   if (const AstNode* parentModAst = searchParents(asttags::Module, &unused)) {
     if (auto parentMod = parentModAst->toModule()) {
-      if (parentMod->kind() == Module::IMPLICIT) {
+      if (parentMod->kind() == Module::IMPLICIT &&
+          parentMod->name() == mod->name()) {
         CHPL_REPORT(context_, ImplicitModuleSameName, mod);
       }
     }
