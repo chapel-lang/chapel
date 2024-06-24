@@ -584,16 +584,6 @@ void setBundledModulePath(Context* context, UniqueString path) {
   QUERY_STORE_INPUT_RESULT(bundledModulePathQuery, context, path);
 }
 
-static void pushBackIfNew(std::vector<std::string>& searchPath,
-                          std::set<std::string>& set,
-                          const std::string& path) {
-  auto pair = set.insert(path);
-  if (pair.second) {
-    // it was inserted in the set, so append it to the vector
-    searchPath.push_back(path);
-  }
-}
-
 static void
 addCommandLineFileDirectories(std::vector<std::string>& searchPath,
                               std::set<std::string>& set,
@@ -602,13 +592,13 @@ addCommandLineFileDirectories(std::vector<std::string>& searchPath,
     auto idx = fname.find_last_of('/');
     if (idx == std::string::npos) {
       // local file
-      pushBackIfNew(searchPath, set, ".");
+      searchPath.push_back(".");
     } else if (idx == 0) {
       // root path: /foo.chpl
-      pushBackIfNew(searchPath, set, "/");
+      searchPath.push_back("/");
     } else {
       auto path = fname.substr(0, idx);
-      pushBackIfNew(searchPath, set, path);
+      searchPath.push_back(path);
     }
   }
 }
@@ -652,46 +642,41 @@ void setupModuleSearchPaths(
 
   // add the internal module paths
   for (auto& path : prependInternalModulePaths) {
-    pushBackIfNew(searchPath, dedupSet, path);
+    searchPath.push_back(path);
     UniqueString uPath = UniqueString::get(context, path);
     uPrependedInternalModulePaths.push_back(uPath);
   }
 
   setPrependedInternalModulePath(context, uPrependedInternalModulePaths);
 
-  pushBackIfNew(searchPath, dedupSet,
-                internal + "/localeModels/" + chplLocaleModel);
+  searchPath.push_back(internal + "/localeModels/" + chplLocaleModel);
 
   const char* tt = enableTaskTracking ? "on" : "off";
-  pushBackIfNew(searchPath, dedupSet,
-                internal + "/tasktable/" + tt);
+  searchPath.push_back(internal + "/tasktable/" + tt);
 
-  pushBackIfNew(searchPath, dedupSet,
-                internal + "/tasks/" + chplTasks);
+  searchPath.push_back(internal + "/tasks/" + chplTasks);
 
-  pushBackIfNew(searchPath, dedupSet,
-                internal + "/comm/" + chplComm);
+  searchPath.push_back(internal + "/comm/" + chplComm);
 
-  pushBackIfNew(searchPath, dedupSet, internal);
+  searchPath.push_back(internal);
 
   // move on to standard modules
   dedupSet.clear(); // clear it so a path could be both internal & standard
 
   for (auto& path : prependStandardModulePaths) {
-    pushBackIfNew(searchPath, dedupSet, path);
+    searchPath.push_back(path);
     UniqueString uPath = UniqueString::get(context, path);
     uPrependedStandardModulePaths.push_back(uPath);
   }
 
   setPrependedStandardModulePath(context, uPrependedStandardModulePaths);
 
-  pushBackIfNew(searchPath, dedupSet,
-                modRoot + "/standard/gen/" + chplSysModulesSubdir);
-  pushBackIfNew(searchPath, dedupSet, modRoot + "/standard");
-  pushBackIfNew(searchPath, dedupSet, modRoot + "/packages");
-  pushBackIfNew(searchPath, dedupSet, modRoot + "/layouts");
-  pushBackIfNew(searchPath, dedupSet, modRoot + "/dists");
-  pushBackIfNew(searchPath, dedupSet, modRoot + "/dists/dims");
+  searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
+  searchPath.push_back(modRoot + "/standard");
+  searchPath.push_back(modRoot + "/packages");
+  searchPath.push_back(modRoot + "/layouts");
+  searchPath.push_back(modRoot + "/dists");
+  searchPath.push_back(modRoot + "/dists/dims");
 
   // move on to user module paths
   dedupSet.clear(); // clear it so a path could be both internal/standard & user
@@ -703,7 +688,7 @@ void setupModuleSearchPaths(
     std::string path;
 
     while (std::getline(ss, path, ':')) {
-      pushBackIfNew(searchPath, dedupSet, path);
+      searchPath.push_back(path);
     }
   }
 
@@ -711,12 +696,15 @@ void setupModuleSearchPaths(
 
   // Add paths from the command line
   for (const auto& p : cmdLinePaths) {
-    pushBackIfNew(searchPath, dedupSet, p);
+    searchPath.push_back(p);
   }
+
+  // deduplicate
+  auto dedupedSearchPath = deduplicateSamePaths(searchPath);
 
   // Convert them all to UniqueStrings.
   std::vector<UniqueString> uSearchPath;
-  for (const auto& p : searchPath) {
+  for (const auto& p : dedupedSearchPath) {
     uSearchPath.push_back(UniqueString::get(context, p));
   }
 

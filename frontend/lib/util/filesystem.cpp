@@ -255,6 +255,33 @@ bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2) {
   return llvm::sys::fs::equivalent(path1, path2);
 }
 
+std::vector<std::string>
+deduplicateSamePaths(const std::vector<std::string>& paths)
+{
+  std::vector<std::string> ret;
+  std::set<llvm::sys::fs::UniqueID> set;
+
+  for (const auto& path : paths) {
+    // gather the unique ID
+    llvm::sys::fs::file_status status;
+    std::error_code err = llvm::sys::fs::status(path, status);
+    if (err) {
+      // Assume it is not a duplicate and proceed.
+      // Expect such an error if the path does not exist.
+      ret.push_back(path);
+    }
+
+    // but filter out multiple names for the same directory
+    auto pair = set.insert(status.getUniqueID());
+    if (pair.second) {
+      // it was inserted in the set, so append it to the vector
+      ret.push_back(path);
+    }
+  }
+
+  return ret;
+}
+
 std::string fileHashToHex(const HashFileResult& hash) {
   return llvm::toHex(hash, /* lower case */ false);
 }
