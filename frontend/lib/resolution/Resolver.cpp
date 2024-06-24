@@ -2721,6 +2721,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
         auto mod = toAst->toModule();
         auto parentAst = parsing::idToAst(context, parentId);
         CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
+        r.setToId(ID()); // clear
       }
     }
   }
