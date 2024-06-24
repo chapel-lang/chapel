@@ -134,6 +134,39 @@ proc localIOTest(type dtype) {
   }
 }
 
+proc updateChunkTest(type dtype) {
+  const N = 100;
+  const N1 = 100;
+  const D1: domain(1) dmapped new blockDist({0..<N1}) = {0..<N1};
+  var A1: [D1] dtype;
+  for i in D1 do A1[i] = (i + 3):dtype;
+  if (isDir("Test1D")) then rmTree("Test1D");
+  writeZarrArray("Test1D", A1, (7,));
+
+  A1[10] = -1;
+  updateZarrChunk("Test1D", A1, 1);
+
+  var B1 = readZarrArray("Test1D", dtype, 1);
+
+  assert(B1[10] == -1, "Failed to update chunk in 1D array");
+
+  rmTree("Test1D");
+
+  const N2 = 100;
+  const D2: domain(2) dmapped new blockDist({0..<N2,0..<N2}) = {0..<N2,0..<N2};
+  var A2: [D2] dtype;
+  fillRandom(A2);
+  if (exists("Test2D")) then rmTree("Test2D");
+  writeZarrArray("Test2D", A2, (7,18));
+
+  A2[10,10] *= 3;
+  updateZarrChunk("Test2D", A2, (1,0));
+
+  var B2 = readZarrArray("Test2D", dtype, 2);
+  assert(B2[10,10] == A2[10,10], "Failed to update chunk in 2D array");
+  
+}
+
 proc main() {
   testGetLocalChunks();
   testUndistributedArray();
@@ -144,6 +177,7 @@ proc main() {
     smallTest(dtype);
     reindexTest(dtype);
     localIOTest(dtype);
+    updateChunkTest(dtype);
   }
   writeln("Pass");
 }

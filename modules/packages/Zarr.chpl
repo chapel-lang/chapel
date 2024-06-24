@@ -541,4 +541,43 @@ module Zarr {
 
     blosc_destroy();
   }
+
+  /* 
+    Updates a single chunk within a Zarr store with the data in `A`. It is assumed that the Zarr store and the associated metadata file already exists.
+
+    :arg directoryPath: Relative or absolute path to the root of the zarr store. This directory should exist and contain a '.zarray' metadata file.
+
+    :arg A: The array to update the chunk with.
+
+    :arg chunkIndex: The index of the chunk to update.
+
+    :arg bloscThreads: The number of threads to use during compression (default=1)
+  */
+  proc updateZarrChunk(directoryPath: string, ref A: [?domainType] ?dtype, chunkIndex: ?dimCount*int, bloscThreads: int(32) = 1) throws {
+    var md = getMetadata(directoryPath);
+    validateMetadata(md, dtype, dimCount);
+    var chunkShape: dimCount*int;
+    for i in 0..<dimCount {
+      chunkShape[i] = md.chunks[i];
+    }
+
+    // Normalize the array's domain to be zero-indexed
+    var normalizedRanges: dimCount*range(int);
+    for i in 0..<dimCount do
+      normalizedRanges[i] = 0..<md.shape[i];
+    const D: domain(dimCount) = normalizedRanges;
+    ref normA = A.reindex(D);
+
+    ref chunkData = normA[D[getChunkDomain(chunkShape, chunkIndex)]];
+    const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
+
+    blosc_init();
+    blosc_set_nthreads(bloscThreads);
+    writeChunk(dimCount, chunkPath, chunkData.domain, chunkData);
+    blosc_destroy();
+  }
+
+  proc updateZarrChunk(directoryPath: string, ref A: [?domainType] ?dtype, chunkIndex: int, bloscThreads=1) throws {
+    updateZarrChunk(directoryPath, A, (chunkIndex,), bloscThreads);
+  }
 }
