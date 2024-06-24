@@ -579,7 +579,7 @@ module Zarr {
     blosc_destroy();
   }
 
-  proc updateZarrChunk(directoryPath: string, ref A: [?domainType] ?dtype, chunkIndex: int, bloscThreads=1) throws {
+  proc updateZarrChunk(directoryPath: string, ref A: [?domainType] ?dtype, chunkIndex: int, bloscThreads: int(32) = 1) throws {
     updateZarrChunk(directoryPath, A, (chunkIndex,), bloscThreads);
   }
 }
