@@ -802,7 +802,7 @@ static std::vector<std::string> getVersionsWithTypes(const std::string& prog,
 static std::vector<std::string> getAllVersions(const std::string& prog) {
   // Note, const checker currently balks at non-'this' calls to 'init'.
   std::vector<std::string> initProgs =
-    getVersionsWithTypes(prog, "INIT", { "this.init" });
+    getVersionsWithTypes(prog, "INIT", { "this.init", "init" });
 
   std::vector<std::string> allProgs;
   for (auto initProg : initProgs) {
