@@ -379,7 +379,8 @@ static const ID& findMainModuleImpl(Context* context,
     // the main module is provided by a command-line option, so use that
     const Module* matchingModule = nullptr;
     for (const Module* mod : findMain.modulesFound) {
-      if (mod->name() == requestedMainModuleName) {
+      if (mod->name() == requestedMainModuleName ||
+          mod->id().symbolPath() == requestedMainModuleName) {
         matchingModule = mod;
         break;
       }
