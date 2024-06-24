@@ -49,6 +49,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+static bool isReservedIdentifier(UniqueString name);
+
 // Mimics helper in Resolver but without corresponding target constraints.
 static void maybeEmitWarningsForId(Context* context, ID idMention,
                                    ID idTarget) {
@@ -878,6 +880,13 @@ bool LookupHelper::doLookupEnclosingModuleName(const Scope* scope,
   if (name != scope->name())
     return false;
 
+  // Ignore this match for enclosing module names that aren't valid
+  // Chapel file names. This avoids compilation failures for
+  // implicit modules created from a filename of the form <keyword>.chpl
+  // e.g. domain.chpl
+  if (isReservedIdentifier(name))
+    return false;
+
   // the name matches! record the match
   auto vis = uast::Decl::Visibility::PRIVATE;
   bool isField = false;
@@ -1125,6 +1134,9 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
 // my performance benchmarks they didn't occur frequently so were not
 // worth the additional checking by this function. This list is not intended
 // to be complete; rather, it is intended to cover the most common cases.
+//
+// *also* this list is consulted to avoid finding a parent module when
+// that would potentially cause a problem.
 static bool isReservedIdentifier(UniqueString name) {
   static std::unordered_set<UniqueString> reserved = {
     USTR("bool"),
@@ -1132,9 +1144,11 @@ static bool isReservedIdentifier(UniqueString name) {
     USTR("domain"),
     USTR("int"),
     USTR("nil"),
-    USTR("uint"),
     USTR("real"),
+    USTR("sparse"),
     USTR("string"),
+    USTR("subdomain"),
+    USTR("uint"),
     USTR("void"),
   };
   return reserved.count(name);
