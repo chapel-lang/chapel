@@ -731,5 +731,14 @@ void ErrorUnknownMainModule::write(ErrorWriterBase& wr) const {
              "cannot find module named '", name, "' for '--main-module'");
 }
 
+void ErrorImplicitModuleSameName::write(ErrorWriterBase& wr) const {
+  auto mod = std::get<const uast::Module*>(info_);
+  wr.heading(kind_, type_, locationOnly(mod),
+             "module '", mod->name(), "' "
+             "has the same name as the implicit file module");
+  wr.note(locationOnly(mod),
+         "did you mean to include all statements in the module declaration?");
+}
+
 
 }

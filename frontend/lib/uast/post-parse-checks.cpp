@@ -158,6 +158,7 @@ struct Visitor {
   void checkLocalBlock(const Local* node);
   bool checkUnderscoreInIdentifier(const Identifier* node);
   bool checkUnderscoreInVariableOrFormal(const VarLikeDecl* node);
+  void checkImplicitModuleSameName(const Module* node);
 
   /*
   TODO
@@ -165,7 +166,6 @@ struct Visitor {
   void checkFunctionReturnsYields(const Function* node);
   void checkReturnHelper(const Return* node);
   void checkYieldHelper(const Yield* node);
-  void checkImplicitModuleSameName(const Module* node);
   void checkIncludeModuleStrictName(const Module* node);
   void checkModuleReturnsYields(const Module* node);
   void checkPointlessUse(const Use* node);
@@ -204,6 +204,7 @@ struct Visitor {
   void visit(const Implements* node);
   void visit(const Import* node);
   void visit(const Local* node);
+  void visit(const Module* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
@@ -1847,6 +1848,21 @@ void Visitor::checkLocalBlock(const Local* node){
 
 void Visitor::visit(const Local* node){
   checkLocalBlock(node);
+}
+
+void Visitor::checkImplicitModuleSameName(const Module* mod) {
+  const AstNode* unused = nullptr;
+  if (const AstNode* parentModAst = searchParents(asttags::Module, &unused)) {
+    if (auto parentMod = parentModAst->toModule()) {
+      if (parentMod->kind() == Module::IMPLICIT) {
+        CHPL_REPORT(context_, ImplicitModuleSameName, mod);
+      }
+    }
+  }
+}
+
+void Visitor::visit(const Module* node){
+  checkImplicitModuleSameName(node);
 }
 
 void Visitor::visit(const Yield* node) {

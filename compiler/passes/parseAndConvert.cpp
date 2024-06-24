@@ -142,10 +142,13 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
 
   virtual void
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
-    if (err->type() == chpl::ErrorType::ImplicitFileModule) {
-      // Defer implicit module warning until we know which module is the
+    if (err->type() == chpl::ErrorType::ImplicitFileModule ||
+        err->type() == chpl::ErrorType::ImplicitModuleSameName) {
+      // Defer implicit module warnings until we know which module is the
       // 'main' one. Knowing this requires having parsed all files and
       // checking them for 'proc main'.
+      // ImplicitModuleSameName is deferred as well since it makes more sense
+      // if it follows the regular implicit module warning.
       deferredErrors_.push_back(err->clone());
     } else {
       errors_.push_back(err->clone());
