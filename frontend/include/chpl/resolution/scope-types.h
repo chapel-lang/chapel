@@ -585,9 +585,10 @@ class Scope {
   enum {
     CONTAINS_FUNCTION_DECLS = 1,
     CONTAINS_USE_IMPORT = 2,
-    AUTO_USES_MODULES = 4,
-    METHOD_SCOPE = 8,
-    CONTAINS_EXTERN_BLOCK = 16,
+    CONTAINS_REQUIRE = 4,
+    AUTO_USES_MODULES = 8,
+    METHOD_SCOPE = 16,
+    CONTAINS_EXTERN_BLOCK = 32,
   };
   /// \endcond
 
@@ -646,6 +647,11 @@ class Scope {
       including the automatic 'use' for the standard library. */
   bool containsUseImport() const {
     return (flags_ & (CONTAINS_USE_IMPORT|AUTO_USES_MODULES)) != 0;
+  }
+
+  /** Returns 'true' if this Scope directly contains 'require' statements */
+  bool containsRequire() const {
+    return (flags_ & CONTAINS_REQUIRE) != 0;
   }
 
   /** Returns 'true' if this Scope directly contains an 'extern' block

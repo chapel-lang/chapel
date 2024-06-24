@@ -141,6 +141,7 @@ struct GatherDecls {
   Context* context = nullptr;
   DeclMap declared;
   bool containsUseImport = false;
+  bool containsRequire = false;
   bool containsFunctionDecls = false;
   bool containsExternBlock = false;
   bool atFieldLevel = false;
@@ -268,6 +269,12 @@ struct GatherDecls {
   }
   void exit(const Module* m) { }
 
+  bool enter(const Require* r) {
+    containsRequire = true;
+    return false;
+  }
+  void exit(const Require* m) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;
@@ -280,7 +287,8 @@ void gatherDeclsWithin(Context* context,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls,
-                       bool& containsExternBlock) {
+                       bool& containsExternBlock,
+                       bool& containsRequire) {
   auto visitor = GatherDecls(context, ast);
 
   // Visit child nodes to e.g. look inside a Function
@@ -485,15 +493,18 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
           bool containsUseImport = false;
           bool containsFns = false;
           bool containsExternBlock = false;
+          bool containsRequire = false;
           gatherDeclsWithin(context, ast, declared,
                             containsUseImport,
                             containsFns,
-                            containsExternBlock);
+                            containsExternBlock,
+                            containsRequire);
 
           // create a new scope if we found any decls/uses immediately in it
           newScope = !(declared.empty() &&
                        containsUseImport == false &&
-                       containsExternBlock == false);
+                       containsExternBlock == false &&
+                       containsRequire == false);
         }
       }
 
@@ -2742,7 +2753,8 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
                   auto requiredModScope = scopeForModule(context, mod->id());
                   // run resolveVisibilityStmtsQuery for side-effects
                   // (namely, to process any nested 'require' statements)
-                  resolveVisibilityStmtsQuery(context, requiredModScope);
+                  resolveVisibilityStmts(context, requiredModScope,
+                                         /*skipPrivate*/ false);
                 }
               }
             } else {
@@ -2766,7 +2778,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
 
 const ResolvedVisibilityScope*
 resolveVisibilityStmts(Context* context, const Scope* scope, bool skipPrivate) {
-  if (!scope->containsUseImport()) {
+  if (!scope->containsUseImport() && !scope->containsRequire()) {
     // stop early if this scope has no use/import statements
     return nullptr;
   }

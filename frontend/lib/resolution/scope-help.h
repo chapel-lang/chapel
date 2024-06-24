@@ -34,7 +34,8 @@ void gatherDeclsWithin(Context* context,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls,
-                       bool& containsExternBlock);
+                       bool& containsExternBlock,
+                       bool& containsRequire);
 
 
 } // end namespace resolution

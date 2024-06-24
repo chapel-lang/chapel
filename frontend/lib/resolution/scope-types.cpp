@@ -251,6 +251,7 @@ Scope::Scope(Context* context,
   bool containsUseImport = false;
   bool containsFunctionDecls = false;
   bool containsExternBlock = false;
+  bool containsRequire = false;
   bool isMethodScope = false;
 
   parentScope_ = parentScope;
@@ -265,12 +266,14 @@ Scope::Scope(Context* context,
   gatherDeclsWithin(context, ast, declared_,
                     containsUseImport,
                     containsFunctionDecls,
-                    containsExternBlock);
+                    containsExternBlock,
+                    containsRequire);
 
   // compute the flags storing a few settings
   ScopeFlags flags = 0;
   if (containsFunctionDecls) { flags |= CONTAINS_FUNCTION_DECLS; }
   if (containsUseImport) {     flags |= CONTAINS_USE_IMPORT; }
+  if (containsRequire) {       flags |= CONTAINS_REQUIRE; }
   if (autoUsesModules) {       flags |= AUTO_USES_MODULES; }
   if (isMethodScope) {         flags |= METHOD_SCOPE; }
   if (containsExternBlock) {   flags |= CONTAINS_EXTERN_BLOCK; }
