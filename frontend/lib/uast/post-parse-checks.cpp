@@ -159,6 +159,7 @@ struct Visitor {
   bool checkUnderscoreInIdentifier(const Identifier* node);
   bool checkUnderscoreInVariableOrFormal(const VarLikeDecl* node);
   void checkImplicitModuleSameName(const Module* node);
+  void checkModuleNotInModule(const Module* node);
 
   /*
   TODO
@@ -1862,8 +1863,16 @@ void Visitor::checkImplicitModuleSameName(const Module* mod) {
   }
 }
 
+void Visitor::checkModuleNotInModule(const Module* mod) {
+  const AstNode* p = parent();
+  if (p != nullptr && !p->isModule()) {
+    error(mod, "Modules must be declared at module- or file-scope");
+  }
+}
+ 
 void Visitor::visit(const Module* node){
   checkImplicitModuleSameName(node);
+  checkModuleNotInModule(node);
 }
 
 void Visitor::visit(const Yield* node) {
