@@ -23,6 +23,7 @@
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
+#include "baseAST.h"
 #include "passes.h"
 
 #include "astutil.h"
@@ -694,6 +695,81 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
   }
 }
 
+
+class LowerThunkPrimsVisitor final : public AstVisitorTraverse
+{
+  public:
+    LowerThunkPrimsVisitor()          = default;
+   ~LowerThunkPrimsVisitor() override = default;
+
+    bool enterCallExpr(CallExpr* node) override;
+};
+
+static void collectThunkOuterVars(Expr* expr, std::set<Symbol*>& outerVars) {
+  std::vector<SymExpr*> uses;
+  collectSymExprs(expr, uses);
+  for (auto use : uses) {
+    Symbol* sym = use->symbol();
+    if (considerForOuter(sym))
+      outerVars.insert(sym);
+  }
+}
+
+static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
+  CHPL_ASSERT(node->numActuals() == 1);
+  auto delayedExpr = node->get(1);
+
+  std::set<Symbol*> outerVars;
+  collectThunkOuterVars(delayedExpr, outerVars);
+
+  static int thunkUid = 0;
+  thunkUid++;
+  auto thunkUidStr = istr(thunkUid);
+  auto thunkName = astr("chpl__buildThunk_", thunkUidStr);
+  auto thunkFn = new FnSymbol(thunkName);
+  thunkFn->addFlag(FLAG_COMPILER_GENERATED);
+  thunkFn->addFlag(FLAG_THUNK_BUILDER);
+  thunkFn->setGeneric(true);
+  node->getStmtExpr()->insertBefore(new DefExpr(thunkFn));
+  thunkFn->body->insertAtTail(new BlockStmt(delayedExpr->remove()));
+
+  SymbolMap map;
+  auto thunkCall = new CallExpr(thunkFn);
+  for (auto outerVar : outerVars) {
+    auto outerVarArg = newOuterVarArg(outerVar);
+    map.put(outerVar, outerVarArg);
+    thunkFn->insertFormalAtTail(outerVarArg);
+    thunkCall->insertAtTail(new SymExpr(outerVar));
+  }
+  update_symbols(thunkFn, &map);
+
+  scopeResolveAndNormalizeGeneratedLoweringFn(thunkFn);
+
+  return thunkCall;
+}
+
+//
+// To match lowering LoopExprs (see LoopExpr.cpp, lowerLoopExpr), lower
+// outer-most calls to thunk primitive first, in order to simplify scope-resolution
+// of newly-created functions.
+//
+bool LowerThunkPrimsVisitor::enterCallExpr(CallExpr* node) {
+  if (!node->isPrimitive(PRIM_CREATE_THUNK)) return true;
+
+  SET_LINENO(node);
+  CallExpr* replacement = buildThunkPrimFunctions(node);
+  node->replace(replacement);
+  normalize(replacement);
+
+  return false;
+}
+
+static void lowerThunkPrims(BaseAST* ast) {
+  INT_ASSERT(ast->inTree()); // otherwise nothing to do
+  LowerThunkPrimsVisitor vis;
+  ast->accept(&vis);
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -783,6 +859,8 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   lowerIfExprs(base);
 
   lowerLoopExprs(base);
+
+  lowerThunkPrims(base);
 
 
   //
