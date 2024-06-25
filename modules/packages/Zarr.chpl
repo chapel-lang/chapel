@@ -480,12 +480,11 @@ module Zarr {
     return A;
   }
 
-  
   /*
     Writes an array to storage as a v2.0 zarr store using a single locale. The
     array metadata and chunks will be stored within the `directoryPath`
     directory, which is created if it does not yet exist. The chunks will
-    have the dimensions given in the`chunkShape` argument. 
+    have the dimensions given in the`chunkShape` argument.
 
     :arg directoryPath: Relative or absolute path to the root of the zarr store.
       The directory and all necessary parent directories will be created if it
@@ -542,7 +541,7 @@ module Zarr {
     blosc_destroy();
   }
 
-  /* 
+  /*
     Updates a single chunk within a Zarr store with the data in `A`. The
     Zarr store and the associated metadata file must already exist.
 
