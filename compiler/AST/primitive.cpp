@@ -731,6 +731,7 @@ initPrimitive() {
   prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
 
   prim_def(PRIM_CREATE_THUNK, "create thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT, "thunk result", returnInfoFirst);
   prim_def(PRIM_FORCE_THUNK, "force thunk", returnInfoUnknown);
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
