@@ -1835,6 +1835,7 @@ static void normalizeReturns(FnSymbol* fn) {
   size_t                 numVoidReturns = 0;
   CallExpr*              theRet         = NULL;
   bool                   isIterator     = fn->isIterator();
+  bool                   isThunkBuilder = fn->hasFlag(FLAG_THUNK_BUILDER);
 
   collectMyCallExprs(fn, calls, fn);
 
@@ -1871,7 +1872,7 @@ static void normalizeReturns(FnSymbol* fn) {
   }
 
   // Add a void return if needed.
-  if (isIterator == false && rets.size() == 0 &&
+  if (isIterator == false && isThunkBuilder == false && rets.size() == 0 &&
       (fn->retExprType == NULL || retExprIsVoid)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
