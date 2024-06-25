@@ -75,7 +75,7 @@ class ID final {
     Construct an ID with specified symbol path, and default postorder traversal
     number.
    */
-  ID(UniqueString symbolPath) : symbolPath_(symbolPath) {}
+  explicit ID(UniqueString symbolPath) : symbolPath_(symbolPath) {}
 
   /**
     Return a path to the ID symbol scope. For example, a function 'foo'
