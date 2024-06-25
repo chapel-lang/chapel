@@ -541,6 +541,7 @@ static void
 checkReturnPaths(FnSymbol* fn) {
   // Check to see if the function returns a value.
   if (fn->isIterator() ||
+      fn->hasFlag(FLAG_THUNK_BUILDER) ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
       fn->retType == dtVoid ||

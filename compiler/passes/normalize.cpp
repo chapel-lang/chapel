@@ -725,7 +725,7 @@ static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
   static int thunkUid = 0;
   thunkUid++;
   auto thunkUidStr = istr(thunkUid);
-  auto thunkName = astr("chpl__buildThunk_", thunkUidStr);
+  auto thunkName = astr("chpl__thunk", thunkUidStr);
   auto thunkFn = new FnSymbol(thunkName);
   thunkFn->addFlag(FLAG_COMPILER_GENERATED);
   thunkFn->addFlag(FLAG_THUNK_BUILDER);

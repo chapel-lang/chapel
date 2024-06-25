@@ -590,6 +590,7 @@ PRAGMA(TASK_JOIN_IMPL_FN, ypr, "task join impl fn", ncm)
 PRAGMA(TEMP, npr, "temp", "compiler-inserted temporary")
 
 PRAGMA(THUNK_BUILDER, npr, "thunk builder", ncm)
+PRAGMA(THUNK_RECORD, npr, "thunk record", ncm)
 
 PRAGMA(TUPLE, ypr, "tuple", ncm)
 PRAGMA(TUPLE_CAST_FN, ypr, "tuple cast fn", ncm)

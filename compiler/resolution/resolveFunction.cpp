@@ -516,6 +516,36 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
   }
 }
 
+static void protoThunkRecord(FnSymbol* fn) {
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn->body, callExprs);
+
+  Type* thunkResultType = nullptr;
+  for (auto call : callExprs) {
+    if (call->isPrimitive(PRIM_THUNK_RESULT)) {
+      thunkResultType = call->typeInfo();
+      break;
+    }
+  }
+  INT_ASSERT(thunkResultType);
+
+  auto newRecord = new AggregateType(AGGREGATE_RECORD);
+  auto recordName = astr("_tr_", fn->name);
+  auto recordSym = new TypeSymbol(recordName, newRecord);
+
+  recordSym->addFlag(FLAG_THUNK_RECORD);
+
+  // Adjust the function's return type and the type of the return symbol
+  fn->retType = newRecord;
+  Symbol* retSym = fn->getReturnSymbol();
+  INT_ASSERT(retSym);
+  retSym->type = newRecord;
+  fn->retTag            = RET_VALUE;
+
+  fn->defPoint->insertBefore(new DefExpr(recordSym));
+  makeRefType(newRecord);
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -585,6 +615,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
         protoIteratorClass(fn, yieldedType);
+      }
+
+      if (fn->hasFlag(FLAG_THUNK_BUILDER) == true) {
+        protoThunkRecord(fn);
       }
 
       if (fn->isMethod() == true && fn->_this != NULL) {
@@ -1672,6 +1706,7 @@ void fixPrimInitsAndAddCasts(FnSymbol* fn) {
     fn->accept(&visitor);
   }
 }
+
 
 /************************************* | **************************************
 *                                                                             *
