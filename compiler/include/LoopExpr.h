@@ -71,6 +71,7 @@ public:
 
 bool considerForOuter(Symbol* sym);
 ArgSymbol* newOuterVarArg(Symbol* sym);
+void scopeResolveAndNormalizeGeneratedLoweringFn(FnSymbol* fn);
 
 void lowerLoopExprs(BaseAST* ast);
 
