@@ -5,6 +5,9 @@ use CTypes;
 config const printTime = false;
 config const printCorrectness = false;
 
+config const initArray = true;
+config param manualConstFold = false;
+
 param A: real(32) = 1.0;
 param B: real(32) = 20.0;
 param C: real(32) = 25.6;
@@ -21,13 +24,24 @@ var nums: [0..<N] ARRAY_TYPE;
 proc kernel() {
   var sum: real(32) = 0.0;
   foreach i in 0..<N with (ref sum) {
-      const x: real(32) = 
-          if nums[i] % 3 == 0 
+    param one: real(32) = 1.0;
+    if !manualConstFold {
+      const x: real(32) =
+          if nums[i] % 3 == 0
           then (if nums[i] % 5 == 0 then A else B)
           else (if nums[i] % 4 == 0 then C else D);
 
-      const rx: real(32) = 1.0 / x;
+      const rx: real(32) = one / x;
       sum += rx;
+    } 
+    else {
+      const rx: real(32) =
+          if nums[i] % 3 == 0
+          then (if nums[i] % 5 == 0 then one / A else one / B)
+          else (if nums[i] % 4 == 0 then one / C else one / D);
+
+      sum += rx;
+    }
   }
   return sum;
 }
@@ -35,12 +49,14 @@ proc kernel() {
 
 proc main() {
 
-  var rs = if seed == 0
-            then new randomStream(nums.eltType)
-            else new randomStream(nums.eltType, seed);
-  // init backwards to preseve cache
-  for i in 0..<N by -1 {
-    nums[i] = rs.next();
+  if initArray {
+    var rs = if seed == 0
+              then new randomStream(nums.eltType)
+              else new randomStream(nums.eltType, seed);
+    // init backwards to preseve cache
+    for i in 0..<N by -1 {
+      nums[i] = rs.next();
+    }
   }
 
   var dest = new c_array(real(32), iters);
@@ -60,7 +76,7 @@ proc main() {
   }
   if printCorrectness then writeln(sum);
 
-  extern proc c_version(printTime: c_int, printCorrectness: c_int);
-  c_version(printTime:c_int, printCorrectness:c_int);
+  extern proc c_version(initArray: c_int, printTime: c_int, printCorrectness: c_int);
+  c_version(initArray:c_int, printTime:c_int, printCorrectness:c_int);
 
 }

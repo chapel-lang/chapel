@@ -34,14 +34,16 @@ float kernel() {
   return sum;
 }
 
-void c_version(int printTime, int printCorrectness) {
+void c_version(int initArray, int printTime, int printCorrectness) {
 
-  #ifdef seed
-  srand(seed);
-  #endif
-  // init backwards to preseve cache
-  for (long i = N-1; i >= N; i--) {
-    nums[i] = rand();
+  if (initArray) {
+    #ifdef seed
+    srand(seed);
+    #endif
+    // init backwards to preseve cache
+    for (long i = N-1; i >= N; i--) {
+      nums[i] = rand();
+    }
   }
 
   float dest[iters];
