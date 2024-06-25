@@ -61,7 +61,7 @@ def get_link_args():
             if exists and retcode != 0:
                 error("CHPL_HWLOC=system requires hwloc >= 2.1", ValueError)
 
-            _, pclibs = third_party_utils.pkgconfig_get_system_link_args('hwloc')
+            _, pclibs = third_party_utils.pkgconfig_get_system_link_args('hwloc', static=False)
             libs = []
             for pcl in pclibs:
                 libs.append(pcl)
