@@ -623,7 +623,7 @@ static void findOuterVars(LoopExpr* loopExpr,
   }
 }
 
-static ArgSymbol* newOuterVarArg(Symbol* ovar) {
+ArgSymbol* newOuterVarArg(Symbol* ovar) {
   Type* argType = ovar->type;
   if (argType == dtUnknown)
     argType = dtAny;

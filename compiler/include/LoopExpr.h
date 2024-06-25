@@ -70,6 +70,7 @@ public:
 };
 
 bool considerForOuter(Symbol* sym);
+ArgSymbol* newOuterVarArg(Symbol* sym);
 
 void lowerLoopExprs(BaseAST* ast);
 
