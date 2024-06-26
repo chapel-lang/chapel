@@ -1,1 +1,1 @@
--sdebugShortArrayTransferOpt=true
+--report-array-view-elision -sdebugShortArrayTransferOpt=true

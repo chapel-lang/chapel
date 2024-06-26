@@ -49,8 +49,15 @@ private:
   bool supported_;
   BlockStmt* staticCheckBlock_;
 
+  // support for report-array-view-elision
+  std::string lhsBaseType_;
+  std::string rhsBaseType_;
+
+  std::vector<std::string> lhsIndexExprTypes_;
+  std::vector<std::string> rhsIndexExprTypes_;
+
   void findCondStmt();
   void findProtoSlices();
-  bool handleOneProtoSlice(CallExpr* call);
+  bool handleOneProtoSlice(CallExpr* call, bool isLhs);
   CallExpr* findOneProtoSliceCall(Expr* e);
 };
