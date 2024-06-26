@@ -546,6 +546,7 @@ static void protoThunkRecord(FnSymbol* fn) {
   makeRefType(newRecord);
 
   FnSymbol* invokeFn = new FnSymbol("invoke");
+  newRecord->thunkInvoke = invokeFn;
 
   invokeFn->addFlag(FLAG_AUTO_II);
   invokeFn->addFlag(FLAG_INLINE);

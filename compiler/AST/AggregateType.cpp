@@ -63,6 +63,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   builtReaderInit     = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
+  thunkInvoke         = NULL;
   doc                 = NULL;
 
   instantiatedFrom    = NULL;
