@@ -24,9 +24,9 @@ module ChapelShortArrayTransfer {
   use ChplConfig only CHPL_LOCALE_MODEL;
 
   @chpldoc.nodoc
-  config param debugShortArrayTransferOpt = false;
+  config param debugShortArrayTransfer = false;
   @chpldoc.nodoc
-  config param disableShortArrayTransferOpt = false;
+  config param disableShortArrayTransfer = false;
   @chpldoc.nodoc
   config const shortArrayTransferThreshold = 50;
 
@@ -34,13 +34,13 @@ module ChapelShortArrayTransfer {
   proc chpl__staticCheckShortArrayTransfer(a, b) param {
     // this is the case I'm focusing on in the initial PR. This can definitely
     // be loosened up... by a lot.
-    return !disableShortArrayTransferOpt && isProtoSlice(a) && isProtoSlice(b);
+    return !disableShortArrayTransfer && isProtoSlice(a) && isProtoSlice(b);
   }
 
   inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
     param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
     const sizeOk = a.sizeAs(uint) < shortArrayTransferThreshold;
-    if debugShortArrayTransferOpt {
+    if debugShortArrayTransfer {
       chpl_debug_writeln("<ShortArrayTransfer> Size: ", a.sizeAs(uint),
                          " Threshold: ", shortArrayTransferThreshold);
       if sizeOk then
