@@ -20,6 +20,7 @@
 
 #include "preFold.h"
 
+#include "arrayViewElision.h"
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "fcf-support.h"
