@@ -858,6 +858,7 @@ std::string getExistingFileInModuleSearchPath(Context* context,
   std::string check;
   std::set<UniqueString> checked;
   std::string found;
+  UniqueString firstFoundInDir;
 
   for (auto path : moduleSearchPath(context)) {
     auto p = checked.insert(path);
@@ -868,9 +869,29 @@ std::string getExistingFileInModuleSearchPath(Context* context,
       check = getExistingFileInDirectory(context, path.str(), fname);
 
       if (!check.empty() && !found.empty()) {
-        auto loc = IdOrLocation::createForCommandLineLocation(context);
-        CHPL_REPORT(context, AmbiguousSourceFile, loc, found, check);
+        // issue a warning if we already found a module in a different dir,
+        // but skip the warning if --prepend-internal-module-dir etc
+        // caused the first match & the later match comes from a bundled
+        // path.
+
+        bool foundInPrependedPath = false;
+        for (auto& prepended : prependedInternalModulePath(context)) {
+          if (firstFoundInDir == prepended) foundInPrependedPath = true;
+        }
+        for (auto& prepended : prependedStandardModulePath(context)) {
+          if (firstFoundInDir == prepended) foundInPrependedPath = true;
+        }
+
+        bool skip = foundInPrependedPath &&
+                    filePathIsInBundledModule(context, path);
+        if (!skip) {
+          auto loc = IdOrLocation::createForCommandLineLocation(context);
+          CHPL_REPORT(context, AmbiguousSourceFile, loc, found, check);
+        }
         continue;
+      } else if (!check.empty() && found.empty()) {
+        // note the first place a match was found
+        firstFoundInDir = path;
       }
 
       if (found.empty() && !check.empty()) {
