@@ -1,0 +1,2 @@
+--report-array-view-elision -sdebugShortArrayTransfer=true -srank=1  # slices-1d
+--report-array-view-elision -sdebugShortArrayTransfer=true -srank=2  # slices-2d
