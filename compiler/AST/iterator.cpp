@@ -2206,8 +2206,7 @@ static void populateThunkInvokeFn(FnSymbol* fn, FnSymbol* invokeFn) {
   auto thunkBody = fn->body->body.last();
   invokeFn->body->replace(thunkBody->remove());
 
-  // HACK: we should not be dropping autodestroys here;
-  // need some way to avoid wasted autodestroys.
+  // Find the thunk result, transform it into a return at the end of the function.
   for_alist_backward(expr, invokeFn->body->body) {
     if (auto call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_THUNK_RESULT)) {
@@ -2217,7 +2216,6 @@ static void populateThunkInvokeFn(FnSymbol* fn, FnSymbol* invokeFn) {
         break;
       }
     }
-    expr->remove();
   }
 }
 

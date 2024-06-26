@@ -731,7 +731,14 @@ static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
   thunkFn->addFlag(FLAG_THUNK_BUILDER);
   thunkFn->setGeneric(true);
   node->getStmtExpr()->insertBefore(new DefExpr(thunkFn));
-  thunkFn->body->insertAtTail(new BlockStmt(new CallExpr(PRIM_THUNK_RESULT, delayedExpr->remove())));
+
+  auto thunkResultTmp = newTemp("thunkResult");
+  thunkResultTmp->addFlag(FLAG_NO_AUTO_DESTROY);
+  auto thunkBlock = new BlockStmt();
+  thunkBlock->insertAtTail(new DefExpr(thunkResultTmp));
+  thunkBlock->insertAtTail(new CallExpr(PRIM_MOVE, thunkResultTmp, delayedExpr->remove()));
+  thunkBlock->insertAtTail(new CallExpr(PRIM_THUNK_RESULT, thunkResultTmp));
+  thunkFn->body->insertAtTail(thunkBlock);
 
   SymbolMap map;
   auto thunkCall = new CallExpr(thunkFn);
