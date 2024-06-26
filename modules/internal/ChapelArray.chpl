@@ -2345,6 +2345,10 @@ module ChapelArray {
     if debugShortArrayTransferOpt {
       chpl_debug_writeln("<ShortArrayTransfer> Size: ", a.sizeAs(uint),
                          " Threshold: ", shortArrayTransferThreshold);
+      if sizeOk then
+        chpl_debug_writeln("<ShortArrayTransfer> size qualifies");
+      else
+        chpl_debug_writeln("<ShortArrayTransfer> size doesn't qualify");
     }
     if localCompilation {
       return sizeOk;
@@ -2352,9 +2356,14 @@ module ChapelArray {
     else {
       // No `.locale` to avoid overheads. Note that this is an optimization for
       // fast-running code. Small things matter.
-      return sizeOk &&
-             __primitive("_wide_get_locale", a) ==
-             __primitive("_wide_get_locale", b);
+      const sameLocale = __primitive("_wide_get_locale", a) ==
+                         __primitive("_wide_get_locale", b);
+      if sameLocale then
+        chpl_debug_writeln("<ShortArrayTransfer> locality qualifies");
+      else
+        chpl_debug_writeln("<ShortArrayTransfer> locality does not qualify");
+
+      return sizeOk && sameLocale;
     }
   }
 
@@ -2365,8 +2374,6 @@ module ChapelArray {
     }
     else if chpl__staticCheckShortArrayTransfer(a, b) &&
             chpl__dynamicCheckShortArrayTransfer(a, b) {
-      if debugShortArrayTransferOpt then
-        chpl_debug_writeln("Will perform a short array transfer");
       chpl__transferArray(a, b, kind, alwaysSerialize=true);
     }
     else if chpl__compatibleForBulkTransfer(a, b, kind) {
@@ -2453,7 +2460,7 @@ module ChapelArray {
   }
 
 
-  private proc allBounded(ranges: range) param {
+  private proc allBounded(ranges: range(?)) param {
     return ranges.bounds == boundKind.both;
   }
 
@@ -2476,6 +2483,18 @@ module ChapelArray {
     var ptrToArr; // I want this to be a `forwarding ref` to the array
     var ranges;
 
+    proc init() {
+      // this constructor is called to create dummy protoSlices that will never
+      // be used and removed from the AST. 
+      this.rank = 1;
+      this.idxType = int;
+
+      var dummyArr = [1,];
+      this.ptrToArr = c_addrOf(dummyArr);
+      this.ranges = (1..0,);
+      compilerWarning("created a dummy slice");
+    }
+
     proc init(ptrToArr, slicingExprs) {
       this.rank = ptrToArr.deref().rank;
       this.idxType = ptrToArr.deref().idxType;
@@ -2488,7 +2507,8 @@ module ChapelArray {
       }
       else {
         this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(),
-                                         (slicingExprs,));
+                                         (slicingExprs,))[0];
+        // [0] at the end makes it a range instead of tuple of ranges
       }
     }
 
@@ -2575,28 +2595,29 @@ module ChapelArray {
   // TODO can we allow const arrs to be passed here without breaking constness
   // guarantees?
   // TODO we can also accept domains and ints (rank-change)
-  proc chpl__createProtoSlice(ref Arr, slicingExprs: range)
+  proc chpl__createProtoSlice(ref Arr, slicingExprs: range(?))
       where chpl__baseTypeSupportAVE(Arr.type) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(ref Arr, slicingExprs:range ...)
+  proc chpl__createProtoSlice(ref Arr, slicingExprs:range(?) ...)
       where chpl__baseTypeSupportAVE(Arr.type) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
+  pragma "last resort"
   proc chpl__createProtoSlice(ref Arr, slicingExprs) {
     // this is an array access. This call will be eliminated later in
     // resolution, but we want it to live for a bit for easier resolution
-    return 0;
+    return new chpl__protoSlice();
   }
 
   pragma "last resort"
   proc chpl__createProtoSlice(ref Arr, slicingExprs... ) {
     // this is an array access. This call will be eliminated later in
     // resolution, but we want it to live for a bit for easier resolution
-    return 0;
+    return new chpl__protoSlice();
   }
 
 
@@ -2630,7 +2651,7 @@ module ChapelArray {
   proc chpl__typesSupportArrayViewElision(type baseType,
                                           type indexingTypes...) param: bool {
     return chpl__baseTypeSupportAVE(baseType) &&
-           chpl__indexingExprsSupportAVE(indexingTypes);
+           chpl__indexingExprsSupportAVE((...indexingTypes));
   }
 
   inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
