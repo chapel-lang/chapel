@@ -38,6 +38,7 @@ public:
   inline BlockStmt* staticCheckBlock() const { return staticCheckBlock_; }
 
   CallExpr* getReplacement();
+  void report();
 
 private:
   CallExpr* call_;

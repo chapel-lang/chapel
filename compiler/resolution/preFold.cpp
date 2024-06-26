@@ -920,6 +920,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_PROTO_SLICE_ASSIGN: {
     ProtoSliceAssignHelper assignment(call);
 
+    assignment.report();
+
     if (assignment.supported()) {
       retval = assignment.getReplacement();
       call->replace(retval);
