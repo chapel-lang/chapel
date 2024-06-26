@@ -146,165 +146,15 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine);
 
-//static const char*   stdModNameToPath(const char* modName,
-//                                      bool*       isStandard);
-
-//static const char*   searchThePath(const char*      modName,
-//                                   bool             isInternal,
-//                                   Vec<const char*> searchPath);
-
-/************************************* | **************************************
-*                                                                             *
-*                          Manage the module search path                      *
-*                                                                             *
-* A few internal modules are defined multiple times.  On 4/28/17 these are    *
-*                                                                             *
-*   ChapelTaskTable          ./tasktable/off/ChapelTaskTable.chpl             *
-*                            ./tasktable/on/ChapelTaskTable.chpl              *
-*                                                                             *
-*   LocaleModel              ./localeModels/flat/LocaleModel.chpl             *
-*                            ./localeModels/numa/LocaleModel.chpl             *
-*                                                                             *
-*   NetworkAtomicTypes       ./comm/ugni/NetworkAtomicTypes.chpl              *
-*                            ./NetworkAtomicTypes.chpl                        *
-*                                                                             *
-* The search paths include the value of configuration variables.              *
-* This means that a search for the first two cases will be unique.            *
-*                                                                             *
-* However the third case is currently ambiguous.  This is handled by          *
-*    a) preferring the first hit to later hits                                *
-*    b) disabling the warning message for searches in internal/               *
-*                                                                             *
-************************************** | *************************************/
-
-// TODO: Remove these, dyno should be handling this.
-#if 0
-static Vec<const char*> sModPathSet;
-
-static Vec<const char*> sIntModPath;
-static Vec<const char*> sStdModPath;
-static Vec<const char*> sUsrModPath;
-static Vec<const char*> sFlagModPath;
-
-static Vec<const char*> sModNameSet;
-static Vec<const char*> sModNameList;
-static Vec<const char*> sModDoneSet;
-static Vec<VisibilityStmt*> sModReqdByInt;
-#endif
-
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
 {
-//  sIntModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath)
 {
-//  sStdModPath.add(astr(newpath));
   gDynoPrependStandardModulePaths.push_back(newpath);
 }
-
-#if 0
-void setupModulePaths() {
-  const char* modulesRoot = NULL;
-
-  if (fMinimalModules == true) {
-    modulesRoot = "modules/minimal";
-
-  } else {
-    modulesRoot = "modules";
-  }
-
-  //
-  // Set up the search path for modulesRoot/internal
-  //
-
-  sIntModPath.add(astr(CHPL_HOME,
-                      "/",
-                      modulesRoot,
-                      "/internal/localeModels/",
-                      CHPL_LOCALE_MODEL));
-
-  sIntModPath.add(astr(CHPL_HOME,
-                      "/",
-                      modulesRoot,
-                      "/internal/tasktable/",
-                      fEnableTaskTracking ? "on" : "off"));
-
-  sIntModPath.add(astr(CHPL_HOME,
-                      "/",
-                      modulesRoot,
-                      "/internal/tasks/",
-                      CHPL_TASKS));
-
-  sIntModPath.add(astr(CHPL_HOME,
-                      "/",
-                      modulesRoot,
-                      "/internal/comm/",
-                      CHPL_COMM));
-
-  sIntModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
-
-  //
-  // Set up the search path for modulesRoot/standard
-  //
-  stdGenModulesPath = astr(CHPL_HOME,
-                           "/",
-                           modulesRoot,
-                           "/standard/gen/",
-                           CHPL_SYS_MODULES_SUBDIR);
-  sStdModPath.add(stdGenModulesPath);
-
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
-
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));
-
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
-
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
-
-  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
-
-  if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
-    char  path[FILENAME_MAX + 1];
-    char* colon = NULL;
-
-    strncpy(path, envvarpath, FILENAME_MAX);
-
-    do {
-      char* start = colon ? colon+1 : path;
-
-      colon = strchr(start, ':');
-
-      if (colon != NULL) {
-        *colon = '\0';
-      }
-
-      addFlagModulePath(start);
-    } while (colon);
-  }
-}
-
-// track directories specified via -M and CHPL_MODULE_PATH.
-void addFlagModulePath(const char* newPath) {
-  sFlagModPath.add(astr(newPath));
-}
-
-void addModuleToParseList(const char* name, VisibilityStmt* expr) {
-  const char* modName = astr(name);
-
-  if (sModDoneSet.set_in(modName) == NULL &&
-      sModNameSet.set_in(modName) == NULL) {
-    /*if (currentModuleType           == MOD_INTERNAL ||
-        sHandlingInternalModulesNow == true) {
-      sModReqdByInt.add(expr);
-    }*/
-
-    sModNameSet.set_add(modName);
-    sModNameList.add(modName);
-  }
-}
-#endif
 
 /************************************* | **************************************
 *                                                                             *
@@ -584,12 +434,7 @@ static void processInternalModules() {
 *                                                                             *
 ************************************** | *************************************/
 
-//static void addModulePaths();
-//static void addDashMsToUserPath();
-//static void addUsrDirToModulePath(const char* dir);
 static void printModuleSearchPath();
-//static void helpPrintPath(Vec<const char*> path);
-//static void ensureRequiredStandardModulesAreParsed();
 
 static void checkFilenameNotTooLong(UniqueString path) {
   const char* inputFileName = path.c_str();
@@ -756,145 +601,6 @@ static std::vector<UniqueString> gatherStdModulePaths() {
   return genLibPaths;
 }
 
-#if 0
-static void parseCommandLineFiles() {
-  int         fileNum       =    0;
-  const char* inputFileName = NULL;
-
-  addModulePaths();
-
-  addDashMsToUserPath();
-
-  if (printSearchDirs) {
-    printModuleSearchPath();
-  }
-
-  while ((inputFileName = nthFilename(fileNum++))) {
-    if (isChplSource(inputFileName))
-    {
-      auto path = cleanLocalPath(UniqueString::get(gContext, inputFileName));
-      UniqueString emptySymbolPath;
-      chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
-    }
-  }
-
-  fileNum = 0;
-  while ((inputFileName = nthFilename(fileNum++))) {
-    if (isChplSource(inputFileName))
-    {
-      parseChplSourceFile(inputFileName);
-    } else if (isDynoLib(inputFileName)) {
-      // Need to parse these files so that they all get converted into the
-      // old AST. This is necessary in case the 'main' module is also in a
-      // .dyno file.
-      //
-      // TODO: It's not necessarily the case that a .dyno file implies that the
-      // serialized file would have been listed on the command line. We
-      // probably to clarify what it means to be listed on the command line.
-      auto libPath = UniqueString::get(gContext, inputFileName);
-      auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
-      for (auto path: lib->containedFilePaths()) {
-        if (!chpl::parsing::filePathIsInBundledModule(gContext, path)) {
-          parseFile(path.c_str(), MOD_USER, true);
-        }
-      }
-    }
-  }
-
-  bool foundSomethingNew = false;
-  do {
-    foundSomethingNew = false;
-
-    //parseDependentModules(false);
-
-    fileNum--;  // back up from previous NULL
-    while ((inputFileName = nthFilename(fileNum++))) {
-      if (isChplSource(inputFileName)) {
-        parseChplSourceFile(inputFileName);
-        foundSomethingNew=true;
-      }
-    }
-  } while (foundSomethingNew);
-
-  ensureRequiredStandardModulesAreParsed();
-
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    mod->addDefaultUses();
-  }
-
-  if (fDynoGenLib) {
-    std::vector<UniqueString> genLibPaths;
-
-    if (fDynoGenStdLib) {
-      // gather the standard/internal module names with directory
-      // listing within $CHPL_HOME/modules, and compute paths from loading
-      // those. (The purpose of this is to handle things like
-      // modules/internal/comm/*/NetworkAtomicTypes.chpl where the module
-      // search path determines what should be loaded)
-      genLibPaths = gatherStdModulePaths();
-    } else {
-      // gather the files named on the command line
-      fileNum = 0;
-      while ((inputFileName = nthFilename(fileNum++))) {
-        genLibPaths.push_back(UniqueString::get(gContext, inputFileName));
-      }
-    }
-    // update the global variable
-    gDynoGenLibSourcePaths.swap(genLibPaths);
-
-    // gather the top-level module names
-    using LFW = chpl::libraries::LibraryFileWriter;
-    auto vec = LFW::gatherTopLevelModuleNames(gContext,
-                                              gDynoGenLibSourcePaths);
-
-    for (UniqueString topLevelModuleName: vec) {
-      gDynoGenLibModuleNameAstrs.insert(astr(topLevelModuleName));
-    }
-  }
-}
-#endif
-
-#if 0
-static void addModulePaths() {
-  int         fileNum  =    0;
-  const char* fileName = NULL;
-
-  while ((fileName = nthFilename(fileNum++))) {
-    if (isChplSource(fileName) == true) {
-      char dirName[FILENAME_MAX + 1];
-
-      strncpy(dirName, fileName, FILENAME_MAX);
-
-      if (char* lastSlash = strrchr(dirName, '/')) {
-        *lastSlash = '\0';
-        addUsrDirToModulePath(dirName);
-
-      } else {
-        addUsrDirToModulePath(".");
-      }
-    }
-  }
-}
-#endif
-
-// Add directories specified with -M to the UserPath
-#if 0
-static void addDashMsToUserPath() {
-  forv_Vec(const char*, dirName, sFlagModPath) {
-    addUsrDirToModulePath(dirName);
-  }
-}
-
-static void addUsrDirToModulePath(const char* dir) {
-  const char* uniqueDir = astr(dir);
-
-  if (sModPathSet.set_in(uniqueDir) == NULL) {
-    sUsrModPath.add(uniqueDir);
-    sModPathSet.set_add(uniqueDir);
-  }
-}
-#endif
-
 static void printModuleSearchPath() {
   fprintf(stderr, "module search dirs:\n");
 
@@ -906,174 +612,18 @@ static void printModuleSearchPath() {
   fprintf(stderr, "end of module search dirs\n");
 }
 
-#if 0
-static void ensureRequiredStandardModulesAreParsed() {
-  do {
-    Vec<VisibilityStmt*> modReqdByIntCopy = sModReqdByInt;
-
-    sModReqdByInt.clear();
-
-    sHandlingInternalModulesNow = true;
-
-    forv_Vec(VisibilityStmt*, moduse, modReqdByIntCopy) {
-      BaseAST* moduleExpr = NULL;
-      if (UseStmt* use = toUseStmt(moduse)) {
-        moduleExpr = use->src;
-      } else if (ImportStmt* import = toImportStmt(moduse)) {
-        moduleExpr = import->src;
-      } else {
-        INT_FATAL("Incorrect VisibilityStmt subclass, expected either UseStmt "
-                  "or ImportStmt");
-      }
-
-      UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
-
-      if (oldModNameExpr == NULL) {
-        // Handle the case of `[use|import] Mod.symbol` by extracting `Mod`
-        // from the `Mod.symbol` expression
-        if (CallExpr* call = toCallExpr(moduleExpr)) {
-          UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->get(1));
-          if (call->isNamedAstr(astrSdot) && urse) {
-            oldModNameExpr = urse;
-          }
-        }
-      }
-
-      if (oldModNameExpr == NULL) {
-        continue;
-      }
-
-      const char* modName  = oldModNameExpr->unresolved;
-      bool        foundInt = false;
-      bool        foundUsr = false;
-
-      forv_Vec(ModuleSymbol, mod, allModules) {
-        if (strcmp(mod->name, modName) == 0) {
-          if (mod->modTag == MOD_STANDARD || mod->modTag == MOD_INTERNAL) {
-            foundInt = true;
-          } else {
-            foundUsr = true;
-          }
-        }
-      }
-
-      // Allow automatically-included standard libraries to be overridden
-      // by a user module.
-      // See also test/modules/bradc/userInsteadOfStandard.
-      // TODO: use a better strategy than this workaround in the future,
-      // such as ideas proposed in issue #19313.
-      if (0 == strcmp(modName, "AutoMath") ||
-          0 == strcmp(modName, "Errors") ||
-          0 == strcmp(modName, "ChapelIO") ||
-          0 == strcmp(modName, "Types")) {
-        foundInt = foundInt || foundUsr;
-      }
-
-      // If we haven't found the standard version of the module,
-      // then we need to parse it
-      if (foundInt == false) {
-        if (const char* path = searchThePath(modName, false, sStdModPath)) {
-          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false);
-
-          // If we also found a user module by the same name,
-          // we need to rename the standard module and the use of it
-          if (foundUsr == true) {
-            SET_LINENO(oldModNameExpr);
-
-            UnresolvedSymExpr* newModNameExpr = NULL;
-
-            if (mod == NULL) {
-              INT_FATAL("Trying to rename a standard module that's part of\n"
-                        "a file defining multiple\nmodules doesn't work yet");
-            }
-
-            mod->name      = astr("chpl_", modName);
-
-            newModNameExpr = new UnresolvedSymExpr(mod->name);
-
-            oldModNameExpr->replace(newModNameExpr);
-          }
-        }
-      }
-    }
-  } while (sModReqdByInt.n != 0);
-}
-#endif
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-#if 0
-static void parseDependentModules(bool isInternal) {
-  forv_expanding_Vec(const char*, modName, sModNameList) {
-    if (sModDoneSet.set_in(modName)   == NULL &&
-        parseMod(modName, isInternal) != NULL) {
-      sModDoneSet.set_add(modName);
-    }
-  }
-
-  // Clear the list of things we need.  On the first pass, this
-  // will be the standard modules used by the internal modules which
-  // are already captured in the modReqdByInt vector and will be dealt
-  // with by the conditional below.  On the second pass, we're done
-  // with these data structures, so clearing them out is just fine.
-  sModNameList.clear();
-  sModNameSet.clear();
-}
-#endif
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-#if 0
-static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
-  const char* path   = NULL;
-  modTag      modTag = MOD_INTERNAL;
-  moduleSymbol* ret  = nullptr;
-
-  if (isInternal == true) {
-    path   = searchThePath(modName, true, sIntModPath);
-    modTag = MOD_INTERNAL;
-
-  } else {
-    bool isStandard = false;
-
-    path   = stdModNameToPath(modName, &isStandard);
-    modTag = isStandard ? MOD_STANDARD : MOD_USER;
-  }
-
-  // This will try to parse the module as uAST, but may fail if the module
-  // is not eligible (e.g. not internal). In that case, parse the file
-  // into AST instead.
-  if (path != nullptr) {
-    INT_ASSERT(ret == nullptr);
-    ret = parseFile(path, modTag, false);
-  }
-
-  return ret;
-}
-#endif
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-//static void addModuleToDoneList(ModuleSymbol* module);
 
 //
 // This is a check to see whether we've already parsed this file
 // before to avoid re-parsing the same thing twice which can result in
 // defining its modules twice.
 //
-static bool haveAlreadyParsed(const char* path) {
+static bool haveAlreadyConverted(const char* path) {
   static std::set<std::string> alreadyParsedPaths;
 
   // normalize the path if possible via realpath() and use 'path' otherwise
@@ -1415,7 +965,7 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
   ModuleSymbol* ret = nullptr;
 
   // Do not parse if we've already done so.
-  if (haveAlreadyParsed(fileName)) return nullptr;
+  if (haveAlreadyConverted(fileName)) return nullptr;
 
   auto path = cleanLocalPath(fileName);
 
@@ -1538,86 +1088,11 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
   return ret;
 }
 
-#if 0
-static void addModuleToDoneList(ModuleSymbol* module) {
-  sModDoneSet.set_add(astr(module->name));
-}
-#endif
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-#if 0
-static const char* stdModNameToPath(const char* modName,
-                                    bool*       isStandard) {
-  const char* usrPath = searchThePath(modName, false, sUsrModPath);
-  const char* stdPath = searchThePath(modName, false, sStdModPath);
-  const char* retval  = NULL;
-
-  if        (usrPath == NULL && stdPath == NULL) {
-    *isStandard = false;
-    retval      = NULL;
-
-  } else if (usrPath == NULL && stdPath != NULL) {
-    *isStandard = true;
-    retval      = stdPath;
-
-  } else if (usrPath != NULL && stdPath == NULL) {
-    *isStandard = false;
-    retval      = usrPath;
-
-  } else {
-    USR_WARN("Ambiguous module source file -- using %s over %s",
-             cleanFilename(usrPath),
-             cleanFilename(stdPath));
-
-    *isStandard = false;
-    retval      = usrPath;
-  }
-
-  return retval;
-}
-
-static const char* searchThePath(const char*      modName,
-                                 bool             isInternal,
-                                 Vec<const char*> searchPath) {
-  const char* fileName = astr(modName, ".chpl");
-  const char* retval   = NULL;
-
-  forv_Vec(const char*, dirName, searchPath) {
-    std::string dirStr = dirName;
-
-    // Remove slashes at the end of the directory path
-    while (dirStr.size() > 1 && dirStr.back() == '/') {
-      dirStr.pop_back();
-    }
-
-    const char* path = astr(dirStr.c_str(), "/", fileName);
-
-    if (FILE* file = openfile(path, "r", false)) {
-      closefile(file);
-
-      if (retval == NULL) {
-        retval = path;
-
-      // 4/28/17 internal/ has an ambiguous duplicate for NetworkAtomicTypes
-      } else if (isInternal == false) {
-        // only generate these warnings if the two paths aren't the same
-        if (strcmp(chplRealPath(retval), chplRealPath(path)) != 0) {
-          USR_WARN("Ambiguous module source file -- using %s over %s",
-                   cleanFilename(retval),
-                   cleanFilename(path));
-        }
-      }
-    }
-  }
-
-  return retval;
-}
-#endif
 
 void parseAndConvertUast() {
   if (gContext == nullptr) {
