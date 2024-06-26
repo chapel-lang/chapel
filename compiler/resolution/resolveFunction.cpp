@@ -516,10 +516,9 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
   }
 }
 
-static void protoThunkRecord(FnSymbol* fn) {
+static Type* findThunkResultType(FnSymbol* fn) {
   std::vector<CallExpr*> callExprs;
   collectCallExprs(fn->body, callExprs);
-
   Type* thunkResultType = nullptr;
   for (auto call : callExprs) {
     if (call->isPrimitive(PRIM_THUNK_RESULT)) {
@@ -527,23 +526,27 @@ static void protoThunkRecord(FnSymbol* fn) {
       break;
     }
   }
-  INT_ASSERT(thunkResultType);
+  return thunkResultType;
+}
 
+static AggregateType* buildThunkRecord(FnSymbol* fn) {
   auto newRecord = new AggregateType(AGGREGATE_RECORD);
   auto recordName = astr("_tr_", fn->name);
   auto recordSym = new TypeSymbol(recordName, newRecord);
 
   recordSym->addFlag(FLAG_THUNK_RECORD);
+  return newRecord;
+}
 
-  // Adjust the function's return type and the type of the return symbol
-  fn->retType = newRecord;
+static void setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType) {
+  fn->retType = retType;
   Symbol* retSym = fn->getReturnSymbol();
   INT_ASSERT(retSym);
-  retSym->type = newRecord;
-  fn->retTag            = RET_VALUE;
+  retSym->type = retType;
+  fn->retTag = RET_VALUE;
+}
 
-  fn->defPoint->insertBefore(new DefExpr(recordSym));
-  makeRefType(newRecord);
+static FnSymbol* buildThunkInvokeMethod(FnSymbol* fn, Type* thunkResultType, AggregateType* newRecord) {
 
   FnSymbol* invokeFn = new FnSymbol("invoke");
   newRecord->thunkInvoke = invokeFn;
@@ -559,9 +562,25 @@ static void protoThunkRecord(FnSymbol* fn) {
 
   invokeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   invokeFn->insertFormalAtTail(invokeFn->_this);
+  return invokeFn;
+}
 
+static void protoThunkRecord(FnSymbol* fn) {
+  auto thunkResultType = findThunkResultType(fn);
+  INT_ASSERT(thunkResultType);
+
+  // Create a record that contains the thunk state (currently: captured variables),
+  // which has a method to perform the computation.
+  auto newRecord = buildThunkRecord(fn);
+  auto invokeFn = buildThunkInvokeMethod(fn, thunkResultType, newRecord);
+
+  // Adjust the function's return type and the type of the return symbol
+  setReturnAndReturnSymbolType(fn, newRecord);
+
+  fn->defPoint->insertBefore(new DefExpr(newRecord->symbol));
   fn->defPoint->insertBefore(new DefExpr(invokeFn));
 
+  makeRefType(newRecord);
   normalize(invokeFn);
 
   // Pretend that this function is already resolved.
@@ -1774,13 +1793,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   iRecord->iteratorInfo = ii;
   fn->iteratorInfo      = ii;
 
-  fn->retType           = iRecord;
-  // Also adjust the type of the return symbol
-  Symbol* retSym = fn->getReturnSymbol();
-  INT_ASSERT(retSym);
-  retSym->type = iRecord;
-
-  fn->retTag            = RET_VALUE;
+  setReturnAndReturnSymbolType(fn, iRecord);
 
   fn->defPoint->insertBefore(new DefExpr(iClass->symbol));
   fn->defPoint->insertBefore(new DefExpr(iRecord->symbol));
