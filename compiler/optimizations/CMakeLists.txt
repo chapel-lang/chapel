@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set(SRCS
+    arrayViewElision.cpp
     bulkCopyRecords.cpp
     copyPropagation.cpp
     deadCodeElimination.cpp
