@@ -2611,10 +2611,11 @@ module ChapelArray {
   }
 
   proc chpl__baseTypeSupportAVE(type baseType) param: bool {
+    import Reflection;
     var dummy: baseType;
     return isArrayType(baseType) &&
            isSubtype(dummy._instance.type, DefaultRectangularArr) &&
-           canResolve("c_addrOf", dummy);
+           Reflection.canResolve("c_addrOf", dummy);
   }
 
   proc chpl__indexingExprsSupportAVE(type indexingTypes...) param: bool {
