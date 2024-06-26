@@ -1,5 +1,3 @@
-<command line>: warning: ambiguous module source file -- using int/ChapelNumLocales.chpl over /home/mppf/w/12/modules/internal/ChapelNumLocales.chpl
-<command line>: warning: ambiguous module source file -- using std/Path.chpl over /home/mppf/w/12/modules/standard/Path.chpl
 warnUnstableBoth.chpl:1: In module 'M':
 warnUnstableBoth.chpl:7: warning: testNumLocalsUnstableProc is unstable
 warnUnstableBoth.chpl:8: warning: testPathUnstableProc is unstable
