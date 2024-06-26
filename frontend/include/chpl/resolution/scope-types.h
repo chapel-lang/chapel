@@ -1243,6 +1243,7 @@ struct ResultVisibilityTrace {
              parentScope == other.parentScope &&
              automaticModule == other.automaticModule &&
              toplevelModule == other.toplevelModule &&
+             containingModule == other.containingModule &&
              externBlock == other.externBlock &&
              rootScope == other.rootScope;
     }
