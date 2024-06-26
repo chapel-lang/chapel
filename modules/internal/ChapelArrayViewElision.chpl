@@ -191,6 +191,15 @@ module ChapelArrayViewElision {
   proc chpl__indexingExprsSupportAVE(type indexingTypes...) param: bool {
     for param tid in 0..<indexingTypes.size {
       if !isRangeType(indexingTypes[tid]) {
+        // should we also check for homogeneous tuples as we don't have support
+        // for rank-change just yet?
+        return false;
+      }
+      else if !(indexingTypes[tid].strides == strideKind.positive ||
+                indexingTypes[tid].strides == strideKind.one) {
+        // negative strided slices are not supported and generate a warning.
+        // Instead of trying to generate the warning, just avoid covering
+        // unsupported things here
         return false;
       }
     }
