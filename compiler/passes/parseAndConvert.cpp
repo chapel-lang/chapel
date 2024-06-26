@@ -362,48 +362,41 @@ static void addDynoLibFiles() {
   }
 }
 
-/*
-static void checkCanLoadModule(const char* name,
-                               const char* pathForErr=nullptr) {
-  // make sure that we can load important internal modules
-  auto ustr = UniqueString::get(gContext, name);
-  auto mod = getToplevelModule(gContext, ustr);
-  if (mod == nullptr && fMinimalModules == false) {
-    if (pathForErr == nullptr) {
-      USR_FATAL("Could not find module '%s'", name);
-    } else {
-      USR_FATAL("Could not find module '%s', "
-                "which should be defined by '%s/%s.chpl'",
-                name, pathForErr, name);
+static void checkCanLoadBundledModule(const char* name) {
+  std::string fname = name;
+  fname += ".chpl";
+  std::string p =
+    chpl::parsing::getExistingFileInModuleSearchPath(gContext, fname);
+  if (p.empty()) {
+    USR_FATAL_CONT("Could not find bundled module '%s'", name);
+    if (0 == strcmp(name, "ChapelSysCTypes")) {
+      USR_PRINT("Missing ChapelSysCTypes indicates an incomplete build");
     }
+    USR_STOP();
   }
 }
 
-static void checkCanLoadInternalModules() {
+static void checkCanLoadBundledModules() {
   // make sure that we can load important internal / standard modules
-  checkCanLoadModule("ChapelBase");
-  checkCanLoadModule("ChapelStandard");
-  checkCanLoadModule("ChapelSysCTypes", stdGenModulesPath);
-  checkCanLoadModule("Errors");
+  checkCanLoadBundledModule("ChapelBase");
+  checkCanLoadBundledModule("ChapelStandard");
+  checkCanLoadBundledModule("ChapelSysCTypes");
+  checkCanLoadBundledModule("Errors");
 }
 
-static void checkCanLoadCommandLineFiles() {
-  while ((inputFileName = nthFilename(fileNum++))) {
-    if (isChplSource(inputFileName))
-    {
-      auto upath = UniqueString::get(gContext, inputFileName);
-      auto path = cleanLocalPath(upath);
-      UniqueString emptySymbolPath;
-      chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
-    }
+static void checkCanLoadCommandLineFile(const char* path) {
+  std::string p = path;
+  if (!chpl::parsing::checkFileExists(gContext, p)) {
+    USR_FATAL("opening '%s': No such file or directory", path);
   }
 }
-*/
 
 static void loadAndConvertModules() {
-  std::vector<UniqueString> commandLinePaths;
-  UniqueString requestedMainModuleName;
 
+  // check that some key internal modules are available
+  checkCanLoadBundledModules();
+
+  UniqueString requestedMainModuleName;
   if (fDynoGenStdLib) {
     // use ChapelStandard as the main module
     requestedMainModuleName = UniqueString::get(gContext, "ChapelStandard");
@@ -413,7 +406,9 @@ static void loadAndConvertModules() {
     requestedMainModuleName = UniqueString::get(gContext, gMainModuleName);
   }
 
+
   // compute paths based the command-line files
+  std::vector<UniqueString> commandLinePaths;
   int fileNum = 0;
   const char* inputFileName = nullptr;
   while ((inputFileName = nthFilename(fileNum++))) {
@@ -421,6 +416,8 @@ static void loadAndConvertModules() {
       auto upath = UniqueString::get(gContext, inputFileName);
       auto path = cleanLocalPath(upath);
       commandLinePaths.push_back(path);
+      // also check that the file exists
+      checkCanLoadCommandLineFile(path.c_str());
     }
   }
 
@@ -1459,6 +1456,10 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
 static void dynoConvertInternalModule(const char* moduleName) {
   UniqueString uname = UniqueString::get(gContext, moduleName);
   auto mod = chpl::parsing::getToplevelModule(gContext, uname);
+  if (mod == nullptr) {
+    USR_FATAL("Could not load internal module '%s'", moduleName);
+    return;
+  }
   UniqueString path;
   bool found = gContext->filePathForId(mod->id(), path);
   INT_ASSERT(found);
@@ -1696,12 +1697,6 @@ void parseAndConvertUast() {
   addDynoLibFiles();
 
   loadAndConvertModules();
-
-  /*
-  checkCanLoadInternalModules();
-
-  checkCanLoadCommandLineFiles();
-  */
 
   processInternalModules();
 

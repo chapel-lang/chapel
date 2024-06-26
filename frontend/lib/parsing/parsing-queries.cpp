@@ -827,6 +827,10 @@ static const bool& fileExistsQuery(Context* context, std::string path) {
   return QUERY_END(result);
 }
 
+bool checkFileExists(Context* context, std::string path) {
+  return fileExistsQuery(context, path);
+}
+
 std::string getExistingFileInDirectory(Context* context,
                                        std::string path,
                                        std::string fname) {

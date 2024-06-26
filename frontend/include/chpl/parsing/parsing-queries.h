@@ -390,6 +390,13 @@ bool
 filePathIsInBundledModule(Context* context, UniqueString filePath);
 
 /**
+  Check if a file exists. This is a query, so that duplicate checks
+  can be avoided.
+  Returns true if the file exists, false otherwise.
+ */
+bool checkFileExists(Context* context, std::string path);
+
+/**
  This helper function checks within a particular directory
  if a file with a particular name exists. It is useful
  when consulting the module search path.
@@ -406,6 +413,8 @@ std::string getExistingFileInDirectory(Context* context,
 
  If multiple such files exist in different directories,
  it will choose the first and emit an ambiguity warning.
+
+ If nothing is found, returns the empty string.
  */
 std::string getExistingFileInModuleSearchPath(Context* context,
                                               std::string fname);
