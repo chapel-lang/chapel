@@ -37,7 +37,6 @@ extern const char* currentModuleName;
 
 extern int         yystartlineno;
 extern const char* yyfilename;
-//extern BlockStmt*  yyblock;
 
 extern bool parsingPrivate;
 

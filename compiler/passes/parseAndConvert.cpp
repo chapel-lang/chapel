@@ -58,7 +58,6 @@ using ID = chpl::ID;
 
 ID dynoIdForLastContainingDecl = ID();
 
-//BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
 
@@ -76,8 +75,6 @@ bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
 
-//static const char*   stdGenModulesPath;
-
 static void          countTokensInCmdLineFiles();
 
 static void          addDynoLibFiles();
@@ -90,32 +87,10 @@ static void checkFilenameNotTooLong(UniqueString path);
 
 static std::vector<UniqueString> gatherStdModulePaths();
 
-//static void          parseCommandLineFiles();
-
-//static void          parseDependentModules(bool isInternal);
-
-//static ModuleSymbol* parseMod(const char* modName,
-//                              bool        isInternal);
-
-// TODO: Remove me.
-struct YYLTYPE {
-  int first_line;
-  int first_column;
-  int last_line;
-  int last_column;
-  const char* comment;
-  const char* prevModule;
-};
-
 static void initializeGlobalParserState(const char* path, ModTag modTag,
-                                        bool namedOnCommandLine,
-                                        YYLTYPE* yylloc=nullptr);
+                                        bool namedOnCommandLine);
 
-static void deinitializeGlobalParserState(YYLTYPE* yylloc=nullptr);
-
-//static ModuleSymbol* parseFile(const char* fileName,
-//                               ModTag      modTag,
-//                               bool        namedOnCommandLine);
+static void deinitializeGlobalParserState();
 
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
@@ -1121,8 +1096,7 @@ static bool haveAlreadyParsed(const char* path) {
 }
 
 static void initializeGlobalParserState(const char* path, ModTag modTag,
-                                        bool namedOnCommandLine,
-                                        YYLTYPE* yylloc) {
+                                        bool namedOnCommandLine) {
 
   // If this file only contains explicit module declarations, this
   // 'currentModuleName' is not accurate, but also should not be
@@ -1132,26 +1106,11 @@ static void initializeGlobalParserState(const char* path, ModTag modTag,
   yyfilename                    = path;
   yystartlineno                 = 1;
 
-  if (yylloc) {
-    yylloc->first_line             = 1;
-    yylloc->first_column           = 0;
-    yylloc->last_line              = 1;
-    yylloc->last_column            = 0;
-  }
-
   chplLineno                    = 1;
 }
 
-static void deinitializeGlobalParserState(YYLTYPE* yylloc) {
+static void deinitializeGlobalParserState() {
   yyfilename                    =  NULL;
-
-  if (yylloc) {
-    yylloc->first_line             =    -1;
-    yylloc->first_column           =     0;
-    yylloc->last_line              =    -1;
-    yylloc->last_column            =     0;
-  }
-
   yystartlineno                 =    -1;
   chplLineno                    =    -1;
 }
