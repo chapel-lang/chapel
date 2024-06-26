@@ -315,12 +315,12 @@ BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
 }
 
 static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
-  UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
+  /*UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
     addModuleToParseList(modNameExpr->unresolved, newStmt);
   } else if (CallExpr* callExpr = toCallExpr(module)) {
     addModuleToSearchList(newStmt, callExpr->argList.first());
-  }
+  }*/
 }
 
 

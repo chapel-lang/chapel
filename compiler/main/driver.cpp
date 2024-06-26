@@ -898,7 +898,7 @@ static void setDriverDebugPhase(const ArgumentDescription* desc,
 }
 
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
-  addFlagModulePath(newpath);
+  //addFlagModulePath(newpath);
 
   // also add the path to a vector to support dyno
   cmdLineModPaths.push_back(std::string(newpath));
@@ -2442,7 +2442,7 @@ int main(int argc, char* argv[]) {
 
     initCompilerGlobals(); // must follow argument parsing
 
-    setupModulePaths();
+    //setupModulePaths();
 
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope

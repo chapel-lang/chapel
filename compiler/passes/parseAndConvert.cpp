@@ -58,7 +58,7 @@ using ID = chpl::ID;
 
 ID dynoIdForLastContainingDecl = ID();
 
-BlockStmt*           yyblock                       = NULL;
+//BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
 
@@ -75,9 +75,8 @@ const char*          chplParseStringMsg            = NULL;
 bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
-//static bool          sHandlingInternalModulesNow   = false;
 
-static const char* stdGenModulesPath;
+//static const char*   stdGenModulesPath;
 
 static void          countTokensInCmdLineFiles();
 
@@ -204,6 +203,7 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
 ************************************** | *************************************/
 
 // TODO: Remove these, dyno should be handling this.
+#if 0
 static Vec<const char*> sModPathSet;
 
 static Vec<const char*> sIntModPath;
@@ -215,17 +215,21 @@ static Vec<const char*> sModNameSet;
 static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<VisibilityStmt*> sModReqdByInt;
+#endif
 
-void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
-  sIntModPath.add(astr(newpath));
+void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
+{
+//  sIntModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
-void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
-  sStdModPath.add(astr(newpath));
+void addStandardModulePath(const ArgumentDescription* desc, const char* newpath)
+{
+//  sStdModPath.add(astr(newpath));
   gDynoPrependStandardModulePaths.push_back(newpath);
 }
 
+#if 0
 void setupModulePaths() {
   const char* modulesRoot = NULL;
 
@@ -325,6 +329,7 @@ void addModuleToParseList(const char* name, VisibilityStmt* expr) {
     sModNameList.add(modName);
   }
 }
+#endif
 
 /************************************* | **************************************
 *                                                                             *
@@ -1086,7 +1091,7 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addModuleToDoneList(ModuleSymbol* module);
+//static void addModuleToDoneList(ModuleSymbol* module);
 
 //
 // This is a check to see whether we've already parsed this file
@@ -1150,14 +1155,6 @@ static void deinitializeGlobalParserState(YYLTYPE* yylloc) {
   yystartlineno                 =    -1;
   chplLineno                    =    -1;
 }
-
-#if 0
-static ModuleSymbol* parseFile(const char* path,
-                               ModTag      modTag,
-                               bool        namedOnCommandLine) {
-  return dynoConvertFile(path, modTag, namedOnCommandLine);
-}
-#endif
 
 static void maybePrintModuleFile(ModTag modTag, const char* path) {
   if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
@@ -1524,7 +1521,7 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
     // TODO (dlongnecke): The new frontend should determine this for us.
     INT_ASSERT(got->modTag == modTag);
 
-    addModuleToDoneList(got);
+    //addModuleToDoneList(got);
 
     if (namedOnCommandLine) {
       got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
@@ -1582,9 +1579,11 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
   return ret;
 }
 
+#if 0
 static void addModuleToDoneList(ModuleSymbol* module) {
   sModDoneSet.set_add(astr(module->name));
 }
+#endif
 
 /************************************* | **************************************
 *                                                                             *
