@@ -429,8 +429,6 @@ static void loadAndConvertModules() {
                                                  fLibraryCompile,
                                                  mainModule);
 
-  //printf("main module %s\n", mainModule.str().c_str());
-
   const std::vector<ID>& modulesToConvert =
     chpl::resolution::moduleInitializationOrder(gContext,
                                                 mainModule,
@@ -496,40 +494,23 @@ static void loadAndConvertModules() {
 
 
 static void processInternalModules() {
-  /*
-  parseMod("ChapelBase",           true);
-  parseMod("ChapelStandard",       true);
-  parseMod("PrintModuleInitOrder", true);
-  if (fLibraryFortran) {
-    parseMod("ISO_Fortran_binding", true);
-  }
-
-  // parse ChapelSysCTypes right away to provide well-known types.
-  parseMod("ChapelSysCTypes", false);
-  // ditto Errors
-  parseMod("Errors", false);
-
-  //parseDependentModules(true);
-*/
+  // Internal modules should be loaded already by loadAndConvertModules.
+  // However, portions of the compiler expect that internal modules
+  // are stored in the global modules vector & have DefExprs
+  // in a particular order.
+  // This function rearranges the internal modules to this order.
+  // This is a workaround and a better solution would be preferred.
 
   // go through all of the modules and rearrange a select few
-  ModuleSymbol* m_chpl__Program = nullptr;
-  ModuleSymbol* m_ChapelStringLiterals = nullptr;
-  //ModuleSymbol* m_currentTask = nullptr;
-  ModuleSymbol* m_ChapelBase = nullptr;
-  ModuleSymbol* m_ChapelStandard = nullptr;
-  ModuleSymbol* m_PrintModuleInitOrder = nullptr;
-  ModuleSymbol* m_ChapelSysCTypes = nullptr;
-  ModuleSymbol* m_Errors = nullptr;
 
-  const char* n_chpl__Program = astr("chpl__Program");
-  const char* n_ChapelStringLiterals = astr("ChapelStringLiterals");
-  //const char* n_currentTask = astr("currentTask");
-  const char* n_ChapelBase = astr("ChapelBase");
-  const char* n_ChapelStandard = astr("ChapelStandard");
-  const char* n_PrintModuleInitOrder = astr("PrintModuleInitOrder");
-  const char* n_ChapelSysCTypes = astr("ChapelSysCTypes");;
-  const char* n_Errors = astr("Errors");
+  std::vector<std::pair<const char*, ModuleSymbol*>> tofix;
+  tofix.push_back({astr("chpl__Program"), nullptr});
+  tofix.push_back({astr("ChapelStringLiterals"), nullptr});
+  tofix.push_back({astr("ChapelBase"), nullptr});
+  tofix.push_back({astr("ChapelStandard"), nullptr});
+  tofix.push_back({astr("PrintModuleInitOrder"), nullptr});
+  tofix.push_back({astr("ChapelSysCTypes"), nullptr});
+  tofix.push_back({astr("Errors"), nullptr});
 
   int saveSize = allModules.size();
 
@@ -538,73 +519,47 @@ static void processInternalModules() {
   int n = allModulesSave.size();
   for (int i = 0; i < n; i++) {
     ModuleSymbol*& mod = allModulesSave.v[i];
-    if (mod == nullptr) {
-      // ignore
-    } else if (mod->name == n_chpl__Program) {
-      m_chpl__Program = mod;
-      mod = nullptr;
-    } else if (mod->name == n_ChapelStringLiterals) {
-      m_ChapelStringLiterals = mod;
-      mod = nullptr;
-    //} else if (mod->name == n_currentTask) {
-    //  m_currentTask = mod;
-    //  mod = nullptr;
-    } else if (mod->name == n_ChapelBase) {
-      m_ChapelBase = mod;
-      mod = nullptr;
-    } else if (mod->name == n_ChapelStandard) {
-      m_ChapelStandard = mod;
-      mod = nullptr;
-    } else if (mod->name == n_PrintModuleInitOrder) {
-      m_PrintModuleInitOrder = mod;
-      mod = nullptr;
-    } else if (mod->name == n_ChapelSysCTypes) {
-      m_ChapelSysCTypes = mod;
-      mod = nullptr;
-    } else if (mod->name == n_Errors) {
-      m_Errors = mod;
-      mod = nullptr;
+    if (mod != nullptr) {
+      for (auto& pair : tofix) {
+        if (mod->name == pair.first) {
+          // note it in tofix
+          pair.second = mod;
+          // remove it from allModulesSave
+          mod = nullptr;
+          // stop looping through tofix
+          break;
+        }
+      }
     }
   }
 
   allModules.clear();
-  if (m_chpl__Program) {
-    allModules.add(m_chpl__Program);
-  }
 
-  SET_LINENO(theProgram);
+  // pull out the module for chpl__Program to treat it specially
+  ModuleSymbol* modChapelProgram = nullptr;
+  INT_ASSERT(0 == strcmp(tofix[0].first, "chpl__Program"));
+  modChapelProgram = tofix[0].second;
+  tofix[0].second = nullptr;
+  INT_ASSERT(modChapelProgram && modChapelProgram == theProgram);
+
+  // add it to allModules
+  allModules.add(modChapelProgram);
+  // add an anchor for DefExprs for the other modules
+  // so that traversals find these modules early
+  SET_LINENO(modChapelProgram);
   CallExpr* anchor = new CallExpr(PRIM_NOOP);
-  theProgram->block->body.insertAtHead(anchor);
+  modChapelProgram->block->body.insertAtHead(anchor);
 
-  if (m_ChapelStringLiterals) {
-    allModules.add(m_ChapelStringLiterals);
-    anchor->insertBefore(m_ChapelStringLiterals->defPoint->remove());
-  }
-  //if (m_currentTask) {
-  //  allModules.add(m_currentTask);
-  //  anchor->insertBefore(m_currentTask->defPoint->remove());
-  //}
-  if (m_ChapelBase) {
-    allModules.add(m_ChapelBase);
-    anchor->insertBefore(m_ChapelBase->defPoint->remove());
-  }
-  if (m_ChapelStandard) {
-    allModules.add(m_ChapelStandard);
-    anchor->insertBefore(m_ChapelStandard->defPoint->remove());
-  }
-  if (m_PrintModuleInitOrder) {
-    allModules.add(m_PrintModuleInitOrder);
-    anchor->insertBefore(m_PrintModuleInitOrder->defPoint->remove());
-  }
-  if (m_ChapelSysCTypes) {
-    allModules.add(m_ChapelSysCTypes);
-    anchor->insertBefore(m_ChapelSysCTypes->defPoint->remove());
-  }
-  if (m_Errors) {
-    allModules.add(m_Errors);
-    anchor->insertBefore(m_Errors->defPoint->remove());
+  // add the remaining early modules from tofix
+  for (const auto& pair : tofix) {
+    if (ModuleSymbol* mod = pair.second) {
+      allModules.add(mod);
+      // move the DefExpr to rearrange traversal order as well
+      anchor->insertBefore(mod->defPoint->remove());
+    }
   }
 
+  // add all other modules
   forv_Vec(ModuleSymbol, mod, allModulesSave) {
     if (mod != nullptr) {
       allModules.add(mod);
@@ -613,6 +568,7 @@ static void processInternalModules() {
 
   INT_ASSERT(allModules.size() == saveSize);
 
+  // Do the other necessary processing to finish loading internal modules
   gatherIteratorTags();
   gatherWellKnownTypes();
   gatherWellKnownFns();
