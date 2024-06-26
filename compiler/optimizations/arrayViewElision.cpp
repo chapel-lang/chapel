@@ -27,6 +27,20 @@
 
 static bool exprSuitableForProtoSlice(Expr* e);
 
+static CallExpr* generateCreateProtoSlice(CallExpr* call) {
+  INT_ASSERT(call);
+
+  SymExpr* base = toSymExpr(call->baseExpr);
+  INT_ASSERT(base);
+
+  CallExpr* ret = new CallExpr("chpl__createProtoSlice", base->copy());
+  for_actuals(actual, call) {
+    ret->insertAtTail(actual->copy());
+  }
+
+  return ret;
+}
+
 void arrayViewElision() {
   if (!fArrayViewElision) return;
 
@@ -51,18 +65,8 @@ void arrayViewElision() {
     CallExpr* lhs = toCallExpr(call->get(1));
     CallExpr* rhs = toCallExpr(call->get(2));
 
-    Expr* lhsBase = lhs->baseExpr;
-    Expr* rhsBase = rhs->baseExpr;
-
-    CallExpr* lhsPSCall = new CallExpr("chpl__createProtoSlice", lhsBase->copy());
-    for_actuals(actual, lhs) {
-      lhsPSCall->insertAtTail(actual->copy());
-    }
-
-    CallExpr* rhsPSCall = new CallExpr("chpl__createProtoSlice", rhsBase->copy());
-    for_actuals(actual, rhs) {
-      rhsPSCall->insertAtTail(actual->copy());
-    }
+    CallExpr* lhsPSCall = generateCreateProtoSlice(lhs);
+    CallExpr* rhsPSCall = generateCreateProtoSlice(rhs);
 
     // arrayview elision placeholder
     VarSymbol* placeholder = new VarSymbol("arrayview_elision_flag", dtBool);
