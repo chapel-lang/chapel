@@ -3,5 +3,5 @@
 mv $2 $1.orig.tmp
 cat $1.orig.tmp | \
   sed s:modules/standard/gen/[a-z0-9_\-]*:modules/standard/gen/...: | \
-  sed s:modules/internal/.*$:modules/internal/...: \
+  grep -v modules/internal/ \
   > $2
