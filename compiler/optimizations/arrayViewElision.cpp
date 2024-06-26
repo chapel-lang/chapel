@@ -151,6 +151,8 @@ void ProtoSliceAssignHelper::findCondStmt() {
 }
 
 void arrayViewElision() {
+  if (!fArrayViewElision) return;
+
   std::vector<CallExpr*> candidates;
 
   for_alive_in_Vec (CallExpr, call, gCallExprs) {
