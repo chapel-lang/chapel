@@ -1,0 +1,2 @@
+-sshouldError=false  # constChecking-no-error
+-sshouldError=true   # constChecking-error

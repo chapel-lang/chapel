@@ -36,6 +36,7 @@ module ChapelArrayViewElision {
 
   record chpl__protoSlice {
     param rank;
+    param isConst;
     type idxType;
     var ptrToArr; // I want this to be a `forwarding ref` to the array
     var ranges;
@@ -44,6 +45,7 @@ module ChapelArrayViewElision {
       // this constructor is called to create dummy protoSlices that will never
       // be used and removed from the AST. 
       this.rank = 1;
+      this.isConst = true;
       this.idxType = int;
 
       var dummyArr = [1,];
@@ -51,8 +53,9 @@ module ChapelArrayViewElision {
       this.ranges = 1..0;
     }
 
-    proc init(ptrToArr, slicingExprs) {
+    proc init(param isConst, ptrToArr, slicingExprs) {
       this.rank = ptrToArr.deref().rank;
+      this.isConst = isConst;
       this.idxType = ptrToArr.deref().idxType;
       this.ptrToArr = ptrToArr;
       if allBounded(slicingExprs) {
@@ -70,6 +73,7 @@ module ChapelArrayViewElision {
 
     proc init=(other: chpl__protoSlice) {
       this.rank = other.rank;
+      this.isConst = other.isConst;
       this.idxType = other.idxType;
       this.ptrToArr = other.ptrToArr;
       this.ranges = other.ranges;
@@ -111,7 +115,30 @@ module ChapelArrayViewElision {
     }
     inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
 
-    iter these() ref {
+    iter these() ref where !isConst {
+      if rank == 1 then {
+        foreach elem in chpl__serialViewIter1D(ptrToArr.deref()._instance,
+                                               domOrRange) {
+          yield elem;
+        }
+      }
+      else {
+
+        /* 
+          Storing `inst` here and iterating over `inst` doesn't seem to work.
+          Check the arrays primer for how that causes issues. Potentially an
+          iterator inlining issue, or memory cleanup going sideways.
+
+          const inst = domOrRange._instance;
+        */
+        foreach elem in chpl__serialViewIter(ptrToArr.deref()._instance,
+                                             domOrRange._instance) {
+          yield elem;
+        }
+      }
+    }
+
+    iter these() const ref where isConst {
       if rank == 1 then {
         foreach elem in chpl__serialViewIter1D(ptrToArr.deref()._instance,
                                                domOrRange) {
@@ -140,28 +167,55 @@ module ChapelArrayViewElision {
       }
     }
 
-    iter these(param tag: iterKind, followThis) ref where tag==iterKind.follower {
+    iter these(param tag: iterKind, followThis) ref
+        where tag==iterKind.follower && !isConst {
       ref arr = ptrToArr.deref();
+      foreach i in domOrRange.these(iterKind.follower, followThis) {
+        yield arr[i];
+      }
+    }
+    iter these(param tag: iterKind, followThis) const ref
+        where tag==iterKind.follower && isConst{
+      const ref arr = ptrToArr.deref();
       foreach i in domOrRange.these(iterKind.follower, followThis) {
         yield arr[i];
       }
     }
   }
 
+  operator ==(const ref lhs: chpl__protoSlice(?),
+              const ref rhs: chpl__protoSlice(?)) {
+    return lhs.rank == rhs.rank &&
+           lhs.ptrToArr == rhs.ptrToArr &&
+           lhs.ranges == rhs.ranges;
+  }
+
   proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
       where chpl__baseTypeSupportAVE(Arr) &&
             chpl__isTupleOfRanges(slicingExprs) {
     if slicingExprs.size == 1 then
-      return new chpl__protoSlice(c_addrOf(Arr), slicingExprs[0]);
+      return new chpl__protoSlice(isConst=false, c_addrOf(Arr),
+                                  slicingExprs[0]);
     else
-      return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
+      return new chpl__protoSlice(isConst=false, c_addrOf(Arr), slicingExprs);
+  }
+
+  proc chpl__createConstProtoSlice(const ref Arr, slicingExprs ...)
+      where chpl__baseTypeSupportAVE(Arr) &&
+            chpl__isTupleOfRanges(slicingExprs) {
+    if slicingExprs.size == 1 {
+      return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr),
+                                  slicingExprs[0]);
+    }
+    else
+      return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr), slicingExprs);
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(const ref Arr, slicingExprs ...)
-      where chpl__baseTypeSupportAVE(Arr) &&
-            chpl__isTupleOfRanges(slicingExprs) {
-    return new chpl__protoSlice(c_addrOfConst(Arr), slicingExprs);
+  proc chpl__createProtoSlice(ref Arr, slicingExprs... ) {
+    // this is an array access. This call will be eliminated later in
+    // resolution, but we want it to live for a bit for easier resolution
+    return new chpl__protoSlice();
   }
 
   pragma "last resort"
@@ -170,6 +224,7 @@ module ChapelArrayViewElision {
     // resolution, but we want it to live for a bit for easier resolution
     return new chpl__protoSlice();
   }
+
 
   proc chpl__baseTypeSupportAVE(base) param: bool {
     import Reflection;
@@ -217,5 +272,9 @@ module ChapelArrayViewElision {
     }
     compilerError("Unexpected type to allBounded");
     return false;
+  }
+
+  inline operator :(ref a: chpl__protoSlice, type b: chpl__protoSlice) {
+    compilerError("Should never cast proto slices");
   }
 }
