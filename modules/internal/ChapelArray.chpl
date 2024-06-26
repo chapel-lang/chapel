@@ -2575,12 +2575,14 @@ module ChapelArray {
   // TODO can we allow const arrs to be passed here without breaking constness
   // guarantees?
   // TODO we can also accept domains and ints (rank-change)
-  proc chpl__createProtoSlice(ref Arr, slicingExprs: range) {
+  proc chpl__createProtoSlice(ref Arr, slicingExprs: range)
+      where chpl__baseTypeSupportAVE(Arr.type) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(ref Arr, slicingExprs:range ...) {
+  proc chpl__createProtoSlice(ref Arr, slicingExprs:range ...)
+      where chpl__baseTypeSupportAVE(Arr.type) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
@@ -2608,20 +2610,26 @@ module ChapelArray {
     return false;
   }
 
+  proc chpl__baseTypeSupportAVE(type baseType) param: bool {
+    var dummy: baseType;
+    return isArrayType(baseType) &&
+           isSubtype(dummy._instance.type, DefaultRectangularArr) &&
+           canResolve("c_addrOf", dummy);
+  }
+
+  proc chpl__indexingExprsSupportAVE(type indexingTypes...) param: bool {
+    for param tid in 0..<indexingTypes.size {
+      if !isRangeType(indexingTypes[tid]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   proc chpl__typesSupportArrayViewElision(type baseType,
                                           type indexingTypes...) param: bool {
-    var dummy: baseType;
-    if isArrayType(baseType) &&
-       isSubtype(dummy._instance.type, DefaultRectangularArr) {
-      for param tid in 0..<indexingTypes.size {
-        if !isRangeType(indexingTypes[tid]) then
-          return false;
-      }
-      return true;
-    }
-    else {
-      return false;
-    }
+    return chpl__baseTypeSupportAVE(baseType) &&
+           chpl__indexingExprsSupportAVE(indexingTypes);
   }
 
   inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
