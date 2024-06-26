@@ -80,13 +80,6 @@ module ChapelArray {
   @chpldoc.nodoc
   config param logAllArrEltAccess = false;
 
-  @chpldoc.nodoc
-  config param debugShortArrayTransferOpt = false;
-  @chpldoc.nodoc
-  config param disableShortArrayTransferOpt = false;
-  @chpldoc.nodoc
-  config const shortArrayTransferThreshold = 50;
-
   proc _isPrivatized(value) param do
     return (!compiledForSingleLocale() || CHPL_LOCALE_MODEL=="gpu") &&
            ((_privatization && value!.dsiSupportsPrivatization()) ||
@@ -2333,42 +2326,10 @@ module ChapelArray {
     }
   }
 
-  private proc chpl__staticCheckShortArrayTransfer(a, b) param {
-    // this is the case I'm focusing on in the initial PR. This can definitely
-    // be loosened up... by a lot.
-    return !disableShortArrayTransferOpt && isProtoSlice(a) && isProtoSlice(b);
-  }
-
-  private inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
-    param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
-    const sizeOk = a.sizeAs(uint) < shortArrayTransferThreshold;
-    if debugShortArrayTransferOpt {
-      chpl_debug_writeln("<ShortArrayTransfer> Size: ", a.sizeAs(uint),
-                         " Threshold: ", shortArrayTransferThreshold);
-      if sizeOk then
-        chpl_debug_writeln("<ShortArrayTransfer> size qualifies");
-      else
-        chpl_debug_writeln("<ShortArrayTransfer> size doesn't qualify");
-    }
-    if localCompilation {
-      return sizeOk;
-    }
-    else {
-      // No `.locale` to avoid overheads. Note that this is an optimization for
-      // fast-running code. Small things matter.
-      const sameLocale = __primitive("_wide_get_locale", a) ==
-                         __primitive("_wide_get_locale", b);
-      if sameLocale then
-        chpl_debug_writeln("<ShortArrayTransfer> locality qualifies");
-      else
-        chpl_debug_writeln("<ShortArrayTransfer> locality does not qualify");
-
-      return sizeOk && sameLocale;
-    }
-  }
-
   pragma "find user line"
   inline proc chpl__uncheckedArrayTransfer(ref a, b, param kind) {
+    use ChapelShortArrayTransfer;
+
     if chpl__serializeAssignment(a, b) {
       chpl__transferArray(a, b, kind);
     }
