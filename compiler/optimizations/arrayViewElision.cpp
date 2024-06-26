@@ -112,8 +112,8 @@ ProtoSliceAssignHelper::ProtoSliceAssignHelper(CallExpr* call):
   BlockStmt* parentBlock = toBlockStmt(call->parentExpr);
   parentBlock->insertAtHead(staticCheckBlock_);
 
-  supported_ = handleOneProtoSlice(newProtoSliceLhs_) &&
-               handleOneProtoSlice(newProtoSliceRhs_);
+  supported_ = handleOneProtoSlice(newProtoSliceLhs_, /* isLhs */ true) &&
+               handleOneProtoSlice(newProtoSliceRhs_, /* isLhs */ false);
 
   findCondStmt();
   INT_ASSERT(condStmt_);
@@ -135,10 +135,43 @@ void ProtoSliceAssignHelper::report() {
   std::string isSupported = supported() ? "supported" : "not supported";
   std::cout << "ArrayViewElision " << isSupported << " " << call_->stringLoc()
             << std::endl;
+
+  std::cout << "\t" << "lhsBaseType: " << lhsBaseType_ << std::endl;
+  std::cout << "\t" << "lhsIndexingExprs: " << std::endl;
+  for (auto typeName: lhsIndexExprTypes_) {
+    std::cout << "\t\t" << typeName << std::endl;
+  }
+
+  std::cout << "\t" << "rhsBaseType: " << rhsBaseType_ << std::endl;
+  std::cout << "\t" << "rhsIndexingExprs: " << std::endl;
+  for (auto typeName: rhsIndexExprTypes_) {
+    std::cout << "\t\t" << typeName << std::endl;
+  }
+
+  std::cout << std::endl;
 }
 
-bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call) {
+bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call, bool isLhs) {
   INT_ASSERT(call->isNamed("chpl__createProtoSlice"));
+
+  // stash some information while working on the call
+  if (fReportArrayViewElision) {
+    std::string& baseType = isLhs ? lhsBaseType_ : rhsBaseType_;
+    std::vector<std::string>& indexExprTypes = isLhs ? lhsIndexExprTypes_ :
+                                                       rhsIndexExprTypes_;
+
+    bool baseRecorded = false;
+    for_actuals (actual, call) {
+      std::string typeName = std::string(actual->typeInfo()->symbol->name);
+      if (!baseRecorded) {
+        baseType = typeName;
+        baseRecorded = true;
+      }
+      else {
+        indexExprTypes.push_back(typeName);
+      }
+    }
+  }
 
   CallExpr* typeCheck = new CallExpr("chpl__typesSupportArrayViewElision");
   for_actuals (actual, call) {
