@@ -50,7 +50,6 @@ module ChapelArrayViewElision {
       var dummyArr = [1,];
       this.ptrToArr = c_addrOf(dummyArr);
       this.ranges = (1..0,);
-      compilerWarning("created a dummy slice");
     }
 
     proc init(ptrToArr, slicingExprs) {
