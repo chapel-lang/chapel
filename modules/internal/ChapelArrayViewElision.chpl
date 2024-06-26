@@ -166,8 +166,6 @@ module ChapelArrayViewElision {
 
   pragma "last resort"
   proc chpl__createProtoSlice(const ref Arr, slicingExprs... ) {
-    compilerWarning("uh-oh ", slicingExprs.type:string);
-    /*chpl_debug_writeln("creating with 30");*/
     // this is an array access. This call will be eliminated later in
     // resolution, but we want it to live for a bit for easier resolution
     return new chpl__protoSlice();
