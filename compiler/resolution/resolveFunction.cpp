@@ -551,7 +551,7 @@ static FnSymbol* buildThunkInvokeMethod(FnSymbol* fn, Type* thunkResultType, Agg
   FnSymbol* invokeFn = new FnSymbol("invoke");
   newRecord->thunkInvoke = invokeFn;
 
-  invokeFn->addFlag(FLAG_AUTO_II);
+  invokeFn->addFlag(FLAG_THUNK_INVOKE);
   invokeFn->addFlag(FLAG_INLINE);
   invokeFn->setMethod(true);
 

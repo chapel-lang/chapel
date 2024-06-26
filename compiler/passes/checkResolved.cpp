@@ -548,7 +548,8 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_AUTO_II))
+      fn->hasFlag(FLAG_AUTO_II) ||
+      fn->hasFlag(FLAG_THUNK_INVOKE))
     return; // No.
 
   // Check to see if the returned value is initialized.
