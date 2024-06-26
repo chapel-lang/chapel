@@ -169,17 +169,6 @@ module ChapelArrayViewElision {
     return new chpl__protoSlice();
   }
 
-
-  proc chpl__exprSupportsViewTransfer(base, exprs...) param {
-    if base.isDefaultRectangular() {
-
-
-
-    }
-
-    return false;
-  }
-
   proc chpl__baseTypeSupportAVE(base) param: bool {
     import Reflection;
     return isArray(base) && // also could be a view?
