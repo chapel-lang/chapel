@@ -2260,7 +2260,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_FORCE_THUNK: {
     auto sizeSym = toSymExpr(call->get(1));
-    auto sizeType = sizeSym->symbol()->typeInfo();
+    auto sizeType = sizeSym->symbol()->typeInfo()->getValType();
     auto aggrT = toAggregateType(sizeType);
 
     // call the invoke method of the thunk stored in aggrT->thunkInvoke
