@@ -83,11 +83,13 @@ static void          countTokensInCmdLineFiles();
 
 static void          addDynoLibFiles();
 
-static UniqueString cleanLocalPath(UniqueString path);
+static UniqueString cleanLocalPath(const char* path);
 
 static void          processInternalModules();
 
 static void checkFilenameNotTooLong(UniqueString path);
+
+static std::vector<UniqueString> gatherStdModulePaths();
 
 //static void          parseCommandLineFiles();
 
@@ -396,12 +398,12 @@ static void loadAndConvertModules() {
   // check that some key internal modules are available
   checkCanLoadBundledModules();
 
+  // compute the requested main module name
   UniqueString requestedMainModuleName;
   if (fDynoGenStdLib) {
     // use ChapelStandard as the main module
     requestedMainModuleName = UniqueString::get(gContext, "ChapelStandard");
   }
-
   if (!gMainModuleName.empty()) {
     requestedMainModuleName = UniqueString::get(gContext, gMainModuleName);
   }
@@ -413,12 +415,19 @@ static void loadAndConvertModules() {
   const char* inputFileName = nullptr;
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName)) {
-      auto upath = UniqueString::get(gContext, inputFileName);
-      auto path = cleanLocalPath(upath);
+      auto path = cleanLocalPath(inputFileName);
       commandLinePaths.push_back(path);
       // also check that the file exists
       checkCanLoadCommandLineFile(path.c_str());
     }
+  }
+  if (fDynoGenLib) {
+    if (fDynoGenStdLib) {
+      // gather the standard/internal module paths for --dyno-gen-std
+      commandLinePaths = gatherStdModulePaths();
+    }
+    // note the source paths for --dyno-gen-lib / --dyno-gen-std
+    gDynoGenLibSourcePaths = commandLinePaths;
   }
 
   ID mainModule;
@@ -485,6 +494,20 @@ static void loadAndConvertModules() {
     dynoConvertInternalModule("ISO_Fortran_binding");
   }
 }
+
+static void setupDynoLibFileGeneration() {
+  if (fDynoGenLib) {
+    // gather the top-level module names
+    using LFW = chpl::libraries::LibraryFileWriter;
+    auto vec = LFW::gatherTopLevelModuleNames(gContext,
+                                              gDynoGenLibSourcePaths);
+
+    for (UniqueString topLevelModuleName: vec) {
+      gDynoGenLibModuleNameAstrs.insert(astr(topLevelModuleName));
+    }
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -613,13 +636,12 @@ static void checkFilenameNotTooLong(UniqueString path) {
   }
 }
 
-static UniqueString cleanLocalPath(UniqueString path) {
-  if (path.startsWith("/") ||
-      path.startsWith("./") == false) {
-    return path;
+static UniqueString cleanLocalPath(const char* path) {
+  if (startsWith(path, "/") || startsWith(path, "./") == false) {
+    return UniqueString::get(gContext, path);
   }
 
-  auto str = path.str();
+  std::string str = path;
   while (str.find("./") == 0) {
     str = str.substr(2);
   }
@@ -679,7 +701,6 @@ static void gatherStdModuleNamesInDir(std::string dir,
   }
 }
 
-#if 0
 static std::set<UniqueString> gatherStdModuleNames() {
   // compute $CHPL_HOME/modules
   const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
@@ -709,13 +730,22 @@ static std::set<UniqueString> gatherStdModuleNames() {
   // then ignore the GPU module, to avoid later compilation errors.
   if (!usingGpuLocaleModel()) {
     modNames.erase(UniqueString::get(gContext, "GPU"));
+    modNames.erase(UniqueString::get(gContext, "LocaleModelHelpGPU"));
+    modNames.erase(UniqueString::get(gContext, "GpuDiagnostics"));
+  }
+  // Workaround: don't try to compile LocaleModelHelpAPU
+  modNames.erase(UniqueString::get(gContext, "LocaleModelHelpAPU"));
+  // Workaround: don't try to compile PrivateDist to avoid a compilation error
+  modNames.erase(UniqueString::get(gContext, "PrivateDist"));
+  // Workaround: don't try to compile GMP or BigInteger if CHPL_GMP is none
+  if (0 == strcmp(CHPL_GMP, "none")) {
+    modNames.erase(UniqueString::get(gContext, "GMP"));
+    modNames.erase(UniqueString::get(gContext, "BigInteger"));
   }
 
   return modNames;
 }
-#endif
 
-#if 0
 static std::vector<UniqueString> gatherStdModulePaths() {
   std::vector<UniqueString> genLibPaths;
 
@@ -745,7 +775,6 @@ static std::vector<UniqueString> gatherStdModulePaths() {
 
   return genLibPaths;
 }
-#endif
 
 #if 0
 static void parseCommandLineFiles() {
@@ -1432,7 +1461,7 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
   // Do not parse if we've already done so.
   if (haveAlreadyParsed(fileName)) return nullptr;
 
-  auto path = cleanLocalPath(UniqueString::get(gContext, fileName));
+  auto path = cleanLocalPath(fileName);
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
@@ -1654,21 +1683,15 @@ void parseAndConvertUast() {
 
   loadAndConvertModules();
 
+  setupDynoLibFileGeneration();
+
   processInternalModules();
 
-  // make sure to add default uses ? why?
+  // add the default uses for all modules
+  // TODO: why do we need to do this?
   forv_Vec(ModuleSymbol, mod, allModules) {
     mod->addDefaultUses();
   }
-
-  /*
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    printf("have module %s\n", mod->name);
-  }*/
-
-  //parseCommandLineFiles();
-
-  // convert the used modules only
 
   dynoRealizeDeferredErrors();
 
