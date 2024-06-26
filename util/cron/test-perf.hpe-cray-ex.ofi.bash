@@ -19,5 +19,6 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-ex.ofi"
 
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-numtrials 1"
+perf_hpe_cray_ex_args="-startdate 06/25/24"
 
-$CWD/nightly -cron ${perf_args} ${perf_hpe_apollo_args} ${nightly_args}
+$CWD/nightly -cron ${perf_args} ${perf_hpe_cray_ex_args} ${nightly_args}
