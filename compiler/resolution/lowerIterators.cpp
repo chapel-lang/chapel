@@ -3244,6 +3244,8 @@ void lowerIterators() {
       // advance() into zip[1-4]
       fn->collapseBlocks();
       lowerIterator(fn);
+    } else if (fn->hasFlag(FLAG_THUNK_BUILDER)) {
+      lowerThunk(fn);
     }
   }
 

@@ -1808,6 +1808,20 @@ addAllLocalVariables(Vec<Symbol*>& syms, std::vector<BaseAST*>& asts) {
   }
 }
 
+static void insertReturn(FnSymbol* fn, Symbol* toReturn) {
+  if (fn->hasFlag(FLAG_FN_RETARG)) {
+    ArgSymbol* retArg = NULL;
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_RETARG))
+        retArg = formal;
+    }
+    fn->insertAtTail(new CallExpr(PRIM_ASSIGN, retArg, toReturn));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  } else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, toReturn));
+  }
+}
+
 
 // Preceding calls to the various build...() functions have copied out
 // interesting parts of the iterator function.
@@ -1880,17 +1894,7 @@ rebuildIterator(IteratorInfo* ii,
   }
 
   // Return the filled-in iterator record.
-  if (fn->hasFlag(FLAG_FN_RETARG)) {
-    ArgSymbol* retArg = NULL;
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_RETARG))
-        retArg = formal;
-    }
-    fn->insertAtTail(new CallExpr(PRIM_ASSIGN, retArg, iterator));
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-  } else {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
-  }
+  insertReturn(fn, iterator);
 
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
 
@@ -2012,10 +2016,15 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   qt = qt.refToRefType();
 
   INT_ASSERT(qt.type() != dtUnknown);
-  Symbol* field = new VarSymbol(fieldName, qt);
+  return new VarSymbol(fieldName, qt);
+}
 
+// Same as createAndInsertICField, but inserts into the iclass.
+static inline Symbol* createAndInsertICField(int& i, Symbol* local, Type* type,
+                                             bool isValueField, FnSymbol* fn) {
+
+  auto field = createICField(i, local, type, isValueField, fn);
   fn->iteratorInfo->iclass->fields.insertAtTail(new DefExpr(field));
-
   return field;
 }
 
@@ -2094,7 +2103,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {
     bool isYieldSym = yldSymSet.set_in(local);
-    Symbol* field = createICField(i, local, NULL, isYieldSym && oneLocalYS, fn);
+    Symbol* field = createAndInsertICField(i, local, NULL, isYieldSym && oneLocalYS, fn);
     local2field.put(local, field);
     if (isYieldSym) {
       INT_ASSERT(local->type == yieldedType);
@@ -2128,9 +2137,161 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
   }
 
   if (!valField) {
-    valField = createICField(i, NULL, yieldedType, true, fn);
+    valField = createAndInsertICField(i, NULL, yieldedType, true, fn);
   }
   *valFieldRef = valField;
+}
+
+void lowerThunk(FnSymbol* fn) {
+  SET_LINENO(fn);
+  std::vector<BaseAST*> asts;
+  Type* returnType = fn->retType;
+  { // inlined from removeRetSymbolAndUses(fn)
+    // follows getReturnSymbol()
+    CallExpr* ret = toCallExpr(fn->body->body.last());
+    INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
+
+    // Since iterator returns might have been already translated to
+    // assignments to a return argument, remove those assignments.
+    if (CallExpr* assign = toCallExpr(ret->prev))
+      if (assign->isPrimitive(PRIM_MOVE) || assign->isPrimitive(PRIM_ASSIGN))
+        if (SymExpr* se = toSymExpr(assign->get(1)))
+          if (se->symbol()->hasFlag(FLAG_RETARG)) {
+            returnType = se->symbol()->typeInfo()->getValType();
+            assign->remove();
+          }
+
+    // Yank the return statement.
+    ret->remove();
+  }
+  auto thunkRecord = toAggregateType(returnType);
+  collect_asts_postorder(fn, asts);
+
+  CHPL_ASSERT(thunkRecord);
+
+  // Add all formals to the set of local symbols.
+  SymbolMap local2field;  // map from arg/local to record field
+  int counter = 0;
+  Vec<Symbol*> locals;
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_RETARG)) continue;
+    locals.push_back(formal);
+  }
+
+  for (auto local : locals) {
+    Symbol* field = createICField(counter, local, NULL, /* isValueField */ false, fn);
+    local2field.put(local, field);
+
+    VarSymbol* rfield = new VarSymbol(field->name, field->type);
+    rfield->qual = field->qual;
+    local2field.put(local, rfield);
+    thunkRecord->fields.insertAtTail(new DefExpr(rfield));
+  }
+
+  Vec<SymExpr*> defSet;
+  Vec<SymExpr*> useSet;
+  buildDefUseSets(locals, fn, defSet, useSet);
+
+  // HACK: get the "invoke" method we created, which is next to the function
+  // itself. Also get the reference to the thunk record.
+  auto next = toDefExpr(fn->defPoint->next);
+  auto invokeFn = toFnSymbol(next->sym);
+  auto tr = invokeFn->getFormal(1);
+
+  { // inlined from replaceLocalsWithFields
+    for (BaseAST* ast : chpl::expandingIterator(asts)) {
+      auto se = toSymExpr(ast);
+      if (!se || !se->parentSymbol) continue;
+
+      if (useSet.set_in(se) || defSet.set_in(se)) {
+        // SymExpr is among those we are interested in: def or use of a live local.
+
+        // Get the corresponding field in the iterator class.
+        Symbol* field = local2field.get(se->symbol());
+
+        // Get the expression that sets or uses the symexpr.
+        CallExpr* call = toCallExpr(se->parentExpr);
+
+        if (call && call->isPrimitive(PRIM_ADDR_OF)) {
+
+          // Convert (addr of var) to (. _ic field).
+          // Note, GET_MEMBER is not valid on a ref field;
+          // in that event, GET_MEMBER_VALUE returns the ref.
+          if (field->isRef())
+            call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+          else
+            call->primitive = primitives[PRIM_GET_MEMBER];
+
+          call->insertAtHead(tr);
+          se->setSymbol(field);
+        } else {
+          replaceLocalWithFieldTemp(se, tr, field,
+              defSet.set_in(se), useSet.set_in(se), asts);
+        }
+      }
+    }
+  }
+
+  auto thunkBody = fn->body->body.last();
+  invokeFn->body->replace(thunkBody->remove());
+
+  // HACK: we should not be dropping autodestroys here;
+  // need some way to avoid wasted autodestroys.
+  for_alist_backward(expr, invokeFn->body->body) {
+    if (auto call = toCallExpr(expr)) {
+      if (call->isPrimitive(PRIM_THUNK_RESULT)) {
+        auto toReturn = call->get(1);
+        call->remove();
+        insertReturn(invokeFn, toSymExpr(toReturn)->symbol());
+        break;
+      }
+    }
+    expr->remove();
+  }
+
+  fn->retSymbol = NULL;
+  for_alist(expr, fn->body->body)
+    expr->remove();
+
+  Symbol* thunk = newTemp("_ir", thunkRecord);
+  fn->insertAtTail(new DefExpr(thunk));
+
+  // Avoids a valgrind warning about uninitialized memory when performing
+  // indirect modification checks on const and default intent arguments
+  if (fWarnUnstable && !fNoConstArgChecks) {
+    fn->insertAtTail(new CallExpr(PRIM_ZERO_VARIABLE, new SymExpr(thunk)));
+  }
+
+  // For each live argument
+  forv_Vec(Symbol, local, locals) {
+    if (!toArgSymbol(local))
+      continue;
+
+    // Get the corresponding field in the iterator class
+    Symbol* field = local2field.get(local);
+    Symbol* value = local;
+
+    if (local->type == field->type->refType) {
+      // If a ref var, load the local in to a temp and
+      // then set the value of the corresponding field.
+      Symbol* tmp = newTemp(field->type);
+
+      fn->insertAtTail(new DefExpr(tmp));
+
+      fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                    tmp,
+                                    new CallExpr(PRIM_DEREF, local)));
+
+      value = tmp;
+    }
+
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, thunk, field, value));
+  }
+
+  // Return the filled-in iterator record.
+  insertReturn(fn, thunk);
+
+  fn->addFlag(FLAG_INLINE);
 }
 
 
