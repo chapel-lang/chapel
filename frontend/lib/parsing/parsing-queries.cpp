@@ -376,7 +376,7 @@ static const ID& findMainModuleImpl(Context* context,
   }
 
   if (!requestedMainModuleName.isEmpty()) {
-    // the main module is provided by a command-line option, so use that
+    // if the main module is provided by a command-line .chpl file, use that
     const Module* matchingModule = nullptr;
     for (const Module* mod : findMain.modulesFound) {
       if (mod->name() == requestedMainModuleName ||
@@ -388,27 +388,35 @@ static const ID& findMainModuleImpl(Context* context,
     if (matchingModule) {
       result = matchingModule->id();
     } else {
-      // try harder to find the main module within something loaded
-      // up by a 'use' / 'import'. This uses 'moduleInitializationOrder'
-      // as a convenient way to compute the modules used/imported (transitively)
-      const std::vector<ID>& moduleIds =
-        resolution::moduleInitializationOrder(context, ID(),
-                                              commandLineModules);
-      // consider all of the modules loaded. Is there one with the appropriate
-      // name?
-      bool found = false;
-      for (const auto& id : moduleIds) {
-        if (id.symbolName(context) == requestedMainModuleName ||
-            id.symbolPath() == requestedMainModuleName) {
-          result = id;
-          found = true;
-          break;
-        }
-      }
+      // check for the requested module in loaded .dyno files
+      UniqueString unusedLibPath;
+      ID libId = ID(requestedMainModuleName, -1, -1);
+      if (context->moduleIsInLibrary(libId, unusedLibPath)) {
+        result = libId;
+      } else {
 
-      if (!found) {
-        auto loc = IdOrLocation::createForCommandLineLocation(context);
-        CHPL_REPORT(context, UnknownMainModule, loc, requestedMainModuleName);
+        // try harder to find the main module within something loaded up by a
+        // 'use' / 'import'. This uses 'moduleInitializationOrder' as a
+        // convenient way to compute the modules used/imported (transitively)
+        const std::vector<ID>& moduleIds =
+          resolution::moduleInitializationOrder(context, ID(),
+                                                commandLineModules);
+        // consider all of the modules loaded. Is there one with the
+        // appropriate name?
+        bool found = false;
+        for (const auto& id : moduleIds) {
+          if (id.symbolName(context) == requestedMainModuleName ||
+              id.symbolPath() == requestedMainModuleName) {
+            result = id;
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          auto loc = IdOrLocation::createForCommandLineLocation(context);
+          CHPL_REPORT(context, UnknownMainModule, loc, requestedMainModuleName);
+        }
       }
     }
   } else if (findMain.mainProcsFound.size() > 0 && !libraryMode) {
