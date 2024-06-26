@@ -151,15 +151,27 @@ module ChapelArrayViewElision {
   // TODO can we allow const arrs to be passed here without breaking constness
   // guarantees?
   // TODO we can also accept domains and ints (rank-change)
-  proc chpl__createProtoSlice(const ref Arr, slicingExprs: range(?))
-      where chpl__baseTypeSupportAVE(Arr.type) {
+  proc chpl__createProtoSlice(ref Arr, slicingExprs: range(?))
+      where chpl__baseTypeSupportAVE(Arr) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(const ref Arr, slicingExprs:range(?) ...)
-      where chpl__baseTypeSupportAVE(Arr.type) {
+  proc chpl__createProtoSlice(ref Arr, slicingExprs:range(?) ...)
+      where chpl__baseTypeSupportAVE(Arr) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
+  }
+
+  pragma "last resort"
+  proc chpl__createProtoSlice(const ref Arr, slicingExprs: range(?))
+      where chpl__baseTypeSupportAVE(Arr) {
+    return new chpl__protoSlice(c_addrOfConst(Arr), slicingExprs);
+  }
+
+  pragma "last resort"
+  proc chpl__createProtoSlice(const ref Arr, slicingExprs:range(?) ...)
+      where chpl__baseTypeSupportAVE(Arr) {
+    return new chpl__protoSlice(c_addrOfConst(Arr), slicingExprs);
   }
 
   pragma "last resort"
@@ -180,23 +192,22 @@ module ChapelArrayViewElision {
     return false;
   }
 
-  proc chpl__baseTypeSupportAVE(type baseType) param: bool {
+  proc chpl__baseTypeSupportAVE(base) param: bool {
     import Reflection;
-    var dummy: baseType;
-    return isArrayType(baseType) &&
-           isSubtype(dummy._instance.type, DefaultRectangularArr) &&
-           Reflection.canResolve("c_addrOf", dummy);
+    return isArray(base) && // also could be a view?
+           isSubtype(base._instance.type, DefaultRectangularArr) &&
+           Reflection.canResolve("c_addrOf", base);
   }
 
-  proc chpl__indexingExprsSupportAVE(type indexingTypes...) param: bool {
-    for param tid in 0..<indexingTypes.size {
-      if !isRangeType(indexingTypes[tid]) {
+  proc chpl__indexingExprsSupportAVE(indexingExprs...) param: bool {
+    for param tid in 0..<indexingExprs.size {
+      if !isRange(indexingExprs[tid]) {
         // should we also check for homogeneous tuples as we don't have support
         // for rank-change just yet?
         return false;
       }
-      else if !(indexingTypes[tid].strides == strideKind.positive ||
-                indexingTypes[tid].strides == strideKind.one) {
+      else if !(indexingExprs[tid].strides == strideKind.positive ||
+                indexingExprs[tid].strides == strideKind.one) {
         // negative strided slices are not supported and generate a warning.
         // Instead of trying to generate the warning, just avoid covering
         // unsupported things here
@@ -206,10 +217,10 @@ module ChapelArrayViewElision {
     return true;
   }
 
-  proc chpl__typesSupportArrayViewElision(type baseType,
-                                          type indexingTypes...) param: bool {
-    return chpl__baseTypeSupportAVE(baseType) &&
-           chpl__indexingExprsSupportAVE((...indexingTypes));
+  proc chpl__typesSupportArrayViewElision(base,
+                                          indexingExprs...) param: bool {
+    return chpl__baseTypeSupportAVE(base) &&
+           chpl__indexingExprsSupportAVE((...indexingExprs));
   }
 
   private proc allBounded(ranges: range(?)) param {

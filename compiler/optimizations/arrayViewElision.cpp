@@ -79,7 +79,8 @@ bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call) {
 
   CallExpr* typeCheck = new CallExpr("chpl__typesSupportArrayViewElision");
   for_actuals (actual, call) {
-    typeCheck->insertAtTail(actual->typeInfo()->symbol);
+    INT_ASSERT(isSymExpr(actual));
+    typeCheck->insertAtTail(actual->copy());
   }
 
   VarSymbol* tmp = newTemp("call_tmp", dtBool);
