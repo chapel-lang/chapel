@@ -151,19 +151,19 @@ module ChapelArrayViewElision {
   // TODO can we allow const arrs to be passed here without breaking constness
   // guarantees?
   // TODO we can also accept domains and ints (rank-change)
-  proc chpl__createProtoSlice(ref Arr, slicingExprs: range(?))
+  proc chpl__createProtoSlice(const ref Arr, slicingExprs: range(?))
       where chpl__baseTypeSupportAVE(Arr.type) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(ref Arr, slicingExprs:range(?) ...)
+  proc chpl__createProtoSlice(const ref Arr, slicingExprs:range(?) ...)
       where chpl__baseTypeSupportAVE(Arr.type) {
     return new chpl__protoSlice(c_addrOf(Arr), slicingExprs);
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(ref Arr, slicingExprs... ) {
+  proc chpl__createProtoSlice(const ref Arr, slicingExprs... ) {
     // this is an array access. This call will be eliminated later in
     // resolution, but we want it to live for a bit for easier resolution
     return new chpl__protoSlice();
