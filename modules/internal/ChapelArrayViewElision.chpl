@@ -48,7 +48,7 @@ module ChapelArrayViewElision {
 
       var dummyArr = [1,];
       this.ptrToArr = c_addrOf(dummyArr);
-      this.ranges = (1..0,);
+      this.ranges = 1..0;
     }
 
     proc init(ptrToArr, slicingExprs) {
@@ -148,8 +148,9 @@ module ChapelArrayViewElision {
     }
   }
 
-  proc chpl__createProtoSlice(ref Arr, slicingExprs:range(?) ...)
-      where chpl__baseTypeSupportAVE(Arr) {
+  proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
+      where chpl__baseTypeSupportAVE(Arr) &&
+            chpl__isTupleOfRanges(slicingExprs) {
     if slicingExprs.size == 1 then
       return new chpl__protoSlice(c_addrOf(Arr), slicingExprs[0]);
     else
@@ -157,13 +158,16 @@ module ChapelArrayViewElision {
   }
 
   pragma "last resort"
-  proc chpl__createProtoSlice(const ref Arr, slicingExprs:range(?) ...)
-      where chpl__baseTypeSupportAVE(Arr) {
+  proc chpl__createProtoSlice(const ref Arr, slicingExprs ...)
+      where chpl__baseTypeSupportAVE(Arr) &&
+            chpl__isTupleOfRanges(slicingExprs) {
     return new chpl__protoSlice(c_addrOfConst(Arr), slicingExprs);
   }
 
   pragma "last resort"
   proc chpl__createProtoSlice(const ref Arr, slicingExprs... ) {
+    compilerWarning("uh-oh ", slicingExprs.type:string);
+    /*chpl_debug_writeln("creating with 30");*/
     // this is an array access. This call will be eliminated later in
     // resolution, but we want it to live for a bit for easier resolution
     return new chpl__protoSlice();
