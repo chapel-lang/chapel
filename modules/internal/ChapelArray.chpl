@@ -2412,23 +2412,6 @@ module ChapelArray {
   }
 
 
-  private proc allBounded(ranges: range(?)) param {
-    return ranges.bounds == boundKind.both;
-  }
-
-  private proc allBounded(ranges) param {
-    if chpl__isTupleOfRanges(ranges) {
-      for param i in 0..<ranges.size {
-        if ranges[i].bounds != boundKind.both {
-          return false;
-        }
-      }
-      return true;
-    }
-    compilerError("Unexpected type to allBounded");
-    return false;
-  }
-
   inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
     var success = false;
 
