@@ -544,6 +544,28 @@ static void protoThunkRecord(FnSymbol* fn) {
 
   fn->defPoint->insertBefore(new DefExpr(recordSym));
   makeRefType(newRecord);
+
+  FnSymbol* invokeFn = new FnSymbol("invoke");
+
+  invokeFn->addFlag(FLAG_AUTO_II);
+  invokeFn->addFlag(FLAG_INLINE);
+  invokeFn->setMethod(true);
+
+  invokeFn->_this   = new ArgSymbol(INTENT_REF, "this", newRecord);
+  invokeFn->_this->addFlag(FLAG_ARG_THIS);
+
+  invokeFn->retType = thunkResultType;
+
+  invokeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  invokeFn->insertFormalAtTail(invokeFn->_this);
+
+  fn->defPoint->insertBefore(new DefExpr(invokeFn));
+
+  normalize(invokeFn);
+
+  // Pretend that this function is already resolved.
+  // Its body will be filled in during the lowerIterators pass.
+  invokeFn->addFlag(FLAG_RESOLVED);
 }
 
 /************************************* | **************************************
