@@ -553,18 +553,22 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
 }
 
 static bool
-isOuterVariable(Resolver* rv, const ID& target, const ID& mention) {
-  if (!target || target.isSymbolDefiningScope()) return false;
+isOuterVariable(Resolver& rv, const ID& target, const ID& mention) {
+  if (!target || !mention || target.isSymbolDefiningScope()) return false;
 
-  if (ID parentSymbolId = target.parentSymbolId(rv->context)) {
+  Context* context = rv.context;
+  ID targetParentSymbolId = target.parentSymbolId(context);
+  ID mentionParentSymbolId = mention.parentSymbolId(context);
+
+  if (targetParentSymbolId && mentionParentSymbolId) {
 
     // No match if the target's parent symbol is what we're resolving.
-    if (rv->symbol && parentSymbolId == rv->symbol->id()) return false;
+    if (rv.symbol && targetParentSymbolId == rv.symbol->id()) return false;
 
     // Ditto for the mention.
-    if (mention.parentSymbolId(rv->context) == parentSymbolId) return false;
+    if (mentionParentSymbolId == targetParentSymbolId) return false;
 
-    switch (parsing::idToTag(rv->context, parentSymbolId)) {
+    switch (parsing::idToTag(context, targetParentSymbolId)) {
       case asttags::Function: return true;
 
       // Module-scope variables are not considered outer-variables. However,
@@ -579,8 +583,56 @@ isOuterVariable(Resolver* rv, const ID& target, const ID& mention) {
         }
       */
       case asttags::Module: {
-        auto targetParentId = parsing::idToParentId(rv->context, target);
-        return parentSymbolId != targetParentId;
+        // Check to see if the module is not the most immediate parent AST.
+        auto targetParentAstId = parsing::idToParentId(context, target);
+        return targetParentSymbolId != targetParentAstId;
+      } break;
+
+      // In this case the mention is of a field. It could possibly be an
+      // outer variable, because we could be reading a field value from a
+      // non-local receiver. E.g.,
+      /*
+        record r {
+          type T;
+          var x: T;
+          proc foo() {
+            // Here 'T' is read from the implicit receiver of 'foo'.
+            proc bar(f: T) {}
+            bar(x);
+          }
+        }
+      */
+      case asttags::Class:
+      case asttags::Record:
+      case asttags::Union: {
+        ID& sym = mentionParentSymbolId;
+        bool isMentionInNested = parsing::idIsNestedFunction(context, sym);
+        bool isMentionInMethod = parsing::idIsMethod(context, sym);
+        bool isTargetField = parsing::idIsField(context, target);
+
+        // Not sure what else it could be in this case...
+        CHPL_ASSERT(isTargetField);
+
+        if (isTargetField) {
+
+          // The obvious case: we are a nested non-method function.
+          if (isMentionInNested && !isMentionInMethod) {
+            return true;
+
+          } else if (isMentionInNested) {
+            // TODO: Is an ID check alone sufficient? Do we need to e.g.,
+            // get some outermost instantiated type using 'CallerDetails'?
+            if (auto t = rv.methodReceiverType().type()) {
+              if (auto ct = t->toCompositeType()) {
+                return ct->id() != targetParentSymbolId;
+              }
+            } else {
+              CHPL_UNIMPL("detecting if field use in nested method is outer "
+                          "variable without 'methodReceiverType()'");
+              return false;
+            }
+          }
+        }
       } break;
       default: break;
     }
@@ -2241,6 +2293,34 @@ bool Resolver::resolveSpecialCall(const Call* call) {
   return false;
 }
 
+static QualifiedType
+lookupFieldType(Resolver& rv, const CompositeType* ct, const ID& idField) {
+  if (!ct || !idField) return {};
+
+  auto newDefaultsPolicy = rv.defaultsPolicy;
+  if (newDefaultsPolicy == DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS &&
+      ct == rv.inCompositeType) {
+    // The USE_DEFAULTS_OTHER_FIELDS policy is supposed to make
+    // the Resolver act as if it was running with IGNORE_DEFAULTS
+    // at first, but then switch to USE_DEFAULTS for all other fields
+    // of the type being resolved. This branch implements the switch:
+    // if we're moving on to resolving another field, and if this
+    // field is from the current type, we resolve that field with
+    // USE_DEFAULTS.
+    newDefaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
+  }
+  // if it is recursive within the current class/record, we can
+  // call resolveField.
+  auto& rf = resolveFieldDecl(rv.context, ct, idField, newDefaultsPolicy);
+
+  // find the field that matches
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (rf.fieldDeclId(i) == idField) return rf.fieldType(i);
+  }
+
+  return {};
+}
+
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (scopeResolveOnly) {
     auto kind = qualifiedTypeKindForId(context, id);
@@ -2350,10 +2430,8 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);
-  auto parentTag = asttags::AST_TAG_UNKNOWN;
-  if (!parentId.isEmpty()) {
-    parentTag = parsing::idToTag(context, parentId);
-  }
+  auto parentTag = parentId ? parsing::idToTag(context, parentId)
+                            : asttags::AST_TAG_UNKNOWN;
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
@@ -2395,33 +2473,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     }
   }
 
-  if (ct) {
-    auto newDefaultsPolicy = defaultsPolicy;
-    if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS &&
-        ct == inCompositeType) {
-      // The USE_DEFAULTS_OTHER_FIELDS policy is supposed to make
-      // the Resolver act as if it was running with IGNORE_DEFAULTS
-      // at first, but then switch to USE_DEFAULTS for all other fields
-      // of the type being resolved. This branch implements the switch:
-      // if we're moving on to resolving another field, and if this
-      // field is from the current type, we resolve that field with
-      // USE_DEFAULTS.
-      newDefaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
-    }
-    // if it is recursive within the current class/record, we can
-    // call resolveField.
-    const ResolvedFields& resolvedFields =
-      resolveFieldDecl(context, ct, id, newDefaultsPolicy);
-    // find the field that matches
-    int nFields = resolvedFields.numFields();
-    for (int i = 0; i < nFields; i++) {
-      if (resolvedFields.fieldDeclId(i) == id) {
-        return resolvedFields.fieldType(i);
-      }
-    }
-
-    CHPL_ASSERT(false && "could not find resolved field");
-  }
+  if (ct) return lookupFieldType(*this, ct, id);
 
   // Otherwise it is a case not handled yet
   // TODO: handle outer function variables
@@ -2766,20 +2818,14 @@ MatchingIdsWithName Resolver::lookupIdentifier(
   return m;
 }
 
-void Resolver::validateAndSetToId(ResolvedExpression& r,
-                                  const AstNode* node,
-                                  const ID& toId) {
-  r.setToId(toId);
-  if (toId.isEmpty()) return;
-  if (toId.isFabricatedId()) return;
-
-  // Validate the newly set to ID.
+static void
+checkForErrorModuleAsVariable(Context* context, const ID& idNode, const ID& toId) {
   auto idTag = parsing::idToTag(context, toId);
 
   // It shouldn't refer to a module unless the node is an identifier in one of
   // the places where module references are allowed (e.g. imports).
   if (asttags::isModule(idTag)) {
-    auto parentId = parsing::idToParentId(context, node->id());
+    auto parentId = parsing::idToParentId(context, idNode);
     if (!parentId.isEmpty()) {
       auto parentTag = parsing::idToTag(context, parentId);
       if (asttags::isUse(parentTag) || asttags::isImport(parentTag) ||
@@ -2790,22 +2836,28 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
         auto toAst = parsing::idToAst(context, toId);
         auto mod = toAst->toModule();
         auto parentAst = parsing::idToAst(context, parentId);
+        auto node = parsing::idToAst(context, toId);
         CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
-        r.setToId(ID()); // clear
       }
     }
   }
+}
+
+static void
+checkForErrorNestedClassFieldRef(Context* context, const ID& idNode,
+                                 const ID& toId) {
+  auto idTag = parsing::idToTag(context, toId);
 
   // If we're in a nested class, it shouldn't refer to an outer class' field.
   auto parentId =
     Builder::astTagIndicatesNewIdScope(idTag) ? toId : toId.parentSymbolId(context);
   auto parentTag = parsing::idToTag(context, parentId);
   if (asttags::isAggregateDecl(parentTag) &&
-      parentId.contains(node->id()) &&
+      parentId.contains(idNode) &&
       parentId != toId /* It's okay to refer to the record itself */) {
     // Referring to a field of a class that's surrounding the current node.
     // Loop upwards looking for a composite type.
-    auto searchId = node->id().parentSymbolId(context);
+    auto searchId = idNode.parentSymbolId(context);
     while (!searchId.isEmpty()) {
       if (searchId == parentId) {
         // We found the aggregate type in which the to-ID is declared,
@@ -2815,16 +2867,37 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
         auto parentAst = parsing::idToAst(context, parentId);
         auto searchAst = parsing::idToAst(context, searchId);
         auto searchAD = searchAst->toTypeDecl();
+        auto node = parsing::idToAst(context, idNode);
         // It's an error!
         CHPL_REPORT(context, NestedClassFieldRef, parentAst->toTypeDecl(),
                     searchAD, node, toId);
-        break;
+        return;
       }
 
       // Move on to the surrounding ID.
       searchId = searchId.parentSymbolId(context);
     }
   }
+}
+
+static const bool&
+checkForIdentifierTargetErrorsQuery(Context* context, ID idNode, ID toId) {
+  QUERY_BEGIN(checkForIdentifierTargetErrorsQuery, context, idNode, toId);
+  bool ret = false;
+
+  checkForErrorModuleAsVariable(context, idNode, toId);
+  checkForErrorNestedClassFieldRef(context, idNode, toId);
+
+  return QUERY_END(ret);
+}
+
+void Resolver::validateAndSetToId(ResolvedExpression& r,
+                                  const AstNode* node,
+                                  const ID& toId) {
+  r.setToId(toId);
+  if (toId.isEmpty()) return;
+  if (toId.isFabricatedId()) return;
+  checkForIdentifierTargetErrorsQuery(context, node->id(), toId);
 }
 
 void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
@@ -3116,19 +3189,45 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     // no stored result or parent frame is present then the type is unknown.
     // Still record the type in this case so that we can know what outer
     // variables we have encountered.
-    if (isOuterVariable(this, id, ident->id())) {
+    if (isOuterVariable(*this, id, ident->id())) {
       const ID& mention = ident->id();
       const ID& target = id;
-
+      bool isFieldAccess = parsing::idIsField(context, target);
       auto it = outerVariables.find(target);
+
+      // Use the cached result if it exists.
       if (it != outerVariables.end()) {
         type = it->second.first;
         it->second.second.push_back(mention);
 
+      // If the target ID is a field, we have to walk up parent frames until
+      // we find a method with a matching receiver, and then use it to look
+      // up the field's type.
+      } else if (isFieldAccess) {
+        for (auto up = parentDetails; up; up = up->parent()) {
+          auto sig = up->signature();
+          if (!sig->isMethod()) continue;
+
+          auto t = sig->formalType(0).type();
+          auto ct = t ? t->toCompositeType() : nullptr;
+
+          // TODO: What if an ID check alone is not sufficient? If I cannot
+          // lookup using field ID alone, then I cannot cache with field ID.
+          if (ct && ct->id() == target.parentSymbolId(context)) {
+            type = lookupFieldType(*this, ct, target);
+            auto p = std::make_pair(type, std::vector<ID>({ mention }));
+            outerVariables.emplace_hint(it, target, std::move(p));
+            break;
+          }
+        }
+
+      // Otherwise, it's a variable, so walk up parent frames and look up
+      // the variable's type using the resolution results.
       } else if (ID parentFn = target.parentFunctionId(context)) {
-        if (parentDetails) {
-          if (auto parent = parentDetails->findParentOf(context, target)) {
-            type = parent->resolutionById()->byId(target).type();
+        CHPL_ASSERT(!parentFn.isEmpty());
+        if (auto details = parentDetails) {
+          if (auto frame = details->findParentOf(context, target)) {
+            type = frame->resolutionById()->byId(target).type();
             auto p = std::make_pair(type, std::vector<ID>({ mention }));
             outerVariables.emplace_hint(it, target, std::move(p));
           }

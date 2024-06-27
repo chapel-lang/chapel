@@ -1048,12 +1048,14 @@ class TypedFnSignature {
     return needsInstantiation_;
   }
 
+  bool isMethod() const { return untyped()->isMethod(); }
+
   bool isInit() const {
-    return untyped()->name() == USTR("init") && untyped()->isMethod();
+    return untyped()->name() == USTR("init") && isMethod();
   }
 
   bool isInitEquals() const {
-    return untyped()->name() == USTR("init=") && untyped()->isMethod();
+    return untyped()->name() == USTR("init=") && isMethod();
   }
 
   bool isInitializer() const {
@@ -1061,7 +1063,7 @@ class TypedFnSignature {
   }
 
   bool isDeinit() const {
-    return untyped()->name() == USTR("deinit") && untyped()->isMethod();
+    return untyped()->name() == USTR("deinit") && isMethod();
   }
 
   /** If this TypedFnSignature represents the result of additional
@@ -1135,10 +1137,6 @@ class TypedFnSignature {
   const types::QualifiedType& formalType(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
-  }
-
-  bool isMethod() const {
-    return untypedSignature_->isMethod();
   }
 
   bool isIterator() const {

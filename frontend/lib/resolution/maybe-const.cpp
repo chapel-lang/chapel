@@ -294,7 +294,18 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // then, traverse nested call-expressions
   if (auto msc = candidates.only()) {
     auto fn = msc.fn();
-    auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
+
+    // Recompute the instantiation scope that was used when resolving the call.
+    const PoiScope* poiScope = nullptr;
+    for (auto sig = fn; sig; sig = sig->parentFn()) {
+      if (sig->instantiatedFrom()) {
+        auto scope = scopeForId(context, ast->id());
+        poiScope = pointOfInstantiationScope(context, scope, resolver.poiScope);
+        break;
+      }
+    }
+
+    auto resolvedFn = inferRefMaybeConstFormals(context, fn, poiScope);
     if (resolvedFn) {
       fn = resolvedFn;
       // use the version with ref-maybe-const formals, but

@@ -1297,8 +1297,9 @@ bool idIsParenlessFunction(Context* context, ID id) {
 
 bool idIsNestedFunction(Context* context, ID id) {
   if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  if (auto up = id.parentSymbolId(context)) {
-    return idIsFunction(context, up);
+  for (auto up = id.parentSymbolId(context); up;
+            up = up.parentSymbolId(context)) {
+    if (idIsFunction(context, up)) return true;
   }
   return false;
 }

@@ -683,6 +683,7 @@ static const TypedFnSignature*
 typedSignatureInitialForIdImpl(Context* context, ID id,
                                const CallerDetails& caller) {
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
+  if (uSig == nullptr) return nullptr;
   const TypedFnSignature* result = typedSignatureInitial(context, uSig, caller);
   return result;
 }
@@ -2595,10 +2596,10 @@ resolveFunctionByInfoImpl(Context* context,
   // Use an empty caller details as a safety precaution if we are not
   // resolving the signature of a nested function.
   CallerDetails empty;
-  auto& details = isNestedFunction && caller ? caller : empty;
+  auto details = caller ? &caller : nullptr;
   auto visitor = isInitializer
     ? Resolver::createForInitializer(context, fn, poiScope, sig, rr)
-    : Resolver::createForFunction(context, fn, poiScope, sig, rr, &details);
+    : Resolver::createForFunction(context, fn, poiScope, sig, rr, details);
 
   if (isInitializer) {
     CHPL_ASSERT(visitor.initResolver.get());
@@ -4741,10 +4742,23 @@ CallResolutionResult resolveFnCall(Context* context,
   bool anyInstantiated = false;
 
   for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate && candidate.fn()->instantiatedFrom() != nullptr) {
-      anyInstantiated = true;
-      break;
+    if (candidate && candidate.fn()) {
+      // If any parent function is instantiated, then the child should also
+      // be considered "instantiated".
+      //
+      // TODO: This needs to be consistent with code in 'AdjustMaybeRefs'
+      // for inferring ref-maybe-const on calls (whatever this does to compute
+      // the poiScope, that code also needs to do). Otherwise we don't reuse
+      // the cached 'ResolvedFunction' and get stuck trying to compute a new
+      // one without 'CallerDetails'.
+      for (auto sig = candidate.fn(); sig; sig = sig->parentFn()) {
+        if (sig->instantiatedFrom()) {
+          anyInstantiated = true;
+          break;
+        }
+      }
     }
+    if (anyInstantiated) break;
   }
 
   if (anyInstantiated) {
