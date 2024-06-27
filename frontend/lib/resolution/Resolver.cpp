@@ -109,6 +109,9 @@ resolveIterTypeWithTag(Resolver& rv,
                        UniqueString iterKindStr,
                        const QualifiedType& followThisFormal);
 
+// Resolve iterators according to the policy set in 'mask' (see the type
+// 'IterDetails::Policy'). Resolution stops the moment an iterator is
+// found with a usable yield type.
 static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* astForErr,
                                       const AstNode* iterand,
@@ -3806,18 +3809,21 @@ bool Resolver::enter(const Zip* zip) {
     // is set then the 'FOLLOWER' bit will be ignored along with the type
     // passed in for 'leaderYieldType'. It is possible for the mask to be
     // 'NONE' if a leader signature was resolved but the return type is bad.
-    int m = isFirstActual ? IterDetails::LEADER_FOLLOWER : IterDetails::NONE;
-    if (resolveFollower) m |= IterDetails::FOLLOWER;
+    int m = IterDetails::NONE;
     if (resolveSerial) m |= IterDetails::SERIAL;
+    if (resolveFollower) {
+      if (isFirstActual) m |= IterDetails::LEADER_FOLLOWER; 
+      m |= IterDetails::FOLLOWER;
+    }
 
     auto dt = resolveIterDetails(*this, actual, actual, leaderYieldType, m);
 
     eltTypes.push_back(dt.idxType);
 
     if (isFirstActual) {
-      if (dt.leader.sig) {
+      if (dt.leader.sig != nullptr) {
         leaderYieldType = dt.leaderYieldType;
-        resolveFollower = !leaderYieldType.isUnknownOrErroneous();
+        resolveFollower = dt.succeededAt == IterDetails::LEADER_FOLLOWER;
         resolveSerial = false;
       } else {
         resolveFollower = false;
