@@ -211,17 +211,17 @@ module ChapelArrayViewElision {
       return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr), slicingExprs);
   }
 
-  pragma "last resort"
-  proc chpl__createProtoSlice(ref Arr, slicingExprs... ) {
-    // this is an array access. This call will be eliminated later in
-    // resolution, but we want it to live for a bit for easier resolution
+  // catch-all: nothing here is supported, just pretend creating a proto slice.
+  // The branch where this call is will be dropped during resolution. We just
+  // want to avoid resolution errors before that happens
+  proc chpl__createProtoSlice(x, slicingExprs... ) {
     return new chpl__protoSlice();
   }
 
-  pragma "last resort"
-  proc chpl__createConstProtoSlice(const ref Arr, slicingExprs... ) {
-    // this is an array access. This call will be eliminated later in
-    // resolution, but we want it to live for a bit for easier resolution
+  // catch-all: nothing here is supported, just pretend creating a proto slice.
+  // The branch where this call is will be dropped during resolution. We just
+  // want to avoid resolution errors before that happens
+  proc chpl__createConstProtoSlice(x, slicingExprs... ) {
     return new chpl__protoSlice();
   }
 
