@@ -37,7 +37,6 @@ module ChapelArrayViewElision {
   record chpl__protoSlice {
     param rank;
     param isConst;
-    type idxType;
     var ptrToArr; // I want this to be a `forwarding ref` to the array
     var ranges;
 
@@ -46,7 +45,6 @@ module ChapelArrayViewElision {
       // be used and removed from the AST. 
       this.rank = 1;
       this.isConst = true;
-      this.idxType = int;
 
       var dummyArr = [1,];
       this.ptrToArr = c_addrOf(dummyArr);
@@ -56,7 +54,6 @@ module ChapelArrayViewElision {
     proc init(param isConst, ptrToArr, slicingExprs) {
       this.rank = ptrToArr.deref().rank;
       this.isConst = isConst;
-      this.idxType = ptrToArr.deref().idxType;
       this.ptrToArr = ptrToArr;
       if allBounded(slicingExprs) {
         this.ranges = slicingExprs;
@@ -74,7 +71,6 @@ module ChapelArrayViewElision {
     proc init=(other: chpl__protoSlice) {
       this.rank = other.rank;
       this.isConst = other.isConst;
-      this.idxType = other.idxType;
       this.ptrToArr = other.ptrToArr;
       this.ranges = other.ranges;
       init this;
