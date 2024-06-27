@@ -89,6 +89,7 @@ public:
   GenRet         codegen()   override;
   bool           inTree()    override;
   QualifiedType  qualType()  override;
+  Type*          typeInfo()  override { return type; }
   void           verify()    override;
 
   // Note: copy may add copied Symbols to the supplied map

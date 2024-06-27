@@ -270,6 +270,11 @@ inline bool Expr::inTree() {
   return parentSymbol != nullptr;
 }
 
+inline Type* Expr::typeInfo() {
+  QualifiedType qt = this->qualType();
+  return qt.type();
+}
+
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().
 //
