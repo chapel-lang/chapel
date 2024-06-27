@@ -75,8 +75,7 @@ module ChapelArrayViewElision {
       this.ptrToArr = other.ptrToArr;
       this.ranges = other.ranges;
       init this;
-      extern proc printf(s...);
-      printf("this is probably not what you want\n");
+      halt("protoSlice copy initializer should never be called");
     }
 
     inline proc domOrRange where rank==1 {
@@ -229,8 +228,6 @@ module ChapelArrayViewElision {
            isSubtype(base._instance.type, DefaultRectangularArr) &&
            Reflection.canResolve("c_addrOf", base);
   }
-
-  extern proc printf(s...);
 
   proc chpl__indexingExprsSupportAVE(indexingExprs...) param: bool {
     for param tid in 0..<indexingExprs.size {
