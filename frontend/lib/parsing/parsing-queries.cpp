@@ -898,7 +898,8 @@ std::string getExistingFileInModuleSearchPath(Context* context,
                     filePathIsInBundledModule(context, path);
         if (!skip) {
           auto loc = IdOrLocation::createForCommandLineLocation(context);
-          CHPL_REPORT(context, AmbiguousSourceFile, loc, found, check);
+          bool warnU = isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
+          CHPL_REPORT(context, AmbiguousSourceFile, loc, found, check, warnU);
         }
         continue;
       } else if (!check.empty() && found.empty()) {

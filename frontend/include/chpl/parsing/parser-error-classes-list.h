@@ -75,7 +75,7 @@ ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 /* end post-parse-checks errors */
 
 // errors to do with finding the main module / command line invocation
-WARNING_CLASS(AmbiguousSourceFile, IdOrLocation, std::string, std::string)
+WARNING_CLASS(AmbiguousSourceFile, IdOrLocation, std::string, std::string, bool)
 ERROR_CLASS(AmbiguousMain, IdOrLocation, std::vector<const uast::Function*>, std::vector<ID>, std::vector<UniqueString>)
 ERROR_CLASS(AmbiguousMainModule, IdOrLocation, std::vector<const uast::Module*>)
 ERROR_CLASS(UnknownMainModule, IdOrLocation, UniqueString)
