@@ -444,10 +444,6 @@ int main(int argc, char** argv) {
     else
       inputFile = argv[i];
   }
-  if (printTiming && !inputFile) {
-    std::cout << "Performance timing requested, but no input file specified" << std::endl;
-    exit(1);
-  }
 
   test0();
   test1();
@@ -461,6 +457,10 @@ int main(int argc, char** argv) {
   // Next, measure performance
   if (inputFile) {
     testPerformance(ctx, inputFile, printTiming);
+  } else if (printTiming) {
+    std::cout << "Performance timing requested, but no input file specified" << std::endl;
+    return 1;
   }
+
   return 0;
 }
