@@ -2658,10 +2658,9 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
   }
 }
 
-std::vector<BorrowedIdsWithName>
-Resolver::lookupIdentifier(const Identifier* ident,
-                           llvm::ArrayRef<const Scope*> receiverScopes,
-                           ParenlessOverloadInfo& outParenlessOverloadInfo) {
+std::vector<BorrowedIdsWithName> Resolver::lookupIdentifier(
+    const Identifier* ident, llvm::ArrayRef<const Scope*> receiverScopes,
+    ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
@@ -2670,7 +2669,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
     // Super is a keyword, and should't be looked up in scopes. Return
     // an empty ID to indicate that this identifier points to something,
     // but that something has a special meaning.
-    return { BorrowedIdsWithName::createWithBuiltinId() };
+    return {BorrowedIdsWithName::createWithBuiltinId()};
   }
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
@@ -2679,11 +2678,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
-                                           ident->name(), config,
-                                           ident->id());
-
-  bool notFound = vec.empty();
-  bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
+                                           ident->name(), config, ident->id());
 
   if (!vec.empty()) {
     // We might be ambiguous, but due to having found multiple parenless procs.
@@ -2692,30 +2687,10 @@ Resolver::lookupIdentifier(const Identifier* ident,
     // one identifier is not a parenless proc, there's an ambiguity.
     //
     // outParenlessOverloadInfo will be falsey if we found non-parenless-proc
-    // IDs, in which case we should emit an ambiguity error.
-    outParenlessOverloadInfo = ParenlessOverloadInfo::fromBorrowedIds(context, vec);
-  }
-
-  // TODO: these errors should be enabled for scope resolution
-  // but for now, they are off, as a temporary measure to enable
-  // the production compiler handle these cases. To enable this,
-  // we will have to adjust the dyno scope resolver to handle 'domain',
-  // and probably a few other features.
-  if (!scopeResolveOnly) {
-    if (notFound) {
-      if (!resolvingCalledIdent) {
-        auto pair = namesWithErrorsEmitted.insert(ident->name());
-        if (pair.second) {
-          // insertion took place so emit the error
-          bool mentionedMoreThanOnce = identHasMoreMentions(ident);
-          CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
-        }
-      }
-    } else if (ambiguous &&
-               !outParenlessOverloadInfo.areCandidatesOnlyParenlessProcs() &&
-               !resolvingCalledIdent) {
-      issueAmbiguityErrorIfNeeded(ident, scope, receiverScopes, config);
-    }
+    // IDs. In that case we may emit an ambiguity error later, after filtering
+    // out incorrect receivers.
+    outParenlessOverloadInfo =
+        ParenlessOverloadInfo::fromBorrowedIds(context, vec);
   }
 
   return vec;
@@ -2952,6 +2927,14 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   auto parenlessInfo = ParenlessOverloadInfo();
   auto vec = lookupIdentifier(ident, receiverScopes, parenlessInfo);
 
+  bool resolvingCalledIdent = nearestCalledExpression() == ident;
+  // TODO: these errors should be enabled for scope resolution
+  // but for now, they are off, as a temporary measure to enable
+  // the production compiler handle these cases. To enable this,
+  // we will have to adjust the dyno scope resolver to handle 'domain',
+  // and probably a few other features.
+  bool emitLookupErrors = !resolvingCalledIdent && !scopeResolveOnly;
+
   if (parenlessInfo.areCandidatesOnlyParenlessProcs() && !scopeResolveOnly) {
     // Ambiguous, but a special case: there are many parenless functions.
     // This might be fine, if their 'where' clauses leave only one.
@@ -2959,11 +2942,53 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     // Call resolution will issue an error if the overload selection fails.
     tryResolveParenlessCall(parenlessInfo, ident, receiverScopes);
   } else if (vec.size() == 0) {
+    if (emitLookupErrors) {
+      auto pair = namesWithErrorsEmitted.insert(ident->name());
+      if (pair.second) {
+        // insertion took place so emit the error
+        bool mentionedMoreThanOnce = identHasMoreMentions(ident);
+        CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
+      }
+    }
+
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-    // can't establish the type. If this is in a function
-    // call, we'll establish it later anyway.
-    result.setType(QualifiedType());
+    // Ambiguous. Check if we can break ambiguity by performing function resolution with
+    // an implicit 'this' receiver, to filter based on receiver type.
+    QualifiedType receiverType;
+    ID receiverId;
+    if (getMethodReceiver(&receiverType, &receiverId) && receiverType.type()) {
+      std::vector<CallInfoActual> actuals;
+      actuals.push_back(CallInfoActual(receiverType, USTR("this")));
+      auto ci = CallInfo(/* name */ ident->name(),
+                         /* calledType */ QualifiedType(),
+                         /* isMethodCall */ true,
+                         /* hasQuestionArg */ false,
+                         /* isParenless */ true, actuals);
+      auto inScope = scopeStack.back();
+      auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+      auto c = resolveGeneratedCall(context, ident, ci, inScopes);
+      // Ensure we error out for redeclarations within the method itself,
+      // which resolution with an implicit 'this' currently does not catch.
+      // TODO: Also catch redeclarations of formal names.
+      std::vector<BorrowedIdsWithName> redeclarations;
+      inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
+                             IdAndFlags::FlagSet());
+      if (!redeclarations.empty()) {
+        context->error(ident, "parenless proc redeclares the field '%s'",
+                       ident->name().c_str());
+      } else {
+        // Save result if successful
+        if (handleResolvedCallWithoutError(result, ident, ci, c) &&
+            emitLookupErrors) {
+          issueErrorForFailedCallResolution(ident, ci, c);
+        }
+      }
+    } else {
+      // Can't establish the type. If this is in a function
+      // call, we'll establish it later anyway.
+      result.setType(QualifiedType());
+    }
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
     const IdAndFlags& idv = vec[0].firstIdAndFlags();
