@@ -71,6 +71,11 @@ c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
   return c_sublocid_any;
 }
 
+static inline
+int chpl_equals_localeID(chpl_localeID_t* loc1, chpl_localeID_t* loc2) {
+  return loc1->node == loc2->node;
+}
+
 //
 // These functions are exported from the locale model for use by
 // the tasking layer to convert between a full sublocale and an

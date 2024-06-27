@@ -150,12 +150,45 @@ CallExpr* ProtoSliceAssignHelper::getReplacement() {
   return new CallExpr("=", call_->get(1)->copy(), call_->get(2)->copy());
 }
 
+Symbol* ProtoSliceAssignHelper::getFlagReplacement() {
+  if (!supported_) {
+    // we can't optimize
+    return gFalse;
+  }
+  else if (fLocal) {
+    // no need to check anything else, we can determine this statically
+    return gTrue;
+  }
+  else {
+    INT_ASSERT(lhsBase_);
+    INT_ASSERT(rhsBase_);
+    // we need to check if the arrays are on the same locale at run time
+    CallExpr* localeCheck = new CallExpr("chpl__bothLocal", lhsBase_, rhsBase_);
+
+    VarSymbol* flagTmp = newTemp(dtBool);
+    DefExpr* flagDef = new DefExpr(flagTmp);
+
+    condStmt_->insertBefore(flagDef);
+    condStmt_->insertBefore(new CallExpr(PRIM_MOVE, flagTmp, localeCheck));
+
+    resolveExpr(localeCheck);
+    resolveExpr(flagDef);
+    return flagTmp;
+  }
+}
+
+void ProtoSliceAssignHelper::updateAndFoldConditional() {
+  condStmt_->condExpr->replace(new SymExpr(getFlagReplacement()));
+  condStmt_->foldConstantCondition(/*addEndOfStatement*/ false);
+}
+
 void ProtoSliceAssignHelper::report() {
   if (!fReportArrayViewElision) return;
 
   std::string isSupported = supported() ? "supported" : "not supported";
-  std::cout << "ArrayViewElision " << isSupported << " " << call_->stringLoc()
-            << std::endl;
+  std::string isDynamic = !fLocal ? "(dynamic locality check required)" : "";
+  std::cout << "ArrayViewElision " << isSupported << " " << isDynamic << " " <<
+               call_->stringLoc() << std::endl;
 
   std::cout << "\t" << "lhsBaseType: " << lhsBaseType_ << std::endl;
   std::cout << "\t" << "lhsIndexingExprs: " << std::endl;
@@ -213,6 +246,10 @@ bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call, bool isLhs) {
   bool ret = (toSymExpr(flagDef->init)->symbol() == gTrue);
 
   flagDef->remove();
+
+  // record the base symbol here for further checks
+  Symbol*& baseToCapture = isLhs ? lhsBase_ : rhsBase_;
+  baseToCapture = toSymExpr(call->get(1))->symbol();
 
   return ret;
 }

@@ -24,6 +24,7 @@ module ChapelArrayViewElision {
   use DefaultRectangular;
   use CTypes;
 
+  // TODO the following can be removed?
   proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
 
   proc isArrayOrProtoSlice(a) param {
@@ -247,6 +248,16 @@ module ChapelArrayViewElision {
       }
     }
     return true;
+  }
+
+  inline proc chpl__bothLocal(const ref a, const ref b) {
+    extern proc chpl_equals_localeID(const ref x, const ref y): bool;
+
+    const aLoc = __primitive("_wide_get_locale", a._value);
+    const bLoc = __primitive("_wide_get_locale", b._value);
+
+    return chpl_equals_localeID(aLoc, bLoc) &&
+           chpl_equals_localeID(aLoc, here_id);
   }
 
   proc chpl__typesSupportArrayViewElision(base,

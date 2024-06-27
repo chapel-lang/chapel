@@ -54,6 +54,7 @@ module ChapelShortArrayTransfer {
     else {
       // No `.locale` to avoid overheads. Note that this is an optimization for
       // fast-running code. Small things matter.
+      // TODO, use chpl__bothLocal
       const sameLocale = __primitive("_wide_get_locale", a) ==
                          __primitive("_wide_get_locale", b);
       if sameLocale then
