@@ -65,11 +65,11 @@ namespace llvm {
     }
 
     static const chpl::ID getEmptyKey() {
-      return chpl::ID(USTR("<empty>"), -1, 0);
+      return chpl::ID(USTR("<empty>"));
     }
 
     static const chpl::ID getTombstoneKey() {
-      return chpl::ID(USTR("<tombstone>"), -1, 0);
+      return chpl::ID(USTR("<tombstone>"));
     }
   };
 }
