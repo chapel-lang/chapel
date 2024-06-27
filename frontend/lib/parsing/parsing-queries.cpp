@@ -1309,27 +1309,21 @@ static bool helpFieldNameCheck(const AstNode* ast,
   return false;
 }
 
-static const bool& idContainsFieldWithNameQuery(Context* context, ID declId,
-                                                UniqueString fieldName) {
-  QUERY_BEGIN(idContainsFieldWithNameQuery, context, declId, fieldName);
+static const bool&
+idContainsFieldWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
+  QUERY_BEGIN(idContainsFieldWithNameQuery, context, typeDeclId, fieldName);
 
   bool result = false;
-  if (auto ast = parsing::idToAst(context, declId)) {
-    AstList dummy;
-    AstListIteratorPair<AstNode> potentialDecls(dummy.cbegin(), dummy.cend());
-    if (auto ad = ast->toAggregateDecl()) {
-      potentialDecls = ad->children();
-    } else if (auto fn = ast->toFunction()) {
-      potentialDecls = fn->stmts();
-    } else {
-      // Empty list, nothing to check
-    }
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
 
-    for (auto potentialDecl : potentialDecls) {
+    for (auto child: ad->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
-      if (potentialDecl->isVarLikeDecl() || potentialDecl->isMultiDecl() ||
-          potentialDecl->isTupleDecl()) {
-        bool found = helpFieldNameCheck(potentialDecl, fieldName);
+      if (child->isVarLikeDecl() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        bool found = helpFieldNameCheck(child, fieldName);
         if (found) {
           result = true;
           break;
@@ -1341,8 +1335,8 @@ static const bool& idContainsFieldWithNameQuery(Context* context, ID declId,
   return QUERY_END(result);
 }
 
-bool idContainsFieldWithName(Context* context, ID declId, UniqueString fieldName) {
-  return idContainsFieldWithNameQuery(context, declId, fieldName);
+bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
+  return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
 }
 
 static bool helpFindFieldId(const AstNode* ast,

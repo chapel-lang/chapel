@@ -478,11 +478,10 @@ bool idIsFunctionWithWhere(Context* context, ID id);
 ID idToContainingMultiDeclId(Context* context, ID id);
 
 /**
-  Given an ID for an aggregate decl or function,
-  returns 'true' if the passed name is the name of a field/variable contained in
-  it.
+  Given an ID for a Record/Union/Class Decl,
+  returns 'true' if the passed name is the name of a field contained in it.
  */
-bool idContainsFieldWithName(Context* context, ID declId,
+bool idContainsFieldWithName(Context* context, ID typeDeclId,
                              UniqueString fieldName);
 
 /**
