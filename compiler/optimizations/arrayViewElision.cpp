@@ -64,17 +64,22 @@ void arrayViewElision() {
   std::vector<CallExpr*> candidates;
 
   for_alive_in_Vec (CallExpr, call, gCallExprs) {
-    if (call->getModule()->modTag == MOD_USER) {
-      if (call->isNamed("=")) {
-        if (exprSuitableForProtoSlice(call->get(1), /* isLhs */ true) &&
-            exprSuitableForProtoSlice(call->get(2), /* isLhs */ false)) {
-          //std::cout << call->stringLoc() << std::endl;
-          //nprint_view(call);
-          candidates.push_back(call);
-        }
+    if (FnSymbol* parentFn = toFnSymbol(call->parentSymbol)) {
+      if (parentFn->hasFlag(FLAG_NO_ARRAY_VIEW_ELISION)) {
+        continue;
+      }
+    }
+
+    if (call->isNamed("=")) {
+      if (exprSuitableForProtoSlice(call->get(1), /* isLhs */ true) &&
+          exprSuitableForProtoSlice(call->get(2), /* isLhs */ false)) {
+        //std::cout << call->stringLoc() << std::endl;
+        //nprint_view(call);
+        candidates.push_back(call);
       }
     }
   }
+
 
   for_vector(CallExpr, call, candidates) {
     SET_LINENO(call);
@@ -86,8 +91,8 @@ void arrayViewElision() {
     CallExpr* rhsPSCall = generateCreateProtoSlice(rhs);
 
     // arrayview elision placeholder
-    VarSymbol* placeholder = new VarSymbol("arrayview_elision_flag", dtBool);
-    placeholder->addFlag(FLAG_ARRAYVIEW_ELISION_FLAG);
+    VarSymbol* placeholder = new VarSymbol("array_view_elision_flag", dtBool);
+    placeholder->addFlag(FLAG_ARRAY_VIEW_ELISION_FLAG);
 
     call->insertBefore(new DefExpr(placeholder, gFalse));
 
@@ -184,6 +189,10 @@ void ProtoSliceAssignHelper::updateAndFoldConditional() {
 
 void ProtoSliceAssignHelper::report() {
   if (!fReportArrayViewElision) return;
+  if (ModuleSymbol* mod = call_->getModule()) {
+    // if there's no user module, getModule could return null
+    if (mod->modTag != MOD_USER) return;
+  }
 
   std::string isSupported = supported() ? "supported" : "not supported";
   std::string isDynamic = !fLocal ? " (dynamic locality check required)" : "";
@@ -289,7 +298,7 @@ void ProtoSliceAssignHelper::findCondStmt() {
   while (cur) {
     if (CondStmt* condStmt = toCondStmt(cur)) {
       if (SymExpr* condExpr = toSymExpr(condStmt->condExpr)) {
-        if (condExpr->symbol()->hasFlag(FLAG_ARRAYVIEW_ELISION_FLAG)) {
+        if (condExpr->symbol()->hasFlag(FLAG_ARRAY_VIEW_ELISION_FLAG)) {
           tmpCondFlag_ = condExpr->symbol();
           condStmt_ = condStmt;
           break;
