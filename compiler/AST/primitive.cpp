@@ -216,6 +216,17 @@ returnInfoScalarPromotionType(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoThunkResultType(CallExpr* call) {
+  QualifiedType tmp = call->get(1)->qualType();
+  AggregateType* type = toAggregateType(tmp.type()->getValType());
+
+  INT_ASSERT(type);
+  INT_ASSERT(type->thunkInvoke);
+
+  return QualifiedType(type->thunkInvoke->retType, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoStaticFieldType(CallExpr* call) {
   // The code below is not very general. It can be extended as needed.
   // The first argument is the variable or the type whose field is queried.
@@ -733,6 +744,7 @@ initPrimitive() {
   prim_def(PRIM_CREATE_THUNK, "create thunk", returnInfoUnknown);
   prim_def(PRIM_THUNK_RESULT, "thunk result", returnInfoFirst);
   prim_def(PRIM_FORCE_THUNK, "force thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT_TYPE, "thunk result type", returnInfoThunkResultType);
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);

@@ -1733,6 +1733,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_CREATE_THUNK:
     case PRIM_THUNK_RESULT:
     case PRIM_FORCE_THUNK:
+    case PRIM_THUNK_RESULT_TYPE:
       CHPL_UNIMPL("misc primitives");
       break;
 
