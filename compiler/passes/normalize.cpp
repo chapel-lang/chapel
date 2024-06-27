@@ -729,7 +729,7 @@ static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
   auto thunkFn = new FnSymbol(thunkName);
   thunkFn->addFlag(FLAG_COMPILER_GENERATED);
   thunkFn->addFlag(FLAG_THUNK_BUILDER);
-  thunkFn->setGeneric(true);
+  if (outerVars.size() > 0) thunkFn->setGeneric(true);
   node->getStmtExpr()->insertBefore(new DefExpr(thunkFn));
 
   auto thunkResultTmp = newTemp("thunkResult");
