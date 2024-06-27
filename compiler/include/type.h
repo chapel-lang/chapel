@@ -71,6 +71,7 @@ public:
   GenRet         codegen()   override;
   bool           inTree()    override;
   QualifiedType  qualType()  override;
+  Type*          typeInfo()  override { return this; }
   void           verify()    override;
 
   virtual void           codegenDef();

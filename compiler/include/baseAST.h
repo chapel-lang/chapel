@@ -251,6 +251,7 @@ public:
   virtual GenRet    codegen()                                          = 0;
   virtual bool      inTree()                                           = 0;
   virtual QualifiedType qualType()                                     = 0;
+  virtual Type*     typeInfo()                                         = 0;
   virtual void      verify()                                           = 0;
   virtual void      accept(AstVisitor* visitor)                        = 0;
 
@@ -258,7 +259,6 @@ public:
   int               linenum()                                    const;
   const char*       stringLoc()                                  const;
 
-  Type*             typeInfo(); // note: calls qualType
   bool              isRef();
   bool              isWideRef();
   bool              isRefOrWideRef();

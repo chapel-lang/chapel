@@ -30,6 +30,7 @@ public:
           bool    inTree()                                        override;
   virtual bool    isStmt()                                           const;
           QualifiedType qualType()                                override;
+          Type*   typeInfo()                                      override;
           void    verify()                                        override;
 
   void verify(AstTag expectedTag); // ensure tag is as expected, then verify()
