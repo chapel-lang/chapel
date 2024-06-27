@@ -2257,6 +2257,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
+    break;
   }
 
   case PRIM_FORCE_THUNK: {
@@ -2267,6 +2268,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // call the invoke method of the thunk stored in aggrT->thunkInvoke
     retval = new CallExpr(aggrT->thunkInvoke, gMethodToken, sizeSym->remove());
     call->replace(retval);
+    break;
   }
 
   default:
