@@ -2161,6 +2161,7 @@ module ChapelArray {
     }
   }
 
+  pragma "find user line"
   private inline proc arrayOrProtoSliceAssign(ref a, b) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
