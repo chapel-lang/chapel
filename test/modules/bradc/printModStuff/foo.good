@@ -1,9 +1,4 @@
 module search dirs:
-  $CHPL_HOME/modules/internal/localeModels/flat
-  $CHPL_HOME/modules/internal/tasktable/off
-  $CHPL_HOME/modules/internal/tasks/fifo
-  $CHPL_HOME/modules/internal/tasks/fifo
-  $CHPL_HOME/modules/internal/comm/none
   $CHPL_HOME/modules/internal
   $CHPL_HOME/modules/standard/gen/...
   $CHPL_HOME/modules/standard
