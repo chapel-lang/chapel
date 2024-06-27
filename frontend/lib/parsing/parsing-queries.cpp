@@ -391,7 +391,7 @@ static const ID& findMainModuleImpl(Context* context,
     } else {
       // check for the requested module in loaded .dyno files
       UniqueString unusedLibPath;
-      ID libId = ID(requestedMainModuleName, -1, -1);
+      ID libId = ID(requestedMainModuleName);
       if (context->moduleIsInLibrary(libId, unusedLibPath)) {
         result = libId;
       } else {
