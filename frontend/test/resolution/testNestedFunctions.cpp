@@ -261,6 +261,7 @@ static void test4(void) {
   assert(x3.type() && x3.type()->isErroneousType());
 }
 
+// This is private issue #6022.
 static void test5(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
@@ -384,6 +385,66 @@ static void test8(void) {
 }
 */
 
+static void test9(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    proc helper(type T) param: string {
+      return T:string + "_hello";
+    }
+
+    proc foo(type T) {
+      extern helper(T) proc foobar(obj: int): int; // should rename to "bool_hello" at codegen
+      var x: int;
+      return foobar(x);
+    }
+
+    var x = foo(bool);
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
+// This is private issue #6123. TODO: Error "type construction call expected".
+/*
+static void test10(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    proc externT(type T) type { return int; }
+
+    record R {
+      type valType;
+      var val : valType;
+
+      proc foo() {
+        extern proc helper(arg: externT(valType)) : real;
+
+        var dummy : int;
+        return helper(dummy);
+      }
+    }
+
+    var r : R(int);
+    var x = r.foo();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+*/
+
 int main() {
   test0();
   test1();
@@ -394,5 +455,7 @@ int main() {
   test6();
   test7();
   // test8();
+  test9();
+  // test10();
   return 0;
 }
