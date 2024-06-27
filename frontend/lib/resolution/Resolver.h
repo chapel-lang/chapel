@@ -112,9 +112,6 @@ struct Resolver {
   owned<OuterVariables> outerVars;
   const CallerDetails* parentDetails = nullptr;
   std::map<ID, std::pair<types::QualifiedType, std::vector<ID>>> outerVariables;
-  // TODO: Can we just compute the details once?
-  // CallerDetails currentDetails;
-
 
   // results of the resolution process
 

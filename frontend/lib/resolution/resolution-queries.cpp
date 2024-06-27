@@ -563,10 +563,6 @@ typedSignatureInitialImpl(Context* context,
       auto parentShape = UntypedFnSignature::get(context, parentFnId);
       parentSignature = typedSignatureInitial(context, parentShape);
     } else {
-      // TODO: Is this safe to use / complete at this point, or does it need
-      // to be further instantiated? I think it would be difficult/impossible
-      // to go through and backpatch every nested function signature to
-      // update their parent function(s).
       parentSignature = caller.signature();
     }
 
