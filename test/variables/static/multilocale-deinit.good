@@ -1,0 +1,5 @@
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+deinit of record with value 3
+deinit of record with value 3
+deinit of record with value 3
+deinit of record with value 3
