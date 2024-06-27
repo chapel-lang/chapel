@@ -138,10 +138,10 @@ Methods that are not accessors are still allowed to use "get" in their name.
 Formals
 +++++++
 
-Formal names should be camelCase.  Descriptive names are recommended, within
-reason.  Encoding the type name into a formal name is generally avoided when
-multiple types are supported, as doing so makes it harder to support generic
-functions.
+Formal names should be camelCase or PascalCase.  Descriptive names are
+recommended, within reason.  Encoding the type name into a formal name is
+generally avoided when multiple types are supported, as doing so makes it harder
+to support generic functions.
 
 Some commonly used names are:
 
