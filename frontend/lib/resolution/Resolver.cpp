@@ -98,7 +98,7 @@ namespace {
 }
 
 static QualifiedType
-getIterKindConstantOrUnknown(Resolver& rv, const std::string& constant);
+getIterKindConstantOrUnknown(Resolver& rv, UniqueString constant);
 
 // Helper to resolve a specified iterator signature and its yield type.
 static QualifiedType
@@ -106,7 +106,7 @@ resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
                        const AstNode* astForErr,
                        const AstNode* iterand,
-                       const std::string& iterKindStr,
+                       UniqueString iterKindStr,
                        const QualifiedType& followThisFormal);
 
 static IterDetails resolveIterDetails(Resolver& rv,
@@ -4225,8 +4225,8 @@ void Resolver::exit(const New* node) {
 }
 
 static QualifiedType
-getIterKindConstantOrUnknown(Resolver& rv, const std::string& constant) {
-  if (!constant.empty()) {
+getIterKindConstantOrUnknown(Resolver& rv, UniqueString constant) {
+  if (!constant.isEmpty()) {
     auto ik = EnumType::getIterKindType(rv.context);
     if (auto m = EnumType::getParamConstantsMapOrNull(rv.context, ik)) {
       auto it = m->find(constant);
@@ -4264,7 +4264,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
     IterDetails ret;
     if (mask & IterDetails::STANDALONE) {
       ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, astForErr,
-                                           iterand, "standalone", {});
+                                           iterand, USTR("standalone"), {});
       wasIterSigResolved = (ret.standalone.sig != nullptr);
       if (!ret.idxType.isUnknownOrErroneous()) {
         ret.succeededAt = IterDetails::STANDALONE;
@@ -4274,7 +4274,8 @@ static IterDetails resolveIterDetails(Resolver& rv,
 
     if (mask & IterDetails::LEADER_FOLLOWER) {
       ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, astForErr,
-                                                   iterand, "leader", {});
+                                                   iterand, USTR("leader"),
+                                                   {});
       computedLeaderYieldType = true;
     } else if (mask & IterDetails::FOLLOWER) {
       ret.leaderYieldType = leaderYieldType;
@@ -4284,7 +4285,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
         mask & IterDetails::FOLLOWER) {
       if (!ret.leaderYieldType.isUnknownOrErroneous()) {
         ret.idxType = resolveIterTypeWithTag(rv, ret.follower, astForErr,
-                                             iterand, "follower",
+                                             iterand, USTR("follower"),
                                              ret.leaderYieldType);
         wasIterSigResolved = (ret.follower.sig != nullptr);
         if (!ret.idxType.isUnknownOrErroneous()) {
@@ -4340,7 +4341,7 @@ resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
                        const AstNode* astForErr,
                        const AstNode* iterand,
-                       const std::string& iterKindStr,
+                       UniqueString iterKindStr,
                        const QualifiedType& followThisFormal) {
   Context* context = rv.context;
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
@@ -4350,7 +4351,7 @@ resolveIterTypeWithTag(Resolver& rv,
   bool needStandalone = iterKindStr == "standalone";
   bool needLeader = iterKindStr == "leader";
   bool needFollower = iterKindStr == "follower";
-  bool needSerial = iterKindStr.empty();
+  bool needSerial = iterKindStr.isEmpty();
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindFormal.isUnknown()) return error;

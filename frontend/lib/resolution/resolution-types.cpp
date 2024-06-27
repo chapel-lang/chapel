@@ -847,7 +847,7 @@ void TypedFnSignature::stringify(std::ostream& ss,
 }
 
 bool TypedFnSignature::
-isIterWithIterKind(Context* context, const std::string& iterKindStr) const {
+isIterWithIterKind(Context* context, UniqueString iterKindStr) const {
   if (!isIterator()) return false;
 
   auto ik = types::EnumType::getIterKindType(context);
