@@ -28,11 +28,15 @@
 class ArgSymbol;
 class CallInfo;
 class FnSymbol;
+class Expr;
+class Symbol;
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
                                 llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
                                 bool                     fastFollowerChecks);
+
+void printCoercionNote(Expr* actualExpr, Symbol* actualSym);
 
 const char* unwrapFnName(FnSymbol* fn);
 

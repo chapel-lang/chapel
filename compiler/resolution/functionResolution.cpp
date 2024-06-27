@@ -7716,6 +7716,8 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
                        calleeFn->hasFlag(FLAG_OPERATOR) ? "operator " : "",
                        calleeFn->name,
                        calleeParens);
+
+      printCoercionNote(actual, actSym);
     }
 
     if (SymExpr* aSE = toSymExpr(actual)) {

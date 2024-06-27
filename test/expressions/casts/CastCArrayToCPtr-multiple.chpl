@@ -36,9 +36,9 @@ if case ==  0 then qic(avar);
 if case == 13 then qrv(avar);  // error: unresolved -- int->real
 if case == 14 then qrc(avar);  // error: unresolved -- int->real
 
-if case == 21 then qiv(acon);  // error: unresolved -- const to non-const
+if case == 21 then qiv(acon);  // error: const actual to ':'
 if case ==  0 then qic(acon);
-if case == 23 then qrv(acon);  // error: unresolved -- int->real, non/const
+if case == 23 then qrv(acon);  // error: unresolved -- int->real
 if case == 24 then qrc(acon);  // error: unresolved -- int->real
 
 /// casts //////////////////////////////////////////////////////////////////
@@ -60,6 +60,6 @@ if case ==  0 then p(acon : c_ptrConst(void));
 /////////// MISMATCH of source and target types ///////////
 
 if case == 51 then p(avar : c_ptr(real));      // error -- int->real
-if case == 52 then p(acon : c_ptr(real));      // error -- int->real, non/const
+if case == 52 then p(acon : c_ptr(real));      // error -- int->real
 if case == 53 then p(avar : c_ptrConst(real)); // error -- int->real
 if case == 54 then p(acon : c_ptrConst(real)); // error -- int->real
