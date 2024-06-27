@@ -1,0 +1,2 @@
+warning: The path 'nonexistentdir' passed to '-M' does not exist and has been discarded
+AddNonDirToModulePath.chpl:1: error: cannot find module named 'UsefulModule'

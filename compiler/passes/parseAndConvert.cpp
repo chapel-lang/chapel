@@ -680,6 +680,19 @@ static void addDashMsToUserPath() {
 static void addUsrDirToModulePath(const char* dir) {
   const char* uniqueDir = astr(dir);
 
+  // Intentionally discard non-existent module paths now and warn the user
+  // that they have been discarded. This may clear up confusion later in
+  // compilation if the user sees a 'cannot find module' error due to this.
+  if (!pathExists(uniqueDir)) {
+    USR_WARN("The path '%s' passed to '-M' does not exist and "
+             "has been discarded", uniqueDir);
+    return;
+  }
+
+  if (!isDirectory(uniqueDir)) {
+    USR_FATAL("The path '%s' passed to '-M' is not a directory", uniqueDir);
+  }
+
   if (sModPathSet.set_in(uniqueDir) == NULL) {
     sUsrModPath.add(uniqueDir);
     sModPathSet.set_add(uniqueDir);
@@ -1380,6 +1393,8 @@ static const char* searchThePath(const char*      modName,
   const char* retval   = NULL;
 
   forv_Vec(const char*, dirName, searchPath) {
+    if (!isDirectory(dirName)) continue;
+
     std::string dirStr = dirName;
 
     // Remove slashes at the end of the directory path

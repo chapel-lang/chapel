@@ -1,0 +1,5 @@
+-M nonexistentdir           # AddNonDirToModulePath.0.good
+-M AddNonDir-dir            # AddNonDirToModulePath.1.good
+-M AddNonDir-file.txt       # AddNonDirToModulePath.2.good
+-M AddNonDir-symlink-dir    # AddNonDirToModulePath.3.good
+-M AddNonDir-symlink-file   # AddNonDirToModulePath.4.good
