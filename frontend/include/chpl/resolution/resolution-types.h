@@ -956,7 +956,7 @@ class TypedFnSignature {
                       Bitmap formalsInstantiated);
 
   bool
-  isIterWithIterKind(Context* context, const std::string& iterKindStr) const;
+  isIterWithIterKind(Context* context, UniqueString iterKindStr) const;
 
  public:
   /** Get the unique TypedFnSignature containing these components */
@@ -1113,17 +1113,17 @@ class TypedFnSignature {
 
   /** Returns 'true' if this signature is for a standalone parallel iterator. */
   bool isParallelStandaloneIterator(Context* context) const {
-    return isIterWithIterKind(context, "standalone");
+    return isIterWithIterKind(context, USTR("standalone"));
   }
 
   /** Returns 'true' if this signature is for a parallel leader iterator. */
   bool isParallelLeaderIterator(Context* context) const {
-    return isIterWithIterKind(context, "leader");
+    return isIterWithIterKind(context, USTR("leader"));
   }
 
   /** Returns 'true' if this signature is for a parallel follower iterator. */
   bool isParallelFollowerIterator(Context* context) const {
-    return isIterWithIterKind(context, "follower");
+    return isIterWithIterKind(context, USTR("follower"));
   }
 
   /** Returns 'true' if this signature is for a serial iterator. */

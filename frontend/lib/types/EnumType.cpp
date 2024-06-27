@@ -65,38 +65,32 @@ const EnumType* EnumType::getBoundKindType(Context* context) {
 }
 
 const EnumType* EnumType::getIterKindType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelBase.iterKind");
   auto name = UniqueString::get(context, "iterKind");
-  auto id = ID(symbolPath, -1, 0);
-
-  // Try to parse the containing module if present so queries will be set.
-  auto up = id.parentSymbolId(context);
-  std::ignore = parsing::getToplevelModule(context, up.symbolPath());
-
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelBase", "iterKind");
   return EnumType::get(context, id, name);
 }
 
-static const std::map<std::string, QualifiedType>&
+static const std::map<UniqueString, QualifiedType>&
 getParamConstantsMapQuery(Context* context, const EnumType* et) {
   QUERY_BEGIN(getParamConstantsMapQuery, context, et);
-  std::map<std::string, QualifiedType> ret;
+  std::map<UniqueString, QualifiedType> ret;
 
   auto ast = parsing::idToAst(context, et->id());
   if (auto e = ast->toEnum()) {
     for (auto elem : e->enumElements()) {
       auto param = EnumParam::get(context, elem->id());
       QualifiedType qt(QualifiedType::PARAM, et, param);
-      auto k = elem->name().str();
+      auto k = UniqueString::get(context, elem->name().str());
       auto it = ret.find(k);
       if (it != ret.end()) continue;
-      ret.emplace_hint(it, k, std::move(qt));
+      ret.emplace_hint(it, std::move(k), std::move(qt));
     }
   }
 
   return QUERY_END(ret);
 }
 
-const std::map<std::string, QualifiedType>*
+const std::map<UniqueString, QualifiedType>*
 EnumType::getParamConstantsMapOrNull(Context* context, const EnumType* et) {
   if (!et || !et->id()) return nullptr;
   auto ast = parsing::idToAst(context, et->id());
