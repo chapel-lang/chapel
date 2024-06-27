@@ -573,6 +573,12 @@ all:
   06/03/24:
     - text: Stop setting CHPL_TARGET_CPU (#25161)
       config: chapcs
+  06/12/24:
+    - text: Add support for GASNet PSHM and send progress thread (#25140)
+      config: 16-node-apollo-hdr
+  06/17/24:
+    - text: Revert to default GASNET_SND_THREAD=0 (#25307)
+      config: 16-node-apollo-hdr
 
 # End all
 
@@ -2455,6 +2461,8 @@ arkouda: &arkouda-base
     - Closes 3089 Avoid OOM Crashes caused due to in intents on makeDistArray (Bears-R-Us/arkouda#3163)
   05/14/24:
     - Dataframe Indexing (Bears-R-Us/arkouda#3109)
+  06/14/24:
+    - Reverts DataFrame Indexing Changes (Bears-R-Us/arkouda#3323)
 
 arkouda-string:
   <<: *arkouda-base
