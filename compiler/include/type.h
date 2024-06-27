@@ -530,6 +530,7 @@ TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
 TYPE_EXTERN Type*             dtIntegral;
 TYPE_EXTERN Type*             dtNumeric;
+TYPE_EXTERN Type*             dtThunkRecord;
 
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;

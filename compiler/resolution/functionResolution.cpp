@@ -919,6 +919,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType                                     == dtThunkRecord &&
+      actualType->symbol->hasFlag(FLAG_THUNK_RECORD) == true) {
+    return true;
+  }
+
   if (formalType == dtAnyRecord && isUserRecord(actualType)) {
     return true;
   }
