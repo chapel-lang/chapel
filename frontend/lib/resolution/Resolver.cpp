@@ -3553,6 +3553,19 @@ void Resolver::prepareCallInfoActuals(const Call* call,
                            /* actualAsts */ nullptr);
 }
 
+static const Type* getGenericType(Context* context, const Type* recv) {
+  const Type* gen = nullptr;
+  if (auto cur = recv->toCompositeType()) {
+    gen = cur->instantiatedFromCompositeType();
+    if (gen == nullptr) gen = cur;
+  } else if (auto cur = recv->toClassType()) {
+    auto m = getGenericType(context, cur->manageableType());
+    gen = ClassType::get(context, m->toManageableType(),
+                         cur->manager(), cur->decorator());
+  }
+  return gen;
+}
+
 void Resolver::handleCallExpr(const uast::Call* call) {
   if (scopeResolveOnly) {
     return;
@@ -3660,7 +3673,25 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   }
 
   if (!skip) {
-    auto receiverType = methodReceiverType();
+    QualifiedType receiverType = methodReceiverType();
+
+    // Calling initializer without qualifier, e.g., `init(a, b, c);``
+    //
+    // If the user has mistakenly instantiated a field of the type before
+    // calling ``init``, then the receiver type will either be fully or
+    // partially instantiated. This will cause a failure to resolve the
+    // ``init`` call, and result in a confusing and unhelpful error message.
+    //
+    // Instead, whenever we see this kind of 'init' call, we will set the
+    // receiver type to be fully-generic as if the user had not instantiated
+    // any fields. This matches the behavior when calling ``this.init(...)``,
+    // where ``this`` is treated as fully-generic.
+    if (initResolver &&
+        ci.name() == USTR("init") && ci.isMethodCall() == false) {
+      auto gen = getGenericType(context, receiverType.type());
+      receiverType = QualifiedType(QualifiedType::INIT_RECEIVER, gen);
+    }
+
     CallResolutionResult c
       = resolveCallInMethod(context, call, ci, inScopes, receiverType);
 
