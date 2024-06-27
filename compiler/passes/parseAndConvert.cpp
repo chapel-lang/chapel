@@ -33,8 +33,6 @@
 #include "wellknown.h"
 #include "misc.h"
 
-#include "view.h" // debug
-
 #include "chpl/libraries/LibraryFile.h"
 #include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/parsing/parsing-queries.h"
