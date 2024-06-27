@@ -920,20 +920,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_PROTO_SLICE_ASSIGN: {
     ProtoSliceAssignHelper assignment(call);
 
-    assignment.report();
-
     if (assignment.supported()) {
       retval = assignment.getReplacement();
       call->replace(retval);
-      assignment.flag()->replace(new SymExpr(gTrue));
     }
     else {
       retval = new CallExpr(PRIM_NOOP);
       assignment.condStmt()->insertBefore(retval);
-      assignment.flag()->replace(new SymExpr(gFalse));
     }
 
-    assignment.condStmt()->foldConstantCondition(/*addEndOfStatement*/ false);
+    assignment.report();
+    assignment.updateAndFoldConditional();
 
     break;
   }

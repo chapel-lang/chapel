@@ -33,15 +33,17 @@ public:
   ~ProtoSliceAssignHelper();
 
   inline CondStmt* condStmt() const { return condStmt_; }
-  inline Expr* flag() const { return condStmt_->condExpr; }
   inline bool supported() const { return supported_; }
   inline BlockStmt* staticCheckBlock() const { return staticCheckBlock_; }
 
   CallExpr* getReplacement();
   void report();
+  void updateAndFoldConditional();
 
 private:
   CallExpr* call_;
+  Symbol* lhsBase_;
+  Symbol* rhsBase_;
   CallExpr* newProtoSliceLhs_;
   CallExpr* newProtoSliceRhs_;
   CondStmt* condStmt_;
@@ -60,4 +62,6 @@ private:
   void findProtoSlices();
   bool handleOneProtoSlice(CallExpr* call, bool isLhs);
   CallExpr* findOneProtoSliceCall(Expr* e);
+  Symbol* getFlagReplacement();
 };
+
