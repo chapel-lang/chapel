@@ -587,6 +587,9 @@ void setupModuleSearchPaths(
                   const std::vector<std::string>& prependStandardModulePaths,
                   const std::vector<std::string>& cmdLinePaths,
                   const std::vector<std::string>& inputFilenames) {
+  CHPL_ASSERT(
+      context->numQueriesRunThisRevision() == 0 &&
+      "setupModuleSearchPaths should be called before any queries are run");
 
   std::string modRoot;
   if (!minimalModules) {

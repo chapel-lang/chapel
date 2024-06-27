@@ -263,9 +263,7 @@ def main():
 
     printed_warning = False
 
-    for filename, context in chapel.files_with_contexts(args.filenames):
-        context.set_module_paths([], [])
-
+    for filename, context in chapel.files_with_stdlib_contexts(args.filenames):
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as _:
             asts = context.parse(filename)
