@@ -16,12 +16,12 @@ class Chapel < Formula
     sha256 x86_64_linux:   "961ad1d420eeeac018098fba19f05ff207edcd279b8c98d5439838d9928f61de"
   end
 
-  depends_on "pkg-config" => :build
   depends_on "cmake"
   depends_on "gmp"
   depends_on "hwloc"
   depends_on "jemalloc"
-  depends_on "llvm@17"
+  depends_on "llvm"
+  depends_on "pkg-config"
   depends_on "python@3.12"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
