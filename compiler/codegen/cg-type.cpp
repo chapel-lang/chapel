@@ -209,11 +209,11 @@ void EnumType::codegenDef() {
 
 static Type* baseForLLVMPointer(TypeSymbol* origBase) {
   Type* result = origBase->type;
-// LLVM pointer's base type does not matter for LLVM >=15
-#if LLVM_VERSION_MAJOR < 15
+#ifdef HAVE_LLVM_TYPED_POINTERS
   if (result == dtVoid || result == dtNothing)
-    // LLVM 14 does not allow void*, see StructType::isValidElementType()
-    // ==> use i8* instead
+    // LLVM does not allow void*, see StructType::isValidElementType()
+    // ==> use i8* instead, for typed pointers
+    // cf. for opaque pointers the base type does not matter
     result = dtInt[INT_SIZE_8];
 #endif
   return result;
