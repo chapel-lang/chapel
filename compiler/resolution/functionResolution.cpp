@@ -11734,6 +11734,7 @@ static void postResolveLiftStaticVars() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR_WRAPPER)) {
       if (!call->inTree()) continue;
+      auto targetMod = call->getModule();
 
       auto wrapperSym = toSymExpr(call->get(1))->symbol();
       auto initDummySym = toSymExpr(call->get(2))->symbol();
@@ -11746,14 +11747,54 @@ static void postResolveLiftStaticVars() {
       // Move the definition point of the wrapper into the module scope.
       // But first, keep a handle on the block to be able to move it later.
       auto wrapperBlock = toBlockStmt(wrapperSym->defPoint->parentExpr);
-      INT_ASSERT(wrapperBlock);
-      call->getModule()->block->insertAtHead(wrapperSym->defPoint->remove());
+      targetMod->block->insertAtHead(wrapperSym->defPoint->remove());
+
+      // If we created some cleanup code to run in the per-locale case,
+      // retrieve it now. See the comment in normalize.cpp's
+      // preNormalizeHandleStaticVars for the structure of the cleanup block,
+      // as well as why it's needed.
+      BlockStmt* cleanupBlock = nullptr;
+      if (wrapperSym->hasFlag(FLAG_LOCALE_PRIVATE)) {
+        cleanupBlock = toBlockStmt(wrapperBlock->body.tail->remove());
+        INT_ASSERT(wrapperBlock);
+      }
 
       // Now move the initialization code into the module init function.
       // The last statement is the 'return void', which we keep.
-      call->getModule()->initFn->body->insertAtHead(wrapperBlock->remove());
+      targetMod->initFn->body->insertAtHead(wrapperBlock->remove());
       wrapperBlock->flattenAndRemove();
       call->remove();
+
+      // In some cases, we need to do cleanup.
+      if (!cleanupBlock) continue;
+      SET_LINENO(wrapperSym);
+
+      auto cleanupFnDefBlock = toBlockStmt(cleanupBlock->body.head->remove());
+      INT_ASSERT(cleanupFnDefBlock);
+      auto cleanupCall = toBlockStmt(cleanupBlock->body.tail->remove());
+      INT_ASSERT(cleanupCall);
+
+      auto cleanupFnDef = toDefExpr(cleanupFnDefBlock->body.tail);
+      INT_ASSERT(cleanupFnDef);
+      auto cleanupFn = toFnSymbol(cleanupFnDef->sym);
+      INT_ASSERT(cleanupFn);
+
+      // Relocate the .reset() call into the function; it's no longer
+      // a captured variable, but a global one.
+      cleanupFn->body->insertAtHead(cleanupBlock);
+      cleanupBlock->flattenAndRemove();
+
+      // Relocate the definition of the cleanup function for the new
+      // global static wrapper into the same module where the variable
+      // itself lives.
+      targetMod->block->insertAtHead(cleanupFnDefBlock);
+      cleanupFnDefBlock->flattenAndRemove();
+
+      // Insert a call to the cleanup code in the module's deinit function.
+      Expr* deinitAnchor = nullptr;
+      ensureModuleDeinitFnAnchor(targetMod, deinitAnchor);
+      deinitAnchor->insertAfter(cleanupCall);
+      cleanupCall->flattenAndRemove();
     }
   }
 }

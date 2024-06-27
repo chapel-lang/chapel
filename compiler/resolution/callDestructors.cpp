@@ -972,7 +972,7 @@ void FixupDestructors::process(FnSymbol* fn) {
   }
 }
 
-static void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
+void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
   if (anchor)
     return;
 

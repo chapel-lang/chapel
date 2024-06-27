@@ -358,6 +358,7 @@ static void preNormalizeHandleStaticVars() {
                                               wrapperVar, initVarTemp));
       wrapperBlock->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
 
+      bool needsCleanup = false;
       if (call->numActuals() > 0) {
         // The actual specifies the sharing kind.
         auto sharingKind = toSymExpr(call->get(1));
@@ -376,10 +377,53 @@ static void preNormalizeHandleStaticVars() {
           // Do nothing, that's the default behavior.
         } else if (sharingKind->symbol()->name == astr("computePerLocale")) {
           wrapperVar->addFlag(FLAG_LOCALE_PRIVATE);
+          needsCleanup = true;
         } else {
           USR_FATAL(call, "invalid argument to @functionStatic attribute");
         }
       }
+
+      // If we're a per-locale variable, we'll need to clean it up
+      // on every locale, since LOCALE_PRIVATE does not do this for us.
+      // Build the cleanup function now, so that it's resolved
+      // as normal as part of the resolution process.
+      //
+      // { scopeless
+      //   proc cleanupStaticWrapper() {}
+      // }
+      // myStaticVar.reset();
+      // { scopeless
+      //   chpl__executeStaticWrapperCleanupEverywhere(cleanupStaticWrapper);
+      // }
+      //
+      // Don't put the reset call into the function body right away because
+      // at this time, myStaticVar is a non-global variable, so the function
+      // is capturing it. We use the function as an FCF argument to
+      // 'executeStaticWraperCleanup', and capturing FCFs do not work. The
+      // relocation of the reset call will happen after the static variable has
+      // been hoisted to the module level.
+      //
+      // The proc def is wrapped in a block because creating an FCF introduces
+      // a whole bunch of additional functions into the same scope as the
+      // original function, and we need an easy way to get a handle on all
+      // of that.
+      //
+      // The 'executeStaticWrapperCleanup' call is wrapped in a block for a
+      // similar reason, but the things we want to relocate are call temps etc.
+      if (needsCleanup) {
+        auto cleanupBlock = new BlockStmt(BLOCK_SCOPELESS);
+        auto cleanupFnBlock = new BlockStmt(BLOCK_SCOPELESS);
+        auto cleanupCallBlock = new BlockStmt(BLOCK_SCOPELESS);
+        auto cleanupFn = new FnSymbol("chpl__cleanupStaticWrapper");
+        cleanupFnBlock->insertAtTail(new DefExpr(cleanupFn));
+        cleanupBlock->insertAtTail(cleanupFnBlock);
+        cleanupBlock->insertAtTail(
+            new CallExpr(new CallExpr(".", wrapperVar, new_CStringSymbol("reset"))));
+        cleanupCallBlock->insertAtTail(new CallExpr("chpl__executeStaticWrapperCleanupEverywhere", cleanupFn));
+        cleanupBlock->insertAtTail(cleanupCallBlock);
+        wrapperBlock->insertAtTail(cleanupBlock);
+      }
+
 
       anchor->insertBefore(initVarBlock);
       anchor->insertBefore(wrapperBlock);
