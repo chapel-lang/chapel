@@ -37,6 +37,7 @@
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/post-parse-checks.h"
 #include "chpl/util/filtering.h"
+#include "chpl/util/string-utils.h"
 #include "chpl/util/version-info.h"
 
 #include "../util/filesystem_help.h"
@@ -899,7 +900,11 @@ std::string getExistingFileInModuleSearchPath(Context* context,
         if (!skip) {
           auto loc = IdOrLocation::createForCommandLineLocation(context);
           bool warnU = isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
-          CHPL_REPORT(context, AmbiguousSourceFile, loc, found, check, warnU);
+
+          CHPL_REPORT(context, AmbiguousSourceFile, loc,
+                      replacePrefix(found, context->chplHome(), "$CHPL_HOME"),
+                      replacePrefix(check, context->chplHome(), "$CHPL_HOME"),
+                      warnU);
         }
         continue;
       } else if (!check.empty() && found.empty()) {
