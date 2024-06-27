@@ -3132,7 +3132,6 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       // Otherwise, it's a variable, so walk up parent frames and look up
       // the variable's type using the resolution results.
       } else if (ID parentFn = target.parentFunctionId(context)) {
-        CHPL_ASSERT(!parentFn.isEmpty());
         if (auto details = parentDetails) {
           if (auto frame = details->findParentOf(context, target)) {
             type = frame->resolutionById()->byId(target).type();
