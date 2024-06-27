@@ -233,6 +233,8 @@ module ChapelArrayViewElision {
            Reflection.canResolve("c_addrOf", base);
   }
 
+  extern proc printf(s...);
+
   proc chpl__indexingExprsSupportAVE(indexingExprs...) param: bool {
     for param tid in 0..<indexingExprs.size {
       if !isRange(indexingExprs[tid]) {

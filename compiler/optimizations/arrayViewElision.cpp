@@ -24,6 +24,7 @@
 #include "global-ast-vecs.h"
 #include "passes.h"
 #include "resolution.h"
+#include "view.h"
 
 static bool exprSuitableForProtoSlice(Expr* e, bool isLhs) {
   if (CallExpr* call = toCallExpr(e)) {
@@ -196,6 +197,7 @@ bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call, bool isLhs) {
 
   CallExpr* typeCheck = new CallExpr("chpl__typesSupportArrayViewElision");
   for_actuals (actual, call) {
+    //nprint_view(actual);
     INT_ASSERT(isSymExpr(actual));
     typeCheck->insertAtTail(actual->copy());
   }
@@ -218,24 +220,29 @@ bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call, bool isLhs) {
 // e must be the lhs or rhs of PRIM_ASSIGN_PROTO_SLICES
 // returns the `chpl__createProtoSlice call
 CallExpr* ProtoSliceAssignHelper::findOneProtoSliceCall(Expr* e) {
-  SymExpr* lhsSE = toSymExpr(call_->get(1));
-  INT_ASSERT(lhsSE);
+  SymExpr* symExpr = toSymExpr(e);
+  INT_ASSERT(symExpr);
 
-  Symbol* lhs = lhsSE->symbol();
-  CallExpr* lhsTmpMove = toCallExpr(lhs->getSingleDef()->getStmtExpr());
-  INT_ASSERT(lhsTmpMove && lhsTmpMove->isPrimitive(PRIM_MOVE));
+  Symbol* sym = symExpr->symbol();
+  CallExpr* tmpMove = toCallExpr(sym->getSingleDef()->getStmtExpr());
+  INT_ASSERT(tmpMove && tmpMove->isPrimitive(PRIM_MOVE));
 
-  SymExpr* lhsTmpSE = toSymExpr(lhsTmpMove->get(2));
-  INT_ASSERT(lhsTmpSE);
+  //nprint_view(lhsTmpMove);
 
-  Symbol* lhsTmpSym = lhsTmpSE->symbol();
-  CallExpr* lhsMove = toCallExpr(lhsTmpSym->getSingleDef()->getStmtExpr());
-  INT_ASSERT(lhsMove && lhsMove->isPrimitive(PRIM_MOVE));
+  SymExpr* tmpSymExpr = toSymExpr(tmpMove->get(2));
+  INT_ASSERT(tmpSymExpr);
 
-  return toCallExpr(lhsMove->get(2));
+  Symbol* tmpSym = tmpSymExpr->symbol();
+  CallExpr* move = toCallExpr(tmpSym->getSingleDef()->getStmtExpr());
+  INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+
+  //nprint_view(lhsMove);
+
+  return toCallExpr(move->get(2));
 }
 
 void ProtoSliceAssignHelper::findProtoSlices() {
+  //nprint_view(call_);
   newProtoSliceLhs_ = findOneProtoSliceCall(call_->get(1));
   newProtoSliceRhs_ = findOneProtoSliceCall(call_->get(2));
 }
