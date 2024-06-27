@@ -261,11 +261,138 @@ static void test4(void) {
   assert(x3.type() && x3.type()->isErroneousType());
 }
 
+static void test5(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    record R {
+      type T;
+      var x : T;
+
+      proc foobar() {
+        proc helper(arg: T) { // Error for 'T' !
+          var y: x.type;
+          return y;
+        }
+        return helper(x);
+      }
+    }
+
+    var r : R(int);
+    var x = r.foobar();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
+static void test6(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    record R {
+      type T;
+      var x : T;
+
+      proc foobar() {
+        proc R.helper(arg: T) { var y: T; return y; }
+        return helper(x);
+      }
+    }
+
+    var r : R(int);
+    var x = r.foobar();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
+static void test7(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    record R {
+      type T;
+      var x : T;
+
+      proc foobar() {
+        record S {
+          proc helper(arg: T) { var y: T; return y; }
+        }
+        var v : S;
+        return v.helper(x);
+      }
+    }
+
+    var r : R(int);
+    var x = r.foobar();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(guard.numErrors() == 2);
+  assert(guard.errors()[0]->type() == chpl::NestedClassFieldRef);
+  assert(guard.errors()[1]->type() == chpl::NestedClassFieldRef);
+  guard.clearErrors();
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
+/*
+static void test8(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    record R {
+      type T;
+      var x : T;
+
+      proc foobar() {
+        record S {
+          var y: x.type;
+          proc helper() { return y; }
+        }
+        var v : S;
+        return v.helper();
+      }
+    }
+
+    var r : R(int);
+    var x = r.foobar();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+*/
+
 int main() {
   test0();
   test1();
   test2();
   test3();
   test4();
+  test5();
+  test6();
+  test7();
+  // test8();
   return 0;
 }
