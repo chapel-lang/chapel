@@ -1139,10 +1139,12 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
 // that would potentially cause a problem.
 static bool isReservedIdentifier(UniqueString name) {
   static std::unordered_set<UniqueString> reserved = {
+    USTR("atomic"),
     USTR("bool"),
     USTR("complex"),
     USTR("domain"),
     USTR("int"),
+    USTR("locale"),
     USTR("nil"),
     USTR("real"),
     USTR("sparse"),
