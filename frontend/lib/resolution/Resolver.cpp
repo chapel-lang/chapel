@@ -53,11 +53,13 @@ using namespace types;
 namespace {
   struct IterDetails {
     // Iterators will be resolved for each bit set in descending order.
-    // Resolution stops when the first iterator with a valid return type
-    // is found.
+    // Resolution stops when the first iterator with a valid yield type
+    // is found. TODO: Stop the moment we find a signature instead?
+    //
     // If the 'LEADER_FOLLOWER' bit is set, then the 'FOLLOWER' bit will
-    // be ignored, and the 'leaderIdxType' will be computed from the
-    // resolved leader signature.
+    // be ignored, and the 'leaderYieldType' will be computed from the
+    // resolved leader signature. Any provided value for 'leaderYieldType'
+    // will be overwritten.
     enum Priority {
       NONE            = 0b0000,
       STANDALONE      = 0b0001,
@@ -65,6 +67,7 @@ namespace {
       FOLLOWER        = 0b0100,
       SERIAL          = 0b1000,
     };
+
     // When an iter is resolved these pieces of the process will be stored.
     struct Pieces {
       bool wasCallInjected = false;
@@ -75,8 +78,22 @@ namespace {
     Pieces leader;
     Pieces follower;
     Pieces serial;
+
+    // This is the iterator that resolution stopped at if it succeeded.
+    // In that case, the type in 'idxType' will be set to the yield type
+    // of this iterator.
+    Priority succeededAt = NONE;
+
+    // If the 'LEADER_FOLLOWER' bit was set, then this will always be the
+    // yield type of the resolved leader iterator. Otherwise, it will be
+    // the type the user provided.
     QualifiedType leaderYieldType;
+
+    // This will be set to the yield type of the first iterator to succeed.
     QualifiedType idxType;
+
+    // This is set to true if the iterand is of kind 'TYPE'.
+    bool isIterandType = false;
   };
 }
 
@@ -4239,44 +4256,26 @@ static IterDetails resolveIterDetails(Resolver& rv,
     return nullptr;
   });
 
-  // Reissue the errors.
-  for (auto& e : runResult.errors()) {
-    if (e->type() == NoMatchingCandidates) {
-      auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
-      if (std::get<0>(nmc->info()) == iterand) continue;
-    }
-    context->report(std::move(e));
-  }
-
-  auto& iterandRE = rv.byPostorder.byAst(iterand);
-  auto& MSC = iterandRE.mostSpecific();
-  auto fn = MSC.only() ? MSC.only().fn() : nullptr;
-
-  // Issue errors about iterator forwarding if we are in user code.
-  if (!parsing::idIsInBundledModule(context, iterand->id()) &&
-       fn && !fn->isSerialIterator(context) &&
-       fn->isIterator()) {
-
-    // TODO: Add note 'actual argument <N> of the iterator call'.
-    context->error(iterand, "user invocation of a parallel iterator should "
-                            "not supply tag arguments -- they are added "
-                            "implicitly by the compiler");
-  }
+  bool computedLeaderYieldType = false;
+  bool wasIterSigResolved = false;
 
   // Resolve iterators, stopping immediately when we get a valid yield type.
-  bool wasIterSigResolved = false;
   auto ret = [&]() -> IterDetails {
     IterDetails ret;
     if (mask & IterDetails::STANDALONE) {
       ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, astForErr,
                                            iterand, "standalone", {});
       wasIterSigResolved = (ret.standalone.sig != nullptr);
-      if (!ret.idxType.isUnknownOrErroneous()) return ret;
+      if (!ret.idxType.isUnknownOrErroneous()) {
+        ret.succeededAt = IterDetails::STANDALONE;
+        return ret;
+      }
     }
 
     if (mask & IterDetails::LEADER_FOLLOWER) {
       ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, astForErr,
                                                    iterand, "leader", {});
+      computedLeaderYieldType = true;
     } else if (mask & IterDetails::FOLLOWER) {
       ret.leaderYieldType = leaderYieldType;
     }
@@ -4288,7 +4287,12 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                              iterand, "follower",
                                              ret.leaderYieldType);
         wasIterSigResolved = (ret.follower.sig != nullptr);
-        if (!ret.idxType.isUnknownOrErroneous()) return ret;
+        if (!ret.idxType.isUnknownOrErroneous()) {
+          ret.succeededAt = computedLeaderYieldType
+              ? IterDetails::LEADER_FOLLOWER
+              : IterDetails::FOLLOWER;
+          return ret;
+        }
       }
     }
 
@@ -4296,6 +4300,9 @@ static IterDetails resolveIterDetails(Resolver& rv,
       ret.idxType = resolveIterTypeWithTag(rv, ret.serial, astForErr,
                                            iterand, {}, {});
       wasIterSigResolved = (ret.serial.sig != nullptr);
+      if (!ret.idxType.isUnknownOrErroneous()) {
+        ret.succeededAt = IterDetails::SERIAL;
+      }
     }
 
     return ret;
@@ -4304,9 +4311,25 @@ static IterDetails resolveIterDetails(Resolver& rv,
   // Only issue a "not iterable" error if the iterand has a type. If it was
   // not typed then earlier resolution of the iterand will have spit out an
   // approriate error for us already.
-  if (!wasIterSigResolved && !iterandRE.type().isUnknownOrErroneous()) {
-    ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
-                                  iterandRE.type());
+  bool skipNoCandidatesError = true;
+  if (!wasIterSigResolved) {
+    auto& iterandRE = rv.byPostorder.byAst(iterand);
+    if (!iterandRE.type().isUnknownOrErroneous()) {
+      ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
+                                    iterandRE.type());
+    } else {
+      skipNoCandidatesError = false;
+    }
+  }
+
+  // Reissue the errors.
+  for (auto& e : runResult.errors()) {
+    if (e->type() == NoMatchingCandidates) {
+      auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
+      auto& f = std::get<0>(nmc->info());
+      if (skipNoCandidatesError && f == iterand) continue;
+    }
+    context->report(std::move(e));
   }
 
   return ret;
@@ -4488,6 +4511,35 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   return false;
 }
 
+static void
+backpatchArrayTypeSpecifier(Resolver& rv, const IndexableLoop* loop) {
+  if (rv.scopeResolveOnly || !loop->isBracketLoop()) return;
+  Context* context = rv.context;
+
+  // Check if this is an array
+  auto iterandType = rv.byPostorder.byAst(loop->iterand()).type();
+  if (!iterandType.isUnknown() && iterandType.type()->isDomainType()) {
+    QualifiedType eltType;
+
+    CHPL_ASSERT(loop->isExpressionLevel() && loop->numStmts() <= 1);
+    if (loop->numStmts() == 1) {
+      eltType = rv.byPostorder.byAst(loop->stmt(0)).type();
+    } else if (loop->numStmts() == 0) {
+      eltType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+    }
+
+    // TODO: resolve array types when the iterand is something other than
+    // a domain.
+    if (eltType.isType() || eltType.kind() == QualifiedType::TYPE_QUERY) {
+      eltType = QualifiedType(QualifiedType::TYPE, eltType.type());
+      auto arrayType = ArrayType::getArrayType(context, iterandType, eltType);
+
+      auto& re = rv.byPostorder.byAst(loop);
+      re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
+    }
+  }
+}
+
 bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
@@ -4499,67 +4551,48 @@ bool Resolver::enter(const IndexableLoop* loop) {
     ag->traverse(*this);
   }
 
-  if (isParamForLoop) {
-    return resolveParamForLoop(*this, loop->toFor());
+  if (isParamForLoop) return resolveParamForLoop(*this, loop->toFor());
+
+  auto iterand = loop->iterand();
+  QualifiedType idxType;
+
+  // The 'zip' visitor will consult the parent loop in order to resolve.
+  if (iterand->isZip()) {
+    iterand->traverse(*this);
+    idxType = byPostorder.byAst(iterand).type();
+
+  // Otherwise - configure a loop-specific policy and resolve the iterator.
   } else {
-    auto iterand = loop->iterand();
-    QualifiedType idxType;
-
-    // The 'zip' visitor will consult the parent loop in order to decide
-    // what should be done (e.g., 'for' vs 'forall').
-    if (iterand->isZip()) {
-      iterand->traverse(*this);
-      idxType = byPostorder.byAst(iterand).type();
-
-    } else {
-      int m = IterDetails::NONE;
-      if (!loop->isForall()) m |= IterDetails::SERIAL;
-      if (loop->isBracketLoop() || loop->isForall()) {
-        m |= IterDetails::STANDALONE | IterDetails::LEADER_FOLLOWER;
-      }
-
-      auto dt = resolveIterDetails(*this, loop, iterand, {}, m);
-      idxType = dt.idxType;
+    int m = IterDetails::NONE;
+    if (!loop->isForall()) m |= IterDetails::SERIAL;
+    if (loop->isBracketLoop() || loop->isForall()) {
+      m |= IterDetails::STANDALONE | IterDetails::LEADER_FOLLOWER;
     }
 
-    enterScope(loop);
+    CHPL_ASSERT(m != IterDetails::NONE);
 
-    if (const Decl* idx = loop->index()) {
-      ResolvedExpression& re = byPostorder.byAst(idx);
-      re.setType(idxType);
-    }
+    auto dt = resolveIterDetails(*this, loop, iterand, {}, m);
 
-    if (auto with = loop->withClause()) {
-      with->traverse(*this);
-    }
-
-    loop->body()->traverse(*this);
-
-    if (!scopeResolveOnly && loop->isBracketLoop()) {
-      // Check if this is an array
-      auto iterandType = byPostorder.byAst(loop->iterand()).type();
-      if (!iterandType.isUnknown() && iterandType.type()->isDomainType()) {
-        QualifiedType eltType;
-        if (loop->numStmts() == 1) {
-          eltType = byPostorder.byAst(loop->stmt(0)).type();
-        } else if (loop->numStmts() == 0) {
-          eltType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-        } else {
-          CHPL_ASSERT(false && "array expression with multiple loop body statements?");
-        }
-
-        // TODO: resolve array types when the iterand is something other than
-        // a domain.
-        if (eltType.isType() || eltType.kind() == QualifiedType::TYPE_QUERY) {
-          eltType = QualifiedType(QualifiedType::TYPE, eltType.type());
-          auto arrayType = ArrayType::getArrayType(context, iterandType, eltType);
-
-          ResolvedExpression& re = byPostorder.byAst(loop);
-          re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
-        }
-      }
-    }
+    idxType = dt.idxType;
   }
+
+  enterScope(loop);
+
+  if (const Decl* idx = loop->index()) {
+    ResolvedExpression& re = byPostorder.byAst(idx);
+    re.setType(idxType);
+  }
+
+  if (auto with = loop->withClause()) {
+    with->traverse(*this);
+  }
+
+  loop->body()->traverse(*this);
+
+  // TODO: What would it take to make backpatching of array types happen
+  // _before_ / without resolving an iterator? Currently we rely on iterator
+  // resolution to resolve the iterand for us.
+  backpatchArrayTypeSpecifier(*this, loop);
 
   return false;
 }
