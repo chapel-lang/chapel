@@ -145,18 +145,19 @@ functions.
 
 Some commonly used names are:
 
-- idx for an index
+- ``idx`` for an index
 
-- x and y for general pairs of formals
+- ``x`` and ``y`` for general pairs of formals
 
-- src and dst/dest (source and destination) for directional pairs of formals
+- ``src`` and ``dst``/``dest`` (source and destination) for directional pairs of
+  formals
 
-  - lhs and rhs (left hand side and right hand side) may also be used
+  - ``lhs`` and ``rhs`` (left hand side and right hand side) may also be used
 
-- eltType for the type of elements stored in a collection (also used as a field
-  name)
+- ``eltType`` for the type of elements stored in a collection (also used as a
+  field name)
 
-- obj for a general object instance (as opposed to formals that can also be
+- ``obj`` for a general object instance (as opposed to formals that can also be
   primitive types)
 
 Other Identifiers
@@ -168,8 +169,10 @@ Handling Failure
 ----------------
 
 In general, when code in a library encounters erroneous behavior, an appropriate
-Error should be thrown.  This will enable users of the library to potentially
-recover from the bad behavior without having to restart their program.
+Error should be thrown (see the :ref:`spec description <Chapter-Error_Handling>`
+for error handling in general and :mod:`Errors` for a list of some potential
+errors to throw).  This will enable users of the library to potentially recover
+from the bad behavior without having to restart their program.
 
 There are some known exceptions to this recommendation:
 
