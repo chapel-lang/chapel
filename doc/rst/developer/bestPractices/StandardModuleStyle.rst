@@ -169,10 +169,10 @@ Handling Failure
 ----------------
 
 In general, when code in a library encounters erroneous behavior, an appropriate
-Error should be thrown (see the :ref:`spec description <Chapter-Error_Handling>`
-for error handling in general and :mod:`Errors` for a list of some potential
-errors to throw).  This will enable users of the library to potentially recover
-from the bad behavior without having to restart their program.
+:class:`~Errors.Error` should be thrown (see the :ref:`spec description
+<Chapter-Error_Handling>` for error handling in general).  This will enable
+users of the library to potentially recover from the bad behavior without having
+to restart their program.
 
 There are some known exceptions to this recommendation:
 
