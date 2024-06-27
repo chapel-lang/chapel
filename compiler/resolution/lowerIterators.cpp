@@ -1490,10 +1490,16 @@ expandBodyForIteratorInline(ForLoop*         forLoop,
                             bool&            addErrorArgToCall,
                             const SymbolMap& map);
 
-static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody) {
+static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
+                               bool forVectorize) {
   bool forIsOrderIndep = forLoop->isOrderIndependent();
   bool forHasHazard = forLoop->hasVectorizationHazard();
   auto llvmAttrs = forLoop->getAdditionalLLVMMetadata();
+
+  if (forVectorize) {
+    forLoop->orderIndependentSet(true);
+    forIsOrderIndep = true;
+  }
 
   // If forLoop is not marked order independent, then
   // the yielding loops in the body should also not be marked
@@ -1721,7 +1727,8 @@ static bool expandIteratorInline(ForLoop* forLoop)
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
 
-    markLoopProperties(forLoop, ibody);
+    markLoopProperties(forLoop, ibody,
+                       iterator->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS));
 
     // Replace yield statements in the inlined iterator body with copies
     // of the body of the For Loop that invoked the iterator, substituting

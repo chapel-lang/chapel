@@ -886,6 +886,7 @@ static void markIteratorAndLoops(FnSymbol* fn) {
    */
   bool markOrderIndep = fn->hasFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
   bool markAllYieldingLoops = fn->hasFlag(FLAG_PROMOTION_WRAPPER) ||
+                              fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS) ||
                               markOrderIndep;
 
   std::vector<CallExpr*> callExprs;
