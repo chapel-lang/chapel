@@ -2970,6 +2970,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       auto c = resolveGeneratedCall(context, ident, ci, inScopes);
       // Ensure we error out for redeclarations within the method itself,
       // which resolution with an implicit 'this' currently does not catch.
+      // TODO: Also catch redeclarations of formal names.
       std::vector<BorrowedIdsWithName> redeclarations;
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
